@@ -1,0 +1,8 @@
+# test scratch files written by the suite
+test/*.out
+test/roundtrip.md
+test/v4.md
+
+__pycache__/
+*.pyc
+.DS_Store
