@@ -3113,7 +3113,11 @@ async function download(){const t=T[lang].ui;const md=toMarkdown();const name=t.
 
 /* ======================= IMPORT: record first, then markdown sections override ======================= */
 function labelMaps(){const M={big:{},today:{},checkin:{},emo:{},kinds:{},items:{},contact:{},outcomes:{},since:[],h:{}};
-  for(const k of ["big","areas","today","checkin","draft","note","page","now","questions","appA","appB","appC","archive","goodday","safety","seal"]) M.h[k]=[];
+  /* Headings are collected from the copy itself, not from a list kept
+     alongside it. That list was a second copy of the same facts: add a heading
+     and the importer threw on `M.h[k].push` of an undefined array, which has
+     now happened twice — the first time it was "fixed" by adding the missing
+     key, which left the trap exactly where it was. */
   for(const l of Object.keys(T)){const t=copyFor(l);const L=t.labels;
     for(const [k,v] of Object.entries(L.big)) M.big[norm(v)]=k;
     for(const [k,v] of Object.entries(L.today)) M.today[norm(v)]=k;
@@ -3136,7 +3140,7 @@ function labelMaps(){const M={big:{},today:{},checkin:{},emo:{},kinds:{},items:{
       if(q&&q[0]) M.today[norm(q[0])]=k;}
     for(const k of TODAY_LISTS){const q=(td.lists||{})[k];if(q&&q[0]) M.today[norm(q[0])]=k;}
     for(const k of BODY_KEYS) M.checkin[norm(t.checkin.body.f[k][0])]=k;M.checkin[norm(t.checkin.emo.other[0])]="other";
-    for(const k of Object.keys(L.h)) M.h[k].push(norm(L.h[k]));}
+    for(const k of Object.keys(L.h)) (M.h[k]=M.h[k]||[]).push(norm(L.h[k]));}
   M.big["one possible next move"]="amove";M.big["un prochain pas possible"]="amove";
   // the six-step guide is gone, but a v0.2 file can still name one of its four
   // problem kinds; keep the labels so a hand-edited old file does not lose them
@@ -3255,7 +3259,10 @@ function parseMarkdownTop(text,M){const R={sections:new Set(),lang:null,mode:nul
     if(starts(n,M.h.checkin)) return ts?{type:"checkin",obj:{...emptyCheckin(),thoughts:[],ts}}:null;return null;};
   const classifyTop=title=>{const n=norm(title);
     if(starts(n,M.h.big)){R.sections.add("big");return {type:"big"};}if(starts(n,M.h.note)) return {type:"note",lines:[]};if(starts(n,M.h.now)){R.sections.add("now");return {type:"now"};}
-    if(starts(n,M.h.areas)){R.sections.add("areas");return {type:"areas"};}if(starts(n,M.h.questions)||starts(n,M.h.safety)||starts(n,M.h.goodday)||starts(n,M.h.page)) return {type:"skip"};
+    if(starts(n,M.h.areas)){R.sections.add("areas");return {type:"areas"};}/* Sections the writer generates and the reader never edits: read past them
+       rather than reporting them as parts of the file that could not be read. */
+    if(starts(n,M.h.questions)||starts(n,M.h.safety)||starts(n,M.h.goodday)
+       ||starts(n,M.h.page)||starts(n,M.h.rights)) return {type:"skip"};
     if(starts(n,M.h.appA)) return {type:"appA"};if(starts(n,M.h.appB)) return {type:"appB"};if(starts(n,M.h.appC)||starts(n,M.h.archive)){R.sections.add("archive");return {type:"archive"};}
     if(starts(n,M.h.seal)||/^app record|^registre de l'application|^do not edit|^ne rien modifier/.test(n)) return {type:"skip"};
     const e=entryFrom(title);if(e) return {type:"entryhost",entry:e};
