@@ -29,9 +29,6 @@ module: you/your-thing        ← the id, "who/what"
 version: 0.1
 status: approved              ← anything else is not offered
 lang: en
-author: Your Name             ← optional; shown beside your module
-license: Apache-2.0           ← optional; defaults to this repo's terms
-source: https://…             ← optional; where it came from
 ---
 
 # Your thing
@@ -76,15 +73,32 @@ node build-registry.js   # then commit registry.json
 
 ## Authorship and terms
 
-`author`, `license` and `source` are optional and appear in the registry and
-beside your module on the site. They exist because a module is prose as much as
-it is config, and a registry carrying other people's work should say whose it
-is. Leave them out and your module is attributed to this repository under its
-Apache-2.0 licence, like everything else here.
+If your module is yours and you want to keep it that way, say so **inside the
+module block**, not in the front matter:
 
-If your module is work you want to keep under different terms, say so in
-`license` — the registry carries the declaration, and a reader sees it before
-they add anything.
+```jsonc
+{ "block": "module", "id": "you/your-thing", "version": "0.1",
+  "title": {…}, "blurb": {…},
+  "rights": {
+    "copyright": "© 2026 Your Name. All rights reserved.",
+    "license": "Free to copy and share, unmodified and with this notice intact.",
+    "source": "https://example.org/where-it-lives"
+  },
+  … }
+```
+
+**In the block, because that is the part that travels.** A module is copied into
+every booklet that uses it, and front matter is discarded the moment it is
+pasted in — a notice there reaches this registry and never reaches anyone
+actually holding your work. Declared in the block, it is written into the human
+half of every file that carries your module, where a person can read it.
+
+Leave `rights` out and your module is contributed under this repository's
+Apache-2.0 terms, like the code.
+
+⚠️ `rights` states terms. It does not enforce them, and nothing can: a module
+that has been copied has been copied. Withdrawing one stops it being *offered*
+and changes the terms of later versions.
 
 ## Why the manifest is committed
 

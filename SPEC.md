@@ -73,7 +73,8 @@ number of them may be read at once.
   "name": { "en": "Activity Kit" },
   "modules": [
     { "id": "who/what", "version": "0.1", "file": "what.md",
-      "title": {…}, "blurb": {…}, "engines": ["grid-select"] },
+      "title": {…}, "blurb": {…}, "engines": ["grid-select"],
+      "rights": { "copyright": "…", "license": "…" } },
     { "id": "who/other", "version": "0.1", "module": { … the whole module … } }
   ] }
 ```

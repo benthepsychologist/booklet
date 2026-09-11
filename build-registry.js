@@ -89,9 +89,17 @@ function build() {
          config, and prose written by a named professional is not the same
          thing as an example anybody may fork. Both default to the repository's
          own terms when a file says nothing. */
-      ...(fm.author ? { author: fm.author } : {}),
-      ...(fm.license ? { license: fm.license } : {}),
-      ...(fm.source ? { source: fm.source } : {}),
+      /* `rights` in the module block is the canonical place — it travels with
+         the module into every booklet, which front matter does not. Carried
+         through whole rather than flattened: a copyright holder and an author
+         credit are different things and squashing them reads as nonsense. */
+      ...(() => {
+        const r = { ...(mod.rights || {}) };
+        if (!r.copyright && fm.author) r.author = fm.author;
+        if (!r.license && fm.license) r.license = fm.license;
+        if (!r.source && fm.source) r.source = fm.source;
+        return Object.keys(r).length ? { rights: r } : {};
+      })(),
       ...((mod.mode || {}).pinned ? { pinned: true } : {}),
     });
   }
@@ -117,8 +125,13 @@ function landing(reg) {
       <p>${esc(m.blurb.en)}</p>
       <p class="meta">v${esc(m.version)}${m.engines.length ? " · draws with " + m.engines.map(esc).join(", ") : ""}${m.pinned ? " · pinned panel" : ""}
         · <a href="${esc(m.file)}">${esc(m.file)}</a></p>
-      <p class="meta">${m.author ? "by " + esc(m.author) : "by the Booklet examples"}
-        · ${m.license ? esc(m.license) : "Apache-2.0"}${m.source ? ` · <a href="${esc(m.source)}">source</a>` : ""}</p>
+      ${(() => {
+        const r = m.rights;
+        if (!r) return `<p class="meta">Contributed under this repository's Apache-2.0 terms.</p>`;
+        const who = r.copyright || (r.author ? "By " + r.author + "." : "");
+        const src = r.source ? ` <a href="${esc(r.source)}">${esc(r.source)}</a>` : "";
+        return `<p class="meta rights">${esc(who)} ${esc(r.license || "")}${src}</p>`;
+      })()}
     </li>`).join("\n");
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -134,6 +147,7 @@ function landing(reg) {
  ul{list-style:none;padding:0} li{border-top:1px solid #8883;padding:1rem 0}
  .id{font:12px ui-monospace,monospace;color:#888;font-weight:400}
  .meta{font-size:.85rem;color:#777;margin:.3rem 0 0}
+ .rights{border-left:2px solid #8883;padding-left:.7rem;margin-top:.5rem}
  code{font:13px ui-monospace,monospace;background:#8881;padding:.1rem .3rem;border-radius:3px}
  pre{background:#8881;padding:.8rem;border-radius:6px;overflow-x:auto;font-size:13px}
  .note{border-left:3px solid #8884;padding-left:1rem;color:#666}

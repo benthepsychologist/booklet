@@ -27,6 +27,88 @@
    ]
   },
   {
+   "id": "mensio/check-in",
+   "version": "0.1",
+   "file": "modules/mensio-check-in.md",
+   "title": {
+    "en": "A mindful check-in",
+    "fr": "Une pause attentive"
+   },
+   "blurb": {
+    "en": "Body, feelings, thoughts — noticed, named, kept.",
+    "fr": "Le corps, les émotions, les pensées — remarqués, nommés, gardés."
+   },
+   "engines": [
+    "grid-select",
+    "svg-regions"
+   ],
+   "rights": {
+    "copyright": "© 2026 Benjamin F. Armstrong III. All rights reserved.",
+    "license": "Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.",
+    "source": "https://benthepsychologist.com/tools/activity-kit/"
+   }
+  },
+  {
+   "id": "mensio/help-now",
+   "version": "0.1",
+   "file": "modules/mensio-help-now.md",
+   "title": {
+    "en": "If you need help now",
+    "fr": "Si vous avez besoin d’aide maintenant"
+   },
+   "blurb": {
+    "en": "Help now",
+    "fr": "Besoin d’aide"
+   },
+   "engines": [],
+   "rights": {
+    "copyright": "© 2026 Benjamin F. Armstrong III. All rights reserved.",
+    "license": "Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.",
+    "source": "https://benthepsychologist.com/tools/activity-kit/"
+   },
+   "pinned": true
+  },
+  {
+   "id": "mensio/the-day",
+   "version": "0.1",
+   "file": "modules/mensio-the-day.md",
+   "title": {
+    "en": "Have a good day",
+    "fr": "Passer une bonne journée"
+   },
+   "blurb": {
+    "en": "What needs to happen today, built from what is already on the map.",
+    "fr": "Ce qui doit arriver aujourd’hui, à partir de ce qui est déjà sur la carte."
+   },
+   "engines": [],
+   "rights": {
+    "copyright": "© 2026 Benjamin F. Armstrong III. All rights reserved.",
+    "license": "Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.",
+    "source": "https://benthepsychologist.com/tools/activity-kit/"
+   }
+  },
+  {
+   "id": "mensio/the-guide",
+   "version": "0.1",
+   "file": "modules/mensio-the-guide.md",
+   "title": {
+    "en": "A short guide to the four quadrants",
+    "fr": "Un court guide des quatre quadrants"
+   },
+   "blurb": {
+    "en": "How the check-in's map of feelings is put together, and what to do with what you notice",
+    "fr": "Comment la carte des émotions de la pause est construite, et quoi faire de ce que vous remarquez"
+   },
+   "engines": [
+    "grid-select"
+   ],
+   "rights": {
+    "copyright": "© 2026 Benjamin F. Armstrong III. All rights reserved.",
+    "license": "Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.",
+    "source": "https://benthepsychologist.com/tools/activity-kit/"
+   }
+  },
+  {
    "id": "example/the-board",
    "version": "0.1",
    "file": "modules/the-board.md",
@@ -55,8 +137,10 @@
     "fr": "Une courte lecture : le fichier, les parties, et ce qui vous appartient."
    },
    "engines": [],
-   "author": "Booklet examples",
-   "license": "Apache-2.0"
+   "rights": {
+    "author": "Booklet examples",
+    "license": "Apache-2.0"
+   }
   }
  ]
 }
