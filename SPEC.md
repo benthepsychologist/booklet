@@ -2,7 +2,7 @@
 
 **A booklet is one Markdown file that holds a person's work *and* the design of the activities they did it in.** The web page that renders it is a viewer, not the home of anything: a conforming renderer ships **no activities, no booklet and no content of its own**, and everything a reader sees comes out of the file.
 
-A published site may put a *wrapper* around a renderer — a starter booklet for a first visit, and a folder of modules to install. That wrapper is neither the renderer nor this format; it is one way of getting a file and some modules into someone's hands. Hand someone a booklet and they get the activities it describes; hand them a booklet with no content and they get a blank workbook — which is all a *preset* is.
+A published site may put a *wrapper* around a renderer — a **preset** for a first visit, and a folder of modules to install. The preset is taken only when there is nothing there already, so it can never overwrite somebody's work, and the page has no idea it came from a wrapper rather than from disk. That wrapper is neither the renderer nor this format; it is one way of getting a file and some modules into someone's hands. Hand someone a booklet and they get the activities it describes; hand them a booklet with no content and they get a blank workbook — which is all a *preset* is.
 
 This document is the format. It is deliberately small, it is versioned, and it is published separately from the page that implements it so that something else can read or write these files later. Released under the Apache Licence 2.0, whose explicit patent grant is meant to travel to anyone implementing it.
 
