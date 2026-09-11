@@ -64,27 +64,50 @@ This is the distinction the whole design rests on, and it is easy to get backwar
 
 ## What is in this repo
 
-| | | status |
-| --- | --- | --- |
-| [`SPEC.md`](SPEC.md) | the format, versioned and published separately from anything that implements it | ✅ here |
-| [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" | ✅ here |
-| `booklet.html` | the renderer | 🚧 not yet — see below |
-| `examples/`, `modules/`, `widgets/` | worked examples and generic fixtures | 🚧 not yet |
-| `test/` | the suite that drives the renderer against those fixtures | 🚧 not yet |
+| | |
+| --- | --- |
+| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, no dependencies |
+| [`SPEC.md`](SPEC.md) | the format, versioned and published separately from anything that implements it |
+| [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
+| [`examples/`](examples/) | a complete booklet you can open |
+| [`modules/`](modules/), [`widgets/`](widgets/) | a worked activity and the two widgets it draws with |
+| [`test/`](test/) | the suite, run with `test/run.sh` |
+| [`build-example.js`](build-example.js) | writes the example booklet through the renderer itself |
 
-### Why the renderer is not here yet
+## Try it
 
-The renderer works, is in production, and is ~300KB of a single self-contained HTML file. It is not in this repo because **it does not yet satisfy the claim this README makes about it.** An audit found real content baked into it as literal strings rather than supplied by a booklet:
+Download `booklet.html` and `examples/end-of-day.md`, open the HTML file in a
+browser — **straight off your disk, `file://` is fine** — and press *Load* to
+open the markdown file. No server, no install, no network: verified with
+`fetch` and `XMLHttpRequest` stubbed to fail.
 
-- a complete built-in reader's guide, in two languages, on the psychology of emotion
-- a block of Canadian crisis-line phone numbers
-- default vocabulary — feeling names, body regions — from one specific practice
-- CSS classes and a colour map keyed by that vocabulary
-- a hard-coded URL naming one private repository
+The renderer opens **empty**, because it holds no booklet of its own. That is
+the property everything else here rests on.
 
-None of that is a bug in the ordinary sense; it all works. But "the renderer holds no content" is the property the three-part split above depends on, and right now that property is **asserted rather than demonstrated** — the only booklets the renderer has ever been tested against belong to the practice it was written for.
+### How "it holds no content" got demonstrated
 
-The work before it lands here is therefore not a file move. It is: lift that content out into modules where it belongs, write generic non-clinical fixtures, and re-point the test suite at them. When the suite passes against fixtures that have nothing to do with any one practice, the claim is demonstrated, and the renderer can move.
+The renderer arrived here carrying six things it should not have: a two-language
+reader's guide on the psychology of emotion, a block of Canadian crisis-line
+numbers, one practice's feeling and body vocabulary as defaults, a stylesheet
+and colour map keyed by that vocabulary, a namespace, and a URL into a private
+repository. None of it was a bug — it all worked. But every one of them was the
+engine knowing something only a booklet should know.
+
+They came out one at a time, and each became a capability instead: a guide is
+now an activity built from ordinary blocks; crisis resources are a **pinned
+panel** any booklet can declare; cell colours and cell names are both the
+widget's; a legacy-file rescue path that named two specific widgets now resolves
+by engine. The renderer lost about 26KB and gained the ability to draw somebody
+else's booklet.
+
+**The fixtures here are how that claim is kept honest.** A desk check and an
+effort/impact grid — deliberately nothing to do with the practice the renderer
+was written for, because a suite built only from its author's own activities
+cannot tell "holds nothing" apart from "holds exactly these". The first run
+against them found two more couplings the old suite never could: an empty state
+pre-seeded with four particular cell ids, and question wording hard-coded to
+three scope names, which had quietly meant a *new* activity could never word its
+own questions.
 
 ---
 
