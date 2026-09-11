@@ -4,7 +4,7 @@ status: approved
 title: "End of day"
 lang: en
 preset: "example/demo@0.1"
-updated: 2026-09-11 00:50
+updated: 2026-09-11 00:53
 ---
 
 # Activity Kit — my notes
@@ -25,7 +25,7 @@ How this file works:
 -->
 
 _Language: en_  
-_Downloaded 2026-09-11 00:50_
+_Downloaded 2026-09-11 00:53_
 
 ## Now
 
@@ -131,7 +131,7 @@ A single JSON object. The app writes this block and reads it back; it holds your
  "app": "useful-next-step",
  "v": 6,
  "booklet": 1,
- "written": "2026-09-11T00:50:00Z",
+ "written": "2026-09-11T00:53:00Z",
  "booklet_id": "example/demo",
  "booklet_version": "0.1",
  "customized": true,

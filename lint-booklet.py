@@ -210,13 +210,27 @@ def check_template(f, tpl):
                         err(f, f"map card {c['id']!r} holds prose field {k!r}, which is not a map field")
 
     # widgets: the data every engine-drawn block depends on
-    named = {b.get("widget") for m in (tpl.get("modules") or [])
-             for b in ((m.get("mode") or {}).get("blocks") or [])
-             if b.get("type") == "widget"}
-    have = {w.get("id") for w in (tpl.get("widgets") or [])}
+    def named_widgets(blocks, into):
+        """Blocks nest — a widget inside a group is still a widget this file
+        has to carry, and looking only at the top level misses it."""
+        for b in blocks or []:
+            if not isinstance(b, dict):
+                continue
+            if b.get("type") == "widget" and b.get("widget"):
+                into.add(b["widget"])
+            named_widgets(b.get("blocks"), into)
+        return into
+
+    named = set()
+    for m in (tpl.get("modules") or []):
+        named_widgets(((m.get("mode") or {}).get("blocks") or []), named)
+    for m in (tpl.get("modes") or []):
+        named_widgets(m.get("blocks") or [], named)
+    have = {w.get("id") for w in (tpl.get("widgets") or []) if isinstance(w, dict)}
     for wid in sorted(n for n in named if n and n not in have):
         err(f, f"a block draws with {wid!r}, which this file does not carry — "
-               f"hand this booklet to anyone and that activity cannot draw")
+               f"hand this booklet to anyone and that activity cannot draw "
+               f"(it carries: {', '.join(sorted(x for x in have if x)) or 'nothing'})")
     for w in (tpl.get("widgets") or []):
         if not isinstance(w.get("id"), str):
             err(f, "every widget needs a string id")
