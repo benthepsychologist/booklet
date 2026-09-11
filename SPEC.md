@@ -164,6 +164,12 @@ prose describing them and going stale the first time anyone renames something.
   "mode":  { … } }                  // the activity itself
 ```
 
+**A module may also carry things that belong to the whole booklet** rather than
+to its own activity: `menus` the blocks name, the `widgets` they draw with, and
+`page` — default words for the booklet's own front page, used only if the
+booklet itself declares none. Resolution is always the same: the booklet first,
+then whichever installed module offers one.
+
 **A module travels whole.** A booklet carries the full module objects it uses, never their names, so a booklet made elsewhere works on a page that has never heard of that module. A page's built-in registry is only the shelf of modules it can *offer* to add.
 
 **Adding** appends, or replaces in place when the id already exists — so handing someone a newer version of a module is an update, not a duplicate. **Removing** drops it; its data stays in the file, so putting it back restores what was there.
@@ -186,6 +192,15 @@ way — there is no bespoke view for any activity in a conforming renderer.
 | `log` | the history of what was kept |
 
 Other keys: `home` (false hides it from the home screen), `head` (copy references for its heading), `chrome` (extra machinery, currently only `"areas"`), `keep` (fields surviving a finalize), `accent`, `icon`, `rail`, and `blocks`.
+
+`pinned: true` marks an activity the booklet keeps **one tap away from every
+page** rather than one you go and do — important contacts, a statement of what
+the booklet is and is not, anything that has to be immediately reachable. It is
+drawn from its blocks like any other page, it is written into the top of every
+file the reader saves, and the renderer supplies only the button and the panel:
+it knows nothing about what goes in them. That is the only way an engine can be
+handed to somebody whose emergency numbers, jurisdiction and language are not
+the author's.
 
 `rail: true` gives a long activity a section index built **from its own heading
 blocks**, so the index cannot disagree with the page. A separate list of section
