@@ -1,0 +1,61 @@
+# ── NOT ACTIVE YET ────────────────────────────────────────────────────────
+# Move this to .github/workflows/ci.yml to turn it on:
+#
+#     git mv setup/pr-checks.yml .github/workflows/ci.yml
+#
+# It lives here because pushing a file under .github/workflows/ needs a token
+# permission ("Workflows: read and write") that the session which wrote it did
+# not have — and that permission lets a token add code which runs with the
+# repository's credentials, so it is worth granting deliberately rather than
+# reflexively. Moving the file by hand needs no permission at all.
+# ──────────────────────────────────────────────────────────────────────────
+
+# Every pull request runs this. A module is text and config, not code, so what
+# there is to check is whether it is VALID and whether it is HONEST about
+# itself — which is exactly what the validator in this repo checks.
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: The engine, against fixtures that belong to nobody
+        run: node test/engine.js
+
+      - name: Is every booklet, module and widget valid?
+        # exits 1 on any error; warnings never fail a build
+        run: python3 lint-booklet.py
+
+      - name: Does the example booklet still match its module?
+        run: node build-example.js --check
+
+      - name: Does registry.json match the modules in this repo?
+        # the manifest is committed so a PR shows what it does to the offer
+        run: node build-registry.js --check
+
+      - name: Does every registry entry point at a file that exists?
+        run: |
+          node -e '
+            const fs=require("fs");
+            const reg=JSON.parse(fs.readFileSync("registry.json","utf8"));
+            let bad=0;
+            for (const m of reg.modules) {
+              if (m.module) continue;                 // carried inline, nothing to fetch
+              if (!m.file) { console.log("⛔ "+m.id+" names neither a file nor a module"); bad++; continue; }
+              if (!fs.existsSync(m.file)) { console.log("⛔ "+m.id+" points at "+m.file+", which is not here"); bad++; }
+            }
+            console.log(reg.modules.length+" entries checked, "+bad+" broken");
+            process.exit(bad?1:0);'
