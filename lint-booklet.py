@@ -171,7 +171,13 @@ def check_template(f, tpl):
             if btype == "widget":
                 if not isinstance(b.get("widget"), str):
                     err(f, f"widget block {bid!r} does not name a widget")
-                if not (isinstance(b.get("keys"), list) and b["keys"]):
+                # a read-only widget is shown, not operated: it writes nothing,
+                # so naming entry keys would be claiming an answer it never takes
+                if b.get("readonly"):
+                    if b.get("keys"):
+                        err(f, f"widget block {bid!r} is readonly but names entry keys; "
+                               f"a widget nobody can touch writes nothing")
+                elif not (isinstance(b.get("keys"), list) and b["keys"]):
                     err(f, f"widget block {bid!r} must name the entry keys its engine writes — "
                            f"only the widget knows what shape its answer is")
             if btype in ("text", "headlines"):

@@ -122,6 +122,14 @@ A **block** uses one by naming it, and names the entry keys the engine writes:
   "keys": ["regions"], "skippable": true }
 ```
 
+**A widget may also be shown rather than operated.** `"readonly": true` draws it
+with nothing selectable, and `"describe": true` follows it with whatever each
+part of it says about itself. A read-only block names **no** entry keys, because
+a widget nobody can touch writes nothing. Together these are what let a page
+that *explains* a widget show the real one instead of a picture of it — so its
+words appear exactly once, on the widget, rather than being copied into the
+prose describing them and going stale the first time anyone renames something.
+
 **Engines a conforming renderer provides:**
 
 | engine | draws | its widget supplies |
@@ -177,7 +185,17 @@ way — there is no bespoke view for any activity in a conforming renderer.
 | `guide` | static reading |
 | `log` | the history of what was kept |
 
-Other keys: `home` (false hides it from the home screen), `head` (copy references for its heading), `chrome` (extra machinery, currently only `"areas"`), `keep` (fields surviving a finalize), `accent`, `icon`, and `blocks`.
+Other keys: `home` (false hides it from the home screen), `head` (copy references for its heading), `chrome` (extra machinery, currently only `"areas"`), `keep` (fields surviving a finalize), `accent`, `icon`, `rail`, and `blocks`.
+
+`rail: true` gives a long activity a section index built **from its own heading
+blocks**, so the index cannot disagree with the page. A separate list of section
+names would have to be edited in lockstep with the headings, and eventually
+would not be.
+
+**`guide` and `board` are drawn the same way** — a page of blocks that is never
+finalized. What separates them is only which blocks the activity puts there,
+which is what "every activity is a list of blocks" has to mean if it means
+anything. Both kinds exist so a booklet can say which it intends.
 
 **An `entry` mode the page has never seen still works.** Its kept entries go to an `entries` block named for it, and its draft is held alongside the built-in ones.
 
@@ -197,6 +215,12 @@ Other keys: `home` (false hides it from the home screen), `head` (copy reference
 | `quadrants` | the energy/valence feelings grid | — |
 | `bodymap` | the front/back figures | — |
 | `group` | nested blocks | `blocks: [ … ]` |
+
+A block may also carry `guide` — the id of another activity in the same booklet
+— with `guideLabel` for the words that offer it. Both belong to the booklet: a
+renderer knows neither what that activity is nor what to call the way in, and
+draws nothing at all if the booklet does not carry it, so removing an activity
+never strands a link pointing at nothing.
 
 **The first five only read.** They carry no answer, and — unlike every other
 type — they own **no entry key at all**, so the id-defaulting rule below can
