@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Booklet — Booklet examples</title>
+<style>
+ :root{color-scheme:light dark}
+ body{font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;max-width:44rem;
+      margin:0 auto;padding:2rem 1.25rem 4rem}
+ h1{margin:0 0 .2rem;font-size:1.7rem} h2{margin:2.2rem 0 .6rem;font-size:1.15rem}
+ h3{margin:0 0 .2rem;font-size:1rem}
+ .lede{color:#666;margin:0 0 1.5rem}
+ ul{list-style:none;padding:0} li{border-top:1px solid #8883;padding:1rem 0}
+ .id{font:12px ui-monospace,monospace;color:#888;font-weight:400}
+ .meta{font-size:.85rem;color:#777;margin:.3rem 0 0}
+ code{font:13px ui-monospace,monospace;background:#8881;padding:.1rem .3rem;border-radius:3px}
+ pre{background:#8881;padding:.8rem;border-radius:6px;overflow-x:auto;font-size:13px}
+ .note{border-left:3px solid #8884;padding-left:1rem;color:#666}
+</style></head><body>
+<h1>Booklet examples</h1>
+<p class="lede">Worked examples of the booklet format. Nothing here is advice of any kind.</p>
+
+<p><a href="booklet.html">Open the renderer</a> · <a href="registry.json">registry.json</a>
+ · <a href="https://github.com/benthepsychologist/booklet">the repo</a>
+ · <a href="SPEC.md">the format</a></p>
+
+<h2>What is on offer</h2>
+<ul>
+    <li>
+      <h3>End of day <span class="id">example/end-of-day</span></h3>
+      <p>Five minutes, once, before you shut the laptop.</p>
+      <p class="meta">v0.1 · draws with grid-select, svg-regions
+        · <a href="modules/end-of-day.md">modules/end-of-day.md</a></p>
+    </li>
+    <li>
+      <h3>The board <span class="id">example/the-board</span></h3>
+      <p>What the work looks like right now. Edited in place, never finished.</p>
+      <p class="meta">v0.1 · draws with card-board
+        · <a href="modules/the-board.md">modules/the-board.md</a></p>
+    </li>
+</ul>
+
+<h2>Using it</h2>
+<p>Point a booklet at this registry and these appear under <b>Add an activity</b>.
+The renderer fetches this one file — about 0.9KB —
+and downloads a module only when somebody adds it.</p>
+<pre>{ "block": "meta", "registries": ["https://benthepsychologist.github.io/booklet/registry.json"] }</pre>
+
+<h2>Adding one</h2>
+<p class="note">A module is Markdown with one fenced JSON block — text and config,
+no code. Open a pull request; see
+<a href="https://github.com/benthepsychologist/booklet/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.
+This list carries examples, not advice of any kind.</p>
+</body></html>

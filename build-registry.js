@@ -98,13 +98,74 @@ function build() {
   };
 }
 
+/* A landing page, built from the same data. Opening the site should show what
+   is on offer — the registry is an INDEX, so reading it raw shows metadata and
+   file pointers rather than modules, which looks like an empty shelf unless
+   something says otherwise. */
+function landing(reg) {
+  const esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const rows = reg.modules.map(m => `    <li>
+      <h3>${esc(m.title.en)} <span class="id">${esc(m.id)}</span></h3>
+      <p>${esc(m.blurb.en)}</p>
+      <p class="meta">v${esc(m.version)}${m.engines.length ? " · draws with " + m.engines.map(esc).join(", ") : ""}${m.pinned ? " · pinned panel" : ""}
+        · <a href="${esc(m.file)}">${esc(m.file)}</a></p>
+    </li>`).join("\n");
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Booklet — ${esc(reg.name.en)}</title>
+<style>
+ :root{color-scheme:light dark}
+ body{font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;max-width:44rem;
+      margin:0 auto;padding:2rem 1.25rem 4rem}
+ h1{margin:0 0 .2rem;font-size:1.7rem} h2{margin:2.2rem 0 .6rem;font-size:1.15rem}
+ h3{margin:0 0 .2rem;font-size:1rem}
+ .lede{color:#666;margin:0 0 1.5rem}
+ ul{list-style:none;padding:0} li{border-top:1px solid #8883;padding:1rem 0}
+ .id{font:12px ui-monospace,monospace;color:#888;font-weight:400}
+ .meta{font-size:.85rem;color:#777;margin:.3rem 0 0}
+ code{font:13px ui-monospace,monospace;background:#8881;padding:.1rem .3rem;border-radius:3px}
+ pre{background:#8881;padding:.8rem;border-radius:6px;overflow-x:auto;font-size:13px}
+ .note{border-left:3px solid #8884;padding-left:1rem;color:#666}
+</style></head><body>
+<h1>${esc(reg.name.en)}</h1>
+<p class="lede">${esc(reg.description.en)}</p>
+
+<p><a href="booklet.html">Open the renderer</a> · <a href="registry.json">registry.json</a>
+ · <a href="https://github.com/benthepsychologist/booklet">the repo</a>
+ · <a href="SPEC.md">the format</a></p>
+
+<h2>What is on offer</h2>
+<ul>
+${rows}
+</ul>
+
+<h2>Using it</h2>
+<p>Point a booklet at this registry and these appear under <b>Add an activity</b>.
+The renderer fetches this one file — about ${Math.round(JSON.stringify(reg).length / 100) / 10}KB —
+and downloads a module only when somebody adds it.</p>
+<pre>{ "block": "meta", "registries": ["${"https://benthepsychologist.github.io/booklet/registry.json"}"] }</pre>
+
+<h2>Adding one</h2>
+<p class="note">A module is Markdown with one fenced JSON block — text and config,
+no code. Open a pull request; see
+<a href="https://github.com/benthepsychologist/booklet/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.
+This list carries examples, not advice of any kind.</p>
+</body></html>
+`;
+}
+
 const check = process.argv.includes("--check");
 const out = JSON.stringify(build(), null, 1) + "\n";
 const dest = path.join(ROOT, "registry.json");
 const old = fs.existsSync(dest) ? fs.readFileSync(dest, "utf8") : null;
 
-if (old === out) {
-  console.log("  registry.json is current");
+const page = landing(build());
+const pageDest = path.join(ROOT, "index.html");
+const oldPage = fs.existsSync(pageDest) ? fs.readFileSync(pageDest, "utf8") : null;
+
+if (old === out && oldPage === page) {
+  console.log("  registry.json and index.html are current");
   process.exit(0);
 }
 if (check) {
@@ -115,4 +176,6 @@ if (check) {
   process.exit(1);
 }
 fs.writeFileSync(dest, out, "utf8");
+fs.writeFileSync(pageDest, page, "utf8");
 console.log(`  wrote      registry.json  (${out.length} bytes)`);
+console.log(`  wrote      index.html     (${page.length} bytes)`);
