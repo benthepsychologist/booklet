@@ -113,6 +113,14 @@ A reader may ignore it. A writer should emit it.
   "copy":   { "en": {…}, "fr": {…} } }
 ```
 
+**A widget's colours are its own.** A cell may carry `color: {tint, deep}`, and
+a renderer uses it rather than a stylesheet of its own: a palette keyed by four
+particular cell ids would mean every other author's grid draws grey, and would
+mean the engine knows what those ids stand for. A renderer supplies only a
+neutral fallback ramp by position, so an uncoloured widget still reads as a
+grid. The same rule governs the words: what a thing is called, what it says
+about itself, and what colour it is are all the widget's.
+
 **Widgets ride in the booklet.** Hand somebody your file and the widget goes with it, so the page draws for them whether or not they have ever seen it. That is possible because a widget is text: the body map's two figures are 2.7KB of SVG markup, and the quadrant grid has no graphics at all — four cells and a vocabulary, under 1KB. **A widget built on a raster image is the exception**: it would reference a URL and degrade to no picture offline, on the same rule as page images — linked, never embedded.
 
 A **block** uses one by naming it, and names the entry keys the engine writes:
@@ -135,7 +143,7 @@ prose describing them and going stale the first time anyone renames something.
 | engine | draws | its widget supplies |
 | --- | --- | --- |
 | `svg-regions` | figures whose SVG shapes carry a `data-r` region id, pointed at and described | the figures, the region names, the vocabulary offered for each |
-| `grid-select` | two axes crossed into cells, each holding selectable words | the axis labels, the cells, the words in each |
+| `grid-select` | two axes crossed into cells, each holding selectable words | the axis labels, the cells, the words in each, and each cell's colour |
 | `card-board` | cards opened one at a time, each leading with what is already recorded, then a quick-add, then the questions behind a disclosure | the cards, which board fields each holds, the menus they offer, the words that ask for them |
  A booklet naming an engine the renderer does not have must say so and carry on — one block lost, not a file.
 
