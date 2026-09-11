@@ -42,7 +42,9 @@ MODE_KINDS  = {"entry", "board", "guide", "log"}
 PLACEMENTS_D = {"open", "folded", "hidden"}
 # `widget` is the live one; bodymap/quadrants are the pre-widget names, still read
 BLOCK_TYPES = {"widget", "headlines", "list", "didlog", "group", "text",
-               "bodymap", "quadrants", "prose", "image"}
+               "bodymap", "quadrants", "prose", "image",
+               # blocks that only read: they own no entry key and take no answer
+               "heading", "deflist", "quote"}
 ENGINES = {"svg-regions", "grid-select", "card-board"}
 PLACEMENTS  = {"open", "folded", "hidden"}
 # the map fields a list block may draw its options from

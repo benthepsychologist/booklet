@@ -185,6 +185,11 @@ Other keys: `home` (false hides it from the home screen), `head` (copy reference
 
 | `type` | what it draws | needs |
 | --- | --- | --- |
+| `heading` | a section heading, optionally numbered | `text`, optional `n` |
+| `prose` | paragraphs; a blank line starts a new one | `text` |
+| `deflist` | named points — a label and what it says | `items: [{label, body}…]` |
+| `quote` | one line set apart from the rest | `text` |
+| `image` | a linked picture, never an embedded one | `src`, `alt` |
 | `text` | a question with a text answer | `q: [scope, key]` |
 | `headlines` | repeated one-line entries | `q: [scope, key]` |
 | `list` | tappable options plus a free add | `source: [mapField…]`, and `copy` or `label` |
@@ -192,6 +197,13 @@ Other keys: `home` (false hides it from the home screen), `head` (copy reference
 | `quadrants` | the energy/valence feelings grid | — |
 | `bodymap` | the front/back figures | — |
 | `group` | nested blocks | `blocks: [ … ]` |
+
+**The first five only read.** They carry no answer, and — unlike every other
+type — they own **no entry key at all**, so the id-defaulting rule below can
+never hand a heading or a paragraph an answer slot that would be wrong to fill.
+They are what lets something long enough to need sections be built out of blocks
+rather than out of a view written for it: a conforming renderer has no separate
+notion of "a page of reading" and needs none.
 
 Every block may carry `placement`, which is the whole above-the-fold control:
 
@@ -217,7 +229,7 @@ An implementation that lets a person rearrange things **must write the parameter
 
 - **Board content** lives in the `fields` block, an **object keyed by field id**. Key order is meaningless.
 - **Kept entries** live in an `entries` block per activity — `mode` names the activity, `items` is a list. Each item carries a `ts`, and **items may be in any order**: an entry is identified by its timestamp, never by its index.
-- **Within an entry**, a value is stored under the key its block owns. A block owns the keys named in its `keys`, which **defaults to the block's own `id`**. The three composite widgets own a differently-named key and declare it: `bodymap` → `regions`, `quadrants` → `emotions`, `headlines` → `thoughts`.
+- **Within an entry**, a value is stored under the key its block owns. A block owns the keys named in its `keys`, which **defaults to the block's own `id`** — except for the reading blocks above, which own none. The three composite widgets own a differently-named key and declare it: `bodymap` → `regions`, `quadrants` → `emotions`, `headlines` → `thoughts`.
 - **Modules** are addressed by `id`. Adding a module whose id is already present replaces it in place.
 
 ### Wording belongs to the activity
