@@ -650,7 +650,7 @@ T.en = {
   booklet:{
     h:"Change the booklet itself",
     p:"What the questions say is above. This is what the booklet is: which activities it has, in what order, what they are called, and which parts of each one you see. It changes your own file and nothing else.",
-    activities:"Activities", add:"Add an activity", noActivities:"No activities yet — add one below.", cards:"The map's cards", menus:"What the lists offer",
+    activities:"Activities", add:"Add an activity", noActivities:"Nothing here yet. Add an activity to begin — or open a file you saved before.", cards:"The map's cards", menus:"What the lists offer",
     remove:"Take this activity out — it stays in your file", added:n=>n+" added.",
     parked:"Taken out. It is still in your file — put it back any time.",
     parkedH:"Taken out, still in your file",
@@ -658,6 +658,7 @@ T.en = {
     putBack:"Put it back", deleteIt:"Delete", deleted:"Deleted from your file.",
     allAdded:"Every activity on offer is already in your booklet.",
     noShelf:"No modules are on offer here. Paste one below, or load a booklet that has one — a page opened straight from a file has no folder to look in, which is normal.",
+    addFailed:"That activity could not be fetched — it may have moved, or you may be offline.",
     addFile:"An activity can also arrive in a booklet somebody sent you — load their file and it comes with it, even if the rest of their booklet is the same as yours.",
     paste:"Or paste one in", pasteGo:"Add it",
     fileH:"Edit the file itself",
@@ -706,11 +707,6 @@ T.en = {
 
     h1:"Activity Kit",
     sub:"For when something needs to change, but the direction is not yet clear",
-    modes:{
-      today:["Have a good day","What needs to happen for you to feel good about today — built from what is already on your map.","A couple of minutes"],
-      big:["Open The Map","Where you are, where you are going, what you enjoy, what soothes you. Four parts, filled in a little at a time.","Come back to it over time"],
-      checkin:["Do a mindful check-in","Body, feelings, and what the mind is doing — noticed, named, and kept.","Under two minutes"]
-    }
   },
   checkin:{
     body:{h:"Body",p:"A few words about what is happening physically.",f:{
@@ -735,7 +731,7 @@ T.en = {
       none:"No check-ins in this range."}
   },
   labels:{ /* export / import labels — keep stable */
-    h:{big:"Big picture",areas:"Areas",today:"Today",checkin:"Check-in",draft:"Draft",note:"A note for you",page:"About this page",now:"Now",questions:"Questions and options",appA:"Appendix A — Today log",appB:"Appendix B — Check-ins",appC:"Appendix C — Archive",archive:"Archive",goodday:"Your good day",safety:"If you need help now",seal:"App record — do not edit below this line"},
+    h:{rights:"Whose these activities are",big:"Big picture",areas:"Areas",today:"Today",checkin:"Check-in",draft:"Draft",note:"A note for you",page:"About this page",now:"Now",questions:"Questions and options",appA:"Appendix A — Today log",appB:"Appendix B — Check-ins",appC:"Appendix C — Archive",archive:"Archive",goodday:"Your good day",safety:"If you need help now",seal:"App record — do not edit below this line"},
     meta:{lang:"Language",mode:"Mode",name:"Name"},
     generated:"_Generated view. The app rebuilds this on every download and does not read it back — the record is the sealed block at the end of the file. To change or remove an entry, use the app._",
     sealNote:"A single JSON object. The app writes this block and reads it back; it holds your kept entries, question settings, and a copy of everything above. Edit the markdown above instead — where the two differ, the markdown wins for the sections it contains.",
@@ -866,7 +862,7 @@ T.fr = {
   booklet:{
     h:"Modifier le carnet lui-même",
     p:"Ce que disent les questions se trouve plus haut. Ici, c’est ce qu’est le carnet : quelles activités il contient, dans quel ordre, comment elles s’appellent, et quelles parties de chacune vous voyez. Cela modifie votre propre fichier et rien d’autre.",
-    activities:"Activités", add:"Ajouter une activité", noActivities:"Aucune activité — ajoutez-en une ci-dessous.", cards:"Les cartes de la carte", menus:"Ce que proposent les listes",
+    activities:"Activités", add:"Ajouter une activité", noActivities:"Rien ici pour l’instant. Ajoutez une activité pour commencer — ou ouvrez un fichier déjà enregistré.", cards:"Les cartes de la carte", menus:"Ce que proposent les listes",
     remove:"Retirer cette activité — elle reste dans votre fichier", added:n=>n+" ajoutée.",
     parked:"Retirée. Elle reste dans votre fichier — remettez-la quand vous voulez.",
     parkedH:"Retirées, toujours dans votre fichier",
@@ -874,6 +870,7 @@ T.fr = {
     putBack:"La remettre", deleteIt:"Supprimer", deleted:"Supprimée de votre fichier.",
     allAdded:"Toutes les activités proposées sont déjà dans votre carnet.",
     noShelf:"Aucun module n’est proposé ici. Collez-en un ci-dessous, ou chargez un carnet qui en contient — une page ouverte directement depuis un fichier n’a aucun dossier où chercher, et c’est normal.",
+    addFailed:"Cette activité n’a pas pu être récupérée — elle a peut-être changé d’adresse, ou vous êtes hors ligne.",
     addFile:"Une activité peut aussi arriver dans un carnet qu’on vous a envoyé — chargez le fichier et elle vient avec, même si le reste de leur carnet est identique au vôtre.",
     paste:"Ou collez-en une", pasteGo:"L’ajouter",
     fileH:"Modifier le fichier lui-même",
@@ -922,11 +919,6 @@ T.fr = {
 
     h1:"Trousse d’activités",
     sub:"Pour les moments où quelque chose doit changer, sans que la direction soit encore claire",
-    modes:{
-      today:["Passer une bonne journée","Ce qui doit arriver pour que vous vous sentiez bien de votre journée — à partir de ce qui est déjà sur votre carte.","Deux ou trois minutes"],
-      big:["Ouvrir La Carte","Où vous en êtes, où vous allez, ce que vous aimez, ce qui vous apaise. Quatre parties, remplies peu à peu.","À reprendre au fil du temps"],
-      checkin:["Faire une pause attentive","Le corps, les émotions et ce que fait l’esprit — remarqués, nommés, gardés.","Moins de deux minutes"]
-    }
   },
   checkin:{
     body:{h:"Le corps",p:"Quelques mots sur ce qui se passe physiquement.",f:{
@@ -951,7 +943,7 @@ T.fr = {
       none:"Aucune pause dans cette période."}
   },
   labels:{
-    h:{big:"Vue d’ensemble",areas:"Domaines",today:"Aujourd’hui",checkin:"Pause attentive",draft:"Brouillon",note:"Un mot pour vous",page:"À propos de cette page",now:"En ce moment",questions:"Questions et options",appA:"Annexe A — Journal du jour",appB:"Annexe B — Pauses",appC:"Annexe C — Archives",archive:"Archives",goodday:"Votre bonne journée",safety:"Si vous avez besoin d’aide maintenant",seal:"Registre de l’application — ne rien modifier sous cette ligne"},
+    h:{rights:"À qui appartiennent ces activités",big:"Vue d’ensemble",areas:"Domaines",today:"Aujourd’hui",checkin:"Pause attentive",draft:"Brouillon",note:"Un mot pour vous",page:"À propos de cette page",now:"En ce moment",questions:"Questions et options",appA:"Annexe A — Journal du jour",appB:"Annexe B — Pauses",appC:"Annexe C — Archives",archive:"Archives",goodday:"Votre bonne journée",safety:"Si vous avez besoin d’aide maintenant",seal:"Registre de l’application — ne rien modifier sous cette ligne"},
     meta:{lang:"Langue",mode:"Mode",name:"Nom"},
     generated:"_Vue générée. L’application la reconstruit à chaque téléchargement et ne la relit pas — le registre est le bloc scellé à la fin du fichier. Pour modifier ou retirer une entrée, utilisez l’application._",
     sealNote:"Un seul objet JSON. L’application écrit ce bloc et le relit ; il contient vos entrées gardées, les réglages des questions et une copie de tout ce qui précède. Modifiez plutôt le markdown au-dessus — en cas de différence, le markdown l’emporte pour les sections qu’il contient.",
@@ -1027,42 +1019,6 @@ T.fr.phone = {
 };
 
 /* ======================= SETUP AND EXPLORATION COPY (v0.2) ======================= */
-/* Q1's options are the charge ladder from the corpus sequencing rules: state, not
-   diagnosis. Q2 and Q4 are the reading-appetite and feedback axes, asked in the
-   words the calibration doc asks them in. */
-T.en.setup = {
-  welcomeLead:"A private place to work out what is actually going on, and what one useful next step might be. Nothing you write leaves this device.",
-  doorSetup:["Set this up for me","Four questions. Under a minute."],
-  doorLoad:["I have a save file","Open notes you saved before."],
-  skip:"or just start — you can set this up any time",
-  title:"Setting this up",
-  lead:"Four questions, all optional. Nothing is locked in and you can change any of it later.",
-  q1:{q:"What has the charge right now?",hint:"What is actually live for you today. Not a diagnosis, and not what you think should be bothering you.",
-    opts:[["spike","Something is spiking","A racing body, panic, an acute moment."],
-          ["flat","Too wound up, or too flat, for anything positive","Including the shut-down kind of flat, where nothing has any pull."],
-          ["steady","Steady enough that I want to notice what is good","Things are workable; you want to build on that."],
-          ["problem","One specific problem is eating me","There is a thing, and it is taking up all the room."],
-          ["unsure","I am not sure","Fine. The check-in is a good place to find out."]]},
-  q2:{q:"How much explaining do you want?",hint:"Honestly — what survives your week?",
-    opts:[["none","As little as possible","Just the questions."],
-          ["light","Short notes where they help",""],
-          ["steady","A bit of explanation","The default."],
-          ["deep","Give me the whole thing","Every note, expanded."]]},
-  q3:{q:"What is this about?",hint:"Pick as many as fit, or none. These become your areas, and they steer what gets suggested later.",more:"Show all areas",less:"Show fewer"},
-  q4:{q:"Do you want to see your own counts over time?",hint:"The check-in can show you how often each quadrant has come up. Some people find that useful; for others, tracking the tracker is its own stress.",
-    opts:[["yes","Yes, show me","You can turn it off later."],
-          ["no","No, keep that hidden","Your entries are still kept. Only the counts are hidden."]]},
-  done:"Done — take me in", skipRest:"Skip the rest",
-  crisisTitle:"Before anything else",
-  crisisLead:"You said something is spiking. This page is a slow tool and it is not the right one for an acute moment. If you are in danger, use one of these.",
-  crisisOk:"Understood — carry on",
-  recTitle:"Where to start",
-  recs:{spike:"Start with the check-in and use it to land, not to analyse. Naming what is happening in the body is the whole task right now.",
-        flat:"Start with the check-in. When things are flat or wound up, the useful first move is usually comfort and safety rather than pushing for drive — the drive comes back after there is a floor.",
-        steady:"Start with the check-in, then the day. When things are workable, noticing what is actually good is not a soft option — it is the thing that builds the floor.",
-        problem:"Start with the check-in so the problem is not the only thing in the room, then take the problem itself into The Map.",
-        unsure:"Start with the check-in. It is two minutes and it usually tells you which of the other two you want."}
-};
 T.en.explore = {
   h:"Ways in", p:"Nine processes people work through. They are not exercises to complete — each one is a direction you can take, and this says what you get from it.",
   gives:"What you come away with", start:"Start this one", started:"Added to your board.",
@@ -1074,39 +1030,6 @@ T.en.explore = {
   clearPick:"Clear", picked:"Working from",
   moveMenu:"Or pick from things that tend to help", moveHint:"Concrete moves and capacities. Tap one to use it as your move; edit it afterwards however you like.",
   libEn:"", steps:"The steps"
-};
-T.fr.setup = {
-  welcomeLead:"Un espace privé pour démêler ce qui se passe vraiment, et quel prochain pas serait utile. Rien de ce que vous écrivez ne quitte cet appareil.",
-  doorSetup:["Configurez-la pour moi","Quatre questions. Moins d’une minute."],
-  doorLoad:["J’ai un fichier sauvegardé","Ouvrir des notes déjà enregistrées."],
-  skip:"ou commencez simplement — la configuration reste disponible",
-  title:"Configuration",
-  lead:"Quatre questions, toutes facultatives. Rien n’est figé et vous pourrez tout changer plus tard.",
-  q1:{q:"Qu’est-ce qui est vif en ce moment ?",hint:"Ce qui est réellement présent aujourd’hui. Pas un diagnostic, ni ce qui devrait vous préoccuper.",
-    opts:[["spike","Quelque chose monte en flèche","Un corps qui s’emballe, de la panique, un moment aigu."],
-          ["flat","Trop agité·e, ou trop éteint·e, pour quoi que ce soit de positif","Y compris l’éteint qui ressemble à un arrêt, où plus rien n’attire."],
-          ["steady","Assez stable pour vouloir remarquer ce qui va bien","Les choses sont gérables ; vous voulez bâtir là-dessus."],
-          ["problem","Un problème précis me dévore","Il y a une chose, et elle prend toute la place."],
-          ["unsure","Je ne sais pas","C’est correct. La pause est un bon endroit pour le découvrir."]]},
-  q2:{q:"Combien d’explications voulez-vous ?",hint:"Honnêtement — qu’est-ce qui survit à votre semaine ?",
-    opts:[["none","Le moins possible","Seulement les questions."],
-          ["light","De courtes notes là où elles aident",""],
-          ["steady","Un peu d’explication","Le réglage par défaut."],
-          ["deep","Donnez-moi tout","Chaque note, développée."]]},
-  q3:{q:"De quoi s’agit-il ?",hint:"Choisissez-en autant que vous voulez, ou aucun. Ils deviennent vos domaines et orientent les suggestions.",more:"Voir tous les domaines",less:"En voir moins"},
-  q4:{q:"Voulez-vous voir vos propres comptes au fil du temps ?",hint:"La pause peut vous montrer à quelle fréquence chaque quadrant est revenu. Utile pour certains ; pour d’autres, suivre le suivi devient un stress de plus.",
-    opts:[["yes","Oui, montrez-moi","Vous pourrez le désactiver plus tard."],
-          ["no","Non, gardez cela caché","Vos entrées sont quand même conservées. Seuls les comptes sont masqués."]]},
-  done:"Terminé — entrons", skipRest:"Passer le reste",
-  crisisTitle:"Avant toute chose",
-  crisisLead:"Vous avez indiqué que quelque chose monte en flèche. Cette page est un outil lent et ce n’est pas le bon pour un moment aigu. Si vous êtes en danger, utilisez l’une de ces ressources.",
-  crisisOk:"Compris — continuer",
-  recTitle:"Par où commencer",
-  recs:{spike:"Commencez par la pause, et servez-vous-en pour atterrir, pas pour analyser. Nommer ce qui se passe dans le corps est toute la tâche en ce moment.",
-        flat:"Commencez par la pause. Quand tout est éteint ou survolté, le premier geste utile est généralement le réconfort et la sécurité plutôt que de forcer l’élan — l’élan revient une fois qu’il y a un plancher.",
-        steady:"Commencez par la pause, puis la journée. Quand les choses sont gérables, remarquer ce qui va bien n’est pas une option molle : c’est ce qui construit le plancher.",
-        problem:"Commencez par la pause pour que le problème ne soit pas seul dans la pièce, puis amenez le problème lui-même dans La Carte.",
-        unsure:"Commencez par la pause. Deux minutes, et elle vous dit généralement laquelle des deux autres vous voulez."}
 };
 T.fr.explore = {
   h:"Portes d’entrée", p:"Neuf processus que les gens traversent. Ce ne sont pas des exercices à compléter — chacun est une direction possible, et voici ce qu’elle vous apporte.",
@@ -1432,9 +1355,6 @@ const EMPTY_BOOKLET={booklet:1, id:"", version:"", modules:[], widgets:[], body:
 /* Modules the page has been *offered* — fetched from a site's module folder,
    or pasted in. Never baked in: this starts empty and stays empty unless
    something puts a module in it. */
-let SHELF={};
-const shelfList=()=>Object.values(SHELF);
-function shelfAdd(mod){if(!moduleOk(mod)) return false;SHELF[mod.id]=mod;return true;}
 /* A module file is markdown with one fenced module block; the bare JSON works
    too, so a folder can hold either. */
 function moduleFromText(txt){
@@ -1455,26 +1375,119 @@ function wrapperConfig(){
   return null;}
 /* Anything in the modules folder is offered; anything not there can be pasted.
    Both routes end in the same place, which is the module going into the file. */
+/* ===================== REGISTRIES =====================
+   A registry is a list of modules somebody offers. It is one JSON file:
+
+     { "registry": 1,
+       "name": {"en": "…"},
+       "modules": [
+         { "id":"who/what", "version":"0.1", "file":"what.md",
+           "title":{…}, "blurb":{…}, "engines":["grid-select"] },
+         { "id":"who/other", "version":"0.1", "module": { …whole module… } }
+       ] }
+
+   The entries carry enough to DRAW THE MENU, so the page fetches one small
+   file instead of every module it might one day offer. Before this, listing
+   four activities cost 64KB on every visit — the whole bank, downloaded in
+   full, to render four button labels, and growing with every module added.
+
+   An entry either names a `file` (fetched only when somebody adds it) or
+   carries the whole `module` inline — which is what lets one file be an
+   entire registry, with nothing to fetch at all.
+
+   A bare array of filenames is the old shape and still works: there is no
+   metadata in it, so the modules are fetched up front as they always were.
+
+   Sources come from the wrapper (`registries`, or the older single
+   `modules_url`) and from the booklet itself (`registries`), so a reader can
+   point their own file at whatever they like without a site's permission. */
+let SHELF={};
+const shelfList=()=>Object.values(SHELF);
+const listingOf=mod=>({id:mod.id,version:mod.version,title:mod.title,blurb:mod.blurb,
+  engines:[...new Set((mod.widgets||[]).map(w=>w.engine).filter(Boolean))],
+  mod,from:""});
+function shelfAdd(mod){if(!moduleOk(mod)) return false;SHELF[mod.id]=listingOf(mod);return true;}
+function shelfPut(entry,base,from){
+  if(!entry||typeof entry.id!=="string") return false;
+  if(entry.module) return shelfAdd(entry.module)&&(SHELF[entry.id].from=from,true);
+  SHELF[entry.id]={id:entry.id,version:entry.version,title:entry.title,blurb:entry.blurb,
+    engines:Array.isArray(entry.engines)?entry.engines:[],
+    mod:null,url:joinUrl(base,entry.file||(entry.id.split("/").pop()+".md")),from};
+  return true;}
+/* Resolve `rel` against `base` the way a browser resolves a link.
+   Two traps, both hit on the first run:
+     - `new URL(rel, base)` REQUIRES an absolute base, and ours is usually a
+       site-relative path like /tools/activity-kit/modules/registry.json, so
+       it throws and the fallback is what actually runs;
+     - a fallback that appends to the base turns .../registry.json into
+       .../registry.json/the-map.md. A relative URL replaces the last
+       segment, it does not extend it. */
+const joinUrl=(base,rel)=>{
+  const here=(typeof location!=="undefined"&&location.href)||"http://booklet.invalid/";
+  try{return new URL(rel,new URL(String(base),here)).href;}
+  catch(e){
+    /* No usable URL constructor. Resolve by hand, and mind that an entry may
+       name a module somewhere else entirely — an absolute address, or a
+       protocol-relative one, replaces the base rather than hanging off it. */
+    const r=String(rel||"");
+    if(/^[a-z][a-z0-9+.-]*:/i.test(r)||r.startsWith("//")) return r;
+    if(r.startsWith("/")) return r;
+    return String(base||"").replace(/[?#].*$/,"").replace(/[^/]*$/,"")+r;}};
+
+/* every source this page will read a registry from */
+function registrySources(){
+  const cfg=wrapperConfig()||{};
+  const out=[];
+  const push=u=>{if(typeof u==="string"&&u&&!out.includes(u)) out.push(u);};
+  (Array.isArray(cfg.registries)?cfg.registries:[]).forEach(push);
+  if(cfg.modules_url) push(joinUrl(cfg.modules_url.replace(/\/?$/,"/"),"registry.json"));
+  (Array.isArray(TPL.registries)?TPL.registries:[]).forEach(push);
+  return out;}
+
+async function loadRegistry(url){
+  try{
+    const r=await fetch(url,{cache:"no-cache"});if(!r.ok) return false;
+    const data=await r.json();
+    /* the old shape: a bare list of filenames, with nothing to show but the
+       modules themselves, so they are fetched as they always were */
+    if(Array.isArray(data)){
+      await Promise.all(data.map(async n=>{
+        try{const m=await fetch(joinUrl(url,n),{cache:"no-cache"});
+          if(!m.ok) return;const mod=moduleFromText(await m.text());if(mod) shelfAdd(mod);}catch(e){}}));
+      return true;}
+    if(!data||!Array.isArray(data.modules)) return false;
+    const from=tx(data.name,"");
+    data.modules.forEach(e=>shelfPut(e,url,from));
+    return true;
+  }catch(e){return false;}}
+
 async function loadShelf(){
   const cfg=wrapperConfig()||{};
-  const inline=cfg.modules||[];
-  inline.forEach(m=>shelfAdd(m&&m.block?(({block,...r})=>r)(m):m));
-  const dir=cfg.modules_url;
-  if(!dir) return;
-  try{
-    const idx=await fetch(dir.replace(/\/?$/,"/")+"index.json",{cache:"no-cache"});
-    if(!idx.ok) return;
-    const names=await idx.json();
-    await Promise.all((Array.isArray(names)?names:[]).map(async n=>{
-      try{const r=await fetch(dir.replace(/\/?$/,"/")+n,{cache:"no-cache"});
-        if(!r.ok) return;const mod=moduleFromText(await r.text());if(mod) shelfAdd(mod);}catch(e){}}));
-  }catch(e){ /* offline, or no folder: the shelf simply stays as it is */ }}
-/* A starter booklet is a file like any other — the wrapper just hands it over
-   so a first visit is not an empty page. It is never merged with anything. */
-async function loadStarter(){
+  (cfg.modules||[]).forEach(m=>shelfAdd(m&&m.block?(({block,...r})=>r)(m):m));
+  const urls=registrySources();
+  if(!urls.length) return;
+  await Promise.all(urls.map(loadRegistry));}
+
+/* A listing becomes a real module only when somebody actually adds it. */
+async function resolveShelf(id){
+  const L=SHELF[id];if(!L) return null;
+  if(L.mod) return JSON.parse(JSON.stringify(L.mod));
+  if(!L.url) return null;
+  try{const r=await fetch(L.url,{cache:"no-cache"});if(!r.ok) return null;
+    const mod=moduleFromText(await r.text());
+    if(!mod||!moduleOk(mod)) return null;
+    L.mod=mod;return JSON.parse(JSON.stringify(mod));}catch(e){return null;}}
+
+/* A published site may hand over a PRESET: a design with no content — a blank
+   workbook — so a first visit is not an empty page. It is taken only when
+   there is nothing here already, so it can never overwrite a person's work,
+   and it is a file like any other: the page has no idea it came from a
+   wrapper rather than from disk. `starter_url` is the old name, still read. */
+async function loadPreset(){
   const cfg=wrapperConfig()||{};
-  if(!cfg.starter_url) return false;
-  try{const r=await fetch(cfg.starter_url,{cache:"no-cache"});if(!r.ok) return false;
+  const url=cfg.preset_url||cfg.starter_url;
+  if(!url) return false;
+  try{const r=await fetch(url,{cache:"no-cache"});if(!r.ok) return false;
     const R=parseFile(await r.text());if(!R.ok) return false;
     applyParsed(R,"replace");return true;}catch(e){return false;}}
 
@@ -1873,7 +1886,7 @@ function renderBar(){const t=T[lang].ui;
 }
 /* fixed views the app always has, then anything the template declares as an
    activity, dispatched on its kind rather than on a hard-coded name */
-const VIEWS={home:renderHome,history:renderHistory,welcome:renderWelcome,setup:renderSetup};
+const VIEWS={home:renderHome,history:renderHistory};
 /* `guide` and `board` are the same renderer: a page of blocks that is never
    finalized. What separates them is only which blocks the module put there,
    which is what "every activity is a list of blocks" has to mean if it means
@@ -1959,7 +1972,9 @@ function blockName(b){
     return b.widget||"widget";}
   if(Array.isArray(b.q)) return Q(b.q[0],b.q[1]).label;
   if(b.copy){const c=copyAt(b.copy,null);if(Array.isArray(c)&&c[0]) return c[0];}
-  if(b.type==="prose") return (b.text||"").split("\n")[0].slice(0,48)||T[lang].blockEdit.kinds.prose;
+  /* a block's text may be a plain string or {en, fr} — name it through tx()
+     rather than assuming, or a localised block crashes the editor */
+  if(b.type==="prose") return tx(b.text,"").split("\n")[0].slice(0,48)||T[lang].blockEdit.kinds.prose;
   return T[lang].blockEdit.kinds[b.type]||b.type||"text";}
 
 /* one frame around one block */
@@ -2003,7 +2018,9 @@ function blockEditorFor(b,ctx){const t=T[lang].blockEdit;const box=el("div",{});
 
   switch(b.type){
     case "prose":
-      box.append(field(tx(b.text,""),t.prosePh,v=>save(x=>{x.text=v;}),6));break;
+      /* setLoc, not a bare string: a booklet may supply prose in both
+         languages, and editing the English must not drop the French. */
+      box.append(field(tx(b.text,""),t.prosePh,v=>save(x=>{x.text=setLoc(x.text,v);}),6));break;
     /* Localised text: written into the language being edited, never over the other. */
     case "heading":
       box.append(field(tx(b.text,""),t.headingPh,v=>save(x=>{x.text=setLoc(x.text,v);})));break;
@@ -2219,7 +2236,7 @@ function homeEditPanel(){const t=T[lang];const u=t.ui;const B=t.booklet;
     const ordered=tplModules();
     if(!ordered.length) list.append(el("p",{class:"hint"},B.noActivities));
     ordered.forEach((mod,i)=>{const m={...mod.mode};const shown=isShown(mod,m);
-      const nameFallback=(t.home.modes[m.id]||[])[0]||m.id;
+      const nameFallback=copyAt((m.head||{}).title,copyAt((m.head||{}).h,m.id));
       list.append(el("div",{class:"bkrow"},
         el("span",{class:"bkname"},tx(mod.title,nameFallback)),
         el("span",{class:"bkacts"},
@@ -2242,9 +2259,14 @@ function homeEditPanel(){const t=T[lang];const u=t.ui;const B=t.booklet;
     const have=new Set(allModules().map(m=>m.id));
     const shelf=shelfList().filter(m=>!have.has(m.id));
     if(shelf.length){const row=el("div",{class:"pills",style:"margin-top:.6rem"});
-      shelf.forEach(mod=>row.append(el("button",{type:"button",class:"pill-btn",
-        onclick:()=>{addModule(JSON.parse(JSON.stringify(mod)));render();toast(B.added(tx(mod.title,mod.id)));}},
-        "+ "+tx(mod.title,mod.id))));
+      shelf.forEach(L=>{const b=el("button",{type:"button",class:"pill-btn",
+        title:tx(L.blurb,"")||undefined},"+ "+tx(L.title,L.id));
+        /* the module itself is fetched here, and only here */
+        b.addEventListener("click",async()=>{
+          b.disabled=true;const mod=await resolveShelf(L.id);
+          if(!mod){b.disabled=false;toast(B.addFailed);return;}
+          addModule(mod);render();toast(B.added(tx(L.title,L.id)));});
+        row.append(b);});
       list.append(row);}};
   drawList();box.append(list);
 
@@ -2281,14 +2303,6 @@ function renderHome(main){const t=T[lang];const u=t.ui;
   if(nonEmpty(S.name)) hero.append(el("p",{class:"greet"},u.greeting(S.name.trim())));
   hero.append(el("h1",{},t.home.h1),el("p",{class:"sub"},t.home.sub));main.append(hero);
 
-  /* An acute answer in setup routes to help — but only if the booklet carries
-     somewhere to route to. A card offering help that opens an empty dialog is
-     worse than no card. */
-  if(S.setup.charge==="spike"&&pinnedOf()){const G=pinnedOf();
-    main.append(el("div",{class:"alertcard"},el("p",{class:"k"},tx(G.title,"")),
-      el("p",{style:"margin:0 0 .6rem"},tx(G.note,tx(G.lead,""))),
-      el("button",{type:"button",class:"small",style:"border-color:var(--warn);color:var(--warn)",
-        onclick:openSafety},tx(G.btn,tx(G.title,"")))));}
 
   if(nonEmpty(S.note)) main.append(el("div",{class:"notecard col"},
     ...S.note.trim().split(/\n{2,}|\n/).filter(nonEmpty).map(x=>el("p",{},x))));
@@ -2299,14 +2313,31 @@ function renderHome(main){const t=T[lang];const u=t.ui;
     checkin:S.checkins.length?[u.entriesN(S.checkins.length)]:[]};
   const shown=tplModes().filter(x=>isShown(moduleOf(x.id),x));
   for(const m of shown){const key=m.id;
-    const base=t.home.modes[key]||[copyAt((m.head||{}).title,key),copyAt((m.head||{}).lead,""),""];
-    const k=tx(m.title,base[0]),d=tx(m.blurb,base[1]);
+    /* A card's name and description belong to the MODULE — it is the thing
+       being offered. The renderer used to keep a table of them keyed by three
+       particular activity ids, so an activity it had never heard of appeared
+       on the home page labelled with its own id. */
+    const mod=moduleOf(key)||{};const head=m.head||{};
+    const k=tx(mod.title,tx(m.title,copyAt(head.title,copyAt(head.h,key))));
+    const d=tx(mod.blurb,tx(m.blurb,copyAt(head.lead,copyAt(head.p,""))));
     const cline=el("span",{class:"c"});
     (stats[key]||[]).forEach(x=>cline.append(el("span",{class:"pill live"},x)));
     modes.append(el("button",{type:"button",class:"mode",onclick:()=>go(key)},
       el("span",{class:"top",html:(ICONS[m.icon||key]||"")+`<span class="k">${k}</span>`}),
       el("span",{class:"d"},d),cline));}
-  if(!shown.length) modes.append(el("p",{class:"hint"},t.booklet.noActivities));
+  /* Nothing is preloaded any more, so the empty page is a real first view and
+     has to offer its own way forward. The add controls live behind the edit
+     toggle, which is right once there is something to edit and useless when
+     the page is blank — "add one below" pointing at nothing is a dead end. */
+  /* The way to add an activity lives on the page, not only inside edit mode.
+     There is a bank of modules on offer and a reader who does not know to
+     press "Edit this page" first will never find it. Loud when the page is
+     empty, quiet once there is something on it. */
+  if(!editing){const add=el("div",{class:"col addrow"});
+    if(!shown.length) add.append(el("p",{class:"hint"},t.booklet.noActivities));
+    const go=el("button",{type:"button",class:shown.length?"quietlink":"primary"},t.booklet.add);
+    go.addEventListener("click",()=>{editing=true;render();});
+    add.append(go);modes.append(add);}
   main.append(modes);
 
   /* what this page is — the reader's own words, one section */
@@ -2370,10 +2401,16 @@ function dayPicker(key,src,def,draft){const t=copyTree("today");const box=el("di
     if(!src.length&&!extra.length){const bw=boardWidget();
       const board=bw?tplModules().find(m=>((m.mode||{}).blocks||[]).some(x=>x.widget===bw.id)):null;
       wrap.append(el("span",{class:"hint"},t.emptyMap+" "),
-        el("button",{type:"button",class:"linkbtn",onclick:()=>{
+        el("button",{type:"button",class:"linkbtn",onclick:async()=>{
           if(board) return go(board.mode.id);
-          const found=shelfList().find(m=>(m.widgets||[]).some(w=>w.engine==="card-board"));
-          if(found&&addModule(JSON.parse(JSON.stringify(found)))){toast(T[lang].booklet.added(tx(found.title,found.id)));render();go(found.mode.id);}
+          /* a listing says which engines its module needs, so the right one
+             is found without downloading any of them */
+          const found=shelfList().find(L=>(L.engines||[]).includes("card-board")
+            ||((L.mod&&L.mod.widgets)||[]).some(w=>w.engine==="card-board"));
+          if(!found){toast(T[lang].booklet.noShelf);return;}
+          const mod=await resolveShelf(found.id);
+          if(mod&&addModule(mod)){toast(T[lang].booklet.added(tx(found.title,found.id)));
+            render();go(mod.mode.id);}
           else toast(T[lang].booklet.noShelf);
         }},board?t.openMap:t.addMap));}};
   const inp=el("input",{type:"text",class:"field",style:"min-height:0",placeholder:t.addOwn,"aria-label":t.addOwn});
@@ -2538,7 +2575,13 @@ function renderBlock(b,draft,modeId){const t=T[lang];
 
     /* what was actually there: a record, not a report card — no score, no
        streak, no percentage, because adherence framing is out of scope here */
-    case "didlog":{const box=el("div",{});const c=copyTree("today.did",{h:"",p:"",none:""});
+    case "didlog":{const box=el("div",{});
+      /* A tick-list's own words come from the block. It used to read them from
+         one particular activity's copy, so a tick-list in any other module
+         rendered with blank headings — the block worked and said nothing. The
+         old path stays as a fallback so existing files are unchanged. */
+      const own=(b.copy&&(b.copy[lang]||b.copy.en))||null;
+      const c={...copyTree("today.did",{h:"",p:"",none:""}),...(own||{})};
       drawDid=()=>{box.innerHTML="";
         const picked=uniq((b.of||[]).flatMap(k=>draft[k]||[]));
         box.append(el("h3",{},c.h));
@@ -2975,6 +3018,22 @@ function toMarkdown(){const t=T[lang];const L=t.labels;const B=S.big;const ST=B.
     ...Object.entries(S.entries||{}).map(([k,v])=>({block:"entries", mode:k, items:v})),
     {block:"drafts", today:todayHas(D.today)?D.today:null, checkin:checkinHas(D.checkin)?D.checkin:null}
   ];
+  /* Whose the activities are, written into the half a person can read.
+     A module travels inside this file, so its terms have to travel with it —
+     front matter is stripped the moment a module is pasted into a booklet,
+     which makes the file itself the only place a notice survives. */
+  {const groups=new Map();
+   tplModules().forEach(m=>{const r=m.rights;if(!r) return;
+     const key=[r.copyright,r.license,r.source].join("|");
+     if(!groups.has(key)) groups.set(key,{r,titles:[]});
+     groups.get(key).titles.push(tx(m.title,m.id));});
+   const join=xs=>xs.filter(nonEmpty).map(x=>x.trim())
+     .map((x,i,a)=>i<a.length-1&&!/[.!?]$/.test(x)?x+".":x).join(" ");
+   const lines=[...groups.values()].map(({r,titles})=>
+     "- **"+titles.join(", ")+"** — "+join([r.copyright,r.license])
+     +(nonEmpty(r.source)?" ("+r.source+")":""));
+   if(lines.length) out.push("## "+L.h.rights,"",...lines,"");}
+
   out.push(DIVIDER,"","## "+L.h.seal,"",L.sealNote,"");
   blocks.forEach(b=>out.push("```json",JSON.stringify(b,null,1),"```",""));
   return out.join("\n");}
@@ -3478,66 +3537,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape") [veilSafety,veilRem
 
 /* ======================= WELCOME, SETUP, AND THE LIBRARY SURFACES (v0.2) ======================= */
 
-function renderWelcome(main){const t=T[lang];const c=el("div",{class:"col"});
-  c.append(el("div",{class:"hero"},el("h1",{},t.home.h1),el("p",{class:"sub"},t.setup.welcomeLead)));
-  c.append(el("div",{class:"doors"},
-    el("button",{type:"button",class:"door primary",onclick:()=>go("setup")},
-      el("span",{class:"k"},t.setup.doorSetup[0]),el("span",{class:"d"},t.setup.doorSetup[1])),
-    el("button",{type:"button",class:"door",onclick:()=>document.getElementById("btnLoad").click()},
-      el("span",{class:"k"},t.setup.doorLoad[0]),el("span",{class:"d"},t.setup.doorLoad[1]))));
-  // the way past setup has to be visible: a wizard you cannot skip is the rabbit hole
-  c.append(el("p",{},el("button",{type:"button",class:"quietlink",onclick:()=>{S.setup.done=true;mark();saveLocal();go("home");}},t.setup.skip)));
-  /* the same words the home page shows, from the same place — the booklet.
-     A third hand-written copy of "your writing stays here" is a third thing
-     to keep in step, and the engine should not be asserting it at all. */
-  {const seed=pageSeed();
-   if(seed&&seed.length){const box=el("div",{class:"notice"});
-     inOrder(seed.filter(b=>placeOf(b)!=="hidden"))
-       .forEach(b=>box.append(renderBlock(b,S,"welcome")));
-     c.append(box);}}
-  if(pinnedOf()) c.append(el("p",{},el("button",{type:"button",class:"linkbtn",
-    style:"color:var(--warn)",onclick:openSafety},tx(pinnedOf().title,""))));
-  main.append(c);}
 
-function renderSetup(main){const t=T[lang];const G=t.setup;const c=el("div",{class:"col"});
-  c.append(el("h2",{},G.title),el("p",{class:"aside"},G.lead));
-  const single=(def,get,set)=>{const box=el("div",{class:"setupq"});
-    box.append(el("h3",{},def.q));if(def.hint) box.append(el("p",{class:"hint",style:"margin:.1rem 0 0"},def.hint));
-    const wrap=el("div",{class:"choices"});
-    const draw=()=>{wrap.innerHTML="";def.opts.forEach(([id,k,d])=>{
-      wrap.append(el("button",{type:"button",class:"choice","aria-pressed":String(get()===id),onclick:()=>{set(get()===id?"":id);mark();draw();}},
-        el("span",{class:"k"},k),d?el("span",{class:"d"},d):null));});};
-    draw();box.append(wrap);return box;};
-
-  c.append(single(G.q1,()=>S.setup.charge,v=>{S.setup.charge=v;}));
-  c.append(single(G.q2,()=>S.setup.reading,v=>{S.setup.reading=v;S.mode=(v==="none"||v==="light")?"compact":"full";}));
-
-  // areas — recognition, not a blank "name this area" box
-  const q3=el("div",{class:"setupq"});
-  q3.append(el("h3",{},G.q3.q),el("p",{class:"hint",style:"margin:.1rem 0 0"},G.q3.hint));
-  const grid=el("div",{class:"domgrid"});let allDomains=false;
-  const drawDoms=()=>{grid.innerHTML="";
-    const list=allDomains?LIBRARY().domains:LIBRARY().domains.slice(0,8);
-    list.forEach(d=>{const on=S.setup.domains.includes(d.id);
-      grid.append(el("button",{type:"button",class:"choice","aria-pressed":String(on),title:d.description,
-        onclick:()=>{S.setup.domains=on?S.setup.domains.filter(x=>x!==d.id):[...S.setup.domains,d.id];mark();drawDoms();}},
-        el("span",{class:"k"},d.title)));});};
-  drawDoms();q3.append(grid,el("p",{style:"margin:.7rem 0 0"},
-    el("button",{type:"button",class:"small togdom",onclick:()=>{allDomains=!allDomains;drawDoms();q3.querySelector(".togdom").textContent=allDomains?G.q3.less:G.q3.more;}},G.q3.more)));
-  c.append(q3);
-
-  c.append(single(G.q4,()=>S.setup.counts?"yes":"no",v=>{S.setup.counts=(v!=="no");}));
-
-  const finish=()=>{S.setup.done=true;
-    // picked areas become real areas, so The Map opens with something in it
-    S.setup.domains.forEach(id=>{const d=DOMAIN(id);if(!d) return;
-      if(!S.areas.some(a=>norm(a.label)===norm(d.title))){const a=emptyArea();a.label=d.title;S.areas.push(a);}});
-    mark();saveLocal();go("home");
-    if(S.setup.charge==="spike"&&pinnedOf()) setTimeout(openSafety,250);};  // acute state routes to help, if the booklet carries any
-  c.append(el("div",{class:"setupbar"},
-    el("button",{type:"button",class:"finalize",onclick:finish},G.done),
-    el("button",{type:"button",class:"quietlink",onclick:finish},G.skipRest)));
-  main.append(c);}
 
 /* --- the body map ----------------------------------------------------------
    A plain outline, not an anatomical drawing: nine tappable shapes plus three
@@ -3601,7 +3601,7 @@ function topicPicker(B){const X=T[lang].explore;const G=T[lang].setup;const box=
 /* ======================= BOOT ======================= */
 const restoredFromBrowser=loadLocal();
 // first run with nothing stored: two doors, not a menu
-if(!restoredFromBrowser&&!S.setup.done) view="welcome";
+
 render();
 if(restoredFromBrowser) setTimeout(()=>toast(T[lang].ui.restored),400);
 else if(!storageOk) setTimeout(()=>toast(T[lang].ui.storageOff),400);
@@ -3612,8 +3612,7 @@ else if(!storageOk) setTimeout(()=>toast(T[lang].ui.storageOff),400);
 (async()=>{
   if(!wrapperConfig()) return;
   await loadShelf();
-  if(!restoredFromBrowser&&!sessionHasContent()&&!tplModules().length){
-    if(await loadStarter()){if(view==="welcome") view="home";}}
+  if(!restoredFromBrowser&&!sessionHasContent()&&!tplModules().length) await loadPreset();
   render();
 })();
 </script>

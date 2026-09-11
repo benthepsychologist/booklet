@@ -10,6 +10,34 @@
  },
  "modules": [
   {
+   "id": "example/daily-journal",
+   "version": "0.1",
+   "file": "modules/daily-journal.md",
+   "title": {
+    "en": "Daily journal",
+    "fr": "Journal quotidien"
+   },
+   "blurb": {
+    "en": "A few minutes at the end of a day. Nothing has to be interesting.",
+    "fr": "Quelques minutes en fin de journée. Rien n'a besoin d'être intéressant."
+   },
+   "engines": []
+  },
+  {
+   "id": "example/decision-log",
+   "version": "0.1",
+   "file": "modules/decision-log.md",
+   "title": {
+    "en": "Decision log",
+    "fr": "Journal des décisions"
+   },
+   "blurb": {
+    "en": "What you decided, and what you believed at the time.",
+    "fr": "Ce que vous avez décidé, et ce que vous croyiez alors."
+   },
+   "engines": []
+  },
+  {
    "id": "example/end-of-day",
    "version": "0.1",
    "file": "modules/end-of-day.md",
@@ -123,6 +151,20 @@
    "engines": [
     "card-board"
    ]
+  },
+  {
+   "id": "example/weekly-review",
+   "version": "0.1",
+   "file": "modules/weekly-review.md",
+   "title": {
+    "en": "Weekly review",
+    "fr": "Bilan de la semaine"
+   },
+   "blurb": {
+    "en": "Once a week: what moved, what did not, and what to change.",
+    "fr": "Une fois par semaine : ce qui a bougé, ce qui n'a pas bougé, et quoi changer."
+   },
+   "engines": []
   },
   {
    "id": "example/what-is-a-booklet",
