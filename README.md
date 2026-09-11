@@ -73,6 +73,8 @@ This is the distinction the whole design rests on, and it is easy to get backwar
 | [`modules/`](modules/), [`widgets/`](widgets/) | a worked activity and the two widgets it draws with |
 | [`test/`](test/) | the suite, run with `test/run.sh` |
 | [`build-example.js`](build-example.js) | writes the example booklet through the renderer itself |
+| [`registry.json`](registry.json) | the examples registry — what this repo offers |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
 
 ## Try it
 
@@ -108,6 +110,28 @@ against them found two more couplings the old suite never could: an empty state
 pre-seeded with four particular cell ids, and question wording hard-coded to
 three scope names, which had quietly meant a *new* activity could never word its
 own questions.
+
+---
+
+## Registries
+
+A **registry** is one JSON file listing modules somebody offers, with enough in
+each entry to draw a menu. A page fetches that one file — around 1KB — instead
+of every module it might one day offer.
+
+This repo publishes one, through GitHub Pages, and takes additions by pull
+request. But nothing here is a gate: a registry is a URL, so it can be a repo,
+a folder on any host, or **a single file with its modules carried inline and
+nothing to fetch at all**. A booklet may name its own registries, so a reader
+can point their file wherever they like.
+
+See [`SPEC.md`](SPEC.md) for the format and [`CONTRIBUTING.md`](CONTRIBUTING.md)
+for how to add to this one.
+
+⛔ **This registry carries examples, not advice.** Nothing in it is health,
+medical, legal or financial guidance, and modules offering any are declined —
+the words in a booklet reach people unmediated, and nobody here can check
+whether they are safe for whoever opens them.
 
 ---
 

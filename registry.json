@@ -1,0 +1,30 @@
+{
+ "registry": 1,
+ "name": {
+  "en": "Booklet examples",
+  "fr": "Exemples Booklet"
+ },
+ "description": {
+  "en": "Worked examples of the booklet format. Nothing here is advice of any kind.",
+  "fr": "Exemples du format booklet. Rien ici ne constitue un conseil."
+ },
+ "modules": [
+  {
+   "id": "example/end-of-day",
+   "version": "0.1",
+   "file": "modules/end-of-day.md",
+   "title": {
+    "en": "End of day",
+    "fr": "Fin de journée"
+   },
+   "blurb": {
+    "en": "Five minutes, once, before you shut the laptop.",
+    "fr": "Cinq minutes, une fois, avant de fermer l'ordinateur."
+   },
+   "engines": [
+    "grid-select",
+    "svg-regions"
+   ]
+  }
+ ]
+}
