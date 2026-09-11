@@ -139,4 +139,22 @@ whether they are safe for whoever opens them.
 
 **Version 1 of the format, draft. Record format v6.** In production in one place, which is the only implementation so far. Nothing outside that depends on the format yet, so it can still change; once something does, it changes by version.
 
+### What is licensed how
+
+**The software and the format** — the renderer, the validator, the build
+scripts, `SPEC.md` — are Apache-2.0, and that is the point: a format meant to
+be implemented by other people carries an explicit patent grant, so anyone
+writing a reader or writer for it gets that protection along with the copyright
+permission.
+
+**Module and widget content is not.** A module is prose, and prose belongs to
+whoever wrote it. A module in this repository that declares no `rights` is
+contributed under the repository's Apache-2.0 terms like the code; a module
+that declares `rights` is offered on the terms it states, and those terms
+travel with it into every booklet that carries it.
+
+That distinction is deliberate. Some of what this registry offers is written by
+a named professional and is not free to modify, and the format has somewhere to
+say so.
+
 Released under the [Apache Licence 2.0](LICENSE) — which, for a format meant to be implemented by other people, is the point: it carries an explicit patent grant, so anyone writing a reader or writer for this format gets that protection along with the copyright permission.

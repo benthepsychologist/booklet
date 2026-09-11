@@ -135,6 +135,23 @@ def check_template(f, tpl):
     # fields modules say up front they draw on from a board elsewhere
     declared_reads = {r for m in (tpl.get("modules") or [])
                       for r in (m.get("reads") or []) if isinstance(r, str)}
+    # A module may declare whose it is. It lives in the module BLOCK rather
+    # than in a file's front matter because front matter is discarded the
+    # moment a module is pasted into a booklet — and the content travels, so
+    # the terms have to travel with it.
+    for m in (tpl.get("modules") or []):
+        r = m.get("rights")
+        if r is None:
+            continue
+        if not isinstance(r, dict):
+            err(f, f"module {m.get('id')!r}: `rights` must be an object")
+            continue
+        for k in ("copyright", "license", "source"):
+            if k in r and not (isinstance(r[k], str) and r[k].strip()):
+                err(f, f"module {m.get('id')!r}: rights.{k} must be a non-empty string")
+        if r.get("license") and not r.get("copyright"):
+            warn(f, f"module {m.get('id')!r} states terms but no copyright holder — "
+                    f"a licence with nobody granting it is not much of a grant")
     seen_mods = set()
     for m in mods:
         if not isinstance(m, dict) or not isinstance(m.get("id"), str):

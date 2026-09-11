@@ -203,6 +203,7 @@ prose describing them and going stale the first time anyone renames something.
   "reads": ["weekday", "weekend"],  // map fields it draws on; soft, not a dependency
   "menus": { "weekday": ["…"] },    // the option lists its own blocks need
   "widgets": [ … ],                 // the widgets its blocks name, carried whole
+  "rights":{ "copyright": "…", "license": "…", "source": "…" },
   "copy":  { "en": {…}, "fr": {…} },// its own wording, per language
   "library": {…},                   // reference content, if it offers any
   "map":   [ … ],                   // cards, if this module is a board
@@ -214,6 +215,19 @@ to its own activity: `menus` the blocks name, the `widgets` they draw with, and
 `page` — default words for the booklet's own front page, used only if the
 booklet itself declares none. Resolution is always the same: the booklet first,
 then whichever installed module offers one.
+
+**`rights` says whose the activity is, and it belongs in the block.** A module
+is prose as much as it is configuration, and it travels inside every booklet
+that carries it — so its terms have to travel with it. A file's front matter
+will not do: front matter is discarded the moment a module is pasted into a
+booklet, which leaves the file itself as the only place a notice survives. A
+conforming writer emits the notices its modules declare into the human half of
+the file, grouped by terms, so that whoever holds the file can read them
+without parsing anything.
+
+Nothing in this format grants or withholds any permission. `rights` is a place
+to state terms, not a licence in itself, and a renderer neither enforces it nor
+is in a position to.
 
 **A module travels whole.** A booklet carries the full module objects it uses, never their names, so a booklet made elsewhere works on a page that has never heard of that module. A page's built-in registry is only the shelf of modules it can *offer* to add.
 
