@@ -1503,13 +1503,24 @@ async function resolveShelf(id){
    there is nothing here already, so it can never overwrite a person's work,
    and it is a file like any other: the page has no idea it came from a
    wrapper rather than from disk. `starter_url` is the old name, still read. */
+function applyPreset(R){
+  if(!R||!R.ok) return false;
+  /* The design is not browser state: it comes from the booklet file or the
+     wrapper on every load. A returning reader may already have locally
+     restored entries, so reinstall the preset's design without replacing
+     those entries. On a genuinely empty first visit, take the whole blank
+     preset exactly as if the reader had loaded its file. */
+  if(sessionHasContent()){
+    if(shouldAdopt(R.template)) adoptTemplate(R.template);
+    else modulesIn(R.template).forEach(m=>{if(!allModules().some(x=>x.id===m.id)) addModule(m);});
+  }else applyParsed(R,"replace");
+  return true;}
 async function loadPreset(){
   const cfg=wrapperConfig()||{};
   const url=cfg.preset_url||cfg.starter_url;
   if(!url) return false;
   try{const r=await fetch(url,{cache:"no-cache"});if(!r.ok) return false;
-    const R=parseFile(await r.text());if(!R.ok) return false;
-    applyParsed(R,"replace");return true;}catch(e){return false;}}
+    return applyPreset(parseFile(await r.text()));}catch(e){return false;}}
 
 /* the booklet in force */
 let TPL = EMPTY_BOOKLET;
@@ -3663,13 +3674,13 @@ render();
 if(restoredFromBrowser) setTimeout(()=>toast(T[lang].ui.restored),400);
 else if(!storageOk) setTimeout(()=>toast(T[lang].ui.storageOff),400);
 
-/* Last, and only if a wrapper is present: pick up whatever it offers. A
-   starter booklet is only taken when there is nothing here already — it is a
-   first-visit convenience, never something that overwrites a person's work. */
+/* Last, and only if a wrapper is present: pick up whatever it offers. The
+   wrapper's preset supplies the design on every page load because the design
+   is not browser state. loadPreset keeps already-restored entries intact. */
 (async()=>{
   if(!wrapperConfig()) return;
   await loadShelf();
-  if(!restoredFromBrowser&&!sessionHasContent()&&!tplModules().length) await loadPreset();
+  if(!tplModules().length) await loadPreset();
   render();
 })();
 </script>

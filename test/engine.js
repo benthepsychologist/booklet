@@ -21,6 +21,10 @@ chk("export is one adaptive action rather than a provider integration",
 chk("the export panel offers only capabilities the browser actually has",
   /if\(canShareFile\(\)\)/.test(html)&&/if\(window\.showSaveFilePicker\)/.test(html)
   &&/copyBooklet/.test(html)&&/touchShare\(\)\) return shareCopy\(\)/.test(html));
+chk("a wrapper reinstalls its preset design without replacing restored entries",
+  /function applyPreset\(R\)/.test(html)
+  &&/if\(sessionHasContent\(\)\)[\s\S]{0,160}adoptTemplate\(R\.template\)/.test(html)
+  &&/if\(!tplModules\(\)\.length\) await loadPreset\(\)/.test(html));
 chk("copying to an ephemeral clipboard is not reported as a durable save",(()=>{
   const f=html.slice(html.indexOf("async function copyBooklet"),html.indexOf("const touchShare"));
   return !/exported\(\)/.test(f);})());
