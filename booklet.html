@@ -279,6 +279,12 @@
   .panel button{border:2px solid var(--rule);background:#fff;border-radius:999px;padding:.45rem 1rem;font-weight:600}
   .panel button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
   .panel button.danger{color:var(--warn)}
+  .exportchoices{display:grid;grid-template-columns:1fr;gap:.55rem;margin:1.1rem 0 .25rem}
+  @media (min-width:520px){.exportchoices{grid-template-columns:1fr 1fr}}
+  .panel button.exportchoice{display:block;text-align:left;border-radius:12px;padding:.75rem .9rem;min-height:4.4rem}
+  .panel button.exportchoice strong{display:block;color:var(--ink);font-size:.98rem;margin-bottom:.15rem}
+  .panel button.exportchoice span{display:block;color:var(--muted);font-size:.82rem;font-weight:400;line-height:1.35}
+  .panel button.exportchoice.primary strong,.panel button.exportchoice.primary span{color:#fff}
   .panel textarea{width:100%;min-height:7rem;font-size:.85rem;background:#fff;border:2px solid var(--rule);border-radius:10px;padding:.5rem;font-family:var(--serif)}
   .panel input[type=file]{font-size:.9rem;max-width:100%}
   .dropzone{border:2px dashed var(--accent);border-radius:12px;padding:.9rem;text-align:center;color:var(--accent);font-weight:600;margin:.5rem 0;background:var(--accent-soft)}
@@ -492,10 +498,7 @@
   <button type="button" class="home" id="btnHome"></button>
   <button type="button" class="navb safety" id="btnSafety"></button>
   <div class="tools">
-    <!-- Send a copy: commented out 2026-09-10 (Ben) — the share sheet does not
-         behave yet, and Download does the same job today.
-    <button type="button" class="navb" id="btnShare" hidden></button> -->
-    <button type="button" class="navb" id="btnDownload"></button>
+    <button type="button" class="navb" id="btnExport"></button>
     <button type="button" class="navb" id="btnLoad"></button>
     <!-- "On a phone?" removed 2026-09-10 (Ben) -->
   </div>
@@ -549,6 +552,7 @@
 <div class="veil" id="veilSafety" role="dialog" aria-modal="true"><div class="panel" id="safetyPanel"></div></div>
 <div class="veil" id="veilRemind" role="dialog" aria-modal="true"><div class="panel" id="remindPanel"></div></div>
 <div class="veil" id="veilLock" role="dialog" aria-modal="true"><div class="panel" id="lockPanel"></div></div>
+<div class="veil" id="veilExport" role="dialog" aria-modal="true"><div class="panel" id="exportPanel"></div></div>
 
 <div class="dropveil" id="dropVeil"></div>
 <div class="toast" id="toast"></div>
@@ -557,7 +561,7 @@
 const T = {};
 T.en = {
   ui:{
-    app:"Activity Kit", history:"History", download:"Download", load:"Load", share:"Send a copy",
+    app:"Activity Kit", history:"History", download:"Download", load:"Load", share:"Share…", export:"Send or save a copy",
     back:"Home",
     loadTitle:"Load notes you saved earlier",
     loadHelp:"Choose the markdown file you downloaded from this page, or paste its contents below.",
@@ -580,6 +584,14 @@ T.en = {
     shared:"Sent. Whatever you sent it to now has your file — open it here again with Load.",
     shareFail:"Could not send a copy. Download instead, and the file is yours either way.",
     copied:"Copied to clipboard as text. Paste it into a file and keep it.",
+    savedFile:"Saved. This file now has your current copy.",
+    saveFail:"Could not save to that file. Download a copy instead.",
+    exportH:"Send or save a copy", exportP:"Your booklet becomes a file here, on this device. Choose where you want it to go.",
+    exportShare:"Share with another app", exportShareHint:"Open your computer’s share menu for Mail, AirDrop, Drive, Dropbox, or another installed app.",
+    exportSave:"Save to a file", exportSaveHint:"Choose a file now. While this page stays open, later saves can update that same file.",
+    exportDownload:"Download a copy", exportDownloadHint:"Put a new copy in your Downloads folder.",
+    exportCopy:"Copy as text", exportCopyHint:"Copy the complete Markdown booklet to your clipboard.",
+    exportLock:"Protect this copy", exportLockHint:"Encrypt it with a passphrase before it leaves this page.",
     downloadFail:"Could not download or copy. Open Load and copy the text from there.",
     leaving:"Your entries are kept in this browser, but you have not downloaded a copy to this device.",
     unsavedEntries:n=>`${n} entr${n===1?"y":"ies"} not yet downloaded`,
@@ -769,7 +781,7 @@ T.en = {
 };
 T.fr = {
   ui:{
-    app:"Trousse d’activités", history:"Historique", download:"Télécharger", load:"Charger", share:"Envoyer une copie",
+    app:"Trousse d’activités", history:"Historique", download:"Télécharger", load:"Charger", share:"Partager…", export:"Envoyer ou sauvegarder une copie",
     back:"Accueil",
     loadTitle:"Charger des notes sauvegardées",
     loadHelp:"Choisissez le fichier markdown téléchargé depuis cette page, ou collez son contenu ci-dessous.",
@@ -792,6 +804,14 @@ T.fr = {
     shared:"Envoyé. Ce que vous avez choisi a maintenant votre fichier — revenez ici avec Charger.",
     shareFail:"Impossible d’envoyer une copie. Téléchargez plutôt ; le fichier est à vous dans les deux cas.",
     copied:"Copié dans le presse-papiers. Collez-le dans un fichier et conservez-le.",
+    savedFile:"Sauvegardé. Ce fichier contient maintenant votre copie actuelle.",
+    saveFail:"Impossible de sauvegarder dans ce fichier. Téléchargez plutôt une copie.",
+    exportH:"Envoyer ou sauvegarder une copie", exportP:"Votre carnet devient un fichier ici, sur cet appareil. Choisissez où vous voulez l’envoyer.",
+    exportShare:"Partager avec une autre application", exportShareHint:"Ouvrez le menu de partage de l’ordinateur pour Mail, AirDrop, Drive, Dropbox ou une autre application installée.",
+    exportSave:"Sauvegarder dans un fichier", exportSaveHint:"Choisissez un fichier maintenant. Tant que cette page reste ouverte, les sauvegardes suivantes peuvent mettre ce même fichier à jour.",
+    exportDownload:"Télécharger une copie", exportDownloadHint:"Placez une nouvelle copie dans votre dossier Téléchargements.",
+    exportCopy:"Copier comme texte", exportCopyHint:"Copiez le carnet Markdown complet dans le presse-papiers.",
+    exportLock:"Protéger cette copie", exportLockHint:"Chiffrez-la avec une phrase de passe avant qu’elle ne quitte cette page.",
     downloadFail:"Impossible de télécharger ou de copier. Ouvrez Charger et copiez le texte à partir de là.",
     leaving:"Vos entrées sont conservées dans ce navigateur, mais vous n’avez pas téléchargé de copie sur cet appareil.",
     unsavedEntries:n=>`${n} entrée${n===1?"":"s"} pas encore téléchargée${n===1?"":"s"}`,
@@ -1874,7 +1894,7 @@ function renderBar(){const t=T[lang].ui;
   document.documentElement.lang=lang;document.title=T[lang].home.h1;document.body.dataset.view=view;
   syncPinnedButton();
   document.getElementById("btnHome").textContent=(view==="home"?"":"← ")+t.app;
-  const dl=document.getElementById("btnDownload");dl.textContent=t.download;dl.classList.toggle("attention",dirty||unsavedEntries>0);
+  const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.classList.toggle("attention",dirty||unsavedEntries>0);
   document.getElementById("btnLoad").textContent=t.load;
   document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));
   document.getElementById("dropZone").textContent=t.dropZone;document.getElementById("dropVeil").textContent=t.dropVeil;
@@ -3046,12 +3066,41 @@ const canShareFile=()=>{try{return !!(navigator.canShare&&navigator.share
   &&navigator.canShare({files:[new File(["x"],"x.md",{type:"text/markdown"})]}));}catch(e){return false;}};
 function bookletFile(){const t=T[lang].ui;
   return new File([toMarkdown()],t.fileName+".md",{type:"text/markdown"});}
+function exported(){dirty=false;unsavedEntries=0;saveLocal();render();}
 async function shareCopy(){const t=T[lang].ui;
   if(!canShareFile()) return download();
   try{await navigator.share({files:[bookletFile()],title:t.exportTitle});
-    dirty=false;unsavedEntries=0;saveLocal();toast(t.shared);render();}
+    exported();toast(t.shared);}
   catch(e){ /* the person backed out of the share sheet: nothing to report */
     if(e&&e.name!=="AbortError") toast(t.shareFail);}}
+let exportHandle=null;
+async function saveToFile(){const t=T[lang].ui;
+  try{
+    exportHandle=exportHandle||await window.showSaveFilePicker({suggestedName:t.fileName+".md",
+      types:[{description:"Markdown",accept:{"text/markdown":[".md"]}}]});
+    const writer=await exportHandle.createWritable();await writer.write(toMarkdown());await writer.close();
+    exported();toast(t.savedFile);
+  }catch(e){if(e&&e.name!=="AbortError") toast(t.saveFail);}}
+async function copyBooklet(){const t=T[lang].ui;
+  try{await navigator.clipboard.writeText(toMarkdown());toast(t.copied);}
+  catch(e){toast(t.downloadFail);}}
+const touchShare=()=>{try{return canShareFile()&&window.matchMedia&&window.matchMedia("(pointer: coarse)").matches;}catch(e){return false;}};
+function openExport(){const t=T[lang].ui;
+  if(S.person.protect) return openLock();
+  if(touchShare()) return shareCopy();
+  const veil=document.getElementById("veilExport"),box=document.getElementById("exportPanel");box.innerHTML="";
+  const close=()=>veil.removeAttribute("open");
+  const choice=(name,hint,fn,primary=false)=>el("button",{type:"button",class:"exportchoice"+(primary?" primary":""),onclick:()=>{close();fn();}},
+    el("strong",{},name),el("span",{},hint));
+  const choices=el("div",{class:"exportchoices"});
+  if(canShareFile()) choices.append(choice(t.exportShare,t.exportShareHint,shareCopy,true));
+  if(window.showSaveFilePicker) choices.append(choice(t.exportSave,t.exportSaveHint,saveToFile,!canShareFile()));
+  choices.append(choice(t.exportDownload,t.exportDownloadHint,download,!canShareFile()&&!window.showSaveFilePicker),
+    choice(t.exportCopy,t.exportCopyHint,copyBooklet));
+  if(hasCrypto()) choices.append(choice(t.exportLock,t.exportLockHint,openLock));
+  box.append(el("h3",{},t.exportH),el("p",{},t.exportP),choices,
+    el("div",{class:"actions"},el("button",{type:"button",onclick:close},t.cancel)));
+  veil.setAttribute("open","");}
 /* Encryption is asynchronous and the share sheet must be opened by a tap, so
    the two cannot happen in one gesture. The dialog does the work while it is
    open and its own buttons are the second tap, by which time the file is
@@ -3476,7 +3525,7 @@ let pending=null;
 const veilLoad=document.getElementById("veilLoad"),veilMerge=document.getElementById("veilMerge"),veilClear=document.getElementById("veilClear"),dropVeil=document.getElementById("dropVeil");
 document.getElementById("btnHome").addEventListener("click",()=>go("home"));
 document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>{lang=b.dataset.lang;render();}));
-document.getElementById("btnDownload").addEventListener("click",()=>S.person.protect?openLock():download());
+document.getElementById("btnExport").addEventListener("click",openExport);
 document.getElementById("btnLoad").addEventListener("click",()=>{const m=document.getElementById("loadMsg");m.textContent="";m.className="msg";document.getElementById("pasteIn").value="";document.getElementById("fileIn").value="";veilLoad.setAttribute("open","");});
 document.getElementById("loadCancel").addEventListener("click",()=>veilLoad.removeAttribute("open"));
 function readFileInto(file,cb){if(!file) return;const r=new FileReader();r.onload=()=>cb(String(r.result||""));r.readAsText(file);}
@@ -3500,8 +3549,9 @@ document.getElementById("mergeAdd").addEventListener("click",()=>{if(pending) fi
 document.getElementById("mergeReplace").addEventListener("click",()=>{if(pending) finishLoad(pending,"replace");});
 document.getElementById("clearCancel").addEventListener("click",()=>veilClear.removeAttribute("open"));
 document.getElementById("clearGo").addEventListener("click",()=>{S=emptyS();D={today:emptyToday(),checkin:emptyCheckin()};dirty=false;unsavedEntries=0;openChip={today:null,checkin:null};clearLocal();veilClear.removeAttribute("open");go("home");});
-[veilLoad,veilMerge,veilClear].forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){[veilLoad,veilMerge,veilClear].forEach(v=>v.removeAttribute("open"));}});
+const veilExport=document.getElementById("veilExport");
+[veilLoad,veilMerge,veilClear,veilExport].forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){[veilLoad,veilMerge,veilClear,veilExport].forEach(v=>v.removeAttribute("open"));}});
 let dragDepth=0;
 window.addEventListener("dragenter",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")){e.preventDefault();dragDepth++;dropVeil.classList.add("show");}});
 window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault();});
@@ -3540,7 +3590,7 @@ function syncPinnedButton(){const b=document.getElementById("btnSafety");if(!b) 
   const G=pinnedOf();b.hidden=!G;
   if(G) b.textContent=tx(G.btn,tx(G.title,tx((G.head||{}).h,"")));}
 [veilSafety,veilRemind].forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));
-document.addEventListener("keydown",e=>{if(e.key==="Escape") [veilSafety,veilRemind,document.getElementById("veilLock")].forEach(v=>v&&v.removeAttribute("open"));});
+document.addEventListener("keydown",e=>{if(e.key==="Escape") [veilSafety,veilRemind,document.getElementById("veilLock"),document.getElementById("veilExport")].forEach(v=>v&&v.removeAttribute("open"));});
 
 /* ======================= WELCOME, SETUP, AND THE LIBRARY SURFACES (v0.2) ======================= */
 

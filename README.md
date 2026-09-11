@@ -86,6 +86,13 @@ open the markdown file. No server, no install, no network: verified with
 The renderer opens **empty**, because it holds no booklet of its own. That is
 the property everything else here rests on.
 
+**Send or save a copy** adapts to the device without adding a storage service.
+On a touch-first device it opens the operating system's share sheet with the
+actual `.md` file. On desktop it opens a small panel and shows only the
+capabilities the browser provides: system sharing, saving to a chosen file,
+downloading, copying as text, and optional passphrase protection. The renderer
+never contacts Mail, Drive, Dropbox or another destination itself.
+
 ### How "it holds no content" got demonstrated
 
 The renderer arrived here carrying six things it should not have: a two-language

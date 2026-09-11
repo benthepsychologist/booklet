@@ -15,6 +15,15 @@ const fresh=()=>{A.setS(A.emptyS());A.setD({today:A.emptyToday(),checkin:A.empty
 fresh();
 chk("a bare renderer carries no booklet",A.tplModules().length===0&&A.tplWidgets().length===0);
 chk("and no shelf of its own",Object.keys(A.SHELF()).length===0);
+chk("export is one adaptive action rather than a provider integration",
+  /id="btnExport"/.test(html)&&/function openExport\(\)/.test(html)
+  &&!/id="btnShare"/.test(html));
+chk("the export panel offers only capabilities the browser actually has",
+  /if\(canShareFile\(\)\)/.test(html)&&/if\(window\.showSaveFilePicker\)/.test(html)
+  &&/copyBooklet/.test(html)&&/touchShare\(\)\) return shareCopy\(\)/.test(html));
+chk("copying to an ephemeral clipboard is not reported as a durable save",(()=>{
+  const f=html.slice(html.indexOf("async function copyBooklet"),html.indexOf("const touchShare"));
+  return !/exported\(\)/.test(f);})());
 chk("it provides exactly three engines",
   Object.keys(A.ENGINES).sort().join(",")==="card-board,grid-select,svg-regions",
   Object.keys(A.ENGINES).sort().join(","));
