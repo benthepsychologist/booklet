@@ -29,6 +29,9 @@ module: you/your-thing        ← the id, "who/what"
 version: 0.1
 status: approved              ← anything else is not offered
 lang: en
+author: Your Name             ← optional; shown beside your module
+license: Apache-2.0           ← optional; defaults to this repo's terms
+source: https://…             ← optional; where it came from
 ---
 
 # Your thing
@@ -70,6 +73,18 @@ Run them yourself before opening the PR:
 test/run.sh              # everything
 node build-registry.js   # then commit registry.json
 ```
+
+## Authorship and terms
+
+`author`, `license` and `source` are optional and appear in the registry and
+beside your module on the site. They exist because a module is prose as much as
+it is config, and a registry carrying other people's work should say whose it
+is. Leave them out and your module is attributed to this repository under its
+Apache-2.0 licence, like everything else here.
+
+If your module is work you want to keep under different terms, say so in
+`license` — the registry carries the declaration, and a reader sees it before
+they add anything.
 
 ## Why the manifest is committed
 

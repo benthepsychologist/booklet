@@ -84,6 +84,14 @@ function build() {
          draw it without downloading it first */
       engines: [...new Set([...widgetIds((mod.mode || {}).blocks)]
         .map(id => ENGINE[id]).filter(Boolean))].sort(),
+      /* Who wrote it and on what terms. A registry that carries other people's
+         work has to say whose it is: a module is prose as much as it is
+         config, and prose written by a named professional is not the same
+         thing as an example anybody may fork. Both default to the repository's
+         own terms when a file says nothing. */
+      ...(fm.author ? { author: fm.author } : {}),
+      ...(fm.license ? { license: fm.license } : {}),
+      ...(fm.source ? { source: fm.source } : {}),
       ...((mod.mode || {}).pinned ? { pinned: true } : {}),
     });
   }
@@ -109,6 +117,8 @@ function landing(reg) {
       <p>${esc(m.blurb.en)}</p>
       <p class="meta">v${esc(m.version)}${m.engines.length ? " · draws with " + m.engines.map(esc).join(", ") : ""}${m.pinned ? " · pinned panel" : ""}
         · <a href="${esc(m.file)}">${esc(m.file)}</a></p>
+      <p class="meta">${m.author ? "by " + esc(m.author) : "by the Booklet examples"}
+        · ${m.license ? esc(m.license) : "Apache-2.0"}${m.source ? ` · <a href="${esc(m.source)}">source</a>` : ""}</p>
     </li>`).join("\n");
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">

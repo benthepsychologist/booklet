@@ -41,6 +41,22 @@
    "engines": [
     "card-board"
    ]
+  },
+  {
+   "id": "example/what-is-a-booklet",
+   "version": "0.1",
+   "file": "modules/what-is-a-booklet.md",
+   "title": {
+    "en": "What is a booklet",
+    "fr": "Qu'est-ce qu'un carnet"
+   },
+   "blurb": {
+    "en": "A short read: the file, the parts, and what is yours.",
+    "fr": "Une courte lecture : le fichier, les parties, et ce qui vous appartient."
+   },
+   "engines": [],
+   "author": "Booklet examples",
+   "license": "Apache-2.0"
   }
  ]
 }
