@@ -31,7 +31,32 @@ function frontMatter(text) {
   return out;
 }
 
+/* Engines come from the WIDGET FILES a module's blocks name, not from the copy
+   of those widgets carried inside the module. Reading the carried copy made
+   this depend on whether the widget sync had run first — generate the registry
+   before the sync and every module looks like it needs no engines at all,
+   which is wrong and silent. */
+function engineIndex() {
+  const dir = path.join(ROOT, "widgets");
+  const out = {};
+  for (const n of fs.readdirSync(dir)) {
+    if (!n.endsWith(".md") || n.toLowerCase() === "readme.md") continue;
+    const w = JSON.parse(FENCE.exec(fs.readFileSync(path.join(dir, n), "utf8"))[1]);
+    if (w.id && w.engine) out[w.id] = w.engine;
+  }
+  return out;
+}
+
+function widgetIds(blocks, into = new Set()) {
+  for (const b of blocks || []) {
+    if (b && b.type === "widget" && b.widget) into.add(b.widget);
+    if (b && b.blocks) widgetIds(b.blocks, into);
+  }
+  return into;
+}
+
 function build() {
+  const ENGINE = engineIndex();
   const dir = path.join(ROOT, "modules");
   const modules = [];
   for (const n of fs.readdirSync(dir).sort()) {
@@ -57,7 +82,8 @@ function build() {
       blurb: mod.blurb,
       /* what it draws with, so a reader can be told their renderer cannot
          draw it without downloading it first */
-      engines: [...new Set((mod.widgets || []).map(w => w.engine).filter(Boolean))].sort(),
+      engines: [...new Set([...widgetIds((mod.mode || {}).blocks)]
+        .map(id => ENGINE[id]).filter(Boolean))].sort(),
       ...((mod.mode || {}).pinned ? { pinned: true } : {}),
     });
   }

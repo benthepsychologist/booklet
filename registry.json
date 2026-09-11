@@ -38,7 +38,9 @@
     "en": "What the work looks like right now. Edited in place, never finished.",
     "fr": "À quoi ressemble le travail en ce moment. Modifié sur place, jamais terminé."
    },
-   "engines": []
+   "engines": [
+    "card-board"
+   ]
   }
  ]
 }

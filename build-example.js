@@ -51,7 +51,14 @@ function stamp(names) {
                                { cwd: KIT, encoding: "utf8" }).trim();
       if (iso) t = Date.parse(iso);
     } catch { /* not a git checkout — fall through */ }
-    if (!t) t = fs.statSync(file).mtimeMs;
+    if (!t) {
+      // No commit for this path — almost always a shallow clone. Say so: the
+      // output is about to be unreproducible and the only symptom otherwise is
+      // a freshness check failing for no visible reason.
+      console.warn(`  ⚠️  no commit time for ${n}.md (shallow clone?) — falling ` +
+                   `back to file mtime, which differs between checkouts`);
+      t = fs.statSync(file).mtimeMs;
+    }
     if (t > newest) newest = t;
   }
   const d = new Date(newest);

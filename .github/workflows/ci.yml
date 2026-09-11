@@ -16,6 +16,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The generated files are stamped with the git COMMIT TIME of their
+          # inputs, so that they are byte-identical in every clone. A shallow
+          # checkout has no commit for those paths, `git log -- <file>` returns
+          # nothing, and the stamp silently falls back to file mtime — which in
+          # CI is the moment of checkout. Full history, or the freshness checks
+          # fail on every run for a reason that looks like nothing.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
