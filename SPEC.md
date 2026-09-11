@@ -2,7 +2,7 @@
 
 **A booklet is one Markdown file that holds a person's work *and* the design of the activities they did it in.** The web page that renders it is a viewer, not the home of anything: a conforming renderer ships **no activities, no booklet and no content of its own**, and everything a reader sees comes out of the file.
 
-A published site may put a *wrapper* around a renderer — a **preset** for a first visit, and a folder of modules to install. The preset is taken only when there is nothing there already, so it can never overwrite somebody's work, and the page has no idea it came from a wrapper rather than from disk. That wrapper is neither the renderer nor this format; it is one way of getting a file and some modules into someone's hands. Hand someone a booklet and they get the activities it describes; hand them a booklet with no content and they get a blank workbook — which is all a *preset* is.
+A published site may put a *wrapper* around a renderer — a **preset** for a first visit, and one or more **registries** of modules to install. The preset is taken only when there is nothing there already, so it can never overwrite somebody's work, and the page has no idea it came from a wrapper rather than from disk. That wrapper is neither the renderer nor this format; it is one way of getting a file and some modules into someone's hands. Hand someone a booklet and they get the activities it describes; hand them a booklet with no content and they get a blank workbook — which is all a *preset* is.
 
 This document is the format. It is deliberately small, it is versioned, and it is published separately from the page that implements it so that something else can read or write these files later. Released under the Apache Licence 2.0, whose explicit patent grant is meant to travel to anyone implementing it.
 
@@ -59,6 +59,43 @@ updated: 2026-09-10 14:25
 1. **The human half is authoritative for any section it contains.** Edit a heading's contents in a text editor and those edits win over the record. A section left out of the Markdown falls back to the record.
 2. **The record is found by its heading and its fenced block, never by the divider.** The divider is a sixty-dash rule and is scenery. Any thematic break — `---`, `***`, `___` — is scenery. This rule exists because a reader typing `---` inside a note once truncated that note on reload.
 3. **Front matter is positional.** Only a `---` on line 1 opens it.
+
+---
+
+## A registry — what somebody offers
+
+A registry is one JSON file listing modules. It is not part of a booklet and
+nothing requires one; it is how a bank of activities is published, and any
+number of them may be read at once.
+
+```jsonc
+{ "registry": 1,
+  "name": { "en": "Activity Kit" },
+  "modules": [
+    { "id": "who/what", "version": "0.1", "file": "what.md",
+      "title": {…}, "blurb": {…}, "engines": ["grid-select"] },
+    { "id": "who/other", "version": "0.1", "module": { … the whole module … } }
+  ] }
+```
+
+**Every entry carries enough to draw the menu** — its name, its description,
+and which engines its module needs. That is the whole point: a page fetches
+one small file rather than every module it might one day offer. Before this
+existed, one implementation was downloading 64KB of modules on every visit to
+render four button labels, and the cost grew with every module added.
+
+- An entry naming a **`file`** is fetched only when somebody adds it. The path
+  resolves against the registry's own URL, the way a link on a page resolves —
+  so it may sit beside the registry, or anywhere else.
+- An entry carrying a **`module`** inline needs no fetch at all, which is what
+  lets a single file be an entire registry.
+- `engines` lets a reader be told *before* downloading anything that their
+  renderer cannot draw a given module.
+
+**Where registries come from is not the format's business.** A wrapper may
+name them, a booklet may name its own, and a person may point at whatever they
+like. A bare JSON array of filenames is the older shape and still readable,
+with no metadata in it and therefore no saving.
 
 ---
 
