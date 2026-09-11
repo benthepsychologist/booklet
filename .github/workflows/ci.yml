@@ -1,15 +1,3 @@
-# ── NOT ACTIVE YET ────────────────────────────────────────────────────────
-# Move this to .github/workflows/ci.yml to turn it on:
-#
-#     git mv setup/pr-checks.yml .github/workflows/ci.yml
-#
-# It lives here because pushing a file under .github/workflows/ needs a token
-# permission ("Workflows: read and write") that the session which wrote it did
-# not have — and that permission lets a token add code which runs with the
-# repository's credentials, so it is worth granting deliberately rather than
-# reflexively. Moving the file by hand needs no permission at all.
-# ──────────────────────────────────────────────────────────────────────────
-
 # Every pull request runs this. A module is text and config, not code, so what
 # there is to check is whether it is VALID and whether it is HONEST about
 # itself — which is exactly what the validator in this repo checks.

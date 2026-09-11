@@ -25,6 +25,20 @@
     "grid-select",
     "svg-regions"
    ]
+  },
+  {
+   "id": "example/the-board",
+   "version": "0.1",
+   "file": "modules/the-board.md",
+   "title": {
+    "en": "The board",
+    "fr": "Le tableau"
+   },
+   "blurb": {
+    "en": "What the work looks like right now. Edited in place, never finished.",
+    "fr": "À quoi ressemble le travail en ce moment. Modifié sur place, jamais terminé."
+   },
+   "engines": []
   }
  ]
 }

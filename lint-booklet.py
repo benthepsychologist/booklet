@@ -48,8 +48,27 @@ BLOCK_TYPES = {"widget", "headlines", "list", "didlog", "group", "text",
 ENGINES = {"svg-regions", "grid-select", "card-board"}
 PLACEMENTS  = {"open", "folded", "hidden"}
 # the map fields a list block may draw its options from
-MAP_FIELDS = {"soothe", "funEnergy", "funTired", "trap", "weekday", "weekend",
-              "lights", "hurts", "stuck", "love", "goodAt", "needs", "paid", "dream"}
+# A board's fields are whatever that board declares. There is no fixed
+# vocabulary: this used to be a hard-coded list of one practice's field names,
+# which meant the reference validator refused every board but theirs.
+def board_fields(tpl):
+    """Every field name any card-board widget in this file holds."""
+    out = set()
+    def take(card):
+        for x in (card.get("lists") or []) + (card.get("prose") or []):
+            name = x.get("field") if isinstance(x, dict) else x
+            if isinstance(name, str):
+                out.add(name)
+    for w in (tpl.get("widgets") or []):
+        if isinstance(w, dict) and w.get("engine") == "card-board":
+            for c in (w.get("cards") or []):
+                if isinstance(c, dict):
+                    take(c)
+    for m in (tpl.get("modules") or []):           # pre-widget files
+        for c in (m.get("map") or []):
+            if isinstance(c, dict):
+                take(c)
+    return out
 STATUSES = {"draft", "approved"}
 
 
@@ -113,6 +132,9 @@ def check_template(f, tpl):
     if not modes and not tpl.get("_widgets_only"):
         err(f, "a booklet needs at least one module with an activity in it")
         return
+    # fields modules say up front they draw on from a board elsewhere
+    declared_reads = {r for m in (tpl.get("modules") or [])
+                      for r in (m.get("reads") or []) if isinstance(r, str)}
     seen_mods = set()
     for m in mods:
         if not isinstance(m, dict) or not isinstance(m.get("id"), str):
@@ -158,9 +180,22 @@ def check_template(f, tpl):
             if "order" in d and not isinstance(d["order"], (int, float)):
                 err(f, f"block {bid!r} has a non-numeric display.order — ordering would fall back to file order")
             if btype == "list":
+                # A list draws from a board field. The board may live in another
+                # module — the spec calls `reads` soft, not a dependency — so a
+                # file carrying no board at all can only be warned about.
+                known = board_fields(tpl)
                 for s in (b.get("source") or []):
-                    if s not in MAP_FIELDS:
-                        err(f, f"block {bid!r} draws from {s!r}, which is not a map field")
+                    if not isinstance(s, str) or not s:
+                        err(f, f"block {bid!r} draws from something that is not a field name")
+                    elif known and s not in known:
+                        err(f, f"block {bid!r} draws from {s!r}, which no board in this file holds "
+                               f"(they hold: {', '.join(sorted(known))})")
+                    elif not known and s not in declared_reads:
+                        # A module that declares `reads` is saying "I draw on a
+                        # board that may not be here" — the spec calls that soft,
+                        # not a dependency, so it is not worth a warning.
+                        warn(f, f"block {bid!r} draws from {s!r}, which no board here holds and "
+                                f"no module declares in `reads`")
                 if not b.get("copy") and not b.get("label"):
                     err(f, f"list block {bid!r} has neither a copy reference nor its own label, "
                            f"so it would render nameless")
@@ -200,14 +235,14 @@ def check_template(f, tpl):
                     err(f, "every map card needs a string id")
                     continue
                 for k in (c.get("lists") or []):
-                    if k not in MAP_FIELDS:
-                        err(f, f"map card {c['id']!r} holds {k!r}, which is not a map field")
+                    if not isinstance(k, str) or not k:
+                        err(f, f"map card {c['id']!r} holds something that is not a field name")
                     if menus and k not in menus:
                         warn(f, f"map card {c['id']!r} offers {k!r} with no menu behind it — "
                                 f"the card works, but its 'find a new one' card has nothing to suggest")
                 for k in (c.get("prose") or []):
-                    if k not in MAP_FIELDS:
-                        err(f, f"map card {c['id']!r} holds prose field {k!r}, which is not a map field")
+                    if not isinstance(k, str) or not k:
+                        err(f, f"map card {c['id']!r} holds a prose field that is not a field name")
 
     # widgets: the data every engine-drawn block depends on
     def named_widgets(blocks, into):
@@ -254,7 +289,7 @@ def check_template(f, tpl):
             cards = w.get("cards") or []
             if not cards:
                 err(f, f"widget {w['id']!r} draws with card-board but has no cards")
-            seen_c = set()
+            seen_c, seen_f = set(), set()
             for c in cards:
                 if not isinstance(c.get("id"), str):
                     err(f, f"widget {w['id']!r}: every card needs a string id")
@@ -268,9 +303,14 @@ def check_template(f, tpl):
                     warn(f, f"widget {w['id']!r}: card {c['id']!r} holds no fields, so it "
                             f"has nothing to show")
                 for fld in fields:
-                    if fld not in MAP_FIELDS:
-                        err(f, f"widget {w['id']!r}: card {c['id']!r} holds {fld!r}, which is "
-                               f"not a board field")
+                    if not isinstance(fld, str) or not fld:
+                        err(f, f"widget {w['id']!r}: card {c['id']!r} holds something that is "
+                               f"not a field name")
+                    elif fld in seen_f:
+                        err(f, f"widget {w['id']!r}: two cards both hold {fld!r} — a field is "
+                               f"an address, and two cards writing to one is a collision")
+                    else:
+                        seen_f.add(fld)
                 for lst in (c.get("lists") or []):
                     fld = lst.get("field") if isinstance(lst, dict) else lst
                     if (w.get("menus") or {}) and fld not in (w.get("menus") or {}):
