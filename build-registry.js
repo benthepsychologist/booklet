@@ -105,10 +105,10 @@ function build() {
   }
   return {
     registry: 1,
-    name: { en: "Booklet examples", fr: "Exemples Booklet" },
+    name: { en: "Booklet module registry", fr: "Registre de modules Booklet" },
     description: {
-      en: "Worked examples of the booklet format. Nothing here is advice of any kind.",
-      fr: "Exemples du format booklet. Rien ici ne constitue un conseil.",
+      en: "Format demonstrations, general-purpose activities, and attributed modules carrying their own terms. A listing is not an endorsement or safety certification.",
+      fr: "Démonstrations du format, activités générales et modules attribués avec leurs propres conditions. Une inscription ne constitue ni une approbation ni une certification de sécurité.",
     },
     modules,
   };
@@ -174,7 +174,7 @@ and downloads a module only when somebody adds it.</p>
 <p class="note">A module is Markdown with one fenced JSON block — text and config,
 no code. Open a pull request; see
 <a href="https://github.com/benthepsychologist/booklet/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.
-This list carries examples, not advice of any kind.</p>
+This registry is an index, not an endorsement or safety certification.</p>
 </body></html>
 `;
 }
