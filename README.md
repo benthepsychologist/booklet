@@ -42,9 +42,14 @@ This is the distinction the whole design rests on, and it is easy to get backwar
 | --- | --- | --- |
 | **The renderer** | one static HTML file. It holds **engines** — the ability to make an SVG's regions clickable, to lay out a grid of selectable words, to open cards one at a time — and its own interface strings. **It holds no activities and no content.** | this repo |
 | **The booklet** | the file above. Every activity, every question, every word a reader sees, and everything they wrote. **All state lives here.** | the reader's device |
-| **The wrapper** | what a website puts *around* a renderer: a starter booklet for a first visit, a folder of modules someone may install. Neither the renderer nor the format — just one way of getting a file into somebody's hands. | whoever publishes it |
+| **The wrapper** | what a website puts *around* a renderer: a preset booklet and one or more registries of modules someone may install. Neither the renderer nor the format — just one way of getting a file into somebody's hands. | whoever publishes it |
 
-**The renderer stores nothing.** It is not a source of truth for anything, because it is rendered output — a viewer. Hand it a booklet and it draws that booklet. Hand it a booklet describing activities it has never heard of and it draws those too, as long as they are built from engines it has.
+**The renderer is not a content store or source of truth.** It is rendered
+output — a viewer. This reference implementation caches in-progress work in the
+browser so a closed tab is recoverable, but the portable artifact is the
+booklet file and the format does not require browser storage. Hand the renderer
+a booklet and it draws that booklet. Hand it activities it has never heard of
+and it draws those too, as long as they use engines it has.
 
 ---
 
@@ -70,7 +75,7 @@ This is the distinction the whole design rests on, and it is easy to get backwar
 | [`SPEC.md`](SPEC.md) | the format, versioned and published separately from anything that implements it |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
 | [`examples/`](examples/) | a complete booklet you can open |
-| [`modules/`](modules/), [`widgets/`](widgets/) | a worked activity and the two widgets it draws with |
+| [`modules/`](modules/), [`widgets/`](widgets/) | generic examples and separately licensed registry content, plus the widgets they draw with |
 | [`test/`](test/) | the suite, run with `test/run.sh` |
 | [`build-example.js`](build-example.js) | writes the example booklet through the renderer itself |
 | [`registry.json`](registry.json) | the examples registry — what this repo offers |
@@ -135,16 +140,21 @@ can point their file wherever they like.
 See [`SPEC.md`](SPEC.md) for the format and [`CONTRIBUTING.md`](CONTRIBUTING.md)
 for how to add to this one.
 
-⛔ **This registry carries examples, not advice.** Nothing in it is health,
-medical, legal or financial guidance, and modules offering any are declined —
-the words in a booklet reach people unmediated, and nobody here can check
-whether they are safe for whoever opens them.
+**This registry is an index, not an endorsement.** It carries format
+demonstrations, general-purpose activities, and attributed professional content
+whose ownership and distribution terms travel in its `rights` block. A listing
+does not certify that a module is suitable, safe, or useful for a particular
+person. Anyone may publish a separate registry under their own policy.
 
 ---
 
 ## Status
 
-**Version 1 of the format, draft. Record format v6.** In production in one place, which is the only implementation so far. Nothing outside that depends on the format yet, so it can still change; once something does, it changes by version.
+**Version 1 of the format is draft; record format v6 is live.** The Activity
+Kit website and its published modules depend on it, using this repository's
+reference renderer. There is no second independent implementation yet. The
+draft may still evolve, but compatibility-breaking changes require a new
+version rather than silently changing existing files.
 
 ### What is licensed how
 

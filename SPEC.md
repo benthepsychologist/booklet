@@ -2,11 +2,23 @@
 
 **A booklet is one Markdown file that holds a person's work *and* the design of the activities they did it in.** The web page that renders it is a viewer, not the home of anything: a conforming renderer ships **no activities, no booklet and no content of its own**, and everything a reader sees comes out of the file.
 
-A published site may put a *wrapper* around a renderer — a **preset** for a first visit, and one or more **registries** of modules to install. The preset is taken only when there is nothing there already, so it can never overwrite somebody's work, and the page has no idea it came from a wrapper rather than from disk. That wrapper is neither the renderer nor this format; it is one way of getting a file and some modules into someone's hands. Hand someone a booklet and they get the activities it describes; hand them a booklet with no content and they get a blank workbook — which is all a *preset* is.
+A published site may put a *wrapper* around a renderer — a **preset** and one
+or more **registries** of modules to install. A preset supplies the site's
+booklet design; it must never overwrite somebody's entries. The reference
+renderer reapplies that design when browser-restored entries have no booklet
+design around them, because browser caching is not part of this format. The
+page otherwise treats the preset like a file loaded from disk. That wrapper is
+neither the renderer nor this format; it is one way of getting a file and some
+modules into someone's hands. Hand someone a booklet and they get the
+activities it describes; hand them a booklet with no content and they get a
+blank workbook — which is all a *preset* is.
 
 This document is the format. It is deliberately small, it is versioned, and it is published separately from the page that implements it so that something else can read or write these files later. Released under the Apache Licence 2.0, whose explicit patent grant is meant to travel to anyone implementing it.
 
-> **Status: version 1, draft.** Record format v6 (per-block). Checked by `lint-booklet.py` in this repository. Nothing outside this repository depends on it yet, so it can still change; once something does, it changes by version.
+> **Status: version 1, draft.** Record format v6 (per-block), checked by
+> `lint-booklet.py`. The Activity Kit production site uses this format and the
+> reference renderer; no independent implementation exists yet. Compatible
+> additions may extend version 1, while breaking changes require a new version.
 
 ---
 

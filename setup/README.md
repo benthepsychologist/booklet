@@ -1,6 +1,8 @@
-# Turning the rest of it on
+# Deployment reference
 
-Two steps, both one-time. Neither needs a token.
+The public repository is already configured. These are the settings that make
+the registry and its pull-request checks work, kept here so another registry can
+reproduce them. Neither requires a token.
 
 ## 1. GitHub Pages — serves the registry
 

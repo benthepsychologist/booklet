@@ -6,16 +6,16 @@ which is why adding one is a pull request and not a security review.
 
 ## What this registry is, and what it is not
 
-This is the **examples** registry. What belongs here is a module that shows the
-format doing something — a shape somebody else can copy. It is deliberately
-small and curated.
+This is a curated **public module registry** with three kinds of content:
+format demonstrations, general-purpose activities, and attributed modules whose
+authors retain their own copyright and state their own distribution terms.
 
-⛔ **It is not a place for advice.** No health, medical, legal or financial
-guidance, and nothing that tells a reader what to do about their own situation.
-A booklet is a workbook; the words in it reach people unmediated, and neither
-this repository nor its maintainers are in a position to check whether they are
-safe for whoever opens them. A module that offers advice will be declined, no
-matter how good it is.
+**A listing is not an endorsement or safety review.** The words in a booklet
+reach people directly. A submission must identify its author/source and terms,
+must describe itself honestly, and must not imply that inclusion here certifies
+fitness for a particular person. Review establishes that the module is valid,
+portable, attributable, and accurately represented; it does not establish that
+its claims are universally appropriate.
 
 **Anyone may run their own registry** — see [`SPEC.md`](SPEC.md). It is one JSON
 file on any host that serves CORS, so nothing here is a gate on what you can
@@ -52,7 +52,7 @@ widget engines. Copy it.
 
 ## Rules that are actually checked
 
-These run on every pull request once the check workflow is enabled, and you can
+These run on every pull request, and you can
 run them yourself first either way:
 
 | | |
