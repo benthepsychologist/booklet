@@ -1851,7 +1851,7 @@ function qField(obj,key,scope,qkey,opt={}){const u=T[lang].ui;const box=el("div"
       const insert=txt=>{obj[key]=nonEmpty(obj[key])?obj[key].trim()+", "+txt:txt;w.ta.value=obj[key];mark();w.grow();if(opt.st&&opt.st.has()){opt.st.clear();w.ta.classList.remove("starter");w.querySelector(".startertag")?.remove();}drawSave();};
       q.options.forEach(o=>chips.append(el("button",{type:"button",class:"opt",onclick:()=>insert(o)},o)));
       (opt.recency||[]).filter(r=>!q.options.includes(r)).forEach(r=>chips.append(el("button",{type:"button",class:"opt recent",title:u.fromCheckin,onclick:()=>insert(r)},r)));
-      chips.append(editBtn);
+      if(editBtn) chips.append(editBtn);
       const save=el("div",{class:"saveopt"});
       const drawSave=()=>{save.innerHTML="";const v=(obj[key]||"").trim().split("\n")[0].trim();const parts=splitList(v);
         if(nonEmpty(v)&&!q.options.includes(v)&&!(parts.length>1&&parts.every(x=>q.options.includes(x)))) save.append(el("button",{type:"button",class:"linkbtn",onclick:()=>{qSet(scope,qkey,{options:[...q.options,v]});drawAnswer();if(editor){editor.remove();editor=qEditor(scope,qkey,()=>drawAnswer());box.append(editor);}toast(u.kept);}},u.saveOption));};
@@ -1861,7 +1861,7 @@ function qField(obj,key,scope,qkey,opt={}){const u=T[lang].ui;const box=el("div"
       if(!q.options.length) pills.append(el("span",{class:"hint"},u.needOptions));
       q.options.forEach(o=>{const on=chosen().includes(o);pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(on),onclick:()=>{let c=chosen();
         if(q.rawType==="single") c=on?[]:[o]; else c=on?c.filter(x=>x!==o):[...c,o];obj[key]=c.join(", ");mark();if(opt.st&&opt.st.has()) opt.st.clear();drawAnswer();}},o));});
-      pills.append(editBtn);answer.append(pills);
+      if(editBtn) pills.append(editBtn);answer.append(pills);
       if(nonEmpty(obj[key])&&!chosen().every(x=>q.options.includes(x))) answer.append(el("p",{class:"hint"},obj[key]));}};
   box.append(answer);drawAnswer();return box;}
 
@@ -2388,7 +2388,20 @@ function entryCard(e,type,onDelete){const t=T[lang];const u=t.ui;const card=el("
   if(type==="today"&&nonEmpty(e.contact)) when.append(el("span",{class:"area"},contactText(e.contact)));
   card.append(when);
   const dl=el("dl",{});
-  if(type==="today"){ for(const k of TODAY_KEYS) if(nonEmpty(e[k])) dl.append(el("dt",{},Q("today",k).label),el("dd",{},e[k].trim())); }
+  if(type==="today"){
+    /* A module may define list and tick-list fields that predate none of the
+       renderer's legacy TODAY_KEYS. Kept entries must be drawn from the
+       module's blocks too, or the data survives in the file but disappears
+       from the visible history card. */
+    const shown=new Set();
+    for(const b of blocksOf("today")){
+      if((b.type==="list"||b.type==="didlog")&&Array.isArray(e[b.id])&&e[b.id].length){
+        const def=b.type==="list"?copyAt(b.copy,[b.id,""]):null;
+        const label=tx(b.label,def?def[0]:blockName(b));
+        dl.append(el("dt",{},label),el("dd",{},e[b.id].join(" · ")));shown.add(b.id);}}
+    for(const k of TODAY_KEYS) if(!shown.has(k)&&nonEmpty(e[k]))
+      dl.append(el("dt",{},Q("today",k).label),el("dd",{},e[k].trim()));
+  }
   else { for(const k of BODY_KEYS) if(nonEmpty(e.body[k])) dl.append(el("dt",{},Q("checkin",k).label),el("dd",{},e.body[k].trim()));
     if((e.regions||[]).length){const w=el("div",{class:"emos"});
       e.regions.forEach(r=>w.append(el("span",{class:"emo",style:"background:var(--paper-deep)"},regionLabel(r.id)+" — "+r.s.map(senseLabel).join(", "))));
