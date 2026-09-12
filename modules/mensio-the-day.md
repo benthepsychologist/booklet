@@ -1,8 +1,8 @@
 ---
 module: mensio/the-day
-version: 0.1
+version: 0.2
 status: approved
-approved: 2026-09-10
+approved: 2026-09-12
 lang: en
 ---
 
@@ -29,7 +29,7 @@ Removing it is the same editor, or deleting this block from the file. **Your ent
 {
  "block": "module",
  "id": "mensio/the-day",
- "version": "0.1",
+ "version": "0.2",
  "title": {
   "en": "Have a good day",
   "fr": "Passer une bonne journée"
@@ -62,12 +62,8 @@ Removing it is the same editor, or deleting this block from the file. **Your ent
    "lead": "today.p",
    "note": "today.adequate"
   },
-  "chrome": [
-   "areas"
-  ],
-  "keep": [
-   "area"
-  ],
+  "chrome": [],
+  "keep": [],
   "blocks": [
    {
     "id": "needs",
