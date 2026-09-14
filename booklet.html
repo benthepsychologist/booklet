@@ -476,6 +476,17 @@
            color:var(--ink);border-radius:999px;padding:.32rem .5rem .32rem .85rem;font-size:.93rem;font-weight:600;line-height:1.2}
   .mapchip .x{border:0;background:transparent;color:var(--muted);font-size:1.05rem;line-height:1;padding:0 .25rem;border-radius:50%}
   .mapchip .x:hover{color:var(--warn);background:#fff}
+  /* tagInput: a comma-separated, suggest-as-you-type word field (body map,
+     emotions grid). Its own identity, close to .mapchip/.pills but kept
+     separate in case the two widgets want to diverge later — e.g. a
+     sense-word chip taking its sense group's own accent color. */
+  .tagfield{margin:0 0 .7rem}
+  .tagfield .hint{margin:0 0 .3rem}
+  .tagchips{display:flex;gap:.35rem;flex-wrap:wrap;margin:.4rem 0 0}
+  .tagchip{display:inline-flex;align-items:center;gap:.3rem;border:2px solid var(--accent);background:var(--accent-soft);
+           color:var(--ink);border-radius:999px;padding:.28rem .45rem .28rem .75rem;font-size:.88rem;font-weight:600;line-height:1.2}
+  .tagchip .x{border:0;background:transparent;color:var(--muted);font-size:1rem;line-height:1;padding:0 .2rem;border-radius:50%}
+  .tagchip .x:hover{color:var(--warn);background:#fff}
   .mapprose{display:flex;flex-direction:column;gap:.5rem;margin:0 0 1.4rem}
   .mprow{border-left:5px solid var(--accent);background:#fff;border-radius:0 10px 10px 0;padding:.5rem .8rem;font-size:.97rem}
   .mprow .r{display:block;font-family:var(--sans);font-weight:800;font-size:.76rem;text-transform:uppercase;letter-spacing:.03em;color:var(--accent);margin-bottom:.15rem}
@@ -572,6 +583,7 @@ T.en = {
     loadOr:"Or paste the file's contents:", loadCancel:"Cancel", loadGo:"Load",
     loadErr:"That text does not look like a file saved from this page. Nothing was changed.",
     unknownBlock:(type,id)=>`This page does not know how to draw a "${type}" (${id}). The rest of the activity is unaffected.`,
+    tagPh:"Type or say words, separated by commas", tagHint:"Suggestions come from the words below, but anything you type or say is kept too.",
     missingWidget:id=>`This activity needs a widget the file does not carry (${id}). Load the booklet it came from, or add the module that brings it.`,
     missingEngine:e=>`This page cannot draw a "${e}" — it is an older version of the app than the booklet expects.`,
     lostBlocks:(n,which)=>`${n} section${n===1?"":"s"} of the file could not be read and ${n===1?"was":"were"} left out${which?" ("+which+")":""}. Everything else loaded.`,
@@ -793,6 +805,7 @@ T.fr = {
     loadOr:"Ou collez le contenu du fichier :", loadCancel:"Annuler", loadGo:"Charger",
     loadErr:"Ce texte ne ressemble pas à un fichier sauvegardé depuis cette page. Rien n’a été modifié.",
     unknownBlock:(type,id)=>`Cette page ne sait pas dessiner un « ${type} » (${id}). Le reste de l’activité n’est pas touché.`,
+    tagPh:"Tapez ou dictez des mots, séparés par des virgules", tagHint:"Les suggestions viennent des mots ci-dessous, mais tout ce que vous tapez ou dictez est aussi gardé.",
     missingWidget:id=>`Cette activité a besoin d’un élément que le fichier ne contient pas (${id}). Chargez le carnet d’origine, ou ajoutez le module qui l’apporte.`,
     missingEngine:e=>`Cette page ne sait pas dessiner un « ${e} » — c’est une version plus ancienne que ce que le carnet attend.`,
     lostBlocks:(n,which)=>`${n} section${n===1?"":"s"} du fichier n’${n===1?"a":"ont"} pas pu être lue${n===1?"":"s"} et ${n===1?"a été laissée":"ont été laissées"} de côté${which?" ("+which+")":""}. Tout le reste a été chargé.`,
@@ -1086,6 +1099,7 @@ T.fr.explore = {
    a `data-r` region id — let a person point at a region and say what it is
    like there. The renderer knows the interaction; the widget knows the body. */
 function svgRegions(e,W,keys){const key=(keys&&keys[0])||"regions";
+  const u=T[lang].ui;
   const C=(W.copy||{})[lang]||(W.copy||{}).en||{};
   const figs=W.figures||[];
   const labelOf=id=>{const r=(W.regions||[]).find(x=>x.id===id);return r?wtx(r.label,id):id;};
@@ -1121,9 +1135,34 @@ function svgRegions(e,W,keys){const key=(keys&&keys[0])||"regions";
   const drawChips=()=>{chips.innerHTML="";(W.chips||[]).forEach(id=>{
       chips.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(!!rowFor(id)||active===id),
         onclick:()=>setActive(id)},labelOf(id)));});};
+  /* The label for a sense code, and back again. A typed/dictated word that
+     matches no known sense stays a freeform code exactly as typed — the
+     same fallback senseWord() already uses for a code it doesn't
+     recognise, which is what lets it round-trip through a saved file. */
+  const labelToSense=label=>{for(const g of (W.senses||[])) for(const w of (g.words||[]))
+      if(norm(wtx(w.label,w.id))===norm(label)) return w.id;
+    return label;};
   const drawPanel=()=>{panel.innerHTML="";
     if(!active){panel.append(el("p",{class:"hint",style:"margin:0"},C.none||""));return;}
     panel.append(el("h4",{},labelOf(active)),el("p",{class:"hint",style:"margin:0"},C.pick||""));
+    panel.append(tagInput({
+      values:()=>((rowFor(active)||{}).s||[]).map(senseWord),
+      vocab:()=>(W.senses||[]).flatMap(g=>(g.words||[]).map(w=>({id:w.id,label:wtx(w.label,w.id)}))),
+      /* Typing here must never rebuild this panel — that would destroy the
+         very field being typed into, the bug Task 1 fixed elsewhere in the
+         editor. drawChips/drawSummary live outside this panel and are safe
+         to refresh immediately; the sense-word buttons just below reflect
+         a typed change the next time anything else redraws them (clicking
+         one, or switching region) — the same kind of accepted, low-stakes
+         staleness Task 1 accepted for a template-shared field, traded for
+         never touching a field someone is actively typing or dictating
+         into. */
+      onChange:labels=>{const codes=labels.map(labelToSense);
+        let r=rowFor(active);
+        if(codes.length){if(!r){r={id:active,s:[]};e[key]=[...rows(),r];}r.s=codes;}
+        else if(r) e[key]=rows().filter(x=>x!==r);
+        mark();drawChips();drawSummary();},
+      placeholder:u.tagPh||"",hint:u.tagHint||""}).el);
     (W.senses||[]).forEach(g=>{
       const set=el("div",{class:"senseset"},el("div",{class:"lbl2"},wtx(g.label,g.id)));
       const ws=el("div",{class:"sensewrap"});
@@ -1159,6 +1198,7 @@ function svgRegions(e,W,keys){const key=(keys&&keys[0])||"regions";
    picture of it — and so the cell names appear exactly once, on the widget,
    instead of being copied into whatever prose describes them. */
 function gridSelect(e,W,keys,opts){opts=opts||{};const key=(keys&&keys[0])||"emotions";
+  const u=T[lang].ui;
   const cells=W.cells||[];const ax=W.axes||{};
   const chosen=()=>e[key]||(e[key]=[]);
   const extra=id=>id.startsWith("x|");
@@ -1171,16 +1211,51 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=(keys&&keys[0])||"emo
   const grid=el("div",{class:"quad",role:"group"});
   cells.forEach((c,ci)=>{const qb=el("div",{class:"q",style:cellStyle(c,ci)},el("div",{class:"qn"},wtx(c.label,c.id)));
     const btns=el("div",{class:"qb"});
-    const ids=[...(W.items||[]).filter(i=>i.cell===c.id).map(i=>i.id),
+    let tag=null;
+    const idsFor=()=>[...(W.items||[]).filter(i=>i.cell===c.id).map(i=>i.id),
                ...((S.emo.extra[c.id]||[]).map(w=>"x|"+c.id+"|"+w))];
-    ids.forEach(id=>{
-      if(opts.readonly){btns.append(el("span",{class:"emw"},itemLabel(id)));return;}
-      const on=chosen().includes(id);
-      const bt=el("button",{type:"button",class:"emb","aria-pressed":String(on)},itemLabel(id));
-      bt.addEventListener("click",()=>{const now=chosen().includes(id);
-        e[key]=now?chosen().filter(x=>x!==id):[...chosen(),id];
-        bt.setAttribute("aria-pressed",String(!now));mark();});
-      btns.append(bt);});
+    const drawBtns=()=>{btns.innerHTML="";
+      idsFor().forEach(id=>{
+        if(opts.readonly){btns.append(el("span",{class:"emw"},itemLabel(id)));return;}
+        const on=chosen().includes(id);
+        const bt=el("button",{type:"button",class:"emb","aria-pressed":String(on)},itemLabel(id));
+        bt.addEventListener("click",()=>{const now=chosen().includes(id);
+          e[key]=now?chosen().filter(x=>x!==id):[...chosen(),id];
+          bt.setAttribute("aria-pressed",String(!now));mark();
+          /* Keep the tag field's own chips/text in sync with a button
+             click too — never the other way of touching tag's own input,
+             just a data-only refresh (see tagInput.refresh). */
+          if(tag) tag.refresh();});
+        btns.append(bt);});};
+    drawBtns();
+    if(!opts.readonly){
+      /* One instance per cell, always visible — unlike svg-regions there is
+         no "active" region to scope to. Freeform words live in two places
+         at once: the id array (as "x|cellId|word", the existing encoding)
+         and S.emo.extra[c.id] (a plain word list a second, separate editor
+         already writes to) — onChange keeps both in sync so a word typed
+         here shows up in that other editor too, and vice versa. */
+      const known=(W.items||[]).filter(i=>i.cell===c.id);
+      tag=tagInput({
+        values:()=>[...known.filter(k=>chosen().includes(k.id)).map(k=>itemLabel(k.id)),
+                    ...chosen().filter(id=>id.startsWith("x|"+c.id+"|")).map(itemLabel)],
+        vocab:()=>known.map(k=>({id:k.id,label:wtx(k.label,k.id)})),
+        /* Typing here must never rebuild this field's own DOM (the Task 1
+           bug, reintroduced). The button row below carries no in-progress
+           typing of its own, so redrawing it immediately is safe and keeps
+           a freshly-typed freeform word visible as a real toggle button
+           right away, not just as text. */
+        onChange:labels=>{
+          const otherCellIds=chosen().filter(id=>!id.startsWith("x|"+c.id+"|")&&!known.some(k=>k.id===id));
+          const newIds=[],newExtra=[];
+          labels.forEach(label=>{
+            const match=known.find(k=>norm(wtx(k.label,k.id))===norm(label));
+            if(match) newIds.push(match.id);else{newIds.push("x|"+c.id+"|"+label);newExtra.push(label);}});
+          e[key]=[...otherCellIds,...newIds];
+          S.emo.extra[c.id]=newExtra;
+          mark();drawBtns();},
+        placeholder:u.tagPh||"",hint:u.tagHint||""});
+      qb.append(tag.el);}
     qb.append(btns);grid.append(qb);});
   wrap.append(grid,el("div",{class:"ax v r",style:"grid-column:3;grid-row:2"},wtx(ax.right,"")),
               el("div",{class:"ax",style:"grid-column:2;grid-row:3"},wtx(ax.bottom,"")));
@@ -1728,6 +1803,101 @@ const minuteKey=ts=>localStamp(new Date(ts));
 const norm=s=>String(s).toLowerCase().replace(/[’‘`´]/g,"'").replace(/[—–]/g,"-").replace(/\s+/g," ").trim();
 const nonEmpty=v=>(v||"").trim().length>0;
 const splitList=s=>String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+/* A tag field holds several comma-separated words. Everything before the
+   last comma is confirmed (splitList already gives "trimmed, non-empty,
+   in order" for that); the text after it is still being typed or dictated
+   and stays uncommitted until a comma, Enter, or blur turns it into one
+   more confirmed word. */
+const parseTagValue=raw=>{const s=String(raw||"");const i=s.lastIndexOf(",");
+  return i<0?{confirmed:[],inProgress:s.trim()}
+            :{confirmed:splitList(s.slice(0,i)),inProgress:s.slice(i+1).trim()};};
+/* Vocabulary suggestions for whatever's typed after the last comma. Exact
+   normalized substring match only — norm() equality is already how this
+   file decides "the same word" everywhere else (e.g. matching typed text
+   to a known emotion id), and a handful of words per widget needs no fuzzy
+   scoring. An empty fragment matches everything, so a bare trailing comma
+   prompts the full remaining vocabulary rather than nothing. */
+const matchVocab=(fragment,vocab)=>{const f=norm(fragment||"");
+  return (vocab||[]).filter(v=>norm(v.label||"").includes(f));};
+/* Typing the same word twice (by hand, not via a suggestion — addWord and
+   the suggestion list already avoid offering a word twice) is a no-op,
+   same rule cardBoard's listBlock/explore already use for their own
+   freeform adds. Keeps the first occurrence's exact casing/spelling. */
+const dedupeLabels=arr=>{const seen=new Set();
+  return (arr||[]).filter(x=>{const k=norm(x);if(seen.has(k)) return false;seen.add(k);return true;});};
+
+/* ======================= tagInput =======================
+   A comma-separated, suggest-as-you-type field over a small vocabulary,
+   shared by svg-regions and grid-select: type or dictate several words,
+   see them as chips, get suggestions from the widget's own vocabulary
+   while still being free to add a word that isn't in it. The whole
+   selection is re-derived from the field's text on every keystroke, so
+   backspacing a word out of the text removes it — no separate remove path
+   to keep in sync with what's visibly there.
+
+   opts: {values():current labels in order, vocab():[{id,label}] to
+   suggest from, onChange(labels): replace the selection with exactly
+   these labels, placeholder, hint}. onChange must never rebuild anything
+   this field's own DOM lives inside — see Task 1's fix in blockFrame for
+   why rebuilding the node being typed into is the actual bug, not a
+   stylistic preference. */
+let tagInputSeq=0;
+function tagInput(opts){
+  const dlId="taglist"+(++tagInputSeq);
+  const wrap=el("div",{class:"tagfield"});
+  if(opts.hint) wrap.append(el("p",{class:"hint"},opts.hint));
+  const inp=el("input",{type:"text",class:"field",style:"min-height:0",
+    placeholder:opts.placeholder||"",list:dlId,"aria-label":opts.placeholder||""});
+  const dl=el("datalist",{id:dlId});
+  const chips=el("div",{class:"tagchips"});
+
+  const drawChips=()=>{chips.innerHTML="";
+    (opts.values()||[]).forEach(label=>chips.append(el("span",{class:"tagchip"},label,
+      el("button",{type:"button",class:"x",onclick:()=>{
+        opts.onChange((opts.values()||[]).filter(x=>x!==label));refresh();}},"×"))));};
+
+  /* Datalist only ever matches/replaces the WHOLE input value, which is
+     wrong for a multi-value field — so every option is written out as the
+     full replacement string ("everything already confirmed" + this one
+     candidate), not just the candidate word on its own. */
+  const drawSuggestions=inProgress=>{dl.innerHTML="";
+    const confirmed=opts.values()||[];
+    const prefix=confirmed.length?confirmed.join(", ")+", ":"";
+    const already=new Set(confirmed.map(norm));
+    matchVocab(inProgress,(opts.vocab()||[]).filter(v=>!already.has(norm(v.label))))
+      .slice(0,8).forEach(v=>dl.append(el("option",{value:prefix+v.label})));};
+
+  /* Only ever touches inp.value when the field is NOT the one the person
+     is actively typing into — a button click elsewhere, for instance.
+     Never resets it out from under an in-progress keystroke. */
+  const refresh=()=>{if(document.activeElement!==inp) inp.value=(opts.values()||[]).join(", ");
+    drawChips();drawSuggestions(parseTagValue(inp.value).inProgress);};
+
+  inp.addEventListener("input",()=>{
+    const {confirmed,inProgress}=parseTagValue(inp.value);
+    const next=dedupeLabels(confirmed);
+    const cur=opts.values()||[];
+    if(next.join(" ")!==cur.join(" ")) opts.onChange(next);
+    drawChips();drawSuggestions(inProgress);});
+  /* A dangling in-progress word (typed but no trailing comma yet) commits
+     on blur, so nothing typed or dictated is silently dropped. */
+  inp.addEventListener("blur",()=>{
+    const {confirmed,inProgress}=parseTagValue(inp.value);
+    const next=dedupeLabels(inProgress?[...confirmed,inProgress]:confirmed);
+    const cur=opts.values()||[];
+    if(next.join(" ")!==cur.join(" ")) opts.onChange(next);
+    refresh();});
+
+  refresh();
+  wrap.append(inp,dl,chips);
+  return {el:wrap,refresh,
+    /* A vocabulary button commits a word the same way typing does: append
+       to whatever's already in the field, then run the identical
+       parse-and-commit path — not a cursor-aware splice. */
+    addWord:label=>{const cur=opts.values()||[];
+      if(cur.some(x=>norm(x)===norm(label))) return;
+      opts.onChange(dedupeLabels([...cur,label]));refresh();}};}
+
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),3400);}
 const LS_KEY="useful-next-step.v1";
 let storageOk=true, saveTimer=null, remindShown=false;
@@ -2033,7 +2203,8 @@ function blockFrame(b,draft,modeId,ctx){const t=T[lang].blockEdit;
   const wrap=el("div",{class:"bframe"});
   const open=ctx.openId===b.id;
   const head=el("div",{class:"bhead"});
-  head.append(el("span",{class:"blabel"},blockName(b)),
+  const blabelEl=el("span",{class:"blabel"},blockName(b));
+  head.append(blabelEl,
               el("span",{class:"btype"},T[lang].blockEdit.kinds[b.type]||b.type||"text"));
   const acts=el("span",{class:"bacts"});
   const list=ctx.list();
@@ -2049,14 +2220,27 @@ function blockFrame(b,draft,modeId,ctx){const t=T[lang].blockEdit;
     el("button",{type:"button",class:"small danger",title:t.remove,onclick:()=>ctx.remove(b.id)},"×"));
   head.append(acts);
   wrap.append(head);
-  wrap.append(el("div",{class:"bbody"},renderBlock(b,draft,modeId)));
-  if(open) wrap.append(el("div",{class:"beditor"},blockEditorFor(b,ctx)));
+  const bodyEl=el("div",{class:"bbody"},renderBlock(b,draft,modeId));
+  wrap.append(bodyEl);
+  /* A plain field edit only ever needs to refresh THIS block's own label and
+     preview — never the rest of the list, and never the field someone is
+     typing into. ctx.redraw() tore down and rebuilt the whole block list on
+     every keystroke, which is both wasteful and (because it destroys the
+     very input being typed into) the cause of losing focus after every
+     character. Only a structural change — add/remove/reorder a block or a
+     widget item, open/close a panel — still goes through ctx.redraw(); see
+     blockCtx below. */
+  const refreshPreview=()=>{blabelEl.textContent=blockName(b);
+    bodyEl.innerHTML="";bodyEl.append(renderBlock(b,draft,modeId));};
+  if(open) wrap.append(el("div",{class:"beditor"},blockEditorFor(b,ctx,refreshPreview)));
   return wrap;}
 
 /* the editor for one block, by kind. Each is small; together they are the
-   whole of "edit anything on this page". */
-function blockEditorFor(b,ctx){const t=T[lang].blockEdit;const box=el("div",{});
-  const save=fn=>{ctx.mutate(x=>fn(x));ctx.redraw();};
+   whole of "edit anything on this page". refreshPreview updates this one
+   block's header/preview without touching whatever field is being typed
+   into — see blockFrame. */
+function blockEditorFor(b,ctx,refreshPreview){const t=T[lang].blockEdit;const box=el("div",{});
+  const save=fn=>{ctx.mutate(x=>fn(x));refreshPreview();};
   const row=(label,node)=>el("div",{class:"qrow"},el("span",{},label),node);
   const field=(value,ph,onInput,rows)=>{
     const n=rows?el("textarea",{class:"field",rows,placeholder:ph||""})
@@ -2094,14 +2278,19 @@ function blockEditorFor(b,ctx){const t=T[lang].blockEdit;const box=el("div",{});
                  row(t.altText,field(b.alt,t.altPh,v=>save(x=>{x.alt=v;}))),
                  el("p",{class:"hint"},T[lang].pageEdit.imageNote));break;
     case "text": case "headlines":
-      box.append(qEditor(b.q[0],b.q[1],()=>ctx.redraw()));break;
+      box.append(qEditor(b.q[0],b.q[1],refreshPreview));break;
     case "list":
       box.append(nameRowFor(),
         row(t.hint,field(tx(b.hint,""),"",v=>save(x=>{x.hint={...(typeof x.hint==="object"?x.hint:{}),[lang]:v};}))),
         row(t.drawsFrom,field((b.source||[]).join(", "),"weekday, weekend",
           v=>save(x=>{x.source=splitList(v);}))));
+      /* This edits a template-level menu (tt.menus[k]) another, currently
+         closed "list" block could also read — refreshPreview only updates
+         THIS block, so a different block sharing the same source key won't
+         visibly update until something structural touches it. Accepted: low
+         consequence, self-corrects the moment anything else redraws. */
       (b.source||[]).forEach(k=>box.append(row(t.optionsFor(k),
-        field(menuOf(k).join(", "),"",v=>{editTemplate(tt=>{tt.menus={...(tt.menus||{}),[k]:splitList(v)};});ctx.redraw();}))));
+        field(menuOf(k).join(", "),"",v=>{editTemplate(tt=>{tt.menus={...(tt.menus||{}),[k]:splitList(v)};});refreshPreview();}))));
       break;
     case "didlog":
       box.append(nameRowFor(),
@@ -2112,7 +2301,7 @@ function blockEditorFor(b,ctx){const t=T[lang].blockEdit;const box=el("div",{});
       const W=widgetOf(b.widget);
       box.append(nameRowFor());
       if(!W){box.append(el("p",{class:"hint"},T[lang].ui.missingWidget(b.widget||"?")));break;}
-      box.append(widgetEditor(W,()=>ctx.redraw()));break;}
+      box.append(widgetEditor(W,refreshPreview));break;}
     default:
       box.append(el("p",{class:"hint"},t.noEditor));}
 

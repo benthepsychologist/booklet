@@ -39,6 +39,16 @@ Pages-backed module registry.
   built-in activities — the renderer no longer needs to know a mode by name to
   show its kept entries. An `entry` mode may also set `upsert:"day"` to keep
   one entry per calendar day (a daily log) instead of one per Finalize.
+- **Editing keeps focus.** Typing anywhere in "edit this page" mode used to
+  lose focus after every character, because a field-level edit rebuilt the
+  entire block list. Now only a block's own header/preview refreshes on a
+  field edit; a full rebuild happens only for a genuine structural change
+  (add/remove/reorder a block or widget item, open/close a panel).
+- **A suggest-as-you-type word field** sits alongside the vocabulary buttons
+  in `svg-regions` and `grid-select`: type or dictate several comma-separated
+  words, get suggestions from the widget's own vocabulary via a native
+  `<datalist>`, and add a word that isn't in it. Buttons stay, reading and
+  writing the same underlying data — no format change.
 
 ## Ownership boundaries
 

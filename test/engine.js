@@ -11,6 +11,34 @@ const example=()=>fs.readFileSync(R+"/examples/end-of-day.md","utf8");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d?"   → "+d:""));};
 const fresh=()=>{A.setS(A.emptyS());A.setD({today:A.emptyToday(),checkin:A.emptyCheckin()});A.resetTPL();};
 
+// ---- parseTagValue/matchVocab: the pure logic behind the comma-separated,
+// suggest-as-you-type word field (body map, emotions grid). Tested directly
+// since the DOM stub can't dispatch a real keystroke — these two functions
+// carry all the logic that could actually go wrong.
+chk("everything before the last comma is confirmed, the tail is in progress",
+  (()=>{const r=A.parseTagValue("tight, ache, nu");
+    return r.inProgress==="nu"&&r.confirmed.join(",")==="tight,ache";})());
+chk("a trailing comma commits the last segment and leaves nothing in progress",
+  (()=>{const r=A.parseTagValue("tight, ");
+    return r.confirmed.includes("tight")&&r.inProgress==="";})());
+chk("no comma at all is entirely in progress, nothing confirmed yet",
+  (()=>{const r=A.parseTagValue("tigh");
+    return r.confirmed.length===0&&r.inProgress==="tigh";})());
+chk("an empty field confirms nothing and has nothing in progress",
+  (()=>{const r=A.parseTagValue("");
+    return r.confirmed.length===0&&r.inProgress==="";})());
+chk("blank/duplicate commas don't produce empty confirmed entries",
+  (()=>{const r=A.parseTagValue("tight,, ache,");
+    return r.confirmed.join(",")==="tight,ache"&&r.inProgress==="";})());
+chk("matchVocab is case- and punctuation-insensitive via the file's own norm()",
+  A.matchVocab("TIG",[{id:"a",label:"tight"}]).length===1);
+chk("matchVocab matches anywhere in the label, not only the start",
+  A.matchVocab("ght",[{id:"a",label:"tight"}]).length===1);
+chk("an empty fragment matches the whole vocabulary",
+  A.matchVocab("",[{id:"a",label:"tight"},{id:"b",label:"cold"}]).length===2);
+chk("no match returns nothing, not the whole vocabulary",
+  A.matchVocab("zzz",[{id:"a",label:"tight"}]).length===0);
+
 // ---- the renderer holds engines and nothing else
 fresh();
 chk("a bare renderer carries no booklet",A.tplModules().length===0&&A.tplWidgets().length===0);
@@ -25,6 +53,32 @@ chk("a wrapper reinstalls its preset design without replacing restored entries",
   /function applyPreset\(R\)/.test(html)
   &&/if\(sessionHasContent\(\)\)[\s\S]{0,160}adoptTemplate\(R\.template\)/.test(html)
   &&/if\(!tplModules\(\)\.length\)\{if\(await loadPreset\(\)\) saveLocal\(\);\}/.test(html));
+
+// ---- a plain field edit refreshes only its own block, never the whole
+// block list — ctx.redraw() tore the entire list down on every keystroke,
+// which is why typing anywhere in "edit this page" mode used to lose focus
+// after every character. The DOM stub can't dispatch a real input event
+// (addEventListener is a no-op here, same as every other test in this
+// file), so this is a source-shape regression guard rather than a runtime
+// check: it fails if a future edit reintroduces ctx.redraw() at any of the
+// four places a field-level handler is wired up.
+chk("blockFrame builds a block-scoped refreshPreview instead of leaning on ctx.redraw",(()=>{
+  const start=html.indexOf("function blockFrame(");
+  const end=html.indexOf("function blockEditorFor(");
+  const f=html.slice(start,end);
+  return start>=0&&end>start&&/const refreshPreview=/.test(f)
+    &&/blockEditorFor\(b,ctx,refreshPreview\)/.test(f);})());
+chk("blockEditorFor's field handlers call refreshPreview, not ctx.redraw",(()=>{
+  const start=html.indexOf("function blockEditorFor(");
+  const end=html.indexOf("function widgetEditor(");
+  const f=html.slice(start,end);
+  return start>=0&&end>start&&!/ctx\.redraw\(\)/.test(f)
+    &&/const save=fn=>\{ctx\.mutate\(x=>fn\(x\)\);refreshPreview\(\);\}/.test(f)
+    &&/qEditor\(b\.q\[0\],b\.q\[1\],refreshPreview\)/.test(f)
+    &&/widgetEditor\(W,refreshPreview\)/.test(f);})());
+chk("structural block operations still redraw the whole list, as they must",
+  /ctx\.toggle=id=>\{ctx\.openId=ctx\.openId===id\?null:id;ctx\.redraw\(\);\}/.test(html)
+  &&/ctx\.remove=id=>\{opts\.remove\(id\);if\(ctx\.openId===id\) ctx\.openId=null;ctx\.redraw\(\);\}/.test(html));
 
 // ---- a reload restores the booklet's own structure, not just its entries
 fresh();
@@ -97,6 +151,65 @@ chk("and nothing seeds the page",A.pageSeed()===null);
      ==="example/desk-check,example/effort-impact");
  let ok=true;try{A.setView("eod");A.render();}catch(e){ok=false;chk("render error",false,e.message);}
  chk("and the activity draws",ok);}
+
+// ---- the suggest-as-you-type word field renders across every state it can
+// be in, for both engines that carry it — empty, a known vocabulary pick,
+// and a freeform word nobody defined. The DOM stub can't dispatch a real
+// keystroke (see the parseTagValue/matchVocab unit tests above for the
+// logic itself); this only proves the render path doesn't throw.
+{fresh();A.addModule(modFile("end-of-day"));A.setView("eod");
+  const eod=()=>{const d=A.getD();d.custom=d.custom||{};d.custom.eod=d.custom.eod||{};return d.custom.eod;};
+  let ok=true;
+  try{
+    A.render();                                                    // nothing picked yet
+    eod().regions=[{id:"screen",s:["wrong:0"]}];                   // a known sense word
+    eod().emotions=["rewrite"];                                    // a known grid item
+    A.render();
+    eod().regions=[{id:"screen",s:["a freeform sensation"]}];      // typed/dictated, not in the vocabulary
+    eod().emotions=["x|slog|a freeform feeling"];
+    A.setS({...A.getS(),emo:{...A.getS().emo,extra:{...A.getS().emo.extra,slog:["a freeform feeling"]}}});
+    A.render();
+  }catch(e){ok=false;chk("tag-field render error",false,e.message);}
+  chk("svg-regions and grid-select render with empty, known, and freeform picks",ok);
+  fresh();A.addModule(modFile("end-of-day"));A.setView("eod");}
+
+// ---- a word added through the new field round-trips through a saved file
+// exactly like one added through a button — same data, same format, so
+// this is genuinely no format change.
+{fresh();A.addModule(modFile("end-of-day"));A.setView("eod");
+  // a KEPT entry (finalized), not a draft — toMarkdown only carries kept
+  // entries; a draft is scratch space that never reaches the saved file
+  const kept={ts:"2026-09-14T12:00:00.000Z",
+    regions:[{id:"screen",s:["wrong:0","a freeform sensation"]}],
+    emotions:["rewrite","x|slog|a freeform feeling"]};
+  const s=A.getS();s.entries=s.entries||{};s.entries.eod=[kept];
+  s.emo.extra.slog=["a freeform feeling"];A.setS(s);
+  const md=A.toMarkdown();
+  chk("the freeform sense word is in the saved file",md.includes("a freeform sensation"));
+  chk("the freeform emotion word is in the saved file",md.includes("a freeform feeling"));
+  fresh();A.addModule(modFile("end-of-day"));
+  const R=A.parseFile(md);A.applyParsed(R,"replace");
+  const restoredKept=((A.getS().entries||{}).eod||[])[0]||{};
+  chk("the mixed known+freeform sense picks survive a save/load round trip",
+    (restoredKept.regions||[]).some(r=>r.id==="screen"&&r.s.includes("wrong:0")&&r.s.includes("a freeform sensation")),
+    JSON.stringify(restoredKept.regions));
+  chk("the mixed known+freeform emotion picks survive a save/load round trip",
+    (restoredKept.emotions||[]).includes("rewrite")&&(restoredKept.emotions||[]).includes("x|slog|a freeform feeling"),
+    JSON.stringify(restoredKept.emotions));
+  fresh();A.addModule(modFile("end-of-day"));A.setView("eod");}
+
+// ---- one shared field, not two bespoke ones
+chk("a shared tagInput helper exists and both engines use it",
+  /function tagInput\(opts\)\{/.test(html)
+  &&(()=>{const s=html.slice(html.indexOf("function svgRegions("),html.indexOf("function gridSelect("));
+    return /tagInput\(\{/.test(s);})()
+  &&(()=>{const s=html.slice(html.indexOf("function gridSelect("),html.indexOf("ENGINE: card-board"));
+    return /tagInput\(\{/.test(s);})());
+chk("tagInput's own typing handler never rewrites the field it just typed into",(()=>{
+  // the input listener's body is the slice between its own opening and the
+  // blur listener that immediately follows it in the source
+  const s=html.slice(html.indexOf('inp.addEventListener("input"'),html.indexOf('inp.addEventListener("blur"'));
+  return s.length>0&&!/inp\.value=/.test(s);})());
 
 // ---- an activity words its own questions
 {fresh();A.addModule(modFile("end-of-day"));
