@@ -24,7 +24,39 @@ chk("the export panel offers only capabilities the browser actually has",
 chk("a wrapper reinstalls its preset design without replacing restored entries",
   /function applyPreset\(R\)/.test(html)
   &&/if\(sessionHasContent\(\)\)[\s\S]{0,160}adoptTemplate\(R\.template\)/.test(html)
-  &&/if\(!tplModules\(\)\.length\) await loadPreset\(\)/.test(html));
+  &&/if\(!tplModules\(\)\.length\)\{if\(await loadPreset\(\)\) saveLocal\(\);\}/.test(html));
+
+// ---- a reload restores the booklet's own structure, not just its entries
+fresh();
+{
+  const dj=modFile("daily-journal");
+  A.addModule(dj);
+  A.saveLocal();
+  const savedTPL=JSON.parse(global.__ls["useful-next-step.v1"]||"{}");
+  chk("the saved snapshot carries the booklet's structure, not only its data",
+    !!savedTPL.TPL&&(savedTPL.TPL.modules||[]).some(m=>m.id===dj.id));
+  A.resetTPL();                       // simulate a fresh page load in memory
+  chk("template is really gone before the reload is simulated",A.tplModules().length===0);
+  const restored=A.loadLocal();
+  chk("loadLocal reports something of the reader's own came back",restored);
+  chk("the installed module survived the reload",
+    A.tplModules().some(m=>m.id===dj.id),A.tplModules().map(m=>m.id).join(","));
+}
+fresh();
+{
+  // an older save from before this fix carries no TPL at all — entries only
+  A.setS({...A.emptyS(),today:[{ts:new Date().toISOString(),items:[{kind:"move",text:"walked",starter:false}]}]});
+  A.saveLocal();
+  const raw=JSON.parse(global.__ls["useful-next-step.v1"]);
+  delete raw.TPL;
+  global.__ls["useful-next-step.v1"]=JSON.stringify(raw);
+  A.resetTPL();
+  const restored=A.loadLocal();
+  chk("a pre-fix save with entries and no template still restores its entries",
+    restored&&A.getS().today.length===1);
+  chk("and correctly reports no template to adopt, so BOOT still asks the wrapper",
+    A.tplModules().length===0);
+}
 chk("copying to an ephemeral clipboard is not reported as a durable save",(()=>{
   const f=html.slice(html.indexOf("async function copyBooklet"),html.indexOf("const touchShare"));
   return !/exported\(\)/.test(f);})());

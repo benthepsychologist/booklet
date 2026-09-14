@@ -14,9 +14,12 @@ Pages-backed module registry.
 - **Renderer:** `booklet.html`, one static file that works from `file://` with a
   booklet loaded from disk. It contains three engines: `svg-regions`,
   `grid-select`, and `card-board`; it contains no modules or widgets.
-- **Website wrappers:** may provide a preset and one or more registries. The
-  reference renderer reconstructs a missing wrapper preset around restored
-  browser entries without replacing those entries.
+- **Website wrappers:** may provide a preset and one or more registries. A
+  reload now restores the reader's whole booklet — installed modules and any
+  in-place edits, not only entries — from `localStorage`; the reference
+  renderer reaches for the wrapper's preset only when nothing usable was
+  saved (a first visit, cleared storage, or a save from before this existed,
+  which still carries entries with no matching design).
 - **Export:** touch-first devices use the operating-system share sheet when file
   sharing is available. Desktop gets an adaptive Share, Save, Download, Copy,
   and optional passphrase panel; unsupported actions are omitted.

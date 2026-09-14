@@ -1512,11 +1512,13 @@ async function resolveShelf(id){
    wrapper rather than from disk. `starter_url` is the old name, still read. */
 function applyPreset(R){
   if(!R||!R.ok) return false;
-  /* The design is not browser state: it comes from the booklet file or the
-     wrapper on every load. A returning reader may already have locally
-     restored entries, so reinstall the preset's design without replacing
-     those entries. On a genuinely empty first visit, take the whole blank
-     preset exactly as if the reader had loaded its file. */
+  /* Reached only when loadLocal restored no usable template — a genuinely
+     first visit, storage that came back empty, or (once, per reader) an
+     older save from before the booklet's own structure was part of what got
+     persisted. That last case may still carry entries with no matching
+     design, so reinstall the preset without replacing those; a truly empty
+     first visit takes the whole blank preset exactly as if the reader had
+     loaded its file. */
   if(sessionHasContent()){
     if(shouldAdopt(R.template)) adoptTemplate(R.template);
     else modulesIn(R.template).forEach(m=>{if(!allModules().some(x=>x.id===m.id)) addModule(m);});
@@ -1730,7 +1732,7 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 const LS_KEY="useful-next-step.v1";
 let storageOk=true, saveTimer=null, remindShown=false;
 try{localStorage.setItem(LS_KEY+".probe","1");localStorage.removeItem(LS_KEY+".probe");}catch(e){storageOk=false;}
-function saveLocal(){if(!storageOk) return;try{localStorage.setItem(LS_KEY,JSON.stringify({S,D,lang,dirty,unsavedEntries}));}catch(e){storageOk=false;}}
+function saveLocal(){if(!storageOk) return;try{localStorage.setItem(LS_KEY,JSON.stringify({S,D,TPL,lang,dirty,unsavedEntries}));}catch(e){storageOk=false;}}
 function clearLocal(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
 function loadLocal(){if(!storageOk) return false;
   try{const raw=localStorage.getItem(LS_KEY);if(!raw) return false;const o=JSON.parse(raw);if(!o||!o.S) return false;
@@ -1748,7 +1750,18 @@ function loadLocal(){if(!storageOk) return false;
     if(!D.checkin.thoughts||!D.checkin.thoughts.length) D.checkin.thoughts=[""];
     if(o.lang&&T[o.lang]) lang=o.lang;
     dirty=!!o.dirty;unsavedEntries=Number(o.unsavedEntries)||0;
-    return S.today.length>0||S.checkins.length>0||bigHas(S.big)||areasHave()||liveItems(S.now.items).length>0||nonEmpty(S.note);
+    /* The booklet's own structure — which modules are installed, their order,
+       any in-place edit to a name or description — is part of what "saved in
+       the browser" promises, exactly like an entry. Restore it the same way a
+       loaded file adopts one, so a reload never silently reverts to whatever
+       the wrapper's preset currently ships; BOOT only re-fetches the preset
+       when nothing valid was saved. The "restored" toast still fires only for
+       content that is actually the reader's own — entries, or a template they
+       deliberately changed — not for a bare, unmodified default preset. */
+    const savedTPL=templateOk(o.TPL)?o.TPL:null;
+    const templateRestored=savedTPL?adoptTemplate(savedTPL):false;
+    const templateIsOwn=templateRestored&&!!savedTPL.customized;
+    return templateIsOwn||S.today.length>0||S.checkins.length>0||bigHas(S.big)||areasHave()||liveItems(S.now.items).length>0||nonEmpty(S.note);
   }catch(e){return false;}}
 function mark(){dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(saveLocal,400);}
 const stFlag=(o,k)=>({has:()=>!!(o.starter&&o.starter[k]),clear:()=>{if(o.starter) delete o.starter[k];}});
@@ -3806,13 +3819,17 @@ render();
 if(restoredFromBrowser) setTimeout(()=>toast(T[lang].ui.restored),400);
 else if(!storageOk) setTimeout(()=>toast(T[lang].ui.storageOff),400);
 
-/* Last, and only if a wrapper is present: pick up whatever it offers. The
-   wrapper's preset supplies the design on every page load because the design
-   is not browser state. loadPreset keeps already-restored entries intact. */
+/* Last, and only if a wrapper is present: pick up whatever it offers.
+   loadLocal already restored a saved booklet, structure included, so this
+   only reaches for the wrapper's preset when NOTHING was restored — a
+   genuinely first visit, or storage that came back empty. Once a preset is
+   installed this way, save it immediately: without this, a second reload
+   before any edit would find nothing in storage yet and fetch the preset
+   again — harmless, but a needless round trip this closes. */
 (async()=>{
   if(!wrapperConfig()) return;
   await loadShelf();
-  if(!tplModules().length) await loadPreset();
+  if(!tplModules().length){if(await loadPreset()) saveLocal();}
   render();
 })();
 </script>
