@@ -48,7 +48,10 @@ Pages-backed module registry.
   in `svg-regions` and `grid-select`: type or dictate several comma-separated
   words, get suggestions from the widget's own vocabulary via a native
   `<datalist>`, and add a word that isn't in it. Buttons stay, reading and
-  writing the same underlying data — no format change.
+  writing the same underlying data — no format change. **Visible by default,
+  a per-widget toggle in the editor** (`W.showTags`, a `widgetEditor`
+  checkbox) — off hides the field and leaves only the buttons, unaffected
+  either way; the setting travels with the widget in the saved file.
 
 ## Ownership boundaries
 

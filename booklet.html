@@ -719,6 +719,7 @@ T.en = {
     cells:"The cells, and the words in each",
     addWord:"add a word", removeWord:"Remove this word", newWord:"New word",
     regions:"What each part of the body is called", senseWords:"The words on offer, comma-separated",
+    showTags:"Show the typed word field, not just the buttons",
     widgetNote:"These words belong to the widget, so changing them changes it everywhere it is used in this booklet."
   },
   pageEdit:{
@@ -941,6 +942,7 @@ T.fr = {
     cells:"Les cellules, et les mots de chacune",
     addWord:"ajouter un mot", removeWord:"Retirer ce mot", newWord:"Nouveau mot",
     regions:"Le nom de chaque partie du corps", senseWords:"Les mots proposés, séparés par des virgules",
+    showTags:"Afficher le champ de texte, pas seulement les boutons",
     widgetNote:"Ces mots appartiennent à l’élément : les changer les change partout où il sert dans ce carnet."
   },
   pageEdit:{
@@ -1145,7 +1147,10 @@ function svgRegions(e,W,keys){const key=(keys&&keys[0])||"regions";
   const drawPanel=()=>{panel.innerHTML="";
     if(!active){panel.append(el("p",{class:"hint",style:"margin:0"},C.none||""));return;}
     panel.append(el("h4",{},labelOf(active)),el("p",{class:"hint",style:"margin:0"},C.pick||""));
-    panel.append(tagInput({
+    /* Visible by default; a widget-level toggle in the editor (widgetEditor)
+       can hide it, leaving only the buttons below — which read and write
+       the exact same data either way. */
+    if(W.showTags!==false) panel.append(tagInput({
       values:()=>((rowFor(active)||{}).s||[]).map(senseWord),
       vocab:()=>(W.senses||[]).flatMap(g=>(g.words||[]).map(w=>({id:w.id,label:wtx(w.label,w.id)}))),
       /* Typing here must never rebuild this panel — that would destroy the
@@ -1228,13 +1233,15 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=(keys&&keys[0])||"emo
           if(tag) tag.refresh();});
         btns.append(bt);});};
     drawBtns();
-    if(!opts.readonly){
-      /* One instance per cell, always visible — unlike svg-regions there is
-         no "active" region to scope to. Freeform words live in two places
-         at once: the id array (as "x|cellId|word", the existing encoding)
-         and S.emo.extra[c.id] (a plain word list a second, separate editor
-         already writes to) — onChange keeps both in sync so a word typed
-         here shows up in that other editor too, and vice versa. */
+    /* One instance per cell, always visible — unlike svg-regions there is
+       no "active" region to scope to. Freeform words live in two places at
+       once: the id array (as "x|cellId|word", the existing encoding) and
+       S.emo.extra[c.id] (a plain word list a second, separate editor
+       already writes to) — onChange keeps both in sync so a word typed
+       here shows up in that other editor too, and vice versa. Visible by
+       default; a widget-level toggle in the editor can hide it, leaving
+       only the buttons, which work identically either way. */
+    if(!opts.readonly&&W.showTags!==false){
       const known=(W.items||[]).filter(i=>i.cell===c.id);
       tag=tagInput({
         values:()=>[...known.filter(k=>chosen().includes(k.id)).map(k=>itemLabel(k.id)),
@@ -2317,6 +2324,16 @@ function widgetEditor(W,redraw){const t=T[lang].blockEdit;const box=el("div",{})
     const inp=el("input",{type:"text",class:"field",style:"min-height:0"});inp.value=value||"";
     inp.addEventListener("input",()=>onInput(inp.value));
     return el("div",{class:"qrow"},el("span",{},label),inp);};
+
+  /* Whether the typed/suggested word field (tagInput) shows alongside this
+     widget's vocabulary buttons — a per-widget setting, visible by default
+     (absent or true = shown; the buttons work identically either way,
+     since both read and write the same underlying data). Only the two
+     engines that carry the field at all get the toggle. */
+  if(W.engine==="grid-select"||W.engine==="svg-regions"){
+    const cb=el("input",{type:"checkbox",id:"showTags-"+W.id});cb.checked=W.showTags!==false;
+    cb.addEventListener("change",()=>put(w=>{w.showTags=cb.checked;}));
+    box.append(el("label",{class:"checkrow",for:"showTags-"+W.id},cb,t.showTags));}
 
   if(W.engine==="grid-select"){
     box.append(el("div",{class:"lbl2"},t.axes));

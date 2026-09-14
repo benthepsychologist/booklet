@@ -211,6 +211,41 @@ chk("tagInput's own typing handler never rewrites the field it just typed into",
   const s=html.slice(html.indexOf('inp.addEventListener("input"'),html.indexOf('inp.addEventListener("blur"'));
   return s.length>0&&!/inp\.value=/.test(s);})());
 
+// ---- the word field is a per-widget toggle in the editor, visible by
+// default, and buttons work the same whether it's shown or hidden
+chk("a widget-level toggle exists for both engines that carry the field",
+  /if\(W\.engine==="grid-select"\|\|W\.engine==="svg-regions"\)\{/.test(html)
+  &&/cb\.checked=W\.showTags!==false/.test(html)
+  &&/put\(w=>\{w\.showTags=cb\.checked;\}\)/.test(html));
+chk("both engines skip the field only when explicitly turned off",
+  /if\(W\.showTags!==false\) panel\.append\(tagInput\(/.test(html)
+  &&/if\(!opts\.readonly&&W\.showTags!==false\)\{/.test(html));
+{fresh();A.addModule(modFile("end-of-day"));A.setView("eod");
+  const eod=()=>{const d=A.getD();d.custom=d.custom||{};d.custom.eod=d.custom.eod||{};return d.custom.eod;};
+  eod().regions=[{id:"screen",s:["wrong:0"]}];eod().emotions=["rewrite"];
+  let ok=true;
+  try{
+    A.render();                                                          // showTags absent — default visible
+    A.editTemplate(t=>{(t.widgets||[]).forEach(w=>{w.showTags=false;})});
+    A.render();                                                          // explicitly hidden
+    A.editTemplate(t=>{(t.widgets||[]).forEach(w=>{w.showTags=true;})});
+    A.render();                                                          // explicitly shown
+  }catch(e){ok=false;chk("render error with showTags toggled",false,e.message);}
+  chk("both engines render with the word field shown, hidden, and shown again",ok);
+  // the underlying data (what the buttons themselves read and write) is
+  // untouched by the toggle — hiding the field never hides or loses a pick
+  chk("hiding the field never touches the data buttons rely on",
+    eod().regions[0].s.includes("wrong:0")&&eod().emotions.includes("rewrite"));
+  fresh();A.addModule(modFile("end-of-day"));A.setView("eod");}
+{fresh();A.addModule(modFile("end-of-day"));
+  A.editTemplate(t=>{(t.widgets||[]).forEach(w=>{w.showTags=false;})});
+  const md=A.toMarkdown();
+  fresh();const R=A.parseFile(md);A.applyParsed(R,"replace");
+  chk("the hidden setting survives a save/load round trip",
+    A.tplWidgets().every(w=>w.showTags===false),
+    A.tplWidgets().map(w=>w.id+":"+w.showTags).join(" "));
+  fresh();}
+
 // ---- an activity words its own questions
 {fresh();A.addModule(modFile("end-of-day"));
  A.setLang("en");const md=A.toMarkdown();
