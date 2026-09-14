@@ -1,6 +1,6 @@
 # STATUS — Booklet
 
-*As of 2026-09-12*
+*As of 2026-09-14*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0.
 The repository publishes the format specification, a dependency-free static
@@ -24,6 +24,18 @@ Pages-backed module registry.
   activities and four copyrighted Mensio modules carrying their own terms.
 - **Validation:** `test/run.sh` and `.github/workflows/ci.yml` check the renderer,
   all 17 booklet/module/widget files, generated examples, and registry freshness.
+- **Naming is editable in place:** the home page's headline and tagline
+  (booklet-level, `meta.head` — falls back to the renderer's own wording when a
+  booklet sets none) and every activity's own name and description (a module's
+  `title`/`blurb`) render as plain text normally and open into the same field
+  chrome as any other block while editing is on. Nothing new to configure —
+  existing modules and booklets are unaffected until a reader actually edits one.
+- **Custom entry activities are first-class in history:** a module whose mode
+  is `kind:"entry"` now gets a chip strip on its own page, a generic
+  block-driven kept-entry summary, and a history filter, the same as the two
+  built-in activities — the renderer no longer needs to know a mode by name to
+  show its kept entries. An `entry` mode may also set `upsert:"day"` to keep
+  one entry per calendar day (a daily log) instead of one per Finalize.
 
 ## Ownership boundaries
 

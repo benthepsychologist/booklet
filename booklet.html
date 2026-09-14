@@ -440,6 +440,10 @@
   .editbtn{font-size:.82rem}
   .editpanel{border:2px dashed var(--rule);border-radius:14px;padding:1rem 1.15rem;margin:.5rem 0 0;background:#fff}
   .homeedit{margin-top:2rem}
+  /* a name/info field: the same block chrome as everything else, just with
+     nothing to reorder, duplicate or remove */
+  .mfield{margin:0 0 .6rem}
+  .backrow .mfield{flex:1 1 auto}
   /* the page's own words */
   .pagetext{margin:2rem 0 0;max-width:64ch}
   .pagetext .pblock{margin:0 0 1rem}
@@ -602,6 +606,7 @@ T.en = {
     earlier:"Earlier entries", noEarlier:"No earlier entries yet.",
     close:"Close", del:"Delete", delConfirm:"Delete this entry?", yes:"Yes, delete", no:"No",
     finalize:"Finalize", finalizeHint:"Keeps this entry with the current date and time, then clears the fields.",
+    headline:"Headline", tagline:"Tagline", activityName:"Name", activityInfo:"Description",
     addArea:"Add another area", removeArea:"Remove this area", areaName:"Name this area",
     nothingSelected:"Select one or more if they fit. Selecting none is also fine.",
     todayTag:"Today", checkinTag:"Check-in",
@@ -822,6 +827,7 @@ T.fr = {
     earlier:"Entrées précédentes", noEarlier:"Aucune entrée précédente pour l’instant.",
     close:"Fermer", del:"Supprimer", delConfirm:"Supprimer cette entrée ?", yes:"Oui, supprimer", no:"Non",
     finalize:"Finaliser", finalizeHint:"Garde cette entrée avec la date et l’heure actuelles, puis vide les champs.",
+    headline:"Titre", tagline:"Accroche", activityName:"Nom", activityInfo:"Description",
     addArea:"Ajouter un autre domaine", removeArea:"Retirer ce domaine", areaName:"Nommer ce domaine",
     nothingSelected:"Sélectionnez une ou plusieurs options si elles conviennent. N’en sélectionner aucune est aussi acceptable.",
     todayTag:"Aujourd’hui", checkinTag:"Pause",
@@ -1301,7 +1307,7 @@ const FORMAT_BLOCK = {
   full_spec:"https://github.com/benthepsychologist/booklet/blob/main/SPEC.md",
   blocks:{
     format:"this block — the format, carried in the file",
-    meta:"which booklet this is, plus anything shared across modules (body figures, menus)",
+    meta:"which booklet this is, plus anything shared across modules (body figures, menus, and the booklet's own head:{title,sub})",
     module:"one activity, whole and portable. One block per activity.",
     person:"the reader's own settings: name, email, language, question wording overrides",
     fields:"the board's content, an object keyed by field id",
@@ -1321,6 +1327,7 @@ const FORMAT_BLOCK = {
           kind:"entry | board | guide | log",
           head:{title:"copy reference for its heading"},
           keep:["fields that survive a finalize"],
+          upsert:"\"day\" keeps one kept entry per calendar day instead of one per Finalize (entry kind only)",
           blocks:["see block_types"]}
   },
   block_types:{
@@ -2242,6 +2249,25 @@ function pageText(){const wrap=el("div",{class:"col pagetext"});
   wrap.append(renderBlocks(()=>S.page.blocks,S,"home",ctx));
   return wrap;}
 
+/* A name or a lead paragraph is a block like any other to read or edit — the
+   same field, the same chrome as everything in blockEditorFor — but there is
+   exactly one of it, it names the thing around it, and it cannot be added,
+   reordered, duplicated or removed the way a block can. Reading mode shows
+   it plainly in the given tag; while editing is on it opens into the field,
+   pre-filled with exactly what reading mode just showed, and every keystroke
+   writes straight back through onInput. Nothing to show and not editing
+   means nothing is drawn at all. */
+function metaField(tag,cls,label,val,onInput,rows){
+  if(!editing){
+    if(!nonEmpty(val)) return null;
+    return el(tag,cls?{class:cls}:{},val);}
+  const wrap=el("div",{class:"bframe mfield"});
+  wrap.append(el("div",{class:"bhead"},el("span",{class:"blabel"},label)));
+  const input=rows?el("textarea",{class:"field",rows}):el("input",{type:"text",class:"field",style:"min-height:0"});
+  input.value=val||"";input.addEventListener("input",()=>onInput(input.value));
+  wrap.append(el("div",{class:"beditor"},input));
+  return wrap;}
+
 /* the single control that turns every inline edit on this page on or off */
 function editToggle(){const t=T[lang].pageEdit;
   const b=el("button",{type:"button",class:"toggle editbtn","aria-pressed":String(editing)},
@@ -2332,7 +2358,20 @@ function homeEditPanel(){const t=T[lang];const u=t.ui;const B=t.booklet;
 function renderHome(main){const t=T[lang];const u=t.ui;
   const hero=el("div",{class:"hero col"});
   if(nonEmpty(S.name)) hero.append(el("p",{class:"greet"},u.greeting(S.name.trim())));
-  hero.append(el("h1",{},t.home.h1),el("p",{class:"sub"},t.home.sub));main.append(hero);
+  /* The headline and tagline are the booklet's own words, exactly like a
+     module's name and description — they just belong to the booklet as a
+     whole rather than to any one activity. A wrapper preset may ship its
+     own (TPL.head); a reader who has never touched them still sees the
+     built-in wording, because the fallback is the value, not a placeholder. */
+  const headTitle=tx((TPL.head||{}).title,t.home.h1);
+  const headSub=tx((TPL.head||{}).sub,t.home.sub);
+  hero.append(metaField("h1",null,u.headline,headTitle,
+    v=>editTemplate(tt=>{tt.head=tt.head||{};tt.head.title=setLoc(tt.head.title,v);}))
+    ||el("h1",{},headTitle));
+  hero.append(metaField("p","sub",u.tagline,headSub,
+    v=>editTemplate(tt=>{tt.head=tt.head||{};tt.head.sub=setLoc(tt.head.sub,v);}),2)
+    ||el("p",{class:"sub"},headSub));
+  main.append(hero);
 
 
   if(nonEmpty(S.note)) main.append(el("div",{class:"notecard col"},
@@ -2382,8 +2421,37 @@ function renderHome(main){const t=T[lang];const u=t.ui;
 
 /* ======================= ENTRY VIEWS (read-only) ======================= */
 const contactText=v=>CONTACTS.includes(v)?T[lang].ui.contact[v]:v;
+/* What one block contributed to a kept entry, read back the same way the
+   block itself is addressed — by the keys it owns, per keysOf(). A reading
+   block owns no key and has nothing to show here; anything else falls
+   through to "nothing recorded" rather than guessing at a shape. This is
+   the only summary a mode the renderer has never heard of gets, so it only
+   reaches for what every block kind already promises: a list/tick-list
+   joins its values, a widget names its picks by the widget's own words, a
+   line-per-thought block keeps its list, a question keeps its answer. */
+function fieldLabel(b){const own=tx(b.label,null);if(nonEmpty(own)) return own;
+  if(Array.isArray(b.q)){const lbl=Q(b.q[0],b.q[1]).label;if(nonEmpty(lbl)) return lbl;}
+  return blockName(b);}
+function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
+  if(b.type==="widget"){const W=widgetOf(b.widget);if(!W) return null;
+    const vals=e[keys[0]];if(!Array.isArray(vals)||!vals.length) return null;
+    if(W.engine==="svg-regions"){
+      const names=vals.map(r=>{const rg=(W.regions||[]).find(x=>x.id===r.id);return rg?wtx(rg.label,r.id):r.id;});
+      return [fieldLabel(b),names.join(", ")];}
+    if(W.engine==="grid-select"){
+      const names=vals.map(id=>{const it=(W.items||[]).find(x=>x.id===id);return it?wtx(it.label,id):id;});
+      return [fieldLabel(b),names.join(", ")];}
+    return null;}
+  if(b.type==="headlines"){const items=(e[keys[0]]||[]).filter(nonEmpty);if(!items.length) return null;
+    return [fieldLabel(b),el("ul",{class:"plain"},...items.map(x=>el("li",{},x.trim())))];}
+  if(b.type==="list"||b.type==="didlog"){const vals=e[keys[0]];if(!Array.isArray(vals)||!vals.length) return null;
+    return [fieldLabel(b),vals.join(" · ")];}
+  if(b.type==="text"){const v=e[keys[0]];if(!nonEmpty(v)) return null;
+    return [fieldLabel(b),v.trim()];}
+  return null;}
 function entryCard(e,type,onDelete){const t=T[lang];const u=t.ui;const card=el("div",{class:"entry"});
-  const when=el("div",{class:"when"},el("span",{class:"tag "+type},type==="today"?u.todayTag:u.checkinTag),fmtWhen(e.ts));
+  const tag=type==="today"?u.todayTag:type==="checkin"?u.checkinTag:tx((moduleOf(type)||{}).title,modeOf(type).id);
+  const when=el("div",{class:"when"},el("span",{class:"tag "+type},tag),fmtWhen(e.ts));
   if(type==="today"&&nonEmpty(e.area)) when.append(el("span",{class:"area"},e.area));
   if(type==="today"&&nonEmpty(e.contact)) when.append(el("span",{class:"area"},contactText(e.contact)));
   card.append(when);
@@ -2402,7 +2470,7 @@ function entryCard(e,type,onDelete){const t=T[lang];const u=t.ui;const card=el("
     for(const k of TODAY_KEYS) if(!shown.has(k)&&nonEmpty(e[k]))
       dl.append(el("dt",{},Q("today",k).label),el("dd",{},e[k].trim()));
   }
-  else { for(const k of BODY_KEYS) if(nonEmpty(e.body[k])) dl.append(el("dt",{},Q("checkin",k).label),el("dd",{},e.body[k].trim()));
+  else if(type==="checkin"){ for(const k of BODY_KEYS) if(nonEmpty(e.body[k])) dl.append(el("dt",{},Q("checkin",k).label),el("dd",{},e.body[k].trim()));
     if((e.regions||[]).length){const w=el("div",{class:"emos"});
       e.regions.forEach(r=>w.append(el("span",{class:"emo",style:"background:var(--paper-deep)"},regionLabel(r.id)+" — "+r.s.map(senseLabel).join(", "))));
       dl.append(el("dt",{},t.labels.checkin.body),el("dd",{},w));}
@@ -2410,22 +2478,26 @@ function entryCard(e,type,onDelete){const t=T[lang];const u=t.ui;const card=el("
     if(e.emotions.length||nonEmpty(e.other)){const wrap=el("div",{class:"emos"});e.emotions.forEach(id=>wrap.append(el("span",{class:"emo",style:(()=>{const [c,i]=cellById(quadOf(id));return "background:"+cellColor(c,i).tint;})()},emoLabel(id))));
       if(nonEmpty(e.other)) wrap.append(el("span",{class:"emo",style:"background:var(--paper-deep)"},e.other.trim()));dl.append(el("dt",{},t.checkin.emo.h),el("dd",{},wrap));}
     const th=e.thoughts.filter(nonEmpty); if(th.length) dl.append(el("dt",{},Q("checkin","thoughts").label),el("dd",{},el("ul",{},...th.map(x=>el("li",{},x.trim()))))); }
+  else {
+    /* Any other entry mode has no bespoke renderer at all — only its own
+       blocks say what it asked and what was answered. */
+    for(const b of blocksOf(type)){const s=fieldSummary(b,e);if(s) dl.append(el("dt",{},s[0]),el("dd",{},s[1]));}}
   card.append(dl);
   if(onDelete){const foot=el("div",{class:"foot"});const btn=el("button",{type:"button",class:"small danger"},u.del);
     btn.addEventListener("click",()=>{foot.innerHTML="";foot.append(el("span",{class:"inlineconfirm"},u.delConfirm,
       el("button",{type:"button",class:"small danger",onclick:onDelete},u.yes),el("button",{type:"button",class:"small",onclick:()=>{foot.innerHTML="";foot.append(btn);}},u.no)));});
     foot.append(btn);card.append(foot);}
   return card;}
-function chipStrip(type){const t=T[lang];const list=[...S[type==="today"?"today":"checkins"]].sort((a,b)=>b.ts.localeCompare(a.ts));
+function chipStrip(id){const t=T[lang];const list=[...keptFor(id)].sort((a,b)=>b.ts.localeCompare(a.ts));
   const wrap=el("div",{});
   if(!list.length){wrap.append(el("p",{class:"chips-empty"},t.ui.noEarlier));return wrap;}
   const strip=el("div",{class:"chips",role:"group","aria-label":t.ui.earlier});const panel=el("div",{});
   const draw=()=>{strip.innerHTML="";panel.innerHTML="";
-    list.forEach(e=>{const on=openChip[type]===e.ts;const c=el("button",{type:"button",class:"chip","aria-pressed":String(on)},fmtWhen(e.ts));
-      c.addEventListener("click",()=>{openChip[type]=on?null:e.ts;draw();});strip.append(c);
-      if(on) panel.append(entryCard(e,type,()=>{removeEntry(type,e.ts);openChip[type]=null;render();}));});};
+    list.forEach(e=>{const on=openChip[id]===e.ts;const c=el("button",{type:"button",class:"chip","aria-pressed":String(on)},fmtWhen(e.ts));
+      c.addEventListener("click",()=>{openChip[id]=on?null:e.ts;draw();});strip.append(c);
+      if(on) panel.append(entryCard(e,id,()=>{removeEntry(id,e.ts);openChip[id]=null;render();}));});};
   draw();wrap.append(strip,panel);return wrap;}
-function removeEntry(type,ts){const arr=type==="today"?S.today:S.checkins;const i=arr.findIndex(x=>x.ts===ts);if(i>=0){arr.splice(i,1);mark();}}
+function removeEntry(id,ts){const arr=keptFor(id);const i=arr.findIndex(x=>x.ts===ts);if(i>=0){arr.splice(i,1);mark();}}
 function finalizeRow(onFinalize){const t=T[lang];return el("div",{class:"finrow"},el("button",{type:"button",class:"finalize",onclick:onFinalize},t.ui.finalize),el("span",{class:"hint"},t.ui.finalizeHint),unsavedNote());}
 
 /* ======================= TODAY ======================= */
@@ -2669,29 +2741,52 @@ function areaChrome(draft,col){const u=T[lang].ui;
     drawPills();col.append(pills);}
   drawFocus();col.append(focus);}
 
+/* A mode marked `upsert:"day"` keeps one entry per calendar day rather than
+   one per Finalize — a daily log, not a running list. Finalizing again on
+   the same day replaces that day's entry instead of adding a second one. */
 function finalizeEntry(id){const u=T[lang].ui;const st=storeOf(id);
   const draft=draftFor(id);
   if(!st.has(draft)){toast(u.nothingYet);return;}
   const e=JSON.parse(JSON.stringify(draft));e.ts=new Date().toISOString();
   if(Array.isArray(e.thoughts)) e.thoughts=e.thoughts.filter(nonEmpty);
-  keptFor(id).push(e);
+  const kept=keptFor(id);
+  if(modeOf(id).upsert==="day"){
+    const idx=kept.findIndex(x=>dayKey(x.ts)===dayKey(e.ts));
+    if(idx>=0) kept[idx]=e; else kept.push(e);
+  } else kept.push(e);
   const keep={};(modeOf(id).keep||[]).forEach(k=>keep[k]=draft[k]);
   const blank=Object.assign(st.blank(),keep);
   if(st.custom) D.custom[id]=blank; else D[st.draft]=blank;
   unsavedEntries++;dirty=true;openChip[id]=e.ts;render();saveLocal();toast(u.kept);maybeRemind();}
+/* Reopening a daily-upsert mode later the same day must not start blank —
+   the reader is continuing today's entry, not starting a second one. Seed
+   the draft from today's kept entry only when the draft is itself still
+   empty, so mid-edit work already in the draft is never overwritten. */
+function seedUpsertDraft(id,m,draft){
+  if(m.upsert!=="day"||storeOf(id).has(draft)) return;
+  const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());
+  if(today){const {ts,...rest}=JSON.parse(JSON.stringify(today));Object.assign(draft,rest);}}
 
 function renderEntry(main,id){const t=T[lang];const u=t.ui;const m=modeOf(id);const mc=copyTree(id==="today"?"today":"checkin");
-  const draft=draftFor(id);const col=el("div",{class:"col"});
+  const mod=moduleOf(id);
+  const draft=draftFor(id);seedUpsertDraft(id,m,draft);const col=el("div",{class:"col"});
   const head=m.head||{};
+  const setModuleField=(key,v)=>editTemplate(tt=>{const mm=mod&&modWithId(tt,mod.id);if(mm) mm[key]=setLoc(mm[key],v);});
   col.append(el("div",{class:"editrow"},editToggle()));
-  col.append(el("h2",{},tx(m.title,copyAt(head.title,id))));
+  const titleVal=tx(mod&&mod.title,tx(m.title,copyAt(head.title,copyAt(head.h,id))));
+  col.append(metaField("h2",null,u.activityName,titleVal,v=>setModuleField("title",v))||el("h2",{},titleVal));
   if(head.question) col.append(el("p",{class:"gdq"},copyAt(head.question,"")));
-  if(head.lead) col.append(el("p",{class:"aside"},copyAt(head.lead,"")));
-  if(ENTRY_STORE[id]) col.append(el("h3",{},u.earlier),chipStrip(id));
+  /* The description reads and writes `blurb` — the same module field the
+     home page's own card already shows — not `head.lead`, which is a copy
+     reference (a path string, not text) and would be clobbered by writing
+     typed words into it. */
+  const leadVal=tx(mod&&mod.blurb,tx(m.blurb,copyAt(head.lead,copyAt(head.p,""))));
+  const leadField=metaField("p","aside",u.activityInfo,leadVal,v=>setModuleField("blurb",v));
+  if(leadField) col.append(leadField);
+  col.append(el("h3",{},u.earlier),chipStrip(id));
   if((m.chrome||[]).includes("areas")) areaChrome(draft,col);
   if(head.note&&!compact()) col.append(el("p",{class:"hint"},copyAt(head.note,"")));
-  {const mod=moduleOf(id);
-   const blocksOfMode=()=>((modeOf(id).blocks)||[]);
+  {const blocksOfMode=()=>((modeOf(id).blocks)||[]);
    const inModule=fn=>editTemplate(t=>{const mm=mod&&modWithId(t,mod.id);
      if(mm&&mm.mode) fn(mm.mode.blocks=mm.mode.blocks||[]);});
    const ctx=blockCtx({
@@ -2808,19 +2903,26 @@ function railFor(id){
     ol.append(el("li",{},bt));});
   return el("nav",{class:"rail","aria-label":"Sections"},ol);}
 
-function renderBoard(main,id){const t=T[lang];const u=t.ui;const m=modeOf(id);
+function renderBoard(main,id){const t=T[lang];const u=t.ui;const m=modeOf(id);const mod=moduleOf(id);
   const col=el("div",{class:"col"});
   col.append(el("div",{class:"editrow"},editToggle()));
   const head=m.head||{};
   const tog=el("button",{type:"button",class:"toggle","aria-pressed":String(compact())},compact()?u.compactOff:u.compactOn);
   tog.addEventListener("click",()=>{S.mode=compact()?"full":"compact";mark();render();});
   /* density only means something where there are inputs to compact */
+  const setModuleField=(key,v)=>editTemplate(tt=>{const mm=mod&&modWithId(tt,mod.id);if(mm) mm[key]=setLoc(mm[key],v);});
+  const titleVal=tx(mod&&mod.title,tx(m.title,copyAt(head.title,id)));
   col.append(el("div",{class:"backrow"},
-    el("h2",{style:"margin:0;flex:1 1 auto"},tx(m.title,copyAt(head.title,id))),
+    metaField("h2",null,u.activityName,titleVal,v=>setModuleField("title",v))
+      ||el("h2",{style:"margin:0;flex:1 1 auto"},titleVal),
     m.kind==="guide"?null:tog));
-  if(head.lead&&!compact()) col.append(el("p",{class:"aside"},copyAt(head.lead,"")));
+  if(!compact()){
+    /* Same field the home card already shows — see renderEntry's note on why
+       this is `blurb`, not the `head.lead` copy reference. */
+    const leadVal=tx(mod&&mod.blurb,tx(m.blurb,copyAt(head.lead,copyAt(head.p,""))));
+    const leadField=metaField("p","aside",u.activityInfo,leadVal,v=>setModuleField("blurb",v));
+    if(leadField) col.append(leadField);}
 
-  const mod=moduleOf(id);
   const blocksOfMode=()=>((modeOf(id).blocks)||[]);
   const inModule=fn=>editTemplate(tt=>{const mm=mod&&modWithId(tt,mod.id);
     if(mm&&mm.mode) fn(mm.mode.blocks=mm.mode.blocks||[]);});
@@ -2841,8 +2943,15 @@ function renderBoard(main,id){const t=T[lang];const u=t.ui;const m=modeOf(id);
 /* ======================= HISTORY ======================= */
 function renderHistory(main){const t=T[lang];const h=t.history;const u=t.ui;const col=el("div",{class:"col"});
   col.append(el("h2",{},h.h),el("p",{class:"aside"},h.p));
+  /* Every entry-kind mode gets a place in history — the two built-ins by
+     their own translated names, anything else by the module's own title, so
+     a custom activity never needs the renderer to have heard of it before. */
+  const modes=tplModes().filter(m=>m.kind==="entry");
   const filters=el("div",{class:"filters"});
-  for(const [k,lbl] of [...Object.entries(h.filters),["archive",u.archiveFilter]]) filters.append(el("button",{type:"button","aria-pressed":String(histFilter===k),onclick:()=>{histFilter=k;render();}},lbl));
+  const filterBtn=(k,lbl)=>filters.append(el("button",{type:"button","aria-pressed":String(histFilter===k),onclick:()=>{histFilter=k;render();}},lbl));
+  filterBtn("all",h.filters.all);
+  modes.forEach(m=>filterBtn(m.id,h.filters[m.id]||tx((moduleOf(m.id)||{}).title,m.id)));
+  filterBtn("archive",u.archiveFilter);
   col.append(filters);
   if(histFilter==="archive"){const list=[...S.archive].sort((a,b)=>b.date.localeCompare(a.date));
     if(!list.length) col.append(el("p",{class:"aside"},u.archiveEmpty));
@@ -2853,8 +2962,11 @@ function renderHistory(main){const t=T[lang];const h=t.history;const u=t.ui;cons
       btn.addEventListener("click",()=>{foot.innerHTML="";foot.append(el("span",{class:"inlineconfirm"},u.delConfirm,el("button",{type:"button",class:"small danger",onclick:()=>{S.archive.splice(idx,1);mark();render();}},u.yes),el("button",{type:"button",class:"small",onclick:()=>{foot.innerHTML="";foot.append(btn);}},u.no)));});
       foot.append(btn);row.append(foot);col.append(row);});
     main.append(col);return;}
+  /* Areas and the feeling-pattern chart are specific to Today and Check-in —
+     they stay keyed to those two literal ids rather than generalising, since
+     neither concept means anything for an arbitrary custom mode. */
   const areaLabels=[...new Set([...namedAreas().map(a=>a.label.trim()),...S.today.map(e=>(e.area||"").trim()).filter(Boolean)])];
-  if(areaLabels.length&&histFilter!=="checkin"){const af=el("div",{class:"filters"});
+  if(areaLabels.length&&(histFilter==="all"||histFilter==="today")){const af=el("div",{class:"filters"});
     af.append(el("button",{type:"button","aria-pressed":String(histArea==="all"),onclick:()=>{histArea="all";render();}},u.allAreas));
     areaLabels.forEach(a=>af.append(el("button",{type:"button","aria-pressed":String(histArea===a),onclick:()=>{histArea=a;render();}},a)));
     af.append(el("button",{type:"button","aria-pressed":String(histArea==="none"),onclick:()=>{histArea="none";render();}},u.noAreaFilter));col.append(af);}
@@ -2877,11 +2989,18 @@ function renderHistory(main){const t=T[lang];const h=t.history;const u=t.ui;cons
       const [cell,ci]=cellById(q);
       bars.append(el("div",{class:"barrow"},el("span",{},cellLabel(q)),el("div",{class:"bar-track"},el("div",{class:"bar-fill",style:`width:${pct}%;background:${cellColor(cell,ci).deep}`})),el("span",{class:"cnt"},String(counts[q]))));});
     box.append(bars,el("p",{class:"hint",style:"margin:0 0 .5rem"},h.patterns.of(inRange.length)+". "+h.patterns.note));pat.append(box);};
-  if(histFilter!=="today"&&S.setup.counts) drawPat();col.append(pat);
+  if((histFilter==="all"||histFilter==="checkin")&&S.setup.counts) drawPat();col.append(pat);
   let items=[];
   const areaOk=e=>histArea==="all"||(histArea==="none"?!nonEmpty(e.area):(e.area||"").trim()===histArea);
-  if(histFilter!=="checkin") items.push(...S.today.filter(areaOk).map(e=>({type:"today",e})));
-  if(histFilter!=="today"&&(histArea==="all"||histFilter==="checkin")) items.push(...S.checkins.map(e=>({type:"checkin",e})));
+  modes.forEach(m=>{
+    if(m.id==="today"){
+      if(histFilter==="all"||histFilter==="today") items.push(...keptFor("today").filter(areaOk).map(e=>({type:"today",e})));
+      return;}
+    /* Anything that is not Today only shows under "all" when no area is
+       narrowing the list (areas do not apply to it), or when it is the
+       filter in view explicitly — the same rule Check-in always followed. */
+    if(histFilter===m.id||(histFilter==="all"&&histArea==="all"))
+      items.push(...keptFor(m.id).map(e=>({type:m.id,e})));});
   items.sort((a,b)=>b.e.ts.localeCompare(a.e.ts));
   if(!items.length){col.append(el("p",{class:"aside"},h.empty));main.append(col);return;}
   let lastDay=null;
@@ -3047,7 +3166,7 @@ function toMarkdown(){const t=T[lang];const L=t.labels;const B=S.big;const ST=B.
     FORMAT_BLOCK,
     {block:"meta", app:"useful-next-step", v:6, booklet:1, written:new Date().toISOString(),
      booklet_id:TPL.id, booklet_version:TPL.version, customized:!!TPL.customized,
-     title:TPL.title||null, body:TPL.body, menus:TPL.menus||undefined},
+     title:TPL.title||null, body:TPL.body, menus:TPL.menus||undefined, head:TPL.head||undefined},
     ...tplWidgets().map(w=>({block:"widget", ...w})),
     ...allModules().map(m=>({block:"module", ...m})),
     {block:"person", name:S.name, email:S.person.email, sync:S.person.sync, protect:!!S.person.protect,
@@ -3240,7 +3359,7 @@ function parseRecord(text){const R={found:false,meta:null,note:null,q:null,emo:n
     const wids=v6.filter(o=>o.block==="widget");
     if(mods.length||meta.booklet_id){const {block,...rest}=meta;
       R.template={id:meta.booklet_id,version:meta.booklet_version,customized:!!meta.customized,
-        title:meta.title||undefined,body:meta.body,menus:meta.menus,
+        title:meta.title||undefined,body:meta.body,menus:meta.menus,head:meta.head||undefined,
         modules:mods.map(({block,...m})=>m),
         widgets:wids.map(({block,...w})=>w)};}
     const person=v6.find(o=>o.block==="person")||{};

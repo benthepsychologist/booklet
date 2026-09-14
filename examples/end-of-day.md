@@ -55,7 +55,7 @@ A single JSON object. The app writes this block and reads it back; it holds your
  "full_spec": "https://github.com/benthepsychologist/booklet/blob/main/SPEC.md",
  "blocks": {
   "format": "this block — the format, carried in the file",
-  "meta": "which booklet this is, plus anything shared across modules (body figures, menus)",
+  "meta": "which booklet this is, plus anything shared across modules (body figures, menus, and the booklet's own head:{title,sub})",
   "module": "one activity, whole and portable. One block per activity.",
   "person": "the reader's own settings: name, email, language, question wording overrides",
   "fields": "the board's content, an object keyed by field id",
@@ -98,6 +98,7 @@ A single JSON object. The app writes this block and reads it back; it holds your
    "keep": [
     "fields that survive a finalize"
    ],
+   "upsert": "\"day\" keeps one kept entry per calendar day instead of one per Finalize (entry kind only)",
    "blocks": [
     "see block_types"
    ]

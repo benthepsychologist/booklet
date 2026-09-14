@@ -119,7 +119,7 @@ with no metadata in it and therefore no saving.
 | `block` | one per file? | what it holds |
 | --- | --- | --- |
 | `format` | yes | **this format, carried in the file** — see below |
-| `meta` | yes | `app`, `v`, `booklet`, which booklet this is (`booklet_id`, `booklet_version`, `customized`), and anything the booklet shares across modules (`body`, `menus`) |
+| `meta` | yes | `app`, `v`, `booklet`, which booklet this is (`booklet_id`, `booklet_version`, `customized`), and anything the booklet shares across modules (`body`, `menus`, `head`) |
 | `widget` | **one per widget used** | a whole widget — the data an engine draws with |
 | `module` | **one per activity** | a whole module — see below |
 | `person` | yes | name, email, language, note, question overrides, preferences, the `sync` slot |
@@ -127,6 +127,8 @@ with no metadata in it and therefore no saving.
 | `entries` | **one per activity** | `mode` names the activity, `items` are its kept entries |
 | `board` | yes | the Now board, areas, the archive |
 | `drafts` | yes | anything unfinished, so nothing is lost mid-thought |
+
+**`head` on `meta` is the booklet's own name and tagline** — `{ "title": {…}, "sub": {…} }`, both localised, both optional. It is to the booklet what `title`/`blurb` are to a module: the words shown at the top of the home page, editable in place the same way. Absent, the renderer's own built-in wording shows instead; present, it travels with the file like everything else here.
 
 A reader must skip a block it cannot parse, count it, and say so. It must not abandon the file.
 
@@ -263,7 +265,9 @@ way — there is no bespoke view for any activity in a conforming renderer.
 | `guide` | static reading |
 | `log` | the history of what was kept |
 
-Other keys: `home` (false hides it from the home screen), `head` (copy references for its heading), `chrome` (extra machinery, currently only `"areas"`), `keep` (fields surviving a finalize), `accent`, `icon`, `rail`, and `blocks`.
+Other keys: `home` (false hides it from the home screen), `head` (copy references for its heading), `chrome` (extra machinery, currently only `"areas"`), `keep` (fields surviving a finalize), `upsert` (an `entry` mode's own keep-one-per-day rule — see below), `accent`, `icon`, `rail`, and `blocks`.
+
+**`upsert: "day"` turns Finalize from "add another entry" into "replace today's."** An ordinary `entry` mode keeps every finalized entry side by side — a log. A mode marked `upsert: "day"` keeps at most one kept entry per calendar day: finalizing again on a day that already has one replaces it rather than adding a second, and reopening that activity later the same day starts from what is already kept rather than blank. Everything else about an `entry` mode — its blocks, its history listing, its chip strip — behaves exactly the same either way.
 
 `pinned: true` marks an activity the booklet keeps **one tap away from every
 page** rather than one you go and do — important contacts, a statement of what
