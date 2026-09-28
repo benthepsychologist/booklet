@@ -1,0 +1,50 @@
+# Every pull request runs this. A module is text and config, not code, so what
+# there is to check is whether it is VALID and whether it is HONEST about
+# itself — which is exactly what the validator in this repo checks.
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The generated files are stamped with the git COMMIT TIME of their
+          # inputs, so that they are byte-identical in every clone. A shallow
+          # checkout has no commit for those paths, `git log -- <file>` returns
+          # nothing, and the stamp silently falls back to file mtime — which in
+          # CI is the moment of checkout. Full history, or the freshness checks
+          # fail on every run for a reason that looks like nothing.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Every check, the same way a person runs them
+        # test/run.sh runs the engine checks, the linter over every booklet,
+        # module and widget (warnings never fail a build), whether the example
+        # booklet and registry.json are current, and every test/*.test.js it
+        # finds. It exits 1 if any of them fails and prints that one in full.
+        run: bash test/run.sh
+
+      - name: Does every registry entry point at a file that exists?
+        run: |
+          node -e '
+            const fs=require("fs");
+            const reg=JSON.parse(fs.readFileSync("registry.json","utf8"));
+            let bad=0;
+            for (const m of reg.modules) {
+              if (m.module) continue;                 // carried inline, nothing to fetch
+              if (!m.file) { console.log("⛔ "+m.id+" names neither a file nor a module"); bad++; continue; }
+              if (!fs.existsSync(m.file)) { console.log("⛔ "+m.id+" points at "+m.file+", which is not here"); bad++; }
+            }
+            console.log(reg.modules.length+" entries checked, "+bad+" broken");
+            process.exit(bad?1:0);'
