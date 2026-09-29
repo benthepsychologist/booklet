@@ -2398,15 +2398,11 @@ const EMPTY_BOOKLET={booklet:2, id:"", version:"", modules:[], widgets:[], body:
 /* Modules the page has been *offered* — fetched from a site's module folder,
    or pasted in. Never baked in: this starts empty and stays empty unless
    something puts a module in it. */
-/* A module file is markdown with one fenced module block; the bare JSON works
-   too, so a folder can hold either. */
-function moduleFromText(txt){
-  const fenced=String(txt||"").match(/```json\s*\n([\s\S]*?)\n```/);
-  let o=null;try{o=JSON.parse(fenced?fenced[1]:txt);}catch(e){return null;}
-  if(!o||typeof o!=="object") return null;
-  const {block,...mod}=o;
-  return moduleOk(mod)?mod:null;}
-
+/* KNOWN GAP (2026-09-29): moduleFromText() (v1 JSON-fence module parser) and
+   resolveShelf() (fetch-and-parse a shelf entry through it) were deleted with
+   the "add a map" feature, the last thing that called them — see STATUS.md.
+   The current "Add a module" dialog uses the v2-aware shelfText()/
+   addModuleFromText() path instead. */
 /* The wrapper — a published site — may say where its modules live and hand the
    page a starter booklet. It does that by putting a config element in the page
    around this one. That element is not part of
@@ -2512,15 +2508,6 @@ async function loadShelf(){
   if(!urls.length) return;
   await Promise.all(urls.map(loadRegistry));}
 
-/* A listing becomes a real module only when somebody actually adds it. */
-async function resolveShelf(id){
-  const L=SHELF[id];if(!L) return null;
-  if(L.mod) return JSON.parse(JSON.stringify(L.mod));
-  if(!L.url) return null;
-  try{const r=await fetch(L.url,{cache:"no-cache"});if(!r.ok) return null;
-    const mod=moduleFromText(await r.text());
-    if(!mod||!moduleOk(mod)) return null;
-    L.mod=mod;return JSON.parse(JSON.stringify(mod));}catch(e){return null;}}
 
 /* A published site may hand over a PRESET: a design with no content — a blank
    workbook — so a first visit is not an empty page. It is taken only when
@@ -3334,40 +3321,19 @@ function Q(scope,key){const [dl,dh,dt,dopts]=qDefault(scope,key);const o=S.q[sco
   return {label:nonEmpty(o.label)?o.label:dl,hint:nonEmpty(o.hint)?o.hint:dh,type,rawType,options:opts,defaultType:dt};}
 function qSet(scope,key,patch){const id=scope+"."+key;const cur=S.q[id]||{};S.q[id]={...cur,...patch};const o=S.q[id];
   const [dl,dh,dt]=qDefault(scope,key);if(!nonEmpty(o.label)&&!nonEmpty(o.hint)&&!(o.options||[]).length&&(!o.type||o.type===dt)) delete S.q[id];mark();}
-/* inline editor for one question: wording, hint, answer type, options */
-function qEditor(scope,key,onChange){const u=T[lang].ui;const id=scope+"."+key;const [dl,dh]=qDefault(scope,key);const o=()=>S.q[id]||{};
-  const box=el("div",{class:"qedit"});
-  const li=el("input",{type:"text",class:"field",placeholder:dl});li.value=o().label||"";
-  const hi=el("input",{type:"text",class:"field",placeholder:dh||"—"});hi.value=o().hint||"";
-  const ty=el("select",{class:"field"});for(const [k,lbl] of Object.entries(u.types)){const op=el("option",{value:k},lbl);if(Q(scope,key).rawType===k) op.selected=true;ty.append(op);}
-  const oi=el("input",{type:"text",class:"field"});oi.value=Q(scope,key).options.join(", ");
-  const need=el("p",{class:"hint needopts",style:"margin:0 0 .5rem;color:var(--warn)"},u.needOptions);
-  const syncNeed=()=>{const q=Q(scope,key);need.hidden=!((q.rawType==="single"||q.rawType==="multi")&&!q.options.length);};
-  li.addEventListener("input",()=>{qSet(scope,key,{label:li.value});onChange&&onChange();});
-  hi.addEventListener("input",()=>{qSet(scope,key,{hint:hi.value});onChange&&onChange();});
-  ty.addEventListener("change",()=>{qSet(scope,key,{type:ty.value});syncNeed();onChange&&onChange();if(ty.value!=="text"&&!Q(scope,key).options.length) oi.focus();});
-  oi.addEventListener("input",()=>{qSet(scope,key,{options:splitList(oi.value)});syncNeed();onChange&&onChange();});
-  const reset=el("button",{type:"button",class:"small",onclick:()=>{delete S.q[id];mark();li.value="";hi.value="";oi.value=qDefault(scope,key)[3].join(", ");ty.value=qDefault(scope,key)[2];syncNeed();onChange&&onChange();}},u.reset);
-  box.append(el("div",{class:"qrow"},el("span",{},u.qLabel),li),el("div",{class:"qrow"},el("span",{},u.qHint),hi),el("div",{class:"qrow"},el("span",{},u.qType),ty),
-    el("div",{class:"qrow"},el("span",{},u.qOptions),oi),need,el("p",{class:"hint",style:"margin:0 0 .5rem"},u.qOptionsHint),reset);
-  syncNeed();return box;}
-/* a question field: free text with chips, or single/multiple choice pills; starter-aware; editable in place */
-function qField(obj,key,scope,qkey,opt={}){const u=T[lang].ui;const box=el("div",{class:"qfield"});const answer=el("div",{});let editor=null;
-  const toggleEdit=()=>{if(editor){editor.remove();editor=null;}else{editor=qEditor(scope,qkey,()=>drawAnswer());box.append(editor);}drawAnswer();};
+/* a question field: free text with chips, or single/multiple choice pills; starter-aware */
+function qField(obj,key,scope,qkey,opt={}){const u=T[lang].ui;const box=el("div",{class:"qfield"});const answer=el("div",{});
   const drawAnswer=()=>{answer.innerHTML="";const q=Q(scope,qkey);const id="f_"+Math.random().toString(36).slice(2,8);
     const lab=el("label",{class:"lbl",for:id},q.label,q.hint?el("span",{class:"hint"},q.hint):null);answer.append(lab);
-    /* inline edits are hidden until the page is put into edit mode */
-    const editBtn=null;                    // KNOWN GAP 2026-09-29: was the inline question-rewording button, block editor only
     if(q.type==="text"&&q.rawType==="text"){
       const chips=el("div",{class:"optchips"});
       const w=bindTextarea(obj,key,"",opt.rows||2,opt.st||null,()=>drawSave());w.ta.id=id;
       const insert=txt=>{obj[key]=nonEmpty(obj[key])?obj[key].trim()+", "+txt:txt;w.ta.value=obj[key];mark();w.grow();if(opt.st&&opt.st.has()){opt.st.clear();w.ta.classList.remove("starter");w.querySelector(".startertag")?.remove();}drawSave();};
       q.options.forEach(o=>chips.append(el("button",{type:"button",class:"opt",onclick:()=>insert(o)},o)));
       (opt.recency||[]).filter(r=>!q.options.includes(r)).forEach(r=>chips.append(el("button",{type:"button",class:"opt recent",title:u.fromCheckin,onclick:()=>insert(r)},r)));
-      if(editBtn) chips.append(editBtn);
       const save=el("div",{class:"saveopt"});
       const drawSave=()=>{save.innerHTML="";const v=(obj[key]||"").trim().split("\n")[0].trim();const parts=splitList(v);
-        if(nonEmpty(v)&&!q.options.includes(v)&&!(parts.length>1&&parts.every(x=>q.options.includes(x)))) save.append(el("button",{type:"button",class:"linkbtn",onclick:()=>{qSet(scope,qkey,{options:[...q.options,v]});drawAnswer();if(editor){editor.remove();editor=qEditor(scope,qkey,()=>drawAnswer());box.append(editor);}toast(u.kept);}},u.saveOption));};
+        if(nonEmpty(v)&&!q.options.includes(v)&&!(parts.length>1&&parts.every(x=>q.options.includes(x)))) save.append(el("button",{type:"button",class:"linkbtn",onclick:()=>{qSet(scope,qkey,{options:[...q.options,v]});drawAnswer();toast(u.kept);}},u.saveOption));};
       drawSave();answer.append(chips,w,save);}
     else{
       const chosen=()=>splitList(obj[key]);const pills=el("div",{class:"pills"});
@@ -3463,11 +3429,6 @@ const ICONS={
   big:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M15.5 8.5l-2.2 5.3-5.3 2.2 2.2-5.3z"/></svg>',
   checkin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12h4l2.5-6 3 12 2.5-7 1.5 3h5.5"/></svg>'};
 function lastTs(arr){return arr.length?arr.reduce((m,e)=>e.ts>m?e.ts:m,arr[0].ts):null;}
-
-function qGroup(title,list){const d=el("details",{class:"pgroup"},el("summary",{},title));const inn=el("div",{class:"inner"});
-  list.forEach(([scope,key])=>{const q=Q(scope,key);const dd=el("details",{class:"quiet"},el("summary",{},el("span",{class:"qsum"},q.label),el("span",{class:"qtype"},T[lang].ui.types[q.rawType])));
-    dd.append(el("div",{class:"inner"},qEditor(scope,key,()=>{const nq=Q(scope,key);dd.querySelector(".qsum").textContent=nq.label;dd.querySelector(".qtype").textContent=T[lang].ui.types[nq.rawType];})));inn.append(dd);});
-  d.append(inn);return d;}
 
 function nameRow(labelText,current,fallback,onSet){const u=T[lang].ui;
   const inp=el("input",{type:"text",class:"field",style:"min-height:0",placeholder:fallback,"aria-label":labelText});
@@ -4061,24 +4022,16 @@ function dayPicker(key,src,def,draft){const t=T[lang].booklet;const box=el("div"
         draft[key]=on?chosen().filter(x=>!sameOption(x,o)):[...chosen(),optionText(o)];
         if(on) draft.did=(draft.did||[]).filter(x=>!sameOption(x,o));
         mark();draw();drawDid();}},optionText(o)));});
+    // KNOWN GAP (2026-09-29): the "add a map" auto-add-a-card-board-module
+    // action that used to sit here is deleted, not fixed. It parsed a
+    // downloaded module through moduleFromText() (v1-only), so it would have
+    // failed against this repo's own real, version-2-only registry — see
+    // STATUS.md's "Not built yet" list. If a board already exists, open it
+    // directly instead of leaving an empty hint with no action:
     if(!src.length&&!extra.length){const bw=boardWidget();
       const board=bw?tplModules().flatMap(modesOf).find(a=>activityBlocks(a).some(x=>x.widget===bw.id)):null;
-      wrap.append(el("span",{class:"hint"},listWord("emptyMap")+" "),
-        el("button",{type:"button",class:"linkbtn",onclick:async()=>{
-          if(board) return go(board.id);
-          /* a listing says which engines its module needs, so the right one
-             is found without downloading any of them */
-          const found=shelfList().find(L=>(L.engines||[]).includes("card-board")
-            ||((L.mod&&L.mod.widgets)||[]).some(w=>w.engine==="card-board"));
-          if(!found){toast(t.noShelf);return;}
-          const gen=bookletGen;
-          const mod=await resolveShelf(found.id);
-          if(gen!==bookletGen) return;      // another booklet was opened while it downloaded
-          if(mod&&addModule(mod)){toast(t.added(tx(found.title,found.id)));
-            render();const acts=modesOf(mod);
-            go((acts.find(a=>activityBlocks(a).some(x=>(widgetOf(x.widget)||{}).engine==="card-board"))||acts[0]).id);}
-          else toast(t.noShelf);
-        }},listWord(board?"openMap":"addMap")));}};
+      if(board) wrap.append(el("button",{type:"button",class:"linkbtn",onclick:()=>go(board.id)},listWord("openMap")));
+      else wrap.append(el("span",{class:"hint"},listWord("emptyMap")));}};
   const inp=el("input",{type:"text",class:"field",style:"min-height:0",placeholder:listWord("addOwn"),"aria-label":listWord("addOwn")});
   const add=()=>{const v=inp.value.trim();if(!v) return;
     if(!hasOption(chosen(),v)) draft[key]=[...chosen(),v];
@@ -4610,18 +4563,6 @@ function renderModulePage(main,v){const mod=moduleForView(v);
   // every activity in the module) was deleted with the rest of the block
   // editor; moveActivity/showActivity below are now unreachable from any UI.
 }
-/* Moving an activity writes an explicit order for every activity in its
-   module, the same way moveModule() does for modules. */
-function moveActivity(modId,actId,dir){editTemplate(t=>{const m=modWithId(t,modId);
-  if(!m||!Array.isArray(m.activities)) return;
-  const cur=inOrder(m.activities);const i=cur.findIndex(a=>a.id===actId),j=i+dir;
-  if(i<0||j<0||j>=cur.length) return;
-  [cur[i],cur[j]]=[cur[j],cur[i]];
-  cur.forEach((a,k)=>{a.display={...(a.display||{}),order:(k+1)*10};});});}
-function showActivity(modId,actId,on){editTemplate(t=>{const m=modWithId(t,modId);
-  const a=m&&Array.isArray(m.activities)?m.activities.find(x=>x.id===actId):null;
-  if(a) a.display={...(a.display||{}),show:!!on};});}
-
 /* ======================= AN ACTIVITY'S PAGES =======================
    An activity is a list of blocks, or, when it is more than one screen should
    hold, a list of PAGES, each a list of blocks: `pages: [{id, title, blocks},
@@ -4807,38 +4748,10 @@ function defaultTitle(n){const d=declaredLangs(),out={};
   for(const t of (d.length?d:["en","es","fr"])){const tt=tableTag(t);
     out[t]=((T[tt]&&T[tt].pages)||T.en.pages).nth(n);}
   return out;}
-/* one page becomes two: the blocks it had are the first, the second is new */
-function splitIntoPages(id){const P=PG();
-  const made=editPages(id,a=>{if(isPaged(a)) return null;
-    const one={id:freshPageId(a),title:defaultTitle(1),blocks:Array.isArray(a.blocks)?a.blocks:[]};
-    const two={id:freshPageId(a,[one.id]),title:defaultTitle(2),blocks:[]};
-    swapKey(a,"blocks","pages",[one,two]);return two.id;});
-  if(made) showPage(id,made);return made;}
-function addPage(id){const P=PG();
-  const made=editPages(id,a=>{if(!isPaged(a)) return null;
-    const names=new Set(a.pages.map(p=>tx(p.title,"")));let n=a.pages.length+1;
-    while(names.has(P.nth(n))) n++;
-    const p={id:freshPageId(a),title:defaultTitle(n),blocks:[]};a.pages.push(p);return p.id;});
-  if(made) showPage(id,made);return made;}
-/* moving writes an explicit order for every page, as moving anything does */
-function movePage(id,pid,dir){editPages(id,a=>{if(isPaged(a)) reorderIn(a.pages,pid,dir);});}
-function renamePage(id,pid,v){editPages(id,a=>{const p=isPaged(a)?a.pages.find(x=>x.id===pid):null;
-  if(p) p.title=setLoc(p.title,v);});}
-/* Deleting a page deletes the blocks on it from the design; nothing anybody
-   wrote is touched. Down to one page, the activity is a one-page activity again. */
-function deletePage(id,pid){const was=currentPage(id).id;
-  editPages(id,a=>{if(!isPaged(a)) return;
-    const order=inOrder(a.pages),i=order.findIndex(p=>p.id===pid);if(i<0) return;
-    a.pages=a.pages.filter(p=>p.id!==pid);settlePages(a);
-    if(!isPaged(a)) showPage(id,"");
-    else if(was===pid) showPage(id,(order[i+1]||order[i-1]).id);});}
-/* A block may not be added on one page if an answer field it owns is already on
-   another: the loader would refuse the module the next time it read it. */
-function fieldElsewhere(id,pid,b){const ps=pagesOf(modeOf(id));if(ps.length<2) return null;
-  const want=new Set(ownedKeys(b));
-  for(let i=0;i<ps.length;i++){if(ps[i].id===pid) continue;
-    for(const x of blocksIn(ps[i])) for(const k of ownedKeys(x)) if(want.has(k)) return {key:k,page:pageName(ps[i],i)};}
-  return null;}
+/* KNOWN GAP (2026-09-29): splitIntoPages/addPage/movePage/renamePage/
+   deletePage/fieldElsewhere/pageActions (adding, reordering, renaming and
+   deleting pages) were deleted with the rest of the block editor — they were
+   only ever reachable from withPages' now-removed editing controls. */
 
 /* ---- drawing ---- */
 /* The page on show: its name (a field of its own while editing, named and
@@ -4850,8 +4763,7 @@ let pageLabels={};
 function pageBody(id,draft){const P=PG();const ps=pagesOf(modeOf(id));const cur=currentPage(id),pid=cur.id;
   const box=el("div",{class:"ap-body"});
   if(ps.length>1){const i=ps.indexOf(cur);
-    box.append(el("div",{class:"ap-name"},metaField("h3","ap-title",P.pageName,pageName(cur,i),v=>{
-      renamePage(id,pid,v);const lab=pageLabels[pid];if(lab) lab.textContent=nonEmpty(v)?v:P.nth(i+1);})));}
+    box.append(el("div",{class:"ap-name"},metaField("h3","ap-title",P.pageName,pageName(cur,i))));}
   const listNow=()=>blocksIn(currentPage(id));
   const inPage=fn=>editPages(id,a=>{
     if(isPaged(a)){const p=a.pages.find(x=>x.id===pid);if(p) fn(p.blocks=blocksIn(p));}
@@ -4884,33 +4796,6 @@ function pageMenuKeys(e){const k=e.key;if(!["ArrowDown","ArrowUp","Home","End"].
   const items=[...nav.querySelectorAll(".ap-item")],i=items.indexOf(me);if(i<0) return;
   const j=k==="Home"?0:k==="End"?items.length-1:Math.min(items.length-1,Math.max(0,i+(k==="ArrowDown"?1:-1)));
   e.preventDefault();items[j].focus();}
-/* A page's own controls while editing: move it, or delete it after saying, in
-   place, what goes with it, the way removing a booklet asks. */
-function pageActions(id,p,i,n){const P=PG();const B=T[lang].blockEdit;const name=pageName(p,i);
-  const box=el("div",{class:"ap-acts"});
-  const at=(k,sel)=>`.ap-menu li[data-i="${k}"] ${sel}`;
-  const draw=asking=>{box.innerHTML="";
-    if(!asking){
-      box.append(el("button",{type:"button",class:"small","data-move":"-1",disabled:i===0||null,
-          "aria-label":P.moveUp(name),title:B.up,
-          onclick:()=>{movePage(id,p.id,-1);render();refocus(at(i-1,"[data-move]:not([disabled])"));}},"↑"),
-        el("button",{type:"button",class:"small","data-move":"1",disabled:i>=n-1||null,
-          "aria-label":P.moveDown(name),title:B.down,
-          onclick:()=>{movePage(id,p.id,1);render();
-            /* the moved page's own ↓ if it can go further, else its ↑ */
-            refocus(at(i+1,"[data-move]:not([disabled])"));refocus(at(i+1,'[data-move="1"]'));}},"↓"),
-        el("button",{type:"button",class:"small danger","aria-label":P.remove(name),title:B.remove,
-          onclick:()=>draw(true)},"×"));
-      return;}
-    const keep=el("button",{type:"button",class:"small",onclick:()=>{draw(false);refocus(at(i,".danger"));}},P.keep);
-    box.append(el("div",{class:"ap-confirm",role:"alert"},
-      el("p",{class:"ap-q"},P.removeQ(name)),
-      el("p",{class:"hint"},P.removeP(blocksIn(p).length)+(n===2?" "+P.removeLast:"")),
-      el("span",{class:"bkacts"},keep,el("button",{type:"button",class:"small danger",
-        onclick:()=>{deletePage(id,p.id);render();toast(P.removed(name));
-          refocus('.ap-item[aria-current="page"]');refocus(".ap-plus");}},P.removeGo))));
-    try{requestAnimationFrame(()=>keep.focus());}catch(e){}};
-  draw(false);return box;}
 /* Wrap an activity's view in its pages: the menu on the left when it has
    several, the plus strip when it has one and pages may be added here, or
    nothing at all. */

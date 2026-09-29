@@ -20,7 +20,7 @@ lists (`needs`, `enjoy`, `soothe`) drawn live from a separate "Map" module's
 own fields, and a `didlog` that ticked off which of those picks actually
 happened. Version 2 has no question kind yet for "options pulled from
 another activity's list" or "tick what you picked earlier" — see `SPEC.md`
-§14. Until one exists, this file keeps only the free-text question and the
+§13. Until one exists, this file keeps only the free-text question and the
 plain follow-up questions; the map-linked lists and the tick-off are dropped
 rather than faked.
 

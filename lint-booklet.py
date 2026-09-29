@@ -1330,8 +1330,8 @@ def check_widget_file(f, fm, blocks, broken):
 
 
 
-# ---- format version 2 ------------------------------------------------------
-# A version 2 booklet is Markdown: front matter, prose, and Booklet lines
+# ---- format v0.2 -----------------------------------------------------------
+# A v0.2 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseV2() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -1361,10 +1361,10 @@ def v2_words(kind, s):
 
 
 def check_v2(f, text, fm):
-    """Lint a version 2 booklet. Every problem names its line."""
+    """Lint a v0.2 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a version 2 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.2 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
@@ -1535,7 +1535,7 @@ def check_file(path):
         return
     # No earlier format is read (2026-09-29) — this mirrors the renderer's own
     # parseFile(), which only ever calls parseV2(). `booklet: 1` and anything
-    # else are rejected outright rather than checked against version 1's rules.
+    # else are rejected outright rather than checked against an earlier format's rules.
     err(f, f"front matter must say `booklet: 2` (found {fm.get('booklet')!r}) — "
            f"no earlier format is read")
 

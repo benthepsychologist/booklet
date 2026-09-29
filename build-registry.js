@@ -19,7 +19,7 @@ const path = require("path");
 
 const ROOT = __dirname;
 const FENCE = /```json\n([\s\S]*?)\n```/;
-/* Every module this registry offers is version 2 markdown now — no fenced
+/* Every module this registry offers is v0.2 markdown now — no fenced
    JSON design block, so the old FENCE-based extraction cannot read it. The
    renderer's own parser is the only correct reader of that grammar (front
    matter, callout lines, module fences), so this script requires the same
@@ -48,7 +48,7 @@ function loc(v) {
   for (const k of [...LANG_ORDER, ...Object.keys(v).sort()]) if (typeof v[k] === "string" && v[k]) return v[k];
   return "";
 }
-/* A version 2 file declares one language in its front matter — there is no
+/* A v0.2 file declares one language in its front matter — there is no
    per-string {en, fr, es} dict to scan for tags anymore (section 9). */
 function languagesOf(fm) {
   return fm.lang ? [fm.lang] : [];
@@ -87,11 +87,11 @@ function build() {
     const fm = frontMatter(text);
     const R = A.parseFile(text);
     if (!R.ok || (R.template.modules || []).length !== 1) {
-      throw new Error(`${n}: not one clean version 2 module (${JSON.stringify(R.unread)})`);
+      throw new Error(`${n}: not one clean v0.2 module (${JSON.stringify(R.unread)})`);
     }
     const mod = R.template.modules[0];
     /* Engines come straight from this file's own widget data (each widget
-       block carries its own `engine`) — version 2 has no separate `widgets/`
+       block carries its own `engine`) — v0.2 has no separate `widgets/`
        directory to cross-reference, since a module's widgets travel inside it. */
     const ENGINE = {};
     for (const w of R.template.widgets || []) if (w.id && w.engine) ENGINE[w.id] = w.engine;
@@ -203,7 +203,7 @@ in the list. The renderer fetches this one file — about ${Math.round(JSON.stri
 and downloads a module's own file only when somebody adds it.</p>
 
 <h2>Adding one</h2>
-<p class="note">A module is one version 2 booklet file — Markdown, with the design
+<p class="note">A module is one v0.2 booklet file — Markdown, with the design
 as callout lines and no JSON except a widget's own data. See
 <a href="SPEC.md">SPEC.md</a>. Open a pull request; see
 <a href="https://github.com/benthepsychologist/booklet/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.

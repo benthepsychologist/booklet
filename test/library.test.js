@@ -16,12 +16,7 @@ const src=html.split("<script>\n")[1].split("\n</script>")[0];
 const LS=global.__ls;
 const exampleText=fs.readFileSync(R+"/examples/mindful-check-in.booklet.md","utf8");
 const modText=n=>fs.readFileSync(R+"/modules/"+n+".md","utf8");
-/* modules/ is version 2 markdown now; moduleFromText() (v1 only) returns
-   nothing for it, so a real module object is read the way the renderer
-   itself reads one, then installed exactly as addModule(moduleFromText(...))
-   used to install one. */
-const addMod=(A,n)=>{const t=modText(n);
-  return A.addModule(A.moduleFromText(t)||(A.parseFile(t).template.modules||[])[0]);};
+const addMod=(A,n)=>A.addModuleText(modText(n));
 const LEGACY="useful-next-step.v1", LIBKEY="booklet.library.v1";
 
 let fails=0;
@@ -67,7 +62,7 @@ function boot(){const API={};
   get LIB(){return LIB}, get restoredAtBoot(){return restoredFromBrowser},
   LIB_VIEW, emptyS, emptyToday, emptyCheckin, emptyArea,
   readLib, addEntry, openBooklet, clearLocal, closeBooklet, removeBooklet, createBooklet, saveLocal, loadLocal, mark, flushSave,
-  toMarkdown, parseFile, applyParsed, addModule, moduleFromText, editTemplate, tplModules, render, renderBar, loadText,
+  toMarkdown, parseFile, applyParsed, addModule, addModuleText, editTemplate, tplModules, render, renderBar, loadText,
   followRoute, homeButton, bookletName, finalizeEntry,
   loadPreset, dayPicker,
   orphanSaveTimer(){saveTimer=null;}      // a timer whose handle was lost: only bookletGen can stop it now
@@ -372,51 +367,25 @@ chk("a booklet started there begins as the preset",A.tplModules().map(m=>m.id).j
 noWrapper();delete global.fetch;
 
 // ---- a download that finishes after the reader has moved to another booklet ----
-// Adding an activity from a shelf, and a site's preset, download a file and then
-// apply it to whichever booklet is in memory. The reader can open another booklet
-// while that is in flight. The fake fetch below answers the registry at once and
-// HOLDS every module or preset download until the test releases it, so the switch
-// is made while the request is pending and the answer arrives after it: the
-// ordering is forced, not left to timing. Each result must be dropped, landing in
-// neither booklet.
-{const REGURL="https://site.invalid/registry.json";
- // filler content for a fake download below — only its shape (a valid
- // version 1 module, since the shelf this race exercises is version 1 only)
- // matters here, not which module it is, so it is the dedicated fixture
- // rather than a real (now version 2) registry file.
- const modSrc=fs.readFileSync(__dirname+"/fixtures/module-one-activity.md","utf8");
- const REG={registry:1,name:{en:"Test shelf"},modules:[
-   {id:"race/one",version:"0.1",file:"one.md",title:{en:"Race one"},engines:[]},
-   {id:"race/board",version:"0.1",file:"board.md",title:{en:"Race board"},engines:["card-board"]}]};
- let held=[];
+// A site's preset downloads a file and then applies it to whichever booklet is
+// in memory. The reader can open another booklet while that is in flight. The
+// fake fetch below HOLDS the download until the test releases it, so the
+// switch is made while the request is pending and the answer arrives after
+// it: the ordering is forced, not left to timing. The result must be dropped,
+// landing in neither booklet.
+//
+// KNOWN GAP (2026-09-29): two race tests that used to sit here — the block
+// editor's "+ add activity" shelf button, and the day-picker's "add a map"
+// action — are deleted along with the features themselves (both routed
+// through resolveShelf()/moduleFromText(), v1-only; see STATUS.md's "Not
+// built yet" list). Only the site's-preset race below is unrelated to either
+// and still real.
+{let held=[];
  const release=(i,text)=>held[i].res({ok:true,text:async()=>text});
- global.fetch=url=>/registry\.json$/.test(url)?Promise.resolve({ok:true,json:async()=>REG})
-   :new Promise(res=>held.push({url,res}));
+ global.fetch=url=>new Promise(res=>held.push({url,res}));
  const modulesOf=X=>X.tplModules().length;
- wipe();withWrapper({registries:[REGURL]});
- A=boot();await sleep(20);                      // the shelf is loaded from the registry
- const sa=await A.createBooklet(),sb=await A.createBooklet();
- // KNOWN GAP (2026-09-29): the "+ add activity" shelf-button race test that
- // used to sit here (via A.editing=true) tested the in-browser block editor's
- // own shelf-add button, deleted along with the rest of that editor. The
- // "race/one" registry entry above is now unused by this section, but modSrc
- // and the rest of the setup stay: the "add map" race test below still uses
- // them (modSrc as filler content for its own download; the shared
- // registry/modulesOf/release/held plumbing).
- // the "add map" link on the day picker, which adds a card-board module
- held=[];A.openBooklet(sa.id);
- {const box=A.dayPicker("k",[],["Things",""],{});
-  const link=findAll(box,n=>n.tagName==="button")[0];
-  chk("the day picker offers to add a map when it has none",!!link);
-  const p=click(link);await sleep(0);
-  chk("its download is pending",held.length===1&&/board\.md$/.test(held[0].url),String(held.length));
-  A.openBooklet(sb.id);release(0,modSrc);await p;
-  chk("a map still downloading when the reader switched does not land in the booklet opened since",
-    A.currentId===sb.id&&modulesOf(A)===0,"B holds "+modulesOf(A));
-  A.openBooklet(sa.id);
-  chk("nor in the booklet it was asked for in",modulesOf(A)===0,"A holds "+modulesOf(A));}
  // a site's preset, applied after its request comes back
- noWrapper();wipe();held=[];withWrapper({});
+ wipe();withWrapper({});
  A=boot();
  const pa=await A.createBooklet(),pb=await A.createBooklet();
  withWrapper({preset_url:"https://site.invalid/preset.booklet.md"});

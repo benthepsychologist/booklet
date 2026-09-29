@@ -11,7 +11,7 @@ version: "0.1"
 A **board**: a page you edit in place and never finalize, together with a
 weekly review that reads it back to you instead of handing you a blank page.
 
-Both live in one module now, on purpose: a version 2 activity can only read
+Both live in one module now, on purpose: a v0.2 activity can only read
 another activity's answers within its own module, never across a module
 boundary, so keeping the board's fields readable by the review means keeping
 them together.

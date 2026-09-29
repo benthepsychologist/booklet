@@ -6,7 +6,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 # Making a booklet
 
 **Skill version: 0.2.0** — matches the project's current version (SPEC.md's
-"project v0.2") now that this skill teaches version 2, the current format.
+"project v0.2") now that this skill teaches v0.2, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. Above a long
@@ -135,7 +135,7 @@ pages, then booklet lines.**
 | Which **lines**? | Open with a line or two of plain prose: what to do, roughly how long, and that anything can be skipped. On a page that asks questions, 3 to 6 of them, mostly `text` (section 6). |
 
 A **quiz** has no scoring and no multiple choice with a visible answer key —
-version 2 has no way yet to fold a block away for the reader to check
+v0.2 has no way yet to fold a block away for the reader to check
 themselves (section 6 says what to do instead: put the answer in ordinary
 prose after the question, or on the next page). A **matching** quiz lists the
 options in prose (a word bank, in a different order from the questions), then
@@ -315,7 +315,7 @@ it, each starting with `>`, no blank line between:
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **Nothing folds a question away.** Version 2 has no working equivalent of
+- **Nothing folds a question away.** v0.2 has no working equivalent of
   an older version's "optional questions, folded shut until opened." If a
   request calls for that (a quiz's answer key, "a couple more if you want
   them"), the honest options are: put the extra material as ordinary prose
@@ -325,7 +325,7 @@ it, each starting with `>`, no blank line between:
 - **Nothing reads another activity's board or tick list yet.** An older
   version could draw a list of options pulled live from a different
   activity's own answers, and a tick-list of what was actually done from
-  it. Neither has a working kind in version 2 yet (`SPEC.md` §14). If a
+  it. Neither has a working kind in v0.2 yet (`SPEC.md` §13). If a
   request needs this, say so plainly and offer a plain `text` or `lines`
   question instead, in the same activity.
 - **`matrix`** (several items against one shared scale, like a symptom
@@ -433,7 +433,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a version 2 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.2 file is written in one language` | add it |
 | bad language tag | `front matter `lang: de`: 'de' is a language the renderer has no interface table for …` | use en, es, es-AR or fr |
 | region spelled wrong | `'fr-ca' is not spelled the way a tag is: lowercase language, uppercase region (es-AR)` | `fr-CA` |
 | a module opened twice | `'x' opens before 'y' (line N) is closed` | close the first module before opening another |
@@ -605,7 +605,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 ## 11. If you have the Booklet repository
 
 A module offered from the repository's own registry is written exactly the
-same way as any other booklet above — one version 2 file, one language, its
+same way as any other booklet above — one v0.2 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 
@@ -614,7 +614,6 @@ python3 lint-booklet.py my-module.booklet.md
 ```
 
 For anything this document does not cover — matrix questions once they are
-drawn, a Booklet plugin for Obsidian — `SPEC.md` is the authority. A version 1
-file (fenced JSON design, `booklet: 1`) is no longer read by this renderer or
-validator at all (2026-09-29); there is no converter, and no spec left to
-translate it against. Say so plainly if someone hands you one.
+drawn, a Booklet plugin for Obsidian — `SPEC.md` is the authority. If someone
+hands you a file this renderer and validator refuse to open, say so plainly
+rather than guessing at what it might have once been.

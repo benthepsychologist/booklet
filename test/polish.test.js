@@ -33,7 +33,7 @@ global.document.createElement=tag=>{const n=mk0(tag);
 /* One page load: the renderer's one <script> evaluated afresh. */
 function load(source){const API={};
   eval(source+`
-;Object.assign(API,{moduleFromText,addModule,render,editTemplate,modeOf,blockName,Q,tx,copyAt,locBag,parseFile,
+;Object.assign(API,{addModule,render,editTemplate,modeOf,blockName,Q,tx,copyAt,locBag,parseFile,
   T,TSRC,citeScope,showPage,currentPage,getPanel:()=>citePanelEl,getView:()=>view,
   setEditing:v=>{editing=v},setView:v=>{view=v},getTPL:()=>TPL,setLang:l=>{lang=l},getLang:()=>lang,
   fresh:()=>{S=emptyS();D={today:emptyToday(),checkin:emptyCheckin()};TPL=EMPTY_BOOKLET;
@@ -63,8 +63,8 @@ function show(mod,act,l,editing){A.fresh();A.addModule(clone(mod));A.setLang(l);
 // ---- 1. the three shipped modules
 // This used to check three real, shipped modules (daily-journal, decision-log,
 // weekly-review) for a folded group named correctly in every language. All
-// three are version 2 markdown now: they carry one language each (SPEC.md §9,
-// no {en,fr,es} dicts left to name a group from), and version 2 has no folded-
+// three are v0.2 markdown now: they carry one language each (SPEC.md §9,
+// no {en,fr,es} dicts left to name a group from), and v0.2 has no folded-
 // question-group kind yet at all — every one of their folded groups was
 // unfolded into plain sequential questions during the conversion (Ben,
 // 2026-09-28: "we do not need legacy support"). The mechanism itself is not
@@ -141,10 +141,10 @@ chk("a widget's words missing in one language read the next language, one by one
   (A.setLang("es-AR"),A.locBag({en:{h:"E",p:"EP"},es:{h:"S"}},{})).p==="EP"&&A.locBag({en:{h:"E",p:"EP"},es:{h:"S"}},{}).h==="S");
 A.setLang("en");
 {const dlText=moduleText("decision-log");
- // modules/ is version 2 now, one language (English) per file; the French
+ // modules/ is v0.2 now, one language (English) per file; the French
  // case here is retired with it (see the note above section 1) — decision-log
  // itself still exercises a block named by its own words, in English only.
- const mod=A.moduleFromText(dlText)||(A.parseFile(dlText).template.modules||[])[0];
+ const mod=(A.parseFile(dlText).template.modules||[])[0];
  for(const [l,h] of [["en","What else you considered"]]){show(mod,"decision",l);
    chk(`decision-log [${l}]: its one-line list is headed by the block's own words`,byTag("h3").map(flat).includes(h),byTag("h3").map(flat).join(" | "));
    /* the module's data, not the renderer: q named copy.decision.f.options,

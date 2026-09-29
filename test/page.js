@@ -54,7 +54,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   get lang(){return lang},set lang(v){lang=v}, get view(){return view},set view(v){view=v},
   get TPL(){return TPL}, get S(){return S}, get D(){return D}, set editing(v){editing=v}, get editing(){return editing},
   T, TSRC, BLOCK_KINDS, KINDS, CONTACTS, TODAY_KEYS, TODAY_LISTS, BODY_KEYS, AREA_KEYS, CALLOUT_KINDS, SOURCE_KINDS,
-  leafPaths, langParity, createBooklet, closeBooklet, saveLocal, addModule, moduleFromText, addModuleText,
+  leafPaths, langParity, createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
   moduleTextProblems, editTemplate, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, tplModules, tplModes, tplWidgets, isMulti,
   moduleView:id=>MODULE_VIEW+id, openExport, openLock, openUnlock, openSafety, maybeRemind, blankBlock,

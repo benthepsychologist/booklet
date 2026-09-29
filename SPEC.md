@@ -1,23 +1,18 @@
-# The booklet format, version 2
+# The booklet format, v0.2
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
-> **Status: project v0.2, draft.** This is a young, evolving format — two
-> version numbers appear in this document and they mean different things.
-> **"Version 2"**, in the title above and in every file's `booklet: 2` front
-> matter, is the *file format generation*: which of the two storage schemes
-> this repository's renderer reads a given file as (version 1 kept its whole
-> design in fenced JSON; version 2 keeps it as Markdown). **"v0.2"** is the
-> *project's own maturity marker* — this spec, the renderer and the tests
-> together, as a whole — and is unrelated to the file-format number. Neither
-> promises stability yet: the file format itself extends compatibly (a
-> reader from before a change still opens a file that uses it, per
-> [what version 2 drops from version 1](#10-what-version-2-drops-from-version-1)
-> and this document's own future addenda), but nothing here is frozen.
-> Version 1 is no longer read, written, or documented (2026-09-29): the
-> reference renderer and validator only ever recognize `booklet: 2`.
+> **Status: v0.2, draft.** This is a young, evolving format — v0.2 is the one
+> version number that matters: this spec, the renderer, the skill and the
+> tests, together. `booklet: 2` in a file's front matter is just this
+> document's own internal marker for "a file this spec describes," not a
+> second version number to think about. Nothing here is frozen: the format
+> itself may extend compatibly (a reader from before a change still opens a
+> file that uses it), but it doesn't promise stability yet. There is no
+> earlier format to compare against or convert from — it was retired
+> entirely on 2026-09-29, and this spec no longer documents or mentions it.
 
-**Why it looks like this, in short.** Version 1 stored a booklet's design as fenced JSON beside its prose — readable, but not really hand-*editable*: nobody sits down and retypes a JSON object correctly by hand. Version 2 rebuilds the design itself as Markdown, using constructs that already exist and already render somewhere real — GitHub's task lists and callouts, Obsidian's callouts and block embeds, CommonMark's footnotes — rather than inventing new syntax to parse. What Booklet needs and no existing convention supplies (a question's type, a module's boundary) is one small vocabulary of callout lines, `> [!kind|id] Title`, so there is exactly one new grammar to learn, not several. The full account of what was surveyed and why each choice was made is [`docs/why-markdown.md`](docs/why-markdown.md).
+**Why it looks like this, in short.** A booklet's design used to live as fenced JSON beside its prose — readable, but not really hand-*editable*: nobody sits down and retypes a JSON object correctly by hand. v0.2 rebuilds the design itself as Markdown, using constructs that already exist and already render somewhere real — GitHub's task lists and callouts, Obsidian's callouts and block embeds, CommonMark's footnotes — rather than inventing new syntax to parse. What Booklet needs and no existing convention supplies (a question's type, a module's boundary) is one small vocabulary of callout lines, `> [!kind|id] Title`, so there is exactly one new grammar to learn, not several. The full account of what was surveyed and why each choice was made is [`docs/why-markdown.md`](docs/why-markdown.md).
 
 ---
 
@@ -31,11 +26,10 @@
 7. [Widgets and other data](#7-widgets-and-other-data)
 8. [Records: what a reader answered](#8-records-what-a-reader-answered)
 9. [Languages](#9-languages)
-10. [What version 2 drops from version 1](#10-what-version-2-drops-from-version-1)
-11. [Obsidian and GitHub: what to expect](#11-obsidian-and-github-what-to-expect)
-12. [A complete booklet](#12-a-complete-booklet)
-13. [Conformance](#13-conformance)
-14. [What's not built yet](#14-whats-not-built-yet)
+10. [Obsidian and GitHub: what to expect](#10-obsidian-and-github-what-to-expect)
+11. [A complete booklet](#11-a-complete-booklet)
+12. [Conformance](#12-conformance)
+13. [What's not built yet](#13-whats-not-built-yet)
 
 ---
 
@@ -54,7 +48,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ## 2. The file: name and front matter
 
-**Name.** `<slug>.booklet.md`, and for a translation `<slug>.<lang>.booklet.md`, for example `tides.booklet.md` and `tides.es.booklet.md`. Obsidian shows the note as `tides.booklet`, which is fine. As in version 1, a reader decides what a file is from its contents, never its name.
+**Name.** `<slug>.booklet.md`, and for a translation `<slug>.<lang>.booklet.md`, for example `tides.booklet.md` and `tides.es.booklet.md`. Obsidian shows the note as `tides.booklet`, which is fine. A reader decides what a file is from its contents, never its name.
 
 **Front matter.** Flat keys only, because Obsidian's Properties editor treats nested values as second-class and may rewrite the block when a property is edited. A renderer must accept any key order and any quoting.
 
@@ -71,7 +65,7 @@ license: CC-BY-4.0
 ```
 
 - `booklet` is the file format generation this file uses (see the status note above). `id` names this booklet across its translations and versions. `lang` is the one language this file is written in (section 9).
-- `copyright`, `license` and `source` replace version 1's `rights` object. Version 1 kept rights inside the module's JSON block because front matter was lost when a module was pasted into somebody's booklet; in version 2 the file is the unit that travels (section 3), so the front matter travels with it.
+- `copyright`, `license` and `source` live in front matter — the file is the unit that travels (section 3), so the front matter travels with it.
 - Reserved by Obsidian and therefore never used for anything else: `tags`, `aliases`, `cssclasses`.
 
 ---
@@ -97,7 +91,7 @@ license: CC-BY-4.0
 - A linter and a renderer refuse a file whose module is opened and not closed, closed and not opened, or whose fences overlap. Modules bleeding into each other is the failure this rule prevents.
 - Within a module, an activity may read another's answers and entries by id. Across modules it may not, and a renderer refuses a reference that crosses.
 - **Bare activities and modules may share a file.** A bare activity sits outside any module fence, by convention before the first one, and refers to nothing else. A file with no module fence is bare activities only: a worksheet needs no more.
-- Module ids stay unique across a person's collection; adding a module whose id is already present replaces it, as in version 1.
+- Module ids stay unique across a person's collection; adding a module whose id is already present replaces it.
 
 **Where data goes: inline, at the end, or in another file.** The blocks a module's activities refer to (widgets, figures, menus, image definitions) may sit inside the module's own fence, in the booklet's data section at the end (opened by a `> [!data] Data` line), or in another file that the manifest names. The one place they may not sit is inside another module's fence. A reference is looked up in the module's own fence, then the data section, then the files the manifest names.
 
@@ -134,19 +128,19 @@ Prose, headings, questions…
 
 The word after the id is the activity's kind:
 
-| kind | what it means | version 1 name |
-| --- | --- | --- |
-| *(none)* | answered once, edited in place | `board`, and `guide` |
-| `repeat` | each completion is kept as a dated entry, with a history | `entry` |
-| `repeat daily` | one kept entry per day; completing again replaces today's | `entry` with `upsert: day` |
+| kind | what it means |
+| --- | --- |
+| *(none)* | answered once, edited in place |
+| `repeat` | each completion is kept as a dated entry, with a history |
+| `repeat daily` | one kept entry per day; completing again replaces today's |
 
-Flags that may follow: `pinned` (kept one tap away from every page, as version 1's `pinned`), `hidden` (kept in the file, not offered).
+Flags that may follow: `pinned` (kept one tap away from every page), `hidden` (kept in the file, not offered).
 
 **Pages are separated by a horizontal rule.** Any thematic break inside an activity (`---`, `***`, `___`) is a page break, the way Marp splits slides. A page's name in the left menu is its first heading, at whatever level; a page with no heading is "Page 2". An activity with no rule is one page.
 
 ⚠️ `---` needs a blank line above it, or Markdown turns the line before it into a heading and the page break vanishes. `***` has no such trap. Both are accepted.
 
-**Links between activities** are ordinary heading links, which Obsidian resolves natively: `[[#Check yourself]]` or `[Check yourself](#check-yourself)`. The renderer opens the activity that contains that heading. This replaces version 1's `guide` and `guideLabel` keys. Reading another activity's *answers* is a module matter, above.
+**Links between activities** are ordinary heading links, which Obsidian resolves natively: `[[#Check yourself]]` or `[Check yourself](#check-yourself)`. The renderer opens the activity that contains that heading. Reading another activity's *answers* is a module matter, above.
 
 ---
 
@@ -186,7 +180,7 @@ In Obsidian, an unknown kind renders as a note-style callout with the title, so 
 > [!lines|wins] Three things that went well
 ```
 
-`text` is a text answer; `long` asks for a bigger box. `lines` is repeated one-line entries (version 1's `headlines`).
+`text` is a text answer; `long` asks for a bigger box. `lines` is repeated one-line entries.
 
 ### Choice: pick one, pick any
 
@@ -201,10 +195,10 @@ In Obsidian, an unknown kind renders as a note-style callout with the title, so 
 - [ ] Curious
 ```
 
-- `choice` takes one answer, `multi` any number. `open` lets the reader add options of their own (version 1's `list` with its free add).
+- `choice` takes one answer, `multi` any number. `open` lets the reader add options of their own.
 - **`[x]` marks a correct option**, for study booklets. A worksheet with no right answer leaves every box `[ ]`. In Obsidian's Reading view, a click on a checkbox rewrites `[ ]` to `[x]` in the file — a real behavior, and the accepted trade-off: a booklet's own reader answers it in Booklet, never by clicking a checkbox in an Obsidian note, so the answer key is never at risk from ordinary use.
-- **Options are identified by position, not by id.** The third option is the third option in every language file too, so a whole questionnaire carries one id. This is what removes per-item tags. A file that reorders options after people have answered breaks its own answers, the same way version 1's menus did.
-- `of=plans` makes the options the reader's own answers to question `plans` (version 1's `didlog`: "tick what actually happened").
+- **Options are identified by position, not by id.** The third option is the third option in every language file too, so a whole questionnaire carries one id. This is what removes per-item tags. A file that reorders options after people have answered breaks its own answers.
+- `of=plans` makes the options the reader's own answers to question `plans` — ticking off what actually happened.
 
 ### Scale, number, date
 
@@ -302,7 +296,7 @@ Most harbours see two high tides each lunar day.[^atlas-12]
 [^atlas-12]: *The Harbour Tide Atlas*, 2nd edition (2019), p. 12: "The tide rises and falls twice in each lunar day." Verified 2026-09-20.
 ```
 
-**A footnote's note, read into a citation.** The reference renderer reads a definition's text and, where it fits the pattern `*Title*, details, p. N: "quote" Verified YYYY-MM-DD.`, turns it into a source and a citation — the exact shape version 1's citation panel already draws from (its title, edition, page, quote, and verified badge). This gives a version 2 booklet the same numbered mark, side panel, hover preview and verified badge a version 1 reading module has, with no separate registry to maintain. A note that doesn't fit the pattern becomes the quote alone, with no source; the panel shows this gracefully (a plain "no source" line) rather than failing. The pattern, piece by piece:
+**A footnote's note, read into a citation.** The reference renderer reads a definition's text and, where it fits the pattern `*Title*, details, p. N: "quote" Verified YYYY-MM-DD.`, turns it into a source and a citation — title, edition, page, quote, and verified badge. This gives a reading module a numbered mark, side panel, hover preview and verified badge, with no separate registry to maintain. A note that doesn't fit the pattern becomes the quote alone, with no source; the panel shows this gracefully (a plain "no source" line) rather than failing. The pattern, piece by piece:
 
 | piece | example | required? |
 | --- | --- | --- |
@@ -324,7 +318,7 @@ Reference style, with the address at the end of the file among the data, so the 
 [harbour]: images/harbour.jpg
 ```
 
-Images are linked, never embedded, as in version 1.
+Images are linked, never embedded.
 
 ### Figures: diagrams placed by reference
 
@@ -349,7 +343,7 @@ Obsidian draws the diagram natively at the embed. On GitHub the embed line shows
 
 ## 7. Widgets and other data
 
-**A widget is data, never code** (unchanged from version 1). Its data is a fenced block named `booklet widget`, with a block id after it, and it is placed and operated through a `widget` line:
+**A widget is data, never code**. Its data is a fenced block named `booklet widget`, with a block id after it, and it is placed and operated through a `widget` line:
 
 ````markdown
 > [!widget|body] Where do you feel it?
@@ -364,10 +358,10 @@ Obsidian draws the diagram natively at the embed. On GitHub the embed line shows
 ````
 
 - The fence holds JSON or YAML (YAML reads JSON, so JSON always works). Strings in YAML must be quoted.
-- `engine` names what draws it: `svg-regions`, `grid-select`, `card-board`, as in version 1. Labels are plain strings, because the file has one language.
+- `engine` names what draws it: `svg-regions`, `grid-select`, `card-board`. Labels are plain strings, because the file has one language.
 - Settings on the widget line: `readonly` (shown, not operated), `describe` (followed by what each part says about itself).
-- **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 14). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
-- Every `svg` string is sanitized before drawing, exactly as version 1 requires.
+- **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
+- Every `svg` string is sanitized before drawing.
 
 **Data blocks live inside their module's fence, or in the data section at the end** (`> [!data] Data`), or in a file the manifest names (section 3). The renderer finds fences by their language word and block id, never by a heading.
 
@@ -398,12 +392,12 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 ````
 
 - `answers` holds once-answered questions, keyed by question id; ids are unique across the file, so no activity prefix is needed. Records sit in the records section at the end, grouped by module under `> [!records|<module>]` lines, never inside a module's fence (section 3).
-- `entries <activity>` holds a `repeat` activity's kept entries, each with a `ts`, identified by timestamp as in version 1. `draft <activity>` holds what is typed and not yet kept.
+- `entries <activity>` holds a `repeat` activity's kept entries, each with a `ts`, identified by timestamp. `draft <activity>` holds what is typed and not yet kept.
 - A choice is stored as the option's position from 1, a scale as the anchor's number. Words are shown by the renderer from the file's own lists.
 - **The whole records section sits inside `%%` … `%%`**, which hides it from Obsidian's Reading view. A block a `![[…]]` embed points to is never put inside `%%`, because an embed cannot reach a block hidden that way — only data no other part of the file references belongs there, and the records section is exactly that.
-- `sync` (where the file is kept) is a record too, preserved unchanged by any reader that doesn't understand it, as in version 1.
+- `sync` (where the file is kept) is a record too, preserved unchanged by any reader that doesn't understand it.
 
-Locked booklets keep version 1's envelope: `encrypted: true` in front matter, one line saying how to open it, and one `booklet locked` fence.
+A locked booklet's envelope: `encrypted: true` in front matter, one line saying how to open it, and one `booklet locked` fence.
 
 ---
 
@@ -417,27 +411,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 ---
 
-## 10. What version 2 drops from version 1
-
-| version 1 | version 2 |
-| --- | --- |
-| the design as fenced JSON `module` blocks | the prose and Booklet lines are the design |
-| `activities`, `mode`, JSON module objects | `module` and `activity` lines |
-| `pages` objects and `display.order` | horizontal rules; written order is the order |
-| `heading`, `prose`, `deflist`, `quote`, `group`, `image` blocks | Markdown |
-| per-language values `{en, fr, es}` and `copy` tables | one language per file |
-| `sources` and `citations` registries, `sources` block | footnotes |
-| `menus` as JSON, picks stored as words | `menu` lines, picks stored as positions |
-| `rights` on the module | front matter keys |
-| the `format` block carried in every file | a link to this document |
-| `person` block | the renderer's own preferences, outside every file |
-| the sixty-dash divider and "found by heading" | fences found by their language word |
-
-Registries stay JSON and simply point at `.booklet.md` files, one per language. A converter from version 1 rewrites each module as a file, keeps every id, turns kept picks into positions by their place in the menu, and carries entries and drafts over. This converter is not built yet (section 14).
-
----
-
-## 11. Obsidian and GitHub: what to expect
+## 10. Obsidian and GitHub: what to expect
 
 **Obsidian: nothing here should cause a problem.** The things that would, and how they are avoided:
 - `#word` anywhere becomes a tag, so no `#` appears in Booklet syntax outside headings.
@@ -448,13 +422,13 @@ Registries stay JSON and simply point at `.booklet.md` files, one per language. 
 - **A checkbox click in Reading view edits the file.** See "Choice" in section 5 for the accepted trade-off.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 
-**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data. **With a Booklet plugin** (not built yet, section 14): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
+**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
 
 **GitHub.** Callout lines show as quotations with the `[!kind|id]` text visible; lists, task lists, footnotes, math and mermaid render; `![[#^id]]` shows as text. Nothing breaks.
 
 ---
 
-## 12. A complete booklet
+## 11. A complete booklet
 
 ````markdown
 ---
@@ -512,13 +486,13 @@ graph LR; New --> Spring --> Quarter --> Neap --> Full
 ^tide-cycle
 ````
 
-Two activities, the first with two pages, one figure placed by reference, one citation, three questions, and no JSON, because nobody has answered yet. A full worked example with kept entries is [`examples/how-tides-work.booklet.md`](examples/how-tides-work.booklet.md); [`examples/mindful-check-in.booklet.md`](examples/mindful-check-in.booklet.md) is a second, showing both widget engines used by version 1's own built-in check-in.
+Two activities, the first with two pages, one figure placed by reference, one citation, three questions, and no JSON, because nobody has answered yet. A full worked example with kept entries is [`examples/how-tides-work.booklet.md`](examples/how-tides-work.booklet.md); [`examples/mindful-check-in.booklet.md`](examples/mindful-check-in.booklet.md) is a second, showing both widget engines.
 
 ---
 
-## 13. Conformance
+## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: 2` by this document, and refuse any other `booklet:` value outright (2026-09-29: version 1 is no longer read); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
+A conforming reader must: read a file whose front matter declares `booklet: 2` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
 
 A conforming writer must: emit front matter with `booklet: 2`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; and never put a data block a `![[…]]` embed points to inside `%%`.
 
@@ -526,14 +500,13 @@ A conforming writer must: emit front matter with `booklet: 2`; keep module ids, 
 
 ---
 
-## 14. What's not built yet
+## 13. What's not built yet
 
 This is a young format, and the reference renderer does not yet do everything this document describes:
 
 - **Matrix questions.** The syntax is settled (section 5); the renderer does not draw one yet.
-- **Editing a version 2 booklet's design in the browser.** Today, editing a version 2 file's design means a text editor, not the renderer — a deliberate, temporary scope decision so the format and the read-only renderer could be proven first. Version 1 files keep their in-browser editor unchanged.
+- **Editing a booklet's design in the browser.** Today, editing a file's design means a text editor, not the renderer — a deliberate, temporary scope decision so the format and the read-only renderer could be proven first.
 - **A Booklet plugin for Obsidian.** Section 6, 7 and 11 describe how one would draw widgets and figures; none exists yet.
-- **A version 1 → version 2 converter.** Section 10 describes what it would do; it has not been written.
-- **A second, independent implementation.** As with version 1, the renderer in this repository is the only reader so far.
+- **A second, independent implementation.** The renderer in this repository is the only reader so far.
 
-None of this affects what already works: loading, reading, answering, and saving a version 2 booklet with every question kind above except matrix, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.2 booklet with every question kind above except matrix, its widgets, and its citations.

@@ -18,14 +18,14 @@ and widgets whole.
 - The renderer, format, validator, build scripts, and modules without a
   `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
-  module's prose and travels with the file, since a version 2 module is the
+  module's prose and travels with the file, since a v0.2 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - `modules/mensio-*.md` are generated publication copies owned upstream by
   `benthepsychologist-corpus`. Do not hand-edit them here. Their source
   repository's adapter updates or withdraws them.
 - Namespace owners control their own ids. Never replace another contributor's
-  module by reusing its id.
+  module or widget by reusing its id.
 
 ## Work loop
 
@@ -33,16 +33,17 @@ and widgets whole.
    `CONTRIBUTING.md` before changing registry content. `SKILL.md` is the
    instruction file handed to an AI agent that makes booklets; when the format
    changes, change it too, since `test/skill.test.js` lints and loads its
-   examples and the booklets built from it.
-2. Edit source modules, never generated registry output.
-3. Run `node build-registry.js` when registry modules or metadata change.
-4. Run `test/run.sh`. It runs the generic engine fixtures, every
+   examples and the booklets agents built from it alone.
+2. Create a feature branch off `main` for the change — never commit to `main`
+   directly.
+3. Edit source modules/widgets, never generated registry output.
+4. Run `node build-registry.js` when registry modules or metadata change.
+5. Run `test/run.sh`. It runs the generic engine fixtures, every
    `test/*.test.js`, the generated registry freshness check, and
-   the validator.
-5. Update `STATUS.md` when capabilities, versions, inventory, or known gaps
-   change.
-
-Every pull request runs the same checks in `.github/workflows/ci.yml`.
+   the validator. Update `STATUS.md` on the branch when
+   capabilities, versions, inventory, or known gaps change.
+6. Open a pull request. `.github/workflows/ci.yml` runs the same checks; a
+   merge to `main` publishes at once (`CONTRIBUTING.md`).
 
 ## Format disciplines
 

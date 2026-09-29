@@ -26,16 +26,12 @@ const PREF="booklet.ui.lang";
    the reader's choice winning over a file's own language WHERE THE FILE OFFERS
    IT, so it is patched to also offer fr/es (prose stays English — only the
    offer, not the wording, matters for this mechanic). */
-/* Version 2 declares one language per file (SKILL.md §8) — a translation is a
+/* v0.2 declares one language per file (SKILL.md §8) — a translation is a
    sibling file with the same id, never a `languages:` list offering several
-   inside one file the way version 1 did. So loading this single-language
+   inside one file the way the earlier format did. So loading this single-language
    file keeps its own `en`, whatever the reader's choice was. */
 const exampleText=fs.readFileSync(R+"/examples/mindful-check-in.booklet.md","utf8");
-/* fixture, not a real registry module: v1-shaped on purpose, since makeBooklet
-   below builds a v1 test booklet and moduleFromText only reads v1's JSON
-   fence — modules/*.md are version 2 now (SPEC.md §14) and no longer parse
-   this way. See test/fixtures/module-one-activity.md. */
-const fixtureModule=fs.readFileSync(R+"/test/fixtures/module-one-activity.md","utf8");
+const fixtureModule=fs.readFileSync(R+"/modules/daily-journal.md","utf8");
 
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
@@ -73,7 +69,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get view(){return view}, get currentId(){return currentId},
   get TPL(){return TPL}, get S(){return S}, get storageOk(){return storageOk}, set editing(v){editing=v},
-  LIB_VIEW, readLib, openBooklet, closeBooklet, createBooklet, saveLocal, addModule, moduleFromText,
+  LIB_VIEW, readLib, openBooklet, closeBooklet, createBooklet, saveLocal, addModule, addModuleText,
   editTemplate, render, loadText, homeButton
 }));`);
   API.toggle=toggle;return API;}
@@ -87,7 +83,7 @@ const bookletRoute=id=>"#/b/"+encodeURIComponent(id);
    saved in, and (optionally) the languages it declares. Returns its id. */
 async function makeBooklet(A,{title,lang,languages}){
   await A.createBooklet();
-  A.addModule(A.moduleFromText(fixtureModule));
+  A.addModuleText(fixtureModule);
   A.editTemplate(t=>{t.head={title:{en:title}};if(languages) t.languages=languages;});
   A.S.note="written in "+title;A.lang=lang;A.saveLocal();
   return A.currentId;}

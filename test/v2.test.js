@@ -1,9 +1,9 @@
-// Format version 2: a booklet written as Markdown loads, draws, keeps what a
+// Format v0.2: a booklet written as Markdown loads, draws, keeps what a
 // reader does, and writes itself back with its design untouched.
 //
 // examples/mindful-check-in.booklet.md is the check-in module rewritten as a
-// version 2 file. Each section below is one promise the renderer makes about it:
-//   1. it is read as version 2, into one module with one repeating activity;
+// v0.2 file. Each section below is one promise the renderer makes about it:
+//   1. it is read as v0.2, into one module with one repeating activity;
 //   2. its widgets arrive whole, in the file's one language;
 //   3. the activity draws: both widgets, the text question and the lines;
 //   4. a finished check-in is kept, written into the records, and read back;
@@ -17,13 +17,13 @@ const EX=fs.readFileSync(P.R+"/examples/mindful-check-in.booklet.md","utf8");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 
-/* 1. read as version 2 */
+/* 1. read as v0.2 */
 let A=P.boot();
 const R=A.parseFile(EX);
 chk("the example parses",R.ok,JSON.stringify(R.unread));
 chk("nothing in the example is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
 const t=R.template||{};
-chk("it is marked version 2",t.booklet===2);
+chk("it is marked v0.2",t.booklet===2);
 chk("its one language is declared",JSON.stringify(t.languages)==='["en"]');
 chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0].id==="mensio-check-in",JSON.stringify((t.modules||[]).map(m=>m.id)));
 const m=(t.modules||[])[0]||{};
@@ -81,7 +81,7 @@ const R3=A.parseFile(bad);
 chk("an unclosed module is reported",R3.unread.some(x=>/never closed/.test(x)),JSON.stringify(R3.unread));
 chk("a question with no id is reported",R3.unread.some(x=>/has no id/.test(x)),JSON.stringify(R3.unread));
 chk("the rest of the file still opens",R3.ok);
-chk("a version 1 file is not read at all — no compat, no exceptions",
+chk("an earlier-format file is not read at all — no compat, no exceptions",
   A.parseFile('---\nbooklet: 1\n---\n\n```json\n{"block":"module"}\n```\n').ok===false);
 
 P.closePages();

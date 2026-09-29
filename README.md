@@ -32,13 +32,11 @@ version: "0.1"
 %%
 ```
 
-This is **version 2** of the format — see [`SPEC.md`](SPEC.md) for the full
+This is **v0.2** of the format — see [`SPEC.md`](SPEC.md) for the full
 format, and [`docs/why-markdown.md`](docs/why-markdown.md) for how it was
 arrived at: what the wider Markdown-tooling field already does, what Booklet
 needs that nothing else supplies, and why each real choice landed where it
-did. **Version 1**, which kept a booklet's design as fenced JSON blocks
-rather than Markdown, is no longer read, written, or documented (2026-09-29):
-the reference renderer and validator only ever recognize `booklet: 2`.
+did.
 
 ---
 
@@ -69,9 +67,9 @@ and it draws those too, as long as they use engines it has.
 - **Block** — the unit of a page. `prose`, `image`, `text`, `headlines`, `list`, `didlog`, `widget`, `group`. Every activity is a list of blocks, whatever its kind — there is no bespoke view for any activity in a conforming renderer.
 - **Preset** — a booklet with a design and no content. A blank workbook.
 
-**Nothing is addressed by position, with one exception.** Modules are found by `id`, board content by field id, kept entries by their timestamp. Where a thing *appears* is set by `display.order` in version 1 (written order, in version 2), and written order decides anything only when no sibling carries an order at all. The exception: a version 2 choice or scale question stores its answer as the option's *position*, not its words, because a translation is a separate file and only a position is guaranteed to match across languages — see [`SPEC.md`](SPEC.md).
+**Nothing is addressed by position, with one exception.** Modules are found by `id`, board content by field id, kept entries by their timestamp. Where a thing *appears* is written order; written order decides anything only when no sibling carries an order at all. The exception: a choice or scale question stores its answer as the option's *position*, not its words, because a translation is a separate file and only a position is guaranteed to match across languages — see [`SPEC.md`](SPEC.md).
 
-**The record is a series of independent JSON blocks, not one object**, in both versions. A block that will not parse costs you that block and nothing else — one mangled module means one missing activity, never a lost file.
+**The record is a series of independent JSON blocks, not one object.** A block that will not parse costs you that block and nothing else — one mangled module means one missing activity, never a lost file.
 
 ---
 
@@ -79,9 +77,9 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, no dependencies. Reads version 2 only — no earlier format opens |
-| [`SPEC.md`](SPEC.md) | the current format (version 2), versioned and published separately from anything that implements it |
-| [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped version 2: the field surveyed, the aims, the choices made and rejected |
+| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, no dependencies. Reads v0.2 only — no earlier format opens |
+| [`SPEC.md`](SPEC.md) | the current format (v0.2), versioned and published separately from anything that implements it |
+| [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.2: the field surveyed, the aims, the choices made and rejected |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
 | [`examples/`](examples/) | complete booklets you can open — `how-tides-work.booklet.md` and `mindful-check-in.booklet.md` |
@@ -265,29 +263,17 @@ a new booklet; a first visit shows the empty list, not the preset.
 - **On the first visit it creates the booklet from the preset.** Once the page
   has loaded, it fetches `preset_url` if the booklet holds no modules, and saves
   the result at once, so a second visit does not fetch it again.
-- **Existing progress is adopted in place.** Renderers from before "Your
-  booklets" kept one save per browser, under the `localStorage` key
-  `useful-next-step.v1`. On a keyed page, the first run of this renderer makes
-  that save the keyed booklet, where it already is: nothing is copied, and the
-  preset is not laid over it.
 - **The key is the booklet's identity in that browser.** Two keys on one
   origin are two booklets with separate answers. Changing a page's key later
   gives its readers a new booklet made from the preset; the old one stays in
   the browser and is listed on any page of the same origin that has no key, but
   the page with the new key no longer opens it.
 
-**Migrating a site when you re-pin the renderer.** If your pages ran a renderer
-from before "Your booklets" and each page is meant to hold one booklet, add
-`"booklet": { "key": "<name>" }` to each page's wrapper **in the same change
-that re-pins the renderer**, and keep that key stable from then on. With the
-key, a returning reader lands straight in their existing booklet, adopted in
-place. Without it, they land on "Your booklets" with their old save as a
-one-item list and must tap it to continue. The renderer only ever calls
-`localStorage.getItem`, `setItem` and `removeItem`, on a few known keys (chiefly
-`booklet.library.v1` for the list, `booklet.b.<id>` for each booklet and
-`useful-next-step.v1` for the old save), and never lists the store. So a page
-that namespaces those three calls per booklet, by prefixing every key, keeps its
-old save under the same prefix, and the adoption finds it there.
+The renderer only ever calls `localStorage.getItem`, `setItem` and
+`removeItem`, on a few known keys (`booklet.library.v1` for the list,
+`booklet.b.<id>` for each booklet), and never lists the store. So a page that
+namespaces those calls per booklet, by prefixing every key, can run several
+independent booklet instances on one origin without their data colliding.
 
 **A booklet's own registries are not read yet.** The renderer's registry code
 also looks for a `registries` list on the open booklet's design, but nothing
@@ -296,9 +282,8 @@ read nor written back. Registries come from the wrapper only.
 
 ### Building a preset
 
-`build-booklet.js`, which used to assemble a preset from version 1 JSON module
-files, is removed — modules/ is version 2 now, and that tool had nothing left
-to read. A version 2 preset is a booklet like any other: write the modules you
+`build-booklet.js`, the old preset-assembly build script, is removed — it has
+nothing left to read. A preset is a booklet like any other: write the modules you
 want as one file (see [`SPEC.md`](SPEC.md) §3 on module fences and manifests,
 or splice several with the renderer's own "Add a module" feature), then check
 it with `python3 lint-booklet.py your-preset.booklet.md`.
@@ -332,13 +317,11 @@ person. Anyone may publish a separate registry under their own policy.
 
 ## Status
 
-**Project v0.2, draft.** Only **version 2** (`SPEC.md`, Markdown-native) is
-read, written, or documented as of 2026-09-29 — version 1, which stored a
-booklet's design as fenced JSON, is retired entirely. There is no
+**v0.2, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
 independent second implementation yet. It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and
-known gaps, and `docs/why-markdown.md` for how version 2 came to be.
+known gaps, and `docs/why-markdown.md` for how v0.2 came to be.
 
 ### What is licensed how
 

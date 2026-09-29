@@ -2,7 +2,7 @@
 
 These are the contribution rules for the public Booklet registry.
 
-A module is one version 2 booklet file: front matter, prose explaining what it
+A module is one v0.2 booklet file: front matter, prose explaining what it
 is, and one `> [!module|…]` … `> [!module|… end]` fence holding its
 activities as callout lines, with a widget's own data (if it has one) fenced
 alongside as JSON. There is **no code in it** — which is why adding one is a
@@ -103,11 +103,9 @@ source: "https://example.org/where-it-lives"
 ---
 ```
 
-**In the front matter, because in version 2 the file itself is the unit that
-travels.** Version 1 kept `rights` inside the module's JSON block specifically
-because front matter was lost when a module was pasted into someone's file;
-version 2 has no such paste-and-lose-it path, so the front matter is where
-these belong now (`SPEC.md` §2).
+**In the front matter, because the file itself is the unit that
+travels** — there is no paste-and-lose-it path, so the front matter is where
+these belong (`SPEC.md` §2).
 
 Leave them out and your module is contributed under this repository's
 Apache-2.0 terms, like the code.
