@@ -14,7 +14,7 @@ const R=__dirname+"/..";
 const html=fs.readFileSync(R+"/booklet.html","utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
 const LS=global.__ls;
-const exampleText=fs.readFileSync(R+"/examples/end-of-day.md","utf8");
+const exampleText=fs.readFileSync(R+"/examples/mindful-check-in.booklet.md","utf8");
 const modText=n=>fs.readFileSync(R+"/modules/"+n+".md","utf8");
 /* modules/ is version 2 markdown now; moduleFromText() (v1 only) returns
    nothing for it, so a real module object is read the way the renderer
@@ -183,52 +183,26 @@ for(const k of Object.keys(before))
  chk("and so does a reload: S, D (with every activity's drafts), TPL, lang, dirty, unsavedEntries",
    Object.keys(before).every(k=>same(before[k],again[k])));}
 
-// ---- an existing single save becomes the first booklet --------------------
+// ---- no earlier save format is adopted — no compat, no exceptions ---------
 wipe();
 freeze("2026-09-26T12:00:00Z");
-let P=boot();                                   // a page with no library at all
-fillRich(P,"L");
-const legacyRaw=JSON.stringify({S:P.S,D:P.D,TPL:P.TPL,lang:P.lang,dirty:P.dirty,unsavedEntries:P.unsavedEntries});
-const expectedMd=P.toMarkdown();
+const legacyRaw=JSON.stringify({S:H.emptyS(),D:{today:H.emptyToday(),checkin:H.emptyCheckin()},
+  TPL:{booklet:1,modules:[]},lang:"en",dirty:false,unsavedEntries:0});
 wipe();LS[LEGACY]=legacyRaw;                   // exactly what every earlier version left behind
-let Q=boot();
-let lib=Q.readLib();
-chk("the old save is listed as the first booklet",lib.entries.length===1&&lib.entries[0].from==="legacy");
-chk("the page still opens on the list, not inside it",Q.view===Q.LIB_VIEW&&Q.currentId===null);
-chk("it is listed by its own name",/Sam L/.test(JSON.stringify(lib.entries[0]))&&Q.bookletName(lib.entries[0]).length>0,
-  JSON.stringify(lib.entries[0]));
-chk("nothing was copied or rewritten: its data stays at the old key, byte for byte",
-  lib.entries[0].key===LEGACY&&LS[LEGACY]===legacyRaw&&!Object.keys(LS).some(k=>k.startsWith("booklet.b.")));
-Q.openBooklet(lib.entries[0].id);
-chk("opened, it writes a byte-identical toMarkdown()",Q.toMarkdown()===expectedMd,
-  (()=>{const x=Q.toMarkdown().split("\n"),y=expectedMd.split("\n");const i=x.findIndex((l,j)=>l!==y[j]);return "first difference at line "+(i+1)+": "+x[i]+" ≠ "+y[i];})());
-chk("and its not-yet-downloaded status came with it",Q.dirty===true&&Q.unsavedEntries===3);
-Q.S.note="carried on in the new version";Q.saveLocal();
-chk("its later saves keep the old key in the old shape, so rolling back loses nothing",
-  JSON.parse(LS[LEGACY]).S.note==="carried on in the new version"&&!!JSON.parse(LS[LEGACY]).TPL);
-{const Q2=boot();
- chk("the next boot does not list it twice",Q2.readLib().entries.length===1);}
-const other=await Q.createBooklet();
-chk("a second booklet beside it gets a key of its own",!!LS["booklet.b."+other.id]&&JSON.parse(LS[LEGACY]).S.note==="carried on in the new version");
-Q.closeBooklet();Q.S.note="written with nothing open";Q.saveLocal();
-chk("once a booklet owns the old key, nothing is written there with no booklet open",
-  JSON.parse(LS[LEGACY]).S.note==="carried on in the new version");
+{const E=boot();
+ chk("an old save sitting under the earlier key is never adopted",E.readLib().entries.length===0);
+ chk("and it is left alone, not cleared",LS[LEGACY]===legacyRaw);}
 thaw();
-wipe();LS[LEGACY]=JSON.stringify({S:P.emptyS(),D:{today:P.emptyToday(),checkin:P.emptyCheckin()},TPL:{booklet:1,modules:[]},lang:"en",dirty:false,unsavedEntries:0});
-{const E=boot();chk("an old save with nothing in it is not listed",E.readLib().entries.length===0);}
 
 // ---- removing a booklet ---------------------------------------------------
-wipe();LS[LEGACY]=legacyRaw;A=boot();
-const la=A.readLib().entries[0];
+wipe();A=boot();
 const n1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
 const n2=await A.createBooklet();addMod(A,"the-board");A.saveLocal();
 A.closeBooklet();
 A.removeBooklet(n1.id);
 chk("removing a booklet takes it off the list and deletes its data",
   !A.readLib().entries.some(e=>e.id===n1.id)&&!("booklet.b."+n1.id in LS));
-chk("and leaves the others as they were",!!LS["booklet.b."+n2.id]&&LS[LEGACY]===legacyRaw&&A.readLib().entries.length===2);
-A.removeBooklet(la.id);
-chk("removing the booklet that came from the old save deletes the old save too",!(LEGACY in LS));
+chk("and leaves the others as they were",!!LS["booklet.b."+n2.id]&&A.readLib().entries.length===1);
 {const B2=boot();chk("and nothing brings it back on the next visit",B2.readLib().entries.length===1);}
 
 // ---- the list view, drawn and clicked through the DOM stub ----------------
@@ -270,7 +244,7 @@ A.loadText(exampleText);
 let L1=A.readLib();
 chk("loading a file on the list adds it as a new booklet and opens it",
   L1.entries.length===1&&L1.entries[0].from==="file"&&A.currentId===L1.entries[0].id
-  &&A.tplModules().map(m=>m.id).join(",")==="example/end-of-day");
+  &&A.tplModules().map(m=>m.id).join(",")==="mensio-check-in");
 A.homeButton();A.loadText(exampleText);
 chk("the same file loaded again is a second booklet, deliberately",A.readLib().entries.length===2);
 A.S.today=[{...A.emptyToday(),ts:"2026-09-23T08:00:00.000Z",mind:"x"}];A.saveLocal();
@@ -373,7 +347,7 @@ wipe();withWrapper({booklet:{key:"learner-1"},preset_url:"https://site.invalid/p
 A=boot();
 chk("a wrapper key opens its booklet directly, with no start page",A.keyedMode&&A.currentId!==null&&A.view==="home");
 await sleep(50);
-chk("on the first visit that booklet is made from the site's preset",A.tplModules().map(m=>m.id).join(",")==="example/end-of-day");
+chk("on the first visit that booklet is made from the site's preset",A.tplModules().map(m=>m.id).join(",")==="mensio-check-in");
 const keyed=A.readLib().entries.find(e=>e.wrapperKey==="learner-1");
 chk("and saved at once under its own key",!!keyed&&!!LS["booklet.b."+keyed.id]&&JSON.parse(LS["booklet.b."+keyed.id]).TPL.modules.length===1);
 A.S.note="the learner's own words";A.saveLocal();
@@ -386,25 +360,6 @@ A.S.note="the learner's own words";A.saveLocal();
 withWrapper({booklet:{key:"learner-2"},preset_url:"https://site.invalid/preset.booklet.md"});
 {const B3=boot();await sleep(50);      // let its preset land before the next page load wipes storage
  chk("another key on the same origin is another booklet",B3.currentId!==keyed.id&&B3.readLib().entries.length===2);}
-/* The stray save the flaky runs met, now put there on purpose: the old single
-   slot fills after the keyed booklet exists (in a browser, an older copy of
-   the page still open in another tab). The key keeps its own booklet. */
-LS[LEGACY]=legacyRaw;withWrapper({booklet:{key:"learner-1"},preset_url:"https://site.invalid/preset.booklet.md"});
-{const B4=boot();await sleep(50);const L4=B4.readLib();
- chk("a single save that turns up after a key has its booklet never takes that booklet's place",
-   B4.currentId===keyed.id&&B4.S.note==="the learner's own words"&&L4.entries.filter(e=>e.wrapperKey==="learner-1").length===1);
- chk("it is listed once, as a booklet of its own, and left where it is byte for byte",
-   L4.entries.length===3&&L4.entries.filter(e=>e.key===LEGACY&&!e.wrapperKey).length===1&&LS[LEGACY]===legacyRaw,
-   JSON.stringify(L4.entries.map(e=>[e.from,e.wrapperKey,e.key])));
- const B5=boot();await sleep(50);
- chk("and the next visit lists it no second time",B5.currentId===keyed.id&&B5.readLib().entries.length===3);}
-wipe();LS[LEGACY]=legacyRaw;withWrapper({booklet:{key:"learner-1"},preset_url:"https://site.invalid/preset.booklet.md"});
-freeze("2026-09-26T12:00:00Z");
-{const K=boot();await sleep(50);
- const e=K.readLib().entries[0];
- chk("on a page that kept one booklet before, the key takes that booklet over, in place",
-   K.readLib().entries.length===1&&e.wrapperKey==="learner-1"&&e.key===LEGACY&&K.currentId===e.id,JSON.stringify({n:K.readLib().entries.length,e,cur:K.currentId}));
- chk("with its work intact and no preset laid over it",K.toMarkdown()===expectedMd);}
 thaw();noWrapper();delete global.fetch;
 
 // ---- a wrapper preset with no key: new booklets start from it ---------------
@@ -413,7 +368,7 @@ global.fetch=async url=>/preset/.test(url)?{ok:true,text:async()=>exampleText}:{
 A=boot();await sleep(20);
 chk("a site's preset alone does not skip the list",A.view===A.LIB_VIEW&&A.currentId===null&&A.readLib().entries.length===0);
 await A.createBooklet();
-chk("a booklet started there begins as the preset",A.tplModules().map(m=>m.id).join(",")==="example/end-of-day");
+chk("a booklet started there begins as the preset",A.tplModules().map(m=>m.id).join(",")==="mensio-check-in");
 noWrapper();delete global.fetch;
 
 // ---- a download that finishes after the reader has moved to another booklet ----

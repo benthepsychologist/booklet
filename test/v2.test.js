@@ -81,8 +81,8 @@ const R3=A.parseFile(bad);
 chk("an unclosed module is reported",R3.unread.some(x=>/never closed/.test(x)),JSON.stringify(R3.unread));
 chk("a question with no id is reported",R3.unread.some(x=>/has no id/.test(x)),JSON.stringify(R3.unread));
 chk("the rest of the file still opens",R3.ok);
-const v1=fs.readFileSync(P.R+"/examples/end-of-day.md","utf8");
-chk("a version 1 file is still read as version 1",A.parseFile(v1).template&&A.parseFile(v1).template.booklet===1);
+chk("a version 1 file is not read at all — no compat, no exceptions",
+  A.parseFile('---\nbooklet: 1\n---\n\n```json\n{"block":"module"}\n```\n').ok===false);
 
 P.closePages();
 console.log((fails?fails+" of the checks above failed":"all v2 checks passed"));

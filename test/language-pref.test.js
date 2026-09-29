@@ -22,7 +22,15 @@ const html=fs.readFileSync(R+"/booklet.html","utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
 const LS=global.__ls;
 const PREF="booklet.ui.lang";
-const exampleText=fs.readFileSync(R+"/examples/end-of-day.md","utf8");
+/* This example declares only `lang: en`; these two sections specifically test
+   the reader's choice winning over a file's own language WHERE THE FILE OFFERS
+   IT, so it is patched to also offer fr/es (prose stays English — only the
+   offer, not the wording, matters for this mechanic). */
+/* Version 2 declares one language per file (SKILL.md §8) — a translation is a
+   sibling file with the same id, never a `languages:` list offering several
+   inside one file the way version 1 did. So loading this single-language
+   file keeps its own `en`, whatever the reader's choice was. */
+const exampleText=fs.readFileSync(R+"/examples/mindful-check-in.booklet.md","utf8");
 /* fixture, not a real registry module: v1-shaped on purpose, since makeBooklet
    below builds a v1 test booklet and moduleFromText only reads v1's JSON
    fence — modules/*.md are version 2 now (SPEC.md §14) and no longer parse
@@ -189,8 +197,8 @@ section("a file loaded on the list speaks the reader's language");
 wipe();A=boot();A.render();A.toggle.press("fr");
 {const m=main();m.prepend=(...k)=>m.children.unshift(...k);}   // the stub's prepend keeps nothing
 A.loadText(exampleText);
-chk("an English file becomes a booklet read in French",A.currentId!==null&&A.lang==="fr",A.lang);
-chk("and the summary of what was loaded is in French",/Chargé/.test(texts(main()))&&!/\bLoaded\b/.test(texts(main())),texts(main()).slice(0,160));
+chk("a single-language file opens in its own language, not the reader's",A.currentId!==null&&A.lang==="en",A.lang);
+chk("but the loaded-file summary itself still speaks the reader's French",/Chargé/.test(texts(main()))&&!/\bLoaded\b/.test(texts(main())),texts(main()).slice(0,160));
 
 section("a site's preset, on a page locked to one booklet");
 {const origGet=global.document.getElementById;
@@ -198,7 +206,7 @@ section("a site's preset, on a page locked to one booklet");
  global.fetch=async()=>({ok:true,text:async()=>exampleText});
  wipe();LS[PREF]="es";
  A=boot();await new Promise(r=>setTimeout(r,50));
- chk("the preset (English) lands, and the page reads in the reader's Spanish",A.TPL.modules.length===1&&A.lang==="es",A.lang);
+ chk("the preset (English) lands, and — single-language — keeps its own",A.TPL.modules.length===1&&A.lang==="en",A.lang);
  global.document.getElementById=origGet;delete global.fetch;}
 
 section("storage that fails");

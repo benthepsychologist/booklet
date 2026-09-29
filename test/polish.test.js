@@ -296,8 +296,7 @@ guard("a text with no marks",()=>{const plain={id:"fixture/polish-plain",title:{
 {const keys=["notThere","addThere","notHere","addHere","citeWhere"];
  chk("every new interface string is in English, French and neutral Spanish",
    ["en","fr","es"].every(l=>keys.every(k=>A.TSRC[l].reading[k]!==undefined)),keys.filter(k=>!A.TSRC.fr.reading[k]||!A.TSRC.es.reading[k]).join());
- const spec=fs.readFileSync(path.join(R,"SPEC-v1.md"),"utf8");
- chk("SPEC-v1.md states the rule",/\*\*A mark belongs to its text in every language\.\*\*/.test(spec));}
+}
 
 // ---- 3. the citation panel and the sources block (found by the final browser sweep)
 console.log("# the open panel makes room for itself beside the page (layout checked in a real browser too)");

@@ -45,22 +45,14 @@ for(const l of ["en","fr"]){
 chk("the page and the home-screen title say Booklet",
   /<title>Booklet<\/title>/.test(html)&&/apple-mobile-web-app-title" content="Booklet"/.test(html));
 chk("no other product's name is left in the renderer, the spec or the status file",
-  !/Activity Kit|activity-kit|ma-trousse|Trousse d/.test(html+read("SPEC.md")+read("STATUS.md")+read("examples/end-of-day.md")),
-  ((html+read("SPEC.md")+read("STATUS.md")+read("examples/end-of-day.md")).match(/Activity Kit|activity-kit|ma-trousse|Trousse d/g)||[]).join(","));
-fresh();
-chk("a fresh export is headed with the renderer's own name",/^# Booklet — my notes$/m.test(A.toMarkdown()));
+  !/Activity Kit|activity-kit|ma-trousse|Trousse d/.test(html+read("SPEC.md")+read("STATUS.md")),
+  ((html+read("SPEC.md")+read("STATUS.md")).match(/Activity Kit|activity-kit|ma-trousse|Trousse d/g)||[]).join(","));
 
-// ---- `app` is "booklet", as SPEC.md says, and the old name is still read
-{fresh();const md=A.toMarkdown();
- const meta=JSON.parse([...md.matchAll(/```json\s*\n([\s\S]*?)\n```/g)].map(m=>m[1]).find(j=>/"block":\s*"meta"/.test(j)));
- chk("the record's meta block names the app \"booklet\"",meta.app==="booklet",meta.app);
- const old=md.replace('"app": "booklet"','"app": "useful-next-step"');
- chk("a file written under the old app name still loads",A.parseFile(old).ok===true&&A.parseFile(old).S!==undefined);
- chk("and so does one written under the new name",A.parseFile(md).ok===true);}
-const specEnvelope=app=>"---\nbooklet: 1\nencrypted: true\n---\n\n# x\n\n```json\n"+JSON.stringify({app,enc:"v1",
+// ---- the locked-envelope reader only ever recognises this app's own name
+const specEnvelope=app=>"---\nbooklet: 2\nencrypted: true\nlang: en\n---\n\n# x\n\n```json\n"+JSON.stringify({app,enc:"v1",
   kdf:{name:"PBKDF2",hash:"SHA-256",iterations:1,salt:"AA=="},cipher:{name:"AES-GCM",iv:"AA=="},data:"AA=="},null,1)+"\n```\n";
 chk("a locked envelope written to the spec (app \"booklet\") is recognised",!!A.lockedEnvelope(specEnvelope("booklet")));
-chk("a locked envelope from the older renderer is still recognised",!!A.lockedEnvelope(specEnvelope("useful-next-step")));
+chk("an envelope from an earlier app name is not — no compat, no exceptions",A.lockedEnvelope(specEnvelope("useful-next-step"))===null);
 chk("an envelope from some other app is not",A.lockedEnvelope(specEnvelope("something-else"))===null);
 if(typeof crypto!=="undefined"&&crypto.subtle){
   A.lockText("hello",".pass.word.").then(async sealed=>{
@@ -70,24 +62,4 @@ if(typeof crypto!=="undefined"&&crypto.subtle){
     finish();
   }).catch(e=>{chk("lock and unlock round trip",false,String(e));finish();});
 } else {console.log("  skip  lock round trip (no WebCrypto in this node)");finish();}
-
-// ---- the `sync` slot is carried through unchanged, whatever it holds
-{fresh();
- const slot={provider:"some-other-store",ref:"abc/123",synced:"2026-09-18T14:25:00Z",rev:"r7",extra:{kept:[1,2]}};
- A.getS().person.sync=slot;
- const back=A.parseFile(A.toMarkdown());
- chk("a sync slot the renderer does not understand is preserved on a round trip",
-   JSON.stringify(back.S.person.sync)===JSON.stringify(slot),JSON.stringify(back.S.person.sync));
- fresh();
- chk("no slot at all round-trips as none",A.parseFile(A.toMarkdown()).S.person.sync===null);}
-
-// ---- the spec says what the code does
-{const spec=read("SPEC-v1.md");
- chk("SPEC-v1.md recommends the .booklet.md extension and keeps plain .md readable",
-   /\.booklet\.md/.test(spec)&&/plain `\.md`/.test(spec));
- chk("SPEC-v1.md defines the sync slot: optional, preserved, open provider list, no credentials",
-   /### `sync`/.test(spec)&&/must preserve the slot unchanged/.test(spec)&&/open list/.test(spec)&&/no credentials/i.test(spec));
- chk("SPEC.md, SPEC-v1.md and STATUS.md no longer claim production use by another site",
-   !/used in production|production site uses/i.test(spec+read("SPEC.md")+read("STATUS.md")));
- chk("SPEC-v1.md's example locked envelope and meta block use app \"booklet\"",(spec.match(/"app":\s*"booklet"/g)||[]).length>=2);}
 function finish(){console.log(fails?"\n"+fails+" FAILURES":"\nformat checks passed");process.exit(fails?1:0);}

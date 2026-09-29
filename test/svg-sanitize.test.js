@@ -210,16 +210,16 @@ chk("nothing, an empty string and a non-string all draw nothing",
 
 /* ---------------- real figures come through untouched ---------------- */
 const figures=[];
-for(const d of ["widgets","modules","examples"]) for(const f of fs.readdirSync(path.join(R,d))){
+for(const d of ["modules","examples"]) for(const f of fs.readdirSync(path.join(R,d))){
   if(!f.endsWith(".md")) continue;const t=fs.readFileSync(path.join(R,d,f),"utf8");
-  for(const m of t.matchAll(/```json\n([\s\S]*?)\n```/g)){let j;try{j=JSON.parse(m[1]);}catch(e){continue;}
+  for(const m of t.matchAll(/```(?:booklet widget|json)\n([\s\S]*?)\n```/g)){let j;try{j=JSON.parse(m[1]);}catch(e){continue;}
     const w=o=>{if(Array.isArray(o)) return o.forEach(w);
       if(o&&typeof o==="object"){if(typeof o.svg==="string") figures.push([d+"/"+f+" "+o.id,o.svg]);Object.values(o).forEach(w);}};
     w(j);}}
-chk("the repository's own figures were found (widgets, modules, examples)",figures.length>=8,figures.length);
+chk("the repository's own figures were found (modules, examples)",figures.length>=6,figures.length);
 for(const [where,svg] of figures)
   chk(where+": sanitized is node-for-node what innerHTML drew",shape(sanitizeSvg(svg))===shape(nodesOf(svg)));
-{const W=JSON.parse(fs.readFileSync(path.join(R,"widgets/mensio-body-map.md"),"utf8").match(/```json\n([\s\S]*?)\n```/)[1]);
+{const W=JSON.parse(fs.readFileSync(path.join(R,"modules/mensio-check-in.md"),"utf8").match(/```booklet widget\n([\s\S]*?)\n```/)[1]);
   for(const fg of W.figures){const before=find(nodesOf(fg.svg),n=>/\brg\b/.test(n.getAttribute("class")||""));
     const after=find(sanitizeSvg(fg.svg),n=>/\brg\b/.test(n.getAttribute("class")||""));
     const ids=ns=>ns.map(n=>n.localName+":"+n.getAttribute("data-r")).join(",");
@@ -237,7 +237,7 @@ for(const [where,svg] of figures)
   chk("svg-regions draws a hostile figure without throwing",!err&&!!drawn,err&&err.message);
   chk("and what it drew runs nothing, while keeping the region to tap",
     !!drawn&&detonate(drawn.children)===0&&find(drawn.children,n=>n.getAttribute("data-r")==="a").length===1);
-  const B=JSON.parse(fs.readFileSync(path.join(R,"widgets/mensio-body-map.md"),"utf8").match(/```json\n([\s\S]*?)\n```/)[1]);
+  const B=JSON.parse(fs.readFileSync(path.join(R,"modules/mensio-check-in.md"),"utf8").match(/```booklet widget\n([\s\S]*?)\n```/)[1]);
   const body=figDiv(API.ENGINES["svg-regions"]({},B,["regions"]));
   chk("svg-regions draws the real body map exactly as innerHTML did",
     !!body&&shape(body.children)===shape(nodesOf(B.figures[0].svg)));}

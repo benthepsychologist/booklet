@@ -2393,7 +2393,7 @@ const BODY_DEFAULT={
 
 /* An empty booklet. This is what the page holds before a file arrives — not a
    default set of activities, because there is no such thing here. */
-const EMPTY_BOOKLET={booklet:1, id:"", version:"", modules:[], widgets:[], body:BODY_DEFAULT};
+const EMPTY_BOOKLET={booklet:2, id:"", version:"", modules:[], widgets:[], body:BODY_DEFAULT, v2:{source:""}};
 
 /* Modules the page has been *offered* — fetched from a site's module folder,
    or pasted in. Never baked in: this starts empty and stays empty unless
@@ -3077,18 +3077,12 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
      booklet.library.v1   the list: one small record per booklet
      booklet.b.<id>       one booklet's snapshot — exactly the shape this page
                           has always saved, {S,D,TPL,lang,dirty,unsavedEntries}
-     useful-next-step.v1  the one save every earlier version kept. The first
-                          run of this version turns it into a booklet IN PLACE:
-                          that entry's record points at this key, nothing is
-                          copied or rewritten, so the booklet opens exactly as
-                          it was and an older renderer still finds its data.
 
    Plain localStorage, and only ever getItem/setItem/removeItem on known keys —
    nothing enumerates it — so a site that namespaces those three calls (one
    does, per booklet page) keeps working. The record reserves the fields a
    storage adapter will need (tags, sync), so that work adds behaviour rather
    than a second migration. */
-const LS_KEY="useful-next-step.v1";
 const LIB_KEY="booklet.library.v1", bookKey=id=>"booklet.b."+id;
 /* "Your booklets" is a view of its own. Views and activity ids share one
    namespace (as "home" and "history" already do), and nothing in the format
@@ -3096,7 +3090,7 @@ const LIB_KEY="booklet.library.v1", bookKey=id=>"booklet.b."+id;
    use has, to stay clear of them in practice. */
 const LIB_VIEW="@booklets";
 let storageOk=true, saveTimer=null, remindShown=false;
-try{localStorage.setItem(LS_KEY+".probe","1");localStorage.removeItem(LS_KEY+".probe");}catch(e){storageOk=false;}
+try{localStorage.setItem(LIB_KEY+".probe","1");localStorage.removeItem(LIB_KEY+".probe");}catch(e){storageOk=false;}
 /* With storage off (private mode, blocked site data, a full quota) the page
    still works for the visit: whatever it cannot write, it keeps in memory, so
    leaving a booklet and coming back within the visit loses nothing. */
@@ -3151,12 +3145,10 @@ function removeBooklet(id){const e=(LIB=readLib(),entryById(id));if(!e) return f
    every open and close; anything scheduled or awaited for one booklet checks
    it before touching the globals, which by then may belong to another. */
 let currentId=null, currentKey=null, currentEntry=null, keyedMode=false, bookletGen=0;
-/* The key the booklet in memory is saved under. With no library entry open the
-   page is being used the way every earlier version was, as one booklet — the
-   Node harness and the build scripts do exactly that — and it keeps the one
-   slot those versions used, for as long as no booklet in the list owns it. */
-function slotKey(){if(currentId) return currentKey;
-  return LIB.entries.some(e=>e.key===LS_KEY)?null:LS_KEY;}
+/* The key the booklet in memory is saved under. With no library entry open,
+   there is nothing of the reader's to save yet — saveLocal() below is a no-op
+   until a booklet is actually created or opened. */
+function slotKey(){return currentId?currentKey:null;}
 function saveLocal(){const key=slotKey();if(!key) return;
   /* nothing open and nothing written: never leave an empty save behind */
   if(!currentId&&!sessionHasContent()&&!(TPL.modules||[]).length&&!(TPL.modes||[]).length) return;
@@ -3248,26 +3240,6 @@ function openBooklet(id){flushSave();LIB=readLib();const e=entryById(id);if(!e) 
 function closeBooklet(){flushSave();resetBookletState();bookletGen++;
   currentId=currentKey=currentEntry=null;view=LIB_VIEW;}
 
-/* ---- the save every earlier version kept ----
-   On a first run it becomes a booklet in the list. Nothing is copied: the
-   entry records that its data lives at the old key. An empty save (a page
-   that was opened and never used) is left alone rather than listed. */
-function worthKeeping(o){if(!o||typeof o!=="object"||!o.S||typeof o.S!=="object") return false;
-  try{const full=v=>Array.isArray(v)?v.some(full):v&&typeof v==="object"?Object.values(v).some(full)
-        :typeof v==="string"?v.trim().length>0:false;
-    const s=o.S;
-    return templateOk(o.TPL)||["today","checkins","entries","archive","areas","note","name","q","goodday","big"].some(k=>full(s[k]))
-      ||full(((s.now||{}).items||[]).map(i=>i&&i.text))||full((s.page||{}).blocks)||full(o.D);}
-  catch(e){return true;}}
-function adoptLegacy(fields){LIB=readLib();
-  if(LIB.entries.some(e=>e.key===LS_KEY)) return null;
-  const raw=lsGet(LS_KEY);if(!raw) return null;
-  let o=null;try{o=JSON.parse(raw);}catch(e){return null;}
-  if(!worthKeeping(o)) return null;
-  const at=new Date().toISOString();
-  return addEntry({...describeBooklet(o.TPL,o.S),key:LS_KEY,from:"legacy",
-    lang:(o.lang&&T[o.lang])?o.lang:lang,dirty:!!o.dirty,unsavedEntries:Number(o.unsavedEntries)||0,
-    createdAt:at,updatedAt:at,...(fields||{})});}
 const stFlag=(o,k)=>({has:()=>!!(o.starter&&o.starter[k]),clear:()=>{if(o.starter) delete o.starter[k];}});
 const stPath=(ST,path)=>({has:()=>!!ST[path],clear:()=>{delete ST[path];}});
 const stItem=it=>({has:()=>!!it.starter,clear:()=>{it.starter=false;}});
@@ -4218,8 +4190,7 @@ function homeButton(){
 
 /* Which booklet, if any, the page opens on. A site that names an instance
    (wrapper "booklet": {"key": "…"}) gets that booklet and never the list: it
-   is created on the first visit, or, on a page that kept one booklet under an
-   earlier version, it IS that booklet. Otherwise a route reopens the booklet a
+   is created on the first visit. Otherwise a route reopens the booklet a
    reload left, and a visit with no route lands on "Your booklets". Returns
    whether something of the reader's own was restored, for the boot toast. */
 function bootLibrary(){LIB=readLib();lang=uiPref()||lang;
@@ -4227,13 +4198,10 @@ function bootLibrary(){LIB=readLib();lang=uiPref()||lang;
   const wk=b&&typeof b==="object"&&typeof b.key==="string"?b.key.trim():"";
   const r=hasLocation()?parseRoute(location.hash):{id:null,view:null};
   if(wk){keyedMode=true;
-    const e=LIB.entries.find(x=>x.wrapperKey===wk)||adoptLegacy({wrapperKey:wk})
-      ||addEntry({wrapperKey:wk,from:"wrapper"});
-    adoptLegacy();
+    const e=LIB.entries.find(x=>x.wrapperKey===wk)||addEntry({wrapperKey:wk,from:"wrapper"});
     const restored=openBooklet(e.id);
     if(r.id===e.id&&knownView(r.view)) view=r.view;
     return !!restored;}
-  adoptLegacy();
   if(r.id&&entryById(r.id)){const restored=openBooklet(r.id);if(knownView(r.view)) view=r.view;return !!restored;}
   view=LIB_VIEW;return false;}
 
@@ -6217,7 +6185,7 @@ async function lockText(text,pass){
     "# "+t.ui.exportTitle,"",t.lock.fileNote,"","```json",JSON.stringify(env,null,1),"```",""].join("\n");}
 const lockedEnvelope=text=>{const m=String(text).match(/```json\s*\n([\s\S]*?)\n```/);
   if(!m) return null;let o=null;try{o=JSON.parse(m[1]);}catch(e){return null;}
-  return (o&&(o.app==="booklet"||o.app==="useful-next-step")&&o.enc==="v1"&&o.data)?o:null;};
+  return (o&&o.app==="booklet"&&o.enc==="v1"&&o.data)?o:null;};
 async function unlockText(env,pass){
   const key=await deriveKey(pass,unb64(env.kdf.salt),env.kdf.iterations||ENC_ITER);
   const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(env.cipher.iv)},key,unb64(env.data));
@@ -6225,100 +6193,7 @@ async function unlockText(env,pass){
 
 /* A YAML value that cannot break the block: quote it and escape the quotes. */
 const yamlStr=v=>'"'+String(v==null?"":v).replace(/\\/g,"\\\\").replace(/"/g,'\\"')+'"';
-/* Front matter, first line of the file. Hugo reads it natively and Obsidian
-   shows it as note properties, which is what makes a booklet a first-class
-   document in both without either of them knowing what a booklet is.
-   Positional by definition — only a `---` on line 1 opens it — so a reader
-   typing `---` in a note further down cannot be mistaken for it. */
-function frontMatter(){const t=T[lang];const out=["---"];
-  out.push("booklet: "+(TPL.booklet||1));
-  out.push("title: "+yamlStr(t.ui.exportTitle+(nonEmpty(S.name)?" — "+S.name.trim():"")));
-  out.push("lang: "+lang);
-  if(declaredLangs().length) out.push("languages: "+declaredLangs().join(", "));
-  out.push("preset: "+yamlStr((TPL.id||"")+"@"+(TPL.version||"")));
-  out.push("updated: "+localStamp(new Date()));
-  out.push("---","");return out;}
-function toMarkdown(){if(TPL&&TPL.booklet===2) return toMarkdownV2();const t=T[lang];const L=t.labels;const B=S.big;const out=[];
-  out.push(...frontMatter());
-  out.push("# "+t.ui.exportTitle+(nonEmpty(S.name)?" — "+S.name.trim():""),"","<!--",...L.howto,"-->","");
-  out.push("_"+L.meta.lang+": "+lang+"_  ");if(compact()) out.push("_"+L.meta.mode+": compact_  ");if(nonEmpty(S.name)) out.push("_"+L.meta.name+": "+S.name.trim()+"_  ");
-  out.push("_"+t.ui.exportedOn+" "+localStamp(new Date())+"_","");
-  out.push(...safetyLines());
-  out.push(...noteSection(S.note,L));
-  /* the page's own words, readable and editable in any text editor */
-  {const bl=(S.page&&S.page.blocks)||[];
-   if(bl.length) out.push("## "+L.h.page,"",...blockLines(bl));}
-  out.push(...nowSection(S.now.items,L),...areasSection(S.areas,L),...bigSection(B,L),...archiveSection(S.archive,L));
-  // the good-day picture — readable, and rebuilt from the record on every download
-  /* the readable half of the board, worded by whichever module owns those
-     fields; with no such module installed there is nothing to write here, and
-     the content itself is untouched either way — it lives in the record */
-  {const gd=S.goodday;const lines=[];
-   const label=(path,f)=>{const v=copyAt(path,null);return v&&v[0]?v[0]:f;};
-   boardFields().forEach(f=>{const v=gd[f];
-     const name=label("gd.card."+f,null)||label("gd.a."+f,null)||label("gd.b."+f,null)||label("gd.c."+f,null)
-       ||fieldQuestion(f)||f;
-     if(Array.isArray(v)){if(v.length) lines.push("- "+name+": "+v.join(" · "));}
-     else if(nonEmpty(v)) lines.push(...fld(name,v));});
-   if(lines.length) out.push("## "+L.h.goodday,"",L.generated,"",...lines,"");}
-  // appendices — a readable view of the kept entries; the record below stays authoritative
-  const td=[...S.today].sort((a,b)=>a.ts.localeCompare(b.ts));
-  const ck=[...S.checkins].sort((a,b)=>a.ts.localeCompare(b.ts));
-  if(td.length){out.push("## "+L.h.appA,"",L.generated,"");
-    td.forEach(e=>{out.push("### "+L.h.today+" — "+localStamp(new Date(e.ts)),"",...todayLines(e),"");});}
-  if(ck.length){out.push("## "+L.h.appB,"",L.generated,"");
-    ck.forEach(e=>{out.push("### "+L.h.checkin+" — "+localStamp(new Date(e.ts)),"",...checkinLines(e),"");});}
-  // record — one JSON object, so a static-site renderer can handle the fence
-  /* The record, v6: a series of independent blocks rather than one. Each block
-     is parsed on its own, so a block that gets mangled — by an editor, a mail
-     client, a careless hand — costs you that block and nothing else. One
-     module failing to parse means one activity is missing, not a lost file. */
-  const blocks=[
-    FORMAT_BLOCK,
-    {block:"meta", app:"booklet", v:6, booklet:1, written:new Date().toISOString(),
-     booklet_id:TPL.id, booklet_version:TPL.version, customized:!!TPL.customized,
-     title:TPL.title||null, body:TPL.body, menus:TPL.menus||undefined, head:TPL.head||undefined,
-     languages:declaredLangs().length?declaredLangs():undefined},
-    ...tplWidgets().map(w=>({block:"widget", ...w})),
-    ...allModules().map(m=>({block:"module", ...m})),
-    {block:"person", name:S.name, email:S.person.email, sync:S.person.sync, protect:!!S.person.protect,
-     lang, mode:S.mode, note:S.note, q:S.q, emo:S.emo, prefs:S.prefs, setup:S.setup},
-    {block:"page", blocks:(S.page&&S.page.blocks)||[]},
-    {block:"fields", fields:S.goodday},
-    /* The record keeps what the readable half cannot show: a Now row or an
-       area nothing has been written in yet, an area with no name, spaces at
-       the end of a line, the archive in the order it was kept. */
-    {block:"board", now:{items:S.now.items||[]},
-     areas:S.areas.map(a=>({...emptyArea(),...a,items:a.items||[],starter:a.starter||{}})),
-     archive:S.archive, big:B},
-    {block:"entries", mode:"checkins", items:ck},
-    {block:"entries", mode:"today", items:td},
-    ...Object.entries(S.entries||{}).map(([k,v])=>({block:"entries", mode:k, items:v})),
-    /* the two built-in activities' drafts under their own names, as always;
-       every other activity's under `activities`, keyed by its id, the same key
-       its entries block carries */
-    {block:"drafts", today:holdsSomething(D.today)?D.today:null, checkin:holdsSomething(D.checkin)?D.checkin:null,
-     activities:otherDrafts()}
-  ];
-  /* Whose the activities are, written into the half a person can read.
-     A module travels inside this file, so its terms have to travel with it —
-     front matter is stripped the moment a module is pasted into a booklet,
-     which makes the file itself the only place a notice survives. */
-  {const groups=new Map();
-   tplModules().forEach(m=>{const r=m.rights;if(!r) return;
-     const key=[r.copyright,r.license,r.source].join("|");
-     if(!groups.has(key)) groups.set(key,{r,titles:[]});
-     groups.get(key).titles.push(tx(m.title,m.id));});
-   const join=xs=>xs.filter(nonEmpty).map(x=>x.trim())
-     .map((x,i,a)=>i<a.length-1&&!/[.!?]$/.test(x)?x+".":x).join(" ");
-   const lines=[...groups.values()].map(({r,titles})=>
-     "- **"+titles.join(", ")+"** — "+join([r.copyright,r.license])
-     +(nonEmpty(r.source)?" ("+r.source+")":""));
-   if(lines.length) out.push("## "+L.h.rights,"",...lines,"");}
-
-  out.push(DIVIDER,"","## "+L.h.seal,"",L.sealNote,"");
-  blocks.forEach(b=>out.push("```json",JSON.stringify(b,null,1),"```",""));
-  return out.join("\n");}
+function toMarkdown(){return toMarkdownV2();}
 /* One file, handed to whatever the phone already has. The share sheet is the
    only route that reliably gets a file off a phone without a server: the person
    picks Mail, Files, Drive, an Obsidian vault, AirDrop — whatever they use. It
@@ -6432,45 +6307,6 @@ async function download(){const t=T[lang].ui;const md=toMarkdown();const name=ex
   catch(e){try{await navigator.clipboard.writeText(md);dirty=false;unsavedEntries=0;saveLocal();toast(t.copied);render();}catch(e2){toast(t.downloadFail);}}}
 
 /* ======================= IMPORT: record first, then markdown sections override ======================= */
-function labelMaps(){const M={big:{},today:{},checkin:{},emo:{},kinds:{},items:{},contact:{},outcomes:{},since:[],h:{}};
-  /* Headings are collected from the copy itself, not from a list kept
-     alongside it. That list was a second copy of the same facts: add a heading
-     and the importer threw on `M.h[k].push` of an undefined array, which has
-     now happened twice — the first time it was "fixed" by adding the missing
-     key, which left the trap exactly where it was. */
-  for(const l of Object.keys(T)){const t=copyFor(l);const L=t.labels;
-    for(const [k,v] of Object.entries(L.big)) M.big[norm(v)]=k;
-    for(const [k,v] of Object.entries(L.today)) M.today[norm(v)]=k;
-    for(const [k,v] of Object.entries(L.checkin)) M.checkin[norm(v)]=k;
-    /* Reading the human half back means recognising the words that were
-       written into it — and those came from the widget, in whatever language
-       and wording the booklet uses. A map built from the engine's own list
-       could only ever re-read the engine's own vocabulary. */
-    ((quadWidget()||{}).items||[]).forEach(it=>{
-      const lbl=(it.label&&pickLoc(it.label,isText,l,true))||it.id;
-      M.emo[norm(lbl)]=it.id;});
-    for(const [k,v] of Object.entries(L.items)) M.items[norm(v)]=k;
-    for(const [k,v] of Object.entries(L.contactVals)) M.contact[norm(v)]=k;
-    for(const [k,v] of Object.entries(L.outcomes)) M.outcomes[norm(v)]=k;
-    M.since.push(norm(L.since));
-    /* a hand-edited file may name a field by its question wording rather than
-       its export label, so both are accepted */
-    const td=t.today||{};
-    for(const k of TODAY_KEYS){const q=k==="carry"?td.carry:k==="extra"?td.extra:(td.f||{})[k];
-      if(q&&q[0]) M.today[norm(q[0])]=k;}
-    for(const k of TODAY_LISTS){const q=(td.lists||{})[k];if(q&&q[0]) M.today[norm(q[0])]=k;}
-    for(const k of BODY_KEYS) M.checkin[norm(t.checkin.body.f[k][0])]=k;M.checkin[norm(t.checkin.emo.other[0])]="other";
-    for(const k of Object.keys(L.h)) (M.h[k]=M.h[k]||[]).push(norm(L.h[k]));}
-  M.big["one possible next move"]="amove";M.big["un prochain pas possible"]="amove";
-  // the six-step guide is gone, but a v0.2 file can still name one of its four
-  // problem kinds; keep the labels so a hand-edited old file does not lose them
-  Object.assign(M.kinds,{
-    "an unresolved choice":"choice","un choix non resolu":"choice","un choix non résolu":"choice",
-    "an untested possibility":"untested","une possibilite non testee":"untested","une possibilité non testée":"untested",
-    "a practical constraint":"constraint","une contrainte pratique":"constraint",
-    "an action that is too large":"toolarge","une action trop grande":"toolarge",
-    "choice":"choice","untested":"untested","constraint":"constraint","toolarge":"toolarge"});
-  return M;}
 /* Other activities' drafts, as a file carries them in `drafts.activities`:
    keyed by activity id, each an object. The two built-in activities have keys
    of their own and are never taken from here, a value that is not an object is
@@ -6478,223 +6314,6 @@ function labelMaps(){const M={big:{},today:{},checkin:{},emo:{},kinds:{},items:{
 function draftsIn(o){if(!o||typeof o!=="object"||Array.isArray(o)) return {};
   return Object.fromEntries(Object.entries(o).filter(([id,d])=>id!=="today"&&id!=="checkin"&&id!=="__proto__"
     &&d&&typeof d==="object"&&!Array.isArray(d)));}
-function parseRecord(text){const R={found:false,meta:null,note:null,q:null,emo:null,now:null,areas:[],big:null,archive:[],today:[],checkins:[],drafts:{today:null,checkin:null},bad:0};
-  // v4: one JSON object (Hugo-safe). Older files carry a ```jsonl block; both are read.
-  /* v6: every fenced block is read on its own, and a block that will not parse
-     is counted and skipped rather than taking the file with it. This is the
-     whole reason the record is a series: one mangled module costs one activity. */
-  const fences=[...String(text).matchAll(/```json\s*\n([\s\S]*?)\n```/g)];
-  const parsed=[],lost=[];
-  fences.forEach(m=>{try{const o=JSON.parse(m[1]);if(o&&typeof o==="object") parsed.push(o);}
-    catch(e){lost.push((m[1].match(/"block"\s*:\s*"([a-z]+)"/)||[])[1]||"?");}});
-  const v6=parsed.filter(o=>o.block);
-  if(v6.length){R.found=true;R.bad=lost.length;R.lostBlocks=lost;
-    const meta=v6.find(o=>o.block==="meta")||{};
-    const mods=admitModules(v6.filter(o=>o.block==="module"),lost);R.bad=lost.length;
-    const wids=v6.filter(o=>o.block==="widget");
-    /* `booklet` is the version of the format a booklet is held and written as.
-       This reader reads every file as version 1, which is also what its writer
-       writes, so a booklet read from a file is marked so — exactly as one made
-       on the page is. */
-    if(mods.length||meta.booklet_id){const {block,...rest}=meta;
-      R.template={booklet:1,id:meta.booklet_id,version:meta.booklet_version,customized:!!meta.customized,
-        title:meta.title||undefined,body:meta.body,menus:meta.menus,head:meta.head||undefined,
-        languages:Array.isArray(meta.languages)?meta.languages:undefined,
-        modules:mods.map(({block,...m})=>m),
-        widgets:wids.map(({block,...w})=>w)};}
-    const person=v6.find(o=>o.block==="person")||{};
-    R.meta={lang:person.lang,mode:person.mode,name:person.name};
-    R.person={email:person.email||"",sync:person.sync||null,protect:!!person.protect};
-    if(typeof person.note==="string") R.note=person.note;
-    R.q=person.q||{};R.emo=person.emo||null;R.prefs=person.prefs||null;R.setup=person.setup||null;
-    const fields=v6.find(o=>o.block==="fields");if(fields) R.goodday=fields.fields||null;
-    const pg=v6.find(o=>o.block==="page");if(pg) R.page={blocks:pg.blocks||[]};
-    const board=v6.find(o=>o.block==="board")||{};
-    R.now={items:(board.now&&board.now.items)||[]};
-    R.areas=(board.areas||[]).map(a=>({...emptyArea(),...a,items:a.items||[],starter:a.starter||{}}));
-    if(board.big) R.big={...emptyBig(),...board.big};
-    R.archive=board.archive||[];
-    const ents=v6.filter(o=>o.block==="entries");
-    const pick=k=>{const b=ents.find(o=>o.mode===k);return (b&&b.items)||[];};
-    R.today=pick("today").filter(e=>e&&e.ts).map(e=>({...emptyToday(),...e}));
-    R.checkins=pick("checkins").filter(e=>e&&e.ts).map(e=>({...emptyCheckin(),...e,body:{...emptyCheckin().body,...(e.body||{})},thoughts:e.thoughts||[]}));
-    R.entries=Object.fromEntries(ents.filter(o=>o.mode!=="today"&&o.mode!=="checkins").map(o=>[o.mode,o.items||[]]));
-    const dr=v6.find(o=>o.block==="drafts")||{};
-    if(dr.today) R.drafts.today={...emptyToday(),...dr.today};
-    if(dr.checkin) R.drafts.checkin={...emptyCheckin(),...dr.checkin};
-    R.drafts.activities=draftsIn(dr.activities);
-    return R;}
-  if(lost.length) R.bad=lost.length;
-
-  const j=text.match(/```json\s*\n([\s\S]*?)\n```/);
-  if(j){let o=null;try{o=JSON.parse(j[1]);}catch(e){o=null;}
-    /* v5 nests the person's content under `data` and their presets under
-       `person`; flatten it back to the v4 shape the rest of this function
-       already understands, so there is one reader rather than two. */
-    if(o&&o.app==="useful-next-step"&&Number(o.v)>=5){
-      const d=o.data||{},pr=o.person||{};
-      R.template=o.template||null;
-      o={...o,v:4,lang:pr.lang,mode:pr.mode,name:pr.name,note:pr.note,q:pr.q,emo:pr.emo,prefs:pr.prefs,setup:pr.setup,
-         email:pr.email,sync:pr.sync,goodday:d.fields,now:d.now,areas:d.areas,big:d.big,archive:d.archive,
-         today:(d.entries||{}).today,checkins:(d.entries||{}).checkins,drafts:d.drafts,
-         entries:Object.fromEntries(Object.entries(d.entries||{}).filter(([k])=>k!=="today"&&k!=="checkins"))};}
-    if(o&&o.app==="useful-next-step"&&Number(o.v)>=4){R.found=true;
-      R.meta={lang:o.lang,mode:o.mode,name:o.name};
-      R.person={email:o.email||"",sync:o.sync||null};
-      if(typeof o.note==="string") R.note=o.note;
-      R.q=o.q||{};R.emo=o.emo||null;R.prefs=o.prefs||null;R.setup=o.setup||null;R.goodday=o.goodday||null;
-      R.now={items:(o.now&&o.now.items)||[]};
-      R.areas=(o.areas||[]).map(a=>({...emptyArea(),...a,items:a.items||[],starter:a.starter||{}}));
-      if(o.big) R.big={...emptyBig(),...o.big};
-      R.archive=o.archive||[];
-      R.entries=o.entries||{};R.page=o.page||null;
-      R.today=(o.today||[]).filter(e=>e&&e.ts).map(e=>({...emptyToday(),...e}));
-      R.checkins=(o.checkins||[]).filter(e=>e&&e.ts).map(e=>({...emptyCheckin(),...e,body:{...emptyCheckin().body,...(e.body||{})},thoughts:e.thoughts||[]}));
-      const dr=o.drafts||{};
-      if(dr.today) R.drafts.today={...emptyToday(),...dr.today};
-      if(dr.checkin) R.drafts.checkin={...emptyCheckin(),...dr.checkin};
-      return R;}}
-  const m=text.match(/```jsonl\s*\n([\s\S]*?)\n```/);if(!m) return R;R.found=true;
-  m[1].split("\n").forEach(line=>{line=line.trim();if(!line) return;let o;try{o=JSON.parse(line);}catch(e){R.bad++;return;}
-    switch(o.type){case "meta":R.meta=o;break;case "note":R.note=o.text||"";break;case "config":R.q=o.q||{};R.emo=o.emo||null;break;case "now":R.now={items:o.items||[]};break;
-      case "area":R.areas.push({...emptyArea(),...o,items:o.items||[],starter:o.starter||{}});break;case "big":{const {type,...b}=o;R.big={...emptyBig(),...b};break;}
-      case "archive":{const {type,...r}=o;R.archive.push(r);break;}case "today":{const {type,...e}=o;if(e.ts) R.today.push({...emptyToday(),...e});break;}
-      case "checkin":{const {type,...e}=o;if(e.ts) R.checkins.push({...emptyCheckin(),...e,body:{...emptyCheckin().body,...(e.body||{})},thoughts:e.thoughts||[]});break;}
-      case "draft-today":{const {type,...e}=o;R.drafts.today={...emptyToday(),...e};break;}case "draft-checkin":{const {type,...e}=o;R.drafts.checkin={...emptyCheckin(),...e};break;}
-      default:R.bad++;}});
-  R.areas.forEach(a=>delete a.type);return R;}
-function parseQuestionsLegacy(text){const q={};let inQ=false,last=null;
-  for(const line of text.replace(/\r/g,"").split("\n")){let m;
-    if((m=line.match(/^##\s+(.+)$/))&&!/^###/.test(line)){inQ=/^questions/.test(norm(m[1]));last=null;continue;}
-    if(!inQ) continue;
-    if((m=line.match(/^-\s+(today|checkin)\.([a-z]+):\s*(.*)$/i))){const id=m[1].toLowerCase()+"."+m[2].toLowerCase();const [lab,hint]=m[3].trim().split("|").map(x=>x.trim());q[id]={label:lab||"",hint:hint||"",options:[]};last=id;continue;}
-    if(last&&(m=line.match(/^\s*-\s+options?\s*:\s*(.*)$/i))){q[last].options=splitList(m[1]);continue;}}
-  return q;}
-function parseMarkdownTop(text,M){const R={sections:new Set(),lang:null,mode:null,name:"",note:"",now:{items:[]},areas:[],big:emptyBig(),archive:[],today:[],checkins:[],drafts:{today:null,checkin:null},unread:[],recognized:0};
-  /* front matter first, if the file opens with it; the older `_Language: en_`
-     lines are still read so a file written before v0.5 loads unchanged */
-  const fm=text.startsWith("---\n")?text.slice(4,text.indexOf("\n---",3)):"";
-  if(fm){const g=k=>{const m=fm.match(new RegExp("^"+k+":\\s*\"?([^\"\\n]*)\"?\\s*$","mi"));return m?m[1].trim():"";};
-    const fl=tableTag(g("lang"));if(fl) R.lang=fl;
-    const dl=[...new Set(g("languages").replace(/[\[\]]/g,"").split(/[,\s]+/).map(normTag).filter(Boolean))];if(dl.length) R.languages=dl;
-    R.preset=g("preset");}
-  /* the labels of the readable half are whatever the tables say they are, so a
-     file written in any language the page speaks reads back in that language */
-  const metaRe=(k,...also)=>{const w=new Set(also);Object.keys(T).forEach(l=>{const v=((T[l].labels||{}).meta||{})[k];if(v) w.add(v);});
-    return [...w].map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|");};
-  const lm=text.match(new RegExp("_(?:"+metaRe("lang","Language","Langue")+")\\s*:\\s*([A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)_","i"));if(lm&&!R.lang) R.lang=tableTag(lm[1])||null;
-  const mm=text.match(new RegExp("_(?:"+metaRe("mode","Mode")+")\\s*:\\s*(compact|full|compacte?|complet)_","i"));if(mm) R.mode=/compact/i.test(mm[1])?"compact":"full";
-  const nm=text.match(new RegExp("_(?:"+metaRe("name","Name","Nom")+")\\s*:\\s*(.+?)_\\s*$","im"));if(nm) R.name=nm[1].trim();
-  const stripped=text.replace(/\r/g,"").replace(/^---\n[\s\S]*?\n---\n/,"").replace(/<!--[\s\S]*?-->/g,"").replace(/```[\s\S]*?```/g,"");const lines=stripped.split("\n");
-  let sec={type:"none"},entry=null,area=null,cur=null;
-  const tsFrom=s=>{const m=s.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/);if(!m) return null;const d=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]);return isNaN(d)?null:d.toISOString();};
-  const starts=(n,arr)=>arr.some(h=>n.startsWith(h));const has=(n,arr)=>arr.some(h=>n.includes(h));
-  const commitEntry=()=>{if(!entry) return;if(entry.type==="today") R.today.push(entry.obj);else if(entry.type==="checkin") R.checkins.push(entry.obj);else if(entry.type==="draft-today") R.drafts.today=entry.obj;else if(entry.type==="draft-checkin") R.drafts.checkin=entry.obj;entry=null;};
-  const commitSec=()=>{commitEntry();if(sec.type==="note"){R.note=sec.lines.join("\n").trim();R.sections.add("note");}};
-  const entryFrom=title=>{const n=norm(title);const ts=tsFrom(title);
-    if(starts(n,M.h.draft)){if(has(n,M.h.today)) return {type:"draft-today",obj:emptyToday()};if(has(n,M.h.checkin)) return {type:"draft-checkin",obj:emptyCheckin()};return null;}
-    if(starts(n,M.h.today)) return ts?{type:"today",obj:{...emptyToday(),ts}}:null;
-    if(starts(n,M.h.checkin)) return ts?{type:"checkin",obj:{...emptyCheckin(),thoughts:[],ts}}:null;return null;};
-  const classifyTop=title=>{const n=norm(title);
-    if(starts(n,M.h.big)){R.sections.add("big");return {type:"big"};}if(starts(n,M.h.note)) return {type:"note",lines:[]};if(starts(n,M.h.now)){R.sections.add("now");return {type:"now"};}
-    if(starts(n,M.h.areas)){R.sections.add("areas");return {type:"areas"};}/* Sections the writer generates and the reader never edits: read past them
-       rather than reporting them as parts of the file that could not be read. */
-    if(starts(n,M.h.questions)||starts(n,M.h.safety)||starts(n,M.h.goodday)
-       ||starts(n,M.h.page)||starts(n,M.h.rights)) return {type:"skip"};
-    if(starts(n,M.h.appA)) return {type:"appA"};if(starts(n,M.h.appB)) return {type:"appB"};if(starts(n,M.h.appC)||starts(n,M.h.archive)){R.sections.add("archive");return {type:"archive"};}
-    if(starts(n,M.h.seal)||/^app record|^registre de l'application|^do not edit|^ne rien modifier/.test(n)) return {type:"skip"};
-    const e=entryFrom(title);if(e) return {type:"entryhost",entry:e};
-    R.unread.push(title);return {type:"unknown"};};
-  const unstar=val=>{const st=STARTER_RX.test(val);return [val.replace(STARTER_RX,""),st];};
-  const itemFromLabel=(label,val)=>{let since=null;let base=label;const sm=label.match(/^(.*?)\s*\(\s*([a-zé]+)\s+(\d{4}-\d{2}-\d{2})\s*\)\s*$/i);
-    if(sm&&M.since.includes(norm(sm[2]))){base=sm[1];since=sm[3];}const kind=M.items[norm(base)];if(!kind) return null;const [txt,st]=unstar(val);return {kind,text:txt,since:since||todayDate(),starter:st};};
-  const setField=(label,raw)=>{const n=norm(label);
-    if(entry){const [val,st]=unstar(raw);const scopeMap=entry.type.includes("today")?M.today:M.checkin;const key=scopeMap[n];if(!key){R.unread.push(label);cur=null;return;}R.recognized++;
-      if(entry.type.includes("today")){if(key==="contact"){entry.obj.contact=M.contact[norm(val)]||val;cur=null;return;}
-        if(TODAY_LISTS.includes(key)){entry.obj[key]=val.split("·").map(x=>x.trim()).filter(Boolean);cur=null;return;}
-        entry.obj[key]=val;cur={obj:entry.obj,key};return;}
-      if(key==="emotions"){const unknown=[];splitList(val).forEach(x=>{const id=M.emo[norm(x)];if(id) entry.obj.emotions.push(id);else unknown.push(x);});if(unknown.length) entry.obj.other=[entry.obj.other,unknown.join(", ")].filter(nonEmpty).join(", ");cur=null;return;}
-      if(key==="thoughts"){entry.obj.thoughts=val?[val]:[];cur={obj:entry.obj,key:"thoughts"};return;}
-      if(key==="other"){entry.obj.other=val;cur={obj:entry.obj,key:"other"};return;}
-      entry.obj.body[key]=val;cur={obj:entry.obj.body,key};return;}
-    if(sec.type==="now"||(sec.type==="areas"&&area)||(sec.type==="big"&&area)){const it=itemFromLabel(label,raw);const target=area||R.now;
-      if(it){target.items.push(it);cur={obj:it,key:"text"};R.recognized++;return;}
-      if(area){const key=M.big[n];const [val,st]=unstar(raw);if(key==="amove"){const mv={kind:"move",text:val,since:todayDate(),starter:st};area.items.push(mv);cur={obj:mv,key:"text"};R.recognized++;return;}
-        if(!key||!AREA_KEYS.includes(key)){R.unread.push(label);cur=null;return;}area[key]=val;if(st) area.starter[key]=true;cur={obj:area,key};R.recognized++;return;}
-      R.unread.push(label);cur=null;return;}
-    if(sec.type==="big"){const key=M.big[n];const [val,st]=unstar(raw);if(!key){R.unread.push(label);cur=null;return;}
-      if(key==="move"){const mv={kind:"move",text:val,since:todayDate(),starter:st};R.now.items.push(mv);R.sections.add("now");cur={obj:mv,key:"text"};R.recognized++;return;}
-      if(key==="kinds"){R.big.s3.kinds=splitList(val).map(x=>M.kinds[norm(x)]).filter(Boolean);cur=null;R.recognized++;return;}
-      const where={area:"s1",change:"s1",obstacle:"s1",topic:"s1",happening:"s1",meaning:"s1",unknown:"s1",more:"s2",protect:"s2",ordinary:"s2",oblige:"s2",costs:"s2",s3notes:"s3",question:"s4",purpose:"s4",limits:"s4",help:"s4",review:"s4",s5notes:"s5",what:"s6",learned:"s6",follows:"s6"}[key];
-      if(!where){R.unread.push(label);cur=null;return;}const k2=key==="s3notes"||key==="s5notes"?"notes":key;R.big[where][k2]=val;if(st) R.big.starter[where+"."+k2]=true;cur={obj:R.big[where],key:k2};R.recognized++;return;}
-    R.unread.push(label);cur=null;};
-  const archiveLine=line=>{const m=line.match(/^-\s+(\d{4}-\d{2}-\d{2})\s*·\s*(.+)$/);if(!m) return false;
-    let rest=m[2],outcome="replaced";
-    const ai=rest.lastIndexOf("→");                       // only split at the arrow if the tail is a real outcome
-    if(ai>=0){const tail=M.outcomes[norm(rest.slice(ai+1))];if(tail){outcome=tail;rest=rest.slice(0,ai).trim();}}
-    const parts=rest.split(/\s*·\s*/);if(parts.length<2) return false;
-    const kind=M.items[norm(parts[0])];if(!kind) return false;
-    let area="",text="";                                   // v2 writes an area slot always ("—" when empty), so text keeps its own middots
-    if(parts.length>=3){area=parts[1]==="—"?"":parts[1];text=parts.slice(2).join(" · ");} else text=parts[1];
-    R.archive.push({date:m[1],kind,area,text:text.trim(),outcome});R.recognized++;return true;};
-  /* every top-level section's lines as they stand in the file, by kind, so
-     parseFile can tell a section nobody edited from one somebody did */
-  R.raw={};let rawAt=-1,rawKind=null;
-  const closeRaw=end=>{if(rawKind) (R.raw[rawKind]=R.raw[rawKind]||[]).push(lines.slice(rawAt,end));rawKind=null;};
-  for(let li=0;li<lines.length;li++){const line=lines[li].replace(/\s+$/,"");let m;
-    if((m=line.match(/^##\s+(.+)$/))&&!/^###/.test(line)){closeRaw(li);commitSec();sec=classifyTop(m[1].trim());rawAt=li;rawKind=sec.type;area=null;cur=null;if(sec.type==="entryhost") entry=sec.entry;if(["big","now","areas","archive"].includes(sec.type)) R.recognized++;continue;}
-    if(sec.type==="unknown"||sec.type==="none"||sec.type==="skip") continue;
-    if(sec.type==="note"){sec.lines.push(unescHead(line));continue;}
-    /* a rule is scenery here too — the record divider sits right after an
-       empty archive, and reporting it as unreadable is noise, not a finding */
-    if(sec.type==="archive"){if(line.trim()===""||isRule(line)) continue;
-      if(!archiveLine(line)) R.unread.push(line.trim().slice(0,60));continue;}
-    if((m=line.match(/^(#{3,4})\s+(.+)$/))){const lvl=m[1].length;const title=m[2].trim();cur=null;
-      if(sec.type==="appA"||sec.type==="appB"||sec.type==="entryhost"){commitEntry();const e=entryFrom(title);if(e) entry=e;else R.unread.push(title);continue;}
-      if(sec.type==="areas"){if(lvl===3){area=emptyArea();area.label=title;R.areas.push(area);R.recognized++;}continue;}
-      if(sec.type==="big"){if(lvl===4){area=emptyArea();area.label=title;R.areas.push(area);R.sections.add("areas");R.recognized++;}else area=null;continue;}
-      continue;}
-    if(/^#\s+/.test(line)) continue;
-    if((sec.type==="appA"||sec.type==="appB")&&/^_.*_$/.test(line.trim())) continue;
-    if((m=line.match(/^- ([^:]+?):\s?(.*)$/))){if(m[1].trim()===""&&m[2].trim()==="") continue;setField(m[1].trim(),m[2].trim());continue;}
-    if(line.trim()===""||line.trim()==="-"||isRule(line)) continue;
-    if(cur&&/^\s+/.test(line)){const v=line.replace(/^\s{1,2}/,"");
-      if(cur.key==="thoughts"){const im=v.match(/^-\s+(.*)$/);cur.obj.thoughts.push(im?im[1].trim():v.trim());}
-      else cur.obj[cur.key]=(cur.obj[cur.key]?cur.obj[cur.key]+"\n":"")+v;continue;}
-    if(cur){cur.obj[cur.key]=(cur.obj[cur.key]?cur.obj[cur.key]+"\n":"")+line.trim();continue;}
-    R.unread.push(line.trim().slice(0,60));}
-  closeRaw(lines.length);commitSec();
-  R.today=R.today.filter(e=>e.ts);R.checkins=R.checkins.filter(e=>e.ts).map(e=>({...e,emotions:(e.emotions||[]).filter(id=>quadOf(id))}));
-  R.areas=R.areas.map(a=>({...emptyArea(),...a,items:a.items||[],starter:a.starter||{}}));
-  return R;}
-/* Which sections of the readable half are exactly what the writer would have
-   written from the record — so nobody edited them by hand. Each is written
-   again from the record, in the file's own language, and compared line for
-   line, with the same parts set aside that the reader sets aside (comments,
-   fenced blocks, spaces at the ends of lines, a closing rule). A section that
-   appears more than once is never taken as untouched. */
-function untouchedSections(rec,md){const out=new Set();
-  try{const lg=tableTag(md.lang||(rec.meta&&rec.meta.lang)||"")||"en";const L=(T[lg]||T.en).labels;
-    const tidy=ls=>{const x=ls.join("\n").replace(/<!--[\s\S]*?-->/g,"").replace(/```[\s\S]*?```/g,"")
-        .split("\n").map(l=>l.replace(/\s+$/,""));
-      while(x.length&&(x[x.length-1]===""||isRule(x[x.length-1]))) x.pop();return x.join("\n");};
-    const would={note:noteSection(typeof rec.note==="string"?rec.note:"",L),
-      now:nowSection((rec.now&&rec.now.items)||[],L),areas:areasSection(rec.areas||[],L),
-      big:bigSection({...emptyBig(),...(rec.big||{})},L),archive:archiveSection(rec.archive||[],L)};
-    for(const k of Object.keys(would)){const got=(md.raw||{})[k]||[];
-      if(got.length===1&&tidy(got[0])===tidy(would[k])) out.add(k);}}
-  catch(e){out.clear();}
-  return out;}
-/* An area with no name is written under its position among the areas written
-   ("### 2"), and a hand-edited Areas section reads that back as a name. Where
-   the record says the area in that position has no name, it still has none. */
-function unnamedAgain(areas,recAreas){
-  try{const shown=(recAreas||[]).filter(a=>a&&areaSays(a));
-    return areas.map((a,i)=>a.label===String(i+1)&&shown[i]&&!nonEmpty(shown[i].label)?{...a,label:""}:a);}
-  catch(e){return areas;}}
-/* combine: the record is the base; each markdown section that is present
-   replaces its part of the record, unless it is exactly what the record would
-   have written there (see untouchedSections) */
 /* MDNODES */
 /* mdNodes(text, opts): turns a chunk of Markdown into an array of DOM nodes,
    for the Booklet renderer. Builds every element through the page's own
@@ -7252,42 +6871,12 @@ function addModuleText(text){
   (R.template.modules||[]).forEach(mod=>{const {widgets,...bare}=mod;if(addModule(bare)) added.push(mod.id);});
   return {ok:true,added};}
 
-function parseFile(text){if(isV2(text)) return parseV2(text);const M=labelMaps();const rec=parseRecord(text);const md=parseMarkdownTop(text,M);
-  const R={ok:false,unread:[...md.unread],today:[],checkins:[],drafts:{today:null,checkin:null},template:rec.template||null,preset:md.preset||""};
-  const st=emptyS();
-  if(rec.found){if(rec.meta){st.mode=rec.meta.mode||"full";st.name=rec.meta.name||"";R.lang=rec.meta.lang||null;}
-    if(rec.note!==null) st.note=rec.note;if(rec.q) st.q=rec.q;if(rec.emo) st.emo={...emptyEmo(),...rec.emo,extra:{...emptyEmo().extra,...(rec.emo.extra||{})}};
-    if(rec.prefs) st.prefs={noRemind:false,skipBody:false,...rec.prefs};
-    if(rec.setup) st.setup={...emptySetup(),...rec.setup};
-    if(rec.person) st.person={...emptyPerson(),...rec.person};
-    if(rec.page) st.page={...emptyPage(),...rec.page,blocks:(rec.page.blocks||[]).map(normalizePageBlock)};
-    if(rec.entries) st.entries=rec.entries;
-    if(rec.goodday) st.goodday={...emptyGoodday(),...rec.goodday};
-    if(rec.now) st.now=rec.now;st.areas=rec.areas;if(rec.big) st.big={...emptyBig(),...rec.big,starter:rec.big.starter||{}};st.archive=rec.archive;
-    R.today=rec.today;R.checkins=rec.checkins;R.drafts=rec.drafts;if(rec.bad) R.unread.push(T[lang].ui.lostBlocks(rec.bad,(rec.lostBlocks||[]).join(", ")));}
-  // markdown overrides (front-matter lines, and any section present)
-  if(md.lang) R.lang=md.lang;
-  if(md.languages&&R.template&&!R.template.languages) R.template.languages=md.languages;
-  /* A section nobody edited is read from the record, which keeps what the
-     readable half cannot show: a Now row or an area with nothing in it yet, an
-     area with no name, spaces at the ends of the name, the note and a line. A
-     section somebody edited wins, as the readable half always has. */
-  const asWritten=rec.found?untouchedSections(rec,md):new Set();
-  if(md.mode) st.mode=md.mode;
-  if(nonEmpty(md.name)&&!(rec.found&&md.name===String(st.name||"").trim())) st.name=md.name;
-  if(md.sections.has("note")&&!asWritten.has("note")) st.note=md.note;
-  if(md.sections.has("now")&&!asWritten.has("now")) st.now=md.now;
-  if(md.sections.has("areas")&&!asWritten.has("areas")) st.areas=rec.found?unnamedAgain(md.areas,rec.areas):md.areas;
-  if(md.sections.has("big")&&!asWritten.has("big")) st.big={...md.big,starter:md.big.starter||{}};
-  if(md.sections.has("archive")&&!asWritten.has("archive")) st.archive=md.archive;
-  // legacy files (no record): questions section, appendices, sealed v2 block
-  if(!rec.found){const lq=parseQuestionsLegacy(text);if(Object.keys(lq).length) st.q=lq;
-    R.today=md.today;R.checkins=md.checkins;R.drafts=md.drafts;
-    const sm=text.match(/```json\s*(\{[\s\S]*?"useful-next-step"\s*:\s*2[\s\S]*?\})\s*```/);
-    if(sm){try{const o=JSON.parse(sm[1]);if(Array.isArray(o.today)&&Array.isArray(o.checkins)){R.today=o.today;R.checkins=o.checkins;}}catch(e){R.unread.push("sealed record");}}}
-  R.S=st;
-  R.ok=rec.found||md.recognized>0||R.today.length>0||R.checkins.length>0||nonEmpty(st.note)||Object.keys(st.q).length>0;
-  return R;}
+/* No earlier format is read. A file that is not version 2 front matter
+   (booklet: 2) simply does not open. */
+function parseFile(text){
+  if(isV2(text)) return parseV2(text);
+  return {ok:false,unread:["Not a version 2 booklet file."],today:[],checkins:[],
+    drafts:{today:null,checkin:null},template:null,S:emptyS()};}
 /* A template arriving in a file is not trusted to be well-formed. It has to
    name modes the renderer has kinds for; anything it leaves out entirely falls
    back to the shipped booklet's version of that part, which is filling in a
@@ -7377,20 +6966,6 @@ function refusalOf(mod){if(!mod||typeof mod!=="object") return null;const W=MW()
   if(dup!==undefined) return cap(W.twice(mod.id,dup))+".";
   const pp=pagesProblem(mod);if(pp) return cap(pp)+".";
   const c=moduleClash(mod,allModules());return c?cap(W.clash(mod.id,c.act,c.other))+".":null;}
-/* The loader's gate for the modules a file carries. A module that has both
-   keys, two activities with one id, or an activity id an earlier module holds
-   is left out and named in `lost`, the list the load summary reports; the rest
-   come through, one activity in `activities` read as `mode`. When two modules
-   collide, the one that sorts first — by display.order, then as written —
-   keeps the id, so the choice follows the format's own ordering rule. */
-function admitModules(mods,lost){const W=MW();const kept=[],refused=new Set();
-  for(const m of inOrder(mods)){
-    const ids=modesOf(m).map(a=>a.id),dup=ids.find((x,i)=>ids.indexOf(x)!==i);
-    const c=moduleClash(m,kept);
-    const why=m.mode!=null&&m.activities!=null?W.bothKeys(m.id)
-      :dup!==undefined?W.twice(m.id,dup):c?W.clash(m.id,c.act,c.other):pagesProblem(m);
-    if(why){lost.push(why);refused.add(m);} else kept.push(m);}
-  return mods.filter(m=>!refused.has(m)).map(normalizeModule);}
 
 function addModule(mod){if(!moduleOk(mod)||moduleClash(mod,allModules())) return false;
   mod=normalizeModule(mod);
