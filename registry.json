@@ -23,31 +23,6 @@
    "engines": []
   },
   {
-   "id": "example-decision-log",
-   "version": "0.1",
-   "file": "modules/decision-log.md",
-   "title": "Decision log",
-   "blurb": "What you decided, and what you believed at the time.",
-   "languages": [
-    "en"
-   ],
-   "engines": []
-  },
-  {
-   "id": "example-end-of-day",
-   "version": "0.1",
-   "file": "modules/end-of-day.md",
-   "title": "End of day",
-   "blurb": "Five minutes, once, before you shut the laptop.",
-   "languages": [
-    "en"
-   ],
-   "engines": [
-    "grid-select",
-    "svg-regions"
-   ]
-  },
-  {
    "id": "mensio-check-in",
    "version": "0.1",
    "file": "modules/mensio-check-in.md",
@@ -65,23 +40,6 @@
     "license": "Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.",
     "source": "https://benthepsychologist.com/tools/activity-kit/"
    }
-  },
-  {
-   "id": "mensio-help-now",
-   "version": "0.1",
-   "file": "modules/mensio-help-now.md",
-   "title": "If you need help now",
-   "blurb": "Help now.",
-   "languages": [
-    "en"
-   ],
-   "engines": [],
-   "rights": {
-    "copyright": "© 2026 Benjamin F. Armstrong III. All rights reserved.",
-    "license": "Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.",
-    "source": "https://benthepsychologist.com/tools/activity-kit/"
-   },
-   "pinned": true
   },
   {
    "id": "mensio-the-day",
@@ -116,19 +74,6 @@
     "license": "Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.",
     "source": "https://benthepsychologist.com/tools/activity-kit/"
    }
-  },
-  {
-   "id": "example-the-board",
-   "version": "0.1",
-   "file": "modules/the-board.md",
-   "title": "The board",
-   "blurb": "What the work looks like right now, and a weekly review that reads it back to you.",
-   "languages": [
-    "en"
-   ],
-   "engines": [
-    "card-board"
-   ]
   },
   {
    "id": "example-what-is-a-booklet",
