@@ -1,6 +1,12 @@
 # Every pull request runs this. A module is text and config, not code, so what
 # there is to check is whether it is VALID and whether it is HONEST about
 # itself — which is exactly what the validator in this repo checks.
+#
+# `deploy` publishes to GitHub Pages, but only once `check` has passed on
+# main — this repo's Pages source is set to "GitHub Actions", not "a branch",
+# specifically so a broken push can never go live unchecked (Ben, 2026-09-29).
+# Repo setting: Settings → Pages → Build and deployment → Source →
+# "GitHub Actions" (was "Deploy from a branch").
 name: check
 
 on:
@@ -48,3 +54,26 @@ jobs:
             }
             console.log(reg.modules.length+" entries checked, "+bad+" broken");
             process.exit(bad?1:0);'
+
+  # Publishes booklet.html, registry.json, examples/, modules/, etc. — the
+  # whole repo root, exactly as the old "Deploy from a branch" source did
+  # (.nojekyll already turns off Jekyll processing either way). Only runs
+  # after `check` passes, and only on a real push to main — never on a PR.
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - id: deployment
+        uses: actions/deploy-pages@v4
