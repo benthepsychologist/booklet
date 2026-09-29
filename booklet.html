@@ -2499,13 +2499,6 @@ async function loadRegistry(url){
   try{
     const r=await fetch(url,{cache:"no-cache"});if(!r.ok) return false;
     const data=await r.json();
-    /* the old shape: a bare list of filenames, with nothing to show but the
-       modules themselves, so they are fetched as they always were */
-    if(Array.isArray(data)){
-      await Promise.all(data.map(async n=>{
-        try{const m=await fetch(joinUrl(url,n),{cache:"no-cache"});
-          if(!m.ok) return;const mod=moduleFromText(await m.text());if(mod) shelfAdd(mod);}catch(e){}}));
-      return true;}
     if(!data||!Array.isArray(data.modules)) return false;
     const from=tx(data.name,"");
     data.modules.forEach(e=>shelfPut(e,url,from));
@@ -3364,7 +3357,7 @@ function qField(obj,key,scope,qkey,opt={}){const u=T[lang].ui;const box=el("div"
   const drawAnswer=()=>{answer.innerHTML="";const q=Q(scope,qkey);const id="f_"+Math.random().toString(36).slice(2,8);
     const lab=el("label",{class:"lbl",for:id},q.label,q.hint?el("span",{class:"hint"},q.hint):null);answer.append(lab);
     /* inline edits are hidden until the page is put into edit mode */
-    const editBtn=editing?el("button",{type:"button",class:"opt edit","aria-pressed":String(!!editor),onclick:toggleEdit},"✎ "+u.editQ):null;
+    const editBtn=null;                    // KNOWN GAP 2026-09-29: was the inline question-rewording button, block editor only
     if(q.type==="text"&&q.rawType==="text"){
       const chips=el("div",{class:"optchips"});
       const w=bindTextarea(obj,key,"",opt.rows||2,opt.st||null,()=>drawSave());w.ta.id=id;
@@ -3483,39 +3476,16 @@ function nameRow(labelText,current,fallback,onSet){const u=T[lang].ui;
   return el("div",{class:"qrow"},el("span",{},labelText),inp);}
 
 
-function morePanel(){const t=T[lang];const u=t.ui;const dp=el("details",{class:"pgroup",style:"margin-top:1rem"},el("summary",{},u.personalize));const inn=el("div",{class:"inner"});
-  inn.append(el("p",{class:"hint"},u.pIntro));
-  // name, note, display, language
-  const g1=el("details",{class:"pgroup",open:""},el("summary",{},u.pName));const i1=el("div",{class:"inner"});
-  const tog=el("button",{type:"button",class:"toggle","aria-pressed":String(compact()),style:"margin-top:1rem"},u.compactLbl);
-  tog.addEventListener("click",()=>{S.mode=compact()?"full":"compact";mark();tog.setAttribute("aria-pressed",String(compact()));});
-  const lp=el("div",{class:"pills",style:"margin-top:.75rem"});offeredLangs().forEach(l=>lp.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(lang===l),onclick:()=>pickLang(l)},LANG_NAMES[l]||l)));
-  const L=T[lang].lock;
-  const lockTog=el("button",{type:"button",class:"toggle","aria-pressed":String(!!S.person.protect),style:"margin-top:1rem"},L.toggle);
-  lockTog.addEventListener("click",()=>{if(!hasCrypto()){toast(L.noCrypto);return;}
-    S.person.protect=!S.person.protect;mark();lockTog.setAttribute("aria-pressed",String(!!S.person.protect));});
-  i1.append(el("div",{},tog),el("div",{style:"margin-top:.5rem"},lockTog),el("p",{class:"hint"},L.toggleHint),
-    ...(offeredLangs().length>1?[el("label",{class:"lbl"},u.pLang),lp]:[]));g1.append(i1);inn.append(g1);
-  // questions
-  inn.append(el("p",{class:"hint",style:"margin:1rem 0 .25rem"},u.pQHint));
-  inn.append(qGroup(u.pToday,[["today","mind"],["today","exploring"],["today","aside"],["today","help"],["today","carry"],["today","contact"]]));
-  const gc=qGroup(u.pCheckin,[["checkin","tension"],["checkin","fresh"],["checkin","positive"],["checkin","other"]]);
-  const th=el("details",{class:"quiet"},el("summary",{},el("span",{class:"qsum"},Q("checkin","thoughts").label)));const thi=el("div",{class:"inner"});
-  const tp=el("input",{type:"text",class:"field",placeholder:t.checkin.thoughts.prefix});tp.value=(S.q["checkin.thoughts"]||{}).label||"";tp.addEventListener("input",()=>{qSet("checkin","thoughts",{label:tp.value});th.querySelector(".qsum").textContent=Q("checkin","thoughts").label;});
-  const thn=el("input",{type:"text",class:"field",placeholder:t.checkin.thoughts.p});thn.value=(S.q["checkin.thoughts"]||{}).hint||"";thn.addEventListener("input",()=>qSet("checkin","thoughts",{hint:thn.value}));
-  thi.append(el("div",{class:"qedit"},el("div",{class:"qrow"},el("span",{},u.thoughtsPrefixLbl),tp),el("div",{class:"qrow"},el("span",{},u.thoughtsHintLbl),thn)));th.append(thi);gc.querySelector(".inner").append(th);
-  inn.append(gc);
-  // feeling words
-  const ge=el("details",{class:"pgroup"},el("summary",{},u.pEmotions));const gei=el("div",{class:"inner"});gei.append(el("p",{class:"hint"},u.pEmoHint));
-  quadCells().forEach(q=>{const W=quadWidget();
-    const standard=((W&&W.items)||[]).filter(i=>i.cell===q).map(i=>wtx(i.label,i.id)).join(", ");
-    const inp=el("input",{type:"text",class:"field",placeholder:standard});inp.value=(S.emo.extra[q]||[]).join(", ");
-    inp.addEventListener("input",()=>{S.emo.extra[q]=splitList(inp.value);mark();});gei.append(el("div",{class:"qrow"},el("span",{class:"qd",style:(()=>{const [c,i]=cellById(q);return cellStyle(c,i)+";padding:.2rem .6rem;border-radius:999px";})()},cellLabel(q)),inp));});
-  ge.append(gei);inn.append(ge);
-  // area fields (the reusable per-area page)
-  const bigList=[];AREA_KEYS.forEach(k=>bigList.push(["area",k]));
-  inn.append(qGroup(u.pBig,bigList));
-  dp.append(inn);return dp;}
+/* KNOWN GAP (2026-09-29): morePanel() — the "Personalize" reader-preferences
+   panel (display density, passphrase lock, language picker, and rewording
+   the built-in today/checkin/area scopes' own questions) — was deleted here.
+   It was only ever rendered from inside the now-deleted homeEditPanel, so it
+   had already been unreachable; it customized the renderer's own built-in
+   pre-registry activities (BUILTIN_SCOPES), not a module's content, which is
+   why it went with the rest of the editor rather than being kept standalone.
+   The language picker it offered is not lost as a capability — the header
+   toggle (EN/FR/ES) is the current, always-available way to change reading
+   language; only the today/checkin wording customization has no replacement. */
 
 /* ======================= EDIT MODE =======================
    Display mode carries no edit chrome at all. Edit mode is a different render
@@ -3548,218 +3518,16 @@ function blockName(b){
     ||T[lang].blockEdit.kinds.callout;
   return T[lang].blockEdit.kinds[b.type]||b.type||"text";}
 
-/* one frame around one block */
-function blockFrame(b,draft,modeId,ctx){const t=T[lang].blockEdit;
-  const wrap=el("div",{class:"bframe"});
-  const open=ctx.openId===b.id;
-  const head=el("div",{class:"bhead"});
-  const blabelEl=el("span",{class:"blabel"},blockName(b));
-  head.append(blabelEl,
-              el("span",{class:"btype"},T[lang].blockEdit.kinds[b.type]||b.type||"text"));
-  const acts=el("span",{class:"bacts"});
-  const list=ctx.list();
-  const i=list.findIndex(x=>x.id===b.id);
-  acts.append(
-    el("button",{type:"button",class:"small"+(open?" primary":""),"aria-pressed":String(open),
-      onclick:()=>ctx.toggle(b.id)},open?t.close:t.edit),
-    el("button",{type:"button",class:"small",disabled:i<=0||null,title:t.up,
-      onclick:()=>ctx.move(b.id,-1)},"↑"),
-    el("button",{type:"button",class:"small",disabled:i<0||i>=list.length-1||null,title:t.down,
-      onclick:()=>ctx.move(b.id,1)},"↓"),
-    el("button",{type:"button",class:"small",title:t.duplicate,onclick:()=>ctx.duplicate(b.id)},"⧉"),
-    el("button",{type:"button",class:"small danger",title:t.remove,onclick:()=>ctx.remove(b.id)},"×"));
-  head.append(acts);
-  wrap.append(head);
-  const bodyEl=el("div",{class:"bbody"},renderBlock(b,draft,modeId));
-  wrap.append(bodyEl);
-  /* A plain field edit only ever needs to refresh THIS block's own label and
-     preview — never the rest of the list, and never the field someone is
-     typing into. ctx.redraw() tore down and rebuilt the whole block list on
-     every keystroke, which is both wasteful and (because it destroys the
-     very input being typed into) the cause of losing focus after every
-     character. Only a structural change — add/remove/reorder a block or a
-     widget item, open/close a panel — still goes through ctx.redraw(); see
-     blockCtx below. */
-  const refreshPreview=()=>{blabelEl.textContent=blockName(b);
-    citeBegin(modeId,true);   /* a mark typed or inserted takes its number at once */
-    bodyEl.innerHTML="";bodyEl.append(renderBlock(b,draft,modeId));};
-  if(open) wrap.append(el("div",{class:"beditor"},blockEditorFor(b,ctx,refreshPreview)));
-  return wrap;}
+/* KNOWN GAP (2026-09-29): blockFrame/blockEditorFor/widgetEditor/addBlockRow
+   (the in-browser block editor's per-block chrome and dialogs) were deleted
+   here along with the rest of that editor — see the note above renderBlocks. */
 
-/* the editor for one block, by kind. Each is small; together they are the
-   whole of "edit anything on this page". refreshPreview updates this one
-   block's header/preview without touching whatever field is being typed
-   into — see blockFrame. */
-function blockEditorFor(b,ctx,refreshPreview){const t=T[lang].blockEdit;const box=el("div",{});
-  /* the activity these blocks belong to, when they belong to one: where a
-     citation added from a text editor is written (see READING MATERIAL) */
-  const modeId=ctx.modeId;
-  const save=fn=>{ctx.mutate(x=>fn(x));refreshPreview();};
-  const row=(label,node)=>el("div",{class:"qrow"},el("span",{},label),node);
-  const field=(value,ph,onInput,rows)=>{
-    const n=rows?el("textarea",{class:"field",rows,placeholder:ph||""})
-                :el("input",{type:"text",class:"field",style:"min-height:0",placeholder:ph||""});
-    n.value=value||"";n.addEventListener("input",()=>onInput(n.value));return n;};
-  /* a name of its own overrides whatever the block would otherwise be called */
-  const nameRowFor=()=>row(t.nameIt,field(tx(b.label,""),blockName(b),
-    v=>save(x=>{if(nonEmpty(v)) x.label={...(typeof x.label==="object"?x.label:{}),[lang]:v};
-                else if(x.label&&typeof x.label==="object") delete x.label[lang];})));
 
-  /* the block as it now stands in the template, for what reads it after an edit */
-  const cur=()=>ctx.list().find(x=>x&&x.id===b.id)||b;
-  /* a text that may carry citation marks: under its field, the check that keeps
-     its marks in step across languages, then the tool that cites a source.
-     Every edit to it (typed, or a mark put in) redraws the check. */
-  const citedText=(ph,rows)=>{let kit=null;
-    const put=v=>{save(x=>{x.text=setLoc(x.text,v);});if(kit) kit.redraw();};
-    const ta=field(tx(b.text,""),ph,put,rows);
-    kit=citeKit(modeId,ta,put,()=>cur().text,(k,v)=>save(x=>{x.text=setIn(x.text,k,v);}));
-    return [ta,...kit.nodes];};
-  switch(b.type){
-    case "prose":
-      /* setLoc, not a bare string: a booklet may supply prose in both
-         languages, and editing the English must not drop the French. */
-      box.append(...citedText(t.prosePh,6));break;
-    /* Localised text: written into the language being edited, never over the other. */
-    case "heading":
-      box.append(field(tx(b.text,""),t.headingPh,v=>save(x=>{x.text=setLoc(x.text,v);})));break;
-    case "quote": box.append(...citedText(t.quotePh,4));break;
-    case "callout": box.append(calloutEditor(b,save,modeId,cur));break;
-    case "sources": box.append(sourcesEditor(b,save,modeId,refreshPreview));break;
-    case "deflist":{
-      /* A term and its definition each take marks, like prose, and each is
-         checked across languages on its own. One cite tool serves the pair: its
-         mark goes where the cursor last was, the definition until the term is
-         chosen. */
-      (b.items||[]).forEach((it,i)=>{
-        const slot=(key,value,rows)=>{let kit=null;
-          const put=v=>{save(x=>{x.items[i][key]=setLoc(x.items[i][key],v);});if(kit) kit.redraw();};
-          const f=field(tx(value,""),"",put,rows);
-          kit=citeKit(modeId,f,put,()=>((cur().items||[])[i]||{})[key],
-            (k,v)=>save(x=>{x.items[i][key]=setIn(x.items[i][key],k,v);}),{tool:false});
-          return {f,put,check:kit.nodes};};
-        const L=slot("label",it.label),B=slot("body",it.body,3);
-        let last=B;
-        L.f.addEventListener("focus",()=>{last=L;});B.f.addEventListener("focus",()=>{last=B;});
-        const tool=citeTool(modeId,()=>[last.f,last.put],null,RT().citeWhere);
-        box.append(row(t.pairLabel(i+1),L.f),...L.check,row(t.pairBody,B.f),...B.check);
-        if(tool) box.append(tool);
-        box.append(el("div",{class:"qrow"},el("span",{},""),
-            el("button",{type:"button",class:"small",
-              onclick:()=>save(x=>{x.items.splice(i,1);})},t.removePair)));});
-      box.append(el("button",{type:"button",class:"small",onclick:()=>save(x=>{
-        (x.items=x.items||[]).push({label:{[lang]:""},body:{[lang]:""}});})},t.addPair));
-      break;}
-    case "image":
-      box.append(row(t.imageUrl,field(b.src,"https://…",v=>save(x=>{x.src=v.trim();}))),
-                 row(t.altText,field(b.alt,t.altPh,v=>save(x=>{x.alt=v;}))),
-                 el("p",{class:"hint"},T[lang].pageEdit.imageNote));break;
-    case "text": case "headlines":
-      box.append(qEditor(b.q[0],b.q[1],refreshPreview));break;
-    case "list":
-      box.append(nameRowFor(),
-        row(t.hint,field(tx(b.hint,""),"",v=>save(x=>{x.hint={...(typeof x.hint==="object"?x.hint:{}),[lang]:v};}))),
-        row(t.drawsFrom,field((b.source||[]).join(", "),t.drawsFromPh,
-          v=>save(x=>{x.source=splitList(v);}))));
-      /* This edits a template-level menu (tt.menus[k]) another, currently
-         closed "list" block could also read — refreshPreview only updates
-         THIS block, so a different block sharing the same source key won't
-         visibly update until something structural touches it. Accepted: low
-         consequence, self-corrects the moment anything else redraws. */
-      /* A menu written one list per language is edited in the language being
-         read, and its other languages are kept; a single list stays one. */
-      (b.source||[]).forEach(k=>box.append(row(t.optionsFor(k),
-        field(menuOf(k).join(", "),"",v=>{const cur=rawMenuOf(k);
-          editTemplate(tt=>{tt.menus={...(tt.menus||{}),[k]:isLangMenu(cur)?{...cur,[lang]:splitList(v)}:splitList(v)};});refreshPreview();}))));
-      break;
-    case "didlog":
-      box.append(nameRowFor(),
-        row(t.ticks,field((b.of||[]).join(", "),t.ticksPh,v=>save(x=>{x.of=splitList(v);}))));break;
-    case "group":
-      box.append(nameRowFor(),el("p",{class:"hint"},t.groupNote));break;
-    case "widget":{
-      const W=widgetOf(b.widget);
-      box.append(nameRowFor());
-      if(!W){box.append(el("p",{class:"hint"},T[lang].ui.missingWidget(b.widget||"?")));break;}
-      box.append(widgetEditor(W,refreshPreview));break;}
-    default:
-      box.append(el("p",{class:"hint"},t.noEditor));}
-
-  box.append(el("p",{style:"margin:.6rem 0 0"},
-    el("button",{type:"button",class:"small primary",onclick:()=>ctx.toggle(b.id)},t.done)));
-  return box;}
-
-/* a widget's own vocabulary, edited where it lives — which is the answer to
-   "I want to change the text on those buttons" */
-function widgetEditor(W,redraw){const t=T[lang].blockEdit;const box=el("div",{});
-  const put=fn=>{editTemplate(tt=>{const w=(tt.widgets||[]).find(x=>x.id===W.id);if(w) fn(w);});redraw();};
-  const line=(label,value,onInput)=>{
-    const inp=el("input",{type:"text",class:"field",style:"min-height:0"});inp.value=value||"";
-    inp.addEventListener("input",()=>onInput(inp.value));
-    return el("div",{class:"qrow"},el("span",{},label),inp);};
-
-  /* Whether the typed/suggested word field (tagInput) shows alongside this
-     widget's vocabulary buttons — a per-widget setting, visible by default
-     (absent or true = shown; the buttons work identically either way,
-     since both read and write the same underlying data). Only the two
-     engines that carry the field at all get the toggle. */
-  if(W.engine==="grid-select"||W.engine==="svg-regions"){
-    const cb=el("input",{type:"checkbox",id:"showTags-"+W.id});cb.checked=W.showTags!==false;
-    cb.addEventListener("change",()=>put(w=>{w.showTags=cb.checked;}));
-    box.append(el("label",{class:"checkrow",for:"showTags-"+W.id},cb,t.showTags));}
-
-  if(W.engine==="grid-select"){
-    box.append(el("div",{class:"lbl2"},t.axes));
-    ["top","bottom","left","right"].forEach(k=>box.append(
-      line(t.axis[k],wtx((W.axes||{})[k],""),v=>put(w=>{w.axes=w.axes||{};
-        w.axes[k]={...(typeof w.axes[k]==="object"?w.axes[k]:{}),[lang]:v};}))));
-    box.append(el("div",{class:"lbl2",style:"margin-top:.7rem"},t.cells));
-    (W.cells||[]).forEach(c=>{
-      box.append(line(c.id,wtx(c.label,c.id),v=>put(w=>{
-        const cc=(w.cells||[]).find(x=>x.id===c.id);if(cc) cc.label={...(typeof cc.label==="object"?cc.label:{}),[lang]:v};})));
-      const words=(W.items||[]).filter(i=>i.cell===c.id);
-      const wrap=el("div",{class:"wordrow"});
-      words.forEach(it=>{
-        const inp=el("input",{type:"text",class:"field wordin",style:"min-height:0"});
-        inp.value=wtx(it.label,it.id);
-        inp.addEventListener("input",()=>put(w=>{const ii=(w.items||[]).find(x=>x.id===it.id);
-          if(ii) ii.label={...(typeof ii.label==="object"?ii.label:{}),[lang]:inp.value};}));
-        wrap.append(el("span",{class:"wordwrap"},inp,
-          el("button",{type:"button",class:"small danger",title:t.removeWord,
-            onclick:()=>put(w=>{w.items=(w.items||[]).filter(x=>x.id!==it.id);})},"×")));});
-      wrap.append(el("button",{type:"button",class:"small",onclick:()=>put(w=>{
-        const id="w"+Math.random().toString(36).slice(2,7);
-        w.items=[...(w.items||[]),{id,cell:c.id,label:{[lang]:t.newWord}}];})},"+ "+t.addWord));
-      box.append(wrap);});
-  }else if(W.engine==="svg-regions"){
-    box.append(el("div",{class:"lbl2"},t.regions));
-    (W.regions||[]).forEach(r=>box.append(line(r.id,wtx(r.label,r.id),v=>put(w=>{
-      const rr=(w.regions||[]).find(x=>x.id===r.id);if(rr) rr.label={...(typeof rr.label==="object"?rr.label:{}),[lang]:v};}))));
-    box.append(el("div",{class:"lbl2",style:"margin-top:.7rem"},t.senseWords));
-    (W.senses||[]).forEach(g=>box.append(line(wtx(g.label,g.id),
-      (g.words||[]).map(x=>wtx(x.label,x.id)).join(", "),
-      v=>put(w=>{const gg=(w.senses||[]).find(x=>x.id===g.id);if(!gg) return;
-        gg.words=splitList(v).map((word,i)=>{const old=(gg.words||[])[i];
-          return {id:(old&&old.id)||`${g.id}:${i}`,
-                  label:{...(old&&typeof old.label==="object"?old.label:{}),[lang]:word}};});}))));
-  }else box.append(el("p",{class:"hint"},t.noEditor));
-  box.append(el("p",{class:"hint",style:"margin-top:.6rem"},t.widgetNote));
-  return box;}
-
-/* the palette: what you can add to a page */
-function addBlockRow(ctx){const t=T[lang].blockEdit;
-  const box=el("div",{class:"addrow"});
-  box.append(el("span",{class:"lbl2"},t.addA));
-  ctx.kinds.forEach(k=>box.append(el("button",{type:"button",class:"pill-btn",
-    onclick:()=>ctx.add(k)},"+ "+(t.kinds[k]||k))));
-  return box;}
-
-/* render a list of blocks: plain in display mode, framed in edit mode */
+/* render a list of blocks, in reading order, skipping any hidden one */
 function renderBlocks(list,draft,modeId,ctx){const host=el("div",{});
   const draw=()=>{host.innerHTML="";citeBegin(modeId);
-    const items=inOrder(list().filter(b=>editing||placeOf(b)!=="hidden"));
-    items.forEach(b=>host.append(editing?blockFrame(b,draft,modeId,ctx):renderBlock(b,draft,modeId)));
-    if(editing) host.append(addBlockRow(ctx));};
+    const items=inOrder(list().filter(b=>placeOf(b)!=="hidden"));
+    items.forEach(b=>host.append(renderBlock(b,draft,modeId)));};
   ctx.redraw=draw;draw();return host;}
 
 /* the two places blocks live, wired the same way */
@@ -3810,15 +3578,13 @@ function reorderIn(list,id,dir){
    Editing is off until asked for. `editing` shows or hides every inline
    control at once, which is the difference between a tool that looks like a
    page and one that looks like a form. */
+/* `editing` never becomes true — the in-browser block editor (add/remove/
+   reorder blocks, "Edit this page") was removed with format v1 support,
+   2026-09-29 (SPEC.md §14: no in-browser design editor for v2). The variable
+   and every `if(editing)` branch downstream stay for now as a deliberate,
+   separate cleanup pass, since they read from the shared block-rendering
+   path rather than one self-contained function. */
 let editing=false;
-
-/* In-browser design editing (adding/removing blocks, adding an activity from
-   the registry) still reads and writes the old version-1 JSON module shape;
-   it was not rebuilt for version 2's Markdown design in this release. Both
-   places that can set `editing=true` — the "Edit this page" toggle and the
-   "Add an activity" call-to-action on an empty page — check this first, so
-   turning edit mode back on again is one flag, not a hunt through the file. */
-const EDIT_MODE_ENABLED=false;
 
 /* The home page's own words are the booklet's, so a booklet may ship them and
    the renderer seeds nothing of its own. A page that opens blank is the honest
@@ -3851,125 +3617,14 @@ function pageText(){const wrap=el("div",{class:"col pagetext"});
   wrap.append(renderBlocks(()=>S.page.blocks,S,"home",ctx));
   return wrap;}
 
-/* A name or a lead paragraph is a block like any other to read or edit — the
-   same field, the same chrome as everything in blockEditorFor — but there is
-   exactly one of it, it names the thing around it, and it cannot be added,
-   reordered, duplicated or removed the way a block can. Reading mode shows
-   it plainly in the given tag; while editing is on it opens into the field,
-   pre-filled with exactly what reading mode just showed, and every keystroke
-   writes straight back through onInput. Nothing to show and not editing
-   means nothing is drawn at all. */
-function metaField(tag,cls,label,val,onInput,rows){
-  if(!editing){
-    if(!nonEmpty(val)) return null;
-    return el(tag,cls?{class:cls}:{},val);}
-  const wrap=el("div",{class:"bframe mfield"});
-  wrap.append(el("div",{class:"bhead"},el("span",{class:"blabel"},label)));
-  const input=rows?el("textarea",{class:"field",rows}):el("input",{type:"text",class:"field",style:"min-height:0"});
-  input.value=val||"";input.addEventListener("input",()=>onInput(input.value));
-  wrap.append(el("div",{class:"beditor"},input));
-  return wrap;}
+/* A name or a lead paragraph, shown plainly in the given tag. There is no
+   in-browser design editor (SPEC.md §14), so this only ever reads; nothing
+   to show means nothing is drawn at all. (label/onInput/rows are unused now —
+   kept as parameters so every existing call site still reads the same way.) */
+function metaField(tag,cls,label,val){
+  if(!nonEmpty(val)) return null;
+  return el(tag,cls?{class:cls}:{},val);}
 
-/* the single control that turns every inline edit on this page on or off */
-function editToggle(){if(!EDIT_MODE_ENABLED) return null;const t=T[lang].pageEdit;
-  /* a version 2 booklet's design is its Markdown, edited in a text editor;
-     this page does not yet write design changes back into it */
-  if(TPL&&TPL.booklet===2) return null;
-  const b=el("button",{type:"button",class:"toggle editbtn","aria-pressed":String(editing)},
-    editing?t.editingOn:t.editThis);
-  b.addEventListener("click",()=>{editing=!editing;render();});
-  return b;}
-
-/* the home page's own editing: its words, and which activities it offers */
-function homeEditPanel(){const t=T[lang];const u=t.ui;const B=t.booklet;
-  const wrap=el("div",{class:"col homeedit"});
-  wrap.append(el("div",{class:"editrow"},editToggle()));
-  if(!editing) return wrap;
-  const box=el("div",{class:"editpanel"});
-
-  const nameIn=el("input",{type:"text",class:"field",style:"min-height:0",id:"f_name"});
-  nameIn.value=S.name;nameIn.addEventListener("input",()=>{S.name=nameIn.value;mark();});
-  box.append(el("label",{class:"lbl",for:"f_name"},u.nameLbl[0]),nameIn,
-             labeled(S,"note",u.noteLbl,3));
-
-  box.append(el("h3",{},B.activities));
-  const list=el("div",{});
-  const drawList=()=>{list.innerHTML="";
-    const ordered=tplModules();
-    if(!ordered.length) list.append(el("p",{class:"hint"},B.noActivities));
-    ordered.forEach((mod,i)=>{const acts=modesOf(mod);const m={...(acts[0]||{})};
-      /* a module with several activities is shown or hidden as a whole here;
-         its activities keep their own `display` */
-      const shown=isShown(mod,acts.length>1?{}:m);
-      const nameFallback=copyText((m.head||{}).title,copyText((m.head||{}).h,m.id));
-      list.append(el("div",{class:"bkrow"},
-        el("span",{class:"bkname"},tx(mod.title,nameFallback)
-          +(acts.length>1?" · "+MW().activitiesN(acts.length):"")),
-        el("span",{class:"bkacts"},
-          el("button",{type:"button",class:"small",disabled:i===0||null,
-            onclick:()=>{moveModule(mod.id,-1);render();}},"↑"),
-          el("button",{type:"button",class:"small",disabled:i>=ordered.length-1||null,
-            onclick:()=>{moveModule(mod.id,1);render();}},"↓"),
-          el("button",{type:"button",class:"small"+(shown?" primary":""),"aria-pressed":String(shown),
-            onclick:()=>{editTemplate(x=>{const mm=modWithId(x,mod.id);
-              if(mm) mm.display={...(mm.display||{}),show:!shown};});render();}},shown?B.shown:B.hidden),
-          el("button",{type:"button",class:"small danger",title:B.remove,
-            onclick:()=>{removeModule(mod.id);render();toast(B.parked);}},"×"))));});
-    const parked=parkedModules();
-    if(parked.length){list.append(el("p",{class:"hint",style:"margin-top:.6rem"},B.parkedH));
-      parked.forEach(mod=>list.append(el("div",{class:"bkrow"},
-        el("span",{class:"bkname"},tx(mod.title,mod.id)),
-        el("span",{class:"bkacts"},
-          el("button",{type:"button",class:"small primary",onclick:()=>{putBack(mod.id);render();}},B.putBack),
-          el("button",{type:"button",class:"small danger",onclick:()=>{deleteModule(mod.id);render();toast(B.deleted);}},B.deleteIt)))));}
-    const have=new Set(allModules().map(m=>m.id));
-    const shelf=shelfList().filter(m=>!have.has(m.id));
-    if(shelf.length){const row=el("div",{class:"pills",style:"margin-top:.6rem"});
-      shelf.forEach(L=>{const b=el("button",{type:"button",class:"pill-btn",
-        title:tx(L.blurb,"")||undefined},"+ "+tx(L.title,L.id));
-        /* the module itself is fetched here, and only here */
-        b.addEventListener("click",async()=>{
-          /* the download can outlast the reader's stay in this booklet: if
-             another was opened meanwhile, the activity is dropped, never put
-             into the wrong one */
-          const gen=bookletGen;
-          b.disabled=true;const mod=await resolveShelf(L.id);
-          if(gen!==bookletGen){b.disabled=false;return;}
-          if(!mod){b.disabled=false;toast(B.addFailed);return;}
-          /* a module refused for taking another's activity id says so */
-          if(!addModule(mod)){b.disabled=false;toast(refusalOf(mod)||B.addFailed);return;}
-          render();toast(B.added(tx(L.title,L.id)));});
-        row.append(b);});
-      list.append(row);}};
-  drawList();box.append(list);
-
-  const paste=el("textarea",{class:"field",rows:3,placeholder:B.pastePh,"aria-label":B.paste});
-  const msg=el("div",{class:"msg"});
-  box.append(el("label",{class:"lbl"},B.paste),paste,msg,
-    el("p",{},el("button",{type:"button",class:"small",onclick:()=>{
-      const mod=moduleFromText(paste.value.trim());
-      if(!mod||!addModule(mod)){msg.className="msg err";msg.textContent=(mod&&refusalOf(mod))||B.pasteBad;return;}
-      paste.value="";toast(B.added(tx(mod.title,mod.id)));render();}},B.pasteGo)));
-  /* The escape hatch. Everything above edits one thing at a time; this edits
-     the file. It is the honest bottom of the system — anything the editors
-     cannot reach is reachable here, and a booklet somebody sent as text can be
-     pasted straight in. */
-  {const d=el("details",{class:"pgroup",style:"margin-top:1rem"},el("summary",{},B.fileH));
-   const inner=el("div",{class:"inner"});
-   inner.append(el("p",{class:"hint"},B.fileP));
-   const ta=el("textarea",{class:"field",rows:12,spellcheck:"false"});
-   const msg=el("div",{class:"msg"});
-   const load=()=>{ta.value=toMarkdown();msg.className="msg";msg.textContent="";};
-   inner.append(ta,msg,el("div",{class:"pbar"},
-     el("button",{type:"button",class:"small",onclick:load},B.fileReload),
-     el("button",{type:"button",class:"small primary",onclick:()=>{
-       const R=parseFile(ta.value);
-       if(!R.ok){msg.className="msg err";msg.textContent=T[lang].ui.loadErr;return;}
-       applyParsed(R,"replace");saveLocal();render();toast(B.fileApplied);}},B.fileApply)));
-   load();d.append(inner);box.append(d);}
-
-  box.append(morePanel());
-  wrap.append(box);return wrap;}
 
 function renderHome(main){const t=T[lang];const u=t.ui;
   const hero=el("div",{class:"hero col"});
@@ -4007,7 +3662,7 @@ function renderHome(main){const t=T[lang];const u=t.ui;
       const acts=activitiesShown(holder);
       /* with every activity hidden the card goes too, except while editing,
          so the module page stays reachable to show them again */
-      if(dispOf(holder).show!==false&&(acts.length||editing)) shown.push({holder,acts});
+      if(dispOf(holder).show!==false&&acts.length) shown.push({holder,acts});
       continue;}
     if(isShown(moduleOf(x.id),x)) shown.push({mode:x});}
   for(const card of shown){if(card.holder){modes.append(moduleCard(card.holder,card.acts));continue;}
@@ -4027,21 +3682,11 @@ function renderHome(main){const t=T[lang];const u=t.ui;
       el("span",{class:"top",html:ICONS[m.icon||key]||""},el("span",{class:"k"},k)),
       el("span",{class:"d"},d),cline));}
   /* Nothing is preloaded any more, so the empty page is a real first view and
-     has to offer its own way forward. The add controls live behind the edit
-     toggle, which is right once there is something to edit and useless when
-     the page is blank — "add one below" pointing at nothing is a dead end. */
-  /* The way to add an activity lives on the page, not only inside edit mode.
-     There is a bank of modules on offer and a reader who does not know to
-     press "Edit this page" first will never find it. Loud when the page is
-     empty, quiet once there is something on it. */
-  if(!editing){const add=el("div",{class:"col addrow"});
+     has to offer its own way forward: "Add a module" (openAddModule), the
+     splicing dialog — loud when the page is blank, quiet once there is
+     something on it. */
+  {const add=el("div",{class:"col addrow"});
     if(!shown.length) add.append(el("p",{class:"hint"},t.booklet.noActivities));
-    if(EDIT_MODE_ENABLED){
-      const go=el("button",{type:"button",class:shown.length?"quietlink":"primary"},t.booklet.add);
-      go.addEventListener("click",()=>{editing=true;render();});
-      add.append(go);}
-    /* the always-available way to add a module: not gated by EDIT_MODE_ENABLED,
-       since it never opens the retired block editor — see addModuleFromText */
     const addMod=el("button",{type:"button",class:shown.length?"quietlink":"primary"},t.ui.addModTitle);
     addMod.addEventListener("click",openAddModule);
     add.append(addMod);
@@ -4052,7 +3697,6 @@ function renderHome(main){const t=T[lang];const u=t.ui;
   main.append(pageText());
 
   const note=unsavedNote();if(note) main.append(el("p",{class:"col"},note));
-  main.append(homeEditPanel());
   main.append(el("p",{class:"col",style:"margin-top:2rem"},
     el("button",{type:"button",class:"quietlink",onclick:()=>document.getElementById("veilClear").setAttribute("open","")},u.clearLink)));
 }
@@ -4618,7 +4262,6 @@ function renderBlock(b,draft,modeId){const t=T[lang];
       return box;}
     case "image":{const box=el("div",{class:"pblock"});
       if(nonEmpty(b.src)) box.append(el("img",{src:b.src,alt:b.alt||"",loading:"lazy"}));
-      else if(editing) box.append(el("p",{class:"hint"},T[lang].pageEdit.noSrc));
       return box;}
 
     /* Three blocks that only read. They carry no answer and own no entry key,
@@ -4804,7 +4447,6 @@ function renderEntry(main,id){const t=T[lang];const u=t.ui;const m=modeOf(id);co
   const draft=draftFor(id);seedUpsertDraft(id,m,draft);const col=el("div",{class:"col"});
   const head=m.head||{};
   const setModuleField=(key,v)=>editTemplate(tt=>{const mm=mod&&modWithId(tt,mod.id);if(mm) mm[key]=setLoc(mm[key],v);});
-  col.append(el("div",{class:"editrow"},editToggle()));
   const titleVal=tx(mod&&mod.title,tx(m.title,copyText(head.title,copyText(head.h,id))));
   col.append(metaField("h2",null,u.activityName,titleVal,v=>setModuleField("title",v))||el("h2",{},titleVal));
   if(head.question) col.append(el("p",{class:"gdq"},copyText(head.question,"")));
@@ -4870,7 +4512,6 @@ function railFor(id){
 
 function renderBoard(main,id){const t=T[lang];const u=t.ui;const m=modeOf(id);const mod=moduleOf(id);
   const col=el("div",{class:"col"});
-  col.append(el("div",{class:"editrow"},editToggle()));
   const head=m.head||{};
   const tog=el("button",{type:"button",class:"toggle","aria-pressed":String(compact())},compact()?u.compactOff:u.compactOn);
   tog.addEventListener("click",()=>{S.mode=compact()?"full":"compact";mark();render();});
@@ -4894,7 +4535,7 @@ function renderBoard(main,id){const t=T[lang];const u=t.ui;const m=modeOf(id);co
   col.append(pageBody(id,boardStore()));
 
   const en=earlierNotes();if(en) col.append(en);
-  const rail=(m.rail&&!editing)?railFor(id):null;
+  const rail=m.rail?railFor(id):null;
   main.append(withPages(id,rail?el("div",{class:"frame"},rail,col):col));}
 
 /* ======================= A MODULE'S OWN PAGE =======================
@@ -4949,7 +4590,6 @@ function renderModulePage(main,v){const mod=moduleForView(v);
   if(!mod||!isMulti(mod)){view=mod?entryViewOf(mod):"home";return render();}
   const u=T[lang].ui;const W=MW();
   const col=el("div",{class:"col"});
-  col.append(el("div",{class:"editrow"},editToggle()));
   const setField=(key,v)=>editTemplate(tt=>{const mm=modWithId(tt,mod.id);if(mm) mm[key]=setLoc(mm[key],v);});
   const title=tx(mod.title,mod.id);
   col.append(metaField("h2",null,u.activityName,title,v=>setField("title",v))||el("h2",{},title));
@@ -4966,21 +4606,10 @@ function renderModulePage(main,v){const mod=moduleForView(v);
     grid.append(el("button",{type:"button",class:"mode",onclick:()=>go(a.id)},
       top,el("span",{class:"d"},tx(a.blurb,"")),cline));});
   main.append(grid);
-  /* While editing: every activity in the module, hidden ones too, each movable
-     and showable. Both are written as display parameters on the activity, never
-     by reordering the file, as SPEC.md requires of anything that rearranges. */
-  if(editing){const B=T[lang].booklet;const all=modesOf(mod);
-    const box=el("div",{class:"col homeedit"},el("h3",{},B.activities));
-    all.forEach((a,i)=>{const on=isShown(null,a);
-      box.append(el("div",{class:"bkrow"},el("span",{class:"bkname"},activityName(a)),
-        el("span",{class:"bkacts"},
-          el("button",{type:"button",class:"small",title:B.up,disabled:i===0||null,
-            onclick:()=>{moveActivity(mod.id,a.id,-1);render();}},"↑"),
-          el("button",{type:"button",class:"small",title:B.down,disabled:i>=all.length-1||null,
-            onclick:()=>{moveActivity(mod.id,a.id,1);render();}},"↓"),
-          el("button",{type:"button",class:"small"+(on?" primary":""),"aria-pressed":String(on),
-            onclick:()=>{showActivity(mod.id,a.id,!on);render();}},on?B.shown:B.hidden))));});
-    main.append(box);}}
+  // KNOWN GAP (2026-09-29): a "while editing" panel here (move/show/hide
+  // every activity in the module) was deleted with the rest of the block
+  // editor; moveActivity/showActivity below are now unreachable from any UI.
+}
 /* Moving an activity writes an explicit order for every activity in its
    module, the same way moveModule() does for modules. */
 function moveActivity(modId,actId,dir){editTemplate(t=>{const m=modWithId(t,modId);
@@ -5014,11 +4643,6 @@ function showActivity(modId,actId,on){editTemplate(t=>{const m=modWithId(t,modId
    loader's gate use too, so a one-page activity written as `blocks` is read,
    drawn and written back exactly as it always was. */
 
-/* Where the plus strip shows on a one-page activity: "editing" (only while
-   "Edit this page" is on) or "always". Editing only, by default: the strip
-   changes the booklet's design, and a reader should not add a page by
-   accident while reading or answering. */
-const ADD_PAGE_BOX="editing";
 /* the browser's own preference for the menu: "min" or "open" */
 const PAGES_MENU_KEY="booklet.ui.pagesMenu";
 /* Below this width the menu starts as the rail and opens over the page rather
@@ -5291,14 +4915,9 @@ function pageActions(id,p,i,n){const P=PG();const B=T[lang].blockEdit;const name
    several, the plus strip when it has one and pages may be added here, or
    nothing at all. */
 function withPages(id,content){const P=PG();const ps=pagesOf(modeOf(id));
-  const editable=!!actIn(TPL,id);const inner=el("div",{class:"ap-content"},content);
-  if(ps.length<2){
-    if(!editable||!(editing||ADD_PAGE_BOX==="always")) return content;
-    const plus=el("button",{type:"button",class:"ap-plus","aria-label":P.addFirst,title:P.addFirst},
-      el("span",{"aria-hidden":"true"},"+"));
-    plus.addEventListener("click",()=>{if(splitIntoPages(id)){render();refocus(".ap-name input");}});
-    return el("div",{class:"ap-frame ap-single"},plus,inner);}
-  const open=pagesMenuOpen(),cur=currentPage(id),tools=editing&&editable;
+  const inner=el("div",{class:"ap-content"},content);
+  if(ps.length<2) return content;
+  const open=pagesMenuOpen(),cur=currentPage(id);
   const tog=el("button",{type:"button",class:"ap-toggle","aria-expanded":String(open),"aria-controls":"ap-pages",
     "aria-label":P.toggle,title:open?P.minimize:P.expand},el("span",{"aria-hidden":"true"},open?"«":"»"));
   tog.addEventListener("click",togglePagesMenu);
@@ -5307,13 +4926,7 @@ function withPages(id,content){const P=PG();const ps=pagesOf(modeOf(id));
     const b=el("button",{type:"button",class:"ap-item","aria-current":p.id===cur.id?"page":null,title:open?null:name},
       el("span",{class:"ap-n","aria-hidden":"true"},String(i+1)),t);
     b.addEventListener("click",()=>choosePage(id,p.id));b.addEventListener("keydown",pageMenuKeys);
-    const li=el("li",{"data-i":String(i)},b);
-    if(tools&&open) li.append(pageActions(id,p,i,ps.length));
-    ol.append(li);});
-  if(tools){const add=el("button",{type:"button",class:"ap-item ap-add",title:open?null:P.addPage},
-      el("span",{class:"ap-n","aria-hidden":"true"},"+"),el("span",{class:"ap-t"},P.addPage));
-    add.addEventListener("click",()=>{if(addPage(id)){pagesOverlay=false;render();refocus(".ap-name input");}});
-    add.addEventListener("keydown",pageMenuKeys);ol.append(el("li",{},add));}
+    ol.append(el("li",{"data-i":String(i)},b));});
   const nav=el("nav",{class:"ap-menu","aria-label":P.nav},
     el("div",{class:"ap-top"},el("span",{class:"ap-head lbl2","aria-hidden":"true"},P.heading),tog),ol);
   /* the menu open over the page on a narrow screen closes with Escape */
@@ -5609,8 +5222,8 @@ function markNode(R,id){const Rt=RT(),n=R.nums.get(id);
     "aria-haspopup":"dialog","aria-expanded":"false","aria-controls":"rd-panel"},String(n));
   /* the first mark of each citation carries its anchor; every mark drawn is
      kept, in order, for the sources list's ways back and a language switch */
-  if(!editing){if(!R.marks.has(id)){b.setAttribute("id","rd-m-"+n);R.marks.set(id,b);}
-    if(!R.drawn.has(id)) R.drawn.set(id,[]);R.drawn.get(id).push(b);}
+  if(!R.marks.has(id)){b.setAttribute("id","rd-m-"+n);R.marks.set(id,b);}
+  if(!R.drawn.has(id)) R.drawn.set(id,[]);R.drawn.get(id).push(b);
   const modeId=R.modeId;
   b.addEventListener("click",()=>{hideTip();openCite(modeId,id,b);});
   /* a mouse, not a finger or a pen: the pointer says which it is, where a
@@ -5740,7 +5353,7 @@ function calloutNode(b,draft,modeId){const Rt=RT(),k=CALLOUT_KINDS.includes(b.ki
   (Array.isArray(b.blocks)?b.blocks:[]).forEach(x=>{if(x&&typeof x==="object") body.append(renderBlock(x,draft,modeId));});
   box.append(body);
   const R=citeScope(modeId);
-  if(R&&k){const c={box,body,btn,kind:k};R.callouts.push(c);calloutView(c,editing?[]:filterOn(modeId));}
+  if(R&&k){const c={box,body,btn,kind:k};R.callouts.push(c);calloutView(c,filterOn(modeId));}
   return box;}
 function applyFilter(id){const R=citeScope(id);if(!R) return;const on=filterOn(id);R.callouts.forEach(c=>calloutView(c,on));}
 /* Above an activity's blocks: the numbering taken afresh, the panel closed
@@ -5752,7 +5365,7 @@ function readingTop(id){
      focus stays where the reader put it. Any other redraw closes it. */
   citeAgain=citeOpen()&&citeAt&&citeAt.modeId===id&&citeAt.lang!==lang?citeAt:null;
   closeCite(false);hideTip();
-  const R=citeBegin(id);if(!R||editing) return null;
+  const R=citeBegin(id);if(!R) return null;
   const counts={};
   const walk=bs=>bs.forEach(b=>{if(!b||typeof b!=="object") return;
     if(b.type==="callout"&&CALLOUT_KINDS.includes(b.kind)) counts[b.kind]=(counts[b.kind]||0)+1;
@@ -5789,7 +5402,7 @@ function sourcesNode(b,modeId){const Rt=RT(),R=citeScope(modeId),u="rd-s"+(++rdS
           el("span",{},(n===undefined?Rt.notCited+": ":"")+[pageLine(c,Rt),nonEmpty(q)?Rt.quoted(clip(q,160)):""].filter(nonEmpty).join(" — ")));
         /* a way back to every place it is marked, each turning to its page */
         const at=R.places.get(c.id)||[];
-        if(n!==undefined&&!editing&&at.length){const backs=el("span",{class:"rd-backs"});
+        if(n!==undefined&&at.length){const backs=el("span",{class:"rd-backs"});
           at.forEach((_,i)=>{const name=at.length>1?Rt.backAt(n,i+1,at.length):Rt.back(n);
             const back=el("button",{type:"button",class:"rd-back","aria-label":name,title:name},
               el("span",{"aria-hidden":"true"},"↩"),at.length>1?el("span",{class:"rd-bn","aria-hidden":"true"},String(i+1)):null);

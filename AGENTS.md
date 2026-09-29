@@ -15,11 +15,12 @@ and widgets whole.
 
 ## Licensing and ownership
 
-- The renderer, format, validator, build scripts, and modules/widgets without a
-  `rights`/`copyright`/`license` declaration are Apache-2.0.
+- The renderer, format, validator, build scripts, and modules without a
+  `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
   module's prose and travels with the file, since a version 2 module is the
-  unit that travels whole (`SPEC.md` §2). Do not remove or relocate it.
+  unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
+  relocate it.
 - `modules/mensio-*.md` are generated publication copies owned upstream by
   `benthepsychologist-corpus`. Do not hand-edit them here. Their source
   repository's adapter updates or withdraws them.

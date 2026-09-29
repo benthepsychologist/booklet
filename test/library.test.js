@@ -395,23 +395,14 @@ noWrapper();delete global.fetch;
  const modulesOf=X=>X.tplModules().length;
  wipe();withWrapper({registries:[REGURL]});
  A=boot();await sleep(20);                      // the shelf is loaded from the registry
- const sa=await A.createBooklet(),sb=await A.createBooklet(),sc=await A.createBooklet();
- // the "+ add activity" button
- A.openBooklet(sa.id);A.editing=true;A.render();
- {const btn=button(main(),"+ Race one");
-  chk("the shelf offers the activity to add",!!btn);
-  const p=click(btn);await sleep(0);
-  chk("its download is pending",held.length===1&&/one\.md$/.test(held[0].url),String(held.length));
-  A.openBooklet(sb.id);                         // the reader moves to booklet B meanwhile
-  release(0,modSrc);await p;
-  chk("an activity still downloading when the reader switched does not land in the booklet opened since",
-    A.currentId===sb.id&&modulesOf(A)===0,"B holds "+modulesOf(A));
-  A.openBooklet(sa.id);
-  chk("nor was it added to the booklet it was asked for in",modulesOf(A)===0,"A holds "+modulesOf(A));
-  // control: with no switch the same button does add it, so the checks above can fail (the earlier download, though dropped, stays cached on the shelf)
-  A.openBooklet(sc.id);A.editing=true;A.render();
-  await click(button(main(),"+ Race one"));   // the discarded download was kept on the shelf, so nothing is fetched again
-  chk("control: the activity is in the booklet it was added to",modulesOf(A)===1,"C holds "+modulesOf(A));}
+ const sa=await A.createBooklet(),sb=await A.createBooklet();
+ // KNOWN GAP (2026-09-29): the "+ add activity" shelf-button race test that
+ // used to sit here (via A.editing=true) tested the in-browser block editor's
+ // own shelf-add button, deleted along with the rest of that editor. The
+ // "race/one" registry entry above is now unused by this section, but modSrc
+ // and the rest of the setup stay: the "add map" race test below still uses
+ // them (modSrc as filler content for its own download; the shared
+ // registry/modulesOf/release/held plumbing).
  // the "add map" link on the day picker, which adds a card-board module
  held=[];A.openBooklet(sa.id);
  {const box=A.dayPicker("k",[],["Things",""],{});

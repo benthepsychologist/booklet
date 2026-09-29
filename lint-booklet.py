@@ -1529,67 +1529,15 @@ def check_file(path):
 
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
-    else:
-        if fm.get("booklet") == "2":
-            check_v2(f, text, fm)
-            return
-        if fm.get("booklet") != "1":
-            err(f, f"front matter must say `booklet: 1` (found {fm.get('booklet')!r})")
-        if lang_problem(fm.get("lang")) is not None:
-            err(f, f"front matter needs `lang:` set to a supported language, one of "
-                   f"en, es, fr, or es-AR (found {fm.get('lang')!r})")
-        if not fm.get("preset"):
-            warn(f, "front matter has no `preset:` line naming the design")
-
-    if fm and fm.get("encrypted") == "true":
-        warn(f, "encrypted booklet — nothing to lint inside it, which is the point")
         return
-
-    blocks, broken = blocks_of(text)
-    for name, why in broken:
-        err(f, f"the {name!r} block is not valid JSON — {why}. "
-               f"The page would load the file without it; fix or remove that block.")
-    if not blocks:
-        err(f, "no record: a booklet carries at least a meta block")
+    if fm.get("booklet") == "2":
+        check_v2(f, text, fm)
         return
-
-    meta, tpl = template_from(blocks)
-    if meta is None:
-        err(f, "no meta block, so nothing says what booklet this is")
-        return
-    app = meta.get("app")
-    if not isinstance(app, str) or not app.strip():
-        err(f, "the meta block has no `app`, so nothing records which application "
-               "wrote this file. Any name is valid; an absent one is not.")
-    if int(meta.get("v", 0)) < 6:
-        err(f, f"record v{meta.get('v')} predates the per-block format; open and re-save it")
-
-    kinds = {b.get("block") for b in blocks}
-    if "format" not in kinds:
-        warn(f, "no format block — the file no longer explains itself, so anyone "
-                "handed it needs the spec separately. Open and re-save it.")
-    for needed in ("meta", "person"):
-        if needed not in kinds:
-            err(f, f"the record has no {needed!r} block")
-    # the record's table says which blocks come once per file, and which once per
-    # activity (`entries`); a second one is a reader's guess about which wins
-    for one in ("format", "meta", "person", "fields", "board", "drafts"):
-        n = sum(1 for b in blocks if b.get("block") == one)
-        if n > 1:
-            err(f, f"the record has {n} {one!r} blocks; a file carries exactly one")
-    seen_entries = set()
-    for b in blocks:
-        if b.get("block") == "entries" and isinstance(b.get("mode"), str):
-            if b["mode"] in seen_entries:
-                err(f, f"the record has two 'entries' blocks for the activity {b['mode']!r}; "
-                       f"a file carries one per activity")
-            seen_entries.add(b["mode"])
-
-    if "languages" not in tpl and fm and fm.get("languages"):
-        tpl["languages"] = parse_languages(fm["languages"])       # `meta` wins, as in check_languages
-    check_template(f, tpl)
-    check_drafts(f, blocks)
-    check_preset_rules(f, fm, blocks)
+    # No earlier format is read (2026-09-29) — this mirrors the renderer's own
+    # parseFile(), which only ever calls parseV2(). `booklet: 1` and anything
+    # else are rejected outright rather than checked against version 1's rules.
+    err(f, f"front matter must say `booklet: 2` (found {fm.get('booklet')!r}) — "
+           f"no earlier format is read")
 
 
 def main():

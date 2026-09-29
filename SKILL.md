@@ -614,6 +614,7 @@ python3 lint-booklet.py my-module.booklet.md
 ```
 
 For anything this document does not cover — matrix questions once they are
-drawn, a Booklet plugin for Obsidian, a version 1 file you were handed to
-translate or fix (`SPEC-v1.md` documents that format in full; it is not this
-skill's job) — `SPEC.md` is the authority.
+drawn, a Booklet plugin for Obsidian — `SPEC.md` is the authority. A version 1
+file (fenced JSON design, `booklet: 1`) is no longer read by this renderer or
+validator at all (2026-09-29); there is no converter, and no spec left to
+translate it against. Say so plainly if someone hands you one.

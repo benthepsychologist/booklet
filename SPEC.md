@@ -14,7 +14,8 @@
 > reader from before a change still opens a file that uses it, per
 > [what version 2 drops from version 1](#10-what-version-2-drops-from-version-1)
 > and this document's own future addenda), but nothing here is frozen.
-> Version 1 files remain fully supported; see [`SPEC-v1.md`](SPEC-v1.md).
+> Version 1 is no longer read, written, or documented (2026-09-29): the
+> reference renderer and validator only ever recognize `booklet: 2`.
 
 **Why it looks like this, in short.** Version 1 stored a booklet's design as fenced JSON beside its prose — readable, but not really hand-*editable*: nobody sits down and retypes a JSON object correctly by hand. Version 2 rebuilds the design itself as Markdown, using constructs that already exist and already render somewhere real — GitHub's task lists and callouts, Obsidian's callouts and block embeds, CommonMark's footnotes — rather than inventing new syntax to parse. What Booklet needs and no existing convention supplies (a question's type, a module's boundary) is one small vocabulary of callout lines, `> [!kind|id] Title`, so there is exactly one new grammar to learn, not several. The full account of what was surveyed and why each choice was made is [`docs/why-markdown.md`](docs/why-markdown.md).
 
@@ -517,7 +518,7 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 13. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: 2` by this document, and a file that declares `booklet: 1` by [`SPEC-v1.md`](SPEC-v1.md); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
+A conforming reader must: read a file whose front matter declares `booklet: 2` by this document, and refuse any other `booklet:` value outright (2026-09-29: version 1 is no longer read); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
 
 A conforming writer must: emit front matter with `booklet: 2`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; and never put a data block a `![[…]]` embed points to inside `%%`.
 

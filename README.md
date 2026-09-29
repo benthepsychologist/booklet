@@ -32,14 +32,13 @@ version: "0.1"
 %%
 ```
 
-This is **version 2** of the format, recommended for anything new — see
-[`SPEC.md`](SPEC.md) for the full format, and
-[`docs/why-markdown.md`](docs/why-markdown.md) for how it was arrived at:
-what the wider Markdown-tooling field already does, what Booklet needs that
-nothing else supplies, and why each real choice landed where it did.
-**Version 1**, which kept a booklet's design as fenced JSON blocks rather than
-Markdown, remains fully supported — every file that already exists keeps
-working, unchanged — and is documented in [`SPEC-v1.md`](SPEC-v1.md).
+This is **version 2** of the format — see [`SPEC.md`](SPEC.md) for the full
+format, and [`docs/why-markdown.md`](docs/why-markdown.md) for how it was
+arrived at: what the wider Markdown-tooling field already does, what Booklet
+needs that nothing else supplies, and why each real choice landed where it
+did. **Version 1**, which kept a booklet's design as fenced JSON blocks
+rather than Markdown, is no longer read, written, or documented (2026-09-29):
+the reference renderer and validator only ever recognize `booklet: 2`.
 
 ---
 
@@ -80,23 +79,20 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, no dependencies. Reads both format versions |
+| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, no dependencies. Reads version 2 only — no earlier format opens |
 | [`SPEC.md`](SPEC.md) | the current format (version 2), versioned and published separately from anything that implements it |
-| [`SPEC-v1.md`](SPEC-v1.md) | the earlier format (version 1), still fully supported |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped version 2: the field surveyed, the aims, the choices made and rejected |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
-| [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid," for either version |
-| [`examples/`](examples/) | complete booklets you can open — `how-tides-work.booklet.md` and `mindful-check-in.booklet.md` are version 2; `end-of-day.md` is version 1 |
-| [`modules/`](modules/) | generic examples and separately licensed registry content, offered through `registry.json` — version 2, one module per file, its widgets carried inline (see `SPEC.md` §7) |
-| [`widgets/`](widgets/) | version 1 widget data no shipped module references anymore; kept as reference fixtures for the widget engines themselves (`test/engine.js`, `test/svg-sanitize.test.js`) |
+| [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
+| [`examples/`](examples/) | complete booklets you can open — `how-tides-work.booklet.md` and `mindful-check-in.booklet.md` |
+| [`modules/`](modules/) | generic examples and separately licensed registry content, offered through `registry.json` — one module per file, its widgets carried inline (see `SPEC.md` §7) |
 | [`test/`](test/) | the suite, run with `test/run.sh` |
 | [`registry.json`](registry.json) | the examples registry — what this repo offers |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
 
 ## Try it
 
-Download `booklet.html` and `examples/how-tides-work.booklet.md` (version 2)
-or `examples/end-of-day.md` (version 1), open the HTML file in a browser —
+Download `booklet.html` and `examples/how-tides-work.booklet.md`, open the HTML file in a browser —
 **straight off your disk, `file://` is fine** — and press *Load* to open the
 markdown file. No server, no install, no network: verified with `fetch` and
 `XMLHttpRequest` stubbed to fail.
@@ -336,20 +332,18 @@ person. Anyone may publish a separate registry under their own policy.
 
 ## Status
 
-**Project v0.2, draft.** Two format generations are both live: **version 2**
-(`SPEC.md`), Markdown-native, recommended for anything new; and **version 1**
-(`SPEC-v1.md`), which stores a booklet's design as fenced JSON, still fully
-supported — the Activity Kit website and its published modules run on it
-today. There is no second independent implementation of either yet. Neither
-is stable: draft compatible additions may extend each without changing its
-own number, and a breaking change gets a new one. See `STATUS.md` for the
-detailed current state and known gaps, and `docs/why-markdown.md` for how
-version 2 came to be.
+**Project v0.2, draft.** Only **version 2** (`SPEC.md`, Markdown-native) is
+read, written, or documented as of 2026-09-29 — version 1, which stored a
+booklet's design as fenced JSON, is retired entirely. There is no
+independent second implementation yet. It is not stable: draft compatible
+additions may extend it without changing its own number, and a breaking
+change gets a new one. See `STATUS.md` for the detailed current state and
+known gaps, and `docs/why-markdown.md` for how version 2 came to be.
 
 ### What is licensed how
 
 **The software and the format** — the renderer, the validator, the build
-scripts, `SPEC.md`, `SPEC-v1.md` — are Apache-2.0, and that is the point: a format meant to
+scripts, `SPEC.md` — are Apache-2.0, and that is the point: a format meant to
 be implemented by other people carries an explicit patent grant, so anyone
 writing a reader or writer for it gets that protection along with the copyright
 permission.

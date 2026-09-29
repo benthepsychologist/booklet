@@ -60,11 +60,14 @@ const CASES=[
  ["lint-group-empty","a group with no blocks",/group block 'lw-main\.e' needs `blocks`/],
  ["lint-didlog-of","a didlog whose of is not a list",/didlog 'lw-main\.dl': `of` must be a list of block ids/],
  ["lint-activity-order","an activity with a non-numeric display.order",/activity 'lw-main' has a non-numeric display\.order/],
- ["lint-module-menus","a module menu that is not a list of strings",/module 'local\/english-daily-reflection': menu 'picks' must be a list of strings/],
  ["lint-question-shape","a question that is not [scope, key]",/block 'lw-main\.q9' of type text must name its question as \[scope, key\]/],
- ["lint-two-person","a second person block",/the record has 2 'person' blocks; a file carries exactly one/],
- ["lint-two-entries","two entries blocks for one activity",/two 'entries' blocks for the activity 'er-day'/],
 ];
+// KNOWN GAP (2026-09-29): "a module menu that is not a list of strings"
+// (lint-module-menus.md), "a second person block" (lint-two-person.md) and
+// "two entries blocks for one activity" (lint-two-entries.md) used plain
+// `booklet: 1` fixtures, not module-shaped ones — check_template's v1
+// record-block rules (person/entries collisions) no longer run for those,
+// since the linter now rejects any non-v2 booklet file outright.
 for(const [name,what,rx] of CASES){
   const r=lint(path.join(FX,name+".md"));
   chk(`${what}: exactly one error`,r.status===1&&r.errors.length===1,r.errors.join(" | ")||r.out);
@@ -83,34 +86,13 @@ for(const [name,what,rx] of CASES){
    chk("still reported: "+what,r.status===1&&rx.test(r.errors.join("\n")),r.errors.join(" | "));}
  fs.rmSync(tmp,{force:true});}
 
-// ---- what the record now carries: drafts of every activity, empty rows and areas, board answers in `fields`
 // `lint()` reports ERROR lines; warnings are read here from the `warn ` lines.
 const warnsOf=r=>r.out.split("\n").filter(l=>l.startsWith("warn"));
-{const clean=lint(path.join(FX,"lint-empty-board.md"));
- chk("a preset whose record keeps empty Now rows, empty areas and empty drafts is clean",
-   clean.status===0&&/ 0 errors · 0 warnings/.test(clean.out),clean.out);
- const row=lint(path.join(FX,"lint-board-row.md"));
- chk("a Now row with text in it is still content: exactly one error",row.status===1&&row.errors.length===1&&/a preset must ship empty: its board block has content/.test(row.errors[0]),row.out);
- const area=lint(path.join(FX,"lint-board-area.md"));
- chk("an area with something written in it is content: exactly one error",area.status===1&&area.errors.length===1&&/a preset must ship empty: its board block has content/.test(area.errors[0]),area.out);
- const dr=lint(path.join(FX,"lint-drafts-activities.md"));
- chk("a preset with a draft in drafts.activities is an error, and it names the activity",
-   dr.status===1&&dr.errors.length===1&&/a preset must ship empty: its drafts block carries a draft of the activity 'er-day'/.test(dr.errors[0]),dr.out);
- const shapes=[
-  ["lint-drafts-shape-list","drafts.activities that is a list",/`activities` in the drafts block must be an object keyed by activity id \(found a list\)/],
-  ["lint-drafts-shape-builtin","a built-in id under drafts.activities",/`activities` in the drafts block holds 'today', which is a built-in activity; `today` and `checkin` are keys of the block itself/],
-  ["lint-drafts-shape-value","a draft in drafts.activities that is not an object",/`activities\.er-day` in the drafts block must be an object keyed by field id \(found a string\)/]];
- for(const [n,what,rx] of shapes){const r=lint(path.join(FX,n+".md"));
-   chk(`${what}: exactly one error, naming the rule`,r.status===1&&r.errors.length===1&&rx.test(r.errors[0]),r.out);}
- // controls built from the clean fixture: content in a built-in draft is caught, blanks are not
- const base=fs.readFileSync(path.join(FX,"lint-empty-board.md"),"utf8");
- const tmp=path.join(require("os").tmpdir(),"lint-drafts-"+process.pid+".md");
- const withDrafts=d=>{fs.writeFileSync(tmp,base.replace('{ "block": "drafts", "today": null, "checkin": null }',d));return lint(tmp);};
- let r=withDrafts('{ "block": "drafts", "today": { "extra": "half a thought" }, "checkin": null }');
- chk("a preset's `today` draft with text in it is an error",r.errors.length===1&&/its drafts block carries a draft of 'today'/.test(r.errors[0]),r.out);
- r=withDrafts('{ "block": "drafts", "today": { "extra": "", "needs": [] }, "checkin": { "other": "" }, "activities": {} }');
- chk("blank built-in drafts and an empty `activities` are not content",r.status===0&&r.errors.length===0,r.out);
- fs.rmSync(tmp,{force:true});}
+// KNOWN GAP (2026-09-29): "what the record now carries" tested v1's board/
+// drafts record-block rules (lint-empty-board/board-row/board-area/
+// drafts-shape-*.md, all plain `booklet: 1` fixtures) — deleted, since the
+// linter now rejects any non-v2 booklet file before reaching those rules.
+// v2's own records section has its own, separate checks in v2.test.js.
 
 // a board or a guide keeps its answers in `fields`, under the key each block owns; some keys are not safe to use
 {const CASES2=[

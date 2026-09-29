@@ -98,8 +98,10 @@ shape("its own label comes first, as for every block",fixture({copy:"pc.more",la
   {en:"Named here",fr:"Nommé ici",es:"Named here","es-AR":"Named here"});
 shape("a reference to nothing still falls back to the id, never to the reference",fixture({copy:"pc.nothing"}),
   {en:"grp",fr:"grp",es:"grp","es-AR":"grp"});
-{show(fixture({copy:{en:"Two more",es:"Dos más",fr:"Deux de plus"}}),"pc","es",true);
- chk("while editing, a group's frame is named by its copy",byClass("blabel").map(flat).includes("Dos más"),byClass("blabel").map(flat).join(" | "));}
+// KNOWN GAP (2026-09-29): "while editing, a group's frame is named by its
+// copy" tested the now-deleted block editor's group-frame label; deleted
+// with the rest of that editor. Reading-mode group naming is still covered
+// by the shape() checks above.
 {const one=fixture({copy:{en:"Two more",es:"Dos más"}});
  A.fresh();A.addModule(clone(one));A.editTemplate(t=>{t.languages=["es"];});A.setLang("es");A.setView("pc");A.render();
  chk("a booklet that declares one language reads that language's copy",summaries()[0]==="Dos más",JSON.stringify(summaries()));
@@ -166,47 +168,12 @@ function openReading(mod,page,l,editing){A.fresh();A.addModule(clone(mod));A.set
 /* a part that cannot run on the renderer it is given counts as failed, and the
    rest still runs */
 const guard=(name,fn)=>{try{fn();}catch(e){chk(name+": runs to the end",false,e.message);}};
-guard("the definition list's cite tool",()=>{openReading(RFX,"read","en",true);
- const frameOf=()=>byClass("bframe").find(f=>byClass("dims",f).length);
- click(buttonIn(frameOf(),"Edit"));
- const ed=byClass("beditor",frameOf())[0];
- const tools=byClass("rd-tool",ed);
- chk("each term and definition pair has a cite tool",tools.length===RFX.mode.pages[0].blocks.find(b=>b.id==="terms").items.length&&tools.length>0,tools.length);
- chk("named as the prose editor's is",/Cite a source/.test(flat(tools[0].children[0])));
- chk("and saying where its mark goes",/in the term or in its definition/.test(flat(tools[0])),flat(tools[0]).slice(0,200));
- const [term,def]=fieldsIn(ed);
- const beforeFr=clone(itemsNow()[0]);
- const pick=findAll(tools[0],n=>n.tagName==="select")[0];
- pick.value="atlas-twice";def.selectionEnd=def.value.indexOf(",");
- click(buttonIn(tools[0],"Insert its mark"));
- chk("inserting a citation puts its mark in the definition, at the cursor",
-   itemsNow()[0].body.en==="The largest range[^atlas-twice], near the new and the full moon.[^atlas-spring]",itemsNow()[0].body.en);
- chk("in the language being edited only",itemsNow()[0].body.fr===beforeFr.body.fr&&itemsNow()[0].body.es===beforeFr.body.es);
- term.focus();term.selectionEnd=term.value.length;pick.value="notes-neap";
- click(buttonIn(tools[0],"Insert its mark"));
- chk("with the cursor last in the term, the mark goes into the term",itemsNow()[0].label.en==="Spring tide[^notes-neap]",itemsNow()[0].label.en);
- const cites=stored(RFX.id).citations.length;
- def.focus();def.selectionEnd=def.value.length;
- const f=l=>{const lab=findAll(tools[0],n=>n.tagName==="label"&&flat(n)===l)[0];return lab&&findAll(tools[0],n=>n.attrs&&n.attrs.id===lab.attrs.for&&n!==lab)[0];};
- f("Source").value="coast-notes";f("Printed page").value="4";f("The quote, word for word").value="Spring tides run fastest.";
- click(byClass("rd-add",tools[0])[0]);
- const made=stored(RFX.id).citations.slice(-1)[0];
- chk("adding a new citation from it writes the module's registry",stored(RFX.id).citations.length===cites+1&&made.source==="coast-notes"&&made.quote==="Spring tides run fastest.",JSON.stringify(made));
- chk("and puts its mark at the end of the definition",itemsNow()[0].body.en.endsWith("[^"+made.id+"]"),itemsNow()[0].body.en);
- const dims=byClass("dim",frameOf());
- chk("the preview draws the term's and the definition's marks at once",
-   findAll(dims[0],n=>n.tagName==="strong").some(s=>byClass("rd-mark",s).some(m=>m.attrs["data-cite"]==="notes-neap"))
-   &&byClass("rd-mark",dims[0]).some(m=>m.attrs["data-cite"]===made.id),flat(dims[0]));
- A.setEditing(false);A.render();
- const termMark=findAll(byClass("dim")[0],n=>n.tagName==="strong").flatMap(s=>byClass("rd-mark",s))[0];
- chk("read, a mark in a term is a numbered mark",!!termMark&&termMark.attrs["data-cite"]==="notes-neap"&&/^\d+$/.test(flat(termMark)));
- click(termMark);
- chk("and pressing it opens the side panel",panelOpen()&&/Neap tides come at the quarter moons/.test(flat(A.getPanel())),flat(A.getPanel()).slice(0,200));
- const defMark=byClass("rd-mark",byClass("dim")[0]).find(m=>m.attrs["data-cite"]===made.id);
- click(defMark);
- chk("so does a mark in a definition",panelOpen()&&/Spring tides run fastest/.test(flat(A.getPanel())));});
+// KNOWN GAP (2026-09-29): "the definition list's cite tool" tested the
+// now-deleted block editor's citation-insertion UI (Edit button, rd-tool,
+// term/definition cite fields) wholesale; deleted with the rest of that
+// editor. Reading-mode citation marks/panel are covered by "drawing marks
+// across languages" below and by test/reading.test.js.
 
-// ---- 2b. a mark belongs to its text in every language
 console.log("# a citation mark belongs to its text in every language");
 const MK={id:"fixture/polish-marks",title:{en:"Marks",fr:"Appels",es:"Llamadas"},
   sources:[{key:"book",title:"A Book",kind:"secondary"}],
@@ -244,55 +211,12 @@ guard("drawing marks across languages",()=>{openMk(MK,"fr");
  chk("with fewer paragraphs, a mark goes to the end of the last one",marksIn(byClass("pblock")[0])==="a=1 b=2"&&paras().length===1,marksIn(byClass("pblock")[0]));
  openMk(MK,"fr");
  chk("drawing it writes nothing into the file",JSON.stringify(stored(MK.id).mode)===JSON.stringify(MK.mode));});
-console.log("# the editor offers to put a mark into the block's other languages");
-guard("the editor's prompt",()=>{openMk(MK,"en",true);
- const frameP=()=>byClass("bframe").find(f=>byClass("pblock",f).length);
- click(buttonIn(frameP(),"Edit"));
- const ed=()=>byClass("beditor",frameP())[0];
- const rows=()=>byClass("rd-lrow",ed());
- chk("under a text, a language that lacks its marks is named, with the marks it lacks",
-   rows().length===1&&rows()[0].attrs["data-lang"]==="fr"&&/Not yet in the French text: \[\^a\] \[\^b\]/.test(flat(rows()[0])),rows().map(flat).join(" | "));
- chk("a language that carries them is not",!rows().some(r=>r.attrs["data-lang"]==="es"));
- click(buttonIn(rows()[0],"Add to the French text"));
- chk("adding them puts each at the end of the same paragraph there",
-   stored(MK.id).mode.blocks[0].text.fr==="Premier paragraphe.[^a]\n\nDeuxième paragraphe.[^b]",stored(MK.id).mode.blocks[0].text.fr);
- chk("and the prompt goes",rows().length===0&&byClass("rd-langs",ed())[0].hasAttribute("hidden"));
- chk("the English is untouched",stored(MK.id).mode.blocks[0].text.en===MK.mode.blocks[0].text.en);
- const ta=fieldsIn(ed())[0];const tool=byClass("rd-tool",ed())[0];
- findAll(tool,n=>n.tagName==="select")[0].value="c";ta.selectionEnd=ta.value.indexOf(".[^a]");
- click(buttonIn(tool,"Insert its mark"));
- chk("a mark inserted in one language goes into that language",stored(MK.id).mode.blocks[0].text.en.startsWith("First paragraph[^c].[^a]"),stored(MK.id).mode.blocks[0].text.en);
- chk("and at once the editor names every other language that lacks it",
-   rows().map(r=>r.attrs["data-lang"]).sort().join()==="es,fr"&&rows().every(r=>/\[\^c\]/.test(flat(r))),rows().map(flat).join(" | "));
- ta.value=ta.value.replace("[^c]","");ta._on.input();
- chk("taking it out again, by typing, takes the prompt away",rows().length===0,rows().map(flat).join(" | "));
- ta.value="First paragraph.[^a][^c]\n\nSecond paragraph.[^b]";ta._on.input();
- click(buttonIn(rows().find(r=>r.attrs["data-lang"]==="es"),"Add to the Spanish text"));
- chk("each language is offered on its own",stored(MK.id).mode.blocks[0].text.es==="Primer párrafo.[^a][^c]\n\nSegundo párrafo.[^b]"
-   &&!/\[\^c\]/.test(stored(MK.id).mode.blocks[0].text.fr),stored(MK.id).mode.blocks[0].text.es);
- A.setEditing(false);A.setLang("fr");A.setEditing(true);A.render();
- click(buttonIn(frameP(),A.T.fr.blockEdit.edit));
- chk("editing the French, the mark it lacks is named as the English text's",
-   rows().length===1&&/In the English text but not in this one: \[\^c\]/.test(flat(rows()[0]))||
-   rows().length===1&&/Dans le texte en anglais, mais pas dans celui-ci : \[\^c\]/.test(flat(rows()[0])),rows().map(flat).join(" | "));
- const fta=fieldsIn(ed())[0];fta.selectionEnd=fta.value.indexOf(".[^a]");
- click(findAll(rows()[0],n=>n.tagName==="button")[0]);
- chk("and inserting it here puts it at the cursor, in French",
-   stored(MK.id).mode.blocks[0].text.fr==="Premier paragraphe[^c].[^a]\n\nDeuxième paragraphe.[^b]",stored(MK.id).mode.blocks[0].text.fr);
- chk("after which nothing is missing anywhere",rows().length===0);
- A.setEditing(false);});
-guard("the definition list's prompts",()=>{openMk(MK,"en",true);
- const frameD=()=>byClass("bframe").find(f=>byClass("dims",f).length);
- click(buttonIn(frameD(),"Edit"));
- const rows=byClass("rd-lrow",byClass("beditor",frameD())[0]);
- chk("a definition list checks its term and its definition each",
-   rows.length===2&&/\[\^c\]/.test(flat(rows[0]))&&/French/.test(flat(rows[0]))&&/\[\^b\]/.test(flat(rows[1]))&&/French/.test(flat(rows[1])),rows.map(flat).join(" | "));
- A.setEditing(false);});
-guard("a text with no marks",()=>{const plain={id:"fixture/polish-plain",title:{en:"Plain"},mode:{id:"pl",kind:"guide",blocks:[{id:"p",type:"prose",text:{en:"Plain.",fr:"Simple."}}]}};
- A.fresh();A.addModule(clone(plain));A.setView("pl");A.setEditing(true);A.render();
- click(buttonIn(byClass("bframe").find(f=>byClass("pblock",f).length),"Edit"));
- chk("a text with no marks in any language has no prompt",!byClass("rd-lrow").length&&byClass("rd-tool").length===1);
- A.setEditing(false);});
+// KNOWN GAP (2026-09-29): the three guard() blocks that used to sit here
+// ("the editor's prompt", "the definition list's prompts", "a text with no
+// marks") all tested the now-deleted block editor's per-language missing-
+// mark prompts (Edit button, rd-lrow rows offering to add a mark to another
+// language's text). Deleted with the rest of that editor.
+
 {const keys=["notThere","addThere","notHere","addHere","citeWhere"];
  chk("every new interface string is in English, French and neutral Spanish",
    ["en","fr","es"].every(l=>keys.every(k=>A.TSRC[l].reading[k]!==undefined)),keys.filter(k=>!A.TSRC.fr.reading[k]||!A.TSRC.es.reading[k]).join());

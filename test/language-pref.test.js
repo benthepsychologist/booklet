@@ -162,15 +162,11 @@ toList(A);openFromCard(A,"Saved in French");
 chk("and one saved in French is French",A.lang==="fr",A.lang);
 delete global.location;delete global.history;
 
-section("Personalize picks the same way");
-A=boot();openFromCard(A,"English one");
-A.editing=true;A.render();                  // Personalize sits at the foot of the page's editor
-const pill=name=>findAll(main(),n=>n.tagName==="button"&&/\bpill-btn\b/.test((n.attrs||{}).class||"")&&texts(n)===name)[0];
-chk("the language names are there to pick",!!pill("Español")&&!!pill("English"));
-pill("Español")._on.click({});
-chk("picking Español puts the booklet in Spanish",A.lang==="es",A.lang);
-A=boot();A.render();
-chk("and it is the reader's choice from then on: the list reloads in Spanish",A.view===A.LIB_VIEW&&A.lang==="es",A.lang);
+// KNOWN GAP (2026-09-29): "Personalize picks the same way" tested picking a
+// language through the now-deleted morePanel() ("Personalize" reader-prefs
+// panel, only ever reachable via the equally-deleted block editor). The
+// underlying capability — picking a language and having it stick — is still
+// covered throughout this file via the header toggle (A.toggle.press(...)).
 
 section("with no choice, a booklet's own language is what it opens in");
 wipe();A=boot();

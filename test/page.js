@@ -57,7 +57,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   leafPaths, langParity, createBooklet, closeBooklet, saveLocal, addModule, moduleFromText, addModuleText,
   moduleTextProblems, editTemplate, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, tplModules, tplModes, tplWidgets, isMulti,
-  moduleView:id=>MODULE_VIEW+id, openExport, openLock, openUnlock, openSafety, maybeRemind, blockEditorFor, blankBlock,
+  moduleView:id=>MODULE_VIEW+id, openExport, openLock, openUnlock, openSafety, maybeRemind, blankBlock,
   menuOf, draftFor, keptFor, boardStore, finalizeEntry, pickLang
 }));`);
   API.toggle=toggle;return API;}
