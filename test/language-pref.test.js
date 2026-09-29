@@ -23,7 +23,11 @@ const src=html.split("<script>\n")[1].split("\n</script>")[0];
 const LS=global.__ls;
 const PREF="booklet.ui.lang";
 const exampleText=fs.readFileSync(R+"/examples/end-of-day.md","utf8");
-const modText=n=>fs.readFileSync(R+"/modules/"+n+".md","utf8");
+/* fixture, not a real registry module: v1-shaped on purpose, since makeBooklet
+   below builds a v1 test booklet and moduleFromText only reads v1's JSON
+   fence — modules/*.md are version 2 now (SPEC.md §14) and no longer parse
+   this way. See test/fixtures/module-one-activity.md. */
+const fixtureModule=fs.readFileSync(R+"/test/fixtures/module-one-activity.md","utf8");
 
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
@@ -75,6 +79,7 @@ const bookletRoute=id=>"#/b/"+encodeURIComponent(id);
    saved in, and (optionally) the languages it declares. Returns its id. */
 async function makeBooklet(A,{title,lang,languages}){
   await A.createBooklet();
+  A.addModule(A.moduleFromText(fixtureModule));
   A.editTemplate(t=>{t.head={title:{en:title}};if(languages) t.languages=languages;});
   A.S.note="written in "+title;A.lang=lang;A.saveLocal();
   return A.currentId;}
