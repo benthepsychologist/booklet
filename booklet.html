@@ -73,6 +73,7 @@
   .lang button{border:0;background:transparent;padding:.2rem .6rem;font-size:.8rem;font-weight:700;color:var(--muted)}
   .lang button[aria-pressed="true"]{background:var(--ink);color:#fff}
   .tools{display:flex;gap:.4rem;flex-wrap:wrap}
+  .bar .ver{flex:0 0 auto;font-size:.7rem;color:var(--muted);white-space:nowrap;padding:.25rem .3rem}
   @media (max-width:520px){ .bar{padding:.45rem .6rem} .bar .home{flex-basis:100%;order:-1} }
 
   /* page */
@@ -670,6 +671,7 @@
     <button type="button" data-lang="es" aria-pressed="false">ES</button>
     <button type="button" data-lang="fr" aria-pressed="false">FR</button>
   </div>
+  <span class="ver" id="rendererVer" aria-hidden="true"></span>
 </div>
 
 <div class="page" id="main"></div>
@@ -3338,6 +3340,7 @@ function renderBar(){const t=T[lang].ui;const atList=view===LIB_VIEW,Lb=libT();
   mergeText();
   document.getElementById("btnSafety").textContent=t.helpNow;
   document.getElementById("langGroup").setAttribute("aria-label",t.pLang);
+  document.getElementById("rendererVer").textContent="v"+RENDERER_VERSION;
   if(storageOk) document.getElementById("clearHelp").textContent=t.clearHelp+" "+t.clearHelpStored;
   applyLangToggle();
 }
