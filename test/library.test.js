@@ -377,8 +377,9 @@ noWrapper();delete global.fetch;
 // KNOWN GAP (2026-09-29): two race tests that used to sit here — the block
 // editor's "+ add activity" shelf button, and the day-picker's "add a map"
 // action — are deleted along with the features themselves (both routed
-// through resolveShelf()/moduleFromText(), v1-only; see STATUS.md's "Not
-// built yet" list). Only the site's-preset race below is unrelated to either
+// through resolveShelf()/moduleFromText(), for the deleted format only; see
+// STATUS.md's "Not built yet" list). Only the site's-preset race below is
+// unrelated to either
 // and still real.
 {let held=[];
  const release=(i,text)=>held[i].res({ok:true,text:async()=>text});

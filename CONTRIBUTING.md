@@ -29,7 +29,7 @@ publish. It is only a gate on what *this* list offers.
 
 ````markdown
 ---
-booklet: 2
+booklet: 0.2
 id: "you/your-thing"
 title: "Your thing"
 lang: en
@@ -92,7 +92,7 @@ If your module is yours and you want to keep it that way, say so in its own
 
 ```yaml
 ---
-booklet: 2
+booklet: 0.2
 id: "you/your-thing"
 title: "Your thing"
 lang: en

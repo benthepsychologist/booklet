@@ -1,5 +1,5 @@
 ---
-booklet: 2
+booklet: 0.2
 id: mensio/help-now
 title: If you need help now
 lang: en

@@ -49,7 +49,7 @@ chk("no other product's name is left in the renderer, the spec or the status fil
   ((html+read("SPEC.md")+read("STATUS.md")).match(/Activity Kit|activity-kit|ma-trousse|Trousse d/g)||[]).join(","));
 
 // ---- the locked-envelope reader only ever recognises this app's own name
-const specEnvelope=app=>"---\nbooklet: 2\nencrypted: true\nlang: en\n---\n\n# x\n\n```json\n"+JSON.stringify({app,enc:"v1",
+const specEnvelope=app=>"---\nbooklet: 0.2\nencrypted: true\nlang: en\n---\n\n# x\n\n```json\n"+JSON.stringify({app,enc:"v1",
   kdf:{name:"PBKDF2",hash:"SHA-256",iterations:1,salt:"AA=="},cipher:{name:"AES-GCM",iv:"AA=="},data:"AA=="},null,1)+"\n```\n";
 chk("a locked envelope written to the spec (app \"booklet\") is recognised",!!A.lockedEnvelope(specEnvelope("booklet")));
 chk("an envelope from an earlier app name is not — no compat, no exceptions",A.lockedEnvelope(specEnvelope("useful-next-step"))===null);

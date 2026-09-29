@@ -737,12 +737,11 @@
 <div class="dropveil" id="dropVeil"></div>
 <div class="toast" id="toast" role="status"></div>
 <script>
-/* This renderer's own version, separate from the file format generation a
-   booklet declares (`booklet: 1`/`booklet: 2`, SPEC.md's own status note)
-   and separate from the project's own umbrella marker ("project v0.2" —
-   SPEC.md, README.md). Major.minor stays in lockstep with the project's;
-   the patch digit is this file's own, for a renderer-only fix that does not
-   need a project-wide re-release (Ben, 2026-09-28). */
+/* This renderer's own version, separate from the project's own umbrella
+   marker ("project v0.2" — SPEC.md, README.md). Major.minor stays in
+   lockstep with the project's; the patch digit is this file's own, for a
+   renderer-only fix that does not need a project-wide re-release (Ben,
+   2026-09-28). */
 const RENDERER_VERSION="0.2.0";
 /* ======================= COPY ======================= */
 const T = {};
@@ -2299,74 +2298,6 @@ function cardBoard(store,W,keys){
 
 const ENGINES={"svg-regions":svgRegions,"grid-select":gridSelect,"card-board":cardBoard};
 
-/* ======================= THE FORMAT, CARRIED IN THE FILE =======================
-   Every saved booklet includes this block, so the file explains itself. It
-   describes the *format*, which is the renderer's business — not any activity,
-   which is not. Hand the file to someone, or to a language model, and say
-   "make me a module" or "tell me why this is not displaying right", and
-   everything needed to answer is already in their hands. */
-const FORMAT_BLOCK = {
-  block:"format",
-  read_this_first:"This file is a booklet: one Markdown file holding a person's work and the design of the activities they did it in. Everything below the long rule is a series of independent JSON blocks, each in its own ```json fence. Each block is parsed on its own — if one will not parse, only that block is lost.",
-  spec:"booklet-1", record_version:6,
-  full_spec:"https://github.com/benthepsychologist/booklet/blob/main/SPEC-v1.md",
-  blocks:{
-    format:"this block — the format, carried in the file",
-    meta:"which booklet this is, plus anything shared across modules (body figures, menus, the booklet's own head:{title,sub}, and the `languages` it declares, if any)",
-    module:"a module, whole and portable: one activity in `mode`, or several in `activities`. One block per module.",
-    person:"the reader's own settings: name, email, language, question wording overrides, and an optional sync slot {provider, ref, synced, rev} saying where the file is kept — no credentials, no account. Keep it exactly as found if you do not use it",
-    fields:"the board's content, an object keyed by field id: a map's own fields, and whatever is typed or picked in a `board` or `guide` activity, under the key each of its blocks owns",
-    entries:"kept entries for one activity: {mode, items:[…]}. One block per activity.",
-    board:"the Now board, areas and the archive",
-    drafts:"anything unfinished, so nothing is lost mid-thought: `today` and `checkin` under their own names, and every other activity's draft under `activities`, keyed by activity id"
-  },
-  order_does_not_matter:"Blocks may appear in any order. Modules may appear in any order. Entries may appear in any order. Nothing is addressed by position: modules by `id`, data by field id, entries by their `ts`. Where a thing is *displayed* is set by `display.order`, and only if no sibling carries one does the written order decide anything.",
-  add_a_module:"Paste a module block — a ```json fence whose object has \"block\":\"module\" — anywhere below the long rule, or paste the same JSON into 'Add an activity' in the page's booklet editor. Adding a module whose id already exists replaces it in place.",
-  module_shape:{
-    block:"module", id:"who/what — stable, and the address for adding or removing",
-    version:"0.1", title:{en:"Its name",fr:"Son nom"}, blurb:{en:"One line",fr:"Une ligne"},
-    display:{order:"lower first; omit and it falls back to written order", show:"false hides it from the home screen"},
-    menus:{"a-menu-name":["the options a list block offers"],"a-menu-in-each-language":{en:["First","Second"],fr:["Premier","Deuxième"]}},
-    reads:["map field ids this activity draws on, if any"],
-    mode:{id:"the activity id — also the name of its entries block",
-          kind:"entry | board | guide | log",
-          head:{title:"copy reference for its heading"},
-          keep:["fields that survive a finalize"],
-          upsert:"\"day\" keeps one kept entry per calendar day instead of one per Finalize (entry kind only)",
-          blocks:["see block_types"],
-          pages:"instead of `blocks`, an activity shown as several pages lists them here: [{id, title:{en,fr}, blocks:[…]}, …], each page's blocks shaped like `blocks`. Never both keys; write one page as `blocks`. Pages are layout only: entries and drafts stay keyed by the activity id and by field id, so a block id or an answer field may be on one page only, and which page is showing is never saved."},
-    activities:"instead of `mode`, a module with several activities lists them here: [{id,kind,title,blurb,blocks…}, …], each shaped like `mode` and named by its own `title`. Never both keys; write one activity as `mode`. Activity ids are unique across the whole booklet, whichever module holds them.",
-    sources:"optional, for reading material: the works the module cites, [{key, title, edition, kind: primary|secondary|law|case, url?}]. `key` is unique within the module.",
-    citations:"optional, for reading material: [{id, source (a sources key), page (the printed page, or a place such as \"art. 14\"), pagePdf? (the PDF's own page number, when different), quote (one sentence, word for word), url? (this exact place), verifiedOn? (YYYY-MM-DD), verifiedBy? (how, in a few words)}]. `id` is unique within the module. A renderer shows whether a citation was verified; it never checks."
-  },
-  menus:"A menu (in `menus` on a module, a widget or `meta`) is either one list of options for every language, or one list per language, {en:[…],fr:[…],es:[…]}, whose lists have the same length and order: an option is its place in the menu, so the third French option is the third English one. What a person picks is kept as the words they picked, in the language they picked them in; a reader recognises those words in any of the menu's languages and shows the option in the reader's language.",
-  citation_marks:"In the text of a prose, quote, deflist or callout block, [^id] marks the citation with that id in the module's `citations`. A renderer draws it as a small number (numbered by first appearance in the activity) that opens the source, page and quote; a mark whose id is not in `citations` is drawn as a broken mark.",
-  block_types:{
-    text:"a question with a written answer. Needs q:[scope,key].",
-    headlines:"repeated one-line entries. Needs q:[scope,key]. Owns `thoughts`.",
-    list:"tappable options plus a free add. Needs source:[mapFieldId…] and copy or label.",
-    didlog:"tick what actually happened. Needs of:[blockId…].",
-    quadrants:"the energy/valence feelings grid. Owns `emotions`.",
-    bodymap:"the front and back figures. Owns `regions`.",
-    group:"nested blocks. Needs blocks:[…].",
-    callout:"reading set apart, of one kind: diff (differs from the reader's guide), law (the law now), opinion (an author's view). Needs kind, and text:{en,…} or blocks:[…]; title optional. A reader may bring one kind forward and fold the others; that choice is never saved.",
-    sources:"the module's `sources`, each with the citations that point at it and a way back to each mark. Optional title."
-  },
-  where_data_goes:"A block owns the entry keys named in its `keys`, defaulting to its own `id`. So a text block with id 'extra' writes entry.extra; a list block with id 'needs' writes entry.needs. The three composite widgets own a differently-named key and say so: bodymap→regions, quadrants→emotions, headlines→thoughts. Board content is not in entries at all — it lives in the `fields` block, keyed by field id: a map's own fields, and what a `board` or `guide` activity's blocks hold, each under the key the block owns.",
-  display_parameters:"Anything with a `display` object: {order:number, show:boolean, placement:'open'|'folded'|'hidden'}. `order` sorts among siblings, lower first, stable, and anything without one sorts last. `show:false` takes a module off the home screen but keeps its data. `placement` applies to a block inside an activity: open renders in place, folded hides it behind a disclosure (which must be named), hidden does not render but keeps its data.",
-  if_it_is_not_displaying:[
-    "A module needs a `mode` (or an `activities` list, never both) whose activities each have a `kind` the renderer knows (entry, board, guide, log). An unknown kind is refused.",
-    "A block needs a `type` from block_types. An unknown type draws nothing.",
-    "A citation mark shown as broken, [?id], names an id the module's `citations` does not hold. A renderer older than citations shows the mark as the text [^id], and a callout or sources block as a note that it cannot draw it.",
-    "An activity holds its blocks in `blocks`, or in `pages` when it has several pages, never both. A module whose activity has one block id or answer field on two pages is refused, and the load message names the field and both pages. A renderer older than `pages` shows such an activity with no blocks.",
-    "Check `display.show` on the module and `display.placement` on the block.",
-    "A folded block with no `copy` and no `label` is a disclosure with no summary — name it.",
-    "A list block whose `source` names a field no map card holds will simply have nothing to offer.",
-    "Two modules sharing an id: the second replaces the first.",
-    "A module holding an activity id that another module already holds is refused, and the load message names both."
-  ]
-};
-
 /* ======================= WHAT THE RENDERER IS =======================
    A renderer, and nothing else. It knows how to draw widget kinds, where to
    put them, how to save a file, and how to add, park or delete a module. It
@@ -2393,15 +2324,15 @@ const BODY_DEFAULT={
 
 /* An empty booklet. This is what the page holds before a file arrives — not a
    default set of activities, because there is no such thing here. */
-const EMPTY_BOOKLET={booklet:2, id:"", version:"", modules:[], widgets:[], body:BODY_DEFAULT, v2:{source:""}};
+const EMPTY_BOOKLET={booklet:0.2, id:"", version:"", modules:[], widgets:[], body:BODY_DEFAULT, raw:{source:""}};
 
 /* Modules the page has been *offered* — fetched from a site's module folder,
    or pasted in. Never baked in: this starts empty and stays empty unless
    something puts a module in it. */
-/* KNOWN GAP (2026-09-29): moduleFromText() (v1 JSON-fence module parser) and
+/* KNOWN GAP (2026-09-29): moduleFromText() (the old JSON-fence module parser) and
    resolveShelf() (fetch-and-parse a shelf entry through it) were deleted with
    the "add a map" feature, the last thing that called them — see STATUS.md.
-   The current "Add a module" dialog uses the v2-aware shelfText()/
+   The current "Add a module" dialog uses the format-aware shelfText()/
    addModuleFromText() path instead. */
 /* The wrapper — a published site — may say where its modules live and hand the
    page a starter booklet. It does that by putting a config element in the page
@@ -3540,8 +3471,8 @@ function reorderIn(list,id,dir){
    control at once, which is the difference between a tool that looks like a
    page and one that looks like a form. */
 /* `editing` never becomes true — the in-browser block editor (add/remove/
-   reorder blocks, "Edit this page") was removed with format v1 support,
-   2026-09-29 (SPEC.md §14: no in-browser design editor for v2). The variable
+   reorder blocks, "Edit this page") was removed with the earlier format's support,
+   2026-09-29 (SPEC.md §13: no in-browser design editor). The variable
    and every `if(editing)` branch downstream stay for now as a deliberate,
    separate cleanup pass, since they read from the shared block-rendering
    path rather than one self-contained function. */
@@ -3579,7 +3510,7 @@ function pageText(){const wrap=el("div",{class:"col pagetext"});
   return wrap;}
 
 /* A name or a lead paragraph, shown plainly in the given tag. There is no
-   in-browser design editor (SPEC.md §14), so this only ever reads; nothing
+   in-browser design editor (SPEC.md §13), so this only ever reads; nothing
    to show means nothing is drawn at all. (label/onInput/rows are unused now —
    kept as parameters so every existing call site still reads the same way.) */
 function metaField(tag,cls,label,val){
@@ -4024,7 +3955,7 @@ function dayPicker(key,src,def,draft){const t=T[lang].booklet;const box=el("div"
         mark();draw();drawDid();}},optionText(o)));});
     // KNOWN GAP (2026-09-29): the "add a map" auto-add-a-card-board-module
     // action that used to sit here is deleted, not fixed. It parsed a
-    // downloaded module through moduleFromText() (v1-only), so it would have
+    // downloaded module through moduleFromText() (the old JSON-fence parser), so it would have
     // failed against this repo's own real, version-2-only registry — see
     // STATUS.md's "Not built yet" list. If a board already exists, open it
     // directly instead of leaving an empty hint with no action:
@@ -4209,7 +4140,7 @@ function renderBlock(b,draft,modeId){const t=T[lang];
     case "prose":{const box=el("div",{class:"pblock"});
       (readTx(b.text,modeId)||"").split(/\n{2,}/).filter(nonEmpty).forEach(par=>box.append(el("p",{},...citeText(par,modeId))));
       return box;}
-    /* a version 2 booklet's prose, drawn from its Markdown: see mdNodes */
+    /* a v0.2 booklet's prose, drawn from its Markdown: see mdNodes */
     case "markdown":{const box=el("div",{class:"pblock md"});
       box.append(...mdNodes(String(b.text||""),{idPrefix:"md-",mark:id=>{const c=citeText("[^"+id+"]",modeId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}));
       return box;}
@@ -4277,7 +4208,7 @@ function renderBlock(b,draft,modeId){const t=T[lang];
           tl.append(el("div",{class:"thought"},el("span",{class:"pre"},q.label),inp));});};
       draw();box.append(tl);return box;}
 
-    /* version 2's own question kinds: declared on the line, answered as a
+    /* this format's own question kinds: declared on the line, answered as a
        position, never invented syntax — see design/format-v2/SPEC-v2-draft.md */
     case "choice":case "multi":{const box=el("div",{});const own=b.options||[];
       const head=nonEmpty(tx(b.label,""))?tx(b.label,""):copyText(b.copy,null);
@@ -5691,7 +5622,7 @@ async function unlockText(env,pass){
 
 /* A YAML value that cannot break the block: quote it and escape the quotes. */
 const yamlStr=v=>'"'+String(v==null?"":v).replace(/\\/g,"\\\\").replace(/"/g,'\\"')+'"';
-function toMarkdown(){return toMarkdownV2();}
+function toMarkdown(){return toMarkdownBooklet();}
 /* One file, handed to whatever the phone already has. The share sheet is the
    only route that reliably gets a file off a phone without a server: the person
    picks Mail, Files, Drive, an Obsidian vault, AirDrop — whatever they use. It
@@ -6058,60 +5989,57 @@ const mdNodes=(text,opts)=>{
   }
 };
 /* /MDNODES */
-/* ======================= FORMAT VERSION 2 =======================
-   A version 2 booklet is Markdown that reads as a document anywhere: front
+/* ======================= THE BOOKLET FORMAT =======================
+   A v0.2 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. See design/format-v2 in
    booklet-hub for the draft specification.
 
-   This reader turns such a file into the same template and state a version 1
-   file becomes, so every engine, page menu and history view draws it
-   unchanged. The design half is kept as written (`TPL.v2.source`) and written
-   back verbatim with fresh records under it: the file a person wrote is never
-   rewritten by the page that reads it. */
-const V2_LINE=/^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$/;
-const V2_FLAGS={module:["end"],activity:["repeat","daily","pinned","hidden"],widget:["skippable","readonly","describe"],
+   This reader turns such a file into one template and state, which every
+   engine, page menu and history view then draws unchanged. The design half
+   is kept as written (`TPL.raw.source`) and written back verbatim with
+   fresh records under it: the file a person wrote is never rewritten by
+   the page that reads it. */
+const CALLOUT_LINE=/^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$/;
+const CALLOUT_FLAGS={module:["end"],activity:["repeat","daily","pinned","hidden"],widget:["skippable","readonly","describe"],
   text:["long"],choice:["open"],multi:["open"]};
-const V2_QUESTION=new Set(["text","lines","widget","choice","multi","scale","number","date","matrix"]);
-/* the kinds this reader draws a real answer field for; a kind outside this
-   set is read (so it holds no other line's ids) but shown as unanswerable */
-const V2_DRAWN=new Set(["text","lines","widget","choice","multi","scale","number","date"]);
-const V2_SCENERY=new Set(["manifest","menu"]);
-const V2_ID=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
-/* A file is version 2 when its front matter says `booklet: 2`, and only then. */
-function isV2(text){const ls=String(text||"").replace(/^﻿/,"").split(/\r?\n/);
+const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","number","date","matrix"]);
+const SCENERY_KINDS=new Set(["manifest","menu"]);
+const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
+/* A file is v0.2 when its front matter says `booklet: 0.2`, and only then. */
+function isBooklet(text){const ls=String(text||"").replace(/^﻿/,"").split(/\r?\n/);
   if((ls[0]||"").trim()!=="---") return false;
-  for(let i=1;i<ls.length&&ls[i].trim()!=="---";i++) if(/^booklet:[ \t]*["']?2["']?[ \t]*$/.test(ls[i])) return true;
+  for(let i=1;i<ls.length&&ls[i].trim()!=="---";i++) if(/^booklet:[ \t]*["']?0\.2["']?[ \t]*$/.test(ls[i])) return true;
   return false;}
 /* `kind|id words` → the id, the flags and the key=value settings; a bare word
    the kind knows is a flag, and the first other bare word is the id */
-function v2Words(kind,s){const out={id:null,flags:new Set(),set:{}};
+function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}};
   String(s||"").trim().split(/\s+/).filter(Boolean).forEach(w=>{const kv=w.match(/^([A-Za-z][A-Za-z0-9-]*)=(.*)$/);
     if(kv) out.set[kv[1]]=kv[2];
-    else if((V2_FLAGS[kind]||[]).includes(w.toLowerCase())) out.flags.add(w.toLowerCase());
+    else if((CALLOUT_FLAGS[kind]||[]).includes(w.toLowerCase())) out.flags.add(w.toLowerCase());
     else if(out.id===null) out.id=w; else out.flags.add(w.toLowerCase());});
   return out;}
 /* A footnote's definition line, `[^id]: note`, is Booklet's own citation —
    the same mark Markdown already gives GitHub and Obsidian. The note itself
    is free text; this reads the shape our own examples and SPEC-v2-draft.md
    use — *Title*, details, p. N: "quote" Verified YYYY-MM-DD — into the same
-   source/citation fields v1's citation panel already draws. A note that
+   source/citation fields the citation panel already draws. A note that
    doesn't fit becomes the quote alone, with no source: citeDetail() already
    shows that gracefully ("no source"), so an unparsed note never breaks.
    This is a reading of free text, not new syntax — the file itself is just
    a footnote, exactly as CommonMark defines one. */
-const V2_CITE_DEF=/^\[\^([A-Za-z0-9][A-Za-z0-9_.:-]*)\]:[ \t]+(.+)$/;
-const V2_CITE_NOTE=/^(?:\*([^*]+)\*|([^,:"“]+))(?:,\s*([^,:]+?))?(?:,\s*(?:pp?\.?|art\.?)\s*([^:]+))?:\s*["“]([^"”]+)["”]\.?\s*(?:Verified\s+(\d{4}-\d{2}-\d{2})\.?\s*(.*))?$/;
+const CITE_DEF=/^\[\^([A-Za-z0-9][A-Za-z0-9_.:-]*)\]:[ \t]+(.+)$/;
+const CITE_NOTE=/^(?:\*([^*]+)\*|([^,:"“]+))(?:,\s*([^,:]+?))?(?:,\s*(?:pp?\.?|art\.?)\s*([^:]+))?:\s*["“]([^"”]+)["”]\.?\s*(?:Verified\s+(\d{4}-\d{2}-\d{2})\.?\s*(.*))?$/;
 /* strips any `[^id]: note` lines out of a chunk of text, so they never show as
    stray prose; returns the cleaned text and what it found */
-function v2StripFootnoteDefs(text){const defs=[],kept=[];
-  String(text||"").split("\n").forEach(ln=>{const m=ln.match(V2_CITE_DEF);
+function stripFootnoteDefs(text){const defs=[],kept=[];
+  String(text||"").split("\n").forEach(ln=>{const m=ln.match(CITE_DEF);
     if(m) defs.push({id:m[1],note:m[2].trim()});else kept.push(ln);});
   return {text:kept.join("\n").replace(/\n{3,}/g,"\n\n").trim(),defs};}
 /* one footnote's note, read into a source (if a title parses out) and a
    citation; the quote is kept whichever way this goes */
-function v2ParseCiteNote(note){const m=String(note||"").match(V2_CITE_NOTE);
+function parseCiteNote(note){const m=String(note||"").match(CITE_NOTE);
   if(!m) return {source:null,citation:{quote:String(note||"").trim()}};
   const title=(m[1]||m[2]||"").trim();
   return {source:title?{title,edition:(m[3]||"").trim()||undefined}:null,
@@ -6119,20 +6047,20 @@ function v2ParseCiteNote(note){const m=String(note||"").match(V2_CITE_NOTE);
       verifiedOn:m[6]||undefined,verifiedBy:(m[7]||"").trim()||undefined}};}
 /* the task list right under a choice/multi question: `- [ ] text` / `- [x] text`,
    zero or one blank line above it. Returns {opts,next} or null if none is there. */
-function v2OptionList(lines,i){let j=i;let blanks=0;
+function optionList(lines,i){let j=i;let blanks=0;
   while(j<lines.length&&!lines[j].trim()){j++;blanks++;if(blanks>1) return null;}
   const opts=[];
   while(j<lines.length){const m=lines[j].match(/^[ \t]*[-*+][ \t]+\[([ xX])\][ \t]+(.*)$/);if(!m) break;
     opts.push({text:m[2].trim(),correct:/[xX]/.test(m[1])});j++;}
   return opts.length?{opts,next:j}:null;}
 /* the numbered list right under a scale question: `0. text`, `1. text`, … */
-function v2AnchorList(lines,i){let j=i;let blanks=0;
+function anchorList(lines,i){let j=i;let blanks=0;
   while(j<lines.length&&!lines[j].trim()){j++;blanks++;if(blanks>1) return null;}
   const anchors=[];
   while(j<lines.length){const m=lines[j].match(/^[ \t]*(\d+)[.)][ \t]+(.*)$/);if(!m) break;
     anchors.push({n:Number(m[1]),text:m[2].trim()});j++;}
   return anchors.length?{anchors,next:j}:null;}
-function parseV2(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g,"\n");
+function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g,"\n");
   const lines=text.split("\n"),fm={},problems=[];let i=0;
   if((lines[0]||"").trim()==="---"){let j=1;
     for(;j<lines.length&&lines[j].trim()!=="---";j++){const m=lines[j].match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if(!m) continue;
@@ -6160,14 +6088,14 @@ function parseV2(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g
       else{buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
     if(ln.trim()==="%%"){if(cut===null&&lines.slice(i+1).some(x=>/^>[ \t]?\[!records\b/i.test(x))) cut=i;continue;}
-    const m=ln.match(V2_LINE);
+    const m=ln.match(CALLOUT_LINE);
     if(m){flush();const kind=m[1].toLowerCase(),body=[];let k=i+1;
-      while(k<lines.length&&/^>/.test(lines[k])&&!V2_LINE.test(lines[k])){body.push(lines[k].replace(/^>[ \t]?/,""));k++;}
+      while(k<lines.length&&/^>/.test(lines[k])&&!CALLOUT_LINE.test(lines[k])){body.push(lines[k].replace(/^>[ \t]?/,""));k++;}
       let opts=null,anchors=null;
-      if(kind==="choice"||kind==="multi"){const r=v2OptionList(lines,k);if(r){opts=r.opts;k=r.next;}}
-      else if(kind==="scale"){const r=v2AnchorList(lines,k);if(r){anchors=r.anchors;k=r.next;}}
+      if(kind==="choice"||kind==="multi"){const r=optionList(lines,k);if(r){opts=r.opts;k=r.next;}}
+      else if(kind==="scale"){const r=anchorList(lines,k);if(r){anchors=r.anchors;k=r.next;}}
       if(kind==="records"&&cut===null) cut=i;
-      items.push({t:"line",kind,...v2Words(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,line:i+1});i=k-1;continue;}
+      items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,line:i+1});i=k-1;continue;}
     /* a thematic break is a page break, except `---` straight under a line of
        text, which Markdown reads as that line's heading */
     if(/^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$/.test(ln)&&!(/^ {0,3}-/.test(ln)&&buf.length&&buf[buf.length-1].trim())){flush();items.push({t:"break",line:i+1});continue;}
@@ -6180,7 +6108,7 @@ function parseV2(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g
   let mod=null,act=null,section="content",lastQ=null,seq=0;
   const plain=s=>String(s||"").replace(/[*_`~=]|\[\^[^\]]*\]|!?\[\[[^\]]*\]\]/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1").trim();
   const firstPara=s=>plain(String(s||"").split(/\n{2,}/).find(p=>p.trim()&&!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p))||"");
-  const claim=(id,where)=>{if(!id) return;if(!V2_ID.test(id)) problems.push(where+": the id “"+id+"” may hold only letters, digits and dashes");
+  const claim=(id,where)=>{if(!id) return;if(!ID_PATTERN.test(id)) problems.push(where+": the id “"+id+"” may hold only letters, digits and dashes");
     if(ids.has(id)) problems.push(where+": the id “"+id+"” is used twice");ids.add(id);};
   const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,copy:{[L]:{}},activities:[],__intro:[],__footnotes:[],__line:line};
     if(fm.copyright||fm.license||fm.source) m.rights={copyright:fm.copyright||"",license:fm.license||"",source:fm.source||""};
@@ -6216,7 +6144,7 @@ function parseV2(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g
       continue;}
     if(it.t==="break"){if(section==="content"&&act){act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});lastQ=null;}continue;}
     if(it.t==="text"){if(section!=="content") continue;
-      const strip=v2StripFootnoteDefs(it.text);
+      const strip=stripFootnoteDefs(it.text);
       const owner=mod||(act&&holderOfAct(act));if(owner) owner.__footnotes.push(...strip.defs);
       if(!act){if(mod&&strip.text) mod.__intro.push(strip.text);continue;}
       if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;continue;}
@@ -6224,7 +6152,7 @@ function parseV2(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g
     const k=it.kind,where="line "+it.line;
     if(k==="data"){section="data";act=null;continue;}
     if(k==="records"){section="records";act=null;continue;}
-    if(section!=="content"||V2_SCENERY.has(k)) continue;
+    if(section!=="content"||SCENERY_KINDS.has(k)) continue;
     if(k==="module"){
       if(it.flags.has("end")){if(!mod) problems.push(where+": a module is closed that was never opened");
         else if(it.id&&it.id!==mod.id) problems.push(where+": this closes “"+it.id+"”, but “"+mod.id+"” is open");
@@ -6232,7 +6160,7 @@ function parseV2(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g
       if(mod) problems.push(where+": “"+it.id+"” opens before “"+mod.id+"” is closed");
       claim(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;continue;}
     if(k==="activity"){newActivity(it,it.title,it.line);lastQ=null;continue;}
-    if(V2_QUESTION.has(k)){
+    if(QUESTION_KINDS.has(k)){
       if(!it.id){problems.push(where+": this "+k+" question has no id, so its answer would have nowhere to go");continue;}
       claim(it.id,where);page();const hint=hintOf(it.body);
       if(k==="text"){copyOf()[it.id]=[it.title,hint];lastQ=put({id:it.id,type:"text",q:[act.id,it.id],rows:it.flags.has("long")?6:undefined});}
@@ -6264,7 +6192,7 @@ function parseV2(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;}
   if(mod) problems.push("line "+mod.__line+": the module “"+mod.id+"” is opened and never closed");
-  /* the shapes a version 1 reader already understands: one page is `blocks`,
+  /* the shapes this reader already draws from: one page is `blocks`,
      one activity is `mode` */
   const heading=p=>{for(const b of p.blocks){if(b.type!=="markdown") continue;
     const h=String(b.text).match(/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/m);if(h) return plain(h[1]);}return undefined;};
@@ -6274,24 +6202,24 @@ function parseV2(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g
       return {...ra,pages:pages.map((p,n)=>({id:p.id,title:heading(p)||"Page "+(n+1),blocks:p.blocks}))};});
     const blurb=firstPara(__intro.join("\n\n"));
     /* every footnote this module's own text defined, read into the source and
-       citation registries v1's citation panel already knows how to draw */
+       citation registries the citation panel already knows how to draw */
     const sources=[],citations=[];
-    __footnotes.forEach((d,idx)=>{const {source,citation}=v2ParseCiteNote(d.note);
+    __footnotes.forEach((d,idx)=>{const {source,citation}=parseCiteNote(d.note);
       let key;if(source){key="s"+(idx+1);sources.push({key,...source});}
       citations.push({id:d.id,source:key,...citation});});
     const o={...rest,...(blurb?{blurb}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
     if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
     return o;});
   const st=emptyS();st.entries=entries;st.goodday={...emptyGoodday(),...answers};
-  const template={booklet:2,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
+  const template={booklet:0.2,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
-    v2:{source,lang:L}};
+    raw:{source,lang:L}};
   return {ok:out.length>0,unread:problems,today:[],checkins:[],drafts:{today:null,checkin:null,activities:drafts},
     template,preset:"",lang:L,S:st};}
-/* Writing a version 2 booklet: the design exactly as it was read, then the
+/* Writing a v0.2 booklet: the design exactly as it was read, then the
    records, grouped by module, inside `%%` so Obsidian's reading view hides
    them. An entry is one line, so a long history stays easy to move through. */
-function toMarkdownV2(){const V=TPL.v2||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
+function toMarkdownBooklet(){const V=TPL.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
   const gd=S.goodday||{},recs=[];
   tplModules().forEach(m=>{const acts=modesOf(m),own=[];
@@ -6309,22 +6237,22 @@ function toMarkdownV2(){const V=TPL.v2||{};const out=[String(V.source||"").repla
   if(recs.length) out.push("%%","> [!records] App record — do not edit below this line","",...recs,"%%","");
   return out.join("\n");}
 
-/* ================ ADD A MODULE (version 2) ================
+/* ================ ADD A MODULE ================
    Splicing, not editing: a module's own fenced text is appended to the end
    of the current booklet's design, and any of its data blocks that sit
    outside its module fence are appended to the end of the booklet's own
-   data section. This is the only way a version 2 booklet's design grows —
-   there is no in-browser design editor (section 14 of SPEC.md) — and the
+   data section. This is the only way a v0.2 booklet's design grows —
+   there is no in-browser design editor (section 13 of SPEC.md) — and the
    same function serves the Examples list (fetched text) and a person's own
    upload (a file read from disk); only where the text came from differs. */
-function v2ModuleSpan(lines){
+function moduleSpan(lines){
   let openAt=-1,closeAt=-1;
-  for(let i=0;i<lines.length;i++){const m=lines[i].match(V2_LINE);
-    if(m&&m[1].toLowerCase()==="module"){const w=v2Words("module",m[2]);
+  for(let i=0;i<lines.length;i++){const m=lines[i].match(CALLOUT_LINE);
+    if(m&&m[1].toLowerCase()==="module"){const w=calloutWords("module",m[2]);
       if(w.flags.has("end")){closeAt=i;break;}
       if(openAt<0) openAt=i;}}
   return {openAt,closeAt};}
-function v2FencedSpans(lines,from,to){
+function fencedSpans(lines,from,to){
   const out=[];
   for(let i=from;i<to;i++){const f=lines[i].match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
     if(!f){continue;}
@@ -6337,7 +6265,7 @@ function v2FencedSpans(lines,from,to){
 /* What is wrong with a module file, in words a person uploading their own
    can act on — never a stack trace. Empty means it is safe to add. */
 function moduleTextProblems(text){
-  if(!isV2(text)) return ["This is not a version 2 file — its front matter needs `booklet: 2`."];
+  if(!isBooklet(text)) return ["This is not a v0.2 file — its front matter needs `booklet: 0.2`."];
   const R=parseFile(text);
   if(R.unread.length) return R.unread;
   if(!(R.template.modules||[]).length) return ["This file holds no module."];
@@ -6345,35 +6273,35 @@ function moduleTextProblems(text){
 function addModuleText(text){
   const problems=moduleTextProblems(text);
   if(problems.length) return {ok:false,problems};
-  if(!TPL||TPL.booklet!==2) return {ok:false,problems:["Add a module only works inside a version 2 booklet."]};
+  if(!TPL||TPL.booklet!==0.2) return {ok:false,problems:["Add a module only works inside a v0.2 booklet."]};
   const R=parseFile(text);
-  const lines=String((R.template.v2||{}).source||"").split("\n");
-  const {openAt,closeAt}=v2ModuleSpan(lines);
+  const lines=String((R.template.raw||{}).source||"").split("\n");
+  const {openAt,closeAt}=moduleSpan(lines);
   if(openAt<0||closeAt<0) return {ok:false,problems:["Could not find a complete `[!module|…]` … `[!module|… end]` fence."]};
   const modChunk=lines.slice(openAt,closeAt+1).join("\n");
-  const outside=[...v2FencedSpans(lines,0,openAt),...v2FencedSpans(lines,closeAt+1,lines.length)];
+  const outside=[...fencedSpans(lines,0,openAt),...fencedSpans(lines,closeAt+1,lines.length)];
   const extraChunks=outside.map(s=>lines.slice(s.start,s.end+1).join("\n"));
 
-  const curLines=String((TPL.v2||{}).source||"").split("\n");
+  const curLines=String((TPL.raw||{}).source||"").split("\n");
   let dataAt=-1;
-  for(let i=0;i<curLines.length;i++){const m=curLines[i].match(V2_LINE);if(m&&m[1].toLowerCase()==="data"){dataAt=i;break;}}
+  for(let i=0;i<curLines.length;i++){const m=curLines[i].match(CALLOUT_LINE);if(m&&m[1].toLowerCase()==="data"){dataAt=i;break;}}
   const mainPart=(dataAt<0?curLines:curLines.slice(0,dataAt)).join("\n").replace(/\s+$/,"");
   const dataPart=(dataAt<0?"":curLines.slice(dataAt).join("\n")).replace(/\s+$/,"");
   const newMain=mainPart+"\n\n"+modChunk+"\n";
   const newData=extraChunks.length?(dataPart||"> [!data] Data")+"\n\n"+extraChunks.join("\n\n")+"\n":dataPart;
   const newSource=newData?newMain+"\n"+newData+"\n":newMain;
 
-  editTemplate(t=>{t.v2={...(t.v2||{}),source:newSource};});
+  editTemplate(t=>{t.raw={...(t.raw||{}),source:newSource};});
   (R.template.widgets||[]).forEach(addWidget);
   const added=[];
   (R.template.modules||[]).forEach(mod=>{const {widgets,...bare}=mod;if(addModule(bare)) added.push(mod.id);});
   return {ok:true,added};}
 
-/* No earlier format is read. A file that is not version 2 front matter
-   (booklet: 2) simply does not open. */
+/* No earlier format is read. A file that is not v0.2 front matter
+   (booklet: 0.2) simply does not open. */
 function parseFile(text){
-  if(isV2(text)) return parseV2(text);
-  return {ok:false,unread:["Not a version 2 booklet file."],today:[],checkins:[],
+  if(isBooklet(text)) return parseBooklet(text);
+  return {ok:false,unread:["Not a v0.2 booklet file."],today:[],checkins:[],
     drafts:{today:null,checkin:null},template:null,S:emptyS()};}
 /* A template arriving in a file is not trusted to be well-formed. It has to
    name modes the renderer has kinds for; anything it leaves out entirely falls
@@ -6591,8 +6519,7 @@ document.getElementById("fileIn").addEventListener("change",e=>readFileInto(e.ta
    here — never at boot) and a person's own file. Both end at
    addModuleFromText, which either adopts the file wholesale (a booklet with
    nothing in it yet has nothing to lose) or splices it in with
-   addModuleText. A version 1 booklet that already has content is refused,
-   in words, rather than attempting a merge between two save formats. */
+   addModuleText. */
 function addModuleFromText(text){
   const msg=document.getElementById("addModMsg");
   const problems=moduleTextProblems(text);
@@ -6600,14 +6527,11 @@ function addModuleFromText(text){
   if(view===LIB_VIEW){const e=addEntry({from:"file"});openBooklet(e.id);}
   const R=parseFile(text);
   /* the same "nothing to lose" test designAtStake uses for a loaded file:
-     an untouched booklet may become this file outright, version 2 included */
+     an untouched booklet may become this file outright */
   const empty=!allModules().length&&!(TPL.modes||[]).length&&!TPL.customized;
   if(empty&&shouldAdopt(R.template)){applyParsed(R,"replace");}
-  else if(TPL.booklet===2){const r=addModuleText(text);
+  else{const r=addModuleText(text);
     if(!r.ok){msg.className="msg err";msg.textContent=r.problems.join(" ");return false;}}
-  else{msg.className="msg err";
-    msg.textContent="This booklet's design is still version 1, so a version 2 module can't be spliced into it. Start a new booklet, or open a version 2 file first.";
-    return false;}
   veilAddModule.removeAttribute("open");saveLocal();render();
   toast(T[lang].booklet.added(tx((R.template.modules[0]||{}).title,"")));
   return true;}

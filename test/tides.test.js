@@ -1,6 +1,6 @@
 // examples/how-tides-work.booklet.md: reading with a citation and math, two
-// pages, a folded hint, and choice/scale questions — the kinds v2.test.js
-// does not cover. Run: node test/v2-tides.test.js
+// pages, a folded hint, and choice/scale questions — the kinds
+// test/booklet-format.test.js does not cover. Run: node test/tides.test.js
 const P=require("./page.js");
 const fs=require("fs");
 const EX=fs.readFileSync(P.R+"/examples/how-tides-work.booklet.md","utf8");
@@ -39,7 +39,7 @@ seen=P.texts(P.main());
 /* citeText only marks [^id] inside prose/quote/deflist/callout text drawn
    through readTx(); the "markdown" block's own drawer (mdNodes) wires its own
    citation marks via its `mark` callback — a stand-in until the real drawer
-   lands, so this is a known, temporary gap rather than a v2-reader bug. */
+   lands, so this is a known, temporary gap rather than a reader bug. */
 chk("the reading page shows the reading text",seen.includes("Most harbours on this coast"),seen.slice(0,300));
 
 /* answer and keep */
@@ -56,5 +56,5 @@ chk("the written file reads back clean",R2.ok&&R2.unread.length===0,JSON.stringi
 chk("the kept entry comes back with the same values",R2.S.entries["rd-check"][0].biggest===2&&R2.S.entries["rd-check"][0].confidence===3);
 
 P.closePages();
-console.log((fails?fails+" of the checks above failed":"all v2-tides checks passed"));
+console.log((fails?fails+" of the checks above failed":"all tides checks passed"));
 process.exit(fails?1:0);

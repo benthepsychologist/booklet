@@ -10,7 +10,7 @@
 //   5. the design half of the file comes back exactly as it was written;
 //   6. what is wrong with a file is said, and the file still opens.
 //
-// Run: node test/v2.test.js      (Needs node; nothing to install.)
+// Run: node test/booklet-format.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
 const fs=require("fs");
 const EX=fs.readFileSync(P.R+"/examples/mindful-check-in.booklet.md","utf8");
@@ -23,7 +23,7 @@ const R=A.parseFile(EX);
 chk("the example parses",R.ok,JSON.stringify(R.unread));
 chk("nothing in the example is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
 const t=R.template||{};
-chk("it is marked v0.2",t.booklet===2);
+chk("it is marked v0.2",t.booklet===0.2);
 chk("its one language is declared",JSON.stringify(t.languages)==='["en"]');
 chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0].id==="mensio-check-in",JSON.stringify((t.modules||[]).map(m=>m.id)));
 const m=(t.modules||[])[0]||{};
@@ -44,7 +44,7 @@ chk("the body map block points at its data",a.blocks[1].widget==="body-map"&&a.b
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
 A.loadText(EX);
-chk("the page adopts it as the booklet",A.TPL.booklet===2&&A.allModules().length===1,JSON.stringify({b:A.TPL.booklet,n:A.allModules().length}));
+chk("the page adopts it as the booklet",A.TPL.booklet===0.2&&A.allModules().length===1,JSON.stringify({b:A.TPL.booklet,n:A.allModules().length}));
 A.view="check-in";A.render();
 const seen=P.texts(P.main());
 ["A mindful check-in","Body","Feelings","Something else","In your own words.","Mind is thinking about","Notice, name, keep."].forEach(w=>
@@ -68,7 +68,7 @@ const R2=A.parseFile(out);
 chk("the written file reads back with no problems",R2.ok&&R2.unread.length===0,JSON.stringify(R2.unread));
 chk("the entry comes back",((R2.S.entries||{})["check-in"]||[]).length===1&&R2.S.entries["check-in"][0].other==="the kettle");
 chk("the draft comes back",(R2.drafts.activities["check-in"]||{}).other==="half a thought");
-chk("the design comes back as the same text",R2.template.v2.source===R.template.v2.source);
+chk("the design comes back as the same text",R2.template.raw.source===R.template.raw.source);
 const again=(()=>{P.wipe();const B=P.boot();B.loadText(out);return B.toMarkdown();})();
 chk("load, save, load, save changes nothing",again===out,again.length+" vs "+out.length);
 
@@ -85,5 +85,5 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
   A.parseFile('---\nbooklet: 1\n---\n\n```json\n{"block":"module"}\n```\n').ok===false);
 
 P.closePages();
-console.log((fails?fails+" of the checks above failed":"all v2 checks passed"));
+console.log((fails?fails+" of the checks above failed":"all booklet-format checks passed"));
 process.exit(fails?1:0);

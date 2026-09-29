@@ -64,10 +64,10 @@ const CASES=[
 ];
 // KNOWN GAP (2026-09-29): "a module menu that is not a list of strings"
 // (lint-module-menus.md), "a second person block" (lint-two-person.md) and
-// "two entries blocks for one activity" (lint-two-entries.md) used plain
-// `booklet: 1` fixtures, not module-shaped ones — check_template's v1
+// "two entries blocks for one activity" (lint-two-entries.md) used plain,
+// pre-v0.2 fixtures, not module-shaped ones — check_template's old
 // record-block rules (person/entries collisions) no longer run for those,
-// since the linter now rejects any non-v2 booklet file outright.
+// since the linter now rejects any file that isn't v0.2 outright.
 for(const [name,what,rx] of CASES){
   const r=lint(path.join(FX,name+".md"));
   chk(`${what}: exactly one error`,r.status===1&&r.errors.length===1,r.errors.join(" | ")||r.out);
@@ -88,11 +88,12 @@ for(const [name,what,rx] of CASES){
 
 // `lint()` reports ERROR lines; warnings are read here from the `warn ` lines.
 const warnsOf=r=>r.out.split("\n").filter(l=>l.startsWith("warn"));
-// KNOWN GAP (2026-09-29): "what the record now carries" tested v1's board/
-// drafts record-block rules (lint-empty-board/board-row/board-area/
+// KNOWN GAP (2026-09-29): "what the record now carries" tested the deleted
+// format's board/drafts record-block rules (lint-empty-board/board-row/board-area/
 // drafts-shape-*.md, all plain `booklet: 1` fixtures) — deleted, since the
-// linter now rejects any non-v2 booklet file before reaching those rules.
-// v2's own records section has its own, separate checks in v2.test.js.
+// linter now rejects any file that isn't v0.2 before reaching those rules.
+// this format's own records section has its own, separate checks in
+// test/booklet-format.test.js.
 
 // a board or a guide keeps its answers in `fields`, under the key each block owns; some keys are not safe to use
 {const CASES2=[
@@ -129,10 +130,10 @@ const warnsOf=r=>r.out.split("\n").filter(l=>l.startsWith("warn"));
 // KNOWN GAP (2026-09-29): the "script in a widget's SVG" hostile-content
 // check that used to live here (widgets/desk-check.md, one shape swapped for
 // an attack payload) was deleted along with the standalone widgets/ files
-// rather than rebuilt against an inline v2 widget fence under time pressure.
+// rather than rebuilt against an inline v0.2 widget fence under time pressure.
 // The renderer-side equivalent (test/svg-sanitize.test.js) still covers the
 // same attack surface at runtime; this was the linter's static, before-a-file-
-// is-shared version of it, and needs rebuilding against a real v2 module's
+// is-shared version of it, and needs rebuilding against a real v0.2 module's
 // inline ```booklet widget``` fence.
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");

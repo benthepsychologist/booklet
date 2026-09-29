@@ -1,5 +1,5 @@
 ---
-booklet: 2
+booklet: 0.2
 id: example/end-of-day
 title: End of day
 lang: en

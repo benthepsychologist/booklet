@@ -6,7 +6,7 @@ Open it in a text editor and you can read everything, top to bottom — question
 
 ```markdown
 ---
-booklet: 2
+booklet: 0.2
 id: example/check-in
 title: A daily check-in
 lang: en

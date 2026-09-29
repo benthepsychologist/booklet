@@ -65,7 +65,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: 2`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: 0.2`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -163,7 +163,7 @@ Copy this exactly and fill in the `<…>` parts.
 
 ````markdown
 ---
-booklet: 2
+booklet: 0.2
 id: "local/<booklet-slug>"
 title: "<Booklet title>"
 lang: <en|es|es-AR|fr>
@@ -453,7 +453,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: 2`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: 0.2`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module, activity and question ids are unique across the file and hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
@@ -471,7 +471,7 @@ the renderer. Imitate their shape.
 
 ````markdown
 ---
-booklet: 2
+booklet: 0.2
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -507,7 +507,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: 2
+booklet: 0.2
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -568,7 +568,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: 2
+booklet: 0.2
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es

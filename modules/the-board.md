@@ -1,5 +1,5 @@
 ---
-booklet: 2
+booklet: 0.2
 id: example/the-board
 title: The board and weekly review
 lang: en

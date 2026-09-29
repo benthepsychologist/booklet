@@ -1333,25 +1333,25 @@ def check_widget_file(f, fm, blocks, broken):
 # ---- format v0.2 -----------------------------------------------------------
 # A v0.2 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
-# mirror parseV2() in booklet.html, so the linter and the page agree on what is
+# mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
-V2_LINE = re.compile(r'^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$')
-V2_ID = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
-V2_FLAGS = {"module": {"end"}, "activity": {"repeat", "daily", "pinned", "hidden"},
+CALLOUT_LINE = re.compile(r'^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$')
+ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
+CALLOUT_FLAGS = {"module": {"end"}, "activity": {"repeat", "daily", "pinned", "hidden"},
             "widget": {"skippable", "readonly", "describe"}, "text": {"long"},
             "choice": {"open"}, "multi": {"open"}}
-V2_QUESTIONS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
-V2_DRAWN = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date"}  # the kinds the reference page draws today
-V2_STRUCTURE = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution"}
+QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
+DRAWN_QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date"}  # the kinds the reference page draws today
+STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution"}
 
 
-def v2_words(kind, s):
+def callout_words(kind, s):
     out = {"id": None, "flags": set(), "set": {}}
     for w in (s or "").split():
         kv = re.match(r'^([A-Za-z][A-Za-z0-9-]*)=(.*)$', w)
         if kv:
             out["set"][kv.group(1)] = kv.group(2)
-        elif w.lower() in V2_FLAGS.get(kind, set()):
+        elif w.lower() in CALLOUT_FLAGS.get(kind, set()):
             out["flags"].add(w.lower())
         elif out["id"] is None:
             out["id"] = w
@@ -1360,7 +1360,7 @@ def v2_words(kind, s):
     return out
 
 
-def check_v2(f, text, fm):
+def check_format(f, text, fm):
     """Lint a v0.2 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
@@ -1432,9 +1432,9 @@ def check_v2(f, text, fm):
                     warn(f, f"line {n}: `booklet {what}` is not a block this format defines")
             i = (m if bid else k) + 1
             continue
-        mm = V2_LINE.match(ln)
+        mm = CALLOUT_LINE.match(ln)
         if mm:
-            kind, w = mm.group(1).lower(), v2_words(mm.group(1).lower(), mm.group(2))
+            kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
             if kind == "data":
                 section = "data"
@@ -1458,15 +1458,15 @@ def check_v2(f, text, fm):
                     seen_activity = True
                     if w["id"]:
                         acts.add(w["id"])
-                elif kind in V2_QUESTIONS:
+                elif kind in QUESTION_KINDS:
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go")
-                    elif kind not in V2_DRAWN:
+                    elif kind not in DRAWN_QUESTION_KINDS:
                         warn(f, f"{where}: {kind} questions are not drawn by the reference page yet")
                     if kind == "widget":
                         body = []
                         k = i + 1
-                        while k < len(lines) and lines[k].startswith(">") and not V2_LINE.match(lines[k]):
+                        while k < len(lines) and lines[k].startswith(">") and not CALLOUT_LINE.match(lines[k]):
                             body.append(lines[k]); k += 1
                         e = re.search(r'!\[\[[^\]#|]*#\^([A-Za-z0-9-]+)', "\n".join(body))
                         if e:
@@ -1479,10 +1479,10 @@ def check_v2(f, text, fm):
                     if re.match(r'^ {0,3}(?!1[.)])\d+[.)][ \t]', nxt):
                         err(f, f"line {n + 1}: a numbered list that does not start at 1 needs a blank line above it, "
                                f"or Markdown reads it as part of the question's title")
-                elif kind not in V2_STRUCTURE:
+                elif kind not in STRUCTURE_KINDS:
                     pass                                   # a reading callout; any kind is allowed
-            for key in (w["id"],) if kind in V2_QUESTIONS | {"module", "activity", "menu"} and w["id"] else ():
-                if not V2_ID.match(key):
+            for key in (w["id"],) if kind in QUESTION_KINDS | {"module", "activity", "menu"} and w["id"] else ():
+                if not ID_PATTERN.match(key):
                     err(f, f"line {n}: the id {key!r} may hold only letters, digits and dashes")
                 if key in ids and not (kind == "module" and "end" in w["flags"]):
                     err(f, f"line {n}: the id {key!r} is also used on line {ids[key]}")
@@ -1530,13 +1530,13 @@ def check_file(path):
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return
-    if fm.get("booklet") == "2":
-        check_v2(f, text, fm)
+    if fm.get("booklet") == "0.2":
+        check_format(f, text, fm)
         return
     # No earlier format is read (2026-09-29) — this mirrors the renderer's own
-    # parseFile(), which only ever calls parseV2(). `booklet: 1` and anything
-    # else are rejected outright rather than checked against an earlier format's rules.
-    err(f, f"front matter must say `booklet: 2` (found {fm.get('booklet')!r}) — "
+    # parseFile(), which only ever calls parseBooklet(). Anything else is
+    # rejected outright rather than checked against an earlier format's rules.
+    err(f, f"front matter must say `booklet: 0.2` (found {fm.get('booklet')!r}) — "
            f"no earlier format is read")
 
 
