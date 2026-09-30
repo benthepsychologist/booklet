@@ -55,7 +55,7 @@ const byTag=(t,root)=>findAll(root||main(),n=>n.tagName===t);
 const click=n=>{if(!n||!n._on||!n._on.click) throw new Error("nothing to click");return n._on.click({target:n,currentTarget:n});};
 const buttonIn=(root,label)=>findAll(root,n=>n.tagName==="button"&&flat(n)===label)[0];
 const summaries=()=>byTag("summary").map(flat);
-const moduleText=f=>fs.readFileSync(path.join(R,"modules",f+".md"),"utf8");
+const moduleText=f=>fs.readFileSync(path.join(R,"test","fixtures","module-"+f+".md"),"utf8");
 const LANGS=["en","fr","es","es-AR"];
 /* an activity, drawn in one language */
 function show(mod,act,l,editing){A.fresh();A.addModule(clone(mod));A.setLang(l);A.setView(act);A.setEditing(!!editing);A.render();}

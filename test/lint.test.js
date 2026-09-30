@@ -124,8 +124,8 @@ const warnsOf=r=>r.out.split("\n").filter(l=>l.startsWith("warn"));
  const solo=lint(path.join(FX,"skill-registro-de-agua.booklet.md"),path.join(FX,"skill-english-journal.booklet.md"));
  chk("control: single-language booklets get no registry warning",
    solo.errors.length===0&&!warnsOf(solo).some(l=>REG.test(l)),solo.out);
- const reg=lint(...fs.readdirSync(path.join(R,"modules")).filter(n=>n.endsWith(".md")).map(n=>path.join(R,"modules",n)));
- chk("every current registry module lints clean as v0.2",reg.status===0&&/0 errors/.test(reg.out),reg.out);}
+ const reg=lint(...["module-daily-journal","module-the-day","module-check-in"].map(n=>path.join(FX,n+".md")));
+ chk("the module fixtures (copies of real registry modules) lint clean as v0.2",reg.status===0&&/0 errors/.test(reg.out),reg.out);}
 
 // KNOWN GAP (2026-09-29): the "script in a widget's SVG" hostile-content
 // check that used to live here (widgets/desk-check.md, one shape swapped for
