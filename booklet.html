@@ -2422,7 +2422,7 @@ function registrySources(){
    examples, so ITS OWN open handler is where that one fetch happens, lazily,
    never at boot. A wrapper that wants none of that sets `no_default_registry`
    in its config. */
-const DEFAULT_REGISTRY="https://benthepsychologist.github.io/booklet/registry.json";
+const DEFAULT_REGISTRY="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json";
 
 async function loadRegistry(url){
   try{

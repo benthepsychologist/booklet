@@ -35,27 +35,11 @@ jobs:
         with: { node-version: '20' }
 
       - name: Every check, the same way a person runs them
-        # test/run.sh runs the engine checks, the linter over every booklet,
-        # module and widget (warnings never fail a build), whether the example
-        # booklet and registry.json are current, and every test/*.test.js it
-        # finds. It exits 1 if any of them fails and prints that one in full.
+        # test/run.sh runs the linter over every booklet and every
+        # test/*.test.js it finds. It exits 1 if any of them fails and prints that one in full.
         run: bash test/run.sh
 
-      - name: Does every registry entry point at a file that exists?
-        run: |
-          node -e '
-            const fs=require("fs");
-            const reg=JSON.parse(fs.readFileSync("registry.json","utf8"));
-            let bad=0;
-            for (const m of reg.modules) {
-              if (m.module) continue;                 // carried inline, nothing to fetch
-              if (!m.file) { console.log("⛔ "+m.id+" names neither a file nor a module"); bad++; continue; }
-              if (!fs.existsSync(m.file)) { console.log("⛔ "+m.id+" points at "+m.file+", which is not here"); bad++; }
-            }
-            console.log(reg.modules.length+" entries checked, "+bad+" broken");
-            process.exit(bad?1:0);'
-
-  # Publishes booklet.html, registry.json, examples/, modules/, etc. — the
+  # Publishes booklet.html, examples/, docs, etc. — the
   # whole repo root, exactly as the old "Deploy from a branch" source did
   # (.nojekyll already turns off Jekyll processing either way). Only runs
   # after `check` passes, and only on a real push to main — never on a PR.

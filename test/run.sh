@@ -18,7 +18,6 @@ run() { # run <label> <command...>
   fi
 }
 
-run registry node build-registry.js --check
 run lint     python3 lint-booklet.py
 for f in test/*.test.js; do
   [ -e "$f" ] || continue

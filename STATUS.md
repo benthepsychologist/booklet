@@ -5,7 +5,7 @@
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
 **project v0.2**. The repository publishes two format generations, a
 dependency-free static HTML renderer that reads both, the reference
-validator, generic examples, and a GitHub Pages-backed module registry.
+validator, generic examples, and a default module registry, kept in its own repo (`booklet-registry`).
 
 ## Current state — v0.2 (2026-09-27, this release)
 
@@ -81,7 +81,7 @@ through its publication adapter.
   registry is an index, not an endorsement or safety certification.
 - The `mensio-*` modules and widgets lack Spanish (`es`); it has to be added in
   `benthepsychologist-corpus` and arrive through its adapter.
-- The example board's sixteen menu options, carried by `modules/the-board.md`
+- The example board's sixteen menu options, carried by a module that has since been removed
   (the standalone `widgets/project-board.md` they came from is deleted, 2026-
   09-29, with the rest of the standalone widget files), are one list per
   language, in French and Spanish as well as English, and await a native
