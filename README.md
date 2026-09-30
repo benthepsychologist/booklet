@@ -83,9 +83,8 @@ and it draws those too, as long as they use engines it has.
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
 | [`examples/`](examples/) | complete booklets you can open — `how-tides-work.booklet.md` and `mindful-check-in.booklet.md` |
-| [`modules/`](modules/) | generic examples and separately licensed registry content, offered through `registry.json` — one module per file, its widgets carried inline (see `SPEC.md` §7) |
 | [`test/`](test/) | the suite, run with `test/run.sh` |
-| [`registry.json`](registry.json) | the examples registry — what this repo offers |
+| [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry) | a separate repo: the modules on offer and the `registry.json` that lists them |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
 
 ## Try it
@@ -95,7 +94,7 @@ Download `booklet.html` and `examples/how-tides-work.booklet.md`, open the HTML 
 markdown file. No server, no install, no network: verified with `fetch` and
 `XMLHttpRequest` stubbed to fail.
 
-A module file (any file in `modules/`) loads as what it is, one activity: on
+A module file (any v0.2 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it, and inside a booklet it is
 added to that booklet, with nothing already there replaced.
 
@@ -296,7 +295,7 @@ A **registry** is one JSON file listing modules somebody offers, with enough in
 each entry to draw a menu. A page fetches that one file — around 1KB — instead
 of every module it might one day offer.
 
-The public Booklet repository publishes one through GitHub Pages and takes
+The default one is [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry), read straight from its public repo, which takes
 additions by pull request. But nothing there is a gate: a registry is a URL,
 so it can be a repo, a folder on any host, or **a single file with its
 modules carried inline and nothing to fetch at all**. A booklet may name its
