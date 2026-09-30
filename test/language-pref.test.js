@@ -31,7 +31,7 @@ const PREF="booklet.ui.lang";
    inside one file the way the earlier format did. So loading this single-language
    file keeps its own `en`, whatever the reader's choice was. */
 const exampleText=fs.readFileSync(R+"/examples/mindful-check-in.booklet.md","utf8");
-const fixtureModule=fs.readFileSync(R+"/modules/daily-journal.md","utf8");
+const fixtureModule=fs.readFileSync(R+"/test/fixtures/module-daily-journal.md","utf8");
 
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};

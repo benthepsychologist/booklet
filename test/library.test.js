@@ -15,7 +15,7 @@ const html=fs.readFileSync(R+"/booklet.html","utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
 const LS=global.__ls;
 const exampleText=fs.readFileSync(R+"/examples/mindful-check-in.booklet.md","utf8");
-const modText=n=>fs.readFileSync(R+"/modules/"+n+".md","utf8");
+const modText=n=>fs.readFileSync(R+"/test/fixtures/module-"+n+".md","utf8");
 const addMod=(A,n)=>A.addModuleText(modText(n));
 const LEGACY="useful-next-step.v1", LIBKEY="booklet.library.v1";
 
@@ -192,7 +192,7 @@ thaw();
 // ---- removing a booklet ---------------------------------------------------
 wipe();A=boot();
 const n1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
-const n2=await A.createBooklet();addMod(A,"mensio-the-day");A.saveLocal();
+const n2=await A.createBooklet();addMod(A,"the-day");A.saveLocal();
 A.closeBooklet();
 A.removeBooklet(n1.id);
 chk("removing a booklet takes it off the list and deletes its data",
@@ -204,7 +204,7 @@ chk("and leaves the others as they were",!!LS["booklet.b."+n2.id]&&A.readLib().e
 wipe();A=boot();
 const v1=await A.createBooklet();addMod(A,"daily-journal");A.S.name="Ana";A.saveLocal();
 await sleep(5);                                  // so "last opened" differs by more than a clock tick
-const v2=await A.createBooklet();addMod(A,"mensio-the-day");
+const v2=await A.createBooklet();addMod(A,"the-day");
 A.editTemplate(t=>{t.head={title:{en:"Week by week",fr:"Semaine après semaine"}};});A.saveLocal();
 A.render();
 chk("inside a booklet, its home leads back out to the list",global.document.getElementById("btnHome").textContent==="← Your booklets");
