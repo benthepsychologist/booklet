@@ -2720,7 +2720,7 @@ const modeShown=id=>{const m=tplModes().find(x=>x.id===id);return !!m&&isShown(m
    which is what keeps "data is addressed by id" true rather than nearly true. */
 const KEYS_BY_TYPE={headlines:["thoughts"]};
 /* blocks that only read: they never own an entry key and never take an answer */
-const READING_BLOCKS=new Set(["heading","prose","deflist","quote","image","callout","sources","markdown"]);
+const READING_BLOCKS=new Set(["heading","prose","deflist","quote","image","callout","sources","markdown","recall"]);
 /* a block owns the entry keys it names; a widget block must name them,
    because only the widget knows what shape its answer is. A block that only
    reads owns nothing, so that the id-defaulting rule above can never hand a
@@ -4126,6 +4126,19 @@ let drawDid=()=>{};
 const LEGACY_ENGINE={bodymap:"svg-regions",quadrants:"grid-select"};
 const LEGACY_KEYS={bodymap:"regions",quadrants:"emotions"};
 const widgetForEngine=eng=>tplWidgets().find(w=>w.engine===eng)||null;
+/* The kept entries of another activity in the SAME module, newest first, or
+   nothing: a reference that crosses a module boundary reads nothing, whatever
+   the file says. Widget engines read through this too. */
+function recallEntries(from,modeId){const h=holderOf(from);
+  if(!h||h!==holderOf(modeId)) return [];
+  return [...keptFor(from)].sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
+function recallCard(e,b){const card=el("div",{class:"entry"});
+  card.append(el("div",{class:"when"},fmtWhen(e.ts)));
+  const dl=el("dl",{});
+  for(const q of blocksOf(b.from)){
+    if(b.fields&&!keysOf(q).some(k=>b.fields.includes(k))&&!b.fields.includes(q.id)) continue;
+    const r=fieldSummary(q,e);if(r) dl.append(el("dt",{},r[0]),el("dd",{},r[1]));}
+  card.append(dl);return card;}
 function renderBlock(b,draft,modeId){const t=T[lang];
   if(LEGACY_ENGINE[b.type]){const W=widgetForEngine(LEGACY_ENGINE[b.type]);
     b={...b,type:"widget",widget:b.widget||(W?W.id:""),
@@ -4144,6 +4157,12 @@ function renderBlock(b,draft,modeId){const t=T[lang];
       (readTx(b.text,modeId)||"").split(/\n{2,}/).filter(nonEmpty).forEach(par=>box.append(el("p",{},...citeText(par,modeId))));
       return box;}
     /* a v0.2 booklet's prose, drawn from its Markdown: see mdNodes */
+    case "recall":{const box=el("div",{class:"pblock recall"});
+      if(nonEmpty(b.title)) box.append(el("h3",{class:"bhead"},b.title));
+      const found=recallEntries(b.from,modeId);
+      if(!found.length){box.append(el("p",{class:"hint"},RC().empty));return box;}
+      (b.limit?found.slice(0,b.limit):found).forEach(e=>box.append(recallCard(e,b)));
+      return box;}
     case "markdown":{const box=el("div",{class:"pblock md"});
       box.append(...mdNodes(String(b.text||""),{idPrefix:"md-",mark:id=>{const c=citeText("[^"+id+"]",modeId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}));
       return box;}
@@ -4454,6 +4473,11 @@ TSRC.es.moduleView={
   twice: (mod,act)=>`módulo “${mod}” rechazado: dos de sus actividades se llaman “${act}”`
 };
 buildTables();
+TSRC.en.recall={empty:"Nothing kept here yet."};
+TSRC.fr.recall={empty:"Rien n’est encore enregistré ici."};
+TSRC.es.recall={empty:"Todavía no hay nada guardado aquí."};
+buildTables();
+const RC=()=>(T[lang]&&T[lang].recall)||T.en.recall;
 const MW=()=>(T[lang]&&T[lang].moduleView)||T.en.moduleView;
 /* An activity's own name: its `title`, else its heading's copy, else its id. */
 function activityName(a){const h=(a&&a.head)||{};
@@ -6163,6 +6187,15 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
       if(mod) problems.push(where+": “"+it.id+"” opens before “"+mod.id+"” is closed");
       claim(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;continue;}
     if(k==="activity"){newActivity(it,it.title,it.line);lastQ=null;continue;}
+    /* a recall shows another activity's kept entries, read-only: it owns no
+       answer, so it takes no id of its own (see SPEC.md, section 8) */
+    if(k==="recall"){
+      if(!it.set.from){problems.push(where+": this recall has no from= (name the activity whose kept entries it shows)");continue;}
+      if(it.id) claim(it.id,where);page();
+      const b={id:it.id||"recall"+(++seq),type:"recall",from:it.set.from,title:it.title||undefined};
+      if(it.set.fields) b.fields=it.set.fields.split(",").map(x=>x.trim()).filter(Boolean);
+      if(it.set.limit!==undefined&&Number(it.set.limit)>0) b.limit=Math.floor(Number(it.set.limit));
+      put(b);lastQ=null;continue;}
     if(QUESTION_KINDS.has(k)){
       if(!it.id){problems.push(where+": this "+k+" question has no id, so its answer would have nowhere to go");continue;}
       claim(it.id,where);page();const hint=hintOf(it.body);
@@ -6195,6 +6228,15 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;}
   if(mod) problems.push("line "+mod.__line+": the module “"+mod.id+"” is opened and never closed");
+  /* A recall reads within its own module and only from an activity that keeps
+     entries; anything else is refused here, so the drawing code never sees it */
+  for(const m of modules){const byId=new Map(m.activities.map(a=>[a.id,a]));
+    for(const a of m.activities) for(const pg of a.pages) pg.blocks=pg.blocks.filter(b=>{
+      if(b.type!=="recall") return true;
+      const src=byId.get(b.from);
+      if(!src){problems.push("the recall “"+b.id+"” in “"+a.id+"” names “"+b.from+"”, which is not an activity of this module, so it was refused");return false;}
+      if(src.kind!=="entry"){problems.push("the recall “"+b.id+"” in “"+a.id+"” names “"+b.from+"”, which keeps no entries (only a repeat activity does), so it was refused");return false;}
+      return true;});}
   /* the shapes this reader already draws from: one page is `blocks`,
      one activity is `mode` */
   const heading=p=>{for(const b of p.blocks){if(b.type!=="markdown") continue;

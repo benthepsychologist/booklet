@@ -58,7 +58,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   moduleTextProblems, editTemplate, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, tplModules, tplModes, tplWidgets, isMulti,
   moduleView:id=>MODULE_VIEW+id, openExport, openLock, openUnlock, openSafety, maybeRemind, blankBlock,
-  menuOf, draftFor, keptFor, boardStore, finalizeEntry, pickLang
+  menuOf, draftFor, keptFor, recallEntries, boardStore, finalizeEntry, pickLang
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};

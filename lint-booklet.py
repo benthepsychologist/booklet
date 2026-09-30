@@ -1379,6 +1379,7 @@ def check_format(f, text, fm):
             i += 1
         i += 1
     ids, block_ids, embeds, acts, entry_refs = {}, {}, [], set(), []
+    act_info, recalls = {}, []
     open_mod, open_line, section, seen_activity = None, 0, "content", False
     while i < len(lines):
         ln, n = lines[i], i + 1
@@ -1458,6 +1459,13 @@ def check_format(f, text, fm):
                     seen_activity = True
                     if w["id"]:
                         acts.add(w["id"])
+                        act_info[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
+                elif kind == "recall":
+                    # shows another activity's kept entries, read-only; owns no answer
+                    if not w["set"].get("from"):
+                        err(f, f"{where}: this recall has no from= (name the activity whose kept entries it shows)")
+                    else:
+                        recalls.append((n, w["set"]["from"], open_mod))
                 elif kind in QUESTION_KINDS:
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go")
@@ -1495,6 +1503,13 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")
         elif not block_ids[ref].lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
+    for n, src, mod in recalls:
+        info = act_info.get(src)
+        if info is None or info[0] != mod:
+            err(f, f"line {n}: the recall names {src!r}, which is not an activity of this module "
+                   f"(a recall reads within its own module only)")
+        elif not info[1]:
+            err(f, f"line {n}: the recall names {src!r}, which keeps no entries (only a repeat activity does)")
     for n, ref in entry_refs:
         if ref not in acts:
             warn(f, f"line {n}: records for {ref!r}, which no activity line names")

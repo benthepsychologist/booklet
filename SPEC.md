@@ -285,6 +285,23 @@ A `hint` or `solution` callout directly after a question belongs to it. Fold the
 > Think about when the sun and the moon pull in the same direction.
 ```
 
+### Recall: showing another activity's kept entries
+
+```markdown
+> [!recall|moments from=log fields=situation,ease limit=5] Your moments so far
+```
+
+A `recall` line draws the entries a reader has kept in another activity, read-only, newest first. It takes no answer and owns no place in the records.
+
+- `from=` names the activity to read. It is required, and it must be an activity **in the same module** that keeps entries (one marked `repeat` or `daily`). A recall that names an activity elsewhere, or one that keeps no entries, is refused: a linter reports an error and a renderer draws nothing for it.
+- `fields=` lists which of that activity's questions to show, by id, comma-separated with no spaces. Leave it out to show them all.
+- `limit=` shows only the newest N entries.
+- The text after the bracket is a heading drawn above the entries.
+- With nothing kept yet, the reader sees a short line saying so.
+- A recall reads *kept* entries only, never a draft in progress.
+
+This is the read that a widget will use too when it draws the reader's own items. The `of=` setting on `choice` and `multi` (options from the reader's earlier answers) is a separate, not yet built, use of the same rule.
+
 ### Citations
 
 A citation is an ordinary CommonMark footnote — the mark `[^id]` in the text, and its definition, `[^id]: …`, anywhere in the file. There is no separate sources registry: a source cited at two places is two footnotes.

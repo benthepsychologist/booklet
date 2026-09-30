@@ -136,5 +136,17 @@ const warnsOf=r=>r.out.split("\n").filter(l=>l.startsWith("warn"));
 // is-shared version of it, and needs rebuilding against a real v0.2 module's
 // inline ```booklet widget``` fence.
 
+// ---- recall: read within the module, from an activity that keeps entries ----
+{const os=require("os");const fx=fs.readFileSync(path.join(FX,"module-recall.md"),"utf8");
+ const tmp=(name,text)=>{const f=path.join(fs.mkdtempSync(path.join(os.tmpdir(),"bk-")),name);fs.writeFileSync(f,text);return f;};
+ const ok=lint(path.join(FX,"module-recall.md"));
+ chk("a recall of a sibling repeat activity lints clean",ok.status===0&&/ 0 errors/.test(ok.out),ok.out);
+ const out=lint(tmp("a.md",fx.replace("from=log fields","from=elsewhere fields")));
+ chk("a recall naming an activity outside the module is an error",out.errors.some(l=>/names 'elsewhere', which is not an activity of this module/.test(l)),out.out);
+ const once=lint(tmp("b.md",fx.replace("[!activity|log repeat]","[!activity|log]")));
+ chk("a recall of an activity that keeps no entries is an error",once.errors.some(l=>/keeps no entries/.test(l)),once.out);
+ const nofrom=lint(tmp("c.md",fx.replace("recall|moments from=log","recall|moments")));
+ chk("a recall with no from= is an error",nofrom.errors.some(l=>/no from=/.test(l)),nofrom.out);}
+
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);
