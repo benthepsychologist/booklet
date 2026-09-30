@@ -87,7 +87,7 @@ const thaw=()=>{global.Date=RealDate;};
 
 /* a booklet with something in every part of the snapshot */
 function fillRich(A,tag){
-  addMod(A,"end-of-day");
+  addMod(A,"daily-journal");
   const S=A.S,D=A.D;
   S.name="Sam "+tag;S.note="A note for "+tag+"\n\nsecond paragraph";S.mode="compact";
   S.now.items=[{kind:"move",text:"call Jo "+tag,since:"2026-09-01",starter:false},{kind:"exploring",text:"",since:"2026-09-02",starter:false}];
@@ -118,12 +118,12 @@ chk("the bar has nothing to export while no booklet is open",global.document.get
 
 // ---- two booklets with the same module keep separate answers -------------
 const a=await A.createBooklet();
-addMod(A,"end-of-day");
+addMod(A,"daily-journal");
 A.S.entries={eod:[{ts:"2026-09-20T10:00:00.000Z",blocker:"A's answer"}]};A.D.custom={eod:{blocker:"A's draft"}};A.saveLocal();
 const b=await A.createBooklet();
 chk("a new booklet starts empty, whatever the last one held",
   A.tplModules().length===0&&!A.S.entries.eod&&!(A.D.custom&&A.D.custom.eod));
-addMod(A,"end-of-day");
+addMod(A,"daily-journal");
 A.S.entries={eod:[{ts:"2026-09-21T10:00:00.000Z",blocker:"B's answer"}]};A.saveLocal();
 chk("each booklet has its own key",!!LS["booklet.b."+a.id]&&!!LS["booklet.b."+b.id]&&a.id!==b.id);
 chk("and neither key holds the other's answer",
@@ -192,7 +192,7 @@ thaw();
 // ---- removing a booklet ---------------------------------------------------
 wipe();A=boot();
 const n1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
-const n2=await A.createBooklet();addMod(A,"the-board");A.saveLocal();
+const n2=await A.createBooklet();addMod(A,"mensio-the-day");A.saveLocal();
 A.closeBooklet();
 A.removeBooklet(n1.id);
 chk("removing a booklet takes it off the list and deletes its data",
@@ -204,7 +204,7 @@ chk("and leaves the others as they were",!!LS["booklet.b."+n2.id]&&A.readLib().e
 wipe();A=boot();
 const v1=await A.createBooklet();addMod(A,"daily-journal");A.S.name="Ana";A.saveLocal();
 await sleep(5);                                  // so "last opened" differs by more than a clock tick
-const v2=await A.createBooklet();addMod(A,"the-board");
+const v2=await A.createBooklet();addMod(A,"mensio-the-day");
 A.editTemplate(t=>{t.head={title:{en:"Week by week",fr:"Semaine après semaine"}};});A.saveLocal();
 A.render();
 chk("inside a booklet, its home leads back out to the list",global.document.getElementById("btnHome").textContent==="← Your booklets");
@@ -300,7 +300,7 @@ global.location={hash:"",href:"file:///tmp/booklet.html"};
 global.history={state:null,replaceState(s,t,u){global.location.hash=u;}};
 A=boot();A.render();
 chk("a visit with no route lands on the list, and says so in the address",A.view===A.LIB_VIEW&&global.location.hash==="#/");
-const h1=await A.createBooklet();addMod(A,"end-of-day");A.saveLocal();
+const h1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
 chk("opening a booklet puts it in the address",global.location.hash==="#/b/"+encodeURIComponent(h1.id));
 global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/history";
 {const B2=boot();
@@ -308,8 +308,8 @@ global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/history";
  chk("and says what it restored, as a reload always has",B2.restoredAtBoot===true||B2.restoredAtBoot===false);}
 global.location.hash="#/";A.followRoute();
 chk("Back to #/ closes the booklet and shows the list",A.view===A.LIB_VIEW&&A.currentId===null);
-global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/eod";A.followRoute();
-chk("a route to an activity opens it",A.currentId===h1.id&&A.view==="eod");
+global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/journal";A.followRoute();
+chk("a route to an activity opens it",A.currentId===h1.id&&A.view==="journal");
 global.location.hash="#/b/nosuchbooklet";A.followRoute();
 chk("a route to a booklet this browser does not have falls back to the list",A.view===A.LIB_VIEW&&A.currentId===null);
 global.location.hash="#areas";A.followRoute();

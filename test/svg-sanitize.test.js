@@ -216,7 +216,7 @@ for(const d of ["modules","examples"]) for(const f of fs.readdirSync(path.join(R
     const w=o=>{if(Array.isArray(o)) return o.forEach(w);
       if(o&&typeof o==="object"){if(typeof o.svg==="string") figures.push([d+"/"+f+" "+o.id,o.svg]);Object.values(o).forEach(w);}};
     w(j);}}
-chk("the repository's own figures were found (modules, examples)",figures.length>=6,figures.length);
+chk("the repository's own figures were found (modules, examples)",figures.length>=4,figures.length);
 for(const [where,svg] of figures)
   chk(where+": sanitized is node-for-node what innerHTML drew",shape(sanitizeSvg(svg))===shape(nodesOf(svg)));
 {const W=JSON.parse(fs.readFileSync(path.join(R,"modules/mensio-check-in.md"),"utf8").match(/```booklet widget\n([\s\S]*?)\n```/)[1]);

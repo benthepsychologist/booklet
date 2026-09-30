@@ -140,16 +140,8 @@ console.log("# the heading, a list, a question and a tick-list read the same way
 chk("a widget's words missing in one language read the next language, one by one",
   (A.setLang("es-AR"),A.locBag({en:{h:"E",p:"EP"},es:{h:"S"}},{})).p==="EP"&&A.locBag({en:{h:"E",p:"EP"},es:{h:"S"}},{}).h==="S");
 A.setLang("en");
-{const dlText=moduleText("decision-log");
- // modules/ is v0.2 now, one language (English) per file; the French
- // case here is retired with it (see the note above section 1) — decision-log
- // itself still exercises a block named by its own words, in English only.
- const mod=(A.parseFile(dlText).template.modules||[])[0];
- for(const [l,h] of [["en","What else you considered"]]){show(mod,"decision",l);
-   chk(`decision-log [${l}]: its one-line list is headed by the block's own words`,byTag("h3").map(flat).includes(h),byTag("h3").map(flat).join(" | "));
-   /* the module's data, not the renderer: q named copy.decision.f.options,
-      which neither language had, so each line had no label at all */
-   chk(`decision-log [${l}]: and each line has its question's words`,nonBlank(A.Q("decision","options").label),JSON.stringify(A.Q("decision","options")));}}
+// The decision-log check sat here: a block named by its own words, in English.
+// modules/decision-log.md was removed (1dcf1f2). Deleted (Ben, 2026-09-29), not rewritten.
 function nonBlank(s){return typeof s==="string"&&s.trim().length>0;}
 
 // ---- 2a. the definition-list editor cites a source

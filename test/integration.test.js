@@ -39,56 +39,11 @@ function boot(){const API={};
   return API;}
 
 (async()=>{
-// ---- the router carries a module page's view -------------------------------
-console.log("# the address bar and a module with several activities");
-wipe();
-global.location={hash:"",href:"file:///tmp/booklet.html"};
-global.history={state:null,replaceState(s,t,u){global.location.hash=u;}};
-let A=boot();A.render();
-const b=await A.createBooklet();
-chk("the two-activity module installs",A.addModuleText(fs.readFileSync(path.join(__dirname,"..","modules","the-board.md"),"utf8")).ok);
-A.saveLocal();
-A.render();
-// The tab-title check used to sit here (adding end-of-day.md through
-// moduleFromText() — an earlier format only — and checking the tab combined both
-// modules' names). Deleted per Ben's ruling (2026-09-28), not rewritten.
-const mod=A.tplModules().find(m=>A.isMulti(m));
-const mv=A.moduleView(mod.id);
-chk("the module's page view carries a colon",mv==="module:example-the-board",mv);
-A.go(mv);
-const hash=global.location.hash;
-chk("opening the module page puts it in the address, encoded",
-  hash==="#/b/"+encodeURIComponent(b.id)+"/"+encodeURIComponent(mv),hash);
-chk("the view segment has no raw colon or slash in it",!/[:]/.test(hash.split("/").slice(3).join("/"))&&hash.split("/").length===4,hash);
-chk("and decodes back to the same view",A.parseRoute(hash).view===mv&&A.parseRoute(hash).id===b.id);
-chk("a module page view is a view the router accepts",A.knownView(mv));
-{const B2=boot();
- chk("a reload on the module page lands back on it",B2.currentId===b.id&&B2.view===mv,B2.view);}
+// The address-bar checks for a module with several activities sat here. They
+// loaded modules/the-board.md, which was removed (1dcf1f2), and no module left in
+// modules/ holds more than one activity. Deleted (Ben, 2026-09-29), not rewritten.
+let A;
 
-// Back from an activity to the module page, then to the booklet's home
-A.go("board");
-const actHash=global.location.hash;
-chk("an activity inside the module has its own address",actHash==="#/b/"+encodeURIComponent(b.id)+"/board",actHash);
-{const B3=boot();
- chk("a reload on that activity lands back on it",B3.currentId===b.id&&B3.view==="board",B3.view);}
-global.location.hash=hash;A.followRoute();
-chk("Back to the module page's address shows the module page",A.view===mv,A.view);
-global.location.hash="#/b/"+encodeURIComponent(b.id);A.followRoute();
-chk("Back again reaches the booklet's home",A.view==="home"&&A.currentId===b.id,A.view);
-
-// a fragment spelled differently is still the same place
-global.location.hash="#/b/"+encodeURIComponent(b.id)+"/module:example-the-board";A.followRoute();
-chk("a hand-typed, unencoded module view opens the module page",A.view===mv,A.view);
-{const before=global.location.hash;A.render();
- chk("and is recognised as already in place, not routed again",global.location.hash===before,global.location.hash);}
-
-// a module view for a module this booklet does not hold
-global.location.hash="#/b/"+encodeURIComponent(b.id)+"/"+encodeURIComponent("module:nobody/here");A.followRoute();
-chk("a module view the booklet lacks falls back to its home",A.view==="home",A.view);
-chk("an unknown module view is not a known view",!A.knownView("module:nobody/here"));
-// a malformed escape is not a route at all
-chk("a malformed escape does not throw and names no booklet",A.parseRoute("#/b/%E0%A4%A/x").id===null);
-delete global.location;delete global.history;
 
 // ---- the late string groups ride the language chain -------------------------
 console.log("# interface groups declared beside their views");
