@@ -288,19 +288,21 @@ A `hint` or `solution` callout directly after a question belongs to it. Fold the
 ### Recall: showing another activity's kept entries
 
 ```markdown
-> [!recall|moments from=log fields=situation,ease limit=5] Your moments so far
+## Your moments so far
+
+![[#^log]]
 ```
 
-A `recall` line draws the entries a reader has kept in another activity, read-only, newest first. It takes no answer and owns no place in the records.
+An embed alone in its paragraph, whose id is an **activity** or a **question** of this file, shows what the reader has kept there. It is read-only, newest first, and takes no answer.
 
-- `from=` names the activity to read. It is required, and it must be an activity **in the same module** that keeps entries (one marked `repeat` or `daily`). A recall that names an activity elsewhere, or one that keeps no entries, is refused: a linter reports an error and a renderer draws nothing for it.
-- `fields=` lists which of that activity's questions to show, by id, comma-separated with no spaces. Leave it out to show them all.
-- `limit=` shows only the newest N entries.
-- The text after the bracket is a heading drawn above the entries.
-- With nothing kept yet, the reader sees a short line saying so.
-- A recall reads *kept* entries only, never a draft in progress.
+- `![[#^log]]` (an activity id) draws each kept entry of that activity with all its questions. `![[#^situation]]` (a question id) draws just that question's answers, each with its date.
+- The heading above it is ordinary prose. There are no settings.
+- The activity must be in the **same module**, and it must keep entries (one marked `repeat` or `daily`). A recall that points into another module, or at an activity that keeps nothing, is refused: the linter reports an error and a renderer draws nothing for it.
+- It reads *kept* entries only, never a draft in progress. With nothing kept yet, the reader sees a short line saying so.
+- This is the same embed that places a figure. What it points at decides the meaning: a fenced block with a `^id` is a figure or a widget's data, an activity or question id is a recall. An id used for both is an error (ids are unique across the file).
+- Obsidian looks for a `^id` block and will not find an activity, so it shows its usual "unable to find" note there; GitHub shows the embed as text. See section 10.
 
-This is the read that a widget will use too when it draws the reader's own items. The `of=` setting on `choice` and `multi` (options from the reader's earlier answers) is a separate, not yet built, use of the same rule.
+The same rule is how a widget will name the entries it draws. The `of=` setting on `choice` and `multi` (options from the reader's earlier answers) is a separate, not yet built, use of the same idea.
 
 ### Citations
 

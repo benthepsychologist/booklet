@@ -9,7 +9,7 @@ version: "0.1"
 # Log and look back
 
 A test fixture: one activity that keeps entries, and a second that shows them
-back with a recall.
+back with a recall (an embed alone in its paragraph).
 
 > [!module|fixture-recall] Log and look back
 
@@ -28,8 +28,12 @@ A log, and a page that reads the log.
 
 > [!activity|look] Look back
 
-> [!recall|moments from=log fields=situation,ease limit=5] Your moments so far
+## Your moments so far
 
-> [!recall|all-of-it from=log] Everything you kept
+![[#^log]]
+
+## Just what happened
+
+![[#^situation]]
 
 > [!module|fixture-recall end] End of Log and look back

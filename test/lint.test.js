@@ -136,17 +136,21 @@ const warnsOf=r=>r.out.split("\n").filter(l=>l.startsWith("warn"));
 // is-shared version of it, and needs rebuilding against a real v0.2 module's
 // inline ```booklet widget``` fence.
 
-// ---- recall: read within the module, from an activity that keeps entries ----
+// ---- recall: an embed alone in its paragraph, read within the module ----
 {const os=require("os");const fx=fs.readFileSync(path.join(FX,"module-recall.md"),"utf8");
  const tmp=(name,text)=>{const f=path.join(fs.mkdtempSync(path.join(os.tmpdir(),"bk-")),name);fs.writeFileSync(f,text);return f;};
  const ok=lint(path.join(FX,"module-recall.md"));
- chk("a recall of a sibling repeat activity lints clean",ok.status===0&&/ 0 errors/.test(ok.out),ok.out);
- const out=lint(tmp("a.md",fx.replace("from=log fields","from=elsewhere fields")));
- chk("a recall naming an activity outside the module is an error",out.errors.some(l=>/names 'elsewhere', which is not an activity of this module/.test(l)),out.out);
+ chk("recalls of a sibling repeat activity, and of one of its questions, lint clean",ok.status===0&&/ 0 errors/.test(ok.out),ok.out);
+ const two=fx.replace("> [!module|fixture-recall end] End of Log and look back",
+   "> [!module|fixture-recall end] End of Log and look back\n\n> [!module|other] Other\n\n> [!activity|elsewhere repeat] Elsewhere\n\n> [!text|far] Far away\n\n> [!module|other end] End of Other").replace("![[#^log]]","![[#^elsewhere]]");
+ const out=lint(tmp("a.md",two));
+ chk("a recall pointing into another module is an error",out.errors.some(l=>/points outside this module/.test(l)),out.out);
  const once=lint(tmp("b.md",fx.replace("[!activity|log repeat]","[!activity|log]")));
  chk("a recall of an activity that keeps no entries is an error",once.errors.some(l=>/keeps no entries/.test(l)),once.out);
- const nofrom=lint(tmp("c.md",fx.replace("recall|moments from=log","recall|moments")));
- chk("a recall with no from= is an error",nofrom.errors.some(l=>/no from=/.test(l)),nofrom.out);}
+ const fig=lint(tmp("c.md",fx.replace("![[#^situation]]","![[#^some-figure]]")));
+ const clash=lint(tmp("d.md",fx.replace("![[#^situation]]","![[#^situation]]\n\n```json\n{}\n```\n^situation")));
+ chk("a block id that is also a question id is an error, so an embed is never ambiguous",clash.errors.some(l=>/also the id of an activity or question/.test(l)),clash.out);
+ chk("an embed of an id that is neither an activity nor a question is not this rule's business",fig.errors.length===0,fig.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

@@ -4158,10 +4158,9 @@ function renderBlock(b,draft,modeId){const t=T[lang];
       return box;}
     /* a v0.2 booklet's prose, drawn from its Markdown: see mdNodes */
     case "recall":{const box=el("div",{class:"pblock recall"});
-      if(nonEmpty(b.title)) box.append(el("h3",{class:"bhead"},b.title));
       const found=recallEntries(b.from,modeId);
       if(!found.length){box.append(el("p",{class:"hint"},RC().empty));return box;}
-      (b.limit?found.slice(0,b.limit):found).forEach(e=>box.append(recallCard(e,b)));
+      found.forEach(e=>box.append(recallCard(e,b)));
       return box;}
     case "markdown":{const box=el("div",{class:"pblock md"});
       box.append(...mdNodes(String(b.text||""),{idPrefix:"md-",mark:id=>{const c=citeText("[^"+id+"]",modeId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}));
@@ -6152,6 +6151,21 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
   const copyOf=()=>{const m=holderOfAct(act);const c=m.copy[L];c[act.id]=c[act.id]||{};return c[act.id];};
   const holderOfAct=a=>modules.find(m=>m.activities.includes(a));
   const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
+  /* An embed alone in its paragraph, ![[#^id]], whose id is an activity or a
+     question of this file, is a recall: it shows that activity's kept entries
+     (or that one question's answers), read-only. Every other embed is left as
+     prose. The ids are gathered first, so a recall may come before the
+     activity it names. */
+  const refs=new Map();{let cur=null;
+    for(const it of items){if(it.t!=="line") continue;
+      if(it.kind==="activity"){cur=it.id||slugify(it.title||fm.title||"");if(cur) refs.set(cur,{from:cur});}
+      else if(QUESTION_KINDS.has(it.kind)&&it.id&&cur) refs.set(it.id,{from:cur,field:it.id});}}
+  const RECALL_PARA=/^[ \t]*!\[\[#\^([A-Za-z0-9-]+)\]\][ \t]*$/;
+  const splitRecalls=text=>{const out=[];let run=[];
+    for(const para of text.split(/\n{2,}/)){const m=para.match(RECALL_PARA);
+      if(m&&refs.has(m[1])){if(run.length) out.push({text:run.join("\n\n")});run=[];out.push({ref:refs.get(m[1])});}
+      else run.push(para);}
+    if(run.length) out.push({text:run.join("\n\n")});return out;};
   for(const it of items){
     if(it.t==="fence"){
       const info=it.info.split(/\s+/);
@@ -6174,7 +6188,10 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
       const strip=stripFootnoteDefs(it.text);
       const owner=mod||(act&&holderOfAct(act));if(owner) owner.__footnotes.push(...strip.defs);
       if(!act){if(mod&&strip.text) mod.__intro.push(strip.text);continue;}
-      if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;continue;}
+      if(strip.text) splitRecalls(strip.text).forEach(part=>{
+        if(part.ref) put({id:"recall"+(++seq),type:"recall",from:part.ref.from,fields:part.ref.field?[part.ref.field]:undefined});
+        else if(part.text.trim()) put({id:"md"+(++seq),type:"markdown",text:part.text});});
+      lastQ=null;continue;}
     /* a Booklet line */
     const k=it.kind,where="line "+it.line;
     if(k==="data"){section="data";act=null;continue;}
@@ -6187,15 +6204,6 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
       if(mod) problems.push(where+": “"+it.id+"” opens before “"+mod.id+"” is closed");
       claim(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;continue;}
     if(k==="activity"){newActivity(it,it.title,it.line);lastQ=null;continue;}
-    /* a recall shows another activity's kept entries, read-only: it owns no
-       answer, so it takes no id of its own (see SPEC.md, section 8) */
-    if(k==="recall"){
-      if(!it.set.from){problems.push(where+": this recall has no from= (name the activity whose kept entries it shows)");continue;}
-      if(it.id) claim(it.id,where);page();
-      const b={id:it.id||"recall"+(++seq),type:"recall",from:it.set.from,title:it.title||undefined};
-      if(it.set.fields) b.fields=it.set.fields.split(",").map(x=>x.trim()).filter(Boolean);
-      if(it.set.limit!==undefined&&Number(it.set.limit)>0) b.limit=Math.floor(Number(it.set.limit));
-      put(b);lastQ=null;continue;}
     if(QUESTION_KINDS.has(k)){
       if(!it.id){problems.push(where+": this "+k+" question has no id, so its answer would have nowhere to go");continue;}
       claim(it.id,where);page();const hint=hintOf(it.body);
@@ -6234,8 +6242,8 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
     for(const a of m.activities) for(const pg of a.pages) pg.blocks=pg.blocks.filter(b=>{
       if(b.type!=="recall") return true;
       const src=byId.get(b.from);
-      if(!src){problems.push("the recall “"+b.id+"” in “"+a.id+"” names “"+b.from+"”, which is not an activity of this module, so it was refused");return false;}
-      if(src.kind!=="entry"){problems.push("the recall “"+b.id+"” in “"+a.id+"” names “"+b.from+"”, which keeps no entries (only a repeat activity does), so it was refused");return false;}
+      if(!src){problems.push("a recall in “"+a.id+"” points at “"+b.from+"”, which is not an activity of this module, so it was refused");return false;}
+      if(src.kind!=="entry"){problems.push("a recall in “"+a.id+"” points at “"+b.from+"”, which keeps no entries (only a repeat activity does), so it was refused");return false;}
       return true;});}
   /* the shapes this reader already draws from: one page is `blocks`,
      one activity is `mode` */

@@ -1379,7 +1379,7 @@ def check_format(f, text, fm):
             i += 1
         i += 1
     ids, block_ids, embeds, acts, entry_refs = {}, {}, [], set(), []
-    act_info, recalls = {}, []
+    act_info, q_owner, cur_act, embeds_bare = {}, {}, None, []
     open_mod, open_line, section, seen_activity = None, 0, "content", False
     while i < len(lines):
         ln, n = lines[i], i + 1
@@ -1433,6 +1433,10 @@ def check_format(f, text, fm):
                     warn(f, f"line {n}: `booklet {what}` is not a block this format defines")
             i = (m if bid else k) + 1
             continue
+        bare = re.match(r'^[ \t]*!\[\[#\^([A-Za-z0-9-]+)\]\][ \t]*$', ln)
+        if bare and section == "content" \
+                and (i == 0 or not lines[i - 1].strip()) and (i + 1 >= len(lines) or not lines[i + 1].strip()):
+            embeds_bare.append((n, bare.group(1), open_mod))
         mm = CALLOUT_LINE.match(ln)
         if mm:
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
@@ -1460,13 +1464,10 @@ def check_format(f, text, fm):
                     if w["id"]:
                         acts.add(w["id"])
                         act_info[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
-                elif kind == "recall":
-                    # shows another activity's kept entries, read-only; owns no answer
-                    if not w["set"].get("from"):
-                        err(f, f"{where}: this recall has no from= (name the activity whose kept entries it shows)")
-                    else:
-                        recalls.append((n, w["set"]["from"], open_mod))
+                        cur_act = w["id"]
                 elif kind in QUESTION_KINDS:
+                    if w["id"] and cur_act:
+                        q_owner[w["id"]] = cur_act
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go")
                     elif kind not in DRAWN_QUESTION_KINDS:
@@ -1503,13 +1504,23 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")
         elif not block_ids[ref].lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
-    for n, src, mod in recalls:
+    # An embed alone on its line whose id is an activity or a question is a recall:
+    # it reads within its own module, from an activity that keeps entries.
+    # Any other embed (a figure's ^id) is not this rule's business.
+    for bid_, info_ in block_ids.items():
+        if bid_ in ids:
+            err(f, f"the block id ^{bid_} is also the id of an activity or question (line {ids[bid_]}); "
+                   f"an embed could not tell which one it means")
+    for n, ref, mod in embeds_bare:
+        src = ref if ref in act_info else q_owner.get(ref)
+        if src is None:
+            continue
         info = act_info.get(src)
         if info is None or info[0] != mod:
-            err(f, f"line {n}: the recall names {src!r}, which is not an activity of this module "
+            err(f, f"line {n}: the recall ![[#^{ref}]] points outside this module "
                    f"(a recall reads within its own module only)")
         elif not info[1]:
-            err(f, f"line {n}: the recall names {src!r}, which keeps no entries (only a repeat activity does)")
+            err(f, f"line {n}: the recall ![[#^{ref}]] points at {src!r}, which keeps no entries (only a repeat activity does)")
     for n, ref in entry_refs:
         if ref not in acts:
             warn(f, f"line {n}: records for {ref!r}, which no activity line names")
