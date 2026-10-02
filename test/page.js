@@ -7,8 +7,8 @@
 // evaluates the renderer's one <script> afresh against the same in-memory
 // localStorage, so a boot is a real page load.
 //
-// Used by undefined.test.js and menus.test.js. Not a test itself (the runner
-// only runs *.test.js).
+// Used by the *.test.js suites. Not a test itself (the runner only runs
+// *.test.js).
 require("./harness.js");                     // the storage stub and the globals the page expects
 const fs=require("fs");
 const R=__dirname+"/..";
@@ -52,13 +52,12 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get view(){return view},set view(v){view=v},
-  get TPL(){return TPL}, get S(){return S}, get D(){return D}, set editing(v){editing=v}, get editing(){return editing},
-  T, TSRC, BLOCK_KINDS, KINDS, CONTACTS, TODAY_KEYS, TODAY_LISTS, BODY_KEYS, AREA_KEYS, CALLOUT_KINDS, SOURCE_KINDS,
+  get TPL(){return TPL}, get S(){return S}, get D(){return D},
+  T, TSRC, CALLOUT_KINDS,
   leafPaths, langParity, createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
   moduleTextProblems, editTemplate, render,
-  loadText, parseFile, applyParsed, toMarkdown, allModules, tplModules, tplModes, tplWidgets, isMulti,
-  moduleView:id=>MODULE_VIEW+id, openExport, openLock, openUnlock, openSafety, maybeRemind, blankBlock,
-  menuOf, draftFor, keptFor, boardStore, finalizeEntry, pickLang
+  loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, tplWidgets, isMulti,
+  moduleView:id=>MODULE_VIEW+id, openExport, draftFor, keptFor, finalizeEntry, pickLang
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};

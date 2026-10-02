@@ -21,7 +21,7 @@ Body, feelings, thoughts — noticed, named, kept.
 
 Notice, name, keep. Nothing here needs to be explained or fixed.
 
-> [!widget|body skippable] Body
+> [!widget|body] Body
 > ![[#^body-map]]
 
 > [!widget|emotions] Feelings
@@ -245,8 +245,6 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
   "pick": "What is it like there?",
   "clear": "Clear this one",
   "none": "Nothing selected yet — tap the figure, or one of the buttons under it.",
-  "skip": "Skip the body this time",
-  "unskip": "Use the body map",
   "sideLbl": "Front or back"
  }
 }

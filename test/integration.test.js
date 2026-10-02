@@ -34,7 +34,7 @@ function boot(){const API={};
   get currentId(){return currentId}, get TPL(){return TPL}, get S(){return S},
   LIB_VIEW, T, TSRC, buildTables, libT, MW, langParity, toMarkdown, parseFile,
   createBooklet, addModule, addModuleText, saveLocal, render, go, followRoute, homeButton,
-  moduleView, moduleForView, modesOf, isMulti, routeNow, parseRoute, knownView, tplModules
+  moduleView, moduleForView, modesOf, isMulti, routeNow, parseRoute, knownView, allModules
 }));`);
   return API;}
 

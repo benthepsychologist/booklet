@@ -54,17 +54,14 @@ function boot(){const API={};
   get S(){return S},set S(v){S=v}, get D(){return D},set D(v){D=v}, get TPL(){return TPL},set TPL(v){TPL=v},
   get lang(){return lang},set lang(v){lang=v}, get view(){return view},set view(v){view=v},
   get dirty(){return dirty},set dirty(v){dirty=v}, get unsavedEntries(){return unsavedEntries},set unsavedEntries(v){unsavedEntries=v},
-  get editing(){return editing},set editing(v){editing=v}, get exportHandle(){return exportHandle},set exportHandle(v){exportHandle=v},
   get pending(){return pending},set pending(v){pending=v}, get boardOpen(){return boardOpen},set boardOpen(v){boardOpen=v},
-  get histFilter(){return histFilter},set histFilter(v){histFilter=v}, get openChip(){return openChip},
-  get remindShown(){return remindShown},set remindShown(v){remindShown=v},
-  get currentId(){return currentId}, get keyedMode(){return keyedMode}, get storageOk(){return storageOk},
+  get openChip(){return openChip},set openChip(v){openChip=v},
+  get currentId(){return currentId}, get storageOk(){return storageOk},
   get LIB(){return LIB}, get restoredAtBoot(){return restoredFromBrowser},
-  LIB_VIEW, emptyS, emptyToday, emptyCheckin, emptyArea,
+  LIB_VIEW, emptyS, emptyD,
   readLib, addEntry, openBooklet, clearLocal, closeBooklet, removeBooklet, createBooklet, saveLocal, loadLocal, mark, flushSave,
-  toMarkdown, parseFile, applyParsed, addModule, addModuleText, editTemplate, tplModules, render, renderBar, loadText,
+  toMarkdown, parseFile, applyParsed, addModule, addModuleText, editTemplate, allModules, render, renderBar, loadText,
   followRoute, homeButton, bookletName, finalizeEntry,
-  loadPreset, dayPicker,
   orphanSaveTimer(){saveTimer=null;}      // a timer whose handle was lost: only bookletGen can stop it now
 }));`);
   return API;}
@@ -89,17 +86,10 @@ const thaw=()=>{global.Date=RealDate;};
 function fillRich(A,tag){
   addMod(A,"daily-journal");
   const S=A.S,D=A.D;
-  S.name="Sam "+tag;S.note="A note for "+tag+"\n\nsecond paragraph";S.mode="compact";
-  S.now.items=[{kind:"move",text:"call Jo "+tag,since:"2026-09-01",starter:false},{kind:"exploring",text:"",since:"2026-09-02",starter:false}];
-  S.areas=[{...A.emptyArea(),label:"Work "+tag,matters:"it matters"},{...A.emptyArea(),matters:"no label yet"}];
-  S.archive=[{date:"2026-09-03",kind:"move",area:"",text:"old · thing "+tag,outcome:"done"}];
-  S.q={"today.mind":{label:"Custom "+tag+"?",hint:"h",options:["a","b"]}};
   S.entries={eod:[{ts:"2026-09-20T10:00:00.000Z",blocker:"meetings "+tag}]};
-  S.today=[{...A.emptyToday(),ts:"2026-09-21T10:00:00.000Z",mind:"today "+tag}];
-  S.checkins=[{...A.emptyCheckin(),ts:"2026-09-22T09:00:00.000Z",other:"calm "+tag}];
-  S.goodday={needs:["rest "+tag]};S.page={blocks:[{id:"b1",type:"prose",text:"hello "+tag}]};
-  S.prefs.noRemind=true;S.emo.extra={slog:["tired "+tag]};S.person.email=tag+"@example.invalid";
-  D.today.mind="draft "+tag;D.custom={eod:{blocker:"half-typed "+tag}};
+  S.answers={note:"an answer for "+tag+"\n\nsecond paragraph",tags:["one "+tag,"two"]};
+  D.custom={eod:{blocker:"half-typed "+tag}};
+  A.openChip={eod:"2026-09-20T10:00:00.000Z"};
   A.lang="fr";A.dirty=true;A.unsavedEntries=3;}
 const snapOf=A=>JSON.parse(JSON.stringify({S:A.S,D:A.D,TPL:A.TPL,lang:A.lang,dirty:A.dirty,unsavedEntries:A.unsavedEntries}));
 
@@ -122,7 +112,7 @@ addMod(A,"daily-journal");
 A.S.entries={eod:[{ts:"2026-09-20T10:00:00.000Z",blocker:"A's answer"}]};A.D.custom={eod:{blocker:"A's draft"}};A.saveLocal();
 const b=await A.createBooklet();
 chk("a new booklet starts empty, whatever the last one held",
-  A.tplModules().length===0&&!A.S.entries.eod&&!(A.D.custom&&A.D.custom.eod));
+  A.allModules().length===0&&!A.S.entries.eod&&!(A.D.custom&&A.D.custom.eod));
 addMod(A,"daily-journal");
 A.S.entries={eod:[{ts:"2026-09-21T10:00:00.000Z",blocker:"B's answer"}]};A.saveLocal();
 chk("each booklet has its own key",!!LS["booklet.b."+a.id]&&!!LS["booklet.b."+b.id]&&a.id!==b.id);
@@ -139,14 +129,14 @@ chk("reopening B finds B's answer, and only B's",A.S.entries.eod.length===1&&A.S
 
 // ---- a save scheduled before a switch cannot land in the other booklet ----
 A.openBooklet(a.id);
-A.S.note="typed in A just before leaving";A.mark();          // the 400ms save is pending
+A.S.answers.note="typed in A just before leaving";A.mark();          // the 400ms save is pending
 A.openBooklet(b.id);
 chk("leaving A writes A's pending save to A's own key",LS["booklet.b."+a.id].includes("typed in A just before leaving"));
 await sleep(500);
 chk("and it never reaches B, not even after the timer would have fired",!LS["booklet.b."+b.id].includes("typed in A just before leaving"));
-chk("B in memory is untouched by it",A.S.note!=="typed in A just before leaving");
+chk("B in memory is untouched by it",A.S.answers.note!=="typed in A just before leaving");
 A.openBooklet(a.id);
-A.S.note="stale";A.mark();A.orphanSaveTimer();                // lose the handle, so no flush can clear it
+A.S.answers.note="stale";A.mark();A.orphanSaveTimer();                // lose the handle, so no flush can clear it
 A.openBooklet(b.id);
 const bBefore=LS["booklet.b."+b.id];
 await sleep(500);
@@ -155,16 +145,15 @@ chk("a save timer that outlives its booklet does nothing when it fires",
 
 // ---- a switch clears everything that belongs to a booklet ----------------
 A.openBooklet(a.id);
-A.exportHandle={name:"a.md"};A.pending={ok:true};A.editing=true;A.boardOpen="x";A.histFilter="today";A.remindShown=true;
-A.view="history";
+A.pending={ok:true};A.boardOpen="x";A.openChip={eod:"x"};
+A.view="eod";
 A.openBooklet(b.id);
-chk("exportHandle is cleared on a switch, so B can never be written into A's file",A.exportHandle===null);
-chk("and so is the rest: merge dialog, edit mode, board, history filter, reminder, view",
-  A.pending===null&&A.editing===false&&A.boardOpen===null&&A.histFilter==="all"&&A.remindShown===false&&A.view==="home");
+chk("the merge dialog, the open card, the open entry and the view are cleared on a switch",
+  A.pending===null&&A.boardOpen===null&&Object.keys(A.openChip).length===0&&A.view==="home");
 A.openBooklet(a.id);
 A.editTemplate(t=>{t.head={title:{en:"A's own design"}};});A.saveLocal();
 const c=await A.createBooklet();
-chk("the next booklet opens on its own design, never the last one's",A.tplModules().length===0&&!(A.TPL.head||{}).title);
+chk("the next booklet opens on its own design, never the last one's",A.allModules().length===0&&!(A.TPL.head||{}).title);
 
 // ---- the round trip keeps everything the old snapshot held ---------------
 wipe();A=boot();
@@ -181,7 +170,7 @@ for(const k of Object.keys(before))
 // ---- no earlier save format is adopted — no compat, no exceptions ---------
 wipe();
 freeze("2026-09-26T12:00:00Z");
-const legacyRaw=JSON.stringify({S:H.emptyS(),D:{today:H.emptyToday(),checkin:H.emptyCheckin()},
+const legacyRaw=JSON.stringify({S:H.emptyS(),D:{custom:{}},
   TPL:{booklet:1,modules:[]},lang:"en",dirty:false,unsavedEntries:0});
 wipe();LS[LEGACY]=legacyRaw;                   // exactly what every earlier version left behind
 {const E=boot();
@@ -202,7 +191,7 @@ chk("and leaves the others as they were",!!LS["booklet.b."+n2.id]&&A.readLib().e
 
 // ---- the list view, drawn and clicked through the DOM stub ----------------
 wipe();A=boot();
-const v1=await A.createBooklet();addMod(A,"daily-journal");A.S.name="Ana";A.saveLocal();
+const v1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
 await sleep(5);                                  // so "last opened" differs by more than a clock tick
 const v2=await A.createBooklet();addMod(A,"the-day");
 A.editTemplate(t=>{t.head={title:{en:"Week by week",fr:"Semaine après semaine"}};});A.saveLocal();
@@ -213,7 +202,7 @@ chk("and that button closes it and shows the list",A.view===A.LIB_VIEW&&A.curren
 let shown=texts(main());
 chk("the list names each booklet: its own headline, or its modules",
   /Week by week/.test(shown)&&/Daily journal|daily-journal/i.test(shown),shown.slice(0,300));
-chk("with who it is for, and when it was last opened",/For Ana/.test(shown)&&/Last opened/.test(shown));
+chk("with when it was last opened",/Last opened/.test(shown));
 chk("most recently opened first",shown.indexOf("Week by week")<shown.search(/Daily journal/i));
 A.lang="fr";A.render();
 chk("the list speaks French too",/Vos carnets/.test(texts(main()))&&/Semaine après semaine/.test(texts(main())));
@@ -226,7 +215,7 @@ A.lang="en";A.render();
  chk("Keep it backs out and deletes nothing",!!LS["booklet.b."+v2.id]&&!/from this browser\?/.test(texts(card)));
  click(button(card,"Remove"));click(button(card,"Remove it"));
  chk("Remove it deletes that booklet and redraws the list",
-   !("booklet.b."+v2.id in LS)&&!/Week by week/.test(texts(main()))&&/For Ana/.test(texts(main())));}
+   !("booklet.b."+v2.id in LS)&&!/Week by week/.test(texts(main()))&&/Daily journal|daily-journal/i.test(texts(main())));}
 click(button(main(),"Open"));
 chk("Open goes into the booklet",A.currentId===v1.id&&A.view==="home");
 A.clearLocal();                                  // what "Clear everything on this page" runs
@@ -239,59 +228,29 @@ A.loadText(exampleText);
 let L1=A.readLib();
 chk("loading a file on the list adds it as a new booklet and opens it",
   L1.entries.length===1&&L1.entries[0].from==="file"&&A.currentId===L1.entries[0].id
-  &&A.tplModules().map(m=>m.id).join(",")==="mensio-check-in");
+  &&A.allModules().map(m=>m.id).join(",")==="mensio-check-in");
 A.homeButton();A.loadText(exampleText);
 chk("the same file loaded again is a second booklet, deliberately",A.readLib().entries.length===2);
-A.S.today=[{...A.emptyToday(),ts:"2026-09-23T08:00:00.000Z",mind:"x"}];A.saveLocal();
+A.S.answers.x="kept";A.saveLocal();
 A.loadText(exampleText);
 chk("inside a booklet, Load still offers add-or-replace and adds no booklet",A.pending!==null&&A.readLib().entries.length===2);
 
-// ---- a module file is an activity to add, not a booklet ----------------------
-// Every module file (modules/*.md, the test fixtures) carries a "## Adding it to
-// a booklet" section of instructions for people. Read as a booklet, that
-// heading was reported as a part of the file that could not be read, and the
-// module was adopted as a whole booklet design. Inside a booklet, Replace would
-// have swapped the booklet for that one activity, and Add left it out.
-{const fx=n=>fs.readFileSync(R+"/test/fixtures/"+n,"utf8");
- const reading=fx("module-reading.md");
- const keptPrepend=main().prepend;
+// ---- a module file is a booklet like any other ------------------------------
+// A v0.2 module file (the fixtures, and what the registry serves) is an
+// ordinary booklet: on the list it becomes a booklet of its own, and inside a
+// booklet that holds work it asks whether to add or replace.
+{const keptPrepend=main().prepend;
  const shownMsg=()=>{const m=main();m.prepend=(...k)=>m.children.unshift(...k);};   // the stub's prepend keeps nothing
- const veil=global.document.getElementById("veilLoad"),loadMsg=global.document.getElementById("loadMsg");
  wipe();A=boot();A.render();shownMsg();
- A.loadText(reading);
- const L=A.readLib(),said=texts(main());
- chk("a module file loaded on the list starts a new booklet holding that activity, and opens it",
-   L.entries.length===1&&A.currentId===L.entries[0].id&&A.view==="home"&&A.tplModules().map(m=>m.id).join(",")==="fixture/reading-tides",
-   JSON.stringify({n:L.entries.length,mods:A.tplModules().map(m=>m.id)}));
- chk("and says so plainly: an activity, not a whole booklet, and how to add it to another",
-   /“How tides work” is an activity \(a module\), not a whole booklet/.test(said)&&/open that booklet and use “Load” there/.test(said),said.slice(0,240));
- chk("with no warning that a part of the file could not be read",!/could not be read/.test(said)&&!/Adding it to a booklet/.test(said),said.slice(0,240));
- chk("and no leftover talk of check-ins or of the file's own booklet design",!/Loaded 0 check-ins/.test(said)&&!/carries its own booklet design/.test(said));
- // inside a booklet that already has work in it
- wipe();A=boot();
- const host=await A.createBooklet();addMod(A,"daily-journal");
- A.S.today=[{...A.emptyToday(),ts:"2026-09-23T08:00:00.000Z",mind:"kept"}];A.S.note="my note";A.saveLocal();
- shownMsg();A.loadText(reading);
- chk("inside a booklet, a module file is added to it: no add-or-replace question, no new booklet",
-   A.pending===null&&A.currentId===host.id&&A.readLib().entries.length===1);
- chk("and everything the booklet held is still there",
-   A.tplModules().map(m=>m.id).join(",")==="example-daily-journal,fixture/reading-tides"&&A.S.today.length===1&&A.S.note==="my note",
-   A.tplModules().map(m=>m.id).join(","));
- chk("and it says it was added to this booklet",/has been added to this booklet/.test(texts(main())),texts(main()).slice(0,200));
- {const B2=boot();B2.openBooklet(host.id);
-  chk("which a reload keeps",B2.tplModules().map(m=>m.id).join(",")==="example-daily-journal,fixture/reading-tides"&&B2.S.note==="my note");}
- A.loadText(reading);
- chk("loading the same module again keeps one copy of it",A.tplModules().filter(m=>m.id==="fixture/reading-tides").length===1);
- // a module file whose module is refused
- wipe();A=boot();A.render();veil.setAttribute("open","");loadMsg.textContent="";
- A.loadText(fx("module-mode-and-activities.md"));
- chk("a module file the renderer refuses leaves no empty booklet behind",A.readLib().entries.length===0&&A.view===A.LIB_VIEW);
- chk("and the dialog says why",/mode/.test(loadMsg.textContent)&&/activities/.test(loadMsg.textContent),loadMsg.textContent);
- veil.removeAttribute("open");
- // Spanish
- wipe();A=boot();A.lang="es";A.render();shownMsg();
- A.loadText(reading);
- chk("the explanation is in the reader's language",/“Cómo funcionan las mareas” es una actividad \(un módulo\)/.test(texts(main()))&&/usa “Cargar”/.test(texts(main())),texts(main()).slice(0,200));
+ A.loadText(modText("daily-journal"));
+ const L=A.readLib();
+ chk("a module file loaded on the list starts a new booklet holding that module, and opens it",
+   L.entries.length===1&&A.currentId===L.entries[0].id&&A.view==="home"&&A.allModules().map(m=>m.id).join(",")==="example-daily-journal",
+   JSON.stringify({n:L.entries.length,mods:A.allModules().map(m=>m.id)}));
+ chk("with no warning that a part of the file could not be read",!/could not be read/.test(texts(main())),texts(main()).slice(0,240));
+ A.S.answers.x="kept";A.saveLocal();
+ A.loadText(modText("the-day"));
+ chk("inside a booklet that holds work, a file asks first: add or replace",A.pending!==null&&A.readLib().entries.length===1);
  main().prepend=keptPrepend;}
 
 // ---- the address bar: reload returns, Back walks out ------------------------
@@ -302,9 +261,9 @@ A=boot();A.render();
 chk("a visit with no route lands on the list, and says so in the address",A.view===A.LIB_VIEW&&global.location.hash==="#/");
 const h1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
 chk("opening a booklet puts it in the address",global.location.hash==="#/b/"+encodeURIComponent(h1.id));
-global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/history";
+global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/journal";
 {const B2=boot();
- chk("a reload returns to the booklet and the view it was on",B2.currentId===h1.id&&B2.view==="history");
+ chk("a reload returns to the booklet and the view it was on",B2.currentId===h1.id&&B2.view==="journal");
  chk("and says what it restored, as a reload always has",B2.restoredAtBoot===true||B2.restoredAtBoot===false);}
 global.location.hash="#/";A.followRoute();
 chk("Back to #/ closes the booklet and shows the list",A.view===A.LIB_VIEW&&A.currentId===null);
@@ -318,90 +277,13 @@ global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/nosuchactivity";A.follow
 chk("a route to an activity the booklet lacks falls back to its home",A.currentId===h1.id&&A.view==="home");
 delete global.location;delete global.history;
 
-// ---- a wrapper key: one booklet, no list -------------------------------------
-const origGet=global.document.getElementById;
-const withWrapper=cfg=>{global.document.getElementById=id=>id==="booklet-wrapper"?{textContent:JSON.stringify(cfg)}:origGet(id);};
-const noWrapper=()=>{global.document.getElementById=origGet;};
-/* Leaving a page, as boot() and wipe() model it, with the orderings the flaky
-   runs hit by chance now forced. A page with no booklet open (the single-
-   booklet mode test/engine.js drives, P2 report D-c) is given words and left
-   with its 400ms autosave pending; storage is wiped and that moment passes.
-   Then a keyed page's preset request is held across a wipe() and answered
-   after it. Both wrote into the fresh storage before pages could be closed. */
-wipe();{const X=boot();X.S.note="typed, then the page was left";X.mark();}
+// ---- a page left behind never saves into the storage that follows it --------
+/* Leaving a page, as boot() and wipe() model it: a page with no booklet open is
+   given words and left with its 400ms autosave pending; storage is wiped and
+   that moment passes. Nothing may be written into the fresh storage. */
+wipe();{const X=boot();X.S.answers.note="typed, then the page was left";X.mark();}
 wipe();await sleep(450);
 chk("a page left behind never saves into the storage that follows it",Object.keys(LS).length===0,Object.keys(LS).join(","));
-{let answer=null;global.fetch=()=>new Promise(r=>{answer=r;});
- withWrapper({booklet:{key:"held"},preset_url:"https://site.invalid/preset.booklet.md"});
- boot();await sleep(0);const asked=!!answer;
- wipe();answer({ok:true,text:async()=>exampleText});await sleep(20);
- chk("nor does a request it was still waiting on, answered after it was left",asked&&Object.keys(LS).length===0,Object.keys(LS).join(","));
- noWrapper();delete global.fetch;}
-global.fetch=async url=>/preset/.test(url)?{ok:true,text:async()=>exampleText}:{ok:false};
-wipe();withWrapper({booklet:{key:"learner-1"},preset_url:"https://site.invalid/preset.booklet.md"});
-A=boot();
-chk("a wrapper key opens its booklet directly, with no start page",A.keyedMode&&A.currentId!==null&&A.view==="home");
-await sleep(50);
-chk("on the first visit that booklet is made from the site's preset",A.tplModules().map(m=>m.id).join(",")==="mensio-check-in");
-const keyed=A.readLib().entries.find(e=>e.wrapperKey==="learner-1");
-chk("and saved at once under its own key",!!keyed&&!!LS["booklet.b."+keyed.id]&&JSON.parse(LS["booklet.b."+keyed.id]).TPL.modules.length===1);
-A.S.note="the learner's own words";A.saveLocal();
-{const B2=boot();await sleep(50);
- chk("the next visit reopens the same booklet, not a new one",
-   B2.currentId===keyed.id&&B2.readLib().entries.length===1&&B2.S.note==="the learner's own words");
- B2.render();
- chk("its home button stays home: there is no list to climb to",global.document.getElementById("btnHome").textContent!=="← Your booklets");
- B2.homeButton();chk("and pressing it on home goes nowhere else",B2.view==="home"&&B2.currentId===keyed.id);}
-withWrapper({booklet:{key:"learner-2"},preset_url:"https://site.invalid/preset.booklet.md"});
-{const B3=boot();await sleep(50);      // let its preset land before the next page load wipes storage
- chk("another key on the same origin is another booklet",B3.currentId!==keyed.id&&B3.readLib().entries.length===2);}
-thaw();noWrapper();delete global.fetch;
-
-// ---- a wrapper preset with no key: new booklets start from it ---------------
-wipe();withWrapper({preset_url:"https://site.invalid/preset.booklet.md"});
-global.fetch=async url=>/preset/.test(url)?{ok:true,text:async()=>exampleText}:{ok:false};
-A=boot();await sleep(20);
-chk("a site's preset alone does not skip the list",A.view===A.LIB_VIEW&&A.currentId===null&&A.readLib().entries.length===0);
-await A.createBooklet();
-chk("a booklet started there begins as the preset",A.tplModules().map(m=>m.id).join(",")==="mensio-check-in");
-noWrapper();delete global.fetch;
-
-// ---- a download that finishes after the reader has moved to another booklet ----
-// A site's preset downloads a file and then applies it to whichever booklet is
-// in memory. The reader can open another booklet while that is in flight. The
-// fake fetch below HOLDS the download until the test releases it, so the
-// switch is made while the request is pending and the answer arrives after
-// it: the ordering is forced, not left to timing. The result must be dropped,
-// landing in neither booklet.
-//
-// KNOWN GAP (2026-09-29): two race tests that used to sit here — the block
-// editor's "+ add activity" shelf button, and the day-picker's "add a map"
-// action — are deleted along with the features themselves (both routed
-// through resolveShelf()/moduleFromText(), for the deleted format only; see
-// STATUS.md's "Not built yet" list). Only the site's-preset race below is
-// unrelated to either
-// and still real.
-{let held=[];
- const release=(i,text)=>held[i].res({ok:true,text:async()=>text});
- global.fetch=url=>new Promise(res=>held.push({url,res}));
- const modulesOf=X=>X.tplModules().length;
- // a site's preset, applied after its request comes back
- wipe();withWrapper({});
- A=boot();
- const pa=await A.createBooklet(),pb=await A.createBooklet();
- withWrapper({preset_url:"https://site.invalid/preset.booklet.md"});
- A.openBooklet(pa.id);
- {const p=A.loadPreset();await sleep(0);
-  chk("the preset request is pending",held.length===1,String(held.length));
-  A.openBooklet(pb.id);release(0,exampleText);const took=await p;
-  chk("a preset still downloading when the reader switched is not laid over the booklet opened since",
-    took===false&&A.currentId===pb.id&&modulesOf(A)===0,"took "+took+", B holds "+modulesOf(A));
-  A.openBooklet(pa.id);
-  chk("nor over the one it was asked for in",modulesOf(A)===0,"A holds "+modulesOf(A));
-  held=[];A.openBooklet(pb.id);
-  const p2=A.loadPreset();await sleep(0);release(0,exampleText);
-  chk("control: with no switch the preset is applied",(await p2)===true&&modulesOf(A)===1,"B holds "+modulesOf(A));}
- noWrapper();delete global.fetch;}
 
 // ---- with storage off, the page works for the visit -------------------------
 wipe();
@@ -409,9 +291,9 @@ const origSet=global.localStorage.setItem;
 global.localStorage.setItem=()=>{throw new Error("QuotaExceededError");};
 A=boot();
 chk("storage off is noticed",A.storageOk===false);
-const m1=await A.createBooklet();A.S.note="kept in memory";A.saveLocal();
+const m1=await A.createBooklet();A.S.answers.note="kept in memory";A.saveLocal();
 await A.createBooklet();A.openBooklet(m1.id);
-chk("booklets still switch without losing anything, for the visit",A.S.note==="kept in memory");
+chk("booklets still switch without losing anything, for the visit",A.S.answers.note==="kept in memory");
 A.closeBooklet();A.render();
 chk("and the list says plainly that nothing is kept between visits",/not keeping anything between visits/.test(texts(main())));
 global.localStorage.setItem=origSet;
@@ -427,7 +309,7 @@ global.localStorage.setItem=origSet;
 // is where a loss fails.
 wipe();A=boot();await A.createBooklet();fillRich(A,"M");
 {const snap=snapOf(A);const md=A.toMarkdown();const Rp=A.parseFile(md);
- A.S=A.emptyS();A.D={today:A.emptyToday(),checkin:A.emptyCheckin()};A.TPL={booklet:1,modules:[],widgets:[]};
+ A.S=A.emptyS();A.D=A.emptyD();A.TPL={booklet:1,modules:[],widgets:[]};
  A.applyParsed(Rp,"replace");const after=snapOf(A);const lost=[];
  const diff=(x,y,p)=>{if(same(x,y)) return;
    if(x&&y&&typeof x==="object"&&typeof y==="object"&&!Array.isArray(x)&&!Array.isArray(y)){

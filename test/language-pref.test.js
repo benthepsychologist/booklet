@@ -68,7 +68,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get view(){return view}, get currentId(){return currentId},
-  get TPL(){return TPL}, get S(){return S}, get storageOk(){return storageOk}, set editing(v){editing=v},
+  get TPL(){return TPL}, get S(){return S}, get storageOk(){return storageOk},
   LIB_VIEW, readLib, openBooklet, closeBooklet, createBooklet, saveLocal, addModule, addModuleText,
   editTemplate, render, loadText, homeButton
 }));`);
@@ -85,7 +85,7 @@ async function makeBooklet(A,{title,lang,languages}){
   await A.createBooklet();
   A.addModuleText(fixtureModule);
   A.editTemplate(t=>{t.head={title:{en:title}};if(languages) t.languages=languages;});
-  A.S.note="written in "+title;A.lang=lang;A.saveLocal();
+  A.S.answers.note="written in "+title;A.lang=lang;A.saveLocal();
   return A.currentId;}
 /* open a booklet the way a reader does: from its card on "Your booklets" */
 function openFromCard(A,title){A.render();
@@ -191,15 +191,6 @@ wipe();A=boot();A.render();A.toggle.press("fr");
 A.loadText(exampleText);
 chk("a single-language file opens in its own language, not the reader's",A.currentId!==null&&A.lang==="en",A.lang);
 chk("but the loaded-file summary itself still speaks the reader's French",/Chargé/.test(texts(main()))&&!/\bLoaded\b/.test(texts(main())),texts(main()).slice(0,160));
-
-section("a site's preset, on a page locked to one booklet");
-{const origGet=global.document.getElementById;
- global.document.getElementById=id=>id==="booklet-wrapper"?{textContent:JSON.stringify({booklet:{key:"k1"},preset_url:"https://site.invalid/p.booklet.md"})}:origGet(id);
- global.fetch=async()=>({ok:true,text:async()=>exampleText});
- wipe();LS[PREF]="es";
- A=boot();await new Promise(r=>setTimeout(r,50));
- chk("the preset (English) lands, and — single-language — keeps its own",A.TPL.modules.length===1&&A.lang==="en",A.lang);
- global.document.getElementById=origGet;delete global.fetch;}
 
 section("storage that fails");
 wipe();

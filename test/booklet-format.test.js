@@ -32,14 +32,16 @@ chk("the module carries its rights from the front matter",m.rights&&/Armstrong/.
 const a=m.mode||{};
 chk("one activity, repeating, so it keeps entries",a.id==="check-in"&&a.kind==="entry",JSON.stringify({id:a.id,kind:a.kind}));
 const types=(a.blocks||[]).map(b=>b.type+":"+b.id);
-chk("its blocks, in order",JSON.stringify(types)===JSON.stringify(["markdown:md1","widget:body","widget:emotions","text:other","headlines:thoughts"]),JSON.stringify(types));
-chk("the text question is worded by the file",JSON.stringify(m.copy.en["check-in"].other)===JSON.stringify(["Something else","In your own words."]),JSON.stringify(m.copy));
+chk("its blocks, in order",JSON.stringify(types)===JSON.stringify(["markdown:md1","widget:body","widget:emotions","text:other","lines:thoughts"]),JSON.stringify(types));
+const other=(a.blocks||[]).find(b=>b.id==="other")||{};
+chk("the text question is worded by the file",other.label==="Something else"&&other.hint==="In your own words.",JSON.stringify(other));
+chk("a module carries no copy tables of its own",m.copy===undefined,JSON.stringify(m.copy));
 
 /* 2. widgets */
 const W=t.widgets||[];
 chk("both widgets arrive, named by their block ids",W.map(w=>w.id).join()==="body-map,quadrants",W.map(w=>w.id).join());
 chk("a widget's words are keyed by the file's language",W.every(w=>w.copy&&w.copy.en&&w.copy.en.h),JSON.stringify(W.map(w=>w.copy)));
-chk("the body map block points at its data",a.blocks[1].widget==="body-map"&&a.blocks[1].skippable===true);
+chk("the body map block points at its data",a.blocks[1].widget==="body-map"&&a.blocks[1].skippable===undefined);
 
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
