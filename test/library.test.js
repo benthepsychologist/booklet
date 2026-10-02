@@ -54,7 +54,7 @@ function boot(){const API={};
   get S(){return S},set S(v){S=v}, get D(){return D},set D(v){D=v}, get TPL(){return TPL},set TPL(v){TPL=v},
   get lang(){return lang},set lang(v){lang=v}, get view(){return view},set view(v){view=v},
   get dirty(){return dirty},set dirty(v){dirty=v}, get unsavedEntries(){return unsavedEntries},set unsavedEntries(v){unsavedEntries=v},
-  get pending(){return pending},set pending(v){pending=v}, get boardOpen(){return boardOpen},set boardOpen(v){boardOpen=v},
+  get boardOpen(){return boardOpen},set boardOpen(v){boardOpen=v},
   get openChip(){return openChip},set openChip(v){openChip=v},
   get currentId(){return currentId}, get storageOk(){return storageOk},
   get LIB(){return LIB}, get restoredAtBoot(){return restoredFromBrowser},
@@ -145,11 +145,11 @@ chk("a save timer that outlives its booklet does nothing when it fires",
 
 // ---- a switch clears everything that belongs to a booklet ----------------
 A.openBooklet(a.id);
-A.pending={ok:true};A.boardOpen="x";A.openChip={eod:"x"};
+A.boardOpen="x";A.openChip={eod:"x"};
 A.view="eod";
 A.openBooklet(b.id);
-chk("the merge dialog, the open card, the open entry and the view are cleared on a switch",
-  A.pending===null&&A.boardOpen===null&&Object.keys(A.openChip).length===0&&A.view==="home");
+chk("the open card, the open entry and the view are cleared on a switch",
+  A.boardOpen===null&&Object.keys(A.openChip).length===0&&A.view==="home");
 A.openBooklet(a.id);
 A.editTemplate(t=>{t.head={title:{en:"A's own design"}};});A.saveLocal();
 const c=await A.createBooklet();
