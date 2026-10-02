@@ -70,19 +70,13 @@ guard("marks and panel",()=>{open();
   click(marks()[0]);A.setView("rd-check");A.render();
   chk("leaving the activity closes the panel",!panelOpen()&&!("data-cite-open" in root().attrs));});
 
-console.log("# the callout filter and the endnotes");
-guard("filter and notes",()=>{open();
-  const filter=byClass("rd-filter")[0];
-  chk("a `diff` callout puts the filter row above the page, with one button and its count",
-    !!filter&&findAll(filter,n=>n.tagName==="button").length===1&&/\(1\)/.test(flat(filter)),filter&&flat(filter));
-  const callout=byClass("rd-callout")[0];
-  chk("every callout is shown in full until a kind is chosen",callout.attrs["data-state"]==="open");
-  click(findAll(filter,n=>n.tagName==="button")[0]);
-  chk("choosing its kind lights it",byClass("rd-callout")[0].attrs["data-state"]==="lit");
+console.log("# the endnotes");
+guard("notes",()=>{open();
   const notes=byClass("rd-notes")[0];
   chk("the page carries its citation as an endnote, for a printout",!!notes&&/The Harbour Tide Atlas/.test(flat(notes)),notes&&flat(notes));
+  chk("a callout is drawn in full, with no filter row and no fold button",byClass("rd-callout").length>0&&byClass("rd-filter").length===0&&byClass("rd-cshow").length===0);
   A.setView("rd-check");A.render();
-  chk("a page with no marks and no callouts has neither",byClass("rd-filter").length===0&&byClass("rd-notes").length===0);});
+  chk("a page with no marks has no endnotes",byClass("rd-notes").length===0);});
 
 console.log("# switching the interface language keeps the panel open, in the new language");
 guard("a language switch",()=>{open("en");

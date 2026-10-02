@@ -54,7 +54,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   get lang(){return lang},set lang(v){lang=v}, get view(){return view},set view(v){view=v},
   get TPL(){return TPL}, get S(){return S}, get D(){return D},
   T, TSRC, CALLOUT_KINDS,
-  leafPaths, langParity, createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
+  createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
   moduleTextProblems, editTemplate, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, tplWidgets, isMulti,
   moduleView:id=>MODULE_VIEW+id, openExport, draftFor, keptFor, finalizeEntry, pickLang

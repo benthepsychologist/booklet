@@ -4,12 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
-<!-- Installable when this file is served over https, which is what makes the
-     phone keep its data (Safari does not evict storage for a Home Screen web
-     app the way it does for a tab) and what turns on the share sheet.
-     Opened straight from disk the manifest simply 404s and nothing else
-     changes — the page has never needed the network for anything. -->
-<link rel="manifest" href="manifest.webmanifest">
+<!-- The renderer's only setting: where "Add a module" looks for modules. A site
+     changes this one line to point at another registry, and must also allow
+     that origin in its own Content-Security-Policy `connect-src`. -->
+<meta name="booklet-registry" content="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json">
 <meta name="theme-color" content="#12996E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -363,25 +361,13 @@
   .rd-callout.rd-k-law{border-left:6px double var(--tone-teal-deep)}
   .rd-callout.rd-k-opinion{border-left:6px dotted var(--tone-slate-deep)}
   .rd-chead{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 .3rem;font-family:var(--sans);font-size:.85rem;font-weight:700}
-  .rd-ci,.rd-fi{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;border-radius:50%;flex:none;font-size:.95rem;line-height:1;font-weight:700}
-  .rd-k-diff .rd-ci,.rd-f-diff .rd-fi{background:var(--tone-warm);color:var(--tone-warm-deep)}
-  .rd-k-law .rd-ci,.rd-f-law .rd-fi{background:var(--tone-teal);color:var(--tone-teal-deep)}
-  .rd-k-opinion .rd-ci,.rd-f-opinion .rd-fi{background:var(--tone-slate);color:var(--tone-slate-deep)}
+  .rd-ci{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;border-radius:50%;flex:none;font-size:.95rem;line-height:1;font-weight:700}
+  .rd-k-diff .rd-ci{background:var(--tone-warm);color:var(--tone-warm-deep)}
+  .rd-k-law .rd-ci{background:var(--tone-teal);color:var(--tone-teal-deep)}
+  .rd-k-opinion .rd-ci{background:var(--tone-slate);color:var(--tone-slate-deep)}
   .rd-k-diff .rd-cl{color:var(--tone-warm-deep)} .rd-k-law .rd-cl{color:var(--tone-teal-deep)} .rd-k-opinion .rd-cl{color:var(--tone-slate-deep)}
-  .rd-cshow{margin-left:auto}
-  .rd-cshow[hidden]{display:none}
   .rd-ctitle{margin:0 0 .35rem;font-weight:700;color:var(--ink)}
   .rd-cb>:last-child{margin-bottom:0}
-  .rd-callout[data-state="folded"]{background:var(--paper);padding:.45rem .9rem}
-  .rd-callout[data-state="folded"] .rd-ctitle{margin:0;font-weight:600;color:var(--muted)}
-  .rd-callout[data-state="lit"].rd-k-diff{box-shadow:0 0 0 3px var(--tone-warm)}
-  .rd-callout[data-state="lit"].rd-k-law{box-shadow:0 0 0 3px var(--tone-teal)}
-  .rd-callout[data-state="lit"].rd-k-opinion{box-shadow:0 0 0 3px var(--tone-slate)}
-  .rd-filter{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;margin:0 0 1.25rem}
-  .rd-filter .rd-fl{margin:0 .2rem 0 0}
-  .rd-filter .pill-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .8rem .3rem .35rem;font-size:.88rem}
-  .rd-filter .pill-btn[aria-pressed="true"] .rd-fi{background:#fff}
-  .rd-fn{font-weight:600;opacity:.85}
 
   .rd-notes{display:none}
 
@@ -392,7 +378,7 @@
   /* Printed, the panel is gone and the citations are endnotes at the end of
      the activity (the page on show); a folded callout prints whole. */
   @media print{
-    .bar,.ap-menu,.rd-filter,.rd-panel,.rd-tip,.rd-cshow,.toast{display:none!important}
+    .bar,.ap-menu,.rd-panel,.rd-tip,.toast{display:none!important}
     .ap-frame{display:block}
     .rd-notes{display:block;margin:2rem 0 0;border-top:2px solid var(--rule);padding-top:.5rem;font-size:.9rem}
     .rd-notes li{margin:0 0 .4rem}
@@ -409,7 +395,6 @@
   <button type="button" class="home" id="btnHome"></button>
   <div class="tools">
     <button type="button" class="navb" id="btnExport"></button>
-    <button type="button" class="navb" id="btnLoad"></button>
   </div>
   <div class="lang" id="langGroup" role="group" aria-label="Language">
     <button type="button" data-lang="en" aria-pressed="true">EN</button>
@@ -433,18 +418,6 @@
     <div class="actions">
       <button type="button" id="loadCancel"></button>
       <button type="button" id="loadGo" class="primary"></button>
-    </div>
-  </div>
-</div>
-
-<div class="veil" id="veilMerge" role="dialog" aria-modal="true" aria-labelledby="mergeTitle">
-  <div class="panel">
-    <h3 id="mergeTitle"></h3>
-    <p id="mergeHelp"></p>
-    <div class="actions">
-      <button type="button" id="mergeCancel"></button>
-      <button type="button" id="mergeReplace" class="danger"></button>
-      <button type="button" id="mergeAdd" class="primary"></button>
     </div>
   </div>
 </div>
@@ -496,7 +469,7 @@ const RENDERER_VERSION="0.2.0";
    TSRC keeps what a person actually wrote for each language. T is what the page
    reads: every table completed from the one beneath it, so `T[lang].ui.x` is
    always a string and a missing translation shows the English rather than a raw
-   key or an error. `langParity()` lists what is still to be written. These are
+   key or an error.  These are
    the words of the renderer's own buttons and dialogs: a booklet's words are
    its own file's, in the one language that file declares. */
 const T = {};
@@ -504,7 +477,6 @@ const TSRC={
   en: {
     ui: {
       app: "Booklet",
-      load: "Load",
       export: "Send or save a copy",
       loadTitle: "Load notes you saved earlier",
       loadHelp: "Choose the markdown file you downloaded from this page, or paste its contents below.",
@@ -521,19 +493,7 @@ const TSRC={
       tagHint: "Suggestions come from the words below, but anything you type or say is kept too.",
       missingWidget: id=>`This activity needs a widget the file does not carry (${id}). Load the booklet it came from, or add the module that brings it.`,
       missingEngine: e=>`This page cannot draw a "${e}" — it is an older version of the app than the booklet expects.`,
-      loadBooklet: n=>`This file carries its own booklet design${n?" ("+n+")":""}. The page now follows it.`,
-      loadGained: names=>`This booklet kept its own design and gained the file's activities it did not have: ${names}.`,
-      loadKept: (n,btn)=>`This booklet kept its own design; the file's${n?" ("+n+")":""} was not used. To switch to it, load the file again and choose “${btn}”.`,
       loadOk: "Loaded",
-      loadSummary: n=>`Loaded ${n} kept entr${n===1?"y":"ies"}.`,
-      loadUnread: n=>`${n} part${n===1?"":"s"} of the file could not be read and ${n===1?"was":"were"} left out:`,
-      mergeTitle: "This page already has entries",
-      mergeHelp: "You can add the file's entries to what is here (entries with the same date and time are kept once), along with any of its activities this booklet does not have yet, or replace everything on the page with the file.",
-      mergeCancel: "Cancel",
-      mergeReplace: "Replace what's here",
-      mergeAdd: "Add to what's here",
-      mergeDesignTitle: "This booklet already has its own design",
-      mergeDesignHelp: n=>`The file carries a different booklet design${n?" ("+n+")":""}. You can add its activities and entries to this booklet, which keeps its own design, or replace this booklet's design with the file's.`,
       clearTitle: "Clear everything on this page?",
       clearHelp: "Your entries exist only in this browser tab. If you have not downloaded them, they will be gone.",
       clearCancel: "Keep my entries",
@@ -615,15 +575,6 @@ const TSRC={
         law: "The law now",
         opinion: "An author’s view"
       },
-      show: {
-        diff: "Show differences",
-        law: "Show changes in law",
-        opinion: "Show authors’ views"
-      },
-      filter: "Filter",
-      filterName: "Filter the callouts on this page",
-      unfold: "Show",
-      refold: "Hide",
       mark: n=>`Citation ${n}`,
       cite: n=>`Citation ${n}`,
       broken: id=>`No citation called “${id}” in this module`,
@@ -639,7 +590,6 @@ const TSRC={
   fr: {
     ui: {
       app: "Booklet",
-      load: "Charger",
       export: "Envoyer ou sauvegarder une copie",
       loadTitle: "Charger des notes sauvegardées",
       loadHelp: "Choisissez le fichier markdown téléchargé depuis cette page, ou collez son contenu ci-dessous.",
@@ -656,19 +606,7 @@ const TSRC={
       tagHint: "Les suggestions viennent des mots ci-dessous, mais tout ce que vous tapez ou dictez est aussi gardé.",
       missingWidget: id=>`Cette activité a besoin d’un élément que le fichier ne contient pas (${id}). Chargez le carnet d’origine, ou ajoutez le module qui l’apporte.`,
       missingEngine: e=>`Cette page ne sait pas dessiner un « ${e} » — c’est une version plus ancienne que ce que le carnet attend.`,
-      loadBooklet: n=>`Ce fichier porte sa propre conception de carnet${n?" ("+n+")":""}. La page la suit désormais.`,
-      loadGained: names=>`Ce carnet a gardé sa propre conception et a reçu les activités du fichier qu’il n’avait pas : ${names}.`,
-      loadKept: (n,btn)=>`Ce carnet a gardé sa propre conception ; celle du fichier${n?" ("+n+")":""} n’a pas été utilisée. Pour l’adopter, chargez de nouveau le fichier et choisissez « ${btn} ».`,
       loadOk: "Chargé",
-      loadSummary: n=>`Chargé : ${n} entrée${n===1?"":"s"} conservée${n===1?"":"s"}.`,
-      loadUnread: n=>`${n} partie${n===1?"":"s"} du fichier n’${n===1?"a":"ont"} pas pu être lue${n===1?"":"s"} et ${n===1?"a été laissée":"ont été laissées"} de côté :`,
-      mergeTitle: "Cette page contient déjà des entrées",
-      mergeHelp: "Vous pouvez ajouter les entrées du fichier à ce qui est ici (une entrée ayant la même date et la même heure n’est gardée qu’une fois), ainsi que les activités du fichier que ce carnet n’a pas encore, ou remplacer tout le contenu de la page par le fichier.",
-      mergeCancel: "Annuler",
-      mergeReplace: "Remplacer ce qui est ici",
-      mergeAdd: "Ajouter à ce qui est ici",
-      mergeDesignTitle: "Ce carnet a déjà sa propre conception",
-      mergeDesignHelp: n=>`Le fichier porte une autre conception de carnet${n?" ("+n+")":""}. Vous pouvez ajouter ses activités et ses entrées à ce carnet, qui garde sa propre conception, ou remplacer la conception de ce carnet par celle du fichier.`,
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
       clearHelp: "Vos réponses n’existent que dans cet onglet. Si vous ne les avez pas téléchargées, elles seront perdues.",
       clearCancel: "Garder mes réponses",
@@ -750,15 +688,6 @@ const TSRC={
         law: "Le droit en vigueur",
         opinion: "L’avis d’un auteur"
       },
-      show: {
-        diff: "Afficher les différences",
-        law: "Afficher les changements de loi",
-        opinion: "Afficher les avis d’auteurs"
-      },
-      filter: "Filtrer",
-      filterName: "Filtrer les encadrés de cette page",
-      unfold: "Afficher",
-      refold: "Masquer",
       mark: n=>`Référence ${n}`,
       cite: n=>`Référence ${n}`,
       broken: id=>`Aucune référence « ${id} » dans ce module`,
@@ -774,7 +703,6 @@ const TSRC={
   es: {
     ui: {
       app: "Booklet",
-      load: "Cargar",
       export: "Enviar o guardar una copia",
       loadTitle: "Cargar notas que guardaste antes",
       loadHelp: "Elige el archivo markdown que descargaste desde esta página, o pega su contenido abajo.",
@@ -791,19 +719,7 @@ const TSRC={
       tagHint: "Las sugerencias vienen de las palabras de abajo, pero también se guarda todo lo que escribas o dictes.",
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Carga el cuadernillo de origen, o agrega el módulo que lo aporta.`,
       missingEngine: e=>`Esta página no puede mostrar un "${e}" — es una versión de la aplicación más antigua que la que el cuadernillo espera.`,
-      loadBooklet: n=>`Este archivo trae su propio diseño de cuadernillo${n?" ("+n+")":""}. La página ahora lo sigue.`,
-      loadGained: names=>`Este cuadernillo conservó su propio diseño y se le agregaron las actividades del archivo que no tenía: ${names}.`,
-      loadKept: (n,btn)=>`Este cuadernillo conservó su propio diseño; no se usó el del archivo${n?" ("+n+")":""}. Para cambiar a ese diseño, vuelve a cargar el archivo y elige “${btn}”.`,
       loadOk: "Cargado",
-      loadSummary: n=>`Cargado: ${n} entrada${n===1?"":"s"} guardada${n===1?"":"s"}.`,
-      loadUnread: n=>`${n} parte${n===1?"":"s"} del archivo no ${n===1?"pudo":"pudieron"} leerse y se ${n===1?"omitió":"omitieron"}:`,
-      mergeTitle: "Esta página ya tiene entradas",
-      mergeHelp: "Puedes agregar las entradas del archivo a lo que hay aquí (las entradas con la misma fecha y hora se guardan una sola vez), junto con las actividades del archivo que este cuadernillo todavía no tiene, o reemplazar todo lo de la página con el archivo.",
-      mergeCancel: "Cancelar",
-      mergeReplace: "Reemplazar lo que hay aquí",
-      mergeAdd: "Agregar a lo que hay aquí",
-      mergeDesignTitle: "Este cuadernillo ya tiene su propio diseño",
-      mergeDesignHelp: n=>`El archivo trae otro diseño de cuadernillo${n?" ("+n+")":""}. Puedes agregar sus actividades y entradas a este cuadernillo, que conserva su propio diseño, o reemplazar el diseño de este cuadernillo por el del archivo.`,
       clearTitle: "¿Borrar todo lo que hay en esta página?",
       clearHelp: "Tus entradas solo existen en esta pestaña del navegador. Si no las descargaste, se perderán.",
       clearCancel: "Conservar mis entradas",
@@ -885,15 +801,6 @@ const TSRC={
         law: "Lo que rige hoy",
         opinion: "Opinión de autor"
       },
-      show: {
-        diff: "Mostrar diferencias",
-        law: "Mostrar cambios de ley",
-        opinion: "Mostrar opiniones de autor"
-      },
-      filter: "Filtrar",
-      filterName: "Filtrar los recuadros de esta página",
-      unfold: "Mostrar",
-      refold: "Ocultar",
       mark: n=>`Cita ${n}`,
       cite: n=>`Cita ${n}`,
       broken: id=>`No hay ninguna cita “${id}” en este módulo`,
@@ -912,9 +819,6 @@ const TSRC={
       loadOr: "O pegá el contenido del archivo:",
       tagPh: "Escribí o dictá palabras, separadas por comas",
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Cargá el cuadernillo de origen, o agregá el módulo que lo aporta.`,
-      mergeHelp: "Podés agregar las entradas del archivo a lo que hay aquí (las entradas con la misma fecha y hora se guardan una sola vez), junto con las actividades del archivo que este cuadernillo todavía no tiene, o reemplazar todo lo de la página con el archivo.",
-      loadKept: (n,btn)=>`Este cuadernillo conservó su propio diseño; no se usó el del archivo${n?" ("+n+")":""}. Para cambiar a ese diseño, volvé a cargar el archivo y elegí “${btn}”.`,
-      mergeDesignHelp: n=>`El archivo trae otro diseño de cuadernillo${n?" ("+n+")":""}. Podés agregar sus actividades y entradas a este cuadernillo, que conserva su propio diseño, o reemplazar el diseño de este cuadernillo por el del archivo.`,
       downloaded: "Descargado. Guardá el archivo en un lugar donde puedas encontrarlo.",
       exportP: "Tu cuadernillo se convierte en un archivo acá, en este dispositivo.",
       exportDownloadHint: "Poné una copia nueva en tu carpeta Descargas.",
@@ -953,20 +857,6 @@ function buildTables(){
   T.es=mergeDeep(TSRC.en,TSRC.es);
   T["es-AR"]=mergeDeep(T.es,TSRC["es-AR"]);}
 buildTables();
-/* every string (or function, or list) a language table holds, by dotted path */
-function leafPaths(o,pre,out){out=out||[];
-  for(const k of Object.keys(o||{})){const p=pre?pre+"."+k:k;
-    if(isObj(o[k])) leafPaths(o[k],p,out);else out.push(p);}
-  return out;}
-/* What is still to be written for a language: the keys English has and this
-   language has not (`missing`), and keys it has that English does not (`extra`,
-   almost always a typo). es-AR is a layer of differences, so it has no missing. */
-function langParity(l){const en=leafPaths(TSRC.en);const have=new Set(leafPaths(TSRC[l]||{}));
-  const enSet=new Set(en);
-  return {lang:l,total:en.length,
-    missing:l==="es-AR"?[]:en.filter(p=>!have.has(p)),
-    extra:[...have].filter(p=>!enSet.has(p))};}
-
 /* ======================= A WIDGET'S SVG, MADE SAFE TO DRAW =======================
    A figure's `svg` is markup that rides in a file somebody was handed, so it
    is a way in for script unless it is cleaned first: an `onerror` on an
@@ -1266,7 +1156,7 @@ const EMPTY_BOOKLET={booklet:0.2, id:"", version:"", modules:[], widgets:[], raw
 
 /* ===================== THE REGISTRY =====================
    The renderer's one and only module store: the booklet registry's own list
-   (DEFAULT_REGISTRY, one JSON file of entries, each naming the module's file).
+   (the one JSON file named by the `booklet-registry` meta tag, whose entries each name the module's file).
    "Add a module" fetches that list fresh every time it opens and a module's
    file fresh every time Add is pressed. Nothing about a module is kept here
    between visits: what a booklet holds of it is part of the booklet. */
@@ -1291,10 +1181,13 @@ const joinUrl=(base,rel)=>{
     if(r.startsWith("/")) return r;
     return String(base||"").replace(/[?#].*$/,"").replace(/[^/]*$/,"")+r;}};
 /* The registry: one JSON file listing the modules on offer. A page load never
-   reaches the network on its own; "Add a module" is the one place that asks. */
-const DEFAULT_REGISTRY="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json";
+   reaches the network on its own; "Add a module" is the one place that asks.
+   Its address is the page's `booklet-registry` meta tag; without one there is none. */
+const registryUrl=()=>{const m=document.querySelector('meta[name="booklet-registry"]');
+  return m?String(m.getAttribute("content")||"").trim():"";};
 
 async function loadRegistry(url){SHELF={};
+  if(!url) return false;
   try{
     const r=await fetch(url,{cache:"no-cache"});if(!r.ok) return false;
     const data=await r.json();
@@ -1681,9 +1574,9 @@ function resetBookletState(){
   lang=langPref()||lang;
   S=emptyS();D=emptyD();TPL=EMPTY_BOOKLET;
   view="home";dirty=false;unsavedEntries=0;
-  openChip={};boardOpen=null;pending=null;
+  openChip={};boardOpen=null;
   clearTimeout(saveTimer);saveTimer=null;
-  ["veilLoad","veilMerge","veilClear","veilAddModule","veilExport"]
+  ["veilLoad","veilClear","veilAddModule","veilExport"]
     .forEach(id=>{const v=document.getElementById(id);if(v) v.removeAttribute("open");});}
 /* Open one entry: whatever the last booklet had pending is written to it,
    the globals are cleared, and this one is read from its own key. Returns
@@ -1714,7 +1607,6 @@ const holdsSomething=v=>typeof v==="string"?v.trim().length>0
   :typeof v==="number"||v===true;
 /* what a person kept or typed, whatever the activity */
 const hasKept=()=>Object.values(S.entries||{}).some(a=>Array.isArray(a)&&a.length>0)||holdsSomething(S.answers);
-const sessionHasContent=()=>hasKept()||holdsSomething(D.custom);
 function unsavedNote(){const t=T[lang].ui;if(unsavedEntries>0) return el("span",{class:"unsaved"},t.unsavedEntries(unsavedEntries));if(dirty) return el("span",{class:"unsaved"},t.unsavedChanges);return null;}
 /* A cell's colour is the widget's, like its name. The renderer used to carry
    a stylesheet keyed by four particular cell ids, which meant anybody else's
@@ -1742,14 +1634,11 @@ function renderBar(){const t=T[lang].ui;const atList=view===LIB_VIEW,Lb=libT();
   const toList=view==="home"&&!!currentId;
   document.getElementById("btnHome").textContent=atList?t.app:toList?"← "+Lb.back:(view==="home"?"":"← ")+t.app;
   const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;dl.classList.toggle("attention",dirty||unsavedEntries>0);
-  document.getElementById("btnLoad").textContent=t.load;
   document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));
   document.getElementById("dropZone").textContent=t.dropZone;document.getElementById("dropVeil").textContent=t.dropVeil;
   for(const [id,key] of [["loadTitle","loadTitle"],["loadHelp","loadHelp"],["loadOr","loadOr"],["loadCancel","loadCancel"],["loadGo","loadGo"],
-    ["mergeCancel","mergeCancel"],["mergeReplace","mergeReplace"],["mergeAdd","mergeAdd"],
     ["clearTitle","clearTitle"],["clearHelp","clearHelp"],["clearCancel","clearCancel"],["clearGo","clearGo"]]) document.getElementById(id).textContent=t[key];
   if(atList) document.getElementById("loadTitle").textContent=Lb.load;
-  mergeText();
   document.getElementById("langGroup").setAttribute("aria-label",t.pLang);
   document.getElementById("rendererVer").textContent="v"+RENDERER_VERSION;
   if(storageOk) document.getElementById("clearHelp").textContent=t.clearHelp+" "+t.clearHelpStored;
@@ -1757,7 +1646,6 @@ function renderBar(){const t=T[lang].ui;const atList=view===LIB_VIEW,Lb=libT();
 }
 const VIEWS={home:renderHome,[LIB_VIEW]:renderBooklets};
 function render(){citeLeave(view);renderBar();const main=document.getElementById("main");main.innerHTML="";
-  syncRoute();
   if(VIEWS[view]) return VIEWS[view](main);
   if(isModuleView(view)) return renderModulePage(main,view);
   return renderActivity(main,view);}
@@ -1810,56 +1698,12 @@ function renderHome(main){const t=T[lang];const u=t.ui;
 
 const libT=()=>(T[lang]&&T[lang].library)||T.en.library;
 
-/* ---- the address bar ----
-     #/                     Your booklets
-     #/b/<entry id>         a booklet's home
-     #/b/<entry id>/<view>  one of its activities, or the page of a module with
-                            several activities (view `module:<module id>`, so
-                            `module%3A…` in the address)
-   A reload returns to where the reader was, a visit with no route lands on the
-   list, and Back walks back out. An entry id is this browser's own and means
-   nothing anywhere else. With no location (the Node harness) none of this runs.
-
-   Both segments are percent-encoded on the way out and decoded on the way in: a
-   module page's view carries a colon and usually a slash (`module:andrea/
-   semana-1`), and an activity id may hold anything. Two addresses are compared
-   by what they DECODE to, never by spelling, so a fragment a browser or a person
-   spelled differently (a hand-typed `module:a/b`) is recognised as the same
-   place instead of being routed again. */
-const hasLocation=()=>typeof location!=="undefined"&&!!location&&typeof location.hash==="string";
-const encSeg=x=>encodeURIComponent(String(x));
-function routeNow(){
-  if(currentId) return "#/b/"+encSeg(currentId)+(view&&view!=="home"?"/"+encSeg(view):"");
-  return view===LIB_VIEW?"#/":null;}
-function parseRoute(h){const m=String(h||"").match(/^#\/b\/([^/]+)(?:\/(.+))?$/);
-  if(m){try{return {id:decodeURIComponent(m[1]),view:m[2]?decodeURIComponent(m[2]):"home"};}catch(e){}}
-  return {id:null,view:null};}
-function sameRoute(a,b){if(a===b) return true;
-  const x=parseRoute(a),y=parseRoute(b);
-  return x.id!==null&&x.id===y.id&&x.view===y.view;}
-const knownView=v=>typeof v==="string"&&(v==="home"||tplModes().some(m=>m.id===v)||!!moduleForView(v));
-let routed=false;
-function syncRoute(){if(!hasLocation()) return;const want=routeNow();if(want===null) return;
-  if(sameRoute(location.hash,want)){routed=true;return;}
-  /* the first place a visit settles replaces the address instead of adding a
-     step, so Back from it leaves the page rather than bouncing in place */
-  if(!routed){routed=true;try{history.replaceState(history.state,"",want);return;}catch(e){}}
-  location.hash=want;}
-function followRoute(){if(!hasLocation()||sameRoute(location.hash,routeNow())) return;
-  if(location.hash&&!location.hash.startsWith("#/")) return;
-  const r=parseRoute(location.hash);
-  LIB=readLib();
-  if(!r.id||!entryById(r.id)){if(currentId||view!==LIB_VIEW) closeBooklet();render();return;}
-  if(r.id!==currentId) openBooklet(r.id);
-  view=knownView(r.view)?r.view:"home";render();window.scrollTo({top:0});}
 function homeButton(){
   if(view==="home"&&currentId){closeBooklet();render();window.scrollTo({top:0});return;}
   if(view===LIB_VIEW){render();return;}
   go("home");}
 
 function bootLibrary(){LIB=readLib();lang=langPref()||lang;
-  const r=hasLocation()?parseRoute(location.hash):{id:null,view:null};
-  if(r.id&&entryById(r.id)){const restored=openBooklet(r.id);if(knownView(r.view)) view=r.view;return !!restored;}
   view=LIB_VIEW;return false;}
 
 function openFromList(id){if(openBooklet(id)===null){render();return;}
@@ -2203,10 +2047,9 @@ function pageBody(id,draft){const ps=pagesOf(modeOf(id));const cur=currentPage(i
   const box=el("div",{class:"ap-body"});
   if(ps.length>1){const i=ps.indexOf(cur);
     box.append(el("div",{class:"ap-name"},el("h3",{class:"ap-title"},pageName(cur,i))));}
-  /* reading material (see READING MATERIAL): the callout filter above the
-     blocks, the endnotes print shows below them; neither when there is nothing
-     for it, so an activity without callouts or marks is drawn as before */
-  const filter=readingTop(id);if(filter) box.append(filter);
+  /* reading material (see READING MATERIAL): the endnotes print shows go below
+     the blocks, and only when there is something for them */
+  readingBegin(id);
   box.append(renderBlocks(()=>blocksIn(currentPage(id)),draft,id));
   const notes=endnotesFor(id);if(notes) box.append(notes);
   citeReopen(id);
@@ -2302,7 +2145,7 @@ function citeBegin(modeId,keep){
         if(!places.has(id)) places.set(id,[]);places.get(id).push({page:p.id,n});}}
   const was=keep?SCOPES[modeId]:null;
   return SCOPES[modeId]={modeId,mod,sources,cites,nums,firstPage,places,broken,lang,tpl:TPL,
-    marks:was?was.marks:new Map(),drawn:was?was.drawn:new Map(),callouts:was?was.callouts:[]};}
+    marks:was?was.marks:new Map(),drawn:was?was.drawn:new Map()};}
 const citeScope=modeId=>{const R=SCOPES[modeId];
   return R&&R.lang===lang&&R.tpl===TPL?R:citeBegin(modeId);};
 
@@ -2416,64 +2259,30 @@ function showTip(modeId,id,at){if(citeOpen()&&citeFrom===at) return;
 function hideTip(){if(citeTipEl) citeTipEl.setAttribute("hidden","");}
 window.addEventListener("scroll",hideTip,{passive:true});
 
-/* ---- callouts, and the row that brings one kind forward ---- */
+/* ---- callouts ---- */
 let rdSeq=0;
-const READ_FILTER={};
-const filterOn=id=>READ_FILTER[pageNowKey(id)]||[];
-/* With nothing chosen every callout is shown in full. With a kind chosen its
-   callouts stay in full and marked, the others fold to their label and title,
-   and all the other reading stays exactly where it was. */
-function calloutView(c,on){const fold=on.length>0&&!on.includes(c.kind);
-  c.box.setAttribute("data-state",on.length?(fold?"folded":"lit"):"open");
-  if(fold){c.body.setAttribute("hidden","");c.btn.removeAttribute("hidden");
-    c.btn.setAttribute("aria-expanded","false");c.btn.textContent=RT().unfold;}
-  else{c.body.removeAttribute("hidden");c.btn.setAttribute("hidden","");}}
 function calloutNode(b,draft,modeId){const Rt=RT(),k=CALLOUT_KINDS.includes(b.kind)?b.kind:"";
   const u="rd-c"+(++rdSeq),title=tx(b.title,"");
-  const box=el("div",{class:"rd-callout"+(k?" rd-k-"+k:""),role:"note","data-kind":k||null,"data-state":"open"});
+  const box=el("div",{class:"rd-callout"+(k?" rd-k-"+k:""),role:"note","data-kind":k||null});
   const head=el("div",{class:"rd-chead"}),named=[];
   if(k){head.append(el("span",{class:"rd-ci","aria-hidden":"true"},CALLOUT_ICON[k]),
     el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
-  const btn=el("button",{type:"button",class:"small rd-cshow","aria-expanded":"false","aria-controls":u+"-b",hidden:true},Rt.unfold);
-  btn.addEventListener("click",()=>{const shut=body.hasAttribute("hidden");
-    if(shut){body.removeAttribute("hidden");box.setAttribute("data-state","shown");}
-    else{body.setAttribute("hidden","");box.setAttribute("data-state","folded");}
-    btn.setAttribute("aria-expanded",String(shut));btn.textContent=shut?RT().refold:RT().unfold;});
-  head.append(btn);box.append(head);
+  box.append(head);
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},title));named.push(u+"-t");}
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
   (Array.isArray(b.blocks)?b.blocks:[]).forEach(x=>{if(x&&typeof x==="object") body.append(renderBlock(x,draft,modeId));});
   box.append(body);
-  const R=citeScope(modeId);
-  if(R&&k){const c={box,body,btn,kind:k};R.callouts.push(c);calloutView(c,filterOn(modeId));}
   return box;}
-function applyFilter(id){const R=citeScope(id);if(!R) return;const on=filterOn(id);R.callouts.forEach(c=>calloutView(c,on));}
-/* Above an activity's blocks: the numbering taken afresh, the panel closed
-   (the mark it came from is being redrawn), and a toggle for each callout kind
-   on the page on show. */
-function readingTop(id){
+/* Before an activity's blocks are drawn: the numbering taken afresh and the
+   panel closed (the mark it came from is being redrawn). */
+function readingBegin(id){
   /* A switch of the interface language redraws the page: the panel is opened
      again once its mark is drawn (citeReopen), in the new language, and the
      focus stays where the reader put it. Any other redraw closes it. */
   citeAgain=citeOpen()&&citeAt&&citeAt.modeId===id&&citeAt.lang!==lang?citeAt:null;
   closeCite(false);hideTip();
-  const R=citeBegin(id);if(!R) return null;
-  const counts={};
-  const walk=bs=>bs.forEach(b=>{if(!b||typeof b!=="object") return;
-    if(b.type==="callout"&&CALLOUT_KINDS.includes(b.kind)) counts[b.kind]=(counts[b.kind]||0)+1;
-    if(Array.isArray(b.blocks)) walk(b.blocks);});
-  walk(pageBlocksShown(id));
-  const kinds=CALLOUT_KINDS.filter(k=>counts[k]);if(!kinds.length) return null;
-  const Rt=RT(),on=filterOn(id);
-  const row=el("div",{class:"rd-filter",role:"group","aria-label":Rt.filterName});
-  row.append(el("span",{class:"lbl2 rd-fl","aria-hidden":"true"},Rt.filter));
-  kinds.forEach(k=>{const b=el("button",{type:"button",class:"pill-btn rd-f rd-f-"+k,"data-kind":k,"aria-pressed":String(on.includes(k))},
-      el("span",{class:"rd-fi","aria-hidden":"true"},CALLOUT_ICON[k]),Rt.show[k],el("span",{class:"rd-fn"},"("+counts[k]+")"));
-    b.addEventListener("click",()=>{const cur=filterOn(id),next=cur.includes(k)?cur.filter(x=>x!==k):[...cur,k];
-      READ_FILTER[pageNowKey(id)]=next;b.setAttribute("aria-pressed",String(next.includes(k)));applyFilter(id);});
-    row.append(b);});
-  return row;}
+  citeBegin(id);}
 
 
 /* ---- print: the citations as endnotes at the end of the page on show ---- */
@@ -3084,7 +2893,6 @@ function templateOk(t){
 function adoptTemplate(t){if(!templateOk(t)) return false;
   TPL={...t,widgets:[...(t.widgets||[])]};
   boardOpen=null;
-  if(!knownView(view)&&!VIEWS[view]) view="home";
   return true;}
 
 /* The empty booklet is shared and must never be edited in place, so the first
@@ -3110,10 +2918,6 @@ function moduleClash(mod,mods){const mine=new Set(modesOf(mod).map(a=>a.id));
   for(const other of mods) if(other&&other.id!==mod.id)
     for(const a of modesOf(other)) if(mine.has(a.id)) return {act:a.id,other:other.id};
   return null;}
-/* the sentence a refused module is reported with, or null if it was not refused */
-const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
-function refusalOf(mod){if(!mod||typeof mod!=="object") return null;
-  const c=moduleClash(mod,allModules());return c?cap(MW().clash(mod.id,c.act,c.other))+".":null;}
 
 function addModule(mod){if(!moduleOk(mod)||moduleClash(mod,allModules())) return false;
   editTemplate(t=>{t.modules=t.modules||[];
@@ -3130,69 +2934,23 @@ function moduleOk(mod){if(!(mod&&typeof mod==="object"&&typeof mod.id==="string"
   if(mod.activities!=null&&!(Array.isArray(mod.activities)&&mod.activities.every(a=>a&&typeof a==="object"))) return false;
   const acts=modesOf(mod),ids=acts.map(a=>a.id);
   return acts.length>0&&acts.every(a=>typeof a.id==="string"&&kindOk(a.kind))&&new Set(ids).size===ids.length;}
-/* every module carried by a file, whether or not its booklet is adopted */
-const modulesIn=t=>((t&&t.modules)||[]).filter(moduleOk);
 
-function applyParsed(R,mode){const st=R.S;
-  /* The design travels with the file it came from, so replacing the contents
-     replaces the booklet. What happens to the design is reported as it
-     happened (the message below): Replace takes the file's; Add keeps this
-     booklet's and brings in only the activities it lacks, so the entries it
-     adds have somewhere to show. */
-  const design={replaced:false,added:[],refused:[]};
-  if(mode==="replace"&&templateOk(R.template)){adoptTemplate(R.template);design.replaced=true;}
-  else if(mode==="replace") modulesIn(R.template).forEach(m=>{if(!allModules().some(x=>x.id===m.id)&&addModule(m)) design.added.push(m);});
-  else if(R.template) design.added=addMissingModules(R.template,design.refused);
+/* A file opened from "Your booklets" becomes a booklet of its own: its design
+   is the booklet, and its entries, answers and drafts are what that booklet
+   holds. */
+function applyParsed(R){const st=R.S;
+  if(templateOk(R.template)) adoptTemplate(R.template);
   /* every activity's draft, keyed by activity id (see draftsIn) */
-  const others=draftsIn((R.drafts||{}).activities);
-  if(mode==="replace"){S=st;D={custom:others};}
-  else{
-    /* kept entries, by the same rule: one per date and time */
-    S.entries=S.entries||{};
-    for(const [id,items] of Object.entries(st.entries||{})){
-      if(!Array.isArray(items)||id==="__proto__"||id==="constructor"||id==="prototype") continue;
-      const mine=Array.isArray(S.entries[id])?S.entries[id]:(S.entries[id]=[]);
-      const seenE=new Set(mine.filter(e=>e&&e.ts).map(e=>minuteKey(e.ts)));
-      items.forEach(e=>{if(e&&e.ts&&!seenE.has(minuteKey(e.ts))){seenE.add(minuteKey(e.ts));mine.push(e);}});}
-    /* answers and drafts: what is already here is kept, and the file's fills in only where there is nothing */
-    S.answers=S.answers||{};
-    for(const [k,v] of Object.entries(st.answers||{})) if(k!=="__proto__"&&!holdsSomething(S.answers[k])) S.answers[k]=v;
-    Object.entries(others).forEach(([id,d])=>{
-      const mine=D.custom&&Object.prototype.hasOwnProperty.call(D.custom,id)?D.custom[id]:null;
-      if(!holdsSomething(mine)){D.custom=D.custom||{};D.custom[id]=d;}});}
+  S=st;D={custom:draftsIn((R.drafts||{}).activities)};
   if(R.lang&&tableTag(R.lang)) lang=tableTag(R.lang);
-  dirty=false;unsavedEntries=0;openChip={};
-  const t=T[lang].ui;const kept=Object.values(st.entries||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);
-  let msg=t.loadSummary(kept);
-  if(design.replaced) msg+="\n"+t.loadBooklet(designName(R.template));
-  else if(design.added.length) msg+="\n"+t.loadGained(design.added.map(m=>tx(m.title,m.id)).join(", "));
-  else if(templateOk(R.template)) msg+="\n"+t.loadKept(designName(R.template),t.mergeReplace);
-  const unread=[...R.unread,...design.refused];
-  if(unread.length) msg+="\n"+t.loadUnread(unread.length)+"\n"+unread.slice(0,6).map(x=>"• "+x).join("\n")+(unread.length>6?"\n…":"");
-  return msg;}
-/* What a booklet design is called in a message: its own title, else the names
-   of its first activities, else its id. */
-function designName(t){const d=describeBooklet(t,null);const n=tx(d.title,"");
-  if(typeof n==="string"&&nonEmpty(n)) return n.trim();
-  const p=d.parts.map(x=>tx(x,"")).filter(x=>typeof x==="string"&&nonEmpty(x));
-  return p.length?p.join(", "):String((t&&t.id)||"");}
-function addMissingModules(t,refused){const added=[];
-  const fileW=(t.widgets||[]).filter(w=>w&&typeof w.id==="string");
-  for(const m of modulesIn(t)){if(allModules().some(x=>x.id===m.id)) continue;
-    const why=refusalOf(m);if(why){refused.push(why);continue;}
-    const need=modesOf(m).flatMap(allBlocksOf).map(b=>typeof b.widget==="string"?fileW.find(w=>w.id===b.widget):null);
-    [...new Set(need)].filter(w=>w&&!widgetOf(w.id)).forEach(addWidget);
-    if(addModule(m)) added.push(m);}
-  return added;}
+  dirty=false;unsavedEntries=0;openChip={};}
 
 /* ======================= WIRING ======================= */
-let pending=null;
-const veilLoad=document.getElementById("veilLoad"),veilMerge=document.getElementById("veilMerge"),veilClear=document.getElementById("veilClear"),dropVeil=document.getElementById("dropVeil");
+const veilLoad=document.getElementById("veilLoad"),veilClear=document.getElementById("veilClear"),dropVeil=document.getElementById("dropVeil");
 document.getElementById("btnHome").addEventListener("click",homeButton);
 document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>pickLang(chooseLang(b.dataset.lang))));
 document.getElementById("btnExport").addEventListener("click",openExport);
 function openLoad(){const m=document.getElementById("loadMsg");m.textContent="";m.className="msg";document.getElementById("pasteIn").value="";document.getElementById("fileIn").value="";veilLoad.setAttribute("open","");}
-document.getElementById("btnLoad").addEventListener("click",openLoad);
 document.getElementById("loadCancel").addEventListener("click",()=>veilLoad.removeAttribute("open"));
 function readFileInto(file,cb){if(!file) return;const r=new FileReader();r.onload=()=>cb(String(r.result||""));r.readAsText(file);}
 document.getElementById("fileIn").addEventListener("change",e=>readFileInto(e.target.files[0],txt=>{document.getElementById("pasteIn").value=txt;}));
@@ -3202,10 +2960,9 @@ function addModuleFromText(text){
   const problems=moduleTextProblems(text);
   if(problems.length){msg.className="msg err";msg.textContent=problems.join(" ");return false;}
   const R=parseFile(text);
-  /* the same "nothing to lose" test designAtStake uses for a loaded file:
-     an untouched booklet may become this file outright */
+  /* an untouched booklet may become this file outright */
   const empty=!allModules().length&&!TPL.customized;
-  if(empty&&templateOk(R.template)){applyParsed(R,"replace");}
+  if(empty&&templateOk(R.template)){applyParsed(R);}
   else{const r=addModuleText(text);
     if(!r.ok){msg.className="msg err";msg.textContent=r.problems.join(" ");return false;}}
   veilAddModule.removeAttribute("open");saveLocal();render();
@@ -3238,7 +2995,7 @@ async function openAddModule(){const t=T[lang].ui;
   box.innerHTML="";
   veilAddModule.setAttribute("open","");
   /* the registry's list, fetched fresh on every opening and never kept */
-  await loadRegistry(DEFAULT_REGISTRY);
+  await loadRegistry(registryUrl());
   renderAddModuleList();}
 const veilAddModule=document.getElementById("veilAddModule");
 document.getElementById("addModCancel").addEventListener("click",()=>veilAddModule.removeAttribute("open"));
@@ -3246,24 +3003,8 @@ function loadText(text){const t=T[lang].ui;const msg=document.getElementById("lo
   const R=parseFile(text||"");
   if(!R.ok){if(veilLoad.hasAttribute("open")){msg.className="msg err";msg.textContent=t.loadErr;} else toast(t.loadErr);return;}
   veilLoad.removeAttribute("open");
-  /* On "Your booklets" a file is always a booklet of its own. It never merges
-     into another one; inside a booklet, Load offers add-or-replace. */
-  if(view===LIB_VIEW){const e=addEntry({from:"file"});openBooklet(e.id);finishLoad(R,"replace");return;}
-  if(sessionHasContent()) return askMerge(R,"entries");
-  if(designAtStake(R)) return askMerge(R,"design");
-  finishLoad(R,"replace");}
-function designAtStake(R){const t=R&&R.template;
-  if(!templateOk(t)) return false;
-  const here=allModules();
-  if(!here.length&&!TPL.customized) return false;
-  const theirs=new Set((t.modules||[]).map(m=>m&&m.id));
-  return !(TPL.id&&t.id===TPL.id&&here.every(m=>theirs.has(m.id))&&!dirty);}
-let mergeWhy="entries";
-function askMerge(R,why){pending=R;mergeWhy=why;mergeText();veilMerge.setAttribute("open","");}
-/* the dialog says what it is asking about: entries already here, or a design */
-function mergeText(){const t=T[lang].ui;const d=!!pending&&mergeWhy==="design";
-  document.getElementById("mergeTitle").textContent=d?t.mergeDesignTitle:t.mergeTitle;
-  document.getElementById("mergeHelp").textContent=d?t.mergeDesignHelp(designName(pending.template)):t.mergeHelp;}
+  /* a file is always a booklet of its own; it never merges into another one */
+  const e=addEntry({from:"file"});openBooklet(e.id);finishLoad(R);}
 /* A module file (modules/*.md: front matter `module:`, one ```json module
    block, and prose for people, such as "Adding it to a booklet") is one activity
    to add, never a booklet to open. Read as a booklet it was adopted as a whole
@@ -3276,20 +3017,14 @@ function mergeText(){const t=T[lang].ui;const d=!!pending&&mergeWhy==="design";
    else, including a module block pasted without its file, is read as a
    booklet, as before. moduleFileOf returns the module as written, or null. */
 document.getElementById("loadGo").addEventListener("click",()=>loadText(document.getElementById("pasteIn").value));
-function finishLoad(R,mode){const mine=!!langPref();
-  const summary=applyParsed(mine?{...R,lang:null}:R,mode);
-  if(mine&&R.lang&&tableTag(R.lang)) lang=tableTag(R.lang);
-  pending=null;saveLocal();veilMerge.removeAttribute("open");
-  if(view==="home") render(); else go("home");
-  const msg=el("div",{class:"msg ok",style:"white-space:pre-wrap;margin:0 0 1rem"},summary);document.getElementById("main").prepend(msg);toast(T[lang].ui.loadOk);}
-document.getElementById("mergeCancel").addEventListener("click",()=>{pending=null;veilMerge.removeAttribute("open");});
-document.getElementById("mergeAdd").addEventListener("click",()=>{if(pending) finishLoad(pending,"add");});
-document.getElementById("mergeReplace").addEventListener("click",()=>{if(pending) finishLoad(pending,"replace");});
+function finishLoad(R){const mine=!!langPref();
+  applyParsed(mine?{...R,lang:null}:R);
+  saveLocal();go("home");toast(T[lang].ui.loadOk);}
 document.getElementById("clearCancel").addEventListener("click",()=>veilClear.removeAttribute("open"));
 document.getElementById("clearGo").addEventListener("click",()=>{S=emptyS();D=emptyD();dirty=false;unsavedEntries=0;openChip={};clearLocal();veilClear.removeAttribute("open");go("home");});
 const veilExport=document.getElementById("veilExport");
-[veilLoad,veilMerge,veilClear,veilExport].forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){[veilLoad,veilMerge,veilClear,veilExport].forEach(v=>v.removeAttribute("open"));}});
+[veilLoad,veilClear,veilExport].forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){[veilLoad,veilClear,veilExport].forEach(v=>v.removeAttribute("open"));}});
 let dragDepth=0;
 window.addEventListener("dragenter",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")){e.preventDefault();dragDepth++;dropVeil.classList.add("show");}});
 window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault();});
@@ -3303,13 +3038,12 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 
 
 /* ======================= BOOT ======================= */
-/* "Your booklets" first, unless the address names a booklet. */
+/* The page opens on "Your booklets". */
 const restoredFromBrowser=bootLibrary();
 
 render();
 if(restoredFromBrowser) setTimeout(()=>toast(T[lang].ui.restored),400);
 else if(!storageOk) setTimeout(()=>toast(T[lang].ui.storageOff),400);
-window.addEventListener("hashchange",followRoute);
 /* another tab added or removed a booklet: the list redraws */
 window.addEventListener("storage",e=>{if(view===LIB_VIEW&&(!e||!e.key||String(e.key).endsWith(LIB_KEY))) render();});
 </script>

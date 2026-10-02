@@ -6,11 +6,21 @@ const fs=require("fs"),path=require("path");
 const html=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
 const BANNED=["ENTRY_STORE","emptyCheckin","emptyToday","goodday","checkins","BODY_KEYS","TODAY_KEYS","skipBody",
   "LIBRARY(","acquisitions","KEYS_BY_TYPE","LEGACY_KEYS","wrapperConfig","addModFile","veilSafety","veilRemind",
-  "veilLock",'"checkin"','"today"'];
+  "veilLock",'"checkin"','"today"',
+  /* the second trimming pass: no in-booklet Load or merge, no address-bar routing,
+     no install manifest, no callout filter, no second copy of the registry URL */
+  "btnLoad","veilMerge","hashchange",'rel="manifest"',"rd-filter","DEFAULT_REGISTRY"];
 let fails=0;
 for(const w of BANNED){const n=html.split(w).length-1;
   if(n){fails++;console.log("  FAIL  booklet.html still contains "+w+" ("+n+"x)");}
   else console.log("  ok    no "+w);}
+// The renderer's one setting: exactly one registry meta tag, and the URL lives there only.
+{const n=html.split('<meta name="booklet-registry"').length-1;
+  if(n===1) console.log("  ok    exactly one booklet-registry meta tag");
+  else{fails++;console.log("  FAIL  expected one <meta name=\"booklet-registry\"> tag, found "+n);}
+  const u=html.split("booklet-registry/main/registry.json").length-1;
+  if(u===1) console.log("  ok    the registry URL appears once");
+  else{fails++;console.log("  FAIL  the registry URL appears "+u+" times");}}
 // The engines style what a module's figure carries by the engine's own classes, never a
 // module's: svg-regions regions (class "rg") and every other shape as an outline. Without
 // these an SVG draws as a solid black silhouette, which no other check notices.

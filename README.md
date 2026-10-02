@@ -89,22 +89,15 @@ and it draws those too, as long as they use engines it has.
 ## Try it
 
 Download `booklet.html` and `examples/how-tides-work.booklet.md`, open the HTML file in a browser —
-**straight off your disk, `file://` is fine** — and press *Load* to open the
-markdown file. No server, no install, no network: verified with `fetch` and
+**straight off your disk, `file://` is fine** — and press *Add a booklet from a file*
+on "Your booklets" to open the markdown file. No server, no install, no network: verified with `fetch` and
 `XMLHttpRequest` stubbed to fail.
 
 A module file (any v0.2 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it.
 
-A booklet file loaded inside a booklet asks first whenever something there
-would be lost: entries, or a design of its own (a booklet with no entries is
-still somebody's work). *Add to what's here* keeps this booklet's design and
-brings in the file's entries and the activities it lacks; *Replace what's here*
-takes the file's booklet whole. The message afterwards says which happened. A
-file loads without asking only into a booklet with no design of its own, or
-when it is a later copy of the same booklet (the same booklet id, holding every
-module this one holds) and nothing here is left undownloaded, which is how a
-saved file goes back into a blank booklet.
+A file added from "Your booklets" is always a booklet of its own, in the list. The
+renderer has no way to load a file into a booklet that is already open.
 
 The renderer opens **empty**, because it holds no booklet of its own. That is
 the property everything else here rests on.
@@ -142,50 +135,19 @@ own questions.
 
 ## Putting the renderer on a site
 
-`booklet.html` needs nothing from a host: copy it anywhere and it works. A site
-that wants to be installable on a phone's home screen adds one small thing
-beside it. It is not part of the renderer or of the format, and a page without
-it is just a renderer and a Load button.
+`booklet.html` needs nothing from a host: copy it anywhere and it works. It has
+one setting, and it is not part of the format: where "Add a module" looks for
+modules. That is one line in the page's `<head>`:
 
-### Publish a `manifest.webmanifest` beside it
-
-The renderer's `<head>` links `manifest.webmanifest`, resolved relative to the
-page. A **web app manifest** is a small JSON file that tells the browser the
-page is an installable app: its name, its icon, and which URL to open when the
-person taps it on their home screen. **The renderer does not ship one and a site
-must publish its own.** Without it, "Add to Home Screen" quietly gives a plain
-bookmark (or nothing), with no error anywhere, because a missing manifest is
-not a failure the page can see. Two more conditions apply:
-
-- **Serve over https** (`localhost` counts). Opened from disk, or over plain
-  http, install is not offered, and a phone will not keep the person's data the
-  way it does for an installed app.
-- **Serve the file as JSON**, with the type `application/manifest+json`
-  (most hosts already do this for `.webmanifest`), and put it at the same path
-  as the renderer, or change the `href` in your copy of the page.
-
-A minimal manifest, for a renderer published at `/tools/booklet.html`:
-
-```json
-{
-  "name": "My Booklets",
-  "short_name": "Booklets",
-  "start_url": "/tools/booklet.html",
-  "scope": "/tools/",
-  "display": "standalone",
-  "background_color": "#FFFCF4",
-  "theme_color": "#12996E",
-  "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
-  ]
-}
+```html
+<meta name="booklet-registry" content="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json">
 ```
 
-`theme_color` matches the renderer's own `<meta name="theme-color">`. The
-192px and 512px PNG icons are what Android needs to offer install; the renderer
-carries an inline icon of its own only for the browser tab and for iOS. The
-renderer registers no service worker, so a manifest and https are all it takes.
+A site changes that one line to point at another registry. A site that sets a
+Content-Security-Policy must also allow that registry's origin, and the origin of
+the module files it lists, in `connect-src`. With the tag missing or empty, "Add
+a module" shows its "no modules" message and nothing else changes. A module's
+`file` path in the registry resolves relative to the registry's own address.
 
 ### Language and storage
 
@@ -199,7 +161,7 @@ it was saved in. A booklet that does not offer the language in force opens in
 its own, and a booklet that declares one language always reads in it.
 
 The page opens on "Your booklets", the list of every booklet kept in that
-browser, unless the address names one (`#/b/<id>`). Each booklet keeps its own
+browser. The address is never read or written. Each booklet keeps its own
 answers, and a first visit shows the empty list.
 
 The renderer only ever calls `localStorage.getItem`, `setItem` and
@@ -213,13 +175,14 @@ independent booklet instances on one origin without their data colliding.
 ## Registries
 
 A **registry** is one JSON file listing modules somebody offers, with enough in
-each entry to draw a menu. The renderer reads exactly one, built into it:
+each entry to draw a menu. The renderer reads exactly one, named by the `booklet-registry` meta tag in its
+`<head>`, which ships pointing at
 [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry),
 straight from its public repo, which takes additions by pull request. "Add a
 module" fetches that `registry.json` fresh each time it opens, and Add fetches
 the chosen module's file fresh. Nothing about a module is cached or kept outside
-the booklet that added it. There is no way to point the renderer at another
-registry, or at a module file of your own.
+the booklet that added it. A site points the renderer at another registry by changing that one tag; there
+is no way to add a module file of your own.
 
 See [`SPEC.md`](SPEC.md) for the format and [`CONTRIBUTING.md`](CONTRIBUTING.md)
 for how to add to this one.
@@ -228,7 +191,7 @@ for how to add to this one.
 demonstrations, general-purpose activities, and attributed professional content
 whose ownership and distribution terms travel in its `rights` block. A listing
 does not certify that a module is suitable, safe, or useful for a particular
-person. Anyone may publish a separate registry under their own policy; this renderer does not read one.
+person. Anyone may publish a separate registry under their own policy; a site can point the renderer at it.
 
 ---
 

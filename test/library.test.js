@@ -61,7 +61,7 @@ function boot(){const API={};
   LIB_VIEW, emptyS, emptyD,
   readLib, addEntry, openBooklet, clearLocal, closeBooklet, removeBooklet, createBooklet, saveLocal, loadLocal, mark, flushSave,
   toMarkdown, parseFile, applyParsed, addModule, addModuleText, editTemplate, allModules, render, renderBar, loadText,
-  followRoute, homeButton, bookletName, finalizeEntry,
+  homeButton, bookletName, finalizeEntry,
   orphanSaveTimer(){saveTimer=null;}      // a timer whose handle was lost: only bookletGen can stop it now
 }));`);
   return API;}
@@ -231,14 +231,10 @@ chk("loading a file on the list adds it as a new booklet and opens it",
   &&A.allModules().map(m=>m.id).join(",")==="mensio-check-in");
 A.homeButton();A.loadText(exampleText);
 chk("the same file loaded again is a second booklet, deliberately",A.readLib().entries.length===2);
-A.S.answers.x="kept";A.saveLocal();
-A.loadText(exampleText);
-chk("inside a booklet, Load still offers add-or-replace and adds no booklet",A.pending!==null&&A.readLib().entries.length===2);
 
 // ---- a module file is a booklet like any other ------------------------------
 // A v0.2 module file (the fixtures, and what the registry serves) is an
-// ordinary booklet: on the list it becomes a booklet of its own, and inside a
-// booklet that holds work it asks whether to add or replace.
+// ordinary booklet: on the list it becomes a booklet of its own.
 {const keptPrepend=main().prepend;
  const shownMsg=()=>{const m=main();m.prepend=(...k)=>m.children.unshift(...k);};   // the stub's prepend keeps nothing
  wipe();A=boot();A.render();shownMsg();
@@ -247,34 +243,19 @@ chk("inside a booklet, Load still offers add-or-replace and adds no booklet",A.p
  chk("a module file loaded on the list starts a new booklet holding that module, and opens it",
    L.entries.length===1&&A.currentId===L.entries[0].id&&A.view==="home"&&A.allModules().map(m=>m.id).join(",")==="example-daily-journal",
    JSON.stringify({n:L.entries.length,mods:A.allModules().map(m=>m.id)}));
- chk("with no warning that a part of the file could not be read",!/could not be read/.test(texts(main())),texts(main()).slice(0,240));
- A.S.answers.x="kept";A.saveLocal();
- A.loadText(modText("the-day"));
- chk("inside a booklet that holds work, a file asks first: add or replace",A.pending!==null&&A.readLib().entries.length===1);
  main().prepend=keptPrepend;}
 
-// ---- the address bar: reload returns, Back walks out ------------------------
+// ---- no address bar: the page always opens on the list ----------------------
 wipe();
 global.location={hash:"",href:"file:///tmp/booklet.html"};
-global.history={state:null,replaceState(s,t,u){global.location.hash=u;}};
+global.history={state:null,replaceState(){throw new Error("the page must not write the address");}};
 A=boot();A.render();
-chk("a visit with no route lands on the list, and says so in the address",A.view===A.LIB_VIEW&&global.location.hash==="#/");
+chk("a visit lands on the list",A.view===A.LIB_VIEW);
 const h1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
-chk("opening a booklet puts it in the address",global.location.hash==="#/b/"+encodeURIComponent(h1.id));
+chk("opening a booklet does not write the address",global.location.hash==="");
 global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/journal";
 {const B2=boot();
- chk("a reload returns to the booklet and the view it was on",B2.currentId===h1.id&&B2.view==="journal");
- chk("and says what it restored, as a reload always has",B2.restoredAtBoot===true||B2.restoredAtBoot===false);}
-global.location.hash="#/";A.followRoute();
-chk("Back to #/ closes the booklet and shows the list",A.view===A.LIB_VIEW&&A.currentId===null);
-global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/journal";A.followRoute();
-chk("a route to an activity opens it",A.currentId===h1.id&&A.view==="journal");
-global.location.hash="#/b/nosuchbooklet";A.followRoute();
-chk("a route to a booklet this browser does not have falls back to the list",A.view===A.LIB_VIEW&&A.currentId===null);
-global.location.hash="#areas";A.followRoute();
-chk("an in-page anchor is not a route and changes nothing",A.view===A.LIB_VIEW&&A.currentId===null);
-global.location.hash="#/b/"+encodeURIComponent(h1.id)+"/nosuchactivity";A.followRoute();
-chk("a route to an activity the booklet lacks falls back to its home",A.currentId===h1.id&&A.view==="home");
+ chk("a route in the address is ignored: the page opens on the list",B2.view===B2.LIB_VIEW&&B2.currentId===null);}
 delete global.location;delete global.history;
 
 // ---- a page left behind never saves into the storage that follows it --------
