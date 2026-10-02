@@ -396,8 +396,6 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 - **The whole records section sits inside `%%` … `%%`**, which hides it from Obsidian's Reading view. A block a `![[…]]` embed points to is never put inside `%%`, because an embed cannot reach a block hidden that way — only data no other part of the file references belongs there, and the records section is exactly that.
 - `sync` (where the file is kept) is a record too, preserved unchanged by any reader that doesn't understand it.
 
-A locked booklet's envelope: `encrypted: true` in front matter, one line saying how to open it, and one `booklet locked` fence.
-
 ---
 
 ## 9. Languages
