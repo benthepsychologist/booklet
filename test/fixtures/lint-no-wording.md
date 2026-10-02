@@ -104,7 +104,7 @@ Paste the block below anywhere under the long rule of your file.
    },
    {
     "id": "nw",
-    "type": "headlines",
+    "type": "text",
     "q": [
      "lw",
      "nw"

@@ -133,7 +133,7 @@ The word after the id is the activity's kind:
 | `repeat` | each completion is kept as a dated entry, with a history |
 | `repeat daily` | one kept entry per day; completing again replaces today's |
 
-Flags that may follow: `pinned` (kept one tap away from every page), `hidden` (kept in the file, not offered).
+Flag that may follow: `hidden` (kept in the file, not offered).
 
 **Pages are separated by a horizontal rule.** Any thematic break inside an activity (`---`, `***`, `___`) is a page break, the way Marp splits slides. A page's name in the left menu is its first heading, at whatever level; a page with no heading is "Page 2". An activity with no rule is one page.
 

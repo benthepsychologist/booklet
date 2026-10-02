@@ -6,26 +6,25 @@ Lint a booklet file against the booklet-1 spec — the reference validator for
 the Booklet format.
 
 A booklet is one portable Markdown file that carries both a person's content
-and the *design* of the activities they filled in — which means a preset is
-just a booklet with a design and no content. That is the whole point of the
-format, and it is also the risk: a malformed template is not a cosmetic
+and the *design* of the activities they filled in. That is the whole point of
+the format, and it is also the risk: a malformed template is not a cosmetic
 problem, it is an activity that renders wrong or not at all for whoever was
 handed it.
 
 A conforming reader refuses a malformed template at load time and falls back
 to a known-good booklet, so a bad file cannot brick anyone. This linter exists
-so a bad file does not reach anyone in the first place, and so a preset is
+so a bad file does not reach anyone in the first place, and so a booklet is
 known-good before it is shared.
 
 What it checks: the front matter, the sealed record's three layers, and every
 structural rule a renderer relies on — known mode kinds, known block types,
 unique ids (blocks nested in groups included), menus that exist for the lists
-that name them, sources that name real map fields, labels that resolve to
+that name them, labels that resolve to
 something, question wording that resolves in every language on offer, and no
 script in a widget's SVG.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
-Default (no arguments): every *.md file in presets/, modules/, widgets/, and
+Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive).
 The files under modules/ and widgets/ here are this repository's registry
@@ -43,11 +42,10 @@ def warn(f, m): warnings.append(f"{f}: {m}")
 
 # The renderer's vocabulary. A booklet may only ask for what the page can draw;
 # anything else is a design that silently renders as nothing.
-MODE_KINDS  = {"entry", "board", "guide", "log"}
+MODE_KINDS  = {"entry", "log"}
 PLACEMENTS_D = {"open", "folded", "hidden"}
-# `widget` is the live one; bodymap/quadrants are the pre-widget names, still read
-BLOCK_TYPES = {"widget", "headlines", "list", "didlog", "group", "text",
-               "bodymap", "quadrants", "prose", "image",
+BLOCK_TYPES = {"widget", "list", "didlog", "group", "text",
+               "prose", "image",
                # blocks that only read: they own no entry key and take no answer
                "heading", "deflist", "quote", "callout", "sources"}
 ENGINES = {"svg-regions", "grid-select", "card-board"}
@@ -77,39 +75,7 @@ def svg_script_in(svg):
     if url:
         found.append(f"a {url.group(1).lower()}: URL")
     return found
-# the map fields a list block may draw its options from
-# A board's fields are whatever that board declares. There is no fixed
-# vocabulary: this used to be a hard-coded list of one practice's field names,
-# which meant the reference validator refused every board but theirs.
-def board_fields(tpl):
-    """Every field name any card-board widget in this file holds."""
-    out = set()
-    def take(card):
-        for x in (card.get("lists") or []) + (card.get("prose") or []):
-            name = x.get("field") if isinstance(x, dict) else x
-            if isinstance(name, str):
-                out.add(name)
-    for w in (tpl.get("widgets") or []):
-        if isinstance(w, dict) and w.get("engine") == "card-board":
-            for c in (w.get("cards") or []):
-                if isinstance(c, dict):
-                    take(c)
-    for m in (tpl.get("modules") or []):           # pre-widget files
-        for c in (m.get("map") or []):
-            if isinstance(c, dict):
-                take(c)
-    return out
 STATUSES = {"draft", "approved"}
-# What a board or a guide keeps goes in the file's `fields` block, under the key
-# each block owns. These are the names the person's own record uses: an older
-# reader keeps a board answer loose in that record, where a block called `note`
-# or `today` wrote over the person's own note or entries, and the current one
-# leaves such an answer where it found it. `__proto__` cannot be a key at all.
-RECORD_KEYS = {"big", "goodday", "now", "areas", "archive", "q", "emo", "prefs", "setup",
-               "person", "page", "today", "checkins", "entries", "mode", "name", "note",
-               "__proto__"}
-BUILTIN_ACTIVITIES = ("today", "checkin")     # the two whose drafts sit at the top of the drafts block
-
 # Languages. The reference renderer has interface tables for English, Spanish
 # and French; `es-AR` is a small layer over `es`. A booklet or module may carry
 # its wording in ANY SUBSET of them, Spanish-only included, and a booklet may
@@ -359,9 +325,6 @@ def check_template(f, tpl):
             if isinstance(m, dict) and "modes" in m and not isinstance(m.get("mode"), dict):
                 err(f, retired_modes(m.get("id")))
         return
-    # fields modules say up front they draw on from a board elsewhere
-    declared_reads = {r for m in (tpl.get("modules") or [])
-                      for r in (m.get("reads") or []) if isinstance(r, str)}
     # A module may declare whose it is. It lives in the module BLOCK rather
     # than in a file's front matter because front matter is discarded the
     # moment a module is pasted into a booklet — and the content travels, so
@@ -420,7 +383,6 @@ def check_template(f, tpl):
 
     # Activity ids are unique across the whole booklet, whichever module holds
     # them: entries, drafts and views are keyed by the id alone.
-    card_fields = board_fields(tpl)
     seen_modes = {}
     for m, owner in owned:
         if not isinstance(m, dict) or not isinstance(m.get("id"), str):
@@ -482,35 +444,7 @@ def check_template(f, tpl):
             if "order" in d and not isinstance(d["order"], (int, float)):
                 err(f, f"block {bid!r} has a non-numeric display.order — ordering would fall back to file order")
             check_block_needs(f, b, bid, btype)
-            if m.get("kind") in ("board", "guide") and not isinstance(b.get("blocks"), list):
-                for k in owned_keys(b):
-                    if k in RECORD_KEYS:
-                        warn(f, f"{m['kind']} activity {mid!r}: block {bid!r} keeps its answer under the key "
-                                f"{k!r}, which the person's own record uses. A current reader keeps it in "
-                                f"`fields`, but an older one writes it over the person's own {k!r}. "
-                                f"Give the block another id, or another `keys` entry")
-                    elif k in card_fields:
-                        warn(f, f"{m['kind']} activity {mid!r}: block {bid!r} keeps its answer under the key "
-                                f"{k!r}, which a card-board widget in this file already holds. Both write "
-                                f"`fields.{k}`, so the answer and the cards would overwrite each other. "
-                                f"Give the block another id, or another `keys` entry")
             if btype == "list":
-                # A list draws from a board field. The board may live in another
-                # module — the spec calls `reads` soft, not a dependency — so a
-                # file carrying no board at all can only be warned about.
-                known = board_fields(tpl)
-                for s in (b.get("source") or []):
-                    if not isinstance(s, str) or not s:
-                        err(f, f"block {bid!r} draws from something that is not a field name")
-                    elif known and s not in known:
-                        err(f, f"block {bid!r} draws from {s!r}, which no board in this file holds "
-                               f"(they hold: {', '.join(sorted(known))})")
-                    elif not known and s not in declared_reads:
-                        # A module that declares `reads` is saying "I draw on a
-                        # board that may not be here" — the spec calls that soft,
-                        # not a dependency, so it is not worth a warning.
-                        warn(f, f"block {bid!r} draws from {s!r}, which no board here holds and "
-                                f"no module declares in `reads`")
                 if not b.get("copy") and not b.get("label"):
                     err(f, f"list block {bid!r} has neither a copy reference nor its own label, "
                            f"so it would render nameless")
@@ -534,7 +468,7 @@ def check_template(f, tpl):
                 elif not (isinstance(b.get("keys"), list) and b["keys"]):
                     err(f, f"widget block {bid!r} must name the entry keys its engine writes — "
                            f"only the widget knows what shape its answer is")
-            if btype in ("text", "headlines"):
+            if btype == "text":
                 q = b.get("q")
                 if not (isinstance(q, list) and len(q) == 2
                         and all(isinstance(x, str) and x for x in q)):
@@ -666,14 +600,6 @@ def check_template(f, tpl):
         check_menus(f, tpl.get("menus"), "template", key="menus",
                     offered=([t for t in declared if isinstance(t, str) and not lang_problem(t)],
                              "the booklet declares") if isinstance(declared, list) and declared else None)
-
-    body = tpl.get("body")
-    if body is not None:
-        if not (isinstance(body, dict) and isinstance(body.get("front"), list)
-                and isinstance(body.get("back"), list)):
-            err(f, "template.body must name a front and a back region list")
-        elif "jaw" in (body.get("back") or []):
-            warn(f, "the back figure lists a jaw, which a view from behind cannot show")
 
 
 # Reading material: a module's `sources` and `citations` registries, the
@@ -845,8 +771,6 @@ def activities_of(m):
 # keep answers addressable (unique block ids, one owner per answer field) run
 # across every page of the activity at once.
 READING_BLOCKS = {"heading", "prose", "deflist", "quote", "image", "callout", "sources"}
-KEYS_BY_TYPE = {"headlines": ["thoughts"]}
-LEGACY_KEYS = {"bodymap": "regions", "quadrants": "emotions"}
 
 
 def has_pages(a):
@@ -881,10 +805,8 @@ def owned_keys(b):
     kv = b.get("keys")
     if kv is not None and kv is not False and kv != 0 and kv != "":   # JS truthiness: [] counts
         keys = kv
-    elif t in LEGACY_KEYS:
-        keys = [LEGACY_KEYS[t]]
     else:
-        keys = KEYS_BY_TYPE.get(t) or [b.get("id")]
+        keys = [b.get("id")]
     return [k for k in (keys if isinstance(keys, list) else []) if isinstance(k, str)]
 
 
@@ -997,7 +919,6 @@ def check_block_needs(f, b, bid, btype):
 
 # The scopes whose question wording the renderer supplies itself when a module
 # words none of it (qDefault in booklet.html); a module may still override it.
-BUILTIN_SCOPES = {"today", "checkin", "area"}
 
 
 def wording_langs(tpl, m):
@@ -1063,13 +984,11 @@ def check_wording(f, b, bid, btype, place, home, mods, tpl):
     """A block that asks something must say what, in every language on offer:
     otherwise the renderer draws a blank label or the block's own id."""
     langs = wording_langs(tpl, home)
-    if btype in ("text", "headlines"):
+    if btype == "text":
         q = b.get("q")
         if not (isinstance(q, list) and len(q) == 2 and all(isinstance(x, str) and x for x in q)):
             return                                    # reported as a malformed `q`
         scope, key = q
-        if scope in BUILTIN_SCOPES:
-            return
         found = [l for l in langs
                  if copy_lookup(l, mods, home, lambda bag: q_wording(bag, scope, key))]
         missing = [l for l in langs if l not in found]
@@ -1155,119 +1074,6 @@ def check_pages(f, a, mid):
                     f"call it by its number")
 
 
-def check_preset_rules(f, fm, blocks):
-    """A preset is a clinical artefact: it decides what a person is asked to do."""
-    status = (fm or {}).get("status", "")
-    if status not in STATUSES:
-        err(f, f"a preset needs `status: draft` or `status: approved` in its front matter (found {status!r})")
-    elif status == "draft":
-        warn(f, "draft — not for distribution until it is approved")
-
-    fields = next((b.get("fields") or {} for b in blocks if b.get("block") == "fields"), {})
-    if any(v for v in fields.values()):
-        err(f, "a preset must ship empty: this one carries content in its fields block")
-    for b in blocks:
-        if b.get("block") == "entries" and b.get("items"):
-            err(f, f"a preset must ship empty: its {b.get('mode')!r} entries block has content")
-        if b.get("block") == "board" and board_has_content(b):
-            err(f, "a preset must ship empty: its board block has content")
-        if b.get("block") == "person" and (b.get("name") or b.get("email")):
-            err(f, "a preset must ship empty: it carries a name or an email address")
-        if b.get("block") == "drafts":
-            drafts_content(f, b)
-
-
-def blank(v):
-    """Nothing a person wrote: no text (spaces do not count), no list items, no
-    values in an object. A number or a true is something."""
-    if v is None or v is False:
-        return True
-    if isinstance(v, str):
-        return not v.strip()
-    if isinstance(v, (list, tuple)):
-        return all(blank(x) for x in v)
-    if isinstance(v, dict):
-        return all(blank(x) for x in v.values())
-    return False
-
-
-def row_has_content(row):
-    """A Now or area row is a `{kind, text, since, starter}`; its `since` and
-    `starter` are bookkeeping, so only its text can be content."""
-    if isinstance(row, dict):
-        return not blank(row.get("text"))
-    return not blank(row)
-
-
-AREA_TEXT = ("label", "matters", "difficult", "known", "fits", "notdecide")
-
-
-def board_has_content(b):
-    """The record keeps Now rows and areas that nothing has been written in yet,
-    so a row or an area is content only when it holds something."""
-    if any(row_has_content(r) for r in (b.get("archive") or [])):
-        return True
-    now = b.get("now")
-    if isinstance(now, dict) and any(row_has_content(r) for r in (now.get("items") or [])):
-        return True
-    for a in (b.get("areas") or []):
-        if not isinstance(a, dict):
-            if not blank(a):
-                return True
-            continue
-        if any(not blank(a.get(k)) for k in AREA_TEXT):
-            return True
-        if any(row_has_content(r) for r in (a.get("items") or [])):
-            return True
-    return False
-
-
-def drafts_problems(b):
-    """What is wrong with the shape of a `drafts` block's `activities`: an
-    object keyed by activity id, none of them `today` or `checkin` (those are
-    the block's own keys), each holding an object keyed by field id."""
-    if "activities" not in b or b["activities"] is None:
-        return []
-    acts = b["activities"]
-    if not isinstance(acts, dict):
-        kind = "a list" if isinstance(acts, list) else \
-               "a string" if isinstance(acts, str) else "a " + type(acts).__name__
-        return [f"`activities` in the drafts block must be an object keyed by activity id (found {kind})"]
-    out = []
-    for k, v in acts.items():
-        if not k:
-            out.append("`activities` in the drafts block has an empty activity id")
-        elif k in BUILTIN_ACTIVITIES:
-            out.append(f"`activities` in the drafts block holds {k!r}, which is a built-in activity; "
-                       f"`today` and `checkin` are keys of the block itself")
-        elif not isinstance(v, dict):
-            kind = "a list" if isinstance(v, list) else "a string" if isinstance(v, str) \
-                   else "null" if v is None else "a " + type(v).__name__
-            out.append(f"`activities.{k}` in the drafts block must be an object keyed by field id (found {kind})")
-    return out
-
-
-def drafts_content(f, b):
-    """A preset carries no draft: not of `today` or `checkin`, and not of any
-    other activity in `activities`. A malformed `activities` is reported by its
-    shape (check_drafts) and not judged again here."""
-    for k in BUILTIN_ACTIVITIES:
-        if not blank(b.get(k)):
-            err(f, f"a preset must ship empty: its drafts block carries a draft of {k!r}")
-    if drafts_problems(b):
-        return
-    for k, v in (b.get("activities") or {}).items():
-        err(f, f"a preset must ship empty: its drafts block carries a draft of the activity {k!r} "
-               f"under `activities`")
-
-
-def check_drafts(f, blocks):
-    for b in blocks:
-        if b.get("block") == "drafts":
-            for m in drafts_problems(b):
-                err(f, m)
-
-
 def check_module_file(f, fm, blocks, broken):
     """A module file is not a booklet: it is one activity, ready to be pasted
     into somebody's booklet or added in the page. It carries the module block
@@ -1337,8 +1143,8 @@ def check_widget_file(f, fm, blocks, broken):
 # wrong with a file. See SPEC.md for the format.
 CALLOUT_LINE = re.compile(r'^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$')
 ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
-CALLOUT_FLAGS = {"module": {"end"}, "activity": {"repeat", "daily", "pinned", "hidden"},
-            "widget": {"skippable", "readonly", "describe"}, "text": {"long"},
+CALLOUT_FLAGS = {"module": {"end"}, "activity": {"repeat", "daily", "hidden"},
+            "widget": {"readonly", "describe"}, "text": {"long"},
             "choice": {"open"}, "multi": {"open"}}
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
 DRAWN_QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date"}  # the kinds the reference page draws today
@@ -1549,7 +1355,7 @@ def main():
     else:
         # every booklet in the repo's standard directories, but not the prose
         # that documents them; a directory that doesn't exist is skipped
-        paths = sorted(x for d in ("presets", "modules", "widgets", "examples")
+        paths = sorted(x for d in ("modules", "widgets", "examples")
                        if (BASE / d).is_dir()
                        for x in (BASE / d).glob("*.md")
                        if x.name.lower() != "readme.md")

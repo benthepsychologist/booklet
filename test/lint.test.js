@@ -95,17 +95,6 @@ const warnsOf=r=>r.out.split("\n").filter(l=>l.startsWith("warn"));
 // this format's own records section has its own, separate checks in
 // test/booklet-format.test.js.
 
-// a board or a guide keeps its answers in `fields`, under the key each block owns; some keys are not safe to use
-{const CASES2=[
-  ["lint-board-key-reserved","a board block owning `note`",/board activity 'lw-main': block 'lw-main\.note' keeps its answer under the key 'note', which the person's own record uses/],
-  ["lint-guide-key-reserved","a guide block owning `today`",/guide activity 'lw-main': block 'lw-main\.today' keeps its answer under the key 'today', which the person's own record uses/],
-  ["lint-board-key-cardboard","a board block owning a card board's field",/board activity 'lw-main': block 'lw-main\.people' keeps its answer under the key 'people', which a card-board widget in this file already holds/]];
- for(const [n,what,rx] of CASES2){const r=lint(path.join(FX,n+".md")),w=warnsOf(r);
-   chk(`${what}: one warning, no error (it works, but the answers would collide)`,r.status===0&&r.errors.length===0&&w.length===1&&rx.test(w[0]),r.out);
-   chk(`${what}: the warning carries the file`,(w[0]||"").includes(n+".md"),w[0]);}
- const e=lint(path.join(FX,"lint-entry-key-fine.md"));
- chk("control: an entry activity's block called `note` is fine, its answers live in its entries",e.status===0&&/ 0 errors · 0 warnings/.test(e.out),e.out);}
-
 // ---- this repository's registry content is set up in en, fr and es
 // A rule of this registry, not of the format: a warning, never an error, and only
 // for the files under modules/ and widgets/ (or any file named after --registry).
