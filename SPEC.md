@@ -359,6 +359,7 @@ Obsidian draws the diagram natively at the embed. On GitHub the embed line shows
 - The fence holds JSON or YAML (YAML reads JSON, so JSON always works). Strings in YAML must be quoted.
 - `engine` names what draws it: `svg-regions`, `grid-select`, `card-board`. Labels are plain strings, because the file has one language.
 - Settings on the widget line: `readonly` (shown, not operated), `describe` (followed by what each part says about itself).
+- **An `svg-regions` figure** marks each region the reader can tap as a shape with `class="rg"` and a `data-r` attribute naming the region id. Every other shape in the figure is drawn as a plain outline, and the renderer styles both; a figure needs no styling of its own.
 - **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
 - Every `svg` string is sanitized before drawing.
 

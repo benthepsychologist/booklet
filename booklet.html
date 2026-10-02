@@ -200,6 +200,14 @@
   .bodywrap{display:grid;grid-template-columns:1fr;gap:1rem;margin:.8rem 0 0;align-items:start}
   @media (min-width:680px){.bodywrap{grid-template-columns:minmax(0,15rem) minmax(0,1fr)}}
 
+  /* svg-regions draws a figure it knows nothing about: a shape with class "rg" and a
+     data-r id is a region the reader can tap; every other shape is a plain outline. */
+  .svgfig svg{width:100%;max-width:15rem;margin:0 auto;display:block;touch-action:manipulation}
+  .svgfig .rg{fill:var(--paper-deep);stroke:var(--rule);stroke-width:2;cursor:pointer;transition:fill .12s,stroke .12s}
+  .svgfig .rg:hover{fill:var(--accent-soft);stroke:var(--accent)}
+  .svgfig .rg.on{fill:var(--accent-soft);stroke:var(--accent);stroke-width:3}
+  .svgfig .rg:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .svgfig svg :is(ellipse,circle,path,rect,polygon,polyline,line):not(.rg){fill:none;stroke:var(--rule);stroke-width:2;pointer-events:none}
   .sideswitch{display:flex;gap:.35rem;justify-content:center;margin:0 0 .5rem}
   .sidebtn{border:2px solid var(--rule);background:#fff;border-radius:999px;padding:.28rem .95rem;font-size:.88rem;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:.4rem}
   .sidebtn:hover{border-color:var(--accent);color:var(--accent)}
@@ -1009,7 +1017,7 @@ function svgRegions(e,W,keys){const key=keys[0];
   const rows=()=>e[key]||(e[key]=[]);
   const rowFor=id=>rows().find(r=>r.id===id);
   const sides=el("div",{class:"sideswitch",role:"group","aria-label":C.sideLbl||""});
-  const fig=el("div",{});
+  const fig=el("div",{class:"svgfig"});
   const chips=el("div",{class:"bodychips"});
   const panel=el("div",{class:"sensepanel"});
   const summary=el("div",{class:"bodysummary"});
