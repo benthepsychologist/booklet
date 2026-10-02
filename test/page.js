@@ -30,7 +30,7 @@ const body=html.slice(html.indexOf("<body>"),html.indexOf("<script>"));
 const realIds=new Set([...body.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
 let STORE={};
 global.document.createElement=mkNode;
-global.document.getElementById=id=>id==="booklet-wrapper"?null:realIds.has(id)?(STORE[id]||(STORE[id]=mkNode("div"))):null;
+global.document.getElementById=id=>realIds.has(id)?(STORE[id]||(STORE[id]=mkNode("div"))):null;
 let docTitle="";
 Object.defineProperty(global.document,"title",{get(){return docTitle;},set(v){docTitle=String(v);},configurable:true});
 const byId=id=>global.document.getElementById(id);
