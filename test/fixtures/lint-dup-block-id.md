@@ -20,4 +20,9 @@ lang: en
 ```
 ^picker-data
 
+```booklet widget
+{ "engine": "grid-select" }
+```
+^picker-data
+
 > [!module|fixture-mod end]

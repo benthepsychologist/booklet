@@ -13,7 +13,7 @@ lang: en
 > [!text|note long] What did you notice?
 
 > [!widget|picker] Pick a spot
-> ![[#^picker-data]]
+
 
 ```booklet widget
 { "engine": "grid-select", "title": "Spots" }

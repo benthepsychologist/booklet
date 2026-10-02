@@ -13,11 +13,16 @@ lang: en
 > [!text|note long] What did you notice?
 
 > [!widget|picker] Pick a spot
-> ![[#^picker-data]]
+> ![[#^notes]]
 
 ```booklet widget
 { "engine": "grid-select", "title": "Spots" }
 ```
 ^picker-data
+
+```booklet answers
+{}
+```
+^notes
 
 > [!module|fixture-mod end]

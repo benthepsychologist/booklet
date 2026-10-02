@@ -1,5 +1,5 @@
 ---
-booklet: 0.2
+module: fixture/old
 title: Lint fixture
 lang: en
 ---

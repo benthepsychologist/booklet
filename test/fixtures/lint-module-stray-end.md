@@ -6,8 +6,6 @@ lang: en
 
 # Lint fixture
 
-> [!module|fixture-mod] A fixture module
-
 > [!activity|walk repeat] A walk
 
 > [!text|note long] What did you notice?
