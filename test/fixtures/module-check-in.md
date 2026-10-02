@@ -28,7 +28,7 @@ the activity, so putting the module back brings them back with it.
 
 Body, feelings, thoughts — noticed, named, kept.
 
-> [!activity|checkin repeat] Mindful check-in
+> [!activity|check-in repeat] Mindful check-in
 
 Notice, name, keep. Nothing here needs to be explained or fixed.
 
