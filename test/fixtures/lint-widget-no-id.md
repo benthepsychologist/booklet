@@ -18,6 +18,5 @@ lang: en
 ```booklet widget
 { "engine": "grid-select", "title": "Spots" }
 ```
-^picker-data
 
 > [!module|fixture-mod end]

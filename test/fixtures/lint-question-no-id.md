@@ -10,7 +10,7 @@ lang: en
 
 > [!activity|walk repeat] A walk
 
-> [!text|note long] What did you notice?
+> [!text|long] What did you notice?
 
 > [!widget|picker] Pick a spot
 > ![[#^picker-data]]

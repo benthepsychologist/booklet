@@ -130,7 +130,7 @@ pages, then booklet lines.**
 | --- | --- |
 | How many **modules**? | One, unless the parts are independent and a person might want one without the other (a journal and a separate tracker). |
 | How many **activities**? | One per thing done in one sitting and kept as one entry. Parts done at different times (a daily log and a weekly review) are separate activities. |
-| Which **flag**? | `repeat` for anything with a dated history. `repeat daily` for once a day, replacing today's entry on a second finalize. No flag for reading, or for a question with one current answer and no history. `pinned` keeps an activity one tap away from every page (rare — a help/safety panel, not an ordinary activity). |
+| Which **flag**? | `repeat` for anything with a dated history. `repeat daily` for once a day, replacing today's entry on a second finalize. No flag for reading, or for a question with one current answer and no history. |
 | `blocks` or a page break? | No break: one scrolling page, enough for up to about seven lines. A break (`***`): one sitting with distinct steps (read, then answer, then review), 2 to 4 pages. |
 | Which **lines**? | Open with a line or two of plain prose: what to do, roughly how long, and that anything can be skipped. On a page that asks questions, 3 to 6 of them, mostly `text` (section 6). |
 
@@ -190,10 +190,9 @@ status: draft
 
 - **`status: draft`** is right for anything an AI wrote. The linter does not
   check this field for an ordinary booklet — it is a convention, not an
-  enforced rule — but `build-registry.js` skips any `modules/` file whose
-  `status` is set and is not `approved`, so a draft stays out of what the
-  Booklet repository actually offers until a person changes it to
-  `approved` after reviewing.
+  enforced rule — but the `booklet-registry` repository, where modules are
+  published, offers only `approved` modules, so a draft stays out until a
+  person changes it to `approved` after reviewing.
 - **`id`** is `local/<booklet-slug>` (or `<namespace>/<slug>` if the
   requester has one). It names the booklet across any future translation or
   version; it is not the module's own callout id (below).
@@ -231,12 +230,11 @@ ever offered from a registry.
   module fence; each still opens with its own `> [!activity|…]` line.
 - **An activity's id** is a short prefix plus a name (`aw-notes`, `tw-learn`):
   lowercase letters, digits, dashes; unique across the **whole booklet**,
-  every module included. Never `home`, `history`, `today` or `checkin` —
-  the renderer uses those names itself.
+  every module included. Never `home` — the renderer uses that name itself.
 - **Flags** (after the id, space-separated): `repeat` (kept as a dated
-  entry), `repeat daily` (one entry per day), `pinned` (reachable from every
-  page — rare). With none of these, the activity is answered once and edited
-  in place.
+  entry), `repeat daily` (one entry per day), `hidden` (kept in the file, not
+  offered). With none of these, the activity is answered once and edited in
+  place.
 
 An activity with pages (a page is a step; the answers of all its pages are
 kept together as one entry):
@@ -322,12 +320,11 @@ it, each starting with `>`, no blank line between:
   right after the question it answers, put it on its own page after a
   `***`, or say in your reply that folding isn't available yet and ask
   whether the requester wants it unfolded instead.
-- **Nothing reads another activity's board or tick list yet.** An older
-  version could draw a list of options pulled live from a different
-  activity's own answers, and a tick-list of what was actually done from
-  it. Neither has a working kind in v0.2 yet (`SPEC.md` §13). If a
-  request needs this, say so plainly and offer a plain `text` or `lines`
-  question instead, in the same activity.
+- **Nothing reads another activity's answers yet.** v0.2 has no kind that
+  draws a list of options pulled live from a different activity's own
+  answers, or a tick-list of what was actually done from it (`SPEC.md`
+  §13). If a request needs this, say so plainly and offer a plain `text` or
+  `lines` question instead, in the same activity.
 - **`matrix`** (several items against one shared scale, like a symptom
   questionnaire) is specified in `SPEC.md` §5 but the reference renderer does
   not draw it yet. Do not use it; ask for separate `scale` questions instead.
@@ -390,8 +387,8 @@ engines — `svg-regions` (clickable figures), `grid-select` (a grid of words),
 ````
 
 **Do not invent a widget or an engine.** Copy one whole, unchanged in shape,
-from an existing module in the Booklet repository's `modules/` (they carry
-their own widgets inline now) — only the wording inside it is yours to
+from an existing module in the `booklet-registry` repository's `modules/`
+(they carry their own widgets inline) — only the wording inside it is yours to
 translate or reword, never its `engine` or its structure. A new engine is a
 change to the renderer, not to a booklet. Without a widget file to copy,
 build the activity from `text`/`choice`/etc. instead.
@@ -416,7 +413,7 @@ build the activity from `text`/`choice`/etc. instead.
   it as needing a native speaker's check; leave `status: draft`.
 - Region spellings are `es-AR`, `fr-CA` (lowercase language, uppercase
   region). Other languages (`de`, `pt`, …) are refused by the linter.
-- **A module for the Booklet repository's own registry is one language too**
+- **A module for the `booklet-registry` repository is one language too**
   — the same rule as any other booklet now, not the three-language
   requirement an older version of this document described.
 
@@ -602,9 +599,9 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ---
 
-## 11. If you have the Booklet repository
+## 11. If you have the booklet-registry repository
 
-A module offered from the repository's own registry is written exactly the
+A module offered from the `booklet-registry` repository is written exactly the
 same way as any other booklet above — one v0.2 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:

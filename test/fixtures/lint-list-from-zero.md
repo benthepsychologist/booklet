@@ -11,6 +11,7 @@ lang: en
 > [!activity|walk repeat] A walk
 
 > [!text|note long] What did you notice?
+0. first
 
 > [!widget|picker] Pick a spot
 > ![[#^picker-data]]

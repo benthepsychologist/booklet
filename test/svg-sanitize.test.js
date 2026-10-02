@@ -211,7 +211,7 @@ chk("nothing, an empty string and a non-string all draw nothing",
 /* ---------------- real figures come through untouched ---------------- */
 const figures=[];
 for(const d of ["test/fixtures","examples"]) for(const f of fs.readdirSync(path.join(R,d))){
-  if(!f.endsWith(".md")) continue;const t=fs.readFileSync(path.join(R,d,f),"utf8");
+  if(!f.endsWith(".md")||/^lint-/.test(f)) continue;const t=fs.readFileSync(path.join(R,d,f),"utf8");
   for(const m of t.matchAll(/```(?:booklet widget|json)\n([\s\S]*?)\n```/g)){let j;try{j=JSON.parse(m[1]);}catch(e){continue;}
     const w=o=>{if(Array.isArray(o)) return o.forEach(w);
       if(o&&typeof o==="object"){if(typeof o.svg==="string") figures.push([d+"/"+f+" "+o.id,o.svg]);Object.values(o).forEach(w);}};

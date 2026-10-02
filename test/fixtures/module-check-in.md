@@ -28,11 +28,11 @@ the activity, so putting the module back brings them back with it.
 
 Body, feelings, thoughts — noticed, named, kept.
 
-> [!activity|checkin repeat] Mindful check-in
+> [!activity|check-in repeat] Mindful check-in
 
 Notice, name, keep. Nothing here needs to be explained or fixed.
 
-> [!widget|body skippable] Body
+> [!widget|body] Body
 > ![[#^body-map]]
 
 ```booklet widget
@@ -68,7 +68,7 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
     "invite": "Invite, don't command. \"Would this part like to soften a little?\" rather than \"relax now\". The point is noticing and allowing, not forcing anything to change.",
     "pick": "What is it like there?", "clear": "Clear this one",
     "none": "Nothing selected yet — tap the figure, or one of the buttons under it.",
-    "skip": "Skip the body this time", "unskip": "Use the body map", "sideLbl": "Front or back" }
+    "sideLbl": "Front or back" }
 }
 ```
 ^body-map

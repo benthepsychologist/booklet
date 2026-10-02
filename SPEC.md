@@ -133,7 +133,7 @@ The word after the id is the activity's kind:
 | `repeat` | each completion is kept as a dated entry, with a history |
 | `repeat daily` | one kept entry per day; completing again replaces today's |
 
-Flags that may follow: `pinned` (kept one tap away from every page), `hidden` (kept in the file, not offered).
+Flag that may follow: `hidden` (kept in the file, not offered).
 
 **Pages are separated by a horizontal rule.** Any thematic break inside an activity (`---`, `***`, `___`) is a page break, the way Marp splits slides. A page's name in the left menu is its first heading, at whatever level; a page with no heading is "Page 2". An activity with no rule is one page.
 
@@ -359,6 +359,7 @@ Obsidian draws the diagram natively at the embed. On GitHub the embed line shows
 - The fence holds JSON or YAML (YAML reads JSON, so JSON always works). Strings in YAML must be quoted.
 - `engine` names what draws it: `svg-regions`, `grid-select`, `card-board`. Labels are plain strings, because the file has one language.
 - Settings on the widget line: `readonly` (shown, not operated), `describe` (followed by what each part says about itself).
+- **An `svg-regions` figure** marks each region the reader can tap as a shape with `class="rg"` and a `data-r` attribute naming the region id. Every other shape in the figure is drawn as a plain outline, and the renderer styles both; a figure needs no styling of its own.
 - **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
 - Every `svg` string is sanitized before drawing.
 
@@ -395,8 +396,6 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 - A choice is stored as the option's position from 1, a scale as the anchor's number. Words are shown by the renderer from the file's own lists.
 - **The whole records section sits inside `%%` … `%%`**, which hides it from Obsidian's Reading view. A block a `![[…]]` embed points to is never put inside `%%`, because an embed cannot reach a block hidden that way — only data no other part of the file references belongs there, and the records section is exactly that.
 - `sync` (where the file is kept) is a record too, preserved unchanged by any reader that doesn't understand it.
-
-A locked booklet's envelope: `encrypted: true` in front matter, one line saying how to open it, and one `booklet locked` fence.
 
 ---
 

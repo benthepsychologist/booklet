@@ -19,11 +19,11 @@ global.document.createElement=tag=>{const n=mk0(tag);
   return n;};
 const A={};
 eval(src+`
-;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,tplModules,modesOf,moduleOf,pagesOf,isPaged,showPage,
-  Q,copyAt,tx,placeOf,declaredLangs,offeredLangs,
+;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,allModules,modesOf,moduleOf,pagesOf,isPaged,showPage,
+  tx,declaredLangs,offeredLangs,
   setView:v=>{view=v},getLang:()=>lang,setLang:l=>{lang=l},
-  fresh:()=>{S=emptyS();D={today:emptyToday(),checkin:emptyCheckin()};TPL=EMPTY_BOOKLET;
-    view="home";editing=false;lang="en";}});`);
+  fresh:()=>{S=emptyS();D=emptyD();TPL=EMPTY_BOOKLET;
+    view="home";lang="en";}});`);
 
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const textOf=n=>n==null?"":typeof n==="string"?n
@@ -66,7 +66,7 @@ for(const file of files){
   const P=A.parseFile(text);
   chk(`${name}: the renderer reads it, with nothing it could not read`,P.ok&&P.unread.length===0,JSON.stringify(P.unread));
   A.applyParsed(P,"replace");
-  const mods=A.tplModules();
+  const mods=A.allModules();
   chk(`${name}: and keeps its module`,mods.length===1,`${mods.length} modules`);
   const declared=A.declaredLangs();
   chk(`${name}: it declares its one language and opens in it`,declared.length===1&&A.getLang()===declared[0],
@@ -85,10 +85,9 @@ for(const file of files){
       catch(e){problems.push(`${act.id}/${pg.id}: ${e.message}`);continue;}
       for(const b of flat(pg.blocks)){
         if(!QUESTIONS.includes(b.type)||b.type==="widget") continue;
-        // text/lines look their own words up through Q(); every other kind
-        // (choice, multi, scale, number, date) carries its title straight on
-        // the block, exactly as written in its callout line — no lookup.
-        const label=b.q?A.Q(b.q[0],b.q[1]).label:A.tx(b.label,"");
+        // every question kind carries its title straight on the block,
+        // exactly as written in its callout line
+        const label=A.tx(b.label,"");
         if(!(label||"").trim()) problems.push(`${act.id}.${b.id}: a blank question`);
         else if(!shown.includes(label)) problems.push(`${act.id}.${b.id}: its question is not on its page`);
       }}}
@@ -96,7 +95,7 @@ for(const file of files){
     !problems.length,problems.slice(0,4).join("; "));
   const back=A.toMarkdown();A.fresh();A.applyParsed(A.parseFile(back),"replace");
   chk(`${name}: written back by the renderer and read again, it keeps its module and its language`,
-    A.tplModules().map(m=>m.id).join()===mods.map(m=>m.id).join()&&JSON.stringify(A.declaredLangs())===JSON.stringify(declared));
+    A.allModules().map(m=>m.id).join()===mods.map(m=>m.id).join()&&JSON.stringify(A.declaredLangs())===JSON.stringify(declared));
 }
 
 fs.rmSync(tmp,{recursive:true,force:true});

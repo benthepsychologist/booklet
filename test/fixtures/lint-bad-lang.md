@@ -1,7 +1,7 @@
 ---
 booklet: 0.2
 title: Lint fixture
-lang: en
+lang: klingon
 ---
 
 # Lint fixture

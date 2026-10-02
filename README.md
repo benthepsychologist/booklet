@@ -7,24 +7,24 @@ Open it in a text editor and you can read everything, top to bottom — question
 ```markdown
 ---
 booklet: 0.2
-id: example/check-in
-title: A daily check-in
+id: example/daily-note
+title: A daily note
 lang: en
 version: "0.1"
 ---
 
-# A daily check-in
+# A daily note
 
-> [!activity|checkin repeat] How today went
+> [!activity|journal repeat] How today went
 
 > [!text|note] What happened?
 
 %%
 > [!records] App record — do not edit below this line
 
-> [!records|checkin] A daily check-in
+> [!records|journal] A daily note
 
-```booklet entries checkin
+```booklet entries journal
 {"items": [
 {"ts": "2026-09-27T08:00:00Z", "note": "Slept badly, but the walk helped more than I expected."}
 ]}
@@ -48,7 +48,7 @@ This is the distinction the whole design rests on, and it is easy to get backwar
 | --- | --- | --- |
 | **The renderer** | one static HTML file. It holds **engines** — the ability to make an SVG's regions clickable, to lay out a grid of selectable words, to open cards one at a time — and its own interface strings. **It holds no activities and no content.** | this repo |
 | **The booklet** | the file above. Every activity, every question, every word a reader sees, and everything they wrote. **All state lives here.** | the reader's device |
-| **The wrapper** | what a website puts *around* a renderer: a preset booklet and one or more registries of modules someone may install. Neither the renderer nor the format — just one way of getting a file into somebody's hands. | whoever publishes it |
+| **The registry** | the one place the renderer fetches modules from: [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry), a separate repo. The renderer stores no module and starts with none. | a separate repo |
 
 **The renderer is not a content store or source of truth.** It is rendered
 output — a viewer. This reference implementation caches in-progress work in the
@@ -62,12 +62,11 @@ and it draws those too, as long as they use engines it has.
 ## The vocabulary
 
 - **Module** — one activity, whole and portable: its questions, its own wording in each language, and the widgets it draws with. You add a module to a booklet or take one out; that is the difference between "take this whole booklet or none of it" and "add this one activity to what I already have."
-- **Widget** — *data*, never code, that specialises an engine: the figures and region names for a body map, the axes and cells for a grid, the cards for a board. Widgets ride inside the booklet, so an activity never arrives without the thing it draws with.
+- **Widget** — *data*, never code, that specialises an engine: the figures and region names for a body map, the axes and cells for a grid, the cards for a card board. Widgets ride inside the booklet, so an activity never arrives without the thing it draws with.
 - **Engine** — the drawing ability the renderer provides. Three so far: `svg-regions`, `grid-select`, `card-board`.
-- **Block** — the unit of a page. `prose`, `image`, `text`, `headlines`, `list`, `didlog`, `widget`, `group`. Every activity is a list of blocks, whatever its kind — there is no bespoke view for any activity in a conforming renderer.
-- **Preset** — a booklet with a design and no content. A blank workbook.
+- **Question** — one line, `> [!kind|id] Title`, in the kinds `text`, `long`, `lines`, `choice`, `multi`, `scale`, `number`, `date` and `widget`. Every activity is drawn the same way, whatever it is — there is no bespoke view for any activity in a conforming renderer.
 
-**Nothing is addressed by position, with one exception.** Modules are found by `id`, board content by field id, kept entries by their timestamp. Where a thing *appears* is written order; written order decides anything only when no sibling carries an order at all. The exception: a choice or scale question stores its answer as the option's *position*, not its words, because a translation is a separate file and only a position is guaranteed to match across languages — see [`SPEC.md`](SPEC.md).
+**Nothing is addressed by position, with one exception.** Modules are found by `id`, kept entries by their timestamp. Where a thing *appears* is written order; written order decides anything only when no sibling carries an order at all. The exception: a choice or scale question stores its answer as the option's *position*, not its words, because a translation is a separate file and only a position is guaranteed to match across languages — see [`SPEC.md`](SPEC.md).
 
 **The record is a series of independent JSON blocks, not one object.** A block that will not parse costs you that block and nothing else — one mangled module means one missing activity, never a lost file.
 
@@ -90,33 +89,22 @@ and it draws those too, as long as they use engines it has.
 ## Try it
 
 Download `booklet.html` and `examples/how-tides-work.booklet.md`, open the HTML file in a browser —
-**straight off your disk, `file://` is fine** — and press *Load* to open the
-markdown file. No server, no install, no network: verified with `fetch` and
+**straight off your disk, `file://` is fine** — and press *Add a booklet from a file*
+on "Your booklets" to open the markdown file. No server, no install, no network: verified with `fetch` and
 `XMLHttpRequest` stubbed to fail.
 
 A module file (any v0.2 module, such as those in `booklet-registry`) loads as what it is, one activity: on
-"Your booklets" it starts a new booklet holding it, and inside a booklet it is
-added to that booklet, with nothing already there replaced.
+"Your booklets" it starts a new booklet holding it.
 
-A booklet file loaded inside a booklet asks first whenever something there
-would be lost: entries, or a design of its own (a booklet with no entries is
-still somebody's work). *Add to what's here* keeps this booklet's design and
-brings in the file's entries and the activities it lacks; *Replace what's here*
-takes the file's booklet whole. The message afterwards says which happened. A
-file loads without asking only into a booklet with no design of its own, or
-when it is a later copy of the same booklet (the same booklet id, holding every
-module this one holds) and nothing here is left undownloaded, which is how a
-saved file goes back into the blank booklet a site's preset made.
+A file added from "Your booklets" is always a booklet of its own, in the list. The
+renderer has no way to load a file into a booklet that is already open.
 
 The renderer opens **empty**, because it holds no booklet of its own. That is
 the property everything else here rests on.
 
-**Send or save a copy** adapts to the device without adding a storage service.
-On a touch-first device it opens the operating system's share sheet with the
-actual `.md` file. On desktop it opens a small panel and shows only the
-capabilities the browser provides: system sharing, saving to a chosen file,
-downloading, copying as text, and optional passphrase protection. The renderer
-never contacts Mail, Drive, Dropbox or another destination itself.
+**Send or save a copy** offers one thing, **Download a copy**: the booklet as
+its `.md` file. The renderer adds no storage service and never contacts Mail,
+Drive, Dropbox or another destination itself.
 
 ### How "it holds no content" got demonstrated
 
@@ -128,8 +116,8 @@ repository. None of it was a bug — it all worked. But every one of them was th
 engine knowing something only a booklet should know.
 
 They came out one at a time, and each became a capability instead: a guide is
-now an activity built from ordinary blocks; crisis resources are a **pinned
-panel** any booklet can declare; cell colours and cell names are both the
+now an activity built from ordinary questions; crisis resources left the
+renderer altogether, which is not a clinical tool; cell colours and cell names are both the
 widget's; a legacy-file rescue path that named two specific widgets now resolves
 by engine. The renderer lost about 26KB and gained the ability to draw somebody
 else's booklet.
@@ -147,126 +135,34 @@ own questions.
 
 ## Putting the renderer on a site
 
-`booklet.html` needs nothing from a host: copy it anywhere and it works. A site
-that wants more (a preset for new booklets, a page locked to one booklet, a
-menu of modules, install to a phone's home screen) adds three small things
-beside it. None of them is part
-of the renderer or of the format, and a page with none of them is just a
-renderer and a Load button.
-
-### Publish a `manifest.webmanifest` beside it
-
-The renderer's `<head>` links `manifest.webmanifest`, resolved relative to the
-page. A **web app manifest** is a small JSON file that tells the browser the
-page is an installable app: its name, its icon, and which URL to open when the
-person taps it on their home screen. **The renderer does not ship one and a site
-must publish its own.** Without it, "Add to Home Screen" quietly gives a plain
-bookmark (or nothing), with no error anywhere, because a missing manifest is
-not a failure the page can see. Two more conditions apply:
-
-- **Serve over https** (`localhost` counts). Opened from disk, or over plain
-  http, install is not offered, and a phone will not keep the person's data the
-  way it does for an installed app. This is also what turns on the share sheet.
-- **Serve the file as JSON**, with the type `application/manifest+json`
-  (most hosts already do this for `.webmanifest`), and put it at the same path
-  as the renderer, or change the `href` in your copy of the page.
-
-A minimal manifest, for a renderer published at `/tools/booklet.html`:
-
-```json
-{
-  "name": "My Booklets",
-  "short_name": "Booklets",
-  "start_url": "/tools/booklet.html",
-  "scope": "/tools/",
-  "display": "standalone",
-  "background_color": "#FFFCF4",
-  "theme_color": "#12996E",
-  "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
-  ]
-}
-```
-
-`theme_color` matches the renderer's own `<meta name="theme-color">`. The
-192px and 512px PNG icons are what Android needs to offer install; the renderer
-carries an inline icon of its own only for the browser tab and for iOS. The
-renderer registers no service worker, so a manifest and https are all it takes.
-
-### Embedding the renderer: the `booklet-wrapper` element
-
-To hand the page anything, put a JSON element in the page around the renderer's
-markup (your copy of `booklet.html`, or a page that includes it):
+`booklet.html` needs nothing from a host: copy it anywhere and it works. It has
+one setting, and it is not part of the format: where "Add a module" looks for
+modules. That is one line in the page's `<head>`:
 
 ```html
-<script type="application/json" id="booklet-wrapper">
-{
-  "registries": ["/tools/registry.json"],
-  "modules": [],
-  "preset_url": "/tools/start.booklet.md",
-  "booklet": { "key": "daily-practice" },
-  "lang": "es-AR"
-}
-</script>
+<meta name="booklet-registry" content="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json">
 ```
 
-If the element's JSON does not parse, the page behaves as if there were no
-element. These are the keys the renderer reads today, and no others:
+A site changes that one line to point at another registry. A site that sets a
+Content-Security-Policy must also allow that registry's origin, and the origin of
+the module files it lists, in `connect-src`. With the tag missing or empty, "Add
+a module" shows its "no modules" message and nothing else changes. A module's
+`file` path in the registry resolves relative to the registry's own address.
 
-| Key | What it does |
-| --- | --- |
-| `registries` | a list of registry URLs (see [Registries](#registries)). Each is fetched once, after the page loads, to fill the "add an activity" menu; one that fails to load is skipped |
-| `modules_url` | the older single form: a folder URL, whose `registry.json` is fetched. Read alongside `registries` |
-| `modules` | a list of whole modules carried inline, offered in the menu with nothing to fetch. A module copied with its `"block": "module"` key is accepted, and a malformed one is left out |
-| `preset_url` | the booklet a **new** booklet starts from: the one made by "Start a new booklet" on "Your booklets", or, with `booklet.key`, the one made on the first visit. It is never laid over a booklet that already holds modules |
-| `starter_url` | the older name for `preset_url`, read when `preset_url` is absent |
-| `booklet` | `{ "key": "<name>" }` locks the page to one booklet; see below. A key that is not a non-empty string is ignored |
-| `lang` | the language the page opens in until the reader picks one: `en`, `fr`, `es` or `es-AR` (in any case). Any other value, `fr-CA` and `es-MX` included, is ignored. See below |
+### Language and storage
 
-**Nothing else is read.** `booklet.preset_url` is not read; the preset is
-always the top-level `preset_url`. No `wrapper.json` file is read.
+The language a reader picks, on "Your booklets" or in any booklet, is that
+browser's choice for every page of the origin: it is kept in `localStorage`
+under `booklet.ui.lang`, apart from every booklet's data, and a reload keeps
+it. Nothing is stored for the reader until they choose. A booklet opens in the
+reader's choice whenever it offers that language; Spanish takes a booklet's own
+`es-AR`. With no choice, a page opens in English, and a booklet in the language
+it was saved in. A booklet that does not offer the language in force opens in
+its own, and a booklet that declares one language always reads in it.
 
-**The language a page opens in.** The language a reader picks, on "Your
-booklets" or in any booklet, is that browser's choice for every page of the
-origin: it is kept in `localStorage` under `booklet.ui.lang`, apart from every
-booklet's data, and a reload keeps it. Until the reader picks one, the
-wrapper's `lang` stands in for that choice and is read the same way; nothing is
-stored for the reader until they choose. A booklet opens in the choice in force
-(the reader's, else the site's) whenever it offers that language, over the
-language it or its preset was saved in; Spanish takes a booklet's own `es-AR`.
-With neither a choice nor a wrapper `lang`, a page opens in English, and a
-booklet in the language it was saved in, or, the first time, in its preset's
-`lang`. A booklet that does not offer the language in force opens in its own,
-and a booklet that declares one language always reads in it.
-
-**On a site whose `lang` is `es-AR`**, `es-AR` is the Spanish on offer, so a
-Spanish reader there never drops back to neutral *tú* Spanish. The toggle keeps
-its three buttons, and its ES button stands for `es-AR`: pressing it gives
-`es-AR` and records `es-AR` as the reader's choice, and the button is named
-*Español (Argentina)* to screen readers and on hover. Personalize lists
-*Español (Argentina)* in place of *Español*, and a choice of Spanish made on
-another page of the origin reads as `es-AR` here. Only a booklet that declares
-neutral `es` and not `es-AR` shows neutral Spanish.
-
-**Without `booklet.key`**, the page opens on "Your booklets", the list of every
-booklet kept in that browser, unless the address names one (`#/b/<id>`). Each
-booklet keeps its own answers. `preset_url` is used only when the reader starts
-a new booklet; a first visit shows the empty list, not the preset.
-
-**With `"booklet": { "key": "<name>" }`**, the page is locked to one booklet:
-
-- It opens that booklet directly and **never shows "Your booklets"**. Its home
-  button stays on the booklet's home, and an address naming another booklet
-  leads to this one's home instead.
-- **On the first visit it creates the booklet from the preset.** Once the page
-  has loaded, it fetches `preset_url` if the booklet holds no modules, and saves
-  the result at once, so a second visit does not fetch it again.
-- **The key is the booklet's identity in that browser.** Two keys on one
-  origin are two booklets with separate answers. Changing a page's key later
-  gives its readers a new booklet made from the preset; the old one stays in
-  the browser and is listed on any page of the same origin that has no key, but
-  the page with the new key no longer opens it.
+The page opens on "Your booklets", the list of every booklet kept in that
+browser. The address is never read or written. Each booklet keeps its own
+answers, and a first visit shows the empty list.
 
 The renderer only ever calls `localStorage.getItem`, `setItem` and
 `removeItem`, on a few known keys (`booklet.library.v1` for the list,
@@ -274,34 +170,19 @@ The renderer only ever calls `localStorage.getItem`, `setItem` and
 namespaces those calls per booklet, by prefixing every key, can run several
 independent booklet instances on one origin without their data colliding.
 
-**A booklet's own registries are not read yet.** The renderer's registry code
-also looks for a `registries` list on the open booklet's design, but nothing
-puts one there: a `registries` key in a booklet file's `meta` block is neither
-read nor written back. Registries come from the wrapper only.
-
-### Building a preset
-
-`build-booklet.js`, the old preset-assembly build script, is removed — it has
-nothing left to read. A preset is a booklet like any other: write the modules you
-want as one file (see [`SPEC.md`](SPEC.md) §3 on module fences and manifests,
-or splice several with the renderer's own "Add a module" feature), then check
-it with `python3 lint-booklet.py your-preset.booklet.md`.
-
 ---
 
 ## Registries
 
 A **registry** is one JSON file listing modules somebody offers, with enough in
-each entry to draw a menu. A page fetches that one file — around 1KB — instead
-of every module it might one day offer.
-
-The default one is [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry), read straight from its public repo, which takes
-additions by pull request. But nothing there is a gate: a registry is a URL,
-so it can be a repo, a folder on any host, or **a single file with its
-modules carried inline and nothing to fetch at all**. A booklet may name its
-own registries, so a reader can point their file wherever they like, but the
-reference renderer does not read them from a file yet (see the wrapper keys
-above).
+each entry to draw a menu. The renderer reads exactly one, named by the `booklet-registry` meta tag in its
+`<head>`, which ships pointing at
+[`booklet-registry`](https://github.com/benthepsychologist/booklet-registry),
+straight from its public repo, which takes additions by pull request. "Add a
+module" fetches that `registry.json` fresh each time it opens, and Add fetches
+the chosen module's file fresh. Nothing about a module is cached or kept outside
+the booklet that added it. A site points the renderer at another registry by changing that one tag; there
+is no way to add a module file of your own.
 
 See [`SPEC.md`](SPEC.md) for the format and [`CONTRIBUTING.md`](CONTRIBUTING.md)
 for how to add to this one.
@@ -310,7 +191,7 @@ for how to add to this one.
 demonstrations, general-purpose activities, and attributed professional content
 whose ownership and distribution terms travel in its `rights` block. A listing
 does not certify that a module is suitable, safe, or useful for a particular
-person. Anyone may publish a separate registry under their own policy.
+person. Anyone may publish a separate registry under their own policy; a site can point the renderer at it.
 
 ---
 
@@ -324,8 +205,8 @@ known gaps, and `docs/why-markdown.md` for how v0.2 came to be.
 
 ### What is licensed how
 
-**The software and the format** — the renderer, the validator, the build
-scripts, `SPEC.md` — are Apache-2.0, and that is the point: a format meant to
+**The software and the format** — the renderer, the validator,
+`SPEC.md` — are Apache-2.0, and that is the point: a format meant to
 be implemented by other people carries an explicit patent grant, so anyone
 writing a reader or writer for it gets that protection along with the copyright
 permission.

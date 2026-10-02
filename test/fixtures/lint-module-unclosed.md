@@ -20,4 +20,3 @@ lang: en
 ```
 ^picker-data
 
-> [!module|fixture-mod end]

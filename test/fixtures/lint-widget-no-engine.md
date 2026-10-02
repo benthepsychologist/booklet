@@ -16,7 +16,7 @@ lang: en
 > ![[#^picker-data]]
 
 ```booklet widget
-{ "engine": "grid-select", "title": "Spots" }
+{ "title": "Spots" }
 ```
 ^picker-data
 

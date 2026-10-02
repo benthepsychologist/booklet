@@ -68,16 +68,12 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get view(){return view}, get currentId(){return currentId},
-  get TPL(){return TPL}, get S(){return S}, get storageOk(){return storageOk}, set editing(v){editing=v},
+  get TPL(){return TPL}, get S(){return S}, get storageOk(){return storageOk},
   LIB_VIEW, readLib, openBooklet, closeBooklet, createBooklet, saveLocal, addModule, addModuleText,
   editTemplate, render, loadText, homeButton
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];delete global.location;delete global.history;};
-/* a reload that lands on one booklet, as the address bar makes it */
-const at=hash=>{global.location={hash,href:"file:///tmp/booklet.html"+hash};
-  global.history={state:null,replaceState(s,t,u){global.location.hash=u;}};};
-const bookletRoute=id=>"#/b/"+encodeURIComponent(id);
 
 /* A booklet kept in this browser: one module, a headline, the language it was
    saved in, and (optionally) the languages it declares. Returns its id. */
@@ -85,7 +81,7 @@ async function makeBooklet(A,{title,lang,languages}){
   await A.createBooklet();
   A.addModuleText(fixtureModule);
   A.editTemplate(t=>{t.head={title:{en:title}};if(languages) t.languages=languages;});
-  A.S.note="written in "+title;A.lang=lang;A.saveLocal();
+  A.S.answers.note="written in "+title;A.lang=lang;A.saveLocal();
   return A.currentId;}
 /* open a booklet the way a reader does: from its card on "Your booklets" */
 function openFromCard(A,title){A.render();
@@ -141,16 +137,13 @@ chk("without changing the reader's choice",LS[PREF]==="es",LS[PREF]);
 toList(A);
 chk("leaving it, the list is Spanish again",A.lang==="es",A.lang);
 
-section("a choice made inside a booklet holds after a reload with no edit");
+section("a choice made inside a booklet holds after a reload with no edit (the reload opens the list)");
 openFromCard(A,"English one");
 const before=LS["booklet.b."+eng];
 A.toggle.press("fr");
 chk("pressing FR inside a booklet puts it in French",A.lang==="fr",A.lang);
 chk("with nothing written to the booklet (no edit was made)",LS["booklet.b."+eng]===before);
-at(bookletRoute(eng));A=boot();A.render();
-chk("a reload, before any edit, reopens it in French",A.currentId===eng&&A.lang==="fr",A.currentId+" "+A.lang);
-chk("and the header shows FR pressed",A.toggle.pressed().join()==="fr",A.toggle.pressed().join());
-at("#/");A=boot();A.render();
+A=boot();A.render();
 chk("the list, reloaded, is French too",A.view===A.LIB_VIEW&&A.lang==="fr",A.lang);
 openFromCard(A,"Argentine one");
 chk("a booklet that offers only es-AR and en, for a French reader, opens in its own es-AR",A.lang==="es-AR",A.lang);
@@ -185,21 +178,10 @@ chk("with EN and FR on its toggle",A.toggle.shown().join()==="en,fr",A.toggle.sh
 toList(A);
 chk("and is back in Spanish on the list",A.lang==="es",A.lang);
 
-section("a file loaded on the list speaks the reader's language");
+section("a file added from the list opens in its own language");
 wipe();A=boot();A.render();A.toggle.press("fr");
-{const m=main();m.prepend=(...k)=>m.children.unshift(...k);}   // the stub's prepend keeps nothing
 A.loadText(exampleText);
 chk("a single-language file opens in its own language, not the reader's",A.currentId!==null&&A.lang==="en",A.lang);
-chk("but the loaded-file summary itself still speaks the reader's French",/Chargé/.test(texts(main()))&&!/\bLoaded\b/.test(texts(main())),texts(main()).slice(0,160));
-
-section("a site's preset, on a page locked to one booklet");
-{const origGet=global.document.getElementById;
- global.document.getElementById=id=>id==="booklet-wrapper"?{textContent:JSON.stringify({booklet:{key:"k1"},preset_url:"https://site.invalid/p.booklet.md"})}:origGet(id);
- global.fetch=async()=>({ok:true,text:async()=>exampleText});
- wipe();LS[PREF]="es";
- A=boot();await new Promise(r=>setTimeout(r,50));
- chk("the preset (English) lands, and — single-language — keeps its own",A.TPL.modules.length===1&&A.lang==="en",A.lang);
- global.document.getElementById=origGet;delete global.fetch;}
 
 section("storage that fails");
 wipe();

@@ -33,7 +33,7 @@ your own booklet, above the long rule.
 
 What needs to happen today.
 
-> [!activity|today repeat] Have a good day
+> [!activity|day repeat] Have a good day
 
 Not the to-do list, and not a target. The question is what has to be there for you to get to the end of today and feel you carried your weight — which is usually shorter and more specific than everything you could do.
 
