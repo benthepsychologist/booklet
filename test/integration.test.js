@@ -63,9 +63,9 @@ A.lang="es-AR";
 chk("library: an es string reaches es-AR through es",A.libT().title==="__es_title__",A.libT().title);
 chk("library: a key es lacks still reads the English",A.libT().open===A.TSRC.en.library.open);
 chk("moduleView: an es string reaches es-AR through es",A.MW().noneShown==="__es_none__");
-chk("moduleView: a function string es lacks still works",typeof A.MW().activitiesN==="function"&&A.MW().activitiesN(2)===A.TSRC.en.moduleView.activitiesN(2));
+chk("moduleView: a function string es lacks still works",typeof A.MW().clash==="function"&&A.MW().clash("m","a","o")===A.TSRC.en.moduleView.clash("m","a","o"));
 A.lang="fr";
-chk("French reads its own words",A.libT().title==="Vos carnets"&&/activités/.test(A.MW().activitiesN(2)));
+chk("French reads its own words",A.libT().title==="Vos carnets"&&/activité/.test(A.MW().clash("m","a","o")));
 
 // Three sections used to sit here: the earlier format's own `languages:`
 // array riding in the saved record (TPL.languages, retired with the rest of

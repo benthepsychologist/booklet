@@ -35,10 +35,10 @@ chk("a booklet that has only a title (no headline) is named from it",A.exportNam
 
 // ---- the renderer's own names: "Booklet", in every language, nothing else
 for(const l of ["en","fr"]){
-  chk("["+l+"] the app, the headline and the export title say Booklet",
-    A.T[l].ui.app==="Booklet"&&A.T[l].home.h1==="Booklet"&&/^Booklet\b/.test(A.T[l].ui.exportTitle),
-    [A.T[l].ui.app,A.T[l].home.h1,A.T[l].ui.exportTitle].join(" | "));
-  chk("["+l+"] no fixed save name is left in the strings",A.T[l].ui.fileName===undefined);
+  chk("["+l+"] the app and the headline say Booklet",
+    A.T[l].ui.app==="Booklet"&&A.T[l].home.h1==="Booklet",
+    [A.T[l].ui.app,A.T[l].home.h1].join(" | "));
+  chk("["+l+"] no fixed save name is left in the strings",A.T[l].ui.fileName===undefined&&A.T[l].ui.exportTitle===undefined);
 }
 chk("the page and the home-screen title say Booklet",
   /<title>Booklet<\/title>/.test(html)&&/apple-mobile-web-app-title" content="Booklet"/.test(html));
