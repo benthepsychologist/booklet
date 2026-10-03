@@ -141,6 +141,35 @@ Flag that may follow: `hidden` (kept in the file, not offered).
 
 **Links between activities** are ordinary heading links, which Obsidian resolves natively: `[[#Check yourself]]` or `[Check yourself](#check-yourself)`. The renderer opens the activity that contains that heading. Reading another activity's *answers* is a module matter, above.
 
+### Rows: things side by side
+
+A row asks for what is inside it to be laid side by side when there is room.
+
+```markdown
+> [!row]
+
+### Overdue
+
+```booklet query
+from: overdue
+```
+
+### Due soon
+
+```booklet query
+from: due-soon
+```
+
+> [!row end]
+```
+
+- A row opens with `> [!row]` and closes with `> [!row end]`, like a module's fence.
+- **Each heading at the shallowest level inside the row starts a cell.** Anything before the first heading is a cell of its own. With no headings at all, each block is a cell.
+- A renderer decides how many cells fit across, and puts them one under another, in file order, on a narrow screen. A file never states widths, columns or breakpoints.
+- Anything may go in a cell: prose, questions, widgets, queries, figures.
+- Rows do not nest, and a row does not cross a page break, an activity line or a module fence.
+- In an editor, on GitHub and in Obsidian a row reads top to bottom, with its two marker lines showing as small callouts.
+
 ---
 
 ## 4. Booklet lines: one grammar for everything
@@ -149,8 +178,8 @@ Flag that may follow: `hidden` (kept in the file, not offered).
 > [!kind|id setting:value flag] Title
 ```
 
-- **`kind`** says what the line is: an activity, a question type, a widget, a menu, or a reading callout. Kinds are Booklet's own vocabulary, and the set is meant to grow (section 5).
-- **`id`** is required for anything that stores an answer or is referenced (activities, questions, widgets, menus). Letters, digits and dashes only, so every id is also valid wherever Obsidian wants one. Unique within the file. Reading callouts need none.
+- **`kind`** says what the line is: an activity, a question type, a widget, a menu, a row, or a reading callout. Kinds are Booklet's own vocabulary, and the set is meant to grow (section 5).
+- **`id`** is required for anything that stores an answer or is referenced (activities, questions, widgets, menus). Letters, digits and dashes only, so every id is also valid wherever Obsidian wants one. Unique within the file. Reading callouts need none, and neither does a row (`> [!row]` … `> [!row end]`, section 3), which is structure like a page break.
 - **Settings** follow the id, separated by spaces: `menu:feelings`, `min:0`, `open`, `repeat`.
 - **The title** is the words a reader sees: the question, the activity name, the caption.
 - **A fold marker** may follow the bracket, as in Obsidian: `> [!hint]- Hint` starts folded.
@@ -427,6 +456,7 @@ empty: Nothing needs you.
 - **An `svg-regions` figure** marks each region the reader can tap as a shape with `class="rg"` and a `data-r` attribute naming the region id. Every other shape in the figure is drawn as a plain outline, and the renderer styles both; a figure needs no styling of its own.
 - **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
 - Every `svg` string is sanitized before drawing.
+- **Colours are tone names.** A colour in widget data is a **tone name**: `warm`, `green`, `amber`, `slate` or `teal`. The renderer draws the tone in the active theme's colours, so a widget looks right in every theme. (A pair of hex colours, `{ "tint": "#…", "deep": "#…" }`, is still read and drawn exactly as given.)
 
 **Data blocks live inside their module's fence, or in the data section at the end** (`> [!data] Data`), or in a file the manifest names (section 3). The renderer finds fences by their language word and block id, never by a heading.
 
@@ -449,6 +479,34 @@ A report or a dashboard page carries its numbers as a data block: a fenced block
 - It lives where a widget's data lives: inside its module's fence, or in the data section at the end.
 - A data block belongs to whoever wrote the file. A reader never changes it, it is not a record, and a renderer writes it back exactly as it found it.
 - Nothing is computed from it. Whatever wrote the file has already ordered, counted and filtered the rows; a renderer draws them. Draw them with a `booklet query` (section 6).
+
+### A theme: how the booklet would like to look
+
+```booklet theme
+base: paper
+accent: "#0f3d47"
+paper: "#f6f1e7"
+ink: "#22201c"
+font: serif
+density: roomy
+```
+
+- One theme block per file, outside any module fence. It belongs to the booklet, not to a module: a module added to a booklet takes the booklet's look.
+- Every line is `key: value`. Nothing else is read, and nothing in it is CSS.
+
+| key | value | default |
+| --- | --- | --- |
+| `base` | `paper`, `daylight`, `night` or `contrast` | `paper` |
+| `paper`, `ink`, `accent` | a hex colour, `#rgb` or `#rrggbb` | the base theme's |
+| `good`, `warn`, `bad` | a hex colour: the three tones | the base theme's |
+| `font` | `default`, `serif`, `sans`, `mono` or `readable` | `default` |
+| `density` | `compact`, `comfortable` or `roomy` | `comfortable` |
+
+- A renderer works every other colour out from these (soft tints, rules, the text drawn on an accent), so a theme stays coherent.
+- **A colour that would be hard to read is not used.** If text on its background falls below a contrast of 4.5 to 1, the renderer keeps the base theme's colour for that pair, and the linter says which.
+- Fonts are the reader's device's own, chosen by family; a theme never names or fetches a font file.
+- **The reader has the last word.** A reader who picks a theme of their own gets it, whatever the booklet asks for.
+- Printing is always light.
 
 ---
 
@@ -505,7 +563,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 - **A checkbox click in Reading view edits the file.** See "Choice" in section 5 for the accepted trade-off.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 
-**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data; a query and a data block show as code blocks. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
+**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout (a row reads top to bottom, its two marker lines showing as small callouts; a theme block shows as a short code block); questions are callouts followed by lists; figures render at their embed; widgets show their data; a query and a data block show as code blocks. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
 
 **GitHub.** Callout lines show as quotations with the `[!kind|id]` text visible; lists, task lists, footnotes, math and mermaid render; `![[#^id]]` shows as text. Nothing breaks.
 
@@ -599,6 +657,9 @@ None of this affects what already works: loading, reading, answering, and saving
 
 ### Changes from v0.4
 
+- A **theme block** is added (section 7): a base theme, up to six colours, a font family and a density, each a strict named value, never CSS. The renderer works out every other colour and keeps the base theme's for any pair that would fall under 4.5 to 1.
+- **Rows** are added (section 3): `> [!row]` … `> [!row end]` lays cells side by side when there is room.
+- **Tone names for widget colours** (section 7): `warm`, `green`, `amber`, `slate`, `teal`, drawn in the active theme's colours. Hex pairs are still read.
 - The marker is `booklet: 0.5`.
 - A file marked `booklet: 0.4` is refused; change the marker to 0.5 (nothing else in a 0.4 file needs to change).
 

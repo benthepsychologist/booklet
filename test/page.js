@@ -57,7 +57,9 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
   moduleTextProblems, editTemplate, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, tplWidgets, isMulti,
-  moduleView:id=>MODULE_VIEW+id, openExport, readingPlan, sectionLede, readsOnly, mdNodes, modeOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, pickLang
+  moduleView:id=>MODULE_VIEW+id, openExport, readingPlan, sectionLede, readsOnly, mdNodes, modeOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, pickLang,
+  readTheme, themeDerive, TH_PAIRS, TH_BASES, TH_COLOURS, TONE_NAMES, toneOf, cellColor, cellStyle, syncBookletTheme, themeBaseTable,
+  get currentId(){return currentId}, get TPLtheme(){return TPL.theme}
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};

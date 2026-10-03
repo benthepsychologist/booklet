@@ -94,9 +94,9 @@ on "Your booklets" to open the markdown file. No server, no install, no network:
 `XMLHttpRequest` stubbed to fail.
 
 **Themes and width.** The renderer has four built-in themes the reader picks from a menu in the top bar:
-Paper (the default look), Daylight (white), Night (dark) and Contrast (high contrast, light). *Auto* follows the
-device (more contrast, then dark, then Paper) and the choice is remembered in the browser only. A booklet cannot
-set a theme yet; that would be a format change. Printing is always light. The page is wide: the content area runs
+Paper (the default look), Daylight (white), Night (dark) and Contrast (high contrast, light). *Auto* is the booklet's own
+look if it asks for one (a `booklet theme` block: strict named values, never CSS), otherwise the device (more
+contrast, then dark, then Paper); any explicit pick wins, and the choice is remembered in the browser only. Printing is always light. The page is wide: the content area runs
 to about 76rem, prose stays at a readable measure (about 70 characters), and tables, tiles, grouped lists and
 figures use the width and fold to one column on a phone.
 

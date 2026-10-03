@@ -12,8 +12,9 @@ repo, `booklet-registry`.
 ## Current state — v0.5 (2026-10-03)
 
 What changed from v0.4, v0.3 and v0.2 is listed at the end of `SPEC.md` (section 14).
-v0.5 changes the marker and nothing else yet (the theme block, rows and tone names follow
-in this release): a file marked `booklet: 0.4` is refused; change it to 0.5.
+v0.5 adds a theme block (a booklet's own look, as strict named values, never CSS), rows
+(`> [!row]` cells side by side) and tone names for widget colours; a file marked
+`booklet: 0.4` is refused, change it to 0.5.
 v0.4 added data blocks (`booklet data`: rows a generator wrote, saved back exactly as
 found) and query views (`as: table`, `list`, `tiles`, with `group:` and `limit:`) that
 draw them, or kept entries. Nothing is computed in the renderer: no filter, no sum, no
@@ -48,10 +49,15 @@ with a message saying so.
 - **Interface languages:** English, French, Spanish and Argentine Spanish.
 - **Four themes the reader picks** (renderer 0.4.1, no format change): Paper, Daylight, Night and Contrast,
   chosen from a menu in the top bar; Auto (the default) follows the device live. The choice is kept in the browser
-  only, never in a booklet, and a booklet cannot set a theme yet. Every colour in the renderer's CSS is a token in
+  only, never in a booklet. A booklet may ask for a look of its own (a `booklet theme` block, renderer 0.5.0): Auto then means the booklet's look, any explicit pick wins, and the look applies only while that booklet is open. Every colour in the renderer's CSS is a token in
   the four tables (`test/themes.test.js` checks the tables match, WCAG contrast, and that no colour literal is left;
   `test/themes-browser.js` checks the switching in Chromium). Diagrams are re-drawn in the active theme; print is
   always light.
+- **Theme block, rows, tone names** (format 0.5, renderer 0.5.0). The theme block is validated key by key and
+  applied as computed `#rrggbb` tokens (no text of it ever reaches a style); a colour pair under 4.5 to 1 is dropped
+  for the base theme's own, and the linter warns which. Rows are a CSS grid of cells (one column under about 45rem).
+  Widget colours are tone names drawn in the theme's tone tokens. Checks: `test/theme-block.test.js`,
+  `test/theme-block-browser.js`.
 - **The page is wide.** The 64-character column is gone: the content area runs to about 76rem, prose (paragraphs,
   lists, callouts, questions, folded reading cards) stays at about 70 characters, and query views, widgets and
   figures use the width. Tiles fill the row, a grouped list lays its groups out as cards side by side when there is
