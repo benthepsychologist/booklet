@@ -278,6 +278,7 @@ it, each starting with `>`, no blank line between:
 | `choice` | pick one | a task list, `- [ ] Option` |
 | `multi` | pick any number | a task list; add `open` after the id to let the reader add their own |
 | `scale` | a numbered scale | a numbered list of anchors, starting at whatever number you want the scale to start at (usually `0.`) |
+| `matrix` | several items on one shared scale (a symptom questionnaire) | a bulleted list of items, then a numbered list of anchors |
 | `number` | a number | nothing; `min:`, `max:`, `step:` after the id |
 | `date` | a date | nothing |
 | `widget` | a drawing engine (body map, grid, cards) | an embed of the widget's data — section 8, and never invent one |
@@ -301,10 +302,38 @@ it, each starting with `>`, no blank line between:
 3. Good
 ```
 ```markdown
+> [!matrix|phq] Over the last two weeks, how often have you been bothered by…
+
+- Little interest or pleasure in doing things
+- Feeling down, depressed, or hopeless
+
+0. Not at all
+1. Several days
+2. More than half the days
+3. Nearly every day
+```
+```markdown
 > [!number|sleep min:0 max:24] Hours slept
 ```
 
-- **A `choice` or `scale` question's options or anchors need a blank line
+**A list used by several questions is written once, as a menu.** Put a
+`menu` line and its bulleted list anywhere in the file (inside the module is
+best, so the module travels whole), and name it on each question with
+`menu:<id>`. The question has no list of its own; `open` still works. The menu
+itself is never shown.
+
+```markdown
+> [!menu|feelings]
+- Calm
+- Tired
+- Curious
+
+> [!multi|morning menu:feelings open] This morning I felt…
+
+> [!choice|evening menu:feelings] This evening I feel…
+```
+
+- **A `choice`, `scale` or `matrix` question's options or anchors need a blank line
   above them**, unless the list starts at `1.` — Markdown only lets a list
   starting at `1.` interrupt a paragraph directly; anything else (including
   `0.`, which most scales want) is swallowed into the question's title
@@ -325,9 +354,11 @@ it, each starting with `>`, no blank line between:
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
   `lines` question instead, in the same activity.
-- **`matrix`** (several items against one shared scale, like a symptom
-  questionnaire) is specified in `SPEC.md` §5 but the reference renderer does
-  not draw it yet. Do not use it; ask for separate `scale` questions instead.
+- **A `matrix`'s answer is one anchor number per item, by position.** Items
+  are identified by position like a `choice`'s options, and a matrix's
+  anchor numbers must not repeat. Give it a title that reads as the stem
+  ("Over the last two weeks, how often have you been bothered by…") and one
+  short phrase per item.
 
 ---
 
@@ -360,6 +391,7 @@ between paragraphs (`\n\n`) for a new one.
   **Never invent a citation.** Cite only a document the requester gave you,
   quoted exactly; leave off `Verified` unless someone actually checked it.
   With no document to hand, write plain reading with no citations at all.
+- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the activity holding that heading (an activity's own title counts) on the right page; the linter warns when no heading in the file matches.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
   module**. It is read-only and takes no answer. The kind goes on the fence
@@ -467,7 +499,9 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a `>` embed pointing at nothing | `![[#^x]] points at no block in this file` | fix the id, or add the fenced block |
 | an embed pointing at the wrong fence | `^x is not a widget block` | point the embed at the actual `booklet widget` fence |
 | a query with a bad `from:` | `the query's `from: x` names no activity or question in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, or a question, in the same module |
-| a kind not drawn yet | `matrix questions are not drawn by the reference page yet` | use `scale` questions instead, or ask whether the requester wants to wait |
+| a `menu:` naming no menu | `` `menu:x` names no menu in this file`` | write the `> [!menu|x]` line and its bulleted list, or fix the id |
+| a `menu:` and a list of its own | `the question 'x' has both `menu:y` and a list of its own` | keep one |
+| a matrix with no items or anchors, or repeated anchor numbers | `the matrix 'x' has no items` / `has no anchors` / `repeats anchor number N` | write the bulleted items, then the numbered anchors, each number once |
 
 **Without the linter**, also check by hand:
 

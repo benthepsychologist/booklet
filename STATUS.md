@@ -3,7 +3,7 @@
 *As of 2026-10-03*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.3**: format v0.3 (files say `booklet: 0.3`) and renderer 0.3.0.
+**project v0.3**: format v0.3 (files say `booklet: 0.3`) and renderer 0.3.1.
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
@@ -25,26 +25,35 @@ with a message saying so.
   pointing at `booklet-registry`'s `registry.json`. The list and each module
   are fetched fresh when "Add a module" is used.
 - **Questions:** `text` (and `long`), `lines`, `choice`, `multi`, `scale`,
-  `number`, `date` and `widget` render. `matrix` is specified, not drawn.
+  `number`, `date`, `matrix` and `widget` render. A `choice` or `multi` may take
+  its options from a shared menu (`> [!menu|id]`, `menu:id`).
 - **Widgets** are fenced `booklet widget` data blocks placed with
   `![[#^id]]`, drawn by the `svg-regions`, `grid-select` and `card-board`
   engines.
 - **Queries** (`booklet query`) show what the reader kept in another activity
   or question of the same module.
+- **Links between activities** (`[[#Heading]]` and `[label](#slug)`) are drawn as
+  links that open the activity, and the page, holding that heading.
 - **Citations** are CommonMark footnotes, drawn as numbered marks with a side
   panel.
 - **Records** sit in a `%%`-wrapped section at the end of the file.
 - **Interface languages:** English, French, Spanish and Argentine Spanish.
+- **Diagrams and math are drawn.** A ```` ```mermaid ```` fence is drawn as SVG
+  where `![[#^id]]` embeds it, or in place when it sits in the prose; `$…$` and
+  `$$…$$` are typeset as MathML. A diagram that will not parse shows its source
+  with a one-line note, and a formula Temml cannot read shows as its TeX. Both
+  libraries (mermaid tiny 12.1.0, Temml 0.13.5, MIT, listed in `NOTICE`) are
+  stored inside `booklet.html` as inert text and run only when a booklet has a
+  diagram or a formula, so a booklet with neither never runs them; the file
+  still opens straight off disk and under the hosted site's Content-Security-Policy
+  (no `unsafe-eval`, no network). The file is about 3 MB because of them.
+  `test/figures.test.js` checks the stored copies and when they wake;
+  `test/figures-browser.js` draws real examples in Chromium under that policy.
 - **The linter** checks v0.3 files by v0.3's rules and agrees with the
   renderer about what is wrong.
 
 ## Specified but not drawn
 
-- `matrix` questions.
-- Shared menus (`> [!menu|id]` with `menu:id` on a question): a question that
-  uses one does not appear.
-- Mermaid figures: the embed shows as text.
-- Math (`$…$`): shown as raw TeX.
 - Editing a booklet's design in the browser, and an Obsidian plugin
   (`SPEC.md` section 13).
 

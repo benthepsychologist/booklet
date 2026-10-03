@@ -14,6 +14,13 @@ practice, clinical vocabulary, or module namespace. The renderer starts empty
 and adds modules only from the `booklet-registry` repository, and booklet files
 carry their modules and widgets whole.
 
+**Two libraries ride inside `booklet.html`, asleep** (mermaid for diagrams, Temml
+for math: `<script type="text/plain" id="lib-…">` blocks at the end of the file,
+a few very long lines). Do not edit them by hand: replace one by downloading the
+pinned build again, updating the version, URL and sha256 in the comment above it,
+and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
+`grep -a`, or the huge lines swamp the output.
+
 ## Licensing and ownership
 
 - The renderer, format, validator, and modules without a

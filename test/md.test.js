@@ -356,5 +356,24 @@ for (const marker of ["---", "***", "___"]) {
   chk("50KB of input renders in well under a second", ms < 3000, ms + "ms");
 }
 
+// ============================= LINKS TO A HEADING =============================
+
+{
+  const seen = [];
+  const out = mdNodes("Next: [Check yourself](#check-yourself) and [web](https://example.com/)", {
+    anchor: (slug, kids) => { seen.push([slug, textOf(kids)]); return el("a", { href: "#", class: "alink" }, ...kids); } });
+  chk("the anchor hook is called with the slug and the label for `[label](#slug)`",
+    seen.length === 1 && seen[0][0] === "check-yourself" && seen[0][1] === "Check yourself", seen);
+  const links = find(out, n => n.tag === "a");
+  chk("the hook's node is drawn, and an ordinary web link is left to mkLink",
+    links.length === 2 && links[0].attrs.class === "alink" && links[1].attrs.href === "https://example.com/", links.map(n => n.attrs));
+  const plain = mdNodes("[Check yourself](#check-yourself)", { anchor: () => "Check yourself" });
+  chk("a hook may return plain text (a heading that is not there)", !find(plain, n => n.tag === "a").length && textOf(plain) === "Check yourself", textOf(plain));
+  const none = mdNodes("[Check yourself](#check-yourself)");
+  chk("with no hook a `#slug` link is the ordinary link it always was", first(none, "a") && first(none, "a").attrs.href === "#check-yourself");
+  const thrown = mdNodes("[x](#y)", { anchor: () => { throw new Error("no"); } });
+  chk("a hook that throws falls back to the ordinary link", first(thrown, "a") && first(thrown, "a").attrs.href === "#y");
+}
+
 console.log(`\n${total} checks, ${failed} failed`);
 process.exit(failed ? 1 : 0);
