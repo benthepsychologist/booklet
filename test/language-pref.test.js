@@ -26,7 +26,7 @@ const PREF="booklet.ui.lang";
    the reader's choice winning over a file's own language WHERE THE FILE OFFERS
    IT, so it is patched to also offer fr/es (prose stays English — only the
    offer, not the wording, matters for this mechanic). */
-/* v0.3 declares one language per file (SKILL.md §8) — a translation is a
+/* v0.4 declares one language per file (SKILL.md §8) — a translation is a
    sibling file with the same id, never a `languages:` list offering several
    inside one file the way the earlier format did. So loading this single-language
    file keeps its own `en`, whatever the reader's choice was. */

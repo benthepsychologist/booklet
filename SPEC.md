@@ -1,13 +1,13 @@
-# The booklet format, v0.3
+# The booklet format, v0.4
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
-> **Status: v0.3, draft.** This is a young, evolving format — v0.3 is the one
+> **Status: v0.4, draft.** This is a young, evolving format — v0.4 is the one
 > version number that matters: this spec, the renderer, the skill, the
-> tests, and the `booklet: 0.3` every file's front matter declares, all
+> tests, and the `booklet: 0.4` every file's front matter declares, all
 > together, all the same number. Nothing here is frozen: the format itself
-> may extend compatibly (a reader from before a change still opens a file
-> that uses it), but it doesn't promise stability yet. There is no earlier
+> may still change, a file names the one version it is written in, and a
+> reader opens only that version, so it doesn't promise stability yet. There is no earlier
 > format to compare against or convert from — it was retired entirely on
 > 2026-09-29, and this spec no longer documents or mentions it.
 
@@ -53,7 +53,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: 0.3
+booklet: 0.4
 id: example/tides
 title: How tides work
 lang: en
@@ -352,9 +352,9 @@ graph LR; New --> Spring --> Quarter --> Neap --> Full
 Obsidian draws the diagram natively at the embed. On GitHub the embed line shows as text and the diagram still renders where the fence itself sits. A mermaid fence written directly in the prose still works everywhere, as it always did.
 
 
-### Queries: what the reader kept
+### Queries: showing kept entries and data
 
-A `booklet query` block, placed in an activity's prose, shows what the reader has kept elsewhere in the same module. It is read-only and takes no answer.
+A `booklet query` block, placed in an activity's prose, shows what the reader has kept elsewhere in the same module, or the rows of a data block (section 7). It is read-only and takes no answer.
 
 ```booklet query
 from: log
@@ -371,6 +371,37 @@ empty: Nothing logged yet.
 - A query never reads across modules. One whose `from:` names nothing, or something in another module, is refused: the linter reports an error and a renderer draws nothing for it. A file with no module fence is one module for this rule.
 - The kind, `query`, is on the fence line; the settings are the block's lines, `key: value`. Ids follow the rule in section 4 (letters, digits and dashes).
 - In Obsidian without a Booklet plugin, and on GitHub, the block shows as a short code block.
+
+A query can also draw a data block, and can say how.
+
+```booklet query
+from: short-list
+as: list
+group: why
+fields: due
+limit: 20
+empty: Nothing needs you.
+```
+
+- `from:` may name a data block (section 7) in the same module or in the file's data section.
+- `as:` chooses the view. `cards` is the default for kept entries; `table` is the default for a data block.
+
+| `as:` | draws | keys it reads |
+| --- | --- | --- |
+| `cards` | one dated card per kept entry | `fields`, `newest` |
+| `table` | one row per row, one column per field | `fields`, `group`, `limit` |
+| `list` | one line per row: its title, then its other fields | `title`, `fields`, `group`, `limit` |
+| `tiles` | one tile per row: a big value over a label | `value`, `label`, `note`, `tone`, `limit` |
+
+- `fields:` names the fields to show, in order. Without it, a data block's own `fields` order is used, or else every key of the first row.
+- `group:` names a field; rows that share its value are drawn together under that value, in the order the values first appear, with a count.
+- `limit:` draws only the first rows, that many.
+- `title:` (list) names the field that is each line's title; the default is `title`, or else the data block's first field.
+- `value:`, `label:`, `note:`, `tone:` (tiles) name the fields a tile reads; the defaults are those same names. A `tone` of `good`, `warn` or `bad` colours the tile; anything else is plain.
+- `table`, `list` and `tiles` also work on kept entries (`from:` an activity): each kept entry is a row, its questions are the fields, and its date is the field `date`.
+- A reader may sort a table by a column on screen. That is the renderer's convenience and is saved nowhere.
+- Values are plain text: nothing in a data block is read as Markdown or HTML.
+- A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the four views, is refused like any other query that cannot be drawn. A page that draws a data block is not a reading-only page: it stays open, not folded into sections.
 
 ---
 
@@ -398,6 +429,26 @@ empty: Nothing logged yet.
 - Every `svg` string is sanitized before drawing.
 
 **Data blocks live inside their module's fence, or in the data section at the end** (`> [!data] Data`), or in a file the manifest names (section 3). The renderer finds fences by their language word and block id, never by a heading.
+
+### Data: rows a generator wrote
+
+A report or a dashboard page carries its numbers as a data block: a fenced block named `booklet data`, with a block id on the line after it.
+
+````markdown
+```booklet data
+{ "fields": { "title": "Item", "due": "Due", "why": "Why it is here" },
+  "rows": [
+    { "title": "Renew the licence", "due": "2026-10-08", "why": "due in 5 days" },
+    { "title": "Send the report",   "due": "2026-10-03", "why": "due today" } ] }
+```
+^short-list
+````
+
+- The fence holds JSON: an object with `rows` (a list of flat objects) and, optionally, `fields` (each key's label, which is also the default order), or just the list of rows. Unlike a widget's, a data block is JSON only.
+- A value is a string, a number, `true`, `false` or nothing. A list of those is shown comma-separated. Nothing nests deeper.
+- It lives where a widget's data lives: inside its module's fence, or in the data section at the end.
+- A data block belongs to whoever wrote the file. A reader never changes it, it is not a record, and a renderer writes it back exactly as it found it.
+- Nothing is computed from it. Whatever wrote the file has already ordered, counted and filtered the rows; a renderer draws them. Draw them with a `booklet query` (section 6).
 
 ---
 
@@ -454,7 +505,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 - **A checkbox click in Reading view edits the file.** See "Choice" in section 5 for the accepted trade-off.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 
-**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data; a query shows as a code block. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
+**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data; a query and a data block show as code blocks. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
 
 **GitHub.** Callout lines show as quotations with the `[!kind|id]` text visible; lists, task lists, footnotes, math and mermaid render; `![[#^id]]` shows as text. Nothing breaks.
 
@@ -464,7 +515,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 ````markdown
 ---
-booklet: 0.3
+booklet: 0.4
 id: example/tides
 title: How tides work
 lang: en
@@ -524,11 +575,11 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: 0.3` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
+A conforming reader must: read a file whose front matter declares `booklet: 0.4` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
 
-A conforming writer must: emit front matter with `booklet: 0.3`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with `booklet: 0.4`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: 0.3` files, rejects anything else outright, and is the reference implementation of "is this file valid."
+`lint-booklet.py` in this repository checks `booklet: 0.4` files, rejects anything else outright, and is the reference implementation of "is this file valid."
 
 ---
 
@@ -540,11 +591,20 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A Booklet plugin for Obsidian.** Section 6, 7 and 11 describe how one would draw widgets and figures; none exists yet.
 - **A second, independent implementation.** The renderer in this repository is the only reader so far.
 
-None of this affects what already works: loading, reading, answering, and saving a v0.3 booklet with every question kind above, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.4 booklet with every question kind above, its widgets, and its citations.
 
 ---
 
-## 14. Changes from v0.2
+## 14. Changes
+
+### Changes from v0.3
+
+- `booklet data` blocks are added (section 7): rows a generator wrote, saved back exactly as found.
+- The `booklet query` block can draw a data block, and takes `as:` (`cards`, `table`, `list`, `tiles`), `group:`, `limit:`, `title:`, `value:`, `label:`, `note:` and `tone:` (section 6). Kept entries can be drawn as a table, list or tiles too.
+- The marker is `booklet: 0.4`.
+- A file marked `booklet: 0.3` is refused; change the marker to 0.4 (nothing else in a 0.3 file needs to change).
+
+### Changes from v0.2
 
 - Callout settings are written `key:value` (`min:0`, not `min=0`).
 - `of=` is removed.
@@ -552,4 +612,4 @@ None of this affects what already works: loading, reading, answering, and saving
 - The locked-file envelope is removed.
 - The `booklet query` block is added (section 6).
 - The `svg-regions` figure contract is stated: `class="rg"` plus `data-r` on each tappable region.
-- A file saying `booklet: 0.2` is refused; update it, then change the marker to `0.3`.
+- A file saying `booklet: 0.2` is refused; update it, then change the marker to `0.4`.

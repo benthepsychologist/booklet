@@ -1,4 +1,4 @@
-// The linter's own rules, for the v0.3 format. test/fixtures/lint-ok.md is a
+// The linter's own rules, for the v0.4 format. test/fixtures/lint-ok.md is a
 // small clean booklet; every other test/fixtures/lint-*.md is that file with one
 // change, written to break exactly one rule. This lints each and checks that the
 // ERROR (or warn) line names the rule and says where. The clean fixture, every
@@ -25,14 +25,15 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
  const b=lint(...blind);
  chk("the three booklets built blind from SKILL.md have no errors",blind.length===3&&b.errors.length===0,b.errors.join(" | "));
  const reg=lint(...["module-daily-journal","module-the-day","module-check-in"].map(n=>path.join(FX,n+".md")));
- chk("the module fixtures (copies of real registry modules) lint clean as v0.3",reg.status===0&&/0 errors/.test(reg.out),reg.out);
+ chk("the module fixtures (copies of real registry modules) lint clean as v0.4",reg.status===0&&/0 errors/.test(reg.out),reg.out);
  const flag=lint("--registry",path.join(FX,"lint-ok.md"));
  chk("--registry is accepted and a clean file stays clean",flag.status===0&&/0 errors · 0 warnings/.test(flag.out),flag.out);}
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.3 (an old `module:` file)",/front matter must say `booklet: 0\.3` \(found None\)/],
- ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.3 \(callout settings are now key:value\)\. Update the file, then the marker\./],
+ ["lint-not-v02","front matter without booklet: 0.4 (an old `module:` file)",/front matter must say `booklet: 0\.4` \(found None\)/],
+ ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.4\. Change the marker to booklet: 0\.4 \(and write settings as key:value/],
+ ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.4\. Change the marker to booklet: 0\.4\.$/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -49,12 +50,12 @@ const CASES=[
  ["lint-list-from-zero","a numbered list from 0 right under a question",/line 14: a numbered list that does not start at 1/],
  ["lint-setting-equals","a setting written key=value instead of key:value",/line 13: settings are written key:value \(found min=0\)/],
  ["lint-query-no-from","a query with no `from:`",/line 23: a query needs `from:`/],
- ["lint-query-from-nothing","a query whose `from:` names nothing",/line 23: the query's `from: nowhere` names no activity or question/],
+ ["lint-query-from-nothing","a query whose `from:` names nothing",/line 23: the query's `from: nowhere` names no activity, question or data block/],
  ["lint-query-other-module","a query whose `from:` is in another module",/line 23: the query's `from: elsewhere` is in another module/],
  ["lint-query-no-entries","a query of an activity that keeps no entries",/line 23: the query's `from: once` keeps no entries/],
  ["lint-query-bad-field","a query whose `fields:` names a question not in the activity",/line 23: the query's `fields: far` is not a question of 'log'/],
  ["lint-query-bad-newest","a query whose `newest:` is not a positive integer",/line 23: the query's `newest: 0` must be a positive whole number/],
- ["lint-query-bad-key","a query with a setting it does not take",/line 25: a query has no setting 'limit'/],
+ ["lint-query-bad-key","a query with a setting it does not take",/line 25: a query has no setting 'sort'/],
  ["lint-query-not-kv","a query body line that is not `key: value`",/line 25: a query line is written `key: value` \(found 'newest 3'\)/],
  ["lint-menu-unknown","a question naming a menu that is not in the file",/line 13: `menu:feelings` names no menu in this file/],
  ["lint-menu-and-list","a question with both menu: and a list of its own",/line 17: the question 'morning' has both `menu:feelings` and a list of its own/],
@@ -62,6 +63,16 @@ const CASES=[
  ["lint-matrix-no-items","a matrix with no items",/line 13: the matrix 'phq' has no items/],
  ["lint-matrix-no-anchors","a matrix with no anchors",/line 13: the matrix 'phq' has no anchors/],
  ["lint-matrix-dup-anchors","a matrix whose anchor numbers repeat",/line 13: the matrix 'phq' repeats anchor number 1/],
+ ["lint-data-no-id","a data block with no ^id",/line 19: a data block needs a \^id/],
+ ["lint-data-bad-json","a data block that is not JSON",/line 19: the `booklet data` block is not valid JSON/],
+ ["lint-data-no-rows","a data block with no list of rows",/line 19: the data block \^short-list holds no list of rows/],
+ ["lint-data-nested","a data block with a nested value",/line 19: the data block \^short-list has a nested value in 'a'/],
+ ["lint-data-bad-fields","a data block whose `fields` are not labels",/line 19: the data block \^short-list has `fields` that is not an object of labels/],
+ ["lint-data-id-clash","a data block id that is also a question's id",/line 19: the data block id \^situation is also the id on line 13/],
+ ["lint-query-bad-as","a query whose `as:` is not a view",/line 25: the query's `as: chart` is not one of cards, table, list, tiles/],
+ ["lint-query-bad-limit","a query whose `limit:` is not a positive integer",/line 25: the query's `limit: 0` must be a positive whole number/],
+ ["lint-query-cards-on-data","`as: cards` on a data block",/line 25: the query's `as: cards` draws kept entries, not the data block 'short-list'/],
+ ["lint-query-data-other-module","a query of a data block in another module",/line 13: the query's `from: short-list` is a data block in another module/],
  ["lint-fence-unclosed","a fence opened and never closed",/line 25: a fence is opened and never closed/],
 ];
 for(const [name,what,rx] of CASES){
@@ -85,6 +96,15 @@ for(const [name,what,rx] of CASES){
 {// a query written correctly is clean
  const r=lint(path.join(FX,"lint-query-ok.md"));
  chk("a `booklet query` block with every setting lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
+
+{// data blocks and the four views, written correctly, are clean
+ const r=lint(path.join(FX,"lint-data-ok.md"));
+ chk("a data block and a query of each view (table, list, tiles, and a kept-entries table) lint clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);
+ const f=lint(path.join(FX,"data-views.booklet.md"));
+ chk("the data-views fixture (data inside a module, and in the data section) lints clean",f.status===0&&/0 errors · 0 warnings/.test(f.out),f.out);
+ const w=lint(path.join(FX,"lint-query-data-warn.md"));
+ chk("a `group:` naming a field the rows never carry is one warning, no error, naming the line",
+   w.status===0&&w.errors.length===0&&w.warns.length===1&&/line 25: the query's `group: nope` names a field the rows never carry/.test(w.warns[0]||""),w.out);}
 
 {// a shared menu used by two questions, and a matrix, are clean
  const r=lint(path.join(FX,"lint-menu-matrix-ok.md"));

@@ -4,7 +4,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 
-const FM="---\nbooklet: 0.3\ntitle: Menus and matrix\nlang: en\n---\n\n";
+const FM="---\nbooklet: 0.4\ntitle: Menus and matrix\nlang: en\n---\n\n";
 const BOOK=FM+`> [!module|qm] Menus and matrix
 
 > [!activity|day] A day

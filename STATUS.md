@@ -3,15 +3,20 @@
 *As of 2026-10-03*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.3**: format v0.3 (files say `booklet: 0.3`) and renderer 0.3.2.
+**project v0.4**: format v0.4 (files say `booklet: 0.4`) and renderer 0.4.0.
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
-## Current state — v0.3 (2026-10-03)
+## Current state — v0.4 (2026-10-03)
 
-What changed from v0.2 is listed at the end of `SPEC.md` (section 14): callout
+What changed from v0.3 and from v0.2 is listed at the end of `SPEC.md` (section 14).
+v0.4 adds data blocks (`booklet data`: rows a generator wrote, saved back exactly as
+found) and query views (`as: table`, `list`, `tiles`, with `group:` and `limit:`) that
+draw them, or kept entries. Nothing is computed in the renderer: no filter, no sum, no
+join. A file marked `booklet: 0.3` is refused with a message naming the marker; change
+it to 0.4 and nothing else needs to change. From v0.2: callout
 settings are written `key:value`, `of=` and the `pinned` flag are gone, the
 locked-file envelope is gone, the `booklet query` block is new, and the
 `svg-regions` figure contract is written down. A `booklet: 0.2` file is refused
@@ -31,7 +36,8 @@ with a message saying so.
   `![[#^id]]`, drawn by the `svg-regions`, `grid-select` and `card-board`
   engines.
 - **Queries** (`booklet query`) show what the reader kept in another activity
-  or question of the same module.
+  or question of the same module, or the rows of a data block, as cards, a table
+  (sortable on screen, never saved), a list or tiles, optionally grouped and limited.
 - **Links between activities** (`[[#Heading]]` and `[label](#slug)`) are drawn as
   links that open the activity, and the page, holding that heading.
 - **Citations** are CommonMark footnotes, drawn as numbered marks with a side
@@ -60,7 +66,7 @@ with a message saying so.
   heading links that open the section they target. The reader's choice is kept per
   booklet in the browser, never in the file. An activity with any question draws as
   before. The registry's `what-is-a-booklet` module now folds.
-- **The linter** checks v0.3 files by v0.3's rules and agrees with the
+- **The linter** checks v0.4 files by v0.4's rules and agrees with the
   renderer about what is wrong.
 
 ## Specified but not drawn

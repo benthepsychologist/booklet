@@ -1,4 +1,4 @@
-// Reading material in a v0.3 booklet: the citation marks in the prose, the
+// Reading material in a v0.4 booklet: the citation marks in the prose, the
 // panel a mark opens, the callout filter, the endnotes a printout carries, and
 // the interface language switching under an open panel.
 //
