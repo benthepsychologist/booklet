@@ -278,7 +278,7 @@ it, each starting with `>`, no blank line between:
 | `choice` | pick one | a task list, `- [ ] Option` |
 | `multi` | pick any number | a task list; add `open` after the id to let the reader add their own |
 | `scale` | a numbered scale | a numbered list of anchors, starting at whatever number you want the scale to start at (usually `0.`) |
-| `number` | a number | nothing; `min=`, `max=`, `step=` after the id |
+| `number` | a number | nothing; `min:`, `max:`, `step:` after the id |
 | `date` | a date | nothing |
 | `widget` | a drawing engine (body map, grid, cards) | an embed of the widget's data — section 8, and never invent one |
 
@@ -301,7 +301,7 @@ it, each starting with `>`, no blank line between:
 3. Good
 ```
 ```markdown
-> [!number|sleep min=0 max=24] Hours slept
+> [!number|sleep min:0 max:24] Hours slept
 ```
 
 - **A `choice` or `scale` question's options or anchors need a blank line

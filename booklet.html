@@ -2598,10 +2598,10 @@ function isBooklet(text){const ls=String(text||"").replace(/^﻿/,"").split(/\r?
   if((ls[0]||"").trim()!=="---") return false;
   for(let i=1;i<ls.length&&ls[i].trim()!=="---";i++) if(/^booklet:[ \t]*["']?0\.2["']?[ \t]*$/.test(ls[i])) return true;
   return false;}
-/* `kind|id words` → the id, the flags and the key=value settings; a bare word
+/* `kind|id words` → the id, the flags and the key:value settings; a bare word
    the kind knows is a flag, and the first other bare word is the id */
 function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}};
-  String(s||"").trim().split(/\s+/).filter(Boolean).forEach(w=>{const kv=w.match(/^([A-Za-z][A-Za-z0-9-]*)=(.*)$/);
+  String(s||"").trim().split(/\s+/).filter(Boolean).forEach(w=>{const kv=w.match(/^([A-Za-z][A-Za-z0-9-]*):(.*)$/);
     if(kv) out.set[kv[1]]=kv[2];
     else if((CALLOUT_FLAGS[kind]||[]).includes(w.toLowerCase())) out.flags.add(w.toLowerCase());
     else if(out.id===null) out.id=w; else out.flags.add(w.toLowerCase());});
