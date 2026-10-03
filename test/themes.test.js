@@ -8,7 +8,7 @@ const html=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8")
 let fails=0;const ok=(c,m)=>{console.log((c?"  ok    ":"  FAIL  ")+m);if(!c)fails++;};
 const style=html.slice(html.indexOf("<style>")+7,html.indexOf("</style>"));
 // token tables: a rule whose selector is :root (alone or with [data-theme=…]) and whose body sets custom properties
-const tables={};let print=null;
+const tables={};let print=null,printImportant=false;
 const stripped=style.replace(/\/\*[\s\S]*?\*\//g,"");
 const names=["paper","daylight","night","contrast"];
 for(const n of names){
@@ -17,11 +17,13 @@ for(const n of names){
   const t={};for(const d of m[1].split(";")){const k=/^\s*(--[\w-]+)\s*:(.*)$/.exec(d);if(k)t[k[1]]=k[2].trim();else if(/color-scheme/.test(d))t["color-scheme"]=d.split(":")[1].trim();}
   tables[n]=t;}
 {const m=/@media print\{\s*:root\[data-theme\]\{([^}]*)\}/.exec(stripped);
- if(m){print={};for(const d of m[1].split(";")){const k=/^\s*(--[\w-]+)\s*:(.*)$/.exec(d);if(k)print[k[1]]=k[2].trim();}}}
+ if(m){print={};printImportant=true;for(const d of m[1].split(";")){const k=/^\s*(--[\w-]+)\s*:(.*)$/.exec(d);
+   if(k){const v=k[2].trim();if(!/\s!important$/.test(v)) printImportant=false;print[k[1]]=v.replace(/\s*!important$/,"");}}}}
 ok(Object.keys(tables).length===4,"four theme tables found");
 const keys=k=>Object.keys(tables[k]).sort().join(",");
 for(const n of names.slice(1)) ok(keys(n)===keys("paper"),n+" defines exactly the tokens paper does ("+Object.keys(tables.paper).length+")");
 ok(print&&Object.keys(print).concat("color-scheme").sort().join(",")===keys("paper"),"the print table defines the same tokens");
+ok(printImportant,"every print token is !important, so a booklet's own look (set on <html>) can never reach a printed page");
 ok(print&&JSON.stringify(print)===JSON.stringify(Object.fromEntries(Object.entries(tables.daylight).filter(([k])=>k!=="color-scheme"))),"print uses the Daylight values (light)");
 ok(tables.night["color-scheme"]==="dark"&&tables.paper["color-scheme"]==="light","color-scheme is set per theme");
 const rgb=h=>{const m=/^#([0-9a-f]{6})$/i.exec(h);if(!m)throw new Error("not a hex colour: "+h);const n=parseInt(m[1],16);return [n>>16,(n>>8)&255,n&255];};

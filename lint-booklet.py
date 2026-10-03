@@ -2,30 +2,30 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.4 format in SPEC.md.
+Lint a booklet file against the v0.5 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: 0.4`,
+A booklet is one portable Markdown file: front matter that says `booklet: 0.5`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: 0.4`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: 0.5`, one `lang:`), fences that are
 closed, unique block and question ids, modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
 title, queries and data blocks, and records that name an activity. Any file whose
-front matter is not `booklet: 0.4` is rejected; no earlier format is read.
+front matter is not `booklet: 0.5` is rejected; no earlier format is read.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.4 file is written in one language, so it
+registry's CI line keeps working; a v0.5 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
-import html, json, pathlib, re, sys, unicodedata, urllib.parse
+import html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 
 BASE = pathlib.Path(__file__).resolve().parent
 
@@ -93,18 +93,21 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.4 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.5 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
 CALLOUT_LINE = re.compile(r'^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$')
+# a row closes with `> [!row end]`: the one booklet line whose flag follows the kind, since a row has no id
+ROW_END = re.compile(r'^>[ \t]?\[!(row)([ \t]+end)\]([+-]?)[ \t]*(.*)$', re.I)
 ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
-CALLOUT_FLAGS = {"module": {"end"}, "activity": {"repeat", "daily", "hidden"},
+CALLOUT_FLAGS = {"module": {"end"}, "row": {"end"}, "activity": {"repeat", "daily", "hidden"},
             "widget": {"readonly", "describe"}, "text": {"long"},
             "choice": {"open"}, "multi": {"open"}}
+TONE_NAMES = ("warm", "green", "amber", "slate", "teal")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
 DRAWN_QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}  # the kinds the reference page draws today
-STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution"}
+STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row"}
 
 
 def callout_words(kind, s):
@@ -229,6 +232,260 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
         err(f, f"line {n}: the query's `newest: {s['newest']}` must be a positive whole number")
 
 
+
+# ---- A theme block (format 0.5): `booklet theme`, key: value lines --------------------------------
+# Data, never CSS: each key takes one strict value. The contrast check below is the renderer's own
+# (themeDerive in booklet.html), ported number for number: test/theme-block.test.js runs both on the same
+# inputs and requires the same result. The tables are the four built-in themes' tokens that the check
+# reads, in lowercase; the same test requires them to equal the stylesheet's.
+TH_BASES = ("paper", "daylight", "night", "contrast")
+TH_COLOURS = ("paper", "ink", "accent", "good", "warn", "bad")
+TH_FONTS = ("default", "serif", "sans", "mono", "readable")
+TH_DENSITIES = ("compact", "comfortable", "roomy")
+TH_HEX = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})")
+TH_BASE = {
+    "paper": {
+        "paper": "#f7f2e8", "paper-deep": "#eee6da", "ink": "#292421", "muted": "#59514b",
+        "reader": "#292421", "field": "#ffffff", "surface": "#ffffff", "warn": "#a04e34",
+        "warn-soft": "#ffe4de", "accent": "#103e46", "accent-soft": "#e3eaea", "on-accent": "#ffffff",
+        "on-ink": "#ffffff", "mark": "#fff3b0", "tone-warm": "#f0d9cf", "tone-warm-deep": "#9a4a31",
+        "tone-green": "#dce7d2", "tone-green-deep": "#4f6b3a", "tone-amber": "#f6edd0", "tone-amber-deep": "#80621a",
+        "tone-slate": "#d9dee2", "tone-slate-deep": "#465b66", "tone-teal": "#d5e3e1", "tone-teal-deep": "#166b63",
+    },
+    "daylight": {
+        "paper": "#ffffff", "paper-deep": "#f3f4f6", "ink": "#1f2328", "muted": "#57606a",
+        "reader": "#1f2328", "field": "#ffffff", "surface": "#ffffff", "warn": "#a04e34",
+        "warn-soft": "#fbe9e4", "accent": "#103e46", "accent-soft": "#e6f0f1", "on-accent": "#ffffff",
+        "on-ink": "#ffffff", "mark": "#fff3b0", "tone-warm": "#f0d9cf", "tone-warm-deep": "#9a4a31",
+        "tone-green": "#dce7d2", "tone-green-deep": "#4f6b3a", "tone-amber": "#f6edd0", "tone-amber-deep": "#80621a",
+        "tone-slate": "#d9dee2", "tone-slate-deep": "#465b66", "tone-teal": "#d5e3e1", "tone-teal-deep": "#166b63",
+    },
+    "night": {
+        "paper": "#16191d", "paper-deep": "#1e2328", "ink": "#e6e1d8", "muted": "#a8a198",
+        "reader": "#e6e1d8", "field": "#1e2328", "surface": "#1e2328", "warn": "#e08a6b",
+        "warn-soft": "#3a2620", "accent": "#7cc4c9", "accent-soft": "#1f3438", "on-accent": "#0f1a1c",
+        "on-ink": "#16191d", "mark": "#5c4e12", "tone-warm": "#3a2620", "tone-warm-deep": "#e8a58c",
+        "tone-green": "#222e1d", "tone-green-deep": "#9cc27a", "tone-amber": "#332b14", "tone-amber-deep": "#d9b25a",
+        "tone-slate": "#2a3238", "tone-slate-deep": "#a9bbc6", "tone-teal": "#1c3331", "tone-teal-deep": "#7fd1c6",
+    },
+    "contrast": {
+        "paper": "#ffffff", "paper-deep": "#ededed", "ink": "#000000", "muted": "#1a1a1a",
+        "reader": "#000000", "field": "#ffffff", "surface": "#ffffff", "warn": "#8b0000",
+        "warn-soft": "#fde7e7", "accent": "#003b49", "accent-soft": "#ffffff", "on-accent": "#ffffff",
+        "on-ink": "#ffffff", "mark": "#ffe600", "tone-warm": "#ffe9e4", "tone-warm-deep": "#8b0000",
+        "tone-green": "#e8f5e0", "tone-green-deep": "#1b4d0e", "tone-amber": "#fff3c4", "tone-amber-deep": "#5c4300",
+        "tone-slate": "#e6eaee", "tone-slate-deep": "#243746", "tone-teal": "#ddf2f0", "tone-teal-deep": "#004d45",
+    },
+}
+TH_PAIRS = [("ink", "paper"), ("ink", "paper-deep"), ("muted", "paper"), ("accent", "paper"), ("on-accent", "accent"),
+            ("ink", "field"), ("reader", "field"), ("ink", "surface"), ("accent", "surface"), ("muted", "surface"),
+            ("warn", "paper"), ("on-ink", "ink"), ("on-ink", "muted"), ("ink", "accent-soft"), ("ink", "mark"),
+            ("warn", "warn-soft")]
+for _t in ("warm", "green", "amber", "slate", "teal"):
+    TH_PAIRS += [("tone-" + _t + "-deep", "tone-" + _t), ("ink", "tone-" + _t)]
+TH_OWES = {"paper": ["paper"], "ink": ["ink"], "reader": ["ink"], "on-ink": ["paper"], "accent": ["accent"],
+           "warn": ["bad"], "tone-green-deep": ["good"], "tone-amber-deep": ["warn"], "tone-warm-deep": ["bad"]}
+
+
+def _th_rgb(h):
+    h = h.lstrip("#")
+    if len(h) == 3:
+        h = h[0] * 2 + h[1] * 2 + h[2] * 2
+    n = int(h, 16)
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+
+
+def _th_hex(c):
+    return "#" + "".join("%02x" % max(0, min(255, int(v))) for v in c)
+
+
+def _th_lum(c):
+    r, g, b = [(v / 255 / 12.92 if v / 255 <= .03928 else ((v / 255 + .055) / 1.055) ** 2.4) for v in c]
+    return .2126 * r + .7152 * g + .0722 * b
+
+
+def _th_ratio(a, b):
+    x, y = _th_lum(a), _th_lum(b)
+    return (max(x, y) + .05) / (min(x, y) + .05)
+
+
+def _th_mix(a, b, t):
+    return [int(math.floor(v + (b[i] - v) * t + .5)) for i, v in enumerate(a)]
+
+
+def _th_tint(P, tgt, t0, fgs):
+    """A tint of paper toward tgt, as strong as t0, eased back until every colour in fgs reads on it."""
+    for k in (1, .7, .4, 0):
+        c = _th_mix(P, tgt, t0 * k)
+        if all(_th_ratio(f, c) >= 4.5 for f in fgs):
+            return c
+    return P
+
+
+def _th_build(B, use):
+    g = lambda n: _th_rgb(B[n])
+    c = lambda k: _th_rgb(use[k]) if k in use else None
+    P, I, A = c("paper") or g("paper"), c("ink") or g("ink"), c("accent") or g("accent")
+    deep = {"green": c("good") or g("tone-green-deep"), "amber": c("warn") or g("tone-amber-deep"),
+            "warm": c("bad") or g("tone-warm-deep"), "slate": g("tone-slate-deep"), "teal": g("tone-teal-deep")}
+    dark = _th_lum(P) < _th_lum(I)
+    pi = "paper" in use or "ink" in use
+    o = {}
+    if pi:
+        pd = _th_mix(P, I, .05)
+        fd = pd if dark else _th_mix(P, [255, 255, 255], .7)
+        o.update({"paper": P, "ink": I, "reader": I, "paper-deep": pd, "field": fd, "surface": fd, "rule": _th_mix(P, I, .18)})
+        mu = I
+        for t in (.28, .2, .12, 0):
+            m = _th_mix(I, P, t)
+            if all(_th_ratio(m, x) >= 4.5 for x in (P, fd, pd)):
+                mu = m
+                break
+        o.update({"muted": mu, "placeholder": _th_mix(I, P, .5), "on-ink": P, "on-ink-soft": _th_mix(P, I, .12), "bar-bg": P,
+                  "mark": _th_tint(P, deep["amber"], .3, [I])})
+    if "accent" in use or pi:
+        o["accent"] = A
+        o["accent-soft"] = _th_tint(P, A, .14 if dark else .1, [I])
+        o["rg-on"] = _th_mix(P, A, .25 if dark else .1)
+        best = g("on-accent")
+        for x in (P, I):
+            if _th_ratio(x, A) > _th_ratio(best, A):
+                best = x
+        o["on-accent"] = best
+    if "bad" in use or pi:
+        o["warn"] = deep["warm"]
+        o["warn-soft"] = _th_tint(P, deep["warm"], .2 if dark else .12, [deep["warm"]])
+    for t in ("warm", "green", "amber", "slate", "teal"):
+        own = (t == "green" and "good" in use) or (t == "amber" and "warn" in use) or (t == "warm" and "bad" in use)
+        if own:
+            o["tone-" + t + "-deep"] = deep[t]
+        if own or pi:
+            o["tone-" + t] = _th_tint(P, deep[t], .16 if dark else .14, [deep[t], I])
+    return {k: _th_hex(v) for k, v in o.items()}
+
+
+def _th_owes(tok, o, use):
+    if tok not in o:
+        return []
+    d = TH_OWES.get(tok)
+    if d is None:
+        d = ["paper", "ink"]
+        if tok in ("accent-soft", "rg-on", "on-accent"):
+            d = d + ["accent"]
+        elif tok == "warn-soft":
+            d = d + ["bad"]
+        elif tok == "mark":
+            d = d + ["warn"]
+        else:
+            m = re.fullmatch(r"tone-(green|amber|warm)", tok)
+            if m:
+                d = d + [{"green": "good", "amber": "warn", "warm": "bad"}[m.group(1)]]
+    return [k for k in d if k in use]
+
+
+def theme_derive(spec):
+    """The renderer's themeDerive, ported: {base, tokens, dropped: [(key, pair, ratio)]}."""
+    base = spec.get("base") if spec.get("base") in TH_BASES else "paper"
+    B = TH_BASE[base]
+    use = {k: spec[k] for k in TH_COLOURS if isinstance(spec.get(k), str) and TH_HEX.fullmatch(spec[k])}
+    dropped = []
+    for _ in range(8):
+        o = _th_build(B, use)
+        val = lambda t: _th_rgb(o.get(t) or B[t])
+        fails = [(f, b, _th_ratio(val(f), val(b))) for f, b in TH_PAIRS if _th_ratio(val(f), val(b)) < 4.5]
+        if not fails:
+            return {"base": base, "tokens": o, "dropped": dropped}
+        hit = {}
+        for f, b, r in fails:
+            d = _th_owes(f, o, use) + _th_owes(b, o, use)
+            pick = [k for k in d if k not in ("paper", "ink")]
+            for k in (pick or d):
+                hit.setdefault(k, (f, b, r))
+        if not hit:
+            break
+        for k, (f, b, r) in hit.items():
+            use.pop(k, None)
+            dropped.append((k, f + " on " + b, round(r * 100) / 100))
+    return {"base": base, "tokens": {}, "dropped": dropped}
+
+
+def check_theme(f, n, code, in_module, have_theme):
+    """A `booklet theme` block: key: value lines, one per booklet, outside every module fence."""
+    if in_module:
+        err(f, f"line {n}: a theme belongs to the booklet, not to a module (put the theme block outside the module's fence)")
+        return
+    if have_theme:
+        err(f, f"line {n}: a booklet has one theme block; this is a second")
+        return
+    spec = {}
+    for off, raw in enumerate(code.split("\n")):
+        ln = raw.strip()
+        if not ln:
+            continue
+        at = n + 1 + off
+        m = re.match(r'^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$', ln)
+        if not m:
+            err(f, f"line {at}: a theme line is written `key: value` (found {ln!r})")
+            continue
+        key, val = m.group(1).lower(), m.group(2).strip()
+        if len(val) >= 2 and ((val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")):
+            val = val[1:-1]
+        lists = {"base": TH_BASES, "font": TH_FONTS, "density": TH_DENSITIES}
+        if key in lists:
+            if val in lists[key]:
+                spec[key] = val
+            else:
+                err(f, f"line {at}: the theme's `{key}: {val}` is not one of {', '.join(lists[key])}")
+        elif key in TH_COLOURS:
+            if TH_HEX.fullmatch(val):
+                spec[key] = val.lower()
+            else:
+                err(f, f"line {at}: the theme's `{key}: {val}` must be a hex colour, #rgb or #rrggbb (no names, no rgb(), no CSS)")
+        else:
+            err(f, f"line {at}: a theme has no setting {key!r} (it takes base, paper, ink, accent, good, warn, bad, font, density)")
+    for key, pair, ratio in theme_derive(spec)["dropped"]:
+        warn(f, f"line {n}: the theme's `{key}` leaves {pair} at {ratio}:1, under 4.5 to 1, so the renderer will use the base theme's {key} instead")
+
+
+# ---- Rows (format 0.5): `> [!row]` ... `> [!row end]` -----------------------------------------------
+def row_cells(rows):
+    """How many cells a row's lines make, by the renderer's rule: each heading at the shallowest level used
+    starts a cell (what comes before the first is one more); with no headings each block is a cell."""
+    heads, fence, blocks, cur = [], None, [], False
+    first_content = None
+    for i, ln in enumerate(rows):
+        fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
+        if fm_:
+            if fence is None:
+                fence = fm_.group(1)[0]
+            elif fm_.group(1)[0] == fence and not fm_.group(2).strip():
+                fence = None
+            if first_content is None:
+                first_content = i
+            cur = True
+            continue
+        if fence:
+            continue
+        h = re.match(r'^ {0,3}(#{1,6})[ \t]+\S', ln)
+        if h:
+            heads.append((i, len(h.group(1))))
+        if ln.strip():
+            if first_content is None:
+                first_content = i
+            if not cur:
+                blocks.append(i)
+            cur = True
+        else:
+            cur = False
+    if first_content is None:
+        return 0
+    if heads:
+        lo = min(l for _, l in heads)
+        starts = [i for i, l in heads if l == lo]
+        return len(starts) + (1 if first_content < starts[0] else 0)
+    return len(blocks)
+
+
 BULLET = re.compile(r'^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$')
 TASK = re.compile(r'^[ \t]*[-*+][ \t]+\[[ xX]\][ \t]+')
 NUMBERED = re.compile(r'^[ \t]*(\d+)[.)][ \t]+(.*)$')
@@ -254,10 +511,10 @@ def list_below(lines, i, pattern):
 
 
 def check_format(f, text, fm):
-    """Lint a v0.4 booklet. Every problem names its line."""
+    """Lint a v0.5 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.4 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.5 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
@@ -276,6 +533,22 @@ def check_format(f, text, fm):
     loose_questions = []   # questions before any activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
     menus, menu_uses, data_blocks = {}, [], {}
+    theme_seen = False
+    rowst = {"open": None, "start": 0}
+
+    def close_row(end, why=None):
+        """The open row ends at line index `end`: say what is wrong with it, or how thin it is."""
+        o, body = rowst["open"], lines[rowst["start"]:end]
+        rowst["open"] = None
+        if why:
+            err(f, f"line {o}: the row opened here {why}")
+            return
+        cells = row_cells(body)
+        if cells == 0:
+            warn(f, f"line {o}: this row is empty")
+        elif cells == 1:
+            warn(f, f"line {o}: this row has one cell, so nothing sits beside anything (start a second cell with another heading)")
+
     while i < len(lines):
         ln, n = lines[i], i + 1
         fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
@@ -307,6 +580,13 @@ def check_format(f, text, fm):
                 queries.append((n, code, open_mod, cur_act))
                 i = (m if bid else k) + 1
                 continue
+            if words and words[0].lower() == "booklet" and len(words) > 1 and words[1].lower() == "theme":
+                if section != "records":
+                    in_module = bool(open_mod) and section == "content"
+                    check_theme(f, n, code, in_module, theme_seen)
+                    theme_seen = theme_seen or not in_module
+                i = (m if bid else k) + 1
+                continue
             if words and words[0].lower() == "booklet":
                 what = words[1].lower() if len(words) > 1 else ""
                 try:
@@ -320,6 +600,19 @@ def check_format(f, text, fm):
                     if isinstance(obj, dict):
                         if not obj.get("engine"):
                             err(f, f"line {n}: the widget ^{bid} names no `engine`")
+                        for cell in obj.get("cells") or []:
+                            if isinstance(cell, dict) and "color" in cell:
+                                col = cell["color"]
+                                if isinstance(col, str):
+                                    if col not in TONE_NAMES:
+                                        err(f, f"line {n}: the widget ^{bid} has the colour {col!r}, which is not a tone name ({', '.join(TONE_NAMES)}); a pair of hex colours is an object with `tint` and `deep`")
+                                elif not isinstance(col, dict):
+                                    err(f, f"line {n}: the widget ^{bid} has a colour that is neither a tone name ({', '.join(TONE_NAMES)}) nor a pair of hex colours")
+                                else:
+                                    for part in ("tint", "deep"):
+                                        v = col.get(part)
+                                        if v is not None and not (isinstance(v, str) and re.fullmatch(r"#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})", v)):
+                                            err(f, f"line {n}: the widget ^{bid} has a `{part}` of {v!r}, which is not a hex colour (#rgb or #rrggbb); the renderer will not use it")
                         for fig in obj.get("figures") or []:
                             bad = svg_script_in((fig or {}).get("svg") or "") if isinstance(fig, dict) else None
                             if bad:
@@ -345,16 +638,33 @@ def check_format(f, text, fm):
                     warn(f, f"line {n}: `booklet {what}` is not a block this format defines")
             i = (m if bid else k) + 1
             continue
-        mm = CALLOUT_LINE.match(ln)
+        if rowst["open"] and re.match(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$', ln):
+            prev = lines[i - 1] if i > 0 else ""
+            under_text = prev.strip() and not prev.lstrip().startswith(">") and not re.match(r'^ {0,3}(`{3,}|~{3,})', prev)
+            if not (ln.lstrip().startswith("-") and under_text):
+                close_row(i, "runs into a page break")
+        mm = CALLOUT_LINE.match(ln) or ROW_END.match(ln)
         if mm:
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
+            if rowst["open"] and kind in ("data", "records", "module", "activity"):
+                close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line"}.get(kind, f"the {kind} section"))
             if kind == "data":
                 section = "data"
             elif kind == "records":
                 section = "records"
             elif section == "content":
-                if kind == "module":
+                if kind == "row":
+                    if "end" in w["flags"]:
+                        if not rowst["open"]:
+                            err(f, f"{where}: a row is closed that was never opened")
+                        else:
+                            close_row(i)
+                    elif rowst["open"]:
+                        err(f, f"{where}: a row opens inside a row (rows do not nest)")
+                    else:
+                        rowst["open"], rowst["start"] = n, i + 1
+                elif kind == "module":
                     if "end" in w["flags"]:
                         if not open_mod:
                             err(f, f"{where}: a module is closed that was never opened")
@@ -386,7 +696,7 @@ def check_format(f, text, fm):
                     if kind == "widget":
                         body = []
                         k = i + 1
-                        while k < len(lines) and lines[k].startswith(">") and not CALLOUT_LINE.match(lines[k]):
+                        while k < len(lines) and lines[k].startswith(">") and not (CALLOUT_LINE.match(lines[k]) or ROW_END.match(lines[k])):
                             body.append(lines[k]); k += 1
                         e = re.search(r'!\[\[[^\]#|]*#\^([A-Za-z0-9-]+)', "\n".join(body))
                         if e:
@@ -432,6 +742,8 @@ def check_format(f, text, fm):
                     err(f, f"line {n}: the id {key!r} is also used on line {ids[key]}")
                 ids.setdefault(key, n)
         i += 1
+    if rowst["open"]:
+        close_row(len(lines), "is never closed")
     if open_mod:
         err(f, f"line {open_line}: the module {open_mod!r} is opened and never closed")
     for n, mid, mod in menu_uses:
@@ -536,18 +848,18 @@ def check_file(path):
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return
-    if fm.get("booklet") == "0.4":
+    if fm.get("booklet") == "0.5":
         check_format(f, text, fm)
         return
     old = fm.get("booklet")
-    if old in ("0.1", "0.2", "0.3"):
-        err(f, f"front matter says booklet: {old}; this is format 0.4. Change the marker to booklet: 0.4"
+    if old in ("0.1", "0.2", "0.3", "0.4"):
+        err(f, f"front matter says booklet: {old}; this is format 0.5. Change the marker to booklet: 0.5"
                + (" (and write settings as key:value, for example min:0)." if old == "0.2" else "."))
         return
     # No earlier format is read — this mirrors the renderer's own
     # parseFile(), which only ever calls parseBooklet(). Anything else is
     # rejected outright rather than checked against an earlier format's rules.
-    err(f, f"front matter must say `booklet: 0.4` (found {fm.get('booklet')!r}) — "
+    err(f, f"front matter must say `booklet: 0.5` (found {fm.get('booklet')!r}) — "
            f"no earlier format is read")
 
 

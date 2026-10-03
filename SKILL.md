@@ -5,8 +5,8 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.4.0** — matches the project's current version (SPEC.md's
-"project v0.4") now that this skill teaches v0.4, the current format.
+**Skill version: 0.5.0** — matches the project's current version (SPEC.md's
+"project v0.5") now that this skill teaches v0.5, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. Above a long
@@ -65,7 +65,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: 0.4`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: 0.5`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -135,7 +135,7 @@ pages, then booklet lines.**
 | Which **lines**? | Open with a line or two of plain prose: what to do, roughly how long, and that anything can be skipped. On a page that asks questions, 3 to 6 of them, mostly `text` (section 6). |
 
 A **quiz** has no scoring and no multiple choice with a visible answer key —
-v0.4 has no way yet to fold a block away for the reader to check
+v0.5 has no way yet to fold a block away for the reader to check
 themselves (section 6 says what to do instead: put the answer in ordinary
 prose after the question, or on the next page). A **matching** quiz lists the
 options in prose (a word bank, in a different order from the questions), then
@@ -163,7 +163,7 @@ Copy this exactly and fill in the `<…>` parts.
 
 ````markdown
 ---
-booklet: 0.4
+booklet: 0.5
 id: "local/<booklet-slug>"
 title: "<Booklet title>"
 lang: <en|es|es-AR|fr>
@@ -342,14 +342,14 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **Nothing folds a question away.** v0.4 has no working equivalent of
+- **Nothing folds a question away.** v0.5 has no working equivalent of
   an older version's "optional questions, folded shut until opened." If a
   request calls for that (a quiz's answer key, "a couple more if you want
   them"), the honest options are: put the extra material as ordinary prose
   right after the question it answers, put it on its own page after a
   `***`, or say in your reply that folding isn't available yet and ask
   whether the requester wants it unfolded instead.
-- **Nothing reads another activity's answers yet.** v0.4 has no kind that
+- **Nothing reads another activity's answers yet.** v0.5 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
@@ -464,7 +464,7 @@ between paragraphs (`\n\n`) for a new one.
   address — never embedded data, never a placeholder URL.
 
 - **A report** (something generated or written to be read, not answered) needs
-  only front matter (`booklet: 0.4`, `id`, `title`, `lang`) and plain Markdown:
+  only front matter (`booklet: 0.5`, `id`, `title`, `lang`) and plain Markdown:
   no activity line is needed, the file is one activity named by the title. Give it
   a title heading, then `##` headings for its sections. The renderer folds a
   reading-only activity: each section shows its heading and the **first paragraph
@@ -528,6 +528,12 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 ---
 
+### Layout and look (optional, format 0.5)
+
+- **Rows.** `> [!row]` … `> [!row end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`---`), an activity line or a module fence.
+- **Widget colours** are tone names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, not hex colours, so a widget reads in every theme.
+- **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`) is only for a booklet that has a reason to look different. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
+
 ## 9. Validation
 
 **With the linter:** `python3 lint-booklet.py <slug>.booklet.md`. It prints
@@ -536,7 +542,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.4 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.5 file is written in one language` | add it |
 | bad language tag | `front matter `lang: de`: 'de' is a language the renderer has no interface table for …` | use en, es, es-AR or fr |
 | region spelled wrong | `'fr-ca' is not spelled the way a tag is: lowercase language, uppercase region (es-AR)` | `fr-CA` |
 | a module opened twice | `'x' opens before 'y' (line N) is closed` | close the first module before opening another |
@@ -561,7 +567,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: 0.4`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: 0.5`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module, activity and question ids are unique across the file and hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
@@ -579,7 +585,7 @@ the renderer. Imitate their shape.
 
 ````markdown
 ---
-booklet: 0.4
+booklet: 0.5
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -615,7 +621,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: 0.4
+booklet: 0.5
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -676,7 +682,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: 0.4
+booklet: 0.5
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -713,7 +719,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 ## 11. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.4 file, one language, its
+same way as any other booklet above — one v0.5 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

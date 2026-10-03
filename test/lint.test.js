@@ -1,4 +1,4 @@
-// The linter's own rules, for the v0.4 format. test/fixtures/lint-ok.md is a
+// The linter's own rules, for the v0.5 format. test/fixtures/lint-ok.md is a
 // small clean booklet; every other test/fixtures/lint-*.md is that file with one
 // change, written to break exactly one rule. This lints each and checks that the
 // ERROR (or warn) line names the rule and says where. The clean fixture, every
@@ -25,15 +25,16 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
  const b=lint(...blind);
  chk("the three booklets built blind from SKILL.md have no errors",blind.length===3&&b.errors.length===0,b.errors.join(" | "));
  const reg=lint(...["module-daily-journal","module-the-day","module-check-in"].map(n=>path.join(FX,n+".md")));
- chk("the module fixtures (copies of real registry modules) lint clean as v0.4",reg.status===0&&/0 errors/.test(reg.out),reg.out);
+ chk("the module fixtures (copies of real registry modules) lint clean as v0.5",reg.status===0&&/0 errors/.test(reg.out),reg.out);
  const flag=lint("--registry",path.join(FX,"lint-ok.md"));
  chk("--registry is accepted and a clean file stays clean",flag.status===0&&/0 errors · 0 warnings/.test(flag.out),flag.out);}
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.4 (an old `module:` file)",/front matter must say `booklet: 0\.4` \(found None\)/],
- ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.4\. Change the marker to booklet: 0\.4 \(and write settings as key:value/],
- ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.4\. Change the marker to booklet: 0\.4\.$/],
+ ["lint-not-v02","front matter without booklet: 0.5 (an old `module:` file)",/front matter must say `booklet: 0\.5` \(found None\)/],
+ ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.5\. Change the marker to booklet: 0\.5 \(and write settings as key:value/],
+ ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.5\. Change the marker to booklet: 0\.5\.$/],
+ ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.5\. Change the marker to booklet: 0\.5\.$/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -125,6 +126,57 @@ for(const [name,what,rx] of CASES){
  chk("a `[[#…]]` and a `](#…)` link to no heading: two warnings, no error, each naming the line",
    r.status===0&&r.errors.length===0&&r.warns.length===2&&/line 23: the link \[\[#Check yourself\]\] points at no heading/.test(r.warns[0]||"")
    &&/line 23: the link \]\(#check-yourself\) points at no heading/.test(r.warns[1]||""),r.out);}
+
+
+// ---- format 0.5: the theme block, rows and tone names
+const CASES5=[
+ ["lint-theme-unknown-key","a theme with a key it does not have",/line 11: a theme has no setting 'size' \(it takes base, paper, ink, accent, good, warn, bad, font, density\)/],
+ ["lint-theme-bad-colour","a theme colour that is a name",/line 10: the theme's `accent: red` must be a hex colour, #rgb or #rrggbb/],
+ ["lint-theme-bad-colour-function","a theme colour written as a function",/line 10: the theme's `accent: rgb\(0,0,0\)` must be a hex colour/],
+ ["lint-theme-bad-base","a theme base that is not one of the four",/line 10: the theme's `base: sepia` is not one of paper, daylight, night, contrast/],
+ ["lint-theme-bad-font","a theme font that is not one of the five",/line 10: the theme's `font: Comic Sans` is not one of default, serif, sans, mono, readable/],
+ ["lint-theme-bad-density","a theme density that is not one of the three",/line 10: the theme's `density: tight` is not one of compact, comfortable, roomy/],
+ ["lint-theme-not-kv","a theme line that is not key: value",/line 11: a theme line is written `key: value` \(found 'just some words'\)/],
+ ["lint-theme-two","a second theme block",/line 13: a booklet has one theme block; this is a second/],
+ ["lint-theme-in-module","a theme inside a module fence",/line 13: a theme belongs to the booklet, not to a module/],
+ ["lint-row-end-alone","a row closed that was never opened",/line 13: a row is closed that was never opened/],
+ ["lint-row-unclosed","a row never closed",/line 13: the row opened here runs into a module fence/],
+ ["lint-tone-bad-name","a widget colour that is not a tone name",/line 16: the widget \^picker-data has the colour 'pink', which is not a tone name \(warm, green, amber, slate, teal\)/],
+ ["lint-tone-not-string-or-pair","a widget colour that is neither a name nor a pair",/line 16: the widget \^picker-data has a colour that is neither a tone name/],
+];
+for(const [name,what,rx] of CASES5){
+  const r=lint(path.join(FX,name+".md"));
+  chk(`${what}: exactly one error`,r.status===1&&r.errors.length===1,r.errors.join(" | ")||r.out);
+  chk(`${what}: the message names the rule and the place`,rx.test(r.errors[0]||""),r.errors[0]);
+}
+{const r=lint(path.join(FX,"lint-row-page-break.md"));
+ chk("a row met by a page break: the row is reported at its opening line, and the later end as never opened",
+   r.status===1&&r.errors.length===2&&/line 13: the row opened here runs into a page break/.test(r.errors[0])&&/line 25: a row is closed that was never opened/.test(r.errors[1]),r.out);
+ const n=lint(path.join(FX,"lint-row-nested.md"));
+ chk("a row inside a row: reported at the inner opening (and the end it leaves over)",
+   n.status===1&&/line 17: a row opens inside a row \(rows do not nest\)/.test(n.errors[0]||"")&&n.errors.length===2,n.out);}
+for(const [name,rx] of [["lint-row-empty",/line 13: this row is empty/],["lint-row-one-cell",/line 13: this row has one cell/],
+    ["lint-theme-low-contrast",/line 9: the theme's `accent` leaves accent on paper at 1\.01:1, under 4\.5 to 1, so the renderer will use the base theme's accent instead/]]){
+  const r=lint(path.join(FX,name+".md"));
+  chk(`${name}: one warning naming the place, no error`,r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);}
+for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-pair-ok","theme-and-rows.booklet"]){
+  const r=lint(path.join(FX,name+".md"));
+  chk(`${name} lints clean`,r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
+{// a theme block needs no ^id, and one given is ignored
+ const t=fs.readFileSync(path.join(FX,"lint-theme-ok.md"),"utf8").replace("font: serif\ndensity: roomy\n```","font: serif\ndensity: roomy\n```\n^look");
+ const f=path.join(require("os").tmpdir(),"lint-theme-id-"+process.pid+".md");fs.writeFileSync(f,t);
+ const r=lint(f);fs.unlinkSync(f);
+ chk("a theme block with a ^id after it is fine",r.status===0&&/0 errors/.test(r.out),r.out);}
+{// the registry's modules, copied, re-marked and linted: hex pairs and tone names both stay valid
+ const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
+ if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
+   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.4$/m,"booklet: 0.5"));
+   const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
+   chk("the registry's modules, copied and re-marked to 0.5, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
+
+{// a widget colour pair must be two hex colours: it is drawn into a style attribute
+ const r=lint(path.join(FX,"lint-tone-pair-not-hex.md"));
+ chk("a `tint` that is not a hex colour is an error",r.errors.some(l=>/not a hex colour/.test(l)),r.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

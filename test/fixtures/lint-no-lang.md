@@ -1,5 +1,5 @@
 ---
-booklet: 0.4
+booklet: 0.5
 title: Lint fixture
 ---
 
