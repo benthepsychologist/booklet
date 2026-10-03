@@ -155,6 +155,9 @@ def data_problem(obj):
     return None, rows, fields
 
 
+IMPLICIT_ACTIVITY = "(the file)"
+
+
 def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_blocks=None):
     """A `booklet query` block: `key: value` lines, read within its own module."""
     data_blocks = data_blocks or {}
@@ -270,6 +273,7 @@ def check_format(f, text, fm):
         i += 1
     ids, block_ids, embeds, acts, entry_refs = {}, {}, [], set(), []
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
+    loose_questions = []   # questions before any activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
     menus, menu_uses, data_blocks = {}, [], {}
     while i < len(lines):
@@ -373,6 +377,8 @@ def check_format(f, text, fm):
                 elif kind in QUESTION_KINDS:
                     if w["id"] and cur_act:
                         q_owner[w["id"]] = cur_act
+                    elif w["id"]:
+                        loose_questions.append(w["id"])
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go")
                     elif kind not in DRAWN_QUESTION_KINDS:
@@ -438,6 +444,13 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")
         elif not block_ids[ref].lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
+    # A file with no activity line and no module line is one activity (SPEC section 3),
+    # so its queries and questions belong to that one activity.
+    if not seen_activity and not any_module:
+        act_info[IMPLICIT_ACTIVITY] = (None, False)
+        for q in loose_questions:
+            q_owner[q] = IMPLICIT_ACTIVITY
+        queries = [(n, code, mod, here or IMPLICIT_ACTIVITY) for n, code, mod, here in queries]
     for n, code, mod, here in queries:
         check_query(f, n, code, mod, here, act_info, q_owner, any_module, {k: v[:2] for k, v in data_blocks.items()})
     for bid, (_, _, n) in data_blocks.items():

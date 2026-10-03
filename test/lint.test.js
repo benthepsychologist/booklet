@@ -93,6 +93,10 @@ for(const [name,what,rx] of CASES){
  const r=lint(path.join(FX,"lint-setting-colon.md"));
  chk("`> [!number|sleep min:0 max:24] Hours` lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
 
+{// a file with no activity line is one activity, so its queries belong to it
+ const r=lint(path.join(FX,"lint-query-plain-file.md"));
+ chk("a query in a plain file (no activity line) lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
+
 {// a query written correctly is clean
  const r=lint(path.join(FX,"lint-query-ok.md"));
  chk("a `booklet query` block with every setting lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
