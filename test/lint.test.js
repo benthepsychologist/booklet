@@ -1,4 +1,4 @@
-// The linter's own rules, for the v0.4 format. test/fixtures/lint-ok.md is a
+// The linter's own rules, for the v0.5 format. test/fixtures/lint-ok.md is a
 // small clean booklet; every other test/fixtures/lint-*.md is that file with one
 // change, written to break exactly one rule. This lints each and checks that the
 // ERROR (or warn) line names the rule and says where. The clean fixture, every
@@ -25,15 +25,16 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
  const b=lint(...blind);
  chk("the three booklets built blind from SKILL.md have no errors",blind.length===3&&b.errors.length===0,b.errors.join(" | "));
  const reg=lint(...["module-daily-journal","module-the-day","module-check-in"].map(n=>path.join(FX,n+".md")));
- chk("the module fixtures (copies of real registry modules) lint clean as v0.4",reg.status===0&&/0 errors/.test(reg.out),reg.out);
+ chk("the module fixtures (copies of real registry modules) lint clean as v0.5",reg.status===0&&/0 errors/.test(reg.out),reg.out);
  const flag=lint("--registry",path.join(FX,"lint-ok.md"));
  chk("--registry is accepted and a clean file stays clean",flag.status===0&&/0 errors · 0 warnings/.test(flag.out),flag.out);}
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.4 (an old `module:` file)",/front matter must say `booklet: 0\.4` \(found None\)/],
- ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.4\. Change the marker to booklet: 0\.4 \(and write settings as key:value/],
- ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.4\. Change the marker to booklet: 0\.4\.$/],
+ ["lint-not-v02","front matter without booklet: 0.5 (an old `module:` file)",/front matter must say `booklet: 0\.5` \(found None\)/],
+ ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.5\. Change the marker to booklet: 0\.5 \(and write settings as key:value/],
+ ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.5\. Change the marker to booklet: 0\.5\.$/],
+ ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.5\. Change the marker to booklet: 0\.5\.$/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],

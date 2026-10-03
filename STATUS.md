@@ -3,16 +3,18 @@
 *As of 2026-10-03*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.4**: format v0.4 (files say `booklet: 0.4`) and renderer 0.4.1.
+**project v0.5**: format v0.5 (files say `booklet: 0.5`) and renderer 0.5.0.
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
-## Current state — v0.4 (2026-10-03)
+## Current state — v0.5 (2026-10-03)
 
-What changed from v0.3 and from v0.2 is listed at the end of `SPEC.md` (section 14).
-v0.4 adds data blocks (`booklet data`: rows a generator wrote, saved back exactly as
+What changed from v0.4, v0.3 and v0.2 is listed at the end of `SPEC.md` (section 14).
+v0.5 changes the marker and nothing else yet (the theme block, rows and tone names follow
+in this release): a file marked `booklet: 0.4` is refused; change it to 0.5.
+v0.4 added data blocks (`booklet data`: rows a generator wrote, saved back exactly as
 found) and query views (`as: table`, `list`, `tiles`, with `group:` and `limit:`) that
 draw them, or kept entries. Nothing is computed in the renderer: no filter, no sum, no
 join. A file marked `booklet: 0.3` is refused with a message naming the marker; change
@@ -76,7 +78,7 @@ with a message saying so.
   heading links that open the section they target. The reader's choice is kept per
   booklet in the browser, never in the file. An activity with any question draws as
   before. The registry's `what-is-a-booklet` module now folds.
-- **The linter** checks v0.4 files by v0.4's rules and agrees with the
+- **The linter** checks v0.5 files by v0.5's rules and agrees with the
   renderer about what is wrong.
 
 ## Specified but not drawn

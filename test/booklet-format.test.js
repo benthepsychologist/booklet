@@ -1,4 +1,4 @@
-// Format v0.4: a booklet written as Markdown loads, draws, keeps what a
+// Format v0.5: a booklet written as Markdown loads, draws, keeps what a
 // reader does, and writes itself back with its design untouched.
 //
 // examples/mindful-check-in.booklet.md is the check-in module rewritten as a
@@ -23,7 +23,7 @@ const R=A.parseFile(EX);
 chk("the example parses",R.ok,JSON.stringify(R.unread));
 chk("nothing in the example is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
 const t=R.template||{};
-chk("it is marked v0.4",t.booklet===0.4);
+chk("it is marked v0.5",t.booklet===0.5);
 chk("its one language is declared",JSON.stringify(t.languages)==='["en"]');
 chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0].id==="mensio-check-in",JSON.stringify((t.modules||[]).map(m=>m.id)));
 const m=(t.modules||[])[0]||{};
@@ -46,7 +46,7 @@ chk("the body map block points at its data",a.blocks[1].widget==="body-map"&&a.b
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
 A.loadText(EX);
-chk("the page adopts it as the booklet",A.TPL.booklet===0.4&&A.allModules().length===1,JSON.stringify({b:A.TPL.booklet,n:A.allModules().length}));
+chk("the page adopts it as the booklet",A.TPL.booklet===0.5&&A.allModules().length===1,JSON.stringify({b:A.TPL.booklet,n:A.allModules().length}));
 A.view="check-in";A.render();
 const seen=P.texts(P.main());
 ["A mindful check-in","Body","Feelings","Something else","In your own words.","Mind is thinking about","Notice, name, keep."].forEach(w=>
@@ -87,14 +87,16 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
   A.parseFile('---\nbooklet: 1\n---\n\n```json\n{"block":"module"}\n```\n').ok===false);
 
 {const r02=A.parseFile('---\nbooklet: 0.2\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a booklet: 0.2 file is refused with the message naming what changed",r02.ok===false&&r02.unread.join(" ")==="front matter says booklet: 0.2; this page reads format 0.4. Change the marker to booklet: 0.4 (and write settings as key:value, for example min:0).",JSON.stringify(r02.unread));}
+ chk("a booklet: 0.2 file is refused with the message naming what changed",r02.ok===false&&r02.unread.join(" ")==="front matter says booklet: 0.2; this page reads format 0.5. Change the marker to booklet: 0.5 (and write settings as key:value, for example min:0).",JSON.stringify(r02.unread));}
 {const r03=A.parseFile('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a booklet: 0.3 file is refused, naming the marker found and the one to write",r03.ok===false&&r03.unread.join(" ")==="front matter says booklet: 0.3; this page reads format 0.4. Change the marker to booklet: 0.4.",JSON.stringify(r03.unread));
- chk("the refusal is shown in the reader's language, naming the marker",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.T[l].ui.oldFormat("0.3"))&&/booklet: 0\.4/.test(A.T[l].ui.oldFormat("0.3"))));
+ chk("a booklet: 0.3 file is refused, naming the marker found and the one to write",r03.ok===false&&r03.unread.join(" ")==="front matter says booklet: 0.3; this page reads format 0.5. Change the marker to booklet: 0.5.",JSON.stringify(r03.unread));
+ chk("the refusal is shown in the reader's language, naming the marker",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.T[l].ui.oldFormat("0.3"))&&/booklet: 0\.5/.test(A.T[l].ui.oldFormat("0.3"))));
+ {const r04=A.parseFile('---\nbooklet: 0.4\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
+ chk("a booklet: 0.4 file is refused, naming the marker found and the one to write",r04.ok===false&&r04.unread.join(" ")==="front matter says booklet: 0.4; this page reads format 0.5. Change the marker to booklet: 0.5.",JSON.stringify(r04.unread));}
  chk("a 0.3 module cannot be added to a booklet",A.moduleTextProblems('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n').length===1);}
 
 /* 7. settings on a callout line are written key:value */
-{const SET=`---\nbooklet: 0.4\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
+{const SET=`---\nbooklet: 0.5\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
  const RS=P.boot().parseFile(SET);
  const bl=((RS.template.modules||[])[0]||{}).mode||{};
  const num=(bl.blocks||[]).find(b=>b.id==="sleep")||{};
