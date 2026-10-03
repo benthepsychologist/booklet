@@ -277,6 +277,12 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  chk("and loads, its cells carrying the names",r.ok&&w.cells.map(c=>c.color).join()==="warm,green,slate,teal",JSON.stringify(w.cells.map(c=>c.color)));
 }
 
+/* a hex pair from a file goes into a style attribute: only plain hex colours are ever used */
+{const bad=A.cellStyle({color:{tint:"#fff;background:url(https://x.test/a.png)",deep:"red;position:fixed"}},0);
+ chk("a colour pair that is not hex never reaches the style",!/url\(|position|;background:|red/.test(bad),bad);
+ const good=A.cellStyle({color:{tint:"#F0D9CF",deep:"#A04E34"}},0);
+ chk("a hex pair is drawn as given",/#F0D9CF/.test(good)&&/#A04E34/.test(good),good);}
+
 /* the interface */
 chk("Auto has a hint in every language saying it is the booklet's look or the device's",["en","fr","es"].every(l=>A.T[l].ui.themeAutoTip&&A.T[l].ui.themeAutoTip.length>20));
 

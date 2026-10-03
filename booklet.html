@@ -2062,8 +2062,12 @@ const TONE_NAMES=["warm","green","amber","slate","teal"];
 const toneOf=c=>c&&typeof c.color==="string"&&TONE_NAMES.includes(c.color)?c.color:null;
 const cellColor=(c,i)=>{const t=toneOf(c);
   if(t) return {tint:"var(--tone-"+t+")",deep:"var(--tone-"+t+"-deep)",tone:true};
-  return {tint:(c&&c.color&&c.color.tint)||FALLBACK_TINT[i%FALLBACK_TINT.length],
-          deep:(c&&c.color&&c.color.deep)||"var(--tint-ink)"};};
+  /* these two strings go into a style attribute, so only a plain hex colour is ever used:
+     anything else in a file's widget data (a url(), a second declaration) is not a colour */
+  const hex=v=>typeof v==="string"&&/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)?v:null;
+  const pair=c&&c.color&&typeof c.color==="object"?c.color:{};
+  return {tint:hex(pair.tint)||FALLBACK_TINT[i%FALLBACK_TINT.length],
+          deep:hex(pair.deep)||"var(--tint-ink)"};};
 const cellStyle=(c,i)=>{const k=cellColor(c,i);return `background:${k.tint};--qd:${k.deep}`+(k.tone?`;--qt:${k.tint}`:"");};
 
 

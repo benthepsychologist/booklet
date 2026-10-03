@@ -608,6 +608,11 @@ def check_format(f, text, fm):
                                         err(f, f"line {n}: the widget ^{bid} has the colour {col!r}, which is not a tone name ({', '.join(TONE_NAMES)}); a pair of hex colours is an object with `tint` and `deep`")
                                 elif not isinstance(col, dict):
                                     err(f, f"line {n}: the widget ^{bid} has a colour that is neither a tone name ({', '.join(TONE_NAMES)}) nor a pair of hex colours")
+                                else:
+                                    for part in ("tint", "deep"):
+                                        v = col.get(part)
+                                        if v is not None and not (isinstance(v, str) and re.fullmatch(r"#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})", v)):
+                                            err(f, f"line {n}: the widget ^{bid} has a `{part}` of {v!r}, which is not a hex colour (#rgb or #rrggbb); the renderer will not use it")
                         for fig in obj.get("figures") or []:
                             bad = svg_script_in((fig or {}).get("svg") or "") if isinstance(fig, dict) else None
                             if bad:

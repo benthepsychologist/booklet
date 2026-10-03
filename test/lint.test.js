@@ -174,5 +174,9 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
    const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
    chk("the registry's modules, copied and re-marked to 0.5, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 
+{// a widget colour pair must be two hex colours: it is drawn into a style attribute
+ const r=lint(path.join(FX,"lint-tone-pair-not-hex.md"));
+ chk("a `tint` that is not a hex colour is an error",r.errors.some(l=>/not a hex colour/.test(l)),r.out);}
+
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);
