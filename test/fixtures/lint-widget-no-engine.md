@@ -1,5 +1,5 @@
 ---
-booklet: 0.2
+booklet: 0.3
 title: Lint fixture
 lang: en
 ---

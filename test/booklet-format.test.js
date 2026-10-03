@@ -1,9 +1,9 @@
-// Format v0.2: a booklet written as Markdown loads, draws, keeps what a
+// Format v0.3: a booklet written as Markdown loads, draws, keeps what a
 // reader does, and writes itself back with its design untouched.
 //
 // examples/mindful-check-in.booklet.md is the check-in module rewritten as a
-// v0.2 file. Each section below is one promise the renderer makes about it:
-//   1. it is read as v0.2, into one module with one repeating activity;
+// v0.3 file. Each section below is one promise the renderer makes about it:
+//   1. it is read as v0.3, into one module with one repeating activity;
 //   2. its widgets arrive whole, in the file's one language;
 //   3. the activity draws: both widgets, the text question and the lines;
 //   4. a finished check-in is kept, written into the records, and read back;
@@ -17,13 +17,13 @@ const EX=fs.readFileSync(P.R+"/examples/mindful-check-in.booklet.md","utf8");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 
-/* 1. read as v0.2 */
+/* 1. read as v0.3 */
 let A=P.boot();
 const R=A.parseFile(EX);
 chk("the example parses",R.ok,JSON.stringify(R.unread));
 chk("nothing in the example is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
 const t=R.template||{};
-chk("it is marked v0.2",t.booklet===0.2);
+chk("it is marked v0.3",t.booklet===0.3);
 chk("its one language is declared",JSON.stringify(t.languages)==='["en"]');
 chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0].id==="mensio-check-in",JSON.stringify((t.modules||[]).map(m=>m.id)));
 const m=(t.modules||[])[0]||{};
@@ -46,7 +46,7 @@ chk("the body map block points at its data",a.blocks[1].widget==="body-map"&&a.b
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
 A.loadText(EX);
-chk("the page adopts it as the booklet",A.TPL.booklet===0.2&&A.allModules().length===1,JSON.stringify({b:A.TPL.booklet,n:A.allModules().length}));
+chk("the page adopts it as the booklet",A.TPL.booklet===0.3&&A.allModules().length===1,JSON.stringify({b:A.TPL.booklet,n:A.allModules().length}));
 A.view="check-in";A.render();
 const seen=P.texts(P.main());
 ["A mindful check-in","Body","Feelings","Something else","In your own words.","Mind is thinking about","Notice, name, keep."].forEach(w=>
@@ -86,8 +86,11 @@ chk("the rest of the file still opens",R3.ok);
 chk("an earlier-format file is not read at all — no compat, no exceptions",
   A.parseFile('---\nbooklet: 1\n---\n\n```json\n{"block":"module"}\n```\n').ok===false);
 
+{const r02=A.parseFile('---\nbooklet: 0.2\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
+ chk("a booklet: 0.2 file is refused with the message naming what changed",r02.ok===false&&r02.unread.join(" ")==="front matter says booklet: 0.2; this is format 0.3 (callout settings are now key:value). Update the file, then the marker.",JSON.stringify(r02.unread));}
+
 /* 7. settings on a callout line are written key:value */
-{const SET=`---\nbooklet: 0.2\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
+{const SET=`---\nbooklet: 0.3\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
  const RS=P.boot().parseFile(SET);
  const bl=((RS.template.modules||[])[0]||{}).mode||{};
  const num=(bl.blocks||[]).find(b=>b.id==="sleep")||{};

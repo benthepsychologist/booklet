@@ -1,17 +1,17 @@
-# The booklet format, v0.2
+# The booklet format, v0.3
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
-> **Status: v0.2, draft.** This is a young, evolving format — v0.2 is the one
+> **Status: v0.3, draft.** This is a young, evolving format — v0.3 is the one
 > version number that matters: this spec, the renderer, the skill, the
-> tests, and the `booklet: 0.2` every file's front matter declares, all
+> tests, and the `booklet: 0.3` every file's front matter declares, all
 > together, all the same number. Nothing here is frozen: the format itself
 > may extend compatibly (a reader from before a change still opens a file
 > that uses it), but it doesn't promise stability yet. There is no earlier
 > format to compare against or convert from — it was retired entirely on
 > 2026-09-29, and this spec no longer documents or mentions it.
 
-**Why it looks like this, in short.** A booklet's design used to live as fenced JSON beside its prose — readable, but not really hand-*editable*: nobody sits down and retypes a JSON object correctly by hand. v0.2 rebuilds the design itself as Markdown, using constructs that already exist and already render somewhere real — GitHub's task lists and callouts, Obsidian's callouts and block embeds, CommonMark's footnotes — rather than inventing new syntax to parse. What Booklet needs and no existing convention supplies (a question's type, a module's boundary) is one small vocabulary of callout lines, `> [!kind|id] Title`, so there is exactly one new grammar to learn, not several. The full account of what was surveyed and why each choice was made is [`docs/why-markdown.md`](docs/why-markdown.md).
+**Why it looks like this, in short.** A booklet's design used to live as fenced JSON beside its prose — readable, but not really hand-*editable*: nobody sits down and retypes a JSON object correctly by hand. v0.3 rebuilds the design itself as Markdown, using constructs that already exist and already render somewhere real — GitHub's task lists and callouts, Obsidian's callouts and block embeds, CommonMark's footnotes — rather than inventing new syntax to parse. What Booklet needs and no existing convention supplies (a question's type, a module's boundary) is one small vocabulary of callout lines, `> [!kind|id] Title`, so there is exactly one new grammar to learn, not several. The full account of what was surveyed and why each choice was made is [`docs/why-markdown.md`](docs/why-markdown.md).
 
 ---
 
@@ -53,7 +53,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: 0.2
+booklet: 0.3
 id: example/tides
 title: How tides work
 lang: en
@@ -337,6 +337,27 @@ graph LR; New --> Spring --> Quarter --> Neap --> Full
 
 Obsidian draws the diagram natively at the embed. On GitHub the embed line shows as text and the diagram still renders where the fence itself sits. A mermaid fence written directly in the prose still works everywhere, as it always did.
 
+
+### Queries: what the reader kept
+
+A `booklet query` block, placed in an activity's prose, shows what the reader has kept elsewhere in the same module. It is read-only and takes no answer.
+
+```booklet query
+from: log
+fields: situation, ease
+newest: 3
+empty: Nothing logged yet.
+```
+
+- `from:` (required) is an activity id or a question id in the same module. An activity must keep entries (`repeat` or `repeat daily`); the query shows its kept entries, newest first, each with its date and answers. A question shows that question's answers: each kept answer with its date if its activity keeps entries, or its one answer if not.
+- `fields:` (optional, with an activity) names the questions to show, comma-separated, in that order. Without it, every question is shown.
+- `newest:` (optional) shows only that many of the most recent entries.
+- `empty:` (optional) is what shows while nothing is kept. Without it, the renderer shows its own short line.
+- It reads kept entries and given answers only, never a draft in progress.
+- A query never reads across modules. One whose `from:` names nothing, or something in another module, is refused: the linter reports an error and a renderer draws nothing for it. A file with no module fence is one module for this rule.
+- The kind, `query`, is on the fence line; the settings are the block's lines, `key: value`. Ids follow the rule in section 4 (letters, digits and dashes).
+- In Obsidian without a Booklet plugin, and on GitHub, the block shows as a short code block.
+
 ---
 
 ## 7. Widgets and other data
@@ -419,7 +440,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 - **A checkbox click in Reading view edits the file.** See "Choice" in section 5 for the accepted trade-off.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 
-**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
+**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data; a query shows as a code block. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
 
 **GitHub.** Callout lines show as quotations with the `[!kind|id]` text visible; lists, task lists, footnotes, math and mermaid render; `![[#^id]]` shows as text. Nothing breaks.
 
@@ -429,7 +450,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 ````markdown
 ---
-booklet: 0.2
+booklet: 0.3
 id: example/tides
 title: How tides work
 lang: en
@@ -489,11 +510,11 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: 0.2` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
+A conforming reader must: read a file whose front matter declares `booklet: 0.3` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
 
-A conforming writer must: emit front matter with `booklet: 0.2`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with `booklet: 0.3`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: 0.2` files, rejects anything else outright, and is the reference implementation of "is this file valid."
+`lint-booklet.py` in this repository checks `booklet: 0.3` files, rejects anything else outright, and is the reference implementation of "is this file valid."
 
 ---
 
@@ -506,4 +527,16 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A Booklet plugin for Obsidian.** Section 6, 7 and 11 describe how one would draw widgets and figures; none exists yet.
 - **A second, independent implementation.** The renderer in this repository is the only reader so far.
 
-None of this affects what already works: loading, reading, answering, and saving a v0.2 booklet with every question kind above except matrix, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.3 booklet with every question kind above except matrix, its widgets, and its citations.
+
+---
+
+## 14. Changes from v0.2
+
+- Callout settings are written `key:value` (`min:0`, not `min=0`).
+- `of=` is removed.
+- The `pinned` activity flag is removed.
+- The locked-file envelope is removed.
+- The `booklet query` block is added (section 6).
+- The `svg-regions` figure contract is stated: `class="rg"` plus `data-r` on each tappable region.
+- A file saying `booklet: 0.2` is refused; update it, then change the marker to `0.3`.
