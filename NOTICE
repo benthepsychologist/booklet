@@ -5,3 +5,16 @@ This product includes software developed by Ben Armstrong.
 
 Licensed under the Apache License, Version 2.0. See LICENSE for the full
 terms, and SPEC.md for the file format the software implements.
+
+Third-party components
+
+booklet.html carries two libraries, stored inside it and run only when a
+booklet has a diagram or a formula to draw. Both are MIT licensed, and their
+copyright notices are kept in the comments above their blocks in booklet.html.
+
+- mermaid (@mermaid-js/tiny 12.1.0), https://github.com/mermaid-js/mermaid
+  The MIT License (MIT). Copyright (c) 2014 - 2022 Knut Sveidqvist.
+  The bundle also carries other open-source packages under their own
+  licences, named in the package.
+- Temml 0.13.5, https://github.com/ronkok/Temml
+  The MIT License (MIT). Copyright (c) 2020 Ron Kok.

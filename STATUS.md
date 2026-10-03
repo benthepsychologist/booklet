@@ -35,6 +35,17 @@ with a message saying so.
   panel.
 - **Records** sit in a `%%`-wrapped section at the end of the file.
 - **Interface languages:** English, French, Spanish and Argentine Spanish.
+- **Diagrams and math are drawn.** A ```` ```mermaid ```` fence is drawn as SVG
+  where `![[#^id]]` embeds it, or in place when it sits in the prose; `$…$` and
+  `$$…$$` are typeset as MathML. A diagram that will not parse shows its source
+  with a one-line note, and a formula Temml cannot read shows as its TeX. Both
+  libraries (mermaid tiny 12.1.0, Temml 0.13.5, MIT, listed in `NOTICE`) are
+  stored inside `booklet.html` as inert text and run only when a booklet has a
+  diagram or a formula, so a booklet with neither never runs them; the file
+  still opens straight off disk and under the hosted site's Content-Security-Policy
+  (no `unsafe-eval`, no network). The file is about 3 MB because of them.
+  `test/figures.test.js` checks the stored copies and when they wake;
+  `test/figures-browser.js` draws real examples in Chromium under that policy.
 - **The linter** checks v0.3 files by v0.3's rules and agrees with the
   renderer about what is wrong.
 
@@ -43,8 +54,6 @@ with a message saying so.
 - `matrix` questions.
 - Shared menus (`> [!menu|id]` with `menu:id` on a question): a question that
   uses one does not appear.
-- Mermaid figures: the embed shows as text.
-- Math (`$…$`): shown as raw TeX.
 - Editing a booklet's design in the browser, and an Obsidian plugin
   (`SPEC.md` section 13).
 
