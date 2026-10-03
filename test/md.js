@@ -119,6 +119,7 @@ const HR_RE=/^ {0,3}([-*_])[ \t]*(?:\1[ \t]*){2,}$/;
 const SETEXT_RE=/^ {0,3}(=+|-+)[ \t]*$/;
 const LIST_RE=/^ {0,3}(?:([-*+])|(\d{1,9})[.)])[ \t]+(.*)$/;
 const TASK_RE=/^\[([ xX])\][ \t]+(.*)$/;
+const NUMCELL_RE=/^[+\-\u2212]?[$\u20ac\u00a3]?[+\-\u2212]?\d[\d,. \u00a0]*%?$/;
 const TABLESEP_RE=/^[ \t]*\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$/;
 const isBlockStart=l=>FENCE_RE.test(l)||ATX_RE.test(l)||/^ {0,3}>/.test(l)||LIST_RE.test(l)||HR_RE.test(l)||SETEXT_RE.test(l);
 const heading=(level,raw,ctx)=>{const tag="h"+Math.min(6,level+1);const kids=renderInline(raw,ctx);
@@ -190,8 +191,12 @@ function parseBlocks(lines,ctx){
     if(line.includes("|")&&i+1<lines.length&&TABLESEP_RE.test(lines[i+1])&&/-/.test(lines[i+1])){
       const header=splitRow(line);i+=2;const body=[];
       while(i<lines.length&&lines[i].trim()!==""&&lines[i].includes("|")){body.push(splitRow(lines[i]));i++;}
-      const thead=el("thead",{},el("tr",{},...header.map(h=>el("th",{},...renderInline(h,ctx)))));
-      const tbody=el("tbody",{},...body.map(r=>el("tr",{},...r.map(c=>el("td",{},...renderInline(c,ctx))))));
+      /* a cell that is only a number (sign, digits, separators, a % or a currency mark) is set right */
+      const cell=(tag,c,num)=>el(tag,num||NUMCELL_RE.test(c)?{class:"num"}:{},...renderInline(c,ctx));
+      /* a column of numbers (a dash or a blank where one is missing) has its heading set right too */
+      const numCol=header.map((_,j)=>body.some(r=>NUMCELL_RE.test(r[j]||""))&&body.every(r=>NUMCELL_RE.test(r[j]||"")||/^(?:[-\u2013\u2014]|)$/.test((r[j]||"").trim())));
+      const thead=el("thead",{},el("tr",{},...header.map((h,j)=>cell("th",h,numCol[j]))));
+      const tbody=el("tbody",{},...body.map(r=>el("tr",{},...r.map(c=>cell("td",c)))));
       nodes.push(el("table",{},thead,tbody));
       continue;}
     const buf=[line];i++;
@@ -207,11 +212,34 @@ function parseBlocks(lines,ctx){
 /* ======================= DEFINITIONS ======================= */
 const REFDEF_RE=/^ {0,3}\[([^\]]+)\]:\s*(<[^>]*>|\S+)(?:\s+"([^"]*)"|\s+'([^']*)'|\s+\(([^)]*)\))?\s*$/;
 const FOOTDEF_RE=/^ {0,3}\[\^([^\]]+)\]:[ \t]?(.*)$/;
+/* HTML comments, `<!-- … -->`, are the writer's own notes and are not drawn: one
+   line or several, inline or on lines of their own. The file keeps them (the
+   renderer writes a booklet's design back as written); only the drawing drops
+   them. A backtick span shows one literally, and so does a fenced block, which
+   extractDefs never hands to this. `st.open` carries an unfinished comment to
+   the next line. */
+function cutComments(line,st){
+  let out="",i=0,cut=false;
+  while(i<line.length){
+    if(st.open){const e=line.indexOf("-->",i);cut=true;if(e<0){i=line.length;break;}st.open=false;i=e+3;continue;}
+    if(line[i]==="`"){let j=i;while(line[j]==="`") j++;
+      const run=line.slice(i,j);let k=j,end=-1;
+      for(;;){const x=line.indexOf(run,k);if(x<0) break;
+        if(line[x-1]!=="`"&&line[x+run.length]!=="`"){end=x+run.length;break;}
+        k=x+1;while(line[k]==="`") k++;}
+      if(end>=0){out+=line.slice(i,end);i=end;}else{out+=run;i=j;}
+      continue;}
+    if(line.startsWith("<!--",i)){st.open=true;cut=true;i+=4;continue;}
+    out+=line[i];i++;}
+  return {text:out,cut};}
 function extractDefs(text,refs){
   const rawLines=text.replace(/\r\n?/g,"\n").split("\n");
   const lines=[];const footnotes=[];let inFence=false,fenceChar=null,fenceLen=0;
+  const com={open:false};
   for(let i=0;i<rawLines.length;i++){
-    const line=rawLines[i];
+    let line=rawLines[i];
+    if(!inFence&&(com.open||line.includes("<!--"))){const r=cutComments(line,com);
+      if(r.cut){if(!r.text.trim()) continue;line=r.text.replace(/\s+$/,"");}}
     const fm=FENCE_RE.exec(line);
     if(fm){
       if(!inFence){inFence=true;fenceChar=fm[1][0];fenceLen=fm[1].length;}

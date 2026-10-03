@@ -326,6 +326,13 @@
   .ap-n{flex:none;min-width:1.1rem;font-weight:700;color:var(--muted)}
   .ap-item[aria-current="page"] .ap-n{color:var(--accent)}
   .ap-t{min-width:0;overflow-wrap:anywhere}
+  /* reading mode: the page's sections under it, each with a dot that fills once it has been opened */
+  .ap-secs{list-style:none;margin:.1rem 0 .4rem .85rem;padding:0;display:flex;flex-direction:column;gap:.05rem}
+  .ap-sec{display:flex;align-items:baseline;gap:.5rem;width:100%;border:0;border-radius:8px;background:transparent;color:var(--muted);text-align:left;padding:.3rem .5rem;font-size:.88rem;line-height:1.3}
+  .ap-sec:hover{color:var(--ink);background:var(--accent-soft)}
+  .ap-dot{flex:none;width:.6rem;height:.6rem;border:2px solid var(--accent);border-radius:50%;background:transparent;transform:translateY(.05rem)}
+  .ap-dot.on{background:var(--accent)}
+  .ap-min .ap-secs{display:none}
 
   .ap-title{font-family:var(--serif);font-weight:600;font-size:1.25rem;line-height:1.3;color:var(--ink);margin:.25rem 0 .9rem}
   /* minimized: the numbers only */
@@ -404,6 +411,30 @@
   .md .math.raw{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em}
   .md div.math.raw{text-align:left;white-space:pre-wrap}
   .md math{font-size:1.08em}
+  /* tables in prose: a rule under the header and between rows, text to the left,
+     numbers to the right; a wide one scrolls inside its own wrapper */
+  .md-table{margin:1.1rem 0;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .md-table table{border-collapse:collapse;min-width:100%;font-size:.95rem;line-height:1.45;font-variant-numeric:tabular-nums}
+  .md-table th,.md-table td{text-align:left;vertical-align:top;padding:.5rem .8rem;border-bottom:1px solid var(--rule)}
+  .md-table th{font-family:var(--sans);font-weight:700;font-size:.85rem;letter-spacing:.02em;color:var(--ink);border-bottom:2px solid var(--accent);white-space:nowrap}
+  .md-table th.num,.md-table td.num{text-align:right;white-space:nowrap}
+  .md-table tbody tr:last-child td{border-bottom:2px solid var(--rule)}
+  /* reading mode: sections folded to a headline and a sentence */
+  .rm-bar{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem .6rem;margin:1.25rem 0 .5rem;font-family:var(--sans)}
+  .rm-btn{border:2px solid var(--accent);background:#fff;color:var(--accent);border-radius:999px;padding:.35rem .9rem;font-size:.9rem;font-weight:700;line-height:1.2}
+  .rm-btn:hover{background:var(--accent-soft)}
+  .rm-count{margin:0 0 0 .25rem;font-size:.9rem;color:var(--muted)}
+  .rm-sec{margin:.6rem 0;background:#fff}
+  .rm-sec>summary{align-items:flex-start;padding:.8rem 1rem;border-radius:10px}
+  .rm-sec>summary:hover{background:var(--accent-soft)}
+  .rm-sec>summary::before{margin-top:.6rem}
+  .rm-sum{min-width:0;flex:1}
+  .rm-sum>h2,.rm-sum>h3,.rm-sum>h4,.rm-sum>h5,.rm-sum>h6{margin:0;font-family:var(--serif);font-weight:600;font-size:1.15rem;line-height:1.3;letter-spacing:0;color:var(--ink);text-transform:none}
+  .rm-lede{margin:.3rem 0 0;font-family:var(--sans);font-weight:400;font-size:.97rem;line-height:1.5;color:var(--muted)}
+  .rm-lede p{margin:0}
+  .rm-body{padding:.1rem 1rem 1rem 2.1rem}
+  .rm-sec[open]>summary .rm-dup{display:none}
+  .rm-body>:last-child,.rm-body .md>:last-child{margin-bottom:0}
   .mfig{margin:1rem 0;text-align:center;overflow-x:auto;max-width:100%}
   .mfig svg{max-width:100%;height:auto}
   .mfig-note{margin:0 0 .4rem;font-size:.88rem;color:var(--muted);text-align:left}
@@ -412,6 +443,13 @@
     .mfig,.md div.math{break-inside:avoid;overflow:visible}
     .mfig svg{max-width:100%;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .bar,.ap-menu,.rd-panel,.rd-tip,.toast{display:none!important}
+    .rm-bar,.rm-dup{display:none!important}
+    .rm-sec{border:0;background:none;break-inside:auto}
+    .rm-sec>summary::before{display:none}
+    .rm-sec::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
+    .md-table{overflow:visible}
+    .md-table tr{break-inside:avoid}
+    .md-table thead{display:table-header-group}
     .ap-frame{display:block}
     .rd-notes{display:block;margin:2rem 0 0;border-top:2px solid var(--rule);padding-top:.5rem;font-size:.9rem}
     .rd-notes li{margin:0 0 .4rem}
@@ -599,6 +637,13 @@ const TSRC={
       noneShown: "Nothing in this module is shown at the moment.",
       clash: (mod,act,other)=>`module “${mod}” refused: its activity “${act}” already belongs to module “${other}”`
     },
+    fold: {
+      openAll: "Open everything",
+      foldAll: "Fold everything",
+      count: (n,m)=>`Opened ${n} of ${m} sections`,
+      sections: "Sections on this page",
+      seen: "opened"
+    },
     pages: {
       nav: "Pages of this activity",
       heading: "Pages",
@@ -717,6 +762,13 @@ const TSRC={
       noneShown: "Rien dans ce module n’est affiché pour l’instant.",
       clash: (mod,act,other)=>`module « ${mod} » refusé : son activité « ${act} » appartient déjà au module « ${other} »`
     },
+    fold: {
+      openAll: "Tout ouvrir",
+      foldAll: "Tout replier",
+      count: (n,m)=>`${n} sur ${m} sections ouvertes`,
+      sections: "Sections de cette page",
+      seen: "ouverte"
+    },
     pages: {
       nav: "Pages de cette activité",
       heading: "Pages",
@@ -834,6 +886,13 @@ const TSRC={
     moduleView: {
       noneShown: "Por ahora no se muestra nada en este módulo.",
       clash: (mod,act,other)=>`módulo “${mod}” rechazado: su actividad “${act}” ya pertenece al módulo “${other}”`
+    },
+    fold: {
+      openAll: "Abrir todo",
+      foldAll: "Plegar todo",
+      count: (n,m)=>`${n} de ${m} secciones abiertas`,
+      sections: "Secciones de esta página",
+      seen: "abierta"
     },
     pages: {
       nav: "Páginas de esta actividad",
@@ -1970,7 +2029,7 @@ function renderBlock(b,draft,modeId){
     /* a booklet's prose, drawn from its Markdown: see mdNodes. A citation mark,
        [^id], becomes a numbered superscript: see READING MATERIAL. */
     case "markdown":{const box=el("div",{class:"pblock md"});
-      box.append(...mdNodes(String(b.text||""),{...FIGURE_HOOKS,...ACTIVITY_LINK_HOOKS,idPrefix:"md-",mark:id=>{const c=citeText("[^"+id+"]",modeId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}));
+      box.append(...mdBlockNodes(b,modeId));
       return box;}
     case "callout": return calloutNode(b,draft,modeId);
     /* read-only: what was kept elsewhere in this module; owns no answer key */
@@ -2224,7 +2283,11 @@ function pageBody(id,draft){const ps=pagesOf(modeOf(id));const cur=currentPage(i
   /* reading material (see READING MATERIAL): the endnotes print shows go below
      the blocks, and only when there is something for them */
   readingBegin(id);
-  box.append(renderBlocks(()=>blocksIn(currentPage(id)),draft,id));
+  /* a page that only reads is drawn by READING MODE, folded where it has sections */
+  RM_CUR=null;
+  const rd=readingPage(id,draft);
+  if(rd){RM_CUR=rd.info;box.append(rd.node);RM_REVEAL=null;}
+  else box.append(renderBlocks(()=>blocksIn(currentPage(id)),draft,id));
   const notes=endnotesFor(id);if(notes) box.append(notes);
   citeReopen(id);
   return box;}
@@ -2234,30 +2297,179 @@ function choosePage(id,pid){showPage(id,pid);pagesOverlay=false;render();
 /* Up and down (and Home, End) move between the menu's items. */
 function pageMenuKeys(e){const k=e.key;if(!["ArrowDown","ArrowUp","Home","End"].includes(k)) return;
   const me=e.currentTarget,nav=me&&me.closest?me.closest(".ap-menu"):null;if(!nav) return;
-  const items=[...nav.querySelectorAll(".ap-item")],i=items.indexOf(me);if(i<0) return;
+  const items=[...nav.querySelectorAll(".ap-item,.ap-sec")],i=items.indexOf(me);if(i<0) return;
   const j=k==="Home"?0:k==="End"?items.length-1:Math.min(items.length-1,Math.max(0,i+(k==="ArrowDown"?1:-1)));
   e.preventDefault();items[j].focus();}
 /* Wrap an activity's view in its pages: the menu on the left when it has
    several, or nothing at all. */
 function withPages(id,content){const P=PG();const ps=pagesOf(modeOf(id));
   const inner=el("div",{class:"ap-content"},content);
-  if(ps.length<2) return content;
+  const rd=RM_CUR;
+  if(ps.length<2&&!rd) return content;
   const open=pagesMenuOpen(),cur=currentPage(id);
   const tog=el("button",{type:"button",class:"ap-toggle","aria-expanded":String(open),"aria-controls":"ap-pages",
     "aria-label":P.toggle,title:open?P.minimize:P.expand},el("span",{"aria-hidden":"true"},open?"«":"»"));
   tog.addEventListener("click",togglePagesMenu);
   const ol=el("ol",{id:"ap-pages"});
-  ps.forEach((p,i)=>{const name=pageName(p,i);const t=el("span",{class:"ap-t"},name);
+  ps.forEach((p,i)=>{const name=ps.length<2?tx((moduleOf(id)||{}).title,tx(modeOf(id).title,id)):pageName(p,i);const t=el("span",{class:"ap-t"},name);
     const b=el("button",{type:"button",class:"ap-item","aria-current":p.id===cur.id?"page":null,title:open?null:name},
       el("span",{class:"ap-n","aria-hidden":"true"},String(i+1)),t);
     b.addEventListener("click",()=>choosePage(id,p.id));b.addEventListener("keydown",pageMenuKeys);
-    ol.append(el("li",{"data-i":String(i)},b));});
+    const li=el("li",{"data-i":String(i)},b);
+    /* the sections of the page on show, each with a dot that fills once it has been opened */
+    if(rd&&p.id===cur.id){const sl=el("ol",{class:"ap-secs","aria-label":RM().sections});
+      rd.sections.forEach(sec=>{const seen=rd.st.seen.has(sec.k);
+        const sb=el("button",{type:"button",class:"ap-sec","data-k":String(sec.k),title:sec.title},
+          el("span",{class:"ap-dot"+(seen?" on":""),"aria-hidden":"true"}),el("span",{class:"ap-t"},sec.title),
+          el("span",{class:"rd-sr ap-sr"},seen?RM().seen:""));
+        sb.addEventListener("click",()=>rmGo(rd,sec.k));sb.addEventListener("keydown",pageMenuKeys);
+        sl.append(el("li",{},sb));});
+      li.append(sl);}
+    ol.append(li);});
   const nav=el("nav",{class:"ap-menu","aria-label":P.nav},
     el("div",{class:"ap-top"},el("span",{class:"ap-head lbl2","aria-hidden":"true"},P.heading),tog),ol);
   /* the menu open over the page on a narrow screen closes with Escape */
   nav.addEventListener("keydown",e=>{if(e.key==="Escape"&&narrowPages()&&pagesOverlay){
     pagesOverlay=false;render();refocus(".ap-toggle");}});
   return el("div",{class:"ap-frame"+(open?"":" ap-min")},nav,inner);}
+
+/* ======================= READING MODE =======================
+   An activity that asks nothing (no question, no widget, no query) and has at
+   least two sections on a page is drawn folded: each section is a disclosure
+   that shows its heading and its first paragraph, and opens on a click to show
+   all of it. A section runs from a heading at the shallowest level the page
+   uses (not counting a title heading that stands alone above it) to the next
+   heading of that level. Prose before the first section stays as it is.
+
+   The reader's choice (folded, or everything open) is the browser's, kept per
+   booklet beside the pages-menu preference, and never enters the file. Which
+   sections are open, and which have been opened, are view state for this
+   visit. An activity with any question is drawn exactly as before. */
+const RM_KEY="booklet.ui.reading.";
+const RM=()=>(T[lang]&&T[lang].fold)||T.en.fold;
+const rmPref=()=>{try{return localStorage.getItem(RM_KEY+(TPL.id||""));}catch(e){return null;}};
+const setRmPref=v=>{try{localStorage.setItem(RM_KEY+(TPL.id||""),v);}catch(e){}};
+const RM_STATE={};
+let RM_CUR=null,RM_REVEAL=null,RM_REVEALED=false,RM_QUIET=false;
+
+const tagOf=n=>n&&typeof n==="object"?String(n.tagName||n.tag||"").toLowerCase():"";
+const headLevel=n=>{const m=/^h([1-6])$/.exec(tagOf(n));return m?+m[1]:0;};
+/* an activity that only reads: blocks of prose and reading callouts, nothing to answer */
+const readsOnly=a=>!!a&&a.kind!=="entry"&&allBlocksOf(a).every(b=>(b.type==="markdown"&&placeOf(b)!=="folded")||b.type==="callout");
+
+/* Where the sections of one page start. `nodes` are the page's top-level nodes
+   in order. Returns null when the page has fewer than two sections, else
+   {lead, sections:[{head, body}]}: `lead` is what comes before the first
+   section, `head` a section's heading node, `body` the nodes under it. */
+function readingPlan(nodes){
+  const heads=[];nodes.forEach((n,i)=>{const l=headLevel(n);if(l) heads.push({i,l});});
+  if(heads.length<2) return null;
+  const min=Math.min(...heads.map(h=>h.l));
+  let from=0,level=min;
+  /* a title heading that stands alone above every other heading is not a section */
+  if(heads[0].l===min&&heads.filter(h=>h.l===min).length===1){from=1;level=Math.min(...heads.slice(1).map(h=>h.l));}
+  const starts=heads.slice(from).filter(h=>h.l===level);
+  if(starts.length<2) return null;
+  return {lead:nodes.slice(0,starts[0].i),
+    sections:starts.map((h,k)=>({head:nodes[h.i],body:nodes.slice(h.i+1,k+1<starts.length?starts[k+1].i:nodes.length)}))};}
+
+/* What a folded section shows under its heading: its first paragraph (which is
+   then drawn there and nowhere else), else the first list item, else the first
+   table row, as a line of text. {para, rest, text}: `rest` is the body without
+   the paragraph; `text` is set only when there was no paragraph. */
+function sectionLede(body){
+  const pi=body.findIndex(n=>tagOf(n)==="p");
+  if(pi>=0) return {para:body[pi],rest:body.filter((_,i)=>i!==pi),text:""};
+  let text="";
+  for(const n of body){
+    try{const li=tagOf(n)==="ul"||tagOf(n)==="ol"?n.querySelector("li"):null;
+      if(li){text=textOf(li);break;}
+      const tr=n.querySelector&&(tagOf(n)==="table"||/\bmd-table\b/.test((n.getAttribute&&n.getAttribute("class"))||""))
+        ?n.querySelector("tbody tr")||n.querySelector("tr"):null;
+      if(tr){text=[...tr.children].map(c=>textOf(c).trim()).filter(Boolean).join(" · ");break;}}catch(e){}}
+  return {para:null,rest:body,text:clip(text,220)};}
+
+/* put a table in its own scrolling wrapper, so a wide one scrolls beside the page, not under it */
+const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
+const mdBlockNodes=(b,modeId)=>mdNodes(String(b.text||""),{...FIGURE_HOOKS,...ACTIVITY_LINK_HOOKS,idPrefix:"md-",
+  mark:id=>{const c=citeText("[^"+id+"]",modeId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
+
+/* keep the menu's dots and the count current, without redrawing the page */
+function rmRefresh(info){
+  try{if(info.countEl) info.countEl.textContent=RM().count(info.st.open.size,info.sections.length);
+    document.querySelectorAll(".ap-sec").forEach(b=>{const k=Number(b.getAttribute("data-k")),on=info.st.seen.has(k);
+      const d=b.querySelector(".ap-dot"),s=b.querySelector(".ap-sr");
+      if(d) d.classList.toggle("on",on);if(s) s.textContent=on?RM().seen:"";});}catch(e){}}
+function rmSetAll(info,open){
+  const st=info.st,all=info.sections.map((_,k)=>k);
+  if(open){all.forEach(k=>{st.open.add(k);st.seen.add(k);});}else st.open.clear();
+  setRmPref(open?"open":"folded");
+  info.dets.forEach(d=>{d.open=open;});
+  rmRefresh(info);}
+/* open section k, scroll to it, and put the focus on its summary */
+function rmGo(info,k){
+  const st=info.st;st.open.add(k);st.seen.add(k);
+  if(narrowPages()&&pagesOverlay){pagesOverlay=false;render();}
+  const d=document.querySelector('.rm-sec[data-k="'+k+'"]');
+  if(d){d.open=true;try{d.scrollIntoView({block:"start"});}catch(e){}
+    const s=d.querySelector("summary");if(s&&s.focus) try{s.focus({preventScroll:true});}catch(e){s.focus();}}
+  const cur=RM_CUR;if(cur) rmRefresh(cur);}
+
+/* Draw a page of a reading-only activity. Returns null for any other activity
+   (drawn as before); otherwise {node, info}, where info is null when the page
+   has no sections to fold. */
+function readingPage(id,draft){
+  if(!readsOnly(modeOf(id))) return null;
+  const page=currentPage(id),list=blocksIn(page);
+  citeBegin(id);
+  const items=[],groups=[];
+  list.forEach(b=>{
+    if(b.type==="markdown"){const ns=mdBlockNodes(b,id);ns.forEach(n=>items.push({n,md:true}));groups.push({ns});}
+    else{const n=renderBlock(b,draft,id);items.push({n,md:false});groups.push({n});}});
+  const plan=readingPlan(items.map(x=>x.n));
+  if(!plan){const host=el("div",{});
+    groups.forEach(g=>host.append(g.ns?el("div",{class:"pblock md"},...g.ns):g.n));
+    return {node:host,info:null};}
+  const of=new Map(items.map(x=>[x.n,x]));
+  const emit=ns=>{const out=[];let run=null;
+    ns.forEach(n=>{if(of.get(n).md){if(!run){run=el("div",{class:"pblock md"});out.push(run);}run.append(n);}
+      else{run=null;out.push(n);}});return out;};
+  const total=plan.sections.length,key=(currentId||"")+"\n"+id+"\n"+page.id;
+  if(!RM_STATE[key]){const all=rmPref()==="open",ks=plan.sections.map((_,k)=>k);
+    RM_STATE[key]={open:new Set(all?ks:[]),seen:new Set(all?ks:[])};}
+  const st=RM_STATE[key];
+  /* a link to a heading inside a section opens that section */
+  if(RM_REVEAL) plan.sections.forEach((s,k)=>{
+    const hs=[s.head,...s.body.filter(n=>headLevel(n))].map(n=>linkNorm(textOf(n)));
+    if(hs.includes(RM_REVEAL)){st.open.add(k);st.seen.add(k);RM_REVEALED=true;}});
+  const info={st,dets:[],sections:[],countEl:null};
+  const host=el("div",{class:"rm"});
+  host.append(...emit(plan.lead));
+  const R=RM();
+  const count=el("p",{class:"rm-count",role:"status"},R.count(st.open.size,total));
+  info.countEl=count;
+  host.append(el("div",{class:"rm-bar"},
+    el("button",{type:"button",class:"rm-btn",onclick:()=>rmSetAll(info,true)},R.openAll),
+    el("button",{type:"button",class:"rm-btn",onclick:()=>rmSetAll(info,false)},R.foldAll),count));
+  plan.sections.forEach((s,k)=>{
+    const {para,rest,text}=sectionLede(s.body);
+    const sum=el("summary",{},el("div",{class:"rm-sum"},s.head,
+      para?el("div",{class:"rm-lede"},para):text?el("div",{class:"rm-lede rm-dup"},text):null));
+    const d=el("details",{class:"rm-sec","data-k":String(k),open:st.open.has(k)},sum,
+      el("div",{class:"inner rm-body"},...emit(rest)));
+    d.addEventListener("toggle",()=>{if(RM_QUIET) return;
+      if(d.open){st.open.add(k);st.seen.add(k);}else st.open.delete(k);rmRefresh(info);});
+    info.dets.push(d);info.sections.push({k,title:textOf(s.head).trim()});
+    host.append(d);});
+  return {node:host,info};}
+
+/* Printing prints everything: the sections open for the print and fold back after */
+let RM_PRINTED=[];
+if(typeof window!=="undefined"&&window.addEventListener){
+  window.addEventListener("beforeprint",()=>{RM_QUIET=true;
+    RM_PRINTED=[...document.querySelectorAll("details.rm-sec")].filter(d=>!d.open);RM_PRINTED.forEach(d=>{d.open=true;});});
+  window.addEventListener("afterprint",()=>{RM_PRINTED.forEach(d=>{d.open=false;});RM_PRINTED=[];
+    setTimeout(()=>{RM_QUIET=false;},300);});}
 
 /* ---- LINKS BETWEEN ACTIVITIES ----
    `[[#Check yourself]]` and `[Check yourself](#check-yourself)` are ordinary
@@ -2298,12 +2510,17 @@ function findHeading(mods,target,bySlug){
 function scrollToHeading(text){let n=null;
   try{const want=linkNorm(text);
     n=[...document.querySelectorAll("#main h2,#main h3,#main h4,#main h5,#main h6")].find(h=>linkNorm(h.textContent)===want)||null;}catch(e){}
+  /* a heading inside a folded section: open the section first */
+  try{for(let p=n;p&&p!==document.body;p=p.parentNode) if(p.classList&&p.classList.contains("rm-sec")&&!p.open) p.open=true;}catch(e){}
   try{if(n&&n.scrollIntoView) n.scrollIntoView({block:"start"});else window.scrollTo({top:0});}catch(e){}}
 function openHeading(hit){
+  RM_REVEAL=linkNorm(hit.heading);RM_REVEALED=false;
   if(view===hit.act){const same=currentPage(hit.act).id===hit.page;
     if(!same){showPage(hit.act,hit.page);pagesOverlay=false;render();}
-    scrollToHeading(hit.heading);return;}
-  showPage(hit.act,hit.page);go(hit.act);}
+    scrollToHeading(hit.heading);RM_REVEAL=null;return;}
+  showPage(hit.act,hit.page);go(hit.act);
+  if(RM_REVEALED) scrollToHeading(hit.heading);
+  RM_REVEAL=null;}
 function headingLink(hit,kids){
   return el("a",{href:"#",class:"alink",onclick:e=>{if(e&&e.preventDefault) e.preventDefault();openHeading(hit);}},...kids);}
 /* what a prose block hands mdNodes so these links lead somewhere */
@@ -2680,6 +2897,7 @@ const HR_RE=/^ {0,3}([-*_])[ \t]*(?:\1[ \t]*){2,}$/;
 const SETEXT_RE=/^ {0,3}(=+|-+)[ \t]*$/;
 const LIST_RE=/^ {0,3}(?:([-*+])|(\d{1,9})[.)])[ \t]+(.*)$/;
 const TASK_RE=/^\[([ xX])\][ \t]+(.*)$/;
+const NUMCELL_RE=/^[+\-\u2212]?[$\u20ac\u00a3]?[+\-\u2212]?\d[\d,. \u00a0]*%?$/;
 const TABLESEP_RE=/^[ \t]*\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$/;
 const isBlockStart=l=>FENCE_RE.test(l)||ATX_RE.test(l)||/^ {0,3}>/.test(l)||LIST_RE.test(l)||HR_RE.test(l)||SETEXT_RE.test(l);
 const heading=(level,raw,ctx)=>{const tag="h"+Math.min(6,level+1);const kids=renderInline(raw,ctx);
@@ -2751,8 +2969,12 @@ function parseBlocks(lines,ctx){
     if(line.includes("|")&&i+1<lines.length&&TABLESEP_RE.test(lines[i+1])&&/-/.test(lines[i+1])){
       const header=splitRow(line);i+=2;const body=[];
       while(i<lines.length&&lines[i].trim()!==""&&lines[i].includes("|")){body.push(splitRow(lines[i]));i++;}
-      const thead=el("thead",{},el("tr",{},...header.map(h=>el("th",{},...renderInline(h,ctx)))));
-      const tbody=el("tbody",{},...body.map(r=>el("tr",{},...r.map(c=>el("td",{},...renderInline(c,ctx))))));
+      /* a cell that is only a number (sign, digits, separators, a % or a currency mark) is set right */
+      const cell=(tag,c,num)=>el(tag,num||NUMCELL_RE.test(c)?{class:"num"}:{},...renderInline(c,ctx));
+      /* a column of numbers (a dash or a blank where one is missing) has its heading set right too */
+      const numCol=header.map((_,j)=>body.some(r=>NUMCELL_RE.test(r[j]||""))&&body.every(r=>NUMCELL_RE.test(r[j]||"")||/^(?:[-\u2013\u2014]|)$/.test((r[j]||"").trim())));
+      const thead=el("thead",{},el("tr",{},...header.map((h,j)=>cell("th",h,numCol[j]))));
+      const tbody=el("tbody",{},...body.map(r=>el("tr",{},...r.map(c=>cell("td",c)))));
       nodes.push(el("table",{},thead,tbody));
       continue;}
     const buf=[line];i++;
@@ -2768,11 +2990,34 @@ function parseBlocks(lines,ctx){
 /* ======================= DEFINITIONS ======================= */
 const REFDEF_RE=/^ {0,3}\[([^\]]+)\]:\s*(<[^>]*>|\S+)(?:\s+"([^"]*)"|\s+'([^']*)'|\s+\(([^)]*)\))?\s*$/;
 const FOOTDEF_RE=/^ {0,3}\[\^([^\]]+)\]:[ \t]?(.*)$/;
+/* HTML comments, `<!-- … -->`, are the writer's own notes and are not drawn: one
+   line or several, inline or on lines of their own. The file keeps them (the
+   renderer writes a booklet's design back as written); only the drawing drops
+   them. A backtick span shows one literally, and so does a fenced block, which
+   extractDefs never hands to this. `st.open` carries an unfinished comment to
+   the next line. */
+function cutComments(line,st){
+  let out="",i=0,cut=false;
+  while(i<line.length){
+    if(st.open){const e=line.indexOf("-->",i);cut=true;if(e<0){i=line.length;break;}st.open=false;i=e+3;continue;}
+    if(line[i]==="`"){let j=i;while(line[j]==="`") j++;
+      const run=line.slice(i,j);let k=j,end=-1;
+      for(;;){const x=line.indexOf(run,k);if(x<0) break;
+        if(line[x-1]!=="`"&&line[x+run.length]!=="`"){end=x+run.length;break;}
+        k=x+1;while(line[k]==="`") k++;}
+      if(end>=0){out+=line.slice(i,end);i=end;}else{out+=run;i=j;}
+      continue;}
+    if(line.startsWith("<!--",i)){st.open=true;cut=true;i+=4;continue;}
+    out+=line[i];i++;}
+  return {text:out,cut};}
 function extractDefs(text,refs){
   const rawLines=text.replace(/\r\n?/g,"\n").split("\n");
   const lines=[];const footnotes=[];let inFence=false,fenceChar=null,fenceLen=0;
+  const com={open:false};
   for(let i=0;i<rawLines.length;i++){
-    const line=rawLines[i];
+    let line=rawLines[i];
+    if(!inFence&&(com.open||line.includes("<!--"))){const r=cutComments(line,com);
+      if(r.cut){if(!r.text.trim()) continue;line=r.text.replace(/\s+$/,"");}}
     const fm=FENCE_RE.exec(line);
     if(fm){
       if(!inFence){inFence=true;fenceChar=fm[1][0];fenceLen=fm[1].length;}
@@ -2959,13 +3204,18 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
   const queries=[],menus=[],menuUses=[],figures=Object.create(null);
   let mod=null,act=null,section="content",lastQ=null,seq=0;
   const plain=s=>String(s||"").replace(/[*_`~=]|\[\^[^\]]*\]|!?\[\[[^\]]*\]\]/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1").trim();
-  const firstPara=s=>plain(String(s||"").split(/\n{2,}/).find(p=>p.trim()&&!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p))||"");
+  const firstPara=s=>plain(String(s||"").replace(/<!--[\s\S]*?-->/g,"").split(/\n{2,}/).find(p=>p.trim()&&!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p))||"");
   const claim=(id,where)=>{if(!id) return;if(!ID_PATTERN.test(id)) problems.push(where+": the id “"+id+"” may hold only letters, digits and dashes");
     if(ids.has(id)) problems.push(where+": the id “"+id+"” is used twice");ids.add(id);};
   const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__footnotes:[],__line:line};
     if(fm.copyright||fm.license||fm.source) m.rights={copyright:fm.copyright||"",license:fm.license||"",source:fm.source||""};
     modules.push(m);return m;};
-  const newActivity=(w,title,line)=>{const id=w.id||(slugify(title||fm.title||"")||"activity-"+(++seq));
+  /* A file with no activity line (and no module fence) is one activity named by
+     its front matter title (SPEC.md section 3): its prose and questions all
+     belong to it. The id is the title's letters and digits, as dashes. */
+  const implicit=!items.some(x=>x.t==="line"&&(x.kind==="activity"||x.kind==="module"));
+  const idWord=s=>slugify(s).replace(/[^A-Za-z0-9-]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-");
+  const newActivity=(w,title,line)=>{const id=w.id||idWord(title||fm.title||"")||idWord(fm.id||"")||"activity-"+(++seq);
     claim(id,"line "+line);
     const a={id,kind:w.flags.has("repeat")||w.flags.has("daily")?"entry":"board",title:title||undefined,pages:[{id:"p1",blocks:[]}]};
     if(w.flags.has("daily")) a.upsert="day";if(w.flags.has("hidden")) a.home=false;
@@ -3003,6 +3253,7 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
     if(it.t==="break"){if(section==="content"&&act){act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});lastQ=null;}continue;}
     if(it.t==="text"){if(section!=="content") continue;
       const strip=stripFootnoteDefs(it.text);
+      if(!act&&!mod&&implicit&&(strip.text||strip.defs.length)) page();
       const owner=mod||(act&&holderOfAct(act));if(owner) owner.__footnotes.push(...strip.defs);
       if(!act){if(mod&&strip.text) mod.__intro.push(strip.text);continue;}
       if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;continue;}

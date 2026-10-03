@@ -96,6 +96,14 @@ on "Your booklets" to open the markdown file. No server, no install, no network:
 A module file (any v0.3 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it.
 
+A plain Markdown file with booklet front matter (`booklet: 0.3`, a `title`) and no booklet lines at all is
+already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
+status or a run's acceptance report, can be read in the renderer. An activity that only reads (no question, no
+widget, no query) and has at least two sections opens **folded**: each section shows its heading and its first
+paragraph and opens on a click, with "Open everything" and "Fold everything" above them and a dot in the left
+menu for each section opened. The choice is kept in the browser only. HTML comments (`<!-- … -->`) are not
+drawn, and tables are styled.
+
 A file added from "Your booklets" is always a booklet of its own, in the list. The
 renderer has no way to load a file into a booklet that is already open.
 
