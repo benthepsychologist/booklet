@@ -30,5 +30,5 @@ global.setTimeout=setTimeout;
 const html=require("fs").readFileSync(__dirname+"/../booklet.html","utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
 // expose internals for testing
-eval(src + "\nglobal.API={emptyS};");
+eval(src + "\nglobal.API={emptyS,parseFile};");
 module.exports=global.API;
