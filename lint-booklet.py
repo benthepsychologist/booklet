@@ -2,26 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.2 format in SPEC.md.
+Lint a booklet file against the v0.3 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: 0.2`,
+A booklet is one portable Markdown file: front matter that says `booklet: 0.3`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: 0.2`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: 0.3`, one `lang:`), fences that are
 closed, unique block and question ids, modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
 title, and records that name an activity. Any file whose front matter is not
-`booklet: 0.2` is rejected; no earlier format is read.
+`booklet: 0.3` is rejected; no earlier format is read.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.2 file is written in one language, so it
+registry's CI line keeps working; a v0.3 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
@@ -93,7 +93,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.2 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.3 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -170,10 +170,10 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module):
 
 
 def check_format(f, text, fm):
-    """Lint a v0.2 booklet. Every problem names its line."""
+    """Lint a v0.3 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.2 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.3 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
@@ -337,13 +337,17 @@ def check_file(path):
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return
-    if fm.get("booklet") == "0.2":
+    if fm.get("booklet") == "0.3":
         check_format(f, text, fm)
+        return
+    if fm.get("booklet") == "0.2":
+        err(f, "front matter says booklet: 0.2; this is format 0.3 (callout settings are now "
+               "key:value). Update the file, then the marker.")
         return
     # No earlier format is read (2026-09-29) — this mirrors the renderer's own
     # parseFile(), which only ever calls parseBooklet(). Anything else is
     # rejected outright rather than checked against an earlier format's rules.
-    err(f, f"front matter must say `booklet: 0.2` (found {fm.get('booklet')!r}) — "
+    err(f, f"front matter must say `booklet: 0.3` (found {fm.get('booklet')!r}) — "
            f"no earlier format is read")
 
 

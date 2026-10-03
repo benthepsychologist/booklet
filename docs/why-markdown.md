@@ -1,8 +1,8 @@
-# Why v0.2 looks the way it does
+# Why v0.3 looks the way it does
 
 Booklet was already "one file, hand-editable, no server." It just wasn't hand-editable in the way that phrase implies. A booklet's design — every activity, every question, every widget — used to live as a series of fenced JSON blocks under the prose. Readable, yes: open the file and you could see the shape of it. But *editable*? Nobody sits down and correctly retypes a JSON object by hand, and a language model asked to add a question to a booklet was really being asked to write valid, deeply-nested JSON on the first try, in the right place, with the right keys. "Hand-editable" turned out to mean "hand-*readable*," and that gap is where this rewrite starts.
 
-This document is the record of how v0.2 got decided: what we looked at, what we were actually trying to do, and why each real choice landed where it did. It exists because "just trust us" is a bad way to hand someone a file format.
+This document is the record of how v0.3 got decided: what we looked at, what we were actually trying to do, and why each real choice landed where it did. It exists because "just trust us" is a bad way to hand someone a file format.
 
 ---
 
@@ -41,7 +41,7 @@ Nobody in Booklet's actual audience opens a file in a bare CommonMark viewer. A 
 
 So the real priority list became: the raw source has to read cleanly in a text editor (since that's where a human author actually looks), the file has to work well in Obsidian (because it's the one Markdown application with real, non-technical adoption — "the biggest Markdown viewer on the planet"), and GitHub rendering matters, but a little visible punctuation there is an acceptable price. Plain CommonMark rendering, once treated as a hard constraint, turned out to matter least of all.
 
-That reordering is what let two of v0.2's harder choices actually work:
+That reordering is what let two of v0.3's harder choices actually work:
 
 **Headings had to be given back to prose.** An early version used headings themselves to mark structure — a module's or activity's name became an `##`, its pages became `###`, and so on. It read cleanly enough in a bare Markdown viewer, but it meant a page of ordinary reading only had the three smallest heading sizes left to write with. That's not a small cost; it breaks ordinary writing. Once "renders in bare CommonMark" stopped being load-bearing, headings could go back to being just headings, and structure moved to a small set of callout lines instead — visible, titled boxes in the one place (Obsidian) where visibility actually matters.
 

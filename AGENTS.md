@@ -19,7 +19,7 @@ carry their modules and widgets whole.
 - The renderer, format, validator, and modules without a
   `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
-  module's prose and travels with the file, since a v0.2 module is the
+  module's prose and travels with the file, since a v0.3 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - Modules are not kept in this repo; they live in `booklet-registry`, where

@@ -6,7 +6,7 @@ Open it in a text editor and you can read everything, top to bottom — question
 
 ```markdown
 ---
-booklet: 0.2
+booklet: 0.3
 id: example/daily-note
 title: A daily note
 lang: en
@@ -32,7 +32,7 @@ version: "0.1"
 %%
 ```
 
-This is **v0.2** of the format — see [`SPEC.md`](SPEC.md) for the full
+This is **v0.3** of the format — see [`SPEC.md`](SPEC.md) for the full
 format, and [`docs/why-markdown.md`](docs/why-markdown.md) for how it was
 arrived at: what the wider Markdown-tooling field already does, what Booklet
 needs that nothing else supplies, and why each real choice landed where it
@@ -76,9 +76,9 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, no dependencies. Reads v0.2 only — no earlier format opens |
-| [`SPEC.md`](SPEC.md) | the current format (v0.2), versioned and published separately from anything that implements it |
-| [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.2: the field surveyed, the aims, the choices made and rejected |
+| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, no dependencies. Reads v0.3 only — no earlier format opens |
+| [`SPEC.md`](SPEC.md) | the current format (v0.3), versioned and published separately from anything that implements it |
+| [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3: the field surveyed, the aims, the choices made and rejected |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
 | [`examples/`](examples/) | complete booklets you can open — `how-tides-work.booklet.md` and `mindful-check-in.booklet.md` |
@@ -93,7 +93,7 @@ Download `booklet.html` and `examples/how-tides-work.booklet.md`, open the HTML 
 on "Your booklets" to open the markdown file. No server, no install, no network: verified with `fetch` and
 `XMLHttpRequest` stubbed to fail.
 
-A module file (any v0.2 module, such as those in `booklet-registry`) loads as what it is, one activity: on
+A module file (any v0.3 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it.
 
 A file added from "Your booklets" is always a booklet of its own, in the list. The
@@ -197,11 +197,11 @@ person. Anyone may publish a separate registry under their own policy; a site ca
 
 ## Status
 
-**v0.2, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
+**v0.3, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
 independent second implementation yet. It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and
-known gaps, and `docs/why-markdown.md` for how v0.2 came to be.
+known gaps, and `docs/why-markdown.md` for how v0.3 came to be.
 
 ### What is licensed how
 
