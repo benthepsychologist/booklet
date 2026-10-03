@@ -494,6 +494,7 @@ const TSRC={
       missingWidget: id=>`This activity needs a widget the file does not carry (${id}). Load the booklet it came from, or add the module that brings it.`,
       missingEngine: e=>`This page cannot draw a "${e}" — it is an older version of the app than the booklet expects.`,
       loadOk: "Loaded",
+      oldFormat: "This file says booklet: 0.2. This page reads format 0.3, where settings are written key:value (for example min:0). Update the file, then its marker.",
       clearTitle: "Clear everything on this page?",
       clearHelp: "Your entries exist only in this browser tab. If you have not downloaded them, they will be gone.",
       clearCancel: "Keep my entries",
@@ -610,6 +611,7 @@ const TSRC={
       missingWidget: id=>`Cette activité a besoin d’un élément que le fichier ne contient pas (${id}). Chargez le carnet d’origine, ou ajoutez le module qui l’apporte.`,
       missingEngine: e=>`Cette page ne sait pas dessiner un « ${e} » — c’est une version plus ancienne que ce que le carnet attend.`,
       loadOk: "Chargé",
+      oldFormat: "Ce fichier indique booklet: 0.2. Cette page lit le format 0.3, où les réglages s’écrivent clé:valeur (par exemple min:0). Mettez le fichier à jour, puis son marqueur.",
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
       clearHelp: "Vos réponses n’existent que dans cet onglet. Si vous ne les avez pas téléchargées, elles seront perdues.",
       clearCancel: "Garder mes réponses",
@@ -726,6 +728,7 @@ const TSRC={
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Carga el cuadernillo de origen, o agrega el módulo que lo aporta.`,
       missingEngine: e=>`Esta página no puede mostrar un "${e}" — es una versión de la aplicación más antigua que la que el cuadernillo espera.`,
       loadOk: "Cargado",
+      oldFormat: "Este archivo dice booklet: 0.2. Esta página lee el formato 0.3, donde los ajustes se escriben clave:valor (por ejemplo min:0). Actualiza el archivo y luego su marcador.",
       clearTitle: "¿Borrar todo lo que hay en esta página?",
       clearHelp: "Tus entradas solo existen en esta pestaña del navegador. Si no las descargaste, se perderán.",
       clearCancel: "Conservar mis entradas",
@@ -826,6 +829,7 @@ const TSRC={
     ui: {
       loadHelp: "Elegí el archivo markdown que descargaste desde esta página, o pegá su contenido abajo.",
       loadOr: "O pegá el contenido del archivo:",
+      oldFormat: "Este archivo dice booklet: 0.2. Esta página lee el formato 0.3, donde los ajustes se escriben clave:valor (por ejemplo min:0). Actualizá el archivo y después su marcador.",
       tagPh: "Escribí o dictá palabras, separadas por comas",
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Cargá el cuadernillo de origen, o agregá el módulo que lo aporta.`,
       downloaded: "Descargado. Guardá el archivo en un lugar donde puedas encontrarlo.",
@@ -2926,7 +2930,7 @@ function fencedSpans(lines,from,to){
 /* What is wrong with a module file, in words a person uploading their own
    can act on — never a stack trace. Empty means it is safe to add. */
 function moduleTextProblems(text){
-  if(isOldFormat(text)) return [OLD_FORMAT_MSG];
+  if(isOldFormat(text)) return [T[lang].ui.oldFormat];
   if(!isBooklet(text)) return ["This is not a v0.3 file — its front matter needs `booklet: 0.3`."];
   const R=parseFile(text);
   if(R.unread.length) return R.unread;
@@ -3083,7 +3087,7 @@ const veilAddModule=document.getElementById("veilAddModule");
 document.getElementById("addModCancel").addEventListener("click",()=>veilAddModule.removeAttribute("open"));
 function loadText(text){const t=T[lang].ui;const msg=document.getElementById("loadMsg");
   const R=parseFile(text||"");
-  if(!R.ok){const why=(R.unread||[]).includes(OLD_FORMAT_MSG)?OLD_FORMAT_MSG:t.loadErr;
+  if(!R.ok){const why=(R.unread||[]).includes(OLD_FORMAT_MSG)?T[lang].ui.oldFormat:t.loadErr;
     if(veilLoad.hasAttribute("open")){msg.className="msg err";msg.textContent=why;} else toast(why);return;}
   veilLoad.removeAttribute("open");
   /* a file is always a booklet of its own; it never merges into another one */
