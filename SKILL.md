@@ -417,6 +417,14 @@ between paragraphs (`\n\n`) for a new one.
   `[harbour]: images/harbour.jpg`. Only a real, requester-supplied `https`
   address — never embedded data, never a placeholder URL.
 
+- **A report** (something generated or written to be read, not answered) needs
+  only front matter (`booklet: 0.3`, `id`, `title`, `lang`) and plain Markdown:
+  no activity line is needed, the file is one activity named by the title. Give it
+  a title heading, then `##` headings for its sections. The renderer folds a
+  reading-only activity: each section shows its heading and the **first paragraph
+  under it**, so make that paragraph a one-sentence statement of the section. Put
+  notes to yourself in `<!-- … -->`; they are not shown.
+
 ---
 
 ## 8. Widgets, languages, and the file name

@@ -3,7 +3,7 @@
 *As of 2026-10-03*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.3**: format v0.3 (files say `booklet: 0.3`) and renderer 0.3.1.
+**project v0.3**: format v0.3 (files say `booklet: 0.3`) and renderer 0.3.2.
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
@@ -49,6 +49,17 @@ with a message saying so.
   (no `unsafe-eval`, no network). The file is about 3 MB because of them.
   `test/figures.test.js` checks the stored copies and when they wake;
   `test/figures-browser.js` draws real examples in Chromium under that policy.
+- **Plain Markdown reads as a booklet.** A file with booklet front matter and no
+  activity line is one activity named by its title (`SPEC.md` section 3), with or
+  without questions. `<!-- … -->` comments are not drawn but are kept in the saved
+  file, and prose tables are styled (scrolling inside their own wrapper).
+- **Reading-only activities open folded.** An activity with no question, widget or
+  query, and at least two sections on a page, draws each section as a disclosure
+  showing its heading and first paragraph, with "Open everything" / "Fold everything",
+  an "Opened N of M sections" line, section entries and dots in the pages menu, and
+  heading links that open the section they target. The reader's choice is kept per
+  booklet in the browser, never in the file. An activity with any question draws as
+  before. The registry's `what-is-a-booklet` module now folds.
 - **The linter** checks v0.3 files by v0.3's rules and agrees with the
   renderer about what is wrong.
 
