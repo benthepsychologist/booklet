@@ -25,7 +25,7 @@ registry's CI line keeps working; a v0.3 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
-import html, json, pathlib, re, sys
+import html, json, pathlib, re, sys, unicodedata, urllib.parse
 
 BASE = pathlib.Path(__file__).resolve().parent
 
@@ -374,6 +374,68 @@ def check_format(f, text, fm):
     for n, ref in entry_refs:
         if ref not in acts:
             warn(f, f"line {n}: records for {ref!r}, which no activity line names")
+    check_links(f, lines)
+
+
+def _plain_heading(s):
+    s = re.sub(r'[ \t]+#+[ \t]*$', '', s)
+    s = re.sub(r'\[\[([^\]|]*)\|([^\]]*)\]\]', r'\2', s)
+    s = re.sub(r'\[\[([^\]]*)\]\]', r'\1', s)
+    s = re.sub(r'!?\[([^\]]*)\]\([^)]*\)', r'\1', s)
+    return re.sub(r'[*_`]+', '', s).strip()
+
+
+def _link_norm(s):
+    return re.sub(r'\s+', ' ', s).strip().lower()
+
+
+def _link_slug(s):
+    s = unicodedata.normalize("NFC", s).replace("\ufe0f", "").replace("\u200d", "")
+    s = re.sub(r'[^\w\s-]', '', _link_norm(s))
+    return re.sub(r'\s', '-', s).strip('-')
+
+
+def check_links(f, lines):
+    """Warn on a `[[#Heading]]` or `](#slug)` link that points at no heading in
+    the file. A heading is a markdown heading, or the title on an activity or
+    question line (`> [!activity|id] Title`). Code fences and `#^block` refs are
+    not links."""
+    heads, links, fence = [], [], None
+    for k, ln in enumerate(lines):
+        fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
+        if fm_:
+            if fence is None:
+                fence = fm_.group(1)[0]
+            elif fm_.group(1)[0] == fence and not fm_.group(2).strip():
+                fence = None
+            continue
+        if fence:
+            continue
+        h = re.match(r'^ {0,3}#{1,6}[ \t]+(.*?)[ \t]*$', ln)
+        if h:
+            heads.append(_plain_heading(h.group(1)))
+        c = re.match(r'^\s*>\s*\[!\w+(?:\|[^\]]*)?\][+-]?\s*(.*?)\s*$', ln)
+        if c and c.group(1):
+            heads.append(_plain_heading(c.group(1)))
+        bare = re.sub(r'`[^`]*`', '', ln)
+        for m in re.finditer(r'(?<!!)\[\[#(?!\^)([^\]|]+)(?:\|[^\]]*)?\]\]', bare):
+            links.append((k + 1, m.group(1), False))
+        for m in re.finditer(r'(?<!!)\[[^\]]*\]\(#([^)\s]*)\)', bare):
+            links.append((k + 1, m.group(1), True))
+    norms = {_link_norm(x) for x in heads}
+    slugs = {_link_slug(x) for x in heads}
+    for n, target, by_slug in links:
+        if by_slug:
+            try:
+                want = _link_slug(urllib.parse.unquote(target))
+            except Exception:
+                want = _link_slug(target)
+            ok = bool(want) and want in slugs
+        else:
+            ok = _link_norm(target) in norms
+        if not ok:
+            kind = f"](#{target})" if by_slug else f"[[#{target}]]"
+            warn(f, f"line {n}: the link {kind} points at no heading in this file")
 
 
 def check_file(path):

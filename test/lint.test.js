@@ -94,5 +94,13 @@ for(const [name,what,rx] of CASES){
  chk("a module using a menu defined outside its fence: one warning, no error",
    r.status===0&&r.errors.length===0&&r.warns.length===1&&/line 13: `menu:feelings` is defined outside module 'fixture-mod'/.test(r.warns[0]||""),r.out);}
 
+{// links between activities: a link to a heading that is there is clean; one to a heading that is not is a warning
+ const ok=lint(path.join(FX,"lint-links-ok.md"));
+ chk("`[[#A walk]]`, `[a walk](#a-walk)` and a titled link to a question lint clean",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);
+ const r=lint(path.join(FX,"lint-link-missing.md"));
+ chk("a `[[#…]]` and a `](#…)` link to no heading: two warnings, no error, each naming the line",
+   r.status===0&&r.errors.length===0&&r.warns.length===2&&/line 23: the link \[\[#Check yourself\]\] points at no heading/.test(r.warns[0]||"")
+   &&/line 23: the link \]\(#check-yourself\) points at no heading/.test(r.warns[1]||""),r.out);}
+
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

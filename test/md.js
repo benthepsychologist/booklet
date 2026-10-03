@@ -22,6 +22,10 @@ const textOf=x=>Array.isArray(x)?x.map(textOf).join(""):typeof x==="string"?x:(x
 const slugify=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderInline(label,ctx):label;
   if(!urlOk(url,true)) return textOf(kids);
+  /* a link to a heading in the same document: the page decides where that leads */
+  if(typeof url==="string"&&url.startsWith("#")&&typeof ctx.opts.anchor==="function"){
+    let n=null;try{n=ctx.opts.anchor(url.slice(1),kids);}catch(e){n=null;}
+    if(n!=null) return n;}
   const {scheme}=cleanScheme(url);const attrs={href:String(url).replace(CTRL,""),title};
   if(scheme==="http"||scheme==="https"){attrs.target="_blank";attrs.rel="noopener noreferrer";}
   return el("a",attrs,...kids);};

@@ -391,6 +391,7 @@ between paragraphs (`\n\n`) for a new one.
   **Never invent a citation.** Cite only a document the requester gave you,
   quoted exactly; leave off `Verified` unless someone actually checked it.
   With no document to hand, write plain reading with no citations at all.
+- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the activity holding that heading (an activity's own title counts) on the right page; the linter warns when no heading in the file matches.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
   module**. It is read-only and takes no answer. The kind goes on the fence

@@ -32,6 +32,8 @@ with a message saying so.
   engines.
 - **Queries** (`booklet query`) show what the reader kept in another activity
   or question of the same module.
+- **Links between activities** (`[[#Heading]]` and `[label](#slug)`) are drawn as
+  links that open the activity, and the page, holding that heading.
 - **Citations** are CommonMark footnotes, drawn as numbered marks with a side
   panel.
 - **Records** sit in a `%%`-wrapped section at the end of the file.

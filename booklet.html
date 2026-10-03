@@ -1970,7 +1970,7 @@ function renderBlock(b,draft,modeId){
     /* a booklet's prose, drawn from its Markdown: see mdNodes. A citation mark,
        [^id], becomes a numbered superscript: see READING MATERIAL. */
     case "markdown":{const box=el("div",{class:"pblock md"});
-      box.append(...mdNodes(String(b.text||""),{...FIGURE_HOOKS,idPrefix:"md-",mark:id=>{const c=citeText("[^"+id+"]",modeId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}));
+      box.append(...mdNodes(String(b.text||""),{...FIGURE_HOOKS,...ACTIVITY_LINK_HOOKS,idPrefix:"md-",mark:id=>{const c=citeText("[^"+id+"]",modeId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}));
       return box;}
     case "callout": return calloutNode(b,draft,modeId);
     /* read-only: what was kept elsewhere in this module; owns no answer key */
@@ -2259,6 +2259,61 @@ function withPages(id,content){const P=PG();const ps=pagesOf(modeOf(id));
     pagesOverlay=false;render();refocus(".ap-toggle");}});
   return el("div",{class:"ap-frame"+(open?"":" ap-min")},nav,inner);}
 
+/* ---- LINKS BETWEEN ACTIVITIES ----
+   `[[#Check yourself]]` and `[Check yourself](#check-yourself)` are ordinary
+   heading links. A heading is an activity's title, a page's title, a heading in
+   its prose or the title of one of its questions. A link opens the activity
+   holding the heading, on the page holding it. Text and slugs are compared the
+   way Obsidian and GitHub do: case and spacing never matter. */
+const linkNorm=s=>String(s==null?"":s).replace(/\s+/g," ").trim().toLowerCase();
+const linkSlug=s=>linkNorm(String(s==null?"":s).normalize("NFC").replace(/[️‍]/g,""))
+  .replace(/[^\p{L}\p{M}\p{N}\s_-]/gu,"").replace(/\s/g,"-").replace(/^-+|-+$/g,"");
+/* the words of a heading, without its emphasis, code ticks or link syntax */
+const plainHeading=s=>String(s).replace(/[ \t]+#+[ \t]*$/,"")
+  .replace(/\[\[([^\]|]*)\|([^\]]*)\]\]/g,"$2").replace(/\[\[([^\]]*)\]\]/g,"$1")
+  .replace(/!?\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/[*_`]+/g,"").trim();
+/* the ATX headings of a chunk of Markdown, outside its code fences */
+function headingsOf(text){const out=[];let fence=null;
+  for(const ln of String(text||"").split("\n")){const f=FENCE_RE.exec(ln);
+    if(f){if(!fence) fence=f[1][0];else if(f[1][0]===fence&&!f[2].trim()) fence=null;continue;}
+    if(fence) continue;
+    const m=ATX_RE.exec(ln);if(m&&m[2]){const h=plainHeading(m[2]);if(h) out.push(h);}}
+  return out;}
+/* every heading an activity holds, with the page it is on */
+function activityHeadings(a){const ps=pagesOf(a),out=[];
+  const t=tx(a.title,null);if(typeof t==="string"&&t.trim()) out.push({text:t,page:ps[0].id});
+  ps.forEach(p=>{const pt=tx(p.title,null);if(typeof pt==="string"&&pt.trim()) out.push({text:pt,page:p.id});
+    blocksIn(p).forEach(b=>{
+      if(b.type==="markdown") headingsOf(b.text).forEach(h=>out.push({text:h,page:p.id}));
+      else{const l=tx(b.label,null);if(typeof l==="string"&&l.trim()) out.push({text:l,page:p.id});}});});
+  return out;}
+/* The first activity (page) in the booklet holding a heading with this text, or,
+   with bySlug, whose heading has this GitHub-style slug. Nothing when none does. */
+function findHeading(mods,target,bySlug){
+  let want;try{want=bySlug?linkSlug(decodeURIComponent(target)):linkNorm(target);}catch(e){want=bySlug?linkSlug(target):linkNorm(target);}
+  if(!want) return null;
+  for(const m of mods) for(const a of modesOf(m)) for(const h of activityHeadings(a))
+    if((bySlug?linkSlug(h.text):linkNorm(h.text))===want) return {act:a.id,page:h.page,heading:h.text};
+  return null;}
+function scrollToHeading(text){let n=null;
+  try{const want=linkNorm(text);
+    n=[...document.querySelectorAll("#main h2,#main h3,#main h4,#main h5,#main h6")].find(h=>linkNorm(h.textContent)===want)||null;}catch(e){}
+  try{if(n&&n.scrollIntoView) n.scrollIntoView({block:"start"});else window.scrollTo({top:0});}catch(e){}}
+function openHeading(hit){
+  if(view===hit.act){const same=currentPage(hit.act).id===hit.page;
+    if(!same){showPage(hit.act,hit.page);pagesOverlay=false;render();}
+    scrollToHeading(hit.heading);return;}
+  showPage(hit.act,hit.page);go(hit.act);}
+function headingLink(hit,kids){
+  return el("a",{href:"#",class:"alink",onclick:e=>{if(e&&e.preventDefault) e.preventDefault();openHeading(hit);}},...kids);}
+/* what a prose block hands mdNodes so these links lead somewhere */
+const ACTIVITY_LINK_HOOKS={
+  link:(target,label)=>{if(target[0]!=="#"||target[1]==="^") return null;
+    const h=target.slice(1).trim(),text=label!==undefined?label:h,hit=findHeading(allModules(),h,false);
+    return hit?headingLink(hit,[text]):text;},
+  anchor:(slug,kids)=>{const hit=findHeading(allModules(),slug,true);
+    return hit?headingLink(hit,kids):textOf(kids);}};
+
 /* ======================= READING MATERIAL =======================
    Reading inside an activity (SPEC.md section 6): a footnote's mark, `[^id]`,
    in the prose becomes a small number that costs the reader nothing; pressed
@@ -2528,6 +2583,10 @@ const textOf=x=>Array.isArray(x)?x.map(textOf).join(""):typeof x==="string"?x:(x
 /* slugify: reuses the page's own Unicode-aware slugify() (see exportName()); md.js keeps its own copy for the standalone test. */
 const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderInline(label,ctx):label;
   if(!urlOk(url,true)) return textOf(kids);
+  /* a link to a heading in the same document: the page decides where that leads */
+  if(typeof url==="string"&&url.startsWith("#")&&typeof ctx.opts.anchor==="function"){
+    let n=null;try{n=ctx.opts.anchor(url.slice(1),kids);}catch(e){n=null;}
+    if(n!=null) return n;}
   const {scheme}=cleanScheme(url);const attrs={href:String(url).replace(CTRL,""),title};
   if(scheme==="http"||scheme==="https"){attrs.target="_blank";attrs.rel="noopener noreferrer";}
   return el("a",attrs,...kids);};
