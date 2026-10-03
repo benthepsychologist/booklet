@@ -527,7 +527,7 @@
    lockstep with the project's; the patch digit is this file's own, for a
    renderer-only fix that does not need a project-wide re-release (Ben,
    2026-09-28). */
-const RENDERER_VERSION="0.3.1";
+const RENDERER_VERSION="0.3.2";
 /* ======================= COPY =======================
    The renderer's own words, in four interface languages: English (the root),
    French, and Spanish, which is two layers, not two full copies. `es` is
@@ -2169,13 +2169,20 @@ function renderActivity(main,id){const u=T[lang].ui;const m=modeOf(id);const mod
   const repeats=m.kind==="entry";
   const draft=answersFor(id);if(repeats) seedUpsertDraft(id,m,draft);
   const col=el("div",{class:"col"});
-  col.append(el("h2",{},tx(mod.title,tx(m.title,id))));
+  const titleText=tx(mod.title,tx(m.title,id));
+  col.append(el("h2",{},titleText));
   const lead=tx(mod.blurb,tx(m.blurb,""));
   if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));
   if(repeats) col.append(el("h3",{},u.earlier),chipStrip(id));
   /* the page on show and its blocks, and the pages menu beside them: see
      AN ACTIVITY'S PAGES. One draft serves every page. */
-  col.append(pageBody(id,draft));
+  const body=pageBody(id,draft);
+  /* a report's own first heading often repeats its title (a plain file is named
+     by its front matter title): draw the title once */
+  const same=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
+  const firstH=body.querySelector("h1,h2,h3,h4,h5,h6");
+  if(firstH&&same(titleText)&&same(firstH.textContent)===same(titleText)) firstH.remove();
+  col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
   main.append(withPages(id,col));}
 
