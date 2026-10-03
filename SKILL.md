@@ -360,6 +360,26 @@ between paragraphs (`\n\n`) for a new one.
   **Never invent a citation.** Cite only a document the requester gave you,
   quoted exactly; leave off `Verified` unless someone actually checked it.
   With no document to hand, write plain reading with no citations at all.
+- **Showing what was kept** — a `booklet query` block, in the prose of one
+  activity, shows what the reader kept in another activity **of the same
+  module**. It is read-only and takes no answer. The kind goes on the fence
+  line and every setting is a `key: value` line:
+
+  ````markdown
+  ```booklet query
+  from: log
+  fields: situation, ease
+  newest: 3
+  empty: Nothing logged yet.
+  ```
+  ````
+
+  `from:` is required: an activity that is `repeat` or `repeat daily` (its
+  kept entries, newest first), or one question's id (its answers).
+  `fields:`, `newest:` and `empty:` are optional. Never point it at another
+  module, and never write anything else in the block. In Obsidian without a
+  plugin it shows as a plain code block, so say in the prose above it what it
+  will show.
 - **An image** is reference style, with its address at the end of the file:
   `![The harbour at low water][harbour]` and, near the other data,
   `[harbour]: images/harbour.jpg`. Only a real, requester-supplied `https`
@@ -446,6 +466,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a numbered list not starting at 1 | `a numbered list that does not start at 1 needs a blank line above it, or Markdown reads it as part of the question's title` | add the blank line |
 | a `>` embed pointing at nothing | `![[#^x]] points at no block in this file` | fix the id, or add the fenced block |
 | an embed pointing at the wrong fence | `^x is not a widget block` | point the embed at the actual `booklet widget` fence |
+| a query with a bad `from:` | `the query's `from: x` names no activity or question in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, or a question, in the same module |
 | a kind not drawn yet | `matrix questions are not drawn by the reference page yet` | use `scale` questions instead, or ask whether the requester wants to wait |
 
 **Without the linter**, also check by hand:

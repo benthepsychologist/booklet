@@ -557,6 +557,9 @@ const TSRC={
       removed: "Removed.",
       storageOff: "This browser is not keeping anything between visits (private mode, or site data is blocked). Booklets here last until you close the tab, so download a copy of any you want to keep."
     },
+    query: {
+      empty: "Nothing kept here yet."
+    },
     moduleView: {
       noneShown: "Nothing in this module is shown at the moment.",
       clash: (mod,act,other)=>`module “${mod}” refused: its activity “${act}” already belongs to module “${other}”`
@@ -669,6 +672,9 @@ const TSRC={
       keep: "Le garder",
       removed: "Retiré.",
       storageOff: "Ce navigateur ne garde rien d’une visite à l’autre (navigation privée, ou données du site bloquées). Les carnets d’ici durent jusqu’à la fermeture de l’onglet : téléchargez une copie de ceux que vous voulez garder."
+    },
+    query: {
+      empty: "Rien n’est encore enregistré ici."
     },
     moduleView: {
       noneShown: "Rien dans ce module n’est affiché pour l’instant.",
@@ -783,6 +789,9 @@ const TSRC={
       removed: "Quitado.",
       storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descarga una copia de los que quieras conservar."
     },
+    query: {
+      empty: "Todavía no hay nada guardado aquí."
+    },
     moduleView: {
       noneShown: "Por ahora no se muestra nada en este módulo.",
       clash: (mod,act,other)=>`módulo “${mod}” rechazado: su actividad “${act}” ya pertenece al módulo “${other}”`
@@ -835,6 +844,9 @@ const TSRC={
     },
     home: {
       sub: "Un cuaderno de trabajo que vive en un solo archivo que conservás"
+    },
+    query: {
+      empty: "Todavía no guardaste nada acá."
     },
     library: {
       sub: "Cada cuadernillo guarda sus propias respuestas en este navegador. Abrí uno para continuar, o agregá otro.",
@@ -1343,7 +1355,7 @@ const moduleForView=v=>isModuleView(v)
 /* where a module's card leads: its one activity, or its own page */
 const entryViewOf=m=>isMulti(m)?moduleView(m.id):((modesOf(m)[0]||{}).id||"home");
 const modeOf=id=>tplModes().find(m=>m.id===id)||{id,kind:"entry",blocks:[]};
-const READING_BLOCKS=new Set(["markdown","callout"]);
+const READING_BLOCKS=new Set(["markdown","callout","query"]);
 const keysOf=b=>READING_BLOCKS.has(b.type)?[]:(b.keys||[b.id]);
 /* what a block asks of the engine drawing it — a page explaining a widget
    wants the real one, shown but not operable */
@@ -1781,6 +1793,21 @@ function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
   if(b.type==="number"||b.type==="date"){const v=e[keys[0]];if(v==null||v==="") return null;
     return [fieldLabel(b),String(v)];}
   return null;}
+/* A query reads what was kept in the SAME module: the kept entries of an
+   activity that keeps them, newest first, and nothing across a module boundary
+   (a file with no module fence is one module, so its block says `fileWide`). */
+function queryEntries(from,modeId,fileWide){
+  if(!holderOf(from)||(!fileWide&&holderOf(from)!==holderOf(modeId))) return [];
+  return [...keptFor(from)].sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
+function queryCard(e,from,fields){const card=el("div",{class:"entry"});
+  if(e.ts) card.append(el("div",{class:"when"},fmtWhen(e.ts)));
+  const dl=el("dl",{});
+  /* `fields` names the questions, and their order is the order shown */
+  const qs=fields?fields.map(id=>blocksOf(from).find(q=>q.id===id)).filter(Boolean):blocksOf(from);
+  let rows=0;
+  for(const q of qs){const r=fieldSummary(q,e);if(r){rows++;dl.append(el("dt",{},r[0]),el("dd",{},r[1]));}}
+  card.append(dl);return rows?card:null;}
+const QY=()=>(T[lang]&&T[lang].query)||T.en.query;
 function entryCard(e,type,onDelete){const u=T[lang].ui;const card=el("div",{class:"entry"});
   const tag=tx((moduleOf(type)||{}).title,modeOf(type).id);
   card.append(el("div",{class:"when"},el("span",{class:"tag"},tag),fmtWhen(e.ts)));
@@ -1833,6 +1860,19 @@ function renderBlock(b,draft,modeId){
       box.append(...mdNodes(String(b.text||""),{idPrefix:"md-",mark:id=>{const c=citeText("[^"+id+"]",modeId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}));
       return box;}
     case "callout": return calloutNode(b,draft,modeId);
+    /* read-only: what was kept elsewhere in this module; owns no answer key */
+    case "query":{const box=el("div",{class:"pblock query"});
+      const same=b.fileWide||(holderOf(b.from)&&holderOf(b.from)===holderOf(modeId));
+      const q=b.field?blocksOf(b.from).find(x=>x.id===b.field):null;
+      let cards=[];
+      if(same&&b.field&&q){
+        if(modeOf(b.from).kind==="entry") cards=queryEntries(b.from,modeId,b.fileWide).map(e=>queryCard(e,b.from,[q.id]));
+        else if(fieldSummary(q,S.answers||{})) cards=[queryCard(S.answers||{},b.from,[q.id])];}
+      else if(same&&!b.field) cards=queryEntries(b.from,modeId,b.fileWide).map(e=>queryCard(e,b.from,b.fields));
+      cards=cards.filter(Boolean);
+      if(b.newest) cards=cards.slice(0,b.newest);
+      if(!cards.length){box.append(el("p",{class:"hint"},b.empty||QY().empty));return box;}
+      box.append(...cards);return box;}
 
     case "widget":{const W=widgetOf(b.widget);
       const box=el("div",{});
@@ -2646,6 +2686,18 @@ function anchorList(lines,i){let j=i;let blanks=0;
   while(j<lines.length){const m=lines[j].match(/^[ \t]*(\d+)[.)][ \t]+(.*)$/);if(!m) break;
     anchors.push({n:Number(m[1]),text:m[2].trim()});j++;}
   return anchors.length?{anchors,next:j}:null;}
+/* A query block's body: `key: value` lines (YAML's plainest form). Returns
+   its settings, or `bad` with the first line that is not one. */
+function readQuery(code){const o={};
+  for(const raw of String(code||"").split("\n")){const ln=raw.trim();if(!ln) continue;
+    const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if(!m) return {bad:ln};
+    let v=m[2].trim();
+    if(/^".*"$/.test(v)){try{v=JSON.parse(v);}catch(e){v=v.slice(1,-1);}}
+    else if(/^'.*'$/.test(v)) v=v.slice(1,-1).replace(/''/g,"'");
+    o[m[1].toLowerCase()]=v;}
+  const n=/^\d+$/.test(o.newest||"")?Number(o.newest):0;
+  return {from:o.from||"",fields:o.fields?o.fields.split(",").map(x=>x.trim()).filter(Boolean):undefined,
+    newest:n>0?n:undefined,empty:o.empty||undefined};}
 function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r\n?/g,"\n");
   const lines=text.split("\n"),fm={},problems=[];let i=0;
   if((lines[0]||"").trim()==="---"){let j=1;
@@ -2691,6 +2743,7 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
   const source=(cut===null?lines:lines.slice(0,cut)).join("\n").replace(/\s+$/,"")+"\n";
 
   const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Set();
+  const queries=[];
   let mod=null,act=null,section="content",lastQ=null,seq=0;
   const plain=s=>String(s||"").replace(/[*_`~=]|\[\^[^\]]*\]|!?\[\[[^\]]*\]\]/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1").trim();
   const firstPara=s=>plain(String(s||"").split(/\n{2,}/).find(p=>p.trim()&&!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p))||"");
@@ -2713,6 +2766,12 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
   for(const it of items){
     if(it.t==="fence"){
       const info=it.info.split(/\s+/);
+      if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="query"){
+        if(section!=="content") continue;
+        if(!act){problems.push("line "+it.line+": a query belongs in an activity's prose, so it was refused");continue;}
+        const q=readQuery(it.code);
+        if(q.bad){problems.push("line "+it.line+": the query block has a line that is not `key: value` ("+q.bad+"), so it was refused");continue;}
+        queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,newest:q.newest,empty:q.empty})});lastQ=null;continue;}
       if(/^booklet$/i.test(info[0])){const what=(info[1]||"").toLowerCase();let o=null;
         try{o=JSON.parse(it.code);}catch(e){problems.push("line "+it.line+": the "+(what||"booklet")+" block is not valid JSON, so it was skipped");continue;}
         if(!o||typeof o!=="object"){problems.push("line "+it.line+": the "+what+" block holds no object");continue;}
@@ -2777,6 +2836,22 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;}
   if(mod) problems.push("line "+mod.__line+": the module “"+mod.id+"” is opened and never closed");
+  /* A query reads within its own module, so a `from` that names nothing, or
+     something in another module, is refused here and never reaches drawing.
+     A file with no module fence is one module. An activity must keep entries;
+     a question may sit in any activity. */
+  {const fenced=modules.some(m=>!m.__bare);
+   const where=new Map();
+   modules.forEach(m=>m.activities.forEach(a=>{where.set(a.id,{m,a});
+     a.pages.forEach(pg=>pg.blocks.forEach(b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) where.set(b.id,{m,a,q:b});}));}));
+   for(const x of queries){const {q,block}=x,drop=why=>{problems.push("a query in “"+x.act.id+"” "+why+", so it was refused");
+       x.act.pages.forEach(pg=>{pg.blocks=pg.blocks.filter(b=>b!==block);});};
+     const src=q.from&&where.get(q.from),here=holderOfAct(x.act);
+     if(!src){drop("names “"+(q.from||"")+"”, which is nothing in this module");continue;}
+     if(fenced&&src.m!==here){drop("names “"+q.from+"”, which is in another module");continue;}
+     if(!fenced) block.fileWide=true;
+     if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;}
+     else if(src.a.kind!=="entry"){drop("names “"+q.from+"”, which keeps no entries (only a repeat activity does)");continue;}}}
   /* the shapes this reader already draws from: one page is `blocks`,
      one activity is `mode` */
   const heading=p=>{for(const b of p.blocks){if(b.type!=="markdown") continue;

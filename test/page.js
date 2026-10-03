@@ -57,7 +57,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
   moduleTextProblems, editTemplate, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, tplWidgets, isMulti,
-  moduleView:id=>MODULE_VIEW+id, openExport, draftFor, keptFor, finalizeEntry, pickLang
+  moduleView:id=>MODULE_VIEW+id, openExport, draftFor, keptFor, queryEntries, finalizeEntry, pickLang
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};

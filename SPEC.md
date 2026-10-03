@@ -337,6 +337,27 @@ graph LR; New --> Spring --> Quarter --> Neap --> Full
 
 Obsidian draws the diagram natively at the embed. On GitHub the embed line shows as text and the diagram still renders where the fence itself sits. A mermaid fence written directly in the prose still works everywhere, as it always did.
 
+
+### Queries: what the reader kept
+
+A `booklet query` block, placed in an activity's prose, shows what the reader has kept elsewhere in the same module. It is read-only and takes no answer.
+
+```booklet query
+from: log
+fields: situation, ease
+newest: 3
+empty: Nothing logged yet.
+```
+
+- `from:` (required) is an activity id or a question id in the same module. An activity must keep entries (`repeat` or `repeat daily`); the query shows its kept entries, newest first, each with its date and answers. A question shows that question's answers: each kept answer with its date if its activity keeps entries, or its one answer if not.
+- `fields:` (optional, with an activity) names the questions to show, comma-separated, in that order. Without it, every question is shown.
+- `newest:` (optional) shows only that many of the most recent entries.
+- `empty:` (optional) is what shows while nothing is kept. Without it, the renderer shows its own short line.
+- It reads kept entries and given answers only, never a draft in progress.
+- A query never reads across modules. One whose `from:` names nothing, or something in another module, is refused: the linter reports an error and a renderer draws nothing for it. A file with no module fence is one module for this rule.
+- The kind, `query`, is on the fence line; the settings are the block's lines, `key: value`. Ids follow the rule in section 4 (letters, digits and dashes).
+- In Obsidian without a Booklet plugin, and on GitHub, the block shows as a short code block.
+
 ---
 
 ## 7. Widgets and other data
@@ -419,7 +440,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 - **A checkbox click in Reading view edits the file.** See "Choice" in section 5 for the accepted trade-off.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 
-**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
+**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout; questions are callouts followed by lists; figures render at their embed; widgets show their data; a query shows as a code block. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
 
 **GitHub.** Callout lines show as quotations with the `[!kind|id]` text visible; lists, task lists, footnotes, math and mermaid render; `![[#^id]]` shows as text. Nothing breaks.
 

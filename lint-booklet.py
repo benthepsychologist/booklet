@@ -124,6 +124,51 @@ def callout_words(kind, s):
     return out
 
 
+QUERY_KEYS = {"from", "fields", "newest", "empty"}
+
+
+def check_query(f, n, code, mod, here, act_info, q_owner, any_module):
+    """A `booklet query` block: `key: value` lines, read within its own module."""
+    s = {}
+    for off, raw in enumerate(code.split("\n")):
+        ln = raw.strip()
+        if not ln:
+            continue
+        m = re.match(r'^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$', ln)
+        if not m:
+            err(f, f"line {n + 1 + off}: a query line is written `key: value` (found {ln!r})")
+            continue
+        key = m.group(1).lower()
+        if key not in QUERY_KEYS:
+            err(f, f"line {n + 1 + off}: a query has no setting {key!r} (it takes from, fields, newest, empty)")
+        s[key] = m.group(2).strip().strip('"\'')
+    if here is None:
+        err(f, f"line {n}: a query belongs in an activity's prose")
+    src_id = s.get("from", "")
+    src_act, src_q = None, None
+    if not src_id:
+        err(f, f"line {n}: a query needs `from:`, the activity or question it shows")
+    elif src_id in act_info:
+        src_act = src_id
+    elif src_id in q_owner:
+        src_act, src_q = q_owner[src_id], src_id
+    else:
+        err(f, f"line {n}: the query's `from: {src_id}` names no activity or question in this file")
+    if src_act:
+        src_mod, keeps = act_info[src_act]
+        # a file with no module fence is one module
+        if any_module and src_mod != mod:
+            err(f, f"line {n}: the query's `from: {src_id}` is in another module (a query reads within its own module only)")
+        elif src_q is None and not keeps:
+            err(f, f"line {n}: the query's `from: {src_id}` keeps no entries (only a repeat activity does)")
+    if "fields" in s and src_act:
+        for name in [x.strip() for x in s["fields"].split(",") if x.strip()]:
+            if q_owner.get(name) != src_act or (src_q and name != src_q):
+                err(f, f"line {n}: the query's `fields: {name}` is not a question of {src_act!r}")
+    if "newest" in s and not re.fullmatch(r'[1-9][0-9]*', s["newest"]):
+        err(f, f"line {n}: the query's `newest: {s['newest']}` must be a positive whole number")
+
+
 def check_format(f, text, fm):
     """Lint a v0.2 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
@@ -143,6 +188,7 @@ def check_format(f, text, fm):
             i += 1
         i += 1
     ids, block_ids, embeds, acts, entry_refs = {}, {}, [], set(), []
+    act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
     open_mod, open_line, section, seen_activity = None, 0, "content", False
     while i < len(lines):
         ln, n = lines[i], i + 1
@@ -170,6 +216,11 @@ def check_format(f, text, fm):
                         err(f, f"line {m + 1}: the block id ^{bid} is used twice")
                     block_ids[bid] = info
             words = info.split()
+            if words and words[0].lower() == "booklet" and section == "content" \
+                    and len(words) > 1 and words[1].lower() == "query":
+                queries.append((n, code, open_mod, cur_act))
+                i = (m if bid else k) + 1
+                continue
             if words and words[0].lower() == "booklet":
                 what = words[1].lower() if len(words) > 1 else ""
                 try:
@@ -218,11 +269,16 @@ def check_format(f, text, fm):
                         if not w["id"]:
                             err(f, f"{where}: a module line needs an id")
                         open_mod, open_line = w["id"], n
+                        any_module = True
                 elif kind == "activity":
                     seen_activity = True
+                    cur_act = w["id"] or None
                     if w["id"]:
                         acts.add(w["id"])
+                        act_info[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
                 elif kind in QUESTION_KINDS:
+                    if w["id"] and cur_act:
+                        q_owner[w["id"]] = cur_act
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go")
                     elif kind not in DRAWN_QUESTION_KINDS:
@@ -261,6 +317,8 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")
         elif not block_ids[ref].lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
+    for n, code, mod, here in queries:
+        check_query(f, n, code, mod, here, act_info, q_owner, any_module)
     for n, ref in entry_refs:
         if ref not in acts:
             warn(f, f"line {n}: records for {ref!r}, which no activity line names")

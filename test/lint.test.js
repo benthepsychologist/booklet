@@ -47,6 +47,14 @@ const CASES=[
  ["lint-question-no-id","a question with no id",/line 13: this text question has no id/],
  ["lint-list-from-zero","a numbered list from 0 right under a question",/line 14: a numbered list that does not start at 1/],
  ["lint-setting-equals","a setting written key=value instead of key:value",/line 13: settings are written key:value \(found min=0\)/],
+ ["lint-query-no-from","a query with no `from:`",/line 23: a query needs `from:`/],
+ ["lint-query-from-nothing","a query whose `from:` names nothing",/line 23: the query's `from: nowhere` names no activity or question/],
+ ["lint-query-other-module","a query whose `from:` is in another module",/line 23: the query's `from: elsewhere` is in another module/],
+ ["lint-query-no-entries","a query of an activity that keeps no entries",/line 23: the query's `from: once` keeps no entries/],
+ ["lint-query-bad-field","a query whose `fields:` names a question not in the activity",/line 23: the query's `fields: far` is not a question of 'log'/],
+ ["lint-query-bad-newest","a query whose `newest:` is not a positive integer",/line 23: the query's `newest: 0` must be a positive whole number/],
+ ["lint-query-bad-key","a query with a setting it does not take",/line 25: a query has no setting 'limit'/],
+ ["lint-query-not-kv","a query body line that is not `key: value`",/line 25: a query line is written `key: value` \(found 'newest 3'\)/],
  ["lint-fence-unclosed","a fence opened and never closed",/line 25: a fence is opened and never closed/],
 ];
 for(const [name,what,rx] of CASES){
@@ -66,6 +74,10 @@ for(const [name,what,rx] of CASES){
 {// the colon form of a setting is clean
  const r=lint(path.join(FX,"lint-setting-colon.md"));
  chk("`> [!number|sleep min:0 max:24] Hours` lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
+
+{// a query written correctly is clean
+ const r=lint(path.join(FX,"lint-query-ok.md"));
+ chk("a `booklet query` block with every setting lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);
