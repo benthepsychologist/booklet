@@ -76,7 +76,7 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, no dependencies. Reads v0.3 only — no earlier format opens |
+| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, nothing to install or fetch to open it. Draws mermaid diagrams and typesets math with two MIT-licensed libraries stored inside it (see below). Reads v0.3 only — no earlier format opens |
 | [`SPEC.md`](SPEC.md) | the current format (v0.3), versioned and published separately from anything that implements it |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3: the field surveyed, the aims, the choices made and rejected |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
@@ -98,6 +98,14 @@ A module file (any v0.3 module, such as those in `booklet-registry`) loads as wh
 
 A file added from "Your booklets" is always a booklet of its own, in the list. The
 renderer has no way to load a file into a booklet that is already open.
+
+**Diagrams and math.** The renderer draws a ```` ```mermaid ```` fence as SVG and
+typesets `$…$` and `$$…$$` as MathML. It does this with mermaid (tiny build)
+and Temml, both MIT, kept inside `booklet.html` as inert text and woken the
+first time a booklet has a diagram or a formula. A booklet with neither never
+runs them, and nothing is fetched, so the file still works straight off disk
+and under a strict Content-Security-Policy. Their versions, source addresses
+and checksums are in the comments above them in the file, and in `NOTICE`.
 
 The renderer opens **empty**, because it holds no booklet of its own. That is
 the property everything else here rests on.

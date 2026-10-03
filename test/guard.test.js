@@ -3,7 +3,10 @@
 // from the removed built-ins, wrapper, shelf or locking code comes back.
 // Run: node test/guard.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path");
-const html=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
+/* the vendored libraries (mermaid, Temml) sit asleep in <script type="text/plain" id="lib-…"> blocks; this guard
+   reads the renderer, not them, so those blocks are left out (test/figures.test.js checks them) */
+const html=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8")
+  .replace(/<script type="text\/plain" id="lib-[a-z]+">[\s\S]*?<\/script>/g,"");
 const BANNED=["ENTRY_STORE","emptyCheckin","emptyToday","goodday","checkins","BODY_KEYS","TODAY_KEYS","skipBody",
   "LIBRARY(","acquisitions","KEYS_BY_TYPE","LEGACY_KEYS","wrapperConfig","addModFile","veilSafety","veilRemind",
   "veilLock",'"checkin"','"today"',

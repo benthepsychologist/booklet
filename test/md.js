@@ -38,7 +38,7 @@ const INLINE_RE=new RegExp(
   "\\\\(?<esc>[\\\\`*_{}\\[\\]()#+.!~=$<>|-])"+
   "|(?<cf>`+)(?<code>[\\s\\S]*?)\\k<cf>"+
   "|\\$\\$(?<mathb>[\\s\\S]+?)\\$\\$"+
-  "|\\$(?<mathi>[^\\s$][^$]*?)\\$"+
+  "|\\$(?<mathi>(?:\\\\[\\s\\S]|[^\\s$\\\\])(?:(?:\\\\[\\s\\S]|[^$\\\\])*?(?:\\\\[\\s\\S]|[^\\s$\\\\]))?)\\$(?![0-9])"+
   "|!\\[\\[(?<embed>[^\\]]+)\\]\\]"+
   "|!\\[(?<imgreflabel>[^\\]]*)\\]\\[(?<imgrefid>[^\\]]*)\\]"+
   "|!\\[(?<imgalt>[^\\]]*)\\]\\((?<imgurl><[^>]*>|(?:[^()\\s]|\\([^()\\s]*\\))*)(?:\\s+\"(?<imgtitle>[^\"]*)\"|\\s+'(?<imgtitle2>[^']*)')?\\)"+
@@ -69,8 +69,9 @@ function renderInline(src,ctx){
     const g=m.groups;
     if(g.esc!==undefined) out.push(g.esc);
     else if(g.code!==undefined) out.push(el("code",{},g.code));
-    else if(g.mathb!==undefined) out.push(el("div",{class:"math"},g.mathb));
-    else if(g.mathi!==undefined) out.push(el("span",{class:"math"},g.mathi));
+    else if(g.mathb!==undefined||g.mathi!==undefined){const disp=g.mathb!==undefined,tex=disp?g.mathb:g.mathi;let n=null;
+      if(typeof ctx.opts.math==="function"){try{n=ctx.opts.math(tex,disp);}catch(e){n=null;}}
+      out.push(n!=null?n:el(disp?"div":"span",{class:"math"},tex));}
     else if(g.embed!==undefined){const t=g.embed.trim();let n=null;
       if(typeof ctx.opts.embed==="function"){try{n=ctx.opts.embed(t);}catch(e){n=null;}}
       out.push(n!=null?n:("![["+t+"]]"));}
@@ -167,7 +168,9 @@ function parseBlocks(lines,ctx){
         codeLines.push(lines[i]);i++;}
       const lang=/^[A-Za-z0-9_+-]+/.exec(info);
       const codeAttrs={};if(lang) codeAttrs["data-lang"]=lang[0];
-      nodes.push(el("pre",{},el("code",codeAttrs,codeLines.join("\n"))));
+      let fn=null;
+      if(lang&&typeof ctx.opts.fence==="function"){try{fn=ctx.opts.fence(lang[0].toLowerCase(),codeLines.join("\n"));}catch(e){fn=null;}}
+      nodes.push(fn!=null?fn:el("pre",{},el("code",codeAttrs,codeLines.join("\n"))));
       continue;}
     if((m=ATX_RE.exec(line))){
       nodes.push(heading(m[1].length,(m[2]||"").replace(/[ \t]+#+[ \t]*$/,"").trim(),ctx));
