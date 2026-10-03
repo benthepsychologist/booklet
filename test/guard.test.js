@@ -12,7 +12,9 @@ const BANNED=["ENTRY_STORE","emptyCheckin","emptyToday","goodday","checkins","BO
   "veilLock",'"checkin"','"today"',
   /* the second trimming pass: no in-booklet Load or merge, no address-bar routing,
      no install manifest, no callout filter, no second copy of the registry URL */
-  "btnLoad","veilMerge","hashchange",'rel="manifest"',"rd-filter","DEFAULT_REGISTRY"];
+  "btnLoad","veilMerge","hashchange",'rel="manifest"',"rd-filter","DEFAULT_REGISTRY",
+  /* v0.4: the query views draw rows and name nothing of any dashboard */
+  "pulse","ledger","leverage","smoldering"];
 let fails=0;
 for(const w of BANNED){const n=html.split(w).length-1;
   if(n){fails++;console.log("  FAIL  booklet.html still contains "+w+" ("+n+"x)");}

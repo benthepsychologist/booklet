@@ -233,7 +233,7 @@ A.homeButton();A.loadText(exampleText);
 chk("the same file loaded again is a second booklet, deliberately",A.readLib().entries.length===2);
 
 // ---- a module file is a booklet like any other ------------------------------
-// A v0.3 module file (the fixtures, and what the registry serves) is an
+// A v0.4 module file (the fixtures, and what the registry serves) is an
 // ordinary booklet: on the list it becomes a booklet of its own.
 {const keptPrepend=main().prepend;
  const shownMsg=()=>{const m=main();m.prepend=(...k)=>m.children.unshift(...k);};   // the stub's prepend keeps nothing

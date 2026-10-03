@@ -2,26 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.3 format in SPEC.md.
+Lint a booklet file against the v0.4 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: 0.3`,
+A booklet is one portable Markdown file: front matter that says `booklet: 0.4`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: 0.3`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: 0.4`, one `lang:`), fences that are
 closed, unique block and question ids, modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
-title, and records that name an activity. Any file whose front matter is not
-`booklet: 0.3` is rejected; no earlier format is read.
+title, queries and data blocks, and records that name an activity. Any file whose
+front matter is not `booklet: 0.4` is rejected; no earlier format is read.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.3 file is written in one language, so it
+registry's CI line keeps working; a v0.4 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
@@ -93,7 +93,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.3 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.4 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -125,10 +125,42 @@ def callout_words(kind, s):
 
 
 QUERY_KEYS = {"from", "fields", "newest", "empty"}
+QUERY_KEYS_V4 = ("as", "group", "limit", "title", "value", "label", "note", "tone")
+QUERY_VIEWS = ("cards", "table", "list", "tiles")
+# the settings that name a field of the rows being drawn
+QUERY_FIELD_KEYS = ("group", "title", "value", "label", "note", "tone")
 
 
-def check_query(f, n, code, mod, here, act_info, q_owner, any_module):
+def _flat(v):
+    return v is None or isinstance(v, (str, int, float, bool))
+
+
+def data_problem(obj):
+    """Why a `booklet data` object is not rows a generator wrote, or None. JSON
+    only: this linter reads no YAML. Returns (problem, rows, fields)."""
+    rows = obj.get("rows") if isinstance(obj, dict) else obj
+    if not isinstance(rows, list):
+        return "holds no list of rows (an object with `rows`, or the list itself)", [], {}
+    for r in rows:
+        if not isinstance(r, dict):
+            return "has a row that is not an object", [], {}
+        for k, v in r.items():
+            if not (_flat(v) or (isinstance(v, list) and all(_flat(x) for x in v))):
+                return f"has a nested value in {k!r} (a value is a string, number, true, false, nothing, or a list of those)", [], {}
+    fields = {}
+    if isinstance(obj, dict) and "fields" in obj:
+        fields = obj["fields"]
+        if not isinstance(fields, dict) or not all(isinstance(x, str) for x in fields.values()):
+            return "has `fields` that is not an object of labels", [], {}
+    return None, rows, fields
+
+
+IMPLICIT_ACTIVITY = "(the file)"
+
+
+def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_blocks=None):
     """A `booklet query` block: `key: value` lines, read within its own module."""
+    data_blocks = data_blocks or {}
     s = {}
     for off, raw in enumerate(code.split("\n")):
         ln = raw.strip()
@@ -139,21 +171,47 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module):
             err(f, f"line {n + 1 + off}: a query line is written `key: value` (found {ln!r})")
             continue
         key = m.group(1).lower()
-        if key not in QUERY_KEYS:
-            err(f, f"line {n + 1 + off}: a query has no setting {key!r} (it takes from, fields, newest, empty)")
+        if key not in QUERY_KEYS and key not in QUERY_KEYS_V4:
+            err(f, f"line {n + 1 + off}: a query has no setting {key!r} (it takes from, fields, newest, empty, as, group, limit, title, value, label, note, tone)")
         s[key] = m.group(2).strip().strip('"\'')
     if here is None:
         err(f, f"line {n}: a query belongs in an activity's prose")
+    if "as" in s and s["as"].lower() not in QUERY_VIEWS:
+        err(f, f"line {n}: the query's `as: {s['as']}` is not one of {', '.join(QUERY_VIEWS)}")
+    if "limit" in s and not re.fullmatch(r'[1-9][0-9]*', s["limit"]):
+        err(f, f"line {n}: the query's `limit: {s['limit']}` must be a positive whole number")
     src_id = s.get("from", "")
-    src_act, src_q = None, None
+    src_act, src_q, src_data = None, None, None
     if not src_id:
         err(f, f"line {n}: a query needs `from:`, the activity or question it shows")
     elif src_id in act_info:
         src_act = src_id
     elif src_id in q_owner:
         src_act, src_q = q_owner[src_id], src_id
+    elif src_id in data_blocks:
+        d_mod, d_keys = data_blocks[src_id]
+        if any_module and d_mod is not None and d_mod != mod:
+            err(f, f"line {n}: the query's `from: {src_id}` is a data block in another module (a query reads within its own module, or the data section)")
+        else:
+            src_data = d_keys
+            if s.get("as", "").lower() == "cards":
+                err(f, f"line {n}: the query's `as: cards` draws kept entries, not the data block {src_id!r}")
     else:
-        err(f, f"line {n}: the query's `from: {src_id}` names no activity or question in this file")
+        err(f, f"line {n}: the query's `from: {src_id}` names no activity, question or data block in this file")
+    # a setting that names a field the rows never carry: a warning, never an error
+    names = None
+    if src_data is not None:
+        names = src_data
+    elif src_act:
+        names = {q for q, a in q_owner.items() if a == src_act and (src_q is None or q == src_q)} | {"date"}
+    if names is not None:
+        for key in QUERY_FIELD_KEYS:
+            if key in s and s[key] not in names:
+                warn(f, f"line {n}: the query's `{key}: {s[key]}` names a field the rows never carry")
+        if src_data is not None and "fields" in s:
+            for name in [x.strip() for x in s["fields"].split(",") if x.strip()]:
+                if name not in names:
+                    warn(f, f"line {n}: the query's `fields: {name}` names a field the rows never carry")
     if src_act:
         src_mod, keeps = act_info[src_act]
         # a file with no module fence is one module
@@ -163,6 +221,8 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module):
             err(f, f"line {n}: the query's `from: {src_id}` keeps no entries (only a repeat activity does)")
     if "fields" in s and src_act:
         for name in [x.strip() for x in s["fields"].split(",") if x.strip()]:
+            if name == "date":
+                continue
             if q_owner.get(name) != src_act or (src_q and name != src_q):
                 err(f, f"line {n}: the query's `fields: {name}` is not a question of {src_act!r}")
     if "newest" in s and not re.fullmatch(r'[1-9][0-9]*', s["newest"]):
@@ -194,10 +254,10 @@ def list_below(lines, i, pattern):
 
 
 def check_format(f, text, fm):
-    """Lint a v0.3 booklet. Every problem names its line."""
+    """Lint a v0.4 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.3 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.4 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
@@ -213,8 +273,9 @@ def check_format(f, text, fm):
         i += 1
     ids, block_ids, embeds, acts, entry_refs = {}, {}, [], set(), []
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
+    loose_questions = []   # questions before any activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
-    menus, menu_uses = {}, []
+    menus, menu_uses, data_blocks = {}, [], {}
     while i < len(lines):
         ln, n = lines[i], i + 1
         fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
@@ -263,6 +324,18 @@ def check_format(f, text, fm):
                             bad = svg_script_in((fig or {}).get("svg") or "") if isinstance(fig, dict) else None
                             if bad:
                                 err(f, f"line {n}: the widget ^{bid} has {', '.join(bad)} in a figure — a figure is a drawing, never a program")
+                elif what == "data":
+                    if section == "records":
+                        pass
+                    elif not bid:
+                        err(f, f"line {n}: a data block needs a ^id on the line after it")
+                    elif obj is not None:
+                        why, rows, flds = data_problem(obj)
+                        if why:
+                            err(f, f"line {n}: the data block ^{bid} {why}")
+                        else:
+                            keys = set(flds) | {k for r in rows for k in r}
+                            data_blocks[bid] = (open_mod if section == "content" else None, keys, n)
                 elif what in ("entries", "draft"):
                     if len(words) < 3:
                         err(f, f"line {n}: `booklet {what}` needs the activity it belongs to")
@@ -304,6 +377,8 @@ def check_format(f, text, fm):
                 elif kind in QUESTION_KINDS:
                     if w["id"] and cur_act:
                         q_owner[w["id"]] = cur_act
+                    elif w["id"]:
+                        loose_questions.append(w["id"])
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go")
                     elif kind not in DRAWN_QUESTION_KINDS:
@@ -369,8 +444,18 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")
         elif not block_ids[ref].lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
+    # A file with no activity line and no module line is one activity (SPEC section 3),
+    # so its queries and questions belong to that one activity.
+    if not seen_activity and not any_module:
+        act_info[IMPLICIT_ACTIVITY] = (None, False)
+        for q in loose_questions:
+            q_owner[q] = IMPLICIT_ACTIVITY
+        queries = [(n, code, mod, here or IMPLICIT_ACTIVITY) for n, code, mod, here in queries]
     for n, code, mod, here in queries:
-        check_query(f, n, code, mod, here, act_info, q_owner, any_module)
+        check_query(f, n, code, mod, here, act_info, q_owner, any_module, {k: v[:2] for k, v in data_blocks.items()})
+    for bid, (_, _, n) in data_blocks.items():
+        if bid in ids:
+            err(f, f"line {n}: the data block id ^{bid} is also the id on line {ids[bid]}, so a query could not tell them apart")
     for n, ref in entry_refs:
         if ref not in acts:
             warn(f, f"line {n}: records for {ref!r}, which no activity line names")
@@ -451,17 +536,18 @@ def check_file(path):
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return
-    if fm.get("booklet") == "0.3":
+    if fm.get("booklet") == "0.4":
         check_format(f, text, fm)
         return
-    if fm.get("booklet") == "0.2":
-        err(f, "front matter says booklet: 0.2; this is format 0.3 (callout settings are now "
-               "key:value). Update the file, then the marker.")
+    old = fm.get("booklet")
+    if old in ("0.1", "0.2", "0.3"):
+        err(f, f"front matter says booklet: {old}; this is format 0.4. Change the marker to booklet: 0.4"
+               + (" (and write settings as key:value, for example min:0)." if old == "0.2" else "."))
         return
-    # No earlier format is read (2026-09-29) — this mirrors the renderer's own
+    # No earlier format is read — this mirrors the renderer's own
     # parseFile(), which only ever calls parseBooklet(). Anything else is
     # rejected outright rather than checked against an earlier format's rules.
-    err(f, f"front matter must say `booklet: 0.3` (found {fm.get('booklet')!r}) — "
+    err(f, f"front matter must say `booklet: 0.4` (found {fm.get('booklet')!r}) — "
            f"no earlier format is read")
 
 
