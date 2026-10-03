@@ -3,7 +3,7 @@
 *As of 2026-10-03*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.4**: format v0.4 (files say `booklet: 0.4`) and renderer 0.4.0.
+**project v0.4**: format v0.4 (files say `booklet: 0.4`) and renderer 0.4.1.
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
@@ -44,6 +44,16 @@ with a message saying so.
   panel.
 - **Records** sit in a `%%`-wrapped section at the end of the file.
 - **Interface languages:** English, French, Spanish and Argentine Spanish.
+- **Four themes the reader picks** (renderer 0.4.1, no format change): Paper, Daylight, Night and Contrast,
+  chosen from a menu in the top bar; Auto (the default) follows the device live. The choice is kept in the browser
+  only, never in a booklet, and a booklet cannot set a theme yet. Every colour in the renderer's CSS is a token in
+  the four tables (`test/themes.test.js` checks the tables match, WCAG contrast, and that no colour literal is left;
+  `test/themes-browser.js` checks the switching in Chromium). Diagrams are re-drawn in the active theme; print is
+  always light.
+- **The page is wide.** The 64-character column is gone: the content area runs to about 76rem, prose (paragraphs,
+  lists, callouts, questions, folded reading cards) stays at about 70 characters, and query views, widgets and
+  figures use the width. Tiles fill the row, a grouped list lays its groups out as cards side by side when there is
+  room, and everything is one column on a phone.
 - **Diagrams and math are drawn.** A ```` ```mermaid ```` fence is drawn as SVG
   where `![[#^id]]` embeds it, or in place when it sits in the prose; `$…$` and
   `$$…$$` are typeset as MathML. A diagram that will not parse shows its source
