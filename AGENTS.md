@@ -22,10 +22,10 @@ carry their modules and widgets whole.
   module's prose and travels with the file, since a v0.3 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
-- Modules are not kept in this repo; they live in `booklet-registry`, where
-  `mensio-*` modules are generated publication copies owned upstream by
-  `benthepsychologist-corpus`. Do not hand-edit them there either. Their source
-  repository's adapter updates or withdraws them.
+- Modules are not kept in this repo; they live in `booklet-registry`, and a
+  change to one is a pull request there. (The `mensio-*` modules were once
+  generated from `benthepsychologist-corpus`; that publisher has been off since
+  2026-09-14, and the registry copies are now the ones maintained.)
 - Namespace owners control their own ids. Never replace another contributor's
   module or widget by reusing its id.
 
