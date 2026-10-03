@@ -1,5 +1,5 @@
 ---
-booklet: 0.3
+booklet: 0.4
 title: Lint fixture
 lang: en
 ---
@@ -22,7 +22,7 @@ lang: en
 
 ```booklet query
 from: log
-limit: 3
+sort: due
 ```
 
 > [!module|fixture-mod end]
