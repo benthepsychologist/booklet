@@ -46,6 +46,7 @@ const CASES=[
  ["lint-module-stray-end","a module closed that was never opened",/line 21: a module is closed that was never opened/],
  ["lint-question-no-id","a question with no id",/line 13: this text question has no id/],
  ["lint-list-from-zero","a numbered list from 0 right under a question",/line 14: a numbered list that does not start at 1/],
+ ["lint-setting-equals","a setting written key=value instead of key:value",/line 13: settings are written key:value \(found min=0\)/],
  ["lint-fence-unclosed","a fence opened and never closed",/line 25: a fence is opened and never closed/],
 ];
 for(const [name,what,rx] of CASES){
@@ -61,6 +62,10 @@ for(const [name,what,rx] of CASES){
  const r=lint(path.join(FX,"lint-records-no-activity.md"));
  chk("records for an activity no line names: one warning, no error",
    r.status===0&&r.errors.length===0&&r.warns.length===1&&/line 27: records for 'elsewhere', which no activity line names/.test(r.warns[0]||""),r.out);}
+
+{// the colon form of a setting is clean
+ const r=lint(path.join(FX,"lint-setting-colon.md"));
+ chk("`> [!number|sleep min:0 max:24] Hours` lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

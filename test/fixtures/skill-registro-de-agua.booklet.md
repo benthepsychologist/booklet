@@ -19,7 +19,7 @@ Cuánta agua tomaste, y cómo te sentiste.
 
 Anotá lo que puedas. Está bien si algún día te lo saltás.
 
-> [!number|vasos min=0 max=20] ¿Cuántos vasos tomaste hoy?
+> [!number|vasos min:0 max:20] ¿Cuántos vasos tomaste hoy?
 > Un vaso cuenta como una unidad, del tamaño que sea.
 
 > [!scale|animo] ¿Cómo te sentiste hoy?

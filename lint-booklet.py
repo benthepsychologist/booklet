@@ -108,11 +108,13 @@ STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", 
 
 
 def callout_words(kind, s):
-    out = {"id": None, "flags": set(), "set": {}}
+    out = {"id": None, "flags": set(), "set": {}, "old": []}
     for w in (s or "").split():
-        kv = re.match(r'^([A-Za-z][A-Za-z0-9-]*)=(.*)$', w)
+        kv = re.match(r'^([A-Za-z][A-Za-z0-9-]*):(.*)$', w)
         if kv:
             out["set"][kv.group(1)] = kv.group(2)
+        elif re.match(r'^[A-Za-z][A-Za-z0-9-]*=', w):
+            out["old"].append(w)
         elif w.lower() in CALLOUT_FLAGS.get(kind, set()):
             out["flags"].add(w.lower())
         elif out["id"] is None:
@@ -243,6 +245,8 @@ def check_format(f, text, fm):
                                f"or Markdown reads it as part of the question's title")
                 elif kind not in STRUCTURE_KINDS:
                     pass                                   # a reading callout; any kind is allowed
+            for old in w["old"]:
+                err(f, f"line {n}: settings are written key:value (found {old}); write {old.replace('=', ':', 1)}")
             for key in (w["id"],) if kind in QUESTION_KINDS | {"module", "activity", "menu"} and w["id"] else ():
                 if not ID_PATTERN.match(key):
                     err(f, f"line {n}: the id {key!r} may hold only letters, digits and dashes")

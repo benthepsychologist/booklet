@@ -146,12 +146,12 @@ Flag that may follow: `hidden` (kept in the file, not offered).
 ## 4. Booklet lines: one grammar for everything
 
 ```markdown
-> [!kind|id setting=value flag] Title
+> [!kind|id setting:value flag] Title
 ```
 
 - **`kind`** says what the line is: an activity, a question type, a widget, a menu, or a reading callout. Kinds are Booklet's own vocabulary, and the set is meant to grow (section 5).
 - **`id`** is required for anything that stores an answer or is referenced (activities, questions, widgets, menus). Letters, digits and dashes only, so every id is also valid wherever Obsidian wants one. Unique within the file. Reading callouts need none.
-- **Settings** follow the id, separated by spaces: `menu=feelings`, `min=0`, `open`, `repeat`.
+- **Settings** follow the id, separated by spaces: `menu:feelings`, `min:0`, `open`, `repeat`.
 - **The title** is the words a reader sees: the question, the activity name, the caption.
 - **A fold marker** may follow the bracket, as in Obsidian: `> [!hint]- Hint` starts folded.
 
@@ -197,7 +197,6 @@ In Obsidian, an unknown kind renders as a note-style callout with the title, so 
 - `choice` takes one answer, `multi` any number. `open` lets the reader add options of their own.
 - **`[x]` marks a correct option**, for study booklets. A worksheet with no right answer leaves every box `[ ]`. In Obsidian's Reading view, a click on a checkbox rewrites `[ ]` to `[x]` in the file — a real behavior, and the accepted trade-off: a booklet's own reader answers it in Booklet, never by clicking a checkbox in an Obsidian note, so the answer key is never at risk from ordinary use.
 - **Options are identified by position, not by id.** The third option is the third option in every language file too, so a whole questionnaire carries one id. This is what removes per-item tags. A file that reorders options after people have answered breaks its own answers.
-- `of=plans` makes the options the reader's own answers to question `plans` — ticking off what actually happened.
 
 ### Scale, number, date
 
@@ -210,7 +209,7 @@ In Obsidian, an unknown kind renders as a note-style callout with the title, so 
 3. Good
 4. Great
 
-> [!number|sleep min=0 max=24] Hours slept
+> [!number|sleep min:0 max:24] Hours slept
 
 > [!date|when] When did it happen?
 ```
@@ -231,9 +230,9 @@ A list used by several questions is written once, anywhere in the file, and name
 - Tired
 - Curious
 
-> [!multi|morning menu=feelings] This morning I felt…
+> [!multi|morning menu:feelings] This morning I felt…
 
-> [!multi|evening menu=feelings] This evening I feel…
+> [!multi|evening menu:feelings] This evening I feel…
 ```
 
 ### Widgets as questions
@@ -249,7 +248,7 @@ A widget the reader operates (the body map, the feelings grid) is a `widget` lin
 | `choice` | the option's position, from 1 | a task list; `[x]` = correct |
 | `multi` | a list of positions, plus the reader's own strings with `open` | a task list |
 | `scale` | the anchor's number | a numbered list |
-| `number` | a number | nothing; `min=` `max=` `step=` |
+| `number` | a number | nothing; `min:` `max:` `step:` |
 | `date` | `YYYY-MM-DD` | nothing |
 | `matrix` *(planned)* | one anchor number per item, by position | a bulleted list, then a numbered list |
 | `widget` | whatever its engine records | an embed of the data block |

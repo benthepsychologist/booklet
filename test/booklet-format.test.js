@@ -86,6 +86,18 @@ chk("the rest of the file still opens",R3.ok);
 chk("an earlier-format file is not read at all — no compat, no exceptions",
   A.parseFile('---\nbooklet: 1\n---\n\n```json\n{"block":"module"}\n```\n').ok===false);
 
+/* 7. settings on a callout line are written key:value */
+{const SET=`---\nbooklet: 0.2\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
+ const RS=P.boot().parseFile(SET);
+ const bl=((RS.template.modules||[])[0]||{}).mode||{};
+ const num=(bl.blocks||[]).find(b=>b.id==="sleep")||{};
+ chk("a number question reads min:0 max:24 step:0.5 as its bounds",num.min===0&&num.max===24&&num.step===0.5,JSON.stringify(num));
+ const mu=(bl.blocks||[]).find(b=>b.id==="morning")||{};
+ chk("a multi with menu:feelings keeps its id and its options (a setting is not read as the id)",mu.type==="multi"&&mu.options&&mu.options.join()==="calm,tense",JSON.stringify(mu));
+ const old=P.boot().parseFile(SET.replace("min:0 max:24 step:0.5","min=0 max=24"));
+ const on=(((old.template.modules||[])[0]||{}).mode||{}).blocks;
+ chk("the old key=value form sets no bounds",!(on||[]).some(b=>b.min!==undefined||b.max!==undefined),JSON.stringify(on));}
+
 P.closePages();
 console.log((fails?fails+" of the checks above failed":"all booklet-format checks passed"));
 process.exit(fails?1:0);
