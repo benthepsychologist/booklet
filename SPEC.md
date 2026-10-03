@@ -216,9 +216,23 @@ In Obsidian, an unknown kind renders as a note-style callout with the title, so 
 
 A `scale` lists its anchors as a numbered list; **the number is the stored answer**, so a questionnaire scored from 0 starts at `0.`, with a blank line above it (section 4).
 
-### Matrix: items and anchors — not built yet
+### Matrix: items and anchors
 
-A matrix question (several items, one shared scale of anchors, such as a symptom questionnaire) is planned but not implemented by the reference renderer: a bulleted list of items, then a numbered list of anchors, deliberately not a table, so one stray space never breaks it. See [what's not built yet](#14-whats-not-built-yet).
+A matrix question is several items answered on one shared scale of anchors, such as a symptom questionnaire. It is written as a bulleted list of items, then a numbered list of anchors, deliberately not a table, so one stray space never breaks it:
+
+```markdown
+> [!matrix|phq] Over the last two weeks, how often have you been bothered by…
+
+- Little interest or pleasure in doing things
+- Feeling down, depressed, or hopeless
+
+0. Not at all
+1. Several days
+2. More than half the days
+3. Nearly every day
+```
+
+A blank line may separate the two lists (section 4), and the numbered list needs one above it when it starts at `0.`. The reader chooses one anchor per item. **The answer is stored as a list with one anchor number per item, by position** (`[1, 3]`; `null` for an item not yet answered), under the question's id. Like a `scale`'s, the number is the stored answer, so the anchors' own numbers are what is kept.
 
 ### Shared menus
 
@@ -250,7 +264,7 @@ A widget the reader operates (the body map, the feelings grid) is a `widget` lin
 | `scale` | the anchor's number | a numbered list |
 | `number` | a number | nothing; `min:` `max:` `step:` |
 | `date` | `YYYY-MM-DD` | nothing |
-| `matrix` *(planned)* | one anchor number per item, by position | a bulleted list, then a numbered list |
+| `matrix` | one anchor number per item, by position | a bulleted list, then a numbered list |
 | `widget` | whatever its engine records | an embed of the data block |
 
 **How the vocabulary grows.** A new question type is a new kind word, a documented shape for what follows the line, and an engine in the renderer. The grammar never changes. A renderer that meets a kind it doesn't know shows the line as a callout and what follows as lists, and says so, instead of failing.
@@ -522,12 +536,11 @@ A conforming writer must: emit front matter with `booklet: 0.3`; keep module ids
 
 This is a young format, and the reference renderer does not yet do everything this document describes:
 
-- **Matrix questions.** The syntax is settled (section 5); the renderer does not draw one yet.
 - **Editing a booklet's design in the browser.** Today, editing a file's design means a text editor, not the renderer — a deliberate, temporary scope decision so the format and the read-only renderer could be proven first.
 - **A Booklet plugin for Obsidian.** Section 6, 7 and 11 describe how one would draw widgets and figures; none exists yet.
 - **A second, independent implementation.** The renderer in this repository is the only reader so far.
 
-None of this affects what already works: loading, reading, answering, and saving a v0.3 booklet with every question kind above except matrix, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.3 booklet with every question kind above, its widgets, and its citations.
 
 ---
 

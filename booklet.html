@@ -122,6 +122,28 @@
   .pill-btn{border:2px solid var(--accent);background:#fff;color:var(--accent);border-radius:999px;padding:.4rem .95rem;font-size:.95rem;font-weight:700;line-height:1.2}
   .pill-btn:hover{background:var(--accent-soft)}
   .pill-btn[aria-pressed="true"]{background:var(--accent);color:#fff}
+  /* matrix: a grid wide, stacked pills narrow (one set of radios either way) */
+  .mxwrap{container-type:inline-size;margin:.25rem 0 1rem}
+  .mx{display:block;font-family:var(--sans)}
+  .mxhead,.mxrow{display:grid;grid-template-columns:minmax(9rem,1.8fr) repeat(var(--mxcols),minmax(0,1fr));align-items:center;gap:0 .4rem}
+  .mxrow .mxopts{display:contents}
+  .mxhead{font-size:.82rem;font-weight:700;color:var(--muted);text-align:center;padding:0 0 .35rem}
+  .mxrow{border-top:1px solid var(--rule);padding:.45rem 0}
+  .mxitem{color:var(--reader)}
+  .mxopt{display:flex;justify-content:center;align-items:center;padding:.35rem;cursor:pointer}
+  .mxopt input{width:1.25rem;height:1.25rem;accent-color:var(--accent);margin:0}
+  .mxopt span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  @container (max-width:560px){
+    .mxhead{display:none}
+    .mxrow{display:block;padding:.6rem 0}
+    .mxitem{display:block;margin:0 0 .4rem;font-weight:600}
+    .mxrow .mxopts{display:flex;flex-wrap:wrap;gap:.45rem}
+    .mxopt{padding:0}
+    .mxopt input{position:absolute;opacity:0;width:1px;height:1px}
+    .mxopt span{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;border:2px solid var(--accent);background:#fff;color:var(--accent);border-radius:999px;padding:.4rem .95rem;font-size:.95rem;font-weight:700;line-height:1.2}
+    .mxopt input:checked+span{background:var(--accent);color:#fff}
+    .mxopt input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+  }
 
   /* entry read view */
   .entry{background:#fff;border:2px solid var(--rule);border-radius:14px;padding:.9rem 1.1rem;margin:0 0 1rem}
@@ -1794,6 +1816,10 @@ function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
     return [fieldLabel(b),ns.map(n=>own[n-1]||("#"+n)).join(", ")];}
   if(b.type==="scale"){const v=e[keys[0]];if(v==null) return null;const a=(b.anchors||[]).find(x=>x.n===v);
     return [fieldLabel(b),a?a.text:String(v)];}
+  if(b.type==="matrix"){const v=e[keys[0]];if(!Array.isArray(v)||!v.some(x=>typeof x==="number")) return null;
+    const items=b.items||[];
+    return [fieldLabel(b),el("ul",{class:"plain"},...items.map((it,i)=>{const a=(b.anchors||[]).find(x=>x.n===v[i]);
+      return el("li",{},it+": "+(typeof v[i]==="number"?(a?a.text:String(v[i])):"\u2013"));}))];}
   if(b.type==="number"||b.type==="date"){const v=e[keys[0]];if(v==null||v==="") return null;
     return [fieldLabel(b),String(v)];}
   return null;}
@@ -1931,6 +1957,27 @@ function renderBlock(b,draft,modeId){
         pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(on),onclick:()=>{
           draft[K]=on?null:a.n;mark();draw();}},a.text));});};
       draw();box.append(pills);return box;}
+    case "matrix":{const box=el("div",{});const items=b.items||[],anchors=b.anchors||[];
+      const head=tx(b.label,"");
+      if(nonEmpty(head)) box.append(el("h3",{},head));
+      const hint=tx(b.hint,"");if(nonEmpty(hint)) box.append(el("p",{class:"aside"},hint));
+      const K=b.keys[0];const uid="m_"+Math.random().toString(36).slice(2,8);
+      const cols="--mxcols:"+anchors.length;
+      const grid=el("div",{class:"mx",style:cols});
+      grid.append(el("div",{class:"mxhead","aria-hidden":"true"},el("span",{}),...anchors.map(a=>el("span",{},a.text))));
+      items.forEach((it,i)=>{
+        const row=el("div",{class:"mxrow",role:"radiogroup","aria-label":it});
+        row.append(el("span",{class:"mxitem"},it));
+        const opts=el("div",{class:"mxopts"});
+        anchors.forEach(a=>{const cur=Array.isArray(draft[K])?draft[K][i]:null;
+          const inp=el("input",{type:"radio",name:uid+"_"+i,value:String(a.n),"aria-label":it+": "+a.text});
+          if(cur===a.n) inp.checked=true;
+          inp.addEventListener("change",()=>{const arr=Array.isArray(draft[K])?draft[K].slice():[];
+            while(arr.length<items.length) arr.push(null);
+            arr[i]=a.n;draft[K]=arr;mark();});
+          opts.append(el("label",{class:"mxopt"},inp,el("span",{},a.text)));});
+        row.append(opts);grid.append(row);});
+      box.append(el("div",{class:"mxwrap"},grid));return box;}
     case "number":case "date":{const box=el("div",{});const K=b.keys[0];
       const head=tx(b.label,"");
       const id="f_"+Math.random().toString(36).slice(2,8);
@@ -2696,6 +2743,14 @@ function anchorList(lines,i){let j=i;let blanks=0;
   while(j<lines.length){const m=lines[j].match(/^[ \t]*(\d+)[.)][ \t]+(.*)$/);if(!m) break;
     anchors.push({n:Number(m[1]),text:m[2].trim()});j++;}
   return anchors.length?{anchors,next:j}:null;}
+/* a bulleted list, zero or one blank line below the line it belongs to: a
+   matrix's items or a shared menu's entries (`- text`; a `[ ]` box is dropped) */
+function bulletList(lines,i){let j=i;let blanks=0;
+  while(j<lines.length&&!lines[j].trim()){j++;blanks++;if(blanks>1) return null;}
+  const items=[];
+  while(j<lines.length){const m=lines[j].match(/^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$/);if(!m) break;
+    items.push(m[1].trim());j++;}
+  return items.length?{items,next:j}:null;}
 /* A query block's body: `key: value` lines (YAML's plainest form). Returns
    its settings, or `bad` with the first line that is not one. */
 function readQuery(code){const o={};
@@ -2739,11 +2794,14 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
     const m=ln.match(CALLOUT_LINE);
     if(m){flush();const kind=m[1].toLowerCase(),body=[];let k=i+1;
       while(k<lines.length&&/^>/.test(lines[k])&&!CALLOUT_LINE.test(lines[k])){body.push(lines[k].replace(/^>[ \t]?/,""));k++;}
-      let opts=null,anchors=null;
+      let opts=null,anchors=null,items2=null;
       if(kind==="choice"||kind==="multi"){const r=optionList(lines,k);if(r){opts=r.opts;k=r.next;}}
       else if(kind==="scale"){const r=anchorList(lines,k);if(r){anchors=r.anchors;k=r.next;}}
+      else if(kind==="menu"){const r=bulletList(lines,k);if(r){items2=r.items;k=r.next;}}
+      else if(kind==="matrix"){const r=bulletList(lines,k);
+        if(r){items2=r.items;k=r.next;const a=anchorList(lines,k);if(a){anchors=a.anchors;k=a.next;}}}
       if(kind==="records"&&cut===null) cut=i;
-      items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,line:i+1});i=k-1;continue;}
+      items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,items:items2,line:i+1});i=k-1;continue;}
     /* a thematic break is a page break, except `---` straight under a line of
        text, which Markdown reads as that line's heading */
     if(/^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$/.test(ln)&&!(/^ {0,3}-/.test(ln)&&buf.length&&buf[buf.length-1].trim())){flush();items.push({t:"break",line:i+1});continue;}
@@ -2753,7 +2811,7 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
   const source=(cut===null?lines:lines.slice(0,cut)).join("\n").replace(/\s+$/,"")+"\n";
 
   const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Set();
-  const queries=[];
+  const queries=[],menus=[],menuUses=[];
   let mod=null,act=null,section="content",lastQ=null,seq=0;
   const plain=s=>String(s||"").replace(/[*_`~=]|\[\^[^\]]*\]|!?\[\[[^\]]*\]\]/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1").trim();
   const firstPara=s=>plain(String(s||"").split(/\n{2,}/).find(p=>p.trim()&&!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p))||"");
@@ -2806,6 +2864,8 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
     const k=it.kind,where="line "+it.line;
     if(k==="data"){section="data";act=null;continue;}
     if(k==="records"){section="records";act=null;continue;}
+    /* a shared menu is never drawn; its list is kept for the questions that name it */
+    if(k==="menu"&&section!=="records"){if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:section==="content"?mod:null});continue;}
     if(section!=="content"||SCENERY_KINDS.has(k)) continue;
     if(k==="module"){
       if(it.flags.has("end")){if(!mod) problems.push(where+": a module is closed that was never opened");
@@ -2825,10 +2885,18 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
         ["readonly","describe"].forEach(f=>{if(it.flags.has(f)) b[f]=true;});
         lastQ=put(b);}
       else if(k==="choice"||k==="multi"){
-        if(!it.opts){problems.push(where+": this "+k+" question has no options under it (a task list, `- [ ] …`)");continue;}
-        lastQ=put({id:it.id,type:k,label:it.title,hint:hint||undefined,keys:[it.id],
+        if(!it.opts&&!it.set.menu){problems.push(where+": this "+k+" question has no options under it (a task list, `- [ ] …`)");continue;}
+        if(!it.opts){/* options come from the shared menu it names, filled in once the whole file is read */
+          lastQ=put({id:it.id,type:k,label:it.title,hint:hint||undefined,keys:[it.id],
+            open:it.flags.has("open")||undefined,options:[],answer:k==="choice"?undefined:[]});
+          menuUses.push({block:lastQ,menu:it.set.menu,mod,where});}
+        else lastQ=put({id:it.id,type:k,label:it.title,hint:hint||undefined,keys:[it.id],
           open:it.flags.has("open")||undefined,options:it.opts.map(o=>o.text),
           answer:k==="choice"?(it.opts.findIndex(o=>o.correct)+1)||undefined:it.opts.map((o,n)=>o.correct?n+1:null).filter(Boolean)});}
+      else if(k==="matrix"){
+        if(!it.items){problems.push(where+": this matrix question has no items under it (a bulleted list)");continue;}
+        if(!it.anchors){problems.push(where+": this matrix question has no anchors under its items (a numbered list)");continue;}
+        lastQ=put({id:it.id,type:"matrix",label:it.title,hint:hint||undefined,keys:[it.id],items:it.items,anchors:it.anchors});}
       else if(k==="scale"){
         if(!it.anchors){problems.push(where+": this scale question has no anchors under it (a numbered list)");continue;}
         lastQ=put({id:it.id,type:"scale",label:it.title,hint:hint||undefined,keys:[it.id],anchors:it.anchors});}
@@ -2846,6 +2914,13 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;}
   if(mod) problems.push("line "+mod.__line+": the module “"+mod.id+"” is opened and never closed");
+  /* a question that names a shared menu takes its options from it: the menu in
+     the same module fence first, then anywhere in the file */
+  for(const u of menuUses){
+    const hit=menus.find(m=>m.id===u.menu&&m.mod===u.mod)||menus.find(m=>m.id===u.menu);
+    if(!hit){problems.push(u.where+": the menu “"+u.menu+"” is not in this file, so the question “"+u.block.id+"” was not drawn");
+      modules.forEach(m=>m.activities.forEach(a=>a.pages.forEach(pg=>{pg.blocks=pg.blocks.filter(b=>b!==u.block);})));continue;}
+    u.block.options=hit.items.slice();}
   /* A query reads within its own module, so a `from` that names nothing, or
      something in another module, is refused here and never reaches drawing.
      A file with no module fence is one module. An activity must keep entries;

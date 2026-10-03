@@ -103,7 +103,7 @@ CALLOUT_FLAGS = {"module": {"end"}, "activity": {"repeat", "daily", "hidden"},
             "widget": {"readonly", "describe"}, "text": {"long"},
             "choice": {"open"}, "multi": {"open"}}
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
-DRAWN_QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date"}  # the kinds the reference page draws today
+DRAWN_QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}  # the kinds the reference page draws today
 STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution"}
 
 
@@ -169,6 +169,30 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module):
         err(f, f"line {n}: the query's `newest: {s['newest']}` must be a positive whole number")
 
 
+BULLET = re.compile(r'^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$')
+TASK = re.compile(r'^[ \t]*[-*+][ \t]+\[[ xX]\][ \t]+')
+NUMBERED = re.compile(r'^[ \t]*(\d+)[.)][ \t]+(.*)$')
+
+
+def list_below(lines, i, pattern):
+    """The lines of one list straight under line i (zero or one blank line
+    between): returns (the pattern's matches, the index after the list)."""
+    j, blanks = i, 0
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+        blanks += 1
+        if blanks > 1:
+            return [], i
+    out = []
+    while j < len(lines):
+        m = pattern.match(lines[j])
+        if not m:
+            break
+        out.append(m)
+        j += 1
+    return (out, j) if out else ([], i)
+
+
 def check_format(f, text, fm):
     """Lint a v0.3 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
@@ -190,6 +214,7 @@ def check_format(f, text, fm):
     ids, block_ids, embeds, acts, entry_refs = {}, {}, [], set(), []
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
     open_mod, open_line, section, seen_activity = None, 0, "content", False
+    menus, menu_uses = {}, []
     while i < len(lines):
         ln, n = lines[i], i + 1
         fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
@@ -293,6 +318,22 @@ def check_format(f, text, fm):
                             embeds.append((n, e.group(1)))
                         else:
                             err(f, f"{where}: the widget {w['id']!r} names no data block (write ![[#^its-id]] under the line)")
+                    if kind == "matrix" and w["id"]:
+                        items, after = list_below(lines, i + 1, BULLET)
+                        anchors, _ = list_below(lines, after, NUMBERED)
+                        if not items:
+                            err(f, f"{where}: the matrix {w['id']!r} has no items (a bulleted list under the line)")
+                        if not anchors:
+                            err(f, f"{where}: the matrix {w['id']!r} has no anchors (a numbered list under its items)")
+                        nums = [a.group(1).lstrip("0") or "0" for a in anchors]
+                        dup = sorted({x for x in nums if nums.count(x) > 1}, key=int)
+                        if dup:
+                            err(f, f"{where}: the matrix {w['id']!r} repeats anchor number {', '.join(dup)} (each anchor needs its own number)")
+                    if kind in ("choice", "multi") and w["set"].get("menu"):
+                        own, _ = list_below(lines, i + 1, TASK)
+                        if own:
+                            err(f, f"{where}: the question {w['id']!r} has both `menu:{w['set']['menu']}` and a list of its own (use one)")
+                        menu_uses.append((n, w["set"]["menu"], open_mod))
                     # Markdown lets only a list starting at 1 interrupt a paragraph:
                     # a list starting at 0 (or 2…) straight under the line joins its title
                     nxt = lines[i + 1] if i + 1 < len(lines) else ""
@@ -301,6 +342,12 @@ def check_format(f, text, fm):
                                f"or Markdown reads it as part of the question's title")
                 elif kind not in STRUCTURE_KINDS:
                     pass                                   # a reading callout; any kind is allowed
+            if kind == "menu" and section != "records":
+                items, _ = list_below(lines, i + 1, BULLET)
+                if not items:
+                    err(f, f"{where}: the menu {w['id']!r} has no items (a bulleted list under the line)")
+                if w["id"]:
+                    menus.setdefault(w["id"], []).append(open_mod if section == "content" else None)
             for old in w["old"]:
                 err(f, f"line {n}: settings are written key:value (found {old}); write {old.replace('=', ':', 1)}")
             for key in (w["id"],) if kind in QUESTION_KINDS | {"module", "activity", "menu"} and w["id"] else ():
@@ -312,6 +359,11 @@ def check_format(f, text, fm):
         i += 1
     if open_mod:
         err(f, f"line {open_line}: the module {open_mod!r} is opened and never closed")
+    for n, mid, mod in menu_uses:
+        if mid not in menus:
+            err(f, f"line {n}: `menu:{mid}` names no menu in this file (write `> [!menu|{mid}]` with a bulleted list)")
+        elif mod is not None and mod not in menus[mid]:
+            warn(f, f"line {n}: `menu:{mid}` is defined outside module {mod!r}, so the module would not travel whole")
     for n, ref in embeds:
         if ref not in block_ids:
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")

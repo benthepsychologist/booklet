@@ -56,6 +56,12 @@ const CASES=[
  ["lint-query-bad-newest","a query whose `newest:` is not a positive integer",/line 23: the query's `newest: 0` must be a positive whole number/],
  ["lint-query-bad-key","a query with a setting it does not take",/line 25: a query has no setting 'limit'/],
  ["lint-query-not-kv","a query body line that is not `key: value`",/line 25: a query line is written `key: value` \(found 'newest 3'\)/],
+ ["lint-menu-unknown","a question naming a menu that is not in the file",/line 13: `menu:feelings` names no menu in this file/],
+ ["lint-menu-and-list","a question with both menu: and a list of its own",/line 17: the question 'morning' has both `menu:feelings` and a list of its own/],
+ ["lint-menu-empty","a menu with no items",/line 13: the menu 'feelings' has no items/],
+ ["lint-matrix-no-items","a matrix with no items",/line 13: the matrix 'phq' has no items/],
+ ["lint-matrix-no-anchors","a matrix with no anchors",/line 13: the matrix 'phq' has no anchors/],
+ ["lint-matrix-dup-anchors","a matrix whose anchor numbers repeat",/line 13: the matrix 'phq' repeats anchor number 1/],
  ["lint-fence-unclosed","a fence opened and never closed",/line 25: a fence is opened and never closed/],
 ];
 for(const [name,what,rx] of CASES){
@@ -79,6 +85,14 @@ for(const [name,what,rx] of CASES){
 {// a query written correctly is clean
  const r=lint(path.join(FX,"lint-query-ok.md"));
  chk("a `booklet query` block with every setting lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
+
+{// a shared menu used by two questions, and a matrix, are clean
+ const r=lint(path.join(FX,"lint-menu-matrix-ok.md"));
+ chk("a shared menu used by two questions, and a matrix, lint clean (and matrix is no longer 'not drawn')",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
+{// a menu defined outside the module that uses it: a warning, not an error
+ const r=lint(path.join(FX,"lint-menu-outside.md"));
+ chk("a module using a menu defined outside its fence: one warning, no error",
+   r.status===0&&r.errors.length===0&&r.warns.length===1&&/line 13: `menu:feelings` is defined outside module 'fixture-mod'/.test(r.warns[0]||""),r.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

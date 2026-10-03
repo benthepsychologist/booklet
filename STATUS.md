@@ -25,7 +25,8 @@ with a message saying so.
   pointing at `booklet-registry`'s `registry.json`. The list and each module
   are fetched fresh when "Add a module" is used.
 - **Questions:** `text` (and `long`), `lines`, `choice`, `multi`, `scale`,
-  `number`, `date` and `widget` render. `matrix` is specified, not drawn.
+  `number`, `date`, `matrix` and `widget` render. A `choice` or `multi` may take
+  its options from a shared menu (`> [!menu|id]`, `menu:id`).
 - **Widgets** are fenced `booklet widget` data blocks placed with
   `![[#^id]]`, drawn by the `svg-regions`, `grid-select` and `card-board`
   engines.
@@ -40,9 +41,6 @@ with a message saying so.
 
 ## Specified but not drawn
 
-- `matrix` questions.
-- Shared menus (`> [!menu|id]` with `menu:id` on a question): a question that
-  uses one does not appear.
 - Mermaid figures: the embed shows as text.
 - Math (`$…$`): shown as raw TeX.
 - Editing a booklet's design in the browser, and an Obsidian plugin
