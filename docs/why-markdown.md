@@ -1,8 +1,8 @@
-# Why v0.3 looks the way it does
+# Why Booklet looks the way it does
 
 Booklet was already "one file, hand-editable, no server." It just wasn't hand-editable in the way that phrase implies. A booklet's design — every activity, every question, every widget — used to live as a series of fenced JSON blocks under the prose. Readable, yes: open the file and you could see the shape of it. But *editable*? Nobody sits down and correctly retypes a JSON object by hand, and a language model asked to add a question to a booklet was really being asked to write valid, deeply-nested JSON on the first try, in the right place, with the right keys. "Hand-editable" turned out to mean "hand-*readable*," and that gap is where this rewrite starts.
 
-This document is the record of how v0.3 got decided: what we looked at, what we were actually trying to do, and why each real choice landed where it did. It exists because "just trust us" is a bad way to hand someone a file format.
+This document is the record of how the Markdown format was decided (at v0.3, and kept in every version since; the current one is v0.9, written up in `SPEC.md`): what we looked at, what we were actually trying to do, and why each real choice landed where it did. It exists because "just trust us" is a bad way to hand someone a file format.
 
 ---
 
@@ -41,7 +41,7 @@ Nobody in Booklet's actual audience opens a file in a bare CommonMark viewer. A 
 
 So the real priority list became: the raw source has to read cleanly in a text editor (since that's where a human author actually looks), the file has to work well in Obsidian (because it's the one Markdown application with real, non-technical adoption — "the biggest Markdown viewer on the planet"), and GitHub rendering matters, but a little visible punctuation there is an acceptable price. Plain CommonMark rendering, once treated as a hard constraint, turned out to matter least of all.
 
-That reordering is what let two of v0.3's harder choices actually work:
+That reordering is what let two of the format's harder choices actually work:
 
 **Headings had to be given back to prose.** An early version used headings themselves to mark structure — a module's or activity's name became an `##`, its pages became `###`, and so on. It read cleanly enough in a bare Markdown viewer, but it meant a page of ordinary reading only had the three smallest heading sizes left to write with. That's not a small cost; it breaks ordinary writing. Once "renders in bare CommonMark" stopped being load-bearing, headings could go back to being just headings, and structure moved to a small set of callout lines instead — visible, titled boxes in the one place (Obsidian) where visibility actually matters.
 
@@ -72,6 +72,6 @@ That reordering is what let two of v0.3's harder choices actually work:
 
 ## Where this leaves the format
 
-Nothing here is finished. The matrix question type is specified but not yet drawn by the renderer. Editing a booklet's design still means a text editor, not the browser — deliberately, so the format and a read-only renderer could be proven first, before editing gets built on top of it. There's no Obsidian plugin yet.
+Nothing here is finished. Editing a booklet's design still means a text editor, not the browser — deliberately, so the format and a read-only renderer could be proven first, before editing gets built on top of it. There's no Obsidian plugin yet.
 
-What's real: the format reads as a document, not a database dump, in a text editor, on GitHub, and in Obsidian; a brand-new booklet with nothing answered yet contains no JSON at all; and the two worked examples in this repository — a rebuild of the original mindful check-in, and a short reading-and-quiz booklet on the tides — both load, draw, and let a reader answer them, verified in a real browser, not just in tests.
+What's real: the format reads as a document, not a database dump, in a text editor, on GitHub, and in Obsidian; a brand-new booklet with nothing answered yet contains no JSON at all; and the worked examples in this repository (a rebuild of the original mindful check-in, a short reading-and-quiz booklet on the tides, and others) load, draw, and let a reader answer them, verified in a real browser, not just in tests.

@@ -53,10 +53,10 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get screen(){return screen},set screen(v){screen=v},
   get BOOK(){return BOOK}, get STATE(){return STATE}, get DRAFTS(){return DRAFTS},
-  STRINGS, STRINGS_SRC, createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
+  STRINGS, STRINGS_SRC, createBooklet, closeBooklet, openBooklet, saveLocal, addModule, addModuleText,
   moduleTextProblems, editBook, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, bookActivities, isMulti,
-  moduleScreen:id=>MODULE_SCREEN+id, readingPlan, sectionLede, readsOnly, mdNodes, activityOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, VIEWSTATE, viewState, QUESTION_KINDS, QUESTION_BLOCK, SUMMARY, DRAW_BLOCK, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, toneOf, cellColor, cellStyle, themeBaseTable,
+  moduleScreen:id=>MODULE_SCREEN+id, answersFor, answersIn, peekAnswers, rekeyFromV08, addrOf, scopeOfAddr, shortId, widgetOf, figureFor, holderOf, RM_STATE, pageNowKey, get openChip(){return openChip}, ownEarlier, readingPlan, sectionLede, readsOnly, mdNodes, activityOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, VIEWSTATE, viewState, QUESTION_KINDS, QUESTION_BLOCK, SUMMARY, DRAW_BLOCK, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, toneOf, cellColor, cellStyle, themeBaseTable,
   get currentId(){return currentId}, get FILE_NOTES(){return FILE_NOTES}, KIND_SETTINGS, NUMBER_SETTINGS, fieldSummary, readQuery
 }));`);
   API.toggle=toggle;return API;}

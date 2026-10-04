@@ -5,7 +5,7 @@ require("./harness.js");
 const fs=require("fs");
 const html=fs.readFileSync(__dirname+"/../booklet.html","utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
-const A=eval(src+"\n({findHeading,headingsOf,ACTIVITY_LINK_HOOKS,setBook:v=>{BOOK=v}})");
+const A=eval(src+"\n({findHeading,headingsOf,linkHooks,setBook:v=>{BOOK=v}})");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const md=text=>({id:"m"+Math.random(),type:"markdown",text});
 const mods=[
@@ -33,7 +33,7 @@ chk("headingsOf skips fences and strips emphasis",JSON.stringify(A.headingsOf("#
 
 // the hooks the prose block hands the Markdown layer
 A.setBook({modules:mods});
-const H=A.ACTIVITY_LINK_HOOKS;
+const H=A.linkHooks("");
 const hit=H.link("#Log a moment",undefined);
 chk("`[[#Heading]]` becomes a link whose text is the heading",hit&&hit.tagName==="a"&&hit.attrs.href==="#");
 const lab=H.link("#Log a moment","go on");

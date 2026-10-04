@@ -1,5 +1,5 @@
 ---
-booklet: 0.8
+booklet: 0.9
 id: test/problems-refused
 title: A file that cannot open
 lang: en

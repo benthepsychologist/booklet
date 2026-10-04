@@ -26,7 +26,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 - The renderer, format, validator, and modules without a
   `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
-  module's prose and travels with the file, since a v0.8 module is the
+  module's prose and travels with the file, since a v0.9 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - Modules are not kept in this repo; they live in `booklet-registry`, and a
@@ -54,8 +54,14 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 
 ## Format disciplines
 
-1. **Stable ids are addresses.** Modules, activities, questions, and widgets are linked
-   by id; file order is not identity.
+1. **Stable ids are addresses, and an id belongs to its module.** Modules,
+   activities, questions, and widgets are linked by id; file order is not
+   identity. From v0.9 an id is unique within its module (module ids within the
+   file), a reference is found in its own module and then the data section and
+   never in another module's fence, and records are tied to a module by the id on
+   its records line. Inside the renderer an activity is known by its address,
+   `module-id/activity-id` (just the id for an activity outside every fence), and
+   the file's own ids never change.
 2. **One broken record block costs one block.** Keep each record object in its
    own fenced JSON block and parse independently.
 3. **Modules carry what they need.** A module using a widget carries that widget;

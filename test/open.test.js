@@ -24,7 +24,7 @@ const field=b=>byClass(b,"q-own")[0];
 const addBtn=b=>tag(byClass(b,"q-ownrow")[0],"button")[0];
 const addOwn=(b,words,how)=>{const f=field(b);f.value=words;
   if(how==="enter") f._on.keydown({key:"Enter",preventDefault(){}});else click(addBtn(b));};
-const answer=(A,id)=>A.draftFor("walk")[id];
+const answer=(A,id)=>A.draftFor("garden-notes/walk")[id];
 const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
 
 /* ---- the file and its parts ---- */
@@ -37,12 +37,12 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
    bs.find(b=>b.id==="seasons").answer===2&&bs.find(b=>b.id==="fruit").answer.join()==="1,3");}
 
 /* ---- A1: the reader's own option ---- */
-{const A=boot();A.screen="walk";
+{const A=boot();A.screen="garden-notes/walk";
  let b=box(A,"What did you notice");
  chk("an open question draws a field and an Add button under its options",!!b&&!!field(b)&&text(addBtn(b))==="Add",b&&text(b));
  chk("the field is labelled “Add your own”",field(b).attrs["aria-label"]==="Add your own"&&field(b).attrs.placeholder==="Add your own");
- chk("a question that is not open draws no such field",(A.screen="quiz",!byClass(box(A,"Which of these are fruit"),"q-own").length));
- A.screen="walk";b=box(A,"What did you notice");
+ chk("a question that is not open draws no such field",(A.screen="garden-notes/quiz",!byClass(box(A,"Which of these are fruit"),"q-own").length));
+ A.screen="garden-notes/walk";b=box(A,"What did you notice");
  addOwn(b,"Moths");b=box(A,"What did you notice");
  chk("the button adds the own option, stored as a string in the answer list",JSON.stringify(answer(A,"noticed"))==='["Moths"]',JSON.stringify(answer(A,"noticed")));
  const own=byClass(b,"pill-own")[0];
@@ -71,11 +71,11 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("pressing the own pill takes it away, leaving no answer",answer(A,"weather")===null);}
 
 /* ---- own options are kept, shown as text, written, read back, and offered again ---- */
-{const A=boot();A.screen="walk";
+{const A=boot();A.screen="garden-notes/walk";
  let b=box(A,"What did you notice");
  click(byWords(b,"Birds"));addOwn(box(A,"What did you notice"),"Moths");addOwn(box(A,"What did you notice"),"Frogs");
- A.finalizeEntry("walk");
- const kept=A.keptFor("walk")[0];
+ A.finalizeEntry("garden-notes/walk");
+ const kept=A.keptFor("garden-notes/walk")[0];
  chk("a kept entry holds positions and the reader's own strings",JSON.stringify(kept.noticed)==='[1,"Moths","Frogs"]',JSON.stringify(kept.noticed));
  b=box(A,"What did you notice");
  const names=pillBtns(b).map(label);
@@ -86,44 +86,44 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  const blk=A.BOOK.modules[0].activities[0].blocks.find(x=>x.id==="noticed");
  const sum=A.fieldSummary(blk,kept);
  chk("an entry's summary shows the own options as their text",sum&&sum[1]==="Birds, Moths, Frogs",JSON.stringify(sum));
- A.screen="walk";A.render();
+ A.screen="garden-notes/walk";A.render();
  chk("the entry card shows them too",/Birds, Moths, Frogs/.test(text(P.main())),text(P.main()).slice(0,300));
- A.draftFor("walk").noticed=[];
+ A.draftFor("garden-notes/walk").noticed=[];
  const md=A.toMarkdown();
  chk("the file keeps the design as written; the own words are in the records only",md.startsWith(OPEN.replace(/\s+$/,""))&&/"noticed":\[1,"Moths","Frogs"\]/.test(md),md.slice(-300));
  P.wipe();const B=P.boot();B.loadText(md);
- chk("read back, the entry holds the same list",JSON.stringify(B.keptFor("walk")[0].noticed)==='[1,"Moths","Frogs"]');
- B.screen="walk";b=box(B,"What did you notice");
+ chk("read back, the entry holds the same list",JSON.stringify(B.keptFor("garden-notes/walk")[0].noticed)==='[1,"Moths","Frogs"]');
+ B.screen="garden-notes/walk";b=box(B,"What did you notice");
  chk("and the own options are offered again after a reload",pillBtns(b).map(label).join()==="Birds,Fresh soil,Bees,Moths,Frogs");}
-{const A=boot();A.screen="walk";
+{const A=boot();A.screen="garden-notes/walk";
  /* the most recent first, at most twelve */
- for(let i=1;i<=14;i++){A.draftFor("walk").noticed=["w"+i];const e=A.keptFor("walk");e.push({ts:"2026-10-"+String(i).padStart(2,"0")+"T08:00:00",noticed:["w"+i]});}
- A.draftFor("walk").noticed=[];
+ for(let i=1;i<=14;i++){A.draftFor("garden-notes/walk").noticed=["w"+i];const e=A.keptFor("garden-notes/walk");e.push({ts:"2026-10-"+String(i).padStart(2,"0")+"T08:00:00",noticed:["w"+i]});}
+ A.draftFor("garden-notes/walk").noticed=[];
  const names=pillBtns(box(A,"What did you notice")).map(label).slice(3);
  chk("at most twelve are offered again, the most recent first",names.length===12&&names[0]==="w14"&&names[11]==="w3",names.join());
- A.keptFor("walk").length=0;A.keptFor("walk").push({ts:"2026-10-01T08:00:00",noticed:["Birds","BEES","  moths ","Moths"]});
+ A.keptFor("garden-notes/walk").length=0;A.keptFor("garden-notes/walk").push({ts:"2026-10-01T08:00:00",noticed:["Birds","BEES","  moths ","Moths"]});
  chk("one equal to a listed option, or repeated, is not offered",pillBtns(box(A,"What did you notice")).map(label).join()==="Birds,Fresh soil,Bees,moths");}
 {/* a shared menu with open behaves the same; a question kept in an activity that keeps no entries offers nothing again */
  P.wipe();const A=P.boot();
- A.loadText("---\nbooklet: 0.8\ntitle: M\nlang: en\n---\n\n> [!module|m] M\n\n> [!menu|feels]\n- Calm\n- Tired\n\n> [!activity|a] A\n\n> [!multi|q1 menu:feels open] This morning\n\n> [!choice|q2 menu:feels open] This evening\n\n> [!module|m end] End\n");
- A.screen="a";let b=box(A,"This morning");
+ A.loadText("---\nbooklet: 0.9\ntitle: M\nlang: en\n---\n\n> [!module|m] M\n\n> [!menu|feels]\n- Calm\n- Tired\n\n> [!activity|a] A\n\n> [!multi|q1 menu:feels open] This morning\n\n> [!choice|q2 menu:feels open] This evening\n\n> [!module|m end] End\n");
+ A.screen="m/a";let b=box(A,"This morning");
  addOwn(b,"Hopeful");b=box(A,"This morning");
- chk("a shared menu with `open` takes the reader's own option, stored as a string",JSON.stringify(A.STATE.answers.q1)==='["Hopeful"]'&&byClass(b,"pill-own").length===1,JSON.stringify(A.STATE.answers));
+ chk("a shared menu with `open` takes the reader's own option, stored as a string",JSON.stringify(A.STATE.answers.m.q1)==='["Hopeful"]'&&byClass(b,"pill-own").length===1,JSON.stringify(A.STATE.answers.m));
  addOwn(box(A,"This evening"),"Weary");
- chk("and an open choice over a menu holds it as its one answer",A.STATE.answers.q2==="Weary");
+ chk("and an open choice over a menu holds it as its one answer",A.STATE.answers.m.q2==="Weary");
  const md=A.toMarkdown();P.wipe();const B=P.boot();B.loadText(md);
- chk("saved and read back, an own option in a plain activity is still the answer",B.STATE.answers.q1[0]==="Hopeful"&&B.STATE.answers.q2==="Weary");
- B.screen="a";chk("nothing is offered again in an activity that keeps no entries",byClass(box(B,"This morning"),"pill-own").length===1&&pillBtns(box(B,"This morning")).length===2);}
+ chk("saved and read back, an own option in a plain activity is still the answer",B.STATE.answers.m.q1[0]==="Hopeful"&&B.STATE.answers.m.q2==="Weary");
+ B.screen="m/a";chk("nothing is offered again in an activity that keeps no entries",byClass(box(B,"This morning"),"pill-own").length===1&&pillBtns(box(B,"This morning")).length===2);}
 {/* in a query view an own option is its text, and in a chart it is not a number */
- const A=boot();A.screen="walk";
- A.draftFor("walk").weather="Misty";A.draftFor("walk").noticed=[1,"Moths"];A.finalizeEntry("walk");
- const set=A.entrySet({from:"walk",fileWide:true,view:{}},"walk","table");
+ const A=boot();A.screen="garden-notes/walk";
+ A.draftFor("garden-notes/walk").weather="Misty";A.draftFor("garden-notes/walk").noticed=[1,"Moths"];A.finalizeEntry("garden-notes/walk");
+ const set=A.entrySet({from:"garden-notes/walk",view:{}},"garden-notes/walk","table");
  chk("a query row shows the own words as text",set.rows[0].noticed==="Birds, Moths"&&set.rows[0].weather==="Misty",JSON.stringify(set.rows[0]));
- const bar=A.entrySet({from:"walk",fileWide:true,view:{}},"walk","bars");
+ const bar=A.entrySet({from:"garden-notes/walk",view:{}},"garden-notes/walk","bars");
  chk("for a chart it is text, never a number",typeof bar.rows[0].weather==="string"&&typeof bar.sortVal(bar.rows[0],"weather")==="string");}
 
 /* ---- A2: [x], right or wrong once answered ---- */
-{const A=boot();A.screen="quiz";
+{const A=boot();A.screen="garden-notes/quiz";
  let b=box(A,"Which season");
  chk("before an answer there are no marks and no live line",!byClass(b,"q-mk").length&&text(byClass(b,"q-live")[0]||"")==="");
  click(byWords(b,"Autumn"));b=box(A,"Which season");
@@ -132,7 +132,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("the polite line says so, with the answer",text(byClass(b,"q-live")[0])==="Not quite. The answer is Spring."&&byClass(b,"q-live")[0].attrs["aria-live"]==="polite");
  click(byWords(b,"Spring"));b=box(A,"Which season");
  chk("picking again moves the marks: right",/Right/.test(text(byWords(b,"Spring")))&&cls(byWords(b,"Spring")).includes("q-right")&&!byClass(b,"q-wrong").length&&text(byClass(b,"q-live")[0])==="Right.");
- chk("nothing new is stored: the answer is the position, and nothing else is kept",A.STATE.answers.seasons===2&&Object.keys(A.STATE.answers).join()==="seasons",JSON.stringify(A.STATE.answers));
+ chk("nothing new is stored: the answer is the position, and nothing else is kept",A.STATE.answers["garden-notes"].seasons===2&&Object.keys(A.STATE.answers["garden-notes"]).join()==="seasons",JSON.stringify(A.STATE.answers["garden-notes"]));
  click(byWords(b,"Spring"));b=box(A,"Which season");
  chk("unpressing clears the marks",!byClass(b,"q-mk").length);
  /* a multi with two correct options */
@@ -151,16 +151,16 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("picked and not right is marked not right",cls(byWords(m,"Carrot")).includes("q-wrong")&&/Not quite/.test(text(byWords(m,"Carrot"))));
  click(byWords(m,"Carrot"));click(byWords(m,"Pear"));click(check());
  chk("every right pick and none wrong: Right.",text(byClass(m,"q-live")[0])==="Right."&&byClass(m,"q-right").length===2);
- chk("nothing about checking is stored: only the picks",JSON.stringify(A.STATE.answers.fruit)==="[1,3]"&&Object.keys(A.STATE.answers).sort().join()==="fruit,seasons",JSON.stringify(A.STATE.answers));
- A.STATE.answers.fruit=[1,3];const md=A.toMarkdown();
+ chk("nothing about checking is stored: only the picks",JSON.stringify(A.STATE.answers["garden-notes"].fruit)==="[1,3]"&&Object.keys(A.STATE.answers["garden-notes"]).sort().join()==="fruit,seasons",JSON.stringify(A.STATE.answers["garden-notes"]));
+ A.STATE.answers["garden-notes"].fruit=[1,3];const md=A.toMarkdown();
  chk("the file carries no mark and no score",!/checked|score|right/i.test(md.slice(OPEN.length)),md.slice(OPEN.length));
  /* a question with no [x] is exactly as before */
- A.screen="walk";const w=box(A,"What did you notice");click(byWords(w,"Birds"));
+ A.screen="garden-notes/walk";const w=box(A,"What did you notice");click(byWords(w,"Birds"));
  chk("a question with no [x] shows no marks, no Check, no live line",!byClass(box(A,"What did you notice"),"q-mk").length&&!byClass(box(A,"What did you notice"),"q-acts").length&&!byClass(box(A,"What did you notice"),"q-live").length);}
 {/* an own option is neither right nor wrong */
  P.wipe();const A=P.boot();
- A.loadText("---\nbooklet: 0.8\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!choice|cap open] Capital of France?\n- [ ] Lyon\n- [x] Paris\n\n> [!multi|cols open] Primary colours\n- [x] Red\n- [ ] Green\n- [x] Blue\n\n> [!module|m end] End\n");
- A.screen="a";let b=box(A,"Capital of France");
+ A.loadText("---\nbooklet: 0.9\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!choice|cap open] Capital of France?\n- [ ] Lyon\n- [x] Paris\n\n> [!multi|cols open] Primary colours\n- [x] Red\n- [ ] Green\n- [x] Blue\n\n> [!module|m end] End\n");
+ A.screen="m/a";let b=box(A,"Capital of France");
  addOwn(b,"Rome");b=box(A,"Capital of France");
  chk("an own option picked in a question with a right answer is not marked",!byClass(b,"q-mk").length&&text(byClass(b,"q-live")[0])==="");
  let m=box(A,"Primary colours");addOwn(m,"Yellow");m=box(A,"Primary colours");click(tag(byClass(m,"q-acts")[0],"button")[0]);
@@ -172,7 +172,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
 
 /* ---- A3: what happens to a file's problems when it opens ---- */
 {const A=P.boot(),REF=read("problems-refused.booklet.md");
- const mk=body=>"---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n"+body;
+ const mk=body=>"---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n"+body;
  const refused=(label,text,rx)=>{const R=A.parseFile(text);chk(label+": the file is refused",R.ok===false&&R.refused.length>=1&&rx.test(R.refused.join(" ")),JSON.stringify(R.refused));};
  refused("a module opened and not closed",REF,/never closed/);
  refused("a module closed and not opened",mk("> [!activity|a] A\n\n> [!module|m end] End\n"),/closed that was never opened/);
@@ -213,16 +213,19 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("a line with an id whose kind is not defined is drawn as a callout, marked unknown, and reported",!!c&&c.unknown===true&&R.unread.some(x=>/does not know the kind “sticker”/.test(x)));
  const plain=blocks.find(b=>b.type==="callout"&&b.kind==="note");
  chk("a reading callout with no id and no settings of any kind is not unknown, and not reported",!!plain&&!plain.unknown&&!R.unread.some(x=>/“note”/.test(x)));
- P.wipe();const B=P.boot();B.loadText(read("problems-reported.booklet.md"));B.screen="day";B.render();
+ P.wipe();const B=P.boot();B.loadText(read("problems-reported.booklet.md"));B.screen="rep/day";B.render();
  const quiet=byClass(P.main(),"rd-unknown");
  chk("the callout says so quietly under its title",quiet.length===1&&/This page does not know the kind “sticker”/.test(text(quiet[0])),text(P.main()).slice(0,300));
  chk("and the reading callout has no such line",byClass(P.main(),"rd-callout").length===2);}
+ {P.wipe();const D=P.boot();D.loadText("---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n");
+  const notes=(D.FILE_NOTES||{}).list||[];
+  chk("a problem shown to the reader carries no Markdown backticks: what was between them is in quotation marks",notes.length>0&&notes.every(x=>!/`/.test(x))&&notes.some(x=>/“daily” only follows “repeat”/.test(x)),JSON.stringify(notes));}
 
 /* ---- A5: the settings table ---- */
 {const A=P.boot();
  chk("KIND_SETTINGS is the table of SPEC.md section 4",JSON.stringify(A.KIND_SETTINGS)===JSON.stringify({module:["end"],activity:["repeat","daily","hidden"],row:["end"],text:["long"],
    lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]}));
- const mk=body=>A.parseFile("---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n"+body+"\n");
+ const mk=body=>A.parseFile("---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n"+body+"\n");
  const q=(R,id)=>R.template.modules[0].mode.blocks.find(b=>b.id===id);
  let R=mk("> [!number|n mx:5 min:1] N");
  chk("an unknown setting is reported and ignored (`mx:5` for `max:5`)",R.unread.length===1&&/a number line takes no “mx:”/.test(R.unread[0])&&q(R,"n").max===undefined&&q(R,"n").min===1,JSON.stringify(R.unread));
@@ -232,14 +235,14 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  R=mk("> [!number|n min:abc] N");chk("a min that is not a number is reported and ignored",R.unread.length===1&&/`min:abc` is not a number/.test(R.unread[0])&&q(R,"n").min===undefined);
  R=mk("> [!number|n MIN:2 Max:9 STEP:0.5] N\n\n> [!TEXT|t LONG] T");
  chk("kinds, settings and flags are read without regard to case",R.unread.length===0&&q(R,"n").min===2&&q(R,"n").max===9&&q(R,"n").step===0.5&&q(R,"t").rows===6,JSON.stringify(R.unread));
- R=A.parseFile("---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n\n> [!activity|b Repeat DAILY] B\n");
+ R=A.parseFile("---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n\n> [!activity|b Repeat DAILY] B\n");
  const acts=R.template.modules.map(m=>m.mode);
  chk("`daily` without `repeat` is reported and ignored; `repeat daily` is fine",R.unread.length===1&&acts[0].kind==="board"&&acts[0].upsert===undefined&&acts[1].kind==="entry"&&acts[1].upsert==="day",JSON.stringify(R.unread));
- chk("an id keeps its case",A.parseFile("---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!activity|MixedCase] A\n").template.modules[0].mode.id==="MixedCase");}
+ chk("an id keeps its case",A.parseFile("---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|MixedCase] A\n").template.modules[0].mode.id==="MixedCase");}
 
 /* ---- A6: the small fixes ---- */
 {const A=P.boot();
- const mk=q=>A.parseFile("---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!activity|a repeat] A\n\n> [!text|t] T\n\n> [!activity|b] B\n\n```booklet query\n"+q+"\n```\n");
+ const mk=q=>A.parseFile("---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|a repeat] A\n\n> [!text|t] T\n\n> [!activity|b] B\n\n```booklet query\n"+q+"\n```\n");
  const view=R=>R.template.modules.flatMap(m=>m.activities||[m.mode]).flatMap(a=>a.blocks).find(b=>b.type==="query");
  let R=mk("from: a\nlimit: 0");chk("`limit: 0` is reported and means no limit is set",R.unread.length===1&&/not a positive whole number/.test(R.unread[0])&&view(R).view.limit===undefined,JSON.stringify(R.unread));
  R=mk("from: a\nlimit: 2.5");chk("`limit: 2.5` too",R.unread.length===1&&view(R).view.limit===undefined);
@@ -249,13 +252,13 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  const set=A.dataSet({rows:[{name:"x",n:3}]});
  chk("an explicit `label:` naming a field no row carries draws no label",A.rolesOf(set,{label:"nope"},"list").label===null);
  chk("with no `label:` the label falls back to the first field",A.rolesOf(set,{},"list").label==="name");
- chk("a query in the data section is reported, not silently skipped",A.parseFile("---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n> [!data] D\n\n```booklet query\nfrom: a\n```\n").unread.some(x=>/not in the data section/.test(x)));
- chk("a single-quoted marker opens the file",A.parseFile("---\nbooklet: '0.8'\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n").ok);
- chk("a file with no `lang:` opens, reads as English and says so",(r=>r.ok&&r.lang==="en"&&r.unread.length===1&&/no `lang:`/.test(r.unread[0]))(A.parseFile("---\nbooklet: 0.8\ntitle: T\n---\n\n> [!activity|a] A\n")));
- chk("any other language opens too, in its own words with the interface in English",(r=>r.ok&&r.lang==="en"&&r.unread.length===0)(A.parseFile("---\nbooklet: 0.8\ntitle: T\nlang: de\n---\n\n> [!activity|a] A\n")));
- chk("`booklet module` is like any unknown fence, reported",A.parseFile("---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet module\n{}\n```\n").unread.some(x=>/a “booklet module” block is not one this page reads/.test(x)));
+ chk("a query in the data section is reported, not silently skipped",A.parseFile("---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n> [!data] D\n\n```booklet query\nfrom: a\n```\n").unread.some(x=>/not in the data section/.test(x)));
+ chk("a single-quoted marker opens the file",A.parseFile("---\nbooklet: '0.9'\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n").ok);
+ chk("a file with no `lang:` opens, reads as English and says so",(r=>r.ok&&r.lang==="en"&&r.unread.length===1&&/no `lang:`/.test(r.unread[0]))(A.parseFile("---\nbooklet: 0.9\ntitle: T\n---\n\n> [!activity|a] A\n")));
+ chk("any other language opens too, in its own words with the interface in English",(r=>r.ok&&r.lang==="en"&&r.unread.length===0)(A.parseFile("---\nbooklet: 0.9\ntitle: T\nlang: de\n---\n\n> [!activity|a] A\n")));
+ chk("`booklet module` is like any unknown fence, reported",A.parseFile("---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet module\n{}\n```\n").unread.some(x=>/a “booklet module” block is not one this page reads/.test(x)));
  chk("a widget naming an engine that does not exist still draws a notice",(()=>{P.wipe();const B=P.boot();
-   B.loadText("---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n> [!widget|w] W\n> ![[#^wd]]\n\n```booklet widget\n{\"engine\":\"tag-cloud\"}\n```\n^wd\n");
+   B.loadText("---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n> [!widget|w] W\n> ![[#^wd]]\n\n```booklet widget\n{\"engine\":\"tag-cloud\"}\n```\n^wd\n");
    B.screen="a";B.render();return /cannot draw a “tag-cloud”|cannot draw a "tag-cloud"/.test(text(P.main()));})());}
 
 P.closePages();

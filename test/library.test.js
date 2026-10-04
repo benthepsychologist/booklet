@@ -51,7 +51,7 @@ function boot(){const API={};
     timers.forEach(h=>global.clearTimeout(h));timers.clear();}});
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
-  get STATE(){return STATE},set STATE(v){STATE=v}, get DRAFTS(){return DRAFTS},set DRAFTS(v){DRAFTS=v}, get BOOK(){return BOOK},set BOOK(v){BOOK=v},
+  get STATE(){return STATE}, answersIn,set STATE(v){STATE=v}, get DRAFTS(){return DRAFTS},set DRAFTS(v){DRAFTS=v}, get BOOK(){return BOOK},set BOOK(v){BOOK=v},
   get lang(){return lang},set lang(v){lang=v}, get screen(){return screen},set screen(v){screen=v},
   get dirty(){return dirty},set dirty(v){dirty=v}, get unsavedEntries(){return unsavedEntries},set unsavedEntries(v){unsavedEntries=v},
 
@@ -86,7 +86,7 @@ function fillRich(A,tag){
   addMod(A,"daily-journal");
   const S=A.STATE,D=A.DRAFTS;
   S.entries={eod:[{ts:"2026-09-20T10:00:00.000Z",blocker:"meetings "+tag}]};
-  S.answers={note:"an answer for "+tag+"\n\nsecond paragraph",tags:["one "+tag,"two"]};
+  S.answers={"":{note:"an answer for "+tag+"\n\nsecond paragraph",tags:["one "+tag,"two"]}};
   D.custom={eod:{blocker:"half-typed "+tag}};
   A.openChip={eod:"2026-09-20T10:00:00.000Z"};
   A.lang="fr";A.dirty=true;A.unsavedEntries=3;}
@@ -128,14 +128,14 @@ chk("reopening B finds B's answer, and only B's",A.STATE.entries.eod.length===1&
 
 // ---- a save scheduled before a switch cannot land in the other booklet ----
 A.openBooklet(a.id);
-A.STATE.answers.note="typed in A just before leaving";A.markDirty();          // the 400ms save is pending
+A.answersIn("").note="typed in A just before leaving";A.markDirty();          // the 400ms save is pending
 A.openBooklet(b.id);
 chk("leaving A writes A's pending save to A's own key",LS["booklet.b."+a.id].includes("typed in A just before leaving"));
 await sleep(500);
 chk("and it never reaches B, not even after the timer would have fired",!LS["booklet.b."+b.id].includes("typed in A just before leaving"));
-chk("B in memory is untouched by it",A.STATE.answers.note!=="typed in A just before leaving");
+chk("B in memory is untouched by it",A.answersIn("").note!=="typed in A just before leaving");
 A.openBooklet(a.id);
-A.STATE.answers.note="stale";A.markDirty();A.orphanSaveTimer();                // lose the handle, so no flush can clear it
+A.answersIn("").note="stale";A.markDirty();A.orphanSaveTimer();                // lose the handle, so no flush can clear it
 A.openBooklet(b.id);
 const bBefore=LS["booklet.b."+b.id];
 await sleep(500);
@@ -261,7 +261,7 @@ delete global.location;delete global.history;
 /* Leaving a page, as boot() and wipe() model it: a page with no booklet open is
    given words and left with its 400ms autosave pending; storage is wiped and
    that moment passes. Nothing may be written into the fresh storage. */
-wipe();{const X=boot();X.STATE.answers.note="typed, then the page was left";X.markDirty();}
+wipe();{const X=boot();X.answersIn("").note="typed, then the page was left";X.markDirty();}
 wipe();await sleep(450);
 chk("a page left behind never saves into the storage that follows it",Object.keys(LS).length===0,Object.keys(LS).join(","));
 
@@ -271,9 +271,9 @@ const origSet=global.localStorage.setItem;
 global.localStorage.setItem=()=>{throw new Error("QuotaExceededError");};
 A=boot();
 chk("storage off is noticed",A.storageOk===false);
-const m1=await A.createBooklet();A.STATE.answers.note="kept in memory";A.saveLocal();
+const m1=await A.createBooklet();A.answersIn("").note="kept in memory";A.saveLocal();
 await A.createBooklet();A.openBooklet(m1.id);
-chk("booklets still switch without losing anything, for the visit",A.STATE.answers.note==="kept in memory");
+chk("booklets still switch without losing anything, for the visit",A.answersIn("").note==="kept in memory");
 A.closeBooklet();A.render();
 chk("and the list says plainly that nothing is kept between visits",/not keeping anything between visits/.test(texts(main())));
 global.localStorage.setItem=origSet;

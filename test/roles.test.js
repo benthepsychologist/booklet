@@ -97,42 +97,42 @@ const tones=n=>walk(n,x=>cls(x).some(c=>/^tone-/.test(c)));
   chk("list: a group is a card with the group's name and a count",byClass(n,"dv-gcard").length===2&&byClass(n,"dv-group").map(text).join()==="x2 rows,y1 row");}
 
  /* ---- kept entries: the same roles, the date as the first field ---- */
- const KEEP=`---\nbooklet: 0.8\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: hours\nas: line\n\`\`\`\n\n\`\`\`booklet query\nfrom: hours\nas: bars\n\`\`\`\n\n\`\`\`booklet query\nfrom: log\nas: list\n\`\`\`\n\n> [!module|m end] End\n`;
+ const KEEP=`---\nbooklet: 0.9\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: hours\nas: line\n\`\`\`\n\n\`\`\`booklet query\nfrom: hours\nas: bars\n\`\`\`\n\n\`\`\`booklet query\nfrom: log\nas: list\n\`\`\`\n\n> [!module|m end] End\n`;
  {const r=A.parseFile(KEEP);
   chk("a question as the source parses clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
-  const qs=r.template.modules[0].activities.find(a=>a.id==="look").blocks.filter(b=>b.type==="query");
+  const qs=r.template.modules[0].activities.find(a=>a.id==="m/look").blocks.filter(b=>b.type==="query");
   chk("the parser sets the value of a query over one question to that question",qs[0].view.value==="hours"&&qs[1].view.value==="hours"&&qs[2].view.value===undefined,JSON.stringify(qs.map(q=>q.view)));}
  P.wipe();
  {const B=P.boot();await B.createBooklet();B.loadText(KEEP);
-  B.keptFor("log").push({ts:"2026-10-01T08:00:00",hours:6.5,mood:2},{ts:"2026-10-02T08:00:00",hours:7,mood:3},{ts:"2026-10-03T08:00:00",hours:5,mood:1},
+  B.keptFor("m/log").push({ts:"2026-10-01T08:00:00",hours:6.5,mood:2},{ts:"2026-10-02T08:00:00",hours:7,mood:3},{ts:"2026-10-03T08:00:00",hours:5,mood:1},
     {ts:"2026-10-04T08:00:00",hours:8,mood:3},{ts:"2026-10-05T08:00:00",hours:9,mood:2});
-  B.screen="look";B.render();const main=P.main();
+  B.screen="m/look";B.render();const main=P.main();
   chk("a line over one question draws its points (it drew nothing before 0.7)",byClass(main,"ch-pt").length===5&&walk(main,x=>x.tagName==="polyline").length===1,String(byClass(main,"ch-pt").length));
   chk("bars over one question draw a bar for each entry",byClass(main,"ch-bar").length===5);
   chk("a list over kept entries: the date is the label, the questions are the extras",byClass(main,"dv-t").length===5&&byClass(main,"dv-f").some(x=>x.attrs.title==="Hours slept"));
-  const set=B.entrySet({from:"log",fields:["hours"],fileWide:true,view:{limit:2}},"look","line");
+  const set=B.entrySet({from:"m/log",fields:["hours"],view:{limit:2}},"m/look","line");
   chk("the set itself is not cut (`limit` is applied once, by the pipeline), and a chart's rows run oldest first",set.rows.length===5&&set.rows.map(r=>r.hours).join()==="6.5,7,5,8,9",JSON.stringify(set.rows));
   const drawn=B.viewNodes(set,{as:"bars",value:"hours",limit:2},{})[0],bars=byClass(drawn,"ch-bar");
   chk("`limit` on kept entries means the newest N, also for a chart (oldest of those first)",bars.length===2&&byClass(drawn,"ch-v").map(text).join()==="8,9",byClass(drawn,"ch-v").map(text).join());
-  const set2=B.entrySet({from:"log",fileWide:true,view:{limit:2}},"look","cards");
+  const set2=B.entrySet({from:"m/log",view:{limit:2}},"m/look","cards");
   const cards=B.viewNodes(set2,{as:"cards",limit:2},{})[0],when=byClass(cards,"when").map(text);
   chk("`limit` on kept entries for cards keeps the newest N, newest first",when.length===2&&/5/.test(when[0])&&/4/.test(when[1]),when.join("|"));
-  const set3=B.entrySet({from:"log",fileWide:true},"look","table");
+  const set3=B.entrySet({from:"m/log"},"m/look","table");
   chk("a kept-entry set: the date is the first field whatever `fields:` says, and its sort value is the timestamp",set3.first==="date"&&set3.own[0]==="date"&&typeof set3.sortVal(set3.rows[0],"date")==="number"&&set3.sortVal(set3.rows[0],"date")>set3.sortVal(set3.rows[1],"date"));
   chk("number and scale answers sort as numbers, not as the words shown",typeof set3.sortVal(set3.rows[0],"mood")==="number"&&typeof set3.rows[0].mood==="string");
-  const set4=B.entrySet({from:"log",fields:["mood"],fileWide:true},"look","table");
+  const set4=B.entrySet({from:"m/log",fields:["mood"]},"m/look","table");
   chk("`fields:` does not change `first`",set4.first==="date");}
 
  /* ---- the fixture: every look on one page ---- */
  {P.wipe();const C=P.boot();await C.createBooklet();
   const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
   chk("the roles fixture parses with nothing reported wrong",C.parseFile(FX).ok&&C.parseFile(FX).unread.length===0,JSON.stringify(C.parseFile(FX).unread));
-  C.loadText(FX);C.screen="overview";C.render();const main=P.main();
+  C.loadText(FX);C.screen="board/overview";C.render();const main=P.main();
   chk("the fixture draws a pill strip, big tiles, flat and grouped lists, a table with a badge column and bars",
     byClass(main,"dv-pills").length===1&&byClass(main,"dv-pills")[0].children.length===6&&byClass(main,"dv-tile").length===4&&byClass(main,"dv-gcard").length===3
     &&walk(main,x=>x.tagName==="table").length===3&&byClass(main,"ch-barchart").length===1&&byClass(main,"pill").length>12);   /* three tables: the long one, the owners, and the bars' numbers */
   chk("only the long list, its table (10 rows each) and the nested house (15) offer the control",byClass(main,"dv-ctl").length===3);
-  C.screen="look";C.render();
+  C.screen="board/look";C.render();
   chk("the fixture's kept entries (10) offer the control on the cards too",byClass(P.main(),"dv-ctl").length===1&&byClass(P.main(),"entry").length===10);}
 
  /* ---- the strings ---- */

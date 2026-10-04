@@ -130,7 +130,7 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
  {const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
   const B=P.boot();await B.createBooklet();B.loadText(FX);
   const md0=B.toMarkdown();
-  B.screen="look";B.render();let main=P.main();
+  B.screen="board/look";B.render();let main=P.main();
   const cards=()=>byClass(P.main(),"entry").map(c=>text(byClass(c,"when")[0]));
   chk("kept entries draw as cards, newest first, with the control (10 entries)",cards().length===10&&byClass(main,"dv-ctl").length===1);
   const when0=cards()[0];
@@ -142,17 +142,17 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   chk("and descending is newest first",/Sep 30/.test(cards()[0])&&/Sep 21/.test(cards()[9]),cards().join(" | "));
   pick(B.screen&&P.main(),"Good");
   chk("Show a mood: only the entries that answered it that way",cards().length===5&&byClass(P.main(),"dv-live").map(text).join()==="5 of 10 shown",cards().length+" / "+byClass(P.main(),"dv-live").map(text).join());
-  chk("the reader's state is kept in memory under the query's own key",B.VIEWSTATE.size===1&&/^look:/.test([...B.VIEWSTATE.keys()][0]),[...B.VIEWSTATE.keys()].join());
+  chk("the reader's state is kept in memory under the query's own key",B.VIEWSTATE.size===1&&/^board\/look:/.test([...B.VIEWSTATE.keys()][0]),[...B.VIEWSTATE.keys()].join());
   B.render();
   chk("a re-draw of the page keeps the sort and the filter",cards().length===5&&/Sep 29/.test(cards()[0])&&byClass(P.main(),"dv-live").map(text).join()==="5 of 10 shown",cards().join(" | "));
   chk("saving the booklet writes the same file as before any of it",B.toMarkdown()===md0);
-  B.keptFor("log").push({ts:"2026-10-01T09:00:00Z",what:"One more",mood:3});B.render();
+  B.keptFor("board/log").push({ts:"2026-10-01T09:00:00Z",what:"One more",mood:3});B.render();
   chk("the file still carries only what was written: the control is never in the records",!/dv-|VIEWSTATE|"sk"|"fv"/.test(B.toMarkdown()));
   B.closeBooklet();
   chk("opening or closing a booklet clears the reader's state",B.VIEWSTATE.size===0);}
  {P.wipe();const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
   const B=P.boot();await B.createBooklet();B.loadText(FX);
-  B.screen="look";B.render();
+  B.screen="board/look";B.render();
   const main=P.main(),sel=byClass(main,"dv-sel").find(s=>s.attrs["aria-label"]==="Sort by");
   chk("cards: Sort by lists the date and the questions",tag(sel,"option").map(text).join()==="Original order,Date,What happened?,How did the day feel?",tag(sel,"option").map(text).join());
   sel.value="what";press(sel,"change");

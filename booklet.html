@@ -835,10 +835,10 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.8.1";
+const RENDERER_VERSION="0.9.0";
 /* The booklet format this renderer reads: the marker a file carries is
-   `booklet: 0.8`, and the number a booklet design carries is +FORMAT_VERSION. */
-const FORMAT_VERSION="0.8";
+   `booklet: 0.9`, and the number a booklet design carries is +FORMAT_VERSION. */
+const FORMAT_VERSION="0.9";
 const LANG_NAMES={en:"English",es:"Español","es-AR":"Español (Argentina)",fr:"Français"};
 /* the interface languages with a button (the variants, es-AR, have none), in the order offered */
 const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
@@ -884,6 +884,13 @@ const KIND_SETTINGS={module:["end"],activity:["repeat","daily","hidden"],row:["e
 /* the settings above that must be numbers */
 const NUMBER_SETTINGS=["min","max","step"];
 const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
+/* An id belongs to its module (SPEC.md section 4). Inside the page an activity is known by its
+   ADDRESS: its module's id, a slash, and the id the file gives it (an id never holds a slash, so
+   the first one in an address is the divide). An activity outside any module fence is in the one
+   module with no name and its address is just its id. SHARED stands for the data section when
+   the parser keeps a module's ids apart from it: no module id can be spelled like it. */
+const ADDR_SEP="/";
+const SHARED="*";
 /* A query's twelve keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
 const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
@@ -973,6 +980,7 @@ const STRINGS_SRC={
     booklet: {
       noActivities: "Nothing here yet. Add an activity to begin — or open a file you saved before.",
       added: n=>n+" added.",
+      renamed: r=>(r.length===1?"One id was renamed so it does not clash: ":r.length+" ids were renamed so they do not clash: ")+renamesList(r," is now ",n=>" and "+n+" more")+".",
       noShelf: "The module list could not be loaded. Check your connection and try again.",
       addFailed: "That activity could not be fetched — it may have moved, or you may be offline."
     },
@@ -1039,7 +1047,7 @@ const STRINGS_SRC={
       line: n=>`line ${n}`,
       idChars: (w,id)=>`${w}: the id “${id}” may hold only letters, digits and dashes`,
       idTwice: (w,id)=>`${w}: the id “${id}” is used twice`,
-      moduleIdClash: id=>`This module uses the id “${id}”, which this booklet already uses. Two modules in one booklet cannot share an id.`,
+      moduleIdClash: id=>`The data section of this booklet already has a block with the id “${id}”, and this module brings another.`,
       rowClosed: (w,why)=>`${w}: the row opened here ${why}, so it was closed there`,
       rowRunsPage: "runs into a page break",
       rowRunsModule: "runs into a module fence",
@@ -1197,6 +1205,7 @@ const STRINGS_SRC={
     booklet: {
       noActivities: "Rien ici pour l’instant. Ajoutez une activité pour commencer — ou ouvrez un fichier déjà enregistré.",
       added: n=>n+" ajoutée.",
+      renamed: r=>(r.length===1?"Un identifiant a été renommé pour éviter un conflit : ":r.length+" identifiants ont été renommés pour éviter un conflit : ")+renamesList(r," devient ",n=>" et "+n+" de plus")+".",
       noShelf: "La liste des modules n’a pas pu être chargée. Vérifiez votre connexion et réessayez.",
       addFailed: "Cette activité n’a pas pu être récupérée — elle a peut-être changé d’adresse, ou vous êtes hors ligne."
     },
@@ -1259,7 +1268,7 @@ const STRINGS_SRC={
       line: n=>`ligne ${n}`,
       idChars: (w,id)=>`${w} : l’identifiant « ${id} » ne peut contenir que des lettres, des chiffres et des tirets`,
       idTwice: (w,id)=>`${w} : l’identifiant « ${id} » est utilisé deux fois`,
-      moduleIdClash: id=>`Ce module utilise l’identifiant « ${id} », que ce carnet utilise déjà. Deux modules d’un même carnet ne peuvent pas partager un identifiant.`,
+      moduleIdClash: id=>`La section de données de ce carnet contient déjà un bloc d’identifiant « ${id} », et ce module en apporte un autre.`,
       rowClosed: (w,why)=>`${w} : la rangée ouverte ici ${why}, elle a donc été fermée à cet endroit`,
       rowRunsPage: "rencontre un saut de page",
       rowRunsModule: "rencontre une clôture de module",
@@ -1417,6 +1426,7 @@ const STRINGS_SRC={
     booklet: {
       noActivities: "Aquí todavía no hay nada. Agrega una actividad para empezar — o abre un archivo que guardaste antes.",
       added: n=>n+" agregada.",
+      renamed: r=>(r.length===1?"Se renombró un identificador para que no choque: ":"Se renombraron "+r.length+" identificadores para que no choquen: ")+renamesList(r," ahora es ",n=>" y "+n+" más")+".",
       noShelf: "No se pudo cargar la lista de módulos. Revisa tu conexión e inténtalo de nuevo.",
       addFailed: "No se pudo obtener esa actividad — puede que se haya movido, o que no tengas conexión."
     },
@@ -1479,7 +1489,7 @@ const STRINGS_SRC={
       line: n=>`línea ${n}`,
       idChars: (w,id)=>`${w}: el identificador “${id}” solo puede tener letras, dígitos y guiones`,
       idTwice: (w,id)=>`${w}: el identificador “${id}” se usa dos veces`,
-      moduleIdClash: id=>`Este módulo usa el identificador “${id}”, que este cuadernillo ya usa. Dos módulos de un mismo cuadernillo no pueden compartir un identificador.`,
+      moduleIdClash: id=>`La sección de datos de este cuadernillo ya tiene un bloque con el identificador “${id}”, y este módulo trae otro.`,
       rowClosed: (w,why)=>`${w}: la fila abierta aquí ${why}, así que se cerró en ese punto`,
       rowRunsPage: "se topa con un salto de página",
       rowRunsModule: "se topa con una valla de módulo",
@@ -1643,6 +1653,11 @@ const strings=g=>(STRINGS[lang]&&STRINGS[lang][g])||STRINGS.en[g];
 
 /* ======================= 3. SMALL HELPERS =======================
    el, sv, text and date helpers, ids, copies, storage access, localised text. */
+/* A message the page shows a reader never carries Markdown's backticks: what a message put between them is shown
+   between quotation marks (the tables keep the backticks, which are how a message marks a word of the format). */
+const humanMsg=s=>String(s).replace(/`([^`]*)`/g,"\u201c$1\u201d");
+/* what Add a module renamed, as a short list: at most three, then the count of the rest */
+const renamesList=(r,is,more)=>r.slice(0,3).map(x=>x.from+is+x.to).join(", ")+(r.length>3?more(r.length-3):"");
 /* The short names used all through the script:
      el(tag, attrs, ...kids)  makes a DOM element. An attribute value of null, undefined or false is
                               left off, true gives a bare attribute, `html` sets innerHTML, and a name
@@ -1731,6 +1746,9 @@ function chooseLang(base){if(primaryOf(lang)===base) return lang;
 const EMPTY_BOOKLET={booklet:+FORMAT_VERSION, id:"", version:"", modules:[], widgets:[], raw:{source:""}};
 /* the booklet in force */
 let BOOK = EMPTY_BOOKLET;
+/* `answers` are the once-answered questions, one map by scope: `answers[scope][questionId]`, where scope is
+   a module's id, or "" for the module with no name (the activities outside any module fence);
+   `entries` are kept entries, keyed by activity address */
 const emptyState=()=>({answers:{},entries:{}});
 const emptyDrafts=()=>({custom:{}});
 let STATE=emptyState();
@@ -1782,7 +1800,10 @@ const isShown=a=>(a||{}).home!==false;
    file handed to somebody draws for them whether or not they have ever seen
    that widget. */
 const bookWidgets=()=>BOOK.widgets||[];
-const widgetOf=id=>bookWidgets().find(w=>w.id===id)||null;
+/* A widget block belongs to the module whose fence holds it (`w.module`), or to the data section
+   (no `module`), and a module sees its own first, then the data section's, never another module's. */
+const widgetOf=(id,scope)=>{const ws=bookWidgets();
+  return (scope&&ws.find(w=>w.id===id&&w.module===scope))||ws.find(w=>w.id===id&&!w.module)||null;};
 const allModules=()=>BOOK.modules||[];
 /* a booklet holds modules and a module holds activities: one in `mode`, several in `activities` */
 const activitiesOf=m=>{if(!m||typeof m!=="object") return [];
@@ -1790,6 +1811,15 @@ const activitiesOf=m=>{if(!m||typeof m!=="object") return [];
   return m.mode&&typeof m.mode==="object"?[m.mode]:[];};
 /* a module with more than one activity opens on a page of its own */
 const isMulti=m=>activitiesOf(m).length>1;
+const addrOf=(scope,id)=>scope?scope+ADDR_SEP+id:id;
+/* the module an address is in ("" for the module with no name), and the id the file gives it */
+const scopeOfAddr=a=>{const s=String(a==null?"":a),i=s.indexOf(ADDR_SEP);return i<0?"":s.slice(0,i);};
+const shortId=a=>{const s=String(a==null?"":a);return s.slice(s.indexOf(ADDR_SEP)+1);};
+/* the scope a module's activities are in: its own id, or "" for a module outside every fence */
+const scopeOfModule=m=>scopeOfAddr((activitiesOf(m)[0]||{}).id);
+/* Where the once-answered questions of a scope are kept. peekAnswers never makes the store. */
+const answersIn=scope=>{STATE.answers=STATE.answers||{};return STATE.answers[scope]||(STATE.answers[scope]={});};
+const peekAnswers=scope=>(STATE.answers||{})[scope]||{};
 const holderOf=actId=>allModules().find(m=>activitiesOf(m).some(a=>a.id===actId))||null;
 const bookActivities=()=>allModules().flatMap(m=>activitiesOf(m).map(a=>({...a,__module:m.id})))
   .filter((m,i,a)=>a.findIndex(x=>x.id===m.id)===i);
@@ -1872,8 +1902,46 @@ function noteSaved(){const id=currentId,now=new Date().toISOString();
 function clearLocal(){const key=slotKey();if(key) lsDel(key);
   if(currentId) changeLib(L=>{const e=L.entries.find(x=>x.id===currentId);
     if(e) Object.assign(e,{title:null,parts:[],dirty:false,unsavedEntries:0,updatedAt:new Date().toISOString()});});}
+/* ---- what renderer 0.8 kept in this browser ----
+   Under 0.8 an id was unique in the whole file, so a booklet's once-answered questions were one flat
+   object and its entries and drafts were keyed by the bare activity id. Under 0.9 an id is unique within
+   its module: questions are kept per module (`answers[scope]`) and its activities are known by
+   their address (module id, slash, activity id). A saved booklet whose design says 0.8 is re-keyed
+   once, when it is opened, by that design: it tells which module each activity and each question is
+   in. Nothing is dropped: an answer, entry or draft the design does not name is kept as a bare key
+   (answers under scope ""). Which modules are fenced is read from the `module` lines of the design's
+   own source text (`raw.source`): a module not named there is outside every fence, so it is in the
+   module with no name. When the design has no source text at all (a booklet put together here with
+   no file behind it), every module is treated as fenced. */
+function rekeyFromV08(o){
+  const tpl=o&&o.TPL;
+  if(!tpl||typeof tpl!=="object"||!(Number(tpl.booklet)<+FORMAT_VERSION)||!Array.isArray(tpl.modules)) return o;
+  const src=String((tpl.raw||{}).source||""),fenced=new Set();
+  src.split("\n").forEach(ln=>{const m=ln.match(CALLOUT_LINE);
+    if(m&&m[1].toLowerCase()==="module"){const w=calloutWords("module",m[2]);if(w.id&&!w.flags.has("end")) fenced.add(w.id);}});
+  const S=isObj(o.S)?o.S:{},D=isObj(o.D)?o.D:{};
+  const oldAns=isObj(S.answers)?S.answers:{},oldEnt=isObj(S.entries)?S.entries:{},oldDr=isObj(D.custom)?D.custom:{};
+  const answers={},entries={},custom={},usedA=new Set(),usedE=new Set();
+  tpl.modules.forEach(m=>{if(!m||typeof m!=="object"||typeof m.id!=="string") return;
+    const scope=src.trim()&&!fenced.has(m.id)?"":m.id,acts=activitiesOf(m).filter(a=>a&&typeof a.id==="string");
+    const was=new Set(acts.map(a=>a.id));
+    acts.forEach(a=>{const old=a.id,now=addrOf(scope,old);
+      if(hasOwn(oldEnt,old)){entries[now]=oldEnt[old];usedE.add(old);}
+      if(hasOwn(oldDr,old)){custom[now]=oldDr[old];usedE.add("\0"+old);}
+      allBlocksOf(a).forEach(b=>{
+        if(a.kind!=="entry") writesKeys(b).forEach(k=>{if(!hasOwn(oldAns,k)) return;
+          (answers[scope]=answers[scope]||{})[k]=oldAns[k];usedA.add(k);});
+        if(b.type==="query"&&!b.data&&was.has(b.from)){b.from=addrOf(scope,b.from);delete b.fileWide;}});
+      a.id=now;});});
+  Object.keys(oldAns).forEach(k=>{if(!usedA.has(k)) (answers[""]=answers[""]||{})[k]=oldAns[k];});
+  Object.keys(oldEnt).forEach(k=>{if(!usedE.has(k)) entries[k]=oldEnt[k];});
+  Object.keys(oldDr).forEach(k=>{if(!usedE.has("\0"+k)) custom[k]=oldDr[k];});
+  tpl.booklet=+FORMAT_VERSION;
+  o.S={...S,answers,entries};o.D={...D,custom};
+  return o;}
 function loadLocal(){const key=slotKey();if(!key) return false;
   try{const raw=lsGet(key);if(!raw) return false;const o=JSON.parse(raw);if(!o||!o.S) return false;
+    rekeyFromV08(o);
     const plain=x=>isObj(x)?x:{};
     STATE={answers:plain(o.S.answers),entries:plain(o.S.entries)};
     DRAFTS={custom:plain((o.D||{}).custom)};
@@ -1927,7 +1995,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.8 booklet is Markdown that reads as a document anywhere: front
+   A v0.9 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -1943,7 +2011,7 @@ const ROW_END=/^>[ \t]?\[!(row)([ \t]+end)\]([+-]?)[ \t]*(.*)$/i;
 const calloutLine=l=>CALLOUT_LINE.test(l)||ROW_END.test(l);
 /* the bare-word flags of each kind, read from the table of settings */
 const CALLOUT_FLAGS=Object.fromEntries(Object.entries(KIND_SETTINGS).map(([k,v])=>[k,v.filter(s=>!s.endsWith(":"))]));
-/* A file is read when its front matter says `booklet: 0.8`, and only then. */
+/* A file is read when its front matter says `booklet: 0.9`, and only then. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -1965,10 +2033,10 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
 const BOOKLET_MARK=new RegExp("^booklet:[ \\t]*[\"']?"+FORMAT_VERSION.replace(/\./g,"\\.")+"[\"']?[ \\t]*$");
 function isBooklet(text){const {head}=frontMatter(text);
   return !!head&&head.some(l=>BOOKLET_MARK.test(l));}
-/* A file marked with an earlier format (0.1 to 0.7) is refused with what to
+/* A file marked with an earlier format (0.1 to 0.8) is refused with what to
    change, not a bare "not a booklet". Returns the marker found, or "". */
 function oldMarker(text){const {head}=frontMatter(text);
-  for(const l of head||[]){const m=l.match(/^booklet:[ \t]*["']?(0\.[1-7])["']?[ \t]*$/);if(m) return m[1];}
+  for(const l of head||[]){const m=l.match(/^booklet:[ \t]*["']?(0\.[1-8])["']?[ \t]*$/);if(m) return m[1];}
   return "";}
 /* `kind|id words` → the id, the flags and the key:value settings; a bare word
    the kind knows is a flag, and the first other bare word is the id */
@@ -2191,14 +2259,23 @@ const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 /* a question's hint: the text of its body, less the lines that only embed a figure */
 const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems){const P=strings("problem");
-  const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Set();
-  const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[];
-  let mod=null,act=null,section="content",lastQ=null,seq=0,row=null,theme=null;
+  const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Map(),blockIds=new Map(),modIds=new Set();
+  const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[];
+  let mod=null,act=null,section="content",lastQ=null,seq=0,row=null,theme=null,recScope="";
   const refuse=m=>{problems.push(m);problems.refused.push(m);};
   /* an id used twice: refused, and its id kept so Add a module can name it */
   const dup=(where,id)=>{const m=P.idTwice(where,id);refuse(m);problems.dupIds.push({id,m});};
-  const claim=(id,where)=>{if(!id) return;if(!ID_PATTERN.test(id)) problems.push(P.idChars(where,id));
-    if(ids.has(id)) dup(where,id);ids.add(id);};
+  /* An id is unique within its module (SPEC.md section 4): activities, questions and menus are claimed
+     in the module whose fence holds them ("" for the module with no name, SHARED for the data section),
+     block ids (`^id`) in a set of their own, and module ids in one for the file. */
+  const claimIn=(map,scope,id,where)=>{if(!map.has(scope)) map.set(scope,new Set());const set=map.get(scope);
+    if(set.has(id)) dup(where,id);set.add(id);};
+  const claim=(id,where,scope)=>{if(!id) return;if(!ID_PATTERN.test(id)) problems.push(P.idChars(where,id));
+    claimIn(ids,scope===undefined?(mod?mod.id:""):scope,id,where);};
+  const claimModule=(id,where)=>{if(!id) return;if(!ID_PATTERN.test(id)) problems.push(P.idChars(where,id));
+    if(modIds.has(id)) dup(where,id);modIds.add(id);};
+  /* a block id's scope: the module whose fence holds the block, else the data section */
+  const blockScope=()=>section==="content"&&mod?mod.id:SHARED;
   const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__footnotes:[],__line:line};
     if(fm.copyright||fm.license||fm.source) m.rights={copyright:fm.copyright||"",license:fm.license||"",source:fm.source||""};
     modules.push(m);return m;};
@@ -2207,10 +2284,11 @@ function readBlocks(items,fm,problems){const P=strings("problem");
      belong to it. The id is the title's letters and digits, as dashes. */
   const implicit=!items.some(x=>x.t==="line"&&(x.kind==="activity"||x.kind==="module"));
   const newActivity=(w,title,line)=>{const id=w.id||idWord(title||fm.title||"")||idWord(fm.id||"")||"activity-"+(++seq);
-    claim(id,"line "+line);
-    const a={id,kind:w.flags.has("repeat")||w.flags.has("daily")?"entry":"board",title:title||undefined,pages:[{id:"p1",blocks:[]}]};
+    claim(id,"line "+line,mod?mod.id:"");
+    const a={id:addrOf(mod?mod.id:"",id),kind:w.flags.has("repeat")||w.flags.has("daily")?"entry":"board",title:title||undefined,pages:[{id:"p1",blocks:[]}]};
     if(w.flags.has("daily")) a.upsert="day";if(w.flags.has("hidden")) a.home=false;
     /* an activity outside any module fence is a module of its own */
+    if(!mod) claimModule(id,"line "+line);
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
     act=a;return a;};
   const page=()=>{if(!act) newActivity({id:null,flags:new Set()},fm.title,0);return act.pages[act.pages.length-1];};
@@ -2240,31 +2318,38 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       r.bad.forEach(x=>problems.push(P.themeBadLine(P.line(it.line),x)));
       r.dropped.forEach(k=>problems.push(P.themeDropped(P.line(it.line),k)));
       return;}
-    if(!/^booklet$/i.test(info[0])){if(it.id&&!(it.id in figures)) figures[it.id]={lang:(info[0]||"").toLowerCase(),code:it.code};return;}
+    if(!/^booklet$/i.test(info[0])){
+      if(it.id&&section!=="records"){claimIn(blockIds,blockScope(),it.id,P.line(it.line));
+        const key=addrOf(blockScope()===SHARED?"":blockScope(),it.id);
+        if(!(key in figures)) figures[key]={lang:(info[0]||"").toLowerCase(),code:it.code};}
+      return;}
     if(/^booklet$/i.test(info[0])){const what=(info[1]||"").toLowerCase();let o=null;
       try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(P.line(it.line),what||"booklet"));return;}
       if(!o||typeof o!=="object"){problems.push(P.blockNoObject(P.line(it.line),what));return;}
       if(what==="widget"){if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
-        const w={...o,id:it.id};
+        claimIn(blockIds,blockScope(),it.id,P.line(it.line));
+        const w={...o,id:it.id};if(blockScope()!==SHARED) w.module=mod.id;
         widgets.push(w);}
       else if(what==="data"){
         if(section==="records") return;
         if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
-        if(dataBlocks.some(d=>d.id===it.id)){dup(P.line(it.line),it.id);return;}
+        const here=section==="content"?mod:null;
+        if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
         const d=readData(o);
         if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
         /* it lives where a widget's data lives: inside its module's fence, or outside any (the data section) */
         dataBlocks.push({id:it.id,mod:section==="content"?mod:null,rows:d.rows,fields:d.fields,line:it.line});}
-      else if(what==="answers") Object.assign(answers,o);
+      else if(what==="answers") answers[recScope]=Object.assign(answers[recScope]||{},o);
       else if(what==="entries"&&info[2]){
         if(!Array.isArray(o.items)) problems.push(P.recordNoItems(P.line(it.line),info[2]));
-        entries[info[2]]=(Array.isArray(o.items)?o.items:[]).filter(e=>e&&e.ts);}
-      else if(what==="draft"&&info[2]) drafts[info[2]]=o;
+        entries[addrOf(recScope,info[2])]=(Array.isArray(o.items)?o.items:[]).filter(e=>e&&e.ts);}
+      else if(what==="draft"&&info[2]) drafts[addrOf(recScope,info[2])]=o;
       else problems.push(P.blockUnknown(P.line(it.line),what));}
   };
   const onBreak=()=>{if(row) closeRow(P.rowRunsPage);
     if(section==="content"&&act){act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});lastQ=null;}};
-  const onText=it=>{if(section!=="content") return;
+  const onText=it=>{if(section==="data"){sharedNotes.push(...stripFootnoteDefs(it.text).defs);return;}
+    if(section!=="content") return;
     const strip=stripFootnoteDefs(it.text);
     if(!act&&!mod&&implicit&&(strip.text||strip.defs.length)) page();
     const owner=mod||(act&&moduleHolding(modules,act));if(owner) owner.__footnotes.push(...strip.defs);
@@ -2279,9 +2364,11 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       if(row){problems.push(P.rowNested(where));return;}
       page();row={blocks:[],line:it.line};lastQ=null;return;}
     if(k==="data"){section="data";act=null;return;}
-    if(k==="records"){section="records";act=null;return;}
+    if(k==="records"){section="records";act=null;
+      /* the module id on a records line says whose the record blocks below it are, until the next records line */
+      recScope=it.id&&modules.some(m=>m.id===it.id&&!m.__bare)?it.id:"";return;}
     /* a shared menu is never drawn; its list is kept for the questions that name it */
-    if(k==="menu"&&section!=="records"){claim(it.id,where);
+    if(k==="menu"&&section!=="records"){claim(it.id,where,section==="content"?(mod?mod.id:SHARED):SHARED);
       if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:section==="content"?mod:null});return;}
     if(section!=="content"||SCENERY_KINDS.has(k)) return;
     if(k==="module"){
@@ -2289,7 +2376,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
         else if(it.id&&it.id!==mod.id) refuse(P.moduleEndMismatch(where,it.id,mod.id));
         mod=null;act=null;return;}
       if(mod) refuse(P.moduleNested(where,it.id,mod.id));
-      claim(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;return;}
+      claimModule(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;return;}
     if(k==="activity"){newActivity(it,it.title,it.line);lastQ=null;return;}
     if(QUESTION_KINDS.has(k)){
       if(!it.id){problems.push(P.questionNoId(where,k));return;}
@@ -2298,6 +2385,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       if(!build){problems.push(P.kindNotDrawn(where,k));lastQ=null;return;}
       const r=build(it,hintOf(it.body),where,P);
       if(r.bad){problems.push(r.bad);return;}
+      if(r.block.type==="widget"&&mod) r.block.module=mod.id;
       lastQ=put(r.block);
       if(r.menu) menuUses.push({block:lastQ,menu:it.set.menu,mod,where});
       return;}
@@ -2316,42 +2404,45 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     else if(it.t==="text") onText(it);
     else onLine(it);}
   if(row) closeRow(P.rowNeverClosed);
-  /* a data block's id is also one a query reads by, so it may not be a question's or an activity's too */
-  dataBlocks.forEach(d=>{if(ids.has(d.id)) dup(P.line(d.line),d.id);});
+  /* a data block's id is also one a query reads by, so it may not be a question's or an activity's too,
+     within its module (a block outside every fence, in the module with no name) */
+  dataBlocks.forEach(d=>{const set=ids.get(d.mod?d.mod.id:"");if(set&&set.has(d.id)) dup(P.line(d.line),d.id);});
   if(mod) refuse(P.moduleNeverClosed(P.line(mod.__line),mod.id));
-  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme};}
+  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme,sharedNotes};}
 function resolveMenus({menus,menuUses,modules},problems){const P=strings("problem");
-  /* a question that names a shared menu takes its options from it, wherever in the file it is
-     (a menu's id is unique in the file, like any other id) */
+  /* a question that names a shared menu takes its options from it: from its own module's menus first,
+     then from the data section's (a menu outside every fence), never from another module's */
   for(const u of menuUses){
-    const hit=menus.find(m=>m.id===u.menu);
+    const hit=menus.find(m=>m.id===u.menu&&m.mod===u.mod)||menus.find(m=>m.id===u.menu&&m.mod===null);
     if(!hit){problems.push(P.menuMissing(u.where,u.menu,u.block.id));
       modules.forEach(m=>m.activities.forEach(a=>a.pages.forEach(pg=>stripBlock(pg.blocks,u.block))));continue;}
     u.block.options=hit.items.slice();}
 }
 function linkQueries({modules,queries,dataBlocks},problems){const P=strings("problem");
-  /* A query reads within its own module, so a `from` that names nothing, or
-     something in another module, is refused here and never reaches drawing.
-     A file with no module fence is one module. An activity must keep entries;
-     a question may sit in any activity. */
-  {const fenced=modules.some(m=>!m.__bare);
+  /* A query reads within its own module, so a `from` that names nothing, or something only in another
+     module, is refused here and never reaches drawing. It is looked for in the query's own module first
+     and then in the data section (a data block outside every fence). The activities outside every module
+     fence are one module. An activity must keep entries; a question may sit in any activity. */
+  {const scopeOf=m=>m.__bare?"":m.id;
    const where=new Map();
-   modules.forEach(m=>m.activities.forEach(a=>{where.set(a.id,{m,a});
-     a.pages.forEach(pg=>rowWalk(pg.blocks,b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) where.set(b.id,{m,a,q:b});}));}));
-   for(const x of queries){const {q,block}=x,drop=(why,hard)=>{const m=P.queryRefused(x.act.id,why);problems.push(m);if(hard) problems.refused.push(m);
+   modules.forEach(m=>{const sc=scopeOf(m),t=where.get(sc)||where.set(sc,new Map()).get(sc);
+     m.activities.forEach(a=>{t.set(shortId(a.id),{m,a});
+       a.pages.forEach(pg=>rowWalk(pg.blocks,b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) t.set(b.id,{m,a,q:b});}));});});
+   for(const x of queries){const {q,block}=x,drop=(why,hard)=>{const m=P.queryRefused(shortId(x.act.id),why);problems.push(m);if(hard) problems.refused.push(m);
        x.act.pages.forEach(pg=>stripBlock(pg.blocks,block));};
-     const src=q.from&&where.get(q.from),here=moduleHolding(modules,x.act),as=(q.view||{}).as;
+     const here=moduleHolding(modules,x.act),sc=scopeOf(here),as=(q.view||{}).as;
+     const src=q.from&&(where.get(sc)||new Map()).get(q.from);
+     const elsewhere=()=>!!q.from&&([...where].some(([k,t])=>k!==sc&&t.has(q.from))||dataBlocks.some(z=>z.id===q.from&&z.mod!==null&&z.mod!==here));
      if(as!==undefined&&!QUERY_VIEWS.has(as)){drop(P.queryViewBad(as,[...QUERY_VIEWS]));continue;}
-     if(!src){const d=q.from&&dataBlocks.find(z=>z.id===q.from);
+     if(!src){const d=q.from&&(dataBlocks.find(z=>z.id===q.from&&z.mod===here)||dataBlocks.find(z=>z.id===q.from&&z.mod===null));
        if(d){
-         if(fenced&&d.mod!==null&&d.mod!==here){drop(P.queryOtherModule(q.from),true);continue;}
          if(as==="cards"){drop(P.queryCardsData(q.from));continue;}
          block.data={rows:d.rows,fields:d.fields};continue;}
+       if(elsewhere()){drop(P.queryOtherModule(q.from),true);continue;}
        drop(P.queryNothing(q.from||""));continue;}
-     if(fenced&&src.m!==here){drop(P.queryOtherModule(q.from),true);continue;}
-     if(!fenced) block.fileWide=true;
      if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};}
-     else if(src.a.kind!=="entry"){drop(P.queryNoEntries(q.from));continue;}}}
+     else if(src.a.kind!=="entry"){drop(P.queryNoEntries(q.from));continue;}
+     else block.from=src.a.id;}}
 }
 /* a line's words without Markdown marks, links or footnote marks */
 const plainText=s=>String(s||"").replace(/[*_`~=]|\[\^[^\]]*\]|!?\[\[[^\]]*\]\]/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1").trim();
@@ -2368,39 +2459,44 @@ function activityOut(a){const {pages,...ra}=a;
     const h=l&&l.match(/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/);return !!h&&plainText(h[1])===pageHeading(p);};
   return {...ra,pages:pages.map(p=>({id:p.id,title:pageHeading(p),...(lead(p)?{lead:true}:{}),blocks:p.blocks}))};}
 /* a module as the page keeps it: its activities, its blurb, and the sources and citations its footnotes define */
+/* footnote definitions read into the source and citation registries the citation panel already knows how
+   to draw; `tag` keeps one list's source keys apart from another's */
+function notesOut(defs,tag){const sources=[],citations=[];
+  defs.forEach((d,idx)=>{const {source,citation}=parseCiteNote(d.note);
+    let key;if(source){key=tag+(idx+1);sources.push({key,...source});}
+    citations.push({id:d.id,source:key,...citation});});
+  return {sources,citations};}
 function moduleOut(m){const {__intro,__line,__bare,__footnotes,activities,...rest}=m;
   const acts=activities.map(activityOut);
   const blurb=firstPara(__intro.join("\n\n"));
-  /* every footnote this module's own text defined, read into the source and
-     citation registries the citation panel already knows how to draw */
-  const sources=[],citations=[];
-  __footnotes.forEach((d,idx)=>{const {source,citation}=parseCiteNote(d.note);
-    let key;if(source){key="s"+(idx+1);sources.push({key,...source});}
-    citations.push({id:d.id,source:key,...citation});});
+  /* every footnote this module's own text defined */
+  const {sources,citations}=notesOut(__footnotes,"s");
   const o={...rest,...(blurb?{blurb}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
   return o;}
-function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme},fm,L,source,problems){
+function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes},fm,L,source,problems){
   const out=modules.filter(m=>m.activities.length).map(moduleOut);
-  const st=emptyState();st.entries=entries;st.answers={...answers};
+  const st=emptyState();st.entries=entries;st.answers=Object.fromEntries(Object.entries(answers).map(([k,v])=>[k,{...v}]));
+  const shared=notesOut(sharedNotes||[],"d");
   const book={booklet:+FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
-    ...(Object.keys(figures).length?{figures:{...figures}}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L}};
+    ...(Object.keys(figures).length?{figures:{...figures}}:{}),
+    ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L}};
   return {ok:out.length>0&&!problems.refused.length,unread:problems,refused:problems.refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st};}
 function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
-  const gd=STATE.answers||{},recs=[];
-  allModules().forEach(m=>{const acts=activitiesOf(m),own=[];
+  const recs=[];
+  allModules().forEach(m=>{const acts=activitiesOf(m),own=[],gd=peekAnswers(scopeOfModule(m));
     const keys=new Set();acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
     const ans={};keys.forEach(k=>{if(Object.prototype.hasOwnProperty.call(gd,k)&&holdsSomething(gd[k])) ans[k]=gd[k];});
     if(Object.keys(ans).length) own.push(...fence("booklet answers",JSON.stringify(ans,null,1)));
     acts.filter(a=>a.kind==="entry").forEach(a=>{
-      const items=((STATE.entries||{})[a.id]||[]).filter(e=>e&&e.ts).slice().sort((x,y)=>String(x.ts).localeCompare(String(y.ts)));
-      if(items.length) own.push(...fence("booklet entries "+a.id,"{\"items\": [\n"+items.map(e=>JSON.stringify(e)).join(",\n")+"\n]}"));
+      const fid=shortId(a.id),items=((STATE.entries||{})[a.id]||[]).filter(e=>e&&e.ts).slice().sort((x,y)=>String(x.ts).localeCompare(String(y.ts)));
+      if(items.length) own.push(...fence("booklet entries "+fid,"{\"items\": [\n"+items.map(e=>JSON.stringify(e)).join(",\n")+"\n]}"));
       const d=DRAFTS.custom&&DRAFTS.custom[a.id];
       /* only what holds something: the empty lists an engine starts with are not work */
       const kept=d&&Object.fromEntries(Object.entries(d).filter(([,v])=>holdsSomething(v)));
-      if(kept&&Object.keys(kept).length) own.push(...fence("booklet draft "+a.id,JSON.stringify(kept)));});
+      if(kept&&Object.keys(kept).length) own.push(...fence("booklet draft "+fid,JSON.stringify(kept)));});
     if(own.length) recs.push("> [!records|"+m.id+"] "+tx(m.title,m.id),"",...own);});
   if(recs.length) out.push("%%","> [!records] App record — do not edit below this line","",...recs,"%%","");
   return out.join("\n");}
@@ -2513,15 +2609,6 @@ function themeBaseTable(name){const out={};
    data section. This is the only way a booklet's design grows (there is no
    in-browser design editor, SPEC.md section 13). The text comes from the
    registry's module file. */
-function moduleSpan(lines){
-  let openAt=-1,closeAt=-1;
-  for(let i=0;i<lines.length;i++){const m=lines[i].match(CALLOUT_LINE);
-    if(m&&m[1].toLowerCase()==="module"){const w=calloutWords("module",m[2]);
-      if(w.flags.has("end")){closeAt=i;break;}
-      if(openAt<0) openAt=i;}}
-  return {openAt,closeAt};}
-/* the id on a module's open line, and the span of the module with a given id */
-function moduleIdAt(lines,i){const m=i>=0?lines[i].match(CALLOUT_LINE):null;return m?calloutWords("module",m[2]).id:null;}
 function moduleSpanOf(lines,id){let openAt=-1;
   for(let i=0;i<lines.length;i++){const m=lines[i].match(CALLOUT_LINE);
     if(m&&m[1].toLowerCase()==="module"){const w=calloutWords("module",m[2]);
@@ -2547,62 +2634,167 @@ function moduleTextProblems(text){
   if(R.unread.length) return R.unread;
   if(!(R.template.modules||[]).length) return [strings("problem").noModule];
   return [];}
+/* ---- RENAME ON A CLASH (SPEC.md section 10) ----
+   Booklet reads a block id or a footnote id in its own module. Obsidian reads `![[#^id]]` as the first block
+   with that id in the note, and Markdown reads `[^id]` and its definition across the whole file (Obsidian and
+   GitHub), so two modules in one file that both use `^fig` or `[^1]` would show the first one's for both
+   there. So when Add a module brings a block id or a footnote id that another module, or the data section,
+   already uses, it writes that id into the incoming module's text as `<module-id>-<id>` (and `-2`, `-3`
+   if that is taken too): the `^id` line, every embed or link to it, a query's `from:` that names it, and for
+   a footnote every mark and its definition. Lines inside fenced code and text inside inline code are left
+   alone, but for the `from:` line of a `booklet query` fence, which names a block. An id that clashes with
+   nothing is left exactly as the author wrote it, and question, activity, widget-line and menu ids are never
+   renamed (nothing a host resolves depends on them). An update runs it again on the module's own text, so
+   the result is the same. This whole block, and its one call in addModuleText, can be taken out alone. */
+/* which lines of a file are fenced code (the fence lines included) */
+function codeMask(lines){const mask=new Array(lines.length).fill(false);
+  for(let i=0;i<lines.length;i++){const f=FENCE_RE.exec(lines[i]);if(!f) continue;
+    const k=Math.min(fenceEnd(lines,i,f),lines.length-1);
+    for(let j=i;j<=k;j++) mask[j]=true;i=k;}
+  return mask;}
+const BLOCK_ID_LINE=/^\^([A-Za-z0-9-]+)$/;
+/* the ids of the blocks (`^id` after a fence) in some lines, by the line the id is on */
+function blockIdLines(lines){const out=new Map();
+  fencedSpans(lines,0,lines.length).forEach(s=>{const m=s.end>s.start?(lines[s.end]||"").trim().match(BLOCK_ID_LINE):null;if(m) out.set(s.end,m[1]);});
+  return out;}
+/* the ids of the footnotes defined in some lines (`[^id]: note`, outside fenced code), by line */
+function noteIdLines(lines){const mask=codeMask(lines),out=new Map();
+  lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CITE_DEF);if(m) out.set(i,m[1]);});
+  return out;}
+/* a line with `fn` applied to every stretch of it that is not inline code */
+function outsideInlineCode(ln,fn){let out="",i=0;
+  while(i<ln.length){const j=ln.indexOf("`",i);
+    if(j<0){out+=fn(ln.slice(i));break;}
+    let n=0;while(ln[j+n]==="`") n++;
+    const run="`".repeat(n);let k=ln.indexOf(run,j+n);
+    while(k>=0&&ln[k+n]==="`") k=ln.indexOf(run,k+n+1);
+    if(k<0){out+=fn(ln.slice(i));break;}
+    out+=fn(ln.slice(i,j))+ln.slice(j,k+n);i=k+n;}
+  return out;}
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+/* The module's lines with each block id or footnote id that `takenBlocks` or `takenNotes` already holds renamed
+   to `<modId>-<id>`. Returns {lines, renamed:[{what,from,to}]}. */
+function renameClashingIds(lines,takenBlocks,takenNotes,modId){
+  const mask=codeMask(lines),bl=blockIdLines(lines),nl=noteIdLines(lines);
+  const usedB=new Set(bl.values()),usedN=new Set(nl.values());
+  /* the ids the module's own lines give to activities, questions and menus: a query's `from:` that names one of
+     these names that, not a block */
+  const own=new Set();lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CALLOUT_LINE);
+    if(m&&["activity","menu","module"].concat([...QUESTION_KINDS]).includes(m[1].toLowerCase())){const w=calloutWords(m[1].toLowerCase(),m[2]);if(w.id) own.add(w.id);}});
+  const fresh=(id,taken,used)=>{let n=modId+"-"+id,k=2;while(taken.has(n)||used.has(n)){n=modId+"-"+id+"-"+k;k++;}used.add(n);return n;};
+  const mapB=new Map(),mapN=new Map(),renamed=[];
+  for(const id of [...usedB]) if(takenBlocks.has(id)){const to=fresh(id,takenBlocks,usedB);mapB.set(id,to);renamed.push({what:"block",from:id,to});}
+  for(const id of [...usedN]) if(takenNotes.has(id)){const to=fresh(id,takenNotes,usedN);mapN.set(id,to);renamed.push({what:"footnote",from:id,to});}
+  if(!renamed.length) return {lines,renamed};
+  /* the `from:` lines of query fences */
+  const fromLines=new Set();
+  for(let i=0;i<lines.length;i++){const f=FENCE_RE.exec(lines[i]);if(!f) continue;
+    const k=Math.min(fenceEnd(lines,i,f),lines.length-1);
+    if(/^booklet[ \t]+query\b/i.test(f[2].trim())) for(let j=i+1;j<k;j++) fromLines.add(j);
+    i=k;}
+  const out=lines.map((ln,i)=>{
+    if(bl.has(i)&&mapB.has(bl.get(i))) return ln.replace(/\^[A-Za-z0-9-]+/,"^"+mapB.get(bl.get(i)));
+    if(fromLines.has(i)){const m=ln.match(/^(\s*from:\s*)(["']?)([A-Za-z0-9-]+)\2(\s*)$/i);
+      return m&&mapB.has(m[3])&&!own.has(m[3])?m[1]+m[2]+mapB.get(m[3])+m[2]+m[4]:ln;}
+    if(mask[i]) return ln;
+    return outsideInlineCode(ln,seg=>{
+      for(const [from,to] of mapB) seg=seg.replace(new RegExp("(\\[\\[[^\\]#|]*#\\^)"+reEsc(from)+"((?:\\|[^\\]]*)?\\]\\])","g"),(m,a,b)=>a+to+b);
+      for(const [from,to] of mapN) seg=seg.replace(new RegExp("\\[\\^"+reEsc(from)+"\\]","g"),()=>"[^"+to+"]");
+      return seg;});});
+  return {lines:out,renamed};}
+/* every module fence in some lines, in order: {id, openAt, closeAt} */
+function moduleSpans(lines){const mask=codeMask(lines),out=[];let at=-1,id=null;
+  lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CALLOUT_LINE);
+    if(!m||m[1].toLowerCase()!=="module") return;const w=calloutWords("module",m[2]);
+    if(w.flags.has("end")){if(at>=0){out.push({id,openAt:at,closeAt:i});at=-1;}}
+    else if(at<0){at=i;id=w.id;}});
+  return out;}
+/* Add a module adds EVERY module a file holds, each one's own lines (its fence, open line to end line) in file
+   order, and the blocks outside every module fence (the file's data section) once. A module the booklet already
+   has is replaced where it sits, so the order of modules does not change. Nothing is changed unless the file
+   this makes is one the renderer reads with nothing refused; then the booklet's design is read from that file,
+   so what is on screen is what the written file holds. */
 function addModuleText(text){
   const problems=moduleTextProblems(text);
   if(problems.length) return {ok:false,problems};
   if(!BOOK||BOOK.booklet!==+FORMAT_VERSION) return {ok:false,problems:[strings("problem").needsV07]};
   const R=parseFile(text);
   const lines=String((R.template.raw||{}).source||"").split("\n");
-  const {openAt,closeAt}=moduleSpan(lines);
-  if(openAt<0||closeAt<0) return {ok:false,problems:[strings("problem").noFence]};
-  const modChunk=lines.slice(openAt,closeAt+1).join("\n");
-  const outside=[...fencedSpans(lines,0,openAt),...fencedSpans(lines,closeAt+1,lines.length)];
-  const extraChunks=outside.filter(s=>!/^ {0,3}(`{3,}|~{3,})[ \t]*booklet[ \t]+theme\b/i.test(lines[s.start])).map(s=>lines.slice(s.start,s.end+1).join("\n"));
-
-  let curLines=String((BOOK.raw||{}).source||"").split("\n");
-  /* An update: a module id the booklet already has. The old module's lines go, and so do the data
-     blocks outside its fence that it names, so the new ones replace them rather than sit beside them. */
-  const newId=moduleIdAt(lines,openAt);
-  const old=newId?moduleSpanOf(curLines,newId):null;
-  const oldText=old?curLines.slice(old.openAt,old.closeAt+1).join("\n"):"";
-  /* a block is the old module's when the old module names its id (an embed, or a query's `from:`) */
-  const named=id=>!!old&&new RegExp("(^|[^A-Za-z0-9-])"+id+"([^A-Za-z0-9-]|$)").test(oldText);
-  if(old){
-    const drop=new Array(curLines.length).fill(false);
-    for(let i=old.openAt;i<=old.closeAt;i++) drop[i]=true;
-    fencedSpans(curLines,0,curLines.length).forEach(s=>{
-      if(s.start>=old.openAt&&s.end<=old.closeAt) return;
-      const m=(curLines[s.end]||"").trim().match(/^\^([A-Za-z0-9-]+)$/);
-      if(m&&named(m[1])) for(let i=s.start;i<=s.end;i++) drop[i]=true;});
-    curLines=curLines.filter((_,i)=>!drop[i]);}
+  const spans=moduleSpans(lines);
+  if(!spans.length) return {ok:false,problems:[strings("problem").noFence]};
+  /* the blocks outside every module fence travel once, into the booklet's data section */
+  const inside=new Array(lines.length).fill(false);
+  spans.forEach(sp=>{for(let i=sp.openAt;i<=sp.closeAt;i++) inside[i]=true;});
+  const extraChunks=fencedSpans(lines,0,lines.length).filter(s=>!inside[s.start]&&!/^ {0,3}(`{3,}|~{3,})[ \t]*booklet[ \t]+theme\b/i.test(lines[s.start]))
+    .map(s=>lines.slice(s.start,s.end+1).join("\n"));
+  const extraIds=new Set(extraChunks.flatMap(c=>[...blockIdLines(c.split("\n")).values()]));
+  let cur=String((BOOK.raw||{}).source||"").split("\n");
+  const blank=!cur.join("").trim(),renamedIds=[],incoming=[];
+  for(const sp of spans){
+    let mod=lines.slice(sp.openAt,sp.closeAt+1);
+    /* An update: a module id the booklet already has. Its lines are replaced where they sit, and the data
+       blocks outside every fence that the old module names go, so the new ones replace them. */
+    let old=sp.id?moduleSpanOf(cur,sp.id):null;
+    if(old){
+      const oldText=cur.slice(old.openAt,old.closeAt+1).join("\n");
+      /* a block is the old module's when it sits outside every module fence (a block inside another module's
+         fence is that module's, and an id is only that module's own) and the old module names its id with an
+         embed, a link or a query's `from:` */
+      const named=id=>new RegExp("#\\^"+id+"(?![A-Za-z0-9-])").test(oldText)||new RegExp("^[ \\t]*from:[ \\t]*[\"']?"+id+"[\"']?[ \\t]*$","m").test(oldText);
+      const fenced=moduleSpans(cur),drop=new Array(cur.length).fill(false);
+      fencedSpans(cur,0,cur.length).forEach(s=>{
+        if(fenced.some(f=>s.start>=f.openAt&&s.end<=f.closeAt)) return;
+        const m=(cur[s.end]||"").trim().match(/^\^([A-Za-z0-9-]+)$/);
+        if(m&&named(m[1])) for(let i=s.start;i<=s.end;i++) drop[i]=true;});
+      cur=cur.filter((_,i)=>!drop[i]);old=moduleSpanOf(cur,sp.id);}
+    /* RENAME ON A CLASH (see above): a block id or footnote id another module or the data section already
+       uses is written into the module's text as `<module-id>-<id>` */
+    if(sp.id){
+      const rest=old?cur.slice(0,old.openAt).concat(cur.slice(old.closeAt+1)):cur;
+      const r=renameClashingIds(mod,new Set([...blockIdLines(rest).values(),...extraIds]),new Set(noteIdLines(rest).values()),sp.id);
+      mod=r.lines;renamedIds.push(...r.renamed);}
+    if(old) cur=cur.slice(0,old.openAt).concat(mod,cur.slice(old.closeAt+1));
+    else{
+      let dataAt=-1;
+      for(let i=0;i<cur.length;i++){const m=cur[i].match(CALLOUT_LINE);if(m&&m[1].toLowerCase()==="data"){dataAt=i;break;}}
+      const main=(dataAt<0?cur:cur.slice(0,dataAt)).join("\n").replace(/\s+$/,""),data=dataAt<0?"":"\n\n"+cur.slice(dataAt).join("\n").replace(/\s+$/,"");
+      cur=(main+(main.trim()?"\n\n":"")+mod.join("\n")+data).split("\n");}
+    incoming.push(sp.id);}
   let dataAt=-1;
-  for(let i=0;i<curLines.length;i++){const m=curLines[i].match(CALLOUT_LINE);if(m&&m[1].toLowerCase()==="data"){dataAt=i;break;}}
-  const mainPart=(dataAt<0?curLines:curLines.slice(0,dataAt)).join("\n").replace(/\s+$/,"");
-  const dataPart=(dataAt<0?"":curLines.slice(dataAt).join("\n")).replace(/\s+$/,"");
+  for(let i=0;i<cur.length;i++){const m=cur[i].match(CALLOUT_LINE);if(m&&m[1].toLowerCase()==="data"){dataAt=i;break;}}
+  const mainPart=(dataAt<0?cur:cur.slice(0,dataAt)).join("\n").replace(/\s+$/,"");
+  const dataPart=(dataAt<0?"":cur.slice(dataAt).join("\n")).replace(/\s+$/,"");
   /* a booklet put together here has no front matter yet; without it the file would not be one */
-  const head=mainPart.trim()?"":"---\nbooklet: "+FORMAT_VERSION+"\nlang: "+((BOOK.raw||{}).lang||lang)+"\n---\n\n";
-  const newMain=head+mainPart+"\n\n"+modChunk+"\n";
-  const newData=extraChunks.length?(dataPart||"> [!data] Data")+"\n\n"+extraChunks.join("\n\n")+"\n":dataPart;
-  const newSource=newData?newMain+"\n"+newData+"\n":newMain;
+  const head=blank?"---\nbooklet: "+FORMAT_VERSION+"\ntitle: "+JSON.stringify(strings("library").untitled)+"\nlang: "+((BOOK.raw||{}).lang||lang)+"\n---\n\n":"";
+  const newMain=head+mainPart+"\n";
+  const newData=extraChunks.length?(dataPart||"> [!data] Data")+"\n\n"+extraChunks.join("\n\n")+"\n":dataPart?dataPart+"\n":"";
+  const newSource=newData?newMain+"\n"+newData:newMain;
 
   /* read the booklet this would make before changing anything: if the renderer would refuse that
-     file, nothing is added and the reader is told why */
-  /* the parser does not refuse a widget block id used twice, but a widget is kept by its id, so the
-     second would silently replace the first one's: for a different module that is a clash too */
-  const widgetClash=[...new Set((R.template.widgets||[]).map(w=>w&&w.id).filter(id=>id&&(BOOK.widgets||[]).some(x=>x.id===id)&&!named(id)))];
-  if(widgetClash.length) return {ok:false,problems:widgetClash.map(strings("problem").moduleIdClash)};
+     file, nothing is added and the reader is told why. An id another module uses is no clash (an id is
+     unique within its module); what can clash is a block the module brings into the data section. */
   const made=parseFile(newSource),refused=(made&&made.refused)||[];
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notV07]};
   if(refused.length){const P=strings("problem"),dups=made.dupIds||[];
     const ids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
     return {ok:false,problems:[...ids.map(P.moduleIdClash),...refused.filter(m=>!said.has(m))]};}
 
-  editBook(t=>{t.raw={...(t.raw||{}),source:newSource};});
-  (R.template.widgets||[]).forEach(addWidget);
-  if(R.template.figures) editBook(t=>{t.figures={...R.template.figures,...(t.figures||{})};});
+  /* the design is read back from that file: each added module as it stands there, its own widgets and
+     figures replacing the ones it had (an update drops what the new text no longer has), and the data
+     section's blocks it brought */
+  const T=made.template,mine=new Set(incoming.filter(Boolean));
+  editBook(t=>{t.raw={...(t.raw||{}),source:newSource};
+    t.widgets=(t.widgets||[]).filter(w=>!(w.module&&mine.has(w.module))&&!(!w.module&&extraIds.has(w.id)));
+    const keep=Object.fromEntries(Object.entries(t.figures||{}).filter(([k])=>!(k.includes(ADDR_SEP)&&mine.has(k.slice(0,k.indexOf(ADDR_SEP))))&&!(!k.includes(ADDR_SEP)&&extraIds.has(k))));
+    const own=Object.fromEntries(Object.entries(T.figures||{}).filter(([k])=>k.includes(ADDR_SEP)?mine.has(k.slice(0,k.indexOf(ADDR_SEP))):extraIds.has(k)));
+    const all={...keep,...own};if(Object.keys(all).length) t.figures=all;else delete t.figures;});
+  (T.widgets||[]).filter(w=>w.module?mine.has(w.module):extraIds.has(w.id)).forEach(addWidget);
   const added=[];
-  (R.template.modules||[]).forEach(mod=>{if(addModule(mod)) added.push(mod.id);});
-  return {ok:true,added};}
+  /* the module file's own copyright, licence and source ride on its module, as they always have (the
+     composed file's front matter is the booklet's, so the module's own are kept from the file it came in) */
+  (T.modules||[]).filter(m=>mine.has(m.id)).forEach(mod=>{const src=R.template.modules.find(x=>x.id===mod.id);
+    if(addModule(src&&src.rights?{...mod,rights:src.rights}:mod)) added.push(mod.id);});
+  return {ok:true,added,renamed:renamedIds};}
 function parseFile(text){
   if(isBooklet(text)) return parseBooklet(text);
   const old=oldMarker(text);
@@ -2629,7 +2821,7 @@ function editBook(fn){if(BOOK===EMPTY_BOOKLET) BOOK=clone(EMPTY_BOOKLET);
   BOOK.customized=true;fn(BOOK);markDirty();}
 function addWidget(w){if(!w||typeof w!=="object"||typeof w.id!=="string"||!w.engine) return false;
   editBook(t=>{t.widgets=t.widgets||[];
-    const i=t.widgets.findIndex(x=>x.id===w.id);
+    const i=t.widgets.findIndex(x=>x.id===w.id&&x.module===w.module);
     if(i>=0) t.widgets[i]=w; else t.widgets.push(w);});
   return true;}
 function addModule(mod){if(!moduleOk(mod)) return false;
@@ -3066,14 +3258,14 @@ function mermaidNode(code){
   return box;}
 /* one figure, by the id on its fence: a mermaid fence is drawn, any other
    fence is shown as the code it is */
-function figureFor(id){const f=BOOK&&BOOK.figures&&BOOK.figures[id];
+function figureFor(id,scope){const fs=BOOK&&BOOK.figures,f=fs&&((scope&&fs[addrOf(scope,id)])||fs[id]);
   if(!f) return null;
   return f.lang==="mermaid"?mermaidNode(f.code):codeBlock(f.lang,f.code);}
 /* what a prose block hands mdNodes, to draw formulas, diagrams and embeds */
-const FIGURE_HOOKS={
+const figureHooks=scope=>({
   math:mathNode,
   fence:(lang,code)=>lang==="mermaid"?mermaidNode(code):null,
-  embed:t=>{const m=/^[^#|]*#\^([A-Za-z0-9-]+)\s*(?:\|.*)?$/.exec(t);return m?figureFor(m[1]):null;}};
+  embed:t=>{const m=/^[^#|]*#\^([A-Za-z0-9-]+)\s*(?:\|.*)?$/.exec(t);return m?figureFor(m[1],scope):null;}});
 
 /* ======================= 8. WIDGET ENGINES =======================
    the two engines a widget names (svg-regions, grid-select) and the helpers they share. */
@@ -3346,7 +3538,7 @@ function renderBlocks(list,draft,activityId){const host=el("div",{});
     list().forEach(b=>host.append(renderBlock(b,draft,activityId)));};
   draw();return host;}
 function entryCard(e,type,onDelete){const u=STRINGS[lang].ui;
-  const tag=tx((moduleOf(type)||{}).title,activityOf(type).id);
+  const tag=tx((moduleOf(type)||{}).title,shortId(activityOf(type).id));
   /* an entry is read back through the blocks that asked for it */
   const {card}=entryBody(e,blocksOf(type),[el("span",{class:"tag"},tag),fmtWhen(e.ts)]);
   if(onDelete){const foot=el("div",{class:"foot"});const btn=el("button",{type:"button",class:"small danger"},u.del);
@@ -3371,7 +3563,7 @@ const draftFor=id=>{DRAFTS.custom=DRAFTS.custom||{};DRAFTS.custom[id]=DRAFTS.cus
 const keptFor=id=>{STATE.entries=STATE.entries||{};STATE.entries[id]=STATE.entries[id]||[];return STATE.entries[id];};
 /* where an activity's answers live: a repeating one keeps a draft, any other the
    booklet's answers, keyed by question id as the file's own `answers` record is */
-const answersFor=id=>activityOf(id).kind==="entry"?draftFor(id):STATE.answers;
+const answersFor=id=>activityOf(id).kind==="entry"?draftFor(id):answersIn(scopeOfAddr(id));
 /* every block of an activity, on every page and inside every group */
 const allBlocksOf=a=>{const out=[];const walk=l=>(Array.isArray(l)?l:[]).forEach(b=>{if(b&&typeof b==="object"){out.push(b);walk(b.blocks);}});
   walk(activityBlocks(a));return out;};
@@ -3405,7 +3597,7 @@ function drawRow(b,draft,activityId){const box=el("div",{class:"pblock row"});
 function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"});
   const v={...(b.view||{}),fields:b.fields},key=activityId+":"+b.id;
   if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,key}));return box;}
-  const same=b.fileWide||(holderOf(b.from)&&holderOf(b.from)===holderOf(activityId));
+  const same=holderOf(b.from)&&scopeOfAddr(b.from)===scopeOfAddr(activityId);
   const q=b.field?blocksOf(b.from).find(x=>x.id===b.field):null;
   const none={kind:"entries",rows:[],keys:new Set(),own:[],first:"date",lab:k=>k,qs:[]};
   box.append(...viewNodes(same&&(!b.field||q)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,key}));
@@ -3413,7 +3605,7 @@ function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"}
 /* A widget block names a widget; the widget names an engine. The renderer
    knows engines and nothing else, so an activity can carry a body map it
    has never seen before as long as the file brings the widget with it. */
-function drawWidget(b,draft,activityId){const W=widgetOf(b.widget);
+function drawWidget(b,draft,activityId){const W=widgetOf(b.widget,b.module);
   const box=el("div",{});
   if(!W){box.append(el("p",{class:"hint"},STRINGS[lang].ui.missingWidget(b.widget||"?")));return box;}
   const eng=ENGINES[W.engine];
@@ -3590,7 +3782,7 @@ const choiceSummary=(b,e,k)=>{const ns=picksOf(e[k]).filter(x=>typeof x==="strin
 const numberSummary=(b,e,k)=>{const v=e[k];if(v==null||v==="") return null;
   return [fieldLabel(b),String(v)];};
 const SUMMARY={
-  widget:(b,e,k)=>{const W=widgetOf(b.widget);if(!W) return null;
+  widget:(b,e,k)=>{const W=widgetOf(b.widget,b.module);if(!W) return null;
     const vals=e[k];if(!Array.isArray(vals)||!vals.length) return null;
     if(W.engine==="svg-regions"){
       const names=vals.map(r=>{const rg=(W.regions||[]).find(x=>x.id===r.id);return rg?tx(rg.label,r.id):r.id;});
@@ -3617,9 +3809,9 @@ function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
   return hasOwn(SUMMARY,b.type)?SUMMARY[b.type](b,e,keys[0]):null;}
 /* A query reads what was kept in the SAME module: the kept entries of an
    activity that keeps them, newest first, and nothing across a module boundary
-   (a file with no module fence is one module, so its block says `fileWide`). */
-function queryEntries(from,activityId,fileWide){
-  if(!holderOf(from)||(!fileWide&&holderOf(from)!==holderOf(activityId))) return [];
+   (the activities outside every module fence are one module). `from` and `activityId` are addresses. */
+function queryEntries(from,activityId){
+  if(!holderOf(from)||scopeOfAddr(from)!==scopeOfAddr(activityId)) return [];
   return [...keptFor(from)].sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
 /* A kept entry as a card: a `.when` line holding `whenKids` (none when null),
    then what each question in `qs` recorded, as a `dl`. Returns the card and how
@@ -3658,7 +3850,7 @@ function entrySet(b,activityId,as){
   const numeric=as==="bars"||as==="line";
   const all=blocksOf(b.from).filter(q=>keysOf(q).length);
   const qs=b.field?all.filter(q=>q.id===b.field):all;
-  const ents=b.field&&activityOf(b.from).kind!=="entry"?[STATE.answers||{}]:queryEntries(b.from,activityId,b.fileWide);
+  const ents=b.field&&activityOf(b.from).kind!=="entry"?[peekAnswers(scopeOfAddr(b.from))]:queryEntries(b.from,activityId);
   const named=(b.fields&&!b.field)?qs.filter(q=>b.fields.includes(q.id)):[];
   const need=named.length?named:qs;
   const raw=new Map(),ent=new Map();
@@ -4100,7 +4292,7 @@ function withPages(id,content){const P=strings("pages");const ps=pagesOf(activit
     "aria-label":P.toggle,title:open?P.minimize:P.expand},el("span",{"aria-hidden":"true"},open?"«":"»"));
   tog.addEventListener("click",togglePagesMenu);
   const ol=el("ol",{id:"ap-pages"});
-  ps.forEach((p,i)=>{const name=ps.length<2?tx((moduleOf(id)||{}).title,tx(activityOf(id).title,id)):pageName(p,i);const t=el("span",{class:"ap-t"},name);
+  ps.forEach((p,i)=>{const name=ps.length<2?tx((moduleOf(id)||{}).title,tx(activityOf(id).title,shortId(id))):pageName(p,i);const t=el("span",{class:"ap-t"},name);
     const b=el("button",{type:"button",class:"ap-item","aria-current":p.id===cur.id?"page":null,title:open?null:name},
       el("span",{class:"ap-n","aria-hidden":"true"},String(i+1)),t);
     b.addEventListener("click",()=>choosePage(id,p.id));b.addEventListener("keydown",pageMenuKeys);
@@ -4174,7 +4366,7 @@ function sectionLede(body){
   return {para:null,rest:body,text:clip(text,220)};}
 /* put a table in its own scrolling wrapper, so a wide one scrolls beside the page, not under it */
 const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
-const mdBlockNodes=(b,activityId)=>mdNodes(String(b.text||""),{...FIGURE_HOOKS,...ACTIVITY_LINK_HOOKS,idPrefix:"md-",
+const mdBlockNodes=(b,activityId)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:"md-",
   mark:id=>{const c=citeText("[^"+id+"]",activityId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
 /* keep the menu's dots and the count current, without redrawing the page */
 function rmRefresh(info){
@@ -4298,13 +4490,16 @@ function openHeading(hit){
   RM_REVEAL=null;}
 function headingLink(hit,kids){
   return el("a",{href:"#",class:"alink",onclick:e=>{if(e&&e.preventDefault) e.preventDefault();openHeading(hit);}},...kids);}
-/* what a prose block hands mdNodes so these links lead somewhere */
-const ACTIVITY_LINK_HOOKS={
-  link:(target,label)=>{if(target[0]!=="#"||target[1]==="^") return null;
-    const h=target.slice(1).trim(),text=label!==undefined?label:h,hit=findHeading(allModules(),h,false);
-    return hit?headingLink(hit,[text]):text;},
-  anchor:(slug,kids)=>{const hit=findHeading(allModules(),slug,true);
-    return hit?headingLink(hit,kids):textOf(kids);}};
+/* what a prose block hands mdNodes so these links lead somewhere. A link is looked for in its own module
+   (the bare activities together are one module), never in another's: a heading that only another module has
+   is plain text, as a heading that is nowhere is. */
+const linkHooks=scope=>{const mods=()=>allModules().filter(m=>scopeOfModule(m)===scope);
+  return {
+    link:(target,label)=>{if(target[0]!=="#"||target[1]==="^") return null;
+      const h=target.slice(1).trim(),text=label!==undefined?label:h,hit=findHeading(mods(),h,false);
+      return hit?headingLink(hit,[text]):text;},
+    anchor:(slug,kids)=>{const hit=findHeading(mods(),slug,true);
+      return hit?headingLink(hit,kids):textOf(kids);}};};
 
 /* ======================= READING MATERIAL =======================
    Reading inside an activity (SPEC.md section 6): a footnote's mark, `[^id]`,
@@ -4328,8 +4523,10 @@ const clip=(s,n)=>{s=String(s==null?"":s).replace(/\s+/g," ").trim();return s.le
 /* a module's sources and citations, by key and by id, read out of its footnotes
    (the first of a repeated one wins; the linter reports the repeat) */
 function registries(mod){const sources=new Map(),cites=new Map();
-  for(const s of regList(mod&&mod.sources)) if(typeof s.key==="string"&&s.key&&!sources.has(s.key)) sources.set(s.key,s);
-  for(const c of regList(mod&&mod.citations)) if(typeof c.id==="string"&&c.id&&!cites.has(c.id)) cites.set(c.id,c);
+  /* a module's own footnotes first, then the data section's (the booklet's own list) for any id it does not define */
+  for(const o of [mod,BOOK]){
+    for(const s of regList(o&&o.sources)) if(typeof s.key==="string"&&s.key&&!sources.has(s.key)) sources.set(s.key,s);
+    for(const c of regList(o&&o.citations)) if(typeof c.id==="string"&&c.id&&!cites.has(c.id)) cites.set(c.id,c);}
   return {sources,cites};}
 /* The texts of a block that may carry marks, in the order it draws them. */
 function markedTexts(b){if(!b||typeof b!=="object") return [];
@@ -4612,7 +4809,7 @@ function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   for(const card of shown){if(card.holder){activities.append(moduleCard(card.holder,card.acts));continue;}
     const m=card.mode;const key=m.id;const mod=moduleOf(key)||{};
     /* the name is the module's text, so it goes in as text */
-    activities.append(activityCard(key,tx(mod.title,tx(m.title,key)),tx(mod.blurb,tx(m.blurb,"")),keptPills(m)));}
+    activities.append(activityCard(key,tx(mod.title,tx(m.title,shortId(key))),tx(mod.blurb,tx(m.blurb,"")),keptPills(m)));}
   /* nothing is preloaded, so the empty page offers its own way forward */
   {const add=el("div",{class:"col addrow"});
     if(!shown.length) add.append(el("p",{class:"hint"},t.booklet.noActivities));
@@ -4687,7 +4884,7 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   const repeats=m.kind==="entry";
   const draft=answersFor(id);if(repeats) seedUpsertDraft(id,m,draft);
   const col=el("div",{class:"col"});
-  const titleText=tx(mod.title,tx(m.title,id));
+  const titleText=tx(mod.title,tx(m.title,shortId(id)));
   col.append(el("h2",{},titleText));
   const lead=tx(mod.blurb,tx(m.blurb,""));
   if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));
@@ -4704,7 +4901,7 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
   main.append(withPages(id,col));}
 /* An activity's own name: its `title`, else its id. */
-function activityName(a){return tx(a&&a.title,null)||(a&&a.id)||"";}
+function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
 const activitiesShown=mod=>activitiesOf(mod).filter(isShown);
 const keptCount=id=>{const a=(STATE.entries||{})[id];return Array.isArray(a)?a.length:0;};
 /* A card on the home page or a module's page: a button that opens view `to`,
@@ -4798,15 +4995,16 @@ async function loadRegistry(url){REGISTRY_CACHE={};
 function addModuleFromText(text){
   const msg=document.getElementById("addModMsg");
   const problems=moduleTextProblems(text);
-  if(problems.length){msg.className="msg err";msg.textContent=problems.join(" ");return false;}
-  const R=parseFile(text);
+  if(problems.length){msg.className="msg err";msg.textContent=humanMsg(problems.join(" "));return false;}
+  const R=parseFile(text);let renamed=[];
   /* an untouched booklet may become this file outright */
   const empty=!allModules().length&&!BOOK.customized;
   if(empty&&bookOk(R.template)){applyParsed(R);}
   else{const r=addModuleText(text);
-    if(!r.ok){msg.className="msg err";msg.textContent=r.problems.join(" ");return false;}}
+    if(!r.ok){msg.className="msg err";msg.textContent=humanMsg(r.problems.join(" "));return false;}
+    renamed=r.renamed||[];}
   veilAddModule.removeAttribute("open");saveLocal();render();
-  toast(STRINGS[lang].booklet.added(tx((R.template.modules[0]||{}).title,"")));
+  toast(STRINGS[lang].booklet.added(tx((R.template.modules[0]||{}).title,""))+(renamed.length?" "+STRINGS[lang].booklet.renamed(renamed):""));
   return true;}
 /* the text behind a registry entry, fetched fresh: an entry only ever carries a
    URL, never the text itself */
@@ -4843,14 +5041,14 @@ function openLoad(){const m=document.getElementById("loadMsg");m.textContent="";
 function readFileInto(file,cb){if(!file) return;const r=new FileReader();r.onload=()=>cb(String(r.result||""));r.readAsText(file);}
 function loadText(text){const t=STRINGS[lang].ui;const msg=document.getElementById("loadMsg");
   const R=parseFile(text||"");
-  if(!R.ok){const why=R.oldMarker?t.oldFormat(R.oldMarker):(R.refused&&R.refused.length?t.loadRefused+" "+R.refused.join(" "):t.loadErr);
+  if(!R.ok){const why=humanMsg(R.oldMarker?t.oldFormat(R.oldMarker):(R.refused&&R.refused.length?t.loadRefused+" "+R.refused.join(" "):t.loadErr));
     if(veilLoad.hasAttribute("open")){msg.className="msg err";msg.textContent=why;} else toast(why);return;}
   veilLoad.removeAttribute("open");
   /* a file is always a booklet of its own; it never merges into another one */
   const e=addEntry();openBooklet(e.id);finishLoad(R);}
 function finishLoad(R){const mine=!!langPref();
   applyParsed(mine?{...R,lang:null}:R);
-  FILE_NOTES=R.unread&&R.unread.length?{list:R.unread.slice(),dismissed:false}:null;
+  FILE_NOTES=R.unread&&R.unread.length?{list:R.unread.map(humanMsg),dismissed:false}:null;
   saveLocal();go("home");toast(STRINGS[lang].ui.loadOk);}
 
 /* ======================= 13. WIRING AND BOOT =======================

@@ -31,13 +31,14 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.8 (an old `module:` file)",/front matter must say `booklet: 0\.8` \(found None\)/],
- ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.8\. Change the marker to booklet: 0\.8 \(and write settings as key:value/],
- ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
- ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
- ["lint-old-format-0-5","a file still saying booklet: 0.5",/front matter says booklet: 0\.5; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
- ["lint-old-format-0-6","a file still saying booklet: 0.6",/front matter says booklet: 0\.6; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
- ["lint-old-format-0-7","a file still saying booklet: 0.7",/front matter says booklet: 0\.7; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
+ ["lint-not-v02","front matter without booklet: 0.9 (an old `module:` file)",/front matter must say `booklet: 0\.9` \(found None\)/],
+ ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.9\. Change the marker to booklet: 0\.9 \(and write settings as key:value/],
+ ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.9\. Change the marker to booklet: 0\.9\.$/],
+ ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.9\. Change the marker to booklet: 0\.9\.$/],
+ ["lint-old-format-0-5","a file still saying booklet: 0.5",/front matter says booklet: 0\.5; this is format 0\.9\. Change the marker to booklet: 0\.9\.$/],
+ ["lint-old-format-0-6","a file still saying booklet: 0.6",/front matter says booklet: 0\.6; this is format 0\.9\. Change the marker to booklet: 0\.9\.$/],
+ ["lint-old-format-0-7","a file still saying booklet: 0.7",/front matter says booklet: 0\.7; this is format 0\.9\. Change the marker to booklet: 0\.9\.$/],
+ ["lint-old-format-0-8","a file still saying booklet: 0.8",/front matter says booklet: 0\.8; this is format 0\.9\. Change the marker to booklet: 0\.9\.$/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -209,13 +210,38 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
 {// the registry's modules, copied, re-marked and linted: hex pairs and tone names both stay valid
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
-   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.[0-9]$/m,"booklet: 0.8"));
+   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.[0-9]$/m,"booklet: 0.9"));
    const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
    chk("the registry's modules, copied and re-marked to 0.7, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 
 {// a widget colour pair must be two hex colours: it is drawn into a style attribute
  const r=lint(path.join(FX,"lint-tone-pair-not-hex.md"));
  chk("a `tint` that is not a hex colour is an error",r.errors.some(l=>/not a hex colour/.test(l)),r.out);}
+
+{// v0.9: an id belongs to its module (SPEC.md section 4)
+ const ok=lint(path.join(FX,"lint-data-section-shared-ok.md"));
+ chk("two modules reading one data-section block lint clean",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);
+ const sh=lint(path.join(FX,"lint-modules-share-ids.md"));
+ chk("two modules sharing an activity, question, menu, block and footnote id: no error, and one warning each for the block id and the footnote id",
+   sh.status===0&&sh.errors.length===0&&sh.warns.length===2
+   &&/the block id \^picker-data is used in the module 'mod-1' and the module 'mod-2': Booklet reads each in its own module, but Obsidian and GitHub will show the first one for all of them/.test(sh.warns[0]||"")
+   &&/the footnote id \[\^1\] is used in the module 'mod-1' and the module 'mod-2'/.test(sh.warns[1]||""),sh.out);
+ const tw=lint(path.join(FX,"lint-module-id-twice.md"));
+ chk("a module id used twice is an error naming both lines",tw.status===1&&tw.errors.length===1&&/line 15: the module id 'twin' is also used on line 9/.test(tw.errors[0]||""),tw.out);
+ const em=lint(path.join(FX,"lint-embed-other-module.md"));
+ chk("an embed of a block that only another module has is an error",em.status===1&&em.errors.length===1&&/line 27: !\[\[#\^only-here\]\] points at a block in another module only/.test(em.errors[0]||""),em.out);
+ const me=lint(path.join(FX,"lint-menu-other-module.md"));
+ chk("a `menu:` naming a menu that only another module has is an error",me.status===1&&me.errors.length===1&&/line 24: `menu:opts` names a menu in another module only/.test(me.errors[0]||""),me.out);
+ const dup=lint(path.join(FX,"lint-dup-block-id.md"));
+ chk("a block id used twice inside one module is still an error",dup.status===1&&dup.errors.length===1&&/the block id \^picker-data is used twice in the module 'fixture-mod'/.test(dup.errors[0]||""),dup.out);}
+
+{// a footnote id defined twice in one module: a warning, the first is used
+ const r=lint(path.join(FX,"lint-footnote-twice.md"));
+ chk("a footnote id defined twice in one module: one warning naming both lines, no error",r.status===0&&r.errors.length===0&&r.warns.length===1&&/line 17: the footnote id \[\^1\] is defined twice in the module 'fixture-mod' \(first on line 15\)/.test(r.warns[0]||""),r.out);}
+
+{// a link to a heading only another module has: a warning (Booklet reads a link in its own module)
+ const r=lint(path.join(FX,"lint-link-other-module.md"));
+ chk("a link whose heading only another module has: one warning, no error",r.status===0&&r.errors.length===0&&r.warns.length===1&&/line 21: the link \[\[#Only here\]\] points at a heading only in another module/.test(r.warns[0]||""),r.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

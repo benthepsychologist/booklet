@@ -113,7 +113,7 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
  P.wipe();
  {const C=P.boot();await C.createBooklet();
   const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
-  C.loadText(FX);const md0=C.toMarkdown();C.screen="overview";C.render();
+  C.loadText(FX);const md0=C.toMarkdown();C.screen="board/overview";C.render();
   const main=P.main(),tree=byClass(main,"dv-tree");
   chk("the fixture's house is a tree three levels deep: two top rows, and the others under them",tree.length===1&&tag(tree[0],"details").length===5&&under(tree[0]).length===2,tag(tree[0],"details").length+"");
   const house=tag(tree[0],"details")[0];

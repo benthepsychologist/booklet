@@ -1,5 +1,5 @@
 ---
-booklet: 0.8
+booklet: 0.9
 id: example/tides
 title: How tides work
 lang: en
