@@ -1,10 +1,10 @@
-# The booklet format, v0.5
+# The booklet format, v0.6
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
-> **Status: v0.5, draft.** This is a young, evolving format — v0.5 is the one
+> **Status: v0.6, draft.** This is a young, evolving format — v0.6 is the one
 > version number that matters: this spec, the renderer, the skill, the
-> tests, and the `booklet: 0.5` every file's front matter declares, all
+> tests, and the `booklet: 0.6` every file's front matter declares, all
 > together, all the same number. Nothing here is frozen: the format itself
 > may still change, a file names the one version it is written in, and a
 > reader opens only that version, so it doesn't promise stability yet. There is no earlier
@@ -53,7 +53,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: 0.5
+booklet: 0.6
 id: example/tides
 title: How tides work
 lang: en
@@ -421,6 +421,8 @@ empty: Nothing needs you.
 | `table` | one row per row, one column per field | `fields`, `group`, `limit` |
 | `list` | one line per row: its title, then its other fields | `title`, `fields`, `group`, `limit` |
 | `tiles` | one tile per row: a big value over a label | `value`, `label`, `note`, `tone`, `limit` |
+| `bars` | one bar per row: a label and a length | `label`, `value`, `tone`, `limit` |
+| `line` | one line per field, across the rows in order | `label`, `fields`, `limit` |
 
 - `fields:` names the fields to show, in order. Without it, a data block's own `fields` order is used, or else every key of the first row.
 - `group:` names a field; rows that share its value are drawn together under that value, in the order the values first appear, with a count.
@@ -430,7 +432,28 @@ empty: Nothing needs you.
 - `table`, `list` and `tiles` also work on kept entries (`from:` an activity): each kept entry is a row, its questions are the fields, and its date is the field `date`.
 - A reader may sort a table by a column on screen. That is the renderer's convenience and is saved nowhere.
 - Values are plain text: nothing in a data block is read as Markdown or HTML.
-- A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the four views, is refused like any other query that cannot be drawn. A page that draws a data block is not a reading-only page: it stays open, not folded into sections.
+
+```booklet query
+from: by-bucket
+as: bars
+label: bucket
+value: count
+```
+
+```booklet query
+from: sleep-log
+as: line
+label: date
+fields: hours
+```
+
+- **Bars.** Each row is one bar. `label:` names the field that names the bar and `value:` the field that gives its length; the defaults are `label` and `value`. Bars are drawn across the page, one under another, in row order, and always start at zero. A row's `tone` (`good`, `warn` or `bad`) colours its bar.
+- **Line.** The rows, in order, are the points from left to right. `label:` names the field written along the bottom; `fields:` names one or more number fields, each drawn as its own line and named by its field label. Without `fields:`, the field `value` is drawn.
+- A value that is not a number draws nothing: no bar, and a gap in a line.
+- A chart always offers the same numbers as a table, so nothing is shown only as a picture.
+- Both work on kept entries too (`from:` an activity): a `number` or `scale` question is a number field, and `date` is the entry's date. A reader's own answers over time are a line.
+- A renderer chooses the scale, the ticks and the size, and fits the chart to the space it has, including inside a row.
+- A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the six views, is refused like any other query that cannot be drawn. A page that draws a data block is not a reading-only page: it stays open, not folded into sections.
 
 ---
 
@@ -563,7 +586,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 - **A checkbox click in Reading view edits the file.** See "Choice" in section 5 for the accepted trade-off.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 
-**Obsidian: how it looks without a plugin.** Every Booklet line is a titled callout (a row reads top to bottom, its two marker lines showing as small callouts; a theme block shows as a short code block); questions are callouts followed by lists; figures render at their embed; widgets show their data; a query and a data block show as code blocks. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
+**Obsidian: how it looks without a plugin.** A chart is a `booklet query` block, so it shows as a code block, like any query. Every Booklet line is a titled callout (a row reads top to bottom, its two marker lines showing as small callouts; a theme block shows as a short code block); questions are callouts followed by lists; figures render at their embed; widgets show their data; a query and a data block show as code blocks. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
 
 **GitHub.** Callout lines show as quotations with the `[!kind|id]` text visible; lists, task lists, footnotes, math and mermaid render; `![[#^id]]` shows as text. Nothing breaks.
 
@@ -573,7 +596,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 ````markdown
 ---
-booklet: 0.5
+booklet: 0.6
 id: example/tides
 title: How tides work
 lang: en
@@ -633,11 +656,11 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: 0.5` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
+A conforming reader must: read a file whose front matter declares `booklet: 0.6` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
 
-A conforming writer must: emit front matter with `booklet: 0.5`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with `booklet: 0.6`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: 0.5` files, rejects anything else outright, and is the reference implementation of "is this file valid."
+`lint-booklet.py` in this repository checks `booklet: 0.6` files, rejects anything else outright, and is the reference implementation of "is this file valid."
 
 ---
 
@@ -649,11 +672,17 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A Booklet plugin for Obsidian.** Section 6, 7 and 11 describe how one would draw widgets and figures; none exists yet.
 - **A second, independent implementation.** The renderer in this repository is the only reader so far.
 
-None of this affects what already works: loading, reading, answering, and saving a v0.5 booklet with every question kind above, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.6 booklet with every question kind above, its widgets, and its citations.
 
 ---
 
 ## 14. Changes
+
+### Changes from v0.5
+
+- Two **chart views** are added to the `booklet query` block (section 6): `as: bars` and `as: line`, drawn from a data block's rows or from kept entries. Nothing is computed: the rows arrive finished.
+- The marker is `booklet: 0.6`.
+- A file marked `booklet: 0.5` is refused; change the marker to 0.6 (nothing else in a 0.5 file needs to change).
 
 ### Changes from v0.4
 

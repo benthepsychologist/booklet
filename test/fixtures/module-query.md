@@ -1,5 +1,5 @@
 ---
-booklet: 0.5
+booklet: 0.6
 id: fixture/query
 title: Log and look back
 lang: en

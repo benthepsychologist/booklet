@@ -1,5 +1,5 @@
 ---
-booklet: 0.5
+booklet: 0.6
 title: Lint fixture
 lang: klingon
 ---

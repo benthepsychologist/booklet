@@ -1,5 +1,5 @@
 ---
-booklet: 0.5
+booklet: 0.6
 id: example/status-page
 title: Allotment status
 lang: en
@@ -69,6 +69,17 @@ A table. Click a column's name to sort it on screen; the file is not changed.
 ```booklet query
 from: harvest
 fields: crop, kilos, picked, rows
+```
+
+## Harvest, as bars
+
+The same rows as bars, one per row, in the order the generator wrote them.
+
+```booklet query
+from: harvest
+as: bars
+label: crop
+value: kilos
 ```
 
 ## Nothing due

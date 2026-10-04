@@ -1,5 +1,5 @@
 ---
-booklet: 0.6
+booklet: 0.5
 title: Lint fixture
 lang: en
 ---
@@ -8,13 +8,15 @@ lang: en
 
 > [!module|fixture-mod] A fixture module
 
-> [!activity|walk] A walk
+> [!activity|walk repeat] A walk
 
-> [!widget|picker] Pick
+> [!text|note long] What did you notice?
+
+> [!widget|picker] Pick a spot
 > ![[#^picker-data]]
 
 ```booklet widget
-{ "engine": "grid-select", "title": "Spots", "cells": [ { "id": "a", "label": "A", "color": 7 } ] }
+{ "engine": "grid-select", "title": "Spots" }
 ```
 ^picker-data
 

@@ -16,7 +16,7 @@ global.__ls=_ls;
 const _markup=require("fs").readFileSync(__dirname+"/../booklet.html","utf8");
 const _body=_markup.slice(_markup.indexOf("<body>"), _markup.indexOf("<script>"));
 const _realIds=new Set([..._body.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
-global.document={createElement:mk,
+global.document={createElement:mk,createElementNS:(ns,t)=>mk(t),
   getElementById:id=>_realIds.has(id)?(store[id]||(store[id]=mk("div"))):null,
   querySelectorAll:()=>[],addEventListener(){},body:mk("body"),documentElement:mk("html"),get title(){return ""},set title(v){}};
 global.document.body.dataset={};
