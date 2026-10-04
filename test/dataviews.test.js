@@ -13,7 +13,7 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const text=n=>typeof n==="string"?n:kids(n).map(text).join("");
-const blocksOf=(R,mod,id)=>{const m=R.template.modules.find(x=>x.id===mod);const a=(m.mode&&m.mode.id===id?m.mode:(m.activities||[]).find(x=>x.id===id));return a.blocks;};
+const blocksOf=(R,mod,id)=>{const m=R.template.modules.find(x=>x.id===mod);const a=(m.mode&&m.mode.id===mod+"/"+id?m.mode:(m.activities||[]).find(x=>x.id===mod+"/"+id));return a.blocks;};
 const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
 
 (async()=>{
@@ -21,7 +21,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  /* ---- parsing ---- */
  const R=A.parseFile(FX);
  chk("the data-views fixture parses with nothing reported wrong",R.ok&&R.unread.length===0,JSON.stringify(R.unread));
- chk("it is marked 0.8",R.template.booklet=== 0.8);
+ chk("it is marked 0.9",R.template.booklet=== 0.9);
  const qs=queries(R);
  chk("four queries, each carrying its rows and its view",qs.length===4&&qs.map(q=>q.view.as||"").join()==="tiles,list,,list"&&qs.every(q=>q.data&&Array.isArray(q.data.rows)),JSON.stringify(qs.map(q=>q.view)));
  chk("a bare list of rows (no object) reads, and names no view (the renderer draws a table)",qs[2].data.rows.length===4&&qs[2].data.fields===undefined&&qs[2].view.as===undefined);
@@ -31,7 +31,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
    blocksOf(R,"allotment","status").every(b=>b.type==="markdown"||b.type==="query")&&!R.template.modules[0].mode.blocks.some(b=>b.type==="data"));
  chk("a data block is not a widget",R.template.widgets.length===0);
 
- const mk=(body,extra="")=>A.parseFile(`---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n${extra}\`\`\`booklet query\n${body}\n\`\`\`\n\n> [!module|m end] End\n`);
+ const mk=(body,extra="")=>A.parseFile(`---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n${extra}\`\`\`booklet query\n${body}\n\`\`\`\n\n> [!module|m end] End\n`);
  const ROWS='```booklet data\n[{"x":1,"y":"a"}]\n```\n^d\n\n';
  {const r=mk("from: d",ROWS);chk("a data block and a query in one module read clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
  {const r=mk("from: d\nas: cards",ROWS);chk("`as: cards` on a data block is refused, with a reason",r.unread.some(p=>/as: cards.*“d”/.test(p)),JSON.stringify(r.unread));}
@@ -41,19 +41,19 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  {const r=mk("from: d",'```booklet data\nrows:\n  - x: 1\n```\n^d\n\n');chk("YAML is not read (JSON only): the block is skipped with a reason",r.unread.some(p=>/not valid JSON/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",'```booklet data\n[{"x":1}]\n```\n\n');chk("a data block with no ^id is refused",r.unread.some(p=>/needs a \^id/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",ROWS+ROWS);chk("a data id used twice is refused",r.unread.some(p=>/“d” is used twice/.test(p)),JSON.stringify(r.unread));}
- {const other=`---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\n\`\`\`\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b] B\n\n${ROWS}> [!module|n end] End\n`;
+ {const other=`---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\n\`\`\`\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b] B\n\n${ROWS}> [!module|n end] End\n`;
   const r=A.parseFile(other);chk("a data block inside another module is not readable (the module rule)",r.unread.some(p=>/“d”, which is in another module/.test(p)),JSON.stringify(r.unread));}
- {const bare=`---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: tiles\n\`\`\`\n\n${ROWS}`;
+ {const bare=`---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: tiles\n\`\`\`\n\n${ROWS}`;
   const r=A.parseFile(bare);chk("in a file with no module fence, a data block is read by any activity",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
  chk("a query over kept entries carries no data, and only the keys it wrote in its view",(()=>{const r=A.parseFile(QFX);
-   const q=r.template.modules.find(m=>m.id==="fixture-query").activities.find(a=>a.id==="look").blocks.filter(b=>b.type==="query");
+   const q=r.template.modules.find(m=>m.id==="fixture-query").activities.find(a=>a.id==="fixture-query/look").blocks.filter(b=>b.type==="query");
    return r.ok&&q.length===3&&q.every(b=>!b.data)&&Object.keys(q[0].view).length===0&&Object.keys(q[2].view).join()==="limit";})());
 
  /* ---- write-back: a data block is saved exactly as it was found ---- */
  P.wipe();const W=P.boot();W.loadText(FX);
  chk("loading the whole fixture and saving it again returns the design byte for byte",W.toMarkdown()===FX.replace(/\s+$/,"")+"\n");
  P.wipe();const W2=P.boot();await W2.createBooklet();
- chk("a booklet started in the renderer says 0.8",W2.BOOK.booklet=== 0.8);
+ chk("a booklet started in the renderer says 0.9",W2.BOOK.booklet=== 0.9);
  chk("the module adds",W2.addModuleText(FX).ok);
  const md=W2.toMarkdown();
  const blockText=id=>{const i=FX.indexOf("^"+id+"\n");const j=FX.lastIndexOf("```booklet data",i);return FX.slice(j,i+id.length+1);};
@@ -62,7 +62,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
 
  /* ---- drawing ---- */
  P.wipe();const B=P.boot();await B.createBooklet();B.addModuleText(FX);
- B.screen="status";B.render();const main=P.main();
+ B.screen="allotment/status";B.render();const main=P.main();
  const tiles=byClass(main,"dv-tile");
  chk("tiles: one per row, a big value over a label",tiles.length===4&&text(byClass(tiles[0],"dv-v")[0])==="12"&&text(byClass(tiles[0],"dv-l")[0])==="Beds planted");
  chk("tiles: a note shows when the row has one, and not otherwise",text(byClass(tiles[0],"dv-n")[0])==="since March"&&byClass(tiles[3],"dv-n").length===0);
@@ -93,10 +93,10 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("table: a numeric column is marked to align right",cls(walk(trs[0],x=>x.tagName==="th")[1]).includes("num")&&!cls(walk(trs[0],x=>x.tagName==="th")[0]).includes("num"));
  chk("the empty block shows the query's own line",text(main).includes("Nothing needs you."));
  chk("the page is not a reading-only page (a dashboard stays open)",!B.readsOnly(B.bookActivities().find(a=>a.id==="status")));
- chk("nothing in a data block is read as Markdown or HTML",(()=>{const r=A.parseFile(`---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
-   P.wipe();const C=P.boot();C.addModuleText(`---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
-   C.screen="a";C.render();return r.ok&&text(P.main()).includes("**bold** <b>x</b> [l](http://e.com)")&&walk(P.main(),x=>x.tagName==="a"||x.tagName==="b"||x.tagName==="strong").length===0;})());
- chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
+ chk("nothing in a data block is read as Markdown or HTML",(()=>{const r=A.parseFile(`---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
+   P.wipe();const C=P.boot();C.addModuleText(`---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
+   C.screen="m/a";C.render();return r.ok&&text(P.main()).includes("**bold** <b>x</b> [l](http://e.com)")&&walk(P.main(),x=>x.tagName==="a"||x.tagName==="b"||x.tagName==="strong").length===0;})());
+ chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
    P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.readsOnly(r.template.modules[0].mode);})());
 
  /* ---- the same words in the reader's language ---- */
@@ -111,9 +111,9 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  const swap=(a,b)=>QFX.replace(a,b);
  P.wipe();const E=P.boot();await E.createBooklet();
  E.addModuleText(swap("from: log\n```\n\n## Just what happened","from: log\nas: table\nfields: date, ease, situation\n```\n\n## Just what happened"));
- const kept=E.keptFor("log");
+ const kept=E.keptFor("fixture-query/log");
  kept.push({ts:"2026-09-20T10:00:00.000Z",situation:"first thing",ease:2},{ts:"2026-09-22T10:00:00.000Z",situation:"second thing",ease:3});
- E.screen="look";E.render();
+ E.screen="fixture-query/look";E.render();
  const et=walk(P.main(),x=>x.tagName==="table")[0];
  chk("kept entries as a table: a row per entry, newest first, its date in the field `date`",!!et&&walk(et,x=>x.tagName==="tr").length===3&&text(walk(et,x=>x.tagName==="tr")[1]).includes("second thing"));
  chk("kept entries as a table: columns are Date and the questions' own labels, in `fields` order",
@@ -122,13 +122,13 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("the other two queries on that page are still cards",byClass(P.main(),"entry").length>=2);
  P.wipe();const F=P.boot();await F.createBooklet();
  F.addModuleText(swap("from: log\nfields: ease, situation\nlimit: 1\nempty: Nothing logged yet.","from: log\nas: tiles\nvalue: ease\nlabel: situation\nlimit: 1"));
- F.keptFor("log").push({ts:"2026-09-20T10:00:00.000Z",situation:"first thing",ease:2},{ts:"2026-09-22T10:00:00.000Z",situation:"second thing",ease:3});
- F.screen="look";F.render();
+ F.keptFor("fixture-query/log").push({ts:"2026-09-20T10:00:00.000Z",situation:"first thing",ease:2},{ts:"2026-09-22T10:00:00.000Z",situation:"second thing",ease:3});
+ F.screen="fixture-query/look";F.render();
  const ft=byClass(P.main(),"dv-tile");
  chk("kept entries as tiles: `value` and `label` name questions, `limit` keeps the first (newest) one",ft.length===1&&text(byClass(ft[0],"dv-v")[0])==="Very"&&text(byClass(ft[0],"dv-l")[0])==="second thing");
  P.wipe();const G=P.boot();await G.createBooklet();
  G.addModuleText(swap("from: log\nfields: ease, situation\nlimit: 1\nempty: Nothing logged yet.","from: log\nas: list\nempty: Nothing logged yet."));
- G.screen="look";G.render();
+ G.screen="fixture-query/look";G.render();
  chk("kept entries as a list with nothing kept: the block's own empty line",text(P.main()).includes("Nothing logged yet."));
  console.log(fails?"\n"+fails+" FAILURES":"\ndata-views checks passed");process.exit(fails?1:0);
 })().catch(e=>{console.log("  FAIL  the suite threw: "+(e&&e.stack||e));process.exit(1);});

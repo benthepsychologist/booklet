@@ -44,9 +44,9 @@ chk("NOTICE lists both libraries as MIT",/mermaid/i.test(notice)&&/temml/i.test(
 const looked=[];
 const realGet=document.getElementById;
 document.getElementById=id=>{if(/^lib-/.test(id)) looked.push(id);return realGet(id);};
-eval(src+"\n;global.F={LIB_ON,mdNodes,FIGURE_HOOKS,parseFile,setBook:t=>{BOOK=t;},STRINGS};");
+eval(src+"\n;global.F={LIB_ON,mdNodes,figureHooks,parseFile,setBook:t=>{BOOK=t;},STRINGS};");
 const F=global.F;
-const draw=(text)=>{looked.length=0;for(const k of Object.keys(F.LIB_ON)) delete F.LIB_ON[k];const nodes=F.mdNodes(text,{...F.FIGURE_HOOKS});return {nodes,looked:[...looked]};};
+const draw=(text)=>{looked.length=0;for(const k of Object.keys(F.LIB_ON)) delete F.LIB_ON[k];const nodes=F.mdNodes(text,{...F.figureHooks("")});return {nodes,looked:[...looked]};};
 const textOf=x=>Array.isArray(x)?x.map(textOf).join(""):typeof x==="string"?x:(x&&x._text||"")+((x&&x.children)||[]).map(textOf).join("");
 const find=(n,pred,out=[])=>{if(n&&typeof n==="object"){if(pred(n)) out.push(n);(n.children||[]).forEach(c=>find(c,pred,out));}return out;};
 const isMath=n=>/(^|\s)math(\s|$)/.test((n.attrs||{}).class||"");

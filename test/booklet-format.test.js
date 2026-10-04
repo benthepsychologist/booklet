@@ -23,14 +23,14 @@ const R=A.parseFile(EX);
 chk("the example parses",R.ok,JSON.stringify(R.unread));
 chk("nothing in the example is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
 const t=R.template||{};
-chk("it is marked v0.8",t.booklet=== 0.8);
+chk("it is marked v0.9",t.booklet=== 0.9);
 chk("its one language is declared",JSON.stringify(t.languages)==='["en"]');
 chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0].id==="mensio-check-in",JSON.stringify((t.modules||[]).map(m=>m.id)));
 const m=(t.modules||[])[0]||{};
 chk("the module's blurb is its opening paragraph",m.blurb==="Body, feelings, thoughts — noticed, named, kept.",m.blurb);
 chk("the module carries its rights from the front matter",m.rights&&/Armstrong/.test(m.rights.copyright));
 const a=m.mode||{};
-chk("one activity, repeating, so it keeps entries",a.id==="check-in"&&a.kind==="entry",JSON.stringify({id:a.id,kind:a.kind}));
+chk("one activity, repeating, so it keeps entries",a.id==="mensio-check-in/check-in"&&a.kind==="entry",JSON.stringify({id:a.id,kind:a.kind}));
 const types=(a.blocks||[]).map(b=>b.type+":"+b.id);
 chk("its blocks, in order",JSON.stringify(types)===JSON.stringify(["markdown:md1","widget:body","widget:emotions","text:other","lines:thoughts"]),JSON.stringify(types));
 const other=(a.blocks||[]).find(b=>b.id==="other")||{};
@@ -46,20 +46,20 @@ chk("the body map block points at its data",a.blocks[1].widget==="body-map"&&a.b
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
 A.loadText(EX);
-chk("the page adopts it as the booklet",A.BOOK.booklet=== 0.8&&A.allModules().length===1,JSON.stringify({b:A.BOOK.booklet,n:A.allModules().length}));
-A.screen="check-in";A.render();
+chk("the page adopts it as the booklet",A.BOOK.booklet=== 0.9&&A.allModules().length===1,JSON.stringify({b:A.BOOK.booklet,n:A.allModules().length}));
+A.screen="mensio-check-in/check-in";A.render();
 const seen=P.texts(P.main());
 ["A mindful check-in","Body","Feelings","Something else","In your own words.","Mind is thinking about","Notice, name, keep."].forEach(w=>
   chk("the activity shows “"+w+"”",seen.includes(w),seen.slice(0,400)));
 
 /* 4. answer, keep, write, read back */
-const d=A.draftFor("check-in");
+const d=A.draftFor("mensio-check-in/check-in");
 d.body=["chest"];d.emotions=["curiosity"];d.other="the kettle";d.thoughts=["the deadline",""];
-A.finalizeEntry("check-in");
-const kept=A.keptFor("check-in");
+A.finalizeEntry("mensio-check-in/check-in");
+const kept=A.keptFor("mensio-check-in/check-in");
 chk("the check-in is kept as an entry",kept.length===1&&kept[0].other==="the kettle");
 chk("blank lines are not kept",JSON.stringify(kept[0].thoughts)==='["the deadline"]',JSON.stringify(kept[0].thoughts));
-A.draftFor("check-in").other="half a thought";
+A.draftFor("mensio-check-in/check-in").other="half a thought";
 const out=A.toMarkdown();
 chk("the file written opens with the design exactly as read",out.startsWith(EX.replace(/\s+$/,"")),out.slice(0,200));
 chk("the records are hidden from Obsidian's reading view",/\n%%\n> \[!records\] App record/.test(out));
@@ -68,8 +68,8 @@ chk("the entry is written, one line per entry",/```booklet entries check-in\n\{"
 chk("the unfinished draft is written",/```booklet draft check-in\n\{"other":"half a thought"\}\n```/.test(out),out.slice(-300));
 const R2=A.parseFile(out);
 chk("the written file reads back with no problems",R2.ok&&R2.unread.length===0,JSON.stringify(R2.unread));
-chk("the entry comes back",((R2.S.entries||{})["check-in"]||[]).length===1&&R2.S.entries["check-in"][0].other==="the kettle");
-chk("the draft comes back",(R2.drafts.activities["check-in"]||{}).other==="half a thought");
+chk("the entry comes back",((R2.S.entries||{})["mensio-check-in/check-in"]||[]).length===1&&R2.S.entries["mensio-check-in/check-in"][0].other==="the kettle");
+chk("the draft comes back",(R2.drafts.activities["mensio-check-in/check-in"]||{}).other==="half a thought");
 chk("the design comes back as the same text",R2.template.raw.source===R.template.raw.source);
 const again=(()=>{P.wipe();const B=P.boot();B.loadText(out);return B.toMarkdown();})();
 chk("load, save, load, save changes nothing",again===out,again.length+" vs "+out.length);
@@ -87,22 +87,24 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
   A.parseFile('---\nbooklet: 1\n---\n\n```json\n{"block":"module"}\n```\n').ok===false);
 
 {const r02=A.parseFile('---\nbooklet: 0.2\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a booklet: 0.2 file is refused with the message naming what changed",r02.ok===false&&r02.unread.join(" ")==="front matter says booklet: 0.2; this page reads format 0.8. Change the marker to booklet: 0.8 (and write settings as key:value, for example min:0).",JSON.stringify(r02.unread));}
+ chk("a booklet: 0.2 file is refused with the message naming what changed",r02.ok===false&&r02.unread.join(" ")==="front matter says booklet: 0.2; this page reads format 0.9. Change the marker to booklet: 0.9 (and write settings as key:value, for example min:0).",JSON.stringify(r02.unread));}
 {const r03=A.parseFile('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a booklet: 0.3 file is refused, naming the marker found and the one to write",r03.ok===false&&r03.unread.join(" ")==="front matter says booklet: 0.3; this page reads format 0.8. Change the marker to booklet: 0.8.",JSON.stringify(r03.unread));
- chk("the refusal is shown in the reader's language, naming the marker",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.STRINGS[l].ui.oldFormat("0.3"))&&/booklet: 0\.8/.test(A.STRINGS[l].ui.oldFormat("0.3"))));
+ chk("a booklet: 0.3 file is refused, naming the marker found and the one to write",r03.ok===false&&r03.unread.join(" ")==="front matter says booklet: 0.3; this page reads format 0.9. Change the marker to booklet: 0.9.",JSON.stringify(r03.unread));
+ chk("the refusal is shown in the reader's language, naming the marker",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.STRINGS[l].ui.oldFormat("0.3"))&&/booklet: 0\.9/.test(A.STRINGS[l].ui.oldFormat("0.3"))));
  {const r04=A.parseFile('---\nbooklet: 0.4\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a booklet: 0.4 file is refused, naming the marker found and the one to write",r04.ok===false&&r04.unread.join(" ")==="front matter says booklet: 0.4; this page reads format 0.8. Change the marker to booklet: 0.8.",JSON.stringify(r04.unread));}
+ chk("a booklet: 0.4 file is refused, naming the marker found and the one to write",r04.ok===false&&r04.unread.join(" ")==="front matter says booklet: 0.4; this page reads format 0.9. Change the marker to booklet: 0.9.",JSON.stringify(r04.unread));}
  {const r05=A.parseFile('---\nbooklet: 0.5\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a booklet: 0.5 file is refused, naming the marker found and the one to write",r05.ok===false&&r05.unread.join(" ")==="front matter says booklet: 0.5; this page reads format 0.8. Change the marker to booklet: 0.8.",JSON.stringify(r05.unread));}
+ chk("a booklet: 0.5 file is refused, naming the marker found and the one to write",r05.ok===false&&r05.unread.join(" ")==="front matter says booklet: 0.5; this page reads format 0.9. Change the marker to booklet: 0.9.",JSON.stringify(r05.unread));}
  {const r06=A.parseFile('---\nbooklet: 0.6\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a booklet: 0.6 file is refused, naming the marker found and the one to write",r06.ok===false&&r06.unread.join(" ")==="front matter says booklet: 0.6; this page reads format 0.8. Change the marker to booklet: 0.8.",JSON.stringify(r06.unread));}
+ chk("a booklet: 0.6 file is refused, naming the marker found and the one to write",r06.ok===false&&r06.unread.join(" ")==="front matter says booklet: 0.6; this page reads format 0.9. Change the marker to booklet: 0.9.",JSON.stringify(r06.unread));}
  {const r07=A.parseFile('---\nbooklet: 0.7\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a booklet: 0.7 file is refused, naming the marker found and the one to write",r07.ok===false&&r07.unread.join(" ")==="front matter says booklet: 0.7; this page reads format 0.8. Change the marker to booklet: 0.8.",JSON.stringify(r07.unread));}
+ chk("a booklet: 0.7 file is refused, naming the marker found and the one to write",r07.ok===false&&r07.unread.join(" ")==="front matter says booklet: 0.7; this page reads format 0.9. Change the marker to booklet: 0.9.",JSON.stringify(r07.unread));}
+ {const r08=A.parseFile('---\nbooklet: 0.8\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
+ chk("a booklet: 0.8 file is refused, naming the marker found and the one to write",r08.ok===false&&r08.unread.join(" ")==="front matter says booklet: 0.8; this page reads format 0.9. Change the marker to booklet: 0.9.",JSON.stringify(r08.unread));}
  chk("a 0.3 module cannot be added to a booklet",A.moduleTextProblems('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n').length===1);}
 
 /* 7. settings on a callout line are written key:value */
-{const SET=`---\nbooklet: 0.8\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
+{const SET=`---\nbooklet: 0.9\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
  const RS=P.boot().parseFile(SET);
  const bl=((RS.template.modules||[])[0]||{}).mode||{};
  const num=(bl.blocks||[]).find(b=>b.id==="sleep")||{};

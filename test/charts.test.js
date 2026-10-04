@@ -74,15 +74,15 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  chk("nothing in a chart label is read as markup",(()=>{const set=A.dataSet({rows:[{label:"<b>x</b>",value:3}]});const n=A.viewNodes(set,{as:"bars"},{empty:"E"})[0];return text(byClass(n,"ch-l")[0])==="<b>x</b>"&&!walk(n,x=>x.tagName==="b").length;})());
 
  /* ---- kept entries as points ---- */
- const KEEP=`---\nbooklet: 0.8\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\nas: line\nlabel: date\nfields: hours, mood\n\`\`\`\n\n> [!module|m end] End\n`;
+ const KEEP=`---\nbooklet: 0.9\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\nas: line\nlabel: date\nfields: hours, mood\n\`\`\`\n\n> [!module|m end] End\n`;
  {const r=A.parseFile(KEEP);chk("a line over kept entries parses clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
-  const q=r.template.modules[0].activities.find(a=>a.id==="look").blocks.find(b=>b.type==="query");
+  const q=r.template.modules[0].activities.find(a=>a.id==="m/look").blocks.find(b=>b.type==="query");
   chk("it keeps `as: line`, `label: date` and the fields",q&&q.view.as==="line"&&q.view.label==="date"&&q.fields.join()==="hours,mood");}
  /* the entry rows carry `date`, and a number question's answer is a number once the set is built */
  {P.wipe();const B=P.boot();B.loadText(KEEP);
-  const keep=B.keptFor("log");
+  const keep=B.keptFor("m/log");
   keep.push({ts:"2026-10-01T08:00:00",hours:6.5,mood:2},{ts:"2026-10-02T08:00:00",hours:7,mood:3},{ts:"2026-10-03T08:00:00",mood:1});
-  const set=B.entrySet({from:"log",fields:["hours","mood"],fileWide:true},"look","line");
+  const set=B.entrySet({from:"m/log",fields:["hours","mood"]},"m/look","line");
   chk("kept entries become rows with the date and each question's answer",set.rows.length===3&&set.rows.every(r=>"date" in r),JSON.stringify(set.rows));
   chk("a number question's answer is a number field the chart can draw",typeof set.rows[0].hours==="number"&&set.rows[0].hours===6.5&&set.rows[2].mood===1,JSON.stringify(set.rows));
   chk("an entry with no answer leaves a gap, and the oldest entry comes first",set.rows[2].hours===undefined&&/Oct/.test(set.rows[0].date)&&/1/.test(set.rows[0].date),JSON.stringify(set.rows));}
@@ -90,7 +90,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  /* ---- the linter ---- */
  const lint=(...a)=>{const r=cp.spawnSync("python3",[path.join(P.R,"lint-booklet.py"),...a],{encoding:"utf8"});return {status:r.status,out:(r.stdout||"")+(r.stderr||"")};};
  const mk=(name,query,data)=>{const f=path.join(require("os").tmpdir(),"chart-"+name+".md");
-  fs.writeFileSync(f,`---\nbooklet: 0.8\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\n${query}\n\`\`\`\n\n\`\`\`booklet data\n${data}\n\`\`\`\n^d\n\n> [!module|m end] End\n`);return f;};
+  fs.writeFileSync(f,`---\nbooklet: 0.9\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\n${query}\n\`\`\`\n\n\`\`\`booklet data\n${data}\n\`\`\`\n^d\n\n> [!module|m end] End\n`);return f;};
  const ROWS='[{"k":"a","n":1,"s":"x"},{"k":"b","n":2,"s":"y"}]';
  {const r=lint(mk("ok","from: d\nas: bars\nlabel: k\nvalue: n",ROWS));chk("a bars query on numbers lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
  {const r=lint(mk("ok2","from: d\nas: line\nlabel: k\nfields: n",ROWS));chk("a line query on numbers lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
@@ -101,7 +101,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  {const r=lint(mk("badkey","from: d\nas: bars\nlabel: k\nvalue: n\ncolour: red",ROWS));chk("an unknown key is still an error",r.status!==0&&/no setting 'colour'/.test(r.out),r.out);}
  {const r=lint(mk("badas","from: d\nas: pie",ROWS));chk("`as: pie` is an error naming the views",r.status!==0&&/bars, line/.test(r.out),r.out);}
  {const r=lint(path.join(P.R,"test/fixtures/charts.booklet.md"));chk("the charts fixture lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
- {const r=lint(path.join(P.R,"test/fixtures/lint-old-format-0-5.md"));chk("a file still saying booklet: 0.5 is refused",r.status!==0&&/booklet: 0\.5; this is format 0\.8/.test(r.out),r.out);}
+ {const r=lint(path.join(P.R,"test/fixtures/lint-old-format-0-5.md"));chk("a file still saying booklet: 0.5 is refused",r.status!==0&&/booklet: 0\.5; this is format 0\.9/.test(r.out),r.out);}
  /* ---- the strings ---- */
  chk("every language says the chart words",["en","fr","es","es-AR"].every(l=>{const c=A.STRINGS[l].dv.chart;return c&&c.numbers&&/\d/.test(c.bars(3,"1","2"))&&/\d/.test(c.line(3,"a","1","2"));}));
  console.log(fails?fails+" chart check(s) FAILED":"chart checks passed");process.exit(fails?1:0);

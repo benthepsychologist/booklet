@@ -68,7 +68,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get screen(){return screen}, get currentId(){return currentId},
-  get STATE(){return STATE}, get storageOk(){return storageOk},
+  get STATE(){return STATE}, answersIn, get storageOk(){return storageOk},
   LIB_SCREEN, closeBooklet, createBooklet, saveLocal, addModuleText,
   editBook, render, loadText
 }));`);
@@ -81,7 +81,7 @@ async function makeBooklet(A,{title,lang,languages}){
   await A.createBooklet();
   A.addModuleText(fixtureModule);
   A.editBook(t=>{t.head={title};if(languages) t.languages=languages;});
-  A.STATE.answers.note="written in "+title;A.lang=lang;A.saveLocal();
+  A.answersIn("").note="written in "+title;A.lang=lang;A.saveLocal();
   return A.currentId;}
 /* open a booklet the way a reader does: from its card on "Your booklets" */
 function openFromCard(A,title){A.render();

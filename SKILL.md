@@ -5,8 +5,8 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.8.0** — matches the project's current version (SPEC.md's
-"project v0.8") now that this skill teaches v0.8, the current format.
+**Skill version: 0.9.0** — matches the project's current version (SPEC.md's
+"project v0.9") now that this skill teaches v0.9, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. Above a long
@@ -65,7 +65,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: 0.8`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: 0.9`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -166,7 +166,7 @@ Copy this exactly and fill in the `<…>` parts.
 
 ````markdown
 ---
-booklet: 0.8
+booklet: 0.9
 id: "local/<booklet-slug>"
 title: "<Booklet title>"
 lang: <en|es|es-AR|fr>
@@ -221,8 +221,8 @@ ever offered from a registry.
 
 - The **module's id** (after `|`) is letters, digits and dashes only —
   `daily-journal`, not `daily_journal` or `Daily Journal`. It is unique
-  across a person's whole collection: adding a module whose id already
-  exists replaces the old one.
+  within the file and across a person's whole collection: adding a module
+  whose id already exists replaces the old one.
 - The **module's title** (after the id) is the words after the `]` on the
   same line — this is what shows on the home card, exactly as written, no
   further wording needed anywhere.
@@ -232,8 +232,9 @@ ever offered from a registry.
 - **Several activities that belong together** (a study week) share one
   module fence; each still opens with its own `> [!activity|…]` line.
 - **An activity's id** is a short prefix plus a name (`aw-notes`, `tw-learn`):
-  lowercase letters, digits, dashes; unique across the **whole booklet**,
-  every module included. Never `home` — the renderer uses that name itself.
+  lowercase letters, digits, dashes; unique **within its module** (two
+  modules may each have an `intro`, and neither sees the other's; the same
+  holds for question, menu and block ids). Never `home` — the renderer uses that name itself.
 - **Flags** (after the id, space-separated): `repeat` (kept as a dated
   entry), `repeat daily` (one entry per day), `hidden` (kept in the file, not
   offered). With none of these, the activity is answered once and edited in
@@ -347,14 +348,14 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **Nothing folds a question away.** v0.8 has no working equivalent of
+- **Nothing folds a question away.** v0.9 has no working equivalent of
   an older version's "optional questions, folded shut until opened." If a
   request calls for that ("a couple more if you want
   them"), the honest options are: put the extra material as ordinary prose
   right after the question it answers, put it on its own page after a
   `***`, or say in your reply that folding isn't available yet and ask
   whether the requester wants it unfolded instead.
-- **Nothing reads another activity's answers yet.** v0.8 has no kind that
+- **Nothing reads another activity's answers yet.** v0.9 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
@@ -529,7 +530,7 @@ between paragraphs (`\n\n`) for a new one.
   address — never embedded data, never a placeholder URL.
 
 - **A report** (something generated or written to be read, not answered) needs
-  only front matter (`booklet: 0.8`, `id`, `title`, `lang`) and plain Markdown:
+  only front matter (`booklet: 0.9`, `id`, `title`, `lang`) and plain Markdown:
   no activity line is needed, the file is one activity named by the title. Give it
   a title heading, then `##` headings for its sections. The renderer folds a
   reading-only activity: each section shows its heading and the **first paragraph
@@ -608,7 +609,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.8 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.9 file is written in one language` | add it |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` only follows `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -637,9 +638,9 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: 0.8`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: 0.9`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
-- [ ] Module, activity and question ids are unique across the file and hold only letters, digits and dashes.
+- [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
 - [ ] No answers, kept entries, names or `sync` values written anywhere; nothing inside `%% … %%` touched.
 - [ ] The tone is kind, skipping is mentioned, and nothing here is a clinical exercise (section 2).
@@ -655,7 +656,7 @@ the renderer. Imitate their shape.
 
 ````markdown
 ---
-booklet: 0.8
+booklet: 0.9
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -691,7 +692,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: 0.8
+booklet: 0.9
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -752,7 +753,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: 0.8
+booklet: 0.9
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -789,7 +790,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 ## 11. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.8 file, one language, its
+same way as any other booklet above — one v0.9 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

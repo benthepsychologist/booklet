@@ -4,7 +4,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 
-const FM="---\nbooklet: 0.8\ntitle: Menus and matrix\nlang: en\n---\n\n";
+const FM="---\nbooklet: 0.9\ntitle: Menus and matrix\nlang: en\n---\n\n";
 const BOOK=FM+`> [!module|qm] Menus and matrix
 
 > [!activity|day] A day
@@ -60,7 +60,13 @@ const blocks=R=>acts(R).blocks;
  const two=FM+`> [!module|m1] One\n\n> [!menu|opts]\n- A1\n- A2\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!menu|opts]\n- B1\n- B2\n- B3\n\n> [!activity|a2] A\n\n> [!choice|q2 menu:opts] Q\n\n> [!module|m2 end] End\n`;
  const R2=A.parseFile(two);
  const opt=id=>R2.template.modules.flatMap(m=>m.mode?[m.mode]:m.activities).flatMap(a=>a.blocks).find(b=>b.id===id).options.join();
- chk("two menus with the same id are refused, like any id used twice",R2.ok===false&&R2.refused.length===1&&/“opts” is used twice/.test(R2.refused[0]),JSON.stringify(R2.refused));
+ chk("two modules may each have a menu with the same id: nothing is refused and each question takes its own module's",R2.ok&&R2.refused.length===0&&opt("q1")==="A1,A2"&&opt("q2")==="B1,B2,B3",JSON.stringify([R2.refused,opt("q1"),opt("q2")]));
+ const twin=A.parseFile(FM+`> [!module|m1] One\n\n> [!menu|opts]\n- A1\n\n> [!menu|opts]\n- A2\n\n> [!activity|a1] A\n\n> [!module|m1 end] End\n`);
+ chk("two menus with the same id in one module are refused, like any id used twice",twin.ok===false&&twin.refused.length===1&&/“opts” is used twice/.test(twin.refused[0]),JSON.stringify(twin.refused));
+ const mine=A.parseFile(FM+`> [!module|m1] One\n\n> [!menu|opts]\n- M1\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|a2] A\n\n> [!choice|q2 menu:opts] Q\n\n> [!module|m2 end] End\n`);
+ chk("a module never reads another module's menu: the menu is reported missing there",mine.unread.some(x=>/menu “opts” is not in this file/.test(x))&&!mine.template.modules.some(m=>m.id==="m2"&&(m.mode.blocks||[]).some(b=>b.id==="q2")),JSON.stringify(mine.unread));
+ const first=A.parseFile(FM+`> [!module|m1] One\n\n> [!menu|opts]\n- M1\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!data] Data\n\n> [!menu|opts]\n- D1\n`);
+ chk("a module's own menu wins over the data section's of the same id",first.template.modules[0].mode.blocks[0].options.join()==="M1",JSON.stringify(first.unread));
  const out=FM+`> [!module|m1] One\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!data] Data\n\n> [!menu|opts]\n- D1\n- D2\n`;
  const R3=A.parseFile(out);
  chk("a menu outside the module fence (the data section) is found",R3.unread.length===0&&R3.template.modules[0].mode.blocks[0].options.join()==="D1,D2",JSON.stringify(R3.unread));
@@ -80,7 +86,7 @@ const blocks=R=>acts(R).blocks;
 /* ---- drawn, answered, kept, read back ---- */
 const radios=()=>P.find(P.main(),n=>n.tagName==="input"&&(n.attrs||{}).type==="radio");
 {P.wipe();const A=P.boot();
- A.loadText(BOOK);A.screen="day";A.render();
+ A.loadText(BOOK);A.screen="qm/day";A.render();
  const seen=P.texts(P.main());
  chk("the menu question shows its prompt, and the menu's own words are options",seen.includes("This morning I felt…")&&seen.includes("Curious"),seen.slice(0,300));
  const rs=radios();
@@ -88,34 +94,34 @@ const radios=()=>P.find(P.main(),n=>n.tagName==="input"&&(n.attrs||{}).type==="r
  chk("each radio is labelled with its item and its anchor",rs[0].attrs["aria-label"]==="Little interest or pleasure in doing things: Not at all"&&rs[7].attrs["aria-label"]==="Feeling down, depressed, or hopeless: Nearly every day",rs[0].attrs["aria-label"]+" | "+rs[7].attrs["aria-label"]);
  chk("the radios of one item share a name, and items do not",rs[0].attrs.name===rs[3].attrs.name&&rs[0].attrs.name!==rs[4].attrs.name);
  rs[1]._on.change();                // item 1: Several days (1)
- chk("one answer is an array with null for the item not yet answered",JSON.stringify(A.STATE.answers.phq)==="[1,null]",JSON.stringify(A.STATE.answers));
+ chk("one answer is an array with null for the item not yet answered",JSON.stringify(A.STATE.answers.qm.phq)==="[1,null]",JSON.stringify(A.STATE.answers.qm));
  radios()[7]._on.change();          // item 2: Nearly every day (3)
  radios()[0]._on.change();          // item 1 again: Not at all (0)
- chk("the stored answer is one anchor number per item, by position (0 is an answer)",JSON.stringify(A.STATE.answers.phq)==="[0,3]",JSON.stringify(A.STATE.answers.phq));
- A.STATE.answers.morning=[1,3];A.STATE.answers.evening=2;
+ chk("the stored answer is one anchor number per item, by position (0 is an answer)",JSON.stringify(A.STATE.answers.qm.phq)==="[0,3]",JSON.stringify(A.STATE.answers.qm.phq));
+ A.STATE.answers.qm.morning=[1,3];A.STATE.answers.qm.evening=2;
  const md=A.toMarkdown();
  chk("the answers are written into the records as numbers by position",/"phq": \[\s*0,\s*3\s*\]/.test(md)&&/"morning": \[\s*1,\s*3\s*\]/.test(md)&&/"evening": 2/.test(md),md.slice(-400));
  chk("the design is written back untouched (the menu stays where it was written)",md.startsWith(BOOK.replace(/\s+$/,"")));
  P.wipe();const B=P.boot();B.loadText(md);
- chk("after a save and reload the matrix answer is the same array",JSON.stringify(B.STATE.answers.phq)==="[0,3]"&&JSON.stringify(B.STATE.answers.morning)==="[1,3]",JSON.stringify(B.STATE.answers));
- B.screen="day";B.render();
+ chk("after a save and reload the matrix answer is the same array",JSON.stringify(B.STATE.answers.qm.phq)==="[0,3]"&&JSON.stringify(B.STATE.answers.qm.morning)==="[1,3]",JSON.stringify(B.STATE.answers.qm));
+ B.screen="qm/day";B.render();
  const on=P.find(P.main(),n=>n.tagName==="input"&&(n.attrs||{}).type==="radio"&&n.checked);
  chk("the reloaded matrix shows its chosen radios",on.length===0||on.length===2,String(on.length));}
 
 /* ---- a matrix answer in a kept entry and in a query card reads item by item ---- */
 {const KEEP=FM+`> [!module|qk] Keep\n\n> [!activity|log repeat] Log\n\n> [!matrix|phq] How often?\n\n- Little interest\n- Feeling down\n\n0. Not at all\n1. Several days\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\n\`\`\`\n\n> [!module|qk end] End\n`;
  P.wipe();const A=P.boot();A.loadText(KEEP);
- A.draftFor("log").phq=[1,null];A.finalizeEntry("log");
- chk("the kept entry holds the array",JSON.stringify(A.keptFor("log")[0].phq)==="[1,null]",JSON.stringify(A.keptFor("log")));
- A.screen="look";A.render();const seen=P.texts(P.main());
+ A.draftFor("qk/log").phq=[1,null];A.finalizeEntry("qk/log");
+ chk("the kept entry holds the array",JSON.stringify(A.keptFor("qk/log")[0].phq)==="[1,null]",JSON.stringify(A.keptFor("qk/log")));
+ A.screen="qk/look";A.render();const seen=P.texts(P.main());
  chk("the query card shows the answer item by item, with the anchor's words, and a dash for an item not answered",
    /Little interest: Several days/.test(seen)&&/Feeling down: –/.test(seen),seen.slice(0,400));
- A.screen="log";A.render();
+ A.screen="qk/log";A.render();
  chk("the kept entry card shows it too",/Little interest: Several days/.test(P.texts(P.main())),P.texts(P.main()).slice(0,400));
  const md=A.toMarkdown();
  chk("the kept entry is written and read back with its array",/"phq":\[1,null\]/.test(md));
  P.wipe();const B=P.boot();B.loadText(md);
- chk("and survives a reload",JSON.stringify(B.keptFor("log")[0].phq)==="[1,null]");}
+ chk("and survives a reload",JSON.stringify(B.keptFor("qk/log")[0].phq)==="[1,null]");}
 
 P.closePages();
 console.log(fails?"\n"+fails+" FAILURES":"\nquestions checks passed");process.exit(fails?1:0);

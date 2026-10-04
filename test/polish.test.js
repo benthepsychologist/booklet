@@ -47,7 +47,7 @@ const panel=()=>A.getPanel();
 const panelOpen=()=>!!panel()&&!panel().hasAttribute("hidden");
 const marks=()=>byClass("rd-mark");
 /* the booklet, loaded the way a reader loads it, on its reading activity */
-function open(l){A.fresh();A.applyParsed(A.parseFile(EX),"replace");A.setLang(l||"en");A.setScreen("rd-tides");A.render();}
+function open(l){A.fresh();A.applyParsed(A.parseFile(EX),"replace");A.setLang(l||"en");A.setScreen("tides/rd-tides");A.render();}
 /* a part that cannot run on the renderer it is given counts as failed, and the
    rest still runs */
 const guard=(name,fn)=>{try{fn();}catch(e){chk(name+": runs to the end",false,e.message);}};
@@ -67,7 +67,7 @@ guard("marks and panel",()=>{open();
   chk("closing gives the room back",!panelOpen()&&!("data-cite-open" in root().attrs));
   click(marks()[1]);pressKey(panel(),"Escape");
   chk("Escape closes it and puts the focus on the mark it came from",!panelOpen()&&global.__focused===marks()[1]);
-  click(marks()[0]);A.setScreen("rd-check");A.render();
+  click(marks()[0]);A.setScreen("tides/rd-check");A.render();
   chk("leaving the activity closes the panel",!panelOpen()&&!("data-cite-open" in root().attrs));});
 
 console.log("# the endnotes");
@@ -75,7 +75,7 @@ guard("notes",()=>{open();
   const notes=byClass("rd-notes")[0];
   chk("the page carries its citation as an endnote, for a printout",!!notes&&/The Harbour Tide Atlas/.test(flat(notes)),notes&&flat(notes));
   chk("a callout is drawn in full, with no filter row and no fold button",byClass("rd-callout").length>0&&byClass("rd-filter").length===0&&byClass("rd-cshow").length===0);
-  A.setScreen("rd-check");A.render();
+  A.setScreen("tides/rd-check");A.render();
   chk("a page with no marks has no endnotes",byClass("rd-notes").length===0);});
 
 console.log("# switching the interface language keeps the panel open, in the new language");

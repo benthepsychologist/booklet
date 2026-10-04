@@ -1,5 +1,5 @@
 ---
-booklet: 0.8
+booklet: 0.9
 id: mensio/check-in
 title: A mindful check-in
 lang: en
