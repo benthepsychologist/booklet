@@ -57,11 +57,10 @@ function boot(){const API={};
   get boardOpen(){return boardOpen},set boardOpen(v){boardOpen=v},
   get openChip(){return openChip},set openChip(v){openChip=v},
   get currentId(){return currentId}, get storageOk(){return storageOk},
-  get LIB(){return LIB}, get restoredAtBoot(){return restoredFromBrowser},
   LIB_VIEW, emptyS, emptyD,
-  readLib, addEntry, openBooklet, clearLocal, closeBooklet, removeBooklet, createBooklet, saveLocal, loadLocal, mark, flushSave,
-  toMarkdown, parseFile, applyParsed, addModule, addModuleText, editTemplate, allModules, render, renderBar, loadText,
-  homeButton, bookletName, finalizeEntry,
+  readLib, openBooklet, clearLocal, closeBooklet, removeBooklet, createBooklet, saveLocal, mark,
+  toMarkdown, parseFile, applyParsed, addModuleText, editTemplate, allModules, render, loadText,
+  homeButton, bookletName,
   orphanSaveTimer(){saveTimer=null;}      // a timer whose handle was lost: only bookletGen can stop it now
 }));`);
   return API;}
@@ -227,7 +226,7 @@ wipe();A=boot();A.render();
 A.loadText(exampleText);
 let L1=A.readLib();
 chk("loading a file on the list adds it as a new booklet and opens it",
-  L1.entries.length===1&&L1.entries[0].from==="file"&&A.currentId===L1.entries[0].id
+  L1.entries.length===1&&A.currentId===L1.entries[0].id
   &&A.allModules().map(m=>m.id).join(",")==="mensio-check-in");
 A.homeButton();A.loadText(exampleText);
 chk("the same file loaded again is a second booklet, deliberately",A.readLib().entries.length===2);

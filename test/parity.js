@@ -1,6 +1,6 @@
 "use strict";
 /* Language-table parity, for the tests only: the renderer does not carry it.
-   Both functions read the TSRC tables the harness exposes. */
+   Both functions read the TSRC tables test/page.js exposes. */
 
 /* every string (or function, or list) a language table holds, by dotted path */
 function leafPaths(o,pre,out){out=out||[];const isO=x=>x!==null&&typeof x==="object"&&!Array.isArray(x);

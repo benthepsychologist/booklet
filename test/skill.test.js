@@ -19,9 +19,9 @@ global.document.createElement=tag=>{const n=mk0(tag);
   return n;};
 const A={};
 eval(src+`
-;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,allModules,modesOf,moduleOf,pagesOf,isPaged,showPage,
+;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,allModules,modesOf,pagesOf,isPaged,showPage,
   tx,declaredLangs,offeredLangs,
-  setView:v=>{view=v},getLang:()=>lang,setLang:l=>{lang=l},
+  setView:v=>{view=v},getLang:()=>lang,
   fresh:()=>{S=emptyS();D=emptyD();TPL=EMPTY_BOOKLET;
     view="home";lang="en";}});`);
 

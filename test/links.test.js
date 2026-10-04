@@ -5,8 +5,7 @@ require("./harness.js");
 const fs=require("fs");
 const html=fs.readFileSync(__dirname+"/../booklet.html","utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
-const A=eval(src+"\n({findHeading,headingsOf,linkSlug,ACTIVITY_LINK_HOOKS,setTPL:v=>{TPL=v},resetTPL:()=>{TPL=EMPTY_BOOKLET;SHELF={}},"+
-  "setView:v=>{view=v},getView:()=>view,pageNow:id=>currentPage(id).id,render:()=>{}})");
+const A=eval(src+"\n({findHeading,headingsOf,ACTIVITY_LINK_HOOKS,setTPL:v=>{TPL=v}})");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const md=text=>({id:"m"+Math.random(),type:"markdown",text});
 const mods=[

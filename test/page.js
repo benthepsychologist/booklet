@@ -1,6 +1,6 @@
 // One page load of booklet.html in node, with a DOM that remembers what was drawn.
 //
-// The same recording DOM test/final.test.js uses: every node keeps its
+// A recording DOM: every node keeps its
 // attributes, its children, the handlers wired to it and any HTML it was
 // given, so a test can read what a reader, or a screen reader, would meet, and
 // press a button by calling the handler the page wired to it. Each boot()
@@ -15,7 +15,6 @@ const R=__dirname+"/..";
 const html=fs.readFileSync(R+"/booklet.html","utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
 const LS=global.__ls;
-const PREF="booklet.ui.lang";
 
 const mkNode=tag=>{const n={tagName:tag,children:[],attrs:{},style:{},dataset:{},_text:"",_html:"",_on:{},
   setAttribute(k,v){this.attrs[k]=String(v);},getAttribute(k){return k in this.attrs?this.attrs[k]:null;},
@@ -54,13 +53,11 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get view(){return view},set view(v){view=v},
   get TPL(){return TPL}, get S(){return S}, get D(){return D},
-  T, TSRC, CALLOUT_KINDS,
-  createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
+  T, TSRC, createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
   moduleTextProblems, editTemplate, render,
-  loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, tplWidgets, isMulti,
-  moduleView:id=>MODULE_VIEW+id, openExport, readingPlan, sectionLede, readsOnly, mdNodes, modeOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, pickLang,
-  showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, colsOf, viewControls, VIEWSTATE, viewState, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, ROLE_NAMES, CONTROLS_MIN, sortCmp, fmtNum, readTheme, themeDerive, TH_PAIRS, TH_BASES, TH_COLOURS, TONE_NAMES, toneOf, cellColor, cellStyle, syncBookletTheme, themeBaseTable,
-  get currentId(){return currentId}, get TPLtheme(){return TPL.theme}
+  loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, isMulti,
+  moduleView:id=>MODULE_VIEW+id, readingPlan, sectionLede, readsOnly, mdNodes, modeOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, VIEWSTATE, viewState, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, toneOf, cellColor, cellStyle, themeBaseTable,
+  get currentId(){return currentId}
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};
@@ -71,15 +68,4 @@ const hasClass=cls=>n=>new RegExp("(^|\\s)"+cls+"(\\s|$)").test((n.attrs||{}).cl
 /* what a node says: its text and the text of everything in it */
 const texts=n=>{const out=[];const walk=x=>{if(x==null) return;if(typeof x!=="object"){out.push(String(x));return;}
   if(x._text) out.push(x._text);(x.children||[]).forEach(walk);};walk(n);return out.join(" ").replace(/\s+/g," ").trim();};
-/* every string a reader or a screen reader meets under n, with where it was */
-const SPOKEN=["aria-label","title","placeholder","alt","aria-description"];
-const collect=(n,out,where)=>{if(n==null) return out;if(typeof n!=="object"){const s=String(n).trim();if(s) out.push([s,where]);return out;}
-  if(n._text&&n._text.trim()) out.push([n._text.trim(),where]);
-  if(n._html) n._html.replace(/<[^>]*>/g,"\n").split("\n").map(x=>x.trim()).filter(Boolean).forEach(x=>out.push([x,where]));
-  for(const k of SPOKEN) if(n.attrs&&n.attrs[k]!==undefined&&String(n.attrs[k]).trim()) out.push([String(n.attrs[k]).trim(),where+" ["+k+"]"]);
-  (n.children||[]).forEach(c=>collect(c,out,where));return out;};
-/* press whatever the page wired to a node's click */
-const click=n=>{if(!n._on.click) throw new Error("nothing is wired to this "+n.tagName);n._on.click({target:n,preventDefault(){}});};
-
-module.exports={R,html,src,LS,PREF,boot,wipe,closePages,byId,main,find,hasClass,texts,collect,click,
-  get docTitle(){return docTitle;}};
+module.exports={R,html,src,boot,wipe,closePages,byId,main,find,hasClass,texts};

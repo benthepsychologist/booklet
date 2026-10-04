@@ -45,7 +45,7 @@ More words.
  A.loadText(FILE);
  const pages=A.modeOf("read").pages;
  chk("three pages: the first leads with its heading, the others do not",pages.length===3&&pages[0].lead===true&&!pages[1].lead&&!pages[2].lead,JSON.stringify(pages.map(p=>[p.title,p.lead])));
- chk("the names: the first heading, a fallback, and the first heading wherever it falls",pages.map(p=>p.title).join("|")==="First page|Page 2|Late heading",pages.map(p=>p.title).join("|"));
+ chk("the names: the first heading, none stored for a page without one (the reader's language names it: Page 2, below), and the first heading wherever it falls",pages.map(p=>p.title||"").join("|")==="First page||Late heading",pages.map(p=>p.title).join("|"));
  const draw=i=>{A.showPage("read",pages[i].id);A.view="read";A.render();return P.main();};
  {const m=draw(0);
   chk("a page named by its own first heading draws no name line above it",walk(m,x=>cls(x).includes("ap-title")).length===0);

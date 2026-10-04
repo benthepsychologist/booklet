@@ -18,11 +18,9 @@ const _body=_markup.slice(_markup.indexOf("<body>"), _markup.indexOf("<script>")
 const _realIds=new Set([..._body.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
 global.document={createElement:mk,createElementNS:(ns,t)=>mk(t),
   getElementById:id=>_realIds.has(id)?(store[id]||(store[id]=mk("div"))):null,
-  querySelectorAll:()=>[],addEventListener(){},body:mk("body"),documentElement:mk("html"),get title(){return ""},set title(v){}};
+  querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:mk("body"),documentElement:mk("html"),get title(){return ""},set title(v){}};
 global.document.body.dataset={};
 global.window={addEventListener(){},scrollTo(){}};
-global.navigator={clipboard:{writeText:async()=>{}}};
-global.IntersectionObserver=class{observe(){}disconnect(){}};
 global.Blob=class{constructor(){}};global.URL={createObjectURL:()=>"blob:x",revokeObjectURL(){}};
 global.FileReader=class{readAsText(){}};
 global.requestAnimationFrame=()=>{};

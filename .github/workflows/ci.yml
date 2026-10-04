@@ -38,6 +38,22 @@ jobs:
         # test/run.sh runs the linter over every booklet and every
         # test/*.test.js it finds. It exits 1 if any of them fails and prints that one in full.
         run: bash test/run.sh
+        env:
+          # The browser scripts run in their own job below, so the required
+          # `check` is unchanged.
+          PLAYWRIGHT_SKIP: '1'
+
+  # The six test/*-browser.js scripts, in a real Chromium. A separate job, not a
+  # step of `check`, so the required check does not wait on a browser download.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm i --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: bash test/run-browser.sh
 
   # Publishes booklet.html, examples/, docs, etc. — the
   # whole repo root, exactly as the old "Deploy from a branch" source did

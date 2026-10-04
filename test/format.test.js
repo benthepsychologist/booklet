@@ -10,9 +10,9 @@ const html=read("booklet.html");
    more (the export-name helpers), so it loads the renderer's script a second
    time and exposes what it wants, leaving harness.js alone. */
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
-const A=eval(src+"\n({toMarkdown,parseFile,exportName,fileBase,slugify,"+
-  "emptyS,emptyD,setS:v=>{S=v},getS:()=>S,setD:v=>{D=v},setLang:l=>{lang=l},"+
-  "setTPL:v=>{TPL=v},resetTPL:()=>{TPL=EMPTY_BOOKLET;SHELF={}},editTemplate,T})");
+const A=eval(src+"\n({exportName,slugify,"+
+  "emptyS,emptyD,setS:v=>{S=v},setD:v=>{D=v},setLang:l=>{lang=l},"+
+  "resetTPL:()=>{TPL=EMPTY_BOOKLET;SHELF={}},editTemplate,T})");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d?"   → "+d:""));};
 const fresh=()=>{A.setS(A.emptyS());A.setD(A.emptyD());A.resetTPL();A.setLang("en");};
 const titled=(en,fr)=>A.editTemplate(t=>{t.head={title:fr===undefined?en:{en,fr}};});

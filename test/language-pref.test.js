@@ -68,9 +68,9 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get view(){return view}, get currentId(){return currentId},
-  get TPL(){return TPL}, get S(){return S}, get storageOk(){return storageOk},
-  LIB_VIEW, readLib, openBooklet, closeBooklet, createBooklet, saveLocal, addModule, addModuleText,
-  editTemplate, render, loadText, homeButton
+  get S(){return S}, get storageOk(){return storageOk},
+  LIB_VIEW, closeBooklet, createBooklet, saveLocal, addModuleText,
+  editTemplate, render, loadText
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];delete global.location;delete global.history;};

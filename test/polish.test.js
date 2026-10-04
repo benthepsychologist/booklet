@@ -25,8 +25,8 @@ global.document.createElement=tag=>{const n=mk0(tag);
 /* One page load: the renderer's one <script> evaluated afresh. */
 function load(source){const API={};
   eval(source+`
-;Object.assign(API,{render,parseFile,applyParsed,T,TSRC,showPage,currentPage,
-  getPanel:()=>citePanelEl,getTPL:()=>TPL,getView:()=>view,setView:v=>{view=v},setLang:l=>{lang=l},
+;Object.assign(API,{render,parseFile,applyParsed,TSRC,
+  getPanel:()=>citePanelEl,getTPL:()=>TPL,setView:v=>{view=v},setLang:l=>{lang=l},
   fresh:()=>{S=emptyS();D=emptyD();TPL=EMPTY_BOOKLET;view="home";lang="en";}});`);
   return API;}
 const A=load(src);

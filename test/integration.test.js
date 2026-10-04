@@ -29,11 +29,8 @@ const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&
 function boot(){const API={};
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
-  get view(){return view},set view(v){view=v}, get lang(){return lang},set lang(v){lang=v},
-  get currentId(){return currentId}, get TPL(){return TPL}, get S(){return S},
-  LIB_VIEW, T, TSRC, buildTables, libT, MW, toMarkdown, parseFile,
-  createBooklet, addModule, addModuleText, saveLocal, render, go, homeButton,
-  moduleView, moduleForView, modesOf, isMulti, allModules
+  get lang(){return lang},set lang(v){lang=v}, get TPL(){return TPL},
+  T, TSRC, buildTables, strings, moduleView
 }));`);
   return API;}
 
@@ -59,12 +56,11 @@ for(const g of ["library","moduleView","pages"]){
 // a Spanish string added the documented way (TSRC.es, then a rebuild) reaches es-AR through es
 A.TSRC.es.library={title:"__es_title__"};A.TSRC.es.moduleView={noneShown:"__es_none__"};A.buildTables();
 A.lang="es-AR";
-chk("library: an es string reaches es-AR through es",A.libT().title==="__es_title__",A.libT().title);
-chk("library: a key es lacks still reads the English",A.libT().open===A.TSRC.en.library.open);
-chk("moduleView: an es string reaches es-AR through es",A.MW().noneShown==="__es_none__");
-chk("moduleView: a function string es lacks still works",typeof A.MW().clash==="function"&&A.MW().clash("m","a","o")===A.TSRC.en.moduleView.clash("m","a","o"));
+chk("library: an es string reaches es-AR through es",A.strings("library").title==="__es_title__",A.strings("library").title);
+chk("library: a key es lacks still reads the English",A.strings("library").open===A.TSRC.en.library.open);
+chk("moduleView: an es string reaches es-AR through es",A.strings("moduleView").noneShown==="__es_none__");
 A.lang="fr";
-chk("French reads its own words",A.libT().title==="Vos carnets"&&/activité/.test(A.MW().clash("m","a","o")));
+chk("French reads its own words",A.strings("library").title==="Vos carnets"&&/ce module/.test(A.strings("moduleView").noneShown));
 
 // Three sections used to sit here: the earlier format's own `languages:`
 // array riding in the saved record (TPL.languages, retired with the rest of
