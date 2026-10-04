@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 id: fixture/tone-pair-not-hex
 title: A colour pair that is not a colour
 lang: en
@@ -11,7 +11,7 @@ lang: en
 > ![[#^grid]]
 
 ```booklet widget
-{ "engine": "grid-select", "title": "Pick",
+{ "engine": "grid-select",
   "cells": [ { "id": "one", "label": "One", "color": { "tint": "#fff;background:url(https://x.test/a.png)", "deep": "#123456" } } ],
   "items": [ { "id": "a", "cell": "one", "label": "A" } ] }
 ```

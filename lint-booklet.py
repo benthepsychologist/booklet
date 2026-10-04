@@ -2,26 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.7 format in SPEC.md.
+Lint a booklet file against the v0.8 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: 0.7`,
+A booklet is one portable Markdown file: front matter that says `booklet: 0.8`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: 0.7`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: 0.8`, one `lang:`), fences that are
 closed, unique block and question ids, modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
 title, queries and data blocks, and records that name an activity. Any file whose
-front matter is not `booklet: 0.7` is rejected; no earlier format is read.
+front matter is not `booklet: 0.8` is rejected; no earlier format is read.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.7 file is written in one language, so it
+registry's CI line keeps working; a v0.8 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
@@ -59,24 +59,31 @@ def svg_script_in(svg):
         found.append(f"a {url.group(1).lower()}: URL")
     return found
 
-# Languages: a supported language, optionally with a region (`es`, `es-AR`, `fr-CA`).
+# Languages. A booklet's `lang` is the language its content is written in: any well-formed tag, a lowercase
+# language with an optional region (`es`, `es-AR`, `de`, `pt-BR`). The renderer's own interface has strings
+# for en, es (with es-AR over it) and fr; for any other language the interface falls back to English.
 LANGS = ("en", "es", "fr")
-LANG_TAG = re.compile(r"^(en|es|fr)(-([A-Z]{2}|[0-9]{3}))?$")
+LANG_TAG = re.compile(r"^[a-z]{2,3}(-([A-Z]{2}|[0-9]{3}))?$")
 # a key that looks like a language tag at all, however wrong
 LANG_LIKE = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$")
 
 
 def lang_problem(tag):
-    """Why a language tag is not usable, or None."""
+    """Why a language tag is not well-formed, or None."""
     if not isinstance(tag, str) or not LANG_LIKE.match(tag):
         return f"{tag!r} is not a language tag"
     if LANG_TAG.match(tag):
         return None
-    if tag.split("-")[0].lower() in LANGS:
-        return (f"{tag!r} is not spelled the way a tag is: lowercase language, "
-                f"uppercase region (es-AR)")
-    return (f"{tag!r} is a language the renderer has no interface table for "
-            f"(supported: {', '.join(LANGS)}, and es-AR as a layer over es)")
+    return (f"{tag!r} is not spelled the way a tag is: lowercase language, "
+            f"uppercase region (es-AR)")
+
+
+def lang_warning(tag):
+    """A warning when the interface has no strings for the tag's language, or None."""
+    if tag.split("-")[0] in LANGS:
+        return None
+    return (f"front matter `lang: {tag}`: the renderer's interface has no strings for this language "
+            f"(it has {', '.join(LANGS)}), so it will show its own words in English around this booklet")
 
 
 def front_matter(text):
@@ -87,13 +94,13 @@ def front_matter(text):
         return None, text
     fm = {}
     for line in text[4:end].split("\n"):
-        m = re.match(r'^([A-Za-z_][\w-]*):\s*"?(.*?)"?\s*$', line)
+        m = re.match(r'^([A-Za-z_][\w-]*):\s*["\']?(.*?)["\']?\s*$', line)
         if m:
             fm[m.group(1)] = m.group(2)
     return fm, text[end + 4:]
 
 
-# A v0.7 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.8 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -101,9 +108,20 @@ CALLOUT_LINE = re.compile(r'^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\](
 # a row closes with `> [!row end]`: the one booklet line whose flag follows the kind, since a row has no id
 ROW_END = re.compile(r'^>[ \t]?\[!(row)([ \t]+end)\]([+-]?)[ \t]*(.*)$', re.I)
 ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
-CALLOUT_FLAGS = {"module": {"end"}, "row": {"end"}, "activity": {"repeat", "daily", "hidden"},
-            "widget": {"readonly", "describe"}, "text": {"long"},
-            "choice": {"open"}, "multi": {"open"}}
+# What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
+# The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
+# together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
+KIND_SETTINGS = {
+    "module": ("end",), "activity": ("repeat", "daily", "hidden"), "row": ("end",), "text": ("long",),
+    "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
+    "data": (), "records": (), "manifest": (),
+    "choice": ("open", "menu:"), "multi": ("open", "menu:"),
+    "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
+}
+NUMBER_SETTINGS = ("min", "max", "step")
+CALLOUT_FLAGS = {k: {s for s in v if not s.endswith(":")} for k, v in KIND_SETTINGS.items()}
+# the widget engines the renderer has
+ENGINES = ("svg-regions", "grid-select")
 TONE_NAMES = ("warm", "green", "amber", "slate", "teal")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
 STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row"}
@@ -114,7 +132,7 @@ def callout_words(kind, s):
     for w in (s or "").split():
         kv = re.match(r'^([A-Za-z][A-Za-z0-9-]*):(.*)$', w)
         if kv:
-            out["set"][kv.group(1)] = kv.group(2)
+            out["set"][kv.group(1).lower()] = kv.group(2)
         elif re.match(r'^[A-Za-z][A-Za-z0-9-]*=', w):
             out["old"].append(w)
         elif w.lower() in CALLOUT_FLAGS.get(kind, set()):
@@ -555,15 +573,39 @@ def list_below(lines, i, pattern):
     return (out, j) if out else ([], i)
 
 
+def check_settings(f, n, kind, w):
+    """A line's settings against KIND_SETTINGS, and an unknown kind (SPEC.md section 4)."""
+    allowed = KIND_SETTINGS.get(kind)
+    if allowed is None:
+        if w["id"] or w["set"] or w["flags"]:
+            warn(f, f"line {n}: `{kind}` is not a kind this format defines, so a renderer shows the line as a "
+                    f"callout and says it does not know the kind")
+        return
+    takes = ", ".join(("`" + s + "`") for s in allowed)
+    said = f"it takes {takes}" if allowed else "it takes no settings at all"
+    for key, val in w["set"].items():
+        if key + ":" not in allowed:
+            err(f, f"line {n}: a {kind} line takes no `{key}:` setting ({said})")
+        elif key in NUMBER_SETTINGS and not re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", val.strip()):
+            err(f, f"line {n}: `{key}:{val}` must be a number")
+    for flag in sorted(w["flags"]):
+        if flag not in allowed:
+            err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
+    if "daily" in w["flags"] and "repeat" not in w["flags"]:
+        err(f, f"line {n}: `daily` only follows `repeat` (write `repeat daily`)")
+
+
 def check_format(f, text, fm):
-    """Lint a v0.7 booklet. Every problem names its line."""
+    """Lint a v0.8 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.7 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.8 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
             err(f, f"front matter `lang: {lang}`: {why}")
+        elif lang_warning(lang):
+            warn(f, lang_warning(lang))
     if not fm.get("title"):
         warn(f, "front matter has no `title:`")
     lines = text.replace("\r\n", "\n").split("\n")
@@ -620,9 +662,11 @@ def check_format(f, text, fm):
                         err(f, f"line {m + 1}: the block id ^{bid} is used twice")
                     block_ids[bid] = info
             words = info.split()
-            if words and words[0].lower() == "booklet" and section == "content" \
-                    and len(words) > 1 and words[1].lower() == "query":
-                queries.append((n, code, open_mod, cur_act))
+            if words and words[0].lower() == "booklet" and len(words) > 1 and words[1].lower() == "query":
+                if section == "content":
+                    queries.append((n, code, open_mod, cur_act))
+                elif section == "data":
+                    err(f, f"line {n}: a query belongs in an activity's prose, not in the data section")
                 i = (m if bid else k) + 1
                 continue
             if words and words[0].lower() == "booklet" and len(words) > 1 and words[1].lower() == "theme":
@@ -645,6 +689,8 @@ def check_format(f, text, fm):
                     if isinstance(obj, dict):
                         if not obj.get("engine"):
                             err(f, f"line {n}: the widget ^{bid} names no `engine`")
+                        elif obj.get("engine") not in ENGINES:
+                            err(f, f"line {n}: the widget ^{bid} names the engine {obj.get('engine')!r}, which is not one of {', '.join(ENGINES)}")
                         for cell in obj.get("cells") or []:
                             if isinstance(cell, dict) and "color" in cell:
                                 col = cell["color"]
@@ -680,7 +726,7 @@ def check_format(f, text, fm):
                         err(f, f"line {n}: `booklet {what}` needs the activity it belongs to")
                     else:
                         entry_refs.append((n, words[2]))
-                elif what not in ("answers", "module"):
+                elif what != "answers":
                     warn(f, f"line {n}: `booklet {what}` is not a block this format defines")
             i = (m if bid else k) + 1
             continue
@@ -693,6 +739,7 @@ def check_format(f, text, fm):
         if mm:
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
+            check_settings(f, n, kind, w)
             if rowst["open"] and kind in ("data", "records", "module", "activity"):
                 close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line"}.get(kind, f"the {kind} section"))
             if kind == "data":
@@ -892,18 +939,18 @@ def check_file(path):
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return
-    if fm.get("booklet") == "0.7":
+    if fm.get("booklet") == "0.8":
         check_format(f, text, fm)
         return
     old = fm.get("booklet")
-    if old in ("0.1", "0.2", "0.3", "0.4", "0.5", "0.6"):
-        err(f, f"front matter says booklet: {old}; this is format 0.7. Change the marker to booklet: 0.7"
+    if old in ("0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7"):
+        err(f, f"front matter says booklet: {old}; this is format 0.8. Change the marker to booklet: 0.8"
                + (" (and write settings as key:value, for example min:0)." if old == "0.2" else "."))
         return
     # No earlier format is read — this mirrors the renderer's own
     # parseFile(), which only ever calls parseBooklet(). Anything else is
     # rejected outright rather than checked against an earlier format's rules.
-    err(f, f"front matter must say `booklet: 0.7` (found {fm.get('booklet')!r}) — "
+    err(f, f"front matter must say `booklet: 0.8` (found {fm.get('booklet')!r}) — "
            f"no earlier format is read")
 
 

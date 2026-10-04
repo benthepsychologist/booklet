@@ -9,7 +9,7 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
 const FILE=`---
-booklet: 0.7
+booklet: 0.8
 title: Pages
 lang: en
 ---

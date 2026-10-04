@@ -31,12 +31,13 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.7 (an old `module:` file)",/front matter must say `booklet: 0\.7` \(found None\)/],
- ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.7\. Change the marker to booklet: 0\.7 \(and write settings as key:value/],
- ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.7\. Change the marker to booklet: 0\.7\.$/],
- ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.7\. Change the marker to booklet: 0\.7\.$/],
- ["lint-old-format-0-5","a file still saying booklet: 0.5",/front matter says booklet: 0\.5; this is format 0\.7\. Change the marker to booklet: 0\.7\.$/],
- ["lint-old-format-0-6","a file still saying booklet: 0.6",/front matter says booklet: 0\.6; this is format 0\.7\. Change the marker to booklet: 0\.7\.$/],
+ ["lint-not-v02","front matter without booklet: 0.8 (an old `module:` file)",/front matter must say `booklet: 0\.8` \(found None\)/],
+ ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.8\. Change the marker to booklet: 0\.8 \(and write settings as key:value/],
+ ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
+ ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
+ ["lint-old-format-0-5","a file still saying booklet: 0.5",/front matter says booklet: 0\.5; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
+ ["lint-old-format-0-6","a file still saying booklet: 0.6",/front matter says booklet: 0\.6; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
+ ["lint-old-format-0-7","a file still saying booklet: 0.7",/front matter says booklet: 0\.7; this is format 0\.8\. Change the marker to booklet: 0\.8\.$/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -78,6 +79,15 @@ const CASES=[
  ["lint-query-cards-on-data","`as: cards` on a data block",/line 25: the query's `as: cards` draws kept entries, not the data block 'short-list'/],
  ["lint-query-data-other-module","a query of a data block in another module",/line 13: the query's `from: short-list` is a data block in another module/],
  ["lint-fence-unclosed","a fence opened and never closed",/line 25: a fence is opened and never closed/],
+ ["lint-setting-unknown","a setting a kind does not take (`mx:5` for `max:5`)",/line 13: a number line takes no `mx:` setting \(it takes `min:`, `max:`, `step:`\)/],
+ ["lint-setting-flag-unknown","a flag a kind does not take",/line 13: a text line takes no `lng` setting \(it takes `long`\)/],
+ ["lint-setting-open-on-text","`open` on a kind other than choice and multi",/line 13: a text line takes no `open` setting/],
+ ["lint-setting-daily-alone","`daily` without `repeat`",/line 15: `daily` only follows `repeat`/],
+ ["lint-setting-number-not-number","a `min:` that is not a number",/line 13: `min:abc` must be a number/],
+ ["lint-setting-date-min","`min:` on a date (it draws neither)",/line 13: a date line takes no `min:` setting \(it takes no settings at all\)/],
+ ["lint-query-in-data","a query in the data section",/line 19: a query belongs in an activity's prose, not in the data section/],
+ ["lint-widget-unknown-engine","a widget naming an engine that does not exist",/line 16: the widget \^picker-data names the engine 'tag-cloud', which is not one of svg-regions, grid-select/],
+ ["lint-limit-zero","a query with `limit: 0`",/line 17: the query's `limit: 0` must be a positive whole number/],
 ];
 for(const [name,what,rx] of CASES){
   const r=lint(path.join(FX,name+".md"));
@@ -92,6 +102,18 @@ for(const [name,what,rx] of CASES){
  const r=lint(path.join(FX,"lint-records-no-activity.md"));
  chk("records for an activity no line names: one warning, no error",
    r.status===0&&r.errors.length===0&&r.warns.length===1&&/line 27: records for 'elsewhere', which no activity line names/.test(r.warns[0]||""),r.out);}
+
+{// v0.8: the settings table, an unknown kind, languages, the marker's quotes, `booklet module`
+ const W=(name,rx,label)=>{const r=lint(path.join(FX,name+".md"));
+   chk(label+": one warning, no error, naming the line",r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);};
+ W("lint-kind-unknown",/line 13: `sticker` is not a kind this format defines/,"a kind the format does not define, with an id");
+ W("lint-fence-module-word",/line 15: `booklet module` is not a block this format defines/,"`booklet module`, which nothing defines (it is like any unknown fence)");
+ W("lint-lang-other",/`lang: de`: the renderer's interface has no strings for this language/,"a well-formed language the interface has no strings for");
+ const C=n=>{const r=lint(path.join(FX,n+".md"));return r.status===0&&/0 errors · 0 warnings/.test(r.out)?"":r.out;};
+ chk("kinds, settings and flags are read without regard to case",C("lint-setting-case-ok")==="",C("lint-setting-case-ok"));
+ chk("a reading callout with no id and no settings, of any kind, needs no notice",C("lint-kind-reading-ok")==="",C("lint-kind-reading-ok"));
+ chk("the marker may be quoted with single quotes",C("lint-marker-single-quote")==="",C("lint-marker-single-quote"));
+ chk("the marker may be quoted with double quotes",C("lint-marker-double-quote")==="",C("lint-marker-double-quote"));}
 
 {// the colon form of a setting is clean
  const r=lint(path.join(FX,"lint-setting-colon.md"));
@@ -187,7 +209,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
 {// the registry's modules, copied, re-marked and linted: hex pairs and tone names both stay valid
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
-   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.[0-9]$/m,"booklet: 0.7"));
+   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.[0-9]$/m,"booklet: 0.8"));
    const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
    chk("the registry's modules, copied and re-marked to 0.7, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 

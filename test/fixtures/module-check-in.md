@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 id: mensio/check-in
 title: A mindful check-in
 lang: en
@@ -36,7 +36,7 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
 > ![[#^body-map]]
 
 ```booklet widget
-{ "engine": "svg-regions", "title": "Body",
+{ "engine": "svg-regions",
   "figures": [
     { "id": "front", "label": "Front", "regions": ["head","jaw","neck","shoulders","chest","arms","stomach","hips","legs","feet"],
       "svg": "\n<svg viewBox=\"0 0 200 440\" class=\"bodyfig\" aria-hidden=\"true\" focusable=\"false\">\n  <defs><clipPath id=\"headclipF\"><ellipse cx=\"100\" cy=\"40\" rx=\"27\" ry=\"31\"/></clipPath></defs>\n  <g clip-path=\"url(#headclipF)\">\n    <rect class=\"rg\" data-r=\"head\" x=\"70\" y=\"6\" width=\"60\" height=\"42\"/>\n    <rect class=\"rg\" data-r=\"jaw\"  x=\"70\" y=\"48\" width=\"60\" height=\"26\"/>\n  </g>\n  <ellipse class=\"outline\" cx=\"100\" cy=\"40\" rx=\"27\" ry=\"31\"/>\n  <rect    class=\"rg\" data-r=\"neck\" x=\"87\" y=\"69\" width=\"26\" height=\"22\" rx=\"9\"/>\n  <path    class=\"rg\" data-r=\"shoulders\" d=\"M54 100 Q100 84 146 100 L146 120 Q100 106 54 120 Z\"/>\n  <path    class=\"rg\" data-r=\"chest\" d=\"M58 120 Q100 108 142 120 L140 172 Q100 182 60 172 Z\"/>\n  <path    class=\"rg\" data-r=\"stomach\" d=\"M60 172 Q100 182 140 172 L138 228 Q100 238 62 228 Z\"/>\n  <path    class=\"rg\" data-r=\"arms\" d=\"M50 102 Q37 105 35 124 L27 214 Q25 230 40 232 Q51 232 53 215 L60 134 Z\"/>\n  <path    class=\"rg\" data-r=\"arms\" d=\"M150 102 Q163 105 165 124 L173 214 Q175 230 160 232 Q149 232 147 215 L140 134 Z\"/>\n  <path    class=\"rg\" data-r=\"hips\" d=\"M62 228 Q100 238 138 228 L136 266 Q100 276 64 266 Z\"/>\n  <path    class=\"rg\" data-r=\"legs\" d=\"M64 266 Q82 274 98 270 L94 388 Q84 394 74 388 Z\"/>\n  <path    class=\"rg\" data-r=\"legs\" d=\"M136 266 Q118 274 102 270 L106 388 Q116 394 126 388 Z\"/>\n  <path    class=\"rg\" data-r=\"feet\" d=\"M74 388 Q84 394 94 388 L96 414 Q84 420 72 414 Z\"/>\n  <path    class=\"rg\" data-r=\"feet\" d=\"M126 388 Q116 394 106 388 L104 414 Q116 420 128 414 Z\"/>\n</svg>" },
@@ -77,7 +77,7 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
 > ![[#^quadrants]]
 
 ```booklet widget
-{ "engine": "grid-select", "title": "Four quadrants of feeling",
+{ "engine": "grid-select",
   "axes": { "top": "more activated", "bottom": "less activated", "left": "more unpleasant", "right": "more pleasant" },
   "cells": [
     { "id": "agitating", "label": "Agitating", "note": "Activated and unpleasant. Anger, frustration, anxiety, fear. These feelings push for a response — fight, fix, escape, prepare. Uncomfortable, and often useful.",

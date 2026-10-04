@@ -4,7 +4,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 
-const FM="---\nbooklet: 0.7\ntitle: Menus and matrix\nlang: en\n---\n\n";
+const FM="---\nbooklet: 0.8\ntitle: Menus and matrix\nlang: en\n---\n\n";
 const BOOK=FM+`> [!module|qm] Menus and matrix
 
 > [!activity|day] A day
@@ -56,11 +56,11 @@ const blocks=R=>acts(R).blocks;
    q.type==="matrix"&&q.items.length===2&&q.anchors.map(a=>a.n).join()==="0,1,2,3"&&q.anchors[2].text==="More than half the days",JSON.stringify(q));
  chk("a matrix owns one answer slot, under its id",JSON.stringify(q.keys)==='["phq"]');
 
- /* lookup: the menu in the same module fence first, then anywhere in the file */
+ /* lookup: a menu is found anywhere in the file; its id is unique */
  const two=FM+`> [!module|m1] One\n\n> [!menu|opts]\n- A1\n- A2\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!menu|opts]\n- B1\n- B2\n- B3\n\n> [!activity|a2] A\n\n> [!choice|q2 menu:opts] Q\n\n> [!module|m2 end] End\n`;
  const R2=A.parseFile(two);
  const opt=id=>R2.template.modules.flatMap(m=>m.mode?[m.mode]:m.activities).flatMap(a=>a.blocks).find(b=>b.id===id).options.join();
- chk("two modules with a menu of the same id each use their own",R2.unread.length===0&&opt("q1")==="A1,A2"&&opt("q2")==="B1,B2,B3",JSON.stringify(R2.unread)+opt("q1")+"|"+opt("q2"));
+ chk("two menus with the same id are refused, like any id used twice",R2.ok===false&&R2.refused.length===1&&/“opts” is used twice/.test(R2.refused[0]),JSON.stringify(R2.refused));
  const out=FM+`> [!module|m1] One\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!data] Data\n\n> [!menu|opts]\n- D1\n- D2\n`;
  const R3=A.parseFile(out);
  chk("a menu outside the module fence (the data section) is found",R3.unread.length===0&&R3.template.modules[0].mode.blocks[0].options.join()==="D1,D2",JSON.stringify(R3.unread));

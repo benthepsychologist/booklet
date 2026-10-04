@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 id: mensio/check-in
 title: A mindful check-in
 lang: en
@@ -40,7 +40,6 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
 ```booklet widget
 {
  "engine": "svg-regions",
- "title": "Body map",
  "figures": [
   {
    "id": "front",
@@ -254,7 +253,6 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
 ```booklet widget
 {
  "engine": "grid-select",
- "title": "Four quadrants of feeling",
  "axes": {
   "top": "more activated",
   "bottom": "less activated",

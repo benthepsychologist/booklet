@@ -29,8 +29,8 @@ const tones=n=>walk(n,x=>cls(x).some(c=>/^tone-/.test(c)));
   const h=A.rolesOf(set,{},"bars");
   chk("a role the view does not draw is null (bars draw label, value and tone only)",h.label==="label"&&h.value==="value"&&h.tone==="tone"&&h.note===null&&h.badge===null,JSON.stringify(h));
   chk("the fallback uses the first field of the source whatever `fields:` says",A.dataSet({fields:{z:"Z",a:"A"},rows:[{a:1,z:2}]}).first==="z"&&A.dataSet({rows:[{b:1,a:2}]}).first==="b");}
- chk("rowTone reads good, warn and bad, whatever the case, and nothing else",
-   A.rowTone({t:"Good"},{tone:"t"})==="good"&&A.rowTone({t:" WARN "},{tone:"t"})==="warn"&&A.rowTone({t:"bad"},{tone:"t"})==="bad"&&A.rowTone({t:"ok"},{tone:"t"})===""&&A.rowTone({t:"good"},{tone:null})==="");
+ chk("rowTone reads good, warn and bad exactly as written (values are not read without regard to case), and nothing else",
+   A.rowTone({t:"Good"},{tone:"t"})===""&&A.rowTone({t:" warn "},{tone:"t"})==="warn"&&A.rowTone({t:"bad"},{tone:"t"})==="bad"&&A.rowTone({t:"ok"},{tone:"t"})===""&&A.rowTone({t:"good"},{tone:null})==="");
  {const p=A.pill("hi","warn");chk("a pill is a span with the pill class and a tone class",p.tagName==="span"&&cls(p).join()==="pill,tone-warn"&&text(p)==="hi"&&cls(A.pill("x","")).join()==="pill");}
 
  /* ---- each view draws only what VIEW_DRAWS says: a sentinel field, pointed at by each key ---- */
@@ -97,7 +97,7 @@ const tones=n=>walk(n,x=>cls(x).some(c=>/^tone-/.test(c)));
   chk("list: a group is a card with the group's name and a count",byClass(n,"dv-gcard").length===2&&byClass(n,"dv-group").map(text).join()==="x2 rows,y1 row");}
 
  /* ---- kept entries: the same roles, the date as the first field ---- */
- const KEEP=`---\nbooklet: 0.7\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: hours\nas: line\n\`\`\`\n\n\`\`\`booklet query\nfrom: hours\nas: bars\n\`\`\`\n\n\`\`\`booklet query\nfrom: log\nas: list\n\`\`\`\n\n> [!module|m end] End\n`;
+ const KEEP=`---\nbooklet: 0.8\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: hours\nas: line\n\`\`\`\n\n\`\`\`booklet query\nfrom: hours\nas: bars\n\`\`\`\n\n\`\`\`booklet query\nfrom: log\nas: list\n\`\`\`\n\n> [!module|m end] End\n`;
  {const r=A.parseFile(KEEP);
   chk("a question as the source parses clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
   const qs=r.template.modules[0].activities.find(a=>a.id==="look").blocks.filter(b=>b.type==="query");
@@ -111,9 +111,12 @@ const tones=n=>walk(n,x=>cls(x).some(c=>/^tone-/.test(c)));
   chk("bars over one question draw a bar for each entry",byClass(main,"ch-bar").length===5);
   chk("a list over kept entries: the date is the label, the questions are the extras",byClass(main,"dv-t").length===5&&byClass(main,"dv-f").some(x=>x.attrs.title==="Hours slept"));
   const set=B.entrySet({from:"log",fields:["hours"],fileWide:true,view:{limit:2}},"look","line");
-  chk("`limit` on kept entries means the newest N, also for a chart (oldest of those first)",set.rows.map(r=>r.hours).join()==="8,9",JSON.stringify(set.rows));
+  chk("the set itself is not cut (`limit` is applied once, by the pipeline), and a chart's rows run oldest first",set.rows.length===5&&set.rows.map(r=>r.hours).join()==="6.5,7,5,8,9",JSON.stringify(set.rows));
+  const drawn=B.viewNodes(set,{as:"bars",value:"hours",limit:2},{})[0],bars=byClass(drawn,"ch-bar");
+  chk("`limit` on kept entries means the newest N, also for a chart (oldest of those first)",bars.length===2&&byClass(drawn,"ch-v").map(text).join()==="8,9",byClass(drawn,"ch-v").map(text).join());
   const set2=B.entrySet({from:"log",fileWide:true,view:{limit:2}},"look","cards");
-  chk("`limit` on kept entries for cards keeps the newest N, newest first",set2.rows.length===2&&set2.sortVal(set2.rows[0],"date")>set2.sortVal(set2.rows[1],"date"));
+  const cards=B.viewNodes(set2,{as:"cards",limit:2},{})[0],when=byClass(cards,"when").map(text);
+  chk("`limit` on kept entries for cards keeps the newest N, newest first",when.length===2&&/5/.test(when[0])&&/4/.test(when[1]),when.join("|"));
   const set3=B.entrySet({from:"log",fileWide:true},"look","table");
   chk("a kept-entry set: the date is the first field whatever `fields:` says, and its sort value is the timestamp",set3.first==="date"&&set3.own[0]==="date"&&typeof set3.sortVal(set3.rows[0],"date")==="number"&&set3.sortVal(set3.rows[0],"date")>set3.sortVal(set3.rows[1],"date"));
   chk("number and scale answers sort as numbers, not as the words shown",typeof set3.sortVal(set3.rows[0],"mood")==="number"&&typeof set3.rows[0].mood==="string");

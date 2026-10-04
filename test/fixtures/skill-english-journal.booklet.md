@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 id: "local/gratitude-journal"
 title: "A gratitude journal"
 lang: en

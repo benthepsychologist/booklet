@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 id: fixture/roles
 title: Studio project board
 lang: en

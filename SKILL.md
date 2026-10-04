@@ -5,8 +5,8 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.7.0** — matches the project's current version (SPEC.md's
-"project v0.7") now that this skill teaches v0.7, the current format.
+**Skill version: 0.8.0** — matches the project's current version (SPEC.md's
+"project v0.8") now that this skill teaches v0.8, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. Above a long
@@ -65,7 +65,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: 0.7`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: 0.8`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -134,16 +134,19 @@ pages, then booklet lines.**
 | `blocks` or a page break? | No break: one scrolling page, enough for up to about seven lines. A break (`***`): one sitting with distinct steps (read, then answer, then review), 2 to 4 pages. |
 | Which **lines**? | Open with a line or two of plain prose: what to do, roughly how long, and that anything can be skipped. On a page that asks questions, 3 to 6 of them, mostly `text` (section 6). |
 
-A **quiz** has no scoring and no multiple choice with a visible answer key —
-v0.7 has no way yet to fold a block away for the reader to check
-themselves (section 6 says what to do instead: put the answer in ordinary
-prose after the question, or on the next page). A **matching** quiz lists the
+A **quiz** has no scoring, but a `choice` or `multi` may mark its correct
+option or options with `[x]` (section 6): once the reader has answered, they see
+whether they were right (a `multi` has a Check button), and nothing is scored or
+stored. The correct option is visible to anyone who opens the file as text, so
+use `[x]` for study material, never for anything that has to stay hidden.
+Further explanation goes in a folded `> [!hint]-` callout after the question,
+or in ordinary prose on the next page. A **matching** quiz lists the
 options in prose (a word bank, in a different order from the questions), then
 asks one `text` question per item. A **review** asks the person to recall or
 explain in their own words, and what they would look at again. A **tracker**
 is a `repeat daily` activity with a few short questions. For **language
 learners**, use simple words and short sentences, and give an example answer
-in the hint line under the question.
+in the help text under the question.
 
 **Step 3. Write the file**, from the skeleton in section 4, as
 `<slug>.booklet.md` (slug: the title in lowercase ASCII words joined by
@@ -163,7 +166,7 @@ Copy this exactly and fill in the `<…>` parts.
 
 ````markdown
 ---
-booklet: 0.7
+booklet: 0.8
 id: "local/<booklet-slug>"
 title: "<Booklet title>"
 lang: <en|es|es-AR|fr>
@@ -263,8 +266,10 @@ otherwise it is just "Page 2".
 
 A booklet line is `> [!kind|id …] Title`. The **title is the question
 itself** — there is no separate wording lookup, unlike in an older version of
-this format. A **hint**, if you want one, is a continuation line right under
-it, each starting with `>`, no blank line between:
+this format. **Help text**, if you want some, is a continuation line right under
+the question line, each starting with `>`, no blank line between; a renderer
+shows it under the prompt. (A **hint** is a different thing: a `> [!hint]-`
+callout after the question, which the reader opens.)
 
 ```markdown
 > [!text|noticed] What did you notice?
@@ -275,8 +280,8 @@ it, each starting with `>`, no blank line between:
 | --- | --- | --- |
 | `text` | a written answer | nothing; `long` after the id for a bigger box |
 | `lines` | repeated one-line notes | nothing; stores under its own id, like any other question — an activity may have more than one |
-| `choice` | pick one | a task list, `- [ ] Option` |
-| `multi` | pick any number | a task list; add `open` after the id to let the reader add their own |
+| `choice` | pick one | a task list, `- [ ] Option`; `[x]` marks the correct one, and `open` after the id lets the reader add their own |
+| `multi` | pick any number | a task list; `[x]` marks each correct one, and `open` after the id lets the reader add their own |
 | `scale` | a numbered scale | a numbered list of anchors, starting at whatever number you want the scale to start at (usually `0.`) |
 | `matrix` | several items on one shared scale (a symptom questionnaire) | a bulleted list of items, then a numbered list of anchors |
 | `number` | a number | nothing; `min:`, `max:`, `step:` after the id |
@@ -342,14 +347,14 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **Nothing folds a question away.** v0.7 has no working equivalent of
+- **Nothing folds a question away.** v0.8 has no working equivalent of
   an older version's "optional questions, folded shut until opened." If a
-  request calls for that (a quiz's answer key, "a couple more if you want
+  request calls for that ("a couple more if you want
   them"), the honest options are: put the extra material as ordinary prose
   right after the question it answers, put it on its own page after a
   `***`, or say in your reply that folding isn't available yet and ask
   whether the requester wants it unfolded instead.
-- **Nothing reads another activity's answers yet.** v0.7 has no kind that
+- **Nothing reads another activity's answers yet.** v0.8 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
@@ -524,7 +529,7 @@ between paragraphs (`\n\n`) for a new one.
   address — never embedded data, never a placeholder URL.
 
 - **A report** (something generated or written to be read, not answered) needs
-  only front matter (`booklet: 0.7`, `id`, `title`, `lang`) and plain Markdown:
+  only front matter (`booklet: 0.8`, `id`, `title`, `lang`) and plain Markdown:
   no activity line is needed, the file is one activity named by the title. Give it
   a title heading, then `##` headings for its sections. The renderer folds a
   reading-only activity: each section shows its heading and the **first paragraph
@@ -535,16 +540,16 @@ between paragraphs (`\n\n`) for a new one.
 
 ## 8. Widgets, languages, and the file name
 
-**Widgets.** A `widget` line draws with data for one of the renderer's three
-engines — `svg-regions` (clickable figures), `grid-select` (a grid of words),
-`card-board` (cards) — embedded right in the file:
+**Widgets.** A `widget` line draws with data for one of the renderer's two
+engines — `svg-regions` (clickable figures) and `grid-select` (a grid of
+words) — embedded right in the file:
 
 ````markdown
 > [!widget|grid] Effort and impact
 > ![[#^effort-impact]]
 
 ```booklet widget
-{ "engine": "grid-select", "title": "Effort and impact",
+{ "engine": "grid-select",
   "axes": { "top": "more effort", "bottom": "less effort", "left": "less payoff", "right": "more payoff" },
   "cells": [ { "id": "quickwin", "label": "Quick win", "note": "Cheap and worth it." } ],
   "items": [ { "id": "reply", "cell": "quickwin", "label": "Send the one-line reply" } ] }
@@ -578,7 +583,8 @@ build the activity from `text`/`choice`/etc. instead.
   language other than the one the request was written in, say so and name
   it as needing a native speaker's check; leave `status: draft`.
 - Region spellings are `es-AR`, `fr-CA` (lowercase language, uppercase
-  region). Other languages (`de`, `pt`, …) are refused by the linter.
+  region). Another well-formed language (`de`, `pt-BR`, …) is allowed, with a
+  warning that the renderer's own buttons will be in English around it.
 - **A module for the `booklet-registry` repository is one language too**
   — the same rule as any other booklet now, not the three-language
   requirement an older version of this document described.
@@ -602,8 +608,11 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.7 file is written in one language` | add it |
-| bad language tag | `front matter `lang: de`: 'de' is a language the renderer has no interface table for …` | use en, es, es-AR or fr |
+| no `lang:` | `front matter has no `lang:` — a v0.8 file is written in one language` | add it |
+| a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
+| a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
+| `daily` alone, or a `min:` that is not a number | `` `daily` only follows `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
+| a kind the format does not define | `warn `sticker` is not a kind this format defines …` | use a kind from section 6, or leave the id and settings off for a plain reading callout |
 | region spelled wrong | `'fr-ca' is not spelled the way a tag is: lowercase language, uppercase region (es-AR)` | `fr-CA` |
 | a module opened twice | `'x' opens before 'y' (line N) is closed` | close the first module before opening another |
 | a module never closed | `the module 'x' is opened and never closed` | add its `> [!module|x end]` line |
@@ -628,7 +637,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: 0.7`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: 0.8`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module, activity and question ids are unique across the file and hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
@@ -646,7 +655,7 @@ the renderer. Imitate their shape.
 
 ````markdown
 ---
-booklet: 0.7
+booklet: 0.8
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -682,7 +691,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: 0.7
+booklet: 0.8
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -743,7 +752,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: 0.7
+booklet: 0.8
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -780,7 +789,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 ## 11. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.7 file, one language, its
+same way as any other booklet above — one v0.8 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

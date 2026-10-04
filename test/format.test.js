@@ -15,7 +15,7 @@ const A=eval(src+"\n({exportName,slugify,"+
   "resetBook:()=>{BOOK=EMPTY_BOOKLET;REGISTRY_CACHE={}},editBook,STRINGS})");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d?"   → "+d:""));};
 const fresh=()=>{A.setState(A.emptyState());A.setDrafts(A.emptyDrafts());A.resetBook();A.setLang("en");};
-const titled=(en,fr)=>A.editBook(t=>{t.head={title:fr===undefined?en:{en,fr}};});
+const titled=title=>A.editBook(t=>{t.head={title};});
 
 // ---- the export name: <slug of the booklet's own title>.booklet.md
 fresh();
@@ -26,9 +26,9 @@ chk("accents and punctuation fold into a plain slug",A.slugify("Trousse d’acti
 chk("a title with no letters or digits falls back to booklet",(titled("?!…"),A.exportName()==="booklet.booklet.md"),A.exportName());
 chk("a title in another script is kept, not erased",A.slugify("日記 の 練習")==="日記-の-練習",A.slugify("日記 の 練習"));
 chk("a very long title gives a bounded name",A.slugify("word ".repeat(40)).length<=60);
-fresh();titled("Daily journal","Journal quotidien");
-chk("the slug follows the language the booklet is being shown in",
-  A.exportName()==="daily-journal.booklet.md"&&(A.setLang("fr"),A.exportName()==="journal-quotidien.booklet.md"),A.exportName());
+fresh();titled("Daily journal");
+chk("the slug is of the title as the file wrote it, whatever language the interface shows",
+  A.exportName()==="daily-journal.booklet.md"&&(A.setLang("fr"),A.exportName()==="daily-journal.booklet.md"),A.exportName());
 A.setLang("en");
 fresh();A.editBook(t=>{t.title="Weekly review";});
 chk("a booklet that has only a title (no headline) is named from it",A.exportName()==="weekly-review.booklet.md",A.exportName());

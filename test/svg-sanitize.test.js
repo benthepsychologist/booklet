@@ -230,8 +230,8 @@ for(const [where,svg] of figures)
 /* ---------------- the engine draws through it ---------------- */
 {const figDiv=root=>{let hit=null;const w=n=>{if(hit||!n||!n.children) return;
     if(n.children.some(c=>c instanceof Elem0)) hit=n;else n.children.forEach(w);};w(root);return hit;};
-  const W={id:"t/evil",engine:"svg-regions",regions:[{id:"a",label:{en:"A"}}],
-    figures:[{id:"f",label:{en:"F"},regions:["a"],
+  const W={id:"t/evil",engine:"svg-regions",regions:[{id:"a",label:"A"}],
+    figures:[{id:"f",label:"F",regions:["a"],
       svg:`<svg viewBox="0 0 10 10" onload="ATTACK()"><image href="x" onerror="ATTACK()"/><a href="javascript:ATTACK()"><rect class="rg" data-r="a"/></a><set attributeName="href" to="javascript:ATTACK()"/><script>ATTACK()</script></svg>`}]};
   let drawn,err=null;try{drawn=figDiv(API.ENGINES["svg-regions"]({},W,["regions"]));}catch(e){err=e;}
   chk("svg-regions draws a hostile figure without throwing",!err&&!!drawn,err&&err.message);

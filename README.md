@@ -6,7 +6,7 @@ Open it in a text editor and you can read everything, top to bottom — question
 
 ```markdown
 ---
-booklet: 0.7
+booklet: 0.8
 id: example/daily-note
 title: A daily note
 lang: en
@@ -32,7 +32,7 @@ version: "0.1"
 %%
 ```
 
-This is **v0.7** of the format — see [`SPEC.md`](SPEC.md) for the full
+This is **v0.8** of the format — see [`SPEC.md`](SPEC.md) for the full
 format, and [`docs/why-markdown.md`](docs/why-markdown.md) for how it was
 arrived at: what the wider Markdown-tooling field already does, what Booklet
 needs that nothing else supplies, and why each real choice landed where it
@@ -62,8 +62,8 @@ and it draws those too, as long as they use engines it has.
 ## The vocabulary
 
 - **Module** — one activity, whole and portable: its questions, its own wording in each language, and the widgets it draws with. You add a module to a booklet or take one out; that is the difference between "take this whole booklet or none of it" and "add this one activity to what I already have."
-- **Widget** — *data*, never code, that specialises an engine: the figures and region names for a body map, the axes and cells for a grid, the cards for a card board. Widgets ride inside the booklet, so an activity never arrives without the thing it draws with.
-- **Engine** — the drawing ability the renderer provides. Three so far: `svg-regions`, `grid-select`, `card-board`.
+- **Widget** — *data*, never code, that specialises an engine: the figures and region names for a body map, the axes and cells for a grid. Widgets ride inside the booklet, so an activity never arrives without the thing it draws with.
+- **Engine** — the drawing ability the renderer provides. Two so far: `svg-regions` and `grid-select`.
 - **Question** — one line, `> [!kind|id] Title`, in the kinds `text`, `long`, `lines`, `choice`, `multi`, `scale`, `number`, `date` and `widget`. Every activity is drawn the same way, whatever it is — there is no bespoke view for any activity in a conforming renderer.
 
 **Nothing is addressed by position, with one exception.** Modules are found by `id`, kept entries by their timestamp. Where a thing *appears* is written order; written order decides anything only when no sibling carries an order at all. The exception: a choice or scale question stores its answer as the option's *position*, not its words, because a translation is a separate file and only a position is guaranteed to match across languages — see [`SPEC.md`](SPEC.md).
@@ -77,7 +77,7 @@ and it draws those too, as long as they use engines it has.
 | | |
 | --- | --- |
 | [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, nothing to install or fetch to open it. Draws mermaid diagrams and typesets math with two MIT-licensed libraries stored inside it (see below). Reads v0.3 only — no earlier format opens |
-| [`SPEC.md`](SPEC.md) | the current format (v0.7), versioned and published separately from anything that implements it |
+| [`SPEC.md`](SPEC.md) | the current format (v0.8), versioned and published separately from anything that implements it |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
@@ -102,10 +102,10 @@ figures use the width and fold to one column on a phone.
 
 **Views.** A `booklet query` draws a data block's rows, or a reader's kept entries, as cards, a table, a list, tiles, bars or a line. Every view draws a row from the same five **roles** (`label`, `value`, `note`, `badge`, `tone`, each read from the field of that name unless the query names another), so rows written with those names need only `from:` and `as:`. Tiles with no value are a strip of pills. One **Sort and filter** control, the same on every view and drawn when there are more than eight rows, lets a reader search, show one value of a field and sort on screen; it is kept in memory only, never in the file. A booklet's `density` sizes the views as well as the prose.
 
-A module file (any v0.7 module, such as those in `booklet-registry`) loads as what it is, one activity: on
+A module file (any v0.8 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it.
 
-A plain Markdown file with booklet front matter (`booklet: 0.7`, a `title`) and no booklet lines at all is
+A plain Markdown file with booklet front matter (`booklet: 0.8`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
 status or a run's acceptance report, can be read in the renderer. An activity that only reads (no question, no
 widget, no query) and has at least two sections opens **folded**: each section shows its heading and its first
@@ -222,7 +222,7 @@ person. Anyone may publish a separate registry under their own policy; a site ca
 
 ## Status
 
-**v0.7, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
+**v0.8, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
 independent second implementation yet. It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and

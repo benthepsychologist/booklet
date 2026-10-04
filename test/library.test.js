@@ -54,7 +54,7 @@ function boot(){const API={};
   get STATE(){return STATE},set STATE(v){STATE=v}, get DRAFTS(){return DRAFTS},set DRAFTS(v){DRAFTS=v}, get BOOK(){return BOOK},set BOOK(v){BOOK=v},
   get lang(){return lang},set lang(v){lang=v}, get screen(){return screen},set screen(v){screen=v},
   get dirty(){return dirty},set dirty(v){dirty=v}, get unsavedEntries(){return unsavedEntries},set unsavedEntries(v){unsavedEntries=v},
-  get boardOpen(){return boardOpen},set boardOpen(v){boardOpen=v},
+
   get openChip(){return openChip},set openChip(v){openChip=v},
   get currentId(){return currentId}, get storageOk(){return storageOk},
   LIB_SCREEN, emptyState, emptyDrafts,
@@ -144,13 +144,13 @@ chk("a save timer that outlives its booklet does nothing when it fires",
 
 // ---- a switch clears everything that belongs to a booklet ----------------
 A.openBooklet(a.id);
-A.boardOpen="x";A.openChip={eod:"x"};
+A.openChip={eod:"x"};
 A.screen="eod";
 A.openBooklet(b.id);
-chk("the open card, the open entry and the view are cleared on a switch",
-  A.boardOpen===null&&Object.keys(A.openChip).length===0&&A.screen==="home");
+chk("the open entry and the view are cleared on a switch",
+  Object.keys(A.openChip).length===0&&A.screen==="home");
 A.openBooklet(a.id);
-A.editBook(t=>{t.head={title:{en:"A's own design"}};});A.saveLocal();
+A.editBook(t=>{t.head={title:"A's own design"};});A.saveLocal();
 const c=await A.createBooklet();
 chk("the next booklet opens on its own design, never the last one's",A.allModules().length===0&&!(A.BOOK.head||{}).title);
 
@@ -193,7 +193,7 @@ wipe();A=boot();
 const v1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
 await sleep(5);                                  // so "last opened" differs by more than a clock tick
 const v2=await A.createBooklet();addMod(A,"the-day");
-A.editBook(t=>{t.head={title:{en:"Week by week",fr:"Semaine après semaine"}};});A.saveLocal();
+A.editBook(t=>{t.head={title:"Week by week"};});A.saveLocal();
 A.render();
 chk("inside a booklet, its home leads back out to the list",global.document.getElementById("btnHome").textContent==="← Your booklets");
 A.homeButton();
@@ -204,7 +204,7 @@ chk("the list names each booklet: its own headline, or its modules",
 chk("with when it was last opened",/Last opened/.test(shown));
 chk("most recently opened first",shown.indexOf("Week by week")<shown.search(/Daily journal/i));
 A.lang="fr";A.render();
-chk("the list speaks French too",/Vos carnets/.test(texts(main()))&&/Semaine après semaine/.test(texts(main())));
+chk("the list speaks French too, and a booklet's own title stays as written",/Vos carnets/.test(texts(main()))&&/Week by week/.test(texts(main())));
 A.lang="en";A.render();
 {const card=findAll(main(),n=>n.attrs&&/\bmode\b/.test(n.attrs.class||"")&&texts(n).includes("Week by week"))[0];
  click(button(card,"Remove"));

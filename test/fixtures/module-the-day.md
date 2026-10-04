@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 id: mensio/the-day
 title: Have a good day
 lang: en

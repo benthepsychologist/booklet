@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 id: fixture/theme-and-rows
 title: A garden week
 lang: en
@@ -71,7 +71,7 @@ Mostly dry, a cold night on Thursday.
 > [!data] Data
 
 ```booklet widget
-{ "engine": "grid-select", "title": "How the beds are",
+{ "engine": "grid-select",
   "axes": { "top": "more growth", "bottom": "less growth", "left": "more weeds", "right": "fewer weeds" },
   "cells": [
     { "id": "weedy", "label": "Weedy and growing", "note": "Lots of growth, lots of weeds.", "color": "warm" },
