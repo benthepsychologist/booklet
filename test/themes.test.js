@@ -33,6 +33,9 @@ const pairs=[["ink","paper"],["ink","paper-deep"],["muted","paper"],["accent","p
   ["reader","field"],["ink","surface"],["accent","surface"],["muted","surface"],["warn","paper"],["on-ink","ink"],["on-ink","muted"],
   ["ink","accent-soft"],["ink","mark"],["warn","warn-soft"]];
 for(const t of ["warm","green","amber","slate","teal"]){pairs.push(["tone-"+t+"-deep","tone-"+t]);pairs.push(["ink","tone-"+t]);}
+/* the views (format 0.7): a plain pill, a toned value on a card, a quiet note and a label on a toned tile */
+pairs.push(["reader","paper-deep"],["muted","paper-deep"]);
+for(const t of ["warm","green","amber"]){pairs.push(["tone-"+t+"-deep","surface"]);pairs.push(["muted","tone-"+t]);pairs.push(["reader","tone-"+t]);}
 for(const n of names){
   for(const [f,b] of pairs){const r=ratio(tables[n]["--"+f],tables[n]["--"+b]);ok(r>=4.5,n+": "+f+" on "+b+" "+r.toFixed(2)+":1");}
   if(n==="contrast"){const r=ratio(tables[n]["--ink"],tables[n]["--paper"]);ok(r>=7,"contrast: ink on paper "+r.toFixed(2)+":1 (7 needed)");}}

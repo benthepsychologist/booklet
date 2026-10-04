@@ -3,16 +3,17 @@
 *As of 2026-10-04*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.6**: format v0.6 (files say `booklet: 0.6`) and renderer 0.6.0.
+**project v0.7**: format v0.7 (files say `booklet: 0.7`) and renderer 0.7.0.
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
-## Current state — v0.6 (2026-10-04)
+## Current state — v0.7 (2026-10-04)
 
-What changed from v0.5, v0.4, v0.3 and v0.2 is listed at the end of `SPEC.md` (section 14).
-v0.6 adds two chart views to the query block, `as: bars` and `as: line`, drawn as plain SVG in the theme's own colours from a data block's rows or a reader's kept entries (nothing computed; "Show the numbers" offers the same rows as a table); a file marked `booklet: 0.5` is refused, change it to 0.6.
+What changed from v0.6, v0.5, v0.4, v0.3 and v0.2 is listed at the end of `SPEC.md` (section 14).
+v0.7 gives every query view one row model: five shared **roles** (`label`, `value`, `note`, `badge`, `tone`, each read from the field of that name unless the query names another), new keys `badge:` and `parent:`, `title:` renamed `label:` and `newest:` renamed `limit:`, `fields:` meaning one thing everywhere (the other fields to show), tiles with no value drawn as pills, a one-line `list` row, and one **Sort and filter** control, the same on every view (renderer-only, kept in memory, never in the file). `density` now sizes the views, and a reader's own theme pick replaces a booklet's colours only (its font and density still apply). A file marked `booklet: 0.6` is refused; change it to 0.7, and in a query change `title:` to `label:` and `newest:` to `limit:`.
+v0.6 added two chart views to the query block, `as: bars` and `as: line`, drawn as plain SVG in the theme's own colours from a data block's rows or a reader's kept entries (nothing computed; "Show the numbers" offers the same rows as a table); a file marked `booklet: 0.5` is refused, change it to 0.6.
 v0.5 added a theme block (a booklet's own look, as strict named values, never CSS), rows
 (`> [!row]` cells side by side) and tone names for widget colours; a file marked
 `booklet: 0.4` is refused, change it to 0.5.
@@ -86,7 +87,8 @@ with a message saying so.
   booklet in the browser, never in the file. An activity with any question draws as
   before. The registry's `what-is-a-booklet` module now folds.
 - **Charts** (format 0.6, renderer 0.6.0). `as: bars` is one list row per data row (label, a decorative bar from zero, the value at its end), `as: line` an SVG redrawn to its container's width with one line per field (distinct colour, dash and marker), gaps for non-numbers, thinned x labels and a legend. Checks: `test/charts.test.js`, `test/charts-browser.js`.
-- **The linter** checks v0.6 files by v0.6's rules and agrees with the
+- **Row roles and the sort-and-filter control** (format 0.7, renderer 0.7.0). One resolver (`rolesOf`) decides which field plays each role, once per query, and every view receives resolved roles and never reads the raw query. One pipeline (`viewNodes`) owns the default view, the empty text, `limit`, filter, sort and grouping; the control (`viewControls`) is drawn once above a query's rows when there are 9 or more, and its state lives in a module-level map that is cleared when another booklet opens. `list` draws one line per row; A list whose rows carry `parent` is drawn nested with native `details`/`summary` (`nestRows` builds the tree in one pass; every row starts closed; what the reader opens is kept in the query's view state beside the sort and filter, never saved; a filter keeps matches with their ancestors and opens them while it is on). A page whose name is its own first heading is no longer named twice, and grouped-list cards are at most two across. The "Show the numbers" table under a chart is no longer sortable on its own, so that sorting it cannot redraw the chart. Interface strings for the control are written in all four languages and have not yet had a person's review (see the `localize` skill).
+- **The linter** checks v0.7 files by v0.7's rules and agrees with the
   renderer about what is wrong.
 
 ## Specified but not drawn

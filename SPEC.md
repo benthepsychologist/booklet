@@ -1,10 +1,10 @@
-# The booklet format, v0.6
+# The booklet format, v0.7
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
-> **Status: v0.6, draft.** This is a young, evolving format — v0.6 is the one
+> **Status: v0.7, draft.** This is a young, evolving format — v0.7 is the one
 > version number that matters: this spec, the renderer, the skill, the
-> tests, and the `booklet: 0.6` every file's front matter declares, all
+> tests, and the `booklet: 0.7` every file's front matter declares, all
 > together, all the same number. Nothing here is frozen: the format itself
 > may still change, a file names the one version it is written in, and a
 > reader opens only that version, so it doesn't promise stability yet. There is no earlier
@@ -53,7 +53,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: 0.6
+booklet: 0.7
 id: example/tides
 title: How tides work
 lang: en
@@ -388,13 +388,13 @@ A `booklet query` block, placed in an activity's prose, shows what the reader ha
 ```booklet query
 from: log
 fields: situation, ease
-newest: 3
+limit: 3
 empty: Nothing logged yet.
 ```
 
 - `from:` (required) is an activity id or a question id in the same module. An activity must keep entries (`repeat` or `repeat daily`); the query shows its kept entries, newest first, each with its date and answers. A question shows that question's answers: each kept answer with its date if its activity keeps entries, or its one answer if not.
 - `fields:` (optional, with an activity) names the questions to show, comma-separated, in that order. Without it, every question is shown.
-- `newest:` (optional) shows only that many of the most recent entries.
+- `limit:` (optional) shows only that many of the most recent entries.
 - `empty:` (optional) is what shows while nothing is kept. Without it, the renderer shows its own short line.
 - It reads kept entries and given answers only, never a draft in progress.
 - A query never reads across modules. One whose `from:` names nothing, or something in another module, is refused: the linter reports an error and a renderer draws nothing for it. A file with no module fence is one module for this rule.
@@ -407,31 +407,42 @@ A query can also draw a data block, and can say how.
 from: short-list
 as: list
 group: why
-fields: due
-limit: 20
-empty: Nothing needs you.
 ```
 
 - `from:` may name a data block (section 7) in the same module or in the file's data section.
 - `as:` chooses the view. `cards` is the default for kept entries; `table` is the default for a data block.
 
-| `as:` | draws | keys it reads |
-| --- | --- | --- |
-| `cards` | one dated card per kept entry | `fields`, `newest` |
-| `table` | one row per row, one column per field | `fields`, `group`, `limit` |
-| `list` | one line per row: its title, then its other fields | `title`, `fields`, `group`, `limit` |
-| `tiles` | one tile per row: a big value over a label | `value`, `label`, `note`, `tone`, `limit` |
-| `bars` | one bar per row: a label and a length | `label`, `value`, `tone`, `limit` |
-| `line` | one line per field, across the rows in order | `label`, `fields`, `limit` |
+**Roles.** A view draws a row from the parts its fields play. There are five, and each is read from the field of the same name unless the query names another.
 
-- `fields:` names the fields to show, in order. Without it, a data block's own `fields` order is used, or else every key of the first row.
+| role | what it is | read from |
+| --- | --- | --- |
+| `label` | the row's name | the field `label`, or else the first field |
+| `value` | its main figure | the field `value` |
+| `note` | a quieter second line | the field `note` |
+| `badge` | a short word, drawn as a pill | the field `badge` |
+| `tone` | `good`, `warn` or `bad` | the field `tone` |
+
+So rows whose fields are already called `label`, `value` and so on need only `from:` and `as:`. A line such as `label: bucket` points a role at a field with another name. A role no row carries is simply not drawn.
+
+| `as:` | draws | reads |
+| --- | --- | --- |
+| `cards` | one dated card per kept entry | `fields`, `limit` |
+| `table` | one row per row, one column per field | `fields`, `group`, `limit`, `badge`, `tone` |
+| `list` | one line per row: badge, label, the other fields, value; the note beneath | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent` |
+| `tiles` | one tile per row: a big value over a label | `label`, `value`, `note`, `tone`, `group`, `limit` |
+| `bars` | one bar per row: a label and a length | `label`, `value`, `tone`, `limit` |
+| `line` | one line per field, across the rows in order | `label`, `value`, `fields`, `limit` |
+
+- `fields:` names the **other fields to show**, in order: a table's columns, a list row's quieter extras, a line chart's lines, a card's questions. Without it a table shows every field, a list shows every field that plays no role, and a line draws the `value`.
 - `group:` names a field; rows that share its value are drawn together under that value, in the order the values first appear, with a count.
-- `limit:` draws only the first rows, that many.
-- `title:` (list) names the field that is each line's title; the default is `title`, or else the data block's first field.
-- `value:`, `label:`, `note:`, `tone:` (tiles) name the fields a tile reads; the defaults are those same names. A `tone` of `good`, `warn` or `bad` colours the tile; anything else is plain.
-- `table`, `list` and `tiles` also work on kept entries (`from:` an activity): each kept entry is a row, its questions are the fields, and its date is the field `date`.
-- A reader may sort a table by a column on screen. That is the renderer's convenience and is saved nowhere.
+- `limit:` draws only the first rows, that many. For kept entries those are the newest.
+- `parent:` names the field that holds the `id` of the row this row sits under. A list whose rows carry it is drawn nested: each row under its parent, opened and closed by the reader. The default field is `parent`, so rows with `id` and `parent` fields nest with no key at all. A row whose parent is not among the rows is drawn at the top. `limit` counts top-level rows; `group` is not drawn on a nested list.
+- A `tone` of `good`, `warn` or `bad` colours the row's badge, or its value when it has no badge; a tile; a bar. Anything else is plain. Tone is always also said in words to a screen reader.
+- A `badge` that is a list is drawn as several pills.
+- **Tiles with no value are pills.** When no row has a value, there is no big figure to draw, and each tile is a short pill holding its label: a strip of them reads as a status line.
+- Every view also works on kept entries (`from:` an activity): each kept entry is a row, its questions are the fields, and its date is the field `date`.
 - Values are plain text: nothing in a data block is read as Markdown or HTML.
+- A query that sets a key its view does not read is not an error; the linter says so.
 
 ```booklet query
 from: by-bucket
@@ -443,17 +454,26 @@ value: count
 ```booklet query
 from: sleep-log
 as: line
-label: date
 fields: hours
 ```
 
-- **Bars.** Each row is one bar. `label:` names the field that names the bar and `value:` the field that gives its length; the defaults are `label` and `value`. Bars are drawn across the page, one under another, in row order, and always start at zero. A row's `tone` (`good`, `warn` or `bad`) colours its bar.
-- **Line.** The rows, in order, are the points from left to right. `label:` names the field written along the bottom; `fields:` names one or more number fields, each drawn as its own line and named by its field label. Without `fields:`, the field `value` is drawn.
+- **Bars.** Each row is one bar: its label names it and its value is its length. Bars are drawn across the page, one under another, in row order, and always start at zero.
+- **Line.** The rows, in order, are the points from left to right, and the label is written along the bottom. `fields:` names one or more number fields, each drawn as its own line and named by its field label; without it the value is drawn.
 - A value that is not a number draws nothing: no bar, and a gap in a line.
 - A chart always offers the same numbers as a table, so nothing is shown only as a picture.
-- Both work on kept entries too (`from:` an activity): a `number` or `scale` question is a number field, and `date` is the entry's date. A reader's own answers over time are a line.
+- On kept entries a `number` or `scale` question is a number field, and the label is the entry's date. A reader's own answers over time are a line.
 - A renderer chooses the scale, the ticks and the size, and fits the chart to the space it has, including inside a row.
-- A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the six views, is refused like any other query that cannot be drawn. A page that draws a data block is not a reading-only page: it stays open, not folded into sections.
+
+**Sorting and filtering are the reader's.** A renderer may let the reader sort and filter the rows of any view on screen, and should offer the same control on every view. It is saved nowhere, and a file never states it: a page always opens in the order its rows were written.
+
+A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the six views, is refused like any other query that cannot be drawn. A page that draws a data block is not a reading-only page: it stays open, not folded into sections.
+
+**Design rules for views.** These bind anyone extending the format.
+
+1. A view is a way to draw rows. It reads the shared roles and takes no key of its own.
+2. A new role must mean the same thing in every view that draws it, and two real pages must need it.
+3. A look that styling, density, or the shaping of rows by whatever wrote the file can give is never a new view or key.
+4. A reader may open, close, sort and filter what is on screen, and none of it is saved. Anything that changes the file or sends something elsewhere is not a view's business.
 
 ---
 
@@ -525,10 +545,11 @@ density: roomy
 | `font` | `default`, `serif`, `sans`, `mono` or `readable` | `default` |
 | `density` | `compact`, `comfortable` or `roomy` | `comfortable` |
 
+- `density` sizes the views (rows, tiles, tables, bars) as well as the prose: `compact` is tighter and `roomy` looser throughout.
 - A renderer works every other colour out from these (soft tints, rules, the text drawn on an accent), so a theme stays coherent.
 - **A colour that would be hard to read is not used.** If text on its background falls below a contrast of 4.5 to 1, the renderer keeps the base theme's colour for that pair, and the linter says which.
 - Fonts are the reader's device's own, chosen by family; a theme never names or fetches a font file.
-- **The reader has the last word.** A reader who picks a theme of their own gets it, whatever the booklet asks for.
+- **The reader has the last word on colour.** A reader who picks a theme of their own gets its colours, whatever the booklet asks for. The booklet's `font` and `density` still apply: they are the page's layout, not its colours.
 - Printing is always light.
 
 ---
@@ -596,7 +617,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 ````markdown
 ---
-booklet: 0.6
+booklet: 0.7
 id: example/tides
 title: How tides work
 lang: en
@@ -656,11 +677,11 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: 0.6` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
+A conforming reader must: read a file whose front matter declares `booklet: 0.7` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
 
-A conforming writer must: emit front matter with `booklet: 0.6`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with `booklet: 0.7`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: 0.6` files, rejects anything else outright, and is the reference implementation of "is this file valid."
+`lint-booklet.py` in this repository checks `booklet: 0.7` files, rejects anything else outright, and is the reference implementation of "is this file valid."
 
 ---
 
@@ -672,11 +693,24 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A Booklet plugin for Obsidian.** Section 6, 7 and 11 describe how one would draw widgets and figures; none exists yet.
 - **A second, independent implementation.** The renderer in this repository is the only reader so far.
 
-None of this affects what already works: loading, reading, answering, and saving a v0.6 booklet with every question kind above, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.7 booklet with every question kind above, its widgets, and its citations.
 
 ---
 
 ## 14. Changes
+
+### Changes from v0.6
+
+- **Roles are shared by every view** (section 6): `label`, `value`, `note`, `badge` and `tone`, each read from the field of the same name unless the query names another. Every view draws a row from the same five parts, and a table of views says which keys each one reads.
+- `title:` is now `label:`, and `newest:` is now `limit:`.
+- `badge:` is added: a short word drawn as a pill, several pills when it is a list.
+- `parent:` is added: the field that holds the `id` of the row a row sits under, so a list of rows can nest.
+- Tiles with no value are drawn as pills: a status strip.
+- `fields:` has one meaning everywhere: the other fields to show (a table's columns, a list row's quieter extras, a line chart's lines, a card's questions).
+- A reader's theme pick replaces a booklet's colours only; its `font` and `density` still apply, and `density` now sizes the views as well as the prose.
+- A renderer may let the reader sort and filter the rows of any view, with one control, saved nowhere.
+- The marker is `booklet: 0.7`.
+- A file marked `booklet: 0.6` is refused; change the marker to 0.7, and in a query change `title:` to `label:` and `newest:` to `limit:`.
 
 ### Changes from v0.5
 

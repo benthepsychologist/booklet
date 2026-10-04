@@ -2,26 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.6 format in SPEC.md.
+Lint a booklet file against the v0.7 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: 0.6`,
+A booklet is one portable Markdown file: front matter that says `booklet: 0.7`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: 0.6`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: 0.7`, one `lang:`), fences that are
 closed, unique block and question ids, modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
 title, queries and data blocks, and records that name an activity. Any file whose
-front matter is not `booklet: 0.6` is rejected; no earlier format is read.
+front matter is not `booklet: 0.7` is rejected; no earlier format is read.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.6 file is written in one language, so it
+registry's CI line keeps working; a v0.7 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
@@ -93,7 +93,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.6 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.7 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -127,11 +127,21 @@ def callout_words(kind, s):
     return out
 
 
-QUERY_KEYS = {"from", "fields", "newest", "empty"}
-QUERY_KEYS_V4 = ("as", "group", "limit", "title", "value", "label", "note", "tone")
+# A query's twelve keys, the six views, and which keys each view draws. A new key or view needs two
+# real pages that need it (SPEC.md, design rules for views). `from`, `as` and `empty` apply to every view.
+QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone")
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
+VIEW_DRAWS = {
+    "cards": ("fields", "limit"),
+    "table": ("fields", "group", "limit", "badge", "tone"),
+    "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent"),
+    "tiles": ("label", "value", "note", "tone", "group", "limit"),
+    "bars": ("label", "value", "tone", "limit"),
+    "line": ("label", "value", "fields", "limit"),
+}
+QUERY_EVERY_VIEW = ("from", "as", "empty")
 # the settings that name a field of the rows being drawn
-QUERY_FIELD_KEYS = ("group", "title", "value", "label", "note", "tone")
+QUERY_FIELD_KEYS = ("group", "parent", "label", "value", "note", "badge", "tone")
 
 
 def _flat(v):
@@ -174,8 +184,8 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             err(f, f"line {n + 1 + off}: a query line is written `key: value` (found {ln!r})")
             continue
         key = m.group(1).lower()
-        if key not in QUERY_KEYS and key not in QUERY_KEYS_V4:
-            err(f, f"line {n + 1 + off}: a query has no setting {key!r} (it takes from, fields, newest, empty, as, group, limit, title, value, label, note, tone)")
+        if key not in QUERY_KEYS:
+            err(f, f"line {n + 1 + off}: a query has no setting {key!r} (it takes {', '.join(QUERY_KEYS)})")
         s[key] = m.group(2).strip().strip('"\'')
     if here is None:
         err(f, f"line {n}: a query belongs in an activity's prose")
@@ -184,7 +194,7 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     if "limit" in s and not re.fullmatch(r'[1-9][0-9]*', s["limit"]):
         err(f, f"line {n}: the query's `limit: {s['limit']}` must be a positive whole number")
     src_id = s.get("from", "")
-    src_act, src_q, src_data, src_nums = None, None, None, set()
+    src_act, src_q, src_data, src_nums, src_rows = None, None, None, set(), []
     if not src_id:
         err(f, f"line {n}: a query needs `from:`, the activity or question it shows")
     elif src_id in act_info:
@@ -192,15 +202,26 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     elif src_id in q_owner:
         src_act, src_q = q_owner[src_id], src_id
     elif src_id in data_blocks:
-        d_mod, d_keys, d_nums = data_blocks[src_id]
+        d_mod, d_keys, d_nums, d_rows = data_blocks[src_id]
         if any_module and d_mod is not None and d_mod != mod:
             err(f, f"line {n}: the query's `from: {src_id}` is a data block in another module (a query reads within its own module, or the data section)")
         else:
-            src_data, src_nums = d_keys, d_nums
+            src_data, src_nums, src_rows = d_keys, d_nums, d_rows
             if s.get("as", "").lower() == "cards":
                 err(f, f"line {n}: the query's `as: cards` draws kept entries, not the data block {src_id!r}")
     else:
         err(f, f"line {n}: the query's `from: {src_id}` names no activity, question or data block in this file")
+    # the view in force: the one named, else the default for what is read (cards for kept entries, a table for a data block)
+    view = s.get("as", "").lower()
+    if view not in QUERY_VIEWS:
+        view = "cards" if src_act else ("table" if src_data is not None else "")
+    drawn = VIEW_DRAWS.get(view, ())
+    ignored = [k for k in QUERY_KEYS if k in s and k not in QUERY_EVERY_VIEW and view and k not in drawn]
+    for key in ignored:
+        if "as" in s:
+            warn(f, f"line {n}: the query's `as: {view}` does not draw `{key}`")
+        else:
+            warn(f, f"line {n}: the query's default view, `{view}`, does not draw `{key}`")
     # a setting that names a field the rows never carry: a warning, never an error
     names = None
     if src_data is not None:
@@ -209,24 +230,35 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
         names = {q for q, a in q_owner.items() if a == src_act and (src_q is None or q == src_q)} | {"date"}
     if names is not None:
         for key in QUERY_FIELD_KEYS:
-            if key in s and s[key] not in names:
+            if key in s and key not in ignored and s[key] not in names:
                 warn(f, f"line {n}: the query's `{key}: {s[key]}` names a field the rows never carry")
-        if src_data is not None and "fields" in s:
+        if src_data is not None and "fields" in s and "fields" not in ignored:
             for name in [x.strip() for x in s["fields"].split(",") if x.strip()]:
                 if name not in names:
                     warn(f, f"line {n}: the query's `fields: {name}` names a field the rows never carry")
+        # nesting reads the field `id`, and a nested list is not grouped
+        if src_data is not None and "parent" in s and "parent" not in ignored and "id" not in names:
+            warn(f, f"line {n}: the query's `parent: {s['parent']}` needs rows with an `id` field, and these carry none")
+        pkey = s.get("parent", "parent")
+        if src_data is not None and "id" in names and view == "list" and any(str(r.get(pkey, "")).strip() for r in src_rows):
+            ids = [str(r.get("id", "")).strip() for r in src_rows]
+            if not all(ids):
+                warn(f, f"line {n}: the nested list has {ids.count('')} row(s) with no `id`; nothing can sit under a row that has none")
+            for dup in sorted({x for x in ids if x and ids.count(x) > 1}):
+                warn(f, f"line {n}: the nested list has {ids.count(dup)} rows with the `id` {dup!r}; the first one is used")
+        if "parent" in s and "group" in s and view == "list":
+            warn(f, f"line {n}: a nested list is not grouped, so `group: {s['group']}` is not drawn")
         # a chart draws numbers: a value field with no number in any row draws nothing
-        view = s.get("as", "").lower()
         if src_data is not None and view in ("bars", "line"):
-            if view == "bars":
+            if view == "bars" or "fields" not in s:
                 wanted = [s.get("value", "value")]
             else:
-                wanted = [x.strip() for x in s["fields"].split(",") if x.strip()] if "fields" in s else ["value"]
+                wanted = [x.strip() for x in s["fields"].split(",") if x.strip()]
             for name in wanted:
                 if name in names and name not in src_nums:
                     warn(f, f"line {n}: the query's `as: {view}` has no number in the field {name!r}, so it draws nothing")
                 elif names and name not in names and name == "value" and "value" not in s and "fields" not in s:
-                    warn(f, f"line {n}: the query's `as: {view}` reads the field 'value', which the rows never carry (name the field with `{'value' if view == 'bars' else 'fields'}:`)")
+                    warn(f, f"line {n}: the query's `as: {view}` reads the field 'value', which the rows never carry (name the field with `value:`)")
     if src_act:
         src_mod, keeps = act_info[src_act]
         # a file with no module fence is one module
@@ -240,8 +272,6 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
                 continue
             if q_owner.get(name) != src_act or (src_q and name != src_q):
                 err(f, f"line {n}: the query's `fields: {name}` is not a question of {src_act!r}")
-    if "newest" in s and not re.fullmatch(r'[1-9][0-9]*', s["newest"]):
-        err(f, f"line {n}: the query's `newest: {s['newest']}` must be a positive whole number")
 
 
 
@@ -295,6 +325,10 @@ TH_PAIRS = [("ink", "paper"), ("ink", "paper-deep"), ("muted", "paper"), ("accen
             ("warn", "warn-soft")]
 for _t in ("warm", "green", "amber", "slate", "teal"):
     TH_PAIRS += [("tone-" + _t + "-deep", "tone-" + _t), ("ink", "tone-" + _t)]
+# the views: a plain pill, a toned value on a card, a quiet note and a label on a toned tile
+TH_PAIRS += [("reader", "paper-deep"), ("muted", "paper-deep")]
+for _t in ("warm", "green", "amber"):
+    TH_PAIRS += [("tone-" + _t + "-deep", "surface"), ("muted", "tone-" + _t), ("reader", "tone-" + _t)]
 TH_OWES = {"paper": ["paper"], "ink": ["ink"], "reader": ["ink"], "on-ink": ["paper"], "accent": ["accent"],
            "warn": ["bad"], "tone-green-deep": ["good"], "tone-amber-deep": ["warn"], "tone-warm-deep": ["bad"]}
 
@@ -523,10 +557,10 @@ def list_below(lines, i, pattern):
 
 
 def check_format(f, text, fm):
-    """Lint a v0.6 booklet. Every problem names its line."""
+    """Lint a v0.7 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.6 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.7 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
@@ -641,7 +675,7 @@ def check_format(f, text, fm):
                         else:
                             keys = set(flds) | {k for r in rows for k in r}
                             nums = {k for r in rows for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
-                            data_blocks[bid] = (open_mod if section == "content" else None, keys, n, nums)
+                            data_blocks[bid] = (open_mod if section == "content" else None, keys, n, nums, rows)
                 elif what in ("entries", "draft"):
                     if len(words) < 3:
                         err(f, f"line {n}: `booklet {what}` needs the activity it belongs to")
@@ -777,8 +811,8 @@ def check_format(f, text, fm):
             q_owner[q] = IMPLICIT_ACTIVITY
         queries = [(n, code, mod, here or IMPLICIT_ACTIVITY) for n, code, mod, here in queries]
     for n, code, mod, here in queries:
-        check_query(f, n, code, mod, here, act_info, q_owner, any_module, {k: (v[0], v[1], v[3]) for k, v in data_blocks.items()})
-    for bid, (_, _, n, _) in data_blocks.items():
+        check_query(f, n, code, mod, here, act_info, q_owner, any_module, {k: (v[0], v[1], v[3], v[4]) for k, v in data_blocks.items()})
+    for bid, (_, _, n, _, _) in data_blocks.items():
         if bid in ids:
             err(f, f"line {n}: the data block id ^{bid} is also the id on line {ids[bid]}, so a query could not tell them apart")
     for n, ref in entry_refs:
@@ -861,18 +895,18 @@ def check_file(path):
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return
-    if fm.get("booklet") == "0.6":
+    if fm.get("booklet") == "0.7":
         check_format(f, text, fm)
         return
     old = fm.get("booklet")
-    if old in ("0.1", "0.2", "0.3", "0.4", "0.5"):
-        err(f, f"front matter says booklet: {old}; this is format 0.6. Change the marker to booklet: 0.6"
+    if old in ("0.1", "0.2", "0.3", "0.4", "0.5", "0.6"):
+        err(f, f"front matter says booklet: {old}; this is format 0.7. Change the marker to booklet: 0.7"
                + (" (and write settings as key:value, for example min:0)." if old == "0.2" else "."))
         return
     # No earlier format is read — this mirrors the renderer's own
     # parseFile(), which only ever calls parseBooklet(). Anything else is
     # rejected outright rather than checked against an earlier format's rules.
-    err(f, f"front matter must say `booklet: 0.6` (found {fm.get('booklet')!r}) — "
+    err(f, f"front matter must say `booklet: 0.7` (found {fm.get('booklet')!r}) — "
            f"no earlier format is read")
 
 

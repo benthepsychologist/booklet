@@ -1,5 +1,5 @@
 ---
-booklet: 0.6
+booklet: 0.7
 id: fixture/query
 title: Log and look back
 lang: en
@@ -46,7 +46,7 @@ from: situation
 ```booklet query
 from: log
 fields: ease, situation
-newest: 1
+limit: 1
 empty: Nothing logged yet.
 ```
 
