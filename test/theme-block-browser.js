@@ -54,10 +54,10 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    // a custom look is visibly different from Paper
    await p.selectOption('#themeSel','paper');await p.waitForTimeout(200);
    const pp=await look(p);
-   ok(pp.theme==='paper'&&!pp.custom&&pp.inline===0&&pp.bg!==a.bg&&pp.accent!==a.accent,'an explicit Paper overrides it and differs ('+pp.bg+' v '+a.bg+')');
+   ok(pp.theme==='paper'&&!pp.custom&&pp.inline===7&&pp.bg!==a.bg&&pp.accent!==a.accent,'an explicit Paper replaces its colours and differs; only its font and density (7 properties) stay ('+pp.bg+' v '+a.bg+', inline '+pp.inline+')');
    await p.selectOption('#themeSel','night');await p.waitForTimeout(300);
    const n=await look(p);
-   ok(n.theme==='night'&&!n.custom&&n.inline===0,'an explicit Night overrides it and no custom token is left on the page ('+JSON.stringify(n)+')');
+   ok(n.theme==='night'&&!n.custom&&n.inline===7&&n.accent==='#7CC4C9','an explicit Night replaces its colours and no colour token is left on the page; its font and density stay ('+JSON.stringify(n)+')');
    // tone-named cells in Night are dark; in Paper, light
    const q=async()=>p.evaluate(()=>[...document.querySelectorAll('.q.toned')].map(e=>getComputedStyle(e).backgroundColor));
    const nq=await q();

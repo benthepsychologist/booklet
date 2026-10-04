@@ -51,7 +51,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  const mod=R.template.modules[0],blocks=(mod.mode&&mod.mode.blocks)||mod.activities[0].blocks;
  const qs=blocks.filter(b=>b.type==="query");
  chk("five queries outside the row, as bars and line",qs.map(q=>q.view.as).join()==="bars,line,line,bars,bars",qs.map(q=>q.view.as).join());
- const draw=q=>{const set=A.dataSet(q.data,q.fields);return A.viewNodes(q.view.as,set,q.view,"EMPTY");};
+ const draw=q=>A.viewNodes(A.dataSet(q.data),{...q.view,fields:q.fields},{empty:"EMPTY"});
  const bars=draw(qs[0])[0],rowsOf=byClass(bars,"ch-row");
  chk("bars: one list row per data row, label and value in each",rowsOf.length===6&&text(byClass(rowsOf[0],"ch-l")[0])==="Tomatoes"&&text(byClass(rowsOf[0],"ch-v")[0])==="30.25");
  chk("bars: a value that is not a number draws no bar and prints a dash",byClass(bars,"ch-bar").length===5&&text(byClass(rowsOf[5],"ch-v")[0])==="–");
@@ -60,7 +60,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  chk("bars: lengths follow the values, from zero",w.every((x,i)=>i===0||x<w[i-1])&&byClass(bars,"ch-zero").length===0);
  const negs=draw(qs[4])[0],zero=Number(byClass(negs,"ch-zero")[0].attrs.x1),nb=byClass(negs,"ch-bar");
  chk("bars: a negative value is drawn left of the zero line, a positive one right of it",Number(nb[0].attrs.x)+Number(nb[0].attrs.width)<=zero+1e-9&&Number(nb[1].attrs.x)>=zero-1e-9);
- chk("bars: the chart carries a summary label and a way to the numbers",/Bar chart, 6 bars/.test(bars.attrs["aria-label"])&&byClass(bars,"ch-nums").length===1&&text(walk(bars,x=>x.tagName==="summary")[0])==="Show the numbers");
+ chk("bars: the chart carries a summary label and a way to the numbers",/Bar chart, 6 bars/.test(byClass(bars,"ch-barchart")[0].attrs["aria-label"])&&byClass(bars,"ch-nums").length===1&&text(walk(bars,x=>x.tagName==="summary")[0])==="Show the numbers");
  chk("bars: the numbers table has the same rows",walk(byClass(bars,"ch-nums")[0],x=>x.tagName==="tr").length===7);
  const line1=draw(qs[1])[0],pl1=walk(line1,x=>x.tagName==="polyline");
  chk("line: one polyline with a point for each row, and a marker for each",pl1.length===1&&pl1[0].attrs.points.split(" ").length===12&&byClass(line1,"ch-pt").length===12);
@@ -70,11 +70,11 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  chk("line: markers for numbers only, a legend of two, series told apart by dash",byClass(walk(line2,x=>cls(x).includes("ch-svg"))[0],"ch-pt").length===11&&walk(byClass(line2,"ch-legend")[0],x=>x.tagName==="li").length===2&&pl2[0].attrs["stroke-dasharray"]===undefined&&pl2[1].attrs["stroke-dasharray"]);
  chk("line: legend names come from the data block's labels",text(byClass(line2,"ch-legend")[0]).includes("North butt (litres)"));
  const emp=draw(qs[3]);chk("an empty chart shows the empty line, not a chart",emp.length===1&&text(emp[0])==="No harvest recorded yet."||text(emp[0])==="EMPTY");
- chk("limit applies to a chart",(()=>{const q=qs[0],set=A.dataSet(q.data,q.fields);const n=A.viewNodes("bars",set,{...q.view,limit:2},"E")[0];return byClass(n,"ch-row").length===2;})());
- chk("nothing in a chart label is read as markup",(()=>{const set=A.dataSet({rows:[{label:"<b>x</b>",value:3}]},undefined);const n=A.viewNodes("bars",set,{},"E")[0];return text(byClass(n,"ch-l")[0])==="<b>x</b>"&&!walk(n,x=>x.tagName==="b").length;})());
+ chk("limit applies to a chart",(()=>{const q=qs[0],set=A.dataSet(q.data);const n=A.viewNodes(set,{...q.view,limit:2},{empty:"E"})[0];return byClass(n,"ch-row").length===2;})());
+ chk("nothing in a chart label is read as markup",(()=>{const set=A.dataSet({rows:[{label:"<b>x</b>",value:3}]});const n=A.viewNodes(set,{as:"bars"},{empty:"E"})[0];return text(byClass(n,"ch-l")[0])==="<b>x</b>"&&!walk(n,x=>x.tagName==="b").length;})());
 
  /* ---- kept entries as points ---- */
- const KEEP=`---\nbooklet: 0.6\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\nas: line\nlabel: date\nfields: hours, mood\n\`\`\`\n\n> [!module|m end] End\n`;
+ const KEEP=`---\nbooklet: 0.7\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\nas: line\nlabel: date\nfields: hours, mood\n\`\`\`\n\n> [!module|m end] End\n`;
  {const r=A.parseFile(KEEP);chk("a line over kept entries parses clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
   const q=r.template.modules[0].activities.find(a=>a.id==="look").blocks.find(b=>b.type==="query");
   chk("it keeps `as: line`, `label: date` and the fields",q&&q.view.as==="line"&&q.view.label==="date"&&q.fields.join()==="hours,mood");}
@@ -82,7 +82,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  {P.wipe();const B=P.boot();B.loadText(KEEP);
   const keep=B.keptFor("log");
   keep.push({ts:"2026-10-01T08:00:00",hours:6.5,mood:2},{ts:"2026-10-02T08:00:00",hours:7,mood:3},{ts:"2026-10-03T08:00:00",mood:1});
-  const set=B.entrySet({from:"log",fields:["hours","mood"],fileWide:true},"look",true);
+  const set=B.entrySet({from:"log",fields:["hours","mood"],fileWide:true},"look","line");
   chk("kept entries become rows with the date and each question's answer",set.rows.length===3&&set.rows.every(r=>"date" in r),JSON.stringify(set.rows));
   chk("a number question's answer is a number field the chart can draw",typeof set.rows[0].hours==="number"&&set.rows[0].hours===6.5&&set.rows[2].mood===1,JSON.stringify(set.rows));
   chk("an entry with no answer leaves a gap, and the oldest entry comes first",set.rows[2].hours===undefined&&/Oct/.test(set.rows[0].date)&&/1/.test(set.rows[0].date),JSON.stringify(set.rows));}
@@ -90,7 +90,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  /* ---- the linter ---- */
  const lint=(...a)=>{const r=cp.spawnSync("python3",[path.join(P.R,"lint-booklet.py"),...a],{encoding:"utf8"});return {status:r.status,out:(r.stdout||"")+(r.stderr||"")};};
  const mk=(name,query,data)=>{const f=path.join(require("os").tmpdir(),"chart-"+name+".md");
-  fs.writeFileSync(f,`---\nbooklet: 0.6\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\n${query}\n\`\`\`\n\n\`\`\`booklet data\n${data}\n\`\`\`\n^d\n\n> [!module|m end] End\n`);return f;};
+  fs.writeFileSync(f,`---\nbooklet: 0.7\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\n${query}\n\`\`\`\n\n\`\`\`booklet data\n${data}\n\`\`\`\n^d\n\n> [!module|m end] End\n`);return f;};
  const ROWS='[{"k":"a","n":1,"s":"x"},{"k":"b","n":2,"s":"y"}]';
  {const r=lint(mk("ok","from: d\nas: bars\nlabel: k\nvalue: n",ROWS));chk("a bars query on numbers lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
  {const r=lint(mk("ok2","from: d\nas: line\nlabel: k\nfields: n",ROWS));chk("a line query on numbers lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
@@ -101,7 +101,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  {const r=lint(mk("badkey","from: d\nas: bars\nlabel: k\nvalue: n\ncolour: red",ROWS));chk("an unknown key is still an error",r.status!==0&&/no setting 'colour'/.test(r.out),r.out);}
  {const r=lint(mk("badas","from: d\nas: pie",ROWS));chk("`as: pie` is an error naming the views",r.status!==0&&/bars, line/.test(r.out),r.out);}
  {const r=lint(path.join(P.R,"test/fixtures/charts.booklet.md"));chk("the charts fixture lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
- {const r=lint(path.join(P.R,"test/fixtures/lint-old-format-0-5.md"));chk("a file still saying booklet: 0.5 is refused",r.status!==0&&/booklet: 0\.5; this is format 0\.6/.test(r.out),r.out);}
+ {const r=lint(path.join(P.R,"test/fixtures/lint-old-format-0-5.md"));chk("a file still saying booklet: 0.5 is refused",r.status!==0&&/booklet: 0\.5; this is format 0\.7/.test(r.out),r.out);}
  /* ---- the strings ---- */
  chk("every language says the chart words",["en","fr","es","es-AR"].every(l=>{const c=A.T[l].dv.chart;return c&&c.numbers&&/\d/.test(c.bars(3,"1","2"))&&/\d/.test(c.line(3,"a","1","2"));}));
  console.log(fails?fails+" chart check(s) FAILED":"chart checks passed");process.exit(fails?1:0);

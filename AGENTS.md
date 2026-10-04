@@ -26,7 +26,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 - The renderer, format, validator, and modules without a
   `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
-  module's prose and travels with the file, since a v0.6 module is the
+  module's prose and travels with the file, since a v0.7 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - Modules are not kept in this repo; they live in `booklet-registry`, and a
@@ -68,3 +68,14 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 6. **Preserve fault isolation and backwards reading.** A new feature must not
    make an unknown module, widget, or malformed fence abandon the rest of a
    readable booklet.
+
+## Design rules for views
+
+These bind anyone extending the format or the renderer's views.
+
+1. A view is a way to draw rows. It reads the shared roles and takes no key of its own.
+2. A new role must mean the same thing in every view that draws it, and two real pages must need it.
+3. A look that styling, density, or the shaping of rows by whatever wrote the file can give is never a new view or key.
+4. A reader may open, close, sort and filter what is on screen, and none of it is saved. Anything that changes the file or sends something elsewhere is not a view's business.
+
+`test/guard.test.js` pins the key list and the view list, so adding either is a deliberate change made in the renderer, the linter and the spec table together.

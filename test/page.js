@@ -59,7 +59,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   moduleTextProblems, editTemplate, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, tplWidgets, isMulti,
   moduleView:id=>MODULE_VIEW+id, openExport, readingPlan, sectionLede, readsOnly, mdNodes, modeOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, pickLang,
-  niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, fmtNum, readTheme, themeDerive, TH_PAIRS, TH_BASES, TH_COLOURS, TONE_NAMES, toneOf, cellColor, cellStyle, syncBookletTheme, themeBaseTable,
+  showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, colsOf, viewControls, VIEWSTATE, viewState, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, ROLE_NAMES, CONTROLS_MIN, sortCmp, fmtNum, readTheme, themeDerive, TH_PAIRS, TH_BASES, TH_COLOURS, TONE_NAMES, toneOf, cellColor, cellStyle, syncBookletTheme, themeBaseTable,
   get currentId(){return currentId}, get TPLtheme(){return TPL.theme}
 }));`);
   API.toggle=toggle;return API;}

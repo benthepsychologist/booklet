@@ -31,11 +31,12 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.6 (an old `module:` file)",/front matter must say `booklet: 0\.6` \(found None\)/],
- ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.6\. Change the marker to booklet: 0\.6 \(and write settings as key:value/],
- ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.6\. Change the marker to booklet: 0\.6\.$/],
- ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.6\. Change the marker to booklet: 0\.6\.$/],
- ["lint-old-format-0-5","a file still saying booklet: 0.5",/front matter says booklet: 0\.5; this is format 0\.6\. Change the marker to booklet: 0\.6\.$/],
+ ["lint-not-v02","front matter without booklet: 0.7 (an old `module:` file)",/front matter must say `booklet: 0\.7` \(found None\)/],
+ ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.7\. Change the marker to booklet: 0\.7 \(and write settings as key:value/],
+ ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.7\. Change the marker to booklet: 0\.7\.$/],
+ ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.7\. Change the marker to booklet: 0\.7\.$/],
+ ["lint-old-format-0-5","a file still saying booklet: 0.5",/front matter says booklet: 0\.5; this is format 0\.7\. Change the marker to booklet: 0\.7\.$/],
+ ["lint-old-format-0-6","a file still saying booklet: 0.6",/front matter says booklet: 0\.6; this is format 0\.7\. Change the marker to booklet: 0\.7\.$/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -56,9 +57,10 @@ const CASES=[
  ["lint-query-other-module","a query whose `from:` is in another module",/line 23: the query's `from: elsewhere` is in another module/],
  ["lint-query-no-entries","a query of an activity that keeps no entries",/line 23: the query's `from: once` keeps no entries/],
  ["lint-query-bad-field","a query whose `fields:` names a question not in the activity",/line 23: the query's `fields: far` is not a question of 'log'/],
- ["lint-query-bad-newest","a query whose `newest:` is not a positive integer",/line 23: the query's `newest: 0` must be a positive whole number/],
+ ["lint-query-bad-newest","a query still using `newest:` (it became `limit:` in 0.7)",/line 25: a query has no setting 'newest' \(it takes from, as, fields, group, limit, parent, empty, label, value, note, badge, tone\)/],
+ ["lint-query-old-title","a query still using `title:` (it became `label:` in 0.7)",/line 28: a query has no setting 'title'/],
  ["lint-query-bad-key","a query with a setting it does not take",/line 25: a query has no setting 'sort'/],
- ["lint-query-not-kv","a query body line that is not `key: value`",/line 25: a query line is written `key: value` \(found 'newest 3'\)/],
+ ["lint-query-not-kv","a query body line that is not `key: value`",/line 25: a query line is written `key: value` \(found 'limit 3'\)/],
  ["lint-menu-unknown","a question naming a menu that is not in the file",/line 13: `menu:feelings` names no menu in this file/],
  ["lint-menu-and-list","a question with both menu: and a list of its own",/line 17: the question 'morning' has both `menu:feelings` and a list of its own/],
  ["lint-menu-empty","a menu with no items",/line 13: the menu 'feelings' has no items/],
@@ -98,6 +100,20 @@ for(const [name,what,rx] of CASES){
 {// a file with no activity line is one activity, so its queries belong to it
  const r=lint(path.join(FX,"lint-query-plain-file.md"));
  chk("a query in a plain file (no activity line) lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
+
+{// the v0.7 rules: a key the view does not draw, and the new keys
+ const W=(name,rx,label)=>{const r=lint(path.join(FX,name+".md"));
+   chk(label+": one warning, no error, naming the line",r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);};
+ W("lint-query-ignored-key",/line 25: the query's `as: bars` does not draw `group`/,"a key the view does not draw");
+ W("lint-query-ignored-cards",/line 23: the query's default view, `cards`, does not draw `group`/,"a key the default view does not draw");
+ W("lint-query-badge-field",/line 25: the query's `badge: nope` names a field the rows never carry/,"a `badge:` naming a field the rows never carry");
+ W("lint-query-parent-field",/line 25: the query's `parent: nope` names a field the rows never carry/,"a `parent:` naming a field the rows never carry");
+ W("lint-query-parent-no-id",/line 25: the query's `parent: due` needs rows with an `id` field/,"a `parent:` over rows with no `id`");
+ W("lint-query-parent-group",/line 25: a nested list is not grouped, so `group: due` is not drawn/,"`group:` together with `parent:` on a list");
+ W("lint-query-nested-dup-id",/line 25: the nested list has 2 rows with the `id` 'a'; the first one is used/,"a nested list with a duplicate `id`");
+ W("lint-query-nested-no-id",/line 25: the nested list has 1 row\(s\) with no `id`/,"a nested list with a row that has no `id`");
+ const ok=lint(path.join(FX,"lint-query-roles-ok.md"));
+ chk("a list with every role key, `fields:` and `parent:` lints clean",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);}
 
 {// a query written correctly is clean
  const r=lint(path.join(FX,"lint-query-ok.md"));
@@ -171,9 +187,9 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
 {// the registry's modules, copied, re-marked and linted: hex pairs and tone names both stay valid
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
-   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.4$/m,"booklet: 0.6"));
+   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.[0-9]$/m,"booklet: 0.7"));
    const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
-   chk("the registry's modules, copied and re-marked to 0.5, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
+   chk("the registry's modules, copied and re-marked to 0.7, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 
 {// a widget colour pair must be two hex colours: it is drawn into a style attribute
  const r=lint(path.join(FX,"lint-tone-pair-not-hex.md"));

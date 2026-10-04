@@ -82,11 +82,11 @@ function boot(){
  chk("a real token with a real value goes through, an unknown token name does not",h.set.length===2&&h.set.some(([k,v])=>k==="--paper"&&v==="#101820")&&!h.set.some(([k])=>k==="--bogus"),JSON.stringify(h.set));
  const real=A.themeDerive(A.readTheme("accent: #0f3d47\npaper: #f6f1e7\nink: #22201c\nfont: mono\ndensity: roomy").spec,T);
  const h2=boot();h2.B.custom(real);
- const FIXED=new Set(['var(--serif)','var(--sans)',"ui-monospace,SFMono-Regular,Menlo,Consolas,monospace","'Atkinson Hyperlegible',Verdana,Tahoma,sans-serif","1.45",".7rem","1.75","1.3rem"]);
+ const FIXED=new Set(['var(--serif)','var(--sans)',"ui-monospace,SFMono-Regular,Menlo,Consolas,monospace","'Atkinson Hyperlegible',Verdana,Tahoma,sans-serif","1.45",".7rem","1.75","1.3rem",".88rem",".3rem",".5rem","1.45rem","1rem","1rem","2.3rem"]);
  chk("what the head script applies is #rrggbb or a value from its own fixed tables",h2.set.length>0&&h2.set.every(([k,v])=>/^#[0-9a-f]{6}$/.test(v)||FIXED.has(v)),JSON.stringify(h2.set.filter(([k,v])=>!/^#[0-9a-f]{6}$/.test(v)&&!FIXED.has(v))));
  chk("none of it holds anything that could be CSS beyond those",h2.set.every(([k,v])=>!/[;{}<>\n\\]|url\(|expression|javascript/i.test(v)));
- chk("a font and a density come only through their tables (mono sets both faces, roomy a looser line)",
-   h2.style["--serif"]&&h2.style["--sans"]&&h2.style["--lh"]==="1.75"&&h2.style["--pgap"]==="1.3rem",JSON.stringify(h2.style));
+ chk("a font and a density come only through their tables (mono sets both faces, roomy a looser line and roomier views)",
+   h2.style["--serif"]&&h2.style["--sans"]&&h2.style["--lh"]==="1.75"&&h2.style["--pgap"]==="1.3rem"&&h2.style["--v-fs"]==="1rem"&&h2.style["--v-pad"]===".7rem"&&h2.style["--v-gap"]==="1rem"&&h2.style["--tile-v"]==="2.3rem",JSON.stringify(h2.style));
 }
 
 /* ---------------- 2. derivation and the floor ---------------- */
@@ -139,7 +139,7 @@ print(json.dumps(m.TH_BASE))
    chk("the linter's copy of the four base tables equals the stylesheet's",same);}}
 
 /* ---------------- 3. parse, write back, who wins ---------------- */
-const FM='---\nbooklet: 0.6\nid: t/theme\ntitle: Theme\nlang: en\n---\n\n';
+const FM='---\nbooklet: 0.7\nid: t/theme\ntitle: Theme\nlang: en\n---\n\n';
 const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\n';
 {const r=A.parseFile(FM+THEME+"\n> [!activity|a] A\n\nBody.\n");
  chk("a theme block is read into the template and drawn nowhere",r.ok&&r.template.theme&&r.template.theme.base==="night"&&r.template.theme.accent==="#8fd0d4"
@@ -160,7 +160,7 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
  chk("the theme block is written back byte for byte",out.includes("```booklet theme\nbase: night\naccent:   \"#8fd0d4\"   \n# a comment-ish line? no: not key:value\nfont: serif\n```\n"),out.slice(0,400));
  /* a module added to a booklet takes the booklet's look: a theme block in the module file is not spliced in */
  A.loadText(FM+"```booklet theme\nbase: daylight\n```\n\n> [!activity|a] A\n\nBody.\n");
- const modFile='---\nbooklet: 0.6\nid: t/mod\ntitle: Mod\nlang: en\n---\n\n> [!module|extra] Extra\n\n> [!activity|x] X\n\nHi.\n\n> [!module|extra end] End\n\n> [!data] Data\n\n```booklet theme\nbase: night\n```\n\n```booklet data\n[{"a":1}]\n```\n^rows\n';
+ const modFile='---\nbooklet: 0.7\nid: t/mod\ntitle: Mod\nlang: en\n---\n\n> [!module|extra] Extra\n\n> [!activity|x] X\n\nHi.\n\n> [!module|extra end] End\n\n> [!data] Data\n\n```booklet theme\nbase: night\n```\n\n```booklet data\n[{"a":1}]\n```\n^rows\n';
  const add=A.addModuleText(modFile);
  const after=A.toMarkdown();
  chk("a module added from a file keeps its data but not its theme block",add.ok&&(after.match(/booklet theme/g)||[]).length===1&&/base: daylight/.test(after)&&/booklet data/.test(after),after.slice(0,600));
@@ -186,7 +186,9 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
  h.B.custom(real);
  chk("Auto + a booklet theme: its base is the theme in force, its tokens are set",h.attrs["data-theme"]==="daylight"&&h.attrs["data-theme-custom"]==="1"&&h.style["--accent"]==="#7a1f5c"&&h.style["--lh"]==="1.75");
  h.B.set("night");
- chk("an explicit Night overrides it: Night in force, every custom token gone",h.attrs["data-theme"]==="night"&&!h.attrs["data-theme-custom"]&&Object.keys(h.style).length===0,JSON.stringify(h.style));
+ chk("an explicit Night replaces its colours only: Night in force, no colour token left, but its font and density still apply",
+   h.attrs["data-theme"]==="night"&&!h.attrs["data-theme-custom"]&&!Object.keys(h.style).some(k=>/^--(paper|ink|accent|muted|surface|rule|tone-)/.test(k))
+   &&h.style["--lh"]==="1.75"&&h.style["--pgap"]==="1.3rem"&&h.style["--v-pad"]===".7rem"&&h.style["--sans"]==="var(--serif)",JSON.stringify(h.style));
  h.B.set("auto");
  chk("back to Auto brings it back",h.attrs["data-theme"]==="daylight"&&h.style["--accent"]==="#7a1f5c");
  h.B.custom(null);

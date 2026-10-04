@@ -16,7 +16,7 @@ const actOf=(R,mod,id)=>R.template.modules.find(m=>m.id===mod).activities.find(a
  chk("the look-back activity holds three queries, between its headings",qs.length===3&&look.blocks.map(b=>b.type).join()==="markdown,query,markdown,query,markdown,query",JSON.stringify(look.blocks.map(b=>b.type)));
  chk("`from:` an activity reads that activity, every question",qs[0].from==="log"&&!qs[0].field&&qs[0].fields===undefined,JSON.stringify(qs[0]));
  chk("`from:` a question reads its activity, that one question",qs[1].from==="log"&&qs[1].field==="situation",JSON.stringify(qs[1]));
- chk("`fields`, `newest` and `empty` are read",qs[2].fields.join()==="ease,situation"&&qs[2].newest===1&&qs[2].empty==="Nothing logged yet.",JSON.stringify(qs[2]));
+ chk("`fields`, `limit` and `empty` are read",qs[2].fields.join()==="ease,situation"&&qs[2].view.limit===1&&qs[2].empty==="Nothing logged yet.",JSON.stringify(qs[2]));
  chk("the prose headings stay ordinary prose",/Your moments so far/.test(look.blocks[0].text)&&/Just what happened/.test(look.blocks[2].text));
  chk("a query owns no answer slot",qs.every(b=>!("keys" in b))&&P.src.includes('"markdown","callout","query"'));
  /* a query may come before the activity it names */
@@ -37,7 +37,7 @@ const actOf=(R,mod,id)=>R.template.modules.find(m=>m.id===mod).activities.find(a
  refused("a query with no `from:` is refused",FX.replace("from: situation","empty: hi"),/nothing in this module/);
  refused("a query of an activity that keeps no entries is refused",FX.replace("> [!activity|log repeat]","> [!activity|log]").replace("from: situation","from: log"),/keeps no entries/,0);
  /* a file with no module fence is one module: bare activities may read each other */
- const bare=`---\nbooklet: 0.6\ntitle: Bare\nlang: en\n---\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\n\`\`\`\n`;
+ const bare=`---\nbooklet: 0.7\ntitle: Bare\nlang: en\n---\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\n\`\`\`\n`;
  const R=A.parseFile(bare);
  chk("in a file with no module fence, one activity may query another",R.unread.length===0&&R.template.modules.some(m=>(m.mode?[m.mode]:m.activities).some(a=>a.id==="look"&&a.blocks.some(b=>b.type==="query"))),JSON.stringify(R.unread));}
 
@@ -60,7 +60,7 @@ const actOf=(R,mod,id)=>R.template.modules.find(m=>m.id===mod).activities.find(a
  chk("the query of one question shows only that question: “hidden” appears once per entry, from the whole-activity query",
    (seen.match(/hidden one/g)||[]).length===1&&(seen.match(/hidden two/g)||[]).length===1,seen);
  chk("newest first",seen.indexOf("second thing")<seen.indexOf("first thing"),seen.slice(0,500));
- chk("`newest: 1` shows only the latest entry in that query (each answer appears: 2 queries show both, the third only one)",
+ chk("`limit: 1` shows only the latest entry in that query (each answer appears: 2 queries show both, the third only one)",
    (seen.match(/first thing/g)||[]).length===2&&(seen.match(/second thing/g)||[]).length===3,seen);
  chk("`fields` sets the order: the scale answer comes before the text answer in the third query",
    seen.lastIndexOf("Very")<seen.lastIndexOf("second thing"),seen.slice(-300));

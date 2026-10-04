@@ -1,5 +1,5 @@
 ---
-booklet: 0.6
+booklet: 0.7
 title: Lint fixture
 lang: en
 ---
@@ -23,7 +23,7 @@ lang: en
 ```booklet query
 from: log
 fields: ease, situation
-newest: 2
+limit: 2
 empty: Nothing logged yet.
 ```
 
