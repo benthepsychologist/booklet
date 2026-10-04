@@ -71,6 +71,17 @@ from: harvest
 fields: crop, kilos, picked, rows
 ```
 
+## Harvest, as bars
+
+The same rows as bars, one per row, in the order the generator wrote them.
+
+```booklet query
+from: harvest
+as: bars
+label: crop
+value: kilos
+```
+
 ## Nothing due
 
 An empty data block, with its own line to say so.

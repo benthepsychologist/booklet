@@ -5,8 +5,8 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.5.0** — matches the project's current version (SPEC.md's
-"project v0.5") now that this skill teaches v0.5, the current format.
+**Skill version: 0.6.0** — matches the project's current version (SPEC.md's
+"project v0.6") now that this skill teaches v0.6, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. Above a long
@@ -135,7 +135,7 @@ pages, then booklet lines.**
 | Which **lines**? | Open with a line or two of plain prose: what to do, roughly how long, and that anything can be skipped. On a page that asks questions, 3 to 6 of them, mostly `text` (section 6). |
 
 A **quiz** has no scoring and no multiple choice with a visible answer key —
-v0.5 has no way yet to fold a block away for the reader to check
+v0.6 has no way yet to fold a block away for the reader to check
 themselves (section 6 says what to do instead: put the answer in ordinary
 prose after the question, or on the next page). A **matching** quiz lists the
 options in prose (a word bank, in a different order from the questions), then
@@ -342,14 +342,14 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **Nothing folds a question away.** v0.5 has no working equivalent of
+- **Nothing folds a question away.** v0.6 has no working equivalent of
   an older version's "optional questions, folded shut until opened." If a
   request calls for that (a quiz's answer key, "a couple more if you want
   them"), the honest options are: put the extra material as ordinary prose
   right after the question it answers, put it on its own page after a
   `***`, or say in your reply that folding isn't available yet and ask
   whether the requester wants it unfolded instead.
-- **Nothing reads another activity's answers yet.** v0.5 has no kind that
+- **Nothing reads another activity's answers yet.** v0.6 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
@@ -418,7 +418,7 @@ between paragraphs (`\n\n`) for a new one.
   list of those) and optionally `fields` (each key's label, which is also the
   column order), with a `^id` on the line after the fence. Put it inside the
   module or in the data section at the end. A `booklet query` then draws it
-  with `as:` set to `table` (the default), `list` or `tiles`. **Write the rows
+  with `as:` set to `table` (the default), `list`, `tiles`, `bars` or `line`. **Write the rows
   already ordered and counted: nothing is sorted, filtered or added up when
   the page is drawn.** One example of each view:
 
@@ -458,6 +458,31 @@ between paragraphs (`\n\n`) for a new one.
   first field), then the `fields:`. `group:` gathers rows under a field's
   value, in the order they first appear. All text is plain: no Markdown or HTML
   in a value. A page that draws data stays open, it is not folded as a report is.
+- **A chart from data** — the same data block can be drawn as a chart. `as: bars`
+  draws one bar per row (`label:` names the field that names the bar, `value:`
+  the field that gives its length, optional `tone`); `as: line` draws the rows,
+  in order, as points left to right (`label:` names the field along the bottom,
+  `fields:` one or more number fields, each its own line). Write the rows in the
+  order they should appear; the chart adds nothing up. A value that is not a
+  number draws nothing (a gap in a line). Every chart can show its numbers as a
+  table, and a number or scale question of a repeat activity works as a line too
+  (`from:` the activity, `label: date`). One of each:
+
+  ````markdown
+  ```booklet query
+  from: by-bucket
+  as: bars
+  label: bucket
+  value: count
+  ```
+
+  ```booklet query
+  from: sleep-log
+  as: line
+  label: date
+  fields: hours
+  ```
+  ````
 - **An image** is reference style, with its address at the end of the file:
   `![The harbour at low water][harbour]` and, near the other data,
   `[harbour]: images/harbour.jpg`. Only a real, requester-supplied `https`
@@ -542,7 +567,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.5 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.6 file is written in one language` | add it |
 | bad language tag | `front matter `lang: de`: 'de' is a language the renderer has no interface table for …` | use en, es, es-AR or fr |
 | region spelled wrong | `'fr-ca' is not spelled the way a tag is: lowercase language, uppercase region (es-AR)` | `fr-CA` |
 | a module opened twice | `'x' opens before 'y' (line N) is closed` | close the first module before opening another |
@@ -559,7 +584,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a `>` embed pointing at nothing | `![[#^x]] points at no block in this file` | fix the id, or add the fenced block |
 | an embed pointing at the wrong fence | `^x is not a widget block` | point the embed at the actual `booklet widget` fence |
 | a data block with no `^id`, a nested value, or no rows | `a data block needs a ^id` / `has a nested value in 'x'` / `holds no list of rows` | add the id; flatten the value; write `rows` |
-| a query with a bad `as:` or `limit:` | `the query's `as: x` is not one of cards, table, list, tiles` / `must be a positive whole number` | use one of the four views; a whole number from 1 |
+| a query with a bad `as:` or `limit:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number` | use one of the six views; a whole number from 1 |
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
 | a `menu:` naming no menu | `` `menu:x` names no menu in this file`` | write the `> [!menu|x]` line and its bulleted list, or fix the id |
 | a `menu:` and a list of its own | `the question 'x' has both `menu:y` and a list of its own` | keep one |
@@ -719,7 +744,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 ## 11. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.5 file, one language, its
+same way as any other booklet above — one v0.6 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

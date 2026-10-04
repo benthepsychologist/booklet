@@ -30,6 +30,7 @@ const body=html.slice(html.indexOf("<body>"),html.indexOf("<script>"));
 const realIds=new Set([...body.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
 let STORE={};
 global.document.createElement=mkNode;
+global.document.createElementNS=(ns,tag)=>mkNode(tag);
 global.document.getElementById=id=>realIds.has(id)?(STORE[id]||(STORE[id]=mkNode("div"))):null;
 let docTitle="";
 Object.defineProperty(global.document,"title",{get(){return docTitle;},set(v){docTitle=String(v);},configurable:true});
@@ -58,7 +59,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   moduleTextProblems, editTemplate, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, tplWidgets, isMulti,
   moduleView:id=>MODULE_VIEW+id, openExport, readingPlan, sectionLede, readsOnly, mdNodes, modeOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, pickLang,
-  readTheme, themeDerive, TH_PAIRS, TH_BASES, TH_COLOURS, TONE_NAMES, toneOf, cellColor, cellStyle, syncBookletTheme, themeBaseTable,
+  niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, fmtNum, readTheme, themeDerive, TH_PAIRS, TH_BASES, TH_COLOURS, TONE_NAMES, toneOf, cellColor, cellStyle, syncBookletTheme, themeBaseTable,
   get currentId(){return currentId}, get TPLtheme(){return TPL.theme}
 }));`);
   API.toggle=toggle;return API;}

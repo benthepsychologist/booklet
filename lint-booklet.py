@@ -129,7 +129,7 @@ def callout_words(kind, s):
 
 QUERY_KEYS = {"from", "fields", "newest", "empty"}
 QUERY_KEYS_V4 = ("as", "group", "limit", "title", "value", "label", "note", "tone")
-QUERY_VIEWS = ("cards", "table", "list", "tiles")
+QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 # the settings that name a field of the rows being drawn
 QUERY_FIELD_KEYS = ("group", "title", "value", "label", "note", "tone")
 
@@ -184,7 +184,7 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     if "limit" in s and not re.fullmatch(r'[1-9][0-9]*', s["limit"]):
         err(f, f"line {n}: the query's `limit: {s['limit']}` must be a positive whole number")
     src_id = s.get("from", "")
-    src_act, src_q, src_data = None, None, None
+    src_act, src_q, src_data, src_nums = None, None, None, set()
     if not src_id:
         err(f, f"line {n}: a query needs `from:`, the activity or question it shows")
     elif src_id in act_info:
@@ -192,11 +192,11 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     elif src_id in q_owner:
         src_act, src_q = q_owner[src_id], src_id
     elif src_id in data_blocks:
-        d_mod, d_keys = data_blocks[src_id]
+        d_mod, d_keys, d_nums = data_blocks[src_id]
         if any_module and d_mod is not None and d_mod != mod:
             err(f, f"line {n}: the query's `from: {src_id}` is a data block in another module (a query reads within its own module, or the data section)")
         else:
-            src_data = d_keys
+            src_data, src_nums = d_keys, d_nums
             if s.get("as", "").lower() == "cards":
                 err(f, f"line {n}: the query's `as: cards` draws kept entries, not the data block {src_id!r}")
     else:
@@ -215,6 +215,18 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             for name in [x.strip() for x in s["fields"].split(",") if x.strip()]:
                 if name not in names:
                     warn(f, f"line {n}: the query's `fields: {name}` names a field the rows never carry")
+        # a chart draws numbers: a value field with no number in any row draws nothing
+        view = s.get("as", "").lower()
+        if src_data is not None and view in ("bars", "line"):
+            if view == "bars":
+                wanted = [s.get("value", "value")]
+            else:
+                wanted = [x.strip() for x in s["fields"].split(",") if x.strip()] if "fields" in s else ["value"]
+            for name in wanted:
+                if name in names and name not in src_nums:
+                    warn(f, f"line {n}: the query's `as: {view}` has no number in the field {name!r}, so it draws nothing")
+                elif names and name not in names and name == "value" and "value" not in s and "fields" not in s:
+                    warn(f, f"line {n}: the query's `as: {view}` reads the field 'value', which the rows never carry (name the field with `{'value' if view == 'bars' else 'fields'}:`)")
     if src_act:
         src_mod, keeps = act_info[src_act]
         # a file with no module fence is one module
@@ -628,7 +640,8 @@ def check_format(f, text, fm):
                             err(f, f"line {n}: the data block ^{bid} {why}")
                         else:
                             keys = set(flds) | {k for r in rows for k in r}
-                            data_blocks[bid] = (open_mod if section == "content" else None, keys, n)
+                            nums = {k for r in rows for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+                            data_blocks[bid] = (open_mod if section == "content" else None, keys, n, nums)
                 elif what in ("entries", "draft"):
                     if len(words) < 3:
                         err(f, f"line {n}: `booklet {what}` needs the activity it belongs to")
@@ -764,8 +777,8 @@ def check_format(f, text, fm):
             q_owner[q] = IMPLICIT_ACTIVITY
         queries = [(n, code, mod, here or IMPLICIT_ACTIVITY) for n, code, mod, here in queries]
     for n, code, mod, here in queries:
-        check_query(f, n, code, mod, here, act_info, q_owner, any_module, {k: v[:2] for k, v in data_blocks.items()})
-    for bid, (_, _, n) in data_blocks.items():
+        check_query(f, n, code, mod, here, act_info, q_owner, any_module, {k: (v[0], v[1], v[3]) for k, v in data_blocks.items()})
+    for bid, (_, _, n, _) in data_blocks.items():
         if bid in ids:
             err(f, f"line {n}: the data block id ^{bid} is also the id on line {ids[bid]}, so a query could not tell them apart")
     for n, ref in entry_refs:

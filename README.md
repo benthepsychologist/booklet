@@ -32,7 +32,7 @@ version: "0.1"
 %%
 ```
 
-This is **v0.5** of the format — see [`SPEC.md`](SPEC.md) for the full
+This is **v0.6** of the format — see [`SPEC.md`](SPEC.md) for the full
 format, and [`docs/why-markdown.md`](docs/why-markdown.md) for how it was
 arrived at: what the wider Markdown-tooling field already does, what Booklet
 needs that nothing else supplies, and why each real choice landed where it
@@ -77,7 +77,7 @@ and it draws those too, as long as they use engines it has.
 | | |
 | --- | --- |
 | [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, nothing to install or fetch to open it. Draws mermaid diagrams and typesets math with two MIT-licensed libraries stored inside it (see below). Reads v0.3 only — no earlier format opens |
-| [`SPEC.md`](SPEC.md) | the current format (v0.5), versioned and published separately from anything that implements it |
+| [`SPEC.md`](SPEC.md) | the current format (v0.6), versioned and published separately from anything that implements it |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
@@ -97,10 +97,10 @@ on "Your booklets" to open the markdown file. No server, no install, no network:
 Paper (the default look), Daylight (white), Night (dark) and Contrast (high contrast, light). *Auto* is the booklet's own
 look if it asks for one (a `booklet theme` block: strict named values, never CSS), otherwise the device (more
 contrast, then dark, then Paper); any explicit pick wins, and the choice is remembered in the browser only. Printing is always light. The page is wide: the content area runs
-to about 76rem, prose stays at a readable measure (about 70 characters), and tables, tiles, grouped lists and
+to about 76rem, prose stays at a readable measure (about 70 characters), and tables, tiles, charts (bars and a line, drawn from data or from a reader's own answers), grouped lists and
 figures use the width and fold to one column on a phone.
 
-A module file (any v0.5 module, such as those in `booklet-registry`) loads as what it is, one activity: on
+A module file (any v0.6 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it.
 
 A plain Markdown file with booklet front matter (`booklet: 0.6`, a `title`) and no booklet lines at all is
@@ -220,7 +220,7 @@ person. Anyone may publish a separate registry under their own policy; a site ca
 
 ## Status
 
-**v0.5, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
+**v0.6, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
 independent second implementation yet. It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and

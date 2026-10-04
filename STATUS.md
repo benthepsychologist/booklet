@@ -1,18 +1,19 @@
 # STATUS — Booklet
 
-*As of 2026-10-03*
+*As of 2026-10-04*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.5**: format v0.5 (files say `booklet: 0.6`) and renderer 0.5.0.
+**project v0.6**: format v0.6 (files say `booklet: 0.6`) and renderer 0.6.0.
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
-## Current state — v0.5 (2026-10-03)
+## Current state — v0.6 (2026-10-04)
 
-What changed from v0.4, v0.3 and v0.2 is listed at the end of `SPEC.md` (section 14).
-v0.5 adds a theme block (a booklet's own look, as strict named values, never CSS), rows
+What changed from v0.5, v0.4, v0.3 and v0.2 is listed at the end of `SPEC.md` (section 14).
+v0.6 adds two chart views to the query block, `as: bars` and `as: line`, drawn as plain SVG in the theme's own colours from a data block's rows or a reader's kept entries (nothing computed; "Show the numbers" offers the same rows as a table); a file marked `booklet: 0.5` is refused, change it to 0.6.
+v0.5 added a theme block (a booklet's own look, as strict named values, never CSS), rows
 (`> [!row]` cells side by side) and tone names for widget colours; a file marked
 `booklet: 0.4` is refused, change it to 0.5.
 v0.4 added data blocks (`booklet data`: rows a generator wrote, saved back exactly as
@@ -40,7 +41,7 @@ with a message saying so.
   engines.
 - **Queries** (`booklet query`) show what the reader kept in another activity
   or question of the same module, or the rows of a data block, as cards, a table
-  (sortable on screen, never saved), a list or tiles, optionally grouped and limited.
+  (sortable on screen, never saved), a list, tiles, bars or a line, optionally grouped and limited.
 - **Links between activities** (`[[#Heading]]` and `[label](#slug)`) are drawn as
   links that open the activity, and the page, holding that heading.
 - **Citations** are CommonMark footnotes, drawn as numbered marks with a side
@@ -84,7 +85,8 @@ with a message saying so.
   heading links that open the section they target. The reader's choice is kept per
   booklet in the browser, never in the file. An activity with any question draws as
   before. The registry's `what-is-a-booklet` module now folds.
-- **The linter** checks v0.5 files by v0.5's rules and agrees with the
+- **Charts** (format 0.6, renderer 0.6.0). `as: bars` is one list row per data row (label, a decorative bar from zero, the value at its end), `as: line` an SVG redrawn to its container's width with one line per field (distinct colour, dash and marker), gaps for non-numbers, thinned x labels and a legend. Checks: `test/charts.test.js`, `test/charts-browser.js`.
+- **The linter** checks v0.6 files by v0.6's rules and agrees with the
   renderer about what is wrong.
 
 ## Specified but not drawn

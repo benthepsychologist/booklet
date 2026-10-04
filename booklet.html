@@ -526,6 +526,35 @@
   .dv-tile.tone-warn{border-color:var(--tone-amber-deep);background:var(--tone-amber)}
   .dv-tile.tone-bad{border-color:var(--tone-warm-deep);background:var(--tone-warm)}
   .dv-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  /* chart views (format 0.6): bars and a line, drawn in the theme's own tokens, never a colour of their own */
+  .ch{margin:0 0 1rem;min-width:0;max-width:100%;font-family:var(--sans)}
+  .ch-bars{list-style:none;margin:0;padding:0}
+  .ch-row{display:grid;grid-template-columns:minmax(6rem,12rem) minmax(0,1fr) auto;align-items:center;gap:.15rem .75rem;padding:.4rem 0;border-bottom:1px solid var(--rule)}
+  .ch-row:last-child{border-bottom:0}
+  .ch-l{color:var(--reader);font-weight:600;overflow-wrap:anywhere;min-width:0}
+  .ch-v{font-family:var(--serif);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right;min-width:2.5rem}
+  .ch-track{display:block;width:100%;height:1.15rem;background:var(--paper-deep);border-radius:4px;overflow:hidden}
+  .ch-bar{fill:var(--accent)} .ch-bar.tone-good{fill:var(--tone-green-deep)} .ch-bar.tone-warn{fill:var(--tone-amber-deep)} .ch-bar.tone-bad{fill:var(--tone-warm-deep)}
+  .ch-zero{stroke:var(--muted);stroke-width:1;vector-effect:non-scaling-stroke}
+  .ch-plot{min-width:0;width:100%}
+  .ch-svg{display:block;width:100%;height:auto;overflow:visible}
+  .ch-grid{stroke:var(--rule);stroke-width:1} .ch-axis{stroke:var(--muted);stroke-width:1}
+  .ch-tick{fill:var(--muted);font-family:var(--sans);font-size:12px}
+  .ch-line{fill:none;stroke-width:2.25;stroke-linejoin:round;stroke-linecap:round}
+  .ch-pt{stroke:var(--surface);stroke-width:1}
+  .ch-s0{stroke:var(--accent)} .ch-s1{stroke:var(--tone-warm-deep)} .ch-s2{stroke:var(--tone-amber-deep)} .ch-s3{stroke:var(--tone-slate-deep)} .ch-s4{stroke:var(--tone-green-deep)} .ch-s5{stroke:var(--tone-teal-deep)}
+  .ch-pt.ch-s0{fill:var(--accent)} .ch-pt.ch-s1{fill:var(--tone-warm-deep)} .ch-pt.ch-s2{fill:var(--tone-amber-deep)} .ch-pt.ch-s3{fill:var(--tone-slate-deep)} .ch-pt.ch-s4{fill:var(--tone-green-deep)} .ch-pt.ch-s5{fill:var(--tone-teal-deep)}
+  .ch-legend{list-style:none;margin:0 0 .4rem;padding:0;display:flex;flex-wrap:wrap;gap:.25rem 1.2rem;color:var(--ink);font-size:.92rem}
+  .ch-legend li{display:inline-flex;align-items:center;gap:.4rem}
+  .ch-sw{flex:none}
+  .ch-nums{margin:.5rem 0 0;font-size:.92rem}
+  .ch-nums summary{cursor:pointer;color:var(--accent);font-weight:600;min-height:1.6rem}
+  .ch-nums summary:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
+  @media (max-width:30rem){
+    .ch-row{grid-template-columns:minmax(0,1fr) auto;row-gap:.25rem}
+    .ch-row .ch-track{grid-column:1 / -1;grid-row:2}
+    .ch-row .ch-v{grid-column:2;grid-row:1}
+  }
   /* rows (format 0.5): cells side by side when there is room, one under another when there is not */
   .pblock.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr));gap:0 1.5rem;align-items:start;margin:0 0 1rem}
   .rowcell{min-width:0}
@@ -556,7 +585,7 @@
   h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.mxwrap,.oneline,.notice,blockquote,ul.plain,.rd-callout,
   .md>:is(ul,ol,h4,h5,h6,dl){max-width:var(--measure)}
   .rm-sec{max-width:calc(var(--measure) + 4.5rem)}
-  .rm-sec:has(.md-table,.mfig,.dv-wrap,.dv-tiles,.dv-list,.dv-groups,.svgfig,.entry,.mx){max-width:none}
+  .rm-sec:has(.md-table,.mfig,.dv-wrap,.dv-tiles,.dv-list,.dv-groups,.ch,.svgfig,.entry,.mx){max-width:none}
   .rm-sum{max-width:var(--measure)}
   /* small things flow within a view: tiles fill the row, a grouped list lays
      its groups out as cards side by side when there is room, and kept-entry
@@ -846,7 +875,12 @@ const TSRC={
       rows: n=>n===1?"1 row":`${n} rows`,
       sortBy: c=>`Sort by ${c}`,
       date: "Date",
-      tone: { good: "Good", warn: "Needs a look", bad: "Needs action" }
+      tone: { good: "Good", warn: "Needs a look", bad: "Needs action" },
+      chart: {
+        numbers: "Show the numbers",
+        bars: (n,lo,hi)=>`Bar chart, ${n===1?"1 bar":n+" bars"}, from ${lo} to ${hi}`,
+        line: (n,names,lo,hi)=>`Line chart of ${names}, ${n===1?"1 point":n+" points"}, from ${lo} to ${hi}`
+      }
     },
     moduleView: {
       noneShown: "Nothing in this module is shown at the moment.",
@@ -979,7 +1013,12 @@ const TSRC={
       rows: n=>n===1?"1 ligne":`${n} lignes`,
       sortBy: c=>`Trier par ${c}`,
       date: "Date",
-      tone: { good: "Bon", warn: "À surveiller", bad: "À traiter" }
+      tone: { good: "Bon", warn: "À surveiller", bad: "À traiter" },
+      chart: {
+        numbers: "Afficher les chiffres",
+        bars: (n,lo,hi)=>`Diagramme à barres, ${n===1?"1 barre":n+" barres"}, de ${lo} à ${hi}`,
+        line: (n,names,lo,hi)=>`Graphique linéaire de ${names}, ${n===1?"1 point":n+" points"}, de ${lo} à ${hi}`
+      }
     },
     moduleView: {
       noneShown: "Rien dans ce module n’est affiché pour l’instant.",
@@ -1112,7 +1151,12 @@ const TSRC={
       rows: n=>n===1?"1 fila":`${n} filas`,
       sortBy: c=>`Ordenar por ${c}`,
       date: "Fecha",
-      tone: { good: "Bien", warn: "Conviene revisarlo", bad: "Requiere acción" }
+      tone: { good: "Bien", warn: "Conviene revisarlo", bad: "Requiere acción" },
+      chart: {
+        numbers: "Mostrar los números",
+        bars: (n,lo,hi)=>`Gráfico de barras, ${n===1?"1 barra":n+" barras"}, de ${lo} a ${hi}`,
+        line: (n,names,lo,hi)=>`Gráfico de líneas de ${names}, ${n===1?"1 punto":n+" puntos"}, de ${lo} a ${hi}`
+      }
     },
     moduleView: {
       noneShown: "Por ahora no se muestra nada en este módulo.",
@@ -2391,20 +2435,22 @@ function dataSet(d,fields){
   const keys=new Set(Object.keys(d.fields||{}));d.rows.forEach(r=>Object.keys(r).forEach(k=>keys.add(k)));
   const own=d.fields?Object.keys(d.fields):Object.keys(d.rows[0]||{});
   const names=fields||own;
-  return {rows:d.rows,keys,first:own[0],cols:names.map(k=>({key:k,label:hasOwn(d.fields,k)?d.fields[k]:k}))};}
+  const lab=k=>hasOwn(d.fields,k)?d.fields[k]:k;
+  return {rows:d.rows,keys,first:own[0],named:!!fields,lab,cols:names.map(k=>({key:k,label:lab(k)}))};}
 /* kept entries as rows: each question is a field and the date is the field `date` */
-function entrySet(b,modeId){
+function entrySet(b,modeId,numeric){
   const qid=b.field?[b.field]:null;
   const all=blocksOf(b.from).filter(q=>keysOf(q).length);
   const named=qid||b.fields;
   const qs=named?named.map(id=>all.find(q=>q.id===id)).filter(Boolean):all;
   const ents=b.field&&modeOf(b.from).kind!=="entry"?[S.answers||{}]:queryEntries(b.from,modeId,b.fileWide);
-  const rows=ents.map(e=>{const r={};if(e.ts) r.date=fmtWhen(e.ts);
-    let any=false;for(const q of qs){const x=fieldSummary(q,e);if(x){r[q.id]=nodeText(x[1]);any=true;}}
+  /* a chart reads left to right in time: oldest first, and a short date */
+  const rows=(numeric?[...ents].reverse():ents).map(e=>{const r={};if(e.ts) r.date=numeric?new Date(e.ts).toLocaleDateString(locale(),{day:"numeric",month:"short"}):fmtWhen(e.ts);
+    let any=false;for(const q of qs){const x=fieldSummary(q,e);if(x){r[q.id]=numeric&&(q.type==="number"||q.type==="scale")&&isFinite(parseFloat(e[q.id]))?Number(e[q.id]):nodeText(x[1]);any=true;}}
     return any?r:null;}).filter(Boolean);
   const names=(b.fields&&!b.field)?b.fields.filter(k=>k==="date"||qs.some(q=>q.id===k)):["date",...qs.map(q=>q.id)];
   const label=k=>k==="date"?DV().date:fieldLabel(qs.find(q=>q.id===k));
-  return {rows,keys:new Set(names),first:names[0],cols:names.map(k=>({key:k,label:label(k)}))};}
+  return {rows,keys:new Set(names),first:names[0],named:!!(b.fields&&!b.field),lab:label,cols:names.map(k=>({key:k,label:label(k)}))};}
 const sortCmp=(a,b)=>{const e=v=>v==null||v==="";
   if(e(a)||e(b)) return e(a)&&e(b)?0:e(a)?1:-1;
   if(typeof a==="number"&&typeof b==="number") return a-b;
@@ -2448,6 +2494,114 @@ function viewTiles(set,groups,v){const D=DV();
       el("span",{class:"dv-l"},cellText(r[k("label")])),
       cellText(r[k("note")])!==""?el("span",{class:"dv-n"},cellText(r[k("note")])):null,
       t?el("span",{class:"dv-sr"},D.tone[t]):null);}))); }
+/* ---- chart views (v0.6): `as: bars` and `as: line`. Plain SVG from numbers and
+   text nodes, coloured only through the theme's tokens (the CSS classes ch-*).
+   Nothing is computed from the rows beyond the scale a picture needs: no
+   aggregate, no binning, no stacking. A value that is not a number draws
+   nothing. The same rows are always offered as a table. */
+const SVGNS="http://www.w3.org/2000/svg";
+const sv=(tag,attrs={},...kids)=>{const n=document.createElementNS(SVGNS,tag);
+  for(const [k,v] of Object.entries(attrs)) if(v!==null&&v!==undefined&&v!==false) n.setAttribute(k,String(v));
+  for(const k of kids) if(k!=null) n.append(k); return n;};
+const isNum=v=>typeof v==="number"&&Number.isFinite(v);
+const decimalsOf=s=>{const x=Math.abs(s);return x>=1?0:Math.min(10,Math.ceil(-Math.log10(x)));};
+function niceNum(x,round){const e=Math.floor(Math.log10(x)),f=x/Math.pow(10,e);
+  const n=round?(f<1.5?1:f<3?2:f<7?5:10):(f<=1?1:f<=2?2:f<=5?5:10);return n*Math.pow(10,e);}
+/* a "nice" scale over [lo,hi]: its ends are multiples of a round step, with 3 to 5 ticks where that can be had */
+function niceScale(lo,hi){
+  if(!isNum(lo)||!isNum(hi)){lo=0;hi=1;}
+  if(lo>hi){const t=lo;lo=hi;hi=t;}
+  if(lo===hi){if(lo===0) hi=1;else if(lo>0) lo=0;else hi=0;}
+  let best=null;
+  for(const want of [4,5,3,6,2]){
+    const step=niceNum(niceNum(hi-lo,false)/(want-1),true),d=decimalsOf(step)+1;
+    const min=Number((Math.floor(lo/step+1e-9)*step).toFixed(d)),max=Number((Math.ceil(hi/step-1e-9)*step).toFixed(d));
+    const ticks=[];for(let k=0;k<=Math.round((max-min)/step)&&k<50;k++) ticks.push(Number((min+k*step).toFixed(d)));
+    best={min,max,step,ticks};
+    if(ticks.length>=3&&ticks.length<=5) break;}
+  return best;}
+/* which of n labels to write along an axis so none overlaps: the first, then every
+   `step`th, then the last; each gap is at least labelW pixels over a plot width plotW */
+function thinLabels(n,plotW,labelW){
+  if(n<=0) return [];if(n===1) return [0];
+  const per=plotW/(n-1),step=Math.max(1,Math.ceil(labelW/Math.max(per,0.0001)));
+  const out=[];for(let i=0;i<=n-1-step;i+=step) out.push(i);
+  if(out[out.length-1]!==n-1) out.push(n-1);
+  return out;}
+/* the series of a line chart: one per field, each a list of numbers or null (a gap) */
+function lineSeries(rows,keys){return keys.map(k=>rows.map(r=>isNum(r[k])?r[k]:null));}
+/* where a line's y scale begins: zero when zero is within reach of the data, else a nice value under the minimum */
+function lineDomain(vals){
+  const v=vals.filter(isNum);if(!v.length) return niceScale(0,1);
+  const lo=Math.min(...v),hi=Math.max(...v);
+  return niceScale((lo>=0&&lo<0.6*hi)?0:lo,hi);}
+const fmtNum=v=>{try{return new Intl.NumberFormat(locale(),{maximumFractionDigits:2}).format(v);}catch(e){return String(Math.round(v*100)/100);}};
+const chClip=(s,n)=>s.length>n?s.slice(0,n-1)+"…":s;
+/* "Show the numbers": the same rows as a table, closed until asked for */
+function chartNumbers(set,keys,groups){const C=DV().chart;
+  const cols=keys.map(k=>({key:k,label:set.lab?set.lab(k):k}));
+  return el("details",{class:"ch-nums"},el("summary",{},C.numbers),viewTable({...set,cols},groups,{}));}
+function viewBars(set,rows,v){const D=DV(),C=D.chart;
+  const lk=v.label||"label",vk=v.value||"value",tk=v.tone||"tone";
+  const vals=rows.map(r=>r[vk]).filter(isNum);
+  const sc=niceScale(Math.min(0,...(vals.length?vals:[0])),Math.max(0,...(vals.length?vals:[0])));
+  const span=sc.max-sc.min,zero=(0-sc.min)/span*100;
+  const list=el("ul",{class:"ch-bars"});
+  rows.forEach(r=>{const x=r[vk],t=cellText(r[tk]).toLowerCase(),tone=["good","warn","bad"].includes(t)?t:"";
+    const track=sv("svg",{class:"ch-track",viewBox:"0 0 100 10",preserveAspectRatio:"none","aria-hidden":"true",focusable:"false"});
+    if(sc.min<0) track.append(sv("line",{class:"ch-zero",x1:zero,x2:zero,y1:0,y2:10}));
+    if(isNum(x)&&x!==0){const a=Math.min(zero,zero+x/span*100),w=Math.max(Math.abs(x)/span*100,.6);
+      track.append(sv("rect",{class:"ch-bar"+(tone?" tone-"+tone:""),x:a,y:1,width:w,height:8}));}
+    list.append(el("li",{class:"ch-row"},el("span",{class:"ch-l"},cellText(r[lk])),track,
+      el("span",{class:"ch-v"},isNum(x)?fmtNum(x):"–"),tone?el("span",{class:"dv-sr"},D.tone[tone]):null));});
+  const lo=vals.length?fmtNum(Math.min(...vals)):"–",hi=vals.length?fmtNum(Math.max(...vals)):"–";
+  return el("div",{class:"ch ch-barchart",role:"group","aria-label":C.bars(rows.length,lo,hi)},list,
+    chartNumbers(set,[lk,vk],[{name:null,rows}]));}
+const CH_DASH=["","7 4","2 4","9 3 2 3","","4 2"];
+function chartMarker(i,x,y,r){const cls="ch-pt ch-s"+(i%6);
+  switch(i%4){
+    case 0: return sv("circle",{class:cls,cx:x,cy:y,r});
+    case 1: return sv("rect",{class:cls,x:x-r,y:y-r,width:2*r,height:2*r});
+    case 2: return sv("path",{class:cls,d:`M${x} ${y-r-1}L${x+r+1} ${y+r}L${x-r-1} ${y+r}Z`});
+    default: return sv("path",{class:cls,d:`M${x} ${y-r-1}L${x+r+1} ${y}L${x} ${y+r+1}L${x-r-1} ${y}Z`});}}
+function viewLine(set,rows,v){const D=DV(),C=D.chart;
+  const lk=v.label||"label",keys=set.named?set.cols.map(c=>c.key):["value"];
+  const series=lineSeries(rows,keys),all=series.flat().filter(isNum);
+  const labels=rows.map(r=>cellText(r[lk])),names=keys.map(k=>set.lab?set.lab(k):k);
+  const lo=all.length?fmtNum(Math.min(...all)):"–",hi=all.length?fmtNum(Math.max(...all)):"–";
+  const box=el("div",{class:"ch ch-linechart"});
+  const holder=el("div",{class:"ch-plot"});
+  const legend=keys.length>1?el("ul",{class:"ch-legend"},...keys.map((k,i)=>el("li",{},
+    sv("svg",{class:"ch-sw",viewBox:"0 0 28 12",width:"28",height:"12","aria-hidden":"true",focusable:"false"},
+      sv("line",{class:"ch-line ch-s"+(i%6),x1:2,x2:26,y1:6,y2:6,"stroke-dasharray":CH_DASH[i%6]||null}),chartMarker(i,14,6,3)),
+    el("span",{},names[i])))):null;
+  const draw=W=>{W=Math.max(240,Math.round(W||640));
+    const H=Math.round(Math.min(340,Math.max(200,W*.42)));
+    const sc=lineDomain(all),yw=Math.max(...sc.ticks.map(t=>fmtNum(t).length))*7+10;
+    const lw=Math.min(14,Math.max(1,...labels.map(l=>l.length)))*6.6+10;
+    const L=Math.max(yw,10),R=Math.max(10,Math.ceil(lw/2)),T=12,B=30;
+    const x0=Math.max(L+8,Math.ceil(lw/2)),x1=W-R,pw=Math.max(x1-x0,1),ph=H-T-B;
+    const n=rows.length,X=i=>n===1?(x0+x1)/2:x0+i*pw/(n-1),Y=t=>T+ph-(t-sc.min)/(sc.max-sc.min)*ph;
+    const svg=sv("svg",{class:"ch-svg",viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":C.line(n,names.join(", "),lo,hi),focusable:"false"});
+    sc.ticks.forEach(t=>{svg.append(sv("line",{class:t===sc.min?"ch-axis":"ch-grid",x1:L,x2:W-R+2,y1:Y(t),y2:Y(t)}),
+      sv("text",{class:"ch-tick",x:L-6,y:Y(t)+4,"text-anchor":"end"},fmtNum(t)));});
+    thinLabels(n,pw,lw).forEach(i=>svg.append(sv("text",{class:"ch-tick",x:X(i),y:H-B+17,"text-anchor":"middle"},chClip(labels[i],14))));
+    series.forEach((s,si)=>{let seg=[];
+      const flush=()=>{if(seg.length>1) svg.append(sv("polyline",{class:"ch-line ch-s"+(si%6),"stroke-dasharray":CH_DASH[si%6]||null,
+        points:seg.map(p=>p[0]+","+p[1]).join(" ")}));seg=[];};
+      s.forEach((val,i)=>{if(val===null){flush();return;}seg.push([X(i),Y(val)]);});flush();
+      s.forEach((val,i)=>{if(val===null) return;
+        const m=chartMarker(si,X(i),Y(val),3.5);
+        m.append(sv("title",{},(keys.length>1?names[si]+" – ":"")+labels[i]+": "+fmtNum(val)));svg.append(m);});});
+    holder.textContent="";holder.append(svg);
+    return svg;};
+  draw(640);
+  let last=0;
+  try{if(typeof ResizeObserver==="function") new ResizeObserver(es=>{
+    if(!holder.isConnected) return;
+    const w=Math.round(es[0].contentRect.width);if(w>0&&Math.abs(w-last)>=4){last=w;draw(w);}}).observe(holder);}catch(e){}
+  box.append(...[legend,holder,chartNumbers(set,[lk,...keys],[{name:null,rows}])].filter(Boolean));
+  return box;}
 /* the nodes of one view: `limit` first rows, then grouped by `group` in the order values first appear */
 function viewNodes(as,set,v,empty){
   let rows=set.rows;if(v.limit) rows=rows.slice(0,v.limit);
@@ -2456,6 +2610,8 @@ function viewNodes(as,set,v,empty){
   if(v.group){groups=[];const at=new Map();
     rows.forEach(r=>{const n=cellText(r[v.group]);if(!at.has(n)){at.set(n,{name:n,rows:[]});groups.push(at.get(n));}at.get(n).rows.push(r);});}
   if(as==="table") return [viewTable(set,groups,v)];
+  if(as==="bars") return [viewBars(set,rows,v)];
+  if(as==="line") return [viewLine(set,rows,v)];
   const draw=as==="list"?viewList:viewTiles,D=DV();
   if(!v.group) return draw(set,groups,v);
   const part=g=>[el("div",{class:"dv-group",role:"heading","aria-level":"3"},g.name||"–",el("span",{class:"dv-count"},D.rows(g.rows.length))),...draw(set,[g],v)];
@@ -2531,7 +2687,7 @@ function renderBlock(b,draft,modeId){
         if(modeOf(b.from).kind==="entry") cards=queryEntries(b.from,modeId,b.fileWide).map(e=>queryCard(e,b.from,[q.id]));
         else if(fieldSummary(q,S.answers||{})) cards=[queryCard(S.answers||{},b.from,[q.id])];}
       else if(same&&!b.field) cards=queryEntries(b.from,modeId,b.fileWide).map(e=>queryCard(e,b.from,b.fields));
-      if(as!=="cards"){box.append(...viewNodes(as,same?entrySet(b,modeId):{rows:[],cols:[],keys:new Set()},v,b.empty||QY().empty));return box;}
+      if(as!=="cards"){box.append(...viewNodes(as,same?entrySet(b,modeId,as==="bars"||as==="line"):{rows:[],cols:[],keys:new Set()},v,b.empty||QY().empty));return box;}
       cards=cards.filter(Boolean);
       if(b.newest) cards=cards.slice(0,b.newest);
       if(!cards.length){box.append(el("p",{class:"hint"},b.empty||QY().empty));return box;}
@@ -3665,7 +3821,7 @@ function readQuery(code){const o={};
    `rows` (and optionally `fields`, each key's label and the default order), or
    the list of rows itself. A value is a string, a number, true, false, null, or
    a list of those; nothing nests deeper. Returns {rows,fields} or `bad`. */
-const QUERY_VIEWS=new Set(["cards","table","list","tiles"]);
+const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
 function readData(o){
   const rows=Array.isArray(o)?o:(o&&typeof o==="object"?o.rows:null);
   if(!Array.isArray(rows)) return {bad:"holds no list of rows (an object with `rows`, or the list itself)"};
@@ -3912,7 +4068,7 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
    for(const x of queries){const {q,block}=x,drop=why=>{problems.push("a query in “"+x.act.id+"” "+why+", so it was refused");
        x.act.pages.forEach(pg=>stripBlock(pg.blocks,block));};
      const src=q.from&&where.get(q.from),here=holderOfAct(x.act),as=(q.view||{}).as;
-     if(as!==undefined&&!QUERY_VIEWS.has(as)){drop("has `as: "+as+"`, which is not cards, table, list or tiles");continue;}
+     if(as!==undefined&&!QUERY_VIEWS.has(as)){drop("has `as: "+as+"`, which is not cards, table, list, tiles, bars or line");continue;}
      if(!src){const d=q.from&&dataBlocks.find(z=>z.id===q.from);
        if(d){
          if(fenced&&d.mod!==null&&d.mod!==here){drop("names “"+q.from+"”, which is in another module");continue;}
