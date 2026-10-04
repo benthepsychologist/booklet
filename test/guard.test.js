@@ -73,11 +73,27 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("no view builds an input or a select: the control is drawn in one place",!/el\("(input|select)"/.test(views));
  must("no view sets a style, from a file's value or otherwise",!/\bstyle\s*[:=]|\.style\b|setAttribute\("style"/.test(views));
  must("no view uses innerHTML",!/innerHTML/.test(views));
- {const r0=html.indexOf("function dataSet("),r1=html.indexOf("function entryCard("),c0=html.indexOf("function viewControls("),c1=html.indexOf("function viewNodes(");
+ {const r0=html.indexOf("function dataSet("),r1=html.indexOf("/* ======================= 11. "),c0=html.indexOf("function viewControls("),c1=html.indexOf("function viewNodes(");
   const rest=html.slice(r0,c0)+html.slice(c1,r1);
   /* the listeners outside the control: the table headings' click, and the pipeline's one toggle listener on a nested list's box */
   const wired=rest.split("addEventListener(").slice(1).map(x=>x.slice(0,8));
   must("viewControls is defined once, and nothing else in the data views builds an input or a select, or wires a listener but the table headings' and the nested list's one toggle",
     html.split("function viewControls(").length===2&&c0>r0&&c1>c0&&!/el\("(input|select)"/.test(rest)&&wired.length===2&&wired.includes('"click",')&&wired.includes('"toggle"'),wired.join(" "));}}
+// A browser ends the main <script> at the first `</script` it meets outside "double escaped" script data. A `<!--` in the
+// code (the Markdown reader looks for HTML comments) opens the escaped state until the next `-->`, and a `<script` written
+// while it is open (even in a comment) opens the double-escaped state, which swallows the real `</script>` and breaks the
+// page with "Unexpected token '<'". Node's evaluation of the script text cannot see that, so this walks the same states.
+{const full=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8"),a=full.indexOf("<script>\n")+9,want=full.indexOf("\n</script>",a)+1;
+ const delim=c=>/[ \t\n\f\r\/>]/.test(c||"");let st="data",i=a,end=-1;
+ while(i<full.length){const low=full.substr(i,9).toLowerCase();
+   if((st==="data"||st==="escaped")&&low.startsWith("</script")&&delim(full[i+8])){end=i;break;}
+   if(st==="data"&&full.startsWith("<!--",i)){if(full[i+4]===">"){i+=5;continue;}st="escaped";i+=4;continue;}
+   if(st==="escaped"){if(full.startsWith("-->",i)){st="data";i+=3;continue;}
+     if(low.startsWith("<script")&&delim(full[i+7])){st="double";i+=7;continue;}}
+   if(st==="double"){if(full.startsWith("-->",i)){st="data";i+=3;continue;}
+     if(low.startsWith("</script")&&delim(full[i+8])){st="escaped";i+=8;continue;}}
+   i++;}
+ if(end===want) console.log("  ok    the browser ends the main script where the file does");
+ else{fails++;console.log("  FAIL  the browser would end the main script at line "+(full.slice(0,end).split("\n").length)+", not at line "+(full.slice(0,want).split("\n").length)+": a `<script` follows an unclosed `<!--` in the code");}}
 console.log(fails?"\n"+fails+" FAILURES":"\nguard checks passed");
 process.exit(fails?1:0);

@@ -46,7 +46,7 @@ const actOf=(R,mod,id)=>R.template.modules.find(m=>m.id===mod).activities.find(a
  P.wipe();const A=P.boot();
  await A.createBooklet();
  chk("the module installs",A.addModuleText(FX).ok);
- A.view="look";A.render();
+ A.screen="look";A.render();
  let seen=P.texts(P.main());
  chk("with nothing kept, the empty line shows (the block's own, or the renderer's)",(seen.match(/Nothing kept here yet\./g)||[]).length===2&&(seen.match(/Nothing logged yet\./g)||[]).length===1,seen.slice(0,400));
  chk("the prose heading above a query is drawn",seen.includes("Your moments so far"),seen.slice(0,300));
@@ -74,7 +74,7 @@ const actOf=(R,mod,id)=>R.template.modules.find(m=>m.id===mod).activities.find(a
  /* a question of an activity that keeps nothing shows its one answer, without a date */
  const board=FX.replace("> [!activity|log repeat]","> [!activity|log]").replace(/from: log\n/g,"from: situation\n").replace(/fields: .*\n/,"");
  P.wipe();const B=P.boot();await B.createBooklet();B.addModuleText(board);
- B.S.answers.situation="my one answer";B.view="look";B.render();
+ B.STATE.answers.situation="my one answer";B.screen="look";B.render();
  chk("a question of a non-repeating activity shows its one answer",/my one answer/.test(P.texts(P.main())));
 
  /* the lookup itself */

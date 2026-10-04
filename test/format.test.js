@@ -11,11 +11,11 @@ const html=read("booklet.html");
    time and exposes what it wants, leaving harness.js alone. */
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
 const A=eval(src+"\n({exportName,slugify,"+
-  "emptyS,emptyD,setS:v=>{S=v},setD:v=>{D=v},setLang:l=>{lang=l},"+
-  "resetTPL:()=>{TPL=EMPTY_BOOKLET;SHELF={}},editTemplate,T})");
+  "emptyState,emptyDrafts,setState:v=>{STATE=v},setDrafts:v=>{DRAFTS=v},setLang:l=>{lang=l},"+
+  "resetBook:()=>{BOOK=EMPTY_BOOKLET;REGISTRY_CACHE={}},editBook,STRINGS})");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d?"   → "+d:""));};
-const fresh=()=>{A.setS(A.emptyS());A.setD(A.emptyD());A.resetTPL();A.setLang("en");};
-const titled=(en,fr)=>A.editTemplate(t=>{t.head={title:fr===undefined?en:{en,fr}};});
+const fresh=()=>{A.setState(A.emptyState());A.setDrafts(A.emptyDrafts());A.resetBook();A.setLang("en");};
+const titled=(en,fr)=>A.editBook(t=>{t.head={title:fr===undefined?en:{en,fr}};});
 
 // ---- the export name: <slug of the booklet's own title>.booklet.md
 fresh();
@@ -30,15 +30,15 @@ fresh();titled("Daily journal","Journal quotidien");
 chk("the slug follows the language the booklet is being shown in",
   A.exportName()==="daily-journal.booklet.md"&&(A.setLang("fr"),A.exportName()==="journal-quotidien.booklet.md"),A.exportName());
 A.setLang("en");
-fresh();A.editTemplate(t=>{t.title="Weekly review";});
+fresh();A.editBook(t=>{t.title="Weekly review";});
 chk("a booklet that has only a title (no headline) is named from it",A.exportName()==="weekly-review.booklet.md",A.exportName());
 
 // ---- the renderer's own names: "Booklet", in every language, nothing else
 for(const l of ["en","fr"]){
   chk("["+l+"] the app and the headline say Booklet",
-    A.T[l].ui.app==="Booklet"&&A.T[l].home.h1==="Booklet",
-    [A.T[l].ui.app,A.T[l].home.h1].join(" | "));
-  chk("["+l+"] no fixed save name is left in the strings",A.T[l].ui.fileName===undefined&&A.T[l].ui.exportTitle===undefined);
+    A.STRINGS[l].ui.app==="Booklet"&&A.STRINGS[l].home.h1==="Booklet",
+    [A.STRINGS[l].ui.app,A.STRINGS[l].home.h1].join(" | "));
+  chk("["+l+"] no fixed save name is left in the strings",A.STRINGS[l].ui.fileName===undefined&&A.STRINGS[l].ui.exportTitle===undefined);
 }
 chk("the page and the home-screen title say Booklet",
   /<title>Booklet<\/title>/.test(html)&&/apple-mobile-web-app-title" content="Booklet"/.test(html));

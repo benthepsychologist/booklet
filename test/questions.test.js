@@ -33,6 +33,13 @@ const BOOK=FM+`> [!module|qm] Menus and matrix
 const acts=R=>R.template.modules[0].mode||R.template.modules[0].activities[0];
 const blocks=R=>acts(R).blocks;
 
+/* ---- one list of question kinds: the parser, the answer summary and the drawing each have an entry per kind ---- */
+{const A=P.boot(),kinds=[...A.QUESTION_KINDS].sort(),keys=o=>Object.keys(o).sort();
+ chk("the parser has a builder for exactly the question kinds",JSON.stringify(keys(A.QUESTION_BLOCK))===JSON.stringify(kinds),keys(A.QUESTION_BLOCK).join());
+ chk("a kept answer has a summary reader for exactly the question kinds",JSON.stringify(keys(A.SUMMARY))===JSON.stringify(kinds),keys(A.SUMMARY).join());
+ chk("every question kind is drawn, beside the four blocks that are not questions",
+   JSON.stringify(keys(A.DRAW_BLOCK).filter(k=>!kinds.includes(k)))===JSON.stringify(["callout","markdown","query","row"])&&kinds.every(k=>k in A.DRAW_BLOCK),keys(A.DRAW_BLOCK).join());}
+
 /* ---- parsing ---- */
 {const A=P.boot();const R=A.parseFile(BOOK);
  chk("the booklet parses with nothing reported",R.ok&&R.unread.length===0,JSON.stringify(R.unread));
@@ -73,7 +80,7 @@ const blocks=R=>acts(R).blocks;
 /* ---- drawn, answered, kept, read back ---- */
 const radios=()=>P.find(P.main(),n=>n.tagName==="input"&&(n.attrs||{}).type==="radio");
 {P.wipe();const A=P.boot();
- A.loadText(BOOK);A.view="day";A.render();
+ A.loadText(BOOK);A.screen="day";A.render();
  const seen=P.texts(P.main());
  chk("the menu question shows its prompt, and the menu's own words are options",seen.includes("This morning I felt…")&&seen.includes("Curious"),seen.slice(0,300));
  const rs=radios();
@@ -81,17 +88,17 @@ const radios=()=>P.find(P.main(),n=>n.tagName==="input"&&(n.attrs||{}).type==="r
  chk("each radio is labelled with its item and its anchor",rs[0].attrs["aria-label"]==="Little interest or pleasure in doing things: Not at all"&&rs[7].attrs["aria-label"]==="Feeling down, depressed, or hopeless: Nearly every day",rs[0].attrs["aria-label"]+" | "+rs[7].attrs["aria-label"]);
  chk("the radios of one item share a name, and items do not",rs[0].attrs.name===rs[3].attrs.name&&rs[0].attrs.name!==rs[4].attrs.name);
  rs[1]._on.change();                // item 1: Several days (1)
- chk("one answer is an array with null for the item not yet answered",JSON.stringify(A.S.answers.phq)==="[1,null]",JSON.stringify(A.S.answers));
+ chk("one answer is an array with null for the item not yet answered",JSON.stringify(A.STATE.answers.phq)==="[1,null]",JSON.stringify(A.STATE.answers));
  radios()[7]._on.change();          // item 2: Nearly every day (3)
  radios()[0]._on.change();          // item 1 again: Not at all (0)
- chk("the stored answer is one anchor number per item, by position (0 is an answer)",JSON.stringify(A.S.answers.phq)==="[0,3]",JSON.stringify(A.S.answers.phq));
- A.S.answers.morning=[1,3];A.S.answers.evening=2;
+ chk("the stored answer is one anchor number per item, by position (0 is an answer)",JSON.stringify(A.STATE.answers.phq)==="[0,3]",JSON.stringify(A.STATE.answers.phq));
+ A.STATE.answers.morning=[1,3];A.STATE.answers.evening=2;
  const md=A.toMarkdown();
  chk("the answers are written into the records as numbers by position",/"phq": \[\s*0,\s*3\s*\]/.test(md)&&/"morning": \[\s*1,\s*3\s*\]/.test(md)&&/"evening": 2/.test(md),md.slice(-400));
  chk("the design is written back untouched (the menu stays where it was written)",md.startsWith(BOOK.replace(/\s+$/,"")));
  P.wipe();const B=P.boot();B.loadText(md);
- chk("after a save and reload the matrix answer is the same array",JSON.stringify(B.S.answers.phq)==="[0,3]"&&JSON.stringify(B.S.answers.morning)==="[1,3]",JSON.stringify(B.S.answers));
- B.view="day";B.render();
+ chk("after a save and reload the matrix answer is the same array",JSON.stringify(B.STATE.answers.phq)==="[0,3]"&&JSON.stringify(B.STATE.answers.morning)==="[1,3]",JSON.stringify(B.STATE.answers));
+ B.screen="day";B.render();
  const on=P.find(P.main(),n=>n.tagName==="input"&&(n.attrs||{}).type==="radio"&&n.checked);
  chk("the reloaded matrix shows its chosen radios",on.length===0||on.length===2,String(on.length));}
 
@@ -100,10 +107,10 @@ const radios=()=>P.find(P.main(),n=>n.tagName==="input"&&(n.attrs||{}).type==="r
  P.wipe();const A=P.boot();A.loadText(KEEP);
  A.draftFor("log").phq=[1,null];A.finalizeEntry("log");
  chk("the kept entry holds the array",JSON.stringify(A.keptFor("log")[0].phq)==="[1,null]",JSON.stringify(A.keptFor("log")));
- A.view="look";A.render();const seen=P.texts(P.main());
+ A.screen="look";A.render();const seen=P.texts(P.main());
  chk("the query card shows the answer item by item, with the anchor's words, and a dash for an item not answered",
    /Little interest: Several days/.test(seen)&&/Feeling down: –/.test(seen),seen.slice(0,400));
- A.view="log";A.render();
+ A.screen="log";A.render();
  chk("the kept entry card shows it too",/Little interest: Several days/.test(P.texts(P.main())),P.texts(P.main()).slice(0,400));
  const md=A.toMarkdown();
  chk("the kept entry is written and read back with its array",/"phq":\[1,null\]/.test(md));

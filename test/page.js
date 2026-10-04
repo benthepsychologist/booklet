@@ -51,12 +51,12 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   const toggle=toggleStub();
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
-  get lang(){return lang},set lang(v){lang=v}, get view(){return view},set view(v){view=v},
-  get TPL(){return TPL}, get S(){return S}, get D(){return D},
-  T, TSRC, createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
-  moduleTextProblems, editTemplate, render,
-  loadText, parseFile, applyParsed, toMarkdown, allModules, tplModes, isMulti,
-  moduleView:id=>MODULE_VIEW+id, readingPlan, sectionLede, readsOnly, mdNodes, modeOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, VIEWSTATE, viewState, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, toneOf, cellColor, cellStyle, themeBaseTable,
+  get lang(){return lang},set lang(v){lang=v}, get screen(){return screen},set screen(v){screen=v},
+  get BOOK(){return BOOK}, get STATE(){return STATE}, get DRAFTS(){return DRAFTS},
+  STRINGS, STRINGS_SRC, createBooklet, closeBooklet, saveLocal, addModule, addModuleText,
+  moduleTextProblems, editBook, render,
+  loadText, parseFile, applyParsed, toMarkdown, allModules, bookActivities, isMulti,
+  moduleScreen:id=>MODULE_SCREEN+id, readingPlan, sectionLede, readsOnly, mdNodes, activityOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, VIEWSTATE, viewState, QUESTION_KINDS, QUESTION_BLOCK, SUMMARY, DRAW_BLOCK, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, toneOf, cellColor, cellStyle, themeBaseTable,
   get currentId(){return currentId}
 }));`);
   API.toggle=toggle;return API;}

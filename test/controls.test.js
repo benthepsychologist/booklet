@@ -130,7 +130,7 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
  {const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
   const B=P.boot();await B.createBooklet();B.loadText(FX);
   const md0=B.toMarkdown();
-  B.view="look";B.render();let main=P.main();
+  B.screen="look";B.render();let main=P.main();
   const cards=()=>byClass(P.main(),"entry").map(c=>text(byClass(c,"when")[0]));
   chk("kept entries draw as cards, newest first, with the control (10 entries)",cards().length===10&&byClass(main,"dv-ctl").length===1);
   const when0=cards()[0];
@@ -140,7 +140,7 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   chk("Sort by date sorts by the entry's time, not by the words of the date: oldest first",/Sep 21/.test(cards()[0])&&/Sep 30/.test(cards()[9]),cards().join(" | "));
   press(dir);
   chk("and descending is newest first",/Sep 30/.test(cards()[0])&&/Sep 21/.test(cards()[9]),cards().join(" | "));
-  pick(B.view&&P.main(),"Good");
+  pick(B.screen&&P.main(),"Good");
   chk("Show a mood: only the entries that answered it that way",cards().length===5&&byClass(P.main(),"dv-live").map(text).join()==="5 of 10 shown",cards().length+" / "+byClass(P.main(),"dv-live").map(text).join());
   chk("the reader's state is kept in memory under the query's own key",B.VIEWSTATE.size===1&&/^look:/.test([...B.VIEWSTATE.keys()][0]),[...B.VIEWSTATE.keys()].join());
   B.render();
@@ -152,13 +152,13 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   chk("opening or closing a booklet clears the reader's state",B.VIEWSTATE.size===0);}
  {P.wipe();const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
   const B=P.boot();await B.createBooklet();B.loadText(FX);
-  B.view="look";B.render();
+  B.screen="look";B.render();
   const main=P.main(),sel=byClass(main,"dv-sel").find(s=>s.attrs["aria-label"]==="Sort by");
   chk("cards: Sort by lists the date and the questions",tag(sel,"option").map(text).join()==="Original order,Date,What happened?,How did the day feel?",tag(sel,"option").map(text).join());
   sel.value="what";press(sel,"change");
   chk("cards sort by a question's words",byClass(P.main(),"entry").map(c=>text(tag(c,"dd")[0])).join()===["A slow day","Cleared the bench","Invoices sent","New paper arrived","Opened the studio","Packed the samples","Photos shot","Printer called","Proofs came back","Quiet Saturday"].join(),byClass(P.main(),"entry").map(c=>text(tag(c,"dd")[0])).join());}
 
  /* ---- the strings ---- */
- chk("the control's words are in the interface language (French)",(()=>{P.wipe();const B=P.boot();B.lang="fr";return B.T.fr.dv.ctl.open==="Trier et filtrer"&&B.T.fr.dv.ctl.shown(2,5)==="2 sur 5 affichés";})());
+ chk("the control's words are in the interface language (French)",(()=>{P.wipe();const B=P.boot();B.lang="fr";return B.STRINGS.fr.dv.ctl.open==="Trier et filtrer"&&B.STRINGS.fr.dv.ctl.shown(2,5)==="2 sur 5 affichés";})());
  console.log(fails?"\n"+fails+" FAILURES":"\ncontrols checks passed");process.exit(fails?1:0);
 })().catch(e=>{console.log("  FAIL  the suite threw: "+(e&&e.stack||e));process.exit(1);});

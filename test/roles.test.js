@@ -106,7 +106,7 @@ const tones=n=>walk(n,x=>cls(x).some(c=>/^tone-/.test(c)));
  {const B=P.boot();await B.createBooklet();B.loadText(KEEP);
   B.keptFor("log").push({ts:"2026-10-01T08:00:00",hours:6.5,mood:2},{ts:"2026-10-02T08:00:00",hours:7,mood:3},{ts:"2026-10-03T08:00:00",hours:5,mood:1},
     {ts:"2026-10-04T08:00:00",hours:8,mood:3},{ts:"2026-10-05T08:00:00",hours:9,mood:2});
-  B.view="look";B.render();const main=P.main();
+  B.screen="look";B.render();const main=P.main();
   chk("a line over one question draws its points (it drew nothing before 0.7)",byClass(main,"ch-pt").length===5&&walk(main,x=>x.tagName==="polyline").length===1,String(byClass(main,"ch-pt").length));
   chk("bars over one question draw a bar for each entry",byClass(main,"ch-bar").length===5);
   chk("a list over kept entries: the date is the label, the questions are the extras",byClass(main,"dv-t").length===5&&byClass(main,"dv-f").some(x=>x.attrs.title==="Hours slept"));
@@ -124,16 +124,16 @@ const tones=n=>walk(n,x=>cls(x).some(c=>/^tone-/.test(c)));
  {P.wipe();const C=P.boot();await C.createBooklet();
   const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
   chk("the roles fixture parses with nothing reported wrong",C.parseFile(FX).ok&&C.parseFile(FX).unread.length===0,JSON.stringify(C.parseFile(FX).unread));
-  C.loadText(FX);C.view="overview";C.render();const main=P.main();
+  C.loadText(FX);C.screen="overview";C.render();const main=P.main();
   chk("the fixture draws a pill strip, big tiles, flat and grouped lists, a table with a badge column and bars",
     byClass(main,"dv-pills").length===1&&byClass(main,"dv-pills")[0].children.length===6&&byClass(main,"dv-tile").length===4&&byClass(main,"dv-gcard").length===3
     &&walk(main,x=>x.tagName==="table").length===3&&byClass(main,"ch-barchart").length===1&&byClass(main,"pill").length>12);   /* three tables: the long one, the owners, and the bars' numbers */
   chk("only the long list, its table (10 rows each) and the nested house (15) offer the control",byClass(main,"dv-ctl").length===3);
-  C.view="look";C.render();
+  C.screen="look";C.render();
   chk("the fixture's kept entries (10) offer the control on the cards too",byClass(P.main(),"dv-ctl").length===1&&byClass(P.main(),"entry").length===10);}
 
  /* ---- the strings ---- */
- chk("every language says the control's words",["en","fr","es","es-AR"].every(l=>{const c=A.T[l].dv.ctl;
+ chk("every language says the control's words",["en","fr","es","es-AR"].every(l=>{const c=A.STRINGS[l].dv.ctl;
    return c&&["open","search","show","all","sortBy","original","asc","desc","clear","nothing"].every(k=>typeof c[k]==="string"&&c[k])&&/3/.test(c.shown(3,9))&&/9/.test(c.shown(3,9));}));
  console.log(fails?"\n"+fails+" FAILURES":"\nroles checks passed");process.exit(fails?1:0);
 })().catch(e=>{console.log("  FAIL  the suite threw: "+(e&&e.stack||e));process.exit(1);});

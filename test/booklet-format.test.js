@@ -46,8 +46,8 @@ chk("the body map block points at its data",a.blocks[1].widget==="body-map"&&a.b
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
 A.loadText(EX);
-chk("the page adopts it as the booklet",A.TPL.booklet=== 0.7&&A.allModules().length===1,JSON.stringify({b:A.TPL.booklet,n:A.allModules().length}));
-A.view="check-in";A.render();
+chk("the page adopts it as the booklet",A.BOOK.booklet=== 0.7&&A.allModules().length===1,JSON.stringify({b:A.BOOK.booklet,n:A.allModules().length}));
+A.screen="check-in";A.render();
 const seen=P.texts(P.main());
 ["A mindful check-in","Body","Feelings","Something else","In your own words.","Mind is thinking about","Notice, name, keep."].forEach(w=>
   chk("the activity shows “"+w+"”",seen.includes(w),seen.slice(0,400)));
@@ -90,7 +90,7 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
  chk("a booklet: 0.2 file is refused with the message naming what changed",r02.ok===false&&r02.unread.join(" ")==="front matter says booklet: 0.2; this page reads format 0.7. Change the marker to booklet: 0.7 (and write settings as key:value, for example min:0).",JSON.stringify(r02.unread));}
 {const r03=A.parseFile('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
  chk("a booklet: 0.3 file is refused, naming the marker found and the one to write",r03.ok===false&&r03.unread.join(" ")==="front matter says booklet: 0.3; this page reads format 0.7. Change the marker to booklet: 0.7.",JSON.stringify(r03.unread));
- chk("the refusal is shown in the reader's language, naming the marker",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.T[l].ui.oldFormat("0.3"))&&/booklet: 0\.7/.test(A.T[l].ui.oldFormat("0.3"))));
+ chk("the refusal is shown in the reader's language, naming the marker",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.STRINGS[l].ui.oldFormat("0.3"))&&/booklet: 0\.7/.test(A.STRINGS[l].ui.oldFormat("0.3"))));
  {const r04=A.parseFile('---\nbooklet: 0.4\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
  chk("a booklet: 0.4 file is refused, naming the marker found and the one to write",r04.ok===false&&r04.unread.join(" ")==="front matter says booklet: 0.4; this page reads format 0.7. Change the marker to booklet: 0.7.",JSON.stringify(r04.unread));}
  {const r05=A.parseFile('---\nbooklet: 0.5\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');

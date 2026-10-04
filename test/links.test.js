@@ -5,7 +5,7 @@ require("./harness.js");
 const fs=require("fs");
 const html=fs.readFileSync(__dirname+"/../booklet.html","utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
-const A=eval(src+"\n({findHeading,headingsOf,ACTIVITY_LINK_HOOKS,setTPL:v=>{TPL=v}})");
+const A=eval(src+"\n({findHeading,headingsOf,ACTIVITY_LINK_HOOKS,setBook:v=>{BOOK=v}})");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const md=text=>({id:"m"+Math.random(),type:"markdown",text});
 const mods=[
@@ -32,7 +32,7 @@ chk("an empty target finds nothing",f("",false)===null&&f("",true)===null);
 chk("headingsOf skips fences and strips emphasis",JSON.stringify(A.headingsOf("# A *b*\n```\n# no\n```\n## [c](http://x)"))===JSON.stringify(["A b","c"]),JSON.stringify(A.headingsOf("# A *b*\n```\n# no\n```\n## [c](http://x)")));
 
 // the hooks the prose block hands the Markdown layer
-A.setTPL({modules:mods});
+A.setBook({modules:mods});
 const H=A.ACTIVITY_LINK_HOOKS;
 const hit=H.link("#Log a moment",undefined);
 chk("`[[#Heading]]` becomes a link whose text is the heading",hit&&hit.tagName==="a"&&hit.attrs.href==="#");
@@ -42,6 +42,6 @@ chk("a heading that is missing is its label, never the brackets",H.link("#Nowher
 chk("a link to another note keeps today's behaviour",H.link("Other note",undefined)===null&&H.link("Other#Heading",undefined)===null);
 chk("a block reference is left alone",H.link("#^some-id",undefined)===null);
 chk("`(#slug)` finds its heading, and a missing one is plain text",H.anchor("log-a-moment",["Log"]).tagName==="a"&&H.anchor("nope",["Plain"])==="Plain");
-A.setTPL({modules:[]});
+A.setBook({modules:[]});
 console.log(fails?`\n${fails} failed`:"\nlinks checks passed");
 process.exit(fails?1:0);

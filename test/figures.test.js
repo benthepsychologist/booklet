@@ -44,7 +44,7 @@ chk("NOTICE lists both libraries as MIT",/mermaid/i.test(notice)&&/temml/i.test(
 const looked=[];
 const realGet=document.getElementById;
 document.getElementById=id=>{if(/^lib-/.test(id)) looked.push(id);return realGet(id);};
-eval(src+"\n;global.F={LIB_ON,mdNodes,FIGURE_HOOKS,parseFile,setTPL:t=>{TPL=t;},T};");
+eval(src+"\n;global.F={LIB_ON,mdNodes,FIGURE_HOOKS,parseFile,setBook:t=>{BOOK=t;},STRINGS};");
 const F=global.F;
 const draw=(text)=>{looked.length=0;for(const k of Object.keys(F.LIB_ON)) delete F.LIB_ON[k];const nodes=F.mdNodes(text,{...F.FIGURE_HOOKS});return {nodes,looked:[...looked]};};
 const textOf=x=>Array.isArray(x)?x.map(textOf).join(""):typeof x==="string"?x:(x&&x._text||"")+((x&&x.children)||[]).map(textOf).join("");
@@ -85,7 +85,7 @@ const prose=JSON.stringify(P.template.modules);
 chk("a data-section figure is not also drawn where it sits (its code is not in any prose block)",!/Quarter/.test(prose.replace(/graph TD[^"]*/,"")));
 chk("the in-prose mermaid fence (no id) stays in the prose to be drawn in place",/graph TD; Sun --> Moon --> Sea/.test(prose));
 chk("a booklet without figure fences carries no figures key",!("figures" in F.parseFile(fs.readFileSync(path.join(R,"examples/how-tides-work.booklet.md"),"utf8")).template));
-F.setTPL(P.template);
+F.setBook(P.template);
 {const r=draw("![[#^snippet]]");
   chk("an embed that points at a non-mermaid fence shows that fence as code, waking nothing",
     r.looked.length===0&&find({children:r.nodes},n=>n.tagName==="code"&&(n.attrs||{})["data-lang"]==="python").length===1);}
@@ -96,8 +96,8 @@ F.setTPL(P.template);
 
 /* ---------------- the failure note, in every interface language ---------------- */
 for(const l of ["en","fr","es","es-AR"])
-  chk("the diagram-failed note exists in "+l,typeof F.T[l].ui.figureErr==="string"&&F.T[l].ui.figureErr.length>10);
-chk("the French and Spanish notes are not the English one",F.T.fr.ui.figureErr!==F.T.en.ui.figureErr&&F.T.es.ui.figureErr!==F.T.en.ui.figureErr);
+  chk("the diagram-failed note exists in "+l,typeof F.STRINGS[l].ui.figureErr==="string"&&F.STRINGS[l].ui.figureErr.length>10);
+chk("the French and Spanish notes are not the English one",F.STRINGS.fr.ui.figureErr!==F.STRINGS.en.ui.figureErr&&F.STRINGS.es.ui.figureErr!==F.STRINGS.en.ui.figureErr);
 
 console.log(fails?"\n"+fails+" figures check(s) failed":"\nall figures checks passed");
 process.exit(fails?1:0);

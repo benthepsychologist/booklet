@@ -67,10 +67,10 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   const toggle=toggleStub();
   eval(src+`
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
-  get lang(){return lang},set lang(v){lang=v}, get view(){return view}, get currentId(){return currentId},
-  get S(){return S}, get storageOk(){return storageOk},
-  LIB_VIEW, closeBooklet, createBooklet, saveLocal, addModuleText,
-  editTemplate, render, loadText
+  get lang(){return lang},set lang(v){lang=v}, get screen(){return screen}, get currentId(){return currentId},
+  get STATE(){return STATE}, get storageOk(){return storageOk},
+  LIB_SCREEN, closeBooklet, createBooklet, saveLocal, addModuleText,
+  editBook, render, loadText
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];delete global.location;delete global.history;};
@@ -80,8 +80,8 @@ const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];delete
 async function makeBooklet(A,{title,lang,languages}){
   await A.createBooklet();
   A.addModuleText(fixtureModule);
-  A.editTemplate(t=>{t.head={title:{en:title}};if(languages) t.languages=languages;});
-  A.S.answers.note="written in "+title;A.lang=lang;A.saveLocal();
+  A.editBook(t=>{t.head={title:{en:title}};if(languages) t.languages=languages;});
+  A.STATE.answers.note="written in "+title;A.lang=lang;A.saveLocal();
   return A.currentId;}
 /* open a booklet the way a reader does: from its card on "Your booklets" */
 function openFromCard(A,title){A.render();
@@ -111,7 +111,7 @@ chk("and records the choice under a key of its own",LS[PREF]==="es",LS[PREF]);
 chk("and writes nothing into any booklet's saved data",
   Object.keys(saved).every(k=>LS[k]===saved[k])&&!Object.values(saved).some(v=>v.includes(PREF)));
 A=boot();A.render();
-chk("a reload of the list keeps Spanish",A.view===A.LIB_VIEW&&A.lang==="es",A.lang);
+chk("a reload of the list keeps Spanish",A.screen===A.LIB_SCREEN&&A.lang==="es",A.lang);
 
 section("opening a booklet follows the reader, not the booklet's saved language");
 openFromCard(A,"English one");
@@ -144,7 +144,7 @@ A.toggle.press("fr");
 chk("pressing FR inside a booklet puts it in French",A.lang==="fr",A.lang);
 chk("with nothing written to the booklet (no edit was made)",LS["booklet.b."+eng]===before);
 A=boot();A.render();
-chk("the list, reloaded, is French too",A.view===A.LIB_VIEW&&A.lang==="fr",A.lang);
+chk("the list, reloaded, is French too",A.screen===A.LIB_SCREEN&&A.lang==="fr",A.lang);
 openFromCard(A,"Argentine one");
 chk("a booklet that offers only es-AR and en, for a French reader, opens in its own es-AR",A.lang==="es-AR",A.lang);
 toList(A);openFromCard(A,"Saved in French");
