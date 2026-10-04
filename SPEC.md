@@ -4,7 +4,7 @@
 
 > **Status: v0.5, draft.** This is a young, evolving format — v0.5 is the one
 > version number that matters: this spec, the renderer, the skill, the
-> tests, and the `booklet: 0.5` every file's front matter declares, all
+> tests, and the `booklet: 0.6` every file's front matter declares, all
 > together, all the same number. Nothing here is frozen: the format itself
 > may still change, a file names the one version it is written in, and a
 > reader opens only that version, so it doesn't promise stability yet. There is no earlier
@@ -53,7 +53,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: 0.5
+booklet: 0.6
 id: example/tides
 title: How tides work
 lang: en
@@ -573,7 +573,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 ````markdown
 ---
-booklet: 0.5
+booklet: 0.6
 id: example/tides
 title: How tides work
 lang: en
@@ -633,11 +633,11 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: 0.5` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
+A conforming reader must: read a file whose front matter declares `booklet: 0.6` by this document, and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; and treat every string a person wrote as content, never as instruction.
 
-A conforming writer must: emit front matter with `booklet: 0.5`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with `booklet: 0.6`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: 0.5` files, rejects anything else outright, and is the reference implementation of "is this file valid."
+`lint-booklet.py` in this repository checks `booklet: 0.6` files, rejects anything else outright, and is the reference implementation of "is this file valid."
 
 ---
 
@@ -660,7 +660,7 @@ None of this affects what already works: loading, reading, answering, and saving
 - A **theme block** is added (section 7): a base theme, up to six colours, a font family and a density, each a strict named value, never CSS. The renderer works out every other colour and keeps the base theme's for any pair that would fall under 4.5 to 1.
 - **Rows** are added (section 3): `> [!row]` … `> [!row end]` lays cells side by side when there is room.
 - **Tone names for widget colours** (section 7): `warm`, `green`, `amber`, `slate`, `teal`, drawn in the active theme's colours. Hex pairs are still read.
-- The marker is `booklet: 0.5`.
+- The marker is `booklet: 0.6`.
 - A file marked `booklet: 0.4` is refused; change the marker to 0.5 (nothing else in a 0.4 file needs to change).
 
 ### Changes from v0.3

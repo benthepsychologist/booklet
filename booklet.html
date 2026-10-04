@@ -734,7 +734,7 @@
    lockstep with the project's; the patch digit is this file's own, for a
    renderer-only fix that does not need a project-wide re-release (Ben,
    2026-09-28). */
-const RENDERER_VERSION="0.5.0";
+const RENDERER_VERSION="0.6.0";
 /* ======================= COPY =======================
    The renderer's own words, in four interface languages: English (the root),
    French, and Spanish, which is two layers, not two full copies. `es` is
@@ -772,7 +772,7 @@ const TSRC={
       missingWidget: id=>`This activity needs a widget the file does not carry (${id}). Load the booklet it came from, or add the module that brings it.`,
       missingEngine: e=>`This page cannot draw a "${e}" — it is an older version of the app than the booklet expects.`,
       loadOk: "Loaded",
-      oldFormat: m=>`This file says booklet: ${m}. This page reads format 0.5. Change the marker to booklet: 0.5${m==="0.2"?" (and write settings as key:value, for example min:0)":""}.`,
+      oldFormat: m=>`This file says booklet: ${m}. This page reads format 0.6. Change the marker to booklet: 0.6${m==="0.2"?" (and write settings as key:value, for example min:0)":""}.`,
       figureErr: "This diagram could not be drawn, so its source is shown instead.",
       clearTitle: "Clear everything on this page?",
       clearHelp: "Your entries exist only in this browser tab. If you have not downloaded them, they will be gone.",
@@ -905,7 +905,7 @@ const TSRC={
       missingWidget: id=>`Cette activité a besoin d’un élément que le fichier ne contient pas (${id}). Chargez le carnet d’origine, ou ajoutez le module qui l’apporte.`,
       missingEngine: e=>`Cette page ne sait pas dessiner un « ${e} » — c’est une version plus ancienne que ce que le carnet attend.`,
       loadOk: "Chargé",
-      oldFormat: m=>`Ce fichier indique booklet: ${m}. Cette page lit le format 0.5. Remplacez le marqueur par booklet: 0.5${m==="0.2"?" (et écrivez les réglages en clé:valeur, par exemple min:0)":""}.`,
+      oldFormat: m=>`Ce fichier indique booklet: ${m}. Cette page lit le format 0.6. Remplacez le marqueur par booklet: 0.6${m==="0.2"?" (et écrivez les réglages en clé:valeur, par exemple min:0)":""}.`,
       figureErr: "Ce diagramme n’a pas pu être dessiné; son texte source est affiché à la place.",
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
       clearHelp: "Vos réponses n’existent que dans cet onglet. Si vous ne les avez pas téléchargées, elles seront perdues.",
@@ -1038,7 +1038,7 @@ const TSRC={
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Carga el cuadernillo de origen, o agrega el módulo que lo aporta.`,
       missingEngine: e=>`Esta página no puede mostrar un "${e}" — es una versión de la aplicación más antigua que la que el cuadernillo espera.`,
       loadOk: "Cargado",
-      oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato 0.5. Cambia el marcador a booklet: 0.5${m==="0.2"?" (y escribe los ajustes como clave:valor, por ejemplo min:0)":""}.`,
+      oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato 0.6. Cambia el marcador a booklet: 0.6${m==="0.2"?" (y escribe los ajustes como clave:valor, por ejemplo min:0)":""}.`,
       figureErr: "No se pudo dibujar este diagrama; se muestra su texto fuente.",
       clearTitle: "¿Borrar todo lo que hay en esta página?",
       clearHelp: "Tus entradas solo existen en esta pestaña del navegador. Si no las descargaste, se perderán.",
@@ -1155,7 +1155,7 @@ const TSRC={
     ui: {
       loadHelp: "Elegí el archivo markdown que descargaste desde esta página, o pegá su contenido abajo.",
       loadOr: "O pegá el contenido del archivo:",
-      oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato 0.5. Cambiá el marcador a booklet: 0.5${m==="0.2"?" (y escribí los ajustes como clave:valor, por ejemplo min:0)":""}.`,
+      oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato 0.6. Cambiá el marcador a booklet: 0.6${m==="0.2"?" (y escribí los ajustes como clave:valor, por ejemplo min:0)":""}.`,
       figureErr: "No se pudo dibujar este diagrama; se muestra su texto fuente.",
       tagPh: "Escribí o dictá palabras, separadas por comas",
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Cargá el cuadernillo de origen, o agregá el módulo que lo aporta.`,
@@ -1593,7 +1593,7 @@ const ENGINES={"svg-regions":svgRegions,"grid-select":gridSelect,"card-board":ca
 
 /* An empty booklet. This is what the page holds before a file arrives: no
    modules, no widgets, nothing of its own. */
-const EMPTY_BOOKLET={booklet:0.5, id:"", version:"", modules:[], widgets:[], raw:{source:""}};
+const EMPTY_BOOKLET={booklet:0.6, id:"", version:"", modules:[], widgets:[], raw:{source:""}};
 
 /* ===================== THE REGISTRY =====================
    The renderer's one and only module store: the booklet registry's own list
@@ -3557,7 +3557,7 @@ const mdNodes=(text,opts)=>{
 };
 /* /MDNODES */
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.5 booklet is Markdown that reads as a document anywhere: front
+   A v0.6 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. See design/format-v2 in
@@ -3577,18 +3577,18 @@ const CALLOUT_FLAGS={module:["end"],row:["end"],activity:["repeat","daily","hidd
 const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","number","date","matrix"]);
 const SCENERY_KINDS=new Set(["manifest","menu"]);
 const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
-/* A file is read when its front matter says `booklet: 0.5`, and only then. */
+/* A file is read when its front matter says `booklet: 0.6`, and only then. */
 function isBooklet(text){const ls=String(text||"").replace(/^﻿/,"").split(/\r?\n/);
   if((ls[0]||"").trim()!=="---") return false;
-  for(let i=1;i<ls.length&&ls[i].trim()!=="---";i++) if(/^booklet:[ \t]*["']?0\.5["']?[ \t]*$/.test(ls[i])) return true;
+  for(let i=1;i<ls.length&&ls[i].trim()!=="---";i++) if(/^booklet:[ \t]*["']?0\.6["']?[ \t]*$/.test(ls[i])) return true;
   return false;}
-/* A file marked with an earlier format (0.1 to 0.4) is refused with what to
+/* A file marked with an earlier format (0.1 to 0.5) is refused with what to
    change, not a bare "not a booklet". Returns the marker found, or "". */
 function oldMarker(text){const ls=String(text||"").replace(/^\uFEFF/,"").split(/\r?\n/);
   if((ls[0]||"").trim()!=="---") return "";
-  for(let i=1;i<ls.length&&ls[i].trim()!=="---";i++){const m=ls[i].match(/^booklet:[ \t]*["']?(0\.[1-4])["']?[ \t]*$/);if(m) return m[1];}
+  for(let i=1;i<ls.length&&ls[i].trim()!=="---";i++){const m=ls[i].match(/^booklet:[ \t]*["']?(0\.[1-5])["']?[ \t]*$/);if(m) return m[1];}
   return "";}
-const oldFormatMsg=m=>"front matter says booklet: "+m+"; this page reads format 0.5. Change the marker to booklet: 0.5"+(m==="0.2"?" (and write settings as key:value, for example min:0).":".");
+const oldFormatMsg=m=>"front matter says booklet: "+m+"; this page reads format 0.6. Change the marker to booklet: 0.6"+(m==="0.2"?" (and write settings as key:value, for example min:0).":".");
 /* `kind|id words` → the id, the flags and the key:value settings; a bare word
    the kind knows is a flag, and the first other bare word is the id */
 function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}};
@@ -3942,7 +3942,7 @@ function parseBooklet(text){text=String(text||"").replace(/^﻿/,"").replace(/\r
     if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
     return o;});
   const st=emptyS();st.entries=entries;st.answers={...answers};
-  const template={booklet:0.5,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
+  const template={booklet:0.6,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L}};
   return {ok:out.length>0,unread:problems,drafts:{activities:drafts},template,lang:L,S:st};}
@@ -3992,7 +3992,7 @@ function fencedSpans(lines,from,to){
    can act on — never a stack trace. Empty means it is safe to add. */
 function moduleTextProblems(text){
   if(oldMarker(text)) return [T[lang].ui.oldFormat(oldMarker(text))];
-  if(!isBooklet(text)) return ["This is not a v0.5 file — its front matter needs `booklet: 0.5`."];
+  if(!isBooklet(text)) return ["This is not a v0.6 file — its front matter needs `booklet: 0.6`."];
   const R=parseFile(text);
   if(R.unread.length) return R.unread;
   if(!(R.template.modules||[]).length) return ["This file holds no module."];
@@ -4000,7 +4000,7 @@ function moduleTextProblems(text){
 function addModuleText(text){
   const problems=moduleTextProblems(text);
   if(problems.length) return {ok:false,problems};
-  if(!TPL||TPL.booklet!==0.5) return {ok:false,problems:["Add a module only works inside a v0.5 booklet."]};
+  if(!TPL||TPL.booklet!== 0.6) return {ok:false,problems:["Add a module only works inside a v0.6 booklet."]};
   const R=parseFile(text);
   const lines=String((R.template.raw||{}).source||"").split("\n");
   const {openAt,closeAt}=moduleSpan(lines);
@@ -4028,7 +4028,7 @@ function addModuleText(text){
 function parseFile(text){
   if(isBooklet(text)) return parseBooklet(text);
   const old=oldMarker(text);
-  return {ok:false,oldMarker:old||undefined,unread:[old?oldFormatMsg(old):"Not a v0.5 booklet file."],drafts:{activities:{}},template:null,S:emptyS()};}
+  return {ok:false,oldMarker:old||undefined,unread:[old?oldFormatMsg(old):"Not a v0.6 booklet file."],drafts:{activities:{}},template:null,S:emptyS()};}
 /* A template arriving in a file is not trusted to be well-formed. It has to
    name activities of a kind the renderer draws. */
 function templateOk(t){

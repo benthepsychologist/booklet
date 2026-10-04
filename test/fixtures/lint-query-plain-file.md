@@ -1,5 +1,5 @@
 ---
-booklet: 0.5
+booklet: 0.6
 id: fixture/plain-report
 title: A plain report
 lang: en

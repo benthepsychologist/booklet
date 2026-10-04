@@ -31,10 +31,11 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.5 (an old `module:` file)",/front matter must say `booklet: 0\.5` \(found None\)/],
- ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.5\. Change the marker to booklet: 0\.5 \(and write settings as key:value/],
- ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.5\. Change the marker to booklet: 0\.5\.$/],
- ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.5\. Change the marker to booklet: 0\.5\.$/],
+ ["lint-not-v02","front matter without booklet: 0.6 (an old `module:` file)",/front matter must say `booklet: 0\.6` \(found None\)/],
+ ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.6\. Change the marker to booklet: 0\.6 \(and write settings as key:value/],
+ ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.6\. Change the marker to booklet: 0\.6\.$/],
+ ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.6\. Change the marker to booklet: 0\.6\.$/],
+ ["lint-old-format-0-5","a file still saying booklet: 0.5",/front matter says booklet: 0\.5; this is format 0\.6\. Change the marker to booklet: 0\.6\.$/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -170,7 +171,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
 {// the registry's modules, copied, re-marked and linted: hex pairs and tone names both stay valid
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
-   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.4$/m,"booklet: 0.5"));
+   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet: 0\.4$/m,"booklet: 0.6"));
    const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
    chk("the registry's modules, copied and re-marked to 0.5, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 

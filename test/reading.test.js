@@ -5,7 +5,7 @@ const P=require("./page.js");
 const fs=require("fs");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM='---\nbooklet: 0.5\nid: local/week-view\ntitle: "Week view"\nlang: en\n---\n\n';
+const FM='---\nbooklet: 0.6\nid: local/week-view\ntitle: "Week view"\nlang: en\n---\n\n';
 const A=P.boot();
 
 /* 1. no activity line: one activity */
@@ -22,12 +22,12 @@ const A=P.boot();
  const qa=Q.template.modules[0].mode;
  chk("with questions: one activity, intro then both questions",Q.ok&&qa.blocks.map(b=>b.type).join()==="markdown,text,lines",qa.blocks.map(b=>b.type).join());
  chk("the id comes from the front matter id when the title has no letters",
-   A.parseFile('---\nbooklet: 0.5\nid: example/tides\ntitle: "—"\n---\n\nHi.\n').template.modules[0].mode.id==="tides"||
-   A.parseFile('---\nbooklet: 0.5\nid: example/tides\ntitle: "—"\n---\n\nHi.\n').template.modules[0].mode.id==="example-tides");
+   A.parseFile('---\nbooklet: 0.6\nid: example/tides\ntitle: "—"\n---\n\nHi.\n').template.modules[0].mode.id==="tides"||
+   A.parseFile('---\nbooklet: 0.6\nid: example/tides\ntitle: "—"\n---\n\nHi.\n').template.modules[0].mode.id==="example-tides");
  chk("a file with activity lines keeps text before the first one out",A.parseFile(FM+"Intro.\n\n> [!activity|a1] A\n\nBody.\n").template.modules[0].mode.id==="a1");
  chk("the three real reports still load without the hand-added line",["weekly-report","week-view","acceptance"].every(n=>{
    const f="/tmp/claude-1000/-workspace-fleet-hubs-booklet-hub/6b4250e5-57b1-4e3b-8323-a32f8be662b4/scratchpad/reading/"+n+".booklet.md";
-   return !fs.existsSync(f)||A.parseFile(fs.readFileSync(f,"utf8").replace(/^booklet: 0\.3$/m,"booklet: 0.5")).ok;}));
+   return !fs.existsSync(f)||A.parseFile(fs.readFileSync(f,"utf8").replace(/^booklet: 0\.3$/m,"booklet: 0.6")).ok;}));
 }
 
 /* 2. comments */

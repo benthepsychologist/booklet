@@ -37,7 +37,7 @@ const actOf=(R,mod,id)=>R.template.modules.find(m=>m.id===mod).activities.find(a
  refused("a query with no `from:` is refused",FX.replace("from: situation","empty: hi"),/nothing in this module/);
  refused("a query of an activity that keeps no entries is refused",FX.replace("> [!activity|log repeat]","> [!activity|log]").replace("from: situation","from: log"),/keeps no entries/,0);
  /* a file with no module fence is one module: bare activities may read each other */
- const bare=`---\nbooklet: 0.5\ntitle: Bare\nlang: en\n---\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\n\`\`\`\n`;
+ const bare=`---\nbooklet: 0.6\ntitle: Bare\nlang: en\n---\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\n\`\`\`\n`;
  const R=A.parseFile(bare);
  chk("in a file with no module fence, one activity may query another",R.unread.length===0&&R.template.modules.some(m=>(m.mode?[m.mode]:m.activities).some(a=>a.id==="look"&&a.blocks.some(b=>b.type==="query"))),JSON.stringify(R.unread));}
 
