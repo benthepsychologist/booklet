@@ -200,6 +200,20 @@
   .pill-btn{border:var(--bw) solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:.4rem .95rem;font-size:.95rem;font-weight:700;line-height:1.2}
   .pill-btn:hover{background:var(--accent-soft)}
   .pill-btn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+  /* a reader's own option (open): a pressed pill with a remove control, and the field that adds one */
+  .pill-own{display:inline-flex;align-items:stretch}
+  .pill-own .pill-btn{border-radius:999px 0 0 999px;border-right-width:0}
+  .pill-x{border:var(--bw) solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:0 999px 999px 0;padding:.4rem .7rem .4rem .45rem;font-size:.95rem;font-weight:700;line-height:1.2}
+  .pill-x:hover{background:var(--accent-soft);color:var(--accent)}
+  .q-ownrow{display:flex;gap:.45rem;align-items:center;margin:-.4rem 0 1rem;max-width:26rem}
+  .q-ownrow .field{flex:1;min-width:0}
+  /* right or wrong, for a question whose options mark a correct one: the tone colours, and a mark and a word besides, so colour is never the only sign */
+  .pill-btn.q-right,.pill-btn.q-right[aria-pressed="true"],.pill-btn.q-answer{background:var(--tone-green);border-color:var(--tone-green-deep);color:var(--tone-green-deep)}
+  .pill-btn.q-wrong,.pill-btn.q-wrong[aria-pressed="true"]{background:var(--tone-warm);border-color:var(--tone-warm-deep);color:var(--tone-warm-deep)}
+  .pill-btn.q-answer{border-style:dashed}
+  .q-mk{font-size:.82em;font-weight:700}
+  .q-acts{display:flex;gap:.45rem;margin:-.4rem 0 .6rem} .q-acts:empty{display:none}
+  .q-live{margin:0 0 1rem;min-height:1.2em} .q-live:empty{display:none}
   /* matrix: a grid wide, stacked pills narrow (one set of radios either way) */
   .mxwrap{container-type:inline-size;margin:.25rem 0 1rem}
   .mx{display:block;font-family:var(--sans)}
@@ -303,7 +317,6 @@
   .toast{position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);background:var(--ink);color:var(--on-ink);padding:.55rem 1rem;border-radius:999px;font-size:.9rem;font-family:var(--sans);font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:90vw;text-align:center}
   .toast.show{opacity:1}
 
-  .qfield{margin:0 0 .5rem}
 
   /* the body map */
   .bodywrap{display:grid;grid-template-columns:1fr;gap:1rem;margin:.8rem 0 0;align-items:start}
@@ -350,29 +363,6 @@
   .lbl2{font-family:var(--sans);font-size:.72rem;font-weight:800;letter-spacing:.04em;
         text-transform:uppercase;color:var(--muted);margin:0 0 .3rem}
 
-  /* the card board: cards, one open at a time */
-  .mapcards{display:grid;grid-template-columns:1fr;gap:.7rem;margin:1.25rem 0 1.5rem}
-  @media (min-width:620px){.mapcards{grid-template-columns:1fr 1fr}}
-  @media (min-width:980px){.mapcards{grid-template-columns:repeat(4,1fr)}}
-  .mapcard{text-align:left;border:var(--bw) solid var(--rule);background:var(--surface);border-radius:16px;padding:.9rem 1rem .8rem;
-           font-family:var(--serif);display:flex;flex-direction:column;gap:.25rem;min-height:7rem;
-           border-top:8px solid var(--mc,var(--rule));transition:transform .12s,border-color .12s,box-shadow .12s}
-
-  .mapcard:hover{transform:translateY(-2px);border-color:var(--mc);box-shadow:0 12px 26px -20px color-mix(in srgb,var(--shadow) 60%,transparent)}
-  .mapcard[aria-selected="true"]{border-color:var(--mc);background:var(--accent-soft);box-shadow:0 10px 22px -18px var(--mc)}
-  .mapcard .mk{font-size:1.14rem;font-weight:600;color:var(--mc);line-height:1.25}
-  .mapcard .md{font-size:.88rem;color:var(--muted);line-height:1.35}
-  .mapcard .mn{margin-top:auto;font-family:var(--sans);font-size:.78rem;font-weight:700;color:var(--muted);
-               background:var(--paper-deep);border-radius:999px;padding:.05rem .6rem;align-self:flex-start}
-  .mapcard[aria-selected="true"] .mn{background:var(--surface);color:var(--mc)}
-  .mapsection{border-top:var(--bw) solid var(--rule);padding:1.5rem 0 0}
-  .mapsection>h2{font-size:1.45rem}
-  .maplist{margin:0 0 1.4rem}
-  .mlhead{font-family:var(--sans);font-weight:700;font-size:.95rem;margin:0 0 .35rem}
-  .mapchip{display:inline-flex;align-items:center;gap:.3rem;border:var(--bw) solid var(--accent);background:var(--accent-soft);
-           color:var(--ink);border-radius:999px;padding:.32rem .5rem .32rem .85rem;font-size:.93rem;font-weight:600;line-height:1.2}
-  .mapchip .x{border:0;background:transparent;color:var(--muted);font-size:1.05rem;line-height:1;padding:0 .25rem;border-radius:50%}
-  .mapchip .x:hover{color:var(--warn);background:var(--surface)}
   /* tagInput: a comma-separated, suggest-as-you-type word field (body map,
      emotions grid) */
   .tagfield{margin:0 0 .7rem}
@@ -382,11 +372,6 @@
            color:var(--ink);border-radius:999px;padding:.28rem .45rem .28rem .75rem;font-size:.88rem;font-weight:600;line-height:1.2}
   .tagchip .x{border:0;background:transparent;color:var(--muted);font-size:1rem;line-height:1;padding:0 .2rem;border-radius:50%}
   .tagchip .x:hover{color:var(--warn);background:var(--surface)}
-  .mapprose{display:flex;flex-direction:column;gap:.5rem;margin:0 0 1.4rem}
-  .mprow{border-left:5px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;padding:.5rem .8rem;font-size:.97rem}
-  .mprow .r{display:block;font-family:var(--sans);font-weight:800;font-size:.76rem;text-transform:uppercase;letter-spacing:.03em;color:var(--accent);margin-bottom:.15rem}
-  details.explore{border:var(--bw) dashed var(--accent);background:var(--paper)}
-  details.explore>summary{color:var(--accent);font-weight:700}
 
   /* ── an activity's pages ──────────────────────────────────────────────
      A menu on the left lists the pages; minimized, it is a thin rail of page
@@ -830,7 +815,7 @@
     5. THE FORMAT                                   reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown).
     6. MARKDOWN TO NODES                            the Markdown reader, mdNodes: text in, DOM nodes out.
     7. FIGURES AND MATH                             drawing diagrams and formulas, and making a figure's SVG safe to draw.
-    8. WIDGET ENGINES                               the three engines a widget names (svg-regions, grid-select, card-board) and the helpers they share.
+    8. WIDGET ENGINES                               the two engines a widget names (svg-regions, grid-select) and the helpers they share.
     9. QUESTIONS AND BLOCKS                         drawing a block (a question, prose, a row, a widget), and keeping an activity's drafts and entries.
    10. QUERY VIEWS                                  row sets, roles, the views (table, list, tiles, cards, bars, line), the pipeline and its one control.
    11. PAGES, READING MODE, LINKS, READING MATERIAL an activity's pages, folding a report, links between activities, citations and callouts.
@@ -850,10 +835,10 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.7.1";
+const RENDERER_VERSION="0.8.0";
 /* The booklet format this renderer reads: the marker a file carries is
-   `booklet: 0.7`, and the number a booklet design carries is +FORMAT_VERSION. */
-const FORMAT_VERSION="0.7";
+   `booklet: 0.8`, and the number a booklet design carries is +FORMAT_VERSION. */
+const FORMAT_VERSION="0.8";
 const LANG_NAMES={en:"English",es:"Español","es-AR":"Español (Argentina)",fr:"Français"};
 /* the interface languages with a button (the variants, es-AR, have none), in the order offered */
 const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
@@ -890,6 +875,14 @@ const PAGES_NARROW="(max-width: 699px)";
 const CALLOUT_KINDS=["diff","law","opinion"];
 const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","number","date","matrix"]);
 const SCENERY_KINDS=new Set(["manifest","menu"]);
+/* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
+   The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
+   kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
+const KIND_SETTINGS={module:["end"],activity:["repeat","daily","hidden"],row:["end"],text:["long"],
+  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],
+  choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
+/* the settings above that must be numbers */
+const NUMBER_SETTINGS=["min","max","step"];
 const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
 /* A query's twelve keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
 const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone"];
@@ -938,6 +931,10 @@ const STRINGS_SRC={
       missingWidget: id=>`This activity needs a widget the file does not carry (${id}). Load the booklet it came from, or add the module that brings it.`,
       missingEngine: e=>`This page cannot draw a "${e}" — it is an older version of the app than the booklet expects.`,
       loadOk: "Loaded",
+      loadRefused: "This file cannot be opened:",
+      fileNotes: n=>`This file has ${n===1?"1 thing":n+" things"} this page could not read`,
+      fileNotesShow: "See the list",
+      fileNotesDismiss: "Dismiss",
       oldFormat: m=>`This file says booklet: ${m}. This page reads format ${FORMAT_VERSION}. Change the marker to booklet: ${FORMAT_VERSION}${m==="0.2"?" (and write settings as key:value, for example min:0)":""}.`,
       figureErr: "This diagram could not be drawn, so its source is shown instead.",
       clearTitle: "Clear everything on this page?",
@@ -1003,6 +1000,17 @@ const STRINGS_SRC={
       removed: "Removed.",
       storageOff: "This browser is not keeping anything between visits (private mode, or site data is blocked). Booklets here last until you close the tab, so download a copy of any you want to keep."
     },
+    question: {
+      addOwn: "Add your own",
+      addBtn: "Add",
+      ownRemove: x=>`Remove “${x}”`,
+      check: "Check",
+      right: "Right",
+      notQuite: "Not quite",
+      theAnswer: "The answer",
+      liveRight: "Right.",
+      liveNot: a=>`Not quite. The answer is ${a}.`
+    },
     query: {
       empty: "Nothing kept here yet."
     },
@@ -1066,6 +1074,15 @@ const STRINGS_SRC={
       matrixNoAnchors: w=>`${w}: this matrix question has no anchors under its items (a numbered list)`,
       scaleNoAnchors: w=>`${w}: this scale question has no anchors under it (a numbered list)`,
       kindNotDrawn: (w,k)=>`${w}: “${k}” questions are not drawn by this page yet`,
+      settingUnknown: (w,kind,s)=>`${w}: a ${kind} line takes no “${s}”, so it was ignored`,
+      numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
+      dailyAlone: w=>`${w}: \`daily\` only follows \`repeat\`, so it was ignored`,
+      kindUnknown: (w,k)=>`${w}: this page does not know the kind “${k}”, so it is shown as a callout`,
+      queryKeyUnknown: (w,key)=>`${w}: a query has no setting “${key}”, so it was ignored`,
+      queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number, so it was ignored`,
+      queryInData: w=>`${w}: a query belongs in an activity's prose, not in the data section, so it was ignored`,
+      recordNoItems: (w,id)=>`${w}: the entries record for “${id}” holds no list of items, so it was skipped`,
+      langMissing: "The front matter has no `lang:`, so this page took the file to be in English",
       menuMissing: (w,menu,id)=>`${w}: the menu “${menu}” is not in this file, so the question “${id}” was not drawn`,
       queryRefused: (id,why)=>`a query in “${id}” ${why}, so it was refused`,
       queryViewBad: (as,views)=>`has \`as: ${as}\`, which is not ${views.slice(0,-1).join(", ")} or ${views[views.length-1]}`,
@@ -1108,6 +1125,7 @@ const STRINGS_SRC={
       cite: n=>`Citation ${n}`,
       broken: id=>`No citation called “${id}” in this module`,
       close: "Close",
+      unknownKind: k=>`This page does not know the kind “${k}”.`,
       noSource: k=>`The source “${k}” is not in this module`,
       page: p=>`Page ${p}`,
       verified: d=>`Verified on ${d}`,
@@ -1136,6 +1154,10 @@ const STRINGS_SRC={
       missingWidget: id=>`Cette activité a besoin d’un élément que le fichier ne contient pas (${id}). Chargez le carnet d’origine, ou ajoutez le module qui l’apporte.`,
       missingEngine: e=>`Cette page ne sait pas dessiner un « ${e} » — c’est une version plus ancienne que ce que le carnet attend.`,
       loadOk: "Chargé",
+      loadRefused: "Ce fichier ne peut pas être ouvert :",
+      fileNotes: n=>`Ce fichier contient ${n===1?"1 point":n+" points"} que cette page n’a pas pu lire`,
+      fileNotesShow: "Voir la liste",
+      fileNotesDismiss: "Fermer",
       oldFormat: m=>`Ce fichier indique booklet: ${m}. Cette page lit le format ${FORMAT_VERSION}. Remplacez le marqueur par booklet: ${FORMAT_VERSION}${m==="0.2"?" (et écrivez les réglages en clé:valeur, par exemple min:0)":""}.`,
       figureErr: "Ce diagramme n’a pas pu être dessiné; son texte source est affiché à la place.",
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
@@ -1201,6 +1223,17 @@ const STRINGS_SRC={
       removed: "Retiré.",
       storageOff: "Ce navigateur ne garde rien d’une visite à l’autre (navigation privée, ou données du site bloquées). Les carnets d’ici durent jusqu’à la fermeture de l’onglet : téléchargez une copie de ceux que vous voulez garder."
     },
+    question: {
+      addOwn: "Ajoutez votre propre option",
+      addBtn: "Ajouter",
+      ownRemove: x=>`Retirer « ${x} »`,
+      check: "Vérifier",
+      right: "Juste",
+      notQuite: "Pas tout à fait",
+      theAnswer: "La réponse",
+      liveRight: "Juste.",
+      liveNot: a=>`Pas tout à fait. La réponse est ${a}.`
+    },
     query: {
       empty: "Rien n’est encore enregistré ici."
     },
@@ -1260,6 +1293,15 @@ const STRINGS_SRC={
       matrixNoAnchors: w=>`${w} : cette question matrix n’a pas d’ancres sous ses éléments (une liste numérotée)`,
       scaleNoAnchors: w=>`${w} : cette question scale n’a pas d’ancres en dessous (une liste numérotée)`,
       kindNotDrawn: (w,k)=>`${w} : les questions « ${k} » ne sont pas encore dessinées par cette page`,
+      settingUnknown: (w,kind,s)=>`${w} : une ligne ${kind} n’accepte pas « ${s} » ; il a donc été ignoré`,
+      numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
+      dailyAlone: w=>`${w} : \`daily\` ne vient qu’après \`repeat\` ; il a donc été ignoré`,
+      kindUnknown: (w,k)=>`${w} : cette page ne connaît pas le type « ${k} » ; il est donc affiché comme un encadré`,
+      queryKeyUnknown: (w,key)=>`${w} : une requête n’a pas de réglage « ${key} » ; il a donc été ignoré`,
+      queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est pas un nombre entier positif ; il a donc été ignoré`,
+      queryInData: w=>`${w} : une requête doit se trouver dans le texte d’une activité, pas dans la section des données ; elle a donc été ignorée`,
+      recordNoItems: (w,id)=>`${w} : l’enregistrement des entrées de « ${id} » ne contient aucune liste d’éléments ; il a donc été ignoré`,
+      langMissing: "L’en-tête n’a pas de `lang:` ; cette page a donc supposé que le fichier est en anglais",
       menuMissing: (w,menu,id)=>`${w} : le menu « ${menu} » n’est pas dans ce fichier ; la question « ${id} » n’a donc pas été dessinée`,
       queryRefused: (id,why)=>`une requête dans « ${id} » ${why} ; elle a donc été refusée`,
       queryViewBad: (as,views)=>`a \`as: ${as}\`, qui n’est pas ${views.slice(0,-1).join(", ")} ni ${views[views.length-1]}`,
@@ -1302,6 +1344,7 @@ const STRINGS_SRC={
       cite: n=>`Référence ${n}`,
       broken: id=>`Aucune référence « ${id} » dans ce module`,
       close: "Fermer",
+      unknownKind: k=>`Cette page ne connaît pas le type « ${k} ».`,
       noSource: k=>`La source « ${k} » n’est pas dans ce module`,
       page: p=>`Page ${p}`,
       verified: d=>`Vérifiée le ${d}`,
@@ -1330,6 +1373,10 @@ const STRINGS_SRC={
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Carga el cuadernillo de origen, o agrega el módulo que lo aporta.`,
       missingEngine: e=>`Esta página no puede mostrar un "${e}" — es una versión de la aplicación más antigua que la que el cuadernillo espera.`,
       loadOk: "Cargado",
+      loadRefused: "Este archivo no se puede abrir:",
+      fileNotes: n=>`Este archivo tiene ${n===1?"1 cosa":n+" cosas"} que esta página no pudo leer`,
+      fileNotesShow: "Ver la lista",
+      fileNotesDismiss: "Descartar",
       oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato ${FORMAT_VERSION}. Cambia el marcador a booklet: ${FORMAT_VERSION}${m==="0.2"?" (y escribe los ajustes como clave:valor, por ejemplo min:0)":""}.`,
       figureErr: "No se pudo dibujar este diagrama; se muestra su texto fuente.",
       clearTitle: "¿Borrar todo lo que hay en esta página?",
@@ -1395,6 +1442,17 @@ const STRINGS_SRC={
       removed: "Quitado.",
       storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descarga una copia de los que quieras conservar."
     },
+    question: {
+      addOwn: "Agrega tu propia opción",
+      addBtn: "Agregar",
+      ownRemove: x=>`Quitar “${x}”`,
+      check: "Comprobar",
+      right: "Correcto",
+      notQuite: "No del todo",
+      theAnswer: "La respuesta",
+      liveRight: "Correcto.",
+      liveNot: a=>`No del todo. La respuesta es ${a}.`
+    },
     query: {
       empty: "Todavía no hay nada guardado aquí."
     },
@@ -1454,6 +1512,15 @@ const STRINGS_SRC={
       matrixNoAnchors: w=>`${w}: esta pregunta matrix no tiene anclas debajo de sus elementos (una lista numerada)`,
       scaleNoAnchors: w=>`${w}: esta pregunta scale no tiene anclas debajo (una lista numerada)`,
       kindNotDrawn: (w,k)=>`${w}: esta página todavía no dibuja las preguntas “${k}”`,
+      settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
+      numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
+      dailyAlone: w=>`${w}: \`daily\` solo va después de \`repeat\`, así que se ignoró`,
+      kindUnknown: (w,k)=>`${w}: esta página no conoce el tipo “${k}”, así que se muestra como un recuadro`,
+      queryKeyUnknown: (w,key)=>`${w}: una consulta no tiene el ajuste “${key}”, así que se ignoró`,
+      queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo, así que se ignoró`,
+      queryInData: w=>`${w}: una consulta va en el texto de una actividad, no en la sección de datos, así que se ignoró`,
+      recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se omitió`,
+      langMissing: "El encabezado no tiene `lang:`, así que esta página tomó el archivo como escrito en inglés",
       menuMissing: (w,menu,id)=>`${w}: el menú “${menu}” no está en este archivo, así que la pregunta “${id}” no se dibujó`,
       queryRefused: (id,why)=>`una consulta en “${id}” ${why}, así que se rechazó`,
       queryViewBad: (as,views)=>`tiene \`as: ${as}\`, que no es ${views.slice(0,-1).join(", ")} ni ${views[views.length-1]}`,
@@ -1496,6 +1563,7 @@ const STRINGS_SRC={
       cite: n=>`Cita ${n}`,
       broken: id=>`No hay ninguna cita “${id}” en este módulo`,
       close: "Cerrar",
+      unknownKind: k=>`Esta página no conoce el tipo “${k}”.`,
       noSource: k=>`La fuente “${k}” no está en este módulo`,
       page: p=>`Página ${p}`,
       verified: d=>`Verificada el ${d}`,
@@ -1531,6 +1599,9 @@ const STRINGS_SRC={
     },
     home: {
       sub: "Un cuaderno de trabajo que vive en un solo archivo que conservás"
+    },
+    question: {
+      addOwn: "Agregá tu propia opción"
     },
     query: {
       empty: "Todavía no guardaste nada acá."
@@ -1575,8 +1646,8 @@ const strings=g=>(STRINGS[lang]&&STRINGS[lang][g])||STRINGS.en[g];
                               starting `on` adds a listener. A kid is a node or text; null is skipped.
                               Text is never parsed as markup.
      sv(tag, attrs, ...kids)  the same for an SVG element (attributes only, no listeners).
-     tx(v, fallback)          a booklet's own words in the language in force: a plain string, or an
-                              object keyed by language; anything it does not hold gives the fallback.
+     tx(v, fallback)          a booklet's own words: a plain string (a file is in one language);
+                              anything else gives the fallback.
      strings(group)           one group of the renderer's own interface words (region 2) in the
                               language in force, else English. */
 const el=(tag,attrs={},...kids)=>{const n=document.createElement(tag);
@@ -1626,19 +1697,16 @@ function lsSet(k,v){if(storageOk){try{localStorage.setItem(k,v);delete MEM[k];re
     catch(e){storageOk=false;setTimeout(()=>toast(STRINGS[lang].ui.storageOff),0);}}
   MEM[k]=v;return false;}
 function lsDel(k){delete MEM[k];try{localStorage.removeItem(k);}catch(e){/* storage may be blocked */}}
-/* A booklet's own words, as a plain string or as {en:…, fr:…}; anything it does
-   not name takes the fallback. */
-const tx=(v,fallback)=>{if(v==null) return fallback;
-  if(typeof v==="string") return v;
-  if(typeof v==="object"){const r=pickLoc(v);return r===undefined?fallback:r;}
-  return fallback;};
-/* ---- languages: one lookup chain for every localised value ----
-   A booklet may DECLARE the languages it offers (`languages`, a list of tags, in
-   its front matter or its design). Declared, the chain never leaves them: a
-   Spanish-only booklet never reads an English or French word, because no slot is
-   ever asked for one. Undeclared, it is what it always was, with Spanish added:
-   the selected language, its primary subtag (es-AR → es), English, French, and
-   only then any language the value happens to carry. */
+/* A booklet's own words: a plain string, since a file is written in one language (SPEC.md section 9);
+   anything else takes the fallback. */
+const tx=(v,fallback)=>typeof v==="string"?v:fallback;
+/* A widget's own words (its `copy`): one object of words, or none. */
+const wordsOf=v=>isObj(v)?v:{};
+/* ---- languages ----
+   A booklet is written in one language, the `lang` of its front matter, which is the one language its design
+   declares (`languages`, a list of one tag). The interface speaks that language where the renderer has strings
+   for it and English where it has not. The reader's own choice (the header's EN / ES / FR) wins over it
+   wherever the booklet offers it: see prefLang. */
 const primaryOf=l=>String(l||"").split("-")[0].toLowerCase();
 /* es-ar → es-AR, ES → es: the one spelling every table and slot uses */
 const normTag=x=>{const p=String(x||"").trim().split("-");if(!/^[A-Za-z]{2,3}$/.test(p[0])) return "";
@@ -1647,34 +1715,6 @@ const normTag=x=>{const p=String(x||"").trim().split("-");if(!/^[A-Za-z]{2,3}$/.
 const tableTag=x=>{const t=normTag(x);return STRINGS[t]?t:(STRINGS[primaryOf(t)]?primaryOf(t):"");};
 function declaredLangs(){const d=BOOK&&BOOK.languages;
   return Array.isArray(d)?[...new Set(d.map(normTag).filter(Boolean))]:[];}
-function langChain(l,open){const out=[];const add=x=>{if(x&&!out.includes(x)) out.push(x);};
-  l=normTag(l)||lang;add(l);add(primaryOf(l));
-  const d=open?[]:declaredLangs();
-  if(d.length){d.forEach(x=>{add(x);add(primaryOf(x));});return out;}
-  add("en");add("fr");return out;}
-/* a string with something in it (whitespace counts; nonEmpty, below, trims) */
-const isText=x=>typeof x==="string"&&x!=="";
-/* an object with at least one key (isObj, above, also accepts an empty one) */
-const isBag=x=>isObj(x)&&Object.keys(x).length>0;
-/* Every language a localised slot holds a value in, in the order a reader tries
-   them: the lookup chain, then (when the booklet declares no languages) any
-   other tag the slot carries. `ok` says what counts as a value (text by
-   default). `open` ignores the booklet's declaration, for reading files, where
-   every language written down is worth recognising. */
-const LOC_TAG=/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
-function locKeys(v,ok,l,open){
-  if(v===null||typeof v!=="object"||Array.isArray(v)) return [];
-  ok=ok||isText;const out=[];const add=k=>{if(!out.includes(k)&&ok(v[k])) out.push(k);};
-  langChain(l,open).forEach(add);
-  if(open||!declaredLangs().length) Object.keys(v).filter(k=>LOC_TAG.test(k)).forEach(add);
-  return out;}
-/* The value a localised slot holds for a language, or undefined. */
-function pickLoc(v){const k=locKeys(v)[0];return k===undefined?undefined:v[k];}
-/* A whole object of wording (a widget's or module's `copy`), or the fallback.
-   It is read word by word down the chain: a Spanish set of words that lacks
-   one takes that one from the next language, rather than leaving it blank. */
-const locBag=(v,fallback)=>{const ks=locKeys(v,isBag);if(!ks.length) return fallback;
-  return ks.length===1?v[ks[0]]:Object.assign({},...ks.slice().reverse().map(k=>v[k]));};
 function offeredLangs(){
   const d=[...new Set(declaredLangs().map(tableTag).filter(Boolean))];
   return d.length?d:BASE_LANGS;}
@@ -1699,6 +1739,9 @@ let openChip={};
    every open and close; anything scheduled or awaited for one booklet checks
    it before touching the globals, which by then may belong to another. */
 let currentId=null, currentKey=null, currentEntry=null, bookletGen=0;
+/* what a file opened with that this page could not read (its reported problems), and whether the reader has dismissed
+   the notice; kept in memory for the session, never saved */
+let FILE_NOTES=null;
 /* the reader's sort and filter for each query on the page (see viewControls): kept while this booklet is open, never saved */
 const VIEWSTATE=new Map();
 /* ---- the reader's language: this browser's choice, never a booklet's ----
@@ -1851,7 +1894,7 @@ function resetBookletState(){
   lang=langPref()||lang;
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
   screen="home";dirty=false;unsavedEntries=0;
-  openChip={};boardOpen=null;VIEWSTATE.clear();
+  openChip={};VIEWSTATE.clear();FILE_NOTES=null;
   clearTimeout(saveTimer);saveTimer=null;
   VEIL_IDS.forEach(id=>{const v=document.getElementById(id);if(v) v.removeAttribute("open");});}
 /* Open one entry: whatever the last booklet had pending is written to it,
@@ -1881,7 +1924,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.7 booklet is Markdown that reads as a document anywhere: front
+   A v0.8 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -1895,9 +1938,9 @@ const CALLOUT_LINE=/^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ 
 /* a row closes with `> [!row end]`: the one booklet line whose flag follows the kind, since a row has no id */
 const ROW_END=/^>[ \t]?\[!(row)([ \t]+end)\]([+-]?)[ \t]*(.*)$/i;
 const calloutLine=l=>CALLOUT_LINE.test(l)||ROW_END.test(l);
-const CALLOUT_FLAGS={module:["end"],row:["end"],activity:["repeat","daily","hidden"],widget:["readonly","describe"],
-  text:["long"],choice:["open"],multi:["open"]};
-/* A file is read when its front matter says `booklet: 0.7`, and only then. */
+/* the bare-word flags of each kind, read from the table of settings */
+const CALLOUT_FLAGS=Object.fromEntries(Object.entries(KIND_SETTINGS).map(([k,v])=>[k,v.filter(s=>!s.endsWith(":"))]));
+/* A file is read when its front matter says `booklet: 0.8`, and only then. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -1919,19 +1962,30 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
 const BOOKLET_MARK=new RegExp("^booklet:[ \\t]*[\"']?"+FORMAT_VERSION.replace(/\./g,"\\.")+"[\"']?[ \\t]*$");
 function isBooklet(text){const {head}=frontMatter(text);
   return !!head&&head.some(l=>BOOKLET_MARK.test(l));}
-/* A file marked with an earlier format (0.1 to 0.6) is refused with what to
+/* A file marked with an earlier format (0.1 to 0.7) is refused with what to
    change, not a bare "not a booklet". Returns the marker found, or "". */
 function oldMarker(text){const {head}=frontMatter(text);
-  for(const l of head||[]){const m=l.match(/^booklet:[ \t]*["']?(0\.[1-6])["']?[ \t]*$/);if(m) return m[1];}
+  for(const l of head||[]){const m=l.match(/^booklet:[ \t]*["']?(0\.[1-7])["']?[ \t]*$/);if(m) return m[1];}
   return "";}
 /* `kind|id words` → the id, the flags and the key:value settings; a bare word
    the kind knows is a flag, and the first other bare word is the id */
 function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}};
   String(s||"").trim().split(/\s+/).filter(Boolean).forEach(w=>{const kv=w.match(/^([A-Za-z][A-Za-z0-9-]*):(.*)$/);
-    if(kv) out.set[kv[1]]=kv[2];
+    if(kv) out.set[kv[1].toLowerCase()]=kv[2];
     else if((CALLOUT_FLAGS[kind]||[]).includes(w.toLowerCase())) out.flags.add(w.toLowerCase());
     else if(out.id===null) out.id=w; else out.flags.add(w.toLowerCase());});
   return out;}
+/* What a line's settings get wrong by KIND_SETTINGS: the messages, and the settings are taken off the line so
+   that they are ignored. A kind outside the table is an unknown kind, said separately (unknownKind). */
+function checkSettings(it,where,P){const allowed=KIND_SETTINGS[it.kind],out=[];if(!allowed) return out;
+  for(const [key,val] of Object.entries(it.set)){
+    if(!allowed.includes(key+":")){out.push(P.settingUnknown(where,it.kind,key+":"));delete it.set[key];continue;}
+    if(NUMBER_SETTINGS.includes(key)&&!(String(val).trim()!==""&&Number.isFinite(Number(val)))){out.push(P.numberBad(where,key,val));delete it.set[key];}}
+  for(const f of [...it.flags]) if(!allowed.includes(f)){out.push(P.settingUnknown(where,it.kind,f));it.flags.delete(f);}
+  if(it.flags.has("daily")&&!it.flags.has("repeat")){out.push(P.dailyAlone(where));it.flags.delete("daily");}
+  return out;}
+/* a line with an id or settings whose kind the format does not define (SPEC.md section 4) */
+const unknownKind=it=>!hasOwn(KIND_SETTINGS,it.kind)&&!!(it.id||it.flags.size||Object.keys(it.set).length);
 /* A footnote's definition line, `[^id]: note`, is Booklet's own citation —
    the same mark Markdown already gives GitHub and Obsidian. The note itself
    is free text; this reads the shape the examples use — *Title*, details, p. N: "quote" Verified YYYY-MM-DD — into the same
@@ -1980,17 +2034,20 @@ function bulletList(lines,i){let j=i;let blanks=0;
     items.push(m[1].trim());j++;}
   return items.length?{items,next:j}:null;}
 /* A query block's body: `key: value` lines (YAML's plainest form). Returns
-   its settings, or `bad` with the first line that is not one. */
+   its settings, or `bad` with the first line that is not one; `unknown` names the keys a query does not
+   have, and `limitBad` a `limit` that is not a positive whole number (both are ignored). */
 function readQuery(code){const o={};
   for(const raw of String(code||"").split("\n")){const ln=raw.trim();if(!ln) continue;
     const kv=kvLine(ln);if(!kv) return {bad:ln};
     o[kv[0].toLowerCase()]=kv[1];}
-  const lim=/^\d+$/.test(o.limit||"")?Number(o.limit):0;
+  const unknown=Object.keys(o).filter(k=>!QUERY_KEYS.includes(k));
+  const limitBad=o.limit!==undefined&&!/^[1-9]\d*$/.test(o.limit)?o.limit:undefined;
+  const lim=limitBad===undefined&&o.limit!==undefined?Number(o.limit):0;
   /* how a view draws: the view, and the names of the fields it reads */
   const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
   if(lim>0) view.limit=lim;
   return {from:o.from||"",fields:o.fields?o.fields.split(",").map(x=>x.trim()).filter(Boolean):undefined,
-    empty:o.empty||undefined,view};}
+    empty:o.empty||undefined,view,unknown,limitBad};}
 /* A `booklet data` block: rows a generator wrote. JSON: an object with
    `rows` (and optionally `fields`, each key's label and the default order), or
    the list of rows itself. A value is a string, a number, true, false, null, or
@@ -2014,11 +2071,14 @@ function readData(o){const P=strings("problem");
    settle those two; shapeBooklet writes the result. Every problem goes into one
    list, in the order the parts find them. */
 function parseBooklet(text){const {lines,head,next}=frontMatter(text,true);
-  const fm={},problems=[];
+  /* `problems` is every message, in the order the parts find them; `refused` is the ones among them that
+     stop the file opening (SPEC.md section 12), the rest being reported when it has opened */
+  const fm={},problems=[];problems.refused=[];
   for(const l of head||[]){const kv=kvLine(l);if(kv) fm[kv[0]]=kv[1];}
   const L=tableTag(fm.lang)||"en";
+  if(!fm.lang) problems.push(strings("problem").langMissing);
   const {items,source}=splitItems(lines,next);
-  const doc=readBlocks(items,fm,L,problems);
+  const doc=readBlocks(items,fm,problems);
   resolveMenus(doc,problems);
   linkQueries(doc,problems);
   return shapeBooklet(doc,fm,L,source,problems);}
@@ -2090,7 +2150,7 @@ const QUESTION_BLOCK={
     if(!it.anchors) return {bad:P.scaleNoAnchors(where)};
     return {block:{id:it.id,type:"scale",label:it.title,hint:hint||undefined,keys:[it.id],anchors:it.anchors}};},
   number:numberBlock("number"),
-  date:numberBlock("date")};
+  date:(it,hint)=>({block:{id:it.id,type:"date",label:it.title,hint:hint||undefined,keys:[it.id]}})};
 /* an activity's id from its title: letters and digits, as dashes */
 const idWord=s=>slugify(s).replace(/[^A-Za-z0-9-]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-");
 /* ROWS: the blocks put while a row is open are held, then split into cells: each heading at
@@ -2127,12 +2187,13 @@ const stripBlock=(list,blk)=>{const i=list.indexOf(blk);if(i>=0) list.splice(i,1
 const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 /* a question's hint: the text of its body, less the lines that only embed a figure */
 const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
-function readBlocks(items,fm,L,problems){const P=strings("problem");
+function readBlocks(items,fm,problems){const P=strings("problem");
   const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[];
   let mod=null,act=null,section="content",lastQ=null,seq=0,row=null,theme=null;
+  const refuse=m=>{problems.push(m);problems.refused.push(m);};
   const claim=(id,where)=>{if(!id) return;if(!ID_PATTERN.test(id)) problems.push(P.idChars(where,id));
-    if(ids.has(id)) problems.push(P.idTwice(where,id));ids.add(id);};
+    if(ids.has(id)) refuse(P.idTwice(where,id));ids.add(id);};
   const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__footnotes:[],__line:line};
     if(fm.copyright||fm.license||fm.source) m.rights={copyright:fm.copyright||"",license:fm.license||"",source:fm.source||""};
     modules.push(m);return m;};
@@ -2157,10 +2218,13 @@ function readBlocks(items,fm,L,problems){const P=strings("problem");
   const onFence=it=>{
     const info=it.info.split(/\s+/);
     if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="query"){
+      if(section==="data"){problems.push(P.queryInData(P.line(it.line)));return;}
       if(section!=="content") return;
       if(!act){problems.push(P.queryOutside(P.line(it.line)));return;}
       const q=readQuery(it.code);
       if(q.bad){problems.push(P.queryBadLine(P.line(it.line),q.bad));return;}
+      q.unknown.forEach(k=>problems.push(P.queryKeyUnknown(P.line(it.line),k)));
+      if(q.limitBad!==undefined) problems.push(P.queryLimitBad(P.line(it.line),q.limitBad));
       queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,empty:q.empty,view:q.view})});lastQ=null;return;}
     if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="theme"){
       /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
@@ -2177,21 +2241,20 @@ function readBlocks(items,fm,L,problems){const P=strings("problem");
       if(!o||typeof o!=="object"){problems.push(P.blockNoObject(P.line(it.line),what));return;}
       if(what==="widget"){if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
         const w={...o,id:it.id};
-        /* one language per file: the widget's own words are that language's */
-        if(isBag(w.copy)&&!locKeys(w.copy,isBag,L,true).length) w.copy={[L]:w.copy};
         widgets.push(w);}
       else if(what==="data"){
         if(section==="records") return;
         if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
-        if(dataBlocks.some(d=>d.id===it.id)){problems.push(P.idTwice(P.line(it.line),it.id));return;}
+        if(dataBlocks.some(d=>d.id===it.id)){refuse(P.idTwice(P.line(it.line),it.id));return;}
         const d=readData(o);
         if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
         /* it lives where a widget's data lives: inside its module's fence, or outside any (the data section) */
-        dataBlocks.push({id:it.id,mod:section==="content"?mod:null,rows:d.rows,fields:d.fields});}
+        dataBlocks.push({id:it.id,mod:section==="content"?mod:null,rows:d.rows,fields:d.fields,line:it.line});}
       else if(what==="answers") Object.assign(answers,o);
-      else if(what==="entries"&&info[2]) entries[info[2]]=(Array.isArray(o.items)?o.items:[]).filter(e=>e&&e.ts);
+      else if(what==="entries"&&info[2]){
+        if(!Array.isArray(o.items)) problems.push(P.recordNoItems(P.line(it.line),info[2]));
+        entries[info[2]]=(Array.isArray(o.items)?o.items:[]).filter(e=>e&&e.ts);}
       else if(what==="draft"&&info[2]) drafts[info[2]]=o;
-      else if(what==="module"){}
       else problems.push(P.blockUnknown(P.line(it.line),what));}
   };
   const onBreak=()=>{if(row) closeRow(P.rowRunsPage);
@@ -2204,6 +2267,7 @@ function readBlocks(items,fm,L,problems){const P=strings("problem");
     if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;};
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
+    checkSettings(it,where,P).forEach(m=>problems.push(m));
     if(row&&(k==="data"||k==="records"||k==="module"||k==="activity")) closeRow(k==="module"?P.rowRunsModule:k==="activity"?P.rowRunsActivity:P.rowRunsSection(k));
     if(k==="row"&&section==="content"){
       if(it.flags.has("end")){if(!row) problems.push(P.rowEndStray(where));else closeRow();return;}
@@ -2212,13 +2276,14 @@ function readBlocks(items,fm,L,problems){const P=strings("problem");
     if(k==="data"){section="data";act=null;return;}
     if(k==="records"){section="records";act=null;return;}
     /* a shared menu is never drawn; its list is kept for the questions that name it */
-    if(k==="menu"&&section!=="records"){if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:section==="content"?mod:null});return;}
+    if(k==="menu"&&section!=="records"){claim(it.id,where);
+      if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:section==="content"?mod:null});return;}
     if(section!=="content"||SCENERY_KINDS.has(k)) return;
     if(k==="module"){
-      if(it.flags.has("end")){if(!mod) problems.push(P.moduleEndStray(where));
-        else if(it.id&&it.id!==mod.id) problems.push(P.moduleEndMismatch(where,it.id,mod.id));
+      if(it.flags.has("end")){if(!mod) refuse(P.moduleEndStray(where));
+        else if(it.id&&it.id!==mod.id) refuse(P.moduleEndMismatch(where,it.id,mod.id));
         mod=null;act=null;return;}
-      if(mod) problems.push(P.moduleNested(where,it.id,mod.id));
+      if(mod) refuse(P.moduleNested(where,it.id,mod.id));
       claim(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;return;}
     if(k==="activity"){newActivity(it,it.title,it.line);lastQ=null;return;}
     if(QUESTION_KINDS.has(k)){
@@ -2235,8 +2300,10 @@ function readBlocks(items,fm,L,problems){const P=strings("problem");
     if((k==="hint"||k==="solution")&&lastQ){put({id:lastQ.id+"-"+k,type:"callout",kind:"",title:it.title||undefined,
       blocks:[{id:lastQ.id+"-"+k+"-md",type:"markdown",text:it.body.join("\n")}],placement:it.fold==="-"?"folded":undefined,label:it.title||k});return;}
     /* any other callout is reading set apart */
+    const unk=unknownKind(it);if(unk) problems.push(P.kindUnknown(where,k));
     if(!act&&mod){mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));return;}
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
+      ...(unk?{unknown:true}:{}),
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;};
   for(const it of items){
     if(it.t==="fence") onFence(it);
@@ -2244,13 +2311,15 @@ function readBlocks(items,fm,L,problems){const P=strings("problem");
     else if(it.t==="text") onText(it);
     else onLine(it);}
   if(row) closeRow(P.rowNeverClosed);
-  if(mod) problems.push(P.moduleNeverClosed(P.line(mod.__line),mod.id));
+  /* a data block's id is also one a query reads by, so it may not be a question's or an activity's too */
+  dataBlocks.forEach(d=>{if(ids.has(d.id)) refuse(P.idTwice(P.line(d.line),d.id));});
+  if(mod) refuse(P.moduleNeverClosed(P.line(mod.__line),mod.id));
   return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme};}
 function resolveMenus({menus,menuUses,modules},problems){const P=strings("problem");
-  /* a question that names a shared menu takes its options from it: the menu in
-     the same module fence first, then anywhere in the file */
+  /* a question that names a shared menu takes its options from it, wherever in the file it is
+     (a menu's id is unique in the file, like any other id) */
   for(const u of menuUses){
-    const hit=menus.find(m=>m.id===u.menu&&m.mod===u.mod)||menus.find(m=>m.id===u.menu);
+    const hit=menus.find(m=>m.id===u.menu);
     if(!hit){problems.push(P.menuMissing(u.where,u.menu,u.block.id));
       modules.forEach(m=>m.activities.forEach(a=>a.pages.forEach(pg=>stripBlock(pg.blocks,u.block))));continue;}
     u.block.options=hit.items.slice();}
@@ -2264,17 +2333,17 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=strings("pro
    const where=new Map();
    modules.forEach(m=>m.activities.forEach(a=>{where.set(a.id,{m,a});
      a.pages.forEach(pg=>rowWalk(pg.blocks,b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) where.set(b.id,{m,a,q:b});}));}));
-   for(const x of queries){const {q,block}=x,drop=why=>{problems.push(P.queryRefused(x.act.id,why));
+   for(const x of queries){const {q,block}=x,drop=(why,hard)=>{const m=P.queryRefused(x.act.id,why);problems.push(m);if(hard) problems.refused.push(m);
        x.act.pages.forEach(pg=>stripBlock(pg.blocks,block));};
      const src=q.from&&where.get(q.from),here=moduleHolding(modules,x.act),as=(q.view||{}).as;
      if(as!==undefined&&!QUERY_VIEWS.has(as)){drop(P.queryViewBad(as,[...QUERY_VIEWS]));continue;}
      if(!src){const d=q.from&&dataBlocks.find(z=>z.id===q.from);
        if(d){
-         if(fenced&&d.mod!==null&&d.mod!==here){drop(P.queryOtherModule(q.from));continue;}
+         if(fenced&&d.mod!==null&&d.mod!==here){drop(P.queryOtherModule(q.from),true);continue;}
          if(as==="cards"){drop(P.queryCardsData(q.from));continue;}
          block.data={rows:d.rows,fields:d.fields};continue;}
        drop(P.queryNothing(q.from||""));continue;}
-     if(fenced&&src.m!==here){drop(P.queryOtherModule(q.from));continue;}
+     if(fenced&&src.m!==here){drop(P.queryOtherModule(q.from),true);continue;}
      if(!fenced) block.fileWide=true;
      if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};}
      else if(src.a.kind!=="entry"){drop(P.queryNoEntries(q.from));continue;}}}
@@ -2312,7 +2381,7 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme},fm,
   const book={booklet:+FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L}};
-  return {ok:out.length>0,unread:problems,drafts:{activities:drafts},template:book,lang:L,S:st};}
+  return {ok:out.length>0&&!problems.refused.length,unread:problems,refused:problems.refused,drafts:{activities:drafts},template:book,lang:L,S:st};}
 function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
   const gd=STATE.answers||{},recs=[];
@@ -2508,7 +2577,6 @@ function bookOk(t){
    booklet in a file is the booklet. */
 function adoptBook(t){if(!bookOk(t)) return false;
   BOOK={...t,widgets:[...(t.widgets||[])]};
-  boardOpen=null;
   return true;}
 /* The empty booklet is shared and must never be edited in place, so the first
    change takes a private copy and marks it as the person's own. */
@@ -2974,7 +3042,7 @@ const FIGURE_HOOKS={
   embed:t=>{const m=/^[^#|]*#\^([A-Za-z0-9-]+)\s*(?:\|.*)?$/.exec(t);return m?figureFor(m[1]):null;}};
 
 /* ======================= 8. WIDGET ENGINES =======================
-   the three engines a widget names (svg-regions, grid-select, card-board) and the helpers they share. */
+   the two engines a widget names (svg-regions, grid-select) and the helpers they share. */
 /* A tag field holds several comma-separated words. Everything before the
    last comma is confirmed (splitList already gives "trimmed, non-empty,
    in order" for that); the text after it is still being typed or dictated
@@ -3080,7 +3148,7 @@ const cellStyle=(c,i)=>{const k=cellColor(c,i);return `background:${k.tint};--qd
    like there. The renderer knows the interaction; the widget knows the body. */
 function svgRegions(e,W,keys){const key=keys[0];
   const u=STRINGS[lang].ui;
-  const C=locBag(W.copy,{});
+  const C=wordsOf(W.copy);
   const figs=W.figures||[];
   const labelOf=id=>{const r=(W.regions||[]).find(x=>x.id===id);return r?tx(r.label,id):id;};
   const senseWord=code=>{for(const g of (W.senses||[])) for(const w of (g.words||[]))
@@ -3125,7 +3193,7 @@ function svgRegions(e,W,keys){const key=keys[0];
   const drawPanel=()=>{panel.innerHTML="";
     if(!active){panel.append(el("p",{class:"hint",style:"margin:0"},C.none||""));return;}
     panel.append(el("h4",{},labelOf(active)),el("p",{class:"hint",style:"margin:0"},C.pick||""));
-    if(W.showTags!==false) panel.append(tagInput({
+    panel.append(tagInput({
       values:()=>((rowFor(active)||{}).s||[]).map(senseWord),
       vocab:()=>(W.senses||[]).flatMap(g=>(g.words||[]).map(w=>({id:w.id,label:tx(w.label,w.id)}))),
       /* typing here must never rebuild this panel, which would destroy the
@@ -3199,7 +3267,7 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
     drawBtns();
     /* One instance per cell, always visible. The buttons below it work
        identically either way. */
-    if(!opts.readonly&&W.showTags!==false){
+    if(!opts.readonly){
       const known=(W.items||[]).filter(i=>i.cell===c.id);
       tag=tagInput({
         values:()=>[...known.filter(k=>chosen().includes(k.id)).map(k=>itemLabel(k.id)),
@@ -3228,109 +3296,7 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
         el("strong",{style:`color:${cellColor(c,ci).deep}`},tx(c.label,c.id)),tx(c.note,"")))));
   return box;}
 
-/* ======================= ENGINE: card-board =======================
-   Cards opened one at a time. Each leads with what is already mapped, then a
-   quick way to add something the person already knows, then the questions that
-   find a new one — folded away, because a page that opens with questions is a
-   form and a page that opens with your own answers is a map.
-
-   Its content is one answer in the store it is given, keyed by field id; the
-   widget says which fields each card holds and what to call them. */
-let boardOpen=null;
-function cardBoard(store,W,keys){
-  const C=locBag(W.copy,{});
-  const cards=W.cards||[];
-  const notes=locBag(W.notes,{});
-  /* what the board holds is one answer, under the block's own key, in the store
-     it was given: { field: list-or-text, … } */
-  const key=keys[0];
-  const bag=()=>store[key]&&typeof store[key]==="object"&&!Array.isArray(store[key])?store[key]:(store[key]={});
-  const menu=k=>{const own=(W.menus||{})[k];return Array.isArray(own)?own:[];};
-  const val=f=>bag()[f];
-  const wrap=el("div",{});
-  if(boardOpen===null) boardOpen=(cards[0]||{}).id||null;
-
-  const count=c=>((c.lists||[]).reduce((n,l)=>n+((val(l.field)||[]).length),0))
-    +((c.prose||[]).filter(pr=>nonEmpty(val(pr.field))).length);
-  /* One field is drawn twice on an open card: as what is on the board, and as
-     the menu's pills below. A change made in either redraws both, so a picked
-     option lands on the board at once and a removed one is no longer pressed. */
-  const drawsOf={};const onDraw=(f,fn)=>{(drawsOf[f]=drawsOf[f]||[]).push(fn);};
-  const changed=f=>(drawsOf[f]||[]).forEach(fn=>fn());
-
-  /* one mapped list: what is there, and a box to add to it */
-  const listBlock=(l,redraw)=>{const box=el("div",{class:"maplist"});
-    const chosen=()=>bag()[l.field]||[];
-    const chips=el("div",{class:"pills"});
-    const draw=()=>{chips.innerHTML="";
-      if(!chosen().length){chips.append(el("span",{class:"hint"},C.nothing||""));return;}
-      chosen().forEach(o=>chips.append(el("span",{class:"mapchip"},o,
-        el("button",{type:"button",class:"x",title:C.remove||"","aria-label":(C.remove||"")+": "+o,
-          onclick:()=>{bag()[l.field]=chosen().filter(x=>x!==o);markDirty();changed(l.field);redraw();}},"×"))));};
-    const inp=el("input",{type:"text",class:"field",style:"min-height:0",
-      placeholder:C.quick||"","aria-label":tx(l.label,l.field)});
-    const add=()=>{const v=inp.value.trim();if(!v) return;
-      if(!chosen().includes(v)) bag()[l.field]=[...chosen(),v];
-      inp.value="";markDirty();changed(l.field);redraw();};
-    inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();add();}});
-    onDraw(l.field,draw);draw();
-    box.append(el("div",{class:"mlhead"},tx(l.label,l.field)),chips,
-      el("div",{style:"display:flex;gap:.4rem;margin:.45rem 0 0"},inp,
-        el("button",{type:"button",class:"small",onclick:add},C.add||"+")));
-    return box;};
-
-  /* the questions that find a new one, and the menus of the corpus's examples */
-  const explore=(c)=>{const d=el("details",{class:"explore"},el("summary",{},C.explore||""));
-    const inner=el("div",{class:"inner"});
-    inner.append(el("p",{class:"hint"},C.exploreHint||""));
-    if(nonEmpty(tx(c.intro,""))) inner.append(el("p",{},tx(c.intro,"")));
-    (c.prose||[]).forEach(pr=>{const id=newId("f_");
-      const ta=textField(bag(),pr.field,2);ta.id=id;
-      inner.append(el("div",{},el("label",{class:"lbl",for:id},tx(pr.label,pr.field),
-        nonEmpty(tx(pr.hint,""))?el("span",{class:"hint"},tx(pr.hint,"")):null),ta));});
-    (c.lists||[]).forEach(l=>{
-      const box=el("div",{class:"qfield"});
-      const wrapc=el("div",{class:"pills"});
-      const chosen=()=>bag()[l.field]||[];
-      const draw=()=>{wrapc.innerHTML="";const opts=menu(l.field);
-        [...new Set([...opts,...chosen()])].forEach(o=>{
-          const on=chosen().includes(o);
-          wrapc.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(on),onclick:()=>{
-            bag()[l.field]=on?chosen().filter(x=>x!==o):[...chosen(),o];markDirty();changed(l.field);drawCards();}},o));});};
-      onDraw(l.field,draw);draw();
-      box.append(el("label",{class:"lbl"},tx(l.label,l.field),
-        nonEmpty(tx(l.hint,""))?el("span",{class:"hint"},tx(l.hint,"")):null),wrapc);
-      inner.append(box);});
-    ((notes[c.id])||[]).forEach(n=>inner.append(el("p",{class:"hint"},n)));
-    d.append(inner);return d;};
-
-  const cardsRow=el("div",{class:"mapcards",role:"tablist"});
-  const openBox=el("div",{class:"mapopen"});
-  const drawCards=()=>{cardsRow.innerHTML="";
-    cards.forEach(c=>{const on=boardOpen===c.id;const n=count(c);
-      cardsRow.append(el("button",{type:"button",class:"mapcard "+c.id,role:"tab","aria-selected":String(on),
-        onclick:()=>{boardOpen=on?null:c.id;drawCards();drawOpen();}},
-        el("span",{class:"mk"},tx(c.label,c.id)),
-        el("span",{class:"md"},tx(c.blurb,"")),
-        el("span",{class:"mn"},n?String(n):"—")));});};
-  const drawOpen=()=>{openBox.innerHTML="";for(const f in drawsOf) delete drawsOf[f];
-    const c=cards.find(x=>x.id===boardOpen);if(!c) return;
-    const sec=el("section",{class:"mapsection "+c.id},el("h2",{},tx(c.label,c.id)));
-    if(nonEmpty(tx(c.blurb,""))) sec.append(el("p",{class:"aside"},tx(c.blurb,"")));
-    sec.append(el("h3",{},C.mapped||""));
-    (c.lists||[]).forEach(l=>sec.append(listBlock(l,drawCards)));
-    if((c.prose||[]).length){const dl=el("div",{class:"mapprose"});
-      const filled=(c.prose||[]).filter(pr=>nonEmpty(val(pr.field)));
-      if(!filled.length) dl.append(el("p",{class:"hint"},C.nothing||""));
-      filled.forEach(pr=>dl.append(el("div",{class:"mprow"},
-        el("span",{class:"r"},tx(pr.label,pr.field)),el("span",{},String(val(pr.field)).trim()))));
-      sec.append(dl);}
-    sec.append(explore(c));
-    openBox.append(sec);};
-  drawCards();drawOpen();
-  wrap.append(cardsRow,openBox);
-  return wrap;}
-const ENGINES={"svg-regions":svgRegions,"grid-select":gridSelect,"card-board":cardBoard};
+const ENGINES={"svg-regions":svgRegions,"grid-select":gridSelect};
 
 /* ======================= 9. QUESTIONS AND BLOCKS =======================
    drawing a block (a question, prose, a row, a widget), and keeping an activity's drafts and entries. */
@@ -3418,7 +3384,7 @@ function drawWidget(b,draft,activityId){const W=widgetOf(b.widget);
   if(!W){box.append(el("p",{class:"hint"},STRINGS[lang].ui.missingWidget(b.widget||"?")));return box;}
   const eng=ENGINES[W.engine];
   if(!eng){box.append(el("p",{class:"hint"},STRINGS[lang].ui.missingEngine(W.engine||"?")));return box;}
-  const C=locBag(W.copy,{});
+  const C=wordsOf(W.copy);
   const head=tx(b.label,C.h);if(nonEmpty(head)) box.append(el("h3",{},head));
   const lead=tx(b.hint,C.p);if(nonEmpty(lead)) box.append(el("p",{class:"aside"},lead));
   [C.stance,C.invite].filter(nonEmpty).forEach(x=>box.append(el("p",{class:"hint"},x)));
@@ -3441,17 +3407,66 @@ function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[
       inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const nx=tl.querySelectorAll("input")[i+1];if(nx) nx.focus();}});
       tl.append(el("div",{class:"oneline"},inp));});};
   draw();box.append(tl);return box;}
-function drawChoice(b,draft,activityId){const box=el("div",{});const own=b.options||[];
+/* ---- choice and multi. An answer is the position of a listed option (from 1) or, for the reader's own option
+   (`open`), their own words as a string: a choice holds one of them, a multi a list of them. Nothing of the
+   reader's is written into the file's option list. `[x]` options (b.answer, positions) are shown as right or wrong
+   once the reader has answered; nothing about that is stored. ---- */
+const sameWords=(a,x)=>String(a).trim().toLowerCase()===String(x).trim().toLowerCase();
+/* an answer as a list: positions and the reader's own strings */
+const picksOf=v=>Array.isArray(v)?v:(v===null||v===undefined||v===""?[]:[v]);
+/* the reader's own options offered again: the words they added to this question in earlier kept entries of its
+   activity, most recent first, at most 12, leaving out any that are listed, or in the answer now, or repeated */
+function ownEarlier(activityId,K,listed,now){const out=[];
+  const kept=[...(((STATE.entries||{})[activityId])||[])].sort((a,x)=>String(x.ts).localeCompare(String(a.ts)));
+  for(const e of kept) for(const x of picksOf(e[K])){if(typeof x!=="string") continue;const t=x.trim();
+    if(!t||listed.some(o=>sameWords(o,t))||now.some(o=>typeof o==="string"&&sameWords(o,t))||out.some(o=>sameWords(o,t))) continue;
+    out.push(t);if(out.length>=12) return out;}
+  return out;}
+function drawChoice(b,draft,activityId){const box=el("div",{});const listed=b.options||[],Q=strings("question");
   questionHead(box,b);
-  const K=b.keys[0];const multi=b.type==="multi";
-  const chosen=()=>{const v=draft[K];return Array.isArray(v)?v:(v?[v]:[]);};
-  const pills=el("div",{class:"pills"});
-  const draw=()=>{pills.innerHTML="";own.forEach((o,idx)=>{const n=idx+1;const on=chosen().includes(n);
-    pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(on),onclick:()=>{
-      if(multi) draft[K]=on?chosen().filter(x=>x!==n):[...chosen(),n];
-      else draft[K]=on?null:n;
-      markDirty();draw();}},o));});};
-  draw();box.append(pills);return box;}
+  const K=b.keys[0],multi=b.type==="multi";
+  const right=Array.isArray(b.answer)?b.answer:(b.answer?[b.answer]:[]);
+  const graded=right.length>0,chosen=()=>picksOf(draft[K]);
+  let checked=false;
+  const put=list=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();draw();};
+  const toggle=n=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n]);};
+  const addOwn=text=>{const t=String(text).trim();if(!t) return;
+    const at=listed.findIndex(o=>sameWords(o,t));
+    if(at>=0){if(!chosen().includes(at+1)) toggle(at+1);return;}
+    if(chosen().some(x=>typeof x==="string"&&sameWords(x,t))) return;
+    put(multi?[...chosen(),t]:[t]);};
+  const dropOwn=t=>put(chosen().filter(x=>x!==t));
+  /* what each listed option shows once the reader has answered, if anything */
+  const markOf=n=>{const c=chosen(),on=c.includes(n),isRight=right.includes(n);
+    if(!graded) return null;
+    if(!multi){if(typeof c[0]!=="number") return null;
+      return on?(isRight?"right":"wrong"):(isRight&&!right.includes(c[0])?"answer":null);}
+    if(!checked) return null;
+    return on?(isRight?"right":"wrong"):(isRight?"answer":null);};
+  const MARK={right:["✓ ",Q.right],wrong:["✗ ",Q.notQuite],answer:["✓ ",Q.theAnswer]};
+  const pills=el("div",{class:"pills"}),live=el("p",{class:"q-live hint","aria-live":"polite"}),acts=el("div",{class:"q-acts"});
+  const draw=()=>{pills.innerHTML="";acts.innerHTML="";live.textContent="";
+    listed.forEach((o,idx)=>{const n=idx+1,mark=markOf(n);
+      pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),
+        onclick:()=>toggle(n)},o,mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
+    const now=chosen();
+    now.filter(x=>typeof x==="string").forEach(t=>pills.append(el("span",{class:"pill-own"},
+      el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
+      el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"))));
+    if(b.open) ownEarlier(activityId,K,listed,now).forEach(t=>pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":"false",
+      onclick:()=>addOwn(t)},t)));
+    if(graded){const c=chosen(),shown=multi?checked:typeof c[0]==="number";
+      if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;draw();}},Q.check));
+      if(shown){const missed=right.some(n=>!c.includes(n)),extra=c.some(x=>typeof x==="number"&&!right.includes(x)),
+          bad=multi?(missed||extra):!right.includes(c[0]);
+        live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).join(", ")):Q.liveRight;}}};
+  draw();box.append(pills);
+  if(b.open){const inp=el("input",{type:"text",class:"field q-own","aria-label":Q.addOwn,placeholder:Q.addOwn,autocomplete:"off"});
+    const go=()=>{const t=inp.value;inp.value="";addOwn(t);inp.focus();};
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go();}});
+    box.append(el("div",{class:"q-ownrow"},inp,el("button",{type:"button",class:"small",onclick:go},Q.addBtn)));}
+  if(graded) box.append(acts,live);
+  return box;}
 function drawScale(b,draft,activityId){const box=el("div",{});const anchors=b.anchors||[];
   questionHead(box,b);
   const K=b.keys[0];const pills=el("div",{class:"pills"});
@@ -3534,9 +3549,10 @@ const fieldLabel=b=>tx(b.label,b.id);
 /* A kept answer to one question, as [label, what to show], or null when there is nothing to show.
    One reader per kind of question (the kinds QUESTION_KINDS names), each called with the question
    `b`, the kept entry `e` and the key `k` the entry holds its answer under. */
-const choiceSummary=(b,e,k)=>{const v=e[k];const ns=Array.isArray(v)?v:(v?[v]:[]);
-  if(!ns.length) return null;const own=b.options||[];
-  return [fieldLabel(b),ns.map(n=>own[n-1]||("#"+n)).join(", ")];};
+const choiceSummary=(b,e,k)=>{const ns=picksOf(e[k]).filter(x=>typeof x==="string"?x.trim()!=="":x!==null&&x!==undefined);
+  if(!ns.length) return null;const listed=b.options||[];
+  /* a position is the listed option's words; a string is the reader's own option, as they wrote it */
+  return [fieldLabel(b),ns.map(n=>typeof n==="string"?n:(listed[n-1]||("#"+n))).join(", ")];};
 const numberSummary=(b,e,k)=>{const v=e[k];if(v==null||v==="") return null;
   return [fieldLabel(b),String(v)];};
 const SUMMARY={
@@ -3602,7 +3618,7 @@ function dataSet(d){
   const lab=k=>hasOwn(d.fields,k)?d.fields[k]:k;
   return {kind:"data",rows:d.rows,keys,own,first:own[0],lab,sortVal:(r,k)=>r[k]};}
 /* kept entries as rows: each question is a field and the date is the field `date`.
-   `limit` takes the newest N before a chart turns the rows oldest-first. A row is
+   A chart has them oldest-first (the pipeline's `limit` then keeps the newest N). A row is
    kept when it answers at least one of the questions `fields:` names (or any). */
 function entrySet(b,activityId,as){
   const numeric=as==="bars"||as==="line";
@@ -3623,7 +3639,6 @@ function entrySet(b,activityId,as){
       if(need.includes(q)) any=true;}
     if(!any) return null;
     raw.set(r,w);ent.set(r,e);return r;}).filter(Boolean);
-  const lim=(b.view||{}).limit;if(lim) rows=rows.slice(0,lim);
   if(numeric) rows.reverse();
   const own=["date",...qs.map(q=>q.id)];
   const lab=k=>k==="date"?strings("dv").date:fieldLabel(qs.find(q=>q.id===k));
@@ -3636,7 +3651,7 @@ const sortCmp=(a,b)=>{
   return cellText(a).localeCompare(cellText(b),undefined,{numeric:true,sensitivity:"base"});};
 /* A role is the part a field plays in a row. Each query key of that name names the
    field; the default is the field with the role's own name; the label falls back to
-   the source's first field. A role this view does not draw, or that no row carries,
+   the source's first field when the query gives no `label:` at all. A role this view does not draw, or that no row carries,
    is null. Decided once per query: every view reads its roles from here. */
 function rolesOf(set,v,as){
   const drawn=VIEW_DRAWS[as]||[];
@@ -3645,10 +3660,10 @@ function rolesOf(set,v,as){
   for(const n of ROLE_NAMES){
     if(!drawn.includes(n)){out[n]=null;continue;}
     const want=v[n]||n;
-    out[n]=has(want)?want:(n==="label"&&has(set.first)?set.first:null);}
+    out[n]=has(want)?want:(n==="label"&&!v.label&&has(set.first)?set.first:null);}
   return out;}
 const TONES=["good","warn","bad"];
-const rowTone=(r,roles)=>{const t=roles.tone?cellText(r[roles.tone]).trim().toLowerCase():"";return TONES.includes(t)?t:"";};
+const rowTone=(r,roles)=>{const t=roles.tone?cellText(r[roles.tone]).trim():"";return TONES.includes(t)?t:"";};
 const pill=(text,tone)=>el("span",{class:"pill"+(tone?" tone-"+tone:"")},text);
 const partsOf=x=>(Array.isArray(x)?x:[x]).map(cellText).filter(t=>t!=="");
 const rolePart=(r,k)=>k?cellText(r[k]):"";
@@ -3907,7 +3922,7 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   let rows=set.rows,tree=null;
   const pk=v.parent||"parent";
   if(as==="list"&&rows.some(r=>cellText(r[pk]).trim()!=="")){tree=nestRows(rows,pk,v.limit);rows=tree.rows;}
-  else if(v.limit&&drawn.includes("limit")) rows=rows.slice(0,v.limit);
+  else if(v.limit&&drawn.includes("limit")) rows=set.kind==="entries"&&(as==="bars"||as==="line")?rows.slice(-v.limit):rows.slice(0,v.limit);
   if(!rows.length) return [el("p",{class:"hint"},opts.empty||dvText.empty)];
   const roles=rolesOf({...set,rows},v,as),cols=colsOf(as,set,v,roles);
   if(as==="table"&&!(roles.badge&&cols.some(c=>c.key===roles.badge))){roles.badge=null;roles.tone=null;}
@@ -4427,6 +4442,7 @@ function calloutNode(b,draft,activityId){const Rt=strings("reading"),k=CALLOUT_K
   const body=el("div",{class:"rd-cb",id:u+"-b"});
   box.append(head);
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},title));named.push(u+"-t");}
+  if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
   blocksIn(b).forEach(x=>{if(x&&typeof x==="object") body.append(renderBlock(x,draft,activityId));});
   box.append(body);
@@ -4535,7 +4551,16 @@ function render(){citeLeave(screen);renderBar();const main=document.getElementBy
   if(SCREENS[screen]) return SCREENS[screen](main);
   if(isModuleScreen(screen)) return renderModulePage(main,screen);
   return renderActivity(main,screen);}
+/* the notice at the top of an opened file's first screen: how many things the page could not read, the list
+   inside a disclosure, and a way to dismiss it for the session */
+function fileNotesNode(){const u=STRINGS[lang].ui;if(!FILE_NOTES||FILE_NOTES.dismissed||!FILE_NOTES.list.length) return null;
+  const box=el("div",{class:"notice col filenotes",role:"status"});
+  box.append(el("p",{style:"margin:0 0 .4rem"},u.fileNotes(FILE_NOTES.list.length)),
+    el("details",{},el("summary",{},u.fileNotesShow),el("ul",{class:"plain"},...FILE_NOTES.list.map(x=>el("li",{},x)))),
+    el("button",{type:"button",class:"small",onclick:()=>{FILE_NOTES.dismissed=true;render();}},u.fileNotesDismiss));
+  return box;}
 function renderHome(main){const t=STRINGS[lang];const u=t.ui;
+  const notes=fileNotesNode();if(notes) main.append(notes);
   const hero=el("div",{class:"hero col"});
   hero.append(el("h1",{},tx((BOOK.head||{}).title,t.home.h1)),el("p",{class:"sub"},tx((BOOK.head||{}).sub,t.home.sub)));
   main.append(hero);
@@ -4784,13 +4809,14 @@ function openLoad(){const m=document.getElementById("loadMsg");m.textContent="";
 function readFileInto(file,cb){if(!file) return;const r=new FileReader();r.onload=()=>cb(String(r.result||""));r.readAsText(file);}
 function loadText(text){const t=STRINGS[lang].ui;const msg=document.getElementById("loadMsg");
   const R=parseFile(text||"");
-  if(!R.ok){const why=R.oldMarker?t.oldFormat(R.oldMarker):t.loadErr;
+  if(!R.ok){const why=R.oldMarker?t.oldFormat(R.oldMarker):(R.refused&&R.refused.length?t.loadRefused+" "+R.refused.join(" "):t.loadErr);
     if(veilLoad.hasAttribute("open")){msg.className="msg err";msg.textContent=why;} else toast(why);return;}
   veilLoad.removeAttribute("open");
   /* a file is always a booklet of its own; it never merges into another one */
   const e=addEntry();openBooklet(e.id);finishLoad(R);}
 function finishLoad(R){const mine=!!langPref();
   applyParsed(mine?{...R,lang:null}:R);
+  FILE_NOTES=R.unread&&R.unread.length?{list:R.unread.slice(),dismissed:false}:null;
   saveLocal();go("home");toast(STRINGS[lang].ui.loadOk);}
 
 /* ======================= 13. WIRING AND BOOT =======================
@@ -4819,8 +4845,8 @@ document.getElementById("addModCancel").addEventListener("click",()=>veilAddModu
 document.getElementById("loadGo").addEventListener("click",()=>loadText(document.getElementById("pasteIn").value));
 document.getElementById("clearCancel").addEventListener("click",()=>veilClear.removeAttribute("open"));
 document.getElementById("clearGo").addEventListener("click",()=>{STATE=emptyState();DRAFTS=emptyDrafts();dirty=false;unsavedEntries=0;openChip={};clearLocal();veilClear.removeAttribute("open");go("home");});
-/* the dialogs that close on a click on their backdrop and on Escape (not the add-a-module one) */
-const dismissable=[veilLoad,veilClear,veilExport];
+/* the dialogs that close on a click on their backdrop and on Escape */
+const dismissable=[veilLoad,veilClear,veilExport,veilAddModule];
 dismissable.forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){dismissable.forEach(v=>v.removeAttribute("open"));}});
 let dragDepth=0;

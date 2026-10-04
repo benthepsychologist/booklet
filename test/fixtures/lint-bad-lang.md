@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 title: Lint fixture
 lang: klingon
 ---
@@ -16,7 +16,7 @@ lang: klingon
 > ![[#^picker-data]]
 
 ```booklet widget
-{ "engine": "grid-select", "title": "Spots" }
+{ "engine": "grid-select" }
 ```
 ^picker-data
 

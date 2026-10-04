@@ -80,7 +80,7 @@ const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];delete
 async function makeBooklet(A,{title,lang,languages}){
   await A.createBooklet();
   A.addModuleText(fixtureModule);
-  A.editBook(t=>{t.head={title:{en:title}};if(languages) t.languages=languages;});
+  A.editBook(t=>{t.head={title};if(languages) t.languages=languages;});
   A.STATE.answers.note="written in "+title;A.lang=lang;A.saveLocal();
   return A.currentId;}
 /* open a booklet the way a reader does: from its card on "Your booklets" */

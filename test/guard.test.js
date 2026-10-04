@@ -79,6 +79,38 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
   const wired=rest.split("addEventListener(").slice(1).map(x=>x.slice(0,8));
   must("viewControls is defined once, and nothing else in the data views builds an input or a select, or wires a listener but the table headings' and the nested list's one toggle",
     html.split("function viewControls(").length===2&&c0>r0&&c1>c0&&!/el\("(input|select)"/.test(rest)&&wired.length===2&&wired.includes('"click",')&&wired.includes('"toggle"'),wired.join(" "));}}
+// The settings table: one table (KIND_SETTINGS), the same in the renderer, the linter and SPEC.md section 4. A kind in it is a
+// kind the format defines, so its keys are the question kinds and the structure kinds, exactly.
+{const must=(label,ok,d)=>{if(ok) console.log("  ok    "+label);else{fails++;console.log("  FAIL  "+label+(d?"   → "+d:""));}};
+ const norm=o=>JSON.stringify(Object.keys(o).sort().map(k=>[k,[...o[k]].sort()]));
+ const rm=html.match(/const KIND_SETTINGS=\{([\s\S]*?)\};/),py=fs.readFileSync(path.join(__dirname,"..","lint-booklet.py"),"utf8"),pm=py.match(/^KIND_SETTINGS = \{([\s\S]*?)\n\}/m);
+ const spec=fs.readFileSync(path.join(__dirname,"..","SPEC.md"),"utf8");
+ const fromRenderer={},fromLinter={},fromSpec={};
+ if(rm) for(const m of rm[1].matchAll(/(\w+):\[([^\]]*)\]/g)) fromRenderer[m[1]]=[...m[2].matchAll(/"([^"]+)"/g)].map(x=>x[1]);
+ if(pm) for(const m of pm[1].matchAll(/"(\w+)": \(([^)]*)\)/g)) fromLinter[m[1]]=[...m[2].matchAll(/"([^"]+)"/g)].map(x=>x[1]);
+ const head=spec.indexOf("| kind | settings it takes |");
+ if(head>=0) for(const l of spec.slice(head).split("\n").slice(2)){if(!/^\|/.test(l)) break;
+   const c=l.split("|").map(x=>x.trim()).filter(Boolean);if(c.length!==2) continue;
+   const kinds=[...c[0].matchAll(/`(\w+)`/g)].map(x=>x[1]);
+   const sets=c[1]==="none"?[]:[...new Set([...c[1].replace(/\([^)]*\)/g,"").matchAll(/`([^`]+)`/g)].flatMap(x=>x[1].replace(/<[^>]*>/,"").split(/\s+/)))];
+   kinds.forEach(k=>{fromSpec[k]=sets;});}
+ must("the renderer's KIND_SETTINGS is found and has kinds",Object.keys(fromRenderer).length>10,JSON.stringify(Object.keys(fromRenderer)));
+ must("KIND_SETTINGS is the same in the renderer and the linter",norm(fromRenderer)===norm(fromLinter),norm(fromRenderer)+" vs "+norm(fromLinter));
+ must("and the same in SPEC.md's table in section 4",norm(fromRenderer)===norm(fromSpec),norm(fromRenderer)+" vs "+norm(fromSpec));
+ const qk=html.match(/const QUESTION_KINDS=new Set\(\[([^\]]*)\]\)/),pk=py.match(/^QUESTION_KINDS = \{([^}]*)\}/m),ps=py.match(/^STRUCTURE_KINDS = \{([^}]*)\}/m);
+ const words=t=>[...t.matchAll(/"(\w+)"/g)].map(x=>x[1]);
+ must("its kinds are the question kinds and the structure kinds the linter knows, and no others",
+   !!(qk&&pk&&ps)&&JSON.stringify(Object.keys(fromRenderer).sort())===JSON.stringify([...new Set([...words(qk[1]),...words(ps[1])])].sort())&&JSON.stringify(words(qk[1]).sort())===JSON.stringify(words(pk[1]).sort()));
+ // the unused card engine is gone, and no word of it is left but in the change list of SPEC.md section 14
+ const needle="card"+"-board",gone=[];
+ const walk=d=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){if(/^(\.git|node_modules|__pycache__)$/.test(e.name)) continue;
+   const f=path.join(d,e.name);if(e.isDirectory()) walk(f);else if(/\.(md|html|js|py|sh|json|yml|yaml|txt)$/.test(e.name)){
+     const t=fs.readFileSync(f,"utf8");if(f.endsWith("SPEC.md")){const i=t.indexOf("### Changes from v0.7"),j=t.indexOf("### Changes from v0.6");
+       if((t.slice(0,i)+t.slice(j)).includes(needle)) gone.push(f);}else if(t.includes(needle)) gone.push(f);}}};
+ walk(path.join(__dirname,".."));
+ must("the "+needle+" engine is mentioned nowhere in the repository outside SPEC.md's change list for v0.8",gone.length===0,gone.join(", "));
+ must("and the renderer has the two engines that remain",/const ENGINES=\{"svg-regions":svgRegions,"grid-select":gridSelect\};/.test(html));
+ must("showTags is read nowhere",!/showTags/.test(html));}
 // A browser ends the main <script> at the first `</script` it meets outside "double escaped" script data. A `<!--` in the
 // code (the Markdown reader looks for HTML comments) opens the escaped state until the next `-->`, and a `<script` written
 // while it is open (even in a comment) opens the double-escaped state, which swallows the real `</script>` and breaks the

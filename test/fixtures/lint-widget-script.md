@@ -1,5 +1,5 @@
 ---
-booklet: 0.7
+booklet: 0.8
 title: Lint fixture
 lang: en
 ---
@@ -16,7 +16,7 @@ lang: en
 > ![[#^picker-data]]
 
 ```booklet widget
-{ "engine": "grid-select", "title": "Spots", "figures": [{"id":"f","svg":"<svg onclick=\"x()\"></svg>"}] }
+{ "engine": "grid-select", "figures": [{"id":"f","svg":"<svg onclick=\"x()\"></svg>"}] }
 ```
 ^picker-data
 

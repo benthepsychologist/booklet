@@ -57,7 +57,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   moduleTextProblems, editBook, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, bookActivities, isMulti,
   moduleScreen:id=>MODULE_SCREEN+id, readingPlan, sectionLede, readsOnly, mdNodes, activityOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, VIEWSTATE, viewState, QUESTION_KINDS, QUESTION_BLOCK, SUMMARY, DRAW_BLOCK, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, toneOf, cellColor, cellStyle, themeBaseTable,
-  get currentId(){return currentId}
+  get currentId(){return currentId}, get FILE_NOTES(){return FILE_NOTES}, KIND_SETTINGS, NUMBER_SETTINGS, fieldSummary, readQuery
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};
