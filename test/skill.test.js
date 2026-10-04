@@ -19,11 +19,11 @@ global.document.createElement=tag=>{const n=mk0(tag);
   return n;};
 const A={};
 eval(src+`
-;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,allModules,modesOf,moduleOf,pagesOf,isPaged,showPage,
+;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,allModules,activitiesOf,pagesOf,isPaged,showPage,
   tx,declaredLangs,offeredLangs,
-  setView:v=>{view=v},getLang:()=>lang,setLang:l=>{lang=l},
-  fresh:()=>{S=emptyS();D=emptyD();TPL=EMPTY_BOOKLET;
-    view="home";lang="en";}});`);
+  setScreen:v=>{screen=v},getLang:()=>lang,
+  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
+    screen="home";lang="en";}});`);
 
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const textOf=n=>n==null?"":typeof n==="string"?n
@@ -76,12 +76,12 @@ for(const file of files){
   const problems=[];
   const l=declared[0];
   let home="";
-  try{A.setView("home");A.render();home=textOf(main());}catch(e){problems.push(`home: ${e.message}`);}
+  try{A.setScreen("home");A.render();home=textOf(main());}catch(e){problems.push(`home: ${e.message}`);}
   for(const m of mods) if(!home.includes(A.tx(m.title,"\u0000"))) problems.push(`${m.id}: its title is not on the home page`);
-  for(const act of mods.flatMap(A.modesOf)){
+  for(const act of mods.flatMap(A.activitiesOf)){
     for(const pg of A.pagesOf(act)){
       let shown="";
-      try{A.setView(act.id);if(A.isPaged(act)) A.showPage(act.id,pg.id);A.render();shown=textOf(main());}
+      try{A.setScreen(act.id);if(A.isPaged(act)) A.showPage(act.id,pg.id);A.render();shown=textOf(main());}
       catch(e){problems.push(`${act.id}/${pg.id}: ${e.message}`);continue;}
       for(const b of flat(pg.blocks)){
         if(!QUESTIONS.includes(b.type)||b.type==="widget") continue;

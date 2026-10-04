@@ -30,11 +30,11 @@ const scale=p2.find(b=>b.id==="confidence");
 chk("the scale question has its three anchors, numbered from the file",JSON.stringify(scale.anchors)===JSON.stringify([{n:1,text:"Guessing"},{n:2,text:"Fairly sure"},{n:3,text:"Certain"}]));
 
 /* draw it */
-A.loadText(EX);A.view="rd-check";A.render();
+A.loadText(EX);A.screen="rd-check";A.render();
 let seen=P.texts(P.main());
 ["When do the largest tides come?","At the quarter moons","Near the new and the full moon","Hint","How sure were you?","Guessing","Fairly sure","Certain","What surprised you?"].forEach(w=>
   chk("the check page shows “"+w+"”",seen.includes(w),seen.slice(0,500)));
-A.view="rd-tides";A.render();
+A.screen="rd-tides";A.render();
 seen=P.texts(P.main());
 /* citeText only marks [^id] inside prose/quote/deflist/callout text drawn
    through readTx(); the "markdown" block's own drawer (mdNodes) wires its own

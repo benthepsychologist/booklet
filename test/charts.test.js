@@ -103,6 +103,6 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  {const r=lint(path.join(P.R,"test/fixtures/charts.booklet.md"));chk("the charts fixture lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
  {const r=lint(path.join(P.R,"test/fixtures/lint-old-format-0-5.md"));chk("a file still saying booklet: 0.5 is refused",r.status!==0&&/booklet: 0\.5; this is format 0\.7/.test(r.out),r.out);}
  /* ---- the strings ---- */
- chk("every language says the chart words",["en","fr","es","es-AR"].every(l=>{const c=A.T[l].dv.chart;return c&&c.numbers&&/\d/.test(c.bars(3,"1","2"))&&/\d/.test(c.line(3,"a","1","2"));}));
+ chk("every language says the chart words",["en","fr","es","es-AR"].every(l=>{const c=A.STRINGS[l].dv.chart;return c&&c.numbers&&/\d/.test(c.bars(3,"1","2"))&&/\d/.test(c.line(3,"a","1","2"));}));
  console.log(fails?fails+" chart check(s) FAILED":"chart checks passed");process.exit(fails?1:0);
 })();

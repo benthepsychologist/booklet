@@ -2,7 +2,11 @@
 # Every check against ../booklet.html. Needs node and python3; nothing to install.
 # Exits 1 if ANY check fails, so a person or CI can trust the exit code. A check
 # that fails prints its whole output, not just the last line.
-# Every test/*.test.js is found and run without being listed here.
+# Every test/*.test.js is found and run without being listed here. At the end it
+# also runs test/run-browser.sh (the six test/*-browser.js scripts, which need
+# Playwright and a Chromium); that prints "SKIPPED" and passes where there is no
+# Playwright, and PLAYWRIGHT_SKIP=1 leaves it out (CI's `check` job does that; the
+# separate `browser` job runs it).
 cd "$(dirname "$0")/.." || exit 1
 fails=0
 
@@ -23,6 +27,10 @@ for f in test/*.test.js; do
   [ -e "$f" ] || continue
   run "$(basename "$f" .test.js)" node "$f"
 done
+
+if [ -z "${PLAYWRIGHT_SKIP:-}" ]; then
+  run browser bash test/run-browser.sh
+fi
 
 if [ "$fails" -ne 0 ]; then
   echo

@@ -217,16 +217,6 @@ for (const marker of ["---", "***", "___"]) {
   chk("an unresolved [ref] shortcut stays literal text", p.tag === "p" && textOf(p) === "[nope]" && !first(p, "a"));
 }
 {
-  const [p] = mdNodes("[x][r]", { refs: { r: { url: "https://example.com/opt", title: "T" } } });
-  const a = first(p, "a");
-  chk("opts.refs supplies a definition when none is in the text", !!a && a.attrs.href === "https://example.com/opt");
-}
-{
-  const [p] = mdNodes("[x][r]\n\n[r]: https://example.com/wins", { refs: { r: { url: "https://example.com/loses" } } });
-  const a = first(p, "a");
-  chk("a text definition wins over the same key in opts.refs", a.attrs.href === "https://example.com/wins", a.attrs.href);
-}
-{
   let got = null;
   mdNodes("a note[^1] here", { mark: id => { got = id; return el("sup", {}, "*"); } });
   chk("opts.mark(id) is called for a footnote ref and its node inserted", got === "1");
@@ -238,11 +228,7 @@ for (const marker of ["---", "***", "___"]) {
   chk("with no opts.mark, a footnote ref stays literal [^1]", textOf(p).includes("[^1]"));
 }
 {
-  const calls = [];
-  const nodes = mdNodes("See[^a] and[^a] again.\n\n[^a]: The footnote body.\n\nAfter the def.", {
-    onFootnote: (id, text) => calls.push([id, text]),
-  });
-  chk("a footnote definition fires opts.onFootnote(id, text) once", calls.length === 1 && calls[0][0] === "a" && calls[0][1] === "The footnote body.", calls);
+  const nodes = mdNodes("See[^a] and[^a] again.\n\n[^a]: The footnote body.\n\nAfter the def.");
   chk("the footnote definition text is removed from the rendered output", !nodes.some(n => textOf(n).includes("The footnote body")));
   chk("prose after the removed footnote definition still renders as its own paragraph", nodes.some(n => textOf(n) === "After the def."));
 }

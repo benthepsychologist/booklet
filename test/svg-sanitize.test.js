@@ -129,7 +129,7 @@ function detonate(nodes){let hit=0;const ATTACK=()=>{hit++;};
 /* ---------------- the renderer, loaded ---------------- */
 /* evaluated inside a function of its own, so its declarations stay its own */
 const API=(()=>{const API={};eval(src+`
-;Object.assign(API,{sanitizeSvg,svgAttrBad,SVG_DROP,ENGINES});`);return API;})();
+;Object.assign(API,{sanitizeSvg,ENGINES});`);return API;})();
 const {sanitizeSvg}=API;
 const nodesOf=markup=>[...parseHTML(markup).childNodes];     // what innerHTML used to put in the page
 const shape=nodes=>JSON.stringify(nodes.map(function f(n){

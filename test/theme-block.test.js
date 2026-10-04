@@ -172,7 +172,7 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
  const last=()=>mockTheme.calls[mockTheme.calls.length-1];
  chk("opening a booklet with a theme hands the page its derived look",last()&&last().base==="daylight"&&last().tokens["--accent"]==="#7a1f5c"&&last().font==="serif"&&last().density==="roomy",JSON.stringify(last()));
  chk("the look the page is given passes the floor",passes("daylight",last().tokens));
- const n=mockTheme.calls.length;A.view="home";A.render();A.render();
+ const n=mockTheme.calls.length;A.screen="home";A.render();A.render();
  chk("redrawing does not hand it over again",mockTheme.calls.length===n);
  A.closeBooklet();A.render();
  chk("leaving the booklet (to Your booklets) removes it",last()===null);
@@ -232,22 +232,22 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
 {/* a question in a cell is the same question: its answer is saved and read back */
  const text=fs.readFileSync(path.join(R,"test/fixtures/theme-and-rows.booklet.md"),"utf8");
  A.loadText(text);
- const S0=A.S;S0.answers.mood=2;S0.answers.note="Cut the kale back";
+ const S0=A.STATE;S0.answers.mood=2;S0.answers.note="Cut the kale back";
  const out=A.toMarkdown();
  chk("the answers are written under the booklet's record, not inside the row",/booklet answers\n\{[^}]*"mood": 2[^}]*"note": "Cut the kale back"/.test(out)&&out.indexOf("booklet answers")>out.indexOf("[!row end]"),out.slice(-500));
  A.loadText(out);
- chk("they are there again after a reload, and the rows are as they were",A.S.answers.mood===2&&A.S.answers.note==="Cut the kale back"&&shape(A.modeOf("week"))==="markdown,row[md|md],markdown,row[md|md+scale|md+text],widget",shape(A.modeOf("week")));
- chk("the question inside a cell keeps its own key",(()=>{const r=A.modeOf("week").blocks.find((b,i)=>b.type==="row"&&i>2);const q=r.blocks[1].blocks.find(x=>x.type==="scale");return q&&q.keys[0]==="mood";})());
+ chk("they are there again after a reload, and the rows are as they were",A.STATE.answers.mood===2&&A.STATE.answers.note==="Cut the kale back"&&shape(A.activityOf("week"))==="markdown,row[md|md],markdown,row[md|md+scale|md+text],widget",shape(A.activityOf("week")));
+ chk("the question inside a cell keeps its own key",(()=>{const r=A.activityOf("week").blocks.find((b,i)=>b.type==="row"&&i>2);const q=r.blocks[1].blocks.find(x=>x.type==="scale");return q&&q.keys[0]==="mood";})());
  chk("saved a second time, the file is identical (rows and theme write back as found)",A.toMarkdown()===out);
  /* reading mode: sections are the headings OUTSIDE rows */
  const reads=FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\nl\n\n### Right\n\nr\n\n> [!row end]\n\n## Second\n\nTwo.\n";
  A.loadText(reads);
- chk("an activity of prose and rows still folds into sections",A.readsOnly(A.modeOf("a")));
- A.view="a";A.render();
+ chk("an activity of prose and rows still folds into sections",A.readsOnly(A.activityOf("a")));
+ A.screen="a";A.render();
  const secs=P.find(P.main(),P.hasClass("rm-sec"));
  chk("its sections are the headings outside the row (two), the row is one block inside the first",secs.length===2&&P.find(secs[0],P.hasClass("rowcell")).length===2&&P.find(secs[1],P.hasClass("rowcell")).length===0,String(secs.length));
  A.loadText(FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\n```booklet data\n[{\"a\":1}]\n```\n^rows\n\n```booklet query\nfrom: rows\nas: table\n```\n\n### Right\n\nr\n\n> [!row end]\n\n## Second\n\nTwo.\n");
- chk("a row holding a data-drawing query stays open, as a query always does",!A.readsOnly(A.modeOf("a")));
+ chk("a row holding a data-drawing query stays open, as a query always does",!A.readsOnly(A.activityOf("a")));
  /* a link to a heading inside a row still finds its page */
  A.loadText(FM+"> [!activity|a] A\n\nGo to [[#Right side]].\n\n> [!activity|b] B\n\n> [!row]\n\n### Left side\n\nl\n\n### Right side\n\nr\n\n> [!row end]\n");
  const mods=A.allModules();
@@ -286,7 +286,7 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  chk("a hex pair is drawn as given",/#F0D9CF/.test(good)&&/#A04E34/.test(good),good);}
 
 /* the interface */
-chk("Auto has a hint in every language saying it is the booklet's look or the device's",["en","fr","es"].every(l=>A.T[l].ui.themeAutoTip&&A.T[l].ui.themeAutoTip.length>20));
+chk("Auto has a hint in every language saying it is the booklet's look or the device's",["en","fr","es"].every(l=>A.STRINGS[l].ui.themeAutoTip&&A.STRINGS[l].ui.themeAutoTip.length>20));
 
 console.log(fails?`\n${fails} theme-block checks failed`:"\nall theme-block checks passed");
 process.exit(fails?1:0);

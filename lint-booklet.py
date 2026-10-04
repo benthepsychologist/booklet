@@ -106,7 +106,6 @@ CALLOUT_FLAGS = {"module": {"end"}, "row": {"end"}, "activity": {"repeat", "dail
             "choice": {"open"}, "multi": {"open"}}
 TONE_NAMES = ("warm", "green", "amber", "slate", "teal")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
-DRAWN_QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}  # the kinds the reference page draws today
 STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row"}
 
 
@@ -738,8 +737,6 @@ def check_format(f, text, fm):
                         loose_questions.append(w["id"])
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go")
-                    elif kind not in DRAWN_QUESTION_KINDS:
-                        warn(f, f"{where}: {kind} questions are not drawn by the reference page yet")
                     if kind == "widget":
                         body = []
                         k = i + 1
@@ -891,7 +888,7 @@ def check_file(path):
     except ValueError:
         f = path
     text = path.read_text(encoding="utf-8")
-    fm, body = front_matter(text)
+    fm, _ = front_matter(text)
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return

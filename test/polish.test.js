@@ -25,9 +25,9 @@ global.document.createElement=tag=>{const n=mk0(tag);
 /* One page load: the renderer's one <script> evaluated afresh. */
 function load(source){const API={};
   eval(source+`
-;Object.assign(API,{render,parseFile,applyParsed,T,TSRC,showPage,currentPage,
-  getPanel:()=>citePanelEl,getTPL:()=>TPL,getView:()=>view,setView:v=>{view=v},setLang:l=>{lang=l},
-  fresh:()=>{S=emptyS();D=emptyD();TPL=EMPTY_BOOKLET;view="home";lang="en";}});`);
+;Object.assign(API,{render,parseFile,applyParsed,STRINGS_SRC,
+  getPanel:()=>citePanelEl,getBook:()=>BOOK,setScreen:v=>{screen=v},setLang:l=>{lang=l},
+  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="home";lang="en";}});`);
   return API;}
 const A=load(src);
 
@@ -47,7 +47,7 @@ const panel=()=>A.getPanel();
 const panelOpen=()=>!!panel()&&!panel().hasAttribute("hidden");
 const marks=()=>byClass("rd-mark");
 /* the booklet, loaded the way a reader loads it, on its reading activity */
-function open(l){A.fresh();A.applyParsed(A.parseFile(EX),"replace");A.setLang(l||"en");A.setView("rd-tides");A.render();}
+function open(l){A.fresh();A.applyParsed(A.parseFile(EX),"replace");A.setLang(l||"en");A.setScreen("rd-tides");A.render();}
 /* a part that cannot run on the renderer it is given counts as failed, and the
    rest still runs */
 const guard=(name,fn)=>{try{fn();}catch(e){chk(name+": runs to the end",false,e.message);}};
@@ -67,7 +67,7 @@ guard("marks and panel",()=>{open();
   chk("closing gives the room back",!panelOpen()&&!("data-cite-open" in root().attrs));
   click(marks()[1]);pressKey(panel(),"Escape");
   chk("Escape closes it and puts the focus on the mark it came from",!panelOpen()&&global.__focused===marks()[1]);
-  click(marks()[0]);A.setView("rd-check");A.render();
+  click(marks()[0]);A.setScreen("rd-check");A.render();
   chk("leaving the activity closes the panel",!panelOpen()&&!("data-cite-open" in root().attrs));});
 
 console.log("# the endnotes");
@@ -75,14 +75,14 @@ guard("notes",()=>{open();
   const notes=byClass("rd-notes")[0];
   chk("the page carries its citation as an endnote, for a printout",!!notes&&/The Harbour Tide Atlas/.test(flat(notes)),notes&&flat(notes));
   chk("a callout is drawn in full, with no filter row and no fold button",byClass("rd-callout").length>0&&byClass("rd-filter").length===0&&byClass("rd-cshow").length===0);
-  A.setView("rd-check");A.render();
+  A.setScreen("rd-check");A.render();
   chk("a page with no marks has no endnotes",byClass("rd-notes").length===0);});
 
 console.log("# switching the interface language keeps the panel open, in the new language");
 guard("a language switch",()=>{open("en");
   /* the file declares its one language, so the toggle would hold the page to it:
      let it offer the three the interface has */
-  A.getTPL().languages=["en","fr","es"];
+  A.getBook().languages=["en","fr","es"];
   click(marks()[1]);
   const langButton={tagName:"button",lang:true};global.__focused=langButton;
   A.setLang("fr");A.render();
@@ -96,7 +96,7 @@ guard("a language switch",()=>{open("en");
 
 {const keys=["notThere","addThere","notHere","addHere","citeWhere"];
  chk("the reading strings the page uses are in English, French and neutral Spanish",
-   ["en","fr","es"].every(l=>["mark","cite","close","verified","notes"].every(k=>A.TSRC[l].reading[k]!==undefined)));}
+   ["en","fr","es"].every(l=>["mark","cite","close","verified","notes"].every(k=>A.STRINGS_SRC[l].reading[k]!==undefined)));}
 
 console.log(fails?`\n${fails} failed`:"\npolish checks passed");
 process.exit(fails?1:0);

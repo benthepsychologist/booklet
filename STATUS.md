@@ -3,7 +3,7 @@
 *As of 2026-10-04*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.7**: format v0.7 (files say `booklet: 0.7`) and renderer 0.7.0.
+**project v0.7**: format v0.7 (files say `booklet: 0.7`) and renderer 0.7.1.
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own

@@ -53,7 +53,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  P.wipe();const W=P.boot();W.loadText(FX);
  chk("loading the whole fixture and saving it again returns the design byte for byte",W.toMarkdown()===FX.replace(/\s+$/,"")+"\n");
  P.wipe();const W2=P.boot();await W2.createBooklet();
- chk("a booklet started in the renderer says 0.7",W2.TPL.booklet=== 0.7);
+ chk("a booklet started in the renderer says 0.7",W2.BOOK.booklet=== 0.7);
  chk("the module adds",W2.addModuleText(FX).ok);
  const md=W2.toMarkdown();
  const blockText=id=>{const i=FX.indexOf("^"+id+"\n");const j=FX.lastIndexOf("```booklet data",i);return FX.slice(j,i+id.length+1);};
@@ -62,7 +62,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
 
  /* ---- drawing ---- */
  P.wipe();const B=P.boot();await B.createBooklet();B.addModuleText(FX);
- B.view="status";B.render();const main=P.main();
+ B.screen="status";B.render();const main=P.main();
  const tiles=byClass(main,"dv-tile");
  chk("tiles: one per row, a big value over a label",tiles.length===4&&text(byClass(tiles[0],"dv-v")[0])==="12"&&text(byClass(tiles[0],"dv-l")[0])==="Beds planted");
  chk("tiles: a note shows when the row has one, and not otherwise",text(byClass(tiles[0],"dv-n")[0])==="since March"&&byClass(tiles[3],"dv-n").length===0);
@@ -92,10 +92,10 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("table: a list value is shown comma-separated, an empty list shows nothing",text(walk(trs[1],x=>x.tagName==="td")[3])==="A, B"&&text(walk(trs[3],x=>x.tagName==="td")[3])==="");
  chk("table: a numeric column is marked to align right",cls(walk(trs[0],x=>x.tagName==="th")[1]).includes("num")&&!cls(walk(trs[0],x=>x.tagName==="th")[0]).includes("num"));
  chk("the empty block shows the query's own line",text(main).includes("Nothing needs you."));
- chk("the page is not a reading-only page (a dashboard stays open)",!B.readsOnly(B.tplModes().find(a=>a.id==="status")));
+ chk("the page is not a reading-only page (a dashboard stays open)",!B.readsOnly(B.bookActivities().find(a=>a.id==="status")));
  chk("nothing in a data block is read as Markdown or HTML",(()=>{const r=A.parseFile(`---\nbooklet: 0.7\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
    P.wipe();const C=P.boot();C.addModuleText(`---\nbooklet: 0.7\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
-   C.view="a";C.render();return r.ok&&text(P.main()).includes("**bold** <b>x</b> [l](http://e.com)")&&walk(P.main(),x=>x.tagName==="a"||x.tagName==="b"||x.tagName==="strong").length===0;})());
+   C.screen="a";C.render();return r.ok&&text(P.main()).includes("**bold** <b>x</b> [l](http://e.com)")&&walk(P.main(),x=>x.tagName==="a"||x.tagName==="b"||x.tagName==="strong").length===0;})());
  chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: 0.7\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
    P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.readsOnly(r.template.modules[0].mode);})());
 
@@ -105,7 +105,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("a table's sort button is named in the interface language (French)",walk(P.main(),x=>x.tagName==="button"&&cls(x).includes("dv-sort")).map(b=>b.attrs["aria-label"])[0]==="Trier par crop");
  B.lang="es";B.render();
  chk("and in Spanish",byClass(P.main(),"dv-count").map(text).join("|").includes("3 filas"));
- chk("every language table carries the new strings",["fr","es"].every(l=>A.TSRC[l].dv&&A.TSRC[l].dv.sortBy&&A.TSRC[l].dv.tone&&A.TSRC[l].dv.rows)&&!!A.TSRC["es-AR"].dv.empty);
+ chk("every language table carries the new strings",["fr","es"].every(l=>A.STRINGS_SRC[l].dv&&A.STRINGS_SRC[l].dv.sortBy&&A.STRINGS_SRC[l].dv.tone&&A.STRINGS_SRC[l].dv.rows)&&!!A.STRINGS_SRC["es-AR"].dv.empty);
 
  /* ---- kept entries as rows, through the other views ---- */
  const swap=(a,b)=>QFX.replace(a,b);
@@ -113,7 +113,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  E.addModuleText(swap("from: log\n```\n\n## Just what happened","from: log\nas: table\nfields: date, ease, situation\n```\n\n## Just what happened"));
  const kept=E.keptFor("log");
  kept.push({ts:"2026-09-20T10:00:00.000Z",situation:"first thing",ease:2},{ts:"2026-09-22T10:00:00.000Z",situation:"second thing",ease:3});
- E.view="look";E.render();
+ E.screen="look";E.render();
  const et=walk(P.main(),x=>x.tagName==="table")[0];
  chk("kept entries as a table: a row per entry, newest first, its date in the field `date`",!!et&&walk(et,x=>x.tagName==="tr").length===3&&text(walk(et,x=>x.tagName==="tr")[1]).includes("second thing"));
  chk("kept entries as a table: columns are Date and the questions' own labels, in `fields` order",
@@ -123,12 +123,12 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  P.wipe();const F=P.boot();await F.createBooklet();
  F.addModuleText(swap("from: log\nfields: ease, situation\nlimit: 1\nempty: Nothing logged yet.","from: log\nas: tiles\nvalue: ease\nlabel: situation\nlimit: 1"));
  F.keptFor("log").push({ts:"2026-09-20T10:00:00.000Z",situation:"first thing",ease:2},{ts:"2026-09-22T10:00:00.000Z",situation:"second thing",ease:3});
- F.view="look";F.render();
+ F.screen="look";F.render();
  const ft=byClass(P.main(),"dv-tile");
  chk("kept entries as tiles: `value` and `label` name questions, `limit` keeps the first (newest) one",ft.length===1&&text(byClass(ft[0],"dv-v")[0])==="Very"&&text(byClass(ft[0],"dv-l")[0])==="second thing");
  P.wipe();const G=P.boot();await G.createBooklet();
  G.addModuleText(swap("from: log\nfields: ease, situation\nlimit: 1\nempty: Nothing logged yet.","from: log\nas: list\nempty: Nothing logged yet."));
- G.view="look";G.render();
+ G.screen="look";G.render();
  chk("kept entries as a list with nothing kept: the block's own empty line",text(P.main()).includes("Nothing logged yet."));
  console.log(fails?"\n"+fails+" FAILURES":"\ndata-views checks passed");process.exit(fails?1:0);
 })().catch(e=>{console.log("  FAIL  the suite threw: "+(e&&e.stack||e));process.exit(1);});
