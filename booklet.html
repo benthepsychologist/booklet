@@ -835,7 +835,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.8.0";
+const RENDERER_VERSION="0.8.1";
 /* The booklet format this renderer reads: the marker a file carries is
    `booklet: 0.8`, and the number a booklet design carries is +FORMAT_VERSION. */
 const FORMAT_VERSION="0.8";
@@ -1039,6 +1039,7 @@ const STRINGS_SRC={
       line: n=>`line ${n}`,
       idChars: (w,id)=>`${w}: the id “${id}” may hold only letters, digits and dashes`,
       idTwice: (w,id)=>`${w}: the id “${id}” is used twice`,
+      moduleIdClash: id=>`This module uses the id “${id}”, which this booklet already uses. Two modules in one booklet cannot share an id.`,
       rowClosed: (w,why)=>`${w}: the row opened here ${why}, so it was closed there`,
       rowRunsPage: "runs into a page break",
       rowRunsModule: "runs into a module fence",
@@ -1258,6 +1259,7 @@ const STRINGS_SRC={
       line: n=>`ligne ${n}`,
       idChars: (w,id)=>`${w} : l’identifiant « ${id} » ne peut contenir que des lettres, des chiffres et des tirets`,
       idTwice: (w,id)=>`${w} : l’identifiant « ${id} » est utilisé deux fois`,
+      moduleIdClash: id=>`Ce module utilise l’identifiant « ${id} », que ce carnet utilise déjà. Deux modules d’un même carnet ne peuvent pas partager un identifiant.`,
       rowClosed: (w,why)=>`${w} : la rangée ouverte ici ${why}, elle a donc été fermée à cet endroit`,
       rowRunsPage: "rencontre un saut de page",
       rowRunsModule: "rencontre une clôture de module",
@@ -1477,6 +1479,7 @@ const STRINGS_SRC={
       line: n=>`línea ${n}`,
       idChars: (w,id)=>`${w}: el identificador “${id}” solo puede tener letras, dígitos y guiones`,
       idTwice: (w,id)=>`${w}: el identificador “${id}” se usa dos veces`,
+      moduleIdClash: id=>`Este módulo usa el identificador “${id}”, que este cuadernillo ya usa. Dos módulos de un mismo cuadernillo no pueden compartir un identificador.`,
       rowClosed: (w,why)=>`${w}: la fila abierta aquí ${why}, así que se cerró en ese punto`,
       rowRunsPage: "se topa con un salto de página",
       rowRunsModule: "se topa con una valla de módulo",
@@ -2073,7 +2076,7 @@ function readData(o){const P=strings("problem");
 function parseBooklet(text){const {lines,head,next}=frontMatter(text,true);
   /* `problems` is every message, in the order the parts find them; `refused` is the ones among them that
      stop the file opening (SPEC.md section 12), the rest being reported when it has opened */
-  const fm={},problems=[];problems.refused=[];
+  const fm={},problems=[];problems.refused=[];problems.dupIds=[];
   for(const l of head||[]){const kv=kvLine(l);if(kv) fm[kv[0]]=kv[1];}
   const L=tableTag(fm.lang)||"en";
   if(!fm.lang) problems.push(strings("problem").langMissing);
@@ -2192,8 +2195,10 @@ function readBlocks(items,fm,problems){const P=strings("problem");
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[];
   let mod=null,act=null,section="content",lastQ=null,seq=0,row=null,theme=null;
   const refuse=m=>{problems.push(m);problems.refused.push(m);};
+  /* an id used twice: refused, and its id kept so Add a module can name it */
+  const dup=(where,id)=>{const m=P.idTwice(where,id);refuse(m);problems.dupIds.push({id,m});};
   const claim=(id,where)=>{if(!id) return;if(!ID_PATTERN.test(id)) problems.push(P.idChars(where,id));
-    if(ids.has(id)) refuse(P.idTwice(where,id));ids.add(id);};
+    if(ids.has(id)) dup(where,id);ids.add(id);};
   const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__footnotes:[],__line:line};
     if(fm.copyright||fm.license||fm.source) m.rights={copyright:fm.copyright||"",license:fm.license||"",source:fm.source||""};
     modules.push(m);return m;};
@@ -2245,7 +2250,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       else if(what==="data"){
         if(section==="records") return;
         if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
-        if(dataBlocks.some(d=>d.id===it.id)){refuse(P.idTwice(P.line(it.line),it.id));return;}
+        if(dataBlocks.some(d=>d.id===it.id)){dup(P.line(it.line),it.id);return;}
         const d=readData(o);
         if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
         /* it lives where a widget's data lives: inside its module's fence, or outside any (the data section) */
@@ -2312,7 +2317,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     else onLine(it);}
   if(row) closeRow(P.rowNeverClosed);
   /* a data block's id is also one a query reads by, so it may not be a question's or an activity's too */
-  dataBlocks.forEach(d=>{if(ids.has(d.id)) refuse(P.idTwice(P.line(d.line),d.id));});
+  dataBlocks.forEach(d=>{if(ids.has(d.id)) dup(P.line(d.line),d.id);});
   if(mod) refuse(P.moduleNeverClosed(P.line(mod.__line),mod.id));
   return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme};}
 function resolveMenus({menus,menuUses,modules},problems){const P=strings("problem");
@@ -2381,7 +2386,7 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme},fm,
   const book={booklet:+FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L}};
-  return {ok:out.length>0&&!problems.refused.length,unread:problems,refused:problems.refused,drafts:{activities:drafts},template:book,lang:L,S:st};}
+  return {ok:out.length>0&&!problems.refused.length,unread:problems,refused:problems.refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st};}
 function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
   const gd=STATE.answers||{},recs=[];
@@ -2515,6 +2520,14 @@ function moduleSpan(lines){
       if(w.flags.has("end")){closeAt=i;break;}
       if(openAt<0) openAt=i;}}
   return {openAt,closeAt};}
+/* the id on a module's open line, and the span of the module with a given id */
+function moduleIdAt(lines,i){const m=i>=0?lines[i].match(CALLOUT_LINE):null;return m?calloutWords("module",m[2]).id:null;}
+function moduleSpanOf(lines,id){let openAt=-1;
+  for(let i=0;i<lines.length;i++){const m=lines[i].match(CALLOUT_LINE);
+    if(m&&m[1].toLowerCase()==="module"){const w=calloutWords("module",m[2]);
+      if(w.flags.has("end")){if(openAt>=0&&(w.id===null||w.id===id)) return {openAt,closeAt:i};}
+      else if(openAt<0&&w.id===id) openAt=i;}}
+  return null;}
 function fencedSpans(lines,from,to){
   const out=[];
   for(let i=from;i<to;i++){const f=FENCE_RE.exec(lines[i]);
@@ -2546,14 +2559,43 @@ function addModuleText(text){
   const outside=[...fencedSpans(lines,0,openAt),...fencedSpans(lines,closeAt+1,lines.length)];
   const extraChunks=outside.filter(s=>!/^ {0,3}(`{3,}|~{3,})[ \t]*booklet[ \t]+theme\b/i.test(lines[s.start])).map(s=>lines.slice(s.start,s.end+1).join("\n"));
 
-  const curLines=String((BOOK.raw||{}).source||"").split("\n");
+  let curLines=String((BOOK.raw||{}).source||"").split("\n");
+  /* An update: a module id the booklet already has. The old module's lines go, and so do the data
+     blocks outside its fence that it names, so the new ones replace them rather than sit beside them. */
+  const newId=moduleIdAt(lines,openAt);
+  const old=newId?moduleSpanOf(curLines,newId):null;
+  const oldText=old?curLines.slice(old.openAt,old.closeAt+1).join("\n"):"";
+  /* a block is the old module's when the old module names its id (an embed, or a query's `from:`) */
+  const named=id=>!!old&&new RegExp("(^|[^A-Za-z0-9-])"+id+"([^A-Za-z0-9-]|$)").test(oldText);
+  if(old){
+    const drop=new Array(curLines.length).fill(false);
+    for(let i=old.openAt;i<=old.closeAt;i++) drop[i]=true;
+    fencedSpans(curLines,0,curLines.length).forEach(s=>{
+      if(s.start>=old.openAt&&s.end<=old.closeAt) return;
+      const m=(curLines[s.end]||"").trim().match(/^\^([A-Za-z0-9-]+)$/);
+      if(m&&named(m[1])) for(let i=s.start;i<=s.end;i++) drop[i]=true;});
+    curLines=curLines.filter((_,i)=>!drop[i]);}
   let dataAt=-1;
   for(let i=0;i<curLines.length;i++){const m=curLines[i].match(CALLOUT_LINE);if(m&&m[1].toLowerCase()==="data"){dataAt=i;break;}}
   const mainPart=(dataAt<0?curLines:curLines.slice(0,dataAt)).join("\n").replace(/\s+$/,"");
   const dataPart=(dataAt<0?"":curLines.slice(dataAt).join("\n")).replace(/\s+$/,"");
-  const newMain=mainPart+"\n\n"+modChunk+"\n";
+  /* a booklet put together here has no front matter yet; without it the file would not be one */
+  const head=mainPart.trim()?"":"---\nbooklet: "+FORMAT_VERSION+"\nlang: "+((BOOK.raw||{}).lang||lang)+"\n---\n\n";
+  const newMain=head+mainPart+"\n\n"+modChunk+"\n";
   const newData=extraChunks.length?(dataPart||"> [!data] Data")+"\n\n"+extraChunks.join("\n\n")+"\n":dataPart;
   const newSource=newData?newMain+"\n"+newData+"\n":newMain;
+
+  /* read the booklet this would make before changing anything: if the renderer would refuse that
+     file, nothing is added and the reader is told why */
+  /* the parser does not refuse a widget block id used twice, but a widget is kept by its id, so the
+     second would silently replace the first one's: for a different module that is a clash too */
+  const widgetClash=[...new Set((R.template.widgets||[]).map(w=>w&&w.id).filter(id=>id&&(BOOK.widgets||[]).some(x=>x.id===id)&&!named(id)))];
+  if(widgetClash.length) return {ok:false,problems:widgetClash.map(strings("problem").moduleIdClash)};
+  const made=parseFile(newSource),refused=(made&&made.refused)||[];
+  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notV07]};
+  if(refused.length){const P=strings("problem"),dups=made.dupIds||[];
+    const ids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
+    return {ok:false,problems:[...ids.map(P.moduleIdClash),...refused.filter(m=>!said.has(m))]};}
 
   editBook(t=>{t.raw={...(t.raw||{}),source:newSource};});
   (R.template.widgets||[]).forEach(addWidget);
@@ -2590,15 +2632,7 @@ function addWidget(w){if(!w||typeof w!=="object"||typeof w.id!=="string"||!w.eng
     const i=t.widgets.findIndex(x=>x.id===w.id);
     if(i>=0) t.widgets[i]=w; else t.widgets.push(w);});
   return true;}
-/* An activity id belongs to one module. A different module claiming it would
-   be writing into the entries and the draft that id already addresses, so it
-   is refused; it never replaces the module that holds the id. The same module
-   arriving again (same module id) is an update, not a clash. */
-function moduleClash(mod,mods){const mine=new Set(activitiesOf(mod).map(a=>a.id));
-  for(const other of mods) if(other&&other.id!==mod.id)
-    for(const a of activitiesOf(other)) if(mine.has(a.id)) return {act:a.id,other:other.id};
-  return null;}
-function addModule(mod){if(!moduleOk(mod)||moduleClash(mod,allModules())) return false;
+function addModule(mod){if(!moduleOk(mod)) return false;
   editBook(t=>{t.modules=t.modules||[];
     const i=t.modules.findIndex(m=>m.id===mod.id);
     if(i>=0) t.modules[i]=mod; else t.modules.push(mod);});
