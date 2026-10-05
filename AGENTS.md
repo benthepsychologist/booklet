@@ -49,7 +49,8 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 4. Run `test/run.sh`. It runs the generic engine fixtures, every
    `test/*.test.js`, and the validator. Update `STATUS.md` on the branch when
    capabilities, versions, inventory, or known gaps change.
-5. Open a pull request. `.github/workflows/ci.yml` runs the same checks; a
+5. After any change to the renderer's scripts (the theme-boot script, the main script or a vendored library), run `node test/csp-hash.js --write booklet.html`: the renderer carries its own Content-Security-Policy as a meta tag, naming those scripts by sha256, and `test/run.sh` and CI fail on a stale one.
+6. Open a pull request. `.github/workflows/ci.yml` runs the same checks; a
    merge to `main` publishes at once (`CONTRIBUTING.md`).
 
 ## Format disciplines

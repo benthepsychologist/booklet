@@ -19,7 +19,8 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 const PAGE_ORIGIN='https://bookletmd.test';
 /* every distinctive string the test types or names as the reader's work */
 const S={own:'QZXownoption4417',name:'QZXrenamedbooklet5528',keep:'QZXkeptentry6639',kit:'QZXkitchenanswer7741',link:'QZXlinkanswer8852'};
-const STORE_ORIGIN='https://store.test';
+/* the renderer carries its own policy (0.11.6): it may read only the page's own origin and the registry's host, so the store is on the page's own origin, under /pub/ */
+const STORE_ORIGIN=PAGE_ORIGIN;
 const mod=(id,title,body)=>`---\nbooklet: "0.11"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
 const KITCHEN=mod('kitchen','Kitchen module',
 `> [!activity|k-act repeat] Kitchen log
@@ -80,7 +81,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   const HOST_CSP=CSP.replace('connect-src https://raw.githubusercontent.com','connect-src https://raw.githubusercontent.com '+STORE_ORIGIN);
   ok(HOST_CSP!==CSP,'the hosted header names the registry origin in connect-src (the store step adds its own origin to a copy of it)');
   await p.route(PAGE_ORIGIN+'/linked/',r=>r.fulfill({status:200,body:fs.readFileSync(HTML,'utf8').replace('<meta name="theme-color"','<meta name="booklet-store" content="'+STORE_ORIGIN+'/pub/">\n<meta name="theme-color"'),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}}));
-  await p.route(STORE_ORIGIN+'/**',r=>r.fulfill({status:200,body:mod('linked','Linked booklet','> [!activity|l-act] Linked\n\n> [!text|l-text long] A linked answer\n\n'),headers:{'content-type':'text/markdown','access-control-allow-origin':'*'}}));
+  await p.route(STORE_ORIGIN+'/pub/**',r=>r.fulfill({status:200,body:mod('linked','Linked booklet','> [!activity|l-act] Linked\n\n> [!text|l-text long] A linked answer\n\n'),headers:{'content-type':'text/markdown','access-control-allow-origin':'*'}}));
   const wait=ms=>p.waitForTimeout(ms);
   const cards=()=>p.locator('#main button.mode');
   const fillAll=async(tag)=>{ /* answer every question on screen */
@@ -184,7 +185,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   ok(local.every(r=>/^(data|blob|about):/.test(r.url)),'anything not over the network is data:, blob: or about: (local to the browser): '+[...new Set(local.map(r=>r.url.split(':')[0]))].join(','));
   ok(net.filter(r=>new URL(r.url).origin===registryOrigin).every(r=>/registry\.json$|\/(kitchen|garden)\.md$/.test(new URL(r.url).pathname)),'the registry origin was asked only for the registry list and the two module files');
   ok(net.every(r=>!r.body),'no request has a body');
-  ok(net.filter(r=>new URL(r.url).origin===STORE_ORIGIN).map(r=>r.url).join()===STORE_ORIGIN+'/pub/pledge/linked.booklet.md','the store was asked for the one checked name and nothing else: '+net.filter(r=>new URL(r.url).origin===STORE_ORIGIN).map(r=>r.url).join());
+  ok(net.filter(r=>r.url.startsWith(STORE_ORIGIN+'/pub/')).map(r=>r.url).join()===STORE_ORIGIN+'/pub/pledge/linked.booklet.md','the store was asked for the one checked name and nothing else: '+net.filter(r=>r.url.startsWith(STORE_ORIGIN+'/pub/')).map(r=>r.url).join());
   const words=[];for(const w of Object.values(S)){words.push(w,encodeURIComponent(w),w.toLowerCase());}
   words.push(S.kit+'0',S.keep+'0','4242');
   const all=[];for(const r of reqs) all.push(r.url,JSON.stringify(r.headers),r.body);
@@ -210,7 +211,8 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
      leaves for any address the file named. The control proves this page can see a request when one is made. */
   {const PLAIN='https://plain.test',names=['tracker.example','harbour.jpg','proto.gif','latex-rel','diagram.png','css.png','theme.png','font.woff'];
    const q=await b.newContext({viewport:{width:1280,height:1000}});const p2=await q.newPage();
-   const seen=[],errs2=[];
+   const seen=[],errs2=[],failed2=[];
+   p2.on('requestfailed',r=>failed2.push(r.url()+' '+((r.failure()||{}).errorText||'')));
    p2.on('request',r=>seen.push({url:r.url(),method:r.method(),type:r.resourceType()}));
    p2.on('pageerror',e=>errs2.push(e.message));
    await p2.route('**/*',r=>{const u=r.request().url();
@@ -226,7 +228,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
      'And an ordinary one, which is drawn:','',F+'mermaid','flowchart LR','  A[Start] --> B{Pick}','  B -->|yes| C[Done]',F,'',
      '> [!text|q] A question','','> [!module|named end] End',''].join('\n');
    await p2.goto(PLAIN+'/app/');await p2.waitForTimeout(500);
-   ok(await p2.evaluate(()=>!document.querySelector('meta[http-equiv="Content-Security-Policy"]')),'the second run: the page carries no Content-Security-Policy meta tag either');
+   ok(await p2.evaluate(()=>{const m=document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');return m.length===1&&/^default-src 'none'; script-src 'self' 'sha256-/.test(m[0].content)&&/connect-src 'self' https:\/\/raw\.githubusercontent\.com;/.test(m[0].content);}),'the second run: no header is sent, and the page carries its own Content-Security-Policy meta tag (0.11.6), the only policy there is');
    await p2.getByRole('button',{name:'Add a booklet from a file'}).click();await p2.waitForTimeout(300);
    await p2.locator('#pasteIn').fill(FILE2);
    await p2.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p2.waitForTimeout(1500);
@@ -249,8 +251,26 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
    ok(seen.every(r=>!/^https?:/.test(r.url)||new URL(r.url).origin===PLAIN),'second run: nothing left for another origin');
    ok(errs2.length===0,'second run: zero page errors '+errs2.join('|'));
    /* the control: a request this page makes itself IS seen, so silence above means something */
-   await p2.evaluate(()=>{(window.__c=new Image()).src='https://control.example/c.gif';});await p2.waitForTimeout(400);
-   ok(seen.slice(base).some(r=>r.url==='https://control.example/c.gif'),'second run, control: a request the test makes on purpose is recorded, so the check can see one');
+   /* the renderer's own policy now closes images to every address, so the control is a read the policy allows: the page's own origin */
+   await p2.evaluate(()=>{fetch('/control-c').catch(()=>{});});await p2.waitForTimeout(400);
+   ok(seen.slice(base).some(r=>r.url===PLAIN+'/control-c'),'second run, control: a request the test makes on purpose (to the page\'s own origin, which the policy allows) is recorded, so the check can see one');
+   /* 0.11.6: with no header at all, the file's own policy holds against the page's own code */
+   {const n0=seen.length;
+    const a=await p2.evaluate(async()=>{try{await fetch('https://evil.example/from-injected-code');return 'went out';}catch(e){return 'blocked';}});
+    ok(a==='blocked'&&seen.slice(n0).filter(r=>/evil\.example/.test(r.url)).every(r=>failed2.some(f=>f.startsWith(r.url+' csp'))),'second run (a): code injected into the page cannot fetch another origin ('+a+'); any request the browser listed for it was refused by the policy before the network: '+failed2.filter(f=>/evil/.test(f)).join(','));
+    const b2=await p2.evaluate(async()=>{window.__ran=0;const s=document.createElement('script');s.textContent='window.__ran=1';document.head.append(s);
+      const t=document.createElement('div');t.innerHTML='<img src="x" onerror="window.__ran=2">';document.body.append(t);await new Promise(r=>setTimeout(r,300));return window.__ran;});
+    ok(b2===0,'second run (b): an inline script injected into the page does not run, nor does an inline event handler (ran flag '+b2+')');
+    /* Playwright lists a request the browser's policy refuses as a request that failed with 'csp': it was stopped before the network,
+       so the proof is the failure reason, the image's own error and the policy's violation report, not an empty list */
+    const imgs=await p2.evaluate(()=>new Promise(res=>{const out=[],viol=[];
+      document.addEventListener('securitypolicyviolation',e=>viol.push(e.violatedDirective));
+      const mk=src=>new Promise(r=>{const i=document.createElement('img');i.onload=()=>r('load');i.onerror=()=>r('error');i.src=src;document.body.append(i);});
+      Promise.all([mk('https://tracker.example/built-by-a-future-bug.gif'),mk('/built-by-a-future-bug-own.gif')]).then(r=>res({r,viol}));}));
+    await p2.waitForTimeout(300);
+    const asked=seen.filter(r=>/built-by-a-future-bug/.test(r.url));
+    ok(imgs.r.join()==='error,error'&&imgs.viol.length===2&&imgs.viol.every(v=>v==='img-src')&&asked.every(r=>failed2.some(f=>f.startsWith(r.url+' csp'))),
+      'second run (c): an image element built by script, for an address a file names and for the page\'s own origin, is refused by the policy (img-src) before any network request: '+JSON.stringify(imgs)+' '+failed2.filter(f=>/future-bug/.test(f)).join(','));}
    /* ---- the same no-header run, with a widget: every way a file can carry SVG (renderer 0.11.5) ----
       An svg-regions figure and a grid-select widget, each naming addresses at host tracker.example in every form
       SVG allows. The page is served with no header, every request is recorded, and not one may go to an address the
@@ -303,8 +323,8 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
     ok(net3.every(u=>u===PLAIN+'/app/'||u===PLAIN+'/favicon.ico'),'the widget run: the only requests are for the page itself: '+net3.join(', '));
     ok(!seen3.some(u=>/tracker\.example|svg-|grid-/.test(u)),'the widget run: not one request for any address the widget named');
     ok(errs3.length===0,'the widget run: zero page errors '+errs3.join('|'));
-    await p3.evaluate(()=>{(window.__c=new Image()).src='https://control.example/c3.gif';});await p3.waitForTimeout(400);
-    ok(seen3.some(u=>u==='https://control.example/c3.gif'),'the widget run, control: a request the test makes on purpose is recorded');}
+    await p3.evaluate(()=>{fetch('/control-c3').catch(()=>{});});await p3.waitForTimeout(400);
+    ok(seen3.some(u=>u===PLAIN+'/control-c3'),'the widget run, control: a request the test makes on purpose (to the page\'s own origin, which the policy allows) is recorded');}
    await q.close();}
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);

@@ -28,8 +28,17 @@ const HOSTSCRIPT=`<script>(function(){
 })();</script>`;
 const HOSTSCRIPT_WATCH=`<script>(function(){window.__calls=[];window.__hits=0;
   window.Booklet.onChange(function(x){window.__calls.push(x);});})();</script>`;
-const page=(inject)=>{const h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS=20000','HOOK_ANSWER_MS=1500');/* the test's own copy waits 1.5 s, not 20 */const i=h.lastIndexOf('</body>');
-  if(i<0) throw new Error('no </body>');return inject?h.slice(0,i)+inject+h.slice(i):h;};
+/* 0.11.6: the renderer carries its own policy, which allows a script file from the page's own origin and no inline script. So the
+   host's script is a file served from the page's origin, as a real host's is (docs/hosting.md), and this test's copy of the
+   renderer, which edits one constant, gets its policy rewritten by test/csp-hash.js, as a host that edits the renderer must. */
+const JS={};
+const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS=20000','HOOK_ANSWER_MS=1500');/* the test's own copy waits 1.5 s, not 20 */
+  h=require('./csp-hash.js').write(h);
+  const i=h.lastIndexOf('</body>');
+  if(i<0) throw new Error('no </body>');
+  if(!inject) return h;
+  const name='/hs'+Object.keys(JS).length+'.js';JS[name]=inject.replace(/^<script>/,'').replace(/<\/script>$/,'');
+  return h.slice(0,i)+'<script src="'+name+'"></script>'+h.slice(i);};
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
@@ -47,6 +56,7 @@ const page=(inject)=>{const h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_
     if(u==='/host/')return r.fulfill({status:200,body:page(HOSTSCRIPT),headers:h});
     if(u==='/watch/')return r.fulfill({status:200,body:page(HOSTSCRIPT_WATCH),headers:h});
     if(u==='/plain/')return r.fulfill({status:200,body:page(''),headers:h});
+    if(JS[u])return r.fulfill({status:200,body:JS[u],headers:{'content-type':'text/javascript'}});
     r.fulfill({status:404,body:'nf'});});
   const wait=(p,ms)=>p.waitForTimeout(ms||800);
   const bar=p=>p.locator('#hostLine').innerText();
@@ -140,7 +150,7 @@ const page=(inject)=>{const h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_
   // the assertions across every page
   const net=reqs.filter(r=>/^https?:/i.test(r.url));
   ok(net.length>0&&net.every(r=>r.method==='GET'),'every request is a GET');
-  ok(net.every(r=>new URL(r.url).origin===PAGE&&/^\/(host|watch|plain)\/$/.test(new URL(r.url).pathname)),'the renderer made no request of its own: every request is the page itself: '+[...new Set(net.map(r=>r.url))].join(' '));
+  ok(net.every(r=>new URL(r.url).origin===PAGE&&/^\/(host|watch|plain)\/$|^\/hs\d+\.js$/.test(new URL(r.url).pathname)),'the renderer made no request of its own: every request is the page itself or the host script file the page names: '+[...new Set(net.map(r=>r.url))].join(' '));
   ok(net.every(r=>!r.body&&!/QZX/.test(r.url+JSON.stringify(r.headers))),'no body, and no typed word in any request');
   ok((await ctx.cookies()).length===0,'no cookies');
   ok(viol.length===0&&csp.length===0,'zero CSP violations: '+viol.concat(csp).join('|'));

@@ -25,38 +25,26 @@ chk("a module marked 0.9 can be added to a booklet, and the page says so in the 
  chk("a new booklet's file says booklet: \"0.11\", quoted",/^booklet: "0\.11"$/m.test(A.BOOK.raw.source)&&A.BOOK.booklet==="0.11",A.BOOK.raw.source);
  A.addModuleText(file('"0.11"'));
  chk("and so does the file it writes after a module is added",/^booklet: "0\.11"$/m.test(A.toMarkdown())&&A.parseFile(A.toMarkdown()).ok);
- /* a design saved in the browser by 0.9 holds the number 0.9 */
+ /* a booklet saved in the browser with another 0.x version in its design is loaded as it was saved */
  const old=P.boot();
  const text=fs.readFileSync(P.R+"/test/fixtures/module-check-in.md","utf8");
  await old.createBooklet();old.addModuleText(text);old.flushSave();
  const id=old.currentId,key="booklet.b."+id;
  const snap=JSON.parse(global.__ls[key]);
- /* make it what 0.9 saved: the number 0.9 in the design, and 0.9 in the marker of its own source text */
- snap.TPL.booklet=0.9;snap.TPL.raw.source=snap.TPL.raw.source.replace(/^booklet: "0\.11"$/m,"booklet: 0.9");
+ snap.TPL.booklet="0.10";
  snap.S.answers={ma:{keep:"x"}};
  global.__ls[key]=JSON.stringify(snap);
- const was=JSON.stringify(snap.S);
- const r=old.rekeyFromV08(JSON.parse(global.__ls[key]));
- chk("a design saved by 0.9 is not re-keyed again",r.TPL.booklet===0.9&&JSON.stringify(r.S)===was,JSON.stringify(r.TPL.booklet));
  P.closePages();
  const B=P.boot();B.openBooklet(id);
- chk("opened, it is marked 0.11 and its own source says so, quoted",B.BOOK.booklet==="0.11"&&/^booklet: "0\.11"$/m.test(B.BOOK.raw.source),B.BOOK.raw.source.slice(0,60));
+ chk("a booklet saved with booklet: \"0.10\" in its design opens, its design untouched",B.BOOK.booklet==="0.10",String(B.BOOK.booklet));
  chk("its answers are where they were",JSON.stringify(B.STATE.answers)===JSON.stringify({ma:{keep:"x"}}));
- chk("a module can be added to it (it is a 0.11 booklet)",B.addModuleText(fs.readFileSync(P.R+"/test/fixtures/module-daily-journal.md","utf8")).ok);
+ chk("a module can be added to it",B.addModuleText(fs.readFileSync(P.R+"/test/fixtures/module-daily-journal.md","utf8")).ok);
  chk("what it downloads opens again",B.parseFile(B.toMarkdown()).ok);
  /* a file opened with another marker is kept with the marker it came with, whatever renderer reads it next */
  {P.wipe();const W=P.boot();W.loadText(file("0.6"));W.flushSave();const wid=W.currentId;P.closePages();
   const W2=P.boot();W2.openBooklet(wid);
   chk("a 0.6 file kept in this browser and opened again still says booklet: 0.6 in its own text, and is read as 0.11",/^booklet: 0\.6$/m.test(W2.BOOK.raw.source)&&W2.BOOK.booklet==="0.11"&&/^booklet: 0\.6$/m.test(W2.toMarkdown()),W2.BOOK.raw.source.slice(0,40));
-  /* and a design a later renderer finds marked by an earlier one's own version is re-marked only where that renderer wrote it */
-  const snap=JSON.parse(global.__ls["booklet.b."+wid]);snap.TPL.booklet="0.10";
-  const re=W2.remarkSaved(JSON.parse(JSON.stringify(snap)));
-  chk("a design saved by 0.10 holding a 0.6 text is re-marked 0.11 as a design but its own text keeps 0.6",re.TPL.booklet==="0.11"&&/^booklet: 0\.6$/m.test(re.TPL.raw.source),re.TPL.raw.source.slice(0,40));
-  const own=JSON.parse(JSON.stringify(snap));own.TPL.raw.source=own.TPL.raw.source.replace(/^booklet: 0\.6$/m,'booklet: "0.10"');
-  chk("while a text the earlier renderer wrote itself (0.10) is re-marked 0.11, quoted",/^booklet: "0\.11"$/m.test(W2.remarkSaved(own).TPL.raw.source));}
- /* a design saved by 0.8 is still re-keyed once */
- const o8={TPL:{booklet:0.8,modules:[],raw:{source:""}},S:{answers:{},entries:{}},D:{custom:{}}};
- chk("a design saved by 0.8 is still re-keyed, and ends marked as the version that keys by module",B.rekeyFromV08(o8).TPL.booklet==="0.9");
+ }
  /* the linter's flags print what generators outside this repo should write */
  {const run=a=>require("child_process").spawnSync("python3",[P.R+"/lint-booklet.py",a],{encoding:"utf8"});
   const mk=run("--marker"),hp=run("--help");

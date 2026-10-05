@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-rJ7VaHbgz7J1hQmpBDWgOvKL70jFgiaRCteM9zAdFWY=' 'sha256-dwi35xoXh73ZdSGi3gjXWKXckFk2iOs/reHaojCjco4=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
 <!-- The renderer's only setting: where "Add a module" looks for modules. A site
-     changes this one line to point at another registry, and must also allow
-     that origin in its own Content-Security-Policy `connect-src`. -->
+     changes this one line to point at another registry, and must also name
+     that origin in the `connect-src` of the policy meta tag above (this file
+     carries its own Content-Security-Policy; a host's header can only tighten it),
+     then run `node test/csp-hash.js --write booklet.html`. -->
 <!-- A host that serves a folder of booklets may add `<meta name="booklet-store" content="…/folder/">` to its own copy, so that
      `#/open/<name>` opens a booklet from it (README.md, "Opening a booklet by link"). This file ships with none. -->
 <meta name="booklet-registry" content="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json">
@@ -858,14 +862,11 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.5";
+const RENDERER_VERSION="0.11.6";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
 const FORMAT_VERSION="0.11";
-/* a booklet design saved in this browser by renderer 0.8 or earlier is re-keyed once (rekeyFromV08); one
-   saved by 0.9 already keeps work the way 0.10 does */
-const KEYED_FROM="0.9";
 const LANG_NAMES={en:"English",es:"Español","es-AR":"Español (Argentina)",fr:"Français"};
 /* the interface languages with a button (the variants, es-AR, have none), in the order offered */
 const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
@@ -1177,7 +1178,7 @@ const STRINGS_SRC={
       notReadable: `This is not a booklet file this page can read — its front matter needs a \`booklet:\` line with a 0.x version, such as \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Not a booklet file this page can read (it needs a \`booklet:\` line with a 0.x version).`,
       noModule: "This file holds no module.",
-      needsV07: `Add a module only works inside a v${FORMAT_VERSION} booklet.`,
+      noBooklet: `Add a module needs an open booklet.`,
       noFence: "Could not find a complete `[!module|…]` … `[!module|… end]` fence."
     },
     moduleView: {
@@ -1445,7 +1446,7 @@ const STRINGS_SRC={
       notReadable: `Ce fichier n’est pas un carnet que cette page peut lire — son en-tête doit contenir une ligne \`booklet:\` avec une version 0.x, par exemple \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Ce n’est pas un fichier de carnet que cette page peut lire (il faut une ligne \`booklet:\` avec une version 0.x).`,
       noModule: "Ce fichier ne contient aucun module.",
-      needsV07: `Ajouter un module ne fonctionne que dans un carnet v${FORMAT_VERSION}.`,
+      noBooklet: `Ajouter un module demande un carnet ouvert.`,
       noFence: "Impossible de trouver une clôture complète `[!module|…]` … `[!module|… end]`."
     },
     moduleView: {
@@ -1713,7 +1714,7 @@ const STRINGS_SRC={
       notReadable: `Este no es un archivo de cuadernillo que esta página pueda leer: su encabezado necesita una línea \`booklet:\` con una versión 0.x, por ejemplo \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Este no es un archivo de cuadernillo que esta página pueda leer (necesita una línea \`booklet:\` con una versión 0.x).`,
       noModule: "Este archivo no contiene ningún módulo.",
-      needsV07: `Agregar un módulo solo funciona dentro de un cuadernillo v${FORMAT_VERSION}.`,
+      noBooklet: `Agregar un módulo requiere un cuadernillo abierto.`,
       noFence: "No se encontró una valla completa `[!module|…]` … `[!module|… end]`."
     },
     moduleView: {
@@ -2189,59 +2190,8 @@ function noteSaved(){const id=currentId,now=new Date().toISOString();
 function clearLocal(){const key=slotKey();if(key) lsDel(key);
   if(currentId) changeLib(L=>{const e=L.entries.find(x=>x.id===currentId);
     if(e) Object.assign(e,{title:null,parts:[],dirty:false,unsavedEntries:0,updatedAt:new Date().toISOString()});});}
-/* ---- what renderer 0.8 kept in this browser ----
-   Under 0.8 an id was unique in the whole file, so a booklet's once-answered questions were one flat
-   object and its entries and drafts were keyed by the bare activity id. Under 0.9 an id is unique within
-   its module: questions are kept per module (`answers[scope]`) and its activities are known by
-   their address (module id, slash, activity id). A saved booklet whose design says 0.8 is re-keyed
-   once, when it is opened, by that design: it tells which module each activity and each question is
-   in. Nothing is dropped: an answer, entry or draft the design does not name is kept as a bare key
-   (answers under scope ""). Which modules are fenced is read from the `module` lines of the design's
-   own source text (`raw.source`): a module not named there is outside every fence, so it is in the
-   module with no name. When the design has no source text at all (a booklet put together here with
-   no file behind it), every module is treated as fenced. */
-function rekeyFromV08(o){
-  const tpl=o&&o.TPL;
-  if(!tpl||typeof tpl!=="object"||!(versionCmp(tpl.booklet,KEYED_FROM)<0)||!Array.isArray(tpl.modules)) return o;
-  const src=String((tpl.raw||{}).source||""),fenced=new Set();
-  src.split("\n").forEach(ln=>{const m=ln.match(CALLOUT_LINE);
-    if(m&&m[1].toLowerCase()==="module"){const w=calloutWords("module",m[2]);if(w.id&&!w.flags.has("end")) fenced.add(w.id);}});
-  const S=isObj(o.S)?o.S:{},D=isObj(o.D)?o.D:{};
-  const oldAns=isObj(S.answers)?S.answers:{},oldEnt=isObj(S.entries)?S.entries:{},oldDr=isObj(D.custom)?D.custom:{};
-  const answers={},entries={},custom={},usedA=new Set(),usedE=new Set();
-  tpl.modules.forEach(m=>{if(!m||typeof m!=="object"||typeof m.id!=="string") return;
-    const scope=src.trim()&&!fenced.has(m.id)?"":m.id,acts=activitiesOf(m).filter(a=>a&&typeof a.id==="string");
-    const was=new Set(acts.map(a=>a.id));
-    acts.forEach(a=>{const old=a.id,now=addrOf(scope,old);
-      if(hasOwn(oldEnt,old)){entries[now]=oldEnt[old];usedE.add(old);}
-      if(hasOwn(oldDr,old)){custom[now]=oldDr[old];usedE.add("\0"+old);}
-      allBlocksOf(a).forEach(b=>{
-        if(a.kind!=="entry") writesKeys(b).forEach(k=>{if(!hasOwn(oldAns,k)) return;
-          (answers[scope]=answers[scope]||{})[k]=oldAns[k];usedA.add(k);});
-        if(b.type==="query"&&!b.data&&was.has(b.from)){b.from=addrOf(scope,b.from);delete b.fileWide;}});
-      a.id=now;});});
-  Object.keys(oldAns).forEach(k=>{if(!usedA.has(k)) (answers[""]=answers[""]||{})[k]=oldAns[k];});
-  Object.keys(oldEnt).forEach(k=>{if(!usedE.has(k)) entries[k]=oldEnt[k];});
-  Object.keys(oldDr).forEach(k=>{if(!usedE.has("\0"+k)) custom[k]=oldDr[k];});
-  tpl.booklet=KEYED_FROM;
-  o.S={...S,answers,entries};o.D={...D,custom};
-  return o;}
-/* A design saved here by an earlier renderer says an earlier format (0.9 holds the number 0.9). Its structure is
-   the one this renderer reads, so it is marked as this format, and the marker in its own source text, when it is
-   the one that renderer wrote, is rewritten the same way (quoted), so a copy downloaded from it opens again. */
-function remarkSaved(o){const tpl=o&&o.TPL;
-  if(!tpl||typeof tpl!=="object"||!(versionCmp(tpl.booklet,FORMAT_VERSION)<0)||versionCmp(tpl.booklet,KEYED_FROM)<0) return o;
-  const was=tpl.booklet;tpl.booklet=FORMAT_VERSION;
-  const raw=tpl.raw;
-  if(raw&&typeof raw.source==="string"){const fm=frontMatter(raw.source);
-    /* only a marker this renderer wrote (the design's own version) is rewritten: a file opened here with some
-       other marker is saved back with the marker it came with */
-    if(fm.head){const k=fm.head.findIndex(l=>/^booklet:/.test(l)&&versionCmp(markerOf(raw.source),was)===0);
-      if(k>=0){const lines=fm.lines.slice();lines[k+1]='booklet: "'+FORMAT_VERSION+'"';raw.source=lines.join("\n");}}}
-  return o;}
 function loadLocal(){const key=slotKey();if(!key) return false;
   try{const raw=lsGet(key);if(!raw) return false;const o=JSON.parse(raw);if(!o||!o.S) return false;
-    rekeyFromV08(o);remarkSaved(o);
     const plain=x=>isObj(x)?x:{};
     STATE={answers:plain(o.S.answers),entries:plain(o.S.entries)};
     DRAFTS={custom:plain((o.D||{}).custom)};
@@ -3136,7 +3086,7 @@ function spliceApart(lines,at,ins){
 function addModuleText(text){
   const problems=moduleTextProblems(text);
   if(problems.length) return {ok:false,problems};
-  if(!BOOK||versionCmp(BOOK.booklet,FORMAT_VERSION)!==0) return {ok:false,problems:[strings("problem").needsV07]};
+  if(!BOOK) return {ok:false,problems:[strings("problem").noBooklet]};
   const R=parseFile(text);
   const lines=String((R.template.raw||{}).source||"").split("\n");
   const spans=moduleSpans(lines);
@@ -3980,7 +3930,7 @@ function tagInput(opts){
     const {confirmed,inProgress}=parseTagValue(inp.value);
     const next=dedupeLabels(confirmed);
     const cur=opts.values()||[];
-    if(next.join(" ")!==cur.join(" ")) opts.onChange(next);
+    if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
     drawChips();drawSuggestions(inProgress);});
   /* A dangling in-progress word (typed but no trailing comma yet) commits
      on blur, so nothing typed or dictated is silently dropped. */
@@ -3988,7 +3938,7 @@ function tagInput(opts){
     const {confirmed,inProgress}=parseTagValue(inp.value);
     const next=dedupeLabels(inProgress?[...confirmed,inProgress]:confirmed);
     const cur=opts.values()||[];
-    if(next.join(" ")!==cur.join(" ")) opts.onChange(next);
+    if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
     refresh();});
 
   refresh();

@@ -193,11 +193,23 @@ modules. That is one line in the page's `<head>`:
 <meta name="booklet-registry" content="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json">
 ```
 
-A site changes that one line to point at another registry. A site that sets a
-Content-Security-Policy must also allow that registry's origin, and the origin of
-the module files it lists, in `connect-src`. With the tag missing or empty, "Add
-a module" shows its "no modules" message and nothing else changes. A module's
-`file` path in the registry resolves relative to the registry's own address.
+A site changes that one line to point at another registry. With the tag missing or
+empty, "Add a module" shows its "no modules" message and nothing else changes. A
+module's `file` path in the registry resolves relative to the registry's own address.
+
+**The renderer carries its own Content-Security-Policy** (renderer 0.11.6): a
+`<meta http-equiv="Content-Security-Policy">` tag directly after the charset tag, so
+the block is in the file itself and a copy opened from disk, or served by any host,
+has it. It lets the page run only its own scripts (named by their sha256, so an
+injected script does not run), draw images only from `data:` and `blob:`, and connect
+only to the page's own origin and `https://raw.githubusercontent.com`. A **registry**
+must therefore be on the page's own origin or on `raw.githubusercontent.com`, and the
+origin of the module files it lists likewise; a **store** (below) and a **host's
+script file** (`docs/hosting.md`) must be on the page's own origin. A host's own
+header adds a second policy and both apply, so a host can only tighten it. A host that
+needs anything else must edit the renderer's policy, which changes the file's
+checksum, and then run `node test/csp-hash.js --write booklet.html` to recompute the
+script hashes.
 
 ### Opening a booklet by link
 
@@ -233,8 +245,9 @@ does). A quiet line at the top says where the booklet came from ("Opened by a li
 and can be dismissed. The page reads the link when it starts and whenever the fragment changes, and the link stays in the
 address bar, so a reload opens the same thing.
 
-A host that sets a Content-Security-Policy must also allow the store's origin in `connect-src`: the renderer can read only
-where the host's own header lets it. Nothing a reader writes is ever sent: the link is a read, and the pledge tests
+The store must be on the page's own origin: the renderer's own Content-Security-Policy lets it read only that origin and
+`raw.githubusercontent.com` (see "Putting the renderer on a site"), and a host's header can only tighten that, so a host's
+header must also allow the store's origin, which is the page's own. Nothing a reader writes is ever sent: the link is a read, and the pledge tests
 (`test/guard.test.js`, `test/pledge-browser.js`) pin that.
 
 ### Language and storage

@@ -27,7 +27,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
 {const A=boot("fleet: booklets/reports"),B=A.BookletApi;
  chk("window.Booklet has exactly these members: version, host, onChange, open, text",Object.keys(B).sort().join()==="host,onChange,open,text,version",Object.keys(B).join());
  chk("it is frozen",Object.isFrozen(B));
- chk("version is the renderer's version, as text",B.version==="0.11.5"&&typeof B.version==="string");
+ chk("version is the renderer's version, as text",B.version==="0.11.6"&&typeof B.version==="string");
  chk("a member cannot be reassigned",(()=>{try{B.text=()=>"x";}catch(e){}return B.text()==="";})());
  chk("with no host, the bar says so: Kept in this browser only",barText()==="Kept in this browser only",barText());
  chk("text() is empty when no booklet is open",B.text()==="");
