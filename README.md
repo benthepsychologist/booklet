@@ -105,6 +105,8 @@ figures use the width and fold to one column on a phone.
 A module file (any v0.10 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it. A module may carry its own notice (licence, copyright, source, version), which Add a module writes into the booklet and the page shows under "About this module". A booklet has one name, its own front matter's `title:`, which a reader can rename on its home screen or in "Your booklets".
 
+A tool that writes booklets should ask the linter for the marker (`python3 lint-booklet.py --marker` prints the front-matter line a file should carry, `--format-version` prints just `0.10`) and not hard-code it.
+
 A plain Markdown file with booklet front matter (`booklet: "0.10"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
 status or a run's acceptance report, can be read in the renderer. An activity that only reads (no question, no

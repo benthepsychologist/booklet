@@ -20,6 +20,10 @@ id that two modules both use is a warning, not an error: Booklet reads each in i
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
+        python3 lint-booklet.py --format-version     prints the current format version (0.10) and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.10") and exits 0
+        python3 lint-booklet.py --help               prints this text
+A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
@@ -1101,6 +1105,16 @@ def check_file(path):
 
 
 def main():
+    flags = [a for a in sys.argv[1:] if a.startswith("-")]
+    if "--help" in flags or "-h" in flags:
+        print(__doc__.strip())
+        return 0
+    if "--format-version" in flags:
+        print(FORMAT_VERSION)
+        return 0
+    if "--marker" in flags:
+        print(f'booklet: "{FORMAT_VERSION}"')
+        return 0
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
     if args:
         paths = [pathlib.Path(a).resolve() for a in args]

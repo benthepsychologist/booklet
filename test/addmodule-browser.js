@@ -6,7 +6,7 @@
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),R=path.dirname(HTML);
-const CSP="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const mod=(id,qid,blk)=>`---\nbooklet: "0.10"\ntitle: ${id}\nlang: en\n---\n\n> [!module|${id}] ${id}\n\n> [!activity|${id}-act repeat] A\n\n> [!text|${qid} long] A question\n\n> [!module|${id} end] End\n`+(blk?`\n\`\`\`booklet data\n[{"x":"${id}"}]\n\`\`\`\n^${blk}\n`:"");
 const FILES={'/first.md':mod('first-mod','first-q','dat'),'/clash.md':mod('clash-mod','clash-q','dat'),'/fine.md':mod('fine-mod','extra')};

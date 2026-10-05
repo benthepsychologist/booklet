@@ -5,10 +5,12 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.10.3** — matches the project's current version (SPEC.md's
+**Skill version: 0.10.4** — matches the project's current version (SPEC.md's
 "project v0.10") now that this skill teaches v0.10, the current format. Write
 the marker in quotes, `booklet: "0.10"`: unquoted, a YAML tool reads `0.10` as
-the number 0.1.
+the number 0.1. A tool that writes booklets should ask the linter for the marker
+(`python3 lint-booklet.py --marker` prints the whole line, `--format-version` just `0.10`) and
+not hard-code it, so a new format version never strands it.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. Above a long

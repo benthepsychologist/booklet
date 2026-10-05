@@ -846,7 +846,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.10.3";
+const RENDERER_VERSION="0.10.4";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.10"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -3308,10 +3308,11 @@ function parseList(lines,i,ctx){
     let checked=null;const tm=TASK_RE.exec(text);
     if(tm){checked=tm[1].toLowerCase()==="x";text=tm[2];}
     const kids=[];if(checked!==null) kids.push(checked?"☑ ":"☐ ");
-    kids.push(...renderInline(text,ctx));
-    if(indentLines.length){
-      if(LIST_RE.test(indentLines[0])){const sub=parseList(indentLines,0,ctx);kids.push(sub.node);}
-      else{const extra=indentLines.join(" ").trim();if(extra) kids.push(" "+extra);}}
+    /* lines indented under an item continue its sentence: they are read as inline Markdown with the first line (so a
+       code span, a bold word or a link may run across the line break), never drawn as raw text with its marks showing */
+    const more=indentLines.length&&!LIST_RE.test(indentLines[0])?indentLines.join(" ").trim():"";
+    kids.push(...renderInline(more?text+" "+more:text,ctx));
+    if(indentLines.length&&LIST_RE.test(indentLines[0])){const sub=parseList(indentLines,0,ctx);kids.push(sub.node);}
     liNodes.push(el("li",{},...kids));
   }
   const attrs={};if(ordered&&startAttr!=="1") attrs.start=startAttr;

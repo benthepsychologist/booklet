@@ -8,7 +8,7 @@
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
-const CSP="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const widget=(h)=>`\`\`\`booklet widget\n{"engine":"grid-select","copy":{"h":"${h}"},"items":[{"id":"i","label":"Item ${h}"}]}\n\`\`\`\n^wd`;
 const MA=`---\nbooklet: "0.10"\ntitle: Garden notes\nlang: en\n---\n\n> [!module|ma] Garden notes\n\nA short blurb about the garden notes.\n\n> [!notice]\n> license: Free to copy and share, unmodified and with this notice intact.\n> copyright: Example Press, 2026\n> source: https://example.org/garden\n> version: 1.2\n\n> [!activity|plant] Plant\n\n> [!text|what] What did you plant?\n\n> [!widget|w]\n> ![[#^wd]]\n\n> [!activity|water repeat] Water\n\n> [!text|how] How much?\n\n> [!module|ma end] End\n\n> [!data|ma] Data for Garden notes\n\n${widget('Garden picker')}\n`;
