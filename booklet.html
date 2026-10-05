@@ -846,7 +846,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.10.2";
+const RENDERER_VERSION="0.10.3";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.10"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1002,7 +1002,7 @@ const STRINGS_SRC={
     notice: {
       about: "About this module", license: "Licence", copyright: "Copyright", source: "Source", version: "Version",
       remove: "Remove this module", removeGo: "Remove", removeKeep: "Cancel",
-      removeAsk: (t,w)=>`This removes “${t}” from this booklet`+(w.length?`, with ${w.length===1?w[0]:w.slice(0,-1).join(", ")+" and "+w[w.length-1]} you kept in it. Download a copy first if you want to keep them.`:"."),
+      removeAsk: (t,w)=>`This removes “${t}” from this booklet`+(w.length?`, with ${w.length===1?w[0]:w.slice(0,-1).join(", ")+" and "+w[w.length-1]} you kept in it. Download a copy first if you want to keep that work.`:"."),
       removeN: {entries:n=>`${n} entr${n===1?"y":"ies"}`,answers:n=>`${n} answer${n===1?"":"s"}`,drafts:n=>`${n} unfinished draft${n===1?"":"s"}`},
       removed: t=>`Removed “${t}”.`
     },

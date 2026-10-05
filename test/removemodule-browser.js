@@ -86,7 +86,7 @@ const FILE=`---\nbooklet: "0.10"\ntitle: Two modules\nlang: en\n---\n
   await ctl.click();await p.waitForTimeout(200);
   const al=p.locator('.removemod [role=alert]');
   const said=await al.textContent();
-  ok(/This removes “Daily journal” from this booklet, with 1 entry you kept in it\. Download a copy first if you want to keep them\./.test(said),'pressing it asks in place and says what goes, counted: '+said);
+  ok(/This removes “Daily journal” from this booklet, with 1 entry you kept in it\. Download a copy first if you want to keep that work\./.test(said),'pressing it asks in place and says what goes, counted: '+said);
   ok(await al.locator('button',{hasText:/^Remove$/}).count()===1&&await al.locator('button',{hasText:/^Cancel$/}).count()===1,'with "Remove" and "Cancel"');
   ok(await p.evaluate(()=>document.activeElement&&document.activeElement.textContent)==='Cancel','focus starts on Cancel');
   await p.screenshot({path:path.join(shots,'confirm-1280.png'),fullPage:true});

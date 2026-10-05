@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.10.2** — matches the project's current version (SPEC.md's
+**Skill version: 0.10.3** — matches the project's current version (SPEC.md's
 "project v0.10") now that this skill teaches v0.10, the current format. Write
 the marker in quotes, `booklet: "0.10"`: unquoted, a YAML tool reads `0.10` as
 the number 0.1.

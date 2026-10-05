@@ -55,7 +55,7 @@ const work=()=>{P.wipe();const A=P.boot();A.loadText(SRC);
  const n=E.moduleWork(E.allModules().find(m=>m.id==="mb"));
  chk("a module with nothing kept counts nothing",n.entries===0&&n.answers===0&&n.drafts===0,JSON.stringify(n));
  const T=E.STRINGS.en.notice;
- chk("the confirmation says so in words, with counts",T.removeAsk("Daily journal",[T.removeN.entries(12),T.removeN.answers(3)])==="This removes “Daily journal” from this booklet, with 12 entries and 3 answers you kept in it. Download a copy first if you want to keep them."
+ chk("the confirmation says so in words, with counts",T.removeAsk("Daily journal",[T.removeN.entries(12),T.removeN.answers(3)])==="This removes “Daily journal” from this booklet, with 12 entries and 3 answers you kept in it. Download a copy first if you want to keep that work."
    &&T.removeAsk("X",[])==="This removes “X” from this booklet."&&T.removeAsk("X",[T.removeN.entries(1)]).includes("with 1 entry you kept"));
  for(const l of ["fr","es","es-AR"]){const t=E.STRINGS[l]&&E.STRINGS[l].notice;if(l==="es-AR"&&!t) continue;
    chk(l+": the control, the question and the buttons are written",!!t&&[t.remove,t.removeGo,t.removeKeep].every(x=>typeof x==="string"&&x.length)&&/Daily/.test(t.removeAsk("Daily",[t.removeN.entries(2)]))&&typeof t.removed("Daily")==="string");}}
