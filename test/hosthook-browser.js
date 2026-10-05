@@ -104,6 +104,25 @@ const page=(inject)=>{const h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   await p.close();
 
+  // 2b a booklet the reader opens from their own disk is not the host's
+  p=await open();
+  await p.goto(PAGE+'/host/');await wait(p,500);
+  fs.writeFileSync(path.join(OUT,'mine.booklet.md'),bk('Mine','> [!activity|a] Mine\n\n> [!text|q long] Note?\n\n'));
+  await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(p,300);
+  await p.locator('#fileIn').setInputFiles(path.join(OUT,'mine.booklet.md'));await wait(p,400);
+  await p.locator('dialog[open] button,[role=dialog][open] button,.veil[open] button').filter({hasText:/^Load$/}).first().click();await wait(p,800);
+  ok(await bar(p)==='Kept in this browser only','a booklet opened from a file, host registered: the bar says Kept in this browser only: '+await bar(p));
+  await p.locator('#main textarea').first().fill('QZXprivate');await wait(p,900);
+  ok(await p.evaluate(()=>window.__calls.length)===0,'the host\'s listener is never called for it (no call after opening and a change)');
+  await wait(p,1800);
+  ok(await bar(p)==='Kept in this browser only','no "Not saved: the host did not answer" after the answer wait: '+await bar(p));
+  ok(await p.evaluate(()=>window.Booklet.text())==='','Booklet.text() is empty for it');
+  await p.evaluate(()=>drawHostLine());
+  ok(await p.locator('#btnExport.attention').count()===1,'the Download mark behaves as with no host: the change is not yet downloaded, and the host covers nothing');
+  await p.screenshot({path:path.join(OUT,'bar-host-ownfile-1280.png')});
+  viol.push(...await p.evaluate(()=>window.__viol||[]));
+  await p.close();
+
   // 3 a hostile booklet cannot reach the hook
   p=await open();
   await p.goto(PAGE+'/watch/');await wait(p,500);
@@ -111,7 +130,7 @@ const page=(inject)=>{const h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_
   await p.locator('#main a, #main div, #main svg').evaluateAll(els=>els.forEach(e=>{try{e.click();e.dispatchEvent(new Event('mouseover'));}catch(x){}}));await wait(p,300);
   ok(await p.evaluate(()=>window.__pwn===undefined),'nothing a booklet held ran');
   ok(await bar(p)==='Kept in this browser only','and registered no host: '+await bar(p));
-  ok(await p.evaluate(()=>window.__calls.length)===1,'onChange heard only of the booklet being opened (one call)');
+  ok(await p.evaluate(()=>window.__calls.length)===0,'a booklet handed over without a name is the reader\'s alone: onChange heard nothing');
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   await p.close();
 

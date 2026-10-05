@@ -18,6 +18,7 @@ if(HOST_CSP===CSP) throw new Error('csp.js no longer has the expected connect-sr
 const page=(withStore)=>fs.readFileSync(HTML,'utf8').replace('<meta name="theme-color"',(withStore?'<meta name="booklet-store" content="'+STORE+'/pub/">\n':'')+'<meta name="theme-color"');
 const bk=(id,title,body,after)=>`---\nbooklet: "0.11"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title} module\n\n${body}\n> [!module|${id} end] End\n${after||''}`;
 const WEEK=bk('week','Week report','> [!activity|wk] The week\n\n> [!text|wq long] What stood out?\n\n');
+const WEEK2=bk('week','Week report','> [!activity|wk] The week\n\n> [!text|wq long] What stood out?\n\n> [!text|wq2 long] And what was hard?\n\n');
 const OTHER=bk('other','Other booklet','> [!activity|ot] The other one\n\n> [!text|oq long] Anything else?\n\n');
 const LOG=bk('log','Daily log','> [!activity|entry repeat] Log\n\n> [!text|what] What happened?\n\n',
   '\n> [!records] App record\n\n> [!records|log] Daily log\n\n```booklet entries entry\n{"items":[{"ts":"2026-09-21T09:00:00Z","what":"QZXrecordone"},{"ts":"2026-09-22T09:00:00Z","what":"QZXrecordtwo"}]}\n```\n');
@@ -83,12 +84,27 @@ const REGJ={modules:[{id:'t/journal',title:'Daily journal',file:'journal.md'}]};
   ok(storeReqs().length===n1,'bad names (up, a host, a backslash, not .md) request nothing');
   ok(/does not name a booklet/.test(await toastText(p)),'and say so in a plain message: '+await toastText(p));
   ok(await view(p)==='other/ot','...the booklet that was open stays open');
-  // 4 the kept copy is offered when the same name is opened again
+  // 4 a name the browser keeps is one booklet: opening it again opens the kept booklet, and a changed file is offered
   await p.evaluate(()=>{location.hash='#/open/reports/week.booklet.md';});await wait(p,900);
-  ok((await line(p).innerText()).includes('You also keep a copy of this with your own work'),'opening the same name again offers the kept copy: '+(await line(p).innerText()).replace(/\n/g,' | '));
-  ok(await p.locator('#main textarea').first().inputValue()==='','...and what opens is the store\'s file, not the kept copy (the answer is not in it)');
-  await line(p).locator('button.quietlink').click();await wait(p,500);
-  ok(await p.locator('#main textarea').first().inputValue()==='QZXansweredhere','the offer opens the kept copy, answer and all');
+  ok(await p.locator('#main textarea').first().inputValue()==='QZXansweredhere','opening the same name again opens the kept booklet, answer and all');
+  ok(!(await p.locator('#main').innerText()).includes('You also keep a copy')&&await p.locator('#main .hostnote').count()===0&&await keptKeys()===1,'no "You also keep a copy" line, no offer (the store file is as it was read), and still one entry');
+  await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,700);
+  FILES['/pub/reports/week.booklet.md']=WEEK2;
+  await p.evaluate(()=>{location.hash='#/open/reports/week.booklet.md';});await wait(p,900);
+  ok(await p.locator('#main .hostnote').count()===1&&(await p.locator('#main .hostnote').innerText()).includes('The file has changed where it is kept'),'a changed store file is offered: '+(await p.locator('#main .hostnote').innerText().catch(()=>'none')).replace(/\n/g,' | '));
+  ok(await p.locator('#main textarea').count()===1&&await p.locator('#main textarea').first().inputValue()==='QZXansweredhere'&&await keptKeys()===1,'nothing changed yet: the kept booklet, one question, one entry');
+  await wait(p,4000);
+  await p.screenshot({path:path.join(OUT,'openlink-newer-1280.png')});
+  await p.setViewportSize({width:400,height:900});await wait(p,300);
+  await p.screenshot({path:path.join(OUT,'openlink-newer-400.png')});
+  ok(await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)<=0,'no sideways overflow at 400px with the offer');
+  await p.setViewportSize({width:1280,height:900});
+  await p.locator('#main .hostnote button.primary').click();await wait(p,600);
+  ok(await p.locator('#main textarea').count()===2&&await p.locator('#main textarea').first().inputValue()==='QZXansweredhere'&&await p.locator('#main .hostnote').count()===0,'reading it takes the new body (two questions) and keeps the reader\'s answer');
+  ok(await keptKeys()===1,'...into the same entry');
+  await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,700);
+  await p.evaluate(()=>{location.hash='#/open/reports/week.booklet.md';});await wait(p,900);
+  ok(await p.locator('#main .hostnote').count()===0&&await p.locator('#main textarea').count()===2,'having read it, opening again offers nothing');
   // 5 a file with records shows its kept entries
   await p.evaluate(()=>{location.hash='#/open/log.md';});await wait(p,900);
   ok((await p.locator('#main').innerText()).includes('QZXrecordtwo')||(await p.locator('#main .chips .chip').count())===2,'a file with records opens with them: '+await p.locator('#main .chips .chip').count()+' chips');

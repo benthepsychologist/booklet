@@ -20,11 +20,7 @@ id that two modules both use is a warning, not an error: Booklet reads each in i
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
-        python3 lint-booklet.py --format-version     prints the current format version (0.11) and exits 0
         python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.11") and exits 0
-        python3 lint-booklet.py --renderer-checksum booklet.html
-                                                     prints the sha256 of that file and its name (what a host publishes, and what a
-                                                     release's notes carry, so anyone can check a host serves the real renderer)
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
@@ -1007,6 +1003,20 @@ def check_format(f, text, fm):
     check_images(f, lines)
 
 
+def fence_skip(ln, fence):
+    """Fenced-code tracking, one line at a time: `fence` is the fence character now open (or None), and the answer is
+    (the fence after this line, whether to skip the line). A line that opens or closes a fence is skipped, and so is
+    every line inside one. The two line-by-line checks below (images, links) share it."""
+    m = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
+    if m:
+        if fence is None:
+            fence = m.group(1)[0]
+        elif m.group(1)[0] == fence and not m.group(2).strip():
+            fence = None
+        return fence, True
+    return fence, fence is not None
+
+
 def check_images(f, lines):
     """An image is linked, never embedded, and a renderer fetches no image (SPEC.md section 6). A remote address
     (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does not fetch it. An address with any
@@ -1014,14 +1024,8 @@ def check_images(f, lines):
     images are read through their `[id]: address` definitions; code fences and inline code are not images."""
     fence, defs, found = None, {}, []
     for k, ln in enumerate(lines):
-        fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
-        if fm_:
-            if fence is None:
-                fence = fm_.group(1)[0]
-            elif fm_.group(1)[0] == fence and not fm_.group(2).strip():
-                fence = None
-            continue
-        if fence:
+        fence, skip = fence_skip(ln, fence)
+        if skip:
             continue
         bare = re.sub(r'`[^`]*`', '', ln)
         d = re.match(r'^ {0,3}\[([^\]]+)\]:[ \t]*(<[^>]*>|\S+)', bare)
@@ -1070,14 +1074,8 @@ def check_links(f, lines):
     (`> [!activity|id] Title`). Code fences and `#^block` refs are not links."""
     heads, links, fence, scope = {}, [], None, None
     for k, ln in enumerate(lines):
-        fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
-        if fm_:
-            if fence is None:
-                fence = fm_.group(1)[0]
-            elif fm_.group(1)[0] == fence and not fm_.group(2).strip():
-                fence = None
-            continue
-        if fence:
+        fence, skip = fence_skip(ln, fence)
+        if skip:
             continue
         mm = CALLOUT_LINE.match(ln)
         if mm and mm.group(1).lower() == "module":
@@ -1154,20 +1152,10 @@ def main():
     if "--help" in flags or "-h" in flags:
         print(__doc__.strip())
         return 0
-    if "--format-version" in flags:
-        print(FORMAT_VERSION)
-        return 0
     if "--marker" in flags:
         print(f'booklet: "{FORMAT_VERSION}"')
         return 0
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
-    if "--renderer-checksum" in flags:
-        import hashlib
-        if len(args) != 1 or not pathlib.Path(args[0]).is_file():
-            print("usage: python3 lint-booklet.py --renderer-checksum booklet.html", file=sys.stderr)
-            return 2
-        print(hashlib.sha256(pathlib.Path(args[0]).read_bytes()).hexdigest() + "  " + pathlib.Path(args[0]).name)
-        return 0
     if args:
         paths = [pathlib.Path(a).resolve() for a in args]
     else:

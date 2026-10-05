@@ -59,11 +59,10 @@ chk("a module marked 0.9 can be added to a booklet, and the page says so in the 
  chk("a design saved by 0.8 is still re-keyed, and ends marked as the version that keys by module",B.rekeyFromV08(o8).TPL.booklet==="0.9");
  /* the linter's flags print what generators outside this repo should write */
  {const run=a=>require("child_process").spawnSync("python3",[P.R+"/lint-booklet.py",a],{encoding:"utf8"});
-  const fv=run("--format-version"),mk=run("--marker"),hp=run("--help");
-  chk("--format-version prints the renderer's FORMAT_VERSION as text and exits 0",fv.status===0&&fv.stdout===A.FORMAT_VERSION+"\n",JSON.stringify(fv.stdout));
+  const mk=run("--marker"),hp=run("--help");
   chk("--marker prints the front-matter line, quoted, and exits 0",mk.status===0&&mk.stdout==='booklet: "'+A.FORMAT_VERSION+'"\n',JSON.stringify(mk.stdout));
   chk("the line --marker prints is a marker the renderer reads",A.parseFile(file(mk.stdout.trim().replace(/^booklet: /,""))).ok);
-  chk("both are in --help",hp.status===0&&/--format-version/.test(hp.stdout)&&/--marker/.test(hp.stdout));}
+  chk("--marker is in --help, and the two flags dropped in 0.11.3 (a format-version flag, a checksum flag) are not",hp.status===0&&/--marker/.test(hp.stdout)&&!/--format-version|--renderer-checksum/.test(hp.stdout));}
  /* the linter */
  const tmp=require("path").join(require("os").tmpdir(),"ver-"+process.pid);fs.mkdirSync(tmp,{recursive:true});
  const lint=(name,t)=>{const f=require("path").join(tmp,name);fs.writeFileSync(f,t);return require("child_process").spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"});};

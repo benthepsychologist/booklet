@@ -108,7 +108,7 @@ figures use the width and fold to one column on a phone.
 A module file (any v0.11 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it. A module may carry its own notice (licence, copyright, source, version), which Add a module writes into the booklet and the page shows under "About this module". A booklet has one name, its own front matter's `title:`, which a reader can rename on its home screen or in "Your booklets".
 
-A tool that writes booklets should ask the linter for the marker (`python3 lint-booklet.py --marker` prints the front-matter line a file should carry, `--format-version` prints just `0.11`) and not hard-code it. A file marked with another `0.x` version still opens, by the current rules and with a notice, and nothing before v1.0 is promised to keep working; the renderer fetches no image or other address a file names.
+A tool that writes booklets should ask the linter for the marker (`python3 lint-booklet.py --marker` prints the front-matter line a file should carry) and not hard-code it. A file marked with another `0.x` version still opens, by the current rules and with a notice, and nothing before v1.0 is promised to keep working; the renderer fetches no address a file names (an image, a diagram's image or style, a font).
 
 A plain Markdown file with booklet front matter (`booklet: "0.11"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
@@ -128,6 +128,26 @@ first time a booklet has a diagram or a formula. A booklet with neither never
 runs them, and nothing is fetched, so the file still works straight off disk
 and under a strict Content-Security-Policy. Their versions, source addresses
 and checksums are in the comments above them in the file, and in `NOTICE`.
+
+**What the renderer refuses in a diagram.** Mermaid can ask the network for an address its own
+source names, even in its strictest mode, and the renderer fetches nothing a file names (`SPEC.md`
+section 6). So it reads each diagram's source as text first (`diagramRisk` in `booklet.html`) and shows
+a diagram it cannot rule out as its source in a code block, under one line saying it is not drawn;
+mermaid never sees it. It refuses, as a broad class and not a parse of mermaid: a `%%{ … }%%` directive;
+mermaid's own front matter; an `@{ … }` shape block that carries an image, icon, address or link, or a key
+outside the plain ones; the words `img`, `icon`, `image`, `src`, `href`, `url`, `link`, `links`, `sprite` or
+`properties` written as a key; a line that opens with `click`, `callback`, `link`, `links` or `properties`;
+`![` in a label; an HTML tag other than the plain ones (`br`, `b`, `i`, `u`, `s`, `strong`, `em`, `sub`,
+`sup`, `small`, `code`, with no attributes); an HTML or mermaid character entity; `://`; a CSS function
+that fetches (`url(`, `src(`, `image(`, `image-set(`, `cross-fade(`, `element(`, `paint(`, `expression(`,
+`local(`) or an at-rule; a `style`, `classDef` or `linkStyle` line with anything outside letters, digits,
+spaces and a few punctuation marks; and a backslash that touches no bracket or slash (CSS reads `\75 rl(`
+as `url(`). A formula is typeset with `\includegraphics` and `\href` switched off. Why a broad refusal: a
+diagram that passes is still drawn by a library started in its strict mode, with HTML labels off,
+behind the page's Content-Security-Policy, and a gap in the list is a gap in what the page asks for.
+`test/mermaid-browser.js` draws a corpus of diagrams and a matrix of probes with a request counter, so a
+gap shows there. **Whenever the vendored mermaid changes, probe it again** (run that test, and read what
+the new version can fetch before trusting the list).
 
 The renderer opens **empty**, because it holds no booklet of its own. That is
 the property everything else here rests on.
@@ -203,9 +223,13 @@ declare a store: not a booklet's front matter, not a link, nothing kept in the b
 
 What opens is read once, as text (a plain read: no method, no body, no credentials, no redirect, at most 5 MB, 15 seconds),
 and then goes through the same parser as a file picked by hand, with the same refusals and notices. It opens with its records,
-if the file has them. It never replaces a booklet the reader keeps: it is a view, and joins "Your booklets" only when the
-reader changes something in it. If the browser already keeps a copy that came from the same name, the page says so and offers
-it. A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
+if the file has them. When the browser keeps nothing for the link it opens as a view, and joins "Your booklets" only when the
+reader changes something in it. In one browser a store name is one booklet, and so is a module link: opening one the browser
+already keeps opens that booklet, never a second. The page remembers a short fingerprint of the file the kept booklet was
+last read from; if the file now is different, it offers "Read the newer file", and nothing changes until the reader presses.
+Reading it never loses the reader's work: with a host registered the store file is the truth, otherwise the new file's body
+is taken and the reader's own answers, entries and drafts stay (a module link updates the module in place, as Add a module
+does). A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
 and can be dismissed. The page reads the link when it starts and whenever the fragment changes, and the link stays in the
 address bar, so a reload opens the same thing.
 
@@ -227,6 +251,15 @@ its own, and a booklet that declares one language always reads in it.
 The page opens on "Your booklets", the list of every booklet kept in that
 browser. The address is read for one thing only: a link a host's own page declares support for (see "Opening a booklet by link"), never written. Each booklet keeps its own
 answers, and a first visit shows the empty list.
+
+Booklets kept in the browser live in its local storage, which a browser may clear (Safari clears what a
+page's script wrote for a site not used for seven days, unless the site is added to the home screen; Chrome and
+Firefox may when the disk is short). So the first time in a session that the page saves a booklet (after something
+the reader did, never at page load) it asks the browser to keep the site's storage, once, with
+`navigator.storage.persist()`; Firefox may ask the reader. That call is to the browser about its own storage and
+sends nothing anywhere, so it is not a request in the pledge's sense. When at least one booklet is kept and the
+browser has not promised to keep the storage, "Your booklets" says so in one quiet line, with the two things a
+reader can do: download a copy, or add the page to the home screen.
 
 The renderer only ever calls `localStorage.getItem`, `setItem` and
 `removeItem`, on a few known keys (`booklet.library.v1` for the list,

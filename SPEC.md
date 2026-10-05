@@ -1,4 +1,4 @@
-# The booklet format, v0.11
+# The booklet format, v0.11.3
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
@@ -9,7 +9,7 @@
 > `0.x` version, earlier or later, by its own rules and say so, but it makes no promise about what
 > such a file draws: what its rules do not understand is reported like any other problem. Nobody
 > maintains backwards compatibility before v1.0, so a tool that writes booklets should still write
-> the current marker (`lint-booklet.py --marker` prints the line). A third number (v0.11.1) is a
+> the current marker (`lint-booklet.py --marker` prints the line). A third number (v0.11.3) is a
 > patch to the wording here or to the renderer: it changes no file, and files go on saying
 > `booklet: "0.11"`. There is no earlier format to compare against or convert from.
 >
@@ -410,7 +410,7 @@ Reference style, with the address at the end of the file among the data, so the 
 [harbour]: images/harbour.jpg
 ```
 
-Images are linked, never embedded. **A renderer never fetches a remote image**: an address with a scheme (`https:`, `http:`), one that starts `//`, and one with any other scheme (`data:`, `javascript:`, `file:`) are never requested. A relative path (`images/harbour.jpg`) is not requested either, because asking for it would tell the host the renderer was served from which file the reader opened. Where a renderer does not show an image, it shows the alt text and the address as text, so a reader can see what was meant. (The reference renderer does not do this yet; see section 13: it shows no image at all, only the alt text in a quiet box that says the image is not shown, with the address beneath.) The linter warns on an image with a remote address (`http:`, `https:` or `//`) and reports an error for any other scheme; a relative path is fine.
+Images are linked, never embedded. A Booklet renderer fetches an image only from a place its own host declares, never from an address the file names directly. A remote address (`https:`, `http:`, or one that starts `//`) is never requested; a relative path (`images/harbour.jpg`) is looked up only in a store its host declares; an address with any other scheme (`data:`, `javascript:`, `file:`) is never used. Showing an image from a declared store is what a renderer with a host can do. (The reference renderer does not do this yet; see section 13.) Where a renderer does not show an image, it shows the alt text and the address as text, so a reader can see what was meant. The linter warns on an image with a remote address (`http:`, `https:` or `//`) and reports an error for any other scheme; a relative path is fine.
 
 ### Figures: diagrams placed by reference
 
@@ -431,7 +431,7 @@ graph LR; New --> Spring --> Quarter --> Neap --> Full
 
 Obsidian draws the diagram natively at the embed. On GitHub the embed line shows as text and the diagram still renders where the fence itself sits. A mermaid fence written directly in the prose still works everywhere, as it always did.
 
-**A diagram that could make a renderer ask for an address is not drawn.** Mermaid can fetch an address its own source names: an image node (`A@{ img: "…" }`), an icon, a style that carries `url(…)`, a theme or font set by a `%%{init}%%` directive or by front matter. A renderer that fetches nothing a file names must not hand such a source to a diagram library. The reference renderer reads each diagram's source as text first and refuses what it cannot rule out (the list is in the comment above `diagramRisk` in `booklet.html`); a refused diagram is shown as its source in a code block, under one line saying it is not drawn. A formula is drawn with `\includegraphics` and `\href` switched off.
+**A diagram that could make a renderer ask for an address is not drawn.** A renderer must not let a diagram library request an address a diagram's source names, and may refuse to draw such a diagram, showing its source instead.
 
 
 ### Queries: showing kept entries and data
@@ -688,6 +688,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 - Block ids allow letters, digits and dashes only; every Booklet id follows that rule.
 - The Properties editor may rewrite front matter; the front matter is flat and readers accept any form of it.
 - **A checkbox click in Reading view edits the file.** See "Choice" in section 5 for the accepted trade-off.
+- **Obsidian and GitHub show images their own way**, outside the rule in section 6.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 - **Two modules in one file may use the same block id or footnote id, and Obsidian and GitHub do not know about modules.** Booklet reads every reference inside its own module (section 4). Obsidian resolves `![[#^id]]` to the first block with that id in the note, and Markdown resolves a footnote mark `[^id]` and its definition across the whole file, in Obsidian and on GitHub. So in a file holding two modules that both use `^fig` or `[^1]`, Booklet shows each module its own, while those hosts show the first one's for both. Nothing a host resolves depends on a question, activity or menu id (they are callout metadata), so those never matter. This only arises in a file with more than one module; a module file on its own is unaffected. This holds for a block id or a footnote id under a module's own data section too. A tool that puts modules together may rename a clashing block id or footnote id by prefixing the module's id (`fig` becomes `week-2-fig`, with every reference to it inside that module), as the reference renderer's Add a module does, so the file it writes has no block id or footnote id twice. An author never needs to prefix an id by hand. The reference linter warns about a block id or a footnote id that two modules share.
 
@@ -784,7 +785,7 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A second, independent implementation.** The renderer in this repository is the only reader so far.
 - **The manifest** (section 3). The linter check of the manifest against the file, and parts that live in another file (`[[week-2.booklet]]`, a data block in another file). The renderer reads one file and skips the manifest.
 - **`sync`**, the record of where a file is kept (section 8).
-- **Showing images** (section 6). The reference renderer fetches no image at all. It draws an image's alt text in a quiet box that says the image is not shown, with the address as text beneath. A later version will read images from a place the renderer's host declares.
+- **Showing images** (section 6). The reference renderer shows no image yet. It draws an image's alt text in a quiet box that says the image is not shown, with the address as text beneath. A later version will read images from a store its host declares.
 - **`readonly` and `describe` on a widget line** (section 7). `grid-select` honours them; `svg-regions` does not yet.
 
 None of this affects what already works: loading, reading, answering, and saving a v0.11 booklet with every question kind above, its widgets, and its citations.
@@ -792,6 +793,13 @@ None of this affects what already works: loading, reading, answering, and saving
 ---
 
 ## 14. Changes
+
+### Changes in v0.11.3: wording only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
+
+- **Images** (sections 6, 10 and 13). A renderer fetches an image only from a place its own host declares, never from an address a file names directly. This replaces the wording that no renderer ever fetches an image.
+- **Diagrams** (section 6). The paragraph is cut to its rule: a renderer must not let a diagram library request an address a diagram's source names, and may refuse to draw such a diagram, showing its source instead. What the reference renderer refuses, and why, is now in `README.md`.
 
 ### Changes from v0.10
 
@@ -808,7 +816,7 @@ Wording only: nothing a file can say has changed, the marker stayed `booklet: "0
 
 ### Changes from v0.9
 
-- **The marker is `booklet: "0.10"` there, and it is written in quotes** (section 2). `0.10` is not the number 0.1, so a version is read as text and compared as two whole numbers, major and minor, and a file writes it quoted so a YAML tool does not read it as 0.1. A file marked `booklet: 0.9`, or `0.1`, is refused as an old format; the linter warns on an unquoted `0.10`.
+- **The marker is `booklet: "0.10"`, and it is written in quotes** (section 2). `0.10` is not the number 0.1, so a version is read as text and compared as two whole numbers, major and minor, and a file writes it quoted so a YAML tool does not read it as 0.1. A file marked `booklet: 0.9`, or `0.1`, is refused as an old format; the linter warns on an unquoted `0.10`.
 - **A module carries its notice** (section 3). A `> [!notice]` callout inside a module's fence holds `license`, `copyright`, `source` and `version`. A file that holds one module and no callout is covered by its own front matter, so no module file has to be rewritten. Add a module writes the callout into the booklet, and the renderer shows it in a quiet "About this module" disclosure. `notice` is added to the table of settings (none).
 - **Data at the end can belong to a module** (sections 3, 4, 7, 10 and 12). `> [!data|module-id]` opens a data section that is that module's, as `> [!records|module-id]` does for records; a reference is looked up in the module's fence, then its data section, then the shared data section. Add a module puts what it brings under the module's own data line, and an update replaces exactly the module's fence and that section; the old rule, which guessed which shared blocks were the old module's, is gone. A `module` or `activity` line now ends a data section.
 - **A booklet has one name** (section 2): the `title:` in its own front matter, shown everywhere, written from the first moment a booklet is started, and renameable by the reader. A module file's title names the module and never the booklet. A file with valid front matter and no module and no activity is an empty booklet with that name: a renderer opens it (the home screen, with Add a module), and the linter accepts it with a warning that it holds nothing yet. As a module to add, it still holds no module.
