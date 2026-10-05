@@ -1,17 +1,17 @@
-# The booklet format, v0.10.1
+# The booklet format, v0.11
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
-> **Status: v0.10, draft.** This is a young, evolving format — v0.10 is the one
-> version number that matters: this spec, the renderer, the skill, the
-> tests, and the `booklet: "0.10"` every file's front matter declares, all
-> together, all the same number. Nothing here is frozen: the format itself
-> may still change, a file names the one version it is written in, and a
-> reader opens only that version, so it doesn't promise stability yet. A third
-> number (v0.10.1) is a patch to the wording here or to the renderer: it changes
-> no file, and files go on saying `booklet: "0.10"`. There is no earlier
-> format to compare against or convert from — it was retired entirely on
-> 2026-09-29, and this spec no longer documents or mentions it.
+> **Status: v0.11, draft.** This is a young, evolving format. Nothing before v1.0 is stable: this
+> spec, the renderer, the skill, the tests, and the `booklet: "0.11"` that a file's front matter
+> declares are all the same number, v0.11, and it will change again. A file names the version it is
+> written in. A reader must read its own version. It should also open a file marked with another
+> `0.x` version, earlier or later, by its own rules and say so, but it makes no promise about what
+> such a file draws: what its rules do not understand is reported like any other problem. Nobody
+> maintains backwards compatibility before v1.0, so a tool that writes booklets should still write
+> the current marker (`lint-booklet.py --marker` prints the line). A third number (v0.11.1) is a
+> patch to the wording here or to the renderer: it changes no file, and files go on saying
+> `booklet: "0.11"`. There is no earlier format to compare against or convert from.
 >
 > **This document may describe things the reference renderer does not do yet.** The spec is allowed to have
 > options the renderer can't do yet. Each one is marked where it is described, in the words "The reference
@@ -59,7 +59,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: example/tides
 title: How tides work
 lang: en
@@ -69,10 +69,11 @@ license: CC-BY-4.0
 ---
 ```
 
-- `booklet` is the file format generation this file uses (see the status note above). `id` names this booklet across its translations and versions. `lang` is the language of the page around the content, the renderer's own words and defaults; in a module's own file it is also the language the module is written in (section 9).
+- `booklet` is the file format version this file uses (see the status note above): `0.11` here. A file marked with another `0.x` version is opened by this version's rules, with a notice (section 12); a file with no marker, or one that is not a `0.x` version (`1.0`, `2`, words), is not a booklet for this version. `id` names this booklet across its translations and versions. `lang` is the language of the page around the content, the renderer's own words and defaults; in a module's own file it is also the language the module is written in (section 9).
 - **The front matter's `id` is the booklet's own name, not an id in the sense of section 4.** It may hold slashes (`example/tides`), and it is not one of the ids a question, an activity or a module carries, so the rule for those (letters, digits and dashes, unique in the file) does not apply to it.
 - `title` is the booklet's own name: the one name its home screen, its row in a list of booklets and the name of the file a renderer saves all show. A module file's own `title` names the module and never the booklet, so adding a module leaves the booklet's name alone. A renderer may let a reader rename the booklet, which rewrites this one line, with the new name as a quoted string.
-- **Write the marker in quotes: `booklet: "0.10"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way. A renderer reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9; `booklet: 0.10`, `"0.10"` and `'0.10'` are all this format, and `booklet: 0.1` is the old format 0.1. The linter warns on the unquoted form, and a renderer writes the quoted one.
+- **Write the marker in quotes: `booklet: "0.11"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way, so the linter warns on any unquoted marker whose minor ends in 0. A renderer reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9; `booklet: 0.11`, `"0.11"` and `'0.11'` are all this format, and `booklet: 0.1` is the earlier version 0.1, not 0.10. A renderer never changes a file's marker: a file it opened with another marker is saved back with the marker it came with, and a booklet it makes itself says `"0.11"`. The linter warns on the unquoted form, and a renderer writes the quoted one.
+- `start` is optional and has one value, `start: home`. Without it, a booklet that holds exactly one activity opens straight into that activity, and one that holds exactly one module (with several activities) opens on that module's own screen; any other booklet opens on its home screen. An author writes `start: home` for a booklet they are still building, or one whose home screen says something a reader should see first. Any other value is an error in the linter, and a renderer reports it and ignores it. The back control from the activity or module still leads to the home screen.
 - `copyright`, `license`, `source` and `version` live in front matter — the file is the unit that travels (section 3), so the front matter travels with it. In a file that holds one module and no notice callout, they are that module's notice (section 3).
 - Reserved by Obsidian and therefore never used for anything else: `tags`, `aliases`, `cssclasses`.
 
@@ -409,7 +410,7 @@ Reference style, with the address at the end of the file among the data, so the 
 [harbour]: images/harbour.jpg
 ```
 
-Images are linked, never embedded.
+Images are linked, never embedded. **A renderer never fetches a remote image**: an address with a scheme (`https:`, `http:`), one that starts `//`, and one with any other scheme (`data:`, `javascript:`, `file:`) are never requested. A relative path (`images/harbour.jpg`) is not requested either, because asking for it would tell the host the renderer was served from which file the reader opened. Where a renderer does not show an image, it shows the alt text and the address as text, so a reader can see what was meant. (The reference renderer does not do this yet; see section 13: it shows no image at all, only the alt text in a quiet box that says the image is not shown, with the address beneath.) The linter warns on an image with a remote address (`http:`, `https:` or `//`) and reports an error for any other scheme; a relative path is fine.
 
 ### Figures: diagrams placed by reference
 
@@ -429,6 +430,8 @@ graph LR; New --> Spring --> Quarter --> Neap --> Full
 ```
 
 Obsidian draws the diagram natively at the embed. On GitHub the embed line shows as text and the diagram still renders where the fence itself sits. A mermaid fence written directly in the prose still works everywhere, as it always did.
+
+**A diagram that could make a renderer ask for an address is not drawn.** Mermaid can fetch an address its own source names: an image node (`A@{ img: "…" }`), an icon, a style that carries `url(…)`, a theme or font set by a `%%{init}%%` directive or by front matter. A renderer that fetches nothing a file names must not hand such a source to a diagram library. The reference renderer reads each diagram's source as text first and refuses what it cannot rule out (the list is in the comment above `diagramRisk` in `booklet.html`); a refused diagram is shown as its source in a code block, under one line saying it is not drawn. A formula is drawn with `\includegraphics` and `\href` switched off.
 
 
 ### Queries: showing kept entries and data
@@ -688,7 +691,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 - **Two modules in one file may use the same block id or footnote id, and Obsidian and GitHub do not know about modules.** Booklet reads every reference inside its own module (section 4). Obsidian resolves `![[#^id]]` to the first block with that id in the note, and Markdown resolves a footnote mark `[^id]` and its definition across the whole file, in Obsidian and on GitHub. So in a file holding two modules that both use `^fig` or `[^1]`, Booklet shows each module its own, while those hosts show the first one's for both. Nothing a host resolves depends on a question, activity or menu id (they are callout metadata), so those never matter. This only arises in a file with more than one module; a module file on its own is unaffected. This holds for a block id or a footnote id under a module's own data section too. A tool that puts modules together may rename a clashing block id or footnote id by prefixing the module's id (`fig` becomes `week-2-fig`, with every reference to it inside that module), as the reference renderer's Add a module does, so the file it writes has no block id or footnote id twice. An author never needs to prefix an id by hand. The reference linter warns about a block id or a footnote id that two modules share.
 
-**The Markdown the reference renderer draws.** Headings (`#` to `######`, and a line underlined with `===` or `---`), paragraphs, emphasis (`*em*`, `_em_`, `**strong**`, `__strong__`), `~~strikethrough~~`, `==highlight==`, `` `code` `` and fenced code (backticks or tildes), links (inline, reference-style, `<autolinks>`, bare web addresses, and `[[#Heading]]` to a heading in the file), images (inline and reference-style, linked and never embedded), bulleted, numbered and task lists (task boxes are drawn, not operated), tables, block quotes, thematic breaks (page breaks inside an activity), footnotes (section 6), `$math$` and `$$display math$$`, `mermaid` fences, and `<!-- comments -->`, which are not drawn. A backslash escapes a punctuation mark. Raw HTML is not drawn: it shows as text.
+**The Markdown the reference renderer draws.** Headings (`#` to `######`, and a line underlined with `===` or `---`), paragraphs, emphasis (`*em*`, `_em_`, `**strong**`, `__strong__`), `~~strikethrough~~`, `==highlight==`, `` `code` `` and fenced code (backticks or tildes), links (inline, reference-style, `<autolinks>`, bare web addresses, and `[[#Heading]]` to a heading in the file), images (inline and reference-style, linked and never embedded; the reference renderer shows an image's alt text and address as text and fetches nothing), bulleted, numbered and task lists (task boxes are drawn, not operated), tables, block quotes, thematic breaks (page breaks inside an activity), footnotes (section 6), `$math$` and `$$display math$$`, `mermaid` fences, and `<!-- comments -->`, which are not drawn. A backslash escapes a punctuation mark. Raw HTML is not drawn: it shows as text.
 
 **Obsidian: how it looks without a plugin.** A chart is a `booklet query` block, so it shows as a code block, like any query. Every Booklet line is a titled callout (a row reads top to bottom, its two marker lines showing as small callouts; a theme block shows as a short code block); a module's notice is a small quoted box at the top of the module, which is what a notice should be, and a `> [!data|module-id]` line is a titled callout above that module's blocks; questions are callouts followed by lists; figures render at their embed; widgets show their data; a query and a data block show as code blocks. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
 
@@ -700,7 +703,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 ````markdown
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: example/tides
 title: How tides work
 lang: en
@@ -760,13 +763,15 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: "0.10"` by this document (the marker read as text: `0.10` is not the number 0.1), and refuse any other `booklet:` value outright; refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction.
+A conforming reader must: read a file whose front matter declares `booklet: "0.11"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names (no image, no diagram image or style, no font), so that opening a file asks the network for nothing.
+
+A conforming reader should open a file marked with another `0.x` version, earlier or later (`0.3`, `0.10`, `0.12`), by its own rules, with a notice that says so first among the file's problems ("This file says booklet: 0.9. This page reads format 0.11 and has opened it as it is; some of it may not draw."), and make no promise about what such a file draws: whatever its rules do not understand is reported like any other problem. The conditions above that refuse a file (a module opened and not closed, an id used twice in a module, and the rest) still refuse it whatever the marker. A reader never changes the marker of a file it opened: it saves the file back with the marker it came with, and a module file with another `0.x` marker may be added to a booklet, with the same notice. Nothing before v1.0 is stable, so none of this is a promise that an old file keeps working.
 
 **This document may describe things the reference renderer does not do yet.** Each is marked where it is described and listed in section 13.
 
-A conforming writer must: emit front matter with `booklet: "0.10"`; keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with `booklet: "0.11"`, the marker `lint-booklet.py --marker` prints (a generator one version behind writes files that open with a notice and no promise); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: "0.10"` files, rejects anything else outright, and is the reference implementation of "is this file valid."
+`lint-booklet.py` in this repository checks `booklet: "0.11"` files, and is the reference implementation of "is this file valid." A file with another `0.x` marker is checked as 0.11 and gets one warning ("this file says booklet: 0.9; the current format is 0.11, and it is checked as 0.11"); a file with no marker, or a marker that is not a `0.x` version, is an error.
 
 ---
 
@@ -779,23 +784,31 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A second, independent implementation.** The renderer in this repository is the only reader so far.
 - **The manifest** (section 3). The linter check of the manifest against the file, and parts that live in another file (`[[week-2.booklet]]`, a data block in another file). The renderer reads one file and skips the manifest.
 - **`sync`**, the record of where a file is kept (section 8).
+- **Showing images** (section 6). The reference renderer fetches no image at all. It draws an image's alt text in a quiet box that says the image is not shown, with the address as text beneath. A later version will read images from a place the renderer's host declares.
 - **`readonly` and `describe` on a widget line** (section 7). `grid-select` honours them; `svg-regions` does not yet.
 
-None of this affects what already works: loading, reading, answering, and saving a v0.10 booklet with every question kind above, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.11 booklet with every question kind above, its widgets, and its citations.
 
 ---
 
 ## 14. Changes
 
+### Changes from v0.10
+
+- **Another `0.x` marker opens, with a notice** (sections 2 and 12). A file marked `booklet: 0.9`, `0.10` or `0.12` is no longer refused: a reader opens it by its own rules, says so first among the file's problems, and promises nothing about what it draws. A file with no marker, or a marker that is not a `0.x` version, is still refused. The marker a file came with is saved back unchanged. The linter warns on another `0.x` marker and checks the file as 0.11.
+- **A renderer fetches no image** (sections 6 and 12). A remote or relative image address is never requested; the reference renderer shows the alt text and the address as text. The linter warns on a remote address and errors on any other scheme. A diagram whose source could make a renderer ask for an address (an image or icon node, a `url(…)` style, a directive or front matter, an HTML tag in a label) is shown as its source and not drawn.
+- **A booklet of one activity or one module opens into it** (section 2). `start: home` in the front matter keeps the home screen. Any other value of `start` is a linter error.
+- A module card's blurb reads the first paragraph as inline Markdown, so `snake_case` keeps its underscore and a formula or an image is its text.
+
 ### Changes in v0.10.1
 
-Wording only: nothing a file can say has changed, the marker stays `booklet: "0.10"`, and no file needs touching.
+Wording only: nothing a file can say has changed, the marker stayed `booklet: "0.10"`, and no file needed touching.
 
 - Section 9 said `lang` "is the language the content is written in". That is true of a module's own file and was wrong for a booklet, which may hold modules in several languages. A booklet's `lang` sets the language of the renderer's own words and defaults, and says nothing about its modules.
 
 ### Changes from v0.9
 
-- **The marker is `booklet: "0.10"`, and it is written in quotes** (section 2). `0.10` is not the number 0.1, so a version is read as text and compared as two whole numbers, major and minor, and a file writes it quoted so a YAML tool does not read it as 0.1. A file marked `booklet: 0.9`, or `0.1`, is refused as an old format; the linter warns on an unquoted `0.10`.
+- **The marker is `booklet: "0.10"` there, and it is written in quotes** (section 2). `0.10` is not the number 0.1, so a version is read as text and compared as two whole numbers, major and minor, and a file writes it quoted so a YAML tool does not read it as 0.1. A file marked `booklet: 0.9`, or `0.1`, is refused as an old format; the linter warns on an unquoted `0.10`.
 - **A module carries its notice** (section 3). A `> [!notice]` callout inside a module's fence holds `license`, `copyright`, `source` and `version`. A file that holds one module and no callout is covered by its own front matter, so no module file has to be rewritten. Add a module writes the callout into the booklet, and the renderer shows it in a quiet "About this module" disclosure. `notice` is added to the table of settings (none).
 - **Data at the end can belong to a module** (sections 3, 4, 7, 10 and 12). `> [!data|module-id]` opens a data section that is that module's, as `> [!records|module-id]` does for records; a reference is looked up in the module's fence, then its data section, then the shared data section. Add a module puts what it brings under the module's own data line, and an update replaces exactly the module's fence and that section; the old rule, which guessed which shared blocks were the old module's, is gone. A `module` or `activity` line now ends a data section.
 - **A booklet has one name** (section 2): the `title:` in its own front matter, shown everywhere, written from the first moment a booklet is started, and renameable by the reader. A module file's title names the module and never the booklet. A file with valid front matter and no module and no activity is an empty booklet with that name: a renderer opens it (the home screen, with Add a module), and the linter accepts it with a warning that it holds nothing yet. As a module to add, it still holds no module.

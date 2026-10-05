@@ -165,18 +165,23 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
     A count that changes here means the library was swapped: look at what is new before changing the number. */
  const ALLOW={
   mermaid:{
-   "new Image":[1,"mermaid's image-shaped node (flowchart A@{ img: ... }). Observed 2026-10-05: it asks for the picture address the booklet FILE wrote, a plain GET, even under securityLevel strict. It carries nothing of the reader's (the address is fixed text in the file, as a Markdown image's is); on the hosted page the Content-Security-Policy img-src refuses any other origin, and off the hosted page it is the same exposure a Markdown image in the file already is"],
+   "new Image":[1,"mermaid's image-shaped node (flowchart A@{ img: ... }): it asks for the picture address the diagram's source wrote, a plain GET, even under securityLevel strict (observed 2026-10-05). It is allowed in the library because the renderer never hands such a diagram to the library: diagramRisk() reads every diagram's source first and refuses an img or icon key, an address, a directive, a style that carries url() and the rest (checked below, and test/mermaid-browser.js counts requests)"],
+   'append("image")':[2,"mermaid's two SVG <image> elements, one for the image-shaped node (img:) and one for a sequence participant's icon (properties ... icon). Each takes its address from the diagram's source, so each is behind the same diagramRisk() refusal (checked below)"],
    "window.open":[1,"a diagram's click link; mermaid only binds click links when its securityLevel is not strict, and the renderer starts it strict (checked below)"],
    "<iframe":[1,"the sandbox iframe, used only under securityLevel sandbox; the renderer starts mermaid strict (checked below)"]},
   temml:{
    "fetch(":[34,"33 calls of the macro expander's own .fetch(), which returns the next token, and its one definition; nothing to do with the network"],
    'createElement("img")':[1,"\\includegraphics, which temml draws only when trust is on; the renderer passes trust:false (checked below)"]}};
- const WATCH=NAMES.concat(["fetch(","new Image","window.open","<iframe",'createElement("img")',"import(","Worker("]);
+ const WATCH=NAMES.concat(["fetch(","new Image",'append("image")',"window.open","<iframe",'createElement("img")',"import(","Worker("]);
  for(const l of libs){
    for(const n of WATCH){const c=count(l.text,n),a=(ALLOW[l.id]||{})[n];
      if(a) must(l.id+" holds "+n+" exactly "+a[0]+" time(s), allowed because: "+a[1],c===a[0],c+" found");
      else must(l.id+" holds no "+n,c===0,c+" found: if a library can now open a connection, say so plainly and ask Ben");}}
  must("mermaid is started with securityLevel strict, so its click links and sandbox iframe never run",/securityLevel:"strict"/.test(hand)&&!/securityLevel:"(loose|sandbox|antiscript)"/.test(hand));
+ must("a diagram's source is read by diagramRisk() before mermaid is started, and one that is refused returns before the library is used",
+   (()=>{const m=hand.match(/function mermaidNode\(code\)\{[\s\S]*?\n  try\{/);return !!m&&/diagramRisk\(code\)/.test(m[0])&&/return box;\}\n  try\{$/.test(m[0])&&!/useLib\("mermaid"\)/.test(m[0]);})());
+ must("mermaid is never started anywhere but mermaidNode (so every diagram passes that check)",count(hand,'useLib("mermaid")')===1&&count(hand,"M.initialize(")===2&&count(hand,"M.render(")===1,count(hand,'useLib("mermaid")')+" / "+count(hand,"M.initialize(")+" / "+count(hand,"M.render("));
+ must("the renderer builds no <img> from a file's Markdown (mkImg draws text), and creates no img element anywhere",count(hand,'el("img"')===0&&count(hand,"createElement(\"img\")")===0&&count(hand,"new Image")===0&&!/<img\b/i.test(hand.slice(hand.indexOf("<body>"))),"img found");
  must("temml is started with trust:false, so \\includegraphics and \\href are not drawn",/trust:false/.test(hand)&&!/trust:true/.test(hand));
  must("the libraries are stored as inert text (type text/plain), never as script that runs on load",!/<script(?![^>]*type="text\/plain")[^>]*id="lib-/.test(full));}
 console.log(fails?"\n"+fails+" FAILURES":"\nguard checks passed");

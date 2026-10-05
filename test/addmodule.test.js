@@ -5,7 +5,7 @@ const fs=require("fs");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const count=(s,sub)=>s.split(sub).length-1;
-const mk=(mod,body)=>`---\nbooklet: "0.10"\ntitle: T ${mod}\nlang: en\n---\n\n> [!module|${mod}] M ${mod}\n\n${body}\n\n> [!module|${mod} end] End\n`;
+const mk=(mod,body)=>`---\nbooklet: "0.11"\ntitle: T ${mod}\nlang: en\n---\n\n> [!module|${mod}] M ${mod}\n\n${body}\n\n> [!module|${mod} end] End\n`;
 (async()=>{
  const A=P.boot();
  const fresh=async()=>{await A.createBooklet();};
@@ -50,7 +50,7 @@ const mk=(mod,body)=>`---\nbooklet: "0.10"\ntitle: T ${mod}\nlang: en\n---\n\n> 
  chk("update: every module file added twice is held once and reopens ("+files.length+" files)",badUpd.length===0,badUpd.slice(0,3).join(" // "));
 
  /* an update brings its data blocks along: the new ones replace the old, none twice */
- {const withData=(v)=>`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n> [!module|upd] M\n\n> [!activity|upd-a repeat] A\n\n> [!text|note long] ${v}\n\n> [!widget|w] W\n> ![[#^upd-data]]\n\n> [!module|upd end] End\n\n\`\`\`booklet widget\n{ "engine": "grid-select", "note": "${v}" }\n\`\`\`\n^upd-data\n`;
+ {const withData=(v)=>`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|upd] M\n\n> [!activity|upd-a repeat] A\n\n> [!text|note long] ${v}\n\n> [!widget|w] W\n> ![[#^upd-data]]\n\n> [!module|upd end] End\n\n\`\`\`booklet widget\n{ "engine": "grid-select", "note": "${v}" }\n\`\`\`\n^upd-data\n`;
   await fresh();A.addModuleText(withData("one"));const r=A.addModuleText(withData("two"));
   const out=A.toMarkdown();
   chk("update with an outside data block: ok, one module, one block, new content",r.ok&&count(out,"[!module|upd]")===1&&count(out,"\n^upd-data")===1&&out.includes('"note": "two"')&&!out.includes('"note": "one"')&&A.parseFile(out).refused.length===0,JSON.stringify(r.problems)+out.slice(-300));}
@@ -63,7 +63,7 @@ const mk=(mod,body)=>`---\nbooklet: "0.10"\ntitle: T ${mod}\nlang: en\n---\n\n> 
    const msg=(r2.problems||[]).join(" ");
    chk(name+": refused, names “"+id+"”, says the data section already has it, adds nothing",r1.ok&&!r2.ok&&msg.includes("“"+id+"”")&&/data section/.test(msg)&&A.toMarkdown()===before&&A.allModules().length===1,JSON.stringify(r2));};
  const outside=(w,blk)=>`> [!activity|${w}-act repeat] A\n\n> [!widget|${w}-w] W\n> ![[#^${blk}]]\n\n> [!module|mod-${w} end] End\n\n\`\`\`booklet widget\n{ "engine": "grid-select" }\n\`\`\`\n^${blk}`;
- const outsideModule=(mod,w,blk)=>`---\nbooklet: "0.10"\ntitle: T ${mod}\nlang: en\n---\n\n> [!module|${mod}] M ${mod}\n\n${outside(w,blk).replace(`mod-${w} end`,`${mod} end`)}\n`;
+ const outsideModule=(mod,w,blk)=>`---\nbooklet: "0.11"\ntitle: T ${mod}\nlang: en\n---\n\n> [!module|${mod}] M ${mod}\n\n${outside(w,blk).replace(`mod-${w} end`,`${mod} end`)}\n`;
  {const name="a data block outside the fence, under an id another module's data section already has";
   await fresh();const r1=A.addModuleText(outsideModule("mod-a","a","blk"));
   const r2=A.addModuleText(outsideModule("mod-b","b","blk"));
@@ -85,7 +85,7 @@ const mk=(mod,body)=>`---\nbooklet: "0.10"\ntitle: T ${mod}\nlang: en\n---\n\n> 
 
  /* ---- rename on a clash (SPEC.md section 10): a block id or footnote id another module or the data section already uses
     is written into the incoming module's text as <module-id>-<id>; nothing else is touched ---- */
- {const mod=(id,t,opts={})=>`---\nbooklet: "0.10"\ntitle: T ${id}\nlang: en\n---\n\n> [!module|${id}] M ${id}\n\n> [!activity|act repeat] Act ${t}\n\n> [!text|wd long] Question ${t}\n\n> [!widget|w] W\n> ![[#^wd]]\n\nSee the picker ![[#^wd]] and a link [[#^wd]], with the note.[^1] Code: \`![[#^wd]] and [^1]\` stays. A second note.[^only-${t}]\n\n\`\`\`text\nunchanged ![[#^wd]] [^1]\n\`\`\`\n\n\`\`\`booklet data\n[{"x":"${t}"}]\n\`\`\`\n^rows\n\n\`\`\`booklet query\nfrom: rows\n\`\`\`\n\n\`\`\`booklet widget\n{ "engine": "grid-select", "copy": {"h": "Heading ${t}"} }\n\`\`\`\n^wd\n${opts.extra||""}\n[^1]: *Source ${t}*, p. 1: "Quote ${t}" Verified 2026-01-01\n\n[^only-${t}]: *Only ${t}*, p. 2: "Own ${t}"\n\n> [!module|${id} end] End\n`;
+ {const mod=(id,t,opts={})=>`---\nbooklet: "0.11"\ntitle: T ${id}\nlang: en\n---\n\n> [!module|${id}] M ${id}\n\n> [!activity|act repeat] Act ${t}\n\n> [!text|wd long] Question ${t}\n\n> [!widget|w] W\n> ![[#^wd]]\n\nSee the picker ![[#^wd]] and a link [[#^wd]], with the note.[^1] Code: \`![[#^wd]] and [^1]\` stays. A second note.[^only-${t}]\n\n\`\`\`text\nunchanged ![[#^wd]] [^1]\n\`\`\`\n\n\`\`\`booklet data\n[{"x":"${t}"}]\n\`\`\`\n^rows\n\n\`\`\`booklet query\nfrom: rows\n\`\`\`\n\n\`\`\`booklet widget\n{ "engine": "grid-select", "copy": {"h": "Heading ${t}"} }\n\`\`\`\n^wd\n${opts.extra||""}\n[^1]: *Source ${t}*, p. 1: "Quote ${t}" Verified 2026-01-01\n\n[^only-${t}]: *Only ${t}*, p. 2: "Own ${t}"\n\n> [!module|${id} end] End\n`;
   await fresh();
   const ra=A.addModuleText(mod("mod-a","a")),rb=A.addModuleText(mod("mod-b","b"));
   const out=A.toMarkdown(),body=out.slice(0,out.indexOf("%%")>0?out.indexOf("%%"):out.length);
@@ -113,7 +113,7 @@ const mk=(mod,body)=>`---\nbooklet: "0.10"\ntitle: T ${mod}\nlang: en\n---\n\n> 
   const r3=A.addModuleText(mod("mod-b","b"));
   chk("a prefixed id that is taken too gets -2",r3.ok&&r3.renamed.some(x=>x.from==="wd"&&x.to==="mod-b-wd-2")&&A.toMarkdown().includes("\n^mod-b-wd-2\n")&&A.parseFile(A.toMarkdown()).refused.length===0,JSON.stringify(r3));
   /* a block of the data section counts as taken */
-  await fresh();A.addModuleText(`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n> [!module|mod-d] D\n\n> [!activity|d repeat] D\n\n> [!module|mod-d end] End\n\n\`\`\`booklet data\n[{"x":1}]\n\`\`\`\n^wd\n`);
+  await fresh();A.addModuleText(`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|mod-d] D\n\n> [!activity|d repeat] D\n\n> [!module|mod-d end] End\n\n\`\`\`booklet data\n[{"x":1}]\n\`\`\`\n^wd\n`);
   const r4=A.addModuleText(mod("mod-b","b"));
   chk("a block id the data section already uses is renamed in the incoming module",r4.ok&&r4.renamed.some(x=>x.from==="wd"&&x.to==="mod-b-wd")&&A.parseFile(A.toMarkdown()).refused.length===0,JSON.stringify(r4));
   /* nothing renamed when nothing clashes: the module text is added as written */
@@ -139,7 +139,7 @@ const mk=(mod,body)=>`---\nbooklet: "0.10"\ntitle: T ${mod}\nlang: en\n---\n\n> 
   await fresh();A.addModuleText(withData);const o2=A.toMarkdown();
   chk("a block outside every module fence is added once, to the data section",(o2.match(/\n\^shared\n/g)||[]).length===1&&o2.indexOf("> [!data] Data")>o2.indexOf("> [!module|mod-2 end]")&&A.parseFile(o2).refused.length===0);}
  /* an update replaces a module where it sits */
- {const m3=(id,w)=>`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n> [!module|${id}] M ${id}\n\n> [!activity|${id}-act repeat] A\n\n> [!text|q long] ${w}\n\n> [!module|${id} end] End\n`;
+ {const m3=(id,w)=>`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|${id}] M ${id}\n\n> [!activity|${id}-act repeat] A\n\n> [!text|q long] ${w}\n\n> [!module|${id} end] End\n`;
   await fresh();["m-a","m-b","m-c"].forEach(id=>A.addModuleText(m3(id,"one")));
   const order=()=>[...A.toMarkdown().matchAll(/^> \[!module\|([^\] ]+)\]/gm)].map(m=>m[1]).join()+" | "+A.BOOK.raw.source.split("\n").filter(l=>/^> \[!module\|[^\] ]+\] /.test(l)).map(l=>l.match(/\|([^\] ]+)\]/)[1]).join()+" | "+A.allModules().map(m=>m.id).join();
   const r=A.addModuleText(m3("m-b","two"));

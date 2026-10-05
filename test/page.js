@@ -22,7 +22,7 @@ const mkNode=tag=>{const n={tagName:tag,children:[],attrs:{},style:{},dataset:{}
   classList:{add(){},remove(){},toggle(){},contains(){return false;}},addEventListener(k,f){this._on[k]=f;},
   append(...k){this.children.push(...k);},prepend(...k){this.children.unshift(...k);},remove(){},
   querySelector(){return mkNode("div");},querySelectorAll(){return [];},focus(){},click(){},scrollIntoView(){},
-  get textContent(){return this._text;},set textContent(v){this._text=String(v);this.children=[];},
+  get textContent(){return this._text||this.children.map(c=>typeof c==="string"?c:(c&&c.textContent)||"").join("");},set textContent(v){this._text=String(v);this.children=[];},
   get innerHTML(){return this._html;},set innerHTML(v){this._html=String(v);this.children=[];},
   get value(){return this._value||"";},set value(v){this._value=v;}};return n;};
 const body=html.slice(html.indexOf("<body>"),html.indexOf("<script>"));
@@ -58,7 +58,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   loadText, parseFile, applyParsed, toMarkdown, allModules, bookActivities, isMulti,
   moduleScreen:id=>MODULE_SCREEN+id, answersFor, answersIn, peekAnswers, rekeyFromV08, addrOf, scopeOfAddr, shortId, widgetOf, figureFor, holderOf, RM_STATE, pageNowKey, get openChip(){return openChip}, ownEarlier, readingPlan, sectionLede, readsOnly, mdNodes, activityOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, VIEWSTATE, viewState, QUESTION_KINDS, QUESTION_BLOCK, SUMMARY, DRAW_BLOCK, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, toneOf, cellColor, cellStyle, themeBaseTable,
   get currentId(){return currentId}, get FILE_NOTES(){return FILE_NOTES}, KIND_SETTINGS, NUMBER_SETTINGS, fieldSummary, readQuery,
-  removeModule, moduleWork, removeModuleControl, PAGE_NOW, FORMAT_VERSION, versionOf, versionCmp, renameBooklet, renameStored, setTitleIn, nameBooklet, noticeNode, dataSections, bookletName, readLib, flushSave, exportName, fileBase, tabName, remarkSaved, blankBook, nameRow, renderBooklets
+  removeModule, moduleWork, removeModuleControl, PAGE_NOW, FORMAT_VERSION, versionOf, versionCmp, renameBooklet, renameStored, setTitleIn, nameBooklet, noticeNode, dataSections, bookletName, readLib, flushSave, exportName, fileBase, tabName, remarkSaved, blankBook, nameRow, renderBooklets, diagramRisk, mermaidNode, markerOf, otherMarker, isBooklet, plainText, startScreen, homeButton, openFromList
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};

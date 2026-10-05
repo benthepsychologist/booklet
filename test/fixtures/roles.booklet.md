@@ -1,5 +1,5 @@
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: fixture/roles
 title: Studio project board
 lang: en

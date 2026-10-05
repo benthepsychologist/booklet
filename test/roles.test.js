@@ -97,7 +97,7 @@ const tones=n=>walk(n,x=>cls(x).some(c=>/^tone-/.test(c)));
   chk("list: a group is a card with the group's name and a count",byClass(n,"dv-gcard").length===2&&byClass(n,"dv-group").map(text).join()==="x2 rows,y1 row");}
 
  /* ---- kept entries: the same roles, the date as the first field ---- */
- const KEEP=`---\nbooklet: "0.10"\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: hours\nas: line\n\`\`\`\n\n\`\`\`booklet query\nfrom: hours\nas: bars\n\`\`\`\n\n\`\`\`booklet query\nfrom: log\nas: list\n\`\`\`\n\n> [!module|m end] End\n`;
+ const KEEP=`---\nbooklet: "0.11"\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: hours\nas: line\n\`\`\`\n\n\`\`\`booklet query\nfrom: hours\nas: bars\n\`\`\`\n\n\`\`\`booklet query\nfrom: log\nas: list\n\`\`\`\n\n> [!module|m end] End\n`;
  {const r=A.parseFile(KEEP);
   chk("a question as the source parses clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
   const qs=r.template.modules[0].activities.find(a=>a.id==="m/look").blocks.filter(b=>b.type==="query");

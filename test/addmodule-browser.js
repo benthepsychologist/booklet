@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),R=path.dirname(HTML);
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const mod=(id,qid,blk)=>`---\nbooklet: "0.10"\ntitle: ${id}\nlang: en\n---\n\n> [!module|${id}] ${id}\n\n> [!activity|${id}-act repeat] A\n\n> [!text|${qid} long] A question\n\n> [!module|${id} end] End\n`+(blk?`\n\`\`\`booklet data\n[{"x":"${id}"}]\n\`\`\`\n^${blk}\n`:"");
+const mod=(id,qid,blk)=>`---\nbooklet: "0.11"\ntitle: ${id}\nlang: en\n---\n\n> [!module|${id}] ${id}\n\n> [!activity|${id}-act repeat] A\n\n> [!text|${qid} long] A question\n\n> [!module|${id} end] End\n`+(blk?`\n\`\`\`booklet data\n[{"x":"${id}"}]\n\`\`\`\n^${blk}\n`:"");
 const FILES={'/first.md':mod('first-mod','first-q','dat'),'/clash.md':mod('clash-mod','clash-q','dat'),'/fine.md':mod('fine-mod','extra')};
 const REG={modules:[{id:'t/first',title:'First module',file:'first.md'},{id:'t/clash',title:'Clashing module',file:'clash.md'},{id:'t/fine',title:'Fine module',file:'fine.md'}]};
 (async()=>{
@@ -26,7 +26,7 @@ const REG={modules:[{id:'t/first',title:'First module',file:'first.md'},{id:'t/c
   await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
   await p.locator('#fileIn').setInputFiles(path.join(R,'test/fixtures/questions-open.booklet.md'));await p.waitForTimeout(500);
-  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
+  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
   const tabs=()=>p.locator('button.mode').count();
   const before=await tabs();
   await p.getByRole('button',{name:'Add a module'}).first().click();await p.waitForTimeout(800);
