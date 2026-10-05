@@ -2,32 +2,32 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.10 format in SPEC.md.
+Lint a booklet file against the v0.11 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: "0.10"`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.11"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.10"`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: "0.11"`, one `lang:`), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
 title, queries and data blocks, and records that name an activity. Any file whose
-front matter is not `booklet: "0.10"` is rejected; no earlier format is read. A block id or a footnote
+front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.11 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
-        python3 lint-booklet.py --format-version     prints the current format version (0.10) and exits 0
-        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.10") and exits 0
+        python3 lint-booklet.py --format-version     prints the current format version (0.11) and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.11") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.10 file is written in one language, so it
+registry's CI line keeps working; a v0.11 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
@@ -36,7 +36,7 @@ import html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 BASE = pathlib.Path(__file__).resolve().parent
 
 # The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
-FORMAT_VERSION = "0.10"
+FORMAT_VERSION = "0.11"
 
 errors, warnings = [], []
 def err(f, m):  errors.append(f"{f}: {m}")
@@ -109,7 +109,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.10 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.11 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -630,10 +630,10 @@ def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
 
 
 def check_format(f, text, fm):
-    """Lint a v0.10 booklet. Every problem names its line."""
+    """Lint a v0.11 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.10 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.11 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
@@ -642,6 +642,9 @@ def check_format(f, text, fm):
             warn(f, lang_warning(lang))
     if not fm.get("title"):
         warn(f, "front matter has no `title:`")
+    if "start" in fm and fm["start"] != "home":
+        err(f, f"front matter `start: {fm['start']}`: the only value is `start: home` (a booklet that holds one activity or one module opens "
+               "straight into it unless it says `start: home`); the renderer reports it and ignores it")
     lines = text.replace("\r\n", "\n").split("\n")
     i = 0
     if lines and lines[0].strip() == "---":
@@ -998,6 +1001,45 @@ def check_format(f, text, fm):
             mark = f"^{key}" if what == "block" else f"[^{key}]"
             warn(f, f"the {what} id {mark} is used in {names}: Booklet reads each in its own module, but Obsidian and GitHub will show the first one for all of them")
     check_links(f, lines)
+    check_images(f, lines)
+
+
+def check_images(f, lines):
+    """An image is linked, never embedded, and a renderer fetches no image (SPEC.md section 6). A remote address
+    (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does not fetch it. An address with any
+    other scheme (`data:`, `javascript:`, `file:` ...) is an error. A relative path is fine. Reference-style
+    images are read through their `[id]: address` definitions; code fences and inline code are not images."""
+    fence, defs, found = None, {}, []
+    for k, ln in enumerate(lines):
+        fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
+        if fm_:
+            if fence is None:
+                fence = fm_.group(1)[0]
+            elif fm_.group(1)[0] == fence and not fm_.group(2).strip():
+                fence = None
+            continue
+        if fence:
+            continue
+        bare = re.sub(r'`[^`]*`', '', ln)
+        d = re.match(r'^ {0,3}\[([^\]]+)\]:[ \t]*(<[^>]*>|\S+)', bare)
+        if d:
+            defs[d.group(1).strip().lower()] = d.group(2).strip("<>")
+        for m in re.finditer(r'!\[[^\]]*\]\((<[^>]*>|(?:[^()\s]|\([^()\s]*\))*)(?:\s+"[^"]*"|\s+\'[^\']*\')?\)', bare):
+            found.append((k + 1, m.group(1).strip("<>")))
+        for m in re.finditer(r'!\[([^\]]*)\]\[([^\]]*)\]', bare):
+            found.append((k + 1, ("ref", (m.group(2) or m.group(1)).strip().lower())))
+    for n, a in found:
+        if isinstance(a, tuple):
+            a = defs.get(a[1])
+            if a is None:
+                continue
+        flat = re.sub(r'[\x00-\x1f\s]', '', a)
+        scheme = re.match(r'^([A-Za-z][A-Za-z0-9+.-]*):', flat)
+        shown = a if len(a) <= 60 else a[:60] + "..."
+        if flat.startswith("//") or (scheme and scheme.group(1).lower() in ("http", "https")):
+            warn(f, f"line {n}: the image {shown} has a remote address; a renderer does not fetch remote images, so it shows the alt text and the address as text")
+        elif scheme:
+            err(f, f"line {n}: the image {shown} has an address with the scheme `{scheme.group(1).lower()}:`; an image is linked by a relative path or an https address, never embedded or given another scheme")
 
 
 def _plain_heading(s):
@@ -1085,23 +1127,23 @@ def check_file(path):
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return
     marker = fm.get("booklet")
-    if marker == FORMAT_VERSION:
-        # `0.10` written bare is the number 0.1 to a YAML tool (Obsidian's properties panel, GitHub), which may write it back that way
+    if isinstance(marker, str) and re.fullmatch(r"0\.\d+", marker):
+        # A YAML tool (Obsidian's properties panel, GitHub) reads an unquoted `0.10` as the number 0.1 and may write it
+        # back that way; so does any unquoted marker whose minor ends in 0
         raw = next((l for l in text.split("\n")[1:] if re.match(r'^booklet:', l)), "")
-        if re.match(r'^booklet:[ \t]*0\.10[ \t]*$', raw):
-            warn(f, 'front matter says `booklet: 0.10` without quotes; write it in quotes, `booklet: "0.10"`, or a YAML tool will read it as 0.1')
+        bare = re.match(r'^booklet:[ \t]*(0\.\d*0)[ \t]*$', raw)
+        if bare:
+            m = bare.group(1)
+            as_num = re.sub(r"0+$", "", m)
+            warn(f, f'front matter says `booklet: {m}` without quotes; write it in quotes, `booklet: "{m}"`, or a YAML tool will read it as {as_num}')
+        if marker != FORMAT_VERSION:
+            warn(f, f"this file says booklet: {marker}; the current format is {FORMAT_VERSION}, and it is checked as {FORMAT_VERSION}")
         check_format(f, text, fm)
         return
-    old = marker
-    if old in ("0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9"):
-        err(f, f"front matter says booklet: {old}; this is format {FORMAT_VERSION}. Change the marker to booklet: \"{FORMAT_VERSION}\""
-               + (" (and write settings as key:value, for example min:0)." if old == "0.2" else "."))
-        return
-    # No earlier format is read — this mirrors the renderer's own
-    # parseFile(), which only ever calls parseBooklet(). Anything else is
-    # rejected outright rather than checked against an earlier format's rules.
-    err(f, f"front matter must say `booklet: \"{FORMAT_VERSION}\"` (found {fm.get('booklet')!r}) — "
-           f"no earlier format is read")
+    # A file with no marker, or a marker that is not a 0.x version, is not a booklet for this linter (and the
+    # renderer refuses it the same way)
+    err(f, f"front matter must say `booklet: \"{FORMAT_VERSION}\"` (found {fm.get('booklet')!r}); "
+           f"a marker is a 0.x version, and the current one is {FORMAT_VERSION}")
 
 
 def main():

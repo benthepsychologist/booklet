@@ -139,7 +139,7 @@ print(json.dumps(m.TH_BASE))
    chk("the linter's copy of the four base tables equals the stylesheet's",same);}}
 
 /* ---------------- 3. parse, write back, who wins ---------------- */
-const FM='---\nbooklet: "0.10"\nid: t/theme\ntitle: Theme\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.11"\nid: t/theme\ntitle: Theme\nlang: en\n---\n\n';
 const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\n';
 {const r=A.parseFile(FM+THEME+"\n> [!activity|a] A\n\nBody.\n");
  chk("a theme block is read into the template and drawn nowhere",r.ok&&r.template.theme&&r.template.theme.base==="night"&&r.template.theme.accent==="#8fd0d4"
@@ -160,7 +160,7 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
  chk("the theme block is written back byte for byte",out.includes("```booklet theme\nbase: night\naccent:   \"#8fd0d4\"   \n# a comment-ish line? no: not key:value\nfont: serif\n```\n"),out.slice(0,400));
  /* a module added to a booklet takes the booklet's look: a theme block in the module file is not spliced in */
  A.loadText(FM+"```booklet theme\nbase: daylight\n```\n\n> [!activity|a] A\n\nBody.\n");
- const modFile='---\nbooklet: "0.10"\nid: t/mod\ntitle: Mod\nlang: en\n---\n\n> [!module|extra] Extra\n\n> [!activity|x] X\n\nHi.\n\n> [!module|extra end] End\n\n> [!data] Data\n\n```booklet theme\nbase: night\n```\n\n```booklet data\n[{"a":1}]\n```\n^rows\n';
+ const modFile='---\nbooklet: "0.11"\nid: t/mod\ntitle: Mod\nlang: en\n---\n\n> [!module|extra] Extra\n\n> [!activity|x] X\n\nHi.\n\n> [!module|extra end] End\n\n> [!data] Data\n\n```booklet theme\nbase: night\n```\n\n```booklet data\n[{"a":1}]\n```\n^rows\n';
  const add=A.addModuleText(modFile);
  const after=A.toMarkdown();
  chk("a module added from a file keeps its data but not its theme block",add.ok&&(after.match(/booklet theme/g)||[]).length===1&&/base: daylight/.test(after)&&/booklet data/.test(after),after.slice(0,600));

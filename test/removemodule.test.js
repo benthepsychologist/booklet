@@ -5,7 +5,7 @@ const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const count=(s,sub)=>s.split(sub).length-1;
-const FM="---\nbooklet: \"0.10\"\ntitle: Remove test\nlang: en\n---\n\n";
+const FM="---\nbooklet: \"0.11\"\ntitle: Remove test\nlang: en\n---\n\n";
 /* one module: an answered-once activity (note), a repeating one (log), a widget on a block that every module
    names the same way, and its own data section; module B also reads the booklet's shared block */
 const mod=(id,t,shared)=>`> [!module|${id}] Module ${t}\n\n> [!activity|act] Answer ${t}\n\n> [!text|note] Note ${t}\n\n> [!widget|w] Pick\n> ![[#^picker]]\n\n> [!activity|log repeat] Log ${t}\n\n> [!text|what] What ${t}\n\n`+(shared?"> [!activity|look] Look\n\n```booklet query\nfrom: rows\n```\n\n":"")+`> [!module|${id} end] End\n`;

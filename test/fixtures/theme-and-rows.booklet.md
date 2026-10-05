@@ -1,5 +1,5 @@
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: fixture/theme-and-rows
 title: A garden week
 lang: en

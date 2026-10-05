@@ -105,7 +105,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("one equal to a listed option, or repeated, is not offered",pillBtns(box(A,"What did you notice")).map(label).join()==="Birds,Fresh soil,Bees,moths");}
 {/* a shared menu with open behaves the same; a question kept in an activity that keeps no entries offers nothing again */
  P.wipe();const A=P.boot();
- A.loadText("---\nbooklet: \"0.10\"\ntitle: M\nlang: en\n---\n\n> [!module|m] M\n\n> [!menu|feels]\n- Calm\n- Tired\n\n> [!activity|a] A\n\n> [!multi|q1 menu:feels open] This morning\n\n> [!choice|q2 menu:feels open] This evening\n\n> [!module|m end] End\n");
+ A.loadText("---\nbooklet: \"0.11\"\ntitle: M\nlang: en\n---\n\n> [!module|m] M\n\n> [!menu|feels]\n- Calm\n- Tired\n\n> [!activity|a] A\n\n> [!multi|q1 menu:feels open] This morning\n\n> [!choice|q2 menu:feels open] This evening\n\n> [!module|m end] End\n");
  A.screen="m/a";let b=box(A,"This morning");
  addOwn(b,"Hopeful");b=box(A,"This morning");
  chk("a shared menu with `open` takes the reader's own option, stored as a string",JSON.stringify(A.STATE.answers.m.q1)==='["Hopeful"]'&&byClass(b,"pill-own").length===1,JSON.stringify(A.STATE.answers.m));
@@ -159,7 +159,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("a question with no [x] shows no marks, no Check, no live line",!byClass(box(A,"What did you notice"),"q-mk").length&&!byClass(box(A,"What did you notice"),"q-acts").length&&!byClass(box(A,"What did you notice"),"q-live").length);}
 {/* an own option is neither right nor wrong */
  P.wipe();const A=P.boot();
- A.loadText("---\nbooklet: \"0.10\"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!choice|cap open] Capital of France?\n- [ ] Lyon\n- [x] Paris\n\n> [!multi|cols open] Primary colours\n- [x] Red\n- [ ] Green\n- [x] Blue\n\n> [!module|m end] End\n");
+ A.loadText("---\nbooklet: \"0.11\"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!choice|cap open] Capital of France?\n- [ ] Lyon\n- [x] Paris\n\n> [!multi|cols open] Primary colours\n- [x] Red\n- [ ] Green\n- [x] Blue\n\n> [!module|m end] End\n");
  A.screen="m/a";let b=box(A,"Capital of France");
  addOwn(b,"Rome");b=box(A,"Capital of France");
  chk("an own option picked in a question with a right answer is not marked",!byClass(b,"q-mk").length&&text(byClass(b,"q-live")[0])==="");
@@ -172,7 +172,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
 
 /* ---- A3: what happens to a file's problems when it opens ---- */
 {const A=P.boot(),REF=read("problems-refused.booklet.md");
- const mk=body=>"---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n"+body;
+ const mk=body=>"---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n"+body;
  const refused=(label,text,rx)=>{const R=A.parseFile(text);chk(label+": the file is refused",R.ok===false&&R.refused.length>=1&&rx.test(R.refused.join(" ")),JSON.stringify(R.refused));};
  refused("a module opened and not closed",REF,/never closed/);
  refused("a module closed and not opened",mk("> [!activity|a] A\n\n> [!module|m end] End\n"),/closed that was never opened/);
@@ -217,7 +217,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  const quiet=byClass(P.main(),"rd-unknown");
  chk("the callout says so quietly under its title",quiet.length===1&&/This page does not know the kind “sticker”/.test(text(quiet[0])),text(P.main()).slice(0,300));
  chk("and the reading callout has no such line",byClass(P.main(),"rd-callout").length===2);}
- {P.wipe();const D=P.boot();D.loadText("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n");
+ {P.wipe();const D=P.boot();D.loadText("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n");
   const notes=(D.FILE_NOTES||{}).list||[];
   chk("a problem shown to the reader carries no Markdown backticks: what was between them is in quotation marks",notes.length>0&&notes.every(x=>!/`/.test(x))&&notes.some(x=>/“daily” only follows “repeat”/.test(x)),JSON.stringify(notes));}
 
@@ -225,7 +225,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
 {const A=P.boot();
  chk("KIND_SETTINGS is the table of SPEC.md section 4",JSON.stringify(A.KIND_SETTINGS)===JSON.stringify({module:["end"],activity:["repeat","daily","hidden"],row:["end"],text:["long"],
    lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]}));
- const mk=body=>A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n"+body+"\n");
+ const mk=body=>A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n"+body+"\n");
  const q=(R,id)=>R.template.modules[0].mode.blocks.find(b=>b.id===id);
  let R=mk("> [!number|n mx:5 min:1] N");
  chk("an unknown setting is reported and ignored (`mx:5` for `max:5`)",R.unread.length===1&&/a number line takes no “mx:”/.test(R.unread[0])&&q(R,"n").max===undefined&&q(R,"n").min===1,JSON.stringify(R.unread));
@@ -235,14 +235,14 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  R=mk("> [!number|n min:abc] N");chk("a min that is not a number is reported and ignored",R.unread.length===1&&/`min:abc` is not a number/.test(R.unread[0])&&q(R,"n").min===undefined);
  R=mk("> [!number|n MIN:2 Max:9 STEP:0.5] N\n\n> [!TEXT|t LONG] T");
  chk("kinds, settings and flags are read without regard to case",R.unread.length===0&&q(R,"n").min===2&&q(R,"n").max===9&&q(R,"n").step===0.5&&q(R,"t").rows===6,JSON.stringify(R.unread));
- R=A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n\n> [!activity|b Repeat DAILY] B\n");
+ R=A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n\n> [!activity|b Repeat DAILY] B\n");
  const acts=R.template.modules.map(m=>m.mode);
  chk("`daily` without `repeat` is reported and ignored; `repeat daily` is fine",R.unread.length===1&&acts[0].kind==="board"&&acts[0].upsert===undefined&&acts[1].kind==="entry"&&acts[1].upsert==="day",JSON.stringify(R.unread));
- chk("an id keeps its case",A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|MixedCase] A\n").template.modules[0].mode.id==="MixedCase");}
+ chk("an id keeps its case",A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|MixedCase] A\n").template.modules[0].mode.id==="MixedCase");}
 
 /* ---- A6: the small fixes ---- */
 {const A=P.boot();
- const mk=q=>A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|a repeat] A\n\n> [!text|t] T\n\n> [!activity|b] B\n\n```booklet query\n"+q+"\n```\n");
+ const mk=q=>A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|a repeat] A\n\n> [!text|t] T\n\n> [!activity|b] B\n\n```booklet query\n"+q+"\n```\n");
  const view=R=>R.template.modules.flatMap(m=>m.activities||[m.mode]).flatMap(a=>a.blocks).find(b=>b.type==="query");
  let R=mk("from: a\nlimit: 0");chk("`limit: 0` is reported and means no limit is set",R.unread.length===1&&/not a positive whole number/.test(R.unread[0])&&view(R).view.limit===undefined,JSON.stringify(R.unread));
  R=mk("from: a\nlimit: 2.5");chk("`limit: 2.5` too",R.unread.length===1&&view(R).view.limit===undefined);
@@ -252,13 +252,13 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  const set=A.dataSet({rows:[{name:"x",n:3}]});
  chk("an explicit `label:` naming a field no row carries draws no label",A.rolesOf(set,{label:"nope"},"list").label===null);
  chk("with no `label:` the label falls back to the first field",A.rolesOf(set,{},"list").label==="name");
- chk("a query in the data section is reported, not silently skipped",A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n> [!data] D\n\n```booklet query\nfrom: a\n```\n").unread.some(x=>/not in the data section/.test(x)));
- chk("a single-quoted marker opens the file",A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n").ok);
- chk("a file with no `lang:` opens, reads as English and says so",(r=>r.ok&&r.lang==="en"&&r.unread.length===1&&/no `lang:`/.test(r.unread[0]))(A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\n---\n\n> [!activity|a] A\n")));
- chk("any other language opens too, in its own words with the interface in English",(r=>r.ok&&r.lang==="en"&&r.unread.length===0)(A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\nlang: de\n---\n\n> [!activity|a] A\n")));
- chk("`booklet module` is like any unknown fence, reported",A.parseFile("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet module\n{}\n```\n").unread.some(x=>/a “booklet module” block is not one this page reads/.test(x)));
+ chk("a query in the data section is reported, not silently skipped",A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n> [!data] D\n\n```booklet query\nfrom: a\n```\n").unread.some(x=>/not in the data section/.test(x)));
+ chk("a single-quoted marker opens the file",A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n").ok);
+ chk("a file with no `lang:` opens, reads as English and says so",(r=>r.ok&&r.lang==="en"&&r.unread.length===1&&/no `lang:`/.test(r.unread[0]))(A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\n---\n\n> [!activity|a] A\n")));
+ chk("any other language opens too, in its own words with the interface in English",(r=>r.ok&&r.lang==="en"&&r.unread.length===0)(A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\nlang: de\n---\n\n> [!activity|a] A\n")));
+ chk("`booklet module` is like any unknown fence, reported",A.parseFile("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet module\n{}\n```\n").unread.some(x=>/a “booklet module” block is not one this page reads/.test(x)));
  chk("a widget naming an engine that does not exist still draws a notice",(()=>{P.wipe();const B=P.boot();
-   B.loadText("---\nbooklet: \"0.10\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n> [!widget|w] W\n> ![[#^wd]]\n\n```booklet widget\n{\"engine\":\"tag-cloud\"}\n```\n^wd\n");
+   B.loadText("---\nbooklet: \"0.11\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n> [!widget|w] W\n> ![[#^wd]]\n\n```booklet widget\n{\"engine\":\"tag-cloud\"}\n```\n^wd\n");
    B.screen="a";B.render();return /cannot draw a “tag-cloud”|cannot draw a "tag-cloud"/.test(text(P.main()));})());}
 
 P.closePages();

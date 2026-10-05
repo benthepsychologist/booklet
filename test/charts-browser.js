@@ -23,7 +23,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(500);
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
     await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
-    await p.locator('[role=dialog][open] button, dialog[open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(1000);
+    await p.locator('[role=dialog][open] button, dialog[open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(1000);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
     await p.locator('button.mode').first().click();await p.waitForTimeout(1200);
     return {p,csp,errs};}
   const over=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);

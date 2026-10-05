@@ -1,5 +1,5 @@
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: test/problems-reported
 title: A file with things to report
 lang: en

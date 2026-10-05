@@ -60,7 +60,7 @@ function boot(){const API={};
   LIB_SCREEN, emptyState, emptyDrafts,
   readLib, openBooklet, clearLocal, closeBooklet, removeBooklet, createBooklet, saveLocal, markDirty,
   toMarkdown, parseFile, applyParsed, addModuleText, editBook, allModules, render, loadText,
-  homeButton, bookletName,
+  homeButton, bookletName, startScreen,
   orphanSaveTimer(){saveTimer=null;}      // a timer whose handle was lost: only bookletGen can stop it now
 }));`);
   return API;}
@@ -216,7 +216,7 @@ A.lang="en";A.render();
  chk("Remove it deletes that booklet and redraws the list",
    !("booklet.b."+v2.id in LS)&&!/Week by week/.test(texts(main()))&&/Daily journal|daily-journal/i.test(texts(main())));}
 click(button(main(),"Open"));
-chk("Open goes into the booklet",A.currentId===v1.id&&A.screen==="home");
+chk("Open goes into the booklet, on the screen its content asks for (a booklet of one activity opens in it, v0.11)",A.currentId===v1.id&&A.screen===A.startScreen(),A.screen);
 A.clearLocal();                                  // what "Clear everything on this page" runs
 chk("Clear everything erases that booklet's saved data and keeps it listed, untitled",
   !("booklet.b."+v1.id in LS)&&A.readLib().entries.some(e=>e.id===v1.id&&A.bookletName(e)==="Untitled booklet"));
@@ -239,8 +239,8 @@ chk("the same file loaded again is a second booklet, deliberately",A.readLib().e
  wipe();A=boot();A.render();shownMsg();
  A.loadText(modText("daily-journal"));
  const L=A.readLib();
- chk("a module file loaded on the list starts a new booklet holding that module, and opens it",
-   L.entries.length===1&&A.currentId===L.entries[0].id&&A.screen==="home"&&A.allModules().map(m=>m.id).join(",")==="example-daily-journal",
+ chk("a module file loaded on the list starts a new booklet holding that module, and opens it (into its one activity, v0.11)",
+   L.entries.length===1&&A.currentId===L.entries[0].id&&A.screen===A.startScreen()&&A.screen!=="home"&&A.allModules().map(m=>m.id).join(",")==="example-daily-journal",
    JSON.stringify({n:L.entries.length,mods:A.allModules().map(m=>m.id)}));
  main().prepend=keptPrepend;}
 

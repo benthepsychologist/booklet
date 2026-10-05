@@ -5,12 +5,16 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.10.4** — matches the project's current version (SPEC.md's
-"project v0.10") now that this skill teaches v0.10, the current format. Write
-the marker in quotes, `booklet: "0.10"`: unquoted, a YAML tool reads `0.10` as
+**Skill version: 0.11.0** — matches the project's current version (SPEC.md's
+"v0.11") now that this skill teaches v0.11, the current format. Write
+the marker in quotes, `booklet: "0.11"`: unquoted, a YAML tool reads `0.10` as
 the number 0.1. A tool that writes booklets should ask the linter for the marker
-(`python3 lint-booklet.py --marker` prints the whole line, `--format-version` just `0.10`) and
-not hard-code it, so a new format version never strands it.
+(`python3 lint-booklet.py --marker` prints the whole line, `--format-version` just `0.11`) and
+not hard-code it. A file marked with another `0.x` version still opens, with a notice and no
+promise, so a generator one version behind is not stranded, but write the current marker. A booklet
+that is one activity or one module opens straight into it; add `start: home` to the front matter to
+keep the home screen. An image is linked and a renderer fetches none: it shows the alt text and the
+address as text, and the linter warns on a remote address.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. Above a long
@@ -69,7 +73,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.10"`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.11"`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -170,7 +174,7 @@ Copy this exactly and fill in the `<…>` parts.
 
 ````markdown
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: "local/<booklet-slug>"
 title: "<Booklet title>"
 lang: <en|es|es-AR|fr>
@@ -361,14 +365,14 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **Nothing folds a question away.** v0.10 has no working equivalent of
+- **Nothing folds a question away.** v0.11 has no working equivalent of
   an older version's "optional questions, folded shut until opened." If a
   request calls for that ("a couple more if you want
   them"), the honest options are: put the extra material as ordinary prose
   right after the question it answers, put it on its own page after a
   `***`, or say in your reply that folding isn't available yet and ask
   whether the requester wants it unfolded instead.
-- **Nothing reads another activity's answers yet.** v0.10 has no kind that
+- **Nothing reads another activity's answers yet.** v0.11 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
@@ -545,7 +549,7 @@ between paragraphs (`\n\n`) for a new one.
   address — never embedded data, never a placeholder URL.
 
 - **A report** (something generated or written to be read, not answered) needs
-  only front matter (`booklet: "0.10"`, `id`, `title`, `lang`) and plain Markdown:
+  only front matter (`booklet: "0.11"`, `id`, `title`, `lang`) and plain Markdown:
   no activity line is needed, the file is one activity named by the title. Give it
   a title heading, then `##` headings for its sections. The renderer folds a
   reading-only activity: each section shows its heading and the **first paragraph
@@ -624,7 +628,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.10 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.11 file is written in one language` | add it |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` only follows `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -656,7 +660,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.10"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.11"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
@@ -674,7 +678,7 @@ the renderer. Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -710,7 +714,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -771,7 +775,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.10"
+booklet: "0.11"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -808,7 +812,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 ## 11. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.10 file, one language, its
+same way as any other booklet above — one v0.11 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

@@ -17,7 +17,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 const PAGE_ORIGIN='https://bookletmd.test';
 /* every distinctive string the test types or names as the reader's work */
 const S={own:'QZXownoption4417',name:'QZXrenamedbooklet5528',keep:'QZXkeptentry6639',kit:'QZXkitchenanswer7741'};
-const mod=(id,title,body)=>`---\nbooklet: "0.10"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
+const mod=(id,title,body)=>`---\nbooklet: "0.11"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
 const KITCHEN=mod('kitchen','Kitchen module',
 `> [!activity|k-act repeat] Kitchen log
 
@@ -82,6 +82,8 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
     const dt=p.locator('.ap-body input[type=date]');for(let i=0;i<await dt.count();i++) await dt.nth(i).fill('2026-10-05');
     const pills=p.locator('.ap-body .pills > button.pill-btn');for(let i=0;i<await pills.count();i+=2) await pills.nth(i).click();
     await wait(200);};
+  /* a booklet that holds one activity opens in it (v0.11): climb back to "Your booklets" */
+  const toList=async()=>{for(let i=0;i<3;i++){if(await p.getByRole('button',{name:'Add a booklet from a file'}).count()) return;await p.locator('#btnHome').click();await wait(400);}};
   const addFromRegistry=async(title)=>{await p.getByRole('button',{name:'Add a module'}).first().click();await wait(800);
     await p.locator('#addModList .bkrow').filter({hasText:title}).first().locator('button').click();await wait(700);};
 
@@ -133,22 +135,22 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(300);
   await p.locator('#fileIn').setInputFiles(savedPath);await wait(500);
   await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(900);
-  ok(await p.locator('#main h1').count()>0,'a file from disk loads');
-  await p.locator('#btnHome').click();await wait(400);
+  ok(await p.locator('#main h1, #main h2').count()>0,'a file from disk loads');
+  await toList();
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(300);
   await p.locator('#pasteIn').fill(GARDEN);
   await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(900);
-  ok(await p.locator('#main h1').count()>0,'a pasted file loads');
+  ok(await p.locator('#main h1, #main h2').count()>0,'a pasted file loads');
   // 7 language and theme
   /* the language buttons show only where more than one language is on offer; press them by script where the page hides them */
   for(const l of ['es','fr','en']){const bt=p.locator('.lang button[data-lang="'+l+'"]');
     if(await bt.isVisible()) await bt.click();else await bt.evaluate(e=>e.click());await wait(250);}
   for(const t of ['night','contrast','daylight','paper','auto']){await p.selectOption('#themeSel',t);await wait(150);}
   // 8 a booklet with a diagram and a formula: the libraries start
-  await p.locator('#btnHome').click();await wait(400);
+  await toList();
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(300);
   await p.locator('#fileIn').setInputFiles(path.join(R,'test/fixtures/figures.booklet.md'));await wait(500);
-  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(1000);
+  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(1000);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await wait(400);}
   await p.locator('button.mode').first().click();await wait(1000);
   await p.getByText('Diagrams and formulas').first().click({timeout:3000}).catch(()=>{});await wait(2500);
   const figs=await p.evaluate(()=>({svg:document.querySelectorAll('.mfig svg').length,math:document.querySelectorAll('math').length,
@@ -183,6 +185,57 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   ok(viol.length===0&&cons.length===0,'zero CSP violations: '+viol.concat(cons).join('|'));
   ok(errs.length===0,'zero page errors '+errs.join('|'));
   console.log('INFO failed requests: '+(failed.length?failed.join('; '):'none'));
+
+  /* ---- the second run: NO Content-Security-Policy header at all ----
+     A copy opened from disk, or served by a plain host, has no header to lean on, so the promise has to be kept by the
+     file's own reading. This opens a booklet that names an address in every way a file can (a remote Markdown image, a
+     relative one, a protocol-relative one, a data: one, a reference-style one, a diagram with an image node, a diagram
+     whose style and directive name an address, and formulas using \includegraphics) and asserts that not one request
+     leaves for any address the file named. The control proves this page can see a request when one is made. */
+  {const PLAIN='https://plain.test',names=['tracker.example','harbour.jpg','proto.gif','latex-rel','diagram.png','css.png','theme.png','font.woff'];
+   const q=await b.newContext({viewport:{width:1280,height:1000}});const p2=await q.newPage();
+   const seen=[],errs2=[];
+   p2.on('request',r=>seen.push({url:r.url(),method:r.method(),type:r.resourceType()}));
+   p2.on('pageerror',e=>errs2.push(e.message));
+   await p2.route('**/*',r=>{const u=r.request().url();
+     if(u===PLAIN+'/app/')return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8'}});
+     if(/^(data|blob|about):/.test(u))return r.continue();
+     r.abort();});
+   const F='`'.repeat(3);
+   const FILE2=['---','booklet: "0.11"','title: Names an address','lang: en','---','','> [!module|named] Named addresses','','> [!activity|look] Look','',
+     'A remote ![remote alt](https://tracker.example/remote.gif), a relative ![relative alt](images/harbour.jpg), a protocol-relative ![proto alt](//tracker.example/proto.gif), a data one ![data alt](data:image/png;base64,iVBORw0KGgo=), and ![ref alt][r].','','[r]: https://tracker.example/ref.gif','',
+     'A formula $\\includegraphics{https://tracker.example/latex.png}$ and $$\\includegraphics[width=1em]{images/latex-rel.png}$$ and a plain one $x_1+y^2$.','',
+     'A diagram with an image node:','',F+'mermaid','flowchart LR','  A@{ img: "https://tracker.example/diagram.png", label: "pic", pos: "t", w: 60, h: 60 } --> B',F,'',
+     'A diagram whose style and directive name addresses:','',F+'mermaid','%%{init: {"themeCSS": ".node{background:url(https://tracker.example/theme.png)}", "fontFamily": "url(https://tracker.example/font.woff)"}}%%','classDiagram','  class A','  style A fill:url(//tracker.example/css.png)',F,'',
+     'And an ordinary one, which is drawn:','',F+'mermaid','flowchart LR','  A[Start] --> B{Pick}','  B -->|yes| C[Done]',F,'',
+     '> [!text|q] A question','','> [!module|named end] End',''].join('\n');
+   await p2.goto(PLAIN+'/app/');await p2.waitForTimeout(500);
+   ok(await p2.evaluate(()=>!document.querySelector('meta[http-equiv="Content-Security-Policy"]')),'the second run: the page carries no Content-Security-Policy meta tag either');
+   await p2.getByRole('button',{name:'Add a booklet from a file'}).click();await p2.waitForTimeout(300);
+   await p2.locator('#pasteIn').fill(FILE2);
+   await p2.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p2.waitForTimeout(1500);
+   await p2.waitForTimeout(2500);
+   const shown=await p2.evaluate(()=>({img:document.querySelectorAll('#main img').length,boxes:document.querySelectorAll('#main .imgbox').length,
+     svg:document.querySelectorAll('#main .mfig svg').length,bad:[...document.querySelectorAll('#main .mfig.bad')].map(n=>n.innerText.slice(0,160)),math:document.querySelectorAll('#main math').length,
+     text:document.getElementById('main').innerText,view:document.body.dataset.view}));
+   ok(shown.view==='named/look','the booklet of one activity opened straight into it: '+shown.view);
+   ok(shown.img===0,'no img element is on the page ('+shown.img+')');
+   ok(shown.boxes===5&&/Image not shown/.test(shown.text)&&shown.text.includes('remote alt')&&shown.text.includes('https://tracker.example/remote.gif')&&shown.text.includes('images/harbour.jpg'),'the five images are shown as text, with their alt text and their addresses: '+shown.boxes);
+   ok(shown.bad.length===2&&shown.bad.every(t=>/not drawn/.test(t)),'the two diagrams that name an address are shown as their source, with the line saying so: '+JSON.stringify(shown.bad.map(t=>t.slice(0,60))));
+   ok(shown.svg>=1,'the ordinary diagram is drawn, so the diagram library did run ('+shown.svg+' drawn)');
+   ok(shown.math>=1,'the ordinary formula is drawn, so the formula library did run ('+shown.math+' drawn)');
+   const base=seen.length;
+   const net2=seen.filter(r=>/^(https?|wss?|ftp):/i.test(r.url));
+   console.log('INFO second run, no CSP: '+seen.length+' requests: '+net2.map(r=>r.method+' '+r.url).join(', '));
+   ok(net2.every(r=>r.method==='GET'),'second run: every request is a GET');
+   ok(net2.every(r=>r.url===PLAIN+'/app/'||r.url===PLAIN+'/favicon.ico'),'second run: the only requests are for the page itself (and a favicon the browser asks for): '+net2.map(r=>r.url).join(', '));
+   ok(!seen.some(r=>names.some(n=>r.url.includes(n))),'second run: not one request for any address the file named');
+   ok(seen.every(r=>!/^https?:/.test(r.url)||new URL(r.url).origin===PLAIN),'second run: nothing left for another origin');
+   ok(errs2.length===0,'second run: zero page errors '+errs2.join('|'));
+   /* the control: a request this page makes itself IS seen, so silence above means something */
+   await p2.evaluate(()=>{(window.__c=new Image()).src='https://control.example/c.gif';});await p2.waitForTimeout(400);
+   ok(seen.slice(base).some(r=>r.url==='https://control.example/c.gif'),'second run, control: a request the test makes on purpose is recorded, so the check can see one');
+   await q.close();}
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
 })();

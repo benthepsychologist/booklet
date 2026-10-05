@@ -4,7 +4,7 @@
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM="---\nbooklet: \"0.10\"\ntitle: Scope\nlang: en\n---\n\n";
+const FM="---\nbooklet: \"0.11\"\ntitle: Scope\nlang: en\n---\n\n";
 const tag=(n,t)=>P.find(P.main(),x=>x.tagName===t);
 const shown=()=>P.texts(P.main());
 const typeIn=(A,addr,words)=>{A.screen=addr;A.render();const ta=tag(0,"textarea")[0];ta.value=words;ta._on.input();};
@@ -199,7 +199,7 @@ const rich=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!menu|opts]\n- ${t}-one\
  const written=B.toMarkdown();
  chk("the file written from it has each record under its own module",/booklet entries log/.test(section(written,"ma"))&&/booklet entries jot/.test(section(written,"mb"))&&/module A's answer/.test(section(written,"ma")),written.slice(written.indexOf("%%")));
  B.saveLocal();
- chk("saved again, it says 0.10 and is not re-keyed a second time",JSON.parse(global.__ls[key]).TPL.booklet==="0.10"&&Object.keys(JSON.parse(global.__ls[key]).S.entries).sort().join()==="ma/log,mb/jot,orphan");
+ chk("saved again, it says 0.11 and is not re-keyed a second time",JSON.parse(global.__ls[key]).TPL.booklet==="0.11"&&Object.keys(JSON.parse(global.__ls[key]).S.entries).sort().join()==="ma/log,mb/jot,orphan");
  P.closePages();
  console.log(fails?"\n"+fails+" FAILURES":"\nmodule-scope checks passed");process.exit(fails?1:0);
 })();

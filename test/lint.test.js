@@ -31,15 +31,7 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.10 (an old `module:` file)",/front matter must say `booklet: "0\.10"` \(found None\)/],
- ["lint-old-format-0-2","a file still saying booklet: 0.2",/front matter says booklet: 0\.2; this is format 0\.10\. Change the marker to booklet: "0\.10" \(and write settings as key:value/],
- ["lint-old-format-0-3","a file still saying booklet: 0.3",/front matter says booklet: 0\.3; this is format 0\.10\. Change the marker to booklet: "0\.10"\.$/],
- ["lint-old-format-0-4","a file still saying booklet: 0.4",/front matter says booklet: 0\.4; this is format 0\.10\. Change the marker to booklet: "0\.10"\.$/],
- ["lint-old-format-0-5","a file still saying booklet: 0.5",/front matter says booklet: 0\.5; this is format 0\.10\. Change the marker to booklet: "0\.10"\.$/],
- ["lint-old-format-0-6","a file still saying booklet: 0.6",/front matter says booklet: 0\.6; this is format 0\.10\. Change the marker to booklet: "0\.10"\.$/],
- ["lint-old-format-0-7","a file still saying booklet: 0.7",/front matter says booklet: 0\.7; this is format 0\.10\. Change the marker to booklet: "0\.10"\.$/],
- ["lint-old-format-0-8","a file still saying booklet: 0.8",/front matter says booklet: 0\.8; this is format 0\.10\. Change the marker to booklet: "0\.10"\.$/],
- ["lint-old-format-0-9","a file still saying booklet: 0.9",/front matter says booklet: 0\.9; this is format 0\.10\. Change the marker to booklet: "0\.10"\.$/],
+ ["lint-not-v02","front matter without booklet: 0.11 (an old `module:` file)",/front matter must say `booklet: "0\.11"` \(found None\); a marker is a 0\.x version/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -211,7 +203,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
 {// the registry's modules, copied, re-marked and linted: hex pairs and tone names both stay valid
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
-   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/m,"booklet: \"0.10\""));
+   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/m,"booklet: \"0.11\""));
    const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
    chk("the registry's modules, copied and re-marked to 0.10, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 
@@ -258,7 +250,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
  {const r=lint(path.join(FX,"lint-notice-with-id.md"));
   chk("a notice with an id: an error naming it",r.status===1&&r.errors.some(l=>/line 11: a notice takes no id \(found 'legal'\)/.test(l)),r.out);}
  {const r=lint(path.join(FX,"lint-marker-unquoted.md"));
-  chk("an unquoted `booklet: 0.10` is one warning, saying to write it in quotes, and no error",r.status===0&&r.errors.length===0&&r.warns.length===1&&/without quotes; write it in quotes.*YAML tool will read it as 0\.1/.test(r.warns[0]||""),r.out);}
+  chk("an unquoted `booklet: 0.10` says to write it in quotes (a YAML tool reads it as 0.1), besides the other-marker warning, and is no error",r.status===0&&r.errors.length===0&&r.warns.length===2&&r.warns.some(w=>/without quotes; write it in quotes.*YAML tool will read it as 0\.1$/.test(w))&&r.warns.some(w=>/booklet: 0\.10; the current format is 0\.11/.test(w)),r.out);}
  const dm=lint(path.join(FX,"lint-data-module-ok.md"));
  chk("a module's own data section: two modules each with their own ^picker, and a shared section, no error; one warning for the block id Obsidian reads across the file",
    dm.status===0&&dm.errors.length===0&&dm.warns.length===1&&/the block id \^picker is used in the module 'mod-1' and the module 'mod-2'/.test(dm.warns[0]||""),dm.out);
@@ -266,6 +258,18 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
  E("lint-data-module-other",/line 13: !\[\[#\^only-two\]\] points at a block in another module only/,"an embed of a block in another module's data section");
  E("lint-data-module-dup",/line 25: the block id \^picker is used twice in the module 'mod-1'/,"a block id in a module's fence and again in its data section");
  E("lint-data-module-settings",/line 15: a data line takes no `repeat` setting \(it takes no settings at all\)/,"a data line with a setting");}
+
+{// v0.11: another 0.x marker is a warning, and the file is then checked by the current rules
+ for(const n of ["0-2","0-3","0-4","0-5","0-6","0-7","0-8","0-9"]){const v=n.replace("-","."),r=lint(path.join(FX,"lint-old-format-"+n+".md"));
+  chk(`a file still saying booklet: ${v} is one warning and no error, and is checked as 0.11`,r.status===0&&r.errors.length===0&&r.warns.length===1&&new RegExp(`this file says booklet: ${v.replace(".","\\.")}; the current format is 0\\.11, and it is checked as 0\\.11`).test(r.warns[0]||""),r.out);}
+ {const r=lint(path.join(FX,"lint-marker-later.md"));
+  chk("a later marker (0.12) is the same one warning",r.status===0&&r.errors.length===0&&r.warns.length===1&&/this file says booklet: 0\.12; the current format is 0\.11/.test(r.warns[0]||""),r.out);}
+ {const r=lint(path.join(FX,"lint-marker-old-and-broken.md"));
+  chk("an old marker does not excuse a broken file: the warning, and the current rules' error",r.status===1&&r.errors.length===1&&/never closed/.test(r.errors[0]||"")&&r.warns.length===1,r.out);}
+ for(const [n,what] of [["lint-marker-1-0","a marker that is not a 0.x version (1.0)"],["lint-marker-words","a marker that is words"]]){
+  const r=lint(path.join(FX,n+".md"));
+  chk(`${what}: one error, as no marker`,r.status===1&&r.errors.length===1&&/front matter must say `booklet: "0\.11"`.*a marker is a 0\.x version/.test(r.errors[0]||"")&&r.warns.length===0,r.out);}
+}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

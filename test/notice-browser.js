@@ -1,4 +1,4 @@
-// Browser check for 0.10: a module carries its notice, its data at the end is its own, and a booklet has one name.
+// Browser check for 0.10 and later: a module carries its notice, its data at the end is its own, and a booklet has one name.
 // Two modules are added from a served registry (one holds a `> [!notice]` callout and a `> [!data|module-id]` section,
 // the other has its notice only in its file's front matter and its data under a plain data line); the quiet
 // "About this module" disclosure is opened; the booklet is renamed on its home screen and in "Your booklets"; the copy
@@ -11,8 +11,8 @@ const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const widget=(h)=>`\`\`\`booklet widget\n{"engine":"grid-select","copy":{"h":"${h}"},"items":[{"id":"i","label":"Item ${h}"}]}\n\`\`\`\n^wd`;
-const MA=`---\nbooklet: "0.10"\ntitle: Garden notes\nlang: en\n---\n\n> [!module|ma] Garden notes\n\nA short blurb about the garden notes.\n\n> [!notice]\n> license: Free to copy and share, unmodified and with this notice intact.\n> copyright: Example Press, 2026\n> source: https://example.org/garden\n> version: 1.2\n\n> [!activity|plant] Plant\n\n> [!text|what] What did you plant?\n\n> [!widget|w]\n> ![[#^wd]]\n\n> [!activity|water repeat] Water\n\n> [!text|how] How much?\n\n> [!module|ma end] End\n\n> [!data|ma] Data for Garden notes\n\n${widget('Garden picker')}\n`;
-const MB=`---\nbooklet: "0.10"\ntitle: Sleep log\nlang: en\nlicense: "Shared under a licence given in front matter."\ncopyright: "Front Matter Press, 2025"\nsource: "javascript:alert(1)"\nversion: "3.1"\n---\n\n> [!module|mb] Sleep log\n\n> [!activity|sleep repeat] Sleep\n\n> [!text|hours] Hours?\n\n> [!widget|w]\n> ![[#^wd]]\n\n> [!module|mb end] End\n\n> [!data] Data\n\n${widget('Sleep picker')}\n`;
+const MA=`---\nbooklet: "0.11"\ntitle: Garden notes\nlang: en\n---\n\n> [!module|ma] Garden notes\n\nA short blurb about the garden notes.\n\n> [!notice]\n> license: Free to copy and share, unmodified and with this notice intact.\n> copyright: Example Press, 2026\n> source: https://example.org/garden\n> version: 1.2\n\n> [!activity|plant] Plant\n\n> [!text|what] What did you plant?\n\n> [!widget|w]\n> ![[#^wd]]\n\n> [!activity|water repeat] Water\n\n> [!text|how] How much?\n\n> [!module|ma end] End\n\n> [!data|ma] Data for Garden notes\n\n${widget('Garden picker')}\n`;
+const MB=`---\nbooklet: "0.11"\ntitle: Sleep log\nlang: en\nlicense: "Shared under a licence given in front matter."\ncopyright: "Front Matter Press, 2025"\nsource: "javascript:alert(1)"\nversion: "3.1"\n---\n\n> [!module|mb] Sleep log\n\n> [!activity|sleep repeat] Sleep\n\n> [!text|hours] Hours?\n\n> [!widget|w]\n> ![[#^wd]]\n\n> [!module|mb end] End\n\n> [!data] Data\n\n${widget('Sleep picker')}\n`;
 const FILES={'/ma.md':MA,'/mb.md':MB};
 const REG={modules:[{id:'t/ma',title:'Garden notes',file:'ma.md'},{id:'t/mb',title:'Sleep log',file:'mb.md'}]};
 const NAME='Ben\'s "spring" plan: #1';
@@ -88,7 +88,7 @@ const NAME='Ben\'s "spring" plan: #1';
     await p.locator('#exportPanel .exportchoice').first().click();})()]);return {name:d.suggestedFilename(),md:fs.readFileSync(await d.path(),'utf8')};};
   const {name,md}=await dl();
   ok(name==='ben-s-spring-plan-1.booklet.md','the download is named for the booklet: '+name);
-  ok(md.split('\n')[2]==='title: '+JSON.stringify(NAME)&&/^booklet: "0\.10"$/m.test(md),'the file\'s title line is the name, quoted and escaped, and the marker is quoted: '+md.split('\n').slice(0,4).join(' | '));
+  ok(md.split('\n')[2]==='title: '+JSON.stringify(NAME)&&/^booklet: "0\.11"$/m.test(md),'the file\'s title line is the name, quoted and escaped, and the marker is quoted: '+md.split('\n').slice(0,4).join(' | '));
   ok(/> \[!module\|ma\] Garden notes\n\nA short blurb[^\n]*\n\n> \[!notice\]\n> license: Free to copy/.test(md)||/> \[!module\|ma\] Garden notes\n\n> \[!notice\]/.test(md)||md.includes('> [!notice]\n> license: Free to copy and share, unmodified and with this notice intact.\n> copyright: Example Press, 2026\n> source: https://example.org/garden\n> version: 1.2'),'module a\'s notice callout is in the file byte for byte');
   ok(/> \[!module\|mb\] Sleep log\n\n> \[!notice\]\n> license: Shared under a licence given in front matter\.\n> copyright: Front Matter Press, 2025\n> source: javascript:alert\(1\)\n> version: 3\.1\n/.test(md),'module b\'s notice, which was only in its front matter, was written into its fence as a callout');
   ok(/> \[!data\|ma\] Data for Garden notes\n\n```booklet widget/.test(md),'module a\'s data is under its own data line');

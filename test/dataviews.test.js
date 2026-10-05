@@ -21,7 +21,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  /* ---- parsing ---- */
  const R=A.parseFile(FX);
  chk("the data-views fixture parses with nothing reported wrong",R.ok&&R.unread.length===0,JSON.stringify(R.unread));
- chk("it is marked 0.10",R.template.booklet==="0.10");
+ chk("it is marked 0.11",R.template.booklet==="0.11");
  const qs=queries(R);
  chk("four queries, each carrying its rows and its view",qs.length===4&&qs.map(q=>q.view.as||"").join()==="tiles,list,,list"&&qs.every(q=>q.data&&Array.isArray(q.data.rows)),JSON.stringify(qs.map(q=>q.view)));
  chk("a bare list of rows (no object) reads, and names no view (the renderer draws a table)",qs[2].data.rows.length===4&&qs[2].data.fields===undefined&&qs[2].view.as===undefined);
@@ -31,7 +31,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
    blocksOf(R,"allotment","status").every(b=>b.type==="markdown"||b.type==="query")&&!R.template.modules[0].mode.blocks.some(b=>b.type==="data"));
  chk("a data block is not a widget",R.template.widgets.length===0);
 
- const mk=(body,extra="")=>A.parseFile(`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n${extra}\`\`\`booklet query\n${body}\n\`\`\`\n\n> [!module|m end] End\n`);
+ const mk=(body,extra="")=>A.parseFile(`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n${extra}\`\`\`booklet query\n${body}\n\`\`\`\n\n> [!module|m end] End\n`);
  const ROWS='```booklet data\n[{"x":1,"y":"a"}]\n```\n^d\n\n';
  {const r=mk("from: d",ROWS);chk("a data block and a query in one module read clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
  {const r=mk("from: d\nas: cards",ROWS);chk("`as: cards` on a data block is refused, with a reason",r.unread.some(p=>/as: cards.*“d”/.test(p)),JSON.stringify(r.unread));}
@@ -41,9 +41,9 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  {const r=mk("from: d",'```booklet data\nrows:\n  - x: 1\n```\n^d\n\n');chk("YAML is not read (JSON only): the block is skipped with a reason",r.unread.some(p=>/not valid JSON/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",'```booklet data\n[{"x":1}]\n```\n\n');chk("a data block with no ^id is refused",r.unread.some(p=>/needs a \^id/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",ROWS+ROWS);chk("a data id used twice is refused",r.unread.some(p=>/“d” is used twice/.test(p)),JSON.stringify(r.unread));}
- {const other=`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\n\`\`\`\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b] B\n\n${ROWS}> [!module|n end] End\n`;
+ {const other=`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\n\`\`\`\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b] B\n\n${ROWS}> [!module|n end] End\n`;
   const r=A.parseFile(other);chk("a data block inside another module is not readable (the module rule)",r.unread.some(p=>/“d”, which is in another module/.test(p)),JSON.stringify(r.unread));}
- {const bare=`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: tiles\n\`\`\`\n\n${ROWS}`;
+ {const bare=`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: tiles\n\`\`\`\n\n${ROWS}`;
   const r=A.parseFile(bare);chk("in a file with no module fence, a data block is read by any activity",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
  chk("a query over kept entries carries no data, and only the keys it wrote in its view",(()=>{const r=A.parseFile(QFX);
    const q=r.template.modules.find(m=>m.id==="fixture-query").activities.find(a=>a.id==="fixture-query/look").blocks.filter(b=>b.type==="query");
@@ -53,7 +53,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  P.wipe();const W=P.boot();W.loadText(FX);
  chk("loading the whole fixture and saving it again returns the design byte for byte",W.toMarkdown()===FX.replace(/\s+$/,"")+"\n");
  P.wipe();const W2=P.boot();await W2.createBooklet();
- chk("a booklet started in the renderer says 0.10",W2.BOOK.booklet==="0.10");
+ chk("a booklet started in the renderer says 0.11",W2.BOOK.booklet==="0.11");
  chk("the module adds",W2.addModuleText(FX).ok);
  const md=W2.toMarkdown();
  const blockText=id=>{const i=FX.indexOf("^"+id+"\n");const j=FX.lastIndexOf("```booklet data",i);return FX.slice(j,i+id.length+1);};
@@ -93,10 +93,10 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("table: a numeric column is marked to align right",cls(walk(trs[0],x=>x.tagName==="th")[1]).includes("num")&&!cls(walk(trs[0],x=>x.tagName==="th")[0]).includes("num"));
  chk("the empty block shows the query's own line",text(main).includes("Nothing needs you."));
  chk("the page is not a reading-only page (a dashboard stays open)",!B.readsOnly(B.bookActivities().find(a=>a.id==="status")));
- chk("nothing in a data block is read as Markdown or HTML",(()=>{const r=A.parseFile(`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
-   P.wipe();const C=P.boot();C.addModuleText(`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
+ chk("nothing in a data block is read as Markdown or HTML",(()=>{const r=A.parseFile(`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
+   P.wipe();const C=P.boot();C.addModuleText(`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
    C.screen="m/a";C.render();return r.ok&&text(P.main()).includes("**bold** <b>x</b> [l](http://e.com)")&&walk(P.main(),x=>x.tagName==="a"||x.tagName==="b"||x.tagName==="strong").length===0;})());
- chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: "0.10"\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
+ chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
    P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.readsOnly(r.template.modules[0].mode);})());
 
  /* ---- the same words in the reader's language ---- */

@@ -1,11 +1,11 @@
-// Format v0.10, a module carries its notice: a `> [!notice]` callout inside the module's fence, the one-module
+// Format v0.11, a module carries its notice: a `> [!notice]` callout inside the module's fence, the one-module
 // file's front matter as its fallback, Add a module writing it into the booklet, and the renderer's quiet
 // "About this module" disclosure. Invented content throughout.
 // Run: node test/notice.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
-const FM=(extra="",id="m")=>`---\nbooklet: "0.10"\ntitle: Notice ${id}\nlang: en\n${extra}---\n\n`;
+const FM=(extra="",id="m")=>`---\nbooklet: "0.11"\ntitle: Notice ${id}\nlang: en\n${extra}---\n\n`;
 const NOTE=`> [!notice]\n> license: Free to copy and share, unmodified and with this notice intact.\n> copyright: Example Press, 2026\n> source: https://example.org/check-in\n> version: 1.2\n`;
 const mod1=(id,notice,more="")=>`> [!module|${id}] Module ${id}\n\n${notice?notice+"\n":""}> [!activity|a-${id} repeat] Act ${id}\n\n> [!text|q long] Q\n${more}\n> [!module|${id} end] End\n`;
 const WITH=FM()+mod1("m",NOTE);

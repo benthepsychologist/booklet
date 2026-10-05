@@ -191,9 +191,10 @@ for (const marker of ["---", "***", "___"]) {
 }
 {
   const [p] = mdNodes("![a picture](https://example.com/pic.png)");
-  const img = first(p, "img");
-  chk("![alt](src) makes an img", !!img && img.attrs.src === "https://example.com/pic.png" && img.attrs.alt === "a picture");
-  chk("img gets loading=lazy", img.attrs.loading === "lazy");
+  chk("![alt](src) builds no img element at all (the renderer fetches no image)", !first(p, "img") && !find(p, n => n.attrs && n.attrs.src !== undefined).length);
+  const box = find(p, n => n.attrs && n.attrs.class === "imgbox")[0];
+  chk("...it draws a framed box holding the alt text, the note, and the address as text",
+    !!box && textOf(box).includes("a picture") && textOf(box).includes("Image not shown") && textOf(box).includes("https://example.com/pic.png"), textOf(p));
 }
 {
   const text = "[ref link][r]\n\nprose after\n\n[r]: https://example.com/r \"R title\"";
@@ -204,8 +205,8 @@ for (const marker of ["---", "***", "___"]) {
 {
   const text = "![ref image][img]\n\n[img]: images/pic.png";
   const [p] = mdNodes(text);
-  const img = first(p, "img");
-  chk("reference-style image ![alt][ref] resolves against a def anywhere in the text", !!img && img.attrs.src === "images/pic.png", img && img.attrs);
+  chk("reference-style image ![alt][ref] resolves against a def anywhere in the text, and shows its address as text, not as an img",
+    !first(p, "img") && textOf(p).includes("ref image") && textOf(p).includes("images/pic.png"), textOf(p));
 }
 {
   const [p] = mdNodes("[Shortcut]\n\n[shortcut]: https://example.com/s");
@@ -281,7 +282,7 @@ for (const marker of ["---", "***", "___"]) {
 {
   const [p] = mdNodes("![pic](data:image/png;base64,AAAA)");
   chk("a data: image URL never becomes a live <img>", !first(p, "img"));
-  chk("...it renders the alt text as plain text instead", textOf(p) === "pic", textOf(p));
+  chk("...it shows the alt text and the address as plain text instead", textOf(p).includes("pic") && textOf(p).includes("data:image/png;base64,AAAA"), textOf(p));
 }
 {
   const [p] = mdNodes("Some text <script>alert(1)</script> more text");
@@ -311,18 +312,29 @@ for (const marker of ["---", "***", "___"]) {
 {
   const relOk = mdNodes("[a](images/x.png) ![b](../up/y.png) [c](#frag) [d](mailto:x@example.com)");
   const a1 = find(relOk, n => n.tag === "a")[0];
-  const img = first(relOk, "img");
   const frag = find(relOk, n => n.tag === "a").find(n => n.attrs.href === "#frag");
   const mail = find(relOk, n => n.tag === "a").find(n => n.attrs.href === "mailto:x@example.com");
   chk("a page-relative path (no scheme) is allowed as a link href", a1.attrs.href === "images/x.png");
-  chk("a page-relative path is allowed as an image src", !!img && img.attrs.src === "../up/y.png");
+  chk("a page-relative image path is shown as text and requested from nowhere", !first(relOk, "img") && textOf(relOk).includes("../up/y.png"));
   chk("a bare #fragment is allowed as a link href", !!frag);
   chk("mailto: is allowed for links", !!mail);
   chk("relative/fragment links are not marked external (no target=_blank)", a1.attrs.target === undefined && frag.attrs.target === undefined);
 }
 {
   const [p] = mdNodes("![x](mailto:a@b.com)");
-  chk("mailto: is NOT allowed for images (links-only scheme)", !first(p, "img") && textOf(p) === "x");
+  chk("an image with a mailto: address is shown as text, never an img", !first(p, "img") && textOf(p).includes("x") && textOf(p).includes("mailto:a@b.com"));
+}
+{
+  // v0.11: no <img> is ever created from Markdown, whatever the address; the alt text and the address are text
+  for (const [what, addr] of [["remote", "https://tracker.example/p.gif"], ["http", "http://tracker.example/p.gif"], ["relative", "images/harbour.jpg"],
+      ["protocol-relative", "//tracker.example/p.gif"], ["data:", "data:image/png;base64,AAAA"], ["javascript:", "javascript:alert(1)"], ["file:", "file:///etc/passwd"]]) {
+    for (const [form, src] of [["inline", `![the alt](${addr})`], ["inline with a title", `![the alt](${addr} "T")`], ["angle", `![the alt](<${addr}>)`], ["reference", `![the alt][r]\n\n[r]: ${addr}`]]) {
+      const nodes = mdNodes(src);
+      const bad = find(nodes, n => n.tag === "img" || (n.attrs && (n.attrs.src !== undefined || n.attrs.srcset !== undefined || n.attrs.poster !== undefined)));
+      chk(`${what} address, ${form}: no img element and no src of any kind`, bad.length === 0, JSON.stringify(bad.map(n => n.tag)));
+      chk(`${what} address, ${form}: the alt text and the address are shown as text`, textOf(nodes).includes("the alt") && textOf(nodes).includes(addr.slice(0, 40)), textOf(nodes));
+    }
+  }
 }
 {
   // never throws, whatever garbage arrives
