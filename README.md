@@ -176,6 +176,40 @@ the module files it lists, in `connect-src`. With the tag missing or empty, "Add
 a module" shows its "no modules" message and nothing else changes. A module's
 `file` path in the registry resolves relative to the registry's own address.
 
+### Opening a booklet by link
+
+A host that serves a folder of booklets can let a link open one. It adds one more line to its own copy of the page
+(the shipped `booklet.html` has none, so it has no store):
+
+```html
+<meta name="booklet-store" content="https://example.org/booklets/">
+```
+
+The address is the folder, absolute or relative to the page. Two links then work, and both ride in the part after the
+`#`, which a browser never sends to a server:
+
+- `#/open/<name>` opens `<store>/<name>`, for example `#/open/reports/week.booklet.md`.
+- `#/module/<id>` opens the module with that id from the registry the page already declares (the list "Add a module"
+  reads) as a booklet of its own.
+
+A link carries a name, never an address. A name is checked before anything is requested: after one decoding it may hold only
+letters, digits, `-`, `_`, `.` and `/`, with no empty part, no `.` or `..` part, no leading `/`, at most 200 characters, and
+it must end in `.md`. A module id must be one the registry's own list names. Anything else is refused with a plain message
+and nothing is requested. So a link cannot name a host, a scheme or a way out of the folder, and only the page's own tag can
+declare a store: not a booklet's front matter, not a link, nothing kept in the browser.
+
+What opens is read once, as text (a plain read: no method, no body, no credentials, no redirect, at most 5 MB, 15 seconds),
+and then goes through the same parser as a file picked by hand, with the same refusals and notices. It opens with its records,
+if the file has them. It never replaces a booklet the reader keeps: it is a view, and joins "Your booklets" only when the
+reader changes something in it. If the browser already keeps a copy that came from the same name, the page says so and offers
+it. A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
+and can be dismissed. The page reads the link when it starts and whenever the fragment changes, and the link stays in the
+address bar, so a reload opens the same thing.
+
+A host that sets a Content-Security-Policy must also allow the store's origin in `connect-src`: the renderer can read only
+where the host's own header lets it. Nothing a reader writes is ever sent: the link is a read, and the pledge tests
+(`test/guard.test.js`, `test/pledge-browser.js`) pin that.
+
 ### Language and storage
 
 The language a reader picks, on "Your booklets" or in any booklet, is that
@@ -188,7 +222,7 @@ it was saved in. A booklet that does not offer the language in force opens in
 its own, and a booklet that declares one language always reads in it.
 
 The page opens on "Your booklets", the list of every booklet kept in that
-browser. The address is never read or written. Each booklet keeps its own
+browser. The address is read for one thing only: a link a host's own page declares support for (see "Opening a booklet by link"), never written. Each booklet keeps its own
 answers, and a first visit shows the empty list.
 
 The renderer only ever calls `localStorage.getItem`, `setItem` and

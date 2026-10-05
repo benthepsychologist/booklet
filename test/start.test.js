@@ -57,6 +57,7 @@ for(const k of ["bare","oneOne","oneThree"]){const A=open(withHome(FILES[k]));
  const A=open(FILES.oneOne.replace('booklet: "0.11"','booklet: 0.9'));
  const note=P.find(P.main(),P.hasClass("filenotes"))[0];
  chk("a 0.9 file of one activity opens in it, with the marker notice on that screen",where(A)==="m/a"&&!!note&&/booklet: 0\.9/.test(P.texts(note)),where(A)+" "+(note?P.texts(note):"no notice"));
- const first=A.FILE_NOTES&&A.FILE_NOTES.list[0];
- chk("...and the notice's first line is the marker line",/^This file says booklet: 0\.9\./.test(first||""),first);}
+ const first=A.FILE_NOTES&&A.FILE_NOTES.marker;
+ chk("...and the notice's first line is the marker sentence, apart from the count",/^This file says booklet: 0\.9\./.test(first||"")&&A.FILE_NOTES.list.length===0,first);
+ chk("...and nothing is counted as a thing the page could not read: that line is not shown",!/could not read/.test(P.texts(note)),P.texts(note));}
 console.log(fails?"\n"+fails+" FAILURES":"\nstart checks passed");P.closePages();process.exit(fails?1:0);
