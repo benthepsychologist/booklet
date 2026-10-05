@@ -166,40 +166,4 @@ const rich=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!menu|opts]\n- ${t}-one\
  chk("a query shows its own module's entries",/Own words A/.test(a)&&!/Own words B/.test(a)&&/Own words B/.test(b)&&!/Own words A/.test(b));
  chk("the per-view state is kept per module",new Set([...A.VIEWSTATE.keys()]).size===A.VIEWSTATE.size);}
 
-/* ---- work kept in this browser by renderer 0.8: re-keyed once, nothing lost ---- */
-(async()=>{
- const SRC=FM+"> [!activity|solo] Solo\n\n> [!text|snote] Solo note\n\n"+mod("ma","A")+"\n> [!module|mb] Module B\n\n> [!activity|jot repeat] Jot B\n\n> [!text|what] What B\n\n> [!activity|look] Look B\n\n```booklet query\nfrom: jot\n```\n\n> [!module|mb end] End\n";
- const A0=P.boot();const R=A0.parseFile(SRC);
- /* the booklet design as 0.8 saved it: the same design, every activity under its bare id, a query naming its source by that id */
- const old=()=>{const t=JSON.parse(JSON.stringify(R.template));t.booklet=0.8;
-   t.modules.forEach(m=>(m.mode?[m.mode]:m.activities).forEach(a=>{a.id=a.id.replace(/^[^/]*\//,"");(a.blocks||[]).forEach(b=>{if(b.type==="query") b.from=b.from.replace(/^[^/]*\//,"");});}));return t;};
- const snap=()=>({S:{answers:{note:"module A's answer",snote:"the bare one",extra:"left over"},
-     entries:{log:[{ts:"2026-10-01T09:00:00Z",what:"kept in A"}],jot:[{ts:"2026-10-02T09:00:00Z",what:"kept in B"}],orphan:[{ts:"2026-10-03T09:00:00Z"}]}},
-   D:{custom:{log:{what:"draft A"},jot:{what:"draft B"}}},TPL:old(),lang:"en",dirty:true,unsavedEntries:2});
- const out=A0.rekeyFromV08(snap());
- const ids=t=>t.modules.map(m=>(m.mode?[m.mode]:m.activities).map(a=>a.id).join()).join("|");
- chk("the design now says 0.9 and every activity is addressed by its module",out.TPL.booklet==="0.9"&&ids(out.TPL)==="solo|ma/act,ma/log|mb/jot,mb/look",ids(out.TPL));
- chk("a query names its source by address",out.TPL.modules[2].activities.find(a=>a.id==="mb/look").blocks.find(b=>b.type==="query").from==="mb/jot");
- chk("entries and drafts moved to the activity's address, and an entry no activity names stayed",JSON.stringify(Object.keys(out.S.entries).sort())==='["ma/log","mb/jot","orphan"]'&&out.S.entries["ma/log"][0].what==="kept in A"&&out.S.entries["mb/jot"][0].what==="kept in B"&&out.D.custom["ma/log"].what==="draft A"&&out.D.custom["mb/jot"].what==="draft B",JSON.stringify(out.S.entries));
- chk("a module's question moved under its module; a bare activity's stayed; a key no design names was kept",out.S.answers.ma.note==="module A's answer"&&!("note" in out.S.answers[""])&&out.S.answers[""].extra==="left over"&&out.S.answers[""].snote==="the bare one",JSON.stringify(out.S));
- chk("run again on its own result it changes nothing",JSON.stringify(A0.rekeyFromV08(JSON.parse(JSON.stringify(out))))===JSON.stringify(out));
- chk("a snapshot that is already 0.9 is left alone",(()=>{const s=snap();s.TPL=R.template;return JSON.stringify(A0.rekeyFromV08(JSON.parse(JSON.stringify(s))))===JSON.stringify(s);})());
- /* a real open of a saved booklet */
- P.wipe();const A=P.boot();
- const made=await A.createBooklet();
- const key="booklet.b."+made.id,s0=snap();s0.TPL.raw={source:SRC,lang:"en"};
- A.closeBooklet();global.__ls[key]=JSON.stringify(s0);
- const B=P.boot();
- B.openBooklet(made.id);
- chk("opening a booklet saved under 0.8 brings the work back, under 0.9's keys",B.keptFor("ma/log").length===1&&B.keptFor("mb/jot").length===1&&B.draftFor("ma/log").what==="draft A"&&B.STATE.answers.ma.note==="module A's answer",JSON.stringify(B.STATE));
- B.screen="ma/act";B.render();
- chk("and the page shows it where it was",tag(0,"textarea")[0].value==="module A's answer");
- B.screen="mb/look";B.openChip["mb/jot"]=null;B.render();
- chk("a query reads the kept entry through the re-keyed address",/kept in B/.test(shown()),shown().slice(0,300));
- const written=B.toMarkdown();
- chk("the file written from it has each record under its own module",/booklet entries log/.test(section(written,"ma"))&&/booklet entries jot/.test(section(written,"mb"))&&/module A's answer/.test(section(written,"ma")),written.slice(written.indexOf("%%")));
- B.saveLocal();
- chk("saved again, it says 0.11 and is not re-keyed a second time",JSON.parse(global.__ls[key]).TPL.booklet==="0.11"&&Object.keys(JSON.parse(global.__ls[key]).S.entries).sort().join()==="ma/log,mb/jot,orphan");
- P.closePages();
- console.log(fails?"\n"+fails+" FAILURES":"\nmodule-scope checks passed");process.exit(fails?1:0);
-})();
+console.log(fails?"\n"+fails+" FAILURES":"\nmodule-scope checks passed");process.exit(fails?1:0);

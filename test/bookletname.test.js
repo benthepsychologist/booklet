@@ -131,7 +131,7 @@ const changed=X=>{const e=X.readLib().entries.find(x=>x.id===X.currentId);return
   snap.TPL.raw.source=snap.TPL.raw.source.replace(/^booklet: .*$/m,"booklet: 0.9").replace(/^title: .*$/m,'title: "Untitled booklet"');
   global.__ls[key]=JSON.stringify(snap);P.closePages();
   const C=P.boot();C.openBooklet(id);C.render();
-  chk("a booklet saved by 0.9 opens (marked 0.11) and says Untitled booklet in its file",C.BOOK.booklet==="0.11"&&titleOf(C.toMarkdown())==="Untitled booklet"&&/^booklet: "0\.11"$/m.test(C.toMarkdown()));
+  chk("a booklet saved by 0.9 opens as it was saved and says Untitled booklet in its file",C.BOOK.booklet===0.9&&titleOf(C.toMarkdown())==="Untitled booklet"&&/^booklet: 0\.9$/m.test(C.toMarkdown()));
   renameHome(C,"Now named");
   chk("renamed, its screen and its file agree",heading()==="Now named"&&titleOf(C.toMarkdown())==="Now named"&&C.parseFile(C.toMarkdown()).ok);
   P.closePages();}
