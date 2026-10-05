@@ -27,9 +27,14 @@ const hostScript=label=>`<script>(function(){
   window.__calls=[];window.__h=window.Booklet.host({label:${JSON.stringify(label)}});
   window.Booklet.onChange(function(x){window.__calls.push(x);});
 })();</script>`;
+/* 0.11.6: the renderer's own policy allows a script file from the page's origin and no inline script, so the host's script is a file */
+const JS={};
 const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   h=h.replace('<meta name="theme-color"','<meta name="booklet-store" content="'+(origin||PRIVATE)+'/store/">\n<meta name="theme-color"');
-  const i=h.lastIndexOf('</body>');return inject?h.slice(0,i)+inject+h.slice(i):h;};
+  const i=h.lastIndexOf('</body>');
+  if(!inject) return h;
+  const name='/hs'+Object.keys(JS).length+'.js';JS[name]=inject.replace(/^<script>/,'').replace(/<\/script>$/,'');
+  return h.slice(0,i)+'<script src="'+name+'"></script>'+h.slice(i);};
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
@@ -49,6 +54,7 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
     const h={'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP};
     if(u==='/app/')return r.fulfill({status:200,body:page(hostScript(hostLabel),origin),headers:h});
     if(u==='/plain/')return r.fulfill({status:200,body:page('',origin),headers:h});
+    if(JS[u])return r.fulfill({status:200,body:JS[u],headers:{'content-type':'text/javascript'}});
     if(u==='/store/week.md')return r.fulfill({status:200,body:storeText,headers:{'content-type':'text/plain; charset=utf-8'}});
     r.fulfill({status:404,body:'nf'});});};
   await serve(PRIVATE);await serve(PUBLIC);
@@ -171,7 +177,7 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   // the assertions across every page
   const net=reqs.filter(r=>/^https?:/i.test(r.url));
   ok(net.length>0&&net.every(r=>r.method==='GET'),'every request is a GET');
-  ok(net.every(r=>[PRIVATE,PUBLIC].includes(new URL(r.url).origin)&&/^\/(app|plain|store)\//.test(new URL(r.url).pathname)),'every request goes to the page\'s own origin: '+[...new Set(net.map(r=>r.url))].join(' '));
+  ok(net.every(r=>[PRIVATE,PUBLIC].includes(new URL(r.url).origin)&&/^\/(app|plain|store)\/|^\/hs\d+\.js$/.test(new URL(r.url).pathname)),'every request goes to the page\'s own origin: '+[...new Set(net.map(r=>r.url))].join(' '));
   ok(net.every(r=>!r.body&&!/QZX/.test(r.url)),'no body, and no typed word in any request');
   ok(viol.length===0&&csp.length===0,'zero CSP violations: '+viol.concat(csp).join('|'));
   ok(errs.length===0,'zero page errors '+errs.join('|'));

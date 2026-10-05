@@ -213,5 +213,32 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
     (main.match(/mergeDeep\(/g)||[]).length===6&&(main.match(/STRINGS(_SRC)?[.\[][^;]*mergeDeep|mergeDeep\(STRINGS/g)||[]).length>=0
     &&/STRINGS\.fr=mergeDeep\(STRINGS_SRC\.en,STRINGS_SRC\.fr\);\s*STRINGS\.es=mergeDeep\(STRINGS_SRC\.en,STRINGS_SRC\.es\);\s*STRINGS\["es-AR"\]=mergeDeep\(STRINGS\.es,STRINGS_SRC\["es-AR"\]\)/.test(main),(main.match(/mergeDeep\(/g)||[]).length);}
  }
+// THE RENDERER CARRIES ITS OWN CONTENT-SECURITY-POLICY (0.11.6): a meta tag directly after the charset tag, so the block on
+// fetch and the rest is in the file itself and a copy opened from disk or served by any host has it. A host's header can only
+// add a second policy, never loosen this one. The script hashes are computed by test/csp-hash.js, never typed.
+{const full=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8"),csp=require("./csp-hash.js");
+ const FIX=" Run: node test/csp-hash.js --write booklet.html (and if the policy itself was changed on purpose, that needs Ben's say-so).";
+ const must=(label,ok,d)=>{if(ok) console.log("  ok    "+label);else{fails++;console.log("  FAIL  "+label+(d?"   → "+d:"")+FIX);}};
+ const head=full.slice(0,full.indexOf("<body>"));
+ const tags=[...head.matchAll(/<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]*)">/gi)];
+ must("exactly one Content-Security-Policy meta tag",tags.length===1&&(head.match(/http-equiv="content-security-policy"/gi)||[]).length===1,tags.length+" found");
+ must("the policy tag comes directly after the charset tag, which is first in the head",head.indexOf('<head>\n<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy"')>=0);
+ const script=head.indexOf("<script"),style=head.indexOf("<style"),link=head.indexOf("<link"),at=head.indexOf("Content-Security-Policy");
+ must("it comes before every script, style and link (a meta policy governs only what follows it)",at>0&&at<script&&at<style&&at<link);
+ const have=tags[0]?tags[0][1]:"";
+ /* the fixed part, written out here so that weakening the template in csp-hash.js cannot pass by changing both together */
+ const FIXED="default-src 'none'; script-src 'self' H H H H; style-src 'self' 'unsafe-inline'; img-src data: blob:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'";
+ must("the policy is exactly the one this renderer carries (the four script hashes aside)",have.replace(/'sha256-[A-Za-z0-9+\/]+={0,2}'/g,"H")===FIXED,have);
+ const sc=(/script-src ([^;]*)/.exec(have)||["",""])[1];
+ must("scripts: no unsafe-inline, no unsafe-eval, no strict-dynamic, no wildcard, no host but 'self'",!/unsafe-inline|unsafe-eval|strict-dynamic|\*|https?:/.test(sc),sc);
+ must("the policy names exactly four script hashes",(sc.match(/'sha256-/g)||[]).length===4);
+ must("the hashes are of the scripts as they stand now (theme-boot, main, mermaid and temml as useLib() starts them)",csp.problems(full).length===0,csp.problems(full).join(" | "));
+ must("the DNS-prefetch tag follows it: x-dns-prefetch-control is off",full.includes(csp.CHARSET+"\n"+csp.tagFor(full)+"\n"+csp.DNS+"\n")&&/<meta http-equiv="x-dns-prefetch-control" content="off">/.test(head));
+ /* what the policy leaves out is as much of the promise as what it names: no frame, worker, media, manifest or font source is opened */
+ must("nothing else is opened: no frame-src, worker-src, media-src, manifest-src, font-src or child-src, so default-src 'none' closes them",
+   !/frame-src|worker-src|media-src|manifest-src|font-src|child-src|prefetch-src/.test(have));
+ /* the static guard still forbids every other way out; WebRTC is not governed by a CSP, so this is what holds it */
+ must("RTCPeerConnection and the other ways out the policy cannot govern stay forbidden in the renderer's code (the pledge list above)",
+   !/RTCPeerConnection|webkitRTCPeerConnection|RTCDataChannel|WebTransport/.test(html));}
 console.log(fails?"\n"+fails+" FAILURES":"\nguard checks passed");
 process.exit(fails?1:0);

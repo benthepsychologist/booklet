@@ -109,8 +109,9 @@ const CFG=[(k,v)=>`%%{init: {"${k}": "${v}"}}%%\nflowchart LR\n A --> B`,(k,v)=>
     await new Promise(r=>setTimeout(r,400));return true;},REFUSED['image node (img:)']('raw'));
   const asked=seen.slice(base).some(u=>u.includes('/raw'));
   console.log('INFO the library handed the image-node source directly '+(asked?'DOES':'did NOT')+' ask for the address (securityLevel strict, htmlLabels off): '+(asked?'this is why diagramRisk() refuses it first':'it no longer does; the refusal stays, as the other forms still do'));
-  await p.evaluate(()=>{(window.__c=new Image()).src='https://control.example/c.gif';});await p.waitForTimeout(400);
-  ok(seen.slice(base).some(u=>u==='https://control.example/c.gif'),'control: a request the test makes on purpose is recorded, so the zero counts above mean something');
+  /* the renderer's own policy (0.11.6) closes images to every address, so the control is a read it allows: the page's own origin */
+  await p.evaluate(()=>{fetch('/control-c').catch(()=>{});});await p.waitForTimeout(400);
+  ok(seen.slice(base).some(u=>u==='https://plain.test/control-c'),'control: a request the test makes on purpose (to the page\'s own origin, which the policy allows) is recorded, so the zero counts above mean something');
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
 })();

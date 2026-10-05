@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-rJ7VaHbgz7J1hQmpBDWgOvKL70jFgiaRCteM9zAdFWY=' 'sha256-dwi35xoXh73ZdSGi3gjXWKXckFk2iOs/reHaojCjco4=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
 <!-- The renderer's only setting: where "Add a module" looks for modules. A site
-     changes this one line to point at another registry, and must also allow
-     that origin in its own Content-Security-Policy `connect-src`. -->
+     changes this one line to point at another registry, and must also name
+     that origin in the `connect-src` of the policy meta tag above (this file
+     carries its own Content-Security-Policy; a host's header can only tighten it),
+     then run `node test/csp-hash.js --write booklet.html`. -->
 <!-- A host that serves a folder of booklets may add `<meta name="booklet-store" content="…/folder/">` to its own copy, so that
      `#/open/<name>` opens a booklet from it (README.md, "Opening a booklet by link"). This file ships with none. -->
 <meta name="booklet-registry" content="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json">
@@ -3926,7 +3930,7 @@ function tagInput(opts){
     const {confirmed,inProgress}=parseTagValue(inp.value);
     const next=dedupeLabels(confirmed);
     const cur=opts.values()||[];
-    if(next.join(" ")!==cur.join(" ")) opts.onChange(next);
+    if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
     drawChips();drawSuggestions(inProgress);});
   /* A dangling in-progress word (typed but no trailing comma yet) commits
      on blur, so nothing typed or dictated is silently dropped. */
@@ -3934,7 +3938,7 @@ function tagInput(opts){
     const {confirmed,inProgress}=parseTagValue(inp.value);
     const next=dedupeLabels(inProgress?[...confirmed,inProgress]:confirmed);
     const cur=opts.values()||[];
-    if(next.join(" ")!==cur.join(" ")) opts.onChange(next);
+    if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
     refresh();});
 
   refresh();
