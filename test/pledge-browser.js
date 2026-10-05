@@ -7,7 +7,9 @@
 // What the reader does here: starts a new booklet, adds two modules from an invented registry (served by page.route), answers
 // questions of every kind, adds an own option, keeps entries, renames the booklet, removes a module, opens and closes "Send or
 // save a copy", downloads, loads a file from disk and one by paste, switches language and theme, opens a booklet with a diagram
-// and a formula (so mermaid and Temml start).
+// and a formula (so mermaid and Temml start), then opens a booklet by link (renderer 0.11.1: a copy of the page that declares a
+// store, under a header that allows reading from it; the link is read, an answer is typed into what it opened, and the store is
+// asked for the one checked name and nothing else).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pledge-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
@@ -16,7 +18,8 @@ const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const PAGE_ORIGIN='https://bookletmd.test';
 /* every distinctive string the test types or names as the reader's work */
-const S={own:'QZXownoption4417',name:'QZXrenamedbooklet5528',keep:'QZXkeptentry6639',kit:'QZXkitchenanswer7741'};
+const S={own:'QZXownoption4417',name:'QZXrenamedbooklet5528',keep:'QZXkeptentry6639',kit:'QZXkitchenanswer7741',link:'QZXlinkanswer8852'};
+const STORE_ORIGIN='https://store.test';
 const mod=(id,title,body)=>`---\nbooklet: "0.11"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
 const KITCHEN=mod('kitchen','Kitchen module',
 `> [!activity|k-act repeat] Kitchen log
@@ -73,6 +76,11 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
     if(/registry\.json$/.test(u))return r.fulfill({status:200,body:JSON.stringify(REG),headers:{'content-type':'application/json','access-control-allow-origin':'*'}});
     const f=FILES['/'+u.split('/').pop()];
     r.fulfill(f?{status:200,body:f,headers:{'content-type':'text/plain','access-control-allow-origin':'*'}}:{status:404,body:'nf'});});
+  /* a host that declares a store: its own copy of the page, and its own header allowing the store's origin */
+  const HOST_CSP=CSP.replace('connect-src https://raw.githubusercontent.com','connect-src https://raw.githubusercontent.com '+STORE_ORIGIN);
+  ok(HOST_CSP!==CSP,'the hosted header names the registry origin in connect-src (the store step adds its own origin to a copy of it)');
+  await p.route(PAGE_ORIGIN+'/linked/',r=>r.fulfill({status:200,body:fs.readFileSync(HTML,'utf8').replace('<meta name="theme-color"','<meta name="booklet-store" content="'+STORE_ORIGIN+'/pub/">\n<meta name="theme-color"'),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}}));
+  await p.route(STORE_ORIGIN+'/**',r=>r.fulfill({status:200,body:mod('linked','Linked booklet','> [!activity|l-act] Linked\n\n> [!text|l-text long] A linked answer\n\n'),headers:{'content-type':'text/markdown','access-control-allow-origin':'*'}}));
   const wait=ms=>p.waitForTimeout(ms);
   const cards=()=>p.locator('#main button.mode');
   const fillAll=async(tag)=>{ /* answer every question on screen */
@@ -157,18 +165,26 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
     libs:{mermaid:typeof __esbuild_esm_mermaid_nm,temml:typeof temml}}));
   ok(figs.svg>=1&&figs.math>=1,'a diagram and a formula are drawn, so the libraries ran: '+JSON.stringify(figs));
   await harvest();
+  // 9 a booklet opened by link: read from the declared store, answered, nothing sent
+  await p.goto(PAGE_ORIGIN+'/linked/#/open/pledge/linked.booklet.md');await wait(1200);
+  ok(await p.evaluate(()=>document.body.dataset.view)==='linked/l-act','a booklet opened by link opens into its content');
+  ok((await p.locator('#main .openedby').innerText()).includes('pledge/linked.booklet.md'),'with the line saying where it came from');
+  await p.locator('#main textarea').first().fill(S.link);await wait(900);
+  ok(await p.evaluate(()=>Object.keys(localStorage).some(k=>/^booklet\.b\./.test(k)&&localStorage[k].includes('QZXlinkanswer'))),'the answer is kept in this browser');
+  await harvest();
 
   // the assertions
-  const origins=new Set([PAGE_ORIGIN,registryOrigin]);
+  const origins=new Set([PAGE_ORIGIN,registryOrigin,STORE_ORIGIN]);
   const net=reqs.filter(r=>/^https?:|^wss?:|^ftp:/i.test(r.url));
   const local=reqs.filter(r=>!/^https?:|^wss?:|^ftp:/i.test(r.url));
   console.log('INFO '+reqs.length+' requests: '+net.length+' network ('+[...new Set(net.map(r=>r.method+' '+new URL(r.url).origin))].join(', ')+'), '+local.length+' local ('+[...new Set(local.map(r=>r.url.split(':')[0]))].join(', ')+')');
   ok(net.length>0,'requests were recorded');
   ok(net.every(r=>r.method==='GET'),'every request is a GET: '+[...new Set(net.map(r=>r.method))].join(','));
-  ok(net.every(r=>origins.has(new URL(r.url).origin)),'every request goes to the page\'s own origin or the registry\'s origin: '+[...new Set(net.map(r=>new URL(r.url).origin))].join(', '));
+  ok(net.every(r=>origins.has(new URL(r.url).origin)),'every request goes to the page\'s own origin, the registry\'s origin or the declared store\'s origin: '+[...new Set(net.map(r=>new URL(r.url).origin))].join(', '));
   ok(local.every(r=>/^(data|blob|about):/.test(r.url)),'anything not over the network is data:, blob: or about: (local to the browser): '+[...new Set(local.map(r=>r.url.split(':')[0]))].join(','));
   ok(net.filter(r=>new URL(r.url).origin===registryOrigin).every(r=>/registry\.json$|\/(kitchen|garden)\.md$/.test(new URL(r.url).pathname)),'the registry origin was asked only for the registry list and the two module files');
   ok(net.every(r=>!r.body),'no request has a body');
+  ok(net.filter(r=>new URL(r.url).origin===STORE_ORIGIN).map(r=>r.url).join()===STORE_ORIGIN+'/pub/pledge/linked.booklet.md','the store was asked for the one checked name and nothing else: '+net.filter(r=>new URL(r.url).origin===STORE_ORIGIN).map(r=>r.url).join());
   const words=[];for(const w of Object.values(S)){words.push(w,encodeURIComponent(w),w.toLowerCase());}
   words.push(S.kit+'0',S.keep+'0','4242');
   const all=[];for(const r of reqs) all.push(r.url,JSON.stringify(r.headers),r.body);

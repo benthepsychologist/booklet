@@ -95,4 +95,8 @@ These bind anyone extending the format or the renderer's views.
 3. A look that styling, density, or the shaping of rows by whatever wrote the file can give is never a new view or key.
 4. A reader may open, close, sort and filter what is on screen, and none of it is saved. Anything that changes the file or sends something elsewhere is not a view's business.
 
+## The renderer's one routing rule
+
+A link carries a name from what the host declared, never an address. `#/open/<name>` is the page's `booklet-store` meta tag plus a name that passed `linkName()`, and `#/module/<id>` is an id the registry's own list holds. Nothing in a link, a booklet or the browser's storage may declare a store or name a host. Opening is a read through the ordinary parser: it adds no write, sends nothing, and never replaces a booklet the reader keeps. `test/openlink.test.js` and `test/openlink-browser.js` pin it.
+
 `test/guard.test.js` pins the key list and the view list, so adding either is a deliberate change made in the renderer, the linter and the spec table together.

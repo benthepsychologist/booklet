@@ -7,6 +7,8 @@
 <!-- The renderer's only setting: where "Add a module" looks for modules. A site
      changes this one line to point at another registry, and must also allow
      that origin in its own Content-Security-Policy `connect-src`. -->
+<!-- A host that serves a folder of booklets may add `<meta name="booklet-store" content="…/folder/">` to its own copy, so that
+     `#/open/<name>` opens a booklet from it (README.md, "Opening a booklet by link"). This file ships with none. -->
 <meta name="booklet-registry" content="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json">
 <meta name="theme-color" content="#F7F2E8">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -166,6 +168,7 @@
   .mode .c .pill{background:var(--paper-deep);border-radius:999px;padding:.05rem .55rem}
   .mode .c .pill.live{background:transparent;color:var(--ink)}
   .notice{border:var(--bw) dashed var(--rule);border-radius:12px;padding:.8rem 1rem;font-size:.9rem;color:var(--muted);margin:0 0 1.5rem;font-family:var(--sans)}
+  .notice.openedby{font-size:.8rem;padding:.5rem .8rem;margin-bottom:1rem}
   .unsaved{font-family:var(--sans);font-size:.85rem;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:999px;padding:.15rem .7rem}
   .quietlink{border:0;background:transparent;color:var(--accent);text-decoration:underline;padding:0;font-size:.92rem;text-align:left;font-family:var(--sans);font-weight:600}
   .quietlink{color:var(--muted);font-weight:500}
@@ -851,7 +854,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.0";
+const RENDERER_VERSION="0.11.1";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1004,7 +1007,19 @@ const STRINGS_SRC={
       addedOtherMarker: m=>`It says booklet: ${m}, so it was read as format ${FORMAT_VERSION}, as it is.`,
       renamed: r=>(r.length===1?"One id was renamed so it does not clash: ":r.length+" ids were renamed so they do not clash: ")+renamesList(r," is now ",n=>" and "+n+" more")+".",
       noShelf: "The module list could not be loaded. Check your connection and try again.",
-      addFailed: "That activity could not be fetched — it may have moved, or you may be offline."
+      addFailed: "That activity could not be fetched — it may have moved, or you may be offline.",
+      linkNoStore: "This page has no store of booklets to open from.",
+      linkBadName: "That link does not name a booklet this page can open.",
+      linkNoModule: "That module is not on this page's registry.",
+      linkMissing: "That booklet could not be found.",
+      linkBig: "That file is too big to open here (the limit is 5 MB).",
+      linkSlow: "That booklet took too long to arrive.",
+      linkNotText: "That is not a text file this page can open.",
+      linkFailed: "That booklet could not be fetched. It may have moved, or you may be offline.",
+      linkFromStore: n=>`Opened by a link, from this page's own store: ${n}`,
+      linkFromRegistry: n=>`Opened by a link, from this page's registry: ${n}`,
+      linkKept: "You also keep a copy of this with your own work:",
+      linkKeptOpen: "open it"
     },
     notice: {
       about: "About this module", license: "Licence", copyright: "Copyright", source: "Source", version: "Version",
@@ -1248,7 +1263,19 @@ const STRINGS_SRC={
       addedOtherMarker: m=>`Elle indique booklet: ${m} ; elle a donc été lue comme le format ${FORMAT_VERSION}, telle quelle.`,
       renamed: r=>(r.length===1?"Un identifiant a été renommé pour éviter un conflit : ":r.length+" identifiants ont été renommés pour éviter un conflit : ")+renamesList(r," devient ",n=>" et "+n+" de plus")+".",
       noShelf: "La liste des modules n’a pas pu être chargée. Vérifiez votre connexion et réessayez.",
-      addFailed: "Cette activité n’a pas pu être récupérée — elle a peut-être changé d’adresse, ou vous êtes hors ligne."
+      addFailed: "Cette activité n’a pas pu être récupérée — elle a peut-être changé d’adresse, ou vous êtes hors ligne.",
+      linkNoStore: "Cette page n’a pas de dépôt de carnets où ouvrir.",
+      linkBadName: "Ce lien ne nomme pas un carnet que cette page peut ouvrir.",
+      linkNoModule: "Ce module ne figure pas dans le registre de cette page.",
+      linkMissing: "Ce carnet est introuvable.",
+      linkBig: "Ce fichier est trop volumineux pour s’ouvrir ici (limite : 5 Mo).",
+      linkSlow: "Ce carnet a mis trop de temps à arriver.",
+      linkNotText: "Ce n’est pas un fichier texte que cette page peut ouvrir.",
+      linkFailed: "Ce carnet n’a pas pu être récupéré. Il a peut-être changé d’adresse, ou vous êtes hors ligne.",
+      linkFromStore: n=>`Ouvert par un lien, depuis le dépôt de cette page : ${n}`,
+      linkFromRegistry: n=>`Ouvert par un lien, depuis le registre de cette page : ${n}`,
+      linkKept: "Vous gardez aussi une copie de ce carnet avec votre propre travail :",
+      linkKeptOpen: "l’ouvrir"
     },
     notice: {
       about: "À propos de ce module", license: "Licence", copyright: "Droit d’auteur", source: "Source", version: "Version",
@@ -1488,7 +1515,19 @@ const STRINGS_SRC={
       addedOtherMarker: m=>`Dice booklet: ${m}, así que se leyó como formato ${FORMAT_VERSION}, tal como está.`,
       renamed: r=>(r.length===1?"Se renombró un identificador para que no choque: ":"Se renombraron "+r.length+" identificadores para que no choquen: ")+renamesList(r," ahora es ",n=>" y "+n+" más")+".",
       noShelf: "No se pudo cargar la lista de módulos. Revisa tu conexión e inténtalo de nuevo.",
-      addFailed: "No se pudo obtener esa actividad — puede que se haya movido, o que no tengas conexión."
+      addFailed: "No se pudo obtener esa actividad — puede que se haya movido, o que no tengas conexión.",
+      linkNoStore: "Esta página no tiene una reserva de cuadernillos desde donde abrir.",
+      linkBadName: "Ese enlace no nombra un cuadernillo que esta página pueda abrir.",
+      linkNoModule: "Ese módulo no está en el registro de esta página.",
+      linkMissing: "No se encontró ese cuadernillo.",
+      linkBig: "Ese archivo es demasiado grande para abrirlo aquí (el límite es 5 MB).",
+      linkSlow: "Ese cuadernillo tardó demasiado en llegar.",
+      linkNotText: "Ese no es un archivo de texto que esta página pueda abrir.",
+      linkFailed: "No se pudo obtener ese cuadernillo. Puede que se haya movido, o que no tengas conexión.",
+      linkFromStore: n=>`Abierto por un enlace, desde la reserva de esta página: ${n}`,
+      linkFromRegistry: n=>`Abierto por un enlace, desde el registro de esta página: ${n}`,
+      linkKept: "También guardas una copia de este con tu propio trabajo:",
+      linkKeptOpen: "ábrela"
     },
     notice: {
       about: "Acerca de este módulo", license: "Licencia", copyright: "Derechos de autor", source: "Fuente", version: "Versión",
@@ -1851,6 +1890,9 @@ let currentId=null, currentKey=null, currentEntry=null, bookletGen=0;
 /* what a file opened with that this page could not read (its reported problems), and whether the reader has dismissed
    the notice; kept in memory for the session, never saved */
 let FILE_NOTES=null;
+/* where a booklet opened by a link came from (see OPENING BY LINK in the shell): its own quiet line, never counted among
+   the things the page could not read; in memory for the session, never saved */
+let PROVENANCE=null;
 /* the reader's sort and filter for each query on the page (see viewControls): kept while this booklet is open, never saved */
 const VIEWSTATE=new Map();
 /* ---- the reader's language: this browser's choice, never a booklet's ----
@@ -2079,7 +2121,7 @@ function resetBookletState(){
   lang=langPref()||lang;
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
   screen="home";dirty=false;unsavedEntries=0;
-  openChip={};VIEWSTATE.clear();FILE_NOTES=null;
+  openChip={};VIEWSTATE.clear();FILE_NOTES=null;PROVENANCE=null;
   clearTimeout(saveTimer);saveTimer=null;
   VEIL_IDS.forEach(id=>{const v=document.getElementById(id);if(v) v.removeAttribute("open");});}
 /* Open one entry: whatever the last booklet had pending is written to it,
@@ -5165,16 +5207,34 @@ function render(){citeLeave(screen);renderBar();const main=document.getElementBy
   if(SCREENS[screen]) return SCREENS[screen](main);
   if(isModuleScreen(screen)) return renderModulePage(main,screen);
   return renderActivity(main,screen);}
-/* the notice at the top of an opened file's first screen: how many things the page could not read, the list
-   inside a disclosure, and a way to dismiss it for the session */
-function fileNotesNode(){const u=STRINGS[lang].ui;if(!FILE_NOTES||FILE_NOTES.dismissed||!FILE_NOTES.list.length) return null;
+/* the notices at the top of an opened file's first screen. A file marked with another 0.x version says so in a
+   sentence of its own, above and apart from the count: the page read it, so that is not a thing it could not read.
+   Under it, how many things the page could not read (nothing is shown when there are none), the list inside a
+   disclosure, and a way to dismiss it for the session */
+function fileNotesNode(){const u=STRINGS[lang].ui;
+  if(!FILE_NOTES||FILE_NOTES.dismissed||!(FILE_NOTES.list.length||FILE_NOTES.marker)) return null;
   /* on the home screen, and on the screen the file opened into when that is not the home screen */
   if(screen!=="home"&&FILE_NOTES.at!==screen) return null;
   const box=el("div",{class:"notice col filenotes",role:"status"});
-  box.append(el("p",{style:"margin:0 0 .4rem"},u.fileNotes(FILE_NOTES.list.length)),
-    el("details",{},el("summary",{},u.fileNotesShow),el("ul",{class:"plain"},...FILE_NOTES.list.map(x=>el("li",{},x)))),
-    el("button",{type:"button",class:"small",onclick:()=>{FILE_NOTES.dismissed=true;render();}},u.fileNotesDismiss));
+  if(FILE_NOTES.marker) box.append(el("p",{style:"margin:0 0 .4rem"},FILE_NOTES.marker));
+  if(FILE_NOTES.list.length) box.append(el("p",{style:"margin:0 0 .4rem"},u.fileNotes(FILE_NOTES.list.length)),
+    el("details",{},el("summary",{},u.fileNotesShow),el("ul",{class:"plain"},...FILE_NOTES.list.map(x=>el("li",{},x)))));
+  box.append(el("button",{type:"button",class:"small",onclick:()=>{FILE_NOTES.dismissed=true;render();}},u.fileNotesDismiss));
   return box;}
+/* the quiet line for a booklet opened by a link: where it came from, and, when this browser already keeps a copy
+   of the same file with the reader's own work, a way to that copy. Its own line, smaller than the problems notice. */
+function provenanceNode(){if(!PROVENANCE||PROVENANCE.dismissed) return null;
+  if(screen!=="home"&&PROVENANCE.at!==screen) return null;
+  const u=STRINGS[lang].ui,B=STRINGS[lang].booklet;
+  const box=el("div",{class:"notice col openedby",role:"status"});
+  const row=el("p",{style:"margin:0"},PROVENANCE.store?B.linkFromStore(PROVENANCE.label):B.linkFromRegistry(PROVENANCE.label));
+  box.append(row);
+  const kept=PROVENANCE.from?readLib().entries.find(e=>e.from===PROVENANCE.from&&e.id!==currentId):null;
+  if(kept) box.append(el("p",{style:"margin:.3rem 0 0"},B.linkKept+" ",
+    el("button",{type:"button",class:"quietlink",onclick:()=>openFromList(kept.id)},B.linkKeptOpen)));
+  box.append(el("button",{type:"button",class:"small",style:"margin-top:.4rem",onclick:()=>{PROVENANCE.dismissed=true;render();}},u.fileNotesDismiss));
+  return box;}
+const openNotices=()=>[provenanceNode(),fileNotesNode()].filter(Boolean);
 /* A module's notice, as a quiet disclosure ("About this module"): the licence, copyright, source and version it
    gives, as text. A source is a link only when it is an http or https address. Nothing for a module with none. */
 function noticeNode(mod){const n=mod&&mod.notice;if(!isObj(n)) return null;
@@ -5227,7 +5287,7 @@ function nameRow(){const L=strings("library"),cur=tx((BOOK.head||{}).title,tx(BO
     if(currentId) row.append(el("button",{type:"button",class:"quietlink",title:L.renameFor(shown),"aria-label":L.renameFor(shown),onclick:()=>draw(true)},L.rename));};
   draw(false);return row;}
 function renderHome(main){const t=STRINGS[lang];const u=t.ui;
-  const notes=fileNotesNode();if(notes) main.append(notes);
+  main.append(...openNotices());
   const hero=el("div",{class:"hero col"});
   hero.append(nameRow(),el("p",{class:"sub"},tx((BOOK.head||{}).sub,t.home.sub)));
   main.append(hero);
@@ -5331,7 +5391,7 @@ function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;cons
    kept so far and a Finalize that keeps the next one; any other keeps its
    answers in the booklet's own `answers`, exactly as the file's record does. */
 function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id);const mod=moduleOf(id)||{};
-  {const notes=fileNotesNode();if(notes) main.append(notes);}
+  {main.append(...openNotices());}
   const repeats=m.kind==="entry";
   const draft=answersFor(id);if(repeats) seedUpsertDraft(id,m,draft);
   const col=el("div",{class:"col"});
@@ -5373,7 +5433,7 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   /* a module that has gone, or now holds one activity, leads where its card would */
   if(!mod||!isMulti(mod)){screen=mod?entryScreenOf(mod):"home";return render();}
   const W=strings("moduleView");
-  {const notes=fileNotesNode();if(notes) main.append(notes);}
+  {main.append(...openNotices());}
   const col=el("div",{class:"col"});
   col.append(el("h2",{},tx(mod.title,mod.id)));
   const lead=tx(mod.blurb,"");
@@ -5503,11 +5563,95 @@ function loadText(text){const t=STRINGS[lang].ui;const msg=document.getElementBy
   veilLoad.removeAttribute("open");
   /* a file is always a booklet of its own; it never merges into another one */
   const e=addEntry();openBooklet(e.id);finishLoad(R);}
-function finishLoad(R){const mine=!!langPref();
+function finishLoad(R,via){const mine=!!langPref();
   applyParsed(mine?{...R,lang:null}:R);
   const at=startScreen();
-  FILE_NOTES=R.unread&&R.unread.length?{list:R.unread.map(humanMsg),dismissed:false,at}:null;
+  /* the other-marker sentence stands apart from the problems: only real problems are counted */
+  const marker=R.markerNote?humanMsg(R.markerNote):"",list=(R.unread||[]).filter(m=>m!==R.markerNote).map(humanMsg);
+  FILE_NOTES=list.length||marker?{marker,list,dismissed:false,at}:null;
+  /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */
+  if(via){PROVENANCE={...via,dismissed:false,at};go(at);return;}
   saveLocal();go(at);toast(STRINGS[lang].ui.loadOk);}
+
+/* ---- OPENING BY LINK ----
+   A host may name a folder of booklets it serves, in a `booklet-store` meta tag of its own copy of this file (the shipped
+   file has none), and the registry it already names in `booklet-registry`. A link then opens something from what the
+   host declared, and only from that:
+     #/open/<name>   the booklet at <store>/<name>
+     #/module/<id>   the registry's module with that id, as a booklet of its own
+   The link rides in the fragment, which a browser never sends to a server. It carries a checked NAME, never an address:
+   what is asked for is always the declared store's address plus a name that passed linkName(), or an address the
+   registry's own list gave for an id it lists. Opening is a read of that one file, with no method, no body, no
+   credentials, no redirect, a size cap and a timeout; the text then goes through the same parser as a file picked by
+   hand. What opens is a view: it never replaces a booklet the reader keeps, and joins "Your booklets" only when the
+   reader changes something in it (noteSaved adds the entry then). */
+const LINK_NAME_MAX=200,LINK_BYTES=5*1024*1024,LINK_MS=15000;
+/* The name rule. The fragment's text is decoded once; what is left must be only letters, digits, - _ . and /, with no
+   empty part, no part that is . or .., no leading /, at most 200 characters, and end in .md. A backslash, a colon, a
+   space, a query or any other character is refused, so no name can carry a host, a scheme or a way up out of the store.
+   Returns the name, or null. */
+function linkName(raw){let n;try{n=decodeURIComponent(String(raw));}catch(e){return null;}
+  if(!n||n.length>LINK_NAME_MAX||n.charAt(0)==="/"||!/^[A-Za-z0-9_.\/-]+$/.test(n)||!/\.md$/.test(n)) return null;
+  if(n.split("/").some(x=>x===""||x==="."||x===".."))  return null;
+  return n;}
+/* the declared store: an http(s) address with a closing slash, from the meta tag and from nothing else; "" when the page declares none */
+function storeUrl(){const m=typeof document!=="undefined"&&document.querySelector?document.querySelector('meta[name="booklet-store"]'):null;
+  const c=m?String(m.getAttribute("content")||"").trim():"";if(!c) return "";
+  try{const u=new URL(c,(typeof location!=="undefined"&&location.href)||"http://booklet.invalid/");
+    if(u.protocol!=="https:"&&u.protocol!=="http:") return "";
+    u.search="";u.hash="";return u.href.endsWith("/")?u.href:u.href+"/";}catch(e){return "";}}
+/* the one address a name stands for: the store's address plus the name, and never anything outside the store */
+function storeAddress(name){const base=storeUrl(),n=linkName(name);if(!base||n===null) return null;
+  try{const u=new URL(n,base);return u.href.startsWith(base)&&u.origin===new URL(base).origin?u.href:null;}catch(e){return null;}}
+/* what a link in the fragment asks for, or null */
+function linkOf(hash){const m=/^#\/(open|module)\/([\s\S]*)$/.exec(String(hash||""));return m?{kind:m[1],raw:m[2]}:null;}
+/* One read of one address, as text. Never a method, a body or credentials; a redirect is an error; at most LINK_BYTES
+   and LINK_MS. Resolves to {text} or {err}, where err is one of missing, big, slow, notText, failed. */
+async function linkFetch(url){
+  const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),LINK_MS);
+  try{
+    const r=await fetch(url,{cache:"no-cache",credentials:"omit",redirect:"error",signal:ac.signal});
+    if(!r.ok) return {err:"missing"};
+    if(/^(text\/html|image\/|audio\/|video\/|application\/(json|pdf|zip|xml))/.test((r.headers.get("content-type")||"").toLowerCase())) return {err:"notText"};
+    if(Number(r.headers.get("content-length"))>LINK_BYTES) return {err:"big"};
+    const rd=r.body&&r.body.getReader?r.body.getReader():null,parts=[];let total=0;
+    if(!rd){const t=await r.text();return t.length>LINK_BYTES?{err:"big"}:{text:t};}
+    for(;;){const {done,value}=await rd.read();if(done) break;
+      total+=value.length;if(total>LINK_BYTES){ac.abort();return {err:"big"};}parts.push(value);}
+    const buf=new Uint8Array(total);let at=0;parts.forEach(x=>{buf.set(x,at);at+=x.length;});
+    try{return {text:new TextDecoder("utf-8",{fatal:true}).decode(buf)};}catch(e){return {err:"notText"};}
+  }catch(e){return {err:ac.signal.aborted?"slow":"failed"};}
+  finally{clearTimeout(timer);}}
+/* Open text as a view: the same parser, the same refusals, the same notices and the same start screen as a file picked
+   by hand; but no entry is added to the list and nothing is saved until the reader changes something. `via` says where
+   it came from: {store:true,label,from} or {store:false,label,from}. */
+function openAsView(text,via){const R=parseFile(text||"");
+  if(!R.ok){toast(humanMsg(R.refused&&R.refused.length?STRINGS[lang].ui.loadRefused+" "+R.refused.join(" "):R.unread&&R.unread.length&&!R.template?R.unread.join(" "):STRINGS[lang].ui.loadErr));return false;}
+  flushSave();resetBookletState();bookletGen++;
+  const now=new Date().toISOString();
+  currentId=newId(Date.now().toString(36));currentKey=bookKey(currentId);
+  currentEntry={id:currentId,title:null,parts:[],createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,lang,from:via.from};
+  finishLoad(R,via);return true;}
+let LINK_GEN=0;
+/* open what the fragment asks for; a link that is not one of the two shapes is left alone */
+async function openLink(hash){const L=linkOf(hash);if(!L) return false;
+  const B=()=>STRINGS[lang].booklet,gen=++LINK_GEN,said=k=>{toast(B()[k]);return false;};
+  let url,via;
+  if(L.kind==="open"){
+    const name=linkName(L.raw);
+    if(!storeUrl()) return said("linkNoStore");
+    if(name===null||!(url=storeAddress(name))) return said("linkBadName");
+    via={store:true,label:name,from:"store:"+name};}
+  else{
+    const id=L.raw.length<=LINK_NAME_MAX?(()=>{try{return decodeURIComponent(L.raw);}catch(e){return "";}})():"";
+    if(!id||!registryUrl()) return said(id?"linkNoModule":"linkBadName");
+    await loadRegistry(registryUrl());if(gen!==LINK_GEN) return false;
+    const entry=hasOwn(REGISTRY_CACHE,id)?REGISTRY_CACHE[id]:null;
+    if(!entry||!entry.url) return said("linkNoModule");
+    url=entry.url;via={store:false,label:tx(entry.title,entry.id),from:"registry:"+entry.id};}
+  const got=await linkFetch(url);if(gen!==LINK_GEN) return false;
+  if(got.err) return said({missing:"linkMissing",big:"linkBig",slow:"linkSlow",notText:"linkNotText"}[got.err]||"linkFailed");
+  return openAsView(got.text,via);}
 
 /* ======================= 13. WIRING AND BOOT =======================
    event listeners and the page's first draw. Runs last, so everything it names exists. */
@@ -5552,6 +5696,9 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 /* The page opens on "Your booklets". */
 bootLibrary();
 render();
+/* a link in the address (see OPENING BY LINK): read when the page starts and whenever the fragment changes */
+openLink(typeof location!=="undefined"?location.hash:"");
+window.addEventListener("hashchange",()=>{openLink(location.hash);});
 if(!storageOk) setTimeout(()=>toast(STRINGS[lang].ui.storageOff),400);
 /* another tab added or removed a booklet: the list redraws */
 window.addEventListener("storage",e=>{if(screen===LIB_SCREEN&&(!e||!e.key||String(e.key).endsWith(LIB_KEY))) render();});
