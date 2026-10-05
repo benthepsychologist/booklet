@@ -846,7 +846,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.10.1";
+const RENDERER_VERSION="0.10.2";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.10"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1000,7 +1000,11 @@ const STRINGS_SRC={
       addFailed: "That activity could not be fetched — it may have moved, or you may be offline."
     },
     notice: {
-      about: "About this module", license: "Licence", copyright: "Copyright", source: "Source", version: "Version"
+      about: "About this module", license: "Licence", copyright: "Copyright", source: "Source", version: "Version",
+      remove: "Remove this module", removeGo: "Remove", removeKeep: "Cancel",
+      removeAsk: (t,w)=>`This removes “${t}” from this booklet`+(w.length?`, with ${w.length===1?w[0]:w.slice(0,-1).join(", ")+" and "+w[w.length-1]} you kept in it. Download a copy first if you want to keep them.`:"."),
+      removeN: {entries:n=>`${n} entr${n===1?"y":"ies"}`,answers:n=>`${n} answer${n===1?"":"s"}`,drafts:n=>`${n} unfinished draft${n===1?"":"s"}`},
+      removed: t=>`Removed “${t}”.`
     },
     home: {
       h1: "Booklet",
@@ -1237,7 +1241,11 @@ const STRINGS_SRC={
       addFailed: "Cette activité n’a pas pu être récupérée — elle a peut-être changé d’adresse, ou vous êtes hors ligne."
     },
     notice: {
-      about: "À propos de ce module", license: "Licence", copyright: "Droit d’auteur", source: "Source", version: "Version"
+      about: "À propos de ce module", license: "Licence", copyright: "Droit d’auteur", source: "Source", version: "Version",
+      remove: "Retirer ce module", removeGo: "Retirer", removeKeep: "Annuler",
+      removeAsk: (t,w)=>`Cela retire « ${t} » de ce carnet`+(w.length?`, avec tout ce que vous y avez gardé (${w.length===1?w[0]:w.slice(0,-1).join(", ")+" et "+w[w.length-1]}). Téléchargez d’abord une copie si vous voulez le conserver.`:"."),
+      removeN: {entries:n=>`${n} entrée${n===1?"":"s"}`,answers:n=>`${n} réponse${n===1?"":"s"}`,drafts:n=>`${n} brouillon${n===1?"":"s"} non terminé${n===1?"":"s"}`},
+      removed: t=>`« ${t} » retiré.`
     },
     home: {
       h1: "Booklet",
@@ -1470,7 +1478,11 @@ const STRINGS_SRC={
       addFailed: "No se pudo obtener esa actividad — puede que se haya movido, o que no tengas conexión."
     },
     notice: {
-      about: "Acerca de este módulo", license: "Licencia", copyright: "Derechos de autor", source: "Fuente", version: "Versión"
+      about: "Acerca de este módulo", license: "Licencia", copyright: "Derechos de autor", source: "Fuente", version: "Versión",
+      remove: "Quitar este módulo", removeGo: "Quitar", removeKeep: "Cancelar",
+      removeAsk: (t,w)=>`Esto quita “${t}” de este cuadernillo`+(w.length?`, con todo lo que guardaste en él (${w.length===1?w[0]:w.slice(0,-1).join(", ")+" y "+w[w.length-1]}). Descarga antes una copia si quieres conservarlo.`:"."),
+      removeN: {entries:n=>`${n} entrada${n===1?"":"s"}`,answers:n=>`${n} respuesta${n===1?"":"s"}`,drafts:n=>`${n} borrador${n===1?"":"es"} sin terminar`},
+      removed: t=>`“${t}” quitado.`
     },
     home: {
       h1: "Booklet",
@@ -3013,6 +3025,65 @@ function addModuleText(text){
   /* the module as the composed file reads it: its notice, from its fence's callout, rides on it */
   (T.modules||[]).filter(m=>mine.has(m.id)).forEach(mod=>{if(addModule(mod)) added.push(mod.id);});
   return {ok:true,added,renamed:renamedIds};}
+/* What the reader has kept in a module, as counts: the entries kept in its activities, the answers it holds
+   (the questions its once-answered activities write, as toMarkdown writes them) and the activities with a draft
+   under way. Read-only. */
+function moduleWork(mod){
+  const acts=activitiesOf(mod),scope=scopeOfModule(mod)||mod.id,gd=peekAnswers(scope);
+  let entries=0,answers=0,drafts=0;
+  acts.forEach(a=>{
+    if(a.kind==="entry"){entries+=((STATE.entries||{})[a.id]||[]).filter(e=>e&&e.ts).length;
+      const d=(DRAFTS.custom||{})[a.id];
+      if(d&&Object.values(d).some(holdsSomething)) drafts++;}
+    else{const keys=new Set();allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k)));
+      keys.forEach(k=>{if(Object.prototype.hasOwnProperty.call(gd,k)&&holdsSomething(gd[k])) answers++;});}});
+  return {entries,answers,drafts};}
+/* Remove a module takes out exactly what the module is in the file: its fence (open line to end line) and its own
+   `> [!data|module-id]` section, found the way Add a module finds them (moduleSpanOf, dataSections). The shared
+   `> [!data]` section, the other modules, the front matter and the order of what remains are not touched. In
+   memory it takes the module, the widgets and figures that were its own, and the reader's work in it: its
+   answers, its kept entries and drafts, and what is keyed by its activities (page on show, reading-mode state,
+   query view state, the open chip). Nothing is changed unless the file this makes is one the renderer reads with
+   nothing refused. Returns {ok} or {ok:false,problems}. */
+function removeModule(id){
+  const mod=id?allModules().find(m=>m.id===id):null;
+  if(!mod||!BOOK) return {ok:false,problems:[strings("problem").noFence]};
+  const cur=String((BOOK.raw||{}).source||"").split("\n");
+  const old=moduleSpanOf(cur,id);
+  if(!old) return {ok:false,problems:[strings("problem").noFence]};
+  const drop=new Array(cur.length).fill(false);
+  for(let i=old.openAt;i<=old.closeAt;i++) drop[i]=true;
+  dataSections(cur).filter(x=>x.id===id).forEach(x=>{for(let i=x.at;i<x.end;i++) drop[i]=true;});
+  const out=[];let after=false;
+  cur.forEach((ln,i)=>{
+    if(drop[i]){after=true;return;}
+    if(after){const blank=!ln.trim(),last=out.length?out[out.length-1]:null;
+      if(blank&&(last===null||!last.trim())) return;
+      if(!blank&&last!==null&&last.trim()) out.push("");
+      after=false;}
+    out.push(ln);});
+  const newSource=out.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
+  const made=parseFile(newSource),refused=(made&&made.refused)||[];
+  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notV07]};
+  if(refused.length) return {ok:false,problems:refused};
+  /* the reader's work in the module goes with it */
+  const addrs=activitiesOf(mod).map(a=>a.id),scope=scopeOfModule(mod)||id;
+  addrs.forEach(a=>{
+    if(STATE.entries) delete STATE.entries[a];
+    if(DRAFTS.custom) delete DRAFTS.custom[a];
+    delete openChip[a];
+    Object.keys(PAGE_NOW).forEach(k=>{if(k.slice(k.indexOf("\n")+1)===a) delete PAGE_NOW[k];});
+    Object.keys(RM_STATE).forEach(k=>{if(k.split("\n")[1]===a) delete RM_STATE[k];});
+    [...VIEWSTATE.keys()].forEach(k=>{if(k.startsWith(a+":")) VIEWSTATE.delete(k);});});
+  if(STATE.answers) delete STATE.answers[scope];
+  const left=Object.values(STATE.entries||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);
+  if(unsavedEntries>left) unsavedEntries=left;
+  editBook(t=>{t.raw={...(t.raw||{}),source:newSource};
+    t.modules=(t.modules||[]).filter(m=>m.id!==id);
+    t.widgets=(t.widgets||[]).filter(w=>w.module!==id);
+    const keep=Object.fromEntries(Object.entries(t.figures||{}).filter(([k])=>scopeOfAddr(k)!==id));
+    if(Object.keys(keep).length) t.figures=keep;else delete t.figures;});
+  return {ok:true};}
 function parseFile(text){
   if(isBooklet(text)) return parseBooklet(text);
   const old=oldMarker(text);
@@ -5017,6 +5088,29 @@ function noticeNode(mod){const n=mod&&mod.notice;if(!isObj(n)) return null;
     const val=k==="source"&&/^https?:\/\//i.test(v)?el("a",{href:v,rel:"noopener noreferrer",target:"_blank"},v):v;
     rows.push(el("dt",{},T[k]),el("dd",{},val));});
   return rows.length?el("details",{class:"about"},el("summary",{},T.about),el("dl",{},...rows)):null;}
+/* "Remove this module", a quiet control where "About this module" is drawn. It asks first, in place (as removing a
+   booklet from "Your booklets" does), says in counts what work goes with the module, and does nothing on Cancel or
+   Escape. The module's title is text. */
+function removeModuleControl(mod){if(!mod||!mod.id) return null;
+  const T=strings("notice"),box=el("div",{class:"removemod col",style:"margin-top:1.2rem"});
+  const draw=asking=>{box.innerHTML="";
+    if(!asking){const b=el("button",{type:"button",class:"quietlink"},T.remove);
+      b.addEventListener("click",()=>draw(true));box.append(b);return;}
+    const w=moduleWork(mod),title=tx(mod.title,mod.id),parts=[];
+    if(w.entries) parts.push(T.removeN.entries(w.entries));
+    if(w.answers) parts.push(T.removeN.answers(w.answers));
+    if(w.drafts) parts.push(T.removeN.drafts(w.drafts));
+    const keep=el("button",{type:"button",class:"small"},T.removeKeep),go=el("button",{type:"button",class:"small danger"},T.removeGo);
+    keep.addEventListener("click",()=>draw(false));
+    go.addEventListener("click",()=>{const r=removeModule(mod.id);
+      if(!r.ok){toast((r.problems||[])[0]||"");draw(false);return;}
+      screen="home";render();window.scrollTo({top:0});toast(T.removed(title));});
+    const alert=el("div",{role:"alert",style:"font-family:var(--sans)"},
+      el("p",{style:"margin:.3rem 0 .6rem;font-weight:700"},T.removeAsk(title,parts)),
+      el("span",{class:"bkacts"},keep,go));
+    alert.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();e.stopPropagation();draw(false);}});
+    box.append(alert);requestAnimationFrame(()=>keep.focus());};
+  draw(false);return box;}
 /* A booklet's name being edited in place: Enter saves, Escape cancels, an empty name keeps the old one. `save` and
    `cancel` are called once; the value is text. */
 function nameEditor(current,save,cancel){
@@ -5150,7 +5244,9 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
   /* a module that is one activity shows its notice at the foot of that activity */
-  {const holder=holderOf(id),about=holder&&!isMulti(holder)?noticeNode(holder):null;if(about) col.append(about);}
+  {const holder=holderOf(id),single=holder&&!isMulti(holder),about=single?noticeNode(holder):null;
+    if(about) col.append(about);
+    const rm=single?removeModuleControl(holder):null;if(rm) col.append(rm);}
   main.append(withPages(id,col));}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
@@ -5181,6 +5277,7 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   acts.forEach(a=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,""),keptPills(a))));
   main.append(grid);
   const about=noticeNode(mod);if(about) main.append(el("div",{class:"col"},about));
+  const rm=removeModuleControl(mod);if(rm) main.append(rm);
 }
 /* What a file is called comes from the booklet's own title, never from the
    name of whatever page happened to write it: "End of day" is saved as
