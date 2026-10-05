@@ -127,5 +127,57 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
    i++;}
  if(end===want) console.log("  ok    the browser ends the main script where the file does");
  else{fails++;console.log("  FAIL  the browser would end the main script at line "+(full.slice(0,end).split("\n").length)+", not at line "+(full.slice(0,want).split("\n").length)+": a `<script` follows an unclosed `<!--` in the code");}}
+// THE PLEDGE: nothing a reader writes is uploaded. The renderer runs in the browser; their work stays there or in a file they
+// save themselves. This is checked over the exact file that is published, because a promise nothing checks is only a hope.
+// A change that makes any of these fail is a change to the promise itself, and needs Ben's say-so before this test is edited.
+{const PLEDGE=" This is Booklet's pledge: nothing a reader writes leaves their browser except in a file they save themselves. Changing this check changes the pledge, and needs Ben's say-so.";
+ const must=(label,ok,d)=>{if(ok) console.log("  ok    "+label);else{fails++;console.log("  FAIL  "+label+(d?"   → "+d:"")+PLEDGE);}};
+ const full=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
+ const libs=[...full.matchAll(/<script type="text\/plain" id="lib-([a-z]+)">([\s\S]*?)<\/script>/g)].map(m=>({id:m[1],text:m[2]}));
+ const hand=html; /* the hand-written part: every script above the libraries, and the static markup */
+ const NAMES=["XMLHttpRequest","sendBeacon","WebSocket","EventSource","RTCPeerConnection",".postMessage(","BroadcastChannel",
+   "navigator.share","serviceWorker","importScripts","formAction",".submit(","document.cookie"];
+ /* a name counts where it is not the tail of a longer identifier (performAction is not formAction) */
+ const count=(text,n)=>(text.match(new RegExp("(?<![A-Za-z0-9_$])"+n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"g"))||[]).length;
+ must("the libraries are found (mermaid and temml)",libs.map(l=>l.id).join()==="mermaid,temml"&&libs.every(l=>l.text.length>100000));
+ for(const n of NAMES) must("the hand-written renderer has no "+n,count(hand,n)===0,count(hand,n)+" found");
+ must("it has no <form with an action",!/<form\b[^>]*\baction\b/i.test(hand)&&!/<form\b/i.test(hand),"a <form> is present");
+ must("it never writes document.cookie",count(hand,"document.cookie")===0);
+ /* every fetch( call: found with a parser, counted, and able only to read */
+ const cp=require("child_process"),r=cp.spawnSync(process.execPath,["--expose-internals",path.join(__dirname,"fetchsites.js")],{encoding:"utf8"});
+ let sites=null;try{sites=JSON.parse(r.stdout);}catch(e){}
+ const PINNED_FETCHES=2; /* loadRegistry (the registry list) and registryText (one module's file), both in region 12 */
+ const textual=count(hand,"fetch(");
+ must("fetch( appears exactly "+PINNED_FETCHES+" times in the hand-written code (the registry list, one module file)",textual===PINNED_FETCHES,textual+" found");
+ if(sites&&!sites.unavailable){
+   const calls=sites.sites.filter(x=>!x.alias),aliases=sites.sites.filter(x=>x.alias);
+   console.log("  info  fetch sites: "+calls.map(c=>"line "+c.line+" "+c.text).join("; "));
+   must("the parser finds exactly "+PINNED_FETCHES+" fetch calls",calls.length===PINNED_FETCHES,calls.length+" found");
+   must("fetch is never aliased or passed on as a value",aliases.length===0,JSON.stringify(aliases));
+   must("each fetch call is a plain read: no method, no body, no headers, no credentials, no keepalive",
+     calls.every(c=>c.args<=2&&c.optionKeys.every(k=>k==="cache")),JSON.stringify(calls.map(c=>[c.line,c.optionKeys])));
+   must("and each is aimed at the registry address or an address the registry listed",
+     calls.map(c=>c.first).sort().join("|")==="L.url|url");}
+ else console.log("  skip  the parser check of fetch calls (this Node has no bundled acorn); the textual count above still ran");
+ must("no fetch( is called with a method or a body written anywhere near it",
+   !/fetch\([^)]*\b(method|body|keepalive|credentials)\b/.test(hand));
+ /* the vendored libraries: stored as text, started only when a file uses a diagram or a formula. What they hold, pinned.
+    A count that changes here means the library was swapped: look at what is new before changing the number. */
+ const ALLOW={
+  mermaid:{
+   "new Image":[1,"mermaid's image-shaped node (flowchart A@{ img: ... }). Observed 2026-10-05: it asks for the picture address the booklet FILE wrote, a plain GET, even under securityLevel strict. It carries nothing of the reader's (the address is fixed text in the file, as a Markdown image's is); on the hosted page the Content-Security-Policy img-src refuses any other origin, and off the hosted page it is the same exposure a Markdown image in the file already is"],
+   "window.open":[1,"a diagram's click link; mermaid only binds click links when its securityLevel is not strict, and the renderer starts it strict (checked below)"],
+   "<iframe":[1,"the sandbox iframe, used only under securityLevel sandbox; the renderer starts mermaid strict (checked below)"]},
+  temml:{
+   "fetch(":[34,"33 calls of the macro expander's own .fetch(), which returns the next token, and its one definition; nothing to do with the network"],
+   'createElement("img")':[1,"\\includegraphics, which temml draws only when trust is on; the renderer passes trust:false (checked below)"]}};
+ const WATCH=NAMES.concat(["fetch(","new Image","window.open","<iframe",'createElement("img")',"import(","Worker("]);
+ for(const l of libs){
+   for(const n of WATCH){const c=count(l.text,n),a=(ALLOW[l.id]||{})[n];
+     if(a) must(l.id+" holds "+n+" exactly "+a[0]+" time(s), allowed because: "+a[1],c===a[0],c+" found");
+     else must(l.id+" holds no "+n,c===0,c+" found: if a library can now open a connection, say so plainly and ask Ben");}}
+ must("mermaid is started with securityLevel strict, so its click links and sandbox iframe never run",/securityLevel:"strict"/.test(hand)&&!/securityLevel:"(loose|sandbox|antiscript)"/.test(hand));
+ must("temml is started with trust:false, so \\includegraphics and \\href are not drawn",/trust:false/.test(hand)&&!/trust:true/.test(hand));
+ must("the libraries are stored as inert text (type text/plain), never as script that runs on load",!/<script(?![^>]*type="text\/plain")[^>]*id="lib-/.test(full));}
 console.log(fails?"\n"+fails+" FAILURES":"\nguard checks passed");
 process.exit(fails?1:0);

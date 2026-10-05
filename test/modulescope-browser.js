@@ -7,7 +7,7 @@
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
-const CSP="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const mod=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!activity|act] Answer ${t}\n\n> [!text|note] Note ${t}\n\n> [!widget|w]\n> ![[#^wd]]\n\n> [!activity|log repeat] Log ${t}\n\n> [!text|what] What ${t}\n\n\`\`\`booklet widget\n{"engine":"grid-select","copy":{"h":"Picker ${t}"},"items":[{"id":"i","label":"Item ${t}"}]}\n\`\`\`\n^wd\n\n> [!module|${id} end] End\n`;
 const FILE=`---\nbooklet: "0.10"\ntitle: Scope\nlang: en\n---\n\n${mod('ma','A')}\n${mod('mb','B')}`;
