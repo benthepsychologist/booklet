@@ -136,7 +136,10 @@
   .themesel option{background:var(--field);color:var(--ink)}
   .tools{display:flex;gap:.4rem;flex-wrap:wrap}
   .bar .ver{flex:0 0 auto;font-size:.7rem;color:var(--muted);white-space:nowrap;padding:.25rem .3rem}
-  @media (max-width:520px){ .bar{padding:.45rem .6rem} .bar .home{flex-basis:100%;order:-1} }
+  .bar .hostline{flex:0 1 auto;min-width:0;max-width:22rem;font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:.25rem .3rem}
+  .bar .hostline.bad{color:var(--warn);font-weight:700}
+  .notice.hostnote{font-size:.85rem;padding:.6rem .9rem;margin-bottom:1rem}
+  @media (max-width:520px){ .bar{padding:.45rem .6rem} .bar .home{flex-basis:100%;order:-1} .bar .hostline{flex-basis:100%;max-width:none;order:9;white-space:normal;padding:0 .3rem;line-height:1.3} }
 
   /* page */
   /* wide: the content area runs to --content-w (76rem), beside the pages menu or
@@ -773,6 +776,7 @@
     <button type="button" data-lang="fr" aria-pressed="false">FR</button>
   </div>
   <select class="themesel" id="themeSel"></select>
+  <span class="hostline" id="hostLine"></span>
   <span class="ver" id="rendererVer" aria-hidden="true"></span>
 </div>
 
@@ -854,7 +858,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.1";
+const RENDERER_VERSION="0.11.2";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -982,6 +986,14 @@ const STRINGS_SRC={
       leaving: "Your entries are kept in this browser, but you have not downloaded a copy to this device.",
       unsavedEntries: n=>`${n} entr${n===1?"y":"ies"} not yet downloaded`,
       unsavedChanges: "Changes not yet downloaded",
+      hostKept: "Kept in this browser only",
+      hostSavesTo: n=>`Saves go to: ${n}`,
+      hostSaved: t=>`Saved ${t}`,
+      hostSaving: "Saving…",
+      hostFailed: m=>m?`Not saved: ${m}`:"Not saved",
+      hostChanged: "The file has changed where it is kept.",
+      hostRead: "Read the newer file",
+      hostNoAnswer: "the host did not answer",
       nothingYet: "Nothing to keep yet — the entry is empty.",
       kept: "Kept.",
       earlier: "Earlier entries",
@@ -1008,6 +1020,8 @@ const STRINGS_SRC={
       renamed: r=>(r.length===1?"One id was renamed so it does not clash: ":r.length+" ids were renamed so they do not clash: ")+renamesList(r," is now ",n=>" and "+n+" more")+".",
       noShelf: "The module list could not be loaded. Check your connection and try again.",
       addFailed: "That activity could not be fetched — it may have moved, or you may be offline.",
+      addSlow: "That module took too long to arrive. Try again.",
+      addBig: "That module file is too big to add (the limit is 5 MB).",
       linkNoStore: "This page has no store of booklets to open from.",
       linkBadName: "That link does not name a booklet this page can open.",
       linkNoModule: "That module is not on this page's registry.",
@@ -1019,7 +1033,8 @@ const STRINGS_SRC={
       linkFromStore: n=>`Opened by a link, from this page's own store: ${n}`,
       linkFromRegistry: n=>`Opened by a link, from this page's registry: ${n}`,
       linkKept: "You also keep a copy of this with your own work:",
-      linkKeptOpen: "open it"
+      linkKeptOpen: "open it",
+      openedFromHost: n=>`Opened from this page's host: ${n}`
     },
     notice: {
       about: "About this module", license: "Licence", copyright: "Copyright", source: "Source", version: "Version",
@@ -1238,6 +1253,14 @@ const STRINGS_SRC={
       leaving: "Vos entrées sont conservées dans ce navigateur, mais vous n’avez pas téléchargé de copie sur cet appareil.",
       unsavedEntries: n=>`${n} entrée${n===1?"":"s"} pas encore téléchargée${n===1?"":"s"}`,
       unsavedChanges: "Modifications pas encore téléchargées",
+      hostKept: "Conservé dans ce navigateur seulement",
+      hostSavesTo: n=>`Les enregistrements vont vers : ${n}`,
+      hostSaved: t=>`Enregistré à ${t}`,
+      hostSaving: "Enregistrement…",
+      hostFailed: m=>m?`Non enregistré : ${m}`:"Non enregistré",
+      hostChanged: "Le fichier a changé là où il est conservé.",
+      hostRead: "Lire le fichier plus récent",
+      hostNoAnswer: "l’hôte n’a pas répondu",
       nothingYet: "Rien à garder pour l’instant — l’entrée est vide.",
       kept: "Gardé.",
       earlier: "Entrées précédentes",
@@ -1264,6 +1287,8 @@ const STRINGS_SRC={
       renamed: r=>(r.length===1?"Un identifiant a été renommé pour éviter un conflit : ":r.length+" identifiants ont été renommés pour éviter un conflit : ")+renamesList(r," devient ",n=>" et "+n+" de plus")+".",
       noShelf: "La liste des modules n’a pas pu être chargée. Vérifiez votre connexion et réessayez.",
       addFailed: "Cette activité n’a pas pu être récupérée — elle a peut-être changé d’adresse, ou vous êtes hors ligne.",
+      addSlow: "Ce module a mis trop de temps à arriver. Réessayez.",
+      addBig: "Ce fichier de module est trop gros pour être ajouté (la limite est de 5 Mo).",
       linkNoStore: "Cette page n’a pas de dépôt de carnets où ouvrir.",
       linkBadName: "Ce lien ne nomme pas un carnet que cette page peut ouvrir.",
       linkNoModule: "Ce module ne figure pas dans le registre de cette page.",
@@ -1275,7 +1300,8 @@ const STRINGS_SRC={
       linkFromStore: n=>`Ouvert par un lien, depuis le dépôt de cette page : ${n}`,
       linkFromRegistry: n=>`Ouvert par un lien, depuis le registre de cette page : ${n}`,
       linkKept: "Vous gardez aussi une copie de ce carnet avec votre propre travail :",
-      linkKeptOpen: "l’ouvrir"
+      linkKeptOpen: "l’ouvrir",
+      openedFromHost: n=>`Ouvert depuis l’hôte de cette page : ${n}`
     },
     notice: {
       about: "À propos de ce module", license: "Licence", copyright: "Droit d’auteur", source: "Source", version: "Version",
@@ -1490,6 +1516,14 @@ const STRINGS_SRC={
       leaving: "Tus entradas se guardan en este navegador, pero no has descargado una copia en este dispositivo.",
       unsavedEntries: n=>`${n} entrada${n===1?"":"s"} sin descargar todavía`,
       unsavedChanges: "Cambios sin descargar todavía",
+      hostKept: "Se guarda solo en este navegador",
+      hostSavesTo: n=>`Los cambios se guardan en: ${n}`,
+      hostSaved: t=>`Guardado a las ${t}`,
+      hostSaving: "Guardando…",
+      hostFailed: m=>m?`No se guardó: ${m}`:"No se guardó",
+      hostChanged: "El archivo cambió donde se conserva.",
+      hostRead: "Leer el archivo más reciente",
+      hostNoAnswer: "el anfitrión no respondió",
       nothingYet: "Nada que guardar todavía — la entrada está vacía.",
       kept: "Guardada.",
       earlier: "Entradas anteriores",
@@ -1516,6 +1550,8 @@ const STRINGS_SRC={
       renamed: r=>(r.length===1?"Se renombró un identificador para que no choque: ":"Se renombraron "+r.length+" identificadores para que no choquen: ")+renamesList(r," ahora es ",n=>" y "+n+" más")+".",
       noShelf: "No se pudo cargar la lista de módulos. Revisa tu conexión e inténtalo de nuevo.",
       addFailed: "No se pudo obtener esa actividad — puede que se haya movido, o que no tengas conexión.",
+      addSlow: "Ese módulo tardó demasiado en llegar. Inténtalo de nuevo.",
+      addBig: "Ese archivo de módulo es demasiado grande para agregarlo (el límite es 5 MB).",
       linkNoStore: "Esta página no tiene una reserva de cuadernillos desde donde abrir.",
       linkBadName: "Ese enlace no nombra un cuadernillo que esta página pueda abrir.",
       linkNoModule: "Ese módulo no está en el registro de esta página.",
@@ -1527,7 +1563,8 @@ const STRINGS_SRC={
       linkFromStore: n=>`Abierto por un enlace, desde la reserva de esta página: ${n}`,
       linkFromRegistry: n=>`Abierto por un enlace, desde el registro de esta página: ${n}`,
       linkKept: "También guardas una copia de este con tu propio trabajo:",
-      linkKeptOpen: "ábrela"
+      linkKeptOpen: "ábrela",
+      openedFromHost: n=>`Abierto desde el anfitrión de esta página: ${n}`
     },
     notice: {
       about: "Acerca de este módulo", license: "Licencia", copyright: "Derechos de autor", source: "Fuente", version: "Versión",
@@ -1893,6 +1930,16 @@ let FILE_NOTES=null;
 /* where a booklet opened by a link came from (see OPENING BY LINK in the shell): its own quiet line, never counted among
    the things the page could not read; in memory for the session, never saved */
 let PROVENANCE=null;
+/* the page's own host, if one has registered through window.Booklet (see THE HOST HOOK, region 13): {label, status
+   (idle, saving, saved, failed), at, message, prev, pending}. Null on a page with no host, which is the shipped file.
+   In memory only, never saved. HOOK_LISTENERS are the functions a host gave onChange. */
+let HOST=null;
+const HOOK_LISTENERS=[];
+let HOOK_TIMER=null,HOOK_LAST=0,HOOK_SEEN="";
+const HOOK_EVERY_MS=500;
+/* how long a host has to answer an onChange call with saved() or failed() before the reader is told it did not */
+let HOOK_ANSWER_MS=20000,HOOK_ANSWER_TIMER=null;
+function hookStopWait(){clearTimeout(HOOK_ANSWER_TIMER);HOOK_ANSWER_TIMER=null;}
 /* the reader's sort and filter for each query on the page (see viewControls): kept while this booklet is open, never saved */
 const VIEWSTATE=new Map();
 /* ---- the reader's language: this browser's choice, never a booklet's ----
@@ -2036,7 +2083,8 @@ function renameStored(id,name){const n=cleanName(name);if(!n) return false;
 function slotKey(){return currentId?currentKey:null;}
 function saveLocal(){const key=slotKey();if(!key) return;
   lsSet(key,JSON.stringify({S:STATE,D:DRAFTS,TPL:BOOK,lang,dirty,unsavedEntries}));
-  if(currentId) noteSaved();}
+  if(currentId) noteSaved();
+  hookChanged();}
 function noteSaved(){const id=currentId,now=new Date().toISOString();
   const fresh={...describeBooklet(BOOK),updatedAt:now,dirty,unsavedEntries,lang};
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
@@ -2114,7 +2162,7 @@ function loadLocal(){const key=slotKey();if(!key) return false;
    writes any save still pending to that booklet's own key first (flushSave),
    and a timer that somehow outlives its booklet finds bookletGen moved on and
    does nothing — it can never write one booklet's globals under another's. */
-function markDirty(){dirty=true;clearTimeout(saveTimer);const gen=bookletGen;
+function markDirty(){dirty=true;hookChanged();clearTimeout(saveTimer);const gen=bookletGen;
   saveTimer=setTimeout(()=>{saveTimer=null;if(gen===bookletGen) saveLocal();},400);}
 function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=null;saveLocal();}
 function resetBookletState(){
@@ -2122,6 +2170,8 @@ function resetBookletState(){
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
   screen="home";dirty=false;unsavedEntries=0;
   openChip={};VIEWSTATE.clear();FILE_NOTES=null;PROVENANCE=null;
+  hookStopWait();
+  if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;}
   clearTimeout(saveTimer);saveTimer=null;
   VEIL_IDS.forEach(id=>{const v=document.getElementById(id);if(v) v.removeAttribute("open");});}
 /* Open one entry: whatever the last booklet had pending is written to it,
@@ -2134,6 +2184,7 @@ function openBooklet(id){flushSave();LIB=readLib();const e=entryById(id);if(!e) 
   const restored=loadLocal();
   screen="home";
   changeLib(L=>{const x=L.entries.find(y=>y.id===e.id);if(x) x.openedAt=new Date().toISOString();});
+  hookChanged();
   return restored;}
 function closeBooklet(){flushSave();resetBookletState();bookletGen++;
   currentId=currentKey=currentEntry=null;screen=LIB_SCREEN;}
@@ -5166,7 +5217,7 @@ function renderBar(){const t=STRINGS[lang].ui;const atList=screen===LIB_SCREEN,L
      and a booklet's home leads to "Your booklets". */
   const toList=screen==="home"&&!!currentId;
   document.getElementById("btnHome").textContent=atList?t.app:toList?"← "+Lb.back:(screen==="home"?"":"← ")+t.app;
-  const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;dl.classList.toggle("attention",dirty||unsavedEntries>0);
+  const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());
   document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));
   document.getElementById("dropZone").textContent=t.dropZone;document.getElementById("dropVeil").textContent=t.dropVeil;
   for(const [id,key] of [["loadTitle","loadTitle"],["loadHelp","loadHelp"],["loadOr","loadOr"],["loadCancel","loadCancel"],["loadGo","loadGo"],
@@ -5176,6 +5227,7 @@ function renderBar(){const t=STRINGS[lang].ui;const atList=screen===LIB_SCREEN,L
   drawThemeSelect(t);
   document.getElementById("rendererVer").textContent="v"+RENDERER_VERSION;
   if(storageOk) document.getElementById("clearHelp").textContent=t.clearHelp+" "+t.clearHelpStored;
+  drawHostLine();
   applyLangToggle();
 }
 /* the booklet that is open asks for its look; the list of booklets never does */
@@ -5201,12 +5253,15 @@ function drawThemeSelect(t){const s=document.getElementById("themeSel"),B=window
 function unsavedSpan(entries,changed){const t=STRINGS[lang].ui;
   if(entries>0) return el("span",{class:"unsaved"},t.unsavedEntries(entries));
   if(changed) return el("span",{class:"unsaved"},t.unsavedChanges);return null;}
-const unsavedNote=()=>unsavedSpan(unsavedEntries,dirty);
+/* a host that reports saves succeeding is keeping the work, so the "not yet downloaded" note rests until a save fails */
+const hostCovers=()=>!!HOST&&HOST.status!=="failed"&&HOOK_LISTENERS.length>0;
+const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
 const SCREENS={home:renderHome,[LIB_SCREEN]:renderBooklets};
 function render(){citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
-  if(SCREENS[screen]) return SCREENS[screen](main);
-  if(isModuleScreen(screen)) return renderModulePage(main,screen);
-  return renderActivity(main,screen);}
+  if(SCREENS[screen]) SCREENS[screen](main);
+  else if(isModuleScreen(screen)) renderModulePage(main,screen);
+  else renderActivity(main,screen);
+  hostNoticeShow(main);}
 /* the notices at the top of an opened file's first screen. A file marked with another 0.x version says so in a
    sentence of its own, above and apart from the count: the page read it, so that is not a thing it could not read.
    Under it, how many things the page could not read (nothing is shown when there are none), the list inside a
@@ -5227,7 +5282,7 @@ function provenanceNode(){if(!PROVENANCE||PROVENANCE.dismissed) return null;
   if(screen!=="home"&&PROVENANCE.at!==screen) return null;
   const u=STRINGS[lang].ui,B=STRINGS[lang].booklet;
   const box=el("div",{class:"notice col openedby",role:"status"});
-  const row=el("p",{style:"margin:0"},PROVENANCE.store?B.linkFromStore(PROVENANCE.label):B.linkFromRegistry(PROVENANCE.label));
+  const row=el("p",{style:"margin:0"},PROVENANCE.host?B.openedFromHost(PROVENANCE.label):PROVENANCE.store?B.linkFromStore(PROVENANCE.label):B.linkFromRegistry(PROVENANCE.label));
   box.append(row);
   const kept=PROVENANCE.from?readLib().entries.find(e=>e.from===PROVENANCE.from&&e.id!==currentId):null;
   if(kept) box.append(el("p",{style:"margin:.3rem 0 0"},B.linkKept+" ",
@@ -5504,8 +5559,8 @@ const registryUrl=()=>{const m=document.querySelector('meta[name="booklet-regist
 async function loadRegistry(url){REGISTRY_CACHE={};
   if(!url) return false;
   try{
-    const r=await fetch(url,{cache:"no-cache"});if(!r.ok) return false;
-    const data=await r.json();
+    const got=await linkFetch(url,{bytes:REGISTRY_LIST_BYTES,json:true});if(got.err) return false;
+    const data=JSON.parse(got.text);
     if(!data||!Array.isArray(data.modules)) return false;
     data.modules.forEach(e=>registryPut(e,url));
     return true;
@@ -5525,9 +5580,9 @@ function addModuleFromText(text){
   return true;}
 /* the text behind a registry entry, fetched fresh: an entry only ever carries a
    URL, never the text itself */
-async function registryText(id){const L=REGISTRY_CACHE[id];if(!L) return null;
-  if(!L.url) return null;
-  try{const r=await fetch(L.url,{cache:"no-cache"});if(!r.ok) return null;return await r.text();}catch(e){return null;}}
+async function registryRead(id){const L=REGISTRY_CACHE[id];if(!L||!L.url) return {err:"missing"};
+  return linkFetch(L.url,{bytes:REGISTRY_MODULE_BYTES});}
+async function registryText(id){const got=await registryRead(id);return got.text==null?null:got.text;}
 function renderAddModuleList(){const box=document.getElementById("addModList");box.innerHTML="";
   const items=registryList();
   if(!items.length){box.append(el("p",{class:"hint"},STRINGS[lang].booklet.noShelf));return;}
@@ -5535,8 +5590,8 @@ function renderAddModuleList(){const box=document.getElementById("addModList");b
     const btn=el("button",{type:"button",class:"small primary"},STRINGS[lang].ui.addModAdd);
     btn.addEventListener("click",async()=>{btn.disabled=true;
       const msg=document.getElementById("addModMsg");msg.className="msg";msg.textContent="";
-      const text=await registryText(L.id);
-      if(!text){msg.className="msg err";msg.textContent=STRINGS[lang].booklet.addFailed;btn.disabled=false;return;}
+      const got=await registryRead(L.id),text=got.text;
+      if(!text){msg.className="msg err";msg.textContent=STRINGS[lang].booklet[got.err==="slow"?"addSlow":got.err==="big"?"addBig":"addFailed"];btn.disabled=false;return;}
       if(!addModuleFromText(text)) btn.disabled=false;});
     box.append(el("div",{class:"bkrow"},
       el("span",{class:"bkname"},tx(L.title,L.id)+(tx(L.blurb,"")?" — "+tx(L.blurb,""):"")),
@@ -5570,8 +5625,71 @@ function finishLoad(R,via){const mine=!!langPref();
   const marker=R.markerNote?humanMsg(R.markerNote):"",list=(R.unread||[]).filter(m=>m!==R.markerNote).map(humanMsg);
   FILE_NOTES=list.length||marker?{marker,list,dismissed:false,at}:null;
   /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */
-  if(via){PROVENANCE={...via,dismissed:false,at};go(at);return;}
+  if(via){PROVENANCE={...via,dismissed:false,at};hookChanged();go(at);return;}
   saveLocal();go(at);toast(STRINGS[lang].ui.loadOk);}
+
+/* ---- THE HOST'S LINE AND NOTICE ----
+   What the top bar says about where saves go, and the offer to read a newer file. The host's words (a label, a failure
+   message) are only ever put on the page as text. The state lives in HOST (region 4); window.Booklet (region 13) is the
+   only way a host changes it. */
+const hookText=(x,n)=>String(x==null?"":x).replace(/\s+/g," ").trim().slice(0,n);
+const hookOpen=()=>!!currentId&&BOOK!==EMPTY_BOOKLET;
+function hostTime(d){const p=n=>String(n).padStart(2,"0");return p(d.getHours())+":"+p(d.getMinutes());}
+function hostLineText(u){if(!HOST) return u.hostKept;
+  const head=HOST.label?u.hostSavesTo(HOST.label):"";
+  const st=HOST.status==="saving"?u.hostSaving:HOST.status==="saved"?u.hostSaved(hostTime(HOST.at)):HOST.status==="failed"?u.hostFailed(HOST.silent?u.hostNoAnswer:HOST.message):"";
+  return [head,st].filter(Boolean).join(" · ");}
+function drawHostLine(){const n=document.getElementById("hostLine");if(!n) return;
+  const txt=hostLineText(STRINGS[lang].ui);n.textContent=txt;n.setAttribute("title",txt);
+  n.setAttribute("class","hostline"+(HOST&&HOST.status==="failed"?" bad":""));
+  const dl=document.getElementById("btnExport");if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());}
+/* a change was made to the open booklet: a host that is registered shows "Saving…" at once, and the listeners hear of it
+   a moment later (at most one call about every half second, and always one after the last change) */
+function hookChanged(){if(!hookOpen()||(!HOST&&!HOOK_LISTENERS.length)) return;
+  if(HOST&&HOST.status!=="saving"){HOST.prev=HOST.status;HOST.status="saving";drawHostLine();}
+  if(HOOK_TIMER) return;
+  HOOK_TIMER=setTimeout(hookFire,Math.max(100,HOOK_EVERY_MS-(Date.now()-HOOK_LAST)));}
+function hookFire(){HOOK_TIMER=null;HOOK_LAST=Date.now();
+  const calm=()=>{if(HOST&&HOST.status==="saving"&&HOOK_ANSWER_TIMER===null){HOST.status=HOST.prev||"idle";drawHostLine();}};
+  if(!hookOpen()||!HOOK_LISTENERS.length) return calm();
+  const text=toMarkdown(),key=currentId+"\u0000"+text;
+  if(key===HOOK_SEEN) return calm();
+  HOOK_SEEN=key;
+  const from=currentEntry&&typeof currentEntry.from==="string"&&currentEntry.from.startsWith("store:")?currentEntry.from.slice(6):"";
+  const info={text,name:from,title:hookText(tx(describeBooklet(BOOK).title,""),200)};
+  hookStopWait();
+  if(HOST) HOOK_ANSWER_TIMER=setTimeout(()=>{HOOK_ANSWER_TIMER=null;if(HOST&&HOST.status==="saving")hostSet("failed","",true);},HOOK_ANSWER_MS);
+  HOOK_LISTENERS.slice().forEach(fn=>{try{fn({...info});}catch(e){HOOK_SEEN="";hostSet("failed",hookText(e&&e.message,200));}});}
+/* a host reports: status "saved", or "failed" with a message */
+function hostSet(status,message,silent){if(!HOST) return;const was=HOST.status;
+  hookStopWait();HOST.silent=!!silent;
+  HOST.status=status;HOST.message=status==="failed"?message||"":"";if(status==="saved") HOST.at=new Date();
+  drawHostLine();
+  if((was==="failed")!==(status==="failed")) render();}
+/* the refusal a file earns, as the sentences the reader would see */
+function refusalList(R){const t=STRINGS[lang].ui;
+  return (R.refused&&R.refused.length?[t.loadRefused+" "+R.refused.join(" ")]:R.unread&&R.unread.length&&!R.template?R.unread:[t.loadErr]).map(humanMsg);}
+function hostNoticeShow(main){if(!HOST||HOST.pending==null||!hookOpen()) return;
+  const u=STRINGS[lang].ui;
+  main.prepend(el("div",{class:"notice col hostnote",role:"status"},el("p",{style:"margin:0 0 .4rem"},u.hostChanged),
+    el("button",{type:"button",class:"small primary",onclick:hostAccept},u.hostRead)," ",
+    el("button",{type:"button",class:"small",onclick:()=>{HOST.pending=null;render();}},STRINGS[lang].ui.fileNotesDismiss)));}
+/* the reader pressed: the newer file replaces what is on screen, through the same parser and refusals as any file. A
+   refused text changes nothing but says why. */
+function hostAccept(){if(!HOST||HOST.pending==null||!hookOpen()) return;
+  const text=HOST.pending;HOST.pending=null;
+  const R=parseFile(text);
+  if(!R.ok){toast(refusalList(R).join(" "));render();return;}
+  finishLoad(R);}
+/* the host hands over a booklet to show: as a file picked by hand, or, when it names where it lives, as a view of that
+   store name. Returns {ok, problems}. */
+function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=raw===null?null:linkName(raw);
+  if(raw!==null&&nm===null) return {ok:false,problems:[STRINGS[lang].booklet.linkBadName]};
+  const R=parseFile(typeof text==="string"?text:"");
+  if(!R.ok){const why=refusalList(R);toast(why.join(" "));return {ok:false,problems:why};}
+  if(nm) openAsView(text,{store:true,host:true,label:nm,from:"store:"+nm});
+  else{const e=addEntry();openBooklet(e.id);finishLoad(R);}
+  return {ok:true,problems:FILE_NOTES?[...(FILE_NOTES.marker?[FILE_NOTES.marker]:[]),...FILE_NOTES.list]:[]};}
 
 /* ---- OPENING BY LINK ----
    A host may name a folder of booklets it serves, in a `booklet-store` meta tag of its own copy of this file (the shipped
@@ -5586,13 +5704,19 @@ function finishLoad(R,via){const mine=!!langPref();
    hand. What opens is a view: it never replaces a booklet the reader keeps, and joins "Your booklets" only when the
    reader changes something in it (noteSaved adds the entry then). */
 const LINK_NAME_MAX=200,LINK_BYTES=5*1024*1024,LINK_MS=15000;
+/* the other two reads share the reader below: the registry's list is capped at 1 MB, a module's file at 5 MB */
+const REGISTRY_LIST_BYTES=1024*1024,REGISTRY_MODULE_BYTES=5*1024*1024;
 /* The name rule. The fragment's text is decoded once; what is left must be only letters, digits, - _ . and /, with no
    empty part, no part that is . or .., no leading /, at most 200 characters, and end in .md. A backslash, a colon, a
    space, a query or any other character is refused, so no name can carry a host, a scheme or a way up out of the store.
+   Something must come before .md: the last part never begins with a dot.
    Returns the name, or null. */
 function linkName(raw){let n;try{n=decodeURIComponent(String(raw));}catch(e){return null;}
   if(!n||n.length>LINK_NAME_MAX||n.charAt(0)==="/"||!/^[A-Za-z0-9_.\/-]+$/.test(n)||!/\.md$/.test(n)) return null;
-  if(n.split("/").some(x=>x===""||x==="."||x===".."))  return null;
+  const parts=n.split("/");
+  if(parts.some(x=>x===""||x==="."||x==="..")) return null;
+  /* something must come before .md, and the file's own name never begins with a dot */
+  if(parts[parts.length-1].charAt(0)===".") return null;
   return n;}
 /* the declared store: an http(s) address with a closing slash, from the meta tag and from nothing else; "" when the page declares none */
 function storeUrl(){const m=typeof document!=="undefined"&&document.querySelector?document.querySelector('meta[name="booklet-store"]'):null;
@@ -5605,19 +5729,21 @@ function storeAddress(name){const base=storeUrl(),n=linkName(name);if(!base||n==
   try{const u=new URL(n,base);return u.href.startsWith(base)&&u.origin===new URL(base).origin?u.href:null;}catch(e){return null;}}
 /* what a link in the fragment asks for, or null */
 function linkOf(hash){const m=/^#\/(open|module)\/([\s\S]*)$/.exec(String(hash||""));return m?{kind:m[1],raw:m[2]}:null;}
-/* One read of one address, as text. Never a method, a body or credentials; a redirect is an error; at most LINK_BYTES
-   and LINK_MS. Resolves to {text} or {err}, where err is one of missing, big, slow, notText, failed. */
-async function linkFetch(url){
+/* THE ONE READER. Every request this page makes goes through here: one read of one address, as text. Never a method, a
+   body or credentials; a redirect is an error; at most `bytes` (LINK_BYTES unless a caller gives less or more) and
+   LINK_MS. A booklet or module is text, so a JSON answer is refused unless the caller (the registry's list) says it
+   expects one. Resolves to {text} or {err}, where err is one of missing, big, slow, notText, failed. */
+async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.json);
   const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),LINK_MS);
   try{
     const r=await fetch(url,{cache:"no-cache",credentials:"omit",redirect:"error",signal:ac.signal});
     if(!r.ok) return {err:"missing"};
-    if(/^(text\/html|image\/|audio\/|video\/|application\/(json|pdf|zip|xml))/.test((r.headers.get("content-type")||"").toLowerCase())) return {err:"notText"};
-    if(Number(r.headers.get("content-length"))>LINK_BYTES) return {err:"big"};
+    if((json?/^(text\/html|image\/|audio\/|video\/|application\/(pdf|zip|xml))/:/^(text\/html|image\/|audio\/|video\/|application\/(json|pdf|zip|xml))/).test((r.headers.get("content-type")||"").toLowerCase())) return {err:"notText"};
+    if(Number(r.headers.get("content-length"))>cap) return {err:"big"};
     const rd=r.body&&r.body.getReader?r.body.getReader():null,parts=[];let total=0;
-    if(!rd){const t=await r.text();return t.length>LINK_BYTES?{err:"big"}:{text:t};}
+    if(!rd){const t=await r.text();return t.length>cap?{err:"big"}:{text:t};}
     for(;;){const {done,value}=await rd.read();if(done) break;
-      total+=value.length;if(total>LINK_BYTES){ac.abort();return {err:"big"};}parts.push(value);}
+      total+=value.length;if(total>cap){ac.abort();return {err:"big"};}parts.push(value);}
     const buf=new Uint8Array(total);let at=0;parts.forEach(x=>{buf.set(x,at);at+=x.length;});
     try{return {text:new TextDecoder("utf-8",{fatal:true}).decode(buf)};}catch(e){return {err:"notText"};}
   }catch(e){return {err:ac.signal.aborted?"slow":"failed"};}
@@ -5655,6 +5781,32 @@ async function openLink(hash){const L=linkOf(hash);if(!L) return false;
 
 /* ======================= 13. WIRING AND BOOT =======================
    event listeners and the page's first draw. Runs last, so everything it names exists. */
+/* ---- THE HOST HOOK: window.Booklet ----
+   A page's own host may add one script of its own beside this one and talk to it through this object: plain function
+   calls inside the page. This file never sends a reader's work anywhere and never will; a host that wants saving brings
+   the code that does it (docs/hosting.md), and the pledge tests check that nothing here can. No request, no message to
+   another window, nothing stored for another page. Nothing in a booklet can reach this object: a booklet is data, the
+   renderer runs no code from one, and these members are only ever called by script the host's page loaded.
+   Members: version; host({label}) returning {saved, failed, fileChanged, leave}; onChange(fn); open(text,{name}); text(). */
+if(typeof window!=="undefined"){
+  const noop=()=>{};
+  const hostFn=function host(o){
+    const mine={label:hookText(o&&o.label,80),status:"idle",message:"",at:null,prev:"idle",pending:null};
+    HOST=mine;drawHostLine();
+    const live=f=>(...a)=>{if(HOST===mine) f(...a);};
+    return Object.freeze({
+      saved:live(()=>hostSet("saved")),
+      failed:live(m=>hostSet("failed",hookText(m,200))),
+      fileChanged:live(t=>{if(typeof t!=="string"||!hookOpen()) return;mine.pending=t;render();}),
+      leave:live(()=>{hookStopWait();const was=mine.status==="failed"||mine.pending!=null;HOST=null;drawHostLine();if(was) render();})});};
+  const onChangeFn=function onChange(fn){if(typeof fn!=="function") return noop;
+    HOOK_LISTENERS.push(fn);
+    return ()=>{const i=HOOK_LISTENERS.indexOf(fn);if(i>=0){HOOK_LISTENERS.splice(i,1);drawHostLine();}};};
+  const openFn=function open(text,o){return hostOpen(text,o);};
+  const textFn=function text(){return hookOpen()?toMarkdown():"";};
+  /* set once and never replaceable; a second copy of this script in the same window (a test harness) leaves the first */
+  try{Object.defineProperty(window,"Booklet",{value:Object.freeze({version:RENDERER_VERSION,host:hostFn,onChange:onChangeFn,open:openFn,text:textFn}),
+    writable:false,configurable:false,enumerable:true});}catch(e){}}
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
 /* The menu stays in view below the page's own sticky bar, whose height changes
@@ -5688,7 +5840,7 @@ window.addEventListener("dragenter",e=>{if([...(e.dataTransfer?.types||[])].incl
 window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault();});
 window.addEventListener("dragleave",e=>{if(dragDepth>0) dragDepth--;if(dragDepth===0) dropVeil.classList.remove("show");});
 window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.classList.remove("show");const f=e.dataTransfer?.files?.[0];if(f) readFileInto(f,loadText);});
-window.addEventListener("beforeunload",e=>{if(dirty||unsavedEntries>0){e.preventDefault();e.returnValue=STRINGS[lang].ui.leaving;}});
+window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&!(HOST&&HOST.status==="saved")){e.preventDefault();e.returnValue=STRINGS[lang].ui.leaving;}});
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
 window.addEventListener("pagehide",flushSave);

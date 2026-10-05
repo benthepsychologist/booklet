@@ -27,7 +27,7 @@ const STORE="https://host.test/booklets/";
 (async()=>{
 /* ---- the name rule ---- */
 reset();{const A=P.boot();
- const bad=["../x.md","/etc/x.md","a/../b.md","a//b.md","https://x/y.md","x.md?y","a\\b.md","%2e%2e/x.md","x.txt","","a/./b.md","a/b/","x.md#y","//x.test/y.md","c:/x.md","a b.md","caf\u00e9.md","%E9%9B%AA.md","%zz.md","x.md\n","a/..","./x.md",".md/","x.MD","a:b.md","a%00b.md","a%5Cb.md","a%2F%2Fb.md","a%2Fb%2F..%2Fc.md","x".repeat(198)+".md"];
+ const bad=["../x.md","/etc/x.md","a/../b.md","a//b.md","https://x/y.md","x.md?y","a\\b.md","%2e%2e/x.md","x.txt","","a/./b.md","a/b/","x.md#y","//x.test/y.md","c:/x.md","a b.md","caf\u00e9.md","%E9%9B%AA.md","%zz.md","x.md\n","a/..","./x.md",".md/","x.MD","a:b.md","a%00b.md","a%5Cb.md","a%2F%2Fb.md","a%2Fb%2F..%2Fc.md","x".repeat(198)+".md",".md","a/.md","a/.hidden.md",".a.md","a/b/.md"];
  const good=["x.md","report.booklet.md","reports/week.booklet.md","a/b/c.md","A-b_c.d/e-f.md","a%2Fb.md","x".repeat(197)+".md"];
  for(const n of bad) chk("refused: "+JSON.stringify(n.length>40?n.slice(0,20)+"...("+n.length+")":n),A.linkName(n)===null);
  chk("a 201-character name is refused and a 200-character one is not",A.linkName("x".repeat(198)+".md")===null&&A.linkName("x".repeat(197)+".md")!==null);
