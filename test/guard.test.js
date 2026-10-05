@@ -192,6 +192,26 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("mermaid is never started anywhere but mermaidNode (so every diagram passes that check)",count(hand,'useLib("mermaid")')===1&&count(hand,"M.initialize(")===2&&count(hand,"M.render(")===1,count(hand,'useLib("mermaid")')+" / "+count(hand,"M.initialize(")+" / "+count(hand,"M.render("));
  must("the renderer builds no <img> from a file's Markdown (mkImg draws text), and creates no img element anywhere",count(hand,'el("img"')===0&&count(hand,"createElement(\"img\")")===0&&count(hand,"new Image")===0&&!/<img\b/i.test(hand.slice(hand.indexOf("<body>"))),"img found");
  must("temml is started with trust:false, so \\includegraphics and \\href are not drawn",/trust:false/.test(hand)&&!/trust:true/.test(hand));
- must("the libraries are stored as inert text (type text/plain), never as script that runs on load",!/<script(?![^>]*type="text\/plain")[^>]*id="lib-/.test(full));}
+ must("the libraries are stored as inert text (type text/plain), never as script that runs on load",!/<script(?![^>]*type="text\/plain")[^>]*id="lib-/.test(full));
+
+ /* 0.11.5: a file's SVG reaches the page only through sanitizeSvg, and the page's own el() html path has no caller */
+ {const strip=hand.split("<!-- LIBRARY:")[0];
+  const main=strip.slice(strip.indexOf("<script>"));
+  must("sanitizeSvg is called in exactly one place, the widget figure's drawFig",
+    (main.match(/\.\.\.sanitizeSvg\(/g)||[]).length===1&&(main.match(/[^.]\bsanitizeSvg\(/g)||[]).filter(x=>!/^\s?function|\//.test(x)).length>=0&&/fig\.append\(\.\.\.sanitizeSvg\(f&&f\.svg\)\)/.test(main),(main.match(/sanitizeSvg\(/g)||[]).length);
+  must("a figure's svg field is read in exactly one place, and mermaid's output goes through sanitizeDiagramSvg",
+    (main.match(/\.svg\b/g)||[]).length===1&&(main.match(/sanitizeDiagramSvg\(/g)||[]).length===2);
+  must("no SVG markup is written with innerHTML, insertAdjacentHTML, outerHTML or DOMParser anywhere but the two sanitizers",
+    !/insertAdjacentHTML|outerHTML|createContextualFragment|srcdoc/.test(main)&&(main.match(/new DOMParser\(\)/g)||[]).length===2);
+  must("the sanitizer has no <style>, <image>, <foreignObject>, <script> or filter in its kept list",
+    (()=>{const m=main.match(/const SVG_KEEP=new Set\("([^"]*)"/);return !!m&&!/\b(style|image|foreignobject|script|filter|a|animate|set)\b/.test(m[1]);})());
+  must("F8: el()'s html attribute has no caller: no `html:` key is written anywhere in the renderer's script",
+    !/[{,]\s*["']?html["']?\s*:/.test(main.replace(/htmlLabels\s*:/g,"")),"");
+  must("F8: the only innerHTML write that takes a value is el()'s own (n.innerHTML=v)",
+    (main.match(/\.innerHTML\s*=\s*(?!"")[^;]+;/g)||[]).join("|")===".innerHTML=v;",(main.match(/\.innerHTML\s*=\s*(?!"")[^;]+;/g)||[]).join("|"));
+  must("F10: mergeDeep is called only on the built-in STRINGS tables (and on itself)",
+    (main.match(/mergeDeep\(/g)||[]).length===6&&(main.match(/STRINGS(_SRC)?[.\[][^;]*mergeDeep|mergeDeep\(STRINGS/g)||[]).length>=0
+    &&/STRINGS\.fr=mergeDeep\(STRINGS_SRC\.en,STRINGS_SRC\.fr\);\s*STRINGS\.es=mergeDeep\(STRINGS_SRC\.en,STRINGS_SRC\.es\);\s*STRINGS\["es-AR"\]=mergeDeep\(STRINGS\.es,STRINGS_SRC\["es-AR"\]\)/.test(main),(main.match(/mergeDeep\(/g)||[]).length);}
+ }
 console.log(fails?"\n"+fails+" FAILURES":"\nguard checks passed");
 process.exit(fails?1:0);

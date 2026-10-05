@@ -251,6 +251,60 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
    /* the control: a request this page makes itself IS seen, so silence above means something */
    await p2.evaluate(()=>{(window.__c=new Image()).src='https://control.example/c.gif';});await p2.waitForTimeout(400);
    ok(seen.slice(base).some(r=>r.url==='https://control.example/c.gif'),'second run, control: a request the test makes on purpose is recorded, so the check can see one');
+   /* ---- the same no-header run, with a widget: every way a file can carry SVG (renderer 0.11.5) ----
+      An svg-regions figure and a grid-select widget, each naming addresses at host tracker.example in every form
+      SVG allows. The page is served with no header, every request is recorded, and not one may go to an address the
+      file named. The figure must still draw, with its region to tap; the control proves requests are seen. */
+   {const T='https://tracker.example/',
+    svg='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">'
+     +'<style>@import url('+T+'svg-import.css); @font-face{font-family:x;src:url('+T+'svg-font.woff)} .x{fill:url('+T+'svg-style-fill.svg#a)}</style>'
+     +'<defs><pattern id="pt" width="4" height="4" patternUnits="userSpaceOnUse"><image href="'+T+'svg-pattern.png" width="4" height="4"/></pattern>'
+     +'<filter id="fl"><feImage href="'+T+'svg-feimage.png"/></filter><marker id="mk"><path d="M0 0L2 1"/></marker>'
+     +'<clipPath id="cp"><rect width="60" height="60"/></clipPath></defs>'
+     +'<image href="'+T+'svg-image.png" width="10" height="10"/><image xlink:href="'+T+'svg-xlink-image.png" width="10" height="10"/>'
+     +'<use href="'+T+'svg-use.svg#a"/><use xlink:href="'+T+'svg-xlink-use.svg#a"/><use href="svg-relative-use.svg#a"/>'
+     +'<rect class="rg" data-r="head" x="0" y="0" width="50" height="50" clip-path="url(#cp)" style="fill:url('+T+'svg-attr-fill.svg#b)"/>'
+     +'<rect x="50" y="0" width="20" height="20" fill="url('+T+'svg-fill.svg#c)" filter="url('+T+'svg-filter.svg#d)" marker-end="url('+T+'svg-marker.svg#e)"/>'
+     +'<rect x="70" y="0" width="20" height="20" fill="url&#40;'+T+'svg-entity.svg#f&#41;" style="fill:u\\72l('+T+'svg-escape.svg#g)"/>'
+     +'<rect x="0" y="60" width="20" height="20" fill="u\\72l('+T+'svg-escape2.svg#h)" mask="url('+T+'svg-mask.svg#i)"/>'
+     +'<path d="M0 0L9 9" marker-end="url(#mk)" stroke="red" style="background:url('+T+'svg-background.svg)"/>'
+     +'<a href="'+T+'svg-link"><text x="5" y="95">tap</text></a><a xlink:href="'+T+'svg-xlink-link"><text x="50" y="95">tap2</text></a></svg>',
+    W1=JSON.stringify({engine:'svg-regions',figures:[{id:'front',label:'Front',svg,regions:['head']}],regions:[{id:'head',label:'Head'}]}),
+    W2=JSON.stringify({engine:'grid-select',axes:{top:'a',bottom:'b',left:'c',right:'d'},
+      cells:[{id:'c1',label:'<image href="'+T+'grid-cell.png"> One <svg><image href="'+T+'grid-cell-svg.png"/></svg>',color:'url('+T+'grid-color.svg)'},
+             {id:'c2',label:'Two',color:{tint:'url('+T+'grid-tint.svg)',deep:'#123456'}},{id:'c3',label:'Three'},{id:'c4',label:'Four'}],
+      items:[{id:'i1',cell:'c1',label:'<img src="'+T+'grid-item.png"> item'}]});
+    const FILE3=['---','booklet: "0.11"','title: SVG addresses','lang: en','---','','> [!activity|a] Probe','','> [!widget|body] Where?','> ![[#^map]]','',
+      '> [!widget|grid] How?','> ![[#^grid]]','','> [!data] Data','',F+'booklet widget',W1,F,'^map','',F+'booklet widget',W2,F,'^grid',''].join('\n');
+    const seen3=[],errs3=[];const p3=await q.newPage();
+    p3.on('request',r=>seen3.push(r.url()));p3.on('pageerror',e=>errs3.push(e.message));
+    await p3.route('**/*',r=>{const u=r.request().url();
+      if(u===PLAIN+'/app/')return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8'}});
+      if(/^(data|blob|about):/.test(u))return r.continue();
+      r.abort();});
+    await p3.goto(PLAIN+'/app/');await p3.waitForTimeout(500);
+    await p3.getByRole('button',{name:'Add a booklet from a file'}).click();await p3.waitForTimeout(300);
+    await p3.locator('#pasteIn').fill(FILE3);
+    await p3.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p3.waitForTimeout(2500);
+    const drawn=await p3.evaluate(()=>({rg:document.querySelectorAll('#main svg .rg').length,
+      kinds:[...new Set([...document.querySelectorAll('#main .svgfig *, #main .bodyfig *')].map(n=>n.localName))].sort().join(),
+      attrs:[...document.querySelectorAll('#main svg *')].flatMap(n=>[...n.attributes].map(a=>a.name+'='+a.value)).filter(x=>/tracker|https?:|url\((?!#)|\\|@/i.test(x)),
+      quad:document.querySelectorAll('#main .quad .q').length,imgs:document.querySelectorAll('#main img, #main image, #main style').length,
+      ids:[...document.querySelectorAll('#main svg [id]')].map(n=>n.id),
+      text:document.getElementById('main').innerText}));
+    console.log('INFO widget run, no CSP: '+seen3.length+' requests; svg elements drawn: '+drawn.kinds);
+    ok(drawn.rg>=1,'the widget run: the figure drew, with its region to tap ('+drawn.rg+' regions)');
+    ok(drawn.quad===4,'the widget run: the grid-select widget drew its four cells ('+drawn.quad+')');
+    ok(drawn.imgs===0,'the widget run: no img, image or style element is on the page from the file ('+drawn.imgs+')');
+    ok(drawn.attrs.length===0,'the widget run: no attribute on the drawn figure holds an address, an escape or an at-sign: '+JSON.stringify(drawn.attrs));
+    ok(drawn.ids.length>=3&&drawn.ids.every(i=>/^bf\d+-/.test(i)),'the widget run: every id in the figure is scoped with the figure prefix: '+drawn.ids.join());
+    ok(drawn.text.includes('tap')&&drawn.text.includes('One'),'the widget run: the text of an unwrapped link and of a grid cell is still shown');
+    const net3=seen3.filter(u=>/^(https?|wss?|ftp):/i.test(u));
+    ok(net3.every(u=>u===PLAIN+'/app/'||u===PLAIN+'/favicon.ico'),'the widget run: the only requests are for the page itself: '+net3.join(', '));
+    ok(!seen3.some(u=>/tracker\.example|svg-|grid-/.test(u)),'the widget run: not one request for any address the widget named');
+    ok(errs3.length===0,'the widget run: zero page errors '+errs3.join('|'));
+    await p3.evaluate(()=>{(window.__c=new Image()).src='https://control.example/c3.gif';});await p3.waitForTimeout(400);
+    ok(seen3.some(u=>u==='https://control.example/c3.gif'),'the widget run, control: a request the test makes on purpose is recorded');}
    await q.close();}
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
