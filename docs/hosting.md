@@ -2,7 +2,45 @@
 
 This page is for someone who serves the renderer (`booklet.html`) on their own site or machine and wants a reader's work saved somewhere other than the reader's browser. It is the contract such a host follows.
 
-It describes renderer 0.11.3 and later. The format (`SPEC.md`) is not involved: nothing here changes what a booklet file may say.
+It describes renderer 0.11.4 and later. The format (`SPEC.md`) is not involved: nothing here changes what a booklet file may say.
+
+## When the renderer will hand a booklet to a host
+
+The renderer hands a booklet to a host only when two checks both pass. Neither depends on the host: they are made by the renderer, for the reader.
+
+**Check 1: the page is on the reader's own machine or private network.** The renderer decides this once, when it starts, from the page's own address (`location`), which a page's script cannot change. The address must be one of:
+
+| allowed | examples |
+| --- | --- |
+| a file on the reader's own disk (`file:`) | `file:///Users/ben/booklet.html` |
+| loopback | `localhost`, `*.localhost`, `127.0.0.0/8`, `::1` |
+| private IPv4 | `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` |
+| shared address space (Tailscale's range) | `100.64.0.0/10` |
+| private and link-local IPv6 | `fc00::/7` (Tailscale uses `fd7a:115c:a1e0::/48`), `fe80::/10` |
+| a name with no dot | `fleet`, `nas` |
+| private-use names | `*.local`, `*.internal`, `*.lan`, `*.home.arpa` |
+| Tailscale names | `*.ts.net` |
+
+Everything else is public, including `bookletmd.org`, and on a public address the hook refuses. An IPv4 address must be four plain decimal numbers (a name like `10.example.com` is a name, not an address); an IPv4-mapped IPv6 address (`::ffff:10.0.0.1`) is judged by the IPv4 address inside it.
+
+`*.ts.net` is a judgement call made on purpose: it is the name a box gets when served over HTTPS inside the tailnet, so it is allowed. Tailscale's Funnel can publish a `*.ts.net` name to the internet, so such a name is not proof of a private network. Check 2 is what covers that.
+
+**On a public address**, `Booklet.host` returns a handle whose members do nothing, `handle.state()` says `"refused"`, no notice is shown, the top bar says "Kept in this browser only", `onChange` listeners are never called and `Booklet.text()` returns `""`. Nothing is said to the reader, because there is nothing they can do. `window.Booklet` stays defined with the same members, so a page's script does not break.
+
+**Check 2: the reader says yes, on that page.** When a host's script calls `Booklet.host({ label })` on a page that passes check 1, the host is *waiting*, not active. The renderer shows its own notice at the top of the screen:
+
+> This page wants to save the booklets it opens for you to: *label*. Your booklets stay in this browser too.  [Allow] [Not now]
+
+- **Allow** makes the host active and remembers the answer for this site in this browser (one local storage key, `booklet.host.allowed`, holding the label it was given for). If one of the host's booklets is open, `onChange` then hears of it once, at once, so the store gets the current text. On the next visit a host that gives the same label is active at once, with no notice (and `onChange` hears of a booklet already open, once).
+- **Not now** leaves the host waiting for this visit and hides the notice. It asks again on the next visit.
+- If a later visit's `Booklet.host` gives a different label from the one remembered, the renderer asks again.
+- **The press must be the reader's own.** The renderer acts on Allow (and on Stop) only for a trusted click (`event.isTrusted`), so a page's script cannot press it for the reader: `element.click()` and dispatched events are not trusted. This stops a host's script from answering for the reader. It does not stop a site that edits the renderer.
+- **While a host is waiting, it is as if there were no host:** no `onChange` calls, `Booklet.text()` returns `""`, `handle.fileChanged` does nothing, `saved()` and `failed()` do nothing, and the bar says "Kept in this browser only". A script that only calls `Booklet.onChange`, never `host()`, is never called either: only an active host is.
+- **Taking it back.** On "Your booklets", once the site has been allowed, a quiet line says "This page may save the booklets it opens to: *label*." with a **Stop** button. Stop forgets the answer and makes the host waiting again (the notice does not come back until the next visit).
+
+**`handle.state()`** returns `"active"`, `"waiting"` or `"refused"` (a public address, or a handle that has since been replaced or left). A host's script reads it to know whether to bother.
+
+**This is about the renderer as published.** A site that edits the renderer it serves, or reads its own page some other way, is not stopped by these checks: that is caught by the checksum (see "Checking that a host serves the real renderer"), not here.
 
 ## The promise, and where the line is
 
@@ -21,7 +59,7 @@ A host's script talks to the renderer through one object, `window.Booklet`. Ever
 
 | Member | What it does |
 | --- | --- |
-| `Booklet.version` | the renderer's version, as text (`"0.11.3"`) |
+| `Booklet.version` | the renderer's version, as text (`"0.11.4"`) |
 | `Booklet.host({ label })` | the host announces itself; returns a handle |
 | `Booklet.onChange(fn)` | `fn` hears when the open booklet's file text changes (a booklet the host gave); returns a function that stops the calls |
 | `Booklet.open(text, { name })` | the host hands the renderer a booklet to show |
@@ -35,12 +73,13 @@ Every other booklet is **the reader's alone**: one picked from the reader's own 
 
 ### `Booklet.host({ label })`
 
-`label` says, in plain text, where saves go (`"fleet: booklets/reports"`). It is shown as text, never as markup, and capped at 80 characters. It returns a handle with four members; only one host is registered at a time, and a second `host()` call replaces the first (the first handle then does nothing).
+`label` says, in plain text, where saves go (`"fleet: booklets/reports"`). It is shown as text, never as markup, and capped at 80 characters. It returns a handle with five members (`saved`, `failed`, `fileChanged`, `leave`, `state`); only one host is registered at a time, and a second `host()` call replaces the first (the first handle then does nothing).
 
 - `handle.saved()` says the current text is saved (answer every `onChange` with `saved()` or `failed()`; see "For the author of a host script"). The top bar shows "Saved" with the time.
 - `handle.failed(message)` says a save failed. The top bar shows "Not saved" and the message (plain text, at most 200 characters), and the "changes not yet downloaded" note comes back. (So does silence: a host that has not answered within 20 seconds is shown as "Not saved: the host did not answer".)
 - `handle.fileChanged(text)` says the file changed where it is kept (a generator rewrote it, say). It applies to the host's booklet that is open; for any other it does nothing. The renderer shows a notice offering to read the newer file. Nothing changes until the reader presses the button; then `text` is opened through the ordinary path (the same parser, refusals and notices as any file) in place of what is on screen. A text the parser refuses leaves the booklet as it was and says why.
 - `handle.leave()` withdraws the host. The bar goes back to "Kept in this browser only".
+- `handle.state()` says where the host stands: `"active"`, `"waiting"` for the reader's yes, or `"refused"` (see "When the renderer will hand a booklet to a host").
 
 ### `Booklet.onChange(fn)`
 
@@ -58,7 +97,8 @@ The renderer opens `text` as a booklet, by the same path as a file picked by han
 
 ### What the reader sees
 
-- With a host registered, the top bar carries a small line: "Saves go to: *label*", then "Saved 10:42", "Saving…" (between a change and the host's `saved()`) or "Not saved: *message*". While the host reports saves succeeding, the "changes not yet downloaded" note rests; it comes back when a save fails.
+- With an active host, the top bar carries a small line: "Saves go to: *label*", then "Saved 10:42", "Saving…" (between a change and the host's `saved()`) or "Not saved: *message*". While the host reports saves succeeding, the "changes not yet downloaded" note rests; it comes back when a save fails.
+- A host that is waiting for the reader's Allow, or refused, shows the same line as no host: "Kept in this browser only".
 - With no host, the same place says "Kept in this browser only". This is true of bookletmd.org and of any plain copy.
 - "Send or save a copy" and everything else work the same either way.
 
@@ -68,6 +108,8 @@ A host's script is the host's own and runs only on the host's page. It calls the
 
 ```js
 const me = Booklet.host({ label: "my box: booklets/reports" });
+// me.state() is "refused" on a public address: nothing will be handed over, so a host may stop here.
+// "waiting" is normal: the reader has not pressed Allow yet. Register as usual; nothing is called until they do.
 Booklet.onChange(({ text, name }) => {
   // no `if (!name) return` is needed: the renderer only reports booklets the host gave, and each has a name
   hostSavesSomehow(name, text)               // the host's own code

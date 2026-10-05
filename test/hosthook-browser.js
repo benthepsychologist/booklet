@@ -13,7 +13,9 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const PAGE='https://bookletmd.test';
+/* 0.11.4: the hook works only on the reader's own machine or network, after the reader says yes. The page is served at a
+   private name (no dot) and the reader's yes is already remembered, as on a later visit. test/hostlock-browser.js covers the ask. */
+const PAGE='http://fleet';
 const bk=(t,body,after)=>`---\nbooklet: "0.11"\ntitle: ${t}\nlang: en\n---\n\n> [!module|m] ${t} module\n\n${body}\n> [!module|m end] End\n${after||''}`;
 const BOOK=bk('Hosted report','> [!activity|a] Report\n\n> [!text|q long] What stood out?\n\n');
 const NEWER=bk('Hosted report','> [!activity|a] Report\n\n> [!text|q long] What stood out?\n\n','\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] Hosted report module\n\n```booklet answers\n{"q": "QZXfromthefile"}\n```\n\n%%\n');
@@ -37,6 +39,7 @@ const page=(inject)=>{const h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_
     p.on('request',r=>reqs.push({url:r.url(),method:r.method(),body:r.postData()||'',headers:r.headers()}));
     p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))csp.push(m.text());});
     p.on('pageerror',e=>errs.push(e.message));
+    await p.addInitScript(()=>{try{localStorage.setItem('booklet.host.allowed','fleet: booklets/reports');}catch(e){}});
     await p.addInitScript(()=>{document.addEventListener('securitypolicyviolation',e=>{(window.__viol=window.__viol||[]).push(e.violatedDirective+' '+e.blockedURI);});});
     return p;};
   await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname;
@@ -94,7 +97,7 @@ const page=(inject)=>{const h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_
   ok(await p.locator('#main textarea').first().inputValue()==='QZXfromthefile','a press shows the newer file: '+await p.locator('#main textarea').first().inputValue());
   ok(await p.locator('#main .hostnote').count()===0,'and the offer is gone');
   // 400px with a host: long label, failure
-  await p.evaluate(()=>{window.__h.leave();window.__h=window.Booklet.host({label:'fleet: booklets/reports/with/a/rather/long/folder/name'});window.__h.failed('disk full, and a rather long explanation follows');});
+  await p.evaluate(()=>{localStorage.setItem('booklet.host.allowed','fleet: booklets/reports/with/a/rather/long/folder/name');window.__h.leave();window.__h=window.Booklet.host({label:'fleet: booklets/reports/with/a/rather/long/folder/name'});window.__h.failed('disk full, and a rather long explanation follows');});
   await p.setViewportSize({width:400,height:800});await wait(p,300);
   await p.screenshot({path:path.join(OUT,'bar-host-failed-400.png')});
   ok(await noScroll(p)<=0,'no sideways overflow at 400px with a host and a failure');

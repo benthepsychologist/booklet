@@ -858,7 +858,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.3";
+const RENDERER_VERSION="0.11.4";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -994,6 +994,12 @@ const STRINGS_SRC={
       hostChanged: "The file has changed where it is kept.",
       hostRead: "Read the newer file",
       hostNoAnswer: "the host did not answer",
+      hostAsk: "This page wants to save the booklets it opens for you to:",
+      hostAskStay: "Your booklets stay in this browser too.",
+      hostAllow: "Allow",
+      hostNotNow: "Not now",
+      hostMay: "This page may save the booklets it opens to:",
+      hostStop: "Stop",
       nothingYet: "Nothing to keep yet — the entry is empty.",
       kept: "Kept.",
       earlier: "Earlier entries",
@@ -1260,6 +1266,12 @@ const STRINGS_SRC={
       hostChanged: "Le fichier a changé là où il est conservé.",
       hostRead: "Lire le fichier plus récent",
       hostNoAnswer: "l’hôte n’a pas répondu",
+      hostAsk: "Cette page veut enregistrer pour vous les livrets qu’elle ouvre vers :",
+      hostAskStay: "Vos livrets restent aussi dans ce navigateur.",
+      hostAllow: "Autoriser",
+      hostNotNow: "Pas maintenant",
+      hostMay: "Cette page peut enregistrer les livrets qu’elle ouvre vers :",
+      hostStop: "Arrêter",
       nothingYet: "Rien à garder pour l’instant — l’entrée est vide.",
       kept: "Gardé.",
       earlier: "Entrées précédentes",
@@ -1522,6 +1534,12 @@ const STRINGS_SRC={
       hostChanged: "El archivo cambió donde se conserva.",
       hostRead: "Leer el archivo más reciente",
       hostNoAnswer: "el anfitrión no respondió",
+      hostAsk: "Esta página quiere guardar por ti los cuadernillos que abre en:",
+      hostAskStay: "Tus cuadernillos también quedan en este navegador.",
+      hostAllow: "Permitir",
+      hostNotNow: "Ahora no",
+      hostMay: "Esta página puede guardar los cuadernillos que abre en:",
+      hostStop: "Detener",
       nothingYet: "Nada que guardar todavía — la entrada está vacía.",
       kept: "Guardada.",
       earlier: "Entradas anteriores",
@@ -1937,6 +1955,47 @@ let LINK_NEWER=null;
    In memory only, never saved. HOOK_LISTENERS are the functions a host gave onChange. */
 let HOST=null;
 const HOOK_LISTENERS=[];
+/* Whether a page at this address is on the reader's own machine or private network. Pure: the table in docs/hosting.md.
+   Allowed: a file on the reader's disk; loopback (localhost, *.localhost, 127/8, ::1); private IPv4 (10/8, 172.16/12,
+   192.168/16); shared address space (100.64/10, Tailscale's range); IPv6 unique-local fc00::/7 and link-local fe80::/10;
+   a name with no dot; the private-use names *.local, *.internal, *.lan, *.home.arpa; and *.ts.net. An IPv4-mapped IPv6
+   address (::ffff:a.b.c.d) is judged by the IPv4 address inside it. Everything else is public, and so is an address the
+   function cannot read. *.ts.net is a judgement call made on purpose: it is the name a box gets when served over HTTPS
+   inside the tailnet, but Tailscale Funnel can publish such a name to the internet, so that name is no proof of a private
+   network. The reader's own Allow (HOST.state) is what covers that. */
+function ownPlace(protocol,hostname){
+  if(protocol==="file:") return true;
+  if(protocol!=="http:"&&protocol!=="https:") return false;
+  let h=String(hostname==null?"":hostname).toLowerCase().trim();
+  if(h.startsWith("[")&&h.endsWith("]")) h=h.slice(1,-1);
+  if(h.endsWith(".")) h=h.slice(0,-1);
+  if(!h) return false;
+  const v4=t=>{const m=/^(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})$/.exec(t);
+    if(!m) return null;const q=m.slice(1).map(Number);return q.every(n=>n<=255)?q:null;};
+  const v4own=q=>q[0]===127||q[0]===10||(q[0]===172&&q[1]>=16&&q[1]<=31)||(q[0]===192&&q[1]===168)||(q[0]===100&&q[1]>=64&&q[1]<=127);
+  if(h.includes(":")){
+    let tail=null;const dot=h.lastIndexOf(".");
+    if(dot>=0){const c=h.lastIndexOf(":"),q=v4(h.slice(c+1));if(!q) return false;
+      h=h.slice(0,c+1)+((q[0]<<8)|q[1]).toString(16)+":"+((q[2]<<8)|q[3]).toString(16);tail=q;}
+    if(!/^[0-9a-f:]+$/.test(h)||h.split("::").length>2) return false;
+    const [a,b]=h.split("::"),A=a?a.split(":"):[],B=b===undefined?null:b?b.split(":"):[];
+    if(B===null?A.length!==8:A.length+B.length>7) return false;
+    const g=(B===null?A:[...A,...Array(8-A.length-B.length).fill("0"),...B]).map(x=>/^[0-9a-f]{1,4}$/.test(x)?parseInt(x,16):NaN);
+    if(g.length!==8||g.some(Number.isNaN)) return false;
+    if(g.slice(0,7).every(x=>x===0)&&g[7]===1) return true;
+    if((g[0]&0xfe00)===0xfc00||(g[0]&0xffc0)===0xfe80) return true;
+    if(g.slice(0,5).every(x=>x===0)&&g[5]===0xffff) return v4own([g[6]>>8,g[6]&255,g[7]>>8,g[7]&255]);
+    return false;}
+  if(/^[0-9.]+$/.test(h)){const q=v4(h);return !!q&&v4own(q);}
+  if(!h.includes(".")||h==="localhost") return true;
+  return [".localhost",".local",".internal",".lan",".home.arpa",".ts.net"].some(x=>h.endsWith(x));}
+/* decided once, at start: a page's script cannot change what the browser reports for its own address */
+const HOST_OWN=typeof location!=="undefined"&&!!location&&ownPlace(location.protocol,location.hostname);
+/* the reader's yes: the label of the host they allowed, for this site in this browser (local storage, the renderer's own key) */
+const HOST_KEY="booklet.host.allowed";
+const hostAllowed=()=>HOST_OWN?hookText(lsGet(HOST_KEY),80):"";
+/* a host's hook works only while HOST is on a page in the reader's own place and the reader has said yes (state "active") */
+const hostActive=()=>!!HOST&&HOST.state==="active";
 let HOOK_TIMER=null,HOOK_LAST=0,HOOK_SEEN="";
 const HOOK_EVERY_MS=500;
 /* how long a host has to answer an onChange call with saved() or failed() before the reader is told it did not */
@@ -2190,11 +2249,14 @@ function loadLocal(){const key=slotKey();if(!key) return false;
     const bookRestored=savedBook?adoptBook(savedBook):false;
     return (bookRestored&&!!savedBook.customized)||hasKept();
   }catch(e){return false;}}
+/* the Download button's mark, kept in step with every change (not only with a redraw) */
+function markAttention(){const dl=document.getElementById("btnExport");
+  if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());}
 /* A save is scheduled for the booklet that asked for it. Leaving a booklet
    writes any save still pending to that booklet's own key first (flushSave),
    and a timer that somehow outlives its booklet finds bookletGen moved on and
    does nothing — it can never write one booklet's globals under another's. */
-function markDirty(){dirty=true;hookChanged();clearTimeout(saveTimer);const gen=bookletGen;
+function markDirty(){dirty=true;markAttention();hookChanged();clearTimeout(saveTimer);const gen=bookletGen;
   saveTimer=setTimeout(()=>{saveTimer=null;if(gen===bookletGen) saveLocal();},400);}
 function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=null;saveLocal();}
 function resetBookletState(){
@@ -4271,7 +4333,7 @@ function finalizeEntry(id){const u=STRINGS[lang].ui;
     if(idx>=0) kept[idx]=e; else kept.push(e);
   } else kept.push(e);
   DRAFTS.custom[id]={};
-  unsavedEntries++;dirty=true;openChip[id]=e.ts;render();saveLocal();toast(u.kept);}
+  unsavedEntries++;dirty=true;openChip[id]=e.ts;markAttention();render();saveLocal();toast(u.kept);}
 function seedUpsertDraft(id,m,draft){
   if(m.upsert!=="day"||anyFilled(draft)) return;
   const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());
@@ -5286,7 +5348,7 @@ function unsavedSpan(entries,changed){const t=STRINGS[lang].ui;
   if(entries>0) return el("span",{class:"unsaved"},t.unsavedEntries(entries));
   if(changed) return el("span",{class:"unsaved"},t.unsavedChanges);return null;}
 /* a host that reports saves succeeding is keeping the work, so the "not yet downloaded" note rests until a save fails */
-const hostCovers=()=>!!HOST&&hookBook()&&HOST.status!=="failed"&&HOOK_LISTENERS.length>0;
+const hostCovers=()=>hostActive()&&hookBook()&&HOST.status!=="failed"&&HOOK_LISTENERS.length>0;
 const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
 const SCREENS={home:renderHome,[LIB_SCREEN]:renderBooklets};
 function render(){citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
@@ -5434,6 +5496,7 @@ function renderBooklets(main){const L=strings("library");
   const create=el("button",{type:"button",class:"small primary"},L.create);
   create.addEventListener("click",()=>createBooklet());
   main.append(el("div",{class:"col addrow"},create,el("button",{type:"button",class:"small",onclick:openLoad},L.load)));
+  hostStopLine(main);
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
   const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
   if(!list.length){main.append(el("p",{class:"col hint"},L.empty));return;}
@@ -5675,7 +5738,7 @@ const hookOpen=()=>!!currentId&&BOOK!==EMPTY_BOOKLET;
 const hostName=()=>{const f=currentEntry&&currentEntry.from;return typeof f==="string"&&f.startsWith("store:")?f.slice(6):"";};
 const hookBook=()=>hookOpen()&&hostName()!=="";
 function hostTime(d){const p=n=>String(n).padStart(2,"0");return p(d.getHours())+":"+p(d.getMinutes());}
-function hostLineText(u){if(!HOST||(hookOpen()&&!hookBook())) return u.hostKept;
+function hostLineText(u){if(!hostActive()||(hookOpen()&&!hookBook())) return u.hostKept;
   const head=HOST.label?u.hostSavesTo(HOST.label):"";
   const st=HOST.status==="saving"?u.hostSaving:HOST.status==="saved"?u.hostSaved(hostTime(HOST.at)):HOST.status==="failed"?u.hostFailed(HOST.silent?u.hostNoAnswer:HOST.message):"";
   return [head,st].filter(Boolean).join(" · ");}
@@ -5685,13 +5748,13 @@ function drawHostLine(){const n=document.getElementById("hostLine");if(!n) retur
   const dl=document.getElementById("btnExport");if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());}
 /* a change was made to the open booklet: a host that is registered shows "Saving…" at once, and the listeners hear of it
    a moment later (at most one call about every half second, and always one after the last change) */
-function hookChanged(){if(!hookBook()||(!HOST&&!HOOK_LISTENERS.length)) return;
-  if(HOST&&HOST.status!=="saving"){HOST.prev=HOST.status;HOST.status="saving";drawHostLine();}
+function hookChanged(){if(!hookBook()||!hostActive()) return;
+  if(HOST.status!=="saving"){HOST.prev=HOST.status;HOST.status="saving";drawHostLine();}
   if(HOOK_TIMER) return;
   HOOK_TIMER=setTimeout(hookFire,Math.max(100,HOOK_EVERY_MS-(Date.now()-HOOK_LAST)));}
 function hookFire(){HOOK_TIMER=null;HOOK_LAST=Date.now();
   const calm=()=>{if(HOST&&HOST.status==="saving"&&HOOK_ANSWER_TIMER===null){HOST.status=HOST.prev||"idle";drawHostLine();}};
-  if(!hookBook()||!HOOK_LISTENERS.length||LINK_NEWER) return calm();
+  if(!hookBook()||!hostActive()||!HOOK_LISTENERS.length||LINK_NEWER) return calm();
   const text=toMarkdown(),key=currentId+"\u0000"+text;
   if(key===HOOK_SEEN) return calm();
   HOOK_SEEN=key;
@@ -5700,7 +5763,7 @@ function hookFire(){HOOK_TIMER=null;HOOK_LAST=Date.now();
   if(HOST) HOOK_ANSWER_TIMER=setTimeout(()=>{HOOK_ANSWER_TIMER=null;if(HOST&&HOST.status==="saving")hostSet("failed","",true);},HOOK_ANSWER_MS);
   HOOK_LISTENERS.slice().forEach(fn=>{try{fn({...info});}catch(e){HOOK_SEEN="";hostSet("failed",hookText(e&&e.message,200));}});}
 /* a host reports: status "saved", or "failed" with a message */
-function hostSet(status,message,silent){if(!HOST) return;const was=HOST.status;
+function hostSet(status,message,silent){if(!hostActive()) return;const was=HOST.status;
   hookStopWait();HOST.silent=!!silent;
   HOST.status=status;HOST.message=status==="failed"?message||"":"";if(status==="saved") HOST.at=new Date();
   drawHostLine();
@@ -5710,8 +5773,30 @@ function refusalList(R){const t=STRINGS[lang].ui;
   return (R.refused&&R.refused.length?[t.loadRefused+" "+R.refused.join(" ")]:R.unread&&R.unread.length&&!R.template?R.unread:[t.loadErr]).map(humanMsg);}
 /* a newer file is waiting: the host said so (fileChanged), or opening a link found the store's file changed since the
    kept booklet last read it (LINK_NEWER) */
-const newerWaiting=()=>hookOpen()&&(!!LINK_NEWER||(!!HOST&&HOST.pending!=null&&hookBook()));
-function hostNoticeShow(main){if(!newerWaiting()) return;
+const newerWaiting=()=>hookOpen()&&(!!LINK_NEWER||(hostActive()&&HOST.pending!=null&&hookBook()));
+/* The reader's yes. HOST.state is "waiting" until the reader presses Allow; the press counts only when the browser says it
+   is the reader's own (event.isTrusted), so a page's script cannot press it for the reader: element.click() and dispatched
+   events are not trusted. That is all this stops. A site that edits this renderer, or reads its own page some other way,
+   can do anything; that is caught by the checksum (docs/hosting.md), not here. */
+function hostAsk(main){const u=STRINGS[lang].ui;
+  main.prepend(el("div",{class:"notice col hostnote hostask",role:"status"},
+    el("p",{style:"margin:0 0 .4rem"},u.hostAsk+" ",el("em",{},HOST.label),". "+u.hostAskStay),
+    el("button",{type:"button",class:"small primary",onclick:e=>{if(!e||e.isTrusted!==true) return;hostAllowNow();}},u.hostAllow)," ",
+    el("button",{type:"button",class:"small",onclick:e=>{if(!e||e.isTrusted!==true) return;HOST.dismissed=true;render();}},u.hostNotNow)));}
+function hostAllowNow(){if(!HOST||HOST.state!=="waiting") return;
+  HOST.state="active";HOST.status="idle";lsSet(HOST_KEY,HOST.label);
+  HOOK_SEEN="";hookChanged();render();}
+function hostStopNow(){lsDel(HOST_KEY);
+  if(HOST){HOST.state="waiting";HOST.dismissed=true;HOST.pending=null;HOST.status="idle";HOST.message="";hookStopWait();
+    if(HOOK_TIMER){clearTimeout(HOOK_TIMER);HOOK_TIMER=null;}}
+  render();}
+/* on "Your booklets": a site the reader has allowed says so, and offers to take it back */
+function hostStopLine(main){const lab=hostAllowed();if(!lab) return;const u=STRINGS[lang].ui;
+  main.append(el("p",{class:"col hint hoststop",style:"margin-top:1.2rem"},u.hostMay+" ",el("em",{},lab),". ",
+    el("button",{type:"button",class:"small",onclick:e=>{if(!e||e.isTrusted!==true) return;hostStopNow();}},u.hostStop)));}
+function hostNoticeShow(main){
+  if(HOST&&HOST.state==="waiting"&&!HOST.dismissed) hostAsk(main);
+  if(!newerWaiting()) return;
   const u=STRINGS[lang].ui;
   main.prepend(el("div",{class:"notice col hostnote",role:"status"},el("p",{style:"margin:0 0 .4rem"},u.hostChanged),
     el("button",{type:"button",class:"small primary",onclick:hostAccept},u.hostRead)," ",
@@ -5874,23 +5959,35 @@ async function openLink(hash){const L=linkOf(hash);if(!L) return false;
    the code that does it (docs/hosting.md), and the pledge tests check that nothing here can. No request, no message to
    another window, nothing stored for another page. Nothing in a booklet can reach this object: a booklet is data, the
    renderer runs no code from one, and these members are only ever called by script the host's page loaded.
-   Members: version; host({label}) returning {saved, failed, fileChanged, leave}; onChange(fn); open(text,{name}); text(). */
+   Members: version; host({label}) returning {saved, failed, fileChanged, leave, state}; onChange(fn); open(text,{name}); text().
+   The hook only ever serves the reader's own machine or private network, and only after the reader says yes: on a public
+   address host() returns a handle that does nothing ("refused"), and elsewhere the host waits until the reader presses
+   Allow in the renderer's own notice (see ownPlace, region 4, and hostAsk, region 12). A host that is not active is as if
+   there were none: no onChange call, text() is empty, fileChanged does nothing, the bar says it is kept here only. */
 if(typeof window!=="undefined"){
   const noop=()=>{};
   const hostFn=function host(o){
-    const mine={label:hookText(o&&o.label,80),status:"idle",message:"",at:null,prev:"idle",pending:null};
+    /* on a public address nothing is handed over, nothing is shown, and nothing is said: the handle does nothing */
+    if(!HOST_OWN) return Object.freeze({saved:noop,failed:noop,fileChanged:noop,leave:noop,state:()=>"refused"});
+    const mine={label:hookText(o&&o.label,80),status:"idle",message:"",at:null,prev:"idle",pending:null,state:"waiting",dismissed:false};
+    /* active at once only for the label the reader already allowed on this site; any other label asks again */
+    if(mine.label!==""&&hostAllowed()===mine.label) mine.state="active";
     HOST=mine;drawHostLine();
+    /* a host the reader allowed on an earlier visit hears of a booklet that is already open (after the script that called
+       host() has had the moment it needs to register onChange); a waiting one asks */
+    if(mine.state==="waiting") render();else hookChanged();
     const live=f=>(...a)=>{if(HOST===mine) f(...a);};
     return Object.freeze({
       saved:live(()=>hostSet("saved")),
       failed:live(m=>hostSet("failed",hookText(m,200))),
-      fileChanged:live(t=>{if(typeof t!=="string"||!hookBook()) return;mine.pending=t;render();}),
-      leave:live(()=>{hookStopWait();const was=mine.status==="failed"||mine.pending!=null;HOST=null;drawHostLine();if(was) render();})});};
+      fileChanged:live(t=>{if(typeof t!=="string"||!hookBook()||mine.state!=="active") return;mine.pending=t;render();}),
+      state:()=>HOST===mine?mine.state:"refused",
+      leave:live(()=>{hookStopWait();const was=mine.status==="failed"||mine.pending!=null||mine.state==="waiting";HOST=null;drawHostLine();if(was) render();})});};
   const onChangeFn=function onChange(fn){if(typeof fn!=="function") return noop;
     HOOK_LISTENERS.push(fn);
     return ()=>{const i=HOOK_LISTENERS.indexOf(fn);if(i>=0){HOOK_LISTENERS.splice(i,1);drawHostLine();}};};
   const openFn=function open(text,o){return hostOpen(text,o);};
-  const textFn=function text(){return hookBook()?toMarkdown():"";};
+  const textFn=function text(){return hookBook()&&hostActive()?toMarkdown():"";};
   /* set once and never replaceable; a second copy of this script in the same window (a test harness) leaves the first */
   try{Object.defineProperty(window,"Booklet",{value:Object.freeze({version:RENDERER_VERSION,host:hostFn,onChange:onChangeFn,open:openFn,text:textFn}),
     writable:false,configurable:false,enumerable:true});}catch(e){}}
@@ -5927,7 +6024,7 @@ window.addEventListener("dragenter",e=>{if([...(e.dataTransfer?.types||[])].incl
 window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault();});
 window.addEventListener("dragleave",e=>{if(dragDepth>0) dragDepth--;if(dragDepth===0) dropVeil.classList.remove("show");});
 window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.classList.remove("show");const f=e.dataTransfer?.files?.[0];if(f) readFileInto(f,loadText);});
-window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&!(HOST&&hookBook()&&HOST.status==="saved")){e.preventDefault();e.returnValue=STRINGS[lang].ui.leaving;}});
+window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&!(hostActive()&&hookBook()&&HOST.status==="saved")){e.preventDefault();e.returnValue=STRINGS[lang].ui.leaving;}});
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
 window.addEventListener("pagehide",flushSave);

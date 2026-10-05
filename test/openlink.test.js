@@ -7,8 +7,9 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 global.URL=Object.assign(require("url").URL,{createObjectURL:()=>"blob:x",revokeObjectURL(){}});
-const PAGE="https://host.test/app/";
-global.location={href:PAGE,hash:""};
+/* a private name: the host hook works only on the reader's own machine or network, after the reader says yes (0.11.4) */
+const PAGE="http://fleet/app/";
+global.location={href:PAGE,protocol:"http:",hostname:"fleet",hash:""};
 let META={};
 global.document.querySelector=sel=>{const m=/meta\[name="([^"]+)"\]/.exec(sel);const v=m&&META[m[1]];return v?{getAttribute:k=>k==="content"?v:null}:null;};
 const booklet=(title,extra)=>`---\nbooklet: "0.11"\ntitle: ${title}\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|m end] End\n${extra||""}`;
@@ -22,7 +23,7 @@ const reset=()=>{P.wipe();global.fetch=undefined;global.fetch=async(url,opts)=>{
   CALLS=[];ROUTES={};META={};};
 const text=n=>P.texts(n);
 const lib=()=>JSON.parse(global.__ls["booklet.library.v1"]||'{"entries":[]}').entries;
-const STORE="https://host.test/booklets/";
+const STORE="http://fleet/booklets/";
 
 (async()=>{
 /* ---- the name rule ---- */
@@ -129,7 +130,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;const U=STORE+"week.md";RO
  ROUTES[U]="not a booklet";const r=await A.openLink("#/open/week.md");
  chk("a store file the page refuses opens nothing and says why",r===false&&A.currentId===null&&/\S/.test(text(P.byId("toast"))));}
 // with a host registered and the booklet the host's: the store file is the truth
-reset();{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
+reset();global.__ls["booklet.host.allowed"]="box";{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
  const calls=[];B.host({label:"box"});B.onChange(x=>calls.push(x));
  await A.openLink("#/open/week.md");answer(A,"m/a","mine");await sleep(700);A.flushSave();A.closeBooklet();
  const FILE="---\nbooklet: \"0.11\"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|m end] End\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n{\"q\": \"from another device\"}\n```\n\n%%\n";
@@ -141,7 +142,7 @@ reset();{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STO
  await sleep(700);
  chk("...and the host then hears of the booklet as it now is",calls.length>n0&&/from another device/.test(calls[calls.length-1].text));}
 // a host that saved: the store holds exactly what the booklet writes, so nothing is offered
-reset();{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
+reset();global.__ls["booklet.host.allowed"]="box";{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
  B.host({label:"box"});B.onChange(x=>{ROUTES[U]=x.text;});
  await A.openLink("#/open/week.md");answer(A,"m/a","saved by the host");await sleep(700);A.flushSave();A.closeBooklet();
  await A.openLink("#/open/week.md");
