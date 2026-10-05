@@ -1,4 +1,4 @@
-# The booklet format, v0.10
+# The booklet format, v0.10.1
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
@@ -7,7 +7,9 @@
 > tests, and the `booklet: "0.10"` every file's front matter declares, all
 > together, all the same number. Nothing here is frozen: the format itself
 > may still change, a file names the one version it is written in, and a
-> reader opens only that version, so it doesn't promise stability yet. There is no earlier
+> reader opens only that version, so it doesn't promise stability yet. A third
+> number (v0.10.1) is a patch to the wording here or to the renderer: it changes
+> no file, and files go on saying `booklet: "0.10"`. There is no earlier
 > format to compare against or convert from — it was retired entirely on
 > 2026-09-29, and this spec no longer documents or mentions it.
 >
@@ -67,7 +69,7 @@ license: CC-BY-4.0
 ---
 ```
 
-- `booklet` is the file format generation this file uses (see the status note above). `id` names this booklet across its translations and versions. `lang` is the one language this file is written in (section 9).
+- `booklet` is the file format generation this file uses (see the status note above). `id` names this booklet across its translations and versions. `lang` is the language of the page around the content, the renderer's own words and defaults; in a module's own file it is also the language the module is written in (section 9).
 - **The front matter's `id` is the booklet's own name, not an id in the sense of section 4.** It may hold slashes (`example/tides`), and it is not one of the ids a question, an activity or a module carries, so the rule for those (letters, digits and dashes, unique in the file) does not apply to it.
 - `title` is the booklet's own name: the one name its home screen, its row in a list of booklets and the name of the file a renderer saves all show. A module file's own `title` names the module and never the booklet, so adding a module leaves the booklet's name alone. A renderer may let a reader rename the booklet, which rewrites this one line, with the new name as a quoted string.
 - **Write the marker in quotes: `booklet: "0.10"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way. A renderer reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9; `booklet: 0.10`, `"0.10"` and `'0.10'` are all this format, and `booklet: 0.1` is the old format 0.1. The linter warns on the unquoted form, and a renderer writes the quoted one.
@@ -664,11 +666,11 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 
 ## 9. Languages
 
-**One language per file.** `lang` in the front matter says which. A translation is a sibling file, `tides.es.booklet.md`, with the same `id`, the same activity and question ids, and the same number of options in every list, in the same order. Answers therefore carry across languages unchanged: position 2 is position 2.
+**A module is written in one language.** In a module's own file, `lang` in the front matter says which. A translation is a sibling file, `tides.es.booklet.md`, with the same `id`, the same activity and question ids, and the same number of options in every list, in the same order. Answers therefore carry across languages unchanged: position 2 is position 2.
 
 A regional variant (`es-AR`) is its own sibling file, no longer a layer of strings.
 
-**`lang` is the language the content is written in.** Any well-formed tag is allowed: a lowercase language with an optional region (`en`, `es-AR`, `de`, `pt-BR`). The renderer's own words (its buttons and dialogs) come in `en`, `fr`, `es` and `es-AR` (`es-AR` → `es` → `en`); for any other language they appear in English. A file with no `lang` is read as English, and a renderer reports it. The linter requires `lang`, rejects a tag that is not well formed, and warns when the interface has no strings for the language.
+**In a booklet, `lang` is about the page around the content, not the content.** It sets the language of the renderer's own words (its menus, buttons and dialogs) and its defaults, such as how a date is written and what a new booklet is called. It does not say what language a booklet's modules are in: a booklet may hold modules written in different languages, and adding a module never changes the booklet's `lang`. A reader who has chosen a language for the renderer keeps that choice, whatever a booklet says. Any well-formed tag is allowed: a lowercase language with an optional region (`en`, `es-AR`, `de`, `pt-BR`). The renderer's own words (its buttons and dialogs) come in `en`, `fr`, `es` and `es-AR` (`es-AR` → `es` → `en`); for any other language they appear in English. A file with no `lang` is read as English, and a renderer reports it. The linter requires `lang`, rejects a tag that is not well formed, and warns when the interface has no strings for the language.
 
 A linter, given the siblings, checks that ids match and lists have equal length.
 
@@ -784,6 +786,12 @@ None of this affects what already works: loading, reading, answering, and saving
 ---
 
 ## 14. Changes
+
+### Changes in v0.10.1
+
+Wording only: nothing a file can say has changed, the marker stays `booklet: "0.10"`, and no file needs touching.
+
+- Section 9 said `lang` "is the language the content is written in". That is true of a module's own file and was wrong for a booklet, which may hold modules in several languages. A booklet's `lang` sets the language of the renderer's own words and defaults, and says nothing about its modules.
 
 ### Changes from v0.9
 
