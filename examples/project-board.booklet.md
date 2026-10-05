@@ -161,6 +161,32 @@ as: bars
 ```
 ^effort
 
+## The work, part by part
+
+A nested list: a row that names a `parent` sits under it, and opens and closes.
+
+```booklet query
+from: parts
+as: list
+```
+
+```booklet data
+{ "fields": { "label": "Part", "badge": "Stage", "value": "Open of all" },
+  "rows": [
+    { "id": "shop", "label": "The shop", "value": "2 of 3" },
+    { "id": "shop-page", "parent": "shop", "label": "Write the shop page", "badge": "doing", "tone": "warn" },
+    { "id": "shop-photos", "parent": "shop", "label": "Photograph the range", "badge": "to do" },
+    { "id": "shop-prices", "parent": "shop", "label": "Update the price list", "badge": "done", "tone": "good" },
+    { "id": "print", "label": "The print run", "value": "1 of 2" },
+    { "id": "print-proofs", "parent": "print", "label": "Approve the proofs", "badge": "late", "tone": "bad" },
+    { "id": "print-paper", "parent": "print", "label": "Order the paper", "badge": "done", "tone": "good",
+      "note": "Two reams of the heavy stock" },
+    { "id": "post", "label": "The mailing", "value": "2 of 2" },
+    { "id": "post-fold", "parent": "post", "label": "Fold and stuff", "badge": "to do" },
+    { "id": "post-list", "parent": "post", "label": "Check the address list", "badge": "to do" } ] }
+```
+^parts
+
 > [!activity|log repeat] Studio log
 
 > [!text|what] What happened?
@@ -169,6 +195,11 @@ as: bars
 1. Rough
 2. Fine
 3. Good
+
+> [!multi|kind open] What kind of day was it? Add your own.
+- [ ] Making
+- [ ] Selling
+- [ ] Paperwork
 
 > [!activity|look] Look back
 
