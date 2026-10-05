@@ -4,9 +4,6 @@ id: mensio/check-in
 title: A mindful check-in
 lang: en
 version: "0.1"
-copyright: "© 2026 Benjamin F. Armstrong III. All rights reserved."
-license: "Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ."
-source: "https://benthepsychologist.com/tools/activity-kit/"
 ---
 
 > [!manifest] A mindful check-in
@@ -14,6 +11,12 @@ source: "https://benthepsychologist.com/tools/activity-kit/"
 > - data: inline
 
 > [!module|mensio-check-in] A mindful check-in
+
+> [!notice]
+> license: Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.
+> copyright: © 2026 Benjamin F. Armstrong III. All rights reserved.
+> source: https://benthepsychologist.com/tools/activity-kit/
+> version: 0.1
 
 Body, feelings, thoughts — noticed, named, kept.
 
@@ -35,7 +38,7 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
 
 > [!module|mensio-check-in end] End of A mindful check-in
 
-> [!data] Data
+> [!data|mensio-check-in] Data for A mindful check-in
 
 ```booklet widget
 {
