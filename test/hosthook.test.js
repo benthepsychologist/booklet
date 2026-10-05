@@ -9,6 +9,7 @@ const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const FM=t=>`---\nbooklet: "0.11"\ntitle: ${t}\nlang: en\n---\n\n`;
 const mod=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!activity|act] Answer ${t}\n\n> [!text|note] Note ${t}\n\n> [!activity|log repeat] Log ${t}\n\n> [!text|what] What ${t}\n\n> [!module|${id} end] End\n`;
+const NAME="reports/week.booklet.md";
 const BOOK=FM("Hook booklet")+mod("ma","A");
 const MODB=FM("Second")+mod("mb","B");
 const tag=t=>P.find(P.main(),x=>x.tagName===t);
@@ -24,7 +25,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
 {const A=boot(),B=A.BookletApi;
  chk("window.Booklet has exactly these members: version, host, onChange, open, text",Object.keys(B).sort().join()==="host,onChange,open,text,version",Object.keys(B).join());
  chk("it is frozen",Object.isFrozen(B));
- chk("version is the renderer's version, as text",B.version==="0.11.2"&&typeof B.version==="string");
+ chk("version is the renderer's version, as text",B.version==="0.11.3"&&typeof B.version==="string");
  chk("a member cannot be reassigned",(()=>{try{B.text=()=>"x";}catch(e){}return B.text()==="";})());
  chk("with no host, the bar says so: Kept in this browser only",barText()==="Kept in this browser only",barText());
  chk("text() is empty when no booklet is open",B.text()==="");
@@ -39,7 +40,9 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  chk("open() of a refused text returns ok:false with problems, and opens nothing",bad.ok===false&&bad.problems.length>0&&A.currentId===null,JSON.stringify(bad));
  const r=B.open(BOOK);
  chk("open() of a good booklet opens it (through the file path) and returns ok:true",r.ok===true&&Array.isArray(r.problems)&&A.currentId&&A.allModules().map(m=>m.id).join()==="ma",JSON.stringify(r));
- chk("text() is the file text now, the same as toMarkdown()",B.text()===A.toMarkdown()&&/title: Hook booklet/.test(B.text()));
+ chk("open() with no name hands over a booklet that is the reader's alone: text() is empty",B.text()==="");
+ B.open(BOOK,{name:NAME});
+ chk("with a name it is the host's: text() is the file text now, the same as toMarkdown()",B.text()===A.toMarkdown()&&/title: Hook booklet/.test(B.text()));
  const r2=B.open(MODB,{name:"reports/week.booklet.md"});
  chk("open() with a good name opens it as a view of that name",r2.ok&&A.PROVENANCE&&A.PROVENANCE.label==="reports/week.booklet.md"&&A.allModules().map(m=>m.id).join()==="mb");
  for(const n of ["../x.md","https://evil.test/x.md","a/.md","x.txt"]){
@@ -49,8 +52,8 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
 
 /* ---- onChange: when, with what, collapsed, stopped ---- */
 {const A=boot(),B=A.BookletApi,L=listen(A);
- B.open(BOOK);await sleep(700);
- chk("onChange fires once when a booklet is opened, with its text, no name and its title",L.calls.length===1&&L.calls[0].text===A.toMarkdown()&&L.calls[0].name===""&&L.calls[0].title==="Hook booklet",JSON.stringify(L.calls.map(c=>[c.name,c.title,c.text.length])));
+ B.open(BOOK,{name:NAME});await sleep(700);
+ chk("onChange fires once when a booklet is opened, with its text, its name and its title",L.calls.length===1&&L.calls[0].text===A.toMarkdown()&&L.calls[0].name===NAME&&L.calls[0].title==="Hook booklet",JSON.stringify(L.calls.map(c=>[c.name,c.title,c.text.length])));
  chk("what it is given is exactly three things: text, name, title",Object.keys(L.calls[0]).sort().join()==="name,text,title");
  const n0=L.calls.length;
  typeIn(A,"ma/act","first answer");await sleep(700);
@@ -89,7 +92,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
 /* ---- a throwing listener ---- */
 {const A=boot(),B=A.BookletApi;B.host({label:"x"});
  B.onChange(()=>{throw new Error("disk <b>full</b>");});
- B.open(BOOK);await sleep(700);
+ B.open(BOOK,{name:NAME});await sleep(700);
  chk("a throwing listener is caught and shown in the bar as a failed save",/Not saved: disk <b>full<\/b>/.test(barText())&&A.HOST.status==="failed",barText());
  chk("and the page still works",A.currentId&&B.text().length>0);
  typeIn(A,"ma/act","still typing");chk("typing still works",/still typing/.test(B.text()));}
@@ -100,7 +103,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  const t=barText();
  chk("a label is shown as text (markup stays as characters) and capped at 80 characters",t.startsWith("Saves go to: <img src=x onerror=alert(1)> ")&&t.length<="Saves go to: ".length+80,t.length);
  chk("it is set as text, never as markup",P.byId("hostLine")._html===""&&P.byId("hostLine").children.length===0);
- B.open(BOOK);
+ B.open(BOOK,{name:NAME});
  h.failed("<script>boom</script>"+"m".repeat(400));
  const f=barText();
  chk("a failure message is shown as text and capped at 200",/Not saved: <script>boom<\/script>/.test(f)&&f.length<=("Saves go to: ".length+80+" · Not saved: ".length+200),f.length);
@@ -113,7 +116,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  B2.leave();h.leave();}
 
 /* ---- the not-downloaded note rests while a host keeps saves, and returns on a failure ---- */
-{const A=boot(),B=A.BookletApi;B.open(BOOK);
+{const A=boot(),B=A.BookletApi;B.open(BOOK,{name:NAME});
  typeIn(A,"ma/act","x");
  chk("with no host the not-downloaded note shows for a change",!!A.unsavedNote());
  const h=B.host({label:"box"});B.onChange(()=>{});h.saved();
@@ -125,7 +128,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  await sleep(700);h.leave();chk("with the host gone, the note is back",!!A.unsavedNote());}
 
 /* ---- fileChanged: an offer, and nothing changes until the reader presses ---- */
-{const A=boot(),B=A.BookletApi;B.open(BOOK);typeIn(A,"ma/act","mine");
+{const A=boot(),B=A.BookletApi;B.open(BOOK,{name:NAME});typeIn(A,"ma/act","mine");
  const h=B.host({label:"box"});
  const NEWER=FM("Hook booklet")+mod("ma","A")+"\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|ma] Module A\n\n```booklet answers\n{\"note\": \"from the file\"}\n```\n\n%%\n";
  const before=B.text();
@@ -144,6 +147,36 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  h.fileChanged(NEWER);const dis=P.find(P.main(),n=>n.tagName==="button"&&/Dismiss/.test(P.texts(n)))[0];click(dis);
  chk("an offer can be dismissed",!/The file has changed/.test(shown())&&A.HOST.pending===null);
  h.leave();}
+
+/* ---- the host sees only the booklets it gave (0.11.3) ---- */
+{const A=boot(),B=A.BookletApi;A.setAnswerMs(300);
+ const h=B.host({label:"box: store"}),L=listen(A);let saved=0;
+ A.loadText(MODB);                                      // the reader opens a file from their own disk
+ typeIn(A,"mb/act","private note");await sleep(900);
+ chk("a booklet opened from a file: the listener is never called",L.calls.length===0,JSON.stringify(L.calls.map(c=>c.name)));
+ chk("...the bar says Kept in this browser only, with a host registered",barText()==="Kept in this browser only",barText());
+ chk("...text() returns an empty string",B.text()==="");
+ h.fileChanged(MODB+"\nx");chk("...fileChanged does nothing: no offer and nothing pending",A.HOST.pending===null&&!/The file has changed/.test(shown()));
+ await sleep(500);
+ chk("...no failure after the answer wait",A.HOST.status!=="failed"&&barText()==="Kept in this browser only",barText());
+ chk("...the not-downloaded note is shown, as on a page with no host",!!A.unsavedNote()&&P.byId("hostLine").attrs.class.indexOf("bad")<0);
+ // pasted, new, a module link and open() with no name are the reader's too
+ A.createBooklet();A.addModuleText(BOOK);await sleep(700);
+ chk("a booklet started here is the reader's alone: no call",L.calls.length===0&&B.text()==="");
+ B.open(BOOK);await sleep(700);
+ chk("open() without a name is the reader's alone: no call",L.calls.length===0&&barText()==="Kept in this browser only");
+ // a host's booklet next to them behaves as before
+ B.open(BOOK,{name:NAME});await sleep(700);
+ chk("a booklet handed over with a name is the host's: one call, with its name",L.calls.length===1&&L.calls[0].name===NAME&&/^Saves go to: box: store/.test(barText()),barText()+" "+L.calls.length);
+ h.saved();
+ chk("...saved() is shown, and the note rests",/Saved \d\d:\d\d$/.test(barText())&&A.unsavedNote()===null,barText());
+ // it stays the host's when opened again from the list (its entry's `from` says store:<name>)
+ typeIn(A,"ma/act","kept");await sleep(700);A.flushSave();
+ const id=A.currentId;A.closeBooklet();A.openFromList(id);
+ chk("opened again from \"Your booklets\", it is still the host's",B.text().length>0&&/^Saves go to:/.test(barText()),barText());
+ A.openBooklet(A.currentId);A.loadText(MODB);
+ chk("and a file opened after it is not",B.text()===""&&barText()==="Kept in this browser only",barText());
+ L.stop();h.leave();}
 
 /* ---- French and Spanish ---- */
 {const A=boot();
@@ -164,12 +197,12 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  chk("nothing it holds became a live attribute on the page (no on* attribute, no javascript: address)",!/"on(click|load|mouseover|error)"/i.test(html)&&!/javascript:/i.test(html),html.slice(0,200));
  chk("no script element exists on the page",P.find(P.main(),n=>n.tagName==="script").length===0);
  await sleep(700);
- chk("the only calls onChange got are for the booklet itself (the test's listener, one open, no extras)",L.calls.length<=1,L.calls.length);
+ chk("a booklet opened without a name is the reader's alone: onChange got no call at all",L.calls.length===0,L.calls.length);
  chk("the bar still says no host",barText()==="Kept in this browser only");}
 
 /* ---- a host that never answers, and a host with nobody listening ---- */
 {const A=boot(),B=A.BookletApi;A.setAnswerMs(300);
- B.open(BOOK);const h=B.host({label:"box"});
+ B.open(BOOK,{name:NAME});const h=B.host({label:"box"});
  chk("a host with nothing listening through onChange does not rest the note or the mark",(typeIn(A,"ma/act","a"),!!A.unsavedNote()));
  const L=listen(A);h.saved();
  chk("once something listens, a succeeding host rests the note",A.unsavedNote()===null);
@@ -184,12 +217,6 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  L.stop();
  chk("with the listener gone the note is back",!!A.unsavedNote());
  for(const l of ["fr","es","es-AR"]) chk(l+" has the no-answer string",A.STRINGS[l].ui.hostNoAnswer.length>3);}
-
-/* ---- the checksum a host publishes ---- */
-{const cp=require("child_process"),crypto=require("crypto"),fs=require("fs");
- const r=cp.spawnSync("python3",["lint-booklet.py","--renderer-checksum","booklet.html"],{cwd:P.R,encoding:"utf8"});
- const want=crypto.createHash("sha256").update(fs.readFileSync(P.R+"/booklet.html")).digest("hex");
- chk("lint-booklet.py --renderer-checksum prints the sha256 of booklet.html and its name",r.status===0&&r.stdout.trim()===want+"  booklet.html",r.stdout+r.stderr);}
 
 console.log(fails?"\n"+fails+" FAILURES":"\nhosthook checks passed");
 process.exit(fails?1:0);

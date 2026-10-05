@@ -5,15 +5,16 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.11.2** — matches the project's current version (SPEC.md's
+**Skill version: 0.11.3** — matches the project's current version (SPEC.md's
 "v0.11") now that this skill teaches v0.11, the current format. Write
 the marker in quotes, `booklet: "0.11"`: unquoted, a YAML tool reads `0.10` as
 the number 0.1. A tool that writes booklets should ask the linter for the marker
-(`python3 lint-booklet.py --marker` prints the whole line, `--format-version` just `0.11`) and
+(`python3 lint-booklet.py --marker` prints the whole line) and
 not hard-code it. A file marked with another `0.x` version still opens, with a notice and no
 promise, so a generator one version behind is not stranded, but write the current marker. A booklet
 that is one activity or one module opens straight into it; add `start: home` to the front matter to
-keep the home screen. An image is linked and a renderer fetches none: it shows the alt text and the
+keep the home screen. An image is linked, and a renderer fetches one only from a place its own host
+declares, never from an address the file names: the reference renderer shows the alt text and the
 address as text, and the linter warns on a remote address.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a

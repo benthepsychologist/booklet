@@ -858,7 +858,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.2";
+const RENDERER_VERSION="0.11.3";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1032,8 +1032,6 @@ const STRINGS_SRC={
       linkFailed: "That booklet could not be fetched. It may have moved, or you may be offline.",
       linkFromStore: n=>`Opened by a link, from this page's own store: ${n}`,
       linkFromRegistry: n=>`Opened by a link, from this page's registry: ${n}`,
-      linkKept: "You also keep a copy of this with your own work:",
-      linkKeptOpen: "open it",
       openedFromHost: n=>`Opened from this page's host: ${n}`
     },
     notice: {
@@ -1069,7 +1067,8 @@ const STRINGS_SRC={
       removeGo: "Remove it",
       keep: "Keep it",
       removed: "Removed.",
-      storageOff: "This browser is not keeping anything between visits (private mode, or site data is blocked). Booklets here last until you close the tab, so download a copy of any you want to keep."
+      storageOff: "This browser is not keeping anything between visits (private mode, or site data is blocked). Booklets here last until you close the tab, so download a copy of any you want to keep.",
+      mayClear: "This browser may clear booklets kept here. Download a copy of any you want to keep, or add this page to your home screen."
     },
     question: {
       addOwn: "Add your own",
@@ -1169,7 +1168,7 @@ const STRINGS_SRC={
       queryNoEntries: from=>`names “${from}”, which keeps no entries (only a repeat activity does)`,
       startBad: v=>`front matter says \`start: ${v}\`; the only value is \`start: home\`, so the page left it out`,
       otherMarker: m=>`This file says booklet: ${m}. This page reads format ${FORMAT_VERSION} and has opened it as it is; some of it may not draw.`,
-      notV07: `This is not a booklet file this page can read — its front matter needs a \`booklet:\` line with a 0.x version, such as \`booklet: "${FORMAT_VERSION}"\`.`,
+      notReadable: `This is not a booklet file this page can read — its front matter needs a \`booklet:\` line with a 0.x version, such as \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Not a booklet file this page can read (it needs a \`booklet:\` line with a 0.x version).`,
       noModule: "This file holds no module.",
       needsV07: `Add a module only works inside a v${FORMAT_VERSION} booklet.`,
@@ -1299,8 +1298,6 @@ const STRINGS_SRC={
       linkFailed: "Ce carnet n’a pas pu être récupéré. Il a peut-être changé d’adresse, ou vous êtes hors ligne.",
       linkFromStore: n=>`Ouvert par un lien, depuis le dépôt de cette page : ${n}`,
       linkFromRegistry: n=>`Ouvert par un lien, depuis le registre de cette page : ${n}`,
-      linkKept: "Vous gardez aussi une copie de ce carnet avec votre propre travail :",
-      linkKeptOpen: "l’ouvrir",
       openedFromHost: n=>`Ouvert depuis l’hôte de cette page : ${n}`
     },
     notice: {
@@ -1336,7 +1333,8 @@ const STRINGS_SRC={
       removeGo: "Le retirer",
       keep: "Le garder",
       removed: "Retiré.",
-      storageOff: "Ce navigateur ne garde rien d’une visite à l’autre (navigation privée, ou données du site bloquées). Les carnets d’ici durent jusqu’à la fermeture de l’onglet : téléchargez une copie de ceux que vous voulez garder."
+      storageOff: "Ce navigateur ne garde rien d’une visite à l’autre (navigation privée, ou données du site bloquées). Les carnets d’ici durent jusqu’à la fermeture de l’onglet : téléchargez une copie de ceux que vous voulez garder.",
+      mayClear: "Ce navigateur peut effacer les carnets gardés ici. Téléchargez une copie de ceux que vous voulez conserver, ou ajoutez cette page à votre écran d’accueil."
     },
     question: {
       addOwn: "Ajoutez votre propre option",
@@ -1432,7 +1430,7 @@ const STRINGS_SRC={
       queryNoEntries: from=>`nomme « ${from} », qui ne garde aucune entrée (seule une activité répétée le fait)`,
       startBad: v=>`l’en-tête indique \`start: ${v}\` ; la seule valeur possible est \`start: home\`, la page l’a donc ignoré`,
       otherMarker: m=>`Ce fichier indique booklet: ${m}. Cette page lit le format ${FORMAT_VERSION} et l’a ouvert tel quel ; certaines parties peuvent ne pas s’afficher.`,
-      notV07: `Ce fichier n’est pas un carnet que cette page peut lire — son en-tête doit contenir une ligne \`booklet:\` avec une version 0.x, par exemple \`booklet: "${FORMAT_VERSION}"\`.`,
+      notReadable: `Ce fichier n’est pas un carnet que cette page peut lire — son en-tête doit contenir une ligne \`booklet:\` avec une version 0.x, par exemple \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Ce n’est pas un fichier de carnet que cette page peut lire (il faut une ligne \`booklet:\` avec une version 0.x).`,
       noModule: "Ce fichier ne contient aucun module.",
       needsV07: `Ajouter un module ne fonctionne que dans un carnet v${FORMAT_VERSION}.`,
@@ -1562,8 +1560,6 @@ const STRINGS_SRC={
       linkFailed: "No se pudo obtener ese cuadernillo. Puede que se haya movido, o que no tengas conexión.",
       linkFromStore: n=>`Abierto por un enlace, desde la reserva de esta página: ${n}`,
       linkFromRegistry: n=>`Abierto por un enlace, desde el registro de esta página: ${n}`,
-      linkKept: "También guardas una copia de este con tu propio trabajo:",
-      linkKeptOpen: "ábrela",
       openedFromHost: n=>`Abierto desde el anfitrión de esta página: ${n}`
     },
     notice: {
@@ -1599,7 +1595,8 @@ const STRINGS_SRC={
       removeGo: "Quitarlo",
       keep: "Conservarlo",
       removed: "Quitado.",
-      storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descarga una copia de los que quieras conservar."
+      storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descarga una copia de los que quieras conservar.",
+      mayClear: "Este navegador puede borrar los cuadernillos guardados aquí. Descarga una copia de los que quieras conservar, o agrega esta página a tu pantalla de inicio."
     },
     question: {
       addOwn: "Agrega tu propia opción",
@@ -1695,7 +1692,7 @@ const STRINGS_SRC={
       queryNoEntries: from=>`nombra “${from}”, que no guarda entradas (solo una actividad repetible lo hace)`,
       startBad: v=>`el encabezado dice \`start: ${v}\`; el único valor es \`start: home\`, así que la página lo dejó de lado`,
       otherMarker: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato ${FORMAT_VERSION} y lo abrió tal como está; es posible que algo no se muestre.`,
-      notV07: `Este no es un archivo de cuadernillo que esta página pueda leer: su encabezado necesita una línea \`booklet:\` con una versión 0.x, por ejemplo \`booklet: "${FORMAT_VERSION}"\`.`,
+      notReadable: `Este no es un archivo de cuadernillo que esta página pueda leer: su encabezado necesita una línea \`booklet:\` con una versión 0.x, por ejemplo \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Este no es un archivo de cuadernillo que esta página pueda leer (necesita una línea \`booklet:\` con una versión 0.x).`,
       noModule: "Este archivo no contiene ningún módulo.",
       needsV07: `Agregar un módulo solo funciona dentro de un cuadernillo v${FORMAT_VERSION}.`,
@@ -1782,7 +1779,8 @@ const STRINGS_SRC={
       sub: "Cada cuadernillo guarda sus propias respuestas en este navegador. Abrí uno para continuar, o agregá otro.",
       empty: "Aún no hay cuadernillos aquí. Agregá uno desde un archivo que guardaste, o empezá uno nuevo.",
       removeUnsaved: x=>`Tiene cambios que todavía no descargaste. Para conservarlos, abrilo y usá “${x}” primero.`,
-      storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descargá una copia de los que quieras conservar."
+      storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descargá una copia de los que quieras conservar.",
+      mayClear: "Este navegador puede borrar los cuadernillos guardados acá. Descargá una copia de los que quieras conservar, o agregá esta página a tu pantalla de inicio."
     }
   }
 };
@@ -1930,6 +1928,10 @@ let FILE_NOTES=null;
 /* where a booklet opened by a link came from (see OPENING BY LINK in the shell): its own quiet line, never counted among
    the things the page could not read; in memory for the session, never saved */
 let PROVENANCE=null;
+/* a newer copy of the file a kept booklet was opened from, offered to the reader and not yet read or dismissed:
+   {text, seen, via}, where seen is its fingerprint (see OPENING BY LINK). Held in memory only, never saved. While one
+   is waiting the host hook sends nothing, so a host never saves the kept booklet over a file that is newer. */
+let LINK_NEWER=null;
 /* the page's own host, if one has registered through window.Booklet (see THE HOST HOOK, region 13): {label, status
    (idle, saving, saved, failed), at, message, prev, pending}. Null on a page with no host, which is the shipped file.
    In memory only, never saved. HOOK_LISTENERS are the functions a host gave onChange. */
@@ -2045,6 +2047,17 @@ function readLib(){const raw=lsGet(LIB_KEY);if(!raw) return emptyLib();
 let LIB=emptyLib();
 function changeLib(fn){LIB=readLib();fn(LIB);lsSet(LIB_KEY,JSON.stringify(LIB));return LIB;}
 const entryById=id=>LIB.entries.find(e=>e.id===id)||null;
+/* A short fingerprint of a text, so a library entry can remember which copy of a file it last read without keeping the
+   file: FNV-1a over the text's UTF-16 units, and its length. Not cryptographic, and used for nothing but "is this the
+   same text as last time". */
+function textPrint(t){t=String(t==null?"":t);let h=0x811c9dc5;
+  for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193);}
+  return (h>>>0).toString(36)+"."+t.length;}
+/* The booklet this browser keeps for a link: the entry whose `from` is "store:<name>" or "registry:<id>" (a store name,
+   and a registry module, is one booklet in one browser). If an older release left several, the one opened last. */
+function entryFrom(from){if(!from) return null;let best=null;const at=e=>String(e.openedAt||e.updatedAt||"");
+  readLib().entries.forEach(e=>{if(e.from===from&&(!best||at(e)>at(best))) best=e;});
+  return best;}
 const keyOfEntry=e=>(e&&e.key)||bookKey(e.id);
 function describeBooklet(t){t=t||{};
   const mods=(Array.isArray(t.modules)?t.modules:[]).filter(m=>m&&typeof m==="object");
@@ -2084,7 +2097,26 @@ function slotKey(){return currentId?currentKey:null;}
 function saveLocal(){const key=slotKey();if(!key) return;
   lsSet(key,JSON.stringify({S:STATE,D:DRAFTS,TPL:BOOK,lang,dirty,unsavedEntries}));
   if(currentId) noteSaved();
+  askPersist();
   hookChanged();}
+/* ---- asking the browser to keep this site's storage ----
+   Booklets kept in the browser live in its local storage, which a browser may clear (Safari clears what a page's script
+   wrote for a site not visited in seven days, unless the site was added to the home screen; Chrome and Firefox may when
+   the disk is short). The first time in a session that the page saves a booklet (so after something the reader did,
+   never at page load) it asks the browser to keep this site's storage, once: navigator.storage.persist(). That is not a
+   request in the pledge's sense: nothing is sent anywhere, it is a call to the browser about the browser's own storage
+   for this page, and a browser without it, or one that says no, changes nothing. PERSISTED is null until the browser
+   has said, then true or false; "Your booklets" draws one quiet line when it is not true. */
+let PERSISTED=null,PERSIST_ASKED=false;
+const storageApi=()=>{try{const s=typeof navigator!=="undefined"&&navigator?navigator.storage:null;return s&&typeof s.persisted==="function"?s:null;}catch(e){return null;}};
+/* what the browser says now; redraws "Your booklets" when that is news */
+function checkPersisted(){const s=storageApi();
+  if(!s){if(PERSISTED!==false){PERSISTED=false;if(screen===LIB_SCREEN) render();}return;}
+  try{Promise.resolve(s.persisted()).then(v=>{v=!!v;if(v!==PERSISTED){PERSISTED=v;if(screen===LIB_SCREEN) render();}},()=>{});}catch(e){}}
+function askPersist(){if(PERSIST_ASKED) return;PERSIST_ASKED=true;
+  const s=storageApi();if(!s||typeof s.persist!=="function") return;
+  try{Promise.resolve(s.persisted()).then(v=>{if(v) return PERSISTED=true;
+    return Promise.resolve(s.persist()).then(g=>{PERSISTED=!!g;if(screen===LIB_SCREEN) render();});}).catch(()=>{});}catch(e){}}
 function noteSaved(){const id=currentId,now=new Date().toISOString();
   const fresh={...describeBooklet(BOOK),updatedAt:now,dirty,unsavedEntries,lang};
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
@@ -2169,7 +2201,7 @@ function resetBookletState(){
   lang=langPref()||lang;
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
   screen="home";dirty=false;unsavedEntries=0;
-  openChip={};VIEWSTATE.clear();FILE_NOTES=null;PROVENANCE=null;
+  openChip={};VIEWSTATE.clear();FILE_NOTES=null;PROVENANCE=null;LINK_NEWER=null;
   hookStopWait();
   if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;}
   clearTimeout(saveTimer);saveTimer=null;
@@ -2913,7 +2945,7 @@ function fencedSpans(lines,from,to){
 /* What is wrong with a module file, in words a person uploading their own
    can act on — never a stack trace. Empty means it is safe to add. */
 function moduleTextProblems(text){
-  if(!isBooklet(text)) return [strings("problem").notV07];
+  if(!isBooklet(text)) return [strings("problem").notReadable];
   const R=parseFile(text);
   /* another 0.x marker is no reason to refuse: it is said when the module is added */
   if(R.unread.filter(m=>m!==R.markerNote).length) return R.unread.filter(m=>m!==R.markerNote);
@@ -3125,7 +3157,7 @@ function addModuleText(text){
      file, nothing is added and the reader is told why. An id another module uses is no clash (an id is
      unique within its module). */
   const made=parseFile(newSource),refused=(made&&made.refused)||[];
-  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notV07]};
+  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notReadable]};
   if(refused.length){const P=strings("problem"),dups=made.dupIds||[];
     const dids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
     return {ok:false,problems:[...dids.map(P.moduleIdClash),...refused.filter(m=>!said.has(m))]};}
@@ -3185,7 +3217,7 @@ function removeModule(id){
     out.push(ln);});
   const newSource=out.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
   const made=parseFile(newSource),refused=(made&&made.refused)||[];
-  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notV07]};
+  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notReadable]};
   if(refused.length) return {ok:false,problems:refused};
   /* the reader's work in the module goes with it */
   const addrs=activitiesOf(mod).map(a=>a.id),scope=scopeOfModule(mod)||id;
@@ -5254,7 +5286,7 @@ function unsavedSpan(entries,changed){const t=STRINGS[lang].ui;
   if(entries>0) return el("span",{class:"unsaved"},t.unsavedEntries(entries));
   if(changed) return el("span",{class:"unsaved"},t.unsavedChanges);return null;}
 /* a host that reports saves succeeding is keeping the work, so the "not yet downloaded" note rests until a save fails */
-const hostCovers=()=>!!HOST&&HOST.status!=="failed"&&HOOK_LISTENERS.length>0;
+const hostCovers=()=>!!HOST&&hookBook()&&HOST.status!=="failed"&&HOOK_LISTENERS.length>0;
 const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
 const SCREENS={home:renderHome,[LIB_SCREEN]:renderBooklets};
 function render(){citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
@@ -5276,17 +5308,13 @@ function fileNotesNode(){const u=STRINGS[lang].ui;
     el("details",{},el("summary",{},u.fileNotesShow),el("ul",{class:"plain"},...FILE_NOTES.list.map(x=>el("li",{},x)))));
   box.append(el("button",{type:"button",class:"small",onclick:()=>{FILE_NOTES.dismissed=true;render();}},u.fileNotesDismiss));
   return box;}
-/* the quiet line for a booklet opened by a link: where it came from, and, when this browser already keeps a copy
-   of the same file with the reader's own work, a way to that copy. Its own line, smaller than the problems notice. */
+/* the quiet line for a booklet opened by a link: where it came from. Its own line, smaller than the problems notice. */
 function provenanceNode(){if(!PROVENANCE||PROVENANCE.dismissed) return null;
   if(screen!=="home"&&PROVENANCE.at!==screen) return null;
   const u=STRINGS[lang].ui,B=STRINGS[lang].booklet;
   const box=el("div",{class:"notice col openedby",role:"status"});
   const row=el("p",{style:"margin:0"},PROVENANCE.host?B.openedFromHost(PROVENANCE.label):PROVENANCE.store?B.linkFromStore(PROVENANCE.label):B.linkFromRegistry(PROVENANCE.label));
   box.append(row);
-  const kept=PROVENANCE.from?readLib().entries.find(e=>e.from===PROVENANCE.from&&e.id!==currentId):null;
-  if(kept) box.append(el("p",{style:"margin:.3rem 0 0"},B.linkKept+" ",
-    el("button",{type:"button",class:"quietlink",onclick:()=>openFromList(kept.id)},B.linkKeptOpen)));
   box.append(el("button",{type:"button",class:"small",style:"margin-top:.4rem",onclick:()=>{PROVENANCE.dismissed=true;render();}},u.fileNotesDismiss));
   return box;}
 const openNotices=()=>[provenanceNode(),fileNotesNode()].filter(Boolean);
@@ -5411,7 +5439,10 @@ function renderBooklets(main){const L=strings("library");
   if(!list.length){main.append(el("p",{class:"col hint"},L.empty));return;}
   const cards=el("div",{class:"modes"});
   list.forEach(e=>cards.append(bookletCard(e)));
-  main.append(cards);}
+  main.append(cards);
+  /* one quiet line when the browser has not promised to keep this site's storage (see asking the browser to keep it) */
+  checkPersisted();
+  if(PERSISTED===false&&storageOk) main.append(el("p",{class:"col hint",style:"margin-top:1.2rem"},L.mayClear));}
 function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;const name=bookletName(e);
   const unsaved=Number(e.unsavedEntries)>0||!!e.dirty;
   const card=el("div",{class:"mode",style:"--mc:var(--accent);min-height:0"});
@@ -5618,8 +5649,10 @@ function loadText(text){const t=STRINGS[lang].ui;const msg=document.getElementBy
   veilLoad.removeAttribute("open");
   /* a file is always a booklet of its own; it never merges into another one */
   const e=addEntry();openBooklet(e.id);finishLoad(R);}
-function finishLoad(R,via){const mine=!!langPref();
+function finishLoad(R,via,keep){const mine=!!langPref();
   applyParsed(mine?{...R,lang:null}:R);
+  /* `keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
+  if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;}
   const at=startScreen();
   /* the other-marker sentence stands apart from the problems: only real problems are counted */
   const marker=R.markerNote?humanMsg(R.markerNote):"",list=(R.unread||[]).filter(m=>m!==R.markerNote).map(humanMsg);
@@ -5634,8 +5667,15 @@ function finishLoad(R,via){const mine=!!langPref();
    only way a host changes it. */
 const hookText=(x,n)=>String(x==null?"":x).replace(/\s+/g," ").trim().slice(0,n);
 const hookOpen=()=>!!currentId&&BOOK!==EMPTY_BOOKLET;
+/* A booklet is the HOST's when it came from the host: opened by #/open/<name> from the declared store, or handed over by
+   Booklet.open(text,{name}) with a name. That is what a library entry's `from` ("store:<name>") records, and it follows
+   the booklet whenever it is opened again. Every other booklet (picked from disk, pasted, dropped, started here, opened
+   by #/module/<id>, handed over without a name) is the reader's alone: the host is not told of it, cannot read it, and
+   the bar says it is kept in this browser only. */
+const hostName=()=>{const f=currentEntry&&currentEntry.from;return typeof f==="string"&&f.startsWith("store:")?f.slice(6):"";};
+const hookBook=()=>hookOpen()&&hostName()!=="";
 function hostTime(d){const p=n=>String(n).padStart(2,"0");return p(d.getHours())+":"+p(d.getMinutes());}
-function hostLineText(u){if(!HOST) return u.hostKept;
+function hostLineText(u){if(!HOST||(hookOpen()&&!hookBook())) return u.hostKept;
   const head=HOST.label?u.hostSavesTo(HOST.label):"";
   const st=HOST.status==="saving"?u.hostSaving:HOST.status==="saved"?u.hostSaved(hostTime(HOST.at)):HOST.status==="failed"?u.hostFailed(HOST.silent?u.hostNoAnswer:HOST.message):"";
   return [head,st].filter(Boolean).join(" · ");}
@@ -5645,18 +5685,17 @@ function drawHostLine(){const n=document.getElementById("hostLine");if(!n) retur
   const dl=document.getElementById("btnExport");if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());}
 /* a change was made to the open booklet: a host that is registered shows "Saving…" at once, and the listeners hear of it
    a moment later (at most one call about every half second, and always one after the last change) */
-function hookChanged(){if(!hookOpen()||(!HOST&&!HOOK_LISTENERS.length)) return;
+function hookChanged(){if(!hookBook()||(!HOST&&!HOOK_LISTENERS.length)) return;
   if(HOST&&HOST.status!=="saving"){HOST.prev=HOST.status;HOST.status="saving";drawHostLine();}
   if(HOOK_TIMER) return;
   HOOK_TIMER=setTimeout(hookFire,Math.max(100,HOOK_EVERY_MS-(Date.now()-HOOK_LAST)));}
 function hookFire(){HOOK_TIMER=null;HOOK_LAST=Date.now();
   const calm=()=>{if(HOST&&HOST.status==="saving"&&HOOK_ANSWER_TIMER===null){HOST.status=HOST.prev||"idle";drawHostLine();}};
-  if(!hookOpen()||!HOOK_LISTENERS.length) return calm();
+  if(!hookBook()||!HOOK_LISTENERS.length||LINK_NEWER) return calm();
   const text=toMarkdown(),key=currentId+"\u0000"+text;
   if(key===HOOK_SEEN) return calm();
   HOOK_SEEN=key;
-  const from=currentEntry&&typeof currentEntry.from==="string"&&currentEntry.from.startsWith("store:")?currentEntry.from.slice(6):"";
-  const info={text,name:from,title:hookText(tx(describeBooklet(BOOK).title,""),200)};
+  const info={text,name:hostName(),title:hookText(tx(describeBooklet(BOOK).title,""),200)};
   hookStopWait();
   if(HOST) HOOK_ANSWER_TIMER=setTimeout(()=>{HOOK_ANSWER_TIMER=null;if(HOST&&HOST.status==="saving")hostSet("failed","",true);},HOOK_ANSWER_MS);
   HOOK_LISTENERS.slice().forEach(fn=>{try{fn({...info});}catch(e){HOOK_SEEN="";hostSet("failed",hookText(e&&e.message,200));}});}
@@ -5669,25 +5708,48 @@ function hostSet(status,message,silent){if(!HOST) return;const was=HOST.status;
 /* the refusal a file earns, as the sentences the reader would see */
 function refusalList(R){const t=STRINGS[lang].ui;
   return (R.refused&&R.refused.length?[t.loadRefused+" "+R.refused.join(" ")]:R.unread&&R.unread.length&&!R.template?R.unread:[t.loadErr]).map(humanMsg);}
-function hostNoticeShow(main){if(!HOST||HOST.pending==null||!hookOpen()) return;
+/* a newer file is waiting: the host said so (fileChanged), or opening a link found the store's file changed since the
+   kept booklet last read it (LINK_NEWER) */
+const newerWaiting=()=>hookOpen()&&(!!LINK_NEWER||(!!HOST&&HOST.pending!=null&&hookBook()));
+function hostNoticeShow(main){if(!newerWaiting()) return;
   const u=STRINGS[lang].ui;
   main.prepend(el("div",{class:"notice col hostnote",role:"status"},el("p",{style:"margin:0 0 .4rem"},u.hostChanged),
     el("button",{type:"button",class:"small primary",onclick:hostAccept},u.hostRead)," ",
-    el("button",{type:"button",class:"small",onclick:()=>{HOST.pending=null;render();}},STRINGS[lang].ui.fileNotesDismiss)));}
+    el("button",{type:"button",class:"small",onclick:()=>{LINK_NEWER=null;if(HOST) HOST.pending=null;render();}},STRINGS[lang].ui.fileNotesDismiss)));}
 /* the reader pressed: the newer file replaces what is on screen, through the same parser and refusals as any file. A
    refused text changes nothing but says why. */
-function hostAccept(){if(!HOST||HOST.pending==null||!hookOpen()) return;
+function hostAccept(){if(!newerWaiting()) return;
+  if(LINK_NEWER) return linkAccept();
   const text=HOST.pending;HOST.pending=null;
   const R=parseFile(text);
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
   finishLoad(R);}
+/* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
+   generator owns the body and the reader owns the records (the store contract).
+   - A host's booklet with a host registered: the store file is the truth (the host saves every change, from any device),
+     so it is read whole, into the same entry.
+   - Otherwise the store file never held the reader's work: the new file's body is taken and the kept booklet's own
+     answers, entries and drafts stay as they are (an answer to a question the new body no longer has stays unused).
+   - A registry module (#/module/<id>) is updated in place the way Add a module updates a module already present.
+   Either way the entry remembers the text just read (storeSeen). A text the page refuses changes nothing but says why. */
+function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
+  const R=parseFile(N.text),id=currentId;
+  if(!R.ok){toast(refusalList(R).join(" "));render();return;}
+  if(N.via.store===false){const r=addModuleText(N.text);
+    if(!r.ok){toast(humanMsg(r.problems.join(" ")));render();return;}
+    saveLocal();render();toast(STRINGS[lang].booklet.added(tx((R.template.modules[0]||{}).title,"")));}
+  else if(HOST&&hostName()) finishLoad(R);
+  else finishLoad(R,null,{S:STATE,D:DRAFTS,dirty,unsavedEntries});
+  if(currentId!==id) return;
+  if(currentEntry) currentEntry.storeSeen=N.seen;
+  changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=N.seen;});}
 /* the host hands over a booklet to show: as a file picked by hand, or, when it names where it lives, as a view of that
    store name. Returns {ok, problems}. */
 function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=raw===null?null:linkName(raw);
   if(raw!==null&&nm===null) return {ok:false,problems:[STRINGS[lang].booklet.linkBadName]};
   const R=parseFile(typeof text==="string"?text:"");
   if(!R.ok){const why=refusalList(R);toast(why.join(" "));return {ok:false,problems:why};}
-  if(nm) openAsView(text,{store:true,host:true,label:nm,from:"store:"+nm});
+  if(nm) openLinked(text,{store:true,host:true,label:nm,from:"store:"+nm});
   else{const e=addEntry();openBooklet(e.id);finishLoad(R);}
   return {ok:true,problems:FILE_NOTES?[...(FILE_NOTES.marker?[FILE_NOTES.marker]:[]),...FILE_NOTES.list]:[]};}
 
@@ -5701,8 +5763,9 @@ function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=
    what is asked for is always the declared store's address plus a name that passed linkName(), or an address the
    registry's own list gave for an id it lists. Opening is a read of that one file, with no method, no body, no
    credentials, no redirect, a size cap and a timeout; the text then goes through the same parser as a file picked by
-   hand. What opens is a view: it never replaces a booklet the reader keeps, and joins "Your booklets" only when the
-   reader changes something in it (noteSaved adds the entry then). */
+   hand. What opens, when this browser keeps nothing for the link, is a view: it joins "Your booklets" only when the
+   reader changes something in it (noteSaved adds the entry then). When it does keep one, that booklet opens, never a
+   second one (see openLinked). */
 const LINK_NAME_MAX=200,LINK_BYTES=5*1024*1024,LINK_MS=15000;
 /* the other two reads share the reader below: the registry's list is capped at 1 MB, a module's file at 5 MB */
 const REGISTRY_LIST_BYTES=1024*1024,REGISTRY_MODULE_BYTES=5*1024*1024;
@@ -5756,8 +5819,32 @@ function openAsView(text,via){const R=parseFile(text||"");
   flushSave();resetBookletState();bookletGen++;
   const now=new Date().toISOString();
   currentId=newId(Date.now().toString(36));currentKey=bookKey(currentId);
-  currentEntry={id:currentId,title:null,parts:[],createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,lang,from:via.from};
+  /* storeSeen: which copy of its file this booklet was last read from (see openLinked) */
+  currentEntry={id:currentId,title:null,parts:[],createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,lang,from:via.from,
+    ...(via.from?{storeSeen:textPrint(text)}:{})};
   finishLoad(R,via);return true;}
+/* One booklet per store name, and per module link, in a browser. When this browser keeps no booklet for the link it
+   opens as a view, as above. When it does, the KEPT booklet opens (never a second entry), and the file just read is
+   compared with the one the kept booklet last read (storeSeen, a fingerprint kept in its library entry): the same, or
+   exactly what the kept booklet would write now (a host that saves has already put its work in the file), and nothing
+   more happens; otherwise the offer to read the newer file is shown (see linkAccept), and nothing changes until the
+   reader presses. */
+const sameText=(a,b)=>{const n=x=>String(x==null?"":x).replace(/\r\n?/g,"\n").replace(/\s+$/,"");return n(a)===n(b);};
+function openLinked(text,via){const kept=entryFrom(via.from);
+  if(!kept) return openAsView(text,via);
+  const R=parseFile(text||"");
+  if(!R.ok){toast(refusalList(R).join(" "));return false;}
+  openBooklet(kept.id);
+  if(BOOK===EMPTY_BOOKLET){/* an entry whose saved copy is gone is not a booklet kept */
+    changeLib(L=>{L.entries=L.entries.filter(x=>x.id!==kept.id);});
+    return openAsView(text,via);}
+  const seen=textPrint(text);
+  screen=startScreen();PROVENANCE={...via,dismissed:false,at:screen};
+  if(kept.storeSeen!==seen&&!sameText(text,toMarkdown())) LINK_NEWER={text,seen,via};
+  else if(kept.storeSeen!==seen){const id=kept.id;
+    if(currentEntry) currentEntry.storeSeen=seen;
+    changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=seen;});}
+  render();window.scrollTo({top:0});return true;}
 let LINK_GEN=0;
 /* open what the fragment asks for; a link that is not one of the two shapes is left alone */
 async function openLink(hash){const L=linkOf(hash);if(!L) return false;
@@ -5777,7 +5864,7 @@ async function openLink(hash){const L=linkOf(hash);if(!L) return false;
     url=entry.url;via={store:false,label:tx(entry.title,entry.id),from:"registry:"+entry.id};}
   const got=await linkFetch(url);if(gen!==LINK_GEN) return false;
   if(got.err) return said({missing:"linkMissing",big:"linkBig",slow:"linkSlow",notText:"linkNotText"}[got.err]||"linkFailed");
-  return openAsView(got.text,via);}
+  return openLinked(got.text,via);}
 
 /* ======================= 13. WIRING AND BOOT =======================
    event listeners and the page's first draw. Runs last, so everything it names exists. */
@@ -5797,13 +5884,13 @@ if(typeof window!=="undefined"){
     return Object.freeze({
       saved:live(()=>hostSet("saved")),
       failed:live(m=>hostSet("failed",hookText(m,200))),
-      fileChanged:live(t=>{if(typeof t!=="string"||!hookOpen()) return;mine.pending=t;render();}),
+      fileChanged:live(t=>{if(typeof t!=="string"||!hookBook()) return;mine.pending=t;render();}),
       leave:live(()=>{hookStopWait();const was=mine.status==="failed"||mine.pending!=null;HOST=null;drawHostLine();if(was) render();})});};
   const onChangeFn=function onChange(fn){if(typeof fn!=="function") return noop;
     HOOK_LISTENERS.push(fn);
     return ()=>{const i=HOOK_LISTENERS.indexOf(fn);if(i>=0){HOOK_LISTENERS.splice(i,1);drawHostLine();}};};
   const openFn=function open(text,o){return hostOpen(text,o);};
-  const textFn=function text(){return hookOpen()?toMarkdown():"";};
+  const textFn=function text(){return hookBook()?toMarkdown():"";};
   /* set once and never replaceable; a second copy of this script in the same window (a test harness) leaves the first */
   try{Object.defineProperty(window,"Booklet",{value:Object.freeze({version:RENDERER_VERSION,host:hostFn,onChange:onChangeFn,open:openFn,text:textFn}),
     writable:false,configurable:false,enumerable:true});}catch(e){}}
@@ -5840,7 +5927,7 @@ window.addEventListener("dragenter",e=>{if([...(e.dataTransfer?.types||[])].incl
 window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault();});
 window.addEventListener("dragleave",e=>{if(dragDepth>0) dragDepth--;if(dragDepth===0) dropVeil.classList.remove("show");});
 window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.classList.remove("show");const f=e.dataTransfer?.files?.[0];if(f) readFileInto(f,loadText);});
-window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&!(HOST&&HOST.status==="saved")){e.preventDefault();e.returnValue=STRINGS[lang].ui.leaving;}});
+window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&!(HOST&&hookBook()&&HOST.status==="saved")){e.preventDefault();e.returnValue=STRINGS[lang].ui.leaving;}});
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
 window.addEventListener("pagehide",flushSave);

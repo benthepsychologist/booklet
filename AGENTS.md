@@ -82,13 +82,13 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
    the renderer never changes the marker a file came with.
 8. **A wording-only change to `SPEC.md` is a patch.** When the spec's words change
    and nothing a file may say does, the spec's title, the renderer and the skill take
-   a third number (v0.11.1). The marker and `FORMAT_VERSION` stay as they are, no file
+   a third number (v0.11.3). The marker and `FORMAT_VERSION` stay as they are, no file
    is re-marked, and the registry needs no release. Any change to what a file may say
    bumps the minor (v0.12) and re-marks every file this repository holds that carries the current marker (not the fixtures that exist to carry another).
 
 ## Code that sends a reader's work never goes in `booklet.html`
 
-Nothing a reader writes is uploaded, and the published renderer holds no code that could send it. A host that wants to save a reader's work brings its own script and talks to the renderer through `window.Booklet` (`docs/hosting.md`); that script and its server live outside this repository. Do not add a `fetch`, a `postMessage`, a `BroadcastChannel`, a form or any other way of sending to `booklet.html`, and do not loosen `test/guard.test.js` or `test/pledge-browser.js` to let one through. A release's notes carry the `sha256` of `booklet.html` (`python3 lint-booklet.py --renderer-checksum booklet.html`) so a host's copy can be checked.
+Nothing a reader writes is uploaded, and the published renderer holds no code that could send it. A host that wants to save a reader's work brings its own script and talks to the renderer through `window.Booklet` (`docs/hosting.md`); that script and its server live outside this repository. Do not add a `fetch`, a `postMessage`, a `BroadcastChannel`, a form or any other way of sending to `booklet.html`, and do not loosen `test/guard.test.js` or `test/pledge-browser.js` to let one through. A release's notes carry the `sha256` of `booklet.html` (`sha256sum booklet.html`, or `shasum -a 256 booklet.html` on a Mac) so a host's copy can be checked.
 
 ## Design rules for views
 
