@@ -87,7 +87,7 @@ and it draws those too, as long as they use engines it has.
 | [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry) | a separate repo: the modules on offer and the `registry.json` that lists them |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
 
-If you serve the renderer yourself and want a reader's work saved somewhere other than their browser, read [`docs/hosting.md`](docs/hosting.md). The published `booklet.html` never sends anything; a host adds one script of its own and talks to the renderer through `window.Booklet`.
+If you serve the renderer yourself and want a reader's work saved somewhere other than their browser, read [`docs/hosting.md`](docs/hosting.md). The published `booklet.html` never sends anything; a host adds one script of its own and talks to the renderer through `window.Booklet`, and the renderer hands a booklet to a host only when the page is on the reader's own machine or private network and only after the reader presses Allow.
 
 ## Try it
 

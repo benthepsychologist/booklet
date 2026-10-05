@@ -40,6 +40,11 @@ function toggleStub(){
   global.document.querySelectorAll=sel=>sel===".lang"?[grp]:sel===".lang button"?btns:[];
   return {grp,btns,press(l){const b=btns.find(x=>x.dataset.lang===l);b._on.click({target:b});}};}
 
+/* where the page thinks it is, for the next boot(): the host hook works only on the reader's own machine or network (and
+   after the reader says yes), so a test that uses the hook starts with P.place("http:","fleet"). Creates a location if
+   the test has none; a test that wants the page with no location at all deletes global.location itself. */
+const place=(protocol,hostname)=>{const loc=global.location||(global.location={hash:""});
+  loc.protocol=protocol;loc.hostname=hostname;loc.href=protocol+"//"+hostname+"/app/";};
 const pages=[];
 function closePages(){for(const p of pages.splice(0)) p.close();}
 function boot(){const API={};let open=true;const timers=new Set(),on={};
@@ -60,7 +65,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   get currentId(){return currentId}, get FILE_NOTES(){return FILE_NOTES}, KIND_SETTINGS, NUMBER_SETTINGS, fieldSummary, readQuery,
   removeModule, moduleWork, removeModuleControl, PAGE_NOW, FORMAT_VERSION, versionOf, versionCmp, renameBooklet, renameStored, setTitleIn, nameBooklet, noticeNode, dataSections, bookletName, readLib, flushSave, exportName, fileBase, tabName, remarkSaved, blankBook, nameRow, renderBooklets, diagramRisk, mermaidNode, markerOf, otherMarker, isBooklet, plainText, startScreen, homeButton, openFromList,
   get PROVENANCE(){return PROVENANCE}, get REGISTRY_CACHE(){return REGISTRY_CACHE}, linkName, storeUrl, storeAddress, linkOf, linkFetch, openLink, openAsView, loadRegistry, registryUrl, fileNotesNode, provenanceNode, editBook, markDirty, registryRead, registryText,
-  get BookletApi(){return window.Booklet}, get HOST(){return HOST}, get HOOK_LISTENERS(){return HOOK_LISTENERS}, hookFire, setAnswerMs:v=>{HOOK_ANSWER_MS=v}, hostAccept, hostLineText, hostNoticeShow, unsavedNote, saveLocal
+  get BookletApi(){return window.Booklet}, get HOST(){return HOST}, get HOOK_LISTENERS(){return HOOK_LISTENERS}, hookFire, setAnswerMs:v=>{HOOK_ANSWER_MS=v}, hostAccept, hostLineText, hostNoticeShow, unsavedNote, saveLocal, ownPlace, hostAllowed, HOST_KEY, get HOST_OWN(){return HOST_OWN}
 }));`);
   API.toggle=toggle;return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};
@@ -71,4 +76,4 @@ const hasClass=cls=>n=>new RegExp("(^|\\s)"+cls+"(\\s|$)").test((n.attrs||{}).cl
 /* what a node says: its text and the text of everything in it */
 const texts=n=>{const out=[];const walk=x=>{if(x==null) return;if(typeof x!=="object"){out.push(String(x));return;}
   if(x._text) out.push(x._text);(x.children||[]).forEach(walk);};walk(n);return out.join(" ").replace(/\s+/g," ").trim();};
-module.exports={R,html,src,boot,wipe,closePages,byId,main,find,hasClass,texts};
+module.exports={R,html,src,place,boot,wipe,closePages,byId,main,find,hasClass,texts};
