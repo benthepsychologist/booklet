@@ -4,7 +4,7 @@
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM="---\nbooklet: 0.9\ntitle: Scope\nlang: en\n---\n\n";
+const FM="---\nbooklet: \"0.10\"\ntitle: Scope\nlang: en\n---\n\n";
 const tag=(n,t)=>P.find(P.main(),x=>x.tagName===t);
 const shown=()=>P.texts(P.main());
 const typeIn=(A,addr,words)=>{A.screen=addr;A.render();const ta=tag(0,"textarea")[0];ta.value=words;ta._on.input();};
@@ -178,7 +178,7 @@ const rich=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!menu|opts]\n- ${t}-one\
    D:{custom:{log:{what:"draft A"},jot:{what:"draft B"}}},TPL:old(),lang:"en",dirty:true,unsavedEntries:2});
  const out=A0.rekeyFromV08(snap());
  const ids=t=>t.modules.map(m=>(m.mode?[m.mode]:m.activities).map(a=>a.id).join()).join("|");
- chk("the design now says 0.9 and every activity is addressed by its module",out.TPL.booklet===0.9&&ids(out.TPL)==="solo|ma/act,ma/log|mb/jot,mb/look",ids(out.TPL));
+ chk("the design now says 0.9 and every activity is addressed by its module",out.TPL.booklet==="0.9"&&ids(out.TPL)==="solo|ma/act,ma/log|mb/jot,mb/look",ids(out.TPL));
  chk("a query names its source by address",out.TPL.modules[2].activities.find(a=>a.id==="mb/look").blocks.find(b=>b.type==="query").from==="mb/jot");
  chk("entries and drafts moved to the activity's address, and an entry no activity names stayed",JSON.stringify(Object.keys(out.S.entries).sort())==='["ma/log","mb/jot","orphan"]'&&out.S.entries["ma/log"][0].what==="kept in A"&&out.S.entries["mb/jot"][0].what==="kept in B"&&out.D.custom["ma/log"].what==="draft A"&&out.D.custom["mb/jot"].what==="draft B",JSON.stringify(out.S.entries));
  chk("a module's question moved under its module; a bare activity's stayed; a key no design names was kept",out.S.answers.ma.note==="module A's answer"&&!("note" in out.S.answers[""])&&out.S.answers[""].extra==="left over"&&out.S.answers[""].snote==="the bare one",JSON.stringify(out.S));
@@ -199,7 +199,7 @@ const rich=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!menu|opts]\n- ${t}-one\
  const written=B.toMarkdown();
  chk("the file written from it has each record under its own module",/booklet entries log/.test(section(written,"ma"))&&/booklet entries jot/.test(section(written,"mb"))&&/module A's answer/.test(section(written,"ma")),written.slice(written.indexOf("%%")));
  B.saveLocal();
- chk("saved again, it says 0.9 and is not re-keyed a second time",JSON.parse(global.__ls[key]).TPL.booklet===0.9&&Object.keys(JSON.parse(global.__ls[key]).S.entries).sort().join()==="ma/log,mb/jot,orphan");
+ chk("saved again, it says 0.10 and is not re-keyed a second time",JSON.parse(global.__ls[key]).TPL.booklet==="0.10"&&Object.keys(JSON.parse(global.__ls[key]).S.entries).sort().join()==="ma/log,mb/jot,orphan");
  P.closePages();
  console.log(fails?"\n"+fails+" FAILURES":"\nmodule-scope checks passed");process.exit(fails?1:0);
 })();

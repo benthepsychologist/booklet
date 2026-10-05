@@ -152,7 +152,7 @@ chk("the open entry and the view are cleared on a switch",
 A.openBooklet(a.id);
 A.editBook(t=>{t.head={title:"A's own design"};});A.saveLocal();
 const c=await A.createBooklet();
-chk("the next booklet opens on its own design, never the last one's",A.allModules().length===0&&!(A.BOOK.head||{}).title);
+chk("the next booklet opens on its own design, never the last one's",A.allModules().length===0&&(A.BOOK.head||{}).title==="Untitled booklet");
 
 // ---- the round trip keeps everything the old snapshot held ---------------
 wipe();A=boot();

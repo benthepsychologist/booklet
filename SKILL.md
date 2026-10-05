@@ -5,8 +5,10 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.9.0** — matches the project's current version (SPEC.md's
-"project v0.9") now that this skill teaches v0.9, the current format.
+**Skill version: 0.10.0** — matches the project's current version (SPEC.md's
+"project v0.10") now that this skill teaches v0.10, the current format. Write
+the marker in quotes, `booklet: "0.10"`: unquoted, a YAML tool reads `0.10` as
+the number 0.1.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. Above a long
@@ -65,7 +67,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: 0.9`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.10"`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -166,7 +168,7 @@ Copy this exactly and fill in the `<…>` parts.
 
 ````markdown
 ---
-booklet: 0.9
+booklet: "0.10"
 id: "local/<booklet-slug>"
 title: "<Booklet title>"
 lang: <en|es|es-AR|fr>
@@ -223,6 +225,13 @@ ever offered from a registry.
   `daily-journal`, not `daily_journal` or `Daily Journal`. It is unique
   within the file and across a person's whole collection: adding a module
   whose id already exists replaces the old one.
+- **A module may carry its notice**, the terms it is shared under, as the first
+  thing inside its fence: a `> [!notice]` callout whose lines are `key: value`
+  for `license`, `copyright`, `source` and `version` (any may be left out;
+  nothing else goes in it, and it takes no id). A file that holds one module and
+  no callout is covered by its front matter's `license`, `copyright`, `source`
+  and `version`, so a module file needs no change. Never invent terms nobody
+  gave you; copy a module's own notice, do not write one.
 - The **module's title** (after the id) is the words after the `]` on the
   same line — this is what shows on the home card, exactly as written, no
   further wording needed anywhere.
@@ -348,14 +357,14 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **Nothing folds a question away.** v0.9 has no working equivalent of
+- **Nothing folds a question away.** v0.10 has no working equivalent of
   an older version's "optional questions, folded shut until opened." If a
   request calls for that ("a couple more if you want
   them"), the honest options are: put the extra material as ordinary prose
   right after the question it answers, put it on its own page after a
   `***`, or say in your reply that folding isn't available yet and ask
   whether the requester wants it unfolded instead.
-- **Nothing reads another activity's answers yet.** v0.9 has no kind that
+- **Nothing reads another activity's answers yet.** v0.10 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
@@ -423,7 +432,9 @@ between paragraphs (`\n\n`) for a new one.
   an object with `rows` (flat objects: a string, number, `true`, `false`, or a
   list of those) and optionally `fields` (each key's label, which is also the
   column order), with a `^id` on the line after the fence. Put it inside the
-  module or in the data section at the end. A `booklet query` then draws it
+  module, in the module's own data section at the end (`> [!data|<module-slug>]`,
+  the way records are tagged by module), or in the shared data section
+  (`> [!data]`). A `booklet query` then draws it
   with `as:` set to `table` (the default), `list`, `tiles`, `bars` or `line`. **Write the rows
   already ordered and counted: nothing is added up or computed when the page
   is drawn.** A reader may sort and filter what is on screen; the file never
@@ -530,7 +541,7 @@ between paragraphs (`\n\n`) for a new one.
   address — never embedded data, never a placeholder URL.
 
 - **A report** (something generated or written to be read, not answered) needs
-  only front matter (`booklet: 0.9`, `id`, `title`, `lang`) and plain Markdown:
+  only front matter (`booklet: "0.10"`, `id`, `title`, `lang`) and plain Markdown:
   no activity line is needed, the file is one activity named by the title. Give it
   a title heading, then `##` headings for its sections. The renderer folds a
   reading-only activity: each section shows its heading and the **first paragraph
@@ -609,7 +620,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.9 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.10 file is written in one language` | add it |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` only follows `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -634,11 +645,14 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
 | a `menu:` naming no menu | `` `menu:x` names no menu in this file`` | write the `> [!menu|x]` line and its bulleted list, or fix the id |
 | a `menu:` and a list of its own | `the question 'x' has both `menu:y` and a list of its own` | keep one |
+| a notice with a key it does not have, two in one module, or one outside a fence or after the first activity | `a notice has license, copyright, source, version, not 'x'` / `has two notices` / `a notice belongs inside a module's fence, before the module's first activity` | write only those four keys, one callout, right under the module line |
+| a data section for a module that is not in the file | `this data section names the module 'x', which the file has not opened` | use the module's id, or a plain `> [!data]` line |
+| an unquoted `booklet: 0.10` | `warn … write it in quotes, `booklet: "0.10"`` | write the marker in quotes |
 | a matrix with no items or anchors, or repeated anchor numbers | `the matrix 'x' has no items` / `has no anchors` / `repeats anchor number N` | write the bulleted items, then the numbered anchors, each number once |
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: 0.9`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.10"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
@@ -656,7 +670,7 @@ the renderer. Imitate their shape.
 
 ````markdown
 ---
-booklet: 0.9
+booklet: "0.10"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -692,7 +706,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: 0.9
+booklet: "0.10"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -753,7 +767,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: 0.9
+booklet: "0.10"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -790,7 +804,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 ## 11. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.9 file, one language, its
+same way as any other booklet above — one v0.10 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

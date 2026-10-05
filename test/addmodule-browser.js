@@ -1,6 +1,6 @@
-// Browser check for Add a module (0.9): an id is unique within its module, so a module that reuses the open booklet's
-// question id is added without a word; one that brings a data block into the data section under an id the data
-// section already has is refused with a message that names the id, and nothing is added. The registry and its
+// Browser check for Add a module (0.10): an id is unique within its module, so a module that reuses the open booklet's
+// question id is added without a word; one that brings a data block under an id another module's data section already
+// has is added too (a module's data section is its own), and the toast says the id was renamed. The registry and its
 // module files are served by page.route; headless Chromium with the hosted /app/ Content-Security-Policy.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/addmodule-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),R=path.dirname(HTML);
 const CSP="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const mod=(id,qid,blk)=>`---\nbooklet: 0.9\ntitle: ${id}\nlang: en\n---\n\n> [!module|${id}] ${id}\n\n> [!activity|${id}-act repeat] A\n\n> [!text|${qid} long] A question\n\n> [!module|${id} end] End\n`+(blk?`\n\`\`\`booklet data\n[{"x":"${id}"}]\n\`\`\`\n^${blk}\n`:"");
+const mod=(id,qid,blk)=>`---\nbooklet: "0.10"\ntitle: ${id}\nlang: en\n---\n\n> [!module|${id}] ${id}\n\n> [!activity|${id}-act repeat] A\n\n> [!text|${qid} long] A question\n\n> [!module|${id} end] End\n`+(blk?`\n\`\`\`booklet data\n[{"x":"${id}"}]\n\`\`\`\n^${blk}\n`:"");
 const FILES={'/first.md':mod('first-mod','first-q','dat'),'/clash.md':mod('clash-mod','clash-q','dat'),'/fine.md':mod('fine-mod','extra')};
 const REG={modules:[{id:'t/first',title:'First module',file:'first.md'},{id:'t/clash',title:'Clashing module',file:'clash.md'},{id:'t/fine',title:'Fine module',file:'fine.md'}]};
 (async()=>{
@@ -36,15 +36,14 @@ const REG={modules:[{id:'t/first',title:'First module',file:'first.md'},{id:'t/c
   ok(await p.locator('#veilAddModule[open]').count()===0&&await tabs()===before+1,'a module that brings a data block is added and the dialog closes');
   await p.getByRole('button',{name:'Add a module'}).first().click();await p.waitForTimeout(800);
   const afterFirst=await tabs();
-  await row('Clashing module').locator('button').click();await p.waitForTimeout(600);
-  const msg=(await p.locator('#addModMsg').textContent())||'';
-  ok(/“dat”/.test(msg)&&/data section/.test(msg),'the module that brings a second block of that id shows a message naming it: '+msg);
-  ok(await p.locator('#addModMsg.err').count()===1,'the message is an error message');
-  ok(await p.locator('#veilAddModule[open]').count()===1,'the dialog stays open');
-  ok(await tabs()===afterFirst,'nothing was added');
-  ok(await row('Clashing module').locator('button').isEnabled(),'the button can be pressed again');
+  await row('Clashing module').locator('button').click();await p.waitForTimeout(700);
+  ok(await p.locator('#veilAddModule[open]').count()===0&&await tabs()===afterFirst+1,'a module that brings a block under an id another module\'s data section has is added too: each module\'s data section is its own');
+  const note=(await p.locator('#toast').textContent())||'';
+  ok(/renamed/.test(note)&&/dat is now clash-mod-dat/.test(note),'and the toast says the id was renamed so Obsidian and GitHub do not mix them up: '+note);
+  await p.getByRole('button',{name:'Add a module'}).first().click();await p.waitForTimeout(800);
+  const afterClash=await tabs();
   await row('Fine module').locator('button').click();await p.waitForTimeout(700);
-  ok(await p.locator('#veilAddModule[open]').count()===0&&await tabs()===afterFirst+1,'a module that reuses the booklet\'s question id is added: an id belongs to its module');
+  ok(await p.locator('#veilAddModule[open]').count()===0&&await tabs()===afterClash+1,'a module that reuses the booklet\'s question id is added: an id belongs to its module');
   ok(csp.length===0&&errs.length===0,'zero CSP violations and page errors '+csp.concat(errs).join('|'));
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
