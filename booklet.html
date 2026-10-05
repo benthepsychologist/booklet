@@ -858,7 +858,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.4";
+const RENDERER_VERSION="0.11.5";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1804,6 +1804,8 @@ const STRINGS_SRC={
 };
 const isObj=x=>x!==null&&typeof x==="object"&&!Array.isArray(x);
 /* `over` laid on top of `base`, two-deep-or-more, without sharing objects with either */
+/* mergeDeep is called only to lay one built-in language table over another (just below); no file value reaches it,
+   and test/guard.test.js pins its callers. A file's own values are never merged with it. */
 function mergeDeep(base,over){const out={};
   for(const k of Object.keys(base||{})) out[k]=isObj(base[k])?mergeDeep(base[k],{}):base[k];
   for(const k of Object.keys(over||{})){const v=over[k];
@@ -1848,6 +1850,9 @@ const renamesList=(r,is,more)=>r.slice(0,3).map(x=>x.from+is+x.to).join(", ")+(r
                               anything else gives the fallback.
      strings(group)           one group of the renderer's own interface words (region 2) in the
                               language in force, else English. */
+/* The `html` attribute below writes innerHTML. No caller passes it: every attrs object in this script is a literal
+   with fixed keys, none built from a file's values, and test/guard.test.js pins that no `html:` key is written
+   anywhere. Do not give it a caller that holds anything from a file. */
 const el=(tag,attrs={},...kids)=>{const n=document.createElement(tag);
   for(const [k,v] of Object.entries(attrs)){ if(k==="html") n.innerHTML=v; else if(k.startsWith("on")) n.addEventListener(k.slice(2),v); else if(v!==null&&v!==undefined&&v!==false) n.setAttribute(k,v===true?"":v); }
   for(const k of kids) if(k!=null) n.append(k); return n;};
@@ -3657,25 +3662,92 @@ const mdNodes=(text,opts)=>{
    drawing diagrams and formulas, and making a figure's SVG safe to draw. */
 
 /* ======================= A WIDGET'S SVG, MADE SAFE TO DRAW =======================
-   A figure's `svg` is markup that rides in a file somebody was handed, so it
-   is a way in for script unless it is cleaned first: an `onerror` on an
-   <image> runs the moment the figure is drawn, and a javascript: link runs
-   when a region is tapped. sanitizeSvg() parses the text with the browser's
-   own HTML parser, in a document that runs nothing, and returns the cleaned
-   nodes. Never a string: clean markup parsed a second time can come out as
-   something else. Kept: SVG elements and text. Removed with everything inside
-   them: any element outside the SVG namespace, and script, foreignObject
-   and the animation elements, which can write a javascript: URL into a link
-   after the link was checked. Stripped from what is kept: every on* attribute,
-   and any attribute whose value is a javascript: or vbscript: URL (control
-   characters and spaces ignored, as a browser ignores them). If anything goes
-   wrong it returns nothing, and the figure is blank rather than unsafe. */
+   A figure's `svg` is markup that rides in a file somebody was handed. It must not run script, make the
+   page ask for an address, restyle the page, or collide with the page's own ids (SPEC.md section 6: the
+   renderer never fetches an address a file names, with or without a security header). sanitizeSvg() parses
+   the text with the browser's own HTML parser, in a document that runs nothing, and builds the figure from
+   an ALLOWLIST, returning the cleaned nodes. Never a string: clean markup parsed a second time can come
+   out as something else.
+   Kept elements (SVG namespace only): svg g defs title desc symbol use path rect circle ellipse line
+   polyline polygon text tspan textPath clipPath mask linearGradient radialGradient stop pattern marker.
+   An <a> is unwrapped: its children stay, so its text still shows. Everything else goes with its
+   content (style, image, filter and every filter primitive, foreignObject, script, the animation
+   elements, anything unknown or outside the SVG namespace).
+   Kept attributes: geometry and presentation names in SVG_ATTRS, the fill-, stroke- and marker- families,
+   aria-*, data-* and a plain id. No on* ever. A value must be plain (letters, digits, # % . , - _ ( ) and
+   spaces, so no quote, backslash, at-sign or colon), and a url( in it must be url(#name). href and
+   xlink:href are kept only as #name. A style attribute is kept declaration by declaration, each one a
+   presentation property with a plain value; the rest of it is dropped. One rule (svgValueOk) serves all.
+   Ids are scoped to the figure: every id gets a prefix made per drawing (bf7-), and every #name
+   reference in the same figure (href, url(#name) in clip-path, mask, fill, marker-* and the rest) is
+   rewritten to match; a reference to an id the figure does not define is dropped. Classes stay.
+   If anything goes wrong it returns nothing, and the figure is blank rather than unsafe. */
 const SVG_NS="http://www.w3.org/2000/svg";
+const SVG_KEEP=new Set("svg g defs title desc symbol use path rect circle ellipse line polyline polygon text tspan textpath clippath mask lineargradient radialgradient stop pattern marker".split(" "));
+const SVG_ATTRS=new Set(("viewbox d x y width height cx cy r rx ry fx fy points x1 y1 x2 y2 dx dy rotate transform "
+  +"fill stroke opacity class id role focusable preserveaspectratio gradientunits gradienttransform spreadmethod offset "
+  +"patternunits patterncontentunits patterntransform clippathunits maskunits maskcontentunits markerunits "
+  +"markerwidth markerheight refx refy orient startoffset pathlength xmlns xmlns:xlink href xlink:href style "
+  +"clip-path mask text-anchor font-size font-weight font-family font-style letter-spacing dominant-baseline "
+  +"display visibility pointer-events shape-rendering vector-effect clip-rule fill-rule color stop-color stop-opacity").split(" "));
+/* the properties a style attribute may carry: the presentation ones only (no position, z-index, content ...) */
+const SVG_STYLE_PROPS=new Set(("fill stroke opacity transform clip-path mask text-anchor font-size font-weight font-family "
+  +"font-style letter-spacing dominant-baseline display visibility pointer-events shape-rendering vector-effect "
+  +"clip-rule fill-rule color stop-color stop-opacity").split(" "));
+const svgFamily=n=>/^(fill|stroke|marker)-[a-z-]+$/.test(n);
+const svgNameOk=n=>SVG_ATTRS.has(n)||/^(aria|data)-[a-z0-9_.-]*$/.test(n)||svgFamily(n);
+const SVG_ID=/^[A-Za-z_][A-Za-z0-9_.:-]*$/;
+/* the one value rule: plain characters; the only url( is url(#name); none of the words that fetch */
+const svgValueOk=v=>{const rest=String(v).replace(/url\(\s*#[A-Za-z_][A-Za-z0-9_.:-]*\s*\)/gi,"");
+  return /^[A-Za-z0-9#%.,\-_()+\s]*$/.test(rest)&&!/url|image|src|expression|element|paint|cross-fade|attr|local|import|var|env/i.test(rest);};
+let SVG_SEQ=0;
+function sanitizeSvg(text){
+  if(typeof text!=="string"||!text.trim()) return [];
+  try{
+    const body=new DOMParser().parseFromString(text,"text/html").body;
+    const pre="bf"+(++SVG_SEQ)+"-",ids=new Set(),later=[];
+    /* one attribute: false to drop it; local ids and references are noted for the second pass */
+    const attrOk=(n,a)=>{const name=String(a.name).toLowerCase(),v=String(a.value);
+      if(!svgNameOk(name)) return false;
+      if(name==="id"){if(!SVG_ID.test(v)) return false;ids.add(v);later.push([n,a,"id"]);return true;}
+      if(name==="href"||name==="xlink:href"){if(!/^#[A-Za-z_][A-Za-z0-9_.:-]*$/.test(v.trim())) return false;later.push([n,a,"href"]);return true;}
+      if(name==="style"){
+        const keep=v.split(";").map(d=>{const i=d.indexOf(":");if(i<0) return "";
+          const k=d.slice(0,i).trim().toLowerCase(),val=d.slice(i+1).trim();
+          return SVG_STYLE_PROPS.has(k)||svgFamily(k)?(svgValueOk(val)?k+":"+val:""):"";}).filter(Boolean);
+        if(!keep.length) return false;a.value=keep.join(";");
+        if(/url\(/i.test(a.value)) later.push([n,a,"url"]);return true;}
+      if(!/^(class|data-|aria-|xmlns)/.test(name)&&!svgValueOk(v)) return false;
+      if(/url\(/i.test(v)){if(!svgValueOk(v)) return false;later.push([n,a,"url"]);}
+      return true;};
+    const scrub=parent=>{for(const n of [...parent.childNodes]){
+      if(n.nodeType===3) continue;
+      if(n.nodeType!==1||n.namespaceURI!==SVG_NS){n.remove();continue;}
+      const ln=n.localName.toLowerCase();
+      if(ln==="a"){scrub(n);n.replaceWith(...[...n.childNodes]);continue;}
+      if(!SVG_KEEP.has(ln)){n.remove();continue;}
+      for(const a of [...n.attributes]) if(!attrOk(n,a)) n.removeAttributeNode(a);
+      scrub(n);}};
+    scrub(body);
+    /* second pass, now every id of the figure is known: prefix them, point references at the prefixed ids */
+    for(const [n,a,kind] of later){
+      if(kind==="id"){a.value=pre+a.value;continue;}
+      let ok=true;
+      const fix=s=>String(s).replace(/#([A-Za-z_][A-Za-z0-9_.:-]*)/g,(m,id)=>{if(!ids.has(id)){ok=false;return m;}return "#"+pre+id;});
+      const v=fix(a.value);
+      if(ok) a.value=v;else n.removeAttributeNode(a);}
+    return [...body.childNodes].map(n=>document.importNode(n,true));
+  }catch(e){return [];}}
+
+/* A mermaid diagram's SVG is the library's output, not a file's: its source was screened as text before the
+   library saw it (the refusal list above mermaidNode), and it needs its own <style> and ids. It keeps the older cleaning: every
+   element outside the SVG namespace, script, foreignObject and the animation elements go with their content,
+   and so does every on* attribute and any javascript: or vbscript: value. */
 const SVG_DROP=new Set(["script","foreignobject","animate","animatecolor","animatemotion",
   "animatetransform","set","discard"]);
 const svgAttrBad=a=>/^on/i.test(a.localName)||/(^|:)on/i.test(a.name)
   ||/^(javascript|vbscript):/i.test(String(a.value).replace(/[\u0000- ]/g,""));
-function sanitizeSvg(text){
+function sanitizeDiagramSvg(text){
   if(typeof text!=="string"||!text.trim()) return [];
   try{
     const body=new DOMParser().parseFromString(text,"text/html").body;
@@ -3720,7 +3792,7 @@ function mathNode(tex,display){
     return box.querySelector&&box.querySelector("math")?box:raw();
   }catch(e){return raw();}}
 /* a diagram: a mermaid fence is drawn as SVG text (no HTML labels), then the
-   SVG goes through sanitizeSvg like every other figure, never innerHTML. A
+   SVG goes through sanitizeDiagramSvg, never innerHTML. A
    diagram that will not parse stays on the page as its source, with a note. */
 let MM_SEQ=0,MM_READY=false;
 const MM_BOXES=[];
@@ -3744,7 +3816,7 @@ function mermaidConfig(){const cs=getComputedStyle(document.documentElement),v=n
 function mermaidDraw(M,box,code,fail){
   const id="bkmm"+(++MM_SEQ);
   return Promise.resolve(M.render(id,code)).then(r=>{
-    const {svg:drawn}=r||{};const nodes=sanitizeSvg(drawn);
+    const {svg:drawn}=r||{};const nodes=sanitizeDiagramSvg(drawn);
     if(!nodes.length){fail();return;}
     box.innerHTML="";box.classList.remove("bad");box.append(...nodes);
   }).catch(()=>fail()).then(()=>{

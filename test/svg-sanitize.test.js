@@ -46,6 +46,7 @@ const decode=s=>s.replace(/&(#[xX][0-9a-fA-F]+|#\d+|[a-zA-Z]+);?/g,(m,e)=>
   :(e in ENT?ENT[e]:m));
 
 class N0{constructor(){this.childNodes=[];this.parentNode=null;}
+  replaceWith(...ns){const p=this.parentNode,i=p.childNodes.indexOf(this);p.childNodes.splice(i,1,...ns);ns.forEach(c=>{c.parentNode=p;});this.parentNode=null;}
   remove(){const p=this.parentNode;if(p){p.childNodes.splice(p.childNodes.indexOf(this),1);this.parentNode=null;}}
   appendChild(c){c.parentNode=this;this.childNodes.push(c);return c;}
   get textContent(){return this.nodeType===3?this.data:this.childNodes.map(c=>c.textContent||"").join("");}}
@@ -129,12 +130,13 @@ function detonate(nodes){let hit=0;const ATTACK=()=>{hit++;};
 /* ---------------- the renderer, loaded ---------------- */
 /* evaluated inside a function of its own, so its declarations stay its own */
 const API=(()=>{const API={};eval(src+`
-;Object.assign(API,{sanitizeSvg,ENGINES});`);return API;})();
+;Object.assign(API,{sanitizeSvg,sanitizeDiagramSvg,ENGINES});`);return API;})();
 const {sanitizeSvg}=API;
 const nodesOf=markup=>[...parseHTML(markup).childNodes];     // what innerHTML used to put in the page
+const unpre=v=>String(v).replace(/bf\d+-/g,"");
 const shape=nodes=>JSON.stringify(nodes.map(function f(n){
   return n.nodeType===3?["#text",n.data]:n.nodeType===8?["#comment"]
-    :[n.namespaceURI,n.localName,n.attributes.map(a=>[a.namespaceURI,a.name,a.value]).sort(),n.childNodes.map(f)];}));
+    :[n.namespaceURI,n.localName,n.attributes.map(a=>[a.namespaceURI,a.name,unpre(a.value)]).sort(),n.childNodes.map(f)];}));
 const find=(nodes,pred)=>{const out=[];const w=n=>{if(n.nodeType===1){if(pred(n)) out.push(n);n.childNodes.forEach(w);}};nodes.forEach(w);return out;};
 
 /* ---------------- attacks ---------------- */
@@ -175,8 +177,8 @@ for(const [name,markup] of ATTACKS){
 /* what is removed is the danger, not the figure */
 {const out=sanitizeSvg(`<svg viewBox="0 0 10 10"><a href="javascript:ATTACK()" class="lnk"><rect class="rg" data-r="a" width="5"/></a></svg>`);
   const a=find(out,n=>n.localName==="a")[0],r=find(out,n=>n.localName==="rect")[0];
-  chk("a javascript: link keeps its element and its other attributes, and loses only the href",
-    !!a&&a.getAttribute("class")==="lnk"&&a.getAttribute("href")===null&&!!r&&r.getAttribute("data-r")==="a");}
+  chk("a javascript: link is unwrapped: no <a> is left, and the shape inside keeps its class and data-r",
+    !a&&!!r&&r.getAttribute("data-r")==="a");}
 {const out=sanitizeSvg(`<svg viewBox="0 0 10 10" onload="ATTACK()"><rect class="rg" data-r="a" onclick="ATTACK()" fill="red"/></svg>`);
   const s=find(out,n=>n.localName==="svg")[0],r=find(out,n=>n.localName==="rect")[0];
   chk("a handler goes and the element stays: the <svg> keeps viewBox, the shape keeps class, data-r and fill",
@@ -248,6 +250,78 @@ for(const [where,svg] of figures)
   chk("every innerHTML write in the renderer clears a node, apart from the el() helper",odd.length===0,odd.join(" | "));
   chk("drawFig draws through sanitizeSvg",/fig\.append\(\.\.\.sanitizeSvg\(f&&f\.svg\)\)/.test(src));
   chk("and nothing else reads a figure's svg",(src.match(/\.svg\b/g)||[]).length===1,(src.match(/.{30}\.svg\b.{10}/g)||[]).join(" | "));}
+
+
+/* ---------------- 0.11.5: an allowlist, and ids scoped to the figure ---------------- */
+const names=ns=>find(ns,()=>true).map(n=>n.localName);
+const S=m=>sanitizeSvg(`<svg viewBox="0 0 10 10">${m}</svg>`);
+const has=(ns,name)=>names(ns).some(x=>x.toLowerCase()===name.toLowerCase());
+const addr=ns=>find(ns,()=>true).some(n=>n.attributes.some(a=>/https?:|\/\/|evil/i.test(a.value)));
+for(const el of "g defs title desc symbol use path rect circle ellipse line polyline polygon text tspan textPath clipPath mask linearGradient radialGradient stop pattern marker".split(" "))
+  chk(`kept element <${el}> survives`,has(S(`<${el}/>`),el));
+for(const el of ["style","image","feImage","filter","feGaussianBlur","feOffset","foreignObject","script","animate","set","iframe","video","audio","font-face","cursor","view","switch","bogus"])
+  chk(`dropped element <${el}> is gone, with its content`,!has(S(`<${el}><rect class="rg"/></${el}>`),el)&&!has(S(`<${el}><rect class="rg"/></${el}>`),"rect"));
+{const out=S(`<a href="https://evil.test/x"><text x="1">tap me</text></a>`);
+  chk("<a> is unwrapped: no <a>, no address, its text still shows",!has(out,"a")&&has(out,"text")&&find(out,n=>n.localName==="text")[0].textContent==="tap me"&&!addr(out));}
+for(const at of ["viewBox","d","x","y","width","height","cx","cy","r","rx","ry","points","x1","y2","transform","fill","stroke","stroke-width","opacity","fill-opacity","stroke-dasharray","class","id","clip-path","mask","marker-end","text-anchor","font-size","font-weight","font-family","dominant-baseline","aria-label","role","focusable","data-r","preserveAspectRatio","gradientUnits","offset","stop-color","stop-opacity","patternUnits","clipPathUnits"]){
+  const v=at==="id"?"q":at==="clip-path"||at==="mask"||at==="marker-end"?"url(#q)":"1";
+  const out=sanitizeSvg(`<svg><rect id="q" ${at==="id"?"":at+'="'+v+'"'} ${at==="id"?'id="q"':""}/></svg>`);
+  const r=find(out,n=>n.localName==="rect")[0];
+  chk(`kept attribute ${at} survives`,!!r&&r.attributes.some(a=>a.name.toLowerCase()===at.toLowerCase()),r&&r.attributes.map(a=>a.name).join());}
+for(const [name,m] of [
+  ["onclick",`<rect onclick="x()"/>`],["srcset",`<rect srcset="a"/>`],["filter attribute",`<rect filter="url(#f)"/>`],
+  ["src",`<rect src="a"/>`],["xml:base",`<rect xml:base="https://evil.test/"/>`],["action",`<rect action="x"/>`],["tabindex",`<rect tabindex="0"/>`]])
+  chk(`dropped attribute: ${name}`,find(S(m),n=>n.localName==="rect")[0].attributes.length===0);
+/* every address form is gone */
+const FORMS=[
+  ["href to a site",`<use href="https://evil.test/u.svg#a"/>`],["xlink:href to a site",`<use xlink:href="https://evil.test/u.svg#a"/>`],
+  ["href to a relative file",`<use href="u.svg#a"/>`],["href to a protocol-relative address",`<use href="//evil.test/u.svg#a"/>`],
+  ["href to a data: address",`<use href="data:image/svg+xml,x"/>`],
+  ["fill url(address)",`<rect fill="url(https://evil.test/a.svg#b)"/>`],["stroke url('address')",`<rect stroke="url('https://evil.test/a')"/>`],
+  ["clip-path url(address)",`<rect clip-path="url(https://evil.test/a)"/>`],["mask url(address)",`<rect mask="url(https://evil.test/a)"/>`],
+  ["marker-end url(address)",`<path marker-end="url(https://evil.test/a)"/>`],["filter url(address)",`<rect filter="url(https://evil.test/a)"/>`],
+  ["style url(address)",`<rect style="fill:url(https://evil.test/a)"/>`],["style background",`<rect style="background:url(https://evil.test/a)"/>`],
+  ["style @import",`<rect style="@import url(https://evil.test/a)"/>`],
+  ["entity-written url&#40;",`<rect fill="url&#40;https://evil.test/a&#41;"/>`],
+  ["css escape u\\72l(",`<rect style="fill:u\\72l(https://evil.test/a)"/>`],["css escape in an attribute",`<rect fill="u\\72l(https://evil.test/a)"/>`],
+  ["a url( with a second, bad, address",`<rect fill="url(#a) url(https://evil.test/a)"/>`],
+  ["pattern with an image",`<pattern id="a"><image href="https://evil.test/p.png"/></pattern>`],
+  ["style element with @font-face",`<style>@font-face{font-family:x;src:url(https://evil.test/f.woff)}</style>`],
+  ["style element with @import",`<style>@import url(https://evil.test/i.css);</style>`],
+  ["feImage",`<filter><feImage href="https://evil.test/f.png"/></filter>`],
+  ["image xlink:href",`<image xlink:href="https://evil.test/i.png"/>`],["image href",`<image href="https://evil.test/i.png"/>`],
+  ["a style with image-set",`<rect style="fill:image-set(a)"/>`],
+  ["a style with an unplain value",`<rect style="fill:red;behavior:x"/>`]];
+for(const [name,m] of FORMS){const out=S(m);
+  chk(`address form gone: ${name}`,!addr(out)&&!has(out,"image")&&!has(out,"style")&&!has(out,"feImage")&&
+    !find(out,()=>true).some(n=>n.attributes.some(a=>/url\((?!#)/i.test(a.value)||/\\|@|image|src/i.test(a.value)&&a.name!=="class"&&!/^data-/.test(a.name)))
+    &&!find(out,()=>true).some(n=>n.attributes.some(a=>/^(href|xlink:href)$/.test(a.name)&&!/^#bf\d+-/.test(a.value))),
+    JSON.stringify(out.map(function f(n){return n.nodeType===1?[n.localName,n.attributes.map(a=>a.name+"="+a.value),n.childNodes.map(f)]:"t";})));}
+{const out=S(`<rect style="fill:red;position:fixed;top:0;stroke:url(https://evil.test/a);stroke-width:2"/>`);
+  chk("a style is kept declaration by declaration: plain presentation ones stay, position and the address go",
+    find(out,n=>n.localName==="rect")[0].getAttribute("style")==="fill:red;stroke-width:2",find(out,n=>n.localName==="rect")[0].getAttribute("style"));}
+/* ids */
+{const out=sanitizeSvg(`<svg><defs><clipPath id="c1"><rect id="r1"/></clipPath><linearGradient id="g"/></defs><use href="#r1" xlink:href="#r1"/><path clip-path="url(#c1)" fill="url(#g)" style="fill:url(#g)"/></svg>`);
+  const idv=find(out,n=>n.getAttribute("id")).map(n=>n.getAttribute("id")),p=idv[0].replace(/c1$/,"");
+  chk("every id is prefixed per figure",/^bf\d+-/.test(p)&&idv.every(v=>v.startsWith(p)),idv.join());
+  const path=find(out,n=>n.localName==="path")[0],use=find(out,n=>n.localName==="use")[0];
+  chk("local references survive and point at the prefixed ids",path.getAttribute("clip-path")===`url(#${p}c1)`&&path.getAttribute("fill")===`url(#${p}g)`
+    &&path.getAttribute("style")===`fill:url(#${p}g)`&&use.getAttribute("href")==="#"+p+"r1"&&use.getAttribute("xlink:href")==="#"+p+"r1",
+    JSON.stringify(path.attributes.map(a=>a.name+"="+a.value)));
+  const out2=sanitizeSvg(`<svg><defs><clipPath id="c1"/></defs></svg>`);
+  chk("two drawings of the same figure never share an id",find(out2,n=>n.getAttribute("id"))[0].getAttribute("id")!==idv[0]);}
+{const out=sanitizeSvg(`<svg><rect id="q"/><path clip-path="url(#nowhere)" fill="url(#q) url(#nowhere)"/><use href="#nowhere"/><rect id="has space"/><rect id="9x"/></svg>`);
+  const path=find(out,n=>n.localName==="path")[0];
+  chk("a reference to an id the figure does not define is dropped (the whole attribute)",path.attributes.length===0&&find(out,n=>n.localName==="use")[0].attributes.length===0);
+  chk("an id that is not a plain name is dropped",find(out,n=>n.localName==="rect").slice(1).every(n=>n.attributes.length===0));}
+{const out=sanitizeSvg(`<svg><rect id="getElementById" class="rg" data-r="a"/><rect id="booklet-app"/></svg>`);
+  chk("an id naming one of the page's own elements cannot match it",find(out,n=>n.getAttribute("id")).every(n=>/^bf\d+-/.test(n.getAttribute("id"))));}
+{const out=sanitizeSvg(`<svg><text>&lt;img src=x onerror=ATTACK()&gt;</text></svg>`);
+  chk("markup in text stays text",find(out,n=>n.localName==="text")[0].childNodes.length===1&&find(out,n=>n.localName==="text")[0].textContent==="<img src=x onerror=ATTACK()>"&&!has(out,"img"));}
+{const out=sanitizeSvg(`<svg><rect class="rg x" data-r="a b" aria-label="the head"/></svg>`);
+  chk("classes, data-* and aria-* stay as written",find(out,n=>n.localName==="rect")[0].attributes.map(a=>a.value).join("|")==="rg x|a b|the head");}
+chk("mermaid output keeps its own <style> and ids through sanitizeDiagramSvg",(()=>{
+  const o=API.sanitizeDiagramSvg(`<svg id="bkmm1"><style>#bkmm1 .a{fill:red}</style><g id="x"/></svg>`);return has(o,"style")&&find(o,n=>n.localName==="g")[0].getAttribute("id")==="x";})());
 
 console.log(fails?`\n${fails} svg-sanitize check(s) failed`:"svg-sanitize checks passed");
 process.exit(fails?1:0);
