@@ -78,6 +78,7 @@ and it draws those too, as long as they use engines it has.
 | --- | --- |
 | [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, nothing to install or fetch to open it. Draws mermaid diagrams and typesets math with two MIT-licensed libraries stored inside it (see below). Reads v0.3 only — no earlier format opens |
 | [`SPEC.md`](SPEC.md) | the current format (v0.11), versioned and published separately from anything that implements it |
+| [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
@@ -85,6 +86,8 @@ and it draws those too, as long as they use engines it has.
 | [`test/`](test/) | the suite, run with `test/run.sh` |
 | [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry) | a separate repo: the modules on offer and the `registry.json` that lists them |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
+
+If you serve the renderer yourself and want a reader's work saved somewhere other than their browser, read [`docs/hosting.md`](docs/hosting.md). The published `booklet.html` never sends anything; a host adds one script of its own and talks to the renderer through `window.Booklet`.
 
 ## Try it
 

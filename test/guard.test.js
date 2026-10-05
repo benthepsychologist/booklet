@@ -147,24 +147,26 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  /* every fetch( call: found with a parser, counted, and able only to read */
  const cp=require("child_process"),r=cp.spawnSync(process.execPath,["--expose-internals",path.join(__dirname,"fetchsites.js")],{encoding:"utf8"});
  let sites=null;try{sites=JSON.parse(r.stdout);}catch(e){}
- /* 3: loadRegistry (the registry list), registryText (one module's file) and, new in 0.11.1, linkFetch (open by link): it
-    reads one booklet, from the address of the page's declared store plus a checked name, or a module the registry's list
-    gave. It reads, never writes: no method, no body, credentials "omit", redirects are errors, a 5 MB cap, a 15 s timeout.
-    The owner agreed this third read on 2026-10-05. All three are in region 12. */
- const PINNED_FETCHES=3;
+ /* ONE: linkFetch (region 12), the shared reader. Until 0.11.1 the registry's list and a module's file had a fetch( of their
+    own with only `cache` set; 0.11.2 sends all three reads (the registry list, a module's file, a booklet opened by link)
+    through this one function, so there is one place that fetches and the same care on every read: no method, no body, no
+    headers, credentials "omit", redirects are errors, a size cap (1 MB for the list, 5 MB for a module or a booklet), a
+    15 s timeout. The count is pinned at one because there is nothing else for it to be: a second fetch( anywhere is a
+    new way for the page to talk to a network, and needs the owner's say-so. */
+ const PINNED_FETCHES=1;
  const textual=count(hand,"fetch(");
- must("fetch( appears exactly "+PINNED_FETCHES+" times in the hand-written code (the registry list, one module file, one booklet opened by link)",textual===PINNED_FETCHES,textual+" found");
+ must("fetch( appears exactly "+PINNED_FETCHES+" time in the hand-written code (the one shared reader)",textual===PINNED_FETCHES,textual+" found");
  if(sites&&!sites.unavailable){
    const calls=sites.sites.filter(x=>!x.alias),aliases=sites.sites.filter(x=>x.alias);
    console.log("  info  fetch sites: "+calls.map(c=>"line "+c.line+" "+c.text).join("; "));
-   must("the parser finds exactly "+PINNED_FETCHES+" fetch calls",calls.length===PINNED_FETCHES,calls.length+" found");
+   must("the parser finds exactly "+PINNED_FETCHES+" fetch call",calls.length===PINNED_FETCHES,calls.length+" found");
    must("fetch is never aliased or passed on as a value",aliases.length===0,JSON.stringify(aliases));
    must("each fetch call is a plain read: no method, no body, no headers, no keepalive; the only options are cache, credentials, redirect and a timeout signal",
      calls.every(c=>c.args<=2&&c.optionKeys.every(k=>["cache","credentials","redirect","signal"].includes(k))),JSON.stringify(calls.map(c=>[c.line,c.optionKeys])));
-   must("the call that opens by link sends no credentials, follows no redirect and has a timeout; the other two set only cache",
-     calls.filter(c=>c.optionKeys.length>1).length===1&&calls.filter(c=>c.optionKeys.length>1).every(c=>/credentials:"omit"/.test(c.text)&&/redirect:"error"/.test(c.text)&&/signal:/.test(c.text))&&calls.filter(c=>c.optionKeys.length===1).length===2);
-   must("and each is aimed at the registry address, an address the registry listed, or the address linkFetch is handed (the declared store plus a checked name, or a listed module)",
-     calls.map(c=>c.first).sort().join("|")==="L.url|url|url");}
+   must("every fetch call sends no credentials, follows no redirect and has a timeout",
+     calls.every(c=>/cache:"no-cache"/.test(c.text)&&/credentials:"omit"/.test(c.text)&&/redirect:"error"/.test(c.text)&&/signal:/.test(c.text)&&c.optionKeys.length===4));
+   must("and it is aimed at the address linkFetch is handed (the registry address, an address the registry listed, or the declared store plus a checked name)",
+     calls.map(c=>c.first).join("|")==="url");}
  else console.log("  skip  the parser check of fetch calls (this Node has no bundled acorn); the textual count above still ran");
  must("no fetch( is called with a method or a body written anywhere near it",
    !/fetch\([^)]*\b(method|body|keepalive)\b/.test(hand)&&(hand.match(/fetch\([^)]*\bcredentials\b[^)]*\)/g)||[]).every(t=>/credentials:"omit"/.test(t)));

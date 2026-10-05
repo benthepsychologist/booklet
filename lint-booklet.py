@@ -22,6 +22,9 @@ Obsidian and GitHub read those two across the whole file.
 Usage:  python3 lint-booklet.py [--registry] [path ...]
         python3 lint-booklet.py --format-version     prints the current format version (0.11) and exits 0
         python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.11") and exits 0
+        python3 lint-booklet.py --renderer-checksum booklet.html
+                                                     prints the sha256 of that file and its name (what a host publishes, and what a
+                                                     release's notes carry, so anyone can check a host serves the real renderer)
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
@@ -1158,6 +1161,13 @@ def main():
         print(f'booklet: "{FORMAT_VERSION}"')
         return 0
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    if "--renderer-checksum" in flags:
+        import hashlib
+        if len(args) != 1 or not pathlib.Path(args[0]).is_file():
+            print("usage: python3 lint-booklet.py --renderer-checksum booklet.html", file=sys.stderr)
+            return 2
+        print(hashlib.sha256(pathlib.Path(args[0]).read_bytes()).hexdigest() + "  " + pathlib.Path(args[0]).name)
+        return 0
     if args:
         paths = [pathlib.Path(a).resolve() for a in args]
     else:
