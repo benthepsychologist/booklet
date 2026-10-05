@@ -78,6 +78,11 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
    Read the marker as text, compare versions as two whole numbers (major, minor)
    with `versionCmp` in the renderer and never `+FORMAT_VERSION`, and write it
    quoted (`booklet: "0.10"`) so a YAML tool does not turn it into 0.1.
+8. **A wording-only change to `SPEC.md` is a patch.** When the spec's words change
+   and nothing a file may say does, the spec's title, the renderer and the skill take
+   a third number (v0.10.1). The marker and `FORMAT_VERSION` stay as they are, no file
+   is re-marked, and the registry needs no release. Any change to what a file may say
+   bumps the minor (v0.11) and re-marks everything.
 
 ## Design rules for views
 

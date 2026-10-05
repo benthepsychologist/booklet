@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.10.0** — matches the project's current version (SPEC.md's
+**Skill version: 0.10.1** — matches the project's current version (SPEC.md's
 "project v0.10") now that this skill teaches v0.10, the current format. Write
 the marker in quotes, `booklet: "0.10"`: unquoted, a YAML tool reads `0.10` as
 the number 0.1.
@@ -201,8 +201,10 @@ status: draft
 - **`id`** is `local/<booklet-slug>` (or `<namespace>/<slug>` if the
   requester has one). It names the booklet across any future translation or
   version; it is not the module's own callout id (below).
-- **`lang`** is the one language the whole file is written in. There is no
-  `languages` list: one file, one language, always.
+- **`lang`** is the one language the file you are writing is in. There is no
+  `languages` list: a module is written in one language. (In a booklet that
+  holds several modules, `lang` only sets the language of the renderer's own
+  menus and defaults; it says nothing about the modules.)
 - The readable half above the module fence holds only `# Title` and plain
   paragraphs. Do not add a `##` heading there that looks like part of the
   design — a heading is fine as ordinary reading, it just carries no
