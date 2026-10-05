@@ -1,5 +1,5 @@
 ---
-booklet: 0.9
+booklet: "0.10"
 id: test/figures
 title: Figures and math
 lang: en

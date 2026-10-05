@@ -2,7 +2,7 @@
 
 Booklet was already "one file, hand-editable, no server." It just wasn't hand-editable in the way that phrase implies. A booklet's design — every activity, every question, every widget — used to live as a series of fenced JSON blocks under the prose. Readable, yes: open the file and you could see the shape of it. But *editable*? Nobody sits down and correctly retypes a JSON object by hand, and a language model asked to add a question to a booklet was really being asked to write valid, deeply-nested JSON on the first try, in the right place, with the right keys. "Hand-editable" turned out to mean "hand-*readable*," and that gap is where this rewrite starts.
 
-This document is the record of how the Markdown format was decided (at v0.3, and kept in every version since; the current one is v0.9, written up in `SPEC.md`): what we looked at, what we were actually trying to do, and why each real choice landed where it did. It exists because "just trust us" is a bad way to hand someone a file format.
+This document is the record of how the Markdown format was decided (at v0.3, and kept in every version since; the current one is v0.10, written up in `SPEC.md`): what we looked at, what we were actually trying to do, and why each real choice landed where it did. It exists because "just trust us" is a bad way to hand someone a file format.
 
 ---
 

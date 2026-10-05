@@ -356,6 +356,17 @@
   .bkacts{display:flex;gap:.3rem;flex-wrap:wrap}
   .bkacts .small{padding:.2rem .6rem;font-size:.8rem}
   .bkacts .small[disabled]{opacity:.35}
+  /* a module's notice: a quiet disclosure, closed until asked for */
+  details.about{margin:1.5rem 0 0;border-style:dashed;background:transparent;max-width:var(--measure)}
+  details.about summary{font-weight:500;color:var(--muted);font-size:.9rem;padding:.5rem .9rem}
+  details.about dl{margin:0;padding:0 1rem .8rem;font-family:var(--sans);font-size:.88rem;display:grid;grid-template-columns:max-content minmax(0,1fr);gap:.3rem .9rem}
+  details.about dt{color:var(--muted)}
+  details.about dd{margin:0;overflow-wrap:anywhere}
+  /* a booklet's name, and its small rename control */
+  .namerow{display:flex;align-items:baseline;gap:.4rem .9rem;flex-wrap:wrap;margin:0 0 .4rem}
+  .namerow h1{margin:0}
+  input.nameedit{font:inherit;font-family:var(--serif);font-size:1.5rem;font-weight:600;line-height:1.2;color:var(--ink);background:var(--surface);border:var(--bw) solid var(--accent);border-radius:8px;padding:.25rem .5rem;min-width:0;width:min(100%,24rem);box-sizing:border-box}
+  .bkacts input.nameedit,.mode input.nameedit{font-size:1.05rem;width:100%}
 
   .addrow{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;margin:.2rem 0 1rem}
   .addrow .pill-btn{padding:.25rem .7rem;font-size:.85rem}
@@ -835,10 +846,14 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.9.0";
-/* The booklet format this renderer reads: the marker a file carries is
-   `booklet: 0.9`, and the number a booklet design carries is +FORMAT_VERSION. */
-const FORMAT_VERSION="0.9";
+const RENDERER_VERSION="0.10.0";
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.10"`, and a
+   booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
+   it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
+const FORMAT_VERSION="0.10";
+/* a booklet design saved in this browser by renderer 0.8 or earlier is re-keyed once (rekeyFromV08); one
+   saved by 0.9 already keeps work the way 0.10 does */
+const KEYED_FROM="0.9";
 const LANG_NAMES={en:"English",es:"Español","es-AR":"Español (Argentina)",fr:"Français"};
 /* the interface languages with a button (the variants, es-AR, have none), in the order offered */
 const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
@@ -879,7 +894,7 @@ const SCENERY_KINDS=new Set(["manifest","menu"]);
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
 const KIND_SETTINGS={module:["end"],activity:["repeat","daily","hidden"],row:["end"],text:["long"],
-  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],
+  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],
   choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
 /* the settings above that must be numbers */
 const NUMBER_SETTINGS=["min","max","step"];
@@ -942,7 +957,7 @@ const STRINGS_SRC={
       fileNotes: n=>`This file has ${n===1?"1 thing":n+" things"} this page could not read`,
       fileNotesShow: "See the list",
       fileNotesDismiss: "Dismiss",
-      oldFormat: m=>`This file says booklet: ${m}. This page reads format ${FORMAT_VERSION}. Change the marker to booklet: ${FORMAT_VERSION}${m==="0.2"?" (and write settings as key:value, for example min:0)":""}.`,
+      oldFormat: m=>`This file says booklet: ${m}. This page reads format ${FORMAT_VERSION}. Change the marker to booklet: "${FORMAT_VERSION}"${m==="0.2"?" (and write settings as key:value, for example min:0)":""}.`,
       figureErr: "This diagram could not be drawn, so its source is shown instead.",
       clearTitle: "Clear everything on this page?",
       clearHelp: "Your entries exist only in this browser tab. If you have not downloaded them, they will be gone.",
@@ -984,6 +999,9 @@ const STRINGS_SRC={
       noShelf: "The module list could not be loaded. Check your connection and try again.",
       addFailed: "That activity could not be fetched — it may have moved, or you may be offline."
     },
+    notice: {
+      about: "About this module", license: "Licence", copyright: "Copyright", source: "Source", version: "Version"
+    },
     home: {
       h1: "Booklet",
       sub: "A workbook that lives in one file you keep"
@@ -997,6 +1015,10 @@ const STRINGS_SRC={
       open: "Open",
       remove: "Remove",
       untitled: "Untitled booklet",
+      rename: "Rename",
+      renameName: "Booklet name",
+      renameHint: "Enter saves, Escape cancels.",
+      renameFor: t=>`Rename “${t}”`,
       back: "Your booklets",
       lastOpened: d=>`Last opened ${d}`,
       added: d=>`Added ${d}`,
@@ -1064,6 +1086,11 @@ const STRINGS_SRC={
       blockNoObject: (w,what)=>`${w}: the ${what} block holds no object`,
       widgetNeedsId: w=>`${w}: a widget block needs a ^id on the line after it`,
       dataNeedsId: w=>`${w}: a data block needs a ^id on the line after it`,
+      dataModuleUnknown: (w,id)=>`${w}: this data section names the module “${id}”, which the file has not opened, so its blocks are shared`,
+      noticeMisplaced: w=>`${w}: a notice belongs inside a module's fence, before its first activity, so it was ignored`,
+      noticeSecond: w=>`${w}: a module has one notice; this second one was ignored`,
+      noticeBadLine: (w,x)=>`${w}: the notice has a line that is not \`key: value\` (${x}), so it was skipped`,
+      noticeKeyUnknown: (w,k)=>`${w}: a notice has license, copyright, source and version, not “${k}”, so it was skipped`,
       dataBad: (w,id,why)=>`${w}: the data block ^${id} ${why}, so it was skipped`,
       dataNoRows: "holds no list of rows (an object with `rows`, or the list itself)",
       dataRowNotObject: "has a row that is not an object",
@@ -1099,8 +1126,8 @@ const STRINGS_SRC={
       queryCardsData: from=>`has \`as: cards\` on the data block “${from}”, but cards draw kept entries`,
       queryNothing: from=>`names “${from}”, which is nothing in this module`,
       queryNoEntries: from=>`names “${from}”, which keeps no entries (only a repeat activity does)`,
-      oldFormat: m=>`front matter says booklet: ${m}; this page reads format ${FORMAT_VERSION}. Change the marker to booklet: ${FORMAT_VERSION}${m==="0.2"?" (and write settings as key:value, for example min:0).":"."}`,
-      notV07: `This is not a v${FORMAT_VERSION} file — its front matter needs \`booklet: ${FORMAT_VERSION}\`.`,
+      oldFormat: m=>`front matter says booklet: ${m}; this page reads format ${FORMAT_VERSION}. Change the marker to booklet: "${FORMAT_VERSION}"${m==="0.2"?" (and write settings as key:value, for example min:0).":"."}`,
+      notV07: `This is not a v${FORMAT_VERSION} file — its front matter needs \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Not a v${FORMAT_VERSION} booklet file.`,
       noModule: "This file holds no module.",
       needsV07: `Add a module only works inside a v${FORMAT_VERSION} booklet.`,
@@ -1167,7 +1194,7 @@ const STRINGS_SRC={
       fileNotes: n=>`Ce fichier contient ${n===1?"1 point":n+" points"} que cette page n’a pas pu lire`,
       fileNotesShow: "Voir la liste",
       fileNotesDismiss: "Fermer",
-      oldFormat: m=>`Ce fichier indique booklet: ${m}. Cette page lit le format ${FORMAT_VERSION}. Remplacez le marqueur par booklet: ${FORMAT_VERSION}${m==="0.2"?" (et écrivez les réglages en clé:valeur, par exemple min:0)":""}.`,
+      oldFormat: m=>`Ce fichier indique booklet: ${m}. Cette page lit le format ${FORMAT_VERSION}. Remplacez le marqueur par booklet: "${FORMAT_VERSION}"${m==="0.2"?" (et écrivez les réglages en clé:valeur, par exemple min:0)":""}.`,
       figureErr: "Ce diagramme n’a pas pu être dessiné; son texte source est affiché à la place.",
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
       clearHelp: "Vos réponses n’existent que dans cet onglet. Si vous ne les avez pas téléchargées, elles seront perdues.",
@@ -1209,6 +1236,9 @@ const STRINGS_SRC={
       noShelf: "La liste des modules n’a pas pu être chargée. Vérifiez votre connexion et réessayez.",
       addFailed: "Cette activité n’a pas pu être récupérée — elle a peut-être changé d’adresse, ou vous êtes hors ligne."
     },
+    notice: {
+      about: "À propos de ce module", license: "Licence", copyright: "Droit d’auteur", source: "Source", version: "Version"
+    },
     home: {
       h1: "Booklet",
       sub: "Un cahier qui tient dans un seul fichier, le vôtre"
@@ -1222,6 +1252,10 @@ const STRINGS_SRC={
       open: "Ouvrir",
       remove: "Retirer",
       untitled: "Carnet sans titre",
+      rename: "Renommer",
+      renameName: "Nom du carnet",
+      renameHint: "Entrée enregistre, Échap annule.",
+      renameFor: t=>`Renommer « ${t} »`,
       back: "Vos carnets",
       lastOpened: d=>`Ouvert le ${d}`,
       added: d=>`Ajouté le ${d}`,
@@ -1285,6 +1319,11 @@ const STRINGS_SRC={
       blockNoObject: (w,what)=>`${w} : le bloc ${what} ne contient aucun objet`,
       widgetNeedsId: w=>`${w} : un bloc widget a besoin d’un ^id sur la ligne qui suit`,
       dataNeedsId: w=>`${w} : un bloc data a besoin d’un ^id sur la ligne qui suit`,
+      dataModuleUnknown: (w,id)=>`${w} : cette section de données nomme le module « ${id} », que le fichier n’a pas ouvert ; ses blocs sont donc partagés`,
+      noticeMisplaced: w=>`${w} : une mention va à l’intérieur de la clôture d’un module, avant sa première activité ; elle a donc été ignorée`,
+      noticeSecond: w=>`${w} : un module n’a qu’une mention ; cette seconde a été ignorée`,
+      noticeBadLine: (w,x)=>`${w} : la mention a une ligne qui n’est pas de la forme \`clé: valeur\` (${x}) ; elle a donc été sautée`,
+      noticeKeyUnknown: (w,k)=>`${w} : une mention comporte license, copyright, source et version, pas « ${k} » ; elle a donc été sautée`,
       dataBad: (w,id,why)=>`${w} : le bloc de données ^${id} ${why} ; il a donc été ignoré`,
       dataNoRows: "ne contient aucune liste de lignes (un objet avec `rows`, ou la liste elle-même)",
       dataRowNotObject: "a une ligne qui n’est pas un objet",
@@ -1320,8 +1359,8 @@ const STRINGS_SRC={
       queryCardsData: from=>`a \`as: cards\` sur le bloc de données « ${from} », mais les cartes montrent des entrées gardées`,
       queryNothing: from=>`nomme « ${from} », qui n’existe pas dans ce module`,
       queryNoEntries: from=>`nomme « ${from} », qui ne garde aucune entrée (seule une activité répétée le fait)`,
-      oldFormat: m=>`l’en-tête indique booklet: ${m} ; cette page lit le format ${FORMAT_VERSION}. Remplacez le marqueur par booklet: ${FORMAT_VERSION}${m==="0.2"?" (et écrivez les réglages en clé:valeur, par exemple min:0).":"."}`,
-      notV07: `Ce fichier n’est pas au format v${FORMAT_VERSION} — son en-tête doit contenir \`booklet: ${FORMAT_VERSION}\`.`,
+      oldFormat: m=>`l’en-tête indique booklet: ${m} ; cette page lit le format ${FORMAT_VERSION}. Remplacez le marqueur par booklet: "${FORMAT_VERSION}"${m==="0.2"?" (et écrivez les réglages en clé:valeur, par exemple min:0).":"."}`,
+      notV07: `Ce fichier n’est pas au format v${FORMAT_VERSION} — son en-tête doit contenir \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Ce n’est pas un fichier de carnet v${FORMAT_VERSION}.`,
       noModule: "Ce fichier ne contient aucun module.",
       needsV07: `Ajouter un module ne fonctionne que dans un carnet v${FORMAT_VERSION}.`,
@@ -1388,7 +1427,7 @@ const STRINGS_SRC={
       fileNotes: n=>`Este archivo tiene ${n===1?"1 cosa":n+" cosas"} que esta página no pudo leer`,
       fileNotesShow: "Ver la lista",
       fileNotesDismiss: "Descartar",
-      oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato ${FORMAT_VERSION}. Cambia el marcador a booklet: ${FORMAT_VERSION}${m==="0.2"?" (y escribe los ajustes como clave:valor, por ejemplo min:0)":""}.`,
+      oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato ${FORMAT_VERSION}. Cambia el marcador a booklet: "${FORMAT_VERSION}"${m==="0.2"?" (y escribe los ajustes como clave:valor, por ejemplo min:0)":""}.`,
       figureErr: "No se pudo dibujar este diagrama; se muestra su texto fuente.",
       clearTitle: "¿Borrar todo lo que hay en esta página?",
       clearHelp: "Tus entradas solo existen en esta pestaña del navegador. Si no las descargaste, se perderán.",
@@ -1430,6 +1469,9 @@ const STRINGS_SRC={
       noShelf: "No se pudo cargar la lista de módulos. Revisa tu conexión e inténtalo de nuevo.",
       addFailed: "No se pudo obtener esa actividad — puede que se haya movido, o que no tengas conexión."
     },
+    notice: {
+      about: "Acerca de este módulo", license: "Licencia", copyright: "Derechos de autor", source: "Fuente", version: "Versión"
+    },
     home: {
       h1: "Booklet",
       sub: "Un cuaderno de trabajo que vive en un solo archivo que conservas"
@@ -1443,6 +1485,10 @@ const STRINGS_SRC={
       open: "Abrir",
       remove: "Quitar",
       untitled: "Cuadernillo sin título",
+      rename: "Renombrar",
+      renameName: "Nombre del cuadernillo",
+      renameHint: "Enter guarda, Escape cancela.",
+      renameFor: t=>`Renombrar «${t}»`,
       back: "Tus cuadernillos",
       lastOpened: d=>`Abierto por última vez el ${d}`,
       added: d=>`Agregado el ${d}`,
@@ -1506,6 +1552,11 @@ const STRINGS_SRC={
       blockNoObject: (w,what)=>`${w}: el bloque ${what} no contiene ningún objeto`,
       widgetNeedsId: w=>`${w}: un bloque widget necesita un ^id en la línea siguiente`,
       dataNeedsId: w=>`${w}: un bloque data necesita un ^id en la línea siguiente`,
+      dataModuleUnknown: (w,id)=>`${w}: esta sección de datos nombra el módulo «${id}», que el archivo no ha abierto, así que sus bloques son compartidos`,
+      noticeMisplaced: w=>`${w}: un aviso va dentro de la cerca de un módulo, antes de su primera actividad, así que se ignoró`,
+      noticeSecond: w=>`${w}: un módulo tiene un solo aviso; este segundo se ignoró`,
+      noticeBadLine: (w,x)=>`${w}: el aviso tiene una línea que no es \`clave: valor\` (${x}), así que se omitió`,
+      noticeKeyUnknown: (w,k)=>`${w}: un aviso tiene license, copyright, source y version, no «${k}», así que se omitió`,
       dataBad: (w,id,why)=>`${w}: el bloque de datos ^${id} ${why}, así que se omitió`,
       dataNoRows: "no contiene una lista de filas (un objeto con `rows`, o la lista misma)",
       dataRowNotObject: "tiene una fila que no es un objeto",
@@ -1541,8 +1592,8 @@ const STRINGS_SRC={
       queryCardsData: from=>`tiene \`as: cards\` sobre el bloque de datos “${from}”, pero las tarjetas muestran entradas guardadas`,
       queryNothing: from=>`nombra “${from}”, que no existe en este módulo`,
       queryNoEntries: from=>`nombra “${from}”, que no guarda entradas (solo una actividad repetible lo hace)`,
-      oldFormat: m=>`el encabezado dice booklet: ${m}; esta página lee el formato ${FORMAT_VERSION}. Cambia el marcador a booklet: ${FORMAT_VERSION}${m==="0.2"?" (y escribe los ajustes como clave:valor, por ejemplo min:0).":"."}`,
-      notV07: `Este no es un archivo v${FORMAT_VERSION}: su encabezado necesita \`booklet: ${FORMAT_VERSION}\`.`,
+      oldFormat: m=>`el encabezado dice booklet: ${m}; esta página lee el formato ${FORMAT_VERSION}. Cambia el marcador a booklet: "${FORMAT_VERSION}"${m==="0.2"?" (y escribe los ajustes como clave:valor, por ejemplo min:0).":"."}`,
+      notV07: `Este no es un archivo v${FORMAT_VERSION}: su encabezado necesita \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Este no es un archivo de cuadernillo v${FORMAT_VERSION}.`,
       noModule: "Este archivo no contiene ningún módulo.",
       needsV07: `Agregar un módulo solo funciona dentro de un cuadernillo v${FORMAT_VERSION}.`,
@@ -1589,7 +1640,7 @@ const STRINGS_SRC={
     ui: {
       loadHelp: "Elegí el archivo markdown que descargaste desde esta página, o pegá su contenido abajo.",
       loadOr: "O pegá el contenido del archivo:",
-      oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato ${FORMAT_VERSION}. Cambiá el marcador a booklet: ${FORMAT_VERSION}${m==="0.2"?" (y escribí los ajustes como clave:valor, por ejemplo min:0)":""}.`,
+      oldFormat: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato ${FORMAT_VERSION}. Cambiá el marcador a booklet: "${FORMAT_VERSION}"${m==="0.2"?" (y escribí los ajustes como clave:valor, por ejemplo min:0)":""}.`,
       figureErr: "No se pudo dibujar este diagrama; se muestra su texto fuente.",
       tagPh: "Escribí o dictá palabras, separadas por comas",
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Cargá el cuadernillo de origen, o agregá el módulo que lo aporta.`,
@@ -1604,7 +1655,7 @@ const STRINGS_SRC={
       addModHelp: "Agregá uno de la lista de abajo. Se revisa antes de que cambie nada."
     },
     problem: {
-      oldFormat: m=>`el encabezado dice booklet: ${m}; esta página lee el formato ${FORMAT_VERSION}. Cambiá el marcador a booklet: ${FORMAT_VERSION}${m==="0.2"?" (y escribí los ajustes como clave:valor, por ejemplo min:0).":"."}`
+      oldFormat: m=>`el encabezado dice booklet: ${m}; esta página lee el formato ${FORMAT_VERSION}. Cambiá el marcador a booklet: "${FORMAT_VERSION}"${m==="0.2"?" (y escribí los ajustes como clave:valor, por ejemplo min:0).":"."}`
     },
     booklet: {
       noActivities: "Aquí todavía no hay nada. Agregá una actividad para empezar — o abrí un archivo que guardaste antes.",
@@ -1653,6 +1704,17 @@ const strings=g=>(STRINGS[lang]&&STRINGS[lang][g])||STRINGS.en[g];
 
 /* ======================= 3. SMALL HELPERS =======================
    el, sv, text and date helpers, ids, copies, storage access, localised text. */
+/* A format version is two whole numbers, major and minor, never one decimal number: 0.10 is later than 0.9
+   (as a number it would be 0.1). versionOf reads text ("0.10", "0.9") or a number a design saved by 0.9 holds
+   (0.9) and gives [major, minor], or null when it is neither; versionCmp is -1, 0 or 1, or null when either
+   is not a version. */
+function versionOf(v){
+  if(typeof v==="number"&&Number.isFinite(v)) v=String(v);
+  const m=typeof v==="string"?v.trim().match(/^(\d+)\.(\d+)$/):null;
+  return m?[Number(m[1]),Number(m[2])]:null;}
+function versionCmp(a,b){const x=versionOf(a),y=versionOf(b);
+  if(!x||!y) return null;
+  return x[0]!==y[0]?(x[0]<y[0]?-1:1):x[1]!==y[1]?(x[1]<y[1]?-1:1):0;}
 /* A message the page shows a reader never carries Markdown's backticks: what a message put between them is shown
    between quotation marks (the tables keep the backticks, which are how a message marks a word of the format). */
 const humanMsg=s=>String(s).replace(/`([^`]*)`/g,"\u201c$1\u201d");
@@ -1743,7 +1805,7 @@ function chooseLang(base){if(primaryOf(lang)===base) return lang;
    the open booklet, the reader's answers and drafts, the screen showing, the library of booklets, saving and loading. */
 /* An empty booklet. This is what the page holds before a file arrives: no
    modules, no widgets, nothing of its own. */
-const EMPTY_BOOKLET={booklet:+FORMAT_VERSION, id:"", version:"", modules:[], widgets:[], raw:{source:""}};
+const EMPTY_BOOKLET={booklet:FORMAT_VERSION, id:"", version:"", modules:[], widgets:[], raw:{source:""}};
 /* the booklet in force */
 let BOOK = EMPTY_BOOKLET;
 /* `answers` are the once-answered questions, one map by scope: `answers[scope][questionId]`, where scope is
@@ -1887,6 +1949,19 @@ function removeBooklet(id){const e=(LIB=readLib(),entryById(id));if(!e) return f
   lsDel(keyOfEntry(e));
   changeLib(L=>{L.entries=L.entries.filter(x=>x.id!==id);});
   return true;}
+/* Rename a booklet that is not open, from "Your booklets": its saved snapshot is renamed in the store (a booklet kept
+   before it had a design gets a blank one, named), and its row in the list. An empty name keeps the old one. */
+function renameStored(id,name){const n=cleanName(name);if(!n) return false;
+  LIB=readLib();const e=entryById(id);if(!e) return false;
+  if(id===currentId) return renameBooklet(n);
+  let o=null;try{o=JSON.parse(lsGet(keyOfEntry(e))||"null");}catch(x){o=null;}
+  if(!o||typeof o!=="object") o={S:emptyState(),D:emptyDrafts(),lang:e.lang||lang};
+  const tpl=o.TPL&&typeof o.TPL==="object"?o.TPL:blankBook();
+  if(n===tx((tpl.head||{}).title,tpl.title)) return false;
+  o.TPL=nameBooklet(tpl,n);o.dirty=true;
+  lsSet(keyOfEntry(e),JSON.stringify(o));
+  changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) Object.assign(x,{title:n,dirty:true,updatedAt:new Date().toISOString()});});
+  return true;}
 /* The key the booklet in memory is saved under. With no library entry open,
    there is nothing of the reader's to save yet — saveLocal() below is a no-op
    until a booklet is actually created or opened. */
@@ -1915,7 +1990,7 @@ function clearLocal(){const key=slotKey();if(key) lsDel(key);
    no file behind it), every module is treated as fenced. */
 function rekeyFromV08(o){
   const tpl=o&&o.TPL;
-  if(!tpl||typeof tpl!=="object"||!(Number(tpl.booklet)<+FORMAT_VERSION)||!Array.isArray(tpl.modules)) return o;
+  if(!tpl||typeof tpl!=="object"||!(versionCmp(tpl.booklet,KEYED_FROM)<0)||!Array.isArray(tpl.modules)) return o;
   const src=String((tpl.raw||{}).source||""),fenced=new Set();
   src.split("\n").forEach(ln=>{const m=ln.match(CALLOUT_LINE);
     if(m&&m[1].toLowerCase()==="module"){const w=calloutWords("module",m[2]);if(w.id&&!w.flags.has("end")) fenced.add(w.id);}});
@@ -1936,12 +2011,23 @@ function rekeyFromV08(o){
   Object.keys(oldAns).forEach(k=>{if(!usedA.has(k)) (answers[""]=answers[""]||{})[k]=oldAns[k];});
   Object.keys(oldEnt).forEach(k=>{if(!usedE.has(k)) entries[k]=oldEnt[k];});
   Object.keys(oldDr).forEach(k=>{if(!usedE.has("\0"+k)) custom[k]=oldDr[k];});
-  tpl.booklet=+FORMAT_VERSION;
+  tpl.booklet=KEYED_FROM;
   o.S={...S,answers,entries};o.D={...D,custom};
+  return o;}
+/* A design saved here by an earlier renderer says an earlier format (0.9 holds the number 0.9). Its structure is
+   the one this renderer reads, so it is marked as this format, and the marker in its own source text is
+   rewritten the same way (quoted), so a copy downloaded from it opens again. */
+function remarkSaved(o){const tpl=o&&o.TPL;
+  if(!tpl||typeof tpl!=="object"||!(versionCmp(tpl.booklet,FORMAT_VERSION)<0)||versionCmp(tpl.booklet,KEYED_FROM)<0) return o;
+  tpl.booklet=FORMAT_VERSION;
+  const raw=tpl.raw;
+  if(raw&&typeof raw.source==="string"){const fm=frontMatter(raw.source);
+    if(fm.head){const k=fm.head.findIndex(l=>/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/.test(l));
+      if(k>=0){const lines=fm.lines.slice();lines[k+1]='booklet: "'+FORMAT_VERSION+'"';raw.source=lines.join("\n");}}}
   return o;}
 function loadLocal(){const key=slotKey();if(!key) return false;
   try{const raw=lsGet(key);if(!raw) return false;const o=JSON.parse(raw);if(!o||!o.S) return false;
-    rekeyFromV08(o);
+    rekeyFromV08(o);remarkSaved(o);
     const plain=x=>isObj(x)?x:{};
     STATE={answers:plain(o.S.answers),entries:plain(o.S.entries)};
     DRAFTS={custom:plain((o.D||{}).custom)};
@@ -1995,7 +2081,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.9 booklet is Markdown that reads as a document anywhere: front
+   A v0.10 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -2009,9 +2095,12 @@ const CALLOUT_LINE=/^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ 
 /* a row closes with `> [!row end]`: the one booklet line whose flag follows the kind, since a row has no id */
 const ROW_END=/^>[ \t]?\[!(row)([ \t]+end)\]([+-]?)[ \t]*(.*)$/i;
 const calloutLine=l=>CALLOUT_LINE.test(l)||ROW_END.test(l);
+/* A module's notice (SPEC.md section 3): the four things a module may say about itself, in the order a callout
+   and a disclosure write them */
+const NOTICE_KEYS=["license","copyright","source","version"];
 /* the bare-word flags of each kind, read from the table of settings */
 const CALLOUT_FLAGS=Object.fromEntries(Object.entries(KIND_SETTINGS).map(([k,v])=>[k,v.filter(s=>!s.endsWith(":"))]));
-/* A file is read when its front matter says `booklet: 0.9`, and only then. */
+/* A file is read when its front matter says `booklet: "0.10"` (quoted or not, as text), and only then. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -2033,10 +2122,10 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
 const BOOKLET_MARK=new RegExp("^booklet:[ \\t]*[\"']?"+FORMAT_VERSION.replace(/\./g,"\\.")+"[\"']?[ \\t]*$");
 function isBooklet(text){const {head}=frontMatter(text);
   return !!head&&head.some(l=>BOOKLET_MARK.test(l));}
-/* A file marked with an earlier format (0.1 to 0.8) is refused with what to
+/* A file marked with an earlier format (0.1 to 0.9) is refused with what to
    change, not a bare "not a booklet". Returns the marker found, or "". */
 function oldMarker(text){const {head}=frontMatter(text);
-  for(const l of head||[]){const m=l.match(/^booklet:[ \t]*["']?(0\.[1-8])["']?[ \t]*$/);if(m) return m[1];}
+  for(const l of head||[]){const m=l.match(/^booklet:[ \t]*["']?(0\.[1-9])["']?[ \t]*$/);if(m) return m[1];}
   return "";}
 /* `kind|id words` → the id, the flags and the key:value settings; a bare word
    the kind knows is a flag, and the first other bare word is the id */
@@ -2261,7 +2350,7 @@ const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems){const P=strings("problem");
   const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[];
-  let mod=null,act=null,section="content",lastQ=null,seq=0,row=null,theme=null,recScope="";
+  let mod=null,act=null,section="content",lastQ=null,seq=0,row=null,theme=null,recScope="",dataMod=null;
   const refuse=m=>{problems.push(m);problems.refused.push(m);};
   /* an id used twice: refused, and its id kept so Add a module can name it */
   const dup=(where,id)=>{const m=P.idTwice(where,id);refuse(m);problems.dupIds.push({id,m});};
@@ -2274,10 +2363,13 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     claimIn(ids,scope===undefined?(mod?mod.id:""):scope,id,where);};
   const claimModule=(id,where)=>{if(!id) return;if(!ID_PATTERN.test(id)) problems.push(P.idChars(where,id));
     if(modIds.has(id)) dup(where,id);modIds.add(id);};
-  /* a block id's scope: the module whose fence holds the block, else the data section */
-  const blockScope=()=>section==="content"&&mod?mod.id:SHARED;
+  /* the module a block, a menu or a footnote belongs to: the module whose fence holds it, or whose data
+     section (`> [!data|module-id]`) it sits in; null for a shared one (outside every fence, in the plain
+     data section) */
+  const scopeMod=()=>section==="content"?mod:section==="data"?dataMod:null;
+  /* a block id's scope: that module, else the data section */
+  const blockScope=()=>{const m=scopeMod();return m?m.id:SHARED;};
   const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__footnotes:[],__line:line};
-    if(fm.copyright||fm.license||fm.source) m.rights={copyright:fm.copyright||"",license:fm.license||"",source:fm.source||""};
     modules.push(m);return m;};
   /* A file with no activity line (and no module fence) is one activity named by
      its front matter title (SPEC.md section 3): its prose and questions all
@@ -2312,7 +2404,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="theme"){
       /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
       if(section==="records") return;
-      if(section==="content"&&mod){problems.push(P.themeInModule(P.line(it.line)));return;}
+      if(scopeMod()){problems.push(P.themeInModule(P.line(it.line)));return;}
       if(theme){problems.push(P.themeSecond(P.line(it.line)));return;}
       const r=readTheme(it.code);theme=r.spec;
       r.bad.forEach(x=>problems.push(P.themeBadLine(P.line(it.line),x)));
@@ -2328,17 +2420,17 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       if(!o||typeof o!=="object"){problems.push(P.blockNoObject(P.line(it.line),what));return;}
       if(what==="widget"){if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
         claimIn(blockIds,blockScope(),it.id,P.line(it.line));
-        const w={...o,id:it.id};if(blockScope()!==SHARED) w.module=mod.id;
+        const w={...o,id:it.id};{const sm=scopeMod();if(sm) w.module=sm.id;}
         widgets.push(w);}
       else if(what==="data"){
         if(section==="records") return;
         if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
-        const here=section==="content"?mod:null;
+        const here=scopeMod();
         if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
         const d=readData(o);
         if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
-        /* it lives where a widget's data lives: inside its module's fence, or outside any (the data section) */
-        dataBlocks.push({id:it.id,mod:section==="content"?mod:null,rows:d.rows,fields:d.fields,line:it.line});}
+        /* it lives where a widget's data lives: inside its module's fence or in its data section, or in the shared data section */
+        dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,line:it.line});}
       else if(what==="answers") answers[recScope]=Object.assign(answers[recScope]||{},o);
       else if(what==="entries"&&info[2]){
         if(!Array.isArray(o.items)) problems.push(P.recordNoItems(P.line(it.line),info[2]));
@@ -2348,7 +2440,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
   };
   const onBreak=()=>{if(row) closeRow(P.rowRunsPage);
     if(section==="content"&&act){act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});lastQ=null;}};
-  const onText=it=>{if(section==="data"){sharedNotes.push(...stripFootnoteDefs(it.text).defs);return;}
+  const onText=it=>{if(section==="data"){const defs=stripFootnoteDefs(it.text).defs;(dataMod?dataMod.__footnotes:sharedNotes).push(...defs);return;}
     if(section!=="content") return;
     const strip=stripFootnoteDefs(it.text);
     if(!act&&!mod&&implicit&&(strip.text||strip.defs.length)) page();
@@ -2358,18 +2450,37 @@ function readBlocks(items,fm,problems){const P=strings("problem");
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
     checkSettings(it,where,P).forEach(m=>problems.push(m));
+    if(k==="notice"){
+      /* a module's notice: one callout, inside the fence, before the module's first activity */
+      if(section!=="content"||!mod||act){problems.push(P.noticeMisplaced(where));return;}
+      if(mod.notice){problems.push(P.noticeSecond(where));return;}
+      const n={};
+      it.body.forEach(raw=>{const ln=raw.trim();if(!ln) return;
+        const kv=kvLine(ln);
+        if(!kv){problems.push(P.noticeBadLine(where,ln));return;}
+        const key=kv[0].toLowerCase();
+        if(!NOTICE_KEYS.includes(key)){problems.push(P.noticeKeyUnknown(where,kv[0]));return;}
+        if(kv[1]!=="") n[key]=kv[1];});
+      mod.notice=n;return;}
     if(row&&(k==="data"||k==="records"||k==="module"||k==="activity")) closeRow(k==="module"?P.rowRunsModule:k==="activity"?P.rowRunsActivity:P.rowRunsSection(k));
     if(k==="row"&&section==="content"){
       if(it.flags.has("end")){if(!row) problems.push(P.rowEndStray(where));else closeRow();return;}
       if(row){problems.push(P.rowNested(where));return;}
       page();row={blocks:[],line:it.line};lastQ=null;return;}
-    if(k==="data"){section="data";act=null;return;}
-    if(k==="records"){section="records";act=null;
+    if(k==="data"){section="data";act=null;dataMod=null;
+      /* the module id on a data line says whose the blocks below it are, until the next data, records, module or
+         activity line (the same as on a records line); a module this file has not opened is reported */
+      if(it.id){const hit=modules.find(m=>m.id===it.id&&!m.__bare);
+        if(hit) dataMod=hit;else problems.push(P.dataModuleUnknown(where,it.id));}
+      return;}
+    if(k==="records"){section="records";act=null;dataMod=null;
       /* the module id on a records line says whose the record blocks below it are, until the next records line */
       recScope=it.id&&modules.some(m=>m.id===it.id&&!m.__bare)?it.id:"";return;}
     /* a shared menu is never drawn; its list is kept for the questions that name it */
-    if(k==="menu"&&section!=="records"){claim(it.id,where,section==="content"?(mod?mod.id:SHARED):SHARED);
-      if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:section==="content"?mod:null});return;}
+    if(k==="menu"&&section!=="records"){const sm=scopeMod();claim(it.id,where,sm?sm.id:SHARED);
+      if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:sm});return;}
+    /* a module or an activity line ends a data section: what follows is the booklet's own text again */
+    if(section==="data"&&(k==="module"||k==="activity")){section="content";dataMod=null;}
     if(section!=="content"||SCENERY_KINDS.has(k)) return;
     if(k==="module"){
       if(it.flags.has("end")){if(!mod) refuse(P.moduleEndStray(where));
@@ -2475,14 +2586,22 @@ function moduleOut(m){const {__intro,__line,__bare,__footnotes,activities,...res
   if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
   return o;}
 function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes},fm,L,source,problems){
-  const out=modules.filter(m=>m.activities.length).map(moduleOut);
+  /* a file that holds one module and no notice callout is covered by its own front matter: its license,
+     copyright, source and version are that module's notice (a callout, when there is one, wins) */
+  const holders=modules.filter(m=>m.activities.length);
+  if(holders.length===1&&!holders[0].notice){const n={};NOTICE_KEYS.forEach(k=>{if(fm[k]) n[k]=String(fm[k]);});
+    if(Object.keys(n).length) holders[0].notice=n;}
+  const out=holders.map(moduleOut);
   const st=emptyState();st.entries=entries;st.answers=Object.fromEntries(Object.entries(answers).map(([k,v])=>[k,{...v}]));
   const shared=notesOut(sharedNotes||[],"d");
-  const book={booklet:+FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
+  const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),
     ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L}};
-  return {ok:out.length>0&&!problems.refused.length,unread:problems,refused:problems.refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st};}
+  /* a file with its front matter and no module and no activity at all is an empty booklet with that name (what a
+     booklet started here and not yet given a module downloads as); a module that holds no activity is still refused */
+  const empty=!modules.length;
+  return {ok:(out.length>0||empty)&&!problems.refused.length,empty:empty||undefined,unread:problems,refused:problems.refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st};}
 function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
   const recs=[];
@@ -2602,6 +2721,39 @@ function themeBaseTable(name){const out={};
       for(let i=0;i<r.style.length;i++){const p=r.style[i];out[p]=r.style.getPropertyValue(p).trim();}}}}}catch(e){/* a style sheet from another origin cannot be read */}
   return out;}
 
+/* ================ A BOOKLET'S NAME ================
+   A booklet has one name: the `title:` in its own front matter (SPEC.md section 2). The home screen, its row in
+   "Your booklets", the file's name when it is downloaded and the saved file all show that one value. A module
+   file's own title names the module and never the booklet, so Add a module leaves the name alone. A booklet
+   started here is given its front matter at once, and the reader can rename it: the `title:` line is rewritten
+   (and only that line), as a quoted string, so what is typed is text and never markup. */
+const cleanName=s=>String(s==null?"":s).replace(/\s+/g," ").trim().slice(0,200);
+/* a file's text with its `title:` line set to `name`; a text with no front matter gets one. Line endings and every
+   other line are kept as they were. */
+function setTitleIn(source,name,langTag){
+  const q=JSON.stringify(name),L=String(source||"").split("\n");
+  if((L[0]||"").replace(/^﻿/,"").trim()==="---"){
+    let j=1;while(j<L.length&&L[j].trim()!=="---") j++;
+    if(j<L.length){
+      let at=-1;for(let k=1;k<j;k++) if(/^title:/.test(L[k])) at=k;
+      const cr=at>=0&&L[at].endsWith("\r")?"\r":(L[0].endsWith("\r")?"\r":"");
+      if(at>=0) L[at]="title: "+q+cr;
+      else{const b=L.findIndex((l,k)=>k>0&&k<j&&/^booklet:/.test(l));L.splice((b>=0?b:0)+1,0,"title: "+q+cr);}
+      return L.join("\n");}}
+  return '---\nbooklet: "'+FORMAT_VERSION+'"\ntitle: '+q+"\nlang: "+(langTag||lang)+"\n---\n"+(String(source||"").trim()?"\n"+String(source).replace(/^\n+/,""):"");}
+/* the design `tpl` (a booklet in memory or one read from the browser's store), named: its source text, and the title
+   and head the screens read */
+function nameBooklet(tpl,name){const raw=tpl.raw||{};
+  tpl.raw={...raw,source:setTitleIn(raw.source,name,raw.lang),lang:raw.lang||lang};
+  tpl.title=name;tpl.head={...(tpl.head||{}),title:name};
+  return tpl;}
+/* a booklet just started here: no module, no answers, its front matter already written */
+function blankBook(){const name=strings("library").untitled;
+  return nameBooklet({booklet:FORMAT_VERSION,id:"local/booklet",version:"1",customized:false,modules:[],widgets:[],raw:{source:"",lang}},name);}
+/* Rename the booklet in memory. An empty name keeps the old one. Returns whether it changed. */
+function renameBooklet(name){const n=cleanName(name);if(!n||n===tx((BOOK.head||{}).title,BOOK.title)) return false;
+  editBook(t=>nameBooklet(t,n));flushSave();return true;}
+
 /* ================ ADD A MODULE ================
    Splicing, not editing: a module's own fenced text is appended to the end
    of the current booklet's design, and any of its data blocks that sit
@@ -2709,91 +2861,157 @@ function moduleSpans(lines){const mask=codeMask(lines),out=[];let at=-1,id=null;
     if(w.flags.has("end")){if(at>=0){out.push({id,openAt:at,closeAt:i});at=-1;}}
     else if(at<0){at=i;id=w.id;}});
   return out;}
+/* Where a booklet's data sections are: from each `> [!data]` or `> [!data|module-id]` line to the next data,
+   records, module or activity line (outside fenced code), or the end. {at, end (exclusive), id: the module's, or null
+   for the shared section}. */
+function dataSections(lines){const mask=codeMask(lines),out=[];let cur=null;
+  lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CALLOUT_LINE);if(!m) return;const k=m[1].toLowerCase();
+    if(k!=="data"&&k!=="records"&&k!=="module"&&k!=="activity") return;
+    if(cur){cur.end=i;out.push(cur);cur=null;}
+    if(k==="data") cur={at:i,end:lines.length,id:calloutWords("data",m[2]).id||null};});
+  if(cur) out.push(cur);
+  return out;}
+/* what a data section holds that can travel: everything under its data line (blocks, menus, footnote definitions, the
+   words between them) as lines, but for a theme block, which is the booklet's own and so stays where it is */
+function dataBody(lines,at,end){const drop=new Array(lines.length).fill(false);
+  fencedSpans(lines,at+1,end).forEach(sp=>{if(/^ {0,3}(`{3,}|~{3,})[ \t]*booklet[ \t]+theme\b/i.test(lines[sp.start])) for(let i=sp.start;i<=sp.end;i++) drop[i]=true;});
+  const out=lines.slice(at+1,end).filter((_,i)=>!drop[at+1+i]);
+  while(out.length&&!out[0].trim()) out.shift();
+  while(out.length&&!out[out.length-1].trim()) out.pop();
+  return out;}
+/* A module's notice written as the callout a booklet file keeps it in (SPEC.md section 3): one `key: value`
+   line each, on one line, in the order license, copyright, source, version */
+function noticeLines(n){const out=[];
+  NOTICE_KEYS.forEach(k=>{const v=String((n||{})[k]||"").replace(/\s+/g," ").trim();if(v) out.push("> "+k+": "+v);});
+  return out.length?["> [!notice]",...out]:[];}
+/* `lines` with `ins` between `before` lines and the rest, set apart by one blank line each side */
+function spliceApart(lines,at,ins){
+  const head=lines.slice(0,at),tail=lines.slice(at);
+  while(head.length&&!head[head.length-1].trim()) head.pop();
+  while(tail.length&&!tail[0].trim()) tail.shift();
+  return [...head,...(head.length?[""]:[]),...ins,...(tail.length?[""]:[]),...tail];}
 /* Add a module adds EVERY module a file holds, each one's own lines (its fence, open line to end line) in file
-   order, and the blocks outside every module fence (the file's data section) once. A module the booklet already
-   has is replaced where it sits, so the order of modules does not change. Nothing is changed unless the file
-   this makes is one the renderer reads with nothing refused; then the booklet's design is read from that file,
-   so what is on screen is what the written file holds. */
+   order, and with each one the data it brings: a data section tagged with the module's id,
+   `> [!data|module-id]`, at the end of the booklet. For a file that holds one module that is every block outside
+   its fence; for a file with several, the blocks under a `> [!data|x]` line go to module x, and the blocks under no
+   module's line (or a plain `> [!data]` line) go once into the booklet's shared data section. A module the
+   booklet already has is replaced where it sits, and its own data section is replaced with it: exactly the
+   module's fence and its `> [!data|module-id]` section, nothing else, so the order of modules does not change.
+   A module that has a notice only in its file's front matter is written with a `> [!notice]` callout in its
+   fence, so the notice is in the file the reader downloads. Nothing is changed unless the file this makes is one
+   the renderer reads with nothing refused; then the booklet's design is read from that file, so what is on screen
+   is what the written file holds. */
 function addModuleText(text){
   const problems=moduleTextProblems(text);
   if(problems.length) return {ok:false,problems};
-  if(!BOOK||BOOK.booklet!==+FORMAT_VERSION) return {ok:false,problems:[strings("problem").needsV07]};
+  if(!BOOK||versionCmp(BOOK.booklet,FORMAT_VERSION)!==0) return {ok:false,problems:[strings("problem").needsV07]};
   const R=parseFile(text);
   const lines=String((R.template.raw||{}).source||"").split("\n");
   const spans=moduleSpans(lines);
   if(!spans.length) return {ok:false,problems:[strings("problem").noFence]};
-  /* the blocks outside every module fence travel once, into the booklet's data section */
+  /* sort what the file holds outside every module fence: each block (and, under a data line, each footnote)
+     goes to the module whose data it is, or is shared */
   const inside=new Array(lines.length).fill(false);
   spans.forEach(sp=>{for(let i=sp.openAt;i<=sp.closeAt;i++) inside[i]=true;});
-  const extraChunks=fencedSpans(lines,0,lines.length).filter(s=>!inside[s.start]&&!/^ {0,3}(`{3,}|~{3,})[ \t]*booklet[ \t]+theme\b/i.test(lines[s.start]))
-    .map(s=>lines.slice(s.start,s.end+1).join("\n"));
+  const secs=dataSections(lines).filter(x=>!inside[x.at]);
+  const ids=new Set(spans.map(sp=>sp.id).filter(Boolean));
+  const dataOf=new Map(spans.map(sp=>[sp.id,[]])),shared=[];
+  const give=(tag,chunks)=>{if(!chunks.length) return;
+    if(spans.length===1) dataOf.get(spans[0].id).push(...chunks);
+    else if(tag&&ids.has(tag)) dataOf.get(tag).push(...chunks);
+    else shared.push(...chunks);};
+  const inSec=new Array(lines.length).fill(false);
+  secs.forEach(x=>{for(let i=x.at;i<x.end;i++) inSec[i]=true;const b=dataBody(lines,x.at,x.end);if(b.length) give(x.id,[b.join("\n")]);});
+  /* blocks outside every fence and under no data line at all are shared too (a file that has no data line) */
+  fencedSpans(lines,0,lines.length).filter(sp=>!inside[sp.start]&&!inSec[sp.start]).forEach(sp=>{
+    if(/^ {0,3}(`{3,}|~{3,})[ \t]*booklet[ \t]+theme\b/i.test(lines[sp.start])) return;
+    give(null,[lines.slice(sp.start,sp.end+1).join("\n")]);});
+  const extraChunks=shared;
   const extraIds=new Set(extraChunks.flatMap(c=>[...blockIdLines(c.split("\n")).values()]));
   let cur=String((BOOK.raw||{}).source||"").split("\n");
   const blank=!cur.join("").trim(),renamedIds=[],incoming=[];
+  /* the first data line outside fenced code: modules are added before it */
+  const firstData=ls=>{const m=codeMask(ls);
+    for(let i=0;i<ls.length;i++){if(m[i]) continue;const x=ls[i].match(CALLOUT_LINE);if(x&&x[1].toLowerCase()==="data") return i;}
+    return -1;};
   for(const sp of spans){
     let mod=lines.slice(sp.openAt,sp.closeAt+1);
-    /* An update: a module id the booklet already has. Its lines are replaced where they sit, and the data
-       blocks outside every fence that the old module names go, so the new ones replace them. */
-    let old=sp.id?moduleSpanOf(cur,sp.id):null;
-    if(old){
-      const oldText=cur.slice(old.openAt,old.closeAt+1).join("\n");
-      /* a block is the old module's when it sits outside every module fence (a block inside another module's
-         fence is that module's, and an id is only that module's own) and the old module names its id with an
-         embed, a link or a query's `from:` */
-      const named=id=>new RegExp("#\\^"+id+"(?![A-Za-z0-9-])").test(oldText)||new RegExp("^[ \\t]*from:[ \\t]*[\"']?"+id+"[\"']?[ \\t]*$","m").test(oldText);
-      const fenced=moduleSpans(cur),drop=new Array(cur.length).fill(false);
-      fencedSpans(cur,0,cur.length).forEach(s=>{
-        if(fenced.some(f=>s.start>=f.openAt&&s.end<=f.closeAt)) return;
-        const m=(cur[s.end]||"").trim().match(/^\^([A-Za-z0-9-]+)$/);
-        if(m&&named(m[1])) for(let i=s.start;i<=s.end;i++) drop[i]=true;});
-      cur=cur.filter((_,i)=>!drop[i]);old=moduleSpanOf(cur,sp.id);}
+    /* the notice: written into the fence when the module has it only in its file's front matter */
+    {const has=(()=>{const mk=codeMask(mod);return mod.some((ln,i)=>{if(mk[i]) return false;const x=ln.match(CALLOUT_LINE);return !!x&&x[1].toLowerCase()==="notice";});})();
+     const n=(R.template.modules.find(x=>x.id===sp.id)||{}).notice,nl=has?[]:noticeLines(n);
+     if(nl.length) mod=[mod[0],"",...nl,...(mod[1]!==undefined&&mod[1].trim()?[""]:[]),...mod.slice(1)];}
+    const title=((lines[sp.openAt].match(CALLOUT_LINE)||[])[4]||"").trim()||sp.id||"";
+    let dat=(dataOf.get(sp.id)||[]).join("\n\n").split("\n");
+    if(!(dataOf.get(sp.id)||[]).length) dat=[];
+    /* An update: a module id the booklet already has. Its fence is replaced where it sits and its own data section
+       with it; nothing else of the booklet's is touched. */
+    const old=sp.id?moduleSpanOf(cur,sp.id):null;
+    const oldSecs=sp.id?dataSections(cur).filter(x=>x.id===sp.id):[];
+    /* what the rest of the booklet holds: the ids this module's own text must not clash with */
+    const drop=new Array(cur.length).fill(false);
+    if(old) for(let i=old.openAt;i<=old.closeAt;i++) drop[i]=true;
+    oldSecs.forEach(x=>{for(let i=x.at;i<x.end;i++) drop[i]=true;});
+    const rest=cur.filter((_,i)=>!drop[i]);
     /* RENAME ON A CLASH (see above): a block id or footnote id another module or the data section already
-       uses is written into the module's text as `<module-id>-<id>` */
+       uses is written into the module's text, its fence and its data section alike, as `<module-id>-<id>` */
     if(sp.id){
-      const rest=old?cur.slice(0,old.openAt).concat(cur.slice(old.closeAt+1)):cur;
-      const r=renameClashingIds(mod,new Set([...blockIdLines(rest).values(),...extraIds]),new Set(noteIdLines(rest).values()),sp.id);
-      mod=r.lines;renamedIds.push(...r.renamed);}
-    if(old) cur=cur.slice(0,old.openAt).concat(mod,cur.slice(old.closeAt+1));
-    else{
-      let dataAt=-1;
-      for(let i=0;i<cur.length;i++){const m=cur[i].match(CALLOUT_LINE);if(m&&m[1].toLowerCase()==="data"){dataAt=i;break;}}
-      const main=(dataAt<0?cur:cur.slice(0,dataAt)).join("\n").replace(/\s+$/,""),data=dataAt<0?"":"\n\n"+cur.slice(dataAt).join("\n").replace(/\s+$/,"");
-      cur=(main+(main.trim()?"\n\n":"")+mod.join("\n")+data).split("\n");}
+      const all=mod.concat(dat);
+      const r=renameClashingIds(all,new Set([...blockIdLines(rest).values(),...extraIds]),new Set(noteIdLines(rest).values()),sp.id);
+      mod=r.lines.slice(0,mod.length);dat=r.lines.slice(mod.length);renamedIds.push(...r.renamed);}
+    const section=dat.length?["> [!data|"+sp.id+"] Data for "+title,"",...dat]:[];
+    /* the fence goes where the old one was (or before the first data section); the data section where the old
+       one was (or at the end) */
+    const MARK="\u0001data";
+    const out=[];let placed=false,marked=false;
+    cur.forEach((ln,i)=>{
+      if(old&&i===old.openAt){out.push(...mod);placed=true;}
+      if(old&&i>=old.openAt&&i<=old.closeAt) return;
+      if(oldSecs.some(x=>i>=x.at&&i<x.end)){if(!marked&&oldSecs[0]&&i===oldSecs[0].at){out.push(MARK);marked=true;}return;}
+      out.push(ln);});
+    cur=out;
+    if(!placed){const at=firstData(cur);cur=spliceApart(cur,at<0?cur.length:at,mod);}
+    const mi=cur.indexOf(MARK);
+    if(mi>=0){if(section.length) cur.splice(mi,1,...section,"");else cur.splice(mi,1);}
+    else if(section.length) cur=spliceApart(cur,cur.length,section);
     incoming.push(sp.id);}
-  let dataAt=-1;
-  for(let i=0;i<cur.length;i++){const m=cur[i].match(CALLOUT_LINE);if(m&&m[1].toLowerCase()==="data"){dataAt=i;break;}}
-  const mainPart=(dataAt<0?cur:cur.slice(0,dataAt)).join("\n").replace(/\s+$/,"");
-  const dataPart=(dataAt<0?"":cur.slice(dataAt).join("\n")).replace(/\s+$/,"");
+  /* the blocks that belong to no module go once into the booklet's shared data section; a shared block the booklet
+     already holds under the same id is replaced by the new one */
+  if(extraChunks.length){
+    let sh=dataSections(cur).find(x=>x.id===null);
+    if(sh){const d=new Array(cur.length).fill(false);
+      fencedSpans(cur,sh.at,sh.end).forEach(f=>{const m=(cur[f.end]||"").trim().match(BLOCK_ID_LINE);
+        if(m&&extraIds.has(m[1])) for(let i=f.start;i<=f.end;i++) d[i]=true;});
+      cur=cur.filter((_,i)=>!d[i]);sh=dataSections(cur).find(x=>x.id===null);
+      cur=spliceApart(cur,sh.end,extraChunks.join("\n\n").split("\n"));}
+    else cur=spliceApart(cur,cur.length,["> [!data] Data","",...extraChunks.join("\n\n").split("\n")]);}
   /* a booklet put together here has no front matter yet; without it the file would not be one */
-  const head=blank?"---\nbooklet: "+FORMAT_VERSION+"\ntitle: "+JSON.stringify(strings("library").untitled)+"\nlang: "+((BOOK.raw||{}).lang||lang)+"\n---\n\n":"";
-  const newMain=head+mainPart+"\n";
-  const newData=extraChunks.length?(dataPart||"> [!data] Data")+"\n\n"+extraChunks.join("\n\n")+"\n":dataPart?dataPart+"\n":"";
-  const newSource=newData?newMain+"\n"+newData:newMain;
+  const head=blank?"---\nbooklet: \""+FORMAT_VERSION+"\"\ntitle: "+JSON.stringify(strings("library").untitled)+"\nlang: "+((BOOK.raw||{}).lang||lang)+"\n---\n\n":"";
+  const newSource=head+cur.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
 
   /* read the booklet this would make before changing anything: if the renderer would refuse that
      file, nothing is added and the reader is told why. An id another module uses is no clash (an id is
-     unique within its module); what can clash is a block the module brings into the data section. */
+     unique within its module). */
   const made=parseFile(newSource),refused=(made&&made.refused)||[];
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notV07]};
   if(refused.length){const P=strings("problem"),dups=made.dupIds||[];
-    const ids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
-    return {ok:false,problems:[...ids.map(P.moduleIdClash),...refused.filter(m=>!said.has(m))]};}
+    const dids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
+    return {ok:false,problems:[...dids.map(P.moduleIdClash),...refused.filter(m=>!said.has(m))]};}
 
   /* the design is read back from that file: each added module as it stands there, its own widgets and
-     figures replacing the ones it had (an update drops what the new text no longer has), and the data
-     section's blocks it brought */
+     figures replacing the ones it had (an update drops what the new text no longer has), and the shared
+     blocks it brought */
   const T=made.template,mine=new Set(incoming.filter(Boolean));
   editBook(t=>{t.raw={...(t.raw||{}),source:newSource};
+    /* a booklet put together before it had a name takes the one its file now says */
+    if(!t.title&&T.title){t.title=T.title;t.head=T.head;}
     t.widgets=(t.widgets||[]).filter(w=>!(w.module&&mine.has(w.module))&&!(!w.module&&extraIds.has(w.id)));
     const keep=Object.fromEntries(Object.entries(t.figures||{}).filter(([k])=>!(k.includes(ADDR_SEP)&&mine.has(k.slice(0,k.indexOf(ADDR_SEP))))&&!(!k.includes(ADDR_SEP)&&extraIds.has(k))));
     const own=Object.fromEntries(Object.entries(T.figures||{}).filter(([k])=>k.includes(ADDR_SEP)?mine.has(k.slice(0,k.indexOf(ADDR_SEP))):extraIds.has(k)));
     const all={...keep,...own};if(Object.keys(all).length) t.figures=all;else delete t.figures;});
   (T.widgets||[]).filter(w=>w.module?mine.has(w.module):extraIds.has(w.id)).forEach(addWidget);
   const added=[];
-  /* the module file's own copyright, licence and source ride on its module, as they always have (the
-     composed file's front matter is the booklet's, so the module's own are kept from the file it came in) */
-  (T.modules||[]).filter(m=>mine.has(m.id)).forEach(mod=>{const src=R.template.modules.find(x=>x.id===mod.id);
-    if(addModule(src&&src.rights?{...mod,rights:src.rights}:mod)) added.push(mod.id);});
+  /* the module as the composed file reads it: its notice, from its fence's callout, rides on it */
+  (T.modules||[]).filter(m=>mine.has(m.id)).forEach(mod=>{if(addModule(mod)) added.push(mod.id);});
   return {ok:true,added,renamed:renamedIds};}
 function parseFile(text){
   if(isBooklet(text)) return parseBooklet(text);
@@ -2804,7 +3022,8 @@ function parseFile(text){
 function bookOk(t){
   if(!t||typeof t!=="object") return false;
   const activities=(t.modules||[]).flatMap(activitiesOf);
-  if(!activities.length) return false;
+  /* a booklet that was started here and holds no module yet is still a booklet when it has its own front matter */
+  if(!activities.length) return !(t.modules||[]).length&&!!frontMatter((t.raw||{}).source).head;
   if((t.modules||[]).some(m=>!m||typeof m.id!=="string")) return false;
   return activities.every(m=>m&&typeof m.id==="string"&&kindOk(m.kind));}
 /* The renderer ships no booklet, so it has no opinion to defend: any valid
@@ -4790,10 +5009,38 @@ function fileNotesNode(){const u=STRINGS[lang].ui;if(!FILE_NOTES||FILE_NOTES.dis
     el("details",{},el("summary",{},u.fileNotesShow),el("ul",{class:"plain"},...FILE_NOTES.list.map(x=>el("li",{},x)))),
     el("button",{type:"button",class:"small",onclick:()=>{FILE_NOTES.dismissed=true;render();}},u.fileNotesDismiss));
   return box;}
+/* A module's notice, as a quiet disclosure ("About this module"): the licence, copyright, source and version it
+   gives, as text. A source is a link only when it is an http or https address. Nothing for a module with none. */
+function noticeNode(mod){const n=mod&&mod.notice;if(!isObj(n)) return null;
+  const T=strings("notice"),rows=[];
+  NOTICE_KEYS.forEach(k=>{const v=typeof n[k]==="string"?n[k].trim():"";if(!v) return;
+    const val=k==="source"&&/^https?:\/\//i.test(v)?el("a",{href:v,rel:"noopener noreferrer",target:"_blank"},v):v;
+    rows.push(el("dt",{},T[k]),el("dd",{},val));});
+  return rows.length?el("details",{class:"about"},el("summary",{},T.about),el("dl",{},...rows)):null;}
+/* A booklet's name being edited in place: Enter saves, Escape cancels, an empty name keeps the old one. `save` and
+   `cancel` are called once; the value is text. */
+function nameEditor(current,save,cancel){
+  const inp=el("input",{type:"text",class:"nameedit",maxlength:"200","aria-label":strings("library").renameName});
+  inp.value=current;let done=false;
+  const finish=ok=>{if(done) return;done=true;(ok?save:cancel)(inp.value);};
+  inp.addEventListener("keydown",e=>{
+    if(e.key==="Enter"){e.preventDefault();finish(true);}
+    else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();finish(false);}});
+  inp.addEventListener("blur",()=>finish(true));
+  requestAnimationFrame(()=>{inp.focus();if(inp.select) inp.select();});
+  return inp;}
+/* the booklet's name on its home screen: the heading, and beside it a small Rename */
+function nameRow(){const L=strings("library"),cur=tx((BOOK.head||{}).title,tx(BOOK.title,"")),shown=cur||L.untitled;
+  const row=el("div",{class:"namerow"});
+  const draw=editing=>{row.innerHTML="";
+    if(editing){row.append(nameEditor(shown,v=>{renameBooklet(v);render();},()=>draw(false)),el("span",{class:"hint"},L.renameHint));return;}
+    row.append(el("h1",{},tx((BOOK.head||{}).title,STRINGS[lang].home.h1)));
+    if(currentId) row.append(el("button",{type:"button",class:"quietlink",title:L.renameFor(shown),"aria-label":L.renameFor(shown),onclick:()=>draw(true)},L.rename));};
+  draw(false);return row;}
 function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   const notes=fileNotesNode();if(notes) main.append(notes);
   const hero=el("div",{class:"hero col"});
-  hero.append(el("h1",{},tx((BOOK.head||{}).title,t.home.h1)),el("p",{class:"sub"},tx((BOOK.head||{}).sub,t.home.sub)));
+  hero.append(nameRow(),el("p",{class:"sub"},tx((BOOK.head||{}).sub,t.home.sub)));
   main.append(hero);
   /* One card per module. A module with one activity is its activity's card; a
      module with several gets one card that names them and opens the module's
@@ -4832,7 +5079,7 @@ function openFromList(id){if(openBooklet(id)===null){render();return;}
   render();window.scrollTo({top:0});}
 /* A new booklet starts empty: no modules, no answers, nothing seeded. */
 function createBooklet(){const e=addEntry();
-  openBooklet(e.id);saveLocal();go("home");return e;}
+  openBooklet(e.id);BOOK=blankBook();saveLocal();go("home");return e;}
 const bookletName=e=>{const t=tx(e.title,"");if(nonEmpty(t)) return t.trim();
   const p=(e.parts||[]).map(x=>tx(x,"")).filter(nonEmpty);
   return p.length?p.join(", "):strings("library").untitled;};
@@ -4854,6 +5101,8 @@ function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;cons
   const unsaved=Number(e.unsavedEntries)>0||!!e.dirty;
   const card=el("div",{class:"mode",style:"--mc:var(--accent);min-height:0"});
   const draw=asking=>{card.innerHTML="";
+    if(asking==="rename"){
+      card.append(el("span",{class:"top"},nameEditor(name,v=>{renameStored(e.id,v);render();},()=>draw(false))),el("span",{class:"d"},L.renameHint));return;}
     card.append(el("span",{class:"top"},el("button",{type:"button",class:"k",
       style:"border:0;background:transparent;padding:0;text-align:left",onclick:()=>openFromList(e.id)},name)));
     const sub=[];
@@ -4864,6 +5113,7 @@ function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;cons
     card.append(c);
     if(!asking){card.append(el("span",{class:"bkacts"},
         el("button",{type:"button",class:"small primary",onclick:()=>openFromList(e.id)},L.open),
+        el("button",{type:"button",class:"small",title:L.renameFor(name),"aria-label":L.renameFor(name),onclick:()=>draw("rename")},L.rename),
         el("button",{type:"button",class:"small danger",onclick:()=>draw(true)},L.remove)));
       return;}
     /* removing cannot be undone, so it asks, in place, and says what is lost */
@@ -4899,6 +5149,8 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   if(firstH&&same(titleText)&&same(firstH.textContent)===same(titleText)) firstH.remove();
   col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
+  /* a module that is one activity shows its notice at the foot of that activity */
+  {const holder=holderOf(id),about=holder&&!isMulti(holder)?noticeNode(holder):null;if(about) col.append(about);}
   main.append(withPages(id,col));}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
@@ -4928,6 +5180,7 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   if(!acts.length) grid.append(el("p",{class:"hint"},W.noneShown));
   acts.forEach(a=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,""),keptPills(a))));
   main.append(grid);
+  const about=noticeNode(mod);if(about) main.append(el("div",{class:"col"},about));
 }
 /* What a file is called comes from the booklet's own title, never from the
    name of whatever page happened to write it: "End of day" is saved as
@@ -4997,10 +5250,9 @@ function addModuleFromText(text){
   const problems=moduleTextProblems(text);
   if(problems.length){msg.className="msg err";msg.textContent=humanMsg(problems.join(" "));return false;}
   const R=parseFile(text);let renamed=[];
-  /* an untouched booklet may become this file outright */
-  const empty=!allModules().length&&!BOOK.customized;
-  if(empty&&bookOk(R.template)){applyParsed(R);}
-  else{const r=addModuleText(text);
+  /* a module is added to the booklet, whatever the booklet holds so far: an empty booklet does not become the module's
+     file, because the booklet's name is its own and a module's title is the module's (SPEC.md section 2) */
+  {const r=addModuleText(text);
     if(!r.ok){msg.className="msg err";msg.textContent=humanMsg(r.problems.join(" "));return false;}
     renamed=r.renamed||[];}
   veilAddModule.removeAttribute("open");saveLocal();render();

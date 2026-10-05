@@ -2,20 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.9 format in SPEC.md.
+Lint a booklet file against the v0.10 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: 0.9`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.10"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: 0.9`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: "0.10"`, one `lang:`), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
 title, queries and data blocks, and records that name an activity. Any file whose
-front matter is not `booklet: 0.9` is rejected; no earlier format is read. A block id or a footnote
+front matter is not `booklet: "0.10"` is rejected; no earlier format is read. A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
@@ -23,13 +23,16 @@ Usage:  python3 lint-booklet.py [--registry] [path ...]
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.9 file is written in one language, so it
+registry's CI line keeps working; a v0.10 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
 import html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 
 BASE = pathlib.Path(__file__).resolve().parent
+
+# The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
+FORMAT_VERSION = "0.10"
 
 errors, warnings = [], []
 def err(f, m):  errors.append(f"{f}: {m}")
@@ -102,7 +105,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.9 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.10 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -116,7 +119,7 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 KIND_SETTINGS = {
     "module": ("end",), "activity": ("repeat", "daily", "hidden"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
-    "data": (), "records": (), "manifest": (),
+    "data": (), "records": (), "manifest": (), "notice": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
     "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
 }
@@ -126,7 +129,9 @@ CALLOUT_FLAGS = {k: {s for s in v if not s.endswith(":")} for k, v in KIND_SETTI
 ENGINES = ("svg-regions", "grid-select")
 TONE_NAMES = ("warm", "green", "amber", "slate", "teal")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
-STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row"}
+STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice"}
+# what a module's notice (`> [!notice]`) may say about itself
+NOTICE_KEYS = ("license", "copyright", "source", "version")
 
 
 def callout_words(kind, s):
@@ -597,11 +602,34 @@ def check_settings(f, n, kind, w):
         err(f, f"line {n}: `daily` only follows `repeat` (write `repeat daily`)")
 
 
+def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
+    """A module's notice: one callout inside the module's fence, before its first activity, with no id and no settings
+    (checked with the rest of the line's settings), holding `key: value` lines for license, copyright, source and version."""
+    if not (in_content and mod) or has_activity:
+        err(f, f"line {n}: a notice belongs inside a module's fence, before the module's first activity")
+        return
+    if mod in seen:
+        err(f, f"line {n}: the module {mod!r} has two notices (a module has one)")
+    seen.add(mod)
+    if w["id"]:
+        err(f, f"line {n}: a notice takes no id (found {w['id']!r})")
+    k = i + 1
+    while k < len(lines) and lines[k].startswith(">") and not (CALLOUT_LINE.match(lines[k]) or ROW_END.match(lines[k])):
+        body = re.sub(r'^>[ \t]?', '', lines[k]).strip()
+        if body:
+            kv = re.match(r'^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$', body)
+            if not kv:
+                err(f, f"line {k + 1}: a notice line is written `key: value` (found {body!r})")
+            elif kv.group(1).lower() not in NOTICE_KEYS:
+                err(f, f"line {k + 1}: a notice has {', '.join(NOTICE_KEYS)}, not {kv.group(1)!r}")
+        k += 1
+
+
 def check_format(f, text, fm):
-    """Lint a v0.9 booklet. Every problem names its line."""
+    """Lint a v0.10 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.9 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.10 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
@@ -628,9 +656,17 @@ def check_format(f, text, fm):
     loose_questions = []   # questions before any activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
     rec_scope = None
+    data_scope = None        # the module a `> [!data|module-id]` section belongs to, until the next data, records, module or activity line
+    notice_seen, mod_has_activity = set(), False
+    body_start = i
     menus, menu_uses, data_blocks = {}, [], {}
     theme_seen = False
     rowst = {"open": None, "start": 0}
+
+    def scope_mod():
+        """The module a block, menu or footnote belongs to: the one whose fence holds it or whose data section it is
+        under; None for a shared one (the plain data section) and for what sits outside every fence."""
+        return open_mod if section == "content" else data_scope if section == "data" else None
 
     def close_row(end, why=None):
         """The open row ends at line index `end`: say what is wrong with it, or how thin it is."""
@@ -667,7 +703,7 @@ def check_format(f, text, fm):
                 b = re.match(r'^\^([A-Za-z0-9-]+)$', lines[m].strip())
                 if b:
                     bid = b.group(1)
-                    bscope = open_mod if section == "content" else None
+                    bscope = scope_mod()
                     if section != "records":
                         if bid in block_ids.setdefault(bscope, {}):
                             err(f, f"line {m + 1}: the block id ^{bid} is used twice" + (f" in the module {bscope!r}" if bscope else ""))
@@ -682,7 +718,7 @@ def check_format(f, text, fm):
                 continue
             if words and words[0].lower() == "booklet" and len(words) > 1 and words[1].lower() == "theme":
                 if section != "records":
-                    in_module = bool(open_mod) and section == "content"
+                    in_module = bool(scope_mod())
                     check_theme(f, n, code, in_module, theme_seen)
                     theme_seen = theme_seen or not in_module
                 i = (m if bid else k) + 1
@@ -731,7 +767,7 @@ def check_format(f, text, fm):
                         else:
                             keys = set(flds) | {k for r in rows for k in r}
                             nums = {k for r in rows for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
-                            data_blocks.setdefault(open_mod if section == "content" else None, {})[bid] = (keys, n, nums, rows)
+                            data_blocks.setdefault(scope_mod(), {})[bid] = (keys, n, nums, rows)
                 elif what in ("entries", "draft"):
                     if len(words) < 3:
                         err(f, f"line {n}: `booklet {what}` needs the activity it belongs to")
@@ -743,7 +779,7 @@ def check_format(f, text, fm):
             continue
         nd = re.match(r'^\[\^([A-Za-z0-9][A-Za-z0-9_.:-]*)\]:[ \t]+\S', ln)
         if nd and section != "records":
-            nscope = open_mod if section == "content" else None
+            nscope = scope_mod()
             seen_note = note_defs.setdefault(nscope, {})
             if nd.group(1) in seen_note:
                 warn(f, f"line {n}: the footnote id [^{nd.group(1)}] is defined twice" + (f" in the module {nscope!r}" if nscope else "")
@@ -762,10 +798,23 @@ def check_format(f, text, fm):
             check_settings(f, n, kind, w)
             if rowst["open"] and kind in ("data", "records", "module", "activity"):
                 close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line"}.get(kind, f"the {kind} section"))
+            if kind == "notice":
+                check_notice(f, n, w, lines, i, open_mod if section == "content" else None,
+                             mod_has_activity, notice_seen, section == "content")
+            if section == "data" and kind in ("module", "activity"):
+                # a module or an activity line ends a data section: what follows is the booklet's own text again
+                section, data_scope = "content", None
             if kind == "data":
                 section = "data"
+                data_scope = None
+                if w["id"]:
+                    if w["id"] in mod_ids and not mod_ids[w["id"]][1]:
+                        data_scope = w["id"]
+                    else:
+                        err(f, f"{where}: this data section names the module {w['id']!r}, which the file has not opened")
             elif kind == "records":
                 section = "records"
+                data_scope = None
                 # the module id on a records line says whose the blocks below are, until the next records line
                 rec_scope = w["id"] if w["id"] and w["id"] in mod_ids and not mod_ids[w["id"]][1] else None
             elif section == "content":
@@ -792,6 +841,7 @@ def check_format(f, text, fm):
                         if not w["id"]:
                             err(f, f"{where}: a module line needs an id")
                         open_mod, open_line = w["id"], n
+                        mod_has_activity = False
                         any_module = True
                         if w["id"]:
                             if w["id"] in mod_ids:
@@ -799,6 +849,7 @@ def check_format(f, text, fm):
                             mod_ids.setdefault(w["id"], (n, False))
                 elif kind == "activity":
                     seen_activity = True
+                    mod_has_activity = True
                     cur_act = w["id"] or None
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
@@ -854,7 +905,7 @@ def check_format(f, text, fm):
                 if not items:
                     err(f, f"{where}: the menu {w['id']!r} has no items (a bulleted list under the line)")
                 if w["id"]:
-                    menus.setdefault(w["id"], []).append(open_mod if section == "content" else None)
+                    menus.setdefault(w["id"], []).append(scope_mod())
             for old in w["old"]:
                 err(f, f"line {n}: settings are written key:value (found {old}); write {old.replace('=', ':', 1)}")
             for key in (w["id"],) if kind in QUESTION_KINDS | {"module", "activity", "menu"} and w["id"] else ():
@@ -864,8 +915,8 @@ def check_format(f, text, fm):
                     continue          # module ids are kept in their own table, above
                 # a module's activities, questions and menus share one namespace; a menu outside every fence is the data section's
                 scope = open_mod
-                if kind == "menu" and not (section == "content" and open_mod):
-                    scope = "\0shared"
+                if kind == "menu":
+                    scope = scope_mod() or "\0shared"
                 table = ids.setdefault(scope, {})
                 if key in table:
                     err(f, f"line {n}: the id {key!r} is also used on line {table[key]}" + (f" in the module {scope!r}" if scope and scope != "\0shared" else ""))
@@ -873,6 +924,8 @@ def check_format(f, text, fm):
         i += 1
     if rowst["open"]:
         close_row(len(lines), "is never closed")
+    if not any(l.strip() for l in lines[body_start:]):
+        warn(f, "this booklet holds nothing yet: no module and no activity (it opens as an empty booklet with this name)")
     if open_mod:
         err(f, f"line {open_line}: the module {open_mod!r} is opened and never closed")
     for n, mid, mod in menu_uses:
@@ -1027,18 +1080,23 @@ def check_file(path):
     if fm is None:
         err(f, "no front matter — a booklet opens with a `---` block on line 1")
         return
-    if fm.get("booklet") == "0.9":
+    marker = fm.get("booklet")
+    if marker == FORMAT_VERSION:
+        # `0.10` written bare is the number 0.1 to a YAML tool (Obsidian's properties panel, GitHub), which may write it back that way
+        raw = next((l for l in text.split("\n")[1:] if re.match(r'^booklet:', l)), "")
+        if re.match(r'^booklet:[ \t]*0\.10[ \t]*$', raw):
+            warn(f, 'front matter says `booklet: 0.10` without quotes; write it in quotes, `booklet: "0.10"`, or a YAML tool will read it as 0.1')
         check_format(f, text, fm)
         return
-    old = fm.get("booklet")
-    if old in ("0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"):
-        err(f, f"front matter says booklet: {old}; this is format 0.9. Change the marker to booklet: 0.9"
+    old = marker
+    if old in ("0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9"):
+        err(f, f"front matter says booklet: {old}; this is format {FORMAT_VERSION}. Change the marker to booklet: \"{FORMAT_VERSION}\""
                + (" (and write settings as key:value, for example min:0)." if old == "0.2" else "."))
         return
     # No earlier format is read — this mirrors the renderer's own
     # parseFile(), which only ever calls parseBooklet(). Anything else is
     # rejected outright rather than checked against an earlier format's rules.
-    err(f, f"front matter must say `booklet: 0.9` (found {fm.get('booklet')!r}) — "
+    err(f, f"front matter must say `booklet: \"{FORMAT_VERSION}\"` (found {fm.get('booklet')!r}) — "
            f"no earlier format is read")
 
 

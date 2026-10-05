@@ -1,5 +1,5 @@
 ---
-booklet: 0.9
+booklet: "0.10"
 id: example/daily-journal
 title: Daily journal
 lang: en

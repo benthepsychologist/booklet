@@ -26,7 +26,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 - The renderer, format, validator, and modules without a
   `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
-  module's prose and travels with the file, since a v0.9 module is the
+  module's prose and travels with the file (a one-module file's `copyright`, `license`, `source` and `version` are its notice, or a `> [!notice]` callout in its fence), since a v0.10 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - Modules are not kept in this repo; they live in `booklet-registry`, and a
@@ -56,7 +56,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 
 1. **Stable ids are addresses, and an id belongs to its module.** Modules,
    activities, questions, and widgets are linked by id; file order is not
-   identity. From v0.9 an id is unique within its module (module ids within the
+   identity. From v0.9 an id is unique within its module (a module's scope is its fence and its `> [!data|module-id]` section; module ids are unique within the
    file), a reference is found in its own module and then the data section and
    never in another module's fence, and records are tied to a module by the id on
    its records line. Inside the renderer an activity is known by its address,
@@ -74,6 +74,10 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 6. **Preserve fault isolation and backwards reading.** A new feature must not
    make an unknown module, widget, or malformed fence abandon the rest of a
    readable booklet.
+7. **A format version is text, never a number.** `0.10` is not the number 0.1.
+   Read the marker as text, compare versions as two whole numbers (major, minor)
+   with `versionCmp` in the renderer and never `+FORMAT_VERSION`, and write it
+   quoted (`booklet: "0.10"`) so a YAML tool does not turn it into 0.1.
 
 ## Design rules for views
 
