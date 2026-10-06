@@ -43,15 +43,15 @@ chk("SKILL.md names its own version, separate from the format generation and the
 {const widgetFences=[...skill.matchAll(/```booklet widget\n([\s\S]*?)\n```/g)].map(m=>m[1]),bad=[];
  widgetFences.forEach((f,i)=>{try{JSON.parse(f);}catch(e){bad.push(i+1+": "+e.message);}});
  chk(`every widget's data in SKILL.md parses (${widgetFences.length} of them)`,widgetFences.length>0&&!bad.length,bad.join("; "));}
-const worked=skill.slice(skill.indexOf("## 10. Worked examples"));
+const worked=skill.slice(skill.indexOf("## 11. Worked examples"));
 const examples=[...worked.matchAll(/````markdown\n([\s\S]*?)\n````/g)].map(m=>m[1]+"\n");
-chk("SKILL.md carries three worked examples",examples.length===3);
+chk("SKILL.md carries four worked examples",examples.length===4);
 
 const files=[
   ...examples.map((t,i)=>{const f=path.join(tmp,`worked-example-${i+1}.booklet.md`);fs.writeFileSync(f,t);return f;}),
   ...fs.readdirSync(path.join(__dirname,"fixtures")).filter(n=>/^skill-.*\.booklet\.md$/.test(n)).sort()
     .map(n=>path.join(__dirname,"fixtures",n))];
-chk("three booklets built from SKILL.md are kept as fixtures",files.length===6,files.map(f=>path.basename(f)).join(", "));
+chk("four worked examples and three booklets built from SKILL.md are kept as fixtures",files.length===7,files.map(f=>path.basename(f)).join(", "));
 
 // ---- each booklet: lint and the renderer
 for(const file of files){
