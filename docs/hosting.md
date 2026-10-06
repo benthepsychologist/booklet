@@ -66,7 +66,7 @@ A host's script talks to the renderer through one object, `window.Booklet`. Ever
 
 | Member | What it does |
 | --- | --- |
-| `Booklet.version` | the renderer's version, as text (`"0.11.6"`) |
+| `Booklet.version` | the renderer's version, as text (`"0.11.7"`) |
 | `Booklet.host({ label })` | the host announces itself; returns a handle |
 | `Booklet.onChange(fn)` | `fn` hears when the open booklet's file text changes (a booklet the host gave); returns a function that stops the calls |
 | `Booklet.open(text, { name })` | the host hands the renderer a booklet to show |

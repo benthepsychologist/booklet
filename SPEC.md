@@ -1,4 +1,4 @@
-# The booklet format, v0.11.3
+# The booklet format, v0.11.4
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
@@ -388,7 +388,7 @@ Most harbours see two high tides each lunar day.[^atlas-12]
 [^atlas-12]: *The Harbour Tide Atlas*, 2nd edition (2019), p. 12: "The tide rises and falls twice in each lunar day." Verified 2026-09-20.
 ```
 
-**A footnote's note, read into a citation.** The reference renderer reads a definition's text and, where it fits the pattern `*Title*, details, p. N: "quote" Verified YYYY-MM-DD.`, turns it into a source and a citation — title, edition, page, quote, and verified badge. This gives a reading module a numbered mark, side panel, hover preview and verified badge, with no separate registry to maintain. A note that doesn't fit the pattern becomes the quote alone, with no source; the panel shows this gracefully (a plain "no source" line) rather than failing. The pattern, piece by piece:
+**A footnote's note, read into a citation.** The reference renderer reads a definition's text and, where it fits the pattern `*Title*, details, p. N: "quote" Verified YYYY-MM-DD.`, turns it into a source and a citation — title, edition, page, quote, and verified badge. This gives a reading module a numbered mark, side panel, hover preview and verified badge, with no separate registry to maintain. A note that doesn't fit the pattern is a plain reference: the panel shows its words as they were written, with no source, no quotation marks and no check, rather than failing or complaining that a source is missing. The pattern, piece by piece:
 
 | piece | example | required? |
 | --- | --- | --- |
@@ -696,6 +696,8 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 **Obsidian: how it looks without a plugin.** A chart is a `booklet query` block, so it shows as a code block, like any query. Every Booklet line is a titled callout (a row reads top to bottom, its two marker lines showing as small callouts; a theme block shows as a short code block); a module's notice is a small quoted box at the top of the module, which is what a notice should be, and a `> [!data|module-id]` line is a titled callout above that module's blocks; questions are callouts followed by lists; figures render at their embed; widgets show their data; a query and a data block show as code blocks. **With a Booklet plugin** (not built yet, section 13): the plugin would open the note in a Booklet view (Obsidian's `TextFileView`, the way the Kanban plugin shows a normal note as a board) and draw everything as the web renderer does.
 
+**When a `$` is a price.** `$$…$$` is display math. A single `$` opens inline math only when a character that is not a space (and not another `$`) follows it, and the math ends at the next `$`, which must follow a character that is not a space and must not be followed by a digit; if that next `$` fails the test, the first `$` is an ordinary dollar sign, and so is a `$` with no such partner. `\$` is always a dollar sign. So `$x$` and `$38,500 of $60,000` come out as a formula and as two prices, but `$5 a month ($)` can turn into a formula: write a price in prose as `\$5`.
+
 **GitHub.** Callout lines show as quotations with the `[!kind|id]` text visible; lists, task lists, footnotes, math and mermaid render; `![[#^id]]` shows as text. Nothing breaks.
 
 ---
@@ -793,6 +795,14 @@ None of this affects what already works: loading, reading, answering, and saving
 ---
 
 ## 14. Changes
+
+### Changes in v0.11.4: wording only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
+
+- **When a `$` is a price** (section 10). The rule the reference renderer follows is now written down, with the advice to write a price in prose as `\$5`.
+- **A footnote with no title and quote** (section 6). It is a plain reference, drawn as written; the panel no longer says its source is missing.
+- **An activity's card** shows its first paragraph under its title, read as inline Markdown as a module card's blurb is, and the title alone when the activity has none. A reading page folds into sections page by page, not activity by activity: a page with a question or a data view is drawn open, whatever the pages beside it hold. (Both are the reference renderer's drawing, not something a file says.)
 
 ### Changes in v0.11.3: wording only
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-rJ7VaHbgz7J1hQmpBDWgOvKL70jFgiaRCteM9zAdFWY=' 'sha256-dwi35xoXh73ZdSGi3gjXWKXckFk2iOs/reHaojCjco4=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-rJ7VaHbgz7J1hQmpBDWgOvKL70jFgiaRCteM9zAdFWY=' 'sha256-sY/Pn/+Bie1lOAB/D+zkzT20M5LBRTvUcXvYIoIQfjE=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -659,9 +659,8 @@
   .rm-body{padding:.1rem 1rem 1rem 2.1rem}
   .rm-sec[open]>summary .rm-dup{display:none}
   .rm-body>:last-child,.rm-body .md>:last-child{margin-bottom:0}
-  /* reading mode: a folded section keeps the measure, unless it holds a table or a figure */
+  /* reading mode: every folded section keeps the same measure; a table or figure wider than it scrolls inside its own section */
   .rm-sec{max-width:calc(var(--measure) + 4.5rem)}
-  .rm-sec:has(.md-table,.mfig){max-width:none}
   .rm-sum{max-width:var(--measure)}
   /* print: the layout for paper. The light tokens are the next block, declared last. */
   @media print{
@@ -862,7 +861,7 @@
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.6";
+const RENDERER_VERSION="0.11.7";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -2746,6 +2745,9 @@ const pageHeading=p=>{for(const b of p.blocks){if(b.type!=="markdown") continue;
   const h=String(b.text).match(/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/m);if(h) return plainText(h[1]);}return undefined;};
 /* an activity as the page keeps it: a one-page activity is its `blocks`, any other its `pages` */
 function activityOut(a){const {pages,...ra}=a;
+  /* `lede`: the first paragraph under the activity's title, read as a module's blurb is, for the activity's card on its module's screen.
+     It is the card's alone (the paragraph is still drawn in the page), so it is not `blurb`, which the activity's own screen draws above the page. */
+  {const f=pages[0]&&pages[0].blocks[0],l=f&&f.type==="markdown"?firstPara(f.text):"";if(l) ra.lede=l;}
   if(pages.length===1) return {...ra,blocks:pages[0].blocks};
   /* `lead`: the page's name is its own first heading, and that heading is the first thing on the page */
   const lead=p=>{const b=p.blocks[0],l=b&&b.type==="markdown"?String(b.text).split("\n").find(x=>x.trim()!==""):"";
@@ -4907,8 +4909,8 @@ function withPages(id,content){const P=strings("pages");const ps=pagesOf(activit
   return el("div",{class:"ap-frame"+(open?"":" ap-min")},nav,inner);}
 
 /* ======================= READING MODE =======================
-   An activity that asks nothing (no question, no widget, no query) and has at
-   least two sections on a page is drawn folded: each section is a disclosure
+   A page that asks nothing (no question, no widget, no query) and has at
+   least two sections is drawn folded: each section is a disclosure
    that shows its heading and its first paragraph, and opens on a click to show
    all of it. A section runs from a heading at the shallowest level the page
    uses (not counting a title heading that stands alone above it) to the next
@@ -4917,15 +4919,20 @@ function withPages(id,content){const P=strings("pages");const ps=pagesOf(activit
    The reader's choice (folded, or everything open) is the browser's, kept per
    booklet beside the pages-menu preference, and never enters the file. Which
    sections are open, and which have been opened, are view state for this
-   visit. An activity with any question is drawn as any other activity is. */
+   visit. A page with a question or a query is drawn open, as any other page is,
+   and so is every page of an activity that repeats; the pages of one activity
+   decide one by one. */
 const rmPref=()=>lsGet(RM_KEY+(BOOK.id||""));
 const setRmPref=v=>{lsSet(RM_KEY+(BOOK.id||""),v);};
 const RM_STATE={};
 let RM_CUR=null,RM_REVEAL=null,RM_REVEALED=false,RM_QUIET=false;
 const tagOf=n=>n&&typeof n==="object"?String(n.tagName||n.tag||"").toLowerCase():"";
 const headLevel=n=>{const m=/^h([1-6])$/.exec(tagOf(n));return m?+m[1]:0;};
-/* an activity that only reads: blocks of prose and reading callouts, nothing to answer */
-const readsOnly=a=>!!a&&a.kind!=="entry"&&allBlocksOf(a).every(b=>b.type==="markdown"?placeOf(b)!=="folded":b.type!=="query"&&READING_BLOCKS.has(b.type));
+/* A page that only reads: blocks of prose and reading callouts, nothing to answer. Each page decides for itself
+   (a page holding a question or a `booklet query` is drawn open, whatever the pages beside it hold); an activity
+   that repeats (kind "entry") never folds. With no page given, the question is whether every page of the activity reads. */
+const blocksAll=l=>{const out=[];const walk=x=>(Array.isArray(x)?x:[]).forEach(b=>{if(b&&typeof b==="object"){out.push(b);walk(b.blocks);}});walk(l);return out;};
+const readsOnly=(a,page)=>!!a&&a.kind!=="entry"&&(page?[page]:pagesOf(a)).every(pg=>blocksAll(blocksIn(pg)).every(b=>b.type==="markdown"?placeOf(b)!=="folded":b.type!=="query"&&READING_BLOCKS.has(b.type)));
 /* Where the sections of one page start. `nodes` are the page's top-level nodes
    in order. Returns null when the page has fewer than two sections, else
    {lead, sections:[{head, body}]}: `lead` is what comes before the first
@@ -4980,12 +4987,13 @@ function rmGo(info,k){
   if(d){d.open=true;d.scrollIntoView({block:"start"});
     const s=d.querySelector("summary");if(s&&s.focus) s.focus({preventScroll:true});}
   const cur=RM_CUR;if(cur) rmRefresh(cur);}
-/* Draw a page of a reading-only activity. Returns null for any other activity
-   (drawn as any other activity is); otherwise {node, info}, where info is null when the page
+/* Draw a page that only reads. Returns null for any other page
+   (drawn as any other page is); otherwise {node, info}, where info is null when the page
    has no sections to fold. */
 function readingPage(id,draft){
-  if(!readsOnly(activityOf(id))) return null;
-  const page=currentPage(id),list=blocksIn(page);
+  const page=currentPage(id);
+  if(!readsOnly(activityOf(id),page)) return null;
+  const list=blocksIn(page);
   citeBegin(id);
   const items=[],groups=[];
   list.forEach(b=>{
@@ -5199,7 +5207,15 @@ const citeOpen=()=>!!citePanelEl&&!citePanelEl.hasAttribute("hidden");
 function pageLine(c,Rt){const p=hasVal(c.page)?String(c.page).trim():"";
   /* a page may be a place that is not a number ("art. 14"), shown as written */
   return !p?"":isWhole(p)?Rt.page(p):p;}
+/* A footnote that names no source (a reference written as it was given, with no title and quote to read out of it) is a plain
+   reference: its text is drawn as it stands, with no quotation marks and no line about a missing source. The red line is for a
+   citation that names a source the module does not hold. */
+const plainRef=(c,src)=>!src&&!hasVal(c.source);
 function citeDetail(c,src,Rt){const out=[];
+  if(plainRef(c,src)){const t=tx(c.quote,"");
+    if(nonEmpty(t)) out.push(el("p",{class:"rd-psrc rd-plain"},t));
+    const pl=pageLine(c,Rt);if(pl) out.push(el("p",{class:"rd-ppage"},pl));
+    return out;}
   if(src){const ed=tx(src.edition,"");
     out.push(el("p",{class:"rd-psrc"},el("cite",{},tx(src.title,src.key)),nonEmpty(ed)?", "+ed:null));}
   else out.push(el("p",{class:"rd-psrc rd-bad"},Rt.noSource(String(c.source==null?"":c.source))));
@@ -5246,7 +5262,7 @@ function showTip(activityId,id,at){if(citeOpen()&&citeFrom===at) return;
   const R=citeScope(activityId),c=R&&R.cites.get(id);if(!c) return;
   const Rt=strings("reading"),t=citeTip(),q=tx(c.quote,""),src=R.sources.get(c.source);
   t.innerHTML="";
-  t.append(el("span",{},nonEmpty(q)?Rt.quoted(clip(q,220)):Rt.cite(R.nums.get(id))),
+  t.append(el("span",{},nonEmpty(q)?(plainRef(c,src)?clip(q,220):Rt.quoted(clip(q,220))):Rt.cite(R.nums.get(id))),
     el("span",{class:"rd-tw"},[src?tx(src.title,src.key):"",pageLine(c,Rt)].filter(nonEmpty).join(" · ")));
   t.removeAttribute("hidden");
   /* kept inside the window, below the mark or above it near the bottom */
@@ -5284,7 +5300,7 @@ function citeRefText(c,src,Rt){const bits=[];
   if(src){const ed=tx(src.edition,"");bits.push(tx(src.title,src.key)+(nonEmpty(ed)?", "+ed:""));}
   const pl=pageLine(c,Rt);if(pl) bits.push(pl);
   const q=tx(c.quote,"");
-  return bits.join(". ")+(bits.length&&nonEmpty(q)?". ":"")+(nonEmpty(q)?Rt.quoted(q):"");}
+  return bits.join(". ")+(bits.length&&nonEmpty(q)?". ":"")+(nonEmpty(q)?(plainRef(c,src)?q:Rt.quoted(q)):"");}
 function endnotesFor(id){const R=citeScope(id);if(!R) return null;
   const here=[];
   for(const b of pageBlocksShown(id)) for(const s of markedTexts(b)) for(const cid of citeIds(s))
@@ -5472,7 +5488,7 @@ function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   for(const card of shown){if(card.holder){activities.append(moduleCard(card.holder,card.acts));continue;}
     const m=card.mode;const key=m.id;const mod=moduleOf(key)||{};
     /* the name is the module's text, so it goes in as text */
-    activities.append(activityCard(key,tx(mod.title,tx(m.title,shortId(key))),tx(mod.blurb,tx(m.blurb,"")),keptPills(m)));}
+    activities.append(activityCard(key,tx(mod.title,tx(m.title,shortId(key))),tx(mod.blurb,tx(m.blurb,tx(m.lede,""))),keptPills(m)));}
   /* nothing is preloaded, so the empty page offers its own way forward */
   {const add=el("div",{class:"col addrow"});
     if(!shown.length) add.append(el("p",{class:"hint"},t.booklet.noActivities));
@@ -5613,7 +5629,7 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   const grid=el("div",{class:"modes"});
   const acts=activitiesShown(mod);
   if(!acts.length) grid.append(el("p",{class:"hint"},W.noneShown));
-  acts.forEach(a=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,""),keptPills(a))));
+  acts.forEach(a=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),keptPills(a))));
   main.append(grid);
   const about=noticeNode(mod);if(about) main.append(el("div",{class:"col"},about));
   const rm=removeModuleControl(mod);if(rm) main.append(rm);
