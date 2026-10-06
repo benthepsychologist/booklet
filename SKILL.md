@@ -1,6 +1,6 @@
 ---
 name: booklet
-description: "Create a valid, well-made booklet (a *.booklet.md file in the open Booklet format for learning and reflection activities) from a plain request such as a journal, a study set, a quiz or a habit tracker, in English, Spanish or French. Use when asked to make, extend, translate or check a booklet or a booklet module."
+description: "Create a valid, well-made booklet (a *.booklet.md file in the open Booklet format for learning and reflection activities) from a plain request such as a journal, a study set, a quiz or a habit tracker, or a report or briefing to be read, with numbers, charts, diagrams and formulas and perhaps a few questions at the end, in English, Spanish or French. Use when asked to make, extend, translate or check a booklet or a booklet module."
 ---
 
 # Making a booklet
@@ -25,7 +25,7 @@ alone, the same file keeps what was answered. A renderer (the Booklet page,
 `booklet.html`) draws the activities from the file, and the person's answers
 are saved back into the same file. This skill turns a plain request into such
 a file with nothing else to hand. `SPEC.md` in the Booklet repository is the
-full format; you should not need it, but section 11 below points at it for
+full format; you should not need it, but section 12 below points at it for
 anything this skill does not cover.
 
 **Hard rules.** Break one and the file is invalid, or it looks valid and
@@ -44,7 +44,7 @@ misbehaves:
 4. **Pages are a horizontal rule** (`***`), never a separate key. A short
    activity needs no rule at all.
 5. **One language per file.** Nothing here is written per-language; a
-   translation, if one is wanted, is a sibling file (section 8).
+   translation, if one is wanted, is a sibling file (section 9).
 6. You write the design only. **Never write answers, kept entries, names or
    emails.** Those live in the records section, which only the renderer
    writes, wrapped in `%% … %%` so Obsidian's Reading view hides it.
@@ -130,7 +130,7 @@ assumptions in your reply.
 | How long, and how often? | 5 to 10 minutes; once a day for journals and trackers |
 
 If the requester may want **another language later**, write only the one
-asked for now, and tell them a translation is a sibling file (section 8).
+asked for now, and tell them a translation is a sibling file (section 9).
 
 **Step 2. Decide the structure, top down: modules, then activities, then
 pages, then booklet lines.**
@@ -161,7 +161,7 @@ in the help text under the question.
 `<slug>.booklet.md` (slug: the title in lowercase ASCII words joined by
 hyphens, accents dropped: `registro-de-agua`).
 
-**Step 4. Validate** (section 9) and fix until clean.
+**Step 4. Validate** (section 10) and fix until clean.
 
 **Step 5. Reply** with: the file path; the structure in a line (modules,
 activities, pages); the assumptions you made; the lint result; and how to
@@ -305,7 +305,7 @@ callout after the question, which the reader opens.)
 | `matrix` | several items on one shared scale (a symptom questionnaire) | a bulleted list of items, then a numbered list of anchors |
 | `number` | a number | nothing; `min:`, `max:`, `step:` after the id |
 | `date` | a date | nothing |
-| `widget` | a drawing engine (body map, grid, cards) | an embed of the widget's data — section 8, and never invent one |
+| `widget` | a drawing engine (body map, grid, cards) | an embed of the widget's data — section 9, and never invent one |
 
 ```markdown
 > [!choice|biggest] When are the biggest tides?
@@ -415,6 +415,10 @@ between paragraphs (`\n\n`) for a new one.
   **Never invent a citation.** Cite only a document the requester gave you,
   quoted exactly; leave off `Verified` unless someone actually checked it.
   With no document to hand, write plain reading with no citations at all.
+  If they gave a reference and no quote, write the note as that reference, as
+  given, with no quote and no `Verified`, and never make a quote up: the
+  panel shows it with a line saying the source is not in this module, which is
+  right. Put nothing else in a note (`*` stays as typed).
 - **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the activity holding that heading (an activity's own title counts) on the right page; the linter warns when no heading in the file matches.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
@@ -486,34 +490,8 @@ between paragraphs (`\n\n`) for a new one.
   ^jobs
   ````
 
-  **A status line, a list of rows.** Rows with `label` and `tone` and no value
-  draw as a strip of coloured pills; rows with `label`, `badge`, `value` and
-  `note` draw as a list. Two lines each:
-
-  ````markdown
-  ```booklet data
-  [ { "label": "Print run", "tone": "good" }, { "label": "Contract", "tone": "bad" } ]
-  ```
-  ^strip
-
-  ```booklet query
-  from: strip
-  as: tiles
-  ```
-
-  ```booklet data
-  [ { "label": "Proof the poster", "badge": "print", "value": 3, "note": "Colours only", "tone": "good" } ]
-  ```
-  ^tasks
-
-  ```booklet query
-  from: tasks
-  as: list
-  ```
-  ````
-
   `tiles` draw a big value over a label, or, when no row has a value, a
-  short pill each. `list` draws each row on one line: badge, label, the other
+  short pill each (a status strip). `list` draws each row on one line: badge, label, the other
   fields, the value at the right, the note beneath. `group:` gathers rows under
   a field's value, in the order they first appear. `parent:` names the field
   holding the `id` of the row this one sits under. All text is plain: no
@@ -549,17 +527,106 @@ between paragraphs (`\n\n`) for a new one.
   `[harbour]: images/harbour.jpg`. Only a real, requester-supplied `https`
   address — never embedded data, never a placeholder URL.
 
-- **A report** (something generated or written to be read, not answered) needs
-  only front matter (`booklet: "0.11"`, `id`, `title`, `lang`) and plain Markdown:
-  no activity line is needed, the file is one activity named by the title. Give it
-  a title heading, then `##` headings for its sections. The renderer folds a
-  reading-only activity: each section shows its heading and the **first paragraph
-  under it**, so make that paragraph a one-sentence statement of the section. Put
-  notes to yourself in `<!-- … -->`; they are not shown.
+- **A report** (something written to be read, with numbers and perhaps a few
+  questions at the end) has its own section, 8.
 
 ---
 
-## 8. Widgets, languages, and the file name
+## 8. Reports and reading booklets
+
+A **report** is a booklet made to be read: a briefing, a status page, a study
+guide, with numbers, charts, diagrams and formulas and perhaps a few questions
+at the end. It is still a learning format, not a clinical tool (section 2). It
+needs only front matter and Markdown: with no activity line, the whole file is
+one activity named by its title. Notes to yourself go in `<!-- … -->`; they are
+not drawn. Section 11 ends with a whole report.
+
+**Choose the shape.** A reading activity *folds*: each `##` section shows its
+heading and first paragraph and opens on a click. It folds only when the
+activity has no question, no data view (`booklet query`) and no `repeat` on any
+page, and a page has two or more sections. One question anywhere turns folding
+off for the whole activity, and everything shows open.
+
+- **One activity, pages, the questions on the last page.** The default. The
+  booklet opens straight into it, nothing is blank, and it never folds. Use it
+  for any report that draws data.
+- **Two activities, one to read and one for the questions**, only for a long,
+  prose-only report where folding helps. The booklet then opens on the
+  module's screen with a card for each activity, and a card shows only its
+  activity's title, never its prose. So title each one for what the reader
+  does ("Read the briefing", "Give your view"), and let the module's first
+  paragraph say what the booklet is. Otherwise the first screen is two bare
+  words.
+
+**Lead with the answer.** The first page says the verdict in one sentence,
+then the headline numbers as tiles, then the detail. A page of an activity with
+pages is named by its first heading, so begin each page with its heading, before
+any prose, and do not repeat it: a heading that follows prose is shown twice,
+once as the page's name. In a folded report each section's first paragraph is
+what shows, so make it one sentence that stands alone.
+
+**Data: which view for what.** Rows are written already ordered and counted;
+the page adds nothing up (the queries and roles are in section 7).
+
+| Data | `as:` | Reads |
+| --- | --- | --- |
+| headline figures | `tiles` | `label`, `value`, `note`, `tone` |
+| status words | `tiles`, rows with no `value` | `label`, `tone` (a strip of pills) |
+| status rows | `list` | `label`, `badge`, `tone`, `value`, `note`, `fields:` |
+| a comparison | `table` | `fields:` (the columns) |
+| categories | `bars` | `label`, `value` |
+| a series over time | `line` | `label:` (along the bottom), `fields:` |
+
+- **A value may be text**, shown as written: `"$38,500"`, `"8%"`. In tiles,
+  lists and tables a number shows bare (`38500`), so write money and percentages
+  as text there.
+- **Bars and lines need real numbers.** Text such as `"15,000"` draws nothing
+  (the linter warns). They show the number with thousands separators and no
+  unit, so say the unit in the label (`"Hire (USD)"`); for a line, in the
+  field's label in the data block's `fields` (`"Revenue ($)"`), which names it.
+
+A module's data goes in its own data section, after the module's end line:
+
+````markdown
+> [!module|reminders end] End of Reminders
+
+> [!data|reminders] Data
+
+```booklet data
+[ { "label": "SMS only ($ a month)", "value": 17820 },
+  { "label": "Add email ($ a month)", "value": 12960, "tone": "good" } ]
+```
+^cost
+````
+
+A page draws one with a `booklet query` block (`from: cost`, `as: bars`).
+
+**Diagrams.** A `mermaid` fence in the prose is drawn. To keep long diagram
+source out of the prose, put the fence in the data section, put `^id` on the
+line after it, and place it with `![[#^id]]` on a line of its own. Prefer the
+fence in the prose when in doubt: it draws everywhere. `flowchart`,
+`sequenceDiagram`, `pie`, `timeline`, `stateDiagram-v2`, `classDiagram` and
+`erDiagram` draw well; `gantt` and `journey` draw cramped, and `mindmap` is not
+drawn (its source shows). A diagram with an image, a link, a style or a `click`
+could make the page ask for an address, so it is not drawn and its source shows
+instead.
+
+**Formulas.** `$…$` is inline and `$$…$$` is a display formula. Ordinary TeX
+works: fractions, sums, roots, Greek letters, `\text{…}`, `cases`, matrices,
+`aligned`. TeX it cannot read, and `\href`, shows as code. A `$` opens a formula
+when a non-space follows it, and the formula ends at the next `$` that follows a
+non-space and is not followed by a digit. So "costs $5 and $10" and "$38,500 of
+$60,000" stay prices, but "$5 a month ($)" turns into a formula. **Write every
+price in prose as `\$5`**: it is always a dollar sign. In a data value, write
+a plain `$`.
+
+**Sources and numbers.** Citations are footnotes (section 7). Numbers are
+written in, never computed: say where each came from, and state any assumption
+behind a worked figure ("assumes one reminder per visit").
+
+---
+
+## 9. Widgets, languages, and the file name
 
 **Widgets.** A `widget` line draws with data for one of the renderer's two
 engines — `svg-regions` (clickable figures) and `grid-select` (a grid of
@@ -621,11 +688,13 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 - **Widget colours** are tone names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, not hex colours, so a widget reads in every theme.
 - **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`) is only for a booklet that has a reason to look different. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
 
-## 9. Validation
+## 10. Validation
 
 **With the linter:** `python3 lint-booklet.py <slug>.booklet.md`. It prints
 `ERROR` and `warn` lines and a summary, and exits 1 on any error. Done means
-**0 errors**, and the only warning is the `draft` one.
+**0 errors**. A clean file prints `1 booklet file checked · 0 errors · 0 warnings`:
+`status: draft` draws no warning. A warning you do get names something real
+(a remote image, a language with no strings, a chart that would draw nothing).
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
@@ -670,7 +739,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 ---
 
-## 10. Worked examples
+## 11. Worked examples
 
 Each of these passes the linter with only the `draft` warning, and loads in
 the renderer. Imitate their shape.
@@ -808,9 +877,90 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 > [!module|rato-de-lectura end] End of Mi rato de lectura
 ````
 
+### A report with a chart, a formula and a diagram, questions last
+
+````markdown
+---
+booklet: "0.11"
+id: "local/reminders-report"
+title: "Reminders: SMS or email?"
+lang: en
+version: "0.1"
+status: draft
 ---
 
-## 11. If you have the booklet-registry repository
+# Reminders: SMS or email?
+
+A short briefing on appointment reminders, with one question at the end.
+
+> [!module|reminders] Reminders: SMS or email?
+
+Whether to add email to SMS reminders. The figures are invented for the example.
+
+> [!activity|brief] The briefing
+
+## The answer
+
+Add email to SMS: in the one trial we have, no-shows fell from 11% to 8%.[^trial]
+
+```booklet query
+from: headline
+as: tiles
+```
+
+***
+
+## The detail
+
+A no-show costs about \$90, and the clinic books 1,800 visits a month. The figures come from the trial report; nothing here is computed, and the cost assumes one reminder per visit.
+
+$$\text{monthly cost} = \text{visits} \times \text{no-show rate} \times \$90$$
+
+```booklet query
+from: cost
+as: bars
+```
+
+```mermaid
+flowchart LR
+  A[Booked] --> B[SMS and email]
+  B --> C{Confirms?}
+  C -- yes --> D[Attends]
+  C -- no --> E[Slot released]
+```
+
+***
+
+## Your view
+
+> [!choice|option] Which option would you choose?
+
+- [ ] SMS only
+- [ ] Add email
+
+> [!module|reminders end] End of Reminders: SMS or email?
+
+> [!data|reminders] Data
+
+```booklet data
+[ { "label": "No-shows with SMS only", "value": "11%" },
+  { "label": "No-shows with email added", "value": "8%", "tone": "good" },
+  { "label": "Saved a month", "value": "$4,860", "note": "invented figures" } ]
+```
+^headline
+
+```booklet data
+[ { "label": "SMS only ($ a month)", "value": 17820 },
+  { "label": "Add email ($ a month)", "value": 12960, "tone": "good" } ]
+```
+^cost
+
+[^trial]: Northfield Health reminder trial, internal report, 2024.
+````
+
+---
+
+## 12. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
 same way as any other booklet above — one v0.11 file, one language, its
