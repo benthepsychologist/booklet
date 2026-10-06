@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.11.6** — matches the project's current version (SPEC.md's
+**Skill version: 0.11.7** — matches the project's current version (SPEC.md's
 "v0.11") now that this skill teaches v0.11, the current format. Write
 the marker in quotes, `booklet: "0.11"`: unquoted, a YAML tool reads `0.10` as
 the number 0.1. A tool that writes booklets should ask the linter for the marker
@@ -417,8 +417,7 @@ between paragraphs (`\n\n`) for a new one.
   With no document to hand, write plain reading with no citations at all.
   If they gave a reference and no quote, write the note as that reference, as
   given, with no quote and no `Verified`, and never make a quote up: the
-  panel shows it with a line saying the source is not in this module, which is
-  right. Put nothing else in a note (`*` stays as typed).
+  panel shows it as a plain reference, its words as written, with no check. Put nothing else in a note (`*` stays as typed).
 - **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the activity holding that heading (an activity's own title counts) on the right page; the linter warns when no heading in the file matches.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
@@ -541,22 +540,25 @@ needs only front matter and Markdown: with no activity line, the whole file is
 one activity named by its title. Notes to yourself go in `<!-- … -->`; they are
 not drawn. Section 11 ends with a whole report.
 
-**Choose the shape.** A reading activity *folds*: each `##` section shows its
-heading and first paragraph and opens on a click. It folds only when the
-activity has no question, no data view (`booklet query`) and no `repeat` on any
-page, and a page has two or more sections. One question anywhere turns folding
-off for the whole activity, and everything shows open.
+**Choose the shape.** A reading page *folds*: each `##` section shows its
+heading and first paragraph and opens on a click. Each page decides for itself.
+A page folds when it holds only prose and reading callouts (no question, no data
+view (`booklet query`)) and has two or more sections. A page with a question or
+a data view is drawn open, and an activity that repeats (`repeat`) never folds.
 
-- **One activity, pages, the questions on the last page.** The default. The
-  booklet opens straight into it, nothing is blank, and it never folds. Use it
-  for any report that draws data.
-- **Two activities, one to read and one for the questions**, only for a long,
-  prose-only report where folding helps. The booklet then opens on the
-  module's screen with a card for each activity, and a card shows only its
-  activity's title, never its prose. So title each one for what the reader
-  does ("Read the briefing", "Give your view"), and let the module's first
-  paragraph say what the booklet is. Otherwise the first screen is two bare
-  words.
+- **One activity, pages, the questions on the last page.** The answer for every
+  report. The booklet opens straight into it, nothing is blank, its prose pages
+  fold, and the page with the questions or the data views is drawn open. Put
+  the questions and the data views together on the last page (or the pages that
+  need them); every page of plain prose before them folds.
+- **Two activities** only when the reader really needs two separate things (a
+  report to read and a log to keep with `repeat`, say), never just to get
+  folding. The booklet then opens on the module's screen with a card for each
+  activity. A card shows its activity's title and, under it, the activity's
+  first paragraph (the line right under its title, read as plain text), so
+  open each activity with one sentence that says what it is for, and title
+  each for what the reader does ("Read the briefing", "Give your view"). An
+  activity with no paragraph first shows its title alone.
 
 **Lead with the answer.** The first page says the verdict in one sentence,
 then the headline numbers as tiles, then the detail. A page of an activity with

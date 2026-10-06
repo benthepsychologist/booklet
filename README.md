@@ -112,10 +112,11 @@ A tool that writes booklets should ask the linter for the marker (`python3 lint-
 
 A plain Markdown file with booklet front matter (`booklet: "0.11"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
-status or a run's acceptance report, can be read in the renderer. An activity that only reads (no question, no
+status or a run's acceptance report, can be read in the renderer. A page that only reads (no question, no
 widget, no query) and has at least two sections opens **folded**: each section shows its heading and its first
 paragraph and opens on a click, with "Open everything" and "Fold everything" above them and a dot in the left
-menu for each section opened. The choice is kept in the browser only. HTML comments (`<!-- … -->`) are not
+menu for each section opened. Each page of an activity decides for itself, so one activity can fold its prose
+pages and draw its last page, with the questions, open; an activity that repeats never folds. The choice is kept in the browser only. HTML comments (`<!-- … -->`) are not
 drawn, and tables are styled.
 
 A file added from "Your booklets" is always a booklet of its own, in the list. The
