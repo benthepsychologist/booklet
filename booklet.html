@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-uv6PY90QxL6DvVvyocXBDgpHMK+zZb7xYD5eekv7uEw=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-ntCcvH52+xH+YojsZdKV2T8iG+g9RlKllXhf61H7goI=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1314,7 +1314,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.10";
+const RENDERER_VERSION="0.11.11";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1945,28 +1945,28 @@ const STRINGS_SRC={
     moduleView: {
       noneShown: "Rien dans ce module n’est affiché pour l’instant."
     },
-    cards: { /* l10n: draft */
+    cards: {
       hint: "Indice",
       solution: "Solution",
-      notStarted: "Pas commencée",
+      notStarted: "Non commencée",
       done: "Terminée",
-      answeredOf: (n,m)=>`${n} réponse${n===1?"":"s"} sur ${m}`,
-      startedOf: (n,m)=>`${n} sur ${m} commencée${n===1?"":"s"}`,
-      activitiesN: n=>`${n} activité${n===1?"":"s"}`,
-      startedN: n=>`${n} commencée${n===1?"":"s"}`,
+      answeredOf: (n,m)=>`${n} réponse${n>1?"s":""} sur ${m}`,
+      startedOf: (n,m)=>`${n} sur ${m} commencée${n>1?"s":""}`,
+      activitiesN: n=>`${n} activité${n>1?"s":""}`,
+      startedN: n=>`${n} commencée${n>1?"s":""}`,
       back: "Retour à l’aperçu",
-      next: (n,t)=>`Suivante : ${n}. ${t}`,
-      questionsN: n=>`${n} question${n===1?"":"s"}`,
-      questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} répondue${n===1?"":"s"}`,
-      rowsN: n=>`${n} ligne${n===1?"":"s"}`,
+      next: (n,t)=>`Suivante : ${n}. ${t}`,
+      questionsN: n=>`${n} question${n>1?"s":""}`,
+      questionsAnswered: (n,m)=>`${m} question${m>1?"s":""} · ${n} réponse${n>1?"s":""}`,
+      rowsN: n=>`${n} ligne${n>1?"s":""}`,
       noneYet: "Aucune pour l’instant"
     },
-    steps: { /* l10n: draft */
-      label: "Façon de lire les questions",
+    steps: {
+      label: "Comment afficher les questions",
       one: "Une à la fois",
-      all: "Toutes ensemble",
+      all: "Toutes en même temps",
       progress: (n,m)=>`Question ${n} sur ${m}`,
-      back: "Précédente",
+      back: "Question précédente",
       next: "Question suivante",
       dots: "Progression dans les questions"
     },
@@ -1986,7 +1986,7 @@ const STRINGS_SRC={
       nth: n=>`Page ${n}`
     },
     reading: {
-      kind: { /* l10n: draft */
+      kind: {
         note: "Note", abstract: "Résumé", info: "Information", todo: "À faire", tip: "Astuce", important: "Important",
         success: "Réussite", question: "Question", warning: "Attention", failure: "Échec", danger: "Danger",
         bug: "Bogue", example: "Exemple", quote: "Citation",
@@ -2241,30 +2241,30 @@ const STRINGS_SRC={
     moduleView: {
       noneShown: "Por ahora no se muestra nada en este módulo."
     },
-    cards: { /* l10n: draft */
+    cards: {
       hint: "Pista",
       solution: "Solución",
       notStarted: "Sin empezar",
-      done: "Hecha",
-      answeredOf: (n,m)=>`${n} de ${m} respondida${n===1?"":"s"}`,
-      startedOf: (n,m)=>`${n} de ${m} empezada${n===1?"":"s"}`,
-      activitiesN: n=>`${n} actividad${n===1?"":"es"}`,
-      startedN: n=>`${n} empezada${n===1?"":"s"}`,
-      back: "Volver al resumen",
+      done: "Completada",
+      answeredOf: (n,m)=>`${n} de ${m} respondidas`,
+      startedOf: (n,m)=>`${n} de ${m} iniciadas`,
+      activitiesN: n=>`${n} ${n===1?"actividad":"actividades"}`,
+      startedN: n=>`${n} ${n===1?"iniciada":"iniciadas"}`,
+      back: "Volver a la vista general",
       next: (n,t)=>`Siguiente: ${n}. ${t}`,
       questionsN: n=>`${n} pregunta${n===1?"":"s"}`,
-      questionsAnswered: (n,m)=>`${m} pregunta${m===1?"":"s"} · ${n} respondida${n===1?"":"s"}`,
+      questionsAnswered: (n,m)=>`${m} pregunta${m===1?"":"s"} · ${n} ${n===1?"respondida":"respondidas"}`,
       rowsN: n=>`${n} fila${n===1?"":"s"}`,
       noneYet: "Ninguna todavía"
     },
-    steps: { /* l10n: draft */
+    steps: {
       label: "Cómo leer las preguntas",
       one: "Una a la vez",
-      all: "Todas a la vez",
+      all: "Todas juntas",
       progress: (n,m)=>`Pregunta ${n} de ${m}`,
-      back: "Anterior",
-      next: "Pregunta siguiente",
-      dots: "Avance por las preguntas"
+      back: "Atrás",
+      next: "Siguiente pregunta",
+      dots: "Progreso en las preguntas"
     },
     fold: {
       openAll: "Abrir todo",
@@ -2282,9 +2282,9 @@ const STRINGS_SRC={
       nth: n=>`Página ${n}`
     },
     reading: {
-      kind: { /* l10n: draft */
+      kind: {
         note: "Nota", abstract: "Resumen", info: "Información", todo: "Por hacer", tip: "Consejo", important: "Importante",
-        success: "Logrado", question: "Pregunta", warning: "Advertencia", failure: "Fallo", danger: "Peligro",
+        success: "Éxito", question: "Pregunta", warning: "Advertencia", failure: "Falla", danger: "Peligro",
         bug: "Error", example: "Ejemplo", quote: "Cita",
         diff: "Diferencia con tu guía",
         law: "Lo que rige hoy",

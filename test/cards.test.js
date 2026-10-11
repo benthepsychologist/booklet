@@ -127,6 +127,6 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
    chk("the cards words exist in "+lang,miss.length===0,miss.join());
    chk("the number words in "+lang+" take a count",c&&/\d/.test(c.answeredOf(2,6))&&/\d/.test(c.startedOf(1,6))&&/\d/.test(c.activitiesN(3))&&/\d/.test(c.startedN(1))&&/2/.test(c.next(2,"T"))&&/T/.test(c.next(2,"T")));}
  chk("a language that is not English does not hand back the English words",A.STRINGS.fr.cards.back!==A.STRINGS.en.cards.back&&A.STRINGS.es.cards.back!==A.STRINGS.en.cards.back&&A.STRINGS.fr.cards.hint!==A.STRINGS.en.cards.hint);
- chk("the draft words are marked for the localisation pass",/cards: \{ \/\* l10n: draft \*\//.test(P.html)&&P.html.split("cards: { /* l10n: draft */").length===3);}
+ chk("no l10n: draft mark is left on the card words",!/cards: \{ \/\* l10n: draft/.test(P.html));}
 console.log(fails?fails+" cards checks failed":"all cards checks passed");
 P.closePages();process.exit(fails?1:0);

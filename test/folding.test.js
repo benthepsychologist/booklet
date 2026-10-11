@@ -80,7 +80,7 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
    chk("the counting words in "+lang+" take numbers",/2/.test(c.questionsN(2))&&/1/.test(c.questionsAnswered(1,2))&&/2/.test(c.questionsAnswered(1,2))&&/3/.test(c.rowsN(3))&&/2/.test(s.progress(2,5))&&/5/.test(s.progress(2,5)));}
  chk("es-AR holds none of these words itself and gets es's",!A.STRINGS_SRC["es-AR"].steps&&A.STRINGS["es-AR"].steps.one===A.STRINGS.es.steps.one&&A.STRINGS["es-AR"].cards.noneYet===A.STRINGS.es.cards.noneYet);
  chk("fr and es are not the English words",A.STRINGS.fr.steps.one!==A.STRINGS.en.steps.one&&A.STRINGS.es.steps.one!==A.STRINGS.en.steps.one&&A.STRINGS.fr.cards.noneYet!==A.STRINGS.en.cards.noneYet&&A.STRINGS.es.cards.noneYet!==A.STRINGS.en.cards.noneYet);
- chk("the draft words are marked for the localisation pass",P.html.split("steps: { /* l10n: draft */").length===3);}
+ chk("no l10n: draft mark is left on the stepper words",!/steps: \{ \/\* l10n: draft/.test(P.html));}
 
 /* 7. the preference lives in booklet.ui.* only */
 chk("the one-at-a-time choice is kept under booklet.ui.steps.",A.OAT_KEY==="booklet.ui.steps.");

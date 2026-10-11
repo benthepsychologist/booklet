@@ -1,4 +1,4 @@
-# The booklet format, v0.11.10
+# The booklet format, v0.11.11
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
@@ -797,6 +797,12 @@ None of this affects what already works: loading, reading, answering, and saving
 ---
 
 ## 14. Changes
+
+### Changes in v0.11.11: wording only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
+
+- **Interface words** (reference renderer). The renderer's French and Spanish interface words for cards, the question stepper and callout kinds were checked and replaced. This is no change to the format.
 
 ### Changes in v0.11.10: wording only
 
