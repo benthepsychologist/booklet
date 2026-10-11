@@ -32,7 +32,7 @@ const rgb=h=>{const n=parseInt(h.slice(1),16);return [n>>16,(n>>8)&255,n&255];};
 const lum=c=>{const [r,g,b]=c.map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*r+.7152*g+.0722*b;};
 const ratio=(a,b)=>{const x=lum(rgb(a)),y=lum(rgb(b));return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
 const merged=(base,tokens)=>({...TABLES[base],...tokens});
-const passes=(base,tokens)=>A.TH_PAIRS.every(([f,b])=>{const t=merged(base,tokens);return ratio(t["--"+f],t["--"+b])>=4.5;});
+const passes=(base,tokens)=>A.TH_PAIRS.every(([f,b,min])=>{const t=merged(base,tokens);return ratio(t["--"+f],t["--"+b])>=(min||4.5);});
 
 chk("the stylesheet reader hands back the base tables",T("night")["--paper"]===TABLES.night["--paper"]&&Object.keys(T("paper")).length===Object.keys(TABLES.paper).length);
 
@@ -65,14 +65,16 @@ const HOSTILE=["red","#fff;}body{display:none","#12345","#1234567","url(https://
 function boot(){
   const src=P.html.slice(P.html.indexOf('<script id="theme-boot">')+'<script id="theme-boot">'.length,P.html.indexOf("</script>",P.html.indexOf('<script id="theme-boot">')));
   const style={},attrs={},set=[];
-  const de={style:{setProperty(k,v){style[k]=v;set.push([k,v]);},removeProperty(k){delete style[k];}},
+  /* the style's own properties (radii, tile fill) are not the theme's: kept apart, so "nothing set" below means no theme token */
+  const own=/^--(r-lg|r-md|r-sm|num-w|tile-bg|tile-art)$/,styleProps={};
+  const de={style:{setProperty(k,v){if(own.test(k)){styleProps[k]=v;return;}style[k]=v;set.push([k,v]);},removeProperty(k){if(own.test(k)){delete styleProps[k];return;}delete style[k];}},
     setAttribute(k,v){attrs[k]=String(v);},getAttribute(k){return k in attrs?attrs[k]:null;},removeAttribute(k){delete attrs[k];},hasAttribute(k){return k in attrs;}};
   const store={};
   const win={matchMedia:()=>({matches:false,addEventListener(){}}),addEventListener(){},dispatchEvent(){},localStorage:null};
   const fn=new Function("document","window","localStorage","getComputedStyle","Event",src);
   const doc={documentElement:de,querySelector:()=>null};
   fn(doc,win,{getItem:k=>k in store?store[k]:null,setItem:(k,v)=>{store[k]=String(v);}},()=>({getPropertyValue:()=>""}),function(){});
-  return {B:win.bookletTheme,style,attrs,set,de};}
+  return {B:win.bookletTheme,S:win.bookletStyle,styleProps,style,attrs,set,de};}
 {const h=boot();
  h.B.custom({base:"night;",tokens:{"--paper":"red","--x;y":"#fff","--accent":"#fff;}body{display:none","--ink":"url(https://x.test/a.png)","--muted":"#12345"},font:"Comic Sans, url(x)",density:"__proto__"});
  chk("the head script refuses a base it does not know, and applies nothing hostile",h.set.length===0&&h.attrs["data-theme"]==="paper",JSON.stringify([h.set,h.attrs]));
@@ -105,6 +107,16 @@ function boot(){
  chk("an ink and paper that do not read together are both dropped",lowInk.tokens["--paper"]===undefined&&lowInk.dropped.map(x=>x.key).sort().join()==="ink,paper",JSON.stringify(lowInk));
  const darkOk=A.themeDerive(A.readTheme("base: night\npaper: #10161c\nink: #e8e4da\naccent: #8fd0d4").spec,T);
  chk("a dark custom theme derives a dark set that passes",darkOk.dropped.length===0&&passes("night",darkOk.tokens)&&darkOk.tokens["--paper"]==="#10161c",JSON.stringify(darkOk));
+ /* 0.11.9: a custom paper re-tints every hue's soft wash and leaves vivid, solid and deep as the base's */
+ {const HUES=["sky","rose","sage","sun","lilac","petrol","slate"];
+  chk("a custom dark paper re-tints each hue's soft shade and keeps every new pair readable",
+    HUES.every(h=>darkOk.tokens["--h-"+h]&&darkOk.tokens["--h-"+h]!==TABLES.night["--h-"+h]&&darkOk.tokens["--h-"+h+"-vivid"]===undefined&&darkOk.tokens["--h-"+h+"-solid"]===undefined&&darkOk.tokens["--h-"+h+"-deep"]===undefined)
+    &&HUES.every(h=>ratio(merged("night",darkOk.tokens)["--h-"+h+"-deep"],merged("night",darkOk.tokens)["--h-"+h])>=4.5&&ratio(merged("night",darkOk.tokens)["--h-"+h+"-vivid"],merged("night",darkOk.tokens)["--h-"+h])>=3)
+    &&passes("night",darkOk.tokens),JSON.stringify(darkOk.tokens));
+  const pairsHue=A.TH_PAIRS.filter(p=>/^h-|^on-solid/.test(p[0])||/^h-/.test(p[1]));
+  chk("the renderer's pair list holds the hue pairs, the picture ones at 3 to 1",pairsHue.length===42&&pairsHue.filter(p=>p[2]===3).length===14,String(pairsHue.length));
+  const wrong=A.themeDerive(A.readTheme("base: paper\npaper: #11181c\nink: #e7edef").spec,T);
+  chk("a dark custom paper over a light base, whose deep shades cannot read on it, is dropped as before",wrong.tokens["--paper"]===undefined&&wrong.dropped.length>0,JSON.stringify(wrong.dropped));}
  /* the floor, as an invariant: whatever is asked for, what comes out reads */
  let seed=12345;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
  const col=()=>"#"+Array.from({length:3},()=>("0"+Math.floor(rnd()*256).toString(16)).slice(-2)).join("");
@@ -194,6 +206,13 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
  h.B.custom(null);
  chk("leaving the booklet removes it cleanly and Auto follows the device again",h.attrs["data-theme"]==="paper"&&Object.keys(h.style).length===0&&!h.attrs["data-theme-custom"]);
  chk("the reader's own pick is never written by a booklet",h.B.get()==="auto");
+ chk("the head script draws teaching at once: data-style, and the style's radii and tile fill",h.attrs["data-style"]==="teaching"&&h.S.get()==="teaching"&&h.S.picture()==="spot"&&h.styleProps["--r-lg"]&&h.styleProps["--tile-bg"]==="var(--c-soft)");
+ h.S.set("briefing");
+ chk("briefing replaces every key of teaching and sets nothing more",h.attrs["data-style"]==="briefing"&&h.S.picture()==="icon"&&h.styleProps["--tile-bg"]==="var(--c-solid)"&&h.styleProps["--tile-art"]==="var(--on-solid)"&&Object.keys(h.styleProps).length===6);
+ h.S.set("nope");h.S.set("__proto__");
+ chk("a style it does not know changes nothing",h.S.get()==="briefing"&&h.attrs["data-style"]==="briefing");
+ h.B.set("night");
+ chk("a theme change leaves the style alone",h.attrs["data-style"]==="briefing");
 }
 
 /* ---------------- 4. rows ---------------- */
@@ -272,7 +291,7 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  /* the tone tokens exist in every theme, with ink readable on them */
  chk("every theme has the five tone tints and deep colours, and the floor checks them",["paper","daylight","night","contrast"].every(n=>["warm","green","amber","slate","teal"].every(t=>TABLES[n]["--tone-"+t]&&TABLES[n]["--tone-"+t+"-deep"])&&passes(n,{})));
  chk("Night's tones are dark tints (a cell does not glare)",lum(rgb(TABLES.night["--tone-green"]))<.05&&lum(rgb(TABLES.paper["--tone-green"]))>.5);
- chk("Paper's and Daylight's green is the one the registry's check-in used",TABLES.paper["--tone-green"]==="#DCE7D2"&&TABLES.daylight["--tone-green"]==="#DCE7D2");
+ chk("Paper's and Daylight's green is BTP's \"yes\" wash (0.11.9; it was #DCE7D2 before)",TABLES.paper["--tone-green"]==="#E1F1E7"&&TABLES.daylight["--tone-green"]==="#E1F1E7");
  const ex=fs.readFileSync(path.join(R,"examples/mindful-check-in.booklet.md"),"utf8");
  chk("the example names its cell colours as tones",["warm","green","slate","teal"].every(n=>ex.includes('"color": "'+n+'"'))&&!/"tint"/.test(ex));
  const r=A.parseFile(ex);const w=r.template.widgets.find(x=>x.cells);

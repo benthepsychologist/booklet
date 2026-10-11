@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-N2Y2aeWuNArhX6rTtvR+MOZ35NJt0l3NWm5TTXRkRbE=' 'sha256-eAz7PJEkdEHvwh9aG4Wsp44Ht/FCi+gwioJyFTqbO1U=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-dLT+CjUtvfGnr6l8wQlmpWbmWArJc9regrGppUJia6w=' 'sha256-G0aYJ5KlHT4LclSsNWreTzlFqK/eZRXxv4Nkmw12m2o=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -36,19 +36,27 @@
      is always light (see the end of the stylesheet). */
   :root,:root[data-theme="paper"]{
     color-scheme:light;
-    --paper:#F7F2E8; --paper-deep:#EEE6DA; --ink:#292421; --muted:#59514B;
-    --rule:#D8C9B5; --field:#FFFFFF; --reader:#292421; --warn:#A04E34; --warn-soft:#FFE4DE;
-    --accent:#103E46; --accent-soft:#E3EAEA; --rg-on:#E3EAEA;
-    --surface:#FFFFFF; --on-accent:#FFFFFF; --on-ink:#FFFFFF; --on-ink-soft:#E9E3D8;
-    --bar-bg:rgba(255,252,244,.94); --shadow:#1F2430; --placeholder:#9AA0B4; --mark:#FFF3B0;
-    --tone-warm:#F0D9CF; --tone-warm-deep:#9A4A31;
-    --tone-green:#DCE7D2; --tone-green-deep:#4F6B3A;
-    --tone-amber:#F6EDD0; --tone-amber-deep:#80621A;
-    --tone-slate:#D9DEE2; --tone-slate-deep:#465B66;
-    --tone-teal:#D5E3E1; --tone-teal-deep:#166B63;
+    --paper:#F8F6F1; --paper-deep:#EFEBE3; --ink:#24323A; --muted:#56646B;
+    --rule:#E4E0D6; --field:#FEFDFB; --reader:#24323A; --warn:#A04E34; --warn-soft:#FFE4DE;
+    --accent:#1E5E6B; --accent-soft:#E4EFEF; --rg-on:#E4EFEF;
+    --surface:#FEFDFB; --on-accent:#FFFFFF; --on-ink:#FFFFFF; --on-ink-soft:#E9E3D8;
+    --bar-bg:rgba(248,246,241,.94); --shadow:#1F2430; --placeholder:#9AA0B4; --mark:#FFF3B0;
+    --tone-warm:#F9E3E8; --tone-warm-deep:#A3405B;
+    --tone-green:#E1F1E7; --tone-green-deep:#2D7751;
+    --tone-amber:#F8EBD0; --tone-amber-deep:#8B5F10;
+    --tone-slate:#E6E9EC; --tone-slate-deep:#3E4E59;
+    --tone-teal:#E4EFEF; --tone-teal-deep:#15464F;
     --bw:2px; --focus-w:3px;
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
     --cell-0:#E8E4DE; --cell-1:#E2E6E0; --cell-2:#DEE2E6; --cell-3:#E0E6E5; --cell-4:#E6E2E6; --cell-5:#E6E5DE;
+    --h-sky:#E3EEF7; --h-sky-vivid:#3F7FB5; --h-sky-solid:#2F6FA8; --h-sky-deep:#2F6596;
+    --h-rose:#F9E3E8; --h-rose-vivid:#BF5470; --h-rose-solid:#B4475F; --h-rose-deep:#A3405B;
+    --h-sage:#E2F0E7; --h-sage-vivid:#4F8C6B; --h-sage-solid:#3D7F5B; --h-sage-deep:#3B6E52;
+    --h-sun:#FBF0D6; --h-sun-vivid:#B07A0F; --h-sun-solid:#9A6408; --h-sun-deep:#8A5E0B;
+    --h-lilac:#ECE8F6; --h-lilac-vivid:#7462B5; --h-lilac-solid:#6553AD; --h-lilac-deep:#6453A6;
+    --h-petrol:#E4EFEF; --h-petrol-vivid:#1E5E6B; --h-petrol-solid:#1E5E6B; --h-petrol-deep:#15464F;
+    --h-slate:#E6E9EC; --h-slate-vivid:#5B6B76; --h-slate-solid:#4E5D68; --h-slate-deep:#3E4E59;
+    --on-solid:#FFFFFF; --spark:#F2B544;
   }
   :root[data-theme="daylight"]{
     color-scheme:light;
@@ -57,30 +65,46 @@
     --accent:#103E46; --accent-soft:#E6F0F1; --rg-on:#E6F0F1;
     --surface:#FFFFFF; --on-accent:#FFFFFF; --on-ink:#FFFFFF; --on-ink-soft:#D0D7DE;
     --bar-bg:rgba(255,255,255,.94); --shadow:#1F2328; --placeholder:#6E7781; --mark:#FFF3B0;
-    --tone-warm:#F0D9CF; --tone-warm-deep:#9A4A31;
-    --tone-green:#DCE7D2; --tone-green-deep:#4F6B3A;
-    --tone-amber:#F6EDD0; --tone-amber-deep:#80621A;
-    --tone-slate:#D9DEE2; --tone-slate-deep:#465B66;
-    --tone-teal:#D5E3E1; --tone-teal-deep:#166B63;
+    --tone-warm:#FAE8EC; --tone-warm-deep:#A3405B;
+    --tone-green:#E1F1E7; --tone-green-deep:#2D7751;
+    --tone-amber:#F8EBD0; --tone-amber-deep:#8B5F10;
+    --tone-slate:#ECEFF1; --tone-slate-deep:#3E4E59;
+    --tone-teal:#E6F0F0; --tone-teal-deep:#15464F;
     --bw:2px; --focus-w:3px;
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
     --cell-0:#E8E4DE; --cell-1:#E2E6E0; --cell-2:#DEE2E6; --cell-3:#E0E6E5; --cell-4:#E6E2E6; --cell-5:#E6E5DE;
+    --h-sky:#E8F1F9; --h-sky-vivid:#3F7FB5; --h-sky-solid:#2F6FA8; --h-sky-deep:#2F6596;
+    --h-rose:#FAE8EC; --h-rose-vivid:#BF5470; --h-rose-solid:#B4475F; --h-rose-deep:#A3405B;
+    --h-sage:#E6F2EA; --h-sage-vivid:#4F8C6B; --h-sage-solid:#3D7F5B; --h-sage-deep:#3B6E52;
+    --h-sun:#FBF2DC; --h-sun-vivid:#B07A0F; --h-sun-solid:#9A6408; --h-sun-deep:#8A5E0B;
+    --h-lilac:#EFECF8; --h-lilac-vivid:#7462B5; --h-lilac-solid:#6553AD; --h-lilac-deep:#6453A6;
+    --h-petrol:#E6F0F0; --h-petrol-vivid:#1E5E6B; --h-petrol-solid:#1E5E6B; --h-petrol-deep:#15464F;
+    --h-slate:#ECEFF1; --h-slate-vivid:#5B6B76; --h-slate-solid:#4E5D68; --h-slate-deep:#3E4E59;
+    --on-solid:#FFFFFF; --spark:#F2B544;
   }
   :root[data-theme="night"]{
     color-scheme:dark;
-    --paper:#16191D; --paper-deep:#1E2328; --ink:#E6E1D8; --muted:#A8A198;
-    --rule:#3A4047; --field:#1E2328; --reader:#E6E1D8; --warn:#E08A6B; --warn-soft:#3A2620;
-    --accent:#7CC4C9; --accent-soft:#1F3438; --rg-on:#2F5A60;
-    --surface:#1E2328; --on-accent:#0F1A1C; --on-ink:#16191D; --on-ink-soft:#3F454C;
-    --bar-bg:rgba(22,25,29,.94); --shadow:#000000; --placeholder:#7F8790; --mark:#5C4E12;
-    --tone-warm:#3A2620; --tone-warm-deep:#E8A58C;
-    --tone-green:#222E1D; --tone-green-deep:#9CC27A;
-    --tone-amber:#332B14; --tone-amber-deep:#D9B25A;
-    --tone-slate:#2A3238; --tone-slate-deep:#A9BBC6;
-    --tone-teal:#1C3331; --tone-teal-deep:#7FD1C6;
+    --paper:#11181C; --paper-deep:#1D2A31; --ink:#E7EDEF; --muted:#A9B7BD;
+    --rule:#2A3840; --field:#18232A; --reader:#E7EDEF; --warn:#E08A6B; --warn-soft:#3A2620;
+    --accent:#7CC0CB; --accent-soft:#163139; --rg-on:#2F5A60;
+    --surface:#18232A; --on-accent:#0E1A1E; --on-ink:#11181C; --on-ink-soft:#3F454C;
+    --bar-bg:rgba(17,24,28,.94); --shadow:#000000; --placeholder:#7F8790; --mark:#5C4E12;
+    --tone-warm:#381F28; --tone-warm-deep:#EC93AA;
+    --tone-green:#172E24; --tone-green-deep:#8CC8A5;
+    --tone-amber:#31281A; --tone-amber-deep:#F0BA55;
+    --tone-slate:#232D33; --tone-slate-deep:#A9BBC6;
+    --tone-teal:#163139; --tone-teal-deep:#7CC0CB;
     --bw:2px; --focus-w:3px;
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
     --cell-0:#E8E4DE; --cell-1:#E2E6E0; --cell-2:#DEE2E6; --cell-3:#E0E6E5; --cell-4:#E6E2E6; --cell-5:#E6E5DE;
+    --h-sky:#172A3B; --h-sky-vivid:#88B8E4; --h-sky-solid:#3A78B0; --h-sky-deep:#88B8E4;
+    --h-rose:#381F28; --h-rose-vivid:#EC93AA; --h-rose-solid:#B24A64; --h-rose-deep:#EC93AA;
+    --h-sage:#172E24; --h-sage-vivid:#8CC8A5; --h-sage-solid:#3E8160; --h-sage-deep:#8CC8A5;
+    --h-sun:#31281A; --h-sun-vivid:#F0BA55; --h-sun-solid:#946410; --h-sun-deep:#F0BA55;
+    --h-lilac:#25223A; --h-lilac-vivid:#B3A5EE; --h-lilac-solid:#6E5DB8; --h-lilac-deep:#B3A5EE;
+    --h-petrol:#163139; --h-petrol-vivid:#7CC0CB; --h-petrol-solid:#2A7280; --h-petrol-deep:#7CC0CB;
+    --h-slate:#232D33; --h-slate-vivid:#A9BBC6; --h-slate-solid:#56666F; --h-slate-deep:#A9BBC6;
+    --on-solid:#FFFFFF; --spark:#F2B544;
   }
   :root[data-theme="contrast"]{
     color-scheme:light;
@@ -89,7 +113,7 @@
     --accent:#003B49; --accent-soft:#FFFFFF; --rg-on:#BFE3EC;
     --surface:#FFFFFF; --on-accent:#FFFFFF; --on-ink:#FFFFFF; --on-ink-soft:#E6E6E6;
     --bar-bg:rgba(255,255,255,.97); --shadow:#000000; --placeholder:#4D4D4D; --mark:#FFE600;
-    --tone-warm:#FFE9E4; --tone-warm-deep:#8B0000;
+    --tone-warm:#FFE9EE; --tone-warm-deep:#7A0F2E;
     --tone-green:#E8F5E0; --tone-green-deep:#1B4D0E;
     --tone-amber:#FFF3C4; --tone-amber-deep:#5C4300;
     --tone-slate:#E6EAEE; --tone-slate-deep:#243746;
@@ -97,6 +121,14 @@
     --bw:3px; --focus-w:4px;
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
     --cell-0:#E8E4DE; --cell-1:#E2E6E0; --cell-2:#DEE2E6; --cell-3:#E0E6E5; --cell-4:#E6E2E6; --cell-5:#E6E5DE;
+    --h-sky:#E6F0FA; --h-sky-vivid:#003A70; --h-sky-solid:#003A70; --h-sky-deep:#003A70;
+    --h-rose:#FFE9EE; --h-rose-vivid:#7A0F2E; --h-rose-solid:#7A0F2E; --h-rose-deep:#7A0F2E;
+    --h-sage:#E8F5E0; --h-sage-vivid:#1B4D0E; --h-sage-solid:#1B4D0E; --h-sage-deep:#1B4D0E;
+    --h-sun:#FFF3C4; --h-sun-vivid:#5C4300; --h-sun-solid:#5C4300; --h-sun-deep:#5C4300;
+    --h-lilac:#EFEAFB; --h-lilac-vivid:#3A2380; --h-lilac-solid:#3A2380; --h-lilac-deep:#3A2380;
+    --h-petrol:#DDF2F0; --h-petrol-vivid:#004D45; --h-petrol-solid:#004D45; --h-petrol-deep:#004D45;
+    --h-slate:#E6EAEE; --h-slate-vivid:#243746; --h-slate-solid:#243746; --h-slate-deep:#243746;
+    --on-solid:#FFFFFF; --spark:#5C4300;
   }
   /* The renderer's own faces, carried inside this file as data: no font file is ever fetched.
      Atkinson Hyperlegible (regular, bold, italic) and Lexend (semibold), Latin and Latin Extended, from
@@ -214,22 +246,33 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --content-w:76rem; --measure:70ch;
     /* the views' sizes: row text, row padding, the gap between tiles and cards, the big tile figure (a booklet's density sets them) */
     --v-fs:.95rem; --v-pad:.5rem; --v-gap:.75rem; --tile-v:2rem;
+    /* the card variables: a hue rule below sets all four; until one does, a picture and a callout are petrol. The two
+       styles (the theme-boot script's STYLES) set the radii, --num-w, --tile-bg and --tile-art; these are their teaching values. */
+    --c-soft:var(--h-petrol); --c-vivid:var(--h-petrol-vivid); --c-solid:var(--h-petrol-solid); --c-deep:var(--h-petrol-deep);
+    --r-lg:22px; --r-md:14px; --r-sm:8px; --num-w:2.25rem; --tile-bg:var(--c-soft); --tile-art:var(--c-vivid);
   }
+  /* one rule per hue: the soft wash, the vivid line drawn on it, the solid fill and the deep text colour (the tokens in each theme's table) */
+  .hue-sky{--c-soft:var(--h-sky);--c-vivid:var(--h-sky-vivid);--c-solid:var(--h-sky-solid);--c-deep:var(--h-sky-deep)}
+  .hue-rose{--c-soft:var(--h-rose);--c-vivid:var(--h-rose-vivid);--c-solid:var(--h-rose-solid);--c-deep:var(--h-rose-deep)}
+  .hue-sage{--c-soft:var(--h-sage);--c-vivid:var(--h-sage-vivid);--c-solid:var(--h-sage-solid);--c-deep:var(--h-sage-deep)}
+  .hue-sun{--c-soft:var(--h-sun);--c-vivid:var(--h-sun-vivid);--c-solid:var(--h-sun-solid);--c-deep:var(--h-sun-deep)}
+  .hue-lilac{--c-soft:var(--h-lilac);--c-vivid:var(--h-lilac-vivid);--c-solid:var(--h-lilac-solid);--c-deep:var(--h-lilac-deep)}
+  .hue-petrol{--c-soft:var(--h-petrol);--c-vivid:var(--h-petrol-vivid);--c-solid:var(--h-petrol-solid);--c-deep:var(--h-petrol-deep)}
+  .hue-slate{--c-soft:var(--h-slate);--c-vivid:var(--h-slate-vivid);--c-solid:var(--h-slate-solid);--c-deep:var(--h-slate-deep)}
   *{box-sizing:border-box}
   /* The picture sprite (generated from art/ by test/art-sprite.js) is hidden. A drawing's shapes take one of six classes, and
-     each gets its colour here from the theme: a accent fill, w card fill, s sun fill, p ink fill, l accent stroke, lw card
-     stroke ("w l" a card fill with an accent outline, "l s" a sun stroke). The --art-* properties are for a style to set; until one
-     does, each falls back to a colour the theme already has. */
+     each gets its colour here from the card it sits on: a and l the hue's vivid (fill and stroke), w and lw the card
+     (--surface), s the gold spot (--spark), p the accent ("w l" a card fill with a vivid outline, "l s" a gold stroke). */
   .artsprite{position:absolute;width:0;height:0;overflow:hidden}
   .ic{width:1em;height:1em;flex:none;vertical-align:-.125em}
   .ic.sp{width:3rem;height:3rem;vertical-align:baseline}
-  symbol .a{fill:var(--art-accent,var(--accent))}
-  symbol .w{fill:var(--art-card,var(--surface))}
-  symbol .s{fill:var(--art-sun,var(--mark))}
-  symbol .p{fill:var(--art-ink,var(--ink))}
-  symbol .l{stroke:var(--art-accent,var(--accent))}
-  symbol .lw{stroke:var(--art-card,var(--surface))}
-  symbol .l.s{stroke:var(--art-sun,var(--mark))}
+  symbol .a{fill:var(--c-vivid)}
+  symbol .w{fill:var(--surface)}
+  symbol .s{fill:var(--spark)}
+  symbol .p{fill:var(--accent)}
+  symbol .l{stroke:var(--c-vivid)}
+  symbol .lw{stroke:var(--surface)}
+  symbol .l.s{stroke:var(--spark)}
   symbol .l:not(.w),symbol .lw:not(.w){fill:none}
   html{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:1.0625rem;line-height:var(--lh,1.6);-webkit-text-size-adjust:100%}
   body{margin:0;min-height:100vh}
@@ -596,16 +639,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .rd-tip{position:fixed;z-index:16;max-width:min(22rem,calc(100vw - 1rem));background:var(--ink);color:var(--on-ink);font-family:var(--sans);font-size:.85rem;line-height:1.45;padding:.5rem .7rem;border-radius:10px;pointer-events:none;box-shadow:0 10px 24px -12px color-mix(in srgb,var(--shadow) 50%,transparent)}
   .rd-tip[hidden]{display:none}
   .rd-tip .rd-tw{display:block;margin-top:.2rem;color:var(--on-ink-soft);font-size:.8rem}
-  .rd-callout{margin:1.25rem 0;padding:.7rem 1rem .75rem;background:var(--surface);border:var(--bw) solid var(--rule);border-left:6px solid var(--muted);border-radius:0 12px 12px 0}
-  .rd-callout.rd-k-diff{border-left:6px dashed var(--tone-warm-deep)}
-  .rd-callout.rd-k-law{border-left:6px double var(--tone-teal-deep)}
-  .rd-callout.rd-k-opinion{border-left:6px dotted var(--tone-slate-deep)}
-  .rd-chead{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 .3rem;font-family:var(--sans);font-size:.85rem;font-weight:700}
-  .rd-ci{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;border-radius:50%;flex:none;font-size:.95rem;line-height:1;font-weight:700}
-  .rd-k-diff .rd-ci{background:var(--tone-warm);color:var(--tone-warm-deep)}
-  .rd-k-law .rd-ci{background:var(--tone-teal);color:var(--tone-teal-deep)}
-  .rd-k-opinion .rd-ci{background:var(--tone-slate);color:var(--tone-slate-deep)}
-  .rd-k-diff .rd-cl{color:var(--tone-warm-deep)} .rd-k-law .rd-cl{color:var(--tone-teal-deep)} .rd-k-opinion .rd-cl{color:var(--tone-slate-deep)}
+  .rd-callout{margin:1.25rem 0;padding:.7rem 1rem .75rem;background:var(--surface);border:var(--bw) solid var(--rule);border-left:6px solid var(--muted);border-radius:0 var(--r-md) var(--r-md) 0}
+  /* a kind Booklet draws in its hue (CALLOUT_LOOK sets the hue-* class): the wash, a line in the vivid colour, the label in the deep one */
+  .rd-callout.rd-hued{background:var(--c-soft);border-color:var(--c-soft);border-left-color:var(--c-vivid)}
+  .rd-callout.rd-k-diff{border-left-style:dashed}
+  .rd-callout.rd-k-law{border-left-style:double}
+  .rd-callout.rd-k-opinion{border-left-style:dotted}
+  .rd-chead{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 .3rem;font-family:var(--serif);font-size:.9rem;font-weight:600}
+  .rd-ci{display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:1.25rem;line-height:1;color:var(--c-vivid)}
+  .rd-cl{color:var(--c-deep)}
   .rd-ctitle{margin:0 0 .35rem;font-weight:700;color:var(--ink)}
   .rd-cb>:last-child{margin-bottom:0}
 
@@ -821,14 +863,22 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       --accent:#103E46 !important; --accent-soft:#E6F0F1 !important; --rg-on:#E6F0F1 !important;
       --surface:#FFFFFF !important; --on-accent:#FFFFFF !important; --on-ink:#FFFFFF !important; --on-ink-soft:#D0D7DE !important;
       --bar-bg:rgba(255,255,255,.94) !important; --shadow:#1F2328 !important; --placeholder:#6E7781 !important; --mark:#FFF3B0 !important;
-      --tone-warm:#F0D9CF !important; --tone-warm-deep:#9A4A31 !important;
-      --tone-green:#DCE7D2 !important; --tone-green-deep:#4F6B3A !important;
-      --tone-amber:#F6EDD0 !important; --tone-amber-deep:#80621A !important;
-      --tone-slate:#D9DEE2 !important; --tone-slate-deep:#465B66 !important;
-      --tone-teal:#D5E3E1 !important; --tone-teal-deep:#166B63 !important;
+      --tone-warm:#FAE8EC !important; --tone-warm-deep:#A3405B !important;
+      --tone-green:#E1F1E7 !important; --tone-green-deep:#2D7751 !important;
+      --tone-amber:#F8EBD0 !important; --tone-amber-deep:#8B5F10 !important;
+      --tone-slate:#ECEFF1 !important; --tone-slate-deep:#3E4E59 !important;
+      --tone-teal:#E6F0F0 !important; --tone-teal-deep:#15464F !important;
       --bw:2px !important; --focus-w:3px !important;
       --tint-ink:#292421 !important; --tint-chip:rgba(255,255,255,.75) !important; --tint-chip-bd:rgba(255,255,255,.9) !important; --on-deep:#FFFFFF !important;
       --cell-0:#E8E4DE !important; --cell-1:#E2E6E0 !important; --cell-2:#DEE2E6 !important; --cell-3:#E0E6E5 !important; --cell-4:#E6E2E6 !important; --cell-5:#E6E5DE !important;
+      --h-sky:#E8F1F9 !important; --h-sky-vivid:#3F7FB5 !important; --h-sky-solid:#2F6FA8 !important; --h-sky-deep:#2F6596 !important;
+      --h-rose:#FAE8EC !important; --h-rose-vivid:#BF5470 !important; --h-rose-solid:#B4475F !important; --h-rose-deep:#A3405B !important;
+      --h-sage:#E6F2EA !important; --h-sage-vivid:#4F8C6B !important; --h-sage-solid:#3D7F5B !important; --h-sage-deep:#3B6E52 !important;
+      --h-sun:#FBF2DC !important; --h-sun-vivid:#B07A0F !important; --h-sun-solid:#9A6408 !important; --h-sun-deep:#8A5E0B !important;
+      --h-lilac:#EFECF8 !important; --h-lilac-vivid:#7462B5 !important; --h-lilac-solid:#6553AD !important; --h-lilac-deep:#6453A6 !important;
+      --h-petrol:#E6F0F0 !important; --h-petrol-vivid:#1E5E6B !important; --h-petrol-solid:#1E5E6B !important; --h-petrol-deep:#15464F !important;
+      --h-slate:#ECEFF1 !important; --h-slate-vivid:#5B6B76 !important; --h-slate-solid:#4E5D68 !important; --h-slate-deep:#3E4E59 !important;
+      --on-solid:#FFFFFF !important; --spark:#F2B544 !important;
     }
   }
 </style>
@@ -855,7 +905,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     readable:{"--serif":"var(--fam-read)","--sans":"var(--fam-read)"}};
   var DENSITY={compact:{"--lh":"1.45","--pgap":".7rem","--v-fs":".88rem","--v-pad":".3rem","--v-gap":".5rem","--tile-v":"1.45rem"},
     roomy:{"--lh":"1.75","--pgap":"1.3rem","--v-fs":"1rem","--v-pad":".7rem","--v-gap":"1rem","--tile-v":"2.3rem"}};
-  var TOKEN=/^--(paper|paper-deep|ink|reader|field|surface|rule|muted|placeholder|on-ink|on-ink-soft|bar-bg|mark|accent|accent-soft|rg-on|on-accent|warn|warn-soft|tone-(warm|green|amber|slate|teal)(-deep)?)$/;
+  /* The two styles. A style sets no colour: its radii, the width of a step number, what a tile is filled with and what is
+     drawn on it (names of variables the hue rules set), and `picture`, whether a card asks for a spot drawing or a line icon.
+     data-style on <html> says which is on. Nothing a file says reaches this yet: every booklet draws as teaching. */
+  var STYLES={teaching:{"--r-lg":"22px","--r-md":"14px","--r-sm":"8px","--num-w":"2.25rem","--tile-bg":"var(--c-soft)","--tile-art":"var(--c-vivid)",picture:"spot"},
+    briefing:{"--r-lg":"10px","--r-md":"6px","--r-sm":"4px","--num-w":"1.75rem","--tile-bg":"var(--c-solid)","--tile-art":"var(--on-solid)",picture:"icon"}};
+  var STYLE_NAMES=["teaching","briefing"],styleOn="teaching",styleSet=[];
+  var TOKEN=/^--(paper|paper-deep|ink|reader|field|surface|rule|muted|placeholder|on-ink|on-ink-soft|bar-bg|mark|accent|accent-soft|rg-on|on-accent|warn|warn-soft|tone-(warm|green|amber|slate|teal)(-deep)?|h-(sky|rose|sage|sun|lilac|petrol|slate)(-vivid|-solid|-deep)?|on-solid|spark)$/;
   function put(n,v){try{de.style.setProperty(n,v);applied.push(n);}catch(e){/* a value the browser will not take is skipped */}}
   function clearCustom(){applied.forEach(function(n){try{de.style.removeProperty(n);}catch(e){/* nothing to remove */}});applied=[];de.removeAttribute("data-theme-custom");}
   function setCustom(colours){
@@ -878,6 +934,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     set:function(c){if(NAMES.indexOf(c)<0) return;mem=c;try{localStorage.setItem(KEY,c);}catch(e){/* storage may be blocked: the choice holds for the visit */}apply(true);},
     custom:function(t){custom=t&&typeof t==="object"&&THEMES.indexOf(t.base)>=0?t:null;apply(true);}};
   var THEMES=["paper","daylight","night","contrast"];
+  function setStyle(n,fire){
+    if(STYLE_NAMES.indexOf(n)<0) return;
+    styleSet.forEach(function(k){try{de.style.removeProperty(k);}catch(e){/* nothing to remove */}});styleSet=[];
+    var tab=STYLES[n];styleOn=n;
+    for(var k in tab) if(k.indexOf("--")===0){try{de.style.setProperty(k,tab[k]);styleSet.push(k);}catch(e){/* a value the browser will not take is skipped */}}
+    de.setAttribute("data-style",n);
+    if(fire){try{window.dispatchEvent(new Event("booklet-style"));}catch(e){/* an old browser without Event */}}}
+  window.bookletStyle={names:STYLE_NAMES,get:function(){return styleOn;},picture:function(){return STYLES[styleOn].picture;},set:function(n){setStyle(n,true);}};
+  setStyle("teaching",false);
   apply(false);
   ["(prefers-color-scheme: dark)","(prefers-contrast: more)","(forced-colors: active)"].forEach(function(q){try{
     var l=window.matchMedia(q),f=function(){if(stored()==="auto"&&!custom) apply(true);};
@@ -911,6 +976,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 <symbol id="bi-box" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
 <symbol id="bi-brain" viewBox="0 0 24 24"><path d="M12 18V5"/><path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4"/><path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5"/><path d="M17.997 5.125a4 4 0 0 1 2.526 5.77"/><path d="M18 18a4 4 0 0 0 2-7.464"/><path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517"/><path d="M6 18a4 4 0 0 1-2-7.464"/><path d="M6.003 5.125a4 4 0 0 0-2.526 5.77"/></symbol>
 <symbol id="bi-briefcase" viewBox="0 0 24 24"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></symbol>
+<symbol id="bi-bug" viewBox="0 0 24 24"><path d="M12 20v-9"/><path d="M14 7a4 4 0 0 1 4 4v3a6 6 0 0 1-12 0v-3a4 4 0 0 1 4-4z"/><path d="M14.12 3.88 16 2"/><path d="M21 21a4 4 0 0 0-3.81-4"/><path d="M21 5a4 4 0 0 1-3.55 3.97"/><path d="M22 13h-4"/><path d="M3 21a4 4 0 0 1 3.81-4"/><path d="M3 5a4 4 0 0 0 3.55 3.97"/><path d="M6 13H2"/><path d="m8 2 1.88 1.88"/><path d="M9 7.13V6a3 3 0 1 1 6 0v1.13"/></symbol>
 <symbol id="bi-calendar" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></symbol>
 <symbol id="bi-calendar-clock" viewBox="0 0 24 24"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v3"/><path d="M21 7.338V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h2.338"/><path d="M3 9h5.859"/><path d="M8 2v3"/><circle cx="16" cy="16" r="6"/></symbol>
 <symbol id="bi-camera" viewBox="0 0 24 24"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></symbol>
@@ -956,6 +1022,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 <symbol id="bi-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol>
 <symbol id="bi-gavel" viewBox="0 0 24 24"><path d="m14 13-8.381 8.38a1 1 0 0 1-3.001-3l8.384-8.381"/><path d="m16 16 6-6"/><path d="m21.5 10.5-8-8"/><path d="m8 8 6-6"/><path d="m8.5 7.5 8 8"/></symbol>
 <symbol id="bi-gift" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5"/><rect x="3" y="7" width="18" height="4" rx="1"/></symbol>
+<symbol id="bi-git-compare" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></symbol>
 <symbol id="bi-glasses" viewBox="0 0 24 24"><circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/></symbol>
 <symbol id="bi-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
 <symbol id="bi-graduation-cap" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></symbol>
@@ -1176,7 +1243,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.8";
+const RENDERER_VERSION="0.11.9";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1214,7 +1281,20 @@ const ROLE_NAMES=["label","value","note","badge","tone"];
 /* Below this width the menu starts as the rail and opens over the page rather
    than beside it (the stylesheet uses the same breakpoint). */
 const PAGES_NARROW="(max-width: 699px)";
-const CALLOUT_KINDS=["diff","law","opinion"];
+/* How a callout is drawn, by kind: its hue (one of HUES, the hue-* rule it takes) and its Lucide icon (art/icons/). The kinds are
+   Obsidian's, with the aliases it and GitHub write; each alias is drawn as its first name and says that name. A kind this does not
+   know is drawn as `note` is, as Obsidian does. `hint` and `solution` (kind "") are the question kinds and have their own drawing. */
+const HUES=["sky","rose","sage","sun","lilac","petrol","slate"];
+/* the order a run of cards takes its hues in (slate is for callouts and quiet things, not a card) */
+const CARD_HUES=["sky","rose","sage","sun","lilac","petrol"];
+const CALLOUT_LOOK={};
+[["note","sky","pencil"],["abstract","petrol","clipboard-list","summary","tldr"],["info","sky","info"],["todo","sky","circle-check"],
+ ["tip","sage","lightbulb"],["important","lilac","star"],["success","sage","check","check","done"],["question","lilac","circle-help","help","faq"],
+ ["warning","sun","triangle-alert","caution","attention"],["failure","rose","x","fail","missing"],["danger","rose","octagon-alert","error"],
+ ["bug","rose","bug"],["example","lilac","flask-conical"],["quote","slate","quote","cite"],["diff","petrol","git-compare"],
+ ["law","slate","scale"],["opinion","rose","message-circle"]
+].forEach(([k,hue,ic,...aka])=>{[k,...aka].forEach(n=>{CALLOUT_LOOK[n]={hue,icon:ic,label:k};});});
+const calloutLook=kind=>{const k=String(kind==null?"":kind).toLowerCase();return Object.prototype.hasOwnProperty.call(CALLOUT_LOOK,k)?CALLOUT_LOOK[k]:CALLOUT_LOOK.note;};
 const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","number","date","matrix"]);
 const SCENERY_KINDS=new Set(["manifest","menu"]);
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
@@ -1515,6 +1595,9 @@ const STRINGS_SRC={
     },
     reading: {
       kind: {
+        note: "Note", abstract: "Summary", info: "Info", todo: "To do", tip: "Tip", important: "Important",
+        success: "Success", question: "Question", warning: "Warning", failure: "Failure", danger: "Danger",
+        bug: "Bug", example: "Example", quote: "Quote",
         diff: "Differs from your guide",
         law: "The law now",
         opinion: "An author’s view"
@@ -1782,7 +1865,10 @@ const STRINGS_SRC={
       nth: n=>`Page ${n}`
     },
     reading: {
-      kind: {
+      kind: { /* l10n: draft */
+        note: "Note", abstract: "Résumé", info: "Information", todo: "À faire", tip: "Astuce", important: "Important",
+        success: "Réussite", question: "Question", warning: "Attention", failure: "Échec", danger: "Danger",
+        bug: "Bogue", example: "Exemple", quote: "Citation",
         diff: "Diffère de votre guide",
         law: "Le droit en vigueur",
         opinion: "L’avis d’un auteur"
@@ -2050,7 +2136,10 @@ const STRINGS_SRC={
       nth: n=>`Página ${n}`
     },
     reading: {
-      kind: {
+      kind: { /* l10n: draft */
+        note: "Nota", abstract: "Resumen", info: "Información", todo: "Por hacer", tip: "Consejo", important: "Importante",
+        success: "Logrado", question: "Pregunta", warning: "Advertencia", failure: "Fallo", danger: "Peligro",
+        bug: "Error", example: "Ejemplo", quote: "Cita",
         diff: "Diferencia con tu guía",
         law: "Lo que rige hoy",
         opinion: "Opinión de autor"
@@ -3169,8 +3258,9 @@ const thLum=c=>{const [r,g,b]=c.map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow
 const thRatio=(a,b)=>{const x=thLum(a),y=thLum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
 const thMix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
 /* a tint of paper toward `tgt`, as strong as t0, eased back until every colour in `fgs` reads on it (at worst, paper itself) */
-const thTint=(P,tgt,t0,fgs)=>{for(const k of [1,.7,.4,0]){const c=thMix(P,tgt,t0*k);if(fgs.every(f=>thRatio(f,c)>=4.5)) return c;}return P;};
-/* the pairs text is drawn in (the same list as test/themes.test.js) */
+const thTint=(P,tgt,t0,fgs,gfx)=>{for(const k of [1,.7,.4,0]){const c=thMix(P,tgt,t0*k);if(fgs.every(f=>thRatio(f,c)>=4.5)&&(gfx||[]).every(f=>thRatio(f,c)>=3)) return c;}return P;};
+/* the pairs drawn in (the same list as test/themes.test.js): text on its ground at 4.5 to 1, and a third item, 3, is a picture
+   (graphics need 3 to 1) */
 const TH_PAIRS=[["ink","paper"],["ink","paper-deep"],["muted","paper"],["accent","paper"],["on-accent","accent"],["ink","field"],
   ["reader","field"],["ink","surface"],["accent","surface"],["muted","surface"],["warn","paper"],["on-ink","ink"],["on-ink","muted"],
   ["ink","accent-soft"],["ink","mark"],["warn","warn-soft"]];
@@ -3178,6 +3268,9 @@ TONE_NAMES.forEach(t=>{TH_PAIRS.push(["tone-"+t+"-deep","tone-"+t]);TH_PAIRS.pus
 /* the views: a plain pill, a toned value on a card, a quiet note and a label on a toned tile */
 TH_PAIRS.push(["reader","paper-deep"],["muted","paper-deep"]);
 ["warm","green","amber"].forEach(t=>{TH_PAIRS.push(["tone-"+t+"-deep","surface"],["muted","tone-"+t],["reader","tone-"+t]);});
+/* the hues: deep text on its soft wash, on a card and on the page; ink on the wash; the vivid line on the wash and white on the solid fill (pictures) */
+HUES.forEach(h=>{TH_PAIRS.push(["h-"+h+"-deep","h-"+h],["h-"+h+"-deep","surface"],["h-"+h+"-deep","paper"],["ink","h-"+h],
+  ["h-"+h+"-vivid","h-"+h,3],["on-solid","h-"+h+"-solid",3]);});
 /* every token a custom theme sets, from the base's table B and the custom colours in force */
 function thBuild(B,use){
   const g=n=>thRgb(B["--"+n]),c=k=>use[k]?thRgb(use[k]):null;
@@ -3190,7 +3283,9 @@ function thBuild(B,use){
     set("paper",P);set("ink",I);set("reader",I);set("paper-deep",pd);set("field",fd);set("surface",fd);set("rule",thMix(P,I,.18));
     let mu=I;for(const t of [.28,.2,.12,0]){const m=thMix(I,P,t);if([P,fd,pd].every(x=>thRatio(m,x)>=4.5)){mu=m;break;}}
     set("muted",mu);set("placeholder",thMix(I,P,.5));set("on-ink",P);set("on-ink-soft",thMix(P,I,.12));set("bar-bg",P);
-    set("mark",thTint(P,deep.amber,.3,[I]));}
+    set("mark",thTint(P,deep.amber,.3,[I]));
+    /* each hue's soft wash is paper tinted with the hue; its vivid, solid and deep stay the base's */
+    for(const h of HUES){const d=g("h-"+h+"-deep");set("h-"+h,thTint(P,d,dark?.16:.12,[d,I],[g("h-"+h+"-vivid")]));}}
   if(use.accent||pi){set("accent",A);set("accent-soft",thTint(P,A,dark?.14:.1,[I]));set("rg-on",thMix(P,A,dark?.25:.1));
     let best=g("on-accent");[P,I].forEach(x=>{if(thRatio(x,A)>thRatio(best,A)) best=x;});set("on-accent",best);}
   if(use.bad||pi){set("warn",deep.warm);set("warn-soft",thTint(P,deep.warm,dark?.2:.12,[deep.warm]));}
@@ -3219,7 +3314,7 @@ function themeDerive(spec,baseTable){
   TH_COLOURS.forEach(k=>{if(typeof spec[k]==="string"&&TH_HEX.test(spec[k])) use[k]=spec[k];});
   for(let round=0;round<8;round++){
     const o=thBuild(B,use),val=t=>thRgb(o["--"+t]||B["--"+t]),fails=[];
-    for(const [f,b] of TH_PAIRS){const r=thRatio(val(f),val(b));if(r<4.5) fails.push({f,b,r});}
+    for(const [f,b,min] of TH_PAIRS){const r=thRatio(val(f),val(b));if(r<(min||4.5)) fails.push({f,b,r});}
     if(!fails.length) return {base,tokens:o,font,density,dropped};
     const hit=new Map();
     for(const x of fails){const d=[...thOwes(x.f,o,use),...thOwes(x.b,o,use)],pick=d.filter(k=>k!=="paper"&&k!=="ink");
@@ -4080,7 +4175,7 @@ const MM_BOXES=[];
 /* mermaid is given the active theme's own tokens, so a diagram is drawn in the
    page's colours (its base theme, with our variables); a new theme re-draws */
 function mermaidConfig(){const cs=getComputedStyle(document.documentElement),v=n=>cs.getPropertyValue("--"+n).trim();
-  const dark=(document.documentElement.getAttribute("data-theme")||"")===TH_NIGHT;
+  const dark=cs.colorScheme==="dark";
   return {startOnLoad:false,securityLevel:"strict",htmlLabels:false,flowchart:{htmlLabels:false},theme:"base",suppressErrorRendering:true,
     themeVariables:{darkMode:dark,background:v("paper"),fontFamily:v("sans"),
       primaryColor:v("paper-deep"),primaryTextColor:v("ink"),primaryBorderColor:v("accent"),
@@ -5436,13 +5531,11 @@ const linkHooks=scope=>{const mods=()=>allModules().filter(m=>scopeOfModule(m)==
    Reading inside an activity (SPEC.md section 6): a footnote's mark, `[^id]`,
    in the prose becomes a small number that costs the reader nothing; pressed
    or hovered it shows the citation: the source's title, the page and the
-   quote, with a badge when the file says it was verified. A callout of one of
-   Booklet's three kinds (`diff`, `law`, `opinion`) has its own glyph, colour
-   and border pattern, and a row above the page brings one kind forward. The
+   quote, with a badge when the file says it was verified. A callout is drawn
+   in its kind's colour and picture (CALLOUT_LOOK); Booklet's three kinds
+   (`diff`, `law`, `opinion`) also keep their own border pattern. The
    citations of the page on show print as endnotes. The renderer only DISPLAYS
    whether a citation was verified; it never checks a quote against anything. */
-/* each kind has its own glyph as well as its own colour and border pattern */
-const CALLOUT_ICON={diff:"≠",law:"§",opinion:"❝"};
 /* the mark: [^ then an id of letters, digits, _ . : or -, then ] */
 const CITE_RX=/\[\^([A-Za-z0-9][A-Za-z0-9_.:-]*)\]/g;
 const citeIds=s=>typeof s==="string"&&s.includes("[^")?[...s.matchAll(CITE_RX)].map(m=>m[1]):[];
@@ -5603,12 +5696,13 @@ function showTip(activityId,id,at){if(citeOpen()&&citeFrom===at) return;
 function hideTip(){if(citeTipEl) citeTipEl.setAttribute("hidden","");}
 /* ---- callouts ---- */
 let rdSeq=0;
-function calloutNode(b,draft,activityId){const Rt=strings("reading"),k=CALLOUT_KINDS.includes(b.kind)?b.kind:"";
+function calloutNode(b,draft,activityId){const Rt=strings("reading"),plain=b.kind==="",look=plain?null:calloutLook(b.kind),k=look?look.label:"";
   const u="rd-c"+(++rdSeq),title=tx(b.title,"");
-  const box=el("div",{class:"rd-callout"+(k?" rd-k-"+k:""),role:"note","data-kind":k||null});
+  const box=el("div",{class:"rd-callout"+(look?" rd-hued hue-"+look.hue+" rd-k-"+look.label:""),role:"note","data-kind":k||null});
   const head=el("div",{class:"rd-chead"}),named=[];
-  if(k){head.append(el("span",{class:"rd-ci","aria-hidden":"true"},CALLOUT_ICON[k]),
-    el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
+  if(look){const pic=icon(look.icon);
+    if(pic) head.append(el("span",{class:"rd-ci","aria-hidden":"true"},pic));
+    head.append(el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
   box.append(head);
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},title));named.push(u+"-t");}

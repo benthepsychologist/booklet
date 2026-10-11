@@ -36,8 +36,15 @@ for(const t of ["warm","green","amber","slate","teal"]){pairs.push(["tone-"+t+"-
 /* the views (format 0.7): a plain pill, a toned value on a card, a quiet note and a label on a toned tile */
 pairs.push(["reader","paper-deep"],["muted","paper-deep"]);
 for(const t of ["warm","green","amber"]){pairs.push(["tone-"+t+"-deep","surface"]);pairs.push(["muted","tone-"+t]);pairs.push(["reader","tone-"+t]);}
+/* the hues (0.11.9): text pairs at 4.5 to 1, picture pairs (a third item, 3) at 3 to 1 */
+const HUES=["sky","rose","sage","sun","lilac","petrol","slate"];
+for(const h of HUES){pairs.push(["h-"+h+"-deep","h-"+h],["h-"+h+"-deep","surface"],["h-"+h+"-deep","paper"],["ink","h-"+h],
+  ["h-"+h+"-vivid","h-"+h,3],["on-solid","h-"+h+"-solid",3]);}
+{const want=HUES.flatMap(h=>["h-"+h,"h-"+h+"-vivid","h-"+h+"-solid","h-"+h+"-deep"]).concat(["on-solid","spark"]).map(x=>"--"+x).sort();
+ for(const n of names){const have=Object.keys(tables[n]).filter(k=>/^--(h-|on-solid$|spark$)/.test(k)).sort();
+   ok(JSON.stringify(have)===JSON.stringify(want),n+" carries the four shades of each of seven hues, --on-solid and --spark ("+want.length+" tokens)");}}
 for(const n of names){
-  for(const [f,b] of pairs){const r=ratio(tables[n]["--"+f],tables[n]["--"+b]);ok(r>=4.5,n+": "+f+" on "+b+" "+r.toFixed(2)+":1");}
+  for(const [f,b,min] of pairs){const r=ratio(tables[n]["--"+f],tables[n]["--"+b]);ok(r>=(min||4.5),n+": "+f+" on "+b+" "+r.toFixed(2)+":1"+(min?" (picture, "+min+" needed)":""));}
   if(n==="contrast"){const r=ratio(tables[n]["--ink"],tables[n]["--paper"]);ok(r>=7,"contrast: ink on paper "+r.toFixed(2)+":1 (7 needed)");}}
 // no colour literal outside the tables, in the CSS and the page's own scripts (the head icons and meta are assets, not CSS)
 let rest=stripped.replace(/:root[^{]*\{[^}]*\}/g,m=>/--paper:/.test(m)?"":m);
@@ -53,5 +60,17 @@ const sprite=html.slice(html.indexOf("<!-- art:start -->"),html.indexOf("<!-- ar
 ok(sprite.length>1000,"the sprite block is found ("+sprite.length+" bytes)");
 const spriteLit=(sprite.match(lit)||[]).concat(sprite.match(/\bstyle=|\b(?:fill|stroke|stop-color|flood-color)="(?!none"|currentColor")[^"]*"/g)||[]);
 ok(spriteLit.length===0,"no colour literal, style attribute or painted colour in the sprite"+(spriteLit.length?" ("+spriteLit.slice(0,5)+")":""));
+// the two styles are fixed tables of the same keys, in the head script, and no selector names a style or a base outside the token tables
+{const boot=html.slice(html.indexOf('<script id="theme-boot">'),html.indexOf("</script>",html.indexOf('<script id="theme-boot">')));
+ const m=/var STYLES=(\{[\s\S]*?\});\s*var STYLE_NAMES/.exec(boot);
+ const STY=m?new Function("return "+m[1])():null;
+ ok(!!STY&&Object.keys(STY).join()==="teaching,briefing","STYLES holds teaching and briefing");
+ if(STY){ok(Object.keys(STY.teaching).sort().join()===Object.keys(STY.briefing).sort().join(),"both styles carry the same keys ("+Object.keys(STY.teaching).join(" ")+")");
+   ok(Object.entries(STY).every(([n,t])=>Object.entries(t).every(([k,v])=>k==="picture"?(v==="spot"||v==="icon"):(/^--(r-lg|r-md|r-sm|num-w|tile-bg|tile-art)$/.test(k)&&!/#|rgb|hsl/.test(v)))),"a style sets only radii, --num-w, --tile-bg, --tile-art and picture, and no colour");
+   ok(STY.teaching["--tile-bg"]==="var(--c-soft)"&&STY.teaching["--tile-art"]==="var(--c-vivid)"&&STY.briefing["--tile-bg"]==="var(--c-solid)"&&STY.briefing["--tile-art"]==="var(--on-solid)"&&STY.teaching.picture==="spot"&&STY.briefing.picture==="icon","teaching: soft tile, vivid art, spots; briefing: solid tile, white art, icons");}
+ const sel=[...stripped.matchAll(/(?:^|\})\s*([^{}@]+)\{/g)].map(x=>x[1]).filter(x=>!/^\s*:root/.test(x));
+ const named=sel.filter(x=>/data-style|data-theme|\.(teaching|briefing)\b/.test(x));
+ ok(named.length===0,"no CSS selector names a style or a base outside the token tables"+(named.length?" ("+named.slice(0,3)+")":""));
+ ok(!/data-style/.test(stripped),"the stylesheet never reads data-style");}
 ok(!/\.col\{max-width:64ch\}/.test(style),"the 64ch page column cap is gone");
 console.log(fails?"\n"+fails+" FAILURES":"\nthemes checks passed");process.exit(fails?1:0);

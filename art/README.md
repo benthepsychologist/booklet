@@ -6,7 +6,7 @@ to the sprite, and the check fails until they agree.
 
 ## icons/ (Lucide)
 
-159 icons from **Lucide** (`lucide-static` 1.48.0, https://lucide.dev), each file exactly as that package ships it, named
+161 icons from **Lucide** (`lucide-static` 1.48.0, https://lucide.dev), each file exactly as that package ships it, named
 by Lucide's name. Licence: ISC, with an MIT portion for the icons derived from Feather (Copyright (c) 2013-present Cole
 Bemis). The full text is in `LUCIDE-LICENSE.txt`. In the sprite each is `<symbol id="bi-<name>">`.
 
