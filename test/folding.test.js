@@ -61,13 +61,25 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
  chk("two questions offer no stepper",A.stepUnits([mk("choice","q1"),mk("choice","q2")]).length===0);
  chk("a row of three questions is one step, and one step offers no stepper (the page needs two)",A.stepUnits([{type:"row",id:"r",blocks:[{type:"cell",id:"c",blocks:[mk("text","a"),mk("text","b"),mk("text","c")]}]}]).length===1);}
 
-/* 6. every new word exists in en, fr, es and es-AR */
-{const cards=["questionsN","questionsAnswered"],steps=["label","one","all","progress","back","next","dots"];
+/* 5b. a section that holds a data view says what it holds */
+{A.loadText(FM+"> [!activity|log repeat] Log\n\n> [!text|t] Note\n\n> [!activity|a] A\n\n## Kept\n\n```booklet query\nfrom: log\nas: table\n```\n\n## Rows\n\nWords.\n\n```booklet data\n[{\"a\":1},{\"a\":2}]\n```\n^d\n\n```booklet query\nfrom: d\nas: table\n```\n\n## Empty\n\n```booklet data\n[]\n```\n^e\n\n```booklet query\nfrom: e\nas: table\nempty: Nothing logged.\n```\n");
+ draw("a");
+ const s=secs();
+ chk("a section holding kept entries says None yet, a data block says its rows, an empty block its own words",
+   status(s[0])==="None yet"&&status(s[1])==="2 rows"&&status(s[2])==="Nothing logged.",JSON.stringify(s.map(status)));}
+
+/* 6. every new word exists in en, fr, es (the tables themselves: a missing key must not hide behind the English that fr and es
+   inherit) and es-AR (which inherits es) */
+{const cards=["questionsN","questionsAnswered","rowsN","noneYet"],steps=["label","one","all","progress","back","next","dots"];
+ const has=(o,k)=>o&&o[k]!=null&&!(typeof o[k]==="string"&&!o[k].trim());
+ for(const lang of ["en","fr","es"]){const src=A.STRINGS_SRC[lang],miss=[...cards.filter(k=>!has(src.cards,k)).map(k=>"cards."+k),...steps.filter(k=>!has(src.steps,k)).map(k=>"steps."+k)];
+   chk("the new words are written in the "+lang+" table itself",miss.length===0,miss.join());}
  for(const lang of ["en","fr","es","es-AR"]){const c=A.STRINGS[lang].cards,s=A.STRINGS[lang].steps;
-   const miss=[...cards.filter(k=>!c||c[k]==null),...steps.filter(k=>!s||s[k]==null||(typeof s[k]==="string"&&!s[k].trim())).map(k=>"steps."+k)];
-   chk("the new words exist in "+lang,miss.length===0,miss.join());
-   chk("the counting words in "+lang+" take numbers",/2/.test(c.questionsN(2))&&/1/.test(c.questionsAnswered(1,2))&&/2/.test(c.questionsAnswered(1,2))&&/2/.test(s.progress(2,5))&&/5/.test(s.progress(2,5)));}
- chk("fr and es are not the English words",A.STRINGS.fr.steps.one!==A.STRINGS.en.steps.one&&A.STRINGS.es.steps.one!==A.STRINGS.en.steps.one&&A.STRINGS.fr.steps.next!==A.STRINGS.en.steps.next);
+   const miss=[...cards.filter(k=>!has(c,k)).map(k=>"cards."+k),...steps.filter(k=>!has(s,k)).map(k=>"steps."+k)];
+   chk("the new words resolve in "+lang,miss.length===0,miss.join());
+   chk("the counting words in "+lang+" take numbers",/2/.test(c.questionsN(2))&&/1/.test(c.questionsAnswered(1,2))&&/2/.test(c.questionsAnswered(1,2))&&/3/.test(c.rowsN(3))&&/2/.test(s.progress(2,5))&&/5/.test(s.progress(2,5)));}
+ chk("es-AR holds none of these words itself and gets es's",!A.STRINGS_SRC["es-AR"].steps&&A.STRINGS["es-AR"].steps.one===A.STRINGS.es.steps.one&&A.STRINGS["es-AR"].cards.noneYet===A.STRINGS.es.cards.noneYet);
+ chk("fr and es are not the English words",A.STRINGS.fr.steps.one!==A.STRINGS.en.steps.one&&A.STRINGS.es.steps.one!==A.STRINGS.en.steps.one&&A.STRINGS.fr.cards.noneYet!==A.STRINGS.en.cards.noneYet&&A.STRINGS.es.cards.noneYet!==A.STRINGS.en.cards.noneYet);
  chk("the draft words are marked for the localisation pass",P.html.split("steps: { /* l10n: draft */").length===3);}
 
 /* 7. the preference lives in booklet.ui.* only */

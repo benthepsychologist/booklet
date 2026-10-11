@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-zJ1OUucg9gj4k2uTRfdmiPwHoFy8TpeUSIghqtsIdlI=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-uv6PY90QxL6DvVvyocXBDgpHMK+zZb7xYD5eekv7uEw=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -461,6 +461,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .oat-dot.cur{background:var(--accent);box-shadow:none}
   .oat-unit{background:var(--surface);border:var(--bw) solid var(--rule);border-radius:var(--r-lg);padding:.9rem 1.1rem .4rem}
   .oat-unit[hidden]{display:none}
+  .oat-unit:focus{outline:none} .oat-unit:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
   .oat-nav{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:.9rem 0 0;font-family:var(--sans)}
   .oat-nav .cd-btn[disabled]{opacity:.45;cursor:default}
   @media (prefers-reduced-motion:reduce){.oat-dot{transition:none}}
@@ -884,10 +885,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .rm-btn{border:var(--bw) solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:.35rem .9rem;font-size:.9rem;font-weight:700;line-height:1.2}
   .rm-btn:hover{background:var(--accent-soft)}
   .rm-count{margin:0 0 0 .25rem;font-size:.9rem;color:var(--muted)}
-  /* reading mode: a folded section is a fold card (cardNode); every one keeps the same measure, and a table or figure
-     wider than it scrolls inside its own section */
-  .rm-sec{max-width:calc(var(--measure) + 6rem)}
-  .rm-sec>summary .cd-main{max-width:var(--measure)}
+  /* reading mode: a folded section is a fold card (cardNode) as wide as the content, like a callout; prose inside keeps the
+     readable measure (its own rule), while a data view, table, chart or pill row uses the card's full width */
   .rm-sec>summary .top :is(h2,h3,h4,h5,h6){font-size:1.15rem}
   /* print: the layout for paper. The light tokens are the next block, declared last. */
   @media print{
@@ -1662,7 +1661,9 @@ const STRINGS_SRC={
       back: "Back to the overview",
       next: (n,t)=>`Next: ${n}. ${t}`,
       questionsN: n=>`${n} question${n===1?"":"s"}`,
-      questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} answered`
+      questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} answered`,
+      rowsN: n=>`${n} row${n===1?"":"s"}`,
+      noneYet: "None yet"
     },
     steps: {
       label: "How to read the questions",
@@ -1956,7 +1957,9 @@ const STRINGS_SRC={
       back: "Retour à l’aperçu",
       next: (n,t)=>`Suivante : ${n}. ${t}`,
       questionsN: n=>`${n} question${n===1?"":"s"}`,
-      questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} répondue${n===1?"":"s"}`
+      questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} répondue${n===1?"":"s"}`,
+      rowsN: n=>`${n} ligne${n===1?"":"s"}`,
+      noneYet: "Aucune pour l’instant"
     },
     steps: { /* l10n: draft */
       label: "Façon de lire les questions",
@@ -2250,7 +2253,9 @@ const STRINGS_SRC={
       back: "Volver al resumen",
       next: (n,t)=>`Siguiente: ${n}. ${t}`,
       questionsN: n=>`${n} pregunta${n===1?"":"s"}`,
-      questionsAnswered: (n,m)=>`${m} pregunta${m===1?"":"s"} · ${n} respondida${n===1?"":"s"}`
+      questionsAnswered: (n,m)=>`${m} pregunta${m===1?"":"s"} · ${n} respondida${n===1?"":"s"}`,
+      rowsN: n=>`${n} fila${n===1?"":"s"}`,
+      noneYet: "Ninguna todavía"
     },
     steps: { /* l10n: draft */
       label: "Cómo leer las preguntas",
@@ -5539,7 +5544,7 @@ function stepPage(id,draft,units){const S=strings("steps"),page=currentPage(id),
   const n=units.length,host=el("div",{class:"oat"});
   const prog=el("span",{class:"oat-prog",role:"status"}),dots=units.map(()=>el("span",{class:"oat-dot"}));
   host.append(el("div",{class:"oat-head"},prog,el("span",{class:"oat-dots","aria-hidden":"true"},...dots)));
-  const nodes=units.map(u=>el("div",{class:"oat-unit"},...u.blocks.map(b=>renderBlock(b,draft,id))));
+  const nodes=units.map(u=>el("div",{class:"oat-unit",tabindex:"-1"},...u.blocks.map(b=>renderBlock(b,draft,id))));
   host.append(...nodes);
   const back=el("button",{type:"button",class:"cd-btn oat-back"},icon("arrow-left"),S.back),
     next=el("button",{type:"button",class:"cd-btn oat-next primary"},S.next,icon("arrow-right"));
@@ -5549,8 +5554,9 @@ function stepPage(id,draft,units){const S=strings("steps"),page=currentPage(id),
     prog.textContent=S.progress(at+1,n);
     dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i])?" on":"")+(i===at?" cur":"");});
     [[back,at<=0],[next,at>=n-1]].forEach(([b,off])=>{if(off) b.setAttribute("disabled","");else b.removeAttribute("disabled");});};
-  const go=d=>{const was=document.activeElement;OAT_AT[key]=Math.max(0,Math.min(n-1,OAT_AT[key]+d));draw();
-    if(was&&was.hasAttribute&&was.hasAttribute("disabled")) (d>0?back:next).focus();};
+  /* Back and Next move the keyboard to the step now shown (its box takes the focus, so a screen reader reads it) */
+  const go=d=>{OAT_AT[key]=Math.max(0,Math.min(n-1,OAT_AT[key]+d));draw();
+    const u=nodes[OAT_AT[key]];if(u&&u.focus) u.focus();};
   back.addEventListener("click",()=>go(-1));next.addEventListener("click",()=>go(1));
   draw();ANSWER_TICKS.push(draw);
   return host;}
@@ -5641,6 +5647,17 @@ function rmGo(info,k){
   if(d){d.open=true;d.scrollIntoView({block:"start"});
     const s=d.querySelector("summary");if(s&&s.focus) s.focus({preventScroll:true});}
   const cur=RM_CUR;if(cur) rmRefresh(cur);}
+/* What a data view or a kept-entry view holds, as a line for its section's card: "2 kept" or "N rows", or the view's own
+   `empty:` text (else "None yet") when it holds nothing. Nothing when the view cannot be drawn. */
+function queryStatus(b,activityId){const C=strings("cards");
+  try{let n;
+    if(b.data) n=dataSet(b.data).rows.length;
+    else{const same=holderOf(b.from)&&scopeOfAddr(b.from)===scopeOfAddr(activityId),q=b.field?blocksOf(b.from).find(x=>x.id===b.field):null;
+      if(!(same&&(!b.field||q))) return "";
+      n=entrySet(b,activityId,"cards").rows.length;}
+    if(n) return b.data?C.rowsN(n):STRINGS[lang].ui.entriesN(n);
+    const e=tx(b.empty,"");return nonEmpty(e)?e:C.noneYet;
+  }catch(err){return "";}}
 /* Draw a page that only reads. Returns null for any other page
    (drawn as any other page is); otherwise {node, info}, where info is null when the page
    has no sections to fold. */
@@ -5667,8 +5684,13 @@ function readingPage(id,draft){
     nodes.forEach(x=>{const it=of.get(x);if(!it||!it.b) return;
       blocksAll([it.b]).filter(q=>QUESTION_KINDS.has(q.type)).forEach(q=>{n++;if(keysOf(q).some(k=>holdsSomething(draft[k]))) done++;});});
     return {n,done};};
-  const statusOf=nodes=>{const C=strings("cards"),q=qStat(nodes);
-    return !q.n?"":q.done>=q.n?C.done:q.done?C.questionsAnswered(q.done,q.n):C.questionsN(q.n);};
+  /* what a section holds besides prose: its questions' progress, and what each data view or kept-entry view holds */
+  const statusOf=nodes=>{const C=strings("cards"),q=qStat(nodes),out=[];
+    if(q.n) out.push(q.done>=q.n?C.done:q.done?C.questionsAnswered(q.done,q.n):C.questionsN(q.n));
+    nodes.forEach(x=>{const it=of.get(x);if(!it||!it.b) return;
+      blocksAll([it.b]).filter(z=>z.type==="query").forEach(z=>{const t=queryStatus(z,id);if(t) out.push(t);});});
+    return out.join(" · ");};
+  const holds=nodes=>nodes.some(x=>{const it=of.get(x);return !!it&&!!it.b&&blocksAll([it.b]).some(z=>z.type==="query"||isQuestion(z));});
   if(!RM_STATE[key]){const all=rmPref()==="open",ks=plan.sections.map((_,k)=>k);
     RM_STATE[key]={open:new Set(all?ks:[]),seen:new Set(all?ks:[])};
     /* arriving, the first section with a question still to answer is open */
@@ -5696,7 +5718,7 @@ function readingPage(id,draft){
     const name=textOf(s.head).trim(),emoji=takeLeadEmoji(s.head);
     const d=cardNode({mode:"fold",cls:"rm-sec",titleNode:s.head,number:k+1,hue:cardHue(k),teaser,teaserCls:"rm-lede",status:statusOf(s.body),
       picture:emoji?{emoji}:{number:k+1},open:st.open.has(k),bodyCls:"rm-body",body:emit(s.body)});
-    if(qStat(s.body).n) info.stats.push({d,line:()=>statusOf(s.body)});
+    if(holds(s.body)) info.stats.push({d,line:()=>statusOf(s.body)});
     d.setAttribute("data-k",String(k));
     d.addEventListener("toggle",()=>{if(RM_QUIET) return;
       if(d.open){st.open.add(k);st.seen.add(k);}else st.open.delete(k);rmRefresh(info);});

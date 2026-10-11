@@ -14,6 +14,7 @@ const opts=['Left','Right','Up'].map(o=>`- [ ] ${o}`).join('\n');
 const longOpts=['An option that is rather long indeed','Another long option here today','A third long option text'].map(o=>`- [ ] ${o}`).join('\n');
 const qpage=head+`> [!module|m] M\n\n> [!activity|q] Questions\n\n## First part\n\nWords about the first part.\n\n> [!choice|c1] Which way?\n${opts}\n\n> [!hint]-\n> HINT-SECRET-WORDS\n\n## Second part\n\nWords about the second.\n\n> [!choice|c2] Which other way?\n${opts}\n\n> [!solution]-\n> SOLUTION-SECRET-WORDS\n\n> [!choice|c3] A long one?\n${longOpts}\n\n## Third part\n\nOnly reading here.\n\n> [!matrix|mx] Rate each\n- Sleep\n- Food\n\n1. Low\n2. High\n\n> [!module|m end] End\n`;
 const dpage=head+`> [!module|m] M\n\n> [!activity|log repeat] Log\n\n## Notes\n\nA note section.\n\n> [!text|what] What?\n\n## More\n\nMore words.\n\n> [!activity|look] Look\n\n## Shown\n\nShown words.\n\n\`\`\`booklet data\n[{"a":1,"b":"x"}]\n\`\`\`\n^rows\n\n\`\`\`booklet query\nfrom: rows\nas: table\n\`\`\`\n\n## Again\n\nAgain words.\n\n> [!module|m end] End\n`;
+const chart=head+`> [!module|m] M\n\n> [!activity|c] Chart\n\n## One\n\nWords about the first.\n\n## Trend\n\nHours of sun.\n\n\`\`\`booklet query\nfrom: sun\nas: line\nlabel: day\nfields: hours\n\`\`\`\n\n\`\`\`booklet data\n{ "fields": { "day": "Day", "hours": "Hours" }, "rows": [ { "day": "Mon", "hours": 6 }, { "day": "Tue", "hours": 7 }, { "day": "Wed", "hours": 4 }, { "day": "Thu", "hours": 2 }, { "day": "Fri", "hours": 5 } ] }\n\`\`\`\n^sun\n\n## Last\n\nEnd.\n\n> [!module|m end] End\n`;
 const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,2,3,4].map(i=>`> [!choice|s${i}] Question number ${i}?\n${opts}\n\n`).join('')+'Closing words.\n\n> [!module|m end] End\n';
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -80,6 +81,7 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     await p.locator('.cd-back').first().click();await wait(300);await openAct('Look');
     const pg=p.locator('.ap-item');if(await pg.count()) {}
     ok(await secs().count()===2,`${W}px: a page with a data view folds into its sections`);
+    ok(await status(0)==='1 row',`${W}px: a section holding a data block says how many rows (${await status(0)})`);
 
     /* 6. one at a time */
     await load(six);
@@ -115,6 +117,15 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     await p.getByRole('button',{name:'All at once'}).click();await wait(300);
     ok(await p.locator('.oat-unit').count()===0&&await p.locator('#main .pill-btn').count()>=12,`${W}px: All at once draws every question again`);
 
+    /* 6b. Back and Next move the keyboard to the step now shown */
+    await p.getByRole('button',{name:'One at a time'}).click();await wait(300);
+    await p.getByRole('button',{name:'Next question'}).click();await wait(150);
+    const fo=await p.evaluate(()=>{const e=document.activeElement,u=[...document.querySelectorAll('.oat-unit')];return {idx:u.indexOf(e),shown:u.findIndex(x=>x.offsetHeight>0)};});
+    ok(fo.idx>=0&&fo.idx===fo.shown,`${W}px: Next puts the focus on the step now shown (${JSON.stringify(fo)})`);
+    await p.getByRole('button',{name:'Back',exact:true}).click();await wait(150);
+    ok(await p.evaluate(()=>{const e=document.activeElement,u=[...document.querySelectorAll('.oat-unit')];return u.indexOf(e)>=0&&u.indexOf(e)===u.findIndex(x=>x.offsetHeight>0);}),`${W}px: Back puts the focus on the step now shown`);
+    await p.getByRole('button',{name:'All at once'}).click();await wait(300);
+
     /* 7. Night: the focus ring; reduced motion */
     await p.evaluate(()=>window.bookletTheme.set('night'));await wait(200);
     await p.getByRole('button',{name:'One at a time'}).focus();await p.keyboard.press('Tab');await p.keyboard.press('Shift+Tab');await wait(100);
@@ -124,6 +135,20 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     await p.getByRole('button',{name:'One at a time'}).click();await wait(300);
     ok(await p.locator('.oat-dot').first().evaluate(d=>parseFloat(getComputedStyle(d).transitionDuration)===0),`${W}px: reduced motion stops the dots' fade`);
     await p.evaluate(()=>window.bookletTheme.set('paper'));
+
+    /* 6c. a section holding a line chart, closed on arrival, draws at its section's width once opened */
+    await load(chart);
+    await openAct('Chart');
+    {const trend=secs().nth(1);
+     ok(await trend.evaluate(d=>!d.open),`${W}px: the chart's section is closed on arrival`);
+     await trend.locator(':scope > summary').click();await wait(500);
+     const w=await trend.evaluate(d=>{const h=d.querySelector('.ch-linechart .ch-svg'),body=d.querySelector('.cd-body'),cs=getComputedStyle(body),
+       inner=body.getBoundingClientRect().width-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),
+       pl=d.querySelector('.dv-panel'),pw=pl?pl.getBoundingClientRect().width:inner;
+       return {svg:Math.round(h.getBoundingClientRect().width),vb:Math.round(parseFloat(h.getAttribute('viewBox').split(' ')[2])),plot:Math.round(d.querySelector('.ch-plot').getBoundingClientRect().width),panel:Math.round(pw),inner:Math.round(inner)};});
+     ok(w.svg>0&&Math.abs(w.svg-w.plot)<=2&&(Math.abs(w.vb-w.svg)<=2||(w.vb===240&&w.svg<240))&&w.svg>=w.panel-48&&w.svg<=w.inner,`${W}px: the opened section's line chart is drawn at its section's width, not 0 or a stale 640 (${JSON.stringify(w)})`);
+     const full=await p.evaluate(()=>{const c=document.querySelector('#main .rm-sec').getBoundingClientRect(),m=document.querySelector('#main .ap-body,#main .col').getBoundingClientRect();return {card:Math.round(c.width),col:Math.round(m.width)};});
+     ok(Math.abs(full.card-full.col)<=2,`${W}px: a section card is as wide as the content column (${JSON.stringify(full)})`);}
 
     /* 8. axe, when a copy is given */
     if(process.env.AXE&&fs.existsSync(process.env.AXE)&&W===1280){
