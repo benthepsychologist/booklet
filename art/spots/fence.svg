@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <path class="a" d="M20 30 L28 20 L36 30 L36 84 L20 84 Z"/>
+  <path class="a" d="M42 30 L50 20 L58 30 L58 84 L42 84 Z"/>
+  <path class="a" d="M64 30 L72 20 L80 30 L80 84 L64 84 Z"/>
+  <rect class="w l" x="14" y="44" width="72" height="7" stroke-width="2"/>
+  <rect class="w l" x="14" y="64" width="72" height="7" stroke-width="2"/>
+</svg>

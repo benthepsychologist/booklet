@@ -24,6 +24,7 @@ run() { # run <label> <command...>
 
 run lint     python3 lint-booklet.py
 run csp      node test/csp-hash.js --check booklet.html   # the renderer's own Content-Security-Policy is current
+run art      node test/art-sprite.js --check booklet.html # the picture sprite is what art/ makes
 for f in test/*.test.js; do
   [ -e "$f" ] || continue
   run "$(basename "$f" .test.js)" node "$f"

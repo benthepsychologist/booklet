@@ -30,6 +30,7 @@ const POLICY=["default-src 'none'",
   "script-src 'self' %H%",
   "style-src 'self' 'unsafe-inline'",
   "img-src data: blob:",
+  "font-src data:",
   "connect-src 'self' https://raw.githubusercontent.com",
   "base-uri 'none'","form-action 'none'","object-src 'none'"].join("; ");
 const CHARSET='<meta charset="utf-8">';

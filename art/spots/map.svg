@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <path class="a" d="M16 26 L38 18 L62 26 L84 18 L84 76 L62 84 L38 76 L16 84 Z"/>
+  <line class="lw" x1="38" y1="18" x2="38" y2="76" stroke-width="2.5"/>
+  <line class="lw" x1="62" y1="26" x2="62" y2="84" stroke-width="2.5"/>
+</svg>

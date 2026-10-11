@@ -1,4 +1,4 @@
-# The booklet format, v0.11.4
+# The booklet format, v0.11.8
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
@@ -629,7 +629,7 @@ density: roomy
 - `density` sizes the views (rows, tiles, tables, bars) as well as the prose: `compact` is tighter and `roomy` looser throughout.
 - A renderer works every other colour out from these (soft tints, rules, the text drawn on an accent), so a theme stays coherent.
 - **A colour that would be hard to read is not used.** If text on its background falls below a contrast of 4.5 to 1, the renderer keeps the base theme's colour for that pair, and the linter says which.
-- Fonts are the reader's device's own, chosen by family; a theme never names or fetches a font file.
+- A theme names a family, never a font file. A renderer may carry a family inside itself; nothing is fetched.
 - **The reader has the last word on colour.** A reader who picks a theme of their own gets its colours, whatever the booklet asks for. The booklet's `font` and `density` still apply: they are the page's layout, not its colours.
 - Printing is always light.
 
@@ -795,6 +795,12 @@ None of this affects what already works: loading, reading, answering, and saving
 ---
 
 ## 14. Changes
+
+### Changes in v0.11.8: wording only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
+
+- **Fonts** (section 7). A theme names a family, never a font file; a renderer may carry a family inside itself, and nothing is fetched. The reference renderer now carries Atkinson Hyperlegible and Lexend as data inside its file, and draws headings in Lexend over body text in Atkinson Hyperlegible unless the theme's `font` says otherwise.
 
 ### Changes in v0.11.4: wording only
 

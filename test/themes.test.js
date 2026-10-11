@@ -48,5 +48,10 @@ ok(cssLeft.length===0,"no colour literal in the CSS outside the token tables"+(c
 // scripts: strip comments and the "#" of selectors/ids is a risk, so match only hex that is a whole quoted colour or inside a style string
 const sLeft=(scripts.replace(/\/\*[\s\S]*?\*\//g,"").match(/["'`]#[0-9A-Fa-f]{3,8}["'`]|rgba?\(|hsla?\(/g)||[]);
 ok(sLeft.length===0,"no colour literal in the page's scripts"+(sLeft.length?" ("+sLeft.slice(0,5)+")":""));
+// the picture sprite carries no colour either: its shapes take classes, and the CSS above gives the classes their colours
+const sprite=html.slice(html.indexOf("<!-- art:start -->"),html.indexOf("<!-- art:end -->"));
+ok(sprite.length>1000,"the sprite block is found ("+sprite.length+" bytes)");
+const spriteLit=(sprite.match(lit)||[]).concat(sprite.match(/\bstyle=|\b(?:fill|stroke|stop-color|flood-color)="(?!none"|currentColor")[^"]*"/g)||[]);
+ok(spriteLit.length===0,"no colour literal, style attribute or painted colour in the sprite"+(spriteLit.length?" ("+spriteLit.slice(0,5)+")":""));
 ok(!/\.col\{max-width:64ch\}/.test(style),"the 64ch page column cap is gone");
 console.log(fails?"\n"+fails+" FAILURES":"\nthemes checks passed");process.exit(fails?1:0);

@@ -83,6 +83,7 @@ and it draws those too, as long as they use engines it has.
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
 | [`examples/`](examples/) | complete booklets you can open: `how-tides-work` (reading, a citation, a quiz that says right or not), `mindful-check-in` (widgets, a module's notice and its own data section), `garden-week` (a theme and rows), `status-page` (tiles, a grouped list, tables and charts from data), `project-board` (row roles, a nested list, a question a reader can add to) |
+| [`art/`](art/) | the pictures the renderer carries: a pinned Lucide subset and Booklet's own spot drawings, with their licences; `node test/art-sprite.js --write booklet.html` turns them into the renderer's hidden sprite |
 | [`test/`](test/) | the suite, run with `test/run.sh` |
 | [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry) | a separate repo: the modules on offer and the `registry.json` that lists them |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
