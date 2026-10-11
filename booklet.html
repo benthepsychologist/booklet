@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-2Rub2jf2W4DQDm6Er8zMMoK+yeHtnm7lFtd1mslxuqA=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-zJ1OUucg9gj4k2uTRfdmiPwHoFy8TpeUSIghqtsIdlI=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -319,7 +319,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   @media (min-width:900px){.page{padding:2.5rem 2rem 6rem}}
   .col{max-width:none}
   /* the readable measure for prose (data and figures keep the full width, above) */
-  h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.mxwrap,.oneline,.notice,blockquote,ul.plain,.rd-callout,
+  h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.mxwrap,.q-inline,.oneline,.notice,blockquote,ul.plain,.rd-callout,
   .md>:is(ul,ol,h4,h5,h6,dl){max-width:var(--measure)}
 
   /* home */
@@ -370,6 +370,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .card-sub .k{font-size:1rem}
   .card-sub .cd-chev{background:var(--surface)}
   .card-sub>.cd-body{padding:.1rem 1rem .8rem 3.8rem}
+  /* a hint or a solution under its question: one quiet line with a small icon, no tile and no teaser */
+  .card-compact{margin:.1rem 0 .6rem;background:transparent;border-color:transparent}
+  .card-compact>summary{min-height:44px;padding:.2rem .5rem;gap:.5rem;align-items:center;color:var(--muted)}
+  .card-compact>summary:hover{background:var(--c-soft)}
+  .card-compact .cd-tile{width:1.5rem;height:1.5rem;font-size:1rem;background:transparent;color:var(--muted)}
+  .card-compact .k{font-family:var(--sans);font-size:.92rem;font-weight:600;color:var(--muted)}
+  .card-compact .cd-chev{width:1.6rem;height:1.6rem;background:transparent;color:var(--muted)}
+  .card-compact[open]{background:var(--c-soft);border-color:transparent}
+  .card-compact[open]>summary{color:var(--ink)}
+  .card-compact>.cd-body{padding:.1rem 1rem .8rem 2.5rem}
   @media (max-width:520px){.cd-tile{width:3.4rem;height:3.4rem;font-size:1.55rem}.card-go,.card-fold>summary{gap:.7rem}.card-sub>.cd-body{padding-left:1rem}}
   .card-go .bkacts{margin-top:.3rem}
   .cd-foot{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin:1.75rem 0 0;padding-top:1.25rem;border-top:var(--bw) dashed var(--rule);font-family:var(--sans)}
@@ -429,28 +439,50 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .q-mk{font-size:.82em;font-weight:700}
   .q-acts{display:flex;gap:.45rem;margin:-.4rem 0 .6rem} .q-acts:empty{display:none}
   .q-live{margin:0 0 1rem;min-height:1.2em} .q-live:empty{display:none}
-  /* matrix: a grid wide, stacked pills narrow (one set of radios either way) */
+  .pills .pill-btn,.pill-x{min-height:44px;min-width:44px}
+  /* short options sit beside their question when there is room */
+  .q-inline{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1rem;align-items:center}
+  .q-inline>:is(h3,label.lbl,.aside){grid-column:1}
+  .q-inline>:is(h3,label.lbl){margin-top:.25rem;margin-bottom:.25rem}
+  .q-inline>.pills{max-width:none}
+  .q-inline>.pills{grid-column:2;grid-row:1/span 2;justify-self:end;margin:.25rem 0 .5rem}
+  .q-inline>:is(.q-acts,.q-live,.q-ownrow){grid-column:1/-1}
+  @media (max-width:640px){.q-inline{display:block}.q-inline>.pills{margin:.25rem 0 1rem}}
+  .rowcell .q-inline{display:block}
+  /* one at a time */
+  .oat-ctl{display:inline-flex;gap:.25rem;padding:.2rem;margin:.6rem 0 1rem;border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);font-family:var(--sans)}
+  .oat-ctl button{min-height:44px;padding:.3rem 1rem;border:0;border-radius:999px;background:transparent;color:var(--muted);font-weight:600;font-size:.92rem}
+  .oat-ctl button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+  .oat-head{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin:0 0 .8rem;font-family:var(--sans)}
+  .oat-prog{font-weight:700;font-size:.9rem;color:var(--accent)}
+  .oat-dots{display:flex;gap:.3rem;flex-wrap:wrap}
+  .oat-dot{width:.6rem;height:.6rem;border-radius:999px;background:var(--rule);transition:background .15s}
+  .oat-dot.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+  .oat-dot.cur{background:var(--accent);box-shadow:none}
+  .oat-unit{background:var(--surface);border:var(--bw) solid var(--rule);border-radius:var(--r-lg);padding:.9rem 1.1rem .4rem}
+  .oat-unit[hidden]{display:none}
+  .oat-nav{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:.9rem 0 0;font-family:var(--sans)}
+  .oat-nav .cd-btn[disabled]{opacity:.45;cursor:default}
+  @media (prefers-reduced-motion:reduce){.oat-dot{transition:none}}
+  /* matrix: each row is its item and its answers as pills (one set of radios, the pill is the label's text): beside the item
+     when the column is wide, under it when it is narrow */
   .mxwrap{container-type:inline-size;margin:.25rem 0 1rem}
   .mx{display:block;font-family:var(--sans)}
-  .mxhead,.mxrow{display:grid;grid-template-columns:minmax(9rem,1.8fr) repeat(var(--mxcols),minmax(0,1fr));align-items:center;gap:0 .4rem}
-  .mxrow .mxopts{display:contents}
-  .mxhead{font-size:.82rem;font-weight:700;color:var(--muted);text-align:center;padding:0 0 .35rem}
-  .mxrow{border-top:1px solid var(--rule);padding:.45rem 0}
-  .mxitem{color:var(--reader)}
-  .mxopt{display:flex;justify-content:center;align-items:center;padding:.35rem;cursor:pointer}
-  .mxopt input{width:1.25rem;height:1.25rem;accent-color:var(--accent);margin:0}
-  /* visually hidden, still read aloud */
-  .mxopt span,.dv-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .mxhead{display:none}
+  .mxrow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.4rem .9rem;border-top:1px solid var(--rule);padding:.45rem 0}
+  .mxitem{color:var(--reader);min-width:0}
+  .mxrow .mxopts{display:flex;flex-wrap:wrap;gap:.45rem;justify-content:flex-end}
+  .mxopt{position:relative;display:inline-flex;cursor:pointer}
+  .mxopt input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .mxopt span{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;box-sizing:border-box;border:var(--bw) solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:.4rem .95rem;font-size:.95rem;font-weight:700;line-height:1.2}
+  .mxopt:hover span{background:var(--accent-soft)}
+  .mxopt input:checked+span{background:var(--accent);color:var(--on-accent)}
+  .mxopt input:focus-visible+span{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
+  .dv-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   @container (max-width:560px){
-    .mxhead{display:none}
     .mxrow{display:block;padding:.6rem 0}
     .mxitem{display:block;margin:0 0 .4rem;font-weight:600}
-    .mxrow .mxopts{display:flex;flex-wrap:wrap;gap:.45rem}
-    .mxopt{padding:0}
-    .mxopt input{position:absolute;opacity:0;width:1px;height:1px}
-    .mxopt span{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;border:var(--bw) solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:.4rem .95rem;font-size:.95rem;font-weight:700;line-height:1.2}
-    .mxopt input:checked+span{background:var(--accent);color:var(--on-accent)}
-    .mxopt input:focus-visible+span{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
+    .mxrow .mxopts{justify-content:flex-start}
   }
 
   /* entry read view */
@@ -868,7 +900,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .mfig,.md div.math{break-inside:avoid;overflow:visible}
     .mfig svg{max-width:100%;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .bar,.ap-menu,.rd-panel,.rd-tip,.toast{display:none!important}
-    .rm-bar,.cd-dup,.cd-chev,.cd-foot{display:none!important}
+    .rm-bar,.cd-dup,.cd-chev,.cd-foot,.oat-ctl,.oat-head,.oat-nav{display:none!important}
+    .oat-unit[hidden]{display:block!important}
+    .oat-unit{border:0;padding:0}
+    .card-compact{background:none}
     .card-fold{border:0;background:none;break-inside:auto}
     .card-sub{background:none}
     .card-fold>summary{padding-left:0;padding-right:0}
@@ -1280,7 +1315,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.9";
+const RENDERER_VERSION="0.11.10";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1625,7 +1660,18 @@ const STRINGS_SRC={
       activitiesN: n=>`${n} ${n===1?"activity":"activities"}`,
       startedN: n=>`${n} started`,
       back: "Back to the overview",
-      next: (n,t)=>`Next: ${n}. ${t}`
+      next: (n,t)=>`Next: ${n}. ${t}`,
+      questionsN: n=>`${n} question${n===1?"":"s"}`,
+      questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} answered`
+    },
+    steps: {
+      label: "How to read the questions",
+      one: "One at a time",
+      all: "All at once",
+      progress: (n,m)=>`Question ${n} of ${m}`,
+      back: "Back",
+      next: "Next question",
+      dots: "Progress through the questions"
     },
     fold: {
       openAll: "Open everything",
@@ -1908,7 +1954,18 @@ const STRINGS_SRC={
       activitiesN: n=>`${n} activité${n===1?"":"s"}`,
       startedN: n=>`${n} commencée${n===1?"":"s"}`,
       back: "Retour à l’aperçu",
-      next: (n,t)=>`Suivante : ${n}. ${t}`
+      next: (n,t)=>`Suivante : ${n}. ${t}`,
+      questionsN: n=>`${n} question${n===1?"":"s"}`,
+      questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} répondue${n===1?"":"s"}`
+    },
+    steps: { /* l10n: draft */
+      label: "Façon de lire les questions",
+      one: "Une à la fois",
+      all: "Toutes ensemble",
+      progress: (n,m)=>`Question ${n} sur ${m}`,
+      back: "Précédente",
+      next: "Question suivante",
+      dots: "Progression dans les questions"
     },
     fold: {
       openAll: "Tout ouvrir",
@@ -2191,7 +2248,18 @@ const STRINGS_SRC={
       activitiesN: n=>`${n} actividad${n===1?"":"es"}`,
       startedN: n=>`${n} empezada${n===1?"":"s"}`,
       back: "Volver al resumen",
-      next: (n,t)=>`Siguiente: ${n}. ${t}`
+      next: (n,t)=>`Siguiente: ${n}. ${t}`,
+      questionsN: n=>`${n} pregunta${n===1?"":"s"}`,
+      questionsAnswered: (n,m)=>`${m} pregunta${m===1?"":"s"} · ${n} respondida${n===1?"":"s"}`
+    },
+    steps: { /* l10n: draft */
+      label: "Cómo leer las preguntas",
+      one: "Una a la vez",
+      all: "Todas a la vez",
+      progress: (n,m)=>`Pregunta ${n} de ${m}`,
+      back: "Anterior",
+      next: "Pregunta siguiente",
+      dots: "Avance por las preguntas"
     },
     fold: {
       openAll: "Abrir todo",
@@ -2701,7 +2769,9 @@ function markAttention(){const dl=document.getElementById("btnExport");
    writes any save still pending to that booklet's own key first (flushSave),
    and a timer that somehow outlives its booklet finds bookletGen moved on and
    does nothing — it can never write one booklet's globals under another's. */
-function markDirty(){dirty=true;markAttention();hookChanged();clearTimeout(saveTimer);const gen=bookletGen;
+/* what a page redraws in place when an answer changes (a section's status line, the stepper's dots) */
+const ANSWER_TICKS=[];
+function markDirty(){dirty=true;markAttention();hookChanged();ANSWER_TICKS.forEach(f=>{try{f();}catch(e){}});clearTimeout(saveTimer);const gen=bookletGen;
   saveTimer=setTimeout(()=>{saveTimer=null;if(gen===bookletGen) saveLocal();},400);}
 function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=null;saveLocal();}
 function resetBookletState(){
@@ -4741,7 +4811,11 @@ function ownEarlier(activityId,K,listed,now){const out=[];
     if(!t||listed.some(o=>sameWords(o,t))||now.some(o=>typeof o==="string"&&sameWords(o,t))||out.some(o=>sameWords(o,t))) continue;
     out.push(t);if(out.length>=12) return out;}
   return out;}
-function drawChoice(b,draft,activityId){const box=el("div",{});const listed=b.options||[],Q=strings("question");
+/* Options short enough (at most four, each at most 24 characters) sit as pills beside their question when there is room,
+   under it when there is not; any longer list stands under the question as before. */
+const shortOptions=l=>Array.isArray(l)&&l.length>0&&l.length<=4&&l.every(o=>typeof o==="string"&&o.length<=24);
+function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("question");
+  const box=el("div",{class:shortOptions(listed)&&!b.open?"q-inline":null});
   questionHead(box,b);
   const K=b.keys[0],multi=b.type==="multi";
   const right=Array.isArray(b.answer)?b.answer:(b.answer?[b.answer]:[]);
@@ -4863,8 +4937,9 @@ function foldedCallout(b,draft,activityId){
     teaser=L.para?clip(textOf(L.para),220):L.text;}
   const body=parts.map(p=>p.n);
   if(b.unknown) body.unshift(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
+  /* a hint or a solution is a compact fold: one quiet line, a small icon, no tile, no teaser */
   return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:""),hue:look?look.hue:"slate",title:emo?lead.title:title,picture,teaser,
-    open:blockFilled(b,draft),body});}
+    size:hs?"compact":null,open:blockFilled(b,draft),body});}
 /* An activity marked `upsert:"day"` (the file's `repeat daily`) keeps one entry per
    calendar day rather than one per Finalize: finalizing again on the same day
    replaces that day's entry instead of adding a second one. */
@@ -5381,9 +5456,13 @@ function pageBody(id,draft){const ps=pagesOf(activityOf(id));const cur=currentPa
      the blocks, and only when there is something for them */
   readingBegin(id);
   /* a page that only reads is drawn by READING MODE, folded where it has sections */
-  RM_CUR=null;
-  const rd=readingPage(id,draft);
-  if(rd){RM_CUR=rd.info;box.append(rd.node);RM_REVEAL=null;}
+  RM_CUR=null;ANSWER_TICKS.length=0;
+  /* three or more questions: the reader may take them one at a time (kept per booklet, like the fold choice) */
+  const units=stepUnits(blocksIn(currentPage(id))),one=units.length>=2&&oatPref()==="one";
+  if(units.length>=2) box.append(stepControl(one));
+  const rd=one?null:readingPage(id,draft);
+  if(one) box.append(stepPage(id,draft,units));
+  else if(rd){RM_CUR=rd.info;box.append(rd.node);RM_REVEAL=null;}
   else box.append(renderBlocks(()=>blocksIn(currentPage(id)),draft,id));
   const notes=endnotesFor(id);if(notes) box.append(notes);
   citeReopen(id);
@@ -5430,6 +5509,52 @@ function withPages(id,content){const P=strings("pages");const ps=pagesOf(activit
     pagesOverlay=false;render();refocus(".ap-toggle");}});
   return el("div",{class:"ap-frame"+(open?"":" ap-min")},nav,inner);}
 
+/* ---- ONE AT A TIME ----
+   A page of three or more questions can be taken one question at a time: a progress line and dots, the question, Back
+   and Next. The reader's choice is the browser's (booklet.ui.steps.<booklet>), never the file's. Every question is drawn
+   and the others are only hidden, so an answer is never lost on a step, and print shows them all. A question's own
+   hint and solution go with it; prose goes with the question that follows it (the last prose with the last question). */
+const OAT_KEY="booklet.ui.steps.";
+const oatPref=()=>lsGet(OAT_KEY+(BOOK.id||""));
+const setOatPref=v=>{lsSet(OAT_KEY+(BOOK.id||""),v);};
+const OAT_AT={};
+const isQuestion=q=>QUESTION_KINDS.has(q.type);
+function stepUnits(list){const units=[];let pre=[];
+  (Array.isArray(list)?list:[]).forEach(b=>{if(!b||typeof b!=="object") return;
+    if(blocksAll([b]).some(isQuestion)){units.push({blocks:[...pre,b]});pre=[];}
+    else if(units.length&&b.type==="callout"&&hintKind(b)) units[units.length-1].blocks.push(b);
+    else pre.push(b);});
+  if(pre.length&&units.length) units[units.length-1].blocks.push(...pre);
+  const qs=units.reduce((n,u)=>n+blocksAll(u.blocks).filter(isQuestion).length,0);
+  return qs>=3?units:[];}
+function stepControl(one){const S=strings("steps");
+  const btn=(val,text)=>{const on=(val==="one")===one;
+    return el("button",{type:"button","aria-pressed":String(on),onclick:()=>{if(on) return;
+      setOatPref(val);render();refocus('.oat-ctl button[aria-pressed="true"]');}},text);};
+  return el("div",{class:"oat-ctl",role:"group","aria-label":S.label},btn("one",S.one),btn("all",S.all));}
+function stepPage(id,draft,units){const S=strings("steps"),page=currentPage(id),key=(currentId||"")+"\n"+id+"\n"+page.id;
+  citeBegin(id);
+  const done=u=>blocksAll(u.blocks).filter(isQuestion).every(q=>keysOf(q).some(k=>holdsSomething(draft[k])));
+  if(!(key in OAT_AT)){const f=units.findIndex(u=>!done(u));OAT_AT[key]=f<0?0:f;}
+  const n=units.length,host=el("div",{class:"oat"});
+  const prog=el("span",{class:"oat-prog",role:"status"}),dots=units.map(()=>el("span",{class:"oat-dot"}));
+  host.append(el("div",{class:"oat-head"},prog,el("span",{class:"oat-dots","aria-hidden":"true"},...dots)));
+  const nodes=units.map(u=>el("div",{class:"oat-unit"},...u.blocks.map(b=>renderBlock(b,draft,id))));
+  host.append(...nodes);
+  const back=el("button",{type:"button",class:"cd-btn oat-back"},icon("arrow-left"),S.back),
+    next=el("button",{type:"button",class:"cd-btn oat-next primary"},S.next,icon("arrow-right"));
+  host.append(el("div",{class:"oat-nav"},back,next));
+  const draw=()=>{const at=OAT_AT[key];
+    nodes.forEach((x,i)=>{if(i===at) x.removeAttribute("hidden");else x.setAttribute("hidden","");});
+    prog.textContent=S.progress(at+1,n);
+    dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i])?" on":"")+(i===at?" cur":"");});
+    [[back,at<=0],[next,at>=n-1]].forEach(([b,off])=>{if(off) b.setAttribute("disabled","");else b.removeAttribute("disabled");});};
+  const go=d=>{const was=document.activeElement;OAT_AT[key]=Math.max(0,Math.min(n-1,OAT_AT[key]+d));draw();
+    if(was&&was.hasAttribute&&was.hasAttribute("disabled")) (d>0?back:next).focus();};
+  back.addEventListener("click",()=>go(-1));next.addEventListener("click",()=>go(1));
+  draw();ANSWER_TICKS.push(draw);
+  return host;}
+
 /* ======================= READING MODE =======================
    A page that asks nothing (no question, no widget, no query) and has at
    least two sections is drawn folded: each section is a disclosure
@@ -5441,8 +5566,8 @@ function withPages(id,content){const P=strings("pages");const ps=pagesOf(activit
    The reader's choice (folded, or everything open) is the browser's, kept per
    booklet beside the pages-menu preference, and never enters the file. Which
    sections are open, and which have been opened, are view state for this
-   visit. A page with a question or a query is drawn open, as any other page is,
-   and so is every page of an activity that repeats; the pages of one activity
+   visit. Any page with sections folds, questions and data views
+   included; the first section with a question not yet answered opens on arrival, and the pages of one activity
    decide one by one. */
 const rmPref=()=>lsGet(RM_KEY+(BOOK.id||""));
 const setRmPref=v=>{lsSet(RM_KEY+(BOOK.id||""),v);};
@@ -5450,11 +5575,18 @@ const RM_STATE={};
 let RM_CUR=null,RM_REVEAL=null,RM_REVEALED=false,RM_QUIET=false;
 const tagOf=n=>n&&typeof n==="object"?String(n.tagName||n.tag||"").toLowerCase():"";
 const headLevel=n=>{const m=/^h([1-6])$/.exec(tagOf(n));return m?+m[1]:0;};
-/* A page that only reads: blocks of prose and reading callouts, nothing to answer. Each page decides for itself
-   (a page holding a question or a `booklet query` is drawn open, whatever the pages beside it hold); an activity
-   that repeats (kind "entry") never folds. With no page given, the question is whether every page of the activity reads. */
+/* A page that can fold: two or more headings at the same level (not counting a title heading that stands alone above
+   them), on any page, whatever else it holds: questions, data views, kept entries. Each page decides for itself. With no
+   page given, the question is whether any page of the activity can. */
 const blocksAll=l=>{const out=[];const walk=x=>(Array.isArray(x)?x:[]).forEach(b=>{if(b&&typeof b==="object"){out.push(b);walk(b.blocks);}});walk(l);return out;};
-const readsOnly=(a,page)=>!!a&&a.kind!=="entry"&&(page?[page]:pagesOf(a)).every(pg=>blocksAll(blocksIn(pg)).every(b=>b.type==="markdown"?placeOf(b)!=="folded":b.type!=="query"&&READING_BLOCKS.has(b.type)));
+function mdHeadNodes(text){const out=[];let fence=null;
+  for(const ln of String(text||"").split("\n")){const was=fence;fence=fenceStep(fence,ln,true);
+    if(was||fence) continue;
+    const m=ATX_RE.exec(ln);if(m&&m[2]) out.push({tagName:"h"+m[1].length});}
+  return out;}
+const foldable=(a,page)=>!!a&&(page?[page]:pagesOf(a)).some(pg=>{const nodes=[];
+  blocksIn(pg).forEach(b=>{if(b&&b.type==="markdown"&&placeOf(b)!=="folded") nodes.push(...mdHeadNodes(b.text));else nodes.push({tagName:"div"});});
+  return !!readingPlan(nodes);});
 /* Where the sections of one page start. `nodes` are the page's top-level nodes
    in order. Returns null when the page has fewer than two sections, else
    {lead, sections:[{head, body}]}: `lead` is what comes before the first
@@ -5514,13 +5646,13 @@ function rmGo(info,k){
    has no sections to fold. */
 function readingPage(id,draft){
   const page=currentPage(id);
-  if(!readsOnly(activityOf(id),page)) return null;
+  if(!foldable(activityOf(id),page)) return null;
   const list=blocksIn(page);
   citeBegin(id);
   const items=[],groups=[];
   list.forEach(b=>{
     if(b.type==="markdown"){const ns=mdBlockNodes(b,id);ns.forEach(n=>items.push({n,md:true}));groups.push({ns});}
-    else{const n=renderBlock(b,draft,id);items.push({n,md:false});groups.push({n});}});
+    else{const n=renderBlock(b,draft,id);items.push({n,md:false,b});groups.push({n});}});
   const plan=readingPlan(items.map(x=>x.n));
   if(!plan){const host=el("div",{});
     groups.forEach(g=>host.append(g.ns?el("div",{class:"pblock md"},...g.ns):g.n));
@@ -5530,14 +5662,24 @@ function readingPage(id,draft){
     ns.forEach(n=>{if(of.get(n).md){if(!run){run=el("div",{class:"pblock md"});out.push(run);}run.append(n);}
       else{run=null;out.push(n);}});return out;};
   const total=plan.sections.length,key=(currentId||"")+"\n"+id+"\n"+page.id;
+  /* a section's questions: how many, and how many hold an answer now */
+  const qStat=nodes=>{let n=0,done=0;
+    nodes.forEach(x=>{const it=of.get(x);if(!it||!it.b) return;
+      blocksAll([it.b]).filter(q=>QUESTION_KINDS.has(q.type)).forEach(q=>{n++;if(keysOf(q).some(k=>holdsSomething(draft[k]))) done++;});});
+    return {n,done};};
+  const statusOf=nodes=>{const C=strings("cards"),q=qStat(nodes);
+    return !q.n?"":q.done>=q.n?C.done:q.done?C.questionsAnswered(q.done,q.n):C.questionsN(q.n);};
   if(!RM_STATE[key]){const all=rmPref()==="open",ks=plan.sections.map((_,k)=>k);
-    RM_STATE[key]={open:new Set(all?ks:[]),seen:new Set(all?ks:[])};}
+    RM_STATE[key]={open:new Set(all?ks:[]),seen:new Set(all?ks:[])};
+    /* arriving, the first section with a question still to answer is open */
+    const first=plan.sections.findIndex(s=>{const q=qStat(s.body);return q.n>q.done;});
+    if(first>=0){RM_STATE[key].open.add(first);RM_STATE[key].seen.add(first);}}
   const st=RM_STATE[key];
   /* a link to a heading inside a section opens that section */
   if(RM_REVEAL) plan.sections.forEach((s,k)=>{
     const hs=[s.head,...s.body.filter(n=>headLevel(n))].map(n=>linkNorm(textOf(n)));
     if(hs.includes(RM_REVEAL)){st.open.add(k);st.seen.add(k);RM_REVEALED=true;}});
-  const info={st,dets:[],sections:[],countEl:null};
+  const info={st,dets:[],sections:[],countEl:null,stats:[]};
   const host=el("div",{class:"rm"});
   host.append(...emit(plan.lead));
   const R=strings("fold");
@@ -5552,13 +5694,16 @@ function readingPage(id,draft){
     const {para,text}=sectionLede(s.body);
     const teaser=para?clip(textOf(para),220):text;
     const name=textOf(s.head).trim(),emoji=takeLeadEmoji(s.head);
-    const d=cardNode({mode:"fold",cls:"rm-sec",titleNode:s.head,number:k+1,hue:cardHue(k),teaser,teaserCls:"rm-lede",
+    const d=cardNode({mode:"fold",cls:"rm-sec",titleNode:s.head,number:k+1,hue:cardHue(k),teaser,teaserCls:"rm-lede",status:statusOf(s.body),
       picture:emoji?{emoji}:{number:k+1},open:st.open.has(k),bodyCls:"rm-body",body:emit(s.body)});
+    if(qStat(s.body).n) info.stats.push({d,line:()=>statusOf(s.body)});
     d.setAttribute("data-k",String(k));
     d.addEventListener("toggle",()=>{if(RM_QUIET) return;
       if(d.open){st.open.add(k);st.seen.add(k);}else st.open.delete(k);rmRefresh(info);});
     info.dets.push(d);info.sections.push({k,title:name});
     host.append(d);});
+  /* answering redraws each section's status line where it stands */
+  if(info.stats.length) ANSWER_TICKS.push(()=>info.stats.forEach(x=>{const c=x.d.querySelector(".c");if(c) c.textContent=x.line();}));
   return {node:host,info};}
 /* Printing prints everything: the sections open for the print and fold back after */
 let RM_PRINTED=[];
@@ -6163,7 +6308,7 @@ function cardPicture(title,number){
 const cardHue=i=>CARD_HUES[((Math.trunc(Number(i))||0)%CARD_HUES.length+CARD_HUES.length)%CARD_HUES.length];
 function cardNode(o){
   const mode=o.mode==="fold"||o.mode==="item"?o.mode:"go",pic=o.picture||null;
-  const cls=["card","card-"+mode].concat(mode==="go"?["mode"]:[],o.hue?["hue-"+o.hue]:[],o.cls?[o.cls]:[]).join(" ");
+  const cls=["card","card-"+mode].concat(mode==="go"?["mode"]:[],o.hue?["hue-"+o.hue]:[],o.size==="compact"?["card-compact"]:[],o.cls?[o.cls]:[]).join(" ");
   const art=pic?(pic.icon||pic.emoji||(pic.number!=null?String(pic.number):null)):null;
   const tile=art==null?null:el("span",{class:"cd-tile"+(pic.number!=null&&!pic.emoji&&!pic.icon?" cd-n":""),"aria-hidden":"true"},art);
   const t=mode==="go"?"span":"div";

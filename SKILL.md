@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.11.9** — matches the project's current version (SPEC.md's
+**Skill version: 0.11.10** — matches the project's current version (SPEC.md's
 "v0.11") now that this skill teaches v0.11, the current format. Write
 the marker in quotes, `booklet: "0.11"`: unquoted, a YAML tool reads `0.10` as
 the number 0.1. A tool that writes booklets should ask the linter for the marker
@@ -366,13 +366,15 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **Nothing folds a question away.** v0.11 has no working equivalent of
-  an older version's "optional questions, folded shut until opened." If a
-  request calls for that ("a couple more if you want
-  them"), the honest options are: put the extra material as ordinary prose
-  right after the question it answers, put it on its own page after a
-  `***`, or say in your reply that folding isn't available yet and ask
-  whether the requester wants it unfolded instead.
+- **A question is never hidden by a file, but a page's sections fold.** v0.11
+  has no way to write "optional questions, folded shut until opened" as a
+  question's own setting. If a request calls for that ("a couple more if you
+  want them"), put the extra questions under their own `##` heading: on any
+  page with two or more sections the renderer folds each section to a card
+  that shows its heading, first line and how many questions are answered, and
+  opens the first section with an unanswered question. Or put the extra
+  material as ordinary prose right after the question it answers, or on its
+  own page after a `***`.
 - **Nothing reads another activity's answers yet.** v0.11 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
@@ -494,8 +496,8 @@ between paragraphs (`\n\n`) for a new one.
   fields, the value at the right, the note beneath. `group:` gathers rows under
   a field's value, in the order they first appear. `parent:` names the field
   holding the `id` of the row this one sits under. All text is plain: no
-  Markdown or HTML in a value. A page that draws data stays open, it is not
-  folded as a report is.
+  Markdown or HTML in a value. A page that draws data folds into sections like any
+  other page with two or more sections.
 - **A chart from data** — the same data block can be drawn as a chart. `as: bars`
   draws one bar per row (`label:` names the field that names the bar, `value:`
   the field that gives its length, optional `tone`); `as: line` draws the rows,
@@ -542,15 +544,18 @@ not drawn. Section 11 ends with a whole report.
 
 **Choose the shape.** A reading page *folds*: each `##` section shows its
 heading and first paragraph and opens on a click. Each page decides for itself.
-A page folds when it holds only prose and reading callouts (no question, no data
-view (`booklet query`)) and has two or more sections. A page with a question or
-a data view is drawn open, and an activity that repeats (`repeat`) never folds.
+A page folds when it has two or more sections, whatever else it holds:
+questions, data views (`booklet query`) and an activity that repeats (`repeat`)
+fold the same way. The first section with a question still to answer is open on
+arrival; a reader may open or fold the rest, and may take a page of three or
+more questions one at a time.
 
 - **One activity, pages, the questions on the last page.** The answer for every
   report. The booklet opens straight into it, nothing is blank, its prose pages
-  fold, and the page with the questions or the data views is drawn open. Put
-  the questions and the data views together on the last page (or the pages that
-  need them); every page of plain prose before them folds.
+  fold, and so does the page with the questions or the data views, when it has
+  sections. Put the questions and the data views together on the last page (or
+  the pages that need them); a page with no `##` sections is drawn open as it
+  stands.
 - **Two activities** only when the reader really needs two separate things (a
   report to read and a log to keep with `repeat`, say), never just to get
   folding. The booklet then opens on the module's screen with a card for each
