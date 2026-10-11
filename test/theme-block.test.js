@@ -66,7 +66,7 @@ function boot(){
   const src=P.html.slice(P.html.indexOf('<script id="theme-boot">')+'<script id="theme-boot">'.length,P.html.indexOf("</script>",P.html.indexOf('<script id="theme-boot">')));
   const style={},attrs={},set=[];
   /* the style's own properties (radii, tile fill) are not the theme's: kept apart, so "nothing set" below means no theme token */
-  const own=/^--(r-lg|r-md|r-sm|num-w|tile-bg|tile-art)$/,styleProps={};
+  const own=/^--(r-lg|r-md|r-sm|num-w|tile-solid)$/,styleProps={};
   const de={style:{setProperty(k,v){if(own.test(k)){styleProps[k]=v;return;}style[k]=v;set.push([k,v]);},removeProperty(k){if(own.test(k)){delete styleProps[k];return;}delete style[k];}},
     setAttribute(k,v){attrs[k]=String(v);},getAttribute(k){return k in attrs?attrs[k]:null;},removeAttribute(k){delete attrs[k];},hasAttribute(k){return k in attrs;}};
   const store={};
@@ -206,9 +206,9 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
  h.B.custom(null);
  chk("leaving the booklet removes it cleanly and Auto follows the device again",h.attrs["data-theme"]==="paper"&&Object.keys(h.style).length===0&&!h.attrs["data-theme-custom"]);
  chk("the reader's own pick is never written by a booklet",h.B.get()==="auto");
- chk("the head script draws teaching at once: data-style, and the style's radii and tile fill",h.attrs["data-style"]==="teaching"&&h.S.get()==="teaching"&&h.S.picture()==="spot"&&h.styleProps["--r-lg"]&&h.styleProps["--tile-bg"]==="var(--c-soft)");
+ chk("the head script draws teaching at once: data-style, and the style's radii and tile fill",h.attrs["data-style"]==="teaching"&&h.S.get()==="teaching"&&h.S.picture()==="spot"&&h.styleProps["--r-lg"]&&h.styleProps["--tile-solid"]==="0");
  h.S.set("briefing");
- chk("briefing replaces every key of teaching and sets nothing more",h.attrs["data-style"]==="briefing"&&h.S.picture()==="icon"&&h.styleProps["--tile-bg"]==="var(--c-solid)"&&h.styleProps["--tile-art"]==="var(--on-solid)"&&Object.keys(h.styleProps).length===6);
+ chk("briefing replaces every key of teaching and sets nothing more",h.attrs["data-style"]==="briefing"&&h.S.picture()==="icon"&&h.styleProps["--tile-solid"]==="1"&&Object.keys(h.styleProps).length===5);
  h.S.set("nope");h.S.set("__proto__");
  chk("a style it does not know changes nothing",h.S.get()==="briefing"&&h.attrs["data-style"]==="briefing");
  h.B.set("night");

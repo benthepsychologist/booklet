@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-dLT+CjUtvfGnr6l8wQlmpWbmWArJc9regrGppUJia6w=' 'sha256-G0aYJ5KlHT4LclSsNWreTzlFqK/eZRXxv4Nkmw12m2o=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-2Rub2jf2W4DQDm6Er8zMMoK+yeHtnm7lFtd1mslxuqA=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -247,9 +247,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     /* the views' sizes: row text, row padding, the gap between tiles and cards, the big tile figure (a booklet's density sets them) */
     --v-fs:.95rem; --v-pad:.5rem; --v-gap:.75rem; --tile-v:2rem;
     /* the card variables: a hue rule below sets all four; until one does, a picture and a callout are petrol. The two
-       styles (the theme-boot script's STYLES) set the radii, --num-w, --tile-bg and --tile-art; these are their teaching values. */
+       styles (the theme-boot script's STYLES) set the radii, --num-w and --tile-solid; these are their teaching values. */
     --c-soft:var(--h-petrol); --c-vivid:var(--h-petrol-vivid); --c-solid:var(--h-petrol-solid); --c-deep:var(--h-petrol-deep);
-    --r-lg:22px; --r-md:14px; --r-sm:8px; --num-w:2.25rem; --tile-bg:var(--c-soft); --tile-art:var(--c-vivid);
+    --r-lg:22px; --r-md:14px; --r-sm:8px; --num-w:2.25rem; --tile-solid:0;
   }
   /* one rule per hue: the soft wash, the vivid line drawn on it, the solid fill and the deep text colour (the tokens in each theme's table) */
   .hue-sky{--c-soft:var(--h-sky);--c-vivid:var(--h-sky-vivid);--c-solid:var(--h-sky-solid);--c-deep:var(--h-sky-deep)}
@@ -326,17 +326,59 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .hero h1{font-family:var(--serif);font-weight:600;font-size:2.1rem;line-height:1.15;margin:0 0 .4rem;letter-spacing:0}
   .hero .sub{font-size:1.12rem;color:var(--muted);margin:0 0 1.25rem;line-height:1.45}
 
-  .modes{display:grid;grid-template-columns:1fr;gap:.8rem;margin:1.5rem 0 0;max-width:64ch}
-  @media (min-width:700px){.modes{grid-template-columns:repeat(2,1fr);max-width:none}}
-  .mode{font-family:var(--sans);text-align:left;border:0;border-top:4px solid var(--mc);background:var(--surface);border-radius:16px;padding:1.1rem 1.15rem 1rem;line-height:1.4;min-height:9rem;display:flex;flex-direction:column;gap:.4rem;
-        box-shadow:0 1px 2px color-mix(in srgb,var(--shadow) 6%,transparent),0 10px 24px -18px color-mix(in srgb,var(--shadow) 40%,transparent);transition:transform .12s,box-shadow .12s;font-family:var(--serif)}
-  .mode:hover{transform:translateY(-2px);box-shadow:0 2px 4px color-mix(in srgb,var(--shadow) 8%,transparent),0 16px 30px -18px color-mix(in srgb,var(--shadow) 50%,transparent)}
-  .mode .top{display:flex;align-items:center;gap:.6rem}
-  .mode .k{font-family:var(--serif);font-size:1.2rem;font-weight:600;color:var(--accent)}
-  .mode .d{color:var(--muted);font-size:.93rem}
-  .mode .c{margin-top:auto;font-family:var(--sans);font-size:.8rem;font-weight:600;color:var(--muted);display:flex;gap:.5rem;flex-wrap:wrap}
-  .mode .c .pill{background:var(--paper-deep);border-radius:999px;padding:.05rem .55rem}
-  .mode .c .pill.live{background:transparent;color:var(--ink)}
+  /* cards: every card is drawn by cardNode (go = a button that opens something, fold = a details, item = a kept entry or
+     a tile). A picture tile, the number in the card's colour, the title, one line, a status line, a round chevron.
+     The hue comes from the card's place in its list (hue-*); the tile's fill from the style (--tile-solid: the soft wash and the vivid line, or the solid shade and white art). */
+  .modes{display:grid;grid-template-columns:1fr;gap:.8rem;margin:1.5rem 0 0;max-width:48rem}
+  /* the home, module and booklet-list screens keep one centred column, as the canvas does */
+  .cd-col.cd-col{max-width:48rem;margin-left:auto;margin-right:auto}
+  .card-go,.card-fold{--cd-pad:1rem;font-family:var(--sans);text-align:left;color:var(--ink);background:var(--surface);border:var(--bw) solid var(--rule);border-radius:var(--r-lg);line-height:1.4;min-width:0}
+  .card-go,.card-fold>summary{display:flex;align-items:center;gap:.9rem;padding:var(--cd-pad) var(--cd-pad) var(--cd-pad) var(--cd-pad);min-height:44px}
+  .card-go{width:100%;box-shadow:0 1px 2px color-mix(in srgb,var(--shadow) 6%,transparent),0 10px 24px -18px color-mix(in srgb,var(--shadow) 40%,transparent);transition:transform .12s,box-shadow .12s}
+  button.card-go{cursor:pointer;font:inherit;font-family:var(--sans)}
+  button.card-go:hover{transform:translateY(-2px);box-shadow:0 2px 4px color-mix(in srgb,var(--shadow) 8%,transparent),0 16px 30px -18px color-mix(in srgb,var(--shadow) 50%,transparent)}
+  .cd-tile{flex:none;display:flex;align-items:center;justify-content:center;width:4.25rem;height:4.25rem;border-radius:var(--r-md);background:color-mix(in srgb,var(--c-solid) calc(var(--tile-solid)*100%),var(--c-soft));color:color-mix(in srgb,var(--on-solid) calc(var(--tile-solid)*100%),var(--c-vivid));font-size:1.9rem;line-height:1;overflow:hidden}
+  .cd-tile.cd-n{font-family:var(--serif);font-weight:700;font-size:1.7rem}
+  .cd-tile .ic{width:60%;height:60%}
+  .cd-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:.25rem}
+  .card-go .top,.card-fold .top{display:flex;align-items:baseline;gap:.4rem;min-width:0}
+  .cd-num{font-family:var(--serif);font-weight:700;font-size:1.2rem;color:var(--c-deep)}
+  .card-go .k,.card-fold .k,.card-fold .top :is(h2,h3,h4,h5,h6){margin:0;font-family:var(--serif);font-size:1.2rem;font-weight:600;line-height:1.3;letter-spacing:0;text-transform:none;color:var(--ink)}
+  .cd-emo{display:none}
+  .card-go button.k{border:0;background:transparent;padding:0;text-align:left;cursor:pointer}
+  .card-go .d,.card-fold .d{margin:0;color:var(--muted);font-size:.97rem;line-height:1.45;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+  .card-go .c,.card-fold .c{margin:.1rem 0 0;font-size:.82rem;font-weight:700;color:var(--c-deep);display:flex;gap:.2rem .6rem;flex-wrap:wrap}
+  .card-go .c .pill{background:var(--paper-deep);color:var(--muted);border-radius:999px;padding:.05rem .55rem;font-weight:600}
+  .cd-chev{flex:none;display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:999px;background:var(--c-soft);color:var(--c-deep);transition:transform .15s}
+  .cd-chev .ic{width:1.15rem;height:1.15rem}
+  .card-fold{margin:.6rem 0}
+  .card-fold>summary{cursor:pointer;list-style:none;padding:.8rem 1rem;align-items:flex-start;min-height:44px;font-weight:400}
+  .card-fold>summary::before{display:none}
+  .card-fold>summary::-webkit-details-marker{display:none}
+  .card-fold>summary{border-radius:calc(var(--r-lg) - var(--bw))}
+  .card-sub>summary{border-radius:calc(var(--r-md) - var(--bw))}
+  .card-fold>summary:hover{background:var(--accent-soft)}
+  .card-fold>summary .cd-chev{align-self:center}
+  .card-fold[open]>summary .cd-chev{transform:rotate(180deg)}
+  .card-fold[open]>summary .cd-dup{display:none}
+  .card-fold>.cd-body{padding:.1rem 1rem 1rem}
+  .card-fold>.cd-body>:last-child,.card-fold>.cd-body .md>:last-child{margin-bottom:0}
+  /* a card folded inside a page (a folded callout, a folded question): smaller, quieter, in the callout's hue */
+  .card-sub{border-radius:var(--r-md);background:var(--c-soft)}
+  .card-sub>summary{padding:.6rem .8rem;align-items:center}
+  .card-sub .cd-tile{width:2.1rem;height:2.1rem;font-size:1.1rem;background:transparent;color:var(--c-vivid)}
+  .card-sub .k{font-size:1rem}
+  .card-sub .cd-chev{background:var(--surface)}
+  .card-sub>.cd-body{padding:.1rem 1rem .8rem 3.8rem}
+  @media (max-width:520px){.cd-tile{width:3.4rem;height:3.4rem;font-size:1.55rem}.card-go,.card-fold>summary{gap:.7rem}.card-sub>.cd-body{padding-left:1rem}}
+  .card-go .bkacts{margin-top:.3rem}
+  .cd-foot{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin:1.75rem 0 0;padding-top:1.25rem;border-top:var(--bw) dashed var(--rule);font-family:var(--sans)}
+  .cd-btn{display:inline-flex;align-items:center;gap:.5rem;min-height:44px;padding:.45rem 1.1rem;border-radius:999px;border:var(--bw) solid var(--rule);background:var(--surface);color:var(--ink);font-weight:600;font-size:.95rem}
+  .cd-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .cd-btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+  .cd-btn .ic{width:1.1rem;height:1.1rem}
+  .cd-meta{margin:.2rem 0 0;font-family:var(--sans);font-size:.95rem;color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){.card-go,.cd-chev{transition:none}button.card-go:hover{transform:none}}
   .notice{border:var(--bw) dashed var(--rule);border-radius:12px;padding:.8rem 1rem;font-size:.9rem;color:var(--muted);margin:0 0 1.5rem;font-family:var(--sans)}
   .notice.openedby{font-size:.8rem;padding:.5rem .8rem;margin-bottom:1rem}
   .unsaved{font-family:var(--sans);font-size:.85rem;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:999px;padding:.15rem .7rem}
@@ -810,20 +852,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .rm-btn{border:var(--bw) solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:.35rem .9rem;font-size:.9rem;font-weight:700;line-height:1.2}
   .rm-btn:hover{background:var(--accent-soft)}
   .rm-count{margin:0 0 0 .25rem;font-size:.9rem;color:var(--muted)}
-  .rm-sec{margin:.6rem 0;background:var(--surface)}
-  .rm-sec>summary{align-items:flex-start;padding:.8rem 1rem;border-radius:10px}
-  .rm-sec>summary:hover{background:var(--accent-soft)}
-  .rm-sec>summary::before{margin-top:.6rem}
-  .rm-sum{min-width:0;flex:1}
-  .rm-sum>h2,.rm-sum>h3,.rm-sum>h4,.rm-sum>h5,.rm-sum>h6{margin:0;font-family:var(--serif);font-weight:600;font-size:1.15rem;line-height:1.3;letter-spacing:0;color:var(--ink);text-transform:none}
-  .rm-lede{margin:.3rem 0 0;font-family:var(--sans);font-weight:400;font-size:.97rem;line-height:1.5;color:var(--muted)}
-  .rm-lede p{margin:0}
-  .rm-body{padding:.1rem 1rem 1rem 2.1rem}
-  .rm-sec[open]>summary .rm-dup{display:none}
-  .rm-body>:last-child,.rm-body .md>:last-child{margin-bottom:0}
-  /* reading mode: every folded section keeps the same measure; a table or figure wider than it scrolls inside its own section */
-  .rm-sec{max-width:calc(var(--measure) + 4.5rem)}
-  .rm-sum{max-width:var(--measure)}
+  /* reading mode: a folded section is a fold card (cardNode); every one keeps the same measure, and a table or figure
+     wider than it scrolls inside its own section */
+  .rm-sec{max-width:calc(var(--measure) + 6rem)}
+  .rm-sec>summary .cd-main{max-width:var(--measure)}
+  .rm-sec>summary .top :is(h2,h3,h4,h5,h6){font-size:1.15rem}
   /* print: the layout for paper. The light tokens are the next block, declared last. */
   @media print{
     .dv-groups{display:block}
@@ -835,10 +868,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .mfig,.md div.math{break-inside:avoid;overflow:visible}
     .mfig svg{max-width:100%;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .bar,.ap-menu,.rd-panel,.rd-tip,.toast{display:none!important}
-    .rm-bar,.rm-dup{display:none!important}
-    .rm-sec{border:0;background:none;break-inside:auto}
-    .rm-sec>summary::before{display:none}
-    .rm-sec::details-content,.dv-tree details::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
+    .rm-bar,.cd-dup,.cd-chev,.cd-foot{display:none!important}
+    .card-fold{border:0;background:none;break-inside:auto}
+    .card-sub{background:none}
+    .card-fold>summary{padding-left:0;padding-right:0}
+    .card-go{box-shadow:none}
+    .card-fold::details-content,.dv-tree details::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
     .dv-tile,.dv-row,.dv-group{break-inside:avoid}
     .dv-sort{font-weight:700}
     .dv-sort::after{display:none}
@@ -905,11 +940,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     readable:{"--serif":"var(--fam-read)","--sans":"var(--fam-read)"}};
   var DENSITY={compact:{"--lh":"1.45","--pgap":".7rem","--v-fs":".88rem","--v-pad":".3rem","--v-gap":".5rem","--tile-v":"1.45rem"},
     roomy:{"--lh":"1.75","--pgap":"1.3rem","--v-fs":"1rem","--v-pad":".7rem","--v-gap":"1rem","--tile-v":"2.3rem"}};
-  /* The two styles. A style sets no colour: its radii, the width of a step number, what a tile is filled with and what is
-     drawn on it (names of variables the hue rules set), and `picture`, whether a card asks for a spot drawing or a line icon.
+  /* The two styles. A style sets no colour: its radii, the width of a step number, whether a tile is filled solid (1,
+     with white art) or with the soft wash (0, with the vivid line) and `picture`, whether a card asks for a spot drawing or
+     a line icon. (A tile's fill is a number, not the name of a hue variable: a name would be read once, on <html>, and every
+     card would be the same hue. A number is read on each card, where its own hue is.)
      data-style on <html> says which is on. Nothing a file says reaches this yet: every booklet draws as teaching. */
-  var STYLES={teaching:{"--r-lg":"22px","--r-md":"14px","--r-sm":"8px","--num-w":"2.25rem","--tile-bg":"var(--c-soft)","--tile-art":"var(--c-vivid)",picture:"spot"},
-    briefing:{"--r-lg":"10px","--r-md":"6px","--r-sm":"4px","--num-w":"1.75rem","--tile-bg":"var(--c-solid)","--tile-art":"var(--on-solid)",picture:"icon"}};
+  var STYLES={teaching:{"--r-lg":"22px","--r-md":"14px","--r-sm":"8px","--num-w":"2.25rem","--tile-solid":"0",picture:"spot"},
+    briefing:{"--r-lg":"10px","--r-md":"6px","--r-sm":"4px","--num-w":"1.75rem","--tile-solid":"1",picture:"icon"}};
   var STYLE_NAMES=["teaching","briefing"],styleOn="teaching",styleSet=[];
   var TOKEN=/^--(paper|paper-deep|ink|reader|field|surface|rule|muted|placeholder|on-ink|on-ink-soft|bar-bg|mark|accent|accent-soft|rg-on|on-accent|warn|warn-soft|tone-(warm|green|amber|slate|teal)(-deep)?|h-(sky|rose|sage|sun|lilac|petrol|slate)(-vivid|-solid|-deep)?|on-solid|spark)$/;
   function put(n,v){try{de.style.setProperty(n,v);applied.push(n);}catch(e){/* a value the browser will not take is skipped */}}
@@ -1578,6 +1615,18 @@ const STRINGS_SRC={
     moduleView: {
       noneShown: "Nothing in this module is shown at the moment."
     },
+    cards: {
+      hint: "Hint",
+      solution: "Solution",
+      notStarted: "Not started",
+      done: "Done",
+      answeredOf: (n,m)=>`${n} of ${m} answered`,
+      startedOf: (n,m)=>`${n} of ${m} started`,
+      activitiesN: n=>`${n} ${n===1?"activity":"activities"}`,
+      startedN: n=>`${n} started`,
+      back: "Back to the overview",
+      next: (n,t)=>`Next: ${n}. ${t}`
+    },
     fold: {
       openAll: "Open everything",
       foldAll: "Fold everything",
@@ -1849,6 +1898,18 @@ const STRINGS_SRC={
     moduleView: {
       noneShown: "Rien dans ce module n’est affiché pour l’instant."
     },
+    cards: { /* l10n: draft */
+      hint: "Indice",
+      solution: "Solution",
+      notStarted: "Pas commencée",
+      done: "Terminée",
+      answeredOf: (n,m)=>`${n} réponse${n===1?"":"s"} sur ${m}`,
+      startedOf: (n,m)=>`${n} sur ${m} commencée${n===1?"":"s"}`,
+      activitiesN: n=>`${n} activité${n===1?"":"s"}`,
+      startedN: n=>`${n} commencée${n===1?"":"s"}`,
+      back: "Retour à l’aperçu",
+      next: (n,t)=>`Suivante : ${n}. ${t}`
+    },
     fold: {
       openAll: "Tout ouvrir",
       foldAll: "Tout replier",
@@ -2119,6 +2180,18 @@ const STRINGS_SRC={
     },
     moduleView: {
       noneShown: "Por ahora no se muestra nada en este módulo."
+    },
+    cards: { /* l10n: draft */
+      hint: "Pista",
+      solution: "Solución",
+      notStarted: "Sin empezar",
+      done: "Hecha",
+      answeredOf: (n,m)=>`${n} de ${m} respondida${n===1?"":"s"}`,
+      startedOf: (n,m)=>`${n} de ${m} empezada${n===1?"":"s"}`,
+      activitiesN: n=>`${n} actividad${n===1?"":"es"}`,
+      startedN: n=>`${n} empezada${n===1?"":"s"}`,
+      back: "Volver al resumen",
+      next: (n,t)=>`Siguiente: ${n}. ${t}`
     },
     fold: {
       openAll: "Abrir todo",
@@ -4765,9 +4838,33 @@ function renderBlock(b,draft,activityId){
   const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId)
     :el("p",{class:"hint"},STRINGS[lang].ui.unknownBlock(b.type||"?",b.id||"?"));
   if(placeOf(b)!=="folded") return node;
-  const d=el("details",{class:"quiet"},el("summary",{},foldName(b)));
-  if(blockFilled(b,draft)) d.setAttribute("open","");
-  d.append(el("div",{class:"inner"},node));return d;}
+  return b.type==="callout"?foldedCallout(b,draft,activityId):
+    cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),open:blockFilled(b,draft),body:[node]});}
+/* Is this callout a hint or a solution ("hint", "solution", or ""): the one place that decides, for both ways the parser
+   makes one: folded under its question (kind "", id ending -hint or -solution) or on its own (kind hint or solution,
+   when no question comes right before it). Either way it never shows a teaser. */
+function hintKind(b){
+  const k=String(b&&b.kind==null?"":b.kind).toLowerCase();
+  if(k==="hint"||k==="solution") return k;
+  return k===""?(/-(hint|solution)$/.exec(String(b&&b.id||""))||[])[1]||"":"";}
+/* A callout folded with a minus sign, or a hint or solution folded under its question, as a fold card: its kind's
+   picture, its title (a hint or a solution is called that, in the reader's language, not by the raw kind), and the
+   first words of its text as the teaser. A hint or a solution has no teaser: a closed one gives nothing away. */
+function foldedCallout(b,draft,activityId){
+  const Rt=strings("reading"),C=strings("cards"),hs=hintKind(b);
+  const look=b.kind===""||hs?null:calloutLook(b.kind),named=tx(b.title,"");
+  const title=nonEmpty(named)?named:hs?C[hs]:look?Rt.kind[look.label]:foldName(b);
+  /* a leading emoji in the title is the picture; otherwise the kind's icon */
+  const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
+  const picture=emo?{emoji:emo}:look?{icon:icon(look.icon)}:hs?{icon:icon(hs==="hint"?"lightbulb":"circle-check")}:null;
+  const parts=blocksIn(b).filter(x=>x&&typeof x==="object").map(x=>({x,n:renderBlock(x,draft,activityId)}));
+  let teaser="";
+  if(!hs){const L=sectionLede(parts.filter(p=>p.x.type==="markdown").flatMap(p=>Array.from(p.n.children||[])));
+    teaser=L.para?clip(textOf(L.para),220):L.text;}
+  const body=parts.map(p=>p.n);
+  if(b.unknown) body.unshift(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
+  return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:""),hue:look?look.hue:"slate",title:emo?lead.title:title,picture,teaser,
+    open:blockFilled(b,draft),body});}
 /* An activity marked `upsert:"day"` (the file's `repeat daily`) keeps one entry per
    calendar day rather than one per Finalize: finalizing again on the same day
    replaces that day's entry instead of adding a second one. */
@@ -4836,11 +4933,10 @@ function queryEntries(from,activityId){
 /* A kept entry as a card: a `.when` line holding `whenKids` (none when null),
    then what each question in `qs` recorded, as a `dl`. Returns the card and how
    many questions had an answer to show. */
-function entryBody(e,qs,whenKids){const card=el("div",{class:"entry"});
-  if(whenKids) card.append(el("div",{class:"when"},...whenKids));
+function entryBody(e,qs,whenKids){
   const dl=el("dl",{});let rows=0;
   for(const q of qs){const r=fieldSummary(q,e);if(r){rows++;dl.append(el("dt",{},r[0]),el("dd",{},r[1]));}}
-  card.append(dl);return {card,rows};}
+  return {card:cardNode({mode:"item",cls:"entry",kids:[whenKids?el("div",{class:"when"},...whenKids):null,dl]}),rows};}
 function queryCard(e,from,fields){
   /* `fields` names the questions, and their order is the order shown */
   const qs=fields?fields.map(id=>blocksOf(from).find(q=>q.id===id)).filter(Boolean):blocksOf(from);
@@ -4962,10 +5058,10 @@ function viewTiles(set,groups,roles){
     const t=rowTone(r,roles),note=rolePart(r,roles.note);
     if(pills) return el("li",{class:"pill"+(t?" tone-"+t:"")},
       el("span",{class:"dv-l"},rolePart(r,roles.label)),note!==""?el("span",{class:"dv-n"},note):null,toneWords(t));
-    return el("li",{class:"dv-tile"+(t?" tone-"+t:"")},
+    return cardNode({mode:"item",tag:"li",cls:"dv-tile"+(t?" tone-"+t:""),kids:[
       el("span",{class:"dv-v"},rolePart(r,roles.value)),
       el("span",{class:"dv-l"},rolePart(r,roles.label)),
-      note!==""?el("span",{class:"dv-n"},note):null,toneWords(t));})));}
+      note!==""?el("span",{class:"dv-n"},note):null,toneWords(t)]});})));}
 /* kept entries as cards: one dated card per row, drawn by queryCard */
 function viewCards(set,groups,roles,cols){
   return groups[0].rows.map(r=>queryCard(set.entryOf(r),set.from,cols.map(c=>c.key))).filter(Boolean);}
@@ -5451,14 +5547,17 @@ function readingPage(id,draft){
     el("button",{type:"button",class:"rm-btn",onclick:()=>rmSetAll(info,true)},R.openAll),
     el("button",{type:"button",class:"rm-btn",onclick:()=>rmSetAll(info,false)},R.foldAll),count));
   plan.sections.forEach((s,k)=>{
-    const {para,rest,text}=sectionLede(s.body);
-    const sum=el("summary",{},el("div",{class:"rm-sum"},s.head,
-      para?el("div",{class:"rm-lede"},para):text?el("div",{class:"rm-lede rm-dup"},text):null));
-    const d=el("details",{class:"rm-sec","data-k":String(k),open:st.open.has(k)},sum,
-      el("div",{class:"inner rm-body"},...emit(rest)));
+    /* the teaser is the first paragraph's words (a list item or a table row when there is no paragraph); the section
+       keeps all its own text, so nothing is lost when it is opened */
+    const {para,text}=sectionLede(s.body);
+    const teaser=para?clip(textOf(para),220):text;
+    const name=textOf(s.head).trim(),emoji=takeLeadEmoji(s.head);
+    const d=cardNode({mode:"fold",cls:"rm-sec",titleNode:s.head,number:k+1,hue:cardHue(k),teaser,teaserCls:"rm-lede",
+      picture:emoji?{emoji}:{number:k+1},open:st.open.has(k),bodyCls:"rm-body",body:emit(s.body)});
+    d.setAttribute("data-k",String(k));
     d.addEventListener("toggle",()=>{if(RM_QUIET) return;
       if(d.open){st.open.add(k);st.seen.add(k);}else st.open.delete(k);rmRefresh(info);});
-    info.dets.push(d);info.sections.push({k,title:textOf(s.head).trim()});
+    info.dets.push(d);info.sections.push({k,title:name});
     host.append(d);});
   return {node:host,info};}
 /* Printing prints everything: the sections open for the print and fold back after */
@@ -5504,7 +5603,7 @@ function findHeading(mods,target,bySlug){
 function scrollToHeading(text){const want=linkNorm(text);
   const n=[...document.querySelectorAll("#main h2,#main h3,#main h4,#main h5,#main h6")].find(h=>linkNorm(h.textContent)===want)||null;
   /* a heading inside a folded section: open the section first */
-  for(let p=n;p&&p!==document.body;p=p.parentNode) if(p.classList&&p.classList.contains("rm-sec")&&!p.open) p.open=true;
+  for(let p=n;p&&p!==document.body;p=p.parentNode) if(p.classList&&p.classList.contains("card-fold")&&!p.open) p.open=true;
   if(n&&n.scrollIntoView) n.scrollIntoView({block:"start"});else window.scrollTo({top:0});}
 function openHeading(hit){
   RM_REVEAL=linkNorm(hit.heading);RM_REVEALED=false;
@@ -5894,6 +5993,8 @@ function nameRow(){const L=strings("library"),cur=tx((BOOK.head||{}).title,tx(BO
     row.append(el("h1",{},tx((BOOK.head||{}).title,STRINGS[lang].home.h1)));
     if(currentId) row.append(el("button",{type:"button",class:"quietlink",title:L.renameFor(shown),"aria-label":L.renameFor(shown),onclick:()=>draw(true)},L.rename));};
   draw(false);return row;}
+/* centre what a screen has drawn so far in one column (the cards' width) */
+const centreScreen=main=>{Array.from(main.children||[]).forEach(n=>{if(n&&n.classList) n.classList.add("cd-col");});};
 function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   main.append(...openNotices());
   const hero=el("div",{class:"hero col"});
@@ -5910,10 +6011,10 @@ function renderHome(main){const t=STRINGS[lang];const u=t.ui;
       if(acts.length) shown.push({holder,acts});
       continue;}
     if(isShown(x)) shown.push({mode:x});}
-  for(const card of shown){if(card.holder){activities.append(moduleCard(card.holder,card.acts));continue;}
+  shown.forEach((card,i)=>{if(card.holder){activities.append(moduleCard(card.holder,card.acts,i));return;}
     const m=card.mode;const key=m.id;const mod=moduleOf(key)||{};
     /* the name is the module's text, so it goes in as text */
-    activities.append(activityCard(key,tx(mod.title,tx(m.title,shortId(key))),tx(mod.blurb,tx(m.blurb,tx(m.lede,""))),keptPills(m)));}
+    activities.append(activityCard(key,tx(mod.title,tx(m.title,shortId(key))),tx(mod.blurb,tx(m.blurb,tx(m.lede,""))),activityStatus(m),i));});
   /* nothing is preloaded, so the empty page offers its own way forward */
   {const add=el("div",{class:"col addrow"});
     if(!shown.length) add.append(el("p",{class:"hint"},t.booklet.noActivities));
@@ -5925,6 +6026,7 @@ function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   const note=unsavedNote();if(note) main.append(el("p",{class:"col"},note));
   main.append(el("p",{class:"col",style:"margin-top:2rem"},
     el("button",{type:"button",class:"quietlink",onclick:()=>document.getElementById("veilClear").setAttribute("open","")},u.clearLink)));
+  centreScreen(main);
 }
 function homeButton(){
   if(screen==="home"&&currentId){closeBooklet();render();window.scrollTo({top:0});return;}
@@ -5962,41 +6064,44 @@ function renderBooklets(main){const L=strings("library");
   hostStopLine(main);
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
   const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
-  if(!list.length){main.append(el("p",{class:"col hint"},L.empty));return;}
+  if(!list.length){main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
   const cards=el("div",{class:"modes"});
   list.forEach(e=>cards.append(bookletCard(e)));
   main.append(cards);
   /* one quiet line when the browser has not promised to keep this site's storage (see asking the browser to keep it) */
   checkPersisted();
-  if(PERSISTED===false&&storageOk) main.append(el("p",{class:"col hint",style:"margin-top:1.2rem"},L.mayClear));}
+  if(PERSISTED===false&&storageOk) main.append(el("p",{class:"col hint",style:"margin-top:1.2rem"},L.mayClear));
+  centreScreen(main);}
 function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;const name=bookletName(e);
   const unsaved=Number(e.unsavedEntries)>0||!!e.dirty;
-  const card=el("div",{class:"mode",style:"--mc:var(--accent);min-height:0"});
-  const draw=asking=>{card.innerHTML="";
+  /* the card stays where it is and is drawn again inside itself: the row, the rename field or the question before removing */
+  const card=cardNode({mode:"go",as:"div",noChevron:true});
+  const fill=c=>{card.innerHTML="";card.append(...(c.childNodes?Array.from(c.childNodes):c.children));};
+  const draw=asking=>{
     if(asking==="rename"){
-      card.append(el("span",{class:"top"},nameEditor(name,v=>{renameStored(e.id,v);render();},()=>draw(false))),el("span",{class:"d"},L.renameHint));return;}
-    card.append(el("span",{class:"top"},el("button",{type:"button",class:"k",
-      style:"border:0;background:transparent;padding:0;text-align:left",onclick:()=>openFromList(e.id)},name)));
+      fill(cardNode({mode:"go",as:"div",noChevron:true,titleNode:nameEditor(name,v=>{renameStored(e.id,v);render();},()=>draw(false)),teaser:L.renameHint}));return;}
     const sub=[];
     if(nonEmpty(tx(e.title,""))){const p=(e.parts||[]).map(x=>tx(x,"")).filter(nonEmpty);if(p.length) sub.push(p.join(", "));}
-    if(sub.length) card.append(el("span",{class:"d"},sub.join(" · ")));
-    const c=el("span",{class:"c"},el("span",{class:"pill"},e.openedAt?L.lastOpened(listDate(e.openedAt)):L.added(listDate(e.createdAt))));
-    if(unsaved) c.append(unsavedSpan(Number(e.unsavedEntries),!!e.dirty));
-    card.append(c);
-    if(!asking){card.append(el("span",{class:"bkacts"},
+    const pills=[el("span",{class:"pill"},e.openedAt?L.lastOpened(listDate(e.openedAt)):L.added(listDate(e.createdAt)))];
+    if(unsaved) pills.push(unsavedSpan(Number(e.unsavedEntries),!!e.dirty));
+    const foot=[];
+    if(!asking){foot.push(el("span",{class:"bkacts"},
         el("button",{type:"button",class:"small primary",onclick:()=>openFromList(e.id)},L.open),
         el("button",{type:"button",class:"small",title:L.renameFor(name),"aria-label":L.renameFor(name),onclick:()=>draw("rename")},L.rename),
-        el("button",{type:"button",class:"small danger",onclick:()=>draw(true)},L.remove)));
-      return;}
+        el("button",{type:"button",class:"small danger",onclick:()=>draw(true)},L.remove)));}
+    else{
     /* removing cannot be undone, so it asks, in place, and says what is lost */
     const keep=el("button",{type:"button",class:"small",onclick:()=>draw(false)},L.keep);
-    card.append(el("div",{role:"alert",style:"font-family:var(--sans)"},
+    foot.push(el("div",{role:"alert",style:"font-family:var(--sans)"},
       el("p",{style:"margin:.3rem 0 .2rem;font-weight:700"},L.removeQ(name)),
       el("p",{class:"hint",style:"margin:0 0 .4rem"},L.removeP),
       unsaved?el("p",{class:"hint",style:"margin:0 0 .4rem;color:var(--warn)"},L.removeUnsaved(u.export)):null,
       el("span",{class:"bkacts"},keep,el("button",{type:"button",class:"small danger",
         onclick:()=>{removeBooklet(e.id);render();toast(L.removed);}},L.removeGo))));
-    requestAnimationFrame(()=>keep.focus());};
+    requestAnimationFrame(()=>keep.focus());}
+    fill(cardNode({mode:"go",as:"div",noChevron:true,
+      titleNode:el("button",{type:"button",class:"k",onclick:()=>openFromList(e.id)},name),
+      teaser:sub.join(" · "),pills,foot}));};
   draw(false);return card;}
 /* Every activity is drawn the same way: its name and description, its pages and
    their blocks. One that repeats (the file's `repeat`) also shows the entries
@@ -6022,25 +6127,98 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   if(firstH&&same(titleText)&&same(firstH.textContent)===same(titleText)) firstH.remove();
   col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
+  col.append(activityFooter(id));
   /* a module that is one activity shows its notice at the foot of that activity */
   {const holder=holderOf(id),single=holder&&!isMulti(holder),about=single?noticeNode(holder):null;
     if(about) col.append(about);
     const rm=single?removeModuleControl(holder):null;if(rm) col.append(rm);}
   main.append(withPages(id,col));}
+/* The foot of an activity's page: back to the overview (the module's page, or the home screen), and on to the next
+   activity of its module in file order, named with its number. */
+function activityFooter(id){const C=strings("cards"),holder=holderOf(id),shown=holder?activitiesShown(holder):[];
+  const here=shown.findIndex(a=>a.id===id),next=here>=0?shown[here+1]:null;
+  const backTo=holder&&isMulti(holder)?moduleScreen(holder.id):"home";
+  const foot=el("div",{class:"cd-foot"},
+    el("button",{type:"button",class:"cd-btn cd-back",onclick:()=>go(backTo)},icon("arrow-left"),C.back));
+  if(next) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:()=>go(next.id)},
+    C.next(here+2,cardPicture(activityName(next),here+2).title),icon("arrow-right")));
+  return foot;}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
 const activitiesShown=mod=>activitiesOf(mod).filter(isShown);
 const keptCount=id=>{const a=(STATE.entries||{})[id];return Array.isArray(a)?a.length:0;};
-/* A card on the home page or a module's page: a button that opens view `to`,
-   with a name, a line of blurb and a line of pills. */
-function activityCard(to,name,blurb,pills){
-  return el("button",{type:"button",class:"mode",onclick:()=>go(to)},
-    el("span",{class:"top"},el("span",{class:"k"},name)),el("span",{class:"d"},blurb),el("span",{class:"c"},...pills));}
-/* the pill that says how many entries an activity that keeps them holds */
-const keptPills=a=>{const n=a.kind==="entry"?keptCount(a.id):0;
-  return n?[el("span",{class:"pill live"},STRINGS[lang].ui.entriesN(n))]:[];};
-function moduleCard(mod,acts){
-  return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),acts.map(a=>el("span",{class:"pill"},activityName(a))));}
+/* ---- CARDS ----
+   Every card is made here and nowhere else (test/guard.test.js fails if another function gives an element the card class).
+   mode "go" opens something (a button; a div when it holds buttons of its own), "fold" is a details that opens in
+   place, "item" holds a kept entry or a tile. A card has a picture tile, the number in its colour, a title, one line
+   of teaser, a status line and a round chevron. Its colour is its place in its list (cardHue); the tile's wash and art
+   come from the style (--tile-solid). The picture and the chevron are decoration: aria-hidden. */
+const LEAD_EMOJI=/^(\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}])*)\s*/u;
+/* The picture of a card from its title and its number in its list: a leading emoji moves into the tile (and leaves
+   the title), else the number is the picture, else there is none. */
+function cardPicture(title,number){
+  const t=String(title==null?"":title),m=LEAD_EMOJI.exec(t.trim());
+  if(m&&t.trim().slice(m[0].length).trim()) return {title:t.trim().slice(m[0].length),picture:{emoji:m[1]}};
+  return {title:t,picture:Number.isFinite(number)?{number}:null};}
+const cardHue=i=>CARD_HUES[((Math.trunc(Number(i))||0)%CARD_HUES.length+CARD_HUES.length)%CARD_HUES.length];
+function cardNode(o){
+  const mode=o.mode==="fold"||o.mode==="item"?o.mode:"go",pic=o.picture||null;
+  const cls=["card","card-"+mode].concat(mode==="go"?["mode"]:[],o.hue?["hue-"+o.hue]:[],o.cls?[o.cls]:[]).join(" ");
+  const art=pic?(pic.icon||pic.emoji||(pic.number!=null?String(pic.number):null)):null;
+  const tile=art==null?null:el("span",{class:"cd-tile"+(pic.number!=null&&!pic.emoji&&!pic.icon?" cd-n":""),"aria-hidden":"true"},art);
+  const t=mode==="go"?"span":"div";
+  const num=o.number!=null&&!(pic&&pic.number!=null)?el("span",{class:"cd-num","aria-hidden":"true"},String(o.number)):null;
+  const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k"},o.title):null);
+  const main=(title||o.teaser||o.status||(o.pills||[]).length||(o.foot||[]).length)?el(t,{class:"cd-main"},
+    title?el(t,{class:"top"},num,title):null,
+    nonEmpty(o.teaser)?el(t,{class:"d"+(mode==="fold"?" cd-dup":"")+(o.teaserCls?" "+o.teaserCls:"")},o.teaser):null,
+    nonEmpty(o.status)||(o.pills||[]).length?el(t,{class:"c"},nonEmpty(o.status)?o.status:null,...(o.pills||[])):null,
+    ...(o.foot||[])):null;
+  const chev=o.noChevron?null:el("span",{class:"cd-chev","aria-hidden":"true"},icon(mode==="go"?"chevron-right":"chevron-down"));
+  if(mode==="fold"){
+    const d=el("details",{class:cls,open:!!o.open},el("summary",{},tile,main,chev));
+    d.append(el("div",{class:"inner cd-body"+(o.bodyCls?" "+o.bodyCls:"")},...(o.body||[])));
+    return d;}
+  if(mode==="item") return el(o.tag||"div",{class:cls},tile,main,...(o.kids||[]));
+  const root=o.as==="div"?el("div",{class:cls}):el("button",{type:"button",class:cls,onclick:o.onclick});
+  root.append(...[tile,main,chev,...(o.kids||[])].filter(x=>x!=null));return root;}
+/* a heading's leading emoji becomes the card's picture; it stays in the heading, hidden, so a link to the heading still finds its words */
+function takeLeadEmoji(root){
+  const step=n=>{const kids=n.childNodes?Array.from(n.childNodes):(n.children||[]);
+    for(let i=0;i<kids.length;i++){const c=kids[i];
+      const str=typeof c==="string",txt=!str&&c&&c.nodeType===3;
+      if(str||txt){const v=(str?c:c.textContent).replace(/^\s+/,"");if(!v) continue;
+        const m=LEAD_EMOJI.exec(v);if(!m||!v.slice(m[0].length).trim()) return "";
+        const rest=v.slice(m[0].length),mark=el("span",{class:"cd-emo"},m[1]);
+        if(str){n.children.splice(i,1,mark,rest);}
+        else{c.textContent=rest;n.insertBefore(mark,c);}
+        return m[1];}
+      return c&&typeof c==="object"?step(c):"";}
+    return "";};
+  return step(root);}
+/* what a reader has done in an activity: how many of its questions hold an answer, or how many entries it has kept */
+function activityProgress(a){
+  const repeats=a.kind==="entry",kept=repeats?keptCount(a.id):0;
+  const qs=repeats?[]:allBlocksOf(a).filter(b=>QUESTION_KINDS.has(b.type)),ans=peekAnswers(scopeOfAddr(a.id));
+  const answered=qs.filter(b=>keysOf(b).some(k=>holdsSomething(ans[k]))).length;
+  return {repeats,kept,total:qs.length,answered,tracked:repeats||qs.length>0,started:repeats?kept>0:answered>0};}
+/* the status line under a card's teaser */
+function activityStatus(a){const C=strings("cards"),p=activityProgress(a);
+  if(p.repeats) return p.kept?STRINGS[lang].ui.entriesN(p.kept):C.notStarted;
+  if(!p.total) return "";
+  return p.answered===0?C.notStarted:p.answered>=p.total?C.done:C.answeredOf(p.answered,p.total);}
+function moduleStatus(acts){const C=strings("cards"),ps=acts.map(activityProgress).filter(p=>p.tracked);
+  if(!ps.length) return "";
+  const n=ps.filter(p=>p.started).length;return n?C.startedOf(n,ps.length):C.notStarted;}
+/* the line under a module's blurb: how many activities, and how many are started */
+function moduleMeta(acts){const C=strings("cards"),ps=acts.map(activityProgress).filter(p=>p.tracked),n=ps.filter(p=>p.started).length;
+  return [C.activitiesN(acts.length),n?C.startedN(n):""].filter(nonEmpty).join(" · ");}
+/* A card on the home page or a module's page: a button that opens view `to`. `i` is its place in the list it is in. */
+function activityCard(to,name,blurb,status,i){
+  const {title,picture}=cardPicture(name,i+1);
+  return cardNode({mode:"go",title,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,onclick:()=>go(to)});}
+function moduleCard(mod,acts,i){
+  return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),moduleStatus(acts),i);}
 function renderModulePage(main,v){const mod=moduleForScreen(v);
   /* a module that has gone, or now holds one activity, leads where its card would */
   if(!mod||!isMulti(mod)){screen=mod?entryScreenOf(mod):"home";return render();}
@@ -6050,14 +6228,17 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   col.append(el("h2",{},tx(mod.title,mod.id)));
   const lead=tx(mod.blurb,"");
   if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));
+  const acts=activitiesShown(mod);
+  /* the cards are the overview: the title, the blurb, one line of counts, then the cards */
+  if(acts.length) col.append(el("p",{class:"cd-meta"},moduleMeta(acts)));
   main.append(col);
   const grid=el("div",{class:"modes"});
-  const acts=activitiesShown(mod);
   if(!acts.length) grid.append(el("p",{class:"hint"},W.noneShown));
-  acts.forEach(a=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),keptPills(a))));
+  acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i)));
   main.append(grid);
   const about=noticeNode(mod);if(about) main.append(el("div",{class:"col"},about));
   const rm=removeModuleControl(mod);if(rm) main.append(rm);
+  centreScreen(main);
 }
 /* What a file is called comes from the booklet's own title, never from the
    name of whatever page happened to write it: "End of day" is saved as
@@ -6464,7 +6645,7 @@ window.addEventListener("booklet-theme",()=>{const s=document.getElementById("th
   new ResizeObserver(set).observe(bar);set();})();
 if(typeof window!=="undefined"&&window.addEventListener){
   window.addEventListener("beforeprint",()=>{RM_QUIET=true;
-    RM_PRINTED=[...document.querySelectorAll("details.rm-sec")].filter(d=>!d.open);RM_PRINTED.forEach(d=>{d.open=true;});});
+    RM_PRINTED=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);RM_PRINTED.forEach(d=>{d.open=true;});});
   window.addEventListener("afterprint",()=>{RM_PRINTED.forEach(d=>{d.open=false;});RM_PRINTED=[];
     setTimeout(()=>{RM_QUIET=false;},300);});}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&citeOpen()) closeCite();});

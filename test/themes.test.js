@@ -66,8 +66,8 @@ ok(spriteLit.length===0,"no colour literal, style attribute or painted colour in
  const STY=m?new Function("return "+m[1])():null;
  ok(!!STY&&Object.keys(STY).join()==="teaching,briefing","STYLES holds teaching and briefing");
  if(STY){ok(Object.keys(STY.teaching).sort().join()===Object.keys(STY.briefing).sort().join(),"both styles carry the same keys ("+Object.keys(STY.teaching).join(" ")+")");
-   ok(Object.entries(STY).every(([n,t])=>Object.entries(t).every(([k,v])=>k==="picture"?(v==="spot"||v==="icon"):(/^--(r-lg|r-md|r-sm|num-w|tile-bg|tile-art)$/.test(k)&&!/#|rgb|hsl/.test(v)))),"a style sets only radii, --num-w, --tile-bg, --tile-art and picture, and no colour");
-   ok(STY.teaching["--tile-bg"]==="var(--c-soft)"&&STY.teaching["--tile-art"]==="var(--c-vivid)"&&STY.briefing["--tile-bg"]==="var(--c-solid)"&&STY.briefing["--tile-art"]==="var(--on-solid)"&&STY.teaching.picture==="spot"&&STY.briefing.picture==="icon","teaching: soft tile, vivid art, spots; briefing: solid tile, white art, icons");}
+   ok(Object.entries(STY).every(([n,t])=>Object.entries(t).every(([k,v])=>k==="picture"?(v==="spot"||v==="icon"):(/^--(r-lg|r-md|r-sm|num-w|tile-solid)$/.test(k)&&!/#|rgb|hsl/.test(v)))),"a style sets only radii, --num-w, --tile-solid and picture, and no colour");
+   ok(STY.teaching["--tile-solid"]==="0"&&STY.briefing["--tile-solid"]==="1"&&STY.teaching.picture==="spot"&&STY.briefing.picture==="icon","teaching: soft tile (--tile-solid 0), spots; briefing: solid tile (--tile-solid 1), icons");}
  const sel=[...stripped.matchAll(/(?:^|\})\s*([^{}@]+)\{/g)].map(x=>x[1]).filter(x=>!/^\s*:root/.test(x));
  const named=sel.filter(x=>/data-style|data-theme|\.(teaching|briefing)\b/.test(x));
  ok(named.length===0,"no CSS selector names a style or a base outside the token tables"+(named.length?" ("+named.slice(0,3)+")":""));

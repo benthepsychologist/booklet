@@ -58,6 +58,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
 ;Object.defineProperties(API,Object.getOwnPropertyDescriptors({
   get lang(){return lang},set lang(v){lang=v}, get screen(){return screen},set screen(v){screen=v},
   get BOOK(){return BOOK}, get STATE(){return STATE}, get DRAFTS(){return DRAFTS},
+  cardNode, cardPicture, cardHue, takeLeadEmoji, activityProgress, activityStatus, moduleStatus, moduleMeta, activityFooter, foldedCallout, hintKind, keptFor,
   STRINGS, STRINGS_SRC, createBooklet, closeBooklet, openBooklet, saveLocal, addModule, addModuleText,
   moduleTextProblems, editBook, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, bookActivities, isMulti,

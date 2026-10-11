@@ -68,7 +68,7 @@ const PROSE2="## Three\n\nThird.\n\n## Four\n\nFourth.\n\n## Five\n\nFifth.\n\n"
 {const card=(id)=>{A.screen="module:"+id;A.render();return P.find(P.main(),P.hasClass("mode"));};
  const F=FM+"> [!module|m] M\n\nModule words.\n\n";
  A.loadText(F+"> [!activity|a] First\n\nA **bold** start with snake_case, $x$ and ![alt text](https://t.example/p.png), see [the guide](g.md).\nSecond line of it.\n\nNot the card.\n\n> [!activity|b] Second\n\n> [!text|q] Q?\n\n> [!activity|c] Third\n\n## Heading first\n\nThe paragraph after a heading.\n"+END);
- const cs=card("m"),words=cs.map(c=>P.texts(P.find(c,P.hasClass("d"))[0]||c));
+ const cs=card("m"),words=cs.map(c=>{const d=P.find(c,P.hasClass("d"))[0];return d?P.texts(d):"";});   // a card with no words has no teaser line (0.11.10)
  const cards=cs.length;
  chk("a module's screen has a card for each activity",cards===3,String(cards));
  chk("an activity's card shows its first paragraph as inline Markdown read to text",words[0]==="A bold start with snake_case, x and alt text, see the guide. Second line of it.",JSON.stringify(words[0]));
