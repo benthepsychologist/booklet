@@ -32,5 +32,5 @@ chk("the card hues are the six, in the work item's order",A.CARD_HUES.join()==="
    ["fr","es"].every(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).length<=5),
    ["fr","es"].map(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).join()).join(" | "));
  const src=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
- chk("every non-English label table is marked l10n: draft until the localisation pass",(src.match(/kind: \{ \/\* l10n: draft \*\//g)||[]).length===2);}
+ chk("no l10n: draft mark remains in STRINGS_SRC (the French and Spanish words were checked)",!/l10n: draft/.test(src));}
 console.log(fails?"\n"+fails+" FAILURES":"\ncallout checks passed");process.exit(fails?1:0);
