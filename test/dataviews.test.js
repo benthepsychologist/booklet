@@ -92,12 +92,12 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("table: a list value is shown comma-separated, an empty list shows nothing",text(walk(trs[1],x=>x.tagName==="td")[3])==="A, B"&&text(walk(trs[3],x=>x.tagName==="td")[3])==="");
  chk("table: a numeric column is marked to align right",cls(walk(trs[0],x=>x.tagName==="th")[1]).includes("num")&&!cls(walk(trs[0],x=>x.tagName==="th")[0]).includes("num"));
  chk("the empty block shows the query's own line",text(main).includes("Nothing needs you."));
- chk("the page is not a reading-only page (a dashboard stays open)",!B.readsOnly(B.bookActivities().find(a=>a.id==="status")));
+ chk("a page with one data view and no sections is not foldable",!B.foldable(B.bookActivities().find(a=>a.id==="status")));
  chk("nothing in a data block is read as Markdown or HTML",(()=>{const r=A.parseFile(`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
    P.wipe();const C=P.boot();C.addModuleText(`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
    C.screen="m/a";C.render();return r.ok&&text(P.main()).includes("**bold** <b>x</b> [l](http://e.com)")&&walk(P.main(),x=>x.tagName==="a"||x.tagName==="b"||x.tagName==="strong").length===0;})());
  chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
-   P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.readsOnly(r.template.modules[0].mode);})());
+   P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.foldable(r.template.modules[0].mode);})());
 
  /* ---- the same words in the reader's language ---- */
  B.lang="fr";B.render();

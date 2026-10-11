@@ -25,6 +25,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
     await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
     await p.locator('[role=dialog][open] button, dialog[open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(1000);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
     await p.locator('button.mode').first().click();await p.waitForTimeout(1200);
+    await p.evaluate(()=>document.querySelectorAll('details.rm-sec').forEach(d=>d.open=true));await p.waitForTimeout(200);   /* 0.11.10: a page with sections folds, data views included; these checks look at the views, so open them */
     return {p,csp,errs};}
   const over=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   const fixture=path.join(R,'test/fixtures/charts.booklet.md');

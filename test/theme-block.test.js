@@ -261,12 +261,12 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  /* reading mode: sections are the headings OUTSIDE rows */
  const reads=FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\nl\n\n### Right\n\nr\n\n> [!row end]\n\n## Second\n\nTwo.\n";
  A.loadText(reads);
- chk("an activity of prose and rows still folds into sections",A.readsOnly(A.activityOf("a")));
+ chk("an activity of prose and rows still folds into sections",A.foldable(A.activityOf("a")));
  A.screen="a";A.render();
  const secs=P.find(P.main(),P.hasClass("rm-sec"));
  chk("its sections are the headings outside the row (two), the row is one block inside the first",secs.length===2&&P.find(secs[0],P.hasClass("rowcell")).length===2&&P.find(secs[1],P.hasClass("rowcell")).length===0,String(secs.length));
  A.loadText(FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\n```booklet data\n[{\"a\":1}]\n```\n^rows\n\n```booklet query\nfrom: rows\nas: table\n```\n\n### Right\n\nr\n\n> [!row end]\n\n## Second\n\nTwo.\n");
- chk("a row holding a data-drawing query stays open, as a query always does",!A.readsOnly(A.activityOf("a")));
+ chk("a row holding a data-drawing query folds like any page of sections (0.11.10)",A.foldable(A.activityOf("a")));
  /* a link to a heading inside a row still finds its page */
  A.loadText(FM+"> [!activity|a] A\n\nGo to [[#Right side]].\n\n> [!activity|b] B\n\n> [!row]\n\n### Left side\n\nl\n\n### Right side\n\nr\n\n> [!row end]\n");
  const mods=A.allModules();

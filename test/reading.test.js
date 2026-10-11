@@ -78,11 +78,11 @@ const A=P.boot();
 
 /* 5. which activities fold */
 {A.loadText(FM+"## One\n\nA.\n\n## Two\n\nB.\n");
- chk("a reading-only activity folds",A.readsOnly(A.activityOf("week-view")));
+ chk("an activity of sections can fold",A.foldable(A.activityOf("week-view")));
  A.loadText(FM+"## One\n\nA.\n\n> [!text|q] Ask?\n\n## Two\n\nB.\n");
- chk("an activity with a question does not",!A.readsOnly(A.activityOf("week-view")));
- A.loadText(FM+"## One\n\nA.\n\n> [!activity|r repeat] Log\n\n## Two\n\nB.\n");
- chk("a repeating activity does not",!A.readsOnly(A.activityOf("r")));
+ chk("an activity with a question folds too (0.11.10)",A.foldable(A.activityOf("week-view")));
+ A.loadText(FM+"## One\n\nA.\n\n> [!activity|r repeat] Log\n\n## Two\n\nB.\n\n## Three\n\nC.\n");
+ chk("a repeating activity folds too (0.11.10)",A.foldable(A.activityOf("r")));
  chk("the interface strings exist in en, fr and es",["en","fr","es"].every(l=>{const f=A.STRINGS[l].fold;return f&&f.openAll&&f.foldAll&&/\d/.test(f.count(2,5))&&f.sections&&f.seen;}));
 }
 console.log(fails?fails+" reading checks failed":"all reading checks passed");

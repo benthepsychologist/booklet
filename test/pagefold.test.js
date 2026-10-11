@@ -22,8 +22,8 @@ const PROSE2="## Three\n\nThird.\n\n## Four\n\nFourth.\n\n## Five\n\nFifth.\n\n"
  const a=A.activityOf("m/a");
  const pg=a.pages;
  chk("the activity has three pages",pg.length===3,String(pg.length));
- chk("a page of prose reads, the page with the question does not",A.readsOnly(a,pg[0])&&A.readsOnly(a,pg[1])&&!A.readsOnly(a,pg[2]));
- chk("asked of the whole activity (no page), the question keeps it from being a reading-only activity",!A.readsOnly(a));
+ chk("the pages with two headings can fold; the page with one question and no headings cannot",A.foldable(a,pg[0])&&A.foldable(a,pg[1])&&!A.foldable(a,pg[2]));
+ chk("asked of the whole activity (no page), any foldable page makes it foldable",A.foldable(a));
  draw("m/a","p1");
  chk("page one folds into its two sections",secs().length===2&&secs().every(d=>!isOpen(d)),String(secs().length));
  chk("it carries the open/fold controls and the count line",bars().length===1&&/0 of 2/.test(counts()[0]||""),JSON.stringify(counts()));
@@ -31,7 +31,7 @@ const PROSE2="## Three\n\nThird.\n\n## Four\n\nFourth.\n\n## Five\n\nFifth.\n\n"
  draw("m/a","p2");
  chk("page two folds into its three sections, with its own count",secs().length===3&&/0 of 3/.test(counts()[0]||""),JSON.stringify(counts()));
  draw("m/a","p3");
- chk("the questions page is drawn open: no folded section, no controls, no count, no section list",
+ chk("the questions page has no headings of one level to fold: drawn open, no controls, no count, no section list",
    secs().length===0&&bars().length===0&&counts().length===0&&P.find(P.main(),P.hasClass("ap-sec")).length===0);
  chk("and its question is there",/What stood out/.test(P.texts(P.main())));
  /* the open state is kept across a redraw and a page change */
@@ -49,19 +49,19 @@ const PROSE2="## Three\n\nThird.\n\n## Four\n\nFourth.\n\n## Five\n\nFifth.\n\n"
 /* 2. a page with a booklet query is drawn open, its sibling prose page folds */
 {A.loadText(FM+"> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n"+PROSE1+"---\n\n## Shown\n\n```booklet query\nfrom: log\n```\n\n## Again\n\ntext\n"+END);
  const a=A.activityOf("m/look");
- chk("a page holding a booklet query does not read",A.readsOnly(a,a.pages[0])&&!A.readsOnly(a,a.pages[1]));
+ chk("a page holding a booklet query folds like any page with two headings (0.11.10)",A.foldable(a,a.pages[0])&&A.foldable(a,a.pages[1]));
  draw("m/look","p1");chk("the prose page folds",secs().length===2);
- draw("m/look","p2");chk("the query page is drawn open, with two sections' worth of headings left as they are",secs().length===0&&bars().length===0);
- chk("a repeating activity never folds",!A.readsOnly(A.activityOf("m/log"),pgs(A.activityOf("m/log"))[0]));
+ draw("m/look","p2");chk("the query page folds into its two sections too",secs().length===2&&bars().length===1);
+ chk("a repeating activity with no sections does not fold",!A.foldable(A.activityOf("m/log"),pgs(A.activityOf("m/log"))[0]));
  A.loadText(FM+"> [!activity|r repeat] Log\n\n"+PROSE1);
- draw("r");chk("even a repeating activity of nothing but prose and sections",secs().length===0&&bars().length===0);
+ draw("r");chk("a repeating activity of prose and sections folds (0.11.10)",secs().length===2&&bars().length===1);
 }
 
 /* 3. the old whole-activity cases still hold */
 {A.loadText(FM+"> [!activity|a] A\n\n"+PROSE1);
- chk("a reading-only activity folds",A.readsOnly(A.activityOf("a"))&&(draw("a"),secs().length===2));
+ chk("an activity of prose folds",A.foldable(A.activityOf("a"))&&(draw("a"),secs().length===2));
  A.loadText(FM+"> [!activity|a] A\n\n"+PROSE1+"> [!text|q] Ask?\n");
- chk("one question on its only page keeps it open",!A.readsOnly(A.activityOf("a"))&&(draw("a"),secs().length===0));
+ chk("a question added to a page of sections folds with it (0.11.10); the section holding it opens",A.foldable(A.activityOf("a"))&&(draw("a"),secs().length===2));
 }
 
 /* 4. an activity's card shows its first paragraph */

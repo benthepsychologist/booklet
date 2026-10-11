@@ -1,4 +1,4 @@
-# The booklet format, v0.11.9
+# The booklet format, v0.11.10
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
@@ -527,7 +527,7 @@ fields: hours
 
 **Sorting and filtering are the reader's.** A renderer may let the reader sort and filter the rows of any view on screen, and should offer the same control on every view. A renderer may offer it only on longer views, and a line chart keeps its order. It is saved nowhere, and a file never states it: a page always opens in the order its rows were written.
 
-A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the six views, is refused like any other query that cannot be drawn. A query key this section does not list is ignored, and a renderer reports it; the linter reports an error. A page that draws a data block is not a reading-only page: it stays open, not folded into sections.
+A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the six views, is refused like any other query that cannot be drawn. A query key this section does not list is ignored, and a renderer reports it; the linter reports an error.
 
 **Design rules for views.** These bind anyone extending the format.
 
@@ -797,6 +797,13 @@ None of this affects what already works: loading, reading, answering, and saving
 ---
 
 ## 14. Changes
+
+### Changes in v0.11.10: wording only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
+
+- **A page that draws a data block** (section 6). The sentence "A page that draws a data block is not a reading-only page: it stays open, not folded into sections." is deleted. A reading page's sections fold on any page, whatever else the page holds: questions, data views, kept entries.
+- **A folded callout** (section 6). A callout folded with `-` shows the first words of its text under its title, as a folded section does. A `hint` or `solution` shows nothing but its name while it is shut, so a closed one gives nothing away. (Both are the reference renderer's drawing, not something a file says.)
 
 ### Changes in v0.11.9: wording only
 

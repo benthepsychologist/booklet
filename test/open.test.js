@@ -14,7 +14,7 @@ const tag=(root,t)=>P.find(root,n=>n.tagName===t);
 const click=n=>{if(!n||!n._on||!n._on.click) throw new Error("nothing to click");return n._on.click({target:n});};
 const text=n=>P.texts(n);
 /* the question's box on the screen: the heading (an h3 or label) holds its words */
-const box=(A,words)=>{A.render();return P.find(P.main(),n=>n.tagName==="div"&&!cls(n).length&&!n.attrs.role&&tag(n,"h3").some(h=>text(h).includes(words))&&!P.find(n,m=>m!==n&&m.tagName==="div"&&!cls(m).length&&tag(m,"h3").length&&tag(m,"h3").some(h=>text(h).includes(words))).length)[0];};
+const box=(A,words)=>{A.render();return P.find(P.main(),n=>n.tagName==="div"&&cls(n).every(c=>c==="q-inline")&&!n.attrs.role&&tag(n,"h3").some(h=>text(h).includes(words))&&!P.find(n,m=>m!==n&&m.tagName==="div"&&cls(m).every(c=>c==="q-inline")&&tag(m,"h3").length&&tag(m,"h3").some(h=>text(h).includes(words))).length)[0];};
 const pills=b=>byClass(b,"pills")[0];
 const pillBtns=b=>pills(b).children.filter(x=>x&&x.tagName==="button"&&cls(x).includes("pill-btn"));
 const label=x=>text(x).replace(/\s*[✓✗].*$/,"").trim();
