@@ -73,12 +73,13 @@ const orphans=head+'> [!activity|a] Orphans\n\n> [!hint]-\n> ORPHAN-SECRET-ONE\n
     const txt=await p.locator('#main').innerText();
     ok(!/THE-SECRET/.test(txt),`${W}px: no hint or solution text is visible while they are closed`);
     const sums=await p.locator('#main details.card-fold > summary').allInnerTexts();
-    ok(/^Hint$/m.test(sums[0].trim())&&/^Solution$/m.test(sums[1].trim()),`${W}px: the summaries say Hint and Solution, not the raw kind (${JSON.stringify(sums.slice(0,2))})`);
-    ok(sums[0].trim()==='Hint'&&sums[1].trim()==='Solution',`${W}px: a hint and a solution show no teaser (${JSON.stringify(sums.slice(0,2))})`);
+    /* 0.11.12: a solution is drawn inside its question, so it comes before the hint's own row */
+    ok(/^Solution$/m.test(sums[0].trim())&&/^Hint$/m.test(sums[1].trim()),`${W}px: the summaries say Hint and Solution, not the raw kind (${JSON.stringify(sums.slice(0,2))})`);
+    ok(sums[0].trim()==='Solution'&&sums[1].trim()==='Hint',`${W}px: a hint and a solution show no teaser (${JSON.stringify(sums.slice(0,2))})`);
     ok(/Extra reading/.test(sums[2])&&/Words that open the group/.test(sums[2])&&sums[2].split('Extra reading').length===2,`${W}px: the folded group shows its title once and its first words (${JSON.stringify(sums[2])})`);
     ok(await p.locator('#main details.card-fold').nth(2).locator('summary .cd-tile').innerText()==='🌱'&&!/🌱/.test(await p.locator('#main details.card-fold').nth(2).locator('summary .k').innerText()),`${W}px: the group's leading emoji is its picture, not part of its title`);
-    ok(await p.locator('#main details.card-fold').nth(0).locator('.cd-body').isVisible()===false,`${W}px: a closed hint's body is not shown`);
-    await p.locator('#main details.card-fold').nth(0).locator('summary').click();await wait(200);
+    ok(await p.locator('#main details.card-fold').nth(1).locator('.cd-body').isVisible()===false,`${W}px: a closed hint's body is not shown`);
+    await p.locator('#main details.card-fold').nth(1).locator('summary').click();await wait(200);
     ok(/THE-SECRET-HINT/.test(await p.locator('#main').innerText())&&!/THE-SECRET-ANSWER/.test(await p.locator('#main').innerText()),`${W}px: opening the hint shows the hint, and only the hint`);
     const hs=await p.locator('#main details.card-fold > summary').evaluateAll(ss=>ss.map(s=>Math.round(s.getBoundingClientRect().height)));
     ok(hs.every(h=>h>=44),`${W}px: a fold card's summary is at least 44 px (${hs})`);

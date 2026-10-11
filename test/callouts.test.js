@@ -32,5 +32,5 @@ chk("the card hues are the six, in the work item's order",A.CARD_HUES.join()==="
    ["fr","es"].every(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).length<=5),
    ["fr","es"].map(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).join()).join(" | "));
  const src=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
- chk("no l10n: draft mark remains in STRINGS_SRC (the French and Spanish words were checked)",!/l10n: draft/.test(src));}
+ chk("the only l10n: draft marks left in STRINGS_SRC are the 0.11.12 words (readsN, lookAgain in fr and es)",(src.match(/l10n: draft/g)||[]).length===4&&src.split("\n").filter(l=>/l10n: draft/.test(l)).every(l=>/readsN|lookAgain/.test(l)));}
 console.log(fails?"\n"+fails+" FAILURES":"\ncallout checks passed");process.exit(fails?1:0);

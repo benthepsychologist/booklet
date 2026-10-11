@@ -51,17 +51,17 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
   "> [!activity|d] Done one\n\n> [!text|d1] Only?\n\n> [!module|m end] End\n";
  A.loadText(T);
  const act=id=>A.activityOf("m/"+id);
- chk("an activity nobody has touched is Not started",A.activityStatus(act("a"))==="Not started",A.activityStatus(act("a")));
+ chk("an activity nobody has touched is Not started",A.activityStatus(act("a"))==="3 questions · Not started",A.activityStatus(act("a")));
  const ans=A.answersIn("m");ans.q1="x";
  chk("one of three answered",A.activityStatus(act("a"))==="1 of 3 answered",A.activityStatus(act("a")));
  ans.q2="y";ans.q3=["z"];
- chk("all answered is Done",A.activityStatus(act("a"))==="Done",A.activityStatus(act("a")));
+ chk("all answered is Done",A.activityStatus(act("a"))==="3 questions · Done",A.activityStatus(act("a")));
  ans.q2="   ";
  chk("blank text is not an answer",A.activityStatus(act("a"))==="2 of 3 answered");
  chk("an activity that only reads has no status line",A.activityStatus(act("b"))==="");
- chk("a repeating activity with nothing kept is Not started",A.activityStatus(act("c"))==="Not started");
+ chk("a repeating activity with nothing kept is Not started",A.activityStatus(act("c"))==="1 question · Not started");
  A.keptFor("m/c").push({ts:"2026-10-01T10:00:00Z",l1:"a"},{ts:"2026-10-02T10:00:00Z",l1:"b"});
- chk("a repeating activity says how many are kept",A.activityStatus(act("c"))==="2 kept",A.activityStatus(act("c")));
+ chk("a repeating activity says how many are kept",A.activityStatus(act("c"))==="1 question · 2 kept",A.activityStatus(act("c")));
  const acts=["a","b","c","d"].map(act);
  chk("a module says how many of its activities are started (those that can be: the reading one does not count)",A.moduleStatus(acts)==="2 of 3 started",A.moduleStatus(acts));
  chk("the line under a module's blurb counts its activities and the started ones",A.moduleMeta(acts)==="4 activities · 2 started",A.moduleMeta(acts));
@@ -70,6 +70,22 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
  for(const k of Object.keys(ans)) delete ans[k];A.keptFor("m/c").length=0;
  chk("nothing started says so",A.moduleStatus(acts)==="Not started"&&A.moduleMeta(acts)==="4 activities");
 
+ /* 5b (0.11.12). the card counts what is inside: folded reads, then questions, then the status, joined by " · " */
+ {const R=FM+"> [!module|m] Module\n\nBlurb.\n\n> [!activity|r] Reads and questions\n\n> [!group]- One\n> words\n\n> [!note]- Two\n> words\n\n> [!tip]- Three\n> words\n\n"+
+    "> [!text|q1] 1?\n\n> [!hint]- \n> a hint is not a read\n\n> [!choice|q2] 2?\n- [ ] a\n- [x] b\n\n> [!solution]- Why\n> a solution is not a read\n\n> [!text|q3] 3?\n\n> [!text|q4] 4?\n\n> [!text|q5] 5?\n\n> [!text|q6] 6?\n\n"+
+    "> [!activity|w repeat] A repeat\n\n"+Array.from({length:13},(_,i)=>"> [!text|w"+i+"] W"+i+"?\n\n").join("")+"> [!activity|n] Plain\n\nJust words.\n\n> [!module|m end] End\n";
+  A.loadText(R);const a2=id=>A.activityOf("m/"+id),an=A.answersIn("m");
+  chk("nothing answered: reads, questions, Not started",A.activityStatus(a2("r"))==="3 reads · 6 questions · Not started",A.activityStatus(a2("r")));
+  an.q1="x";an.q2=1;
+  chk("part answered: reads, then how far",A.activityStatus(a2("r"))==="3 reads · 2 of 6 answered",A.activityStatus(a2("r")));
+  an.q3="x";an.q4="x";an.q5="x";an.q6="x";
+  chk("all answered: reads, questions, Done",A.activityStatus(a2("r"))==="3 reads · 6 questions · Done",A.activityStatus(a2("r")));
+  chk("an activity that repeats: questions, then kept",A.activityStatus(a2("w"))==="13 questions · Not started");
+  A.keptFor("m/w").push({ts:"2026-10-01T10:00:00Z"},{ts:"2026-10-02T10:00:00Z"});
+  chk("and with two kept",A.activityStatus(a2("w"))==="13 questions · 2 kept",A.activityStatus(a2("w")));
+  chk("no reads and no questions keeps the old line",A.activityStatus(a2("n"))==="");
+  A.loadText(T);}
+
  /* 6. a module's screen: title, blurb, a meta line, then the cards (no second list) */
  A.screen="module:m";A.render();
  const m=P.main(),cards=find(m,hasClass("mode"));
@@ -77,7 +93,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
  chk("it leads with the title, the blurb and the meta line",find(m,n=>n.tagName==="h2").length>=1&&find(m,hasClass("aside")).length===1&&texts(find(m,hasClass("cd-meta"))[0])==="4 activities");
  chk("each card is numbered in file order and has its place's hue",cards.map(c=>texts(find(c,hasClass("cd-tile"))[0])).join()==="1,2,3,4"&&hasClass("hue-sky")(cards[0])&&hasClass("hue-petrol")(cards[0])===false&&hasClass("hue-rose")(cards[1]));
  chk("no second overview list: the only lists of links are the cards",find(m,n=>n.tagName==="ul"||n.tagName==="ol").length===0);
- chk("a card's status line is the activity's status",texts(find(cards[0],hasClass("c"))[0])==="Not started");
+ chk("a card's status line is the activity's status",texts(find(cards[0],hasClass("c"))[0])==="3 questions · Not started");
 
  /* 7. the foot of an activity */
  A.screen="m/a";A.render();
@@ -121,11 +137,14 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
  chk("an ordinary callout is not a hint",A.hintKind({kind:"note",id:"c1"})===""&&A.hintKind({kind:"",id:"q-hint"})==="hint"&&A.hintKind({kind:"",id:"q-solution"})==="solution"&&A.hintKind({kind:"",id:"c7"})==="");}
 
 /* 9. every new word exists in en, fr, es and es-AR */
-{const want=["hint","solution","notStarted","done","answeredOf","startedOf","activitiesN","startedN","back","next"];
+{const want=["hint","solution","readsN","notStarted","done","answeredOf","startedOf","activitiesN","startedN","back","next"];
  for(const lang of ["en","fr","es","es-AR"]){const c=A.STRINGS[lang].cards;
    const miss=want.filter(k=>c==null||c[k]==null||(typeof c[k]==="string"&&!c[k].trim()));
    chk("the cards words exist in "+lang,miss.length===0,miss.join());
    chk("the number words in "+lang+" take a count",c&&/\d/.test(c.answeredOf(2,6))&&/\d/.test(c.startedOf(1,6))&&/\d/.test(c.activitiesN(3))&&/\d/.test(c.startedN(1))&&/2/.test(c.next(2,"T"))&&/T/.test(c.next(2,"T")));}
+ for(const lang of ["en","fr","es","es-AR"]){const c=A.STRINGS[lang].cards,q=A.STRINGS[lang].question;
+   chk("readsN and lookAgain exist in "+lang+" and read a count",/3/.test(c.readsN(3))&&typeof q.lookAgain==="string"&&q.lookAgain.trim().length>0);}
+ chk("fr and es have their own words for them",A.STRINGS.fr.question.lookAgain!==A.STRINGS.en.question.lookAgain&&A.STRINGS.es.question.lookAgain!==A.STRINGS.en.question.lookAgain&&A.STRINGS.fr.cards.readsN(2)!==A.STRINGS.en.cards.readsN(2));
  chk("a language that is not English does not hand back the English words",A.STRINGS.fr.cards.back!==A.STRINGS.en.cards.back&&A.STRINGS.es.cards.back!==A.STRINGS.en.cards.back&&A.STRINGS.fr.cards.hint!==A.STRINGS.en.cards.hint);
  chk("no l10n: draft mark is left on the card words",!/cards: \{ \/\* l10n: draft/.test(P.html));}
 console.log(fails?fails+" cards checks failed":"all cards checks passed");

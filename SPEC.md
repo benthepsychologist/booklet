@@ -1,4 +1,4 @@
-# The booklet format, v0.11.11
+# The booklet format, v0.11.12
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
@@ -798,6 +798,13 @@ None of this affects what already works: loading, reading, answering, and saving
 
 ## 14. Changes
 
+### Changes in v0.11.12: drawing only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
+
+- **A folded callout** (section 6). A folded `solution` that follows a question is drawn inside that question's own block: a small control that opens on request, and that opens by itself when the reader picks an option of a `choice` or presses Check on a `multi` that has a right answer (in the good tone when right, the warn tone with "Look again" when not). A callout folded with `-` whose kind means nothing to the renderer (a `group`) is drawn on plain paper, not tinted.
+- **An activity's card** counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started").
+
 ### Changes in v0.11.11: wording only
 
 Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
@@ -809,7 +816,7 @@ Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no f
 Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
 
 - **A page that draws a data block** (section 6). The sentence "A page that draws a data block is not a reading-only page: it stays open, not folded into sections." is deleted. A reading page's sections fold on any page, whatever else the page holds: questions, data views, kept entries.
-- **A folded callout** (section 6). A callout folded with `-` shows the first words of its text under its title, as a folded section does. A `hint` or `solution` shows nothing but its name while it is shut, so a closed one gives nothing away. (Both are the reference renderer's drawing, not something a file says.)
+- **A folded callout** (section 6). A callout folded with `-` shows the first words of its text under its title, as a folded section does. A `hint` or `solution` shows nothing but its name while it is shut, so a closed one gives nothing away. A folded `solution` right after a question is drawn inside that question, not as a row of its own, and opens by itself under the reader's answer to a question that has a right one. (All of this is the reference renderer's drawing, not something a file says.)
 
 ### Changes in v0.11.9: wording only
 
