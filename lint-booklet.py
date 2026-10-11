@@ -314,36 +314,84 @@ TH_DENSITIES = ("compact", "comfortable", "roomy")
 TH_HEX = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})")
 TH_BASE = {
     "paper": {
-        "paper": "#f7f2e8", "paper-deep": "#eee6da", "ink": "#292421", "muted": "#59514b",
-        "reader": "#292421", "field": "#ffffff", "surface": "#ffffff", "warn": "#a04e34",
-        "warn-soft": "#ffe4de", "accent": "#103e46", "accent-soft": "#e3eaea", "on-accent": "#ffffff",
-        "on-ink": "#ffffff", "mark": "#fff3b0", "tone-warm": "#f0d9cf", "tone-warm-deep": "#9a4a31",
-        "tone-green": "#dce7d2", "tone-green-deep": "#4f6b3a", "tone-amber": "#f6edd0", "tone-amber-deep": "#80621a",
-        "tone-slate": "#d9dee2", "tone-slate-deep": "#465b66", "tone-teal": "#d5e3e1", "tone-teal-deep": "#166b63",
+        "paper": "#f8f6f1", "paper-deep": "#efebe3", "ink": "#24323a",
+        "muted": "#56646b", "reader": "#24323a", "field": "#fefdfb",
+        "surface": "#fefdfb", "warn": "#a04e34", "warn-soft": "#ffe4de",
+        "accent": "#1e5e6b", "accent-soft": "#e4efef", "on-accent": "#ffffff",
+        "on-ink": "#ffffff", "mark": "#fff3b0", "tone-warm": "#f9e3e8",
+        "tone-warm-deep": "#a3405b", "tone-green": "#e1f1e7", "tone-green-deep": "#2d7751",
+        "tone-amber": "#f8ebd0", "tone-amber-deep": "#8b5f10", "tone-slate": "#e6e9ec",
+        "tone-slate-deep": "#3e4e59", "tone-teal": "#e4efef", "tone-teal-deep": "#15464f",
+        "h-sky": "#e3eef7", "h-sky-vivid": "#3f7fb5", "h-sky-solid": "#2f6fa8",
+        "h-sky-deep": "#2f6596", "h-rose": "#f9e3e8", "h-rose-vivid": "#bf5470",
+        "h-rose-solid": "#b4475f", "h-rose-deep": "#a3405b", "h-sage": "#e2f0e7",
+        "h-sage-vivid": "#4f8c6b", "h-sage-solid": "#3d7f5b", "h-sage-deep": "#3b6e52",
+        "h-sun": "#fbf0d6", "h-sun-vivid": "#b07a0f", "h-sun-solid": "#9a6408",
+        "h-sun-deep": "#8a5e0b", "h-lilac": "#ece8f6", "h-lilac-vivid": "#7462b5",
+        "h-lilac-solid": "#6553ad", "h-lilac-deep": "#6453a6", "h-petrol": "#e4efef",
+        "h-petrol-vivid": "#1e5e6b", "h-petrol-solid": "#1e5e6b", "h-petrol-deep": "#15464f",
+        "h-slate": "#e6e9ec", "h-slate-vivid": "#5b6b76", "h-slate-solid": "#4e5d68",
+        "h-slate-deep": "#3e4e59", "on-solid": "#ffffff",
     },
     "daylight": {
-        "paper": "#ffffff", "paper-deep": "#f3f4f6", "ink": "#1f2328", "muted": "#57606a",
-        "reader": "#1f2328", "field": "#ffffff", "surface": "#ffffff", "warn": "#a04e34",
-        "warn-soft": "#fbe9e4", "accent": "#103e46", "accent-soft": "#e6f0f1", "on-accent": "#ffffff",
-        "on-ink": "#ffffff", "mark": "#fff3b0", "tone-warm": "#f0d9cf", "tone-warm-deep": "#9a4a31",
-        "tone-green": "#dce7d2", "tone-green-deep": "#4f6b3a", "tone-amber": "#f6edd0", "tone-amber-deep": "#80621a",
-        "tone-slate": "#d9dee2", "tone-slate-deep": "#465b66", "tone-teal": "#d5e3e1", "tone-teal-deep": "#166b63",
+        "paper": "#ffffff", "paper-deep": "#f3f4f6", "ink": "#1f2328",
+        "muted": "#57606a", "reader": "#1f2328", "field": "#ffffff",
+        "surface": "#ffffff", "warn": "#a04e34", "warn-soft": "#fbe9e4",
+        "accent": "#103e46", "accent-soft": "#e6f0f1", "on-accent": "#ffffff",
+        "on-ink": "#ffffff", "mark": "#fff3b0", "tone-warm": "#fae8ec",
+        "tone-warm-deep": "#a3405b", "tone-green": "#e1f1e7", "tone-green-deep": "#2d7751",
+        "tone-amber": "#f8ebd0", "tone-amber-deep": "#8b5f10", "tone-slate": "#eceff1",
+        "tone-slate-deep": "#3e4e59", "tone-teal": "#e6f0f0", "tone-teal-deep": "#15464f",
+        "h-sky": "#e8f1f9", "h-sky-vivid": "#3f7fb5", "h-sky-solid": "#2f6fa8",
+        "h-sky-deep": "#2f6596", "h-rose": "#fae8ec", "h-rose-vivid": "#bf5470",
+        "h-rose-solid": "#b4475f", "h-rose-deep": "#a3405b", "h-sage": "#e6f2ea",
+        "h-sage-vivid": "#4f8c6b", "h-sage-solid": "#3d7f5b", "h-sage-deep": "#3b6e52",
+        "h-sun": "#fbf2dc", "h-sun-vivid": "#b07a0f", "h-sun-solid": "#9a6408",
+        "h-sun-deep": "#8a5e0b", "h-lilac": "#efecf8", "h-lilac-vivid": "#7462b5",
+        "h-lilac-solid": "#6553ad", "h-lilac-deep": "#6453a6", "h-petrol": "#e6f0f0",
+        "h-petrol-vivid": "#1e5e6b", "h-petrol-solid": "#1e5e6b", "h-petrol-deep": "#15464f",
+        "h-slate": "#eceff1", "h-slate-vivid": "#5b6b76", "h-slate-solid": "#4e5d68",
+        "h-slate-deep": "#3e4e59", "on-solid": "#ffffff",
     },
     "night": {
-        "paper": "#16191d", "paper-deep": "#1e2328", "ink": "#e6e1d8", "muted": "#a8a198",
-        "reader": "#e6e1d8", "field": "#1e2328", "surface": "#1e2328", "warn": "#e08a6b",
-        "warn-soft": "#3a2620", "accent": "#7cc4c9", "accent-soft": "#1f3438", "on-accent": "#0f1a1c",
-        "on-ink": "#16191d", "mark": "#5c4e12", "tone-warm": "#3a2620", "tone-warm-deep": "#e8a58c",
-        "tone-green": "#222e1d", "tone-green-deep": "#9cc27a", "tone-amber": "#332b14", "tone-amber-deep": "#d9b25a",
-        "tone-slate": "#2a3238", "tone-slate-deep": "#a9bbc6", "tone-teal": "#1c3331", "tone-teal-deep": "#7fd1c6",
+        "paper": "#11181c", "paper-deep": "#1d2a31", "ink": "#e7edef",
+        "muted": "#a9b7bd", "reader": "#e7edef", "field": "#18232a",
+        "surface": "#18232a", "warn": "#e08a6b", "warn-soft": "#3a2620",
+        "accent": "#7cc0cb", "accent-soft": "#163139", "on-accent": "#0e1a1e",
+        "on-ink": "#11181c", "mark": "#5c4e12", "tone-warm": "#381f28",
+        "tone-warm-deep": "#ec93aa", "tone-green": "#172e24", "tone-green-deep": "#8cc8a5",
+        "tone-amber": "#31281a", "tone-amber-deep": "#f0ba55", "tone-slate": "#232d33",
+        "tone-slate-deep": "#a9bbc6", "tone-teal": "#163139", "tone-teal-deep": "#7cc0cb",
+        "h-sky": "#172a3b", "h-sky-vivid": "#88b8e4", "h-sky-solid": "#3a78b0",
+        "h-sky-deep": "#88b8e4", "h-rose": "#381f28", "h-rose-vivid": "#ec93aa",
+        "h-rose-solid": "#b24a64", "h-rose-deep": "#ec93aa", "h-sage": "#172e24",
+        "h-sage-vivid": "#8cc8a5", "h-sage-solid": "#3e8160", "h-sage-deep": "#8cc8a5",
+        "h-sun": "#31281a", "h-sun-vivid": "#f0ba55", "h-sun-solid": "#946410",
+        "h-sun-deep": "#f0ba55", "h-lilac": "#25223a", "h-lilac-vivid": "#b3a5ee",
+        "h-lilac-solid": "#6e5db8", "h-lilac-deep": "#b3a5ee", "h-petrol": "#163139",
+        "h-petrol-vivid": "#7cc0cb", "h-petrol-solid": "#2a7280", "h-petrol-deep": "#7cc0cb",
+        "h-slate": "#232d33", "h-slate-vivid": "#a9bbc6", "h-slate-solid": "#56666f",
+        "h-slate-deep": "#a9bbc6", "on-solid": "#ffffff",
     },
     "contrast": {
-        "paper": "#ffffff", "paper-deep": "#ededed", "ink": "#000000", "muted": "#1a1a1a",
-        "reader": "#000000", "field": "#ffffff", "surface": "#ffffff", "warn": "#8b0000",
-        "warn-soft": "#fde7e7", "accent": "#003b49", "accent-soft": "#ffffff", "on-accent": "#ffffff",
-        "on-ink": "#ffffff", "mark": "#ffe600", "tone-warm": "#ffe9e4", "tone-warm-deep": "#8b0000",
-        "tone-green": "#e8f5e0", "tone-green-deep": "#1b4d0e", "tone-amber": "#fff3c4", "tone-amber-deep": "#5c4300",
-        "tone-slate": "#e6eaee", "tone-slate-deep": "#243746", "tone-teal": "#ddf2f0", "tone-teal-deep": "#004d45",
+        "paper": "#ffffff", "paper-deep": "#ededed", "ink": "#000000",
+        "muted": "#1a1a1a", "reader": "#000000", "field": "#ffffff",
+        "surface": "#ffffff", "warn": "#8b0000", "warn-soft": "#fde7e7",
+        "accent": "#003b49", "accent-soft": "#ffffff", "on-accent": "#ffffff",
+        "on-ink": "#ffffff", "mark": "#ffe600", "tone-warm": "#ffe9ee",
+        "tone-warm-deep": "#7a0f2e", "tone-green": "#e8f5e0", "tone-green-deep": "#1b4d0e",
+        "tone-amber": "#fff3c4", "tone-amber-deep": "#5c4300", "tone-slate": "#e6eaee",
+        "tone-slate-deep": "#243746", "tone-teal": "#ddf2f0", "tone-teal-deep": "#004d45",
+        "h-sky": "#e6f0fa", "h-sky-vivid": "#003a70", "h-sky-solid": "#003a70",
+        "h-sky-deep": "#003a70", "h-rose": "#ffe9ee", "h-rose-vivid": "#7a0f2e",
+        "h-rose-solid": "#7a0f2e", "h-rose-deep": "#7a0f2e", "h-sage": "#e8f5e0",
+        "h-sage-vivid": "#1b4d0e", "h-sage-solid": "#1b4d0e", "h-sage-deep": "#1b4d0e",
+        "h-sun": "#fff3c4", "h-sun-vivid": "#5c4300", "h-sun-solid": "#5c4300",
+        "h-sun-deep": "#5c4300", "h-lilac": "#efeafb", "h-lilac-vivid": "#3a2380",
+        "h-lilac-solid": "#3a2380", "h-lilac-deep": "#3a2380", "h-petrol": "#ddf2f0",
+        "h-petrol-vivid": "#004d45", "h-petrol-solid": "#004d45", "h-petrol-deep": "#004d45",
+        "h-slate": "#e6eaee", "h-slate-vivid": "#243746", "h-slate-solid": "#243746",
+        "h-slate-deep": "#243746", "on-solid": "#ffffff",
     },
 }
 TH_PAIRS = [("ink", "paper"), ("ink", "paper-deep"), ("muted", "paper"), ("accent", "paper"), ("on-accent", "accent"),
@@ -356,6 +404,12 @@ for _t in ("warm", "green", "amber", "slate", "teal"):
 TH_PAIRS += [("reader", "paper-deep"), ("muted", "paper-deep")]
 for _t in ("warm", "green", "amber"):
     TH_PAIRS += [("tone-" + _t + "-deep", "surface"), ("muted", "tone-" + _t), ("reader", "tone-" + _t)]
+# the hues: deep text on its wash, on a card and on the page; ink on the wash; then the pictures, at 3 to 1: the vivid line
+# on the wash and white on the solid fill
+TH_HUES = ("sky", "rose", "sage", "sun", "lilac", "petrol", "slate")
+for _h in TH_HUES:
+    TH_PAIRS += [("h-" + _h + "-deep", "h-" + _h), ("h-" + _h + "-deep", "surface"), ("h-" + _h + "-deep", "paper"),
+                 ("ink", "h-" + _h), ("h-" + _h + "-vivid", "h-" + _h, 3), ("on-solid", "h-" + _h + "-solid", 3)]
 TH_OWES = {"paper": ["paper"], "ink": ["ink"], "reader": ["ink"], "on-ink": ["paper"], "accent": ["accent"],
            "warn": ["bad"], "tone-green-deep": ["good"], "tone-amber-deep": ["warn"], "tone-warm-deep": ["bad"]}
 
@@ -386,11 +440,11 @@ def _th_mix(a, b, t):
     return [int(math.floor(v + (b[i] - v) * t + .5)) for i, v in enumerate(a)]
 
 
-def _th_tint(P, tgt, t0, fgs):
-    """A tint of paper toward tgt, as strong as t0, eased back until every colour in fgs reads on it."""
+def _th_tint(P, tgt, t0, fgs, gfx=()):
+    """A tint of paper toward tgt, as strong as t0, eased back until every colour in fgs reads on it (4.5) and every one in gfx (3)."""
     for k in (1, .7, .4, 0):
         c = _th_mix(P, tgt, t0 * k)
-        if all(_th_ratio(f, c) >= 4.5 for f in fgs):
+        if all(_th_ratio(f, c) >= 4.5 for f in fgs) and all(_th_ratio(f, c) >= 3 for f in gfx):
             return c
     return P
 
@@ -416,6 +470,9 @@ def _th_build(B, use):
                 break
         o.update({"muted": mu, "placeholder": _th_mix(I, P, .5), "on-ink": P, "on-ink-soft": _th_mix(P, I, .12), "bar-bg": P,
                   "mark": _th_tint(P, deep["amber"], .3, [I])})
+        for h in TH_HUES:
+            d = g("h-" + h + "-deep")
+            o["h-" + h] = _th_tint(P, d, .16 if dark else .12, [d, I], [g("h-" + h + "-vivid")])
     if "accent" in use or pi:
         o["accent"] = A
         o["accent-soft"] = _th_tint(P, A, .14 if dark else .1, [I])
@@ -465,7 +522,8 @@ def theme_derive(spec):
     for _ in range(8):
         o = _th_build(B, use)
         val = lambda t: _th_rgb(o.get(t) or B[t])
-        fails = [(f, b, _th_ratio(val(f), val(b))) for f, b in TH_PAIRS if _th_ratio(val(f), val(b)) < 4.5]
+        fails = [(x[0], x[1], _th_ratio(val(x[0]), val(x[1]))) for x in TH_PAIRS
+                 if _th_ratio(val(x[0]), val(x[1])) < (x[2] if len(x) > 2 else 4.5)]
         if not fails:
             return {"base": base, "tokens": o, "dropped": dropped}
         hit = {}

@@ -30,7 +30,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
   const openAct=async p=>{await p.locator('button.mode').first().click();await p.waitForTimeout(900);};
   const look=p=>p.evaluate(()=>{const de=document.documentElement,cs=getComputedStyle(de);
     return {theme:de.dataset.theme,choice:de.dataset.themeChoice,custom:de.hasAttribute('data-theme-custom'),
-      bg:cs.backgroundColor,ink:cs.color,accent:cs.getPropertyValue('--accent').trim(),inline:[...de.style].filter(n=>n!=='--ap-top').length,
+      bg:cs.backgroundColor,ink:cs.color,accent:cs.getPropertyValue('--accent').trim(),inline:[...de.style].filter(n=>n!=='--ap-top'&&!/^--(r-lg|r-md|r-sm|num-w|tile-bg|tile-art)$/.test(n)).length,
       font:getComputedStyle(document.querySelector('.md')||document.body).fontFamily,meta:document.querySelector('meta[name=theme-color]').content};});
   const over=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   const lum=css=>{const m=css.match(/\d+(\.\d+)?/g).map(Number);const [r,g,bl]=m.slice(0,3).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*r+.7152*g+.0722*bl;};
@@ -57,7 +57,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    ok(pp.theme==='paper'&&!pp.custom&&pp.inline===8&&pp.bg!==a.bg&&pp.accent!==a.accent,'an explicit Paper replaces its colours and differs; only its font and density (8 properties: both faces and six density) stay ('+pp.bg+' v '+a.bg+', inline '+pp.inline+')');
    await p.selectOption('#themeSel','night');await p.waitForTimeout(300);
    const n=await look(p);
-   ok(n.theme==='night'&&!n.custom&&n.inline===8&&n.accent==='#7CC4C9','an explicit Night replaces its colours and no colour token is left on the page; its font and density stay ('+JSON.stringify(n)+')');
+   ok(n.theme==='night'&&!n.custom&&n.inline===8&&n.accent==='#7CC0CB','an explicit Night replaces its colours and no colour token is left on the page; its font and density stay ('+JSON.stringify(n)+')');
    // tone-named cells in Night are dark; in Paper, light
    const q=async()=>p.evaluate(()=>[...document.querySelectorAll('.q.toned')].map(e=>getComputedStyle(e).backgroundColor));
    const nq=await q();

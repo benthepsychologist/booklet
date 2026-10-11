@@ -1,4 +1,4 @@
-# The booklet format, v0.11.8
+# The booklet format, v0.11.9
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
@@ -356,6 +356,8 @@ A widget the reader operates (the body map, the feelings grid) is a `widget` lin
 ### Callouts
 
 Reading set apart is an Obsidian callout, with `>` on every line of its body. Use Obsidian's built-in kinds where they fit (`note`, `tip`, `example`, `quote`, `question`, `warning`), and Booklet's three for guided reading: `diff` (where this differs from the reader's own guide), `law` (the rule as it now stands), `opinion` (an author's view, not to be learned as a rule).
+
+A renderer draws each kind in its own colour and picture; a kind it does not know is drawn as `note` is.
 
 ```markdown
 > [!diff] Your guide says the tide turns every six hours
@@ -795,6 +797,12 @@ None of this affects what already works: loading, reading, answering, and saving
 ---
 
 ## 14. Changes
+
+### Changes in v0.11.9: wording only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
+
+- **Callouts** (section 6). A renderer draws each kind in its own colour and picture; a kind it does not know is drawn as `note` is.
 
 ### Changes in v0.11.8: wording only
 

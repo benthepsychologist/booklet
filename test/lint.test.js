@@ -189,7 +189,7 @@ for(const [name,what,rx] of CASES5){
  chk("a row inside a row: reported at the inner opening (and the end it leaves over)",
    n.status===1&&/line 17: a row opens inside a row \(rows do not nest\)/.test(n.errors[0]||"")&&n.errors.length===2,n.out);}
 for(const [name,rx] of [["lint-row-empty",/line 13: this row is empty/],["lint-row-one-cell",/line 13: this row has one cell/],
-    ["lint-theme-low-contrast",/line 9: the theme's `accent` leaves accent on paper at 1\.01:1, under 4\.5 to 1, so the renderer will use the base theme's accent instead/]]){
+    ["lint-theme-low-contrast",/line 9: the theme's `accent` leaves accent on paper at 1\.04:1, under 4\.5 to 1, so the renderer will use the base theme's accent instead/]]){
   const r=lint(path.join(FX,name+".md"));
   chk(`${name}: one warning naming the place, no error`,r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);}
 for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-pair-ok","theme-and-rows.booklet"]){
