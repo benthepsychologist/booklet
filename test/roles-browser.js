@@ -59,7 +59,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    const num=await p.evaluate(()=>{const v=document.querySelector('ul.dv-list .dv-val');return getComputedStyle(v).fontVariantNumeric;});
    ok(/tabular/.test(num),'list: values use tabular numbers ('+num+')');
    const face=await p.evaluate(()=>[['.dv-v'],['.dv-t'],['.ch-v']].map(([s])=>{const e=document.querySelector(s);return e?getComputedStyle(e).fontFamily:'';}));
-   ok(face.every(f=>/Source Sans|sans-serif|Helvetica|Segoe/i.test(f)&&!/Lora|Georgia/.test(f)),'the tile figure, the list label and the bars value are in the sans face ('+face.join(' | ')+')');
+   ok(face.every(f=>/Atkinson|sans-serif|Helvetica|Segoe/i.test(f)&&!/Lora|Georgia/.test(f)),'the tile figure, the list label and the bars value are in the sans face ('+face.join(' | ')+')');
    const ctl=await p.evaluate(()=>[...document.querySelectorAll('.dv-box')].map(b=>({btn:!!b.querySelector('.dv-ctl-btn'),rows:b.querySelectorAll('li.dv-row,tbody tr,.ch-row').length})));
    ok(ctl.filter(c=>c.btn).length===3&&ctl.filter(c=>c.btn).every(c=>c.rows>=9)&&ctl.filter(c=>!c.btn).every(c=>c.rows<=8),'the control button is on the three long views only ('+JSON.stringify(ctl)+')');
    const panels=await p.evaluate(()=>[...document.querySelectorAll('.dv-box')].map(b=>({panel:b.classList.contains('dv-panel'),bg:getComputedStyle(b).backgroundColor,bw:getComputedStyle(b).borderTopWidth})));

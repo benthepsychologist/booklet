@@ -227,7 +227,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("it comes before every script, style and link (a meta policy governs only what follows it)",at>0&&at<script&&at<style&&at<link);
  const have=tags[0]?tags[0][1]:"";
  /* the fixed part, written out here so that weakening the template in csp-hash.js cannot pass by changing both together */
- const FIXED="default-src 'none'; script-src 'self' H H H H; style-src 'self' 'unsafe-inline'; img-src data: blob:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'";
+ const FIXED="default-src 'none'; script-src 'self' H H H H; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'";
  must("the policy is exactly the one this renderer carries (the four script hashes aside)",have.replace(/'sha256-[A-Za-z0-9+\/]+={0,2}'/g,"H")===FIXED,have);
  const sc=(/script-src ([^;]*)/.exec(have)||["",""])[1];
  must("scripts: no unsafe-inline, no unsafe-eval, no strict-dynamic, no wildcard, no host but 'self'",!/unsafe-inline|unsafe-eval|strict-dynamic|\*|https?:/.test(sc),sc);
@@ -235,8 +235,10 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("the hashes are of the scripts as they stand now (theme-boot, main, mermaid and temml as useLib() starts them)",csp.problems(full).length===0,csp.problems(full).join(" | "));
  must("the DNS-prefetch tag follows it: x-dns-prefetch-control is off",full.includes(csp.CHARSET+"\n"+csp.tagFor(full)+"\n"+csp.DNS+"\n")&&/<meta http-equiv="x-dns-prefetch-control" content="off">/.test(head));
  /* what the policy leaves out is as much of the promise as what it names: no frame, worker, media, manifest or font source is opened */
- must("nothing else is opened: no frame-src, worker-src, media-src, manifest-src, font-src or child-src, so default-src 'none' closes them",
-   !/frame-src|worker-src|media-src|manifest-src|font-src|child-src|prefetch-src/.test(have));
+ must("nothing else is opened: no frame-src, worker-src, media-src, manifest-src or child-src, so default-src 'none' closes them; the one source the renderer opens is its own fonts",
+   !/frame-src|worker-src|media-src|manifest-src|child-src|prefetch-src/.test(have));
+ must("font-src is exactly data: (the faces are carried inside the file; no font address, no 'self', no host)",
+   (have.match(/font-src [^;]*/g)||[]).join("|")==="font-src data:",have);
  /* the static guard still forbids every other way out; WebRTC is not governed by a CSP, so this is what holds it */
  must("RTCPeerConnection and the other ways out the policy cannot govern stay forbidden in the renderer's code (the pledge list above)",
    !/RTCPeerConnection|webkitRTCPeerConnection|RTCDataChannel|WebTransport/.test(html));}

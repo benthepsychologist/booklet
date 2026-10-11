@@ -79,10 +79,10 @@ function boot(){
  h.B.custom({base:"night",tokens:{"--paper":"red","--x;y":"#fff","--accent":"#fff;}body{display:none","--ink":"url(https://x.test/a.png)","--muted":"#12345","--good":"#abcdef"},font:"Comic Sans, url(x)",density:"constructor"});
  chk("it sets only a token it knows, with exactly #rrggbb, and no font or density it has no table for",h.set.length===0,JSON.stringify(h.set));
  h.B.custom({base:"night",tokens:{"--paper":"#101820","--bogus":"#abcdef"},font:"serif",density:"constructor"});
- chk("a real token with a real value goes through, an unknown token name does not",h.set.length===2&&h.set.some(([k,v])=>k==="--paper"&&v==="#101820")&&!h.set.some(([k])=>k==="--bogus"),JSON.stringify(h.set));
+ chk("a real token with a real value goes through, an unknown token name does not",h.set.length===3&&h.set.some(([k,v])=>k==="--paper"&&v==="#101820")&&!h.set.some(([k])=>k==="--bogus"),JSON.stringify(h.set));
  const real=A.themeDerive(A.readTheme("accent: #0f3d47\npaper: #f6f1e7\nink: #22201c\nfont: mono\ndensity: roomy").spec,T);
  const h2=boot();h2.B.custom(real);
- const FIXED=new Set(['var(--serif)','var(--sans)',"ui-monospace,SFMono-Regular,Menlo,Consolas,monospace","'Atkinson Hyperlegible',Verdana,Tahoma,sans-serif","1.45",".7rem","1.75","1.3rem",".88rem",".3rem",".5rem","1.45rem","1rem","1rem","2.3rem"]);
+ const FIXED=new Set(['var(--fam-serif)','var(--fam-sans)','var(--fam-mono)','var(--fam-read)',"1.45",".7rem","1.75","1.3rem",".88rem",".3rem",".5rem","1.45rem","1rem","1rem","2.3rem"]);
  chk("what the head script applies is #rrggbb or a value from its own fixed tables",h2.set.length>0&&h2.set.every(([k,v])=>/^#[0-9a-f]{6}$/.test(v)||FIXED.has(v)),JSON.stringify(h2.set.filter(([k,v])=>!/^#[0-9a-f]{6}$/.test(v)&&!FIXED.has(v))));
  chk("none of it holds anything that could be CSS beyond those",h2.set.every(([k,v])=>!/[;{}<>\n\\]|url\(|expression|javascript/i.test(v)));
  chk("a font and a density come only through their tables (mono sets both faces, roomy a looser line and roomier views)",
@@ -188,7 +188,7 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
  h.B.set("night");
  chk("an explicit Night replaces its colours only: Night in force, no colour token left, but its font and density still apply",
    h.attrs["data-theme"]==="night"&&!h.attrs["data-theme-custom"]&&!Object.keys(h.style).some(k=>/^--(paper|ink|accent|muted|surface|rule|tone-)/.test(k))
-   &&h.style["--lh"]==="1.75"&&h.style["--pgap"]==="1.3rem"&&h.style["--v-pad"]===".7rem"&&h.style["--sans"]==="var(--serif)",JSON.stringify(h.style));
+   &&h.style["--lh"]==="1.75"&&h.style["--pgap"]==="1.3rem"&&h.style["--v-pad"]===".7rem"&&h.style["--sans"]==="var(--fam-serif)",JSON.stringify(h.style));
  h.B.set("auto");
  chk("back to Auto brings it back",h.attrs["data-theme"]==="daylight"&&h.style["--accent"]==="#7a1f5c");
  h.B.custom(null);
