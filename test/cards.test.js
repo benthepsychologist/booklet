@@ -102,6 +102,24 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
  A.lang="en";
  chk("the doubled title is gone: a folded group's title is drawn once",texts(find(g,n=>n.tagName==="summary")[0]).split("Extra").length===2&&texts(g).split("Extra").length===2,texts(g));}
 
+/* 8b. a hint or solution that is not right under a question (the parser then keeps its own kind) is still one: label, no teaser, closed */
+{const cases=[
+  ["no question before it","> [!activity|a] A\n\n> [!hint]- \n> SECRET-ONE words here.\n","hint","SECRET-ONE"],
+  ["a note between the question and it","> [!activity|a] A\n\n> [!text|q] Q?\n\n> [!note] Aside\n> Some aside.\n\n> [!hint]-\n> SECRET-TWO words here.\n","hint","SECRET-TWO"],
+  ["a prose paragraph between the question and it","> [!activity|a] A\n\n> [!text|q] Q?\n\nA paragraph of prose.\n\n> [!solution]-\n> SECRET-THREE words here.\n","solution","SECRET-THREE"],
+  ["an upper-case kind","> [!activity|a] A\n\n> [!SOLUTION]-\n> SECRET-FOUR words here.\n","solution","SECRET-FOUR"]];
+ for(const [name,src,kind,secret] of cases){
+   A.loadText(FM+src);
+   const b=A.activityOf("a").blocks.find(x=>x.type==="callout"&&x.placement==="folded"&&/SECRET/.test(JSON.stringify(x)));
+   chk("orphan ("+name+"): the parser kept a folded callout",!!b);
+   if(!b) continue;
+   chk("orphan ("+name+"): it is told to be a "+kind,A.hintKind(b)===kind,String(A.hintKind(b)));
+   for(const lang of ["en","fr","es"]){A.lang=lang;const c=A.foldedCallout(b,{},"a"),sum=texts(find(c,n=>n.tagName==="summary")[0]);
+     const word=A.STRINGS[lang].cards[kind];
+     chk("orphan ("+name+") in "+lang+": the label is the localised "+kind+" and no answer is in the closed summary",sum.trim()===word&&!sum.includes(secret)&&find(c,hasClass("d")).length===0&&!c.attrs.open,JSON.stringify(sum));}
+   A.lang="en";}
+ chk("an ordinary callout is not a hint",A.hintKind({kind:"note",id:"c1"})===""&&A.hintKind({kind:"",id:"q-hint"})==="hint"&&A.hintKind({kind:"",id:"q-solution"})==="solution"&&A.hintKind({kind:"",id:"c7"})==="");}
+
 /* 9. every new word exists in en, fr, es and es-AR */
 {const want=["hint","solution","notStarted","done","answeredOf","startedOf","activitiesN","startedN","back","next"];
  for(const lang of ["en","fr","es","es-AR"]){const c=A.STRINGS[lang].cards;

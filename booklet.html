@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-PtpPxiPrmkE1wFdU1Am9bHU40CLnqSm1FH6SQlE+Jgs=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-2Rub2jf2W4DQDm6Er8zMMoK+yeHtnm7lFtd1mslxuqA=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -330,6 +330,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
      a tile). A picture tile, the number in the card's colour, the title, one line, a status line, a round chevron.
      The hue comes from the card's place in its list (hue-*); the tile's fill from the style (--tile-solid: the soft wash and the vivid line, or the solid shade and white art). */
   .modes{display:grid;grid-template-columns:1fr;gap:.8rem;margin:1.5rem 0 0;max-width:48rem}
+  /* the home, module and booklet-list screens keep one centred column, as the canvas does */
+  .cd-col.cd-col{max-width:48rem;margin-left:auto;margin-right:auto}
   .card-go,.card-fold{--cd-pad:1rem;font-family:var(--sans);text-align:left;color:var(--ink);background:var(--surface);border:var(--bw) solid var(--rule);border-radius:var(--r-lg);line-height:1.4;min-width:0}
   .card-go,.card-fold>summary{display:flex;align-items:center;gap:.9rem;padding:var(--cd-pad) var(--cd-pad) var(--cd-pad) var(--cd-pad);min-height:44px}
   .card-go{width:100%;box-shadow:0 1px 2px color-mix(in srgb,var(--shadow) 6%,transparent),0 10px 24px -18px color-mix(in srgb,var(--shadow) 40%,transparent);transition:transform .12s,box-shadow .12s}
@@ -4838,12 +4840,19 @@ function renderBlock(b,draft,activityId){
   if(placeOf(b)!=="folded") return node;
   return b.type==="callout"?foldedCallout(b,draft,activityId):
     cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),open:blockFilled(b,draft),body:[node]});}
+/* Is this callout a hint or a solution ("hint", "solution", or ""): the one place that decides, for both ways the parser
+   makes one: folded under its question (kind "", id ending -hint or -solution) or on its own (kind hint or solution,
+   when no question comes right before it). Either way it never shows a teaser. */
+function hintKind(b){
+  const k=String(b&&b.kind==null?"":b.kind).toLowerCase();
+  if(k==="hint"||k==="solution") return k;
+  return k===""?(/-(hint|solution)$/.exec(String(b&&b.id||""))||[])[1]||"":"";}
 /* A callout folded with a minus sign, or a hint or solution folded under its question, as a fold card: its kind's
    picture, its title (a hint or a solution is called that, in the reader's language, not by the raw kind), and the
    first words of its text as the teaser. A hint or a solution has no teaser: a closed one gives nothing away. */
 function foldedCallout(b,draft,activityId){
-  const Rt=strings("reading"),C=strings("cards"),hs=b.kind===""?(/-(hint|solution)$/.exec(String(b.id||""))||[])[1]||"":"";
-  const look=b.kind===""?null:calloutLook(b.kind),named=tx(b.title,"");
+  const Rt=strings("reading"),C=strings("cards"),hs=hintKind(b);
+  const look=b.kind===""||hs?null:calloutLook(b.kind),named=tx(b.title,"");
   const title=nonEmpty(named)?named:hs?C[hs]:look?Rt.kind[look.label]:foldName(b);
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
@@ -5984,6 +5993,8 @@ function nameRow(){const L=strings("library"),cur=tx((BOOK.head||{}).title,tx(BO
     row.append(el("h1",{},tx((BOOK.head||{}).title,STRINGS[lang].home.h1)));
     if(currentId) row.append(el("button",{type:"button",class:"quietlink",title:L.renameFor(shown),"aria-label":L.renameFor(shown),onclick:()=>draw(true)},L.rename));};
   draw(false);return row;}
+/* centre what a screen has drawn so far in one column (the cards' width) */
+const centreScreen=main=>{Array.from(main.children||[]).forEach(n=>{if(n&&n.classList) n.classList.add("cd-col");});};
 function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   main.append(...openNotices());
   const hero=el("div",{class:"hero col"});
@@ -6015,6 +6026,7 @@ function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   const note=unsavedNote();if(note) main.append(el("p",{class:"col"},note));
   main.append(el("p",{class:"col",style:"margin-top:2rem"},
     el("button",{type:"button",class:"quietlink",onclick:()=>document.getElementById("veilClear").setAttribute("open","")},u.clearLink)));
+  centreScreen(main);
 }
 function homeButton(){
   if(screen==="home"&&currentId){closeBooklet();render();window.scrollTo({top:0});return;}
@@ -6052,13 +6064,14 @@ function renderBooklets(main){const L=strings("library");
   hostStopLine(main);
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
   const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
-  if(!list.length){main.append(el("p",{class:"col hint"},L.empty));return;}
+  if(!list.length){main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
   const cards=el("div",{class:"modes"});
   list.forEach(e=>cards.append(bookletCard(e)));
   main.append(cards);
   /* one quiet line when the browser has not promised to keep this site's storage (see asking the browser to keep it) */
   checkPersisted();
-  if(PERSISTED===false&&storageOk) main.append(el("p",{class:"col hint",style:"margin-top:1.2rem"},L.mayClear));}
+  if(PERSISTED===false&&storageOk) main.append(el("p",{class:"col hint",style:"margin-top:1.2rem"},L.mayClear));
+  centreScreen(main);}
 function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;const name=bookletName(e);
   const unsaved=Number(e.unsavedEntries)>0||!!e.dirty;
   /* the card stays where it is and is drawn again inside itself: the row, the rename field or the question before removing */
@@ -6225,6 +6238,7 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   main.append(grid);
   const about=noticeNode(mod);if(about) main.append(el("div",{class:"col"},about));
   const rm=removeModuleControl(mod);if(rm) main.append(rm);
+  centreScreen(main);
 }
 /* What a file is called comes from the booklet's own title, never from the
    name of whatever page happened to write it: "End of day" is saved as

@@ -11,6 +11,7 @@ const head='---\nbooklet: "0.11"\ntitle: Harbour notes\nlang: en\n---\n\n';
 const six=head+'> [!module|m] Harbour\n\nA module of six.\n\n'+['One','Two','Three','Four','Five','Six','Seven'].map((t,i)=>
   `> [!activity|a${i}] ${t}\n\n${i===0?'First words with [a link](https://example.com/x) in them, then more.\n\n':'Some words.\n\n'}> [!text|q${i}] A question in ${t}?\n\n> [!text|r${i}] Another in ${t}?\n\n`).join('')+'> [!module|m end] End\n';
 const folds=head+'> [!activity|a] Folding\n\n> [!choice|q] Pick one\n- [ ] Left\n- [ ] Right\n\n> [!hint]- \n> THE-SECRET-HINT-WORDS\n\n> [!solution]- \n> THE-SECRET-ANSWER-WORDS\n\n> [!group]- 🌱 Extra reading\n> Words that open the group and say what is in it. More after that.\n>\n> The second paragraph.\n\n## Not a section\n\nText.\n';
+const orphans=head+'> [!activity|a] Orphans\n\n> [!hint]-\n> ORPHAN-SECRET-ONE\n\n> [!text|q] Q?\n\n> [!note] Aside\n> Some aside.\n\n> [!hint]-\n> ORPHAN-SECRET-TWO\n\nA paragraph.\n\n> [!solution]-\n> ORPHAN-SECRET-THREE\n';
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
@@ -42,6 +43,9 @@ const folds=head+'> [!activity|a] Folding\n\n> [!choice|q] Pick one\n- [ ] Left\
     const first=await p.locator('#main button.mode').first().innerText();
     ok(/First words with a link in them/.test(first)&&/Not started/.test(first),`${W}px: the first card's teaser reads the paragraph's words (link text, no link), and says Not started: ${JSON.stringify(first)}`);
     ok(await p.locator('#main .cd-meta').innerText()==='7 activities',`${W}px: the screen leads with a meta line`);
+    {const g=await p.evaluate(()=>{const r=e=>e.getBoundingClientRect(),m=r(document.querySelector('#main')),c=[...document.querySelectorAll('#main button.mode')].map(r),h=r(document.querySelector('#main h2'));
+       return {left:Math.min(...c.map(x=>x.left))-m.left,right:m.right-Math.max(...c.map(x=>x.right)),h:h.left-Math.min(...c.map(x=>x.left)),w:Math.max(...c.map(x=>x.width)),rem:parseFloat(getComputedStyle(document.documentElement).fontSize)};});
+     ok(Math.abs(g.left-g.right)<=2&&Math.abs(g.h)<=2&&g.w<=48*g.rem+2,`${W}px: the cards are one centred column, and the title lines up with them (${JSON.stringify(g)})`);}
     ok(await over()<=0,`${W}px: the module screen does not scroll sideways`);
     const sizes=await p.evaluate(()=>[...document.querySelectorAll('#main button.mode')].map(c=>Math.round(c.getBoundingClientRect().height)));
     ok(sizes.every(h=>h>=44),`${W}px: every card is at least 44 px tall`);
@@ -80,6 +84,12 @@ const folds=head+'> [!activity|a] Folding\n\n> [!choice|q] Pick one\n- [ ] Left\
     ok(hs.every(h=>h>=44),`${W}px: a fold card's summary is at least 44 px (${hs})`);
     ok(await p.locator('#main svg[aria-hidden="true"]').count()>=3&&await p.locator('#main .cd-chev:not([aria-hidden="true"])').count()===0,`${W}px: the chevrons are aria-hidden`);
 
+    /* a hint or solution with no question right before it is still a hint or a solution */
+    await load(orphans);
+    {const sm=(await p.locator('#main details.card-fold > summary').allInnerTexts()).map(x=>x.trim());
+     ok(sm.join('|')==='Hint|Hint|Solution',`${W}px: orphan hints and solutions say Hint or Solution and show no teaser (${JSON.stringify(sm)})`);
+     ok(!/ORPHAN-SECRET/.test(await p.locator('#main').innerText()),`${W}px: no orphan answer text is visible while they are closed`);}
+    await load(folds);
     /* print: the cards print open and the chevrons go */
     await p.emulateMedia({media:'print'});await wait(200);
     const pr=await p.evaluate(()=>{const d=document.querySelectorAll('#main details.card-fold');return {body:[...d].map(x=>x.querySelector('.cd-body').getBoundingClientRect().height>0),chev:[...document.querySelectorAll('#main .cd-chev')].map(c=>getComputedStyle(c).display)};});
