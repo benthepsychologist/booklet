@@ -242,5 +242,16 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  /* the static guard still forbids every other way out; WebRTC is not governed by a CSP, so this is what holds it */
  must("RTCPeerConnection and the other ways out the policy cannot govern stay forbidden in the renderer's code (the pledge list above)",
    !/RTCPeerConnection|webkitRTCPeerConnection|RTCDataChannel|WebTransport/.test(html));}
+/* One builder for every card (0.11.10): the card class is given to an element in cardNode and nowhere else. The detector
+   is itself tested: it must see the violation in a seeded line and must see cardNode's own, or a pass would mean nothing. */
+{const CARD_MAKER=/(?:\bclass|\bclassName)\s*[:=]\s*(["'`])[^"'`]*\bcard(?:-(?:go|fold|item|sub))?\b[^"'`]*\1|classList\.add\(\s*["'`]card\b|["'`]card["']\s*,\s*["'`]card-/;
+ const a=html.indexOf("function cardNode(o){"),b=html.indexOf("/* a heading's leading emoji becomes the card's picture");
+ const must=(n,ok,d)=>{if(ok)console.log("  ok    "+n);else{fails++;console.log("  FAIL  "+n+(d?"   → "+d:""));}};
+ must("cardNode is found in the renderer",a>0&&b>a);
+ const body=html.slice(a,b),rest=html.slice(0,a)+html.slice(b);
+ must("the detector sees a card made by another function (seeded)",CARD_MAKER.test('function f(){return el("div",{class:"card card-go"});}')&&CARD_MAKER.test('n.className="card"')&&CARD_MAKER.test('x.classList.add("card")'));
+ must("the detector sees cardNode's own card class",CARD_MAKER.test(body));
+ const hit=rest.split("\n").map((l,i)=>[i,l]).filter(([i,l])=>!/^\s*(\/\*|\.|@)/.test(l)&&CARD_MAKER.test(l));
+ must("no other function gives an element the card class",hit.length===0,hit.map(([i,l])=>l.trim().slice(0,80)).join(" | "));}
 console.log(fails?"\n"+fails+" FAILURES":"\nguard checks passed");
 process.exit(fails?1:0);

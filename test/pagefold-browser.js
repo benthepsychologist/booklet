@@ -77,7 +77,7 @@ One trial only.
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
     if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
     await p.locator('button.mode').first().click();await p.waitForTimeout(700);
-    const cards=await p.evaluate(()=>[...document.querySelectorAll('button.mode')].map(c=>({k:c.querySelector('.k').textContent,d:c.querySelector('.d').textContent})));
+    const cards=await p.evaluate(()=>[...document.querySelectorAll('button.mode')].map(c=>({k:c.querySelector('.k').textContent,d:(c.querySelector('.d')||{textContent:''}).textContent})));   // a card with no words draws no teaser line (0.11.10)
     ok(cards.length===2,W+': the module screen has two activity cards');
     ok(cards[0].d==='This is the first paragraph of the activity, with bold and snake_case.',W+': the first card shows the activity\'s first paragraph: '+JSON.stringify(cards[0].d));
     ok(cards[1].d==='',W+': an activity with no paragraph shows its title alone');
