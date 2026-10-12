@@ -30,7 +30,7 @@ let path3=null;(function find(l,trail){for(const [i,p] of l.entries()){if(i>=24)
 
 const FLAT=`---\nbooklet: "0.12"\ntitle: Flat\nlang: en\n---\n\n> [!module|f] Flat module\n\nOpening words.\n\n> [!activity|one] First\n\nOne.\n\n> [!activity|two] Second\n\nTwo.\n\n> [!activity|three] Third\n\nThree.\n\n> [!module|f end] End\n`;
 const CHIP=`---\nbooklet: "0.12"\ntitle: Programme\nlang: en\n---\n\n> [!module|prog] Programme\n\n> [!activity|start] Start here\n\nThe first week: [[week-1.booklet]]. The second: [Week 2](week-2.booklet.md). A row below.\n\n\`\`\`booklet data\n[{"label":"Third week","link":"week-3.booklet"}]\n\`\`\`\n^weeks\n\n\`\`\`booklet query\nfrom: weeks\nas: list\n\`\`\`\n\n> [!activity|more] More\n\nMore.\n\n> [!module|prog end] End\n\n> [!module|week-1] Week 1\n\n> [!activity|w1] Words\n\nWeek one.\n\n> [!activity|w1b] More words\n\nStill week one.\n\n> [!module|week-1 end] End\n`;
-const WEEK2=`---\nbooklet: "0.12"\ntitle: Week 2\nlang: en\n---\n\n> [!module|week-2] Week 2\n\n> [!activity|w2] Week two\n\nWeek two reading.\n\n> [!activity|w2b] More\n\nx\n\n> [!module|week-2 end] End\n`;
+const WEEK2=`---\nbooklet: "0.11"\ntitle: Week 2\nlang: en\n---\n\n> [!module|week-2] Week 2\n\n> [!activity|w2] Week two\n\nWeek two reading.\n\n> [!activity|w2b] More\n\nx\n\n> [!module|week-2 end] End\n`;
 const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
 
 (async()=>{
@@ -43,6 +43,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
     p.on('request',r=>p.reqs.push(r.url()));
     await p.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
     await p.route('https://raw.githubusercontent.com/**',r=>{const u=new URL(r.request().url()).pathname;
+      if(p.regFail&&/registry\.json$/.test(u)) return r.fulfill({status:500,body:'no',headers:{'access-control-allow-origin':'*'}});
       r.fulfill({status:200,body:/registry\.json$/.test(u)?JSON.stringify(REG):WEEK2,headers:{'content-type':/json$/.test(u)?'application/json':'text/plain','access-control-allow-origin':'*'}});});
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(200);
@@ -51,6 +52,9 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
     return p;};
   const h2=p=>p.locator('#main .wk-content h2, #main .col h2').first().innerText();
   const cards=p=>p.locator('#main .wk-cards button.mode');
+  const focused=p=>p.evaluate(()=>{const a=document.activeElement;return a?a.tagName+'|'+(a.getAttribute('aria-current')||'')+'|'+(a.textContent||'').slice(0,40):'none';});
+  const addr=p=>p.evaluate(()=>JSON.stringify([history.length,location.href]));
+  const heights=(p,sel)=>p.locator(sel).evaluateAll(es=>es.slice(0,8).map(e=>Math.round(e.getBoundingClientRect().height)));
   const cardTitle=async(p,i)=>(await cards(p).nth(i).locator('.k').innerText()).trim();
 
   ok(pages.length===157&&roots.length>=1&&!!path3,'the fixture: '+pages.length+' pages, '+roots.length+' at the top, a path three levels down');
@@ -69,10 +73,13 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   await d0.locator(':scope > summary').click({position:{x:4,y:6}});await p.waitForTimeout(150);
   ok(!(await d0.evaluate(d=>d.open)),'and pressing it again closes it');
 
+  const a0=await addr(p);
   /* three levels down by the cards */
   const titles=[];
   for(const [pg,i] of path3){await cards(p).nth(i).click();await p.waitForTimeout(300);titles.push(pg.title);
-    ok((await h2(p)).trim()===pg.title,'level '+titles.length+': the page is "'+pg.title+'"');}
+    ok((await h2(p)).trim()===pg.title,'level '+titles.length+': the page is "'+pg.title+'"');
+    ok(/^H2/.test(await focused(p)),'after a card the focus is on the new page\'s heading ('+await focused(p)+')');}
+  ok((await heights(p,'.wk-tree .wk-link')).every(h=>h>=44)&&(await heights(p,'.wk-crumb')).every(h=>h>=44),'tree links and breadcrumbs are at least 44 px tall ('+(await heights(p,'.wk-tree .wk-link')).slice(0,3)+' / '+(await heights(p,'.wk-crumb')).slice(0,3)+')');
   const crumbs=()=>p.locator('.wk-crumbs li').allInnerTexts();
   const cr=(await crumbs()).map(t=>t.trim());
   ok(cr.length===4&&cr.slice(1).join('|')===titles.join('|'),'breadcrumbs: the module, then each ancestor, then this page ('+cr.length+' of them)');
@@ -86,10 +93,12 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   /* back up by a breadcrumb */
   await p.locator('.wk-crumbs li button').nth(1).click();await p.waitForTimeout(300);
   ok((await h2(p)).trim()===titles[0]&&(await crumbs()).length===2,'a breadcrumb leads back up to that ancestor');
+  ok(/^H2/.test(await focused(p)),'after a breadcrumb the focus is on the page\'s heading ('+await focused(p)+')');
   /* Up */
   await cards(p).nth(path3[1][1]).click();await p.waitForTimeout(250);
   await p.locator('.cd-back').click();await p.waitForTimeout(250);
   ok((await h2(p)).trim()===titles[0],'"Up" climbs one level');
+  ok(/^H2/.test(await focused(p)),'after Up the focus is on the page\'s heading');
   /* the module crumb leads to the module screen */
   await p.locator('.wk-crumbs li button').first().click();await p.waitForTimeout(250);
   ok(await cards(p).count()===Math.min(24,roots.length)&&await p.locator('.wk-crumbs').count()===0,'the first breadcrumb is the module\'s own screen');
@@ -100,6 +109,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
     const t=(await h2(p)).trim();seen.push(t);if(t!==dfs[i].title){good=false;break;}
     await p.locator('.cd-next').click();await p.waitForTimeout(200);}
   ok(good,'"Next" goes through the pages depth first (the first '+seen.length+' match the file\'s tree)');
+  ok(/^H2/.test(await focused(p)),'after Next the focus is on the page\'s heading');
   /* a long row of children: only the first cards are drawn, the rest on a press */
   const wide=pages.map(q=>[q,kids(q).length]).sort((x,y)=>y[1]-x[1])[0];
   console.log('     most children under one page: '+wide[1]);
@@ -118,6 +128,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   ok(await p.locator('.wk-none').isVisible()&&await p.locator('.wk-results').isHidden(),'a word nowhere says so');
   await p.locator('.wk-q').fill(word);await p.waitForTimeout(150);
   await p.locator('.wk-results .wk-link').first().click();await p.waitForTimeout(300);
+  ok(/\|page\|/.test(await focused(p)),'after a choice in the menu the focus is on that page\'s entry ('+await focused(p)+')');
   ok(await p.locator('.wk-q').inputValue()===word&&await p.locator('.wk-results .wk-link').count()>=1,'a result opens its page, and the search stays as it was typed');
   await p.locator('.wk-q').fill('');await p.waitForTimeout(150);
   ok(await p.locator('.wk-tree').isVisible()&&await p.locator('.wk-results').isHidden(),'an empty box shows the tree again');
@@ -131,6 +142,9 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   ok(chips.map(t=>t.trim()).includes(src.title),'"Mentioned on" lists the page that links to this one ("'+src.title+'" -> "'+tgt.title+'")');
   await p.locator('.wk-chips .wk-chip',{hasText:src.title}).first().click();await p.waitForTimeout(300);
   ok((await h2(p)).trim()===src.title,'a chip opens that page');
+  ok(/^H2/.test(await focused(p)),'after a mention chip the focus is on the page\'s heading');
+  ok((await heights(p,'.wk-chip')).every(h=>h>=44),'mention chips are at least 44 px tall');
+  ok(await addr(p)===a0,'browsing (cards, tree, breadcrumb, Up, Next, search, a mention chip) left history.length and location.href as they were ('+a0+')');
   await p.locator('.wk-q').fill('');
   await p.screenshot({path:path.join(OUT,'wiki-page.png')});
 
@@ -171,16 +185,76 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   ok(await p.locator('.wk-fold').evaluate(d=>d.open)&&await p.locator('.wk-q').isVisible(),'pressing it opens the menu with its search box');
   const ov=await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   ok(ov<=0,'the page does not scroll sideways at 390 px ('+ov+')');
+  const menuOpen=()=>p.locator('.wk-fold').evaluate(d=>d.open);
+  /* a choice closes the phone's menu: a tree entry, a search result, a breadcrumb */
+  await p.locator('.wk-tree .wk-link').first().click();await p.waitForTimeout(300);
+  ok(!(await menuOpen())&&/^H2/.test(await focused(p)),'a tree entry chosen on a phone closes the menu and focuses the page\'s heading ('+await focused(p)+')');
+  await p.locator('.wk-fold > summary').click();await p.waitForTimeout(200);
+  await p.locator('.wk-q').fill(word);await p.waitForTimeout(200);
+  await p.locator('.wk-results .wk-link').first().click();await p.waitForTimeout(300);
+  ok(!(await menuOpen())&&await p.locator('.wk-q').inputValue()===word,'a search result chosen on a phone closes the menu, though the words stay in the box');
+  await cards(p).first().click().catch(()=>{});await p.waitForTimeout(250);
+  await p.locator('.wk-fold > summary').click();await p.waitForTimeout(200);
+  ok(await menuOpen(),'and it opens again when asked');
+  await p.locator('.wk-fold > summary').click();await p.waitForTimeout(100);
+  if(await p.locator('.wk-crumb').count()){await p.locator('.wk-crumb').first().click();await p.waitForTimeout(250);
+    ok(!(await menuOpen()),'a breadcrumb leaves the menu closed');}
+  await p.screenshot({path:path.join(OUT,'wiki-phone-closed.png')});
   await p.context().close();
+
+  /* ---- a hidden page: left out of every list, its children in its place; reached by a link it shows its place ---- */
+  {const HID='---\nbooklet: "0.12"\ntitle: Hidden\nlang: en\n---\n\n> [!module|h] Hid\n\n> [!activity|a] Alpha\n\nAlpha words.\n\n> [!activity|h1 parent:a hidden] Hidden one\n\nHidden words.\n\n> [!activity|c parent:h1] Child\n\nChild words.\n\n> [!activity|z] Zed\n\nSee [[#Hidden one]].\n\n> [!module|h end] End\n';
+   p=await openBook(HID,1280);
+   ok(await cards(p).count()===2&&(await p.locator('.wk-tree > li').count())===2,'a hidden page is not among the top cards or the menu\'s top ('+await cards(p).count()+' cards)');
+   await cards(p).first().click();await p.waitForTimeout(250);
+   ok(await cards(p).count()===1&&/Child/.test(await cards(p).first().innerText()),'its child takes its place among the cards of Alpha');
+   ok(await p.locator('.wk-tree [data-id$="c"]').count()===1&&await p.locator('.wk-tree [data-id$="h1"]').count()===0,'and in the menu, under Alpha');
+   await p.locator('.cd-next').click();await p.waitForTimeout(200);
+   ok((await h2(p)).trim()==='Child','"Next" from Alpha passes over the hidden page');
+   await p.locator('.wk-q').fill('hidden words');await p.waitForTimeout(150);
+   ok(await p.locator('.wk-none').isVisible(),'the search does not offer the hidden page');
+   await p.locator('.wk-q').fill('');
+   await p.locator('.wk-crumbs li button').first().click();await p.waitForTimeout(200);
+   await cards(p).nth(1).click();await p.waitForTimeout(250);
+   await p.locator('.wk-content a.alink').click();await p.waitForTimeout(300);
+   ok((await h2(p)).trim()==='Hidden one'&&(await crumbs()).map(t=>t.trim()).join('|')==='Hid|Alpha|Hidden one','a link to the hidden page opens it, with its real breadcrumbs ('+(await crumbs()).join('|')+')');
+   ok(await cards(p).count()===1&&/Child/.test(await cards(p).first().innerText()),'and its own child as a card');
+   ok(/Zed/.test(await p.locator('.wk-chips').innerText()),'and the page that links to it under "Mentioned on"');
+   await p.locator('.cd-next').click();await p.waitForTimeout(200);
+   ok((await h2(p)).trim()==='Child','"Next" from the hidden page goes on to the next shown page');
+   await p.context().close();}
+
+  /* ---- a page with sections: they are listed in the wiki's menu, and no second rail is drawn ---- */
+  {const chunks=WIKI.split(/^> \[!activity\|/m).slice(1).map((c,i)=>({page:pages[i],n:(c.match(/^#{2,6} /gm)||[]).length}));
+   const sec=chunks.sort((x,y)=>y.n-x.n)[0];
+   p=await openBook(WIKI,1280);
+   await p.locator('.wk-q').fill(sec.page.title);await p.waitForTimeout(150);
+   await p.locator('.wk-results .wk-link',{hasText:sec.page.title}).first().click();await p.waitForTimeout(400);
+   await p.locator('.wk-q').fill('');await p.waitForTimeout(150);
+   const n=await p.locator('.wk-menu .ap-sec').count();
+   ok(sec.n>=3&&n>=2,'a page with sections lists them in the wiki menu, under its own entry ('+n+' of its '+sec.n+' headings)');
+   ok(await p.locator('.ap-menu, .ap-frame').count()===0,'and no separate sections rail is drawn beside it');
+   const entry=p.locator('.wk-menu .ap-sec').nth(1);await entry.click();await p.waitForTimeout(300);
+   ok(await p.locator('.wk-menu .ap-dot.on').count()>=1,'pressing a section goes to it, as the rail did (its dot fills)');
+   await p.screenshot({path:path.join(OUT,'wiki-sections.png')});
+   await p.context().close();
+   /* a flat module keeps its rail */
+   const FLATSEC=FLAT.replace('One.\n','## Part one\n\nOne.\n\n## Part two\n\nTwo words.\n');
+   p=await openBook(FLATSEC,1280);
+   await p.locator('#main button.mode').first().click();await p.waitForTimeout(300);
+   ok(await p.locator('.ap-menu .ap-sec').count()>=2&&await p.locator('.wk-menu').count()===0,'a flat module\'s page keeps the sections rail exactly as it was');
+   await p.context().close();}
 
   /* ---- a long row of children: the first 24 cards, the rest on a press ---- */
   {const wide='---\nbooklet: "0.12"\ntitle: Wide\nlang: en\n---\n\n> [!module|w] Wide\n\n> [!activity|top] Top\n\nTop page.\n\n'+
-    Array.from({length:30},(_,i)=>'> [!activity|k'+i+' parent:top] Kid '+(i+1)+'\n\nBody '+(i+1)+'.\n\n').join('')+'> [!module|w end] End\n';
+    Array.from({length:60},(_,i)=>'> [!activity|k'+i+' parent:top] Kid '+(i+1)+'\n\nBody '+(i+1)+'.\n\n').join('')+'> [!module|w end] End\n';
    p=await openBook(wide,1280);
    await cards(p).first().click();await p.waitForTimeout(300);
-   ok(await cards(p).count()===24&&/Show 6 more/.test(await p.locator('.wk-morerow').innerText()),'thirty children: the first 24 are cards and a button offers the other 6');
+   ok(await cards(p).count()===24&&/^Show 24 more$/.test((await p.locator('.wk-morerow').innerText()).trim()),'sixty children: the first 24 are cards and the button says what a press draws, "Show 24 more"');
    await p.locator('.wk-morerow button').click();await p.waitForTimeout(200);
-   ok(await cards(p).count()===30&&await p.locator('.wk-morerow button').count()===0,'pressing it draws the rest');
+   ok(await cards(p).count()===48&&/^Show 12 more$/.test((await p.locator('.wk-morerow').innerText()).trim()),'a press draws 24 more, and the button now says "Show 12 more"');
+   await p.locator('.wk-morerow button').click();await p.waitForTimeout(200);
+   ok(await cards(p).count()===60&&await p.locator('.wk-morerow button').count()===0,'and the last press draws the rest and the button goes');
    await p.context().close();}
 
   /* ---- a link to a module: a chip, and nothing asked until it is pressed ---- */
@@ -192,6 +266,8 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   ok(/Week 2[\s\S]*not in this booklet/.test((await p.locator('.mchip').allInnerTexts()).join('|'))&&/Third week[\s\S]*not in this booklet/.test((await p.locator('.mchip').allInnerTexts()).join('|')),'a chip names the module and says it is not in this booklet');
   ok(await p.locator('#main a.alink', {hasText:'Week 1'}).count()===1,'a module the booklet holds is a link');
   ok(asked().length===0,'drawing the page, chips and all, asked the network for nothing ('+asked().length+' requests outside the page)');
+  ok((await heights(p,'.mchip')).every(h=>h>=44),'chips are at least 44 px tall ('+(await heights(p,'.mchip'))+')');
+  const a1=await addr(p);
   await p.locator('#main a.alink',{hasText:'Week 1'}).click();await p.waitForTimeout(300);
   ok((await p.locator('#main h2').first().innerText()).trim()==='Week 1','a link to a held module opens it');
   await p.locator('#btnHome').click();await p.waitForTimeout(300);
@@ -199,16 +275,21 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   await p.locator('#main button.mode').first().click();await p.waitForTimeout(400);
   const chip=p.locator('.mchip',{hasText:'Week 2'}).first();
   ok(asked().length===0,'still nothing asked');
+  p.regFail=true;
   await chip.click();await p.waitForTimeout(800);
-  ok(asked().length===1&&/registry\.json$/.test(asked()[0]),'pressing the chip reads the registry\'s list, once, and nothing else ('+asked().join(' ')+')');
-  ok(await p.locator('.mc-add').count()===1,'and offers "Add it"');
+  ok(asked().length===1&&/The module list could not be loaded/.test(await p.locator('.mc-ask').innerText())&&await p.locator('.mc-add').count()===0,'a registry that cannot be read is said so in Add a module\'s own words, with no offer');
+  p.regFail=false;
+  await chip.click();await p.waitForTimeout(800);
+  ok(asked().length===2&&/registry\.json$/.test(asked()[1])&&await p.locator('.mc-add').count()===1,'pressing it again asks again (the registry list, once more), and now offers "Add it"');
   await p.locator('.mc-add').click();await p.waitForTimeout(900);
-  ok(asked().length===2&&/week-2\.md$/.test(asked()[1]),'"Add it" reads that module\'s file');
+  ok(asked().length===3&&/week-2\.md$/.test(asked()[2]),'"Add it" reads that module\'s file, and nothing else');
+  ok(/It says booklet: 0\.11, so it was read as format 0\.12/.test(await p.locator('#toast').innerText()),'a module marked "0.11" added from a chip shows the older-version notice, as Add a module does ('+(await p.locator('#toast').innerText()).slice(0,100)+')');
   await p.locator('#btnHome').click().catch(()=>{});await p.waitForTimeout(300);
   ok(await p.locator('#main button.mode').filter({hasText:'Week 2'}).count()===1,'the module is now in the booklet');
   await p.locator('#main button.mode').filter({hasText:'Programme'}).first().click();await p.waitForTimeout(300);
   await p.locator('#main button.mode').first().click();await p.waitForTimeout(400);
   ok(await p.locator('#main a.alink',{hasText:'Week 2'}).count()===1&&await p.locator('.mchip',{hasText:'Week 2'}).count()===0,'and its link is now a link, not a chip');
+  ok(await addr(p)===a1,'pressing a chip, adding a module and following a held-module link left history.length and location.href as they were');
   await p.context().close();
 
   ok(cons.length===0,'no Content Security Policy violation'+(cons.length?': '+cons[0]:''));

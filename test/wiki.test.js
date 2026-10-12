@@ -42,6 +42,7 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
   /* ---- the search ---- */
   chk("search finds by title and by words in the prose, titles first",names(A.wikiFind(W,"alpha"))==="a,b,g,f",names(A.wikiFind(W,"alpha")));
   chk("every word typed must be there; case does not matter; nothing typed finds nothing",names(A.wikiFind(W,"SECOND child"))==="g"&&A.wikiFind(W,"  ").length===0&&A.wikiFind(W,"zzzz").length===0);
+  chk("search reads words, not link markup: [[ and ]( find nothing, and a linked word is found by its label",A.wikiFind(W,"[[").length===0&&A.wikiFind(W,"](").length===0&&names(A.wikiFind(W,"second child"))==="g");
   /* a flat module is not a wiki */
   A.loadText(FM+"> [!module|m] M\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\ny\n\n> [!module|m end] End\n");
   chk("a module with no parent: is not a wiki, and draws as it did",A.wikiOf(A.allModules()[0])===null);
@@ -63,6 +64,15 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
   chk("a held module's link is an anchor that opens it",!!links[0]._on.click&&links[0].attrs.href==="#");
   delete global.fetch;}
 
+ /* a link that names no module is its words, not a nameless chip */
+ {const out=A.mdNodes("[[.booklet]] and [words](.booklet.md) and [[.booklet|label]]",A.linkHooks("m"));
+  chk("[[.booklet]] and the like stay plain text",walk({children:out},x=>x.tagName==="button"||x.tagName==="a").length===0&&/\.booklet.*words.*label/.test(out.map(text).join("")),out.map(text).join("|"));}
+ /* the search box is emptied when the reader moves to another module */
+ {const TWOW=FM+"> [!module|m1] One\n\n> [!activity|a] A\n\nx\n\n> [!activity|b parent:a] B\n\ny\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|c] C\n\nx\n\n> [!activity|d parent:c] D\n\ny\n\n> [!module|m2 end] End\n";
+  A.loadText(TWOW);A.screen=A.moduleScreen("m1");A.render();A.WK.q="typed";A.render();
+  chk("the words in the search box stay for the module they were typed in",A.WK.q==="typed");
+  A.screen=A.moduleScreen("m2");A.render();
+  chk("and are cleared on moving to another module",A.WK.q==="");}
  /* ---- a link may name a page ---- */
  chk("the link's page is what follows the final .md/ (a store name may hold slashes)",
    JSON.stringify(A.linkSplit("a.md/b.md/page-one"))===JSON.stringify({name:"a.md/b.md",act:"page-one"})
@@ -71,7 +81,8 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
 
  /* ---- the renderer never writes the address bar ---- */
  {const src=P.src.replace(/\/\*[\s\S]*?\*\//g,"");
-  const writes=[/history\s*\.\s*(pushState|replaceState)/,/location\s*\.\s*hash\s*=[^=]/,/location\s*\.\s*(href|search|pathname)\s*=[^=]/,/location\s*\.\s*(assign|replace)\s*\(/,/\bwindow\.location\s*=[^=]/,/\bhistory\s*\.\s*(go|back|forward)\s*\(/];
+  const writes=[/history\s*\.\s*(pushState|replaceState)/,/location\s*\.\s*(hash|href|search|pathname|host|hostname|port|protocol)\s*(\+|-|\|)?=[^=]/,/location\s*\.\s*(assign|replace|reload)\s*\(/,
+    /\b(window\s*\.\s*|document\s*\.\s*|self\s*\.\s*|top\s*\.\s*)?location\s*(\+|-|\|)?=[^=]/,/\blocation\s*\[[^\]]*\]\s*(\+|-|\|)?=[^=]/,/\bhistory\s*\.\s*(go|back|forward)\s*\(/];
   chk("no history.pushState or replaceState, no write to location.hash, href, assign or replace: the renderer only reads the address",writes.every(r=>!r.test(src)),writes.filter(r=>r.test(src)).join(" "));}
 
  /* ---- the words ---- */
@@ -80,6 +91,6 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
   for(const l of ["en","fr","es","es-AR"]){const g=A2.STRINGS[l].wiki;
    chk("every wiki word exists in "+l+" ("+keys.length+" keys)",keys.every(k=>typeof g[k]===typeof A2.STRINGS_SRC.en.wiki[k]&&(typeof g[k]!=="string"||g[k].trim()!=="")&&(typeof g[k]!=="function"||String(g[k]("X")).includes("X")||k==="more")),keys.filter(k=>!g[k]).join());}
   chk("fr and es have words of their own",["fr","es"].every(l=>keys.filter(k=>typeof A2.STRINGS_SRC.en.wiki[k]==="string").every(k=>A2.STRINGS[l].wiki[k]!==A2.STRINGS.en.wiki[k])));
-  chk("es-AR keeps es except where the voseo differs",A2.STRINGS["es-AR"].wiki.add==="Agregalo"&&A2.STRINGS["es-AR"].wiki.search===A2.STRINGS.es.wiki.search);}
+  chk("es-AR inherits the whole group from es (no imperative to turn into the voseo)",!A2.STRINGS_SRC["es-AR"].wiki&&JSON.stringify(Object.entries(A2.STRINGS["es-AR"].wiki).map(([k,v])=>[k,typeof v==="function"?v("X"):v]))===JSON.stringify(Object.entries(A2.STRINGS.es.wiki).map(([k,v])=>[k,typeof v==="function"?v("X"):v])));}
  console.log(fails?"\n"+fails+" FAILURES":"\nwiki checks passed");process.exit(fails?1:0);
 })();

@@ -67,17 +67,20 @@ function synthetic(){
     console.log('     '+label+': opened in '+best.join(', ')+' ms (limit '+lim+' ms'+(CI_FACTOR!==1?', factor '+CI_FACTOR:'')+')');
     ok(med<lim,label+': opens in under '+lim+' ms (median '+med+' ms)');
     const built=await p.evaluate(()=>document.querySelectorAll('#main *').length);
-    ok(built<1500,label+': only what is looked at is built ('+built+' elements on screen)');
+    /* drawn in full the 157-page fixture would be about 800 elements and the big wiki thousands; lazily it is a few dozen to a few hundred */
+    ok(built<(label.startsWith('a synthetic')?400:200),label+': only what is looked at is built ('+built+' elements on screen)');
     /* going down the tree and searching stay quick */
     /* a press on a card, to the second frame after it, in the page's own clock (so the test's own waiting is not counted) */
     const press=sel=>p.evaluate(s=>new Promise(res=>{const t0=performance.now();document.querySelector(s).click();
       requestAnimationFrame(()=>requestAnimationFrame(()=>res(performance.now()-t0)));}),sel);
     const down=Math.round((await press('#main .wk-cards button.mode'))+(await press('#main .wk-cards button.mode')));
     ok(down<1000*CI_FACTOR,label+': two levels down in '+down+' ms (two presses, to the second frame)');
-    const find=await timed('find',async()=>{await p.locator('.wk-q').fill('kobaris');await p.locator('.wk-results,.wk-none').first().waitFor({state:'attached'});});
-    ok(find<2000*CI_FACTOR,label+': the first search, which reads every page once, in '+find+' ms');
-    const again=await timed('again',async()=>{await p.locator('.wk-q').fill('bakomu');await p.waitForTimeout(0);});
-    ok(again<500*CI_FACTOR,label+': the next search in '+again+' ms');
+    /* a search, typed as a reader types it, timed in the page's own clock: from the input event to the results on screen */
+    const type=q=>p.evaluate(q=>{const i=document.querySelector('.wk-q'),t0=performance.now();i.value=q;i.dispatchEvent(new Event('input',{bubbles:true}));
+      return {ms:performance.now()-t0,hits:document.querySelectorAll('.wk-results .wk-link').length,shown:!document.querySelector('.wk-results').hidden};},q);
+    const first=await type(label.startsWith('a synthetic')?'ba':'mi'),second=await type(label.startsWith('a synthetic')?'ko':'mivi');
+    ok(first.hits>0&&first.shown&&first.ms<2000*CI_FACTOR,label+': the first search, which reads every page once, finds '+first.hits+' pages in '+Math.round(first.ms)+' ms');
+    ok(second.hits>0&&second.ms<500*CI_FACTOR,label+': the next search finds '+second.hits+' in '+Math.round(second.ms)+' ms');
     await p.context().close();}
   ok(errs.length===0,'no page errors'+(errs.length?': '+errs[0]:''));
   await b.close();

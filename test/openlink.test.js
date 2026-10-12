@@ -172,7 +172,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
  chk("the quiet line of where it came from is on that page",P.find(P.main(),P.hasClass("openedby")).length===1);
  A.closeBooklet();CALLS=[];
  await A.openLink("#/open/reports/week.booklet.md/no-such-page");
- chk("a page the booklet does not have is ignored: it opens as it would without one",A.screen==="m/a"||A.screen==="module:m"||A.screen==="home",A.screen);
+ chk("a page the booklet does not have is ignored: it opens as it would without one",A.screen==="module:m",A.screen);
  A.closeBooklet();
  await A.openLink("#/open/reports/week.booklet.md/%62");
  chk("the page is decoded once",A.screen==="m/b",A.screen);}
@@ -190,7 +190,7 @@ reset();{const A=P.boot();META["booklet-registry"]="https://reg.test/registry.js
  chk("...and an id with no slash does too",A.screen==="m/b",A.screen);
  A.closeBooklet();
  await A.openLink("#/module/t%2Ftwo");
- chk("a module link with no page opens as before",A.screen==="module:m"||A.screen==="home",A.screen);}
+ chk("a module link with no page opens as before",A.screen==="module:m",A.screen);}
 
 /* ---- the fetch refusals ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;
