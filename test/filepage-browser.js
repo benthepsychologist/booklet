@@ -9,9 +9,9 @@ const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.dirname(HTML);
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const MOD=`---\nbooklet: "0.11"\ntitle: Shore walk\nlang: en\n---\n\n> [!module|shore] Shore module\n\n> [!activity|walk] Shore walk\n\n> [!text|what long] What did you notice?\n\n> [!choice|tide] The tide was\n- [ ] In\n- [ ] Out\n\n> [!module|shore end] End\n`;
+const MOD=`---\nbooklet: "0.12"\ntitle: Shore walk\nlang: en\n---\n\n> [!module|shore] Shore module\n\n> [!activity|walk] Shore walk\n\n> [!text|what long] What did you notice?\n\n> [!choice|tide] The tide was\n- [ ] In\n- [ ] Out\n\n> [!module|shore end] End\n`;
 const REG={modules:[{id:'t/regmod',title:'Registry module',file:'regmod.md'}]};
-const REGMOD=`---\nbooklet: "0.11"\ntitle: Registry module\nlang: en\n---\n\n> [!module|regmod] Registry module\n\n> [!activity|ra] Registry activity\n\n> [!text|rq] A registry question\n\n> [!module|regmod end] End\n`;
+const REGMOD=`---\nbooklet: "0.12"\ntitle: Registry module\nlang: en\n---\n\n> [!module|regmod] Registry module\n\n> [!activity|ra] Registry activity\n\n> [!text|rq] A registry question\n\n> [!module|regmod end] End\n`;
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();

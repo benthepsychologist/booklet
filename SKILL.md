@@ -5,9 +5,9 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.11.12** — matches the project's current version (SPEC.md's
-"v0.11") now that this skill teaches v0.11, the current format. Write
-the marker in quotes, `booklet: "0.11"`: unquoted, a YAML tool reads `0.10` as
+**Skill version: 0.12.0** — matches the project's current version (SPEC.md's
+"v0.12") now that this skill teaches v0.12, the current format. Write
+the marker in quotes, `booklet: "0.12"`: unquoted, a YAML tool reads `0.10` as
 the number 0.1. A tool that writes booklets should ask the linter for the marker
 (`python3 lint-booklet.py --marker` prints the whole line) and
 not hard-code it. A file marked with another `0.x` version still opens, with a notice and no
@@ -74,7 +74,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.11"`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.12"`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -175,7 +175,7 @@ Copy this exactly and fill in the `<…>` parts.
 
 ````markdown
 ---
-booklet: "0.11"
+booklet: "0.12"
 id: "local/<booklet-slug>"
 title: "<Booklet title>"
 lang: <en|es|es-AR|fr>
@@ -224,8 +224,9 @@ status: draft
 ```markdown
 > [!module|<module-slug>] Shown nowhere but this file's own manifest
 
-Optional: one short paragraph here becomes the module's blurb, if it is
-ever offered from a registry.
+Optional: prose here, before the first activity, is the module's opening.
+It is drawn on the module's own screen above its activities (its first
+paragraph large) and nowhere else, and its first paragraph is the module's blurb.
 
 > [!activity|<act-id>] Shown on the home card
 ```
@@ -257,6 +258,24 @@ ever offered from a registry.
   entry), `repeat daily` (one entry per day), `hidden` (kept in the file, not
   offered). With none of these, the activity is answered once and edited in
   place.
+- **A picture for a card: `icon:`** on a module or activity line names a
+  picture from Booklet's icon set (the Lucide names in the repository's
+  `art/icons/`): `> [!activity|log repeat icon:notebook-pen] Log a moment`.
+  Without it a leading emoji in the title is the picture, and without that the
+  card's number. A name outside the set is an error in the linter, so copy it
+  from `art/icons/` and never invent one. A module's own `icon:` goes on its
+  opening line, never on its end line, and is drawn large beside its title:
+  `> [!module|loop icon:refresh-cw] Mapping the loop`.
+- **An activity under another: `parent:`** names the activity it belongs under,
+  in the same module, for a module that is a tree of pages (a wiki, a
+  portfolio). Write the parent first:
+  `> [!activity|v1-release parent:booklet-dev] Booklet v1.0`. Without `parent`
+  a module is a flat list. A parent that is not in the module, or a loop, puts the
+  activity at the top and the linter warns.
+- **A link to a whole module**, one that may not be in this booklet, is
+  `[[week-2.booklet]]` or `[Week 2](week-2.booklet.md)`: the module's id is the
+  file's name before `.booklet`. A renderer opens it if the booklet holds it and
+  shows it as not here otherwise. Use `[[#Heading]]` to move within a file.
 
 An activity with pages (a page is a step; the answers of all its pages are
 kept together as one entry):
@@ -366,7 +385,7 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **A question is never hidden by a file, but a page's sections fold.** v0.11
+- **A question is never hidden by a file, but a page's sections fold.** v0.12
   has no way to write "optional questions, folded shut until opened" as a
   question's own setting. If a request calls for that ("a couple more if you
   want them"), put the extra questions under their own `##` heading: on any
@@ -375,7 +394,7 @@ itself is never shown.
   opens the first section with an unanswered question. Or put the extra
   material as ordinary prose right after the question it answers, or on its
   own page after a `***`.
-- **Nothing reads another activity's answers yet.** v0.11 has no kind that
+- **Nothing reads another activity's answers yet.** v0.12 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
@@ -455,9 +474,12 @@ between paragraphs (`\n\n`) for a new one.
   says how.
 
   **Name the fields for the part they play, and the query is two lines.** A row
-  has five roles: `label` (its name), `value` (its main figure), `note` (a
+  has seven roles: `label` (its name), `value` (its main figure), `note` (a
   quieter second line), `badge` (a short word, drawn as a pill; a list is
-  several pills) and `tone` (`good`, `warn` or `bad`). Each is read from the
+  several pills), `tone` (`good`, `warn` or `bad`), `link` (where the row
+  leads: `#Heading` or a web address, as a link in prose; a module link is plain text) and `icon` (the row's picture, a name from the
+  icon set). `table`, `list`, `tiles` and `cards` draw the last two; `bars` and `line` do not. A tile strip that leads to pages is
+  rows of `label`, `link` and `icon` (`link` `#Home visits`, `icon` `house`). Each is read from the
   field of the same name, and the label falls back to the first field, so rows
   written with those names need only `from:` and `as:`. If the fields are
   already named something else, a line such as `label: bucket` points a role at
@@ -693,7 +715,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 - **Rows.** `> [!row]` … `> [!row end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`---`), an activity line or a module fence.
 - **Widget colours** are tone names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, not hex colours, so a widget reads in every theme.
-- **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`) is only for a booklet that has a reason to look different. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
+- **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`, `style`) is only for a booklet that has a reason to look different. `style: teaching` (soft tiles with pictures, the default) or `style: briefing` (solid tiles with icons, for reading at a glance) is the booklet's look, and holds whatever colours the reader picks. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
 
 ## 10. Validation
 
@@ -705,7 +727,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.11 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.12 file is written in one language` | add it |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` only follows `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -737,7 +759,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.11"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.12"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
@@ -755,7 +777,7 @@ the renderer. Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.11"
+booklet: "0.12"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -791,7 +813,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: "0.11"
+booklet: "0.12"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -852,7 +874,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.11"
+booklet: "0.12"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -888,7 +910,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ````markdown
 ---
-booklet: "0.11"
+booklet: "0.12"
 id: "local/reminders-report"
 title: "Reminders: SMS or email?"
 lang: en
@@ -970,7 +992,7 @@ flowchart LR
 ## 12. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.11 file, one language, its
+same way as any other booklet above — one v0.12 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

@@ -7,7 +7,7 @@ const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const head='---\nbooklet: "0.11"\ntitle: Harbour notes\nlang: en\n---\n\n';
+const head='---\nbooklet: "0.12"\ntitle: Harbour notes\nlang: en\n---\n\n';
 const six=head+'> [!module|m] Harbour\n\nA module of six.\n\n'+['One','Two','Three','Four','Five','Six','Seven'].map((t,i)=>
   `> [!activity|a${i}] ${t}\n\n${i===0?'First words with [a link](https://example.com/x) in them, then more.\n\n':'Some words.\n\n'}> [!text|q${i}] A question in ${t}?\n\n> [!text|r${i}] Another in ${t}?\n\n`).join('')+'> [!module|m end] End\n';
 const folds=head+'> [!activity|a] Folding\n\n> [!choice|q] Pick one\n- [ ] Left\n- [ ] Right\n\n> [!hint]- \n> THE-SECRET-HINT-WORDS\n\n> [!solution]- \n> THE-SECRET-ANSWER-WORDS\n\n> [!group]- 🌱 Extra reading\n> Words that open the group and say what is in it. More after that.\n>\n> The second paragraph.\n\n## Not a section\n\nText.\n';

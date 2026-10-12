@@ -5,7 +5,7 @@
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
-const FM='---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
 const A=P.boot();
 const END="\n> [!module|m end] End\n";
 const pgs=a=>a.pages||[{id:"",blocks:a.blocks}];

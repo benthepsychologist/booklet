@@ -2,7 +2,7 @@
 
 This page is for someone who serves the renderer (`booklet.html`) on their own site or machine and wants a reader's work saved somewhere other than the reader's browser. It is the contract such a host follows.
 
-It describes renderer 0.11.4 and later. The format (`SPEC.md`) is not involved: nothing here changes what a booklet file may say.
+It describes renderer 0.11.4 and later (the section on `window.bookletStyle`, 0.12.0 and later). The format (`SPEC.md`) is not involved: nothing here changes what a booklet file may say.
 
 ## When the renderer will hand a booklet to a host
 
@@ -41,6 +41,19 @@ Everything else is public, including `bookletmd.org`, and on a public address th
 **`handle.state()`** returns `"active"`, `"waiting"` or `"refused"` (a public address, or a handle that has since been replaced or left). A host's script reads it to know whether to bother.
 
 **This is about the renderer as published.** A site that edits the renderer it serves, or reads its own page some other way, is not stopped by these checks: that is caught by the checksum (see "Checking that a host serves the real renderer"), not here.
+
+## A host's default look: `window.bookletStyle`
+
+Before the renderer's own script runs, a small script in its head sets the page's look. A host can choose which of the renderer's two styles a booklet is drawn in when the booklet does not ask for one.
+
+- `bookletStyle.names` is the two styles, `["teaching", "briefing"]`. `teaching` is soft tiles with pictures, for working through; `briefing` is solid tiles with icons, for reading at a glance. A style changes shapes and where colour goes, never the colours themselves.
+- `bookletStyle.set(name)` is the host's **default**: the style drawn for a booklet whose theme block has no `style:`. A name that is not one of the two is ignored. Call it any time; the open page draws again.
+- `bookletStyle.get()` is the style in force right now, whoever chose it, and `bookletStyle.picture()` is `"spot"` or `"icon"`, the kind of picture a card asks for in it.
+- **A file's `style:` wins over the host's default.** A booklet whose theme block says `style: briefing` is drawn as briefing while it is open, whatever the host set, and whatever colour theme the reader picks. When the reader leaves it (back to the list of booklets), or opens one with no `style:`, the host's default holds again. `bookletStyle.set` while such a booklet is open changes the default and nothing on screen.
+
+```js
+window.bookletStyle.set("briefing");   // this site's booklets read as briefings unless a file says teaching
+```
 
 ## The promise, and where the line is
 

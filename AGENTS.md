@@ -26,7 +26,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 - The renderer, format, validator, and modules without a
   `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
-  module's prose and travels with the file (a one-module file's `copyright`, `license`, `source` and `version` are its notice, or a `> [!notice]` callout in its fence), since a v0.11 module is the
+  module's prose and travels with the file (a one-module file's `copyright`, `license`, `source` and `version` are its notice, or a `> [!notice]` callout in its fence), since a v0.12 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - Modules are not kept in this repo; they live in `booklet-registry`, and a
@@ -50,7 +50,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
    `test/*.test.js`, and the validator. Update `STATUS.md` on the branch when
    capabilities, versions, inventory, or known gaps change.
 5. After any change to the renderer's scripts (the theme-boot script, the main script or a vendored library), run `node test/csp-hash.js --write booklet.html`: the renderer carries its own Content-Security-Policy as a meta tag, naming those scripts by sha256, and `test/run.sh` and CI fail on a stale one.
-   After any change to `art/`, run `node test/art-sprite.js --write booklet.html` (the picture sprite is generated from that folder; `--check` is in `test/run.sh`). The renderer also carries two font families as `data:` fonts, so its policy allows `font-src data:` and nothing more.
+   After any change to `art/`, run `node test/art-sprite.js --write booklet.html` (the picture sprite is generated from that folder, and so is the list of icon names in `lint-booklet.py` between its `# icons:start` and `# icons:end` lines; `--check` is in `test/run.sh`). The renderer also carries two font families as `data:` fonts, so its policy allows `font-src data:` and nothing more.
 6. Open a pull request. `.github/workflows/ci.yml` runs the same checks; a
    merge to `main` publishes at once (`CONTRIBUTING.md`).
 
@@ -79,12 +79,12 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 7. **A format version is text, never a number.** `0.10` is not the number 0.1.
    Read the marker as text, compare versions as two whole numbers (major, minor)
    with `versionCmp` in the renderer and never `+FORMAT_VERSION`, and write it
-   quoted (`booklet: "0.11"`) so a YAML tool does not turn it into 0.1. A file
-   marked with another `0.x` version opens by the current rules with a notice (v0.11);
+   quoted (`booklet: "0.12"`) so a YAML tool does not turn it into 0.1. A file
+   marked with another `0.x` version opens by the current rules with a notice (v0.12);
    the renderer never changes the marker a file came with.
 8. **A wording-only change to `SPEC.md` is a patch.** When the spec's words change
    and nothing a file may say does, the spec's title, the renderer and the skill take
-   a third number (v0.11.3). The marker and `FORMAT_VERSION` stay as they are, no file
+   a third number (v0.12.1). The marker and `FORMAT_VERSION` stay as they are, no file
    is re-marked, and the registry needs no release. Any change to what a file may say
    bumps the minor (v0.12) and re-marks every file this repository holds that carries the current marker (not the fixtures that exist to carry another).
 

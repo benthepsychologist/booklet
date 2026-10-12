@@ -15,7 +15,7 @@ const KINDS=[["note","sky","pencil"],["abstract","petrol","clipboard-list"],["su
   ["bug","rose","bug"],["example","lilac","flask-conical"],["quote","slate","quote"],["cite","slate","quote"],["diff","petrol","git-compare"],["law","slate","scale"],
   ["opinion","rose","message-circle"],["frobnicate","sky","pencil"]];
 const FILE=`---
-booklet: "0.11"
+booklet: "0.12"
 title: Callouts
 lang: en
 ---
