@@ -240,7 +240,7 @@ Only prose.
    const ids=await q.evaluate(()=>{const all=[...document.querySelectorAll('#main [id]')].map(e=>e.id);return {dup:all.filter((x,i)=>all.indexOf(x)!==i),mo:all.includes('mo-background'),md:all.includes('md-background')};});
    ok(ids.dup.length===0&&ids.mo&&ids.md,'the opening\'s heading has its own id (mo-background), so the activity\'s Background is not a duplicate ('+JSON.stringify(ids)+')');
    await q.locator('#main a.alink').first().click();await q.waitForTimeout(400);
-   ok(await q.evaluate(()=>{const a=document.querySelector('#main h2#md-background, #main #md-background');return !!a;})&&/Activity mark/.test(await q.locator('#main').innerText()),'the activity\\'s own link to Background stays on the activity (its heading, not the opening\\'s)');
+   ok(await q.evaluate(()=>{const a=document.querySelector('#main h2#md-background, #main #md-background');return !!a;})&&/Activity mark/.test(await q.locator('#main').innerText()),"the activity's own link to Background stays on the activity (its heading, not the opening's)");
    await q.context().close();
    /* several activities: the module screen numbers its opening from 1, the first activity starts at 1 too */
    q=await go('multi');
