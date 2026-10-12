@@ -144,6 +144,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
    chk("the number words in "+lang+" take a count",c&&/\d/.test(c.answeredOf(2,6))&&/\d/.test(c.startedOf(1,6))&&/\d/.test(c.activitiesN(3))&&/\d/.test(c.startedN(1))&&/2/.test(c.next(2,"T"))&&/T/.test(c.next(2,"T")));}
  for(const lang of ["en","fr","es","es-AR"]){const c=A.STRINGS[lang].cards,q=A.STRINGS[lang].question;
    chk("readsN and lookAgain exist in "+lang+" and read a count",/3/.test(c.readsN(3))&&typeof q.lookAgain==="string"&&q.lookAgain.trim().length>0);}
+ chk("es-AR says it in the voseo",A.STRINGS["es-AR"].question.lookAgain==="Fijate otra vez"&&A.STRINGS["es-AR"].question.right===A.STRINGS.es.question.right);
  chk("fr and es have their own words for them",A.STRINGS.fr.question.lookAgain!==A.STRINGS.en.question.lookAgain&&A.STRINGS.es.question.lookAgain!==A.STRINGS.en.question.lookAgain&&A.STRINGS.fr.cards.readsN(2)!==A.STRINGS.en.cards.readsN(2));
  chk("a language that is not English does not hand back the English words",A.STRINGS.fr.cards.back!==A.STRINGS.en.cards.back&&A.STRINGS.es.cards.back!==A.STRINGS.en.cards.back&&A.STRINGS.fr.cards.hint!==A.STRINGS.en.cards.hint);
  chk("no l10n: draft mark is left on the card words",!/cards: \{ \/\* l10n: draft/.test(P.html));}

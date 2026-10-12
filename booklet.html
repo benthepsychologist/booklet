@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-F6W5Ral8tBviKmDFCGF/hFMrvNxELPLRM6Knd4rebP0=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-+q56ycBMTP2ndIRWUSD6ewkHTNXXwRRZ3L0EFsYYNJo=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -386,6 +386,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .q-inline>.sol-in{grid-column:1}
   .q-inline>.sol-in[open]{grid-column:1/-1}
   .sol-in{margin:.1rem 0 .4rem}
+  /* shut, it is a small control as wide as its label, not a bar; open, the panel is full width */
+  .sol-in:not([open]){width:fit-content;max-width:100%;justify-self:start}
+  .sol-in:not([open])>summary{padding-right:.4rem}
   .sol-in.sol-good[open]{background:var(--tone-green);border-color:var(--tone-green-deep);--c-deep:var(--tone-green-deep)}
   .sol-in.sol-warn[open]{background:var(--tone-amber);border-color:var(--tone-amber-deep);--c-deep:var(--tone-amber-deep)}
   .sol-in.sol-good[open] .k,.sol-in.sol-good[open]>summary{color:var(--tone-green-deep)}
@@ -444,11 +447,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .q-ownrow .field{flex:1;min-width:0}
   /* right or wrong, for a question whose options mark a correct one: the tone colours, and a mark and a word besides, so colour is never the only sign */
   .pill-btn.q-right,.pill-btn.q-right[aria-pressed="true"],.pill-btn.q-answer{background:var(--tone-green);border-color:var(--tone-green-deep);color:var(--tone-green-deep)}
-  .pill-btn.q-wrong,.pill-btn.q-wrong[aria-pressed="true"]{background:var(--tone-warm);border-color:var(--tone-warm-deep);color:var(--tone-warm-deep)}
+  .pill-btn.q-wrong,.pill-btn.q-wrong[aria-pressed="true"]{background:var(--tone-amber);border-color:var(--tone-amber-deep);color:var(--tone-amber-deep)}
   .pill-btn.q-answer{border-style:dashed}
   .q-mk{font-size:.82em;font-weight:700}
   .q-acts{display:flex;gap:.45rem;margin:-.4rem 0 .6rem} .q-acts:empty{display:none}
   .q-live{margin:0 0 1rem;min-height:1.2em} .q-live:empty{display:none}
+  /* a solution inside the question says the verdict in its own label; the line stays for screen readers only */
+  .q-live.q-live-sr{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
   .pills .pill-btn,.pill-x{min-height:44px;min-width:44px}
   /* short options sit beside their question when there is room */
   .q-inline{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1rem;align-items:center}
@@ -1860,7 +1865,7 @@ const STRINGS_SRC={
       ownRemove: x=>`Retirer « ${x} »`,
       check: "Vérifier",
       right: "Juste",
-      lookAgain: "À revoir", /* l10n: draft */
+      lookAgain: "Regardez de plus près",
       notQuite: "Pas tout à fait",
       theAnswer: "La réponse",
       liveRight: "Juste.",
@@ -1970,7 +1975,7 @@ const STRINGS_SRC={
       back: "Retour à l’aperçu",
       next: (n,t)=>`Suivante : ${n}. ${t}`,
       questionsN: n=>`${n} question${n>1?"s":""}`,
-      readsN: n=>`${n} lecture${n>1?"s":""}`, /* l10n: draft */
+      readsN: n=>`${n} texte${n>1?"s":""}`,
       questionsAnswered: (n,m)=>`${m} question${m>1?"s":""} · ${n} réponse${n>1?"s":""}`,
       rowsN: n=>`${n} ligne${n>1?"s":""}`,
       noneYet: "Aucune pour l’instant"
@@ -2158,7 +2163,7 @@ const STRINGS_SRC={
       ownRemove: x=>`Quitar “${x}”`,
       check: "Comprobar",
       right: "Correcto",
-      lookAgain: "Vuelve a mirar", /* l10n: draft */
+      lookAgain: "Fíjate otra vez",
       notQuite: "No del todo",
       theAnswer: "La respuesta",
       liveRight: "Correcto.",
@@ -2268,7 +2273,7 @@ const STRINGS_SRC={
       back: "Volver a la vista general",
       next: (n,t)=>`Siguiente: ${n}. ${t}`,
       questionsN: n=>`${n} pregunta${n===1?"":"s"}`,
-      readsN: n=>`${n} lectura${n===1?"":"s"}`, /* l10n: draft */
+      readsN: n=>`${n} lectura${n===1?"":"s"}`,
       questionsAnswered: (n,m)=>`${m} pregunta${m===1?"":"s"} · ${n} ${n===1?"respondida":"respondidas"}`,
       rowsN: n=>`${n} fila${n===1?"":"s"}`,
       noneYet: "Ninguna todavía"
@@ -2346,7 +2351,8 @@ const STRINGS_SRC={
       sub: "Un cuaderno de trabajo que vive en un solo archivo que conservás"
     },
     question: {
-      addOwn: "Agregá tu propia opción"
+      addOwn: "Agregá tu propia opción",
+      lookAgain: "Fijate otra vez"
     },
     query: {
       empty: "Todavía no guardaste nada acá."
@@ -4860,6 +4866,7 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
   const MARK={right:["✓ ",Q.right],wrong:["✗ ",Q.notQuite],answer:["✓ ",Q.theAnswer]};
   const pills=el("div",{class:"pills"}),live=el("p",{class:"q-live hint","aria-live":"polite"}),acts=el("div",{class:"q-acts"});
   const sol=solutionsOf(activityId).q.get(b),SP=sol?solutionPart(sol,draft,activityId):null;
+  if(SP) live.classList.add("q-live-sr");
   const draw=()=>{pills.innerHTML="";acts.innerHTML="";live.textContent="";
     listed.forEach((o,idx)=>{const n=idx+1,mark=markOf(n);
       pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),

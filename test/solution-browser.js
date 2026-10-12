@@ -45,6 +45,13 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     ok(await d1.evaluate(d=>d.open&&d.classList.contains('sol-warn'))&&/Look again/.test(await d1.innerText()),`${W}px: a wrong pick opens the why in the warn tone with Look again`);
     ok(/BECAUSE-1-SECRET/.test(await d1.innerText()),`${W}px: and shows the why`);
     ok(await p.evaluate(()=>document.activeElement&&document.activeElement.tagName)!=='SUMMARY',`${W}px: the focus is not taken by the opened solution`);
+    {const v=await p.evaluate(()=>{const q=document.querySelector('#main .sol-in').parentElement;const l=q.querySelector('.q-live'),r=l.getBoundingClientRect(),w=q.querySelector('.pill-btn.q-wrong'),cs=getComputedStyle(document.documentElement);
+        const probe=document.createElement('i');probe.style.color=cs.getPropertyValue('--tone-amber-deep');document.body.append(probe);const amber=getComputedStyle(probe).color;probe.remove();
+        return {text:l.textContent,w:r.width,h:r.height,wrong:w&&getComputedStyle(w).color,amber};});
+      ok(v.text.length>0&&v.w<=1&&v.h<=1,`${W}px: with a solution the verdict line is kept for screen readers only (${JSON.stringify(v.text)})`);
+      ok(v.wrong===v.amber,`${W}px: a wrong pick is in the warn tone, not red (${v.wrong})`);}
+    {const sh=await sols().nth(3).evaluate(d=>({w:d.getBoundingClientRect().width,pw:d.parentElement.getBoundingClientRect().width,h:d.getBoundingClientRect().height,bg:getComputedStyle(d).backgroundColor,bw:getComputedStyle(d).borderTopColor}));
+      ok(sh.w<sh.pw*0.6&&sh.h>=44&&sh.bg==='rgba(0, 0, 0, 0)',`${W}px: a shut solution is a small control, not a bar (${Math.round(sh.w)} of ${Math.round(sh.pw)} px, ${Math.round(sh.h)} tall)`);}
     /* a right pick on item 2 */
     await p.locator('#main button.pill-btn').filter({hasText:/^Right 2/}).click();await wait(200);
     const d2=sols().nth(1);
