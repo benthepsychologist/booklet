@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-PxWuTnslo8jn13Cc7quvgpephsOiZi5z95a4oKNddw0=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-Ka3ZtJ8s1nSjoqZD+D4XF3NoovcSe3Vh9fR59HA0/Bo=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -741,6 +741,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .phead h2{margin:0;min-width:0}
   .wk-pages{list-style:none;margin:0 0 .3rem .5rem;padding:0}
   .wk-crumbs ol{list-style:none;margin:0 0 .9rem;padding:0;display:flex;flex-wrap:wrap;gap:.1rem .35rem;color:var(--muted);font-size:.9rem}
+  .wk-crumbs li{display:flex;align-items:center;min-height:44px}
+  .wk-menu .ap-sec{min-height:44px;align-items:center}
+  .wk-pagelist{margin:0 0 1rem;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.3rem .5rem}
+  .wk-pagelist>li{display:block}
+  .wk-pagelist .wk-link{border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);padding:.2rem 1rem}
+  .wk-pagelist .wk-link[aria-current="step"]{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+  .wk-pages .wk-link[aria-current="step"]{font-weight:700;color:var(--accent)}
   .wk-crumbs li+li::before{content:"›";margin-right:.35rem}
   .wk-crumb{display:inline-flex;align-items:center;min-height:44px;padding:.25rem 0;border:0;background:transparent;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
   .wk-h{margin:1.75rem 0 .6rem;font-family:var(--serif);font-size:1.2rem}
@@ -5743,8 +5750,8 @@ function choosePage(id,pid){showPage(id,pid);pagesOverlay=false;render();
   refocus('.ap-item[aria-current="page"]');}
 /* Up and down (and Home, End) move between the menu's items. */
 function pageMenuKeys(e){const k=e.key;if(!["ArrowDown","ArrowUp","Home","End"].includes(k)) return;
-  const me=e.currentTarget,nav=me&&me.closest?me.closest(".ap-menu"):null;if(!nav) return;
-  const items=[...nav.querySelectorAll(".ap-item,.ap-sec")],i=items.indexOf(me);if(i<0) return;
+  const me=e.currentTarget,nav=me&&me.closest?me.closest(".ap-menu,.wk-plist"):null;if(!nav) return;
+  const items=[...nav.querySelectorAll(".ap-item,.ap-sec,.wk-pitem")],i=items.indexOf(me);if(i<0) return;
   const j=k==="Home"?0:k==="End"?items.length-1:Math.min(items.length-1,Math.max(0,i+(k==="ArrowDown"?1:-1)));
   e.preventDefault();items[j].focus();}
 /* Wrap an activity's view in its pages: the menu on the left when it has
@@ -6582,6 +6589,8 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   else{col.append(pageHead(id,m,titleText,W));
     const lead=tx(mod.blurb,tx(m.blurb,""));
     if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
+  /* a wiki page's own pages are listed in the menu; where the menu is not on screen (a phone, or a hidden page that has no entry) they are listed here */
+  if(W&&pagesOf(m).length>1&&(narrowPages()||!isShown(m))) col.append(wkInside(id,null,true));
   if(repeats) col.append(el("h3",{},u.earlier),chipStrip(id));
   /* the page on show and its blocks, and the pages menu beside them: see
      AN ACTIVITY'S PAGES. One draft serves every page. */
@@ -6604,10 +6613,10 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
 /* The head of an activity's page: its title, and, when its line names an `icon:`, the picture its card shows (cardPicture decides: the spot of
    that name in teaching, the line icon in briefing) in the card's own tile and colour, to the left of the title. No `icon:`: the title alone. */
 function pageHead(id,m,titleText,W){
-  const pic=m.icon?cardPicture(titleText,NaN,m.icon).picture:null;
+  const cp=m.icon?cardPicture(titleText,NaN,m.icon):null,pic=cp&&cp.picture;
   if(!pic||!pic.icon) return el("h2",{},titleText);
   const holder=holderOf(id),sib=W?wikiSiblings(W,id):holder?activitiesShown(holder):[],at=Math.max(0,sib.findIndex(a=>a.id===id));
-  return el("div",{class:"phead hue-"+cardHue(at)},el("span",{class:"cd-tile","aria-hidden":"true"},pic.icon),el("h2",{},titleText));}
+  return el("div",{class:"phead hue-"+cardHue(at)},cardTile(pic),el("h2",{},cp.title));}
 /* The foot of an activity's page: back to the overview (the module's page, or the home screen), and on to the next
    activity of its module in file order, named with its number. */
 function activityFooter(id){const C=strings("cards"),holder=holderOf(id),W=wikiOf(holder),shown=W?W.acts.filter(isShown):holder?activitiesShown(holder):[];
@@ -6644,11 +6653,14 @@ function cardPicture(title,number,iconName){
   return {title:t,picture:Number.isFinite(number)?{number}:null};}
 const pictureIsSpot=()=>{const S=window.bookletStyle;return !S||!S.picture||S.picture()==="spot";};
 const cardHue=i=>CARD_HUES[((Math.trunc(Number(i))||0)%CARD_HUES.length+CARD_HUES.length)%CARD_HUES.length];
+/* the picture tile of a card, and of the head of a page whose line names an `icon:` (one builder for both) */
+function cardTile(pic){
+  const art=pic?(pic.icon||pic.emoji||(pic.number!=null?String(pic.number):null)):null;
+  return art==null?null:el("span",{class:"cd-tile"+(pic.number!=null&&!pic.emoji&&!pic.icon?" cd-n":""),"aria-hidden":"true"},art);}
 function cardNode(o){
   const mode=o.mode==="fold"||o.mode==="item"?o.mode:"go",pic=o.picture||null;
   const cls=["card","card-"+mode].concat(mode==="go"?["mode"]:[],o.hue?["hue-"+o.hue]:[],o.size==="compact"?["card-compact"]:[],o.cls?[o.cls]:[]).join(" ");
-  const art=pic?(pic.icon||pic.emoji||(pic.number!=null?String(pic.number):null)):null;
-  const tile=art==null?null:el("span",{class:"cd-tile"+(pic.number!=null&&!pic.emoji&&!pic.icon?" cd-n":""),"aria-hidden":"true"},art);
+  const tile=cardTile(pic);
   const t=mode==="go"?"span":"div";
   const num=o.number!=null&&!(pic&&pic.number!=null)?el("span",{class:"cd-num","aria-hidden":"true"},String(o.number)):null;
   const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k"},o.title):null);
@@ -6757,8 +6769,10 @@ function wikiOf(mod){
     t.order.forEach(i=>{const a=acts[i],p=t.parent[i]?W.byId.get(t.parent[i]):null;
       W.up.set(a.id,p||null);
       if(p){if(!W.kids.has(p.id)) W.kids.set(p.id,[]);W.kids.get(p.id).push(a);}else W.roots.push(a);});
-    W.top=wikiShown(W,W.roots);}
-  WK_CACHE.set(mod,W);return t?W:null;}
+    W.top=wikiShown(W,W.roots);
+    /* a wiki is a module where a shown page sits under a shown page: a `parent:` that only reaches a hidden page makes no tree to show */
+    W.tree=acts.some(a=>isShown(a)&&wikiPath(W,a.id).length>0);}
+  WK_CACHE.set(mod,W);return W.tree?W:null;}
 /* a list of pages as it is drawn: a hidden page gives its place to its children */
 function wikiShown(W,list){const out=[],walk=l=>l.forEach(a=>{if(isShown(a)) out.push(a);else walk(W.kids.get(a.id)||[]);});walk(list);return out;}
 const wikiKids=(W,id)=>wikiShown(W,W.kids.get(id)||[]);
@@ -6811,21 +6825,28 @@ function wikiGo(id,fromMenu){const side=fromMenu&&!narrowPages();WK.menu=false;g
   if(h){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}}
 const wikiCard=(a,i)=>activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon,()=>wikiGo(a.id,false));
 /* ---- the menu: a search box over the whole tree ---- */
-/* the page on show, inside its entry: its pages (when it has several) and the sections the page holds, as the rail listed them */
-function wkInside(id,rd){const F=strings("fold"),ps=pagesOf(activityOf(id)),cur=currentPage(id);
-  const secs=()=>{if(!rd) return null;
-    const sl=el("ol",{class:"ap-secs wk-secs","aria-label":F.sections});
+/* the page on show, inside its entry: its pages (when it has several) and the sections the page holds, as the rail listed them.
+   `own` is the list drawn in the page itself (a phone, or a hidden page with no entry in the menu): its pages only. */
+function wkPagePick(id,pid,fromList){showPage(id,pid);WK.menu=false;pagesOverlay=false;render();window.scrollTo({top:0});
+  /* the focus goes to the entry for the page chosen, in the list it was chosen from if that is still on screen */
+  const vis=n=>n&&n.offsetParent!==null,a=document.querySelector((fromList?".wk-pagelist":".wk-menu")+" [aria-current=\"step\"]"),
+    b=document.querySelector((fromList?".wk-menu":".wk-pagelist")+" [aria-current=\"step\"]"),n=vis(a)?a:vis(b)?b:null;
+  if(n&&n.focus) n.focus({preventScroll:true});}
+function wkInside(id,rd,own){const F=strings("fold"),ps=pagesOf(activityOf(id)),cur=currentPage(id);
+  const secs=top=>{if(!rd||own) return null;
+    const sl=el("ol",{class:"ap-secs wk-secs"+(top?" wk-plist":""),"aria-label":F.sections});
     rd.sections.forEach(sec=>{const seen=rd.st.seen.has(sec.k);
       const sb=el("button",{type:"button",class:"ap-sec","data-k":String(sec.k),title:sec.title},
         el("span",{class:"ap-dot"+(seen?" on":""),"aria-hidden":"true"}),el("span",{class:"ap-t"},sec.title),
         el("span",{class:"rd-sr ap-sr"},seen?F.seen:""));
-      sb.addEventListener("click",()=>rmGo(rd,sec.k));sl.append(el("li",{},sb));});
+      sb.addEventListener("click",()=>rmGo(rd,sec.k));sb.addEventListener("keydown",pageMenuKeys);sl.append(el("li",{},sb));});
     return sl;};
-  if(ps.length<2) return secs();
-  const ol=el("ol",{class:"wk-pages"});
-  ps.forEach((p,i)=>{const b=el("button",{type:"button",class:"wk-link","aria-current":p.id===cur.id?"page":null,
-      onclick:()=>{showPage(id,p.id);WK.menu=false;pagesOverlay=false;render();window.scrollTo({top:0});}},pageName(p,i));
-    ol.append(el("li",{},b,p.id===cur.id?secs():null));});
+  if(ps.length<2) return secs(true);
+  const ol=el("ol",{class:"wk-pages wk-plist"+(own?" wk-pagelist":""),"aria-label":strings("pages").heading});
+  ps.forEach((p,i)=>{const b=el("button",{type:"button",class:"wk-link wk-pitem","aria-current":p.id===cur.id?"step":null,
+      onclick:()=>wkPagePick(id,p.id,!!own)},pageName(p,i));
+    b.addEventListener("keydown",pageMenuKeys);
+    ol.append(el("li",{},b,p.id===cur.id?secs(false):null));});
   return ol;}
 function wkNode(W,a,cur,rd){const k=wikiKids(W,a.id),here=a.id===cur,inside=here?wkInside(a.id,rd):null;
   const b=el("button",{type:"button",class:"wk-link","aria-current":here?"page":null,"data-id":a.id,onclick:()=>wikiGo(a.id,true)},activityName(a));
@@ -6894,7 +6915,7 @@ function moduleChip(id,label){const K=strings("wiki");
     const add=el("button",{type:"button",class:"small primary mc-add"},K.add);
     add.addEventListener("click",async()=>{add.disabled=true;
       if(gen!==bookletGen) return;
-      if(!(await addFromRegistry(entry.id,m=>toast(m)))) add.disabled=false;});
+      if(!(await addFromRegistry(entry.id,m=>toast(m)))&&gen===bookletGen) add.disabled=false;});
     ask.textContent="";ask.append(add);});
   return box;}
 function renderModulePage(main,v){const mod=moduleForScreen(v);
@@ -7008,7 +7029,9 @@ function addModuleFromText(text,say){say=say||addDialogSay;
   toast(STRINGS[lang].booklet.added(tx((R.template.modules[0]||{}).title,""))+(renamed.length?" "+STRINGS[lang].booklet.renamed(renamed):"")+(otherMarker(text)?" "+STRINGS[lang].booklet.addedOtherMarker(otherMarker(text)):""));
   return true;}
 /* the module a registry entry names, read (with the size limit and the words for a slow or missing file) and added */
-async function addFromRegistry(id,say){const got=await registryRead(id),B=STRINGS[lang].booklet;
+async function addFromRegistry(id,say){const gen=bookletGen,got=await registryRead(id),B=STRINGS[lang].booklet;
+  /* the reader moved to another booklet while the file was coming: it is not added to that one */
+  if(gen!==bookletGen) return false;
   if(!got.text){say(B[got.err==="slow"?"addSlow":got.err==="big"?"addBig":"addFailed"]);return false;}
   return addModuleFromText(got.text,say);}
 /* the text behind a registry entry, fetched fresh: an entry only ever carries a

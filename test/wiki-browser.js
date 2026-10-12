@@ -42,7 +42,8 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
     p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))cons.push(m.text());});p.on('pageerror',e=>errs.push(e.message));
     p.on('request',r=>p.reqs.push(r.url()));
     await p.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
-    await p.route('https://raw.githubusercontent.com/**',r=>{const u=new URL(r.request().url()).pathname;
+    await p.route('https://raw.githubusercontent.com/**',async r=>{const u=new URL(r.request().url()).pathname;
+      if(p.fileDelay&&!/registry\.json$/.test(u)) await new Promise(res=>setTimeout(res,p.fileDelay));
       if(p.regFail&&/registry\.json$/.test(u)) return r.fulfill({status:500,body:'no',headers:{'access-control-allow-origin':'*'}});
       r.fulfill({status:200,body:/registry\.json$/.test(u)?JSON.stringify(REG):WEEK2,headers:{'content-type':/json$/.test(u)?'application/json':'text/plain','access-control-allow-origin':'*'}});});
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
@@ -90,6 +91,8 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   const last=path3[2][0];
   ok(await cards(p).count()===Math.min(24,kids(last).length),'its children are cards after its words ('+await cards(p).count()+')');
   ok(await p.locator('#main .wk-content > .col .ap-body, #main .wk-content .ap-body').count()>0&&await p.evaluate(()=>{const c=document.querySelector('.wk-cards'),b=document.querySelector('.ap-body');return !c||(b.compareDocumentPosition(c)&Node.DOCUMENT_POSITION_FOLLOWING)>0;}),'the cards come after the page\'s own content');
+  const mid=await p.evaluate(()=>{const c=[...document.querySelectorAll('.wk-crumbs li')].map(l=>{const r=(l.querySelector('button,span')).getBoundingClientRect();return r.top+r.height/2;});return Math.max(...c)-Math.min(...c);});
+  ok(mid<3,'the current (last) breadcrumb is centred with the buttons before it ('+mid.toFixed(1)+' px apart)');
   /* back up by a breadcrumb */
   await p.locator('.wk-crumbs li button').nth(1).click();await p.waitForTimeout(300);
   ok((await h2(p)).trim()===titles[0]&&(await crumbs()).length===2,'a breadcrumb leads back up to that ancestor');
@@ -224,6 +227,44 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
    ok((await h2(p)).trim()==='Child','"Next" from the hidden page goes on to the next shown page');
    await p.context().close();}
 
+  /* ---- a hidden parent: alone, it does not make a wiki ---- */
+  {const HP='---\nbooklet: "0.12"\ntitle: HP\nlang: en\n---\n\n> [!module|hp] HP\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\ny\n\n> [!activity|h parent:a hidden] H\n\nz\n\n> [!module|hp end] End\n';
+   p=await openBook(HP,1280);
+   ok(await p.locator('.wk-frame').count()===0&&await p.locator('#main button.mode').count()===2,'a parent: that only reaches a hidden page makes no wiki: two flat cards, no menu');
+   await p.locator('#main button.mode').first().click();await p.waitForTimeout(250);
+   ok(await p.locator('.wk-crumbs,.wk-menu').count()===0,'and its pages have no breadcrumbs or menu');
+   await p.context().close();}
+
+  /* ---- an activity of three pages in a wiki: listed in the menu, or in the page where the menu is not on screen ---- */
+  {const PG='> [!activity|ID PAR] Title\n\n## First page\n\nAlpha content.\n\n***\n\n## Second page\n\nBeta content.\n\n***\n\n## Third page\n\nGamma content.\n\n';
+   const MP='---\nbooklet: "0.12"\ntitle: MP\nlang: en\n---\n\n> [!module|mp] MP\n\n> [!activity|one] One\n\nTop.\n\n'+PG.replace('ID PAR','multi parent:one').replace('Title','Multi')+PG.replace('ID PAR','hid parent:one hidden').replace('Title','Hid')+'> [!activity|link] Link\n\nSee [[#Hid]].\n\n> [!module|mp end] End\n';
+   const down=async q=>{await cards(q).first().click();await q.waitForTimeout(250);};
+   /* 1280: in the menu, not in the page */
+   p=await openBook(MP,1280);await down(p);await cards(p).first().click();await p.waitForTimeout(300);
+   ok((await h2(p)).trim()==='Multi'&&await p.locator('.wk-menu .wk-pages .wk-pitem').count()===3&&await p.locator('.wk-pagelist').count()===0,'1280 px: a three-page activity lists its pages in the menu, under its entry, and not in the page');
+   ok(await p.locator('.wk-menu [aria-current="page"]').count()===1&&await p.locator('.wk-menu [aria-current="step"]').innerText()==='First page','the activity\'s entry is the current page and the sub-page is the current step');
+   await p.locator('.wk-menu .wk-pitem').nth(1).click();await p.waitForTimeout(250);
+   ok(/Beta content/.test(await p.locator('#main').innerText())&&/^BUTTON\|step\|Second page/.test(await focused(p)),'choosing one shows it and focuses its entry in the menu ('+await focused(p)+')');
+   await p.keyboard.press('ArrowDown');
+   ok(/Third page/.test(await focused(p)),'the arrow keys move through the list, as in the rail ('+await focused(p)+')');
+   await p.context().close();
+   /* 390: in the page */
+   p=await openBook(MP,390);await down(p);await cards(p).first().click();await p.waitForTimeout(300);
+   ok(await p.locator('.wk-fold').evaluate(d=>!d.open)&&await p.locator('.wk-content .wk-pagelist .wk-pitem').count()===3,'390 px: with the menu closed the three pages are listed in the page itself');
+   await p.locator('.wk-pagelist .wk-pitem').nth(1).click();await p.waitForTimeout(250);
+   ok(/Beta content/.test(await p.locator('#main').innerText())&&/^BUTTON\|step\|Second page/.test(await focused(p))&&await p.locator('.wk-pagelist [aria-current="step"]').count()===1,'choosing one shows it and focuses its entry in that list ('+await focused(p)+')');
+   await p.keyboard.press('ArrowDown');
+   ok(/Third page/.test(await focused(p)),'the arrow keys move through it');
+   await p.screenshot({path:path.join(OUT,'wiki-pagelist-390.png')});
+   await p.context().close();
+   /* hidden, reached by a link, at 1280 */
+   p=await openBook(MP,1280);await p.locator('.wk-q').fill('link');await p.locator('.wk-results .wk-link').first().click();await p.waitForTimeout(250);
+   await p.locator('.wk-q').fill('');await p.locator('.wk-content a.alink').click();await p.waitForTimeout(300);
+   ok((await h2(p)).trim()==='Hid'&&await p.locator('.wk-menu [data-id$="hid"]').count()===0&&await p.locator('.wk-content .wk-pagelist .wk-pitem').count()===3,'a hidden three-page activity reached by a link has no menu entry, so its pages are listed in the page');
+   await p.locator('.wk-pagelist .wk-pitem').nth(2).click();await p.waitForTimeout(250);
+   ok(/Gamma content/.test(await p.locator('#main').innerText())&&/^BUTTON\|step\|Third page/.test(await focused(p)),'and choosing one works there');
+   await p.context().close();}
+
   /* ---- a page with sections: they are listed in the wiki's menu, and no second rail is drawn ---- */
   {const chunks=WIKI.split(/^> \[!activity\|/m).slice(1).map((c,i)=>({page:pages[i],n:(c.match(/^#{2,6} /gm)||[]).length}));
    const sec=chunks.sort((x,y)=>y.n-x.n)[0];
@@ -234,6 +275,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
    const n=await p.locator('.wk-menu .ap-sec').count();
    ok(sec.n>=3&&n>=2,'a page with sections lists them in the wiki menu, under its own entry ('+n+' of its '+sec.n+' headings)');
    ok(await p.locator('.ap-menu, .ap-frame').count()===0,'and no separate sections rail is drawn beside it');
+   ok((await heights(p,'.wk-menu .ap-sec')).every(h=>h>=44),'the section entries are at least 44 px tall ('+(await heights(p,'.wk-menu .ap-sec')).slice(0,4)+')');
    const entry=p.locator('.wk-menu .ap-sec').nth(1);await entry.click();await p.waitForTimeout(300);
    ok(await p.locator('.wk-menu .ap-dot.on').count()>=1,'pressing a section goes to it, as the rail did (its dot fills)');
    await p.screenshot({path:path.join(OUT,'wiki-sections.png')});
@@ -290,6 +332,20 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   await p.locator('#main button.mode').first().click();await p.waitForTimeout(400);
   ok(await p.locator('#main a.alink',{hasText:'Week 2'}).count()===1&&await p.locator('.mchip',{hasText:'Week 2'}).count()===0,'and its link is now a link, not a chip');
   ok(await addr(p)===a1,'pressing a chip, adding a module and following a held-module link left history.length and location.href as they were');
+  await p.context().close();
+
+  /* ---- "Add it" while the reader moves to another booklet: it is not added to that one ---- */
+  p=await openBook(CHIP,1280);
+  await p.locator('#main button.mode').first().click();await p.waitForTimeout(400);
+  await p.locator('#main button.mode').first().click();await p.waitForTimeout(400);
+  p.fileDelay=2500;
+  await p.locator('.mchip',{hasText:'Week 2'}).first().click();await p.waitForTimeout(800);
+  await p.locator('.mc-add').click();await p.waitForTimeout(300);
+  await p.locator('#btnHome').click();await p.waitForTimeout(250);
+  await p.locator('#btnHome').click();await p.waitForTimeout(300);
+  await p.getByRole('button',{name:'Start a new booklet'}).click();await p.waitForTimeout(500);
+  await p.waitForTimeout(3200);
+  ok(!/Week 2/.test(await p.locator('#main').innerText())&&!(await p.evaluate(()=>Object.values(localStorage).join('\n').includes('Week two reading'))),'a module still coming when the reader starts another booklet is not added to it, and nothing is saved for it');
   await p.context().close();
 
   ok(cons.length===0,'no Content Security Policy violation'+(cons.length?': '+cons[0]:''));
