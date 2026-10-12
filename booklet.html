@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-F3j7DtD8EF9OwzZzDJw12MP9SrCpMZUvK7o2ymvkYbk=' 'sha256-7TT1bBi3uyTWyoy837tYa6Acy1GIvMi5IiQ6GGeBrEE=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-3lwMIyXogVD7vQ8Z91sKtAIaOyUOVDwOhr/JptaF/AA=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1061,7 +1061,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   setStyle("teaching",false);
   apply(false);
   ["(prefers-color-scheme: dark)","(prefers-contrast: more)","(forced-colors: active)"].forEach(function(q){try{
-    var l=window.matchMedia(q),f=function(){if(stored()==="auto"&&!custom) apply(true);};
+    var l=window.matchMedia(q),f=function(){if(stored()==="auto"&&(!custom||custom.colours===false)) apply(true);};
     if(l.addEventListener) l.addEventListener("change",f);else if(l.addListener) l.addListener(f);}catch(e){/* a browser that cannot watch this preference */}});
   window.addEventListener("storage",function(e){if(e.key===KEY) apply(true);});
 })();
@@ -3999,7 +3999,7 @@ const textOf=x=>Array.isArray(x)?x.map(textOf).join(""):typeof x==="string"?x:(x
 /* a web address is written with no space in it: cleanScheme strips spaces to read a scheme, so `ht tps://x` would pass as https and keep its space */
 const WEB_ADDRESS=/^https?:\/\/\S+$/i;
 /* a link to a whole module (SPEC.md section 3): `x.booklet`, `x.booklet.md`, with or without a folder. This release reads it and draws it as plain text (SPEC.md section 13). */
-const isModuleLink=t=>cleanScheme(t).scheme===null&&/^(?:[^\s#]*\/)?[^\/\s#]+\.booklet(?:\.md)?$/i.test(String(t==null?"":t).trim());
+const isModuleLink=t=>cleanScheme(t).scheme===null&&/^[^#?]*\.booklet(?:\.md)?(?:[#?].*)?$/i.test(String(t==null?"":t).trim());
 const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderInline(label,ctx):label;
   if(!urlOk(url,true)||isModuleLink(url)) return textOf(kids);
   {const sc=cleanScheme(url).scheme;if((sc==="http"||sc==="https")&&!WEB_ADDRESS.test(String(url).trim())) return textOf(kids);}
@@ -5795,7 +5795,7 @@ function sectionLede(body){
   return {para:null,rest:body,text:clip(text,220)};}
 /* put a table in its own scrolling wrapper, so a wide one scrolls beside the page, not under it */
 const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
-const mdBlockNodes=(b,activityId)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:"md-",
+const mdBlockNodes=(b,activityId,prefix)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",
   mark:id=>{const c=citeText("[^"+id+"]",activityId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
 /* keep the menu's dots and the count current, without redrawing the page */
 function rmRefresh(info){
@@ -5938,7 +5938,7 @@ function findHeading(mods,target,bySlug){
     if((bySlug?linkSlug(h.text):linkNorm(h.text))===want) return {act:a.id,page:h.page,heading:h.text};
   return null;}
 function scrollToHeading(text){const want=linkNorm(text);
-  const n=[...document.querySelectorAll("#main h2,#main h3,#main h4,#main h5,#main h6")].find(h=>linkNorm(h.textContent)===want)||null;
+  const n=[...document.querySelectorAll("#main h2,#main h3,#main h4,#main h5,#main h6")].find(h=>linkNorm(h.textContent)===want&&!(h.closest&&h.closest(".mhead-lede,.mhead-more")))||null;
   /* a heading inside a folded section: open the section first */
   for(let p=n;p&&p!==document.body;p=p.parentNode) if(p.classList&&p.classList.contains("card-fold")&&!p.open) p.open=true;
   if(n&&n.scrollIntoView) n.scrollIntoView({block:"start"});else window.scrollTo({top:0});}
@@ -6000,16 +6000,20 @@ const SCOPES={};
 /* Number an activity's marks: every page in order, every block the reader can
    see, in order. No module holding the activity means no scope, and text
    drawn as it is. */
-function citeBegin(activityId){
+/* A module's opening is drawn with its activity when the module is one activity (so its marks and the activity's number on together, 1, 2, ...), and on the
+   module's own screen otherwise, where it is numbered in a scope of its own (the first activity's id and a mark, \u0001); CITE_OPENING says which is being drawn. */
+let CITE_OPENING=false;
+const openingWithActivity=mod=>!!mod&&!isMulti(mod)&&Array.isArray(mod.opening)&&mod.opening.length>0;
+function citeBegin(raw){
+  const open=CITE_OPENING||String(raw).endsWith("\u0001"),activityId=String(raw).replace(/\u0001$/,""),key=activityId+(open?"\u0001":"");
   const mod=typeof activityId==="string"?holderOf(activityId):null;
-  if(!mod){delete SCOPES[activityId];return null;}
+  if(!mod){delete SCOPES[key];return null;}
   const {sources,cites}=registries(mod);
   /* places: every place each citation is marked, in reading order, as its
      page and how many marks of it come before on that page */
   const nums=new Map(),firstPage=new Map(),broken=new Set(),places=new Map();
-  /* the module's opening is drawn with its first activity (on the module's screen, or on the activity's own when it is the only one), so its marks come first */
-  const pgs=pagesOf(activityOf(activityId)),first=activitiesOf(mod)[0];
-  if(first&&first.id===activityId&&Array.isArray(mod.opening)&&mod.opening.length) pgs.unshift({id:"opening",blocks:mod.opening});
+  const pgs=open?[{id:"opening",blocks:mod.opening||[]}]:pagesOf(activityOf(activityId)).slice();
+  if(!open&&openingWithActivity(mod)) pgs.unshift({id:"opening",blocks:mod.opening});
   for(const p of pgs){const onPage=new Map();
     for(const b of blocksIn(p))
       for(const s of markedTexts(b)) for(const id of citeIds(s)){
@@ -6017,11 +6021,10 @@ function citeBegin(activityId){
         if(!nums.has(id)){nums.set(id,nums.size+1);firstPage.set(id,p.id);}
         const n=onPage.get(id)||0;onPage.set(id,n+1);
         if(!places.has(id)) places.set(id,[]);places.get(id).push({page:p.id,n});}}
-  return SCOPES[activityId]={modeId:activityId,mod,sources,cites,nums,firstPage,places,broken,lang,tpl:BOOK,
+  return SCOPES[key]={modeId:key,mod,sources,cites,nums,firstPage,places,broken,lang,tpl:BOOK,
     marks:new Map(),drawn:new Map()};}
-const citeScope=activityId=>{const R=SCOPES[activityId];
-  return R&&R.lang===lang&&R.tpl===BOOK?R:citeBegin(activityId);};
-/* A text with its marks drawn: the same single string when it has none. A
+const citeScope=raw=>{const key=CITE_OPENING&&!String(raw).endsWith("\u0001")?raw+"\u0001":raw,R=SCOPES[key];
+  return R&&R.lang===lang&&R.tpl===BOOK?R:citeBegin(key);};/* A text with its marks drawn: the same single string when it has none. A
    mark is held to the word before it (and to a mark right before it), because
    a browser may otherwise break the line just before a button and leave the
    number alone at the start of the next line. */
@@ -6166,9 +6169,11 @@ function citeRefText(c,src,Rt){const bits=[];
   const pl=pageLine(c,Rt);if(pl) bits.push(pl);
   const q=tx(c.quote,"");
   return bits.join(". ")+(bits.length&&nonEmpty(q)?". ":"")+(nonEmpty(q)?(plainRef(c,src)?q:Rt.quoted(q)):"");}
-function endnotesFor(id){const R=citeScope(id);if(!R) return null;
-  const here=[];
-  for(const b of pageBlocksShown(id)) for(const s of markedTexts(b)) for(const cid of citeIds(s))
+function endnotesFor(id,openingOnly){const wasO=CITE_OPENING;CITE_OPENING=!!openingOnly;
+  try{return endnotesIn(id,openingOnly);}finally{CITE_OPENING=wasO;}}
+function endnotesIn(id,openingOnly){const R=citeScope(id);if(!R) return null;
+  const here=[],mod=holderOf(id),shown=openingOnly?(mod&&mod.opening||[]):[...(openingWithActivity(mod)?mod.opening:[]),...pageBlocksShown(id)];
+  for(const b of shown) for(const s of markedTexts(b)) for(const cid of citeIds(s))
     if(R.nums.has(cid)&&!here.includes(cid)) here.push(cid);
   if(!here.length) return null;
   here.sort((a,b)=>R.nums.get(a)-R.nums.get(b));
@@ -6456,7 +6461,7 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   const col=el("div",{class:"col"});
   const titleText=tx(mod.title,tx(m.title,shortId(id)));
   /* a module that is one activity has no screen of its own: its activity's screen draws its head (title, opening, picture) */
-  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)) col.append(moduleHead({...mod,title:titleText},id,null,false,m.icon));
+  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)) col.append(moduleHead({...mod,title:titleText},id,null,false));
   else{col.append(el("h2",{},titleText));
     const lead=tx(mod.blurb,tx(m.blurb,""));
     if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
@@ -6580,21 +6585,23 @@ function moduleCard(mod,acts,i){
 function openingNodes(mod,activityId){
   const bs=Array.isArray(mod.opening)?mod.opening:[];if(!bs.length||!activityId) return {lede:null,more:[]};
   const draft=answersFor(activityId),more=[];let lede=null;
+  /* the opening's headings carry their own id prefix, so a heading of the same words in the activity is still found by its links */
   bs.forEach((b,i)=>{
-    if(b.type==="markdown"&&i===0){
-      const paras=String(b.text||"").replace(/<!--[\s\S]*?-->/g,"").trim().split(/\n{2,}/),plain=p=>!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p);
-      if(paras[0]&&plain(paras[0])){lede=el("div",{class:"mhead-lede"},...mdBlockNodes({text:paras.shift()},activityId));
-        if(paras.length) more.push(renderBlock({...b,text:paras.join("\n\n")},draft,activityId));
-        return;}}
+    if(b.type==="markdown"){
+      const nodes=mdBlockNodes(b,activityId,"mo-");
+      if(i===0&&nodes.length&&tagOf(nodes[0])==="p"){lede=el("div",{class:"mhead-lede"},nodes[0]);nodes.shift();}
+      if(nodes.length) more.push(el("div",{class:"pblock md"},...nodes));
+      return;}
     more.push(renderBlock(b,draft,activityId));});
   return {lede,more};}
-function moduleHead(mod,activityId,meta,showMeta,iconName){
+function moduleHead(mod,activityId,meta,showMeta){
   const text=el("div",{class:"mhead-text"},el("h2",{},tx(mod.title,mod.id)));
   const o=openingNodes(mod,activityId),lead=tx(mod.blurb,"");
   if(o.lede||o.more.length){if(o.lede) text.append(o.lede);if(o.more.length) text.append(el("div",{class:"mhead-more"},...o.more));}
   else if(nonEmpty(lead)) text.append(el("p",{class:"aside"},lead));
   if(showMeta&&meta) text.append(meta);
-  const name=mod.icon||iconName,big=name?icon(name,{spot:pictureIsSpot()}):null;
+  /* the large picture is the module's own `icon:`, on both screens (an activity's icon is its card's picture) */
+  const big=mod.icon?icon(mod.icon,{spot:pictureIsSpot()}):null;
   return big?el("div",{class:"mhead"},text,el("div",{class:"mhead-pic","aria-hidden":"true"},big)):text;}
 function renderModulePage(main,v){const mod=moduleForScreen(v);
   /* a module that has gone, or now holds one activity, leads where its card would */
@@ -6603,12 +6610,18 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   {main.append(...openNotices());}
   const col=el("div",{class:"col"});
   const acts=activitiesShown(mod);
-  col.append(moduleHead(mod,activitiesOf(mod)[0]&&activitiesOf(mod)[0].id,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0));
+  const first=activitiesOf(mod)[0]&&activitiesOf(mod)[0].id;
+  CITE_OPENING=true;
+  try{col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0));
+    /* the opening's own sources, numbered from 1 in a scope of its own, close it at the foot of the screen */
+    var openNotes=first&&Array.isArray(mod.opening)&&mod.opening.length?endnotesFor(first,true):null;}
+  finally{CITE_OPENING=false;}
   main.append(col);
   const grid=el("div",{class:"modes"});
   if(!acts.length) grid.append(el("p",{class:"hint"},W.noneShown));
   acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon)));
   main.append(grid);
+  if(openNotes) main.append(el("div",{class:"col"},openNotes));
   const about=noticeNode(mod);if(about) main.append(el("div",{class:"col"},about));
   const rm=removeModuleControl(mod);if(rm) main.append(rm);
   centreScreen(main);
@@ -7017,7 +7030,7 @@ window.addEventListener("booklet-style",()=>{if(RENDERING) return;
   render();
   if(at<0) return;
   const n=(a.id&&document.getElementById(a.id))||Array.from(document.querySelectorAll(CTL))[at];
-  if(n&&n.focus){n.focus();try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}});
+  if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}});
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
 /* The menu stays in view below the page's own sticky bar, whose height changes

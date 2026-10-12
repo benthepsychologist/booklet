@@ -212,6 +212,66 @@ Only prose.
    const st=await q.evaluate(()=>({theme:document.documentElement.getAttribute('data-theme'),style:document.documentElement.getAttribute('data-style'),custom:document.documentElement.hasAttribute('data-theme-custom')}));
    ok(st.theme==='night'&&st.style==='briefing'&&!st.custom,'a dark-mode reader on Auto, a file with only style: briefing: Night colours, briefing shapes ('+JSON.stringify(st)+')');
    await q.context().close();}
+
+  /* ---- review round 2: citations, heading ids, the large picture, device switches ---- */
+  {const NOTES=`
+[^o]: *Opening source*, p. 1: "Opening quote."
+[^x]: *Activity source*, p. 2: "Activity quote."
+`;
+   const files={
+     one:`---\nbooklet: "0.12"\ntitle: One\nlang: en\n---\n\n> [!module|one] One module\n\n## Background\n\nOpening mark[^o].\n\n> [!activity|a] Only\n\n## Background\n\nActivity mark[^x]. See [[#Background]].\n\n${NOTES}\n> [!module|one end] End\n`,
+     multi:`---\nbooklet: "0.12"\ntitle: Multi\nlang: en\n---\n\n> [!module|mm icon:compass] Multi module\n\nOpening mark[^o].\n\n> [!activity|a icon:house] First\n\nActivity mark[^x].\n\n> [!activity|b] Second\n\nPlain.\n\n${NOTES}\n> [!module|mm end] End\n`,
+     iconOnly:`---\nbooklet: "0.12"\ntitle: Icon\nlang: en\n---\n\n> [!module|io icon:compass] Icon module\n\n> [!activity|a icon:house] Only\n\nProse.\n\n> [!module|io end] End\n`,
+     actIcon:`---\nbooklet: "0.12"\ntitle: ActIcon\nlang: en\n---\n\n> [!module|ai] Plain module\n\nAn opening.\n\n> [!activity|a icon:house] Only\n\nProse.\n\n> [!module|ai end] End\n`};
+   const go=async(name)=>{const f=path.join(OUT,'f012-r2-'+name+'.booklet.md');fs.writeFileSync(f,files[name]);
+     const pg=await (await b.newContext({viewport:{width:1100,height:900}})).newPage();
+     pg.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))cons.push(m.text());});pg.on('pageerror',e=>errs.push(e.message));
+     await pg.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
+     await pg.goto('https://bookletmd.test/app/');await pg.waitForTimeout(400);
+     await pg.getByRole('button',{name:'Add a booklet from a file'}).click();await pg.waitForTimeout(300);
+     await pg.locator('#fileIn').setInputFiles(f);await pg.waitForTimeout(500);
+     await pg.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await pg.waitForTimeout(900);return pg;};
+   const marks=pg=>pg.evaluate(()=>[...document.querySelectorAll('#main .rd-mark')].map(m=>m.textContent));
+   const notes=pg=>pg.evaluate(()=>[...document.querySelectorAll('#main .rd-nlist li')].map(l=>l.getAttribute('value')+':'+l.textContent.slice(0,16)));
+   /* one activity: the opening and the activity share a screen: 1, 2, and the endnotes list both */
+   let q=await go('one');
+   ok((await marks(q)).join()==='1,2','a one-activity module: the opening\'s mark is 1 and the activity\'s is 2 on the one screen ('+(await marks(q))+')');
+   ok((await notes(q)).map(x=>x.split(':')[0]).join()==='1,2','and its endnotes list both, 1 and 2 ('+(await notes(q))+')');
+   const ids=await q.evaluate(()=>{const all=[...document.querySelectorAll('#main [id]')].map(e=>e.id);return {dup:all.filter((x,i)=>all.indexOf(x)!==i),mo:all.includes('mo-background'),md:all.includes('md-background')};});
+   ok(ids.dup.length===0&&ids.mo&&ids.md,'the opening\'s heading has its own id (mo-background), so the activity\'s Background is not a duplicate ('+JSON.stringify(ids)+')');
+   await q.locator('#main a.alink').first().click();await q.waitForTimeout(400);
+   ok(await q.evaluate(()=>{const a=document.querySelector('#main h2#md-background, #main #md-background');return !!a;})&&/Activity mark/.test(await q.locator('#main').innerText()),'the activity\\'s own link to Background stays on the activity (its heading, not the opening\\'s)');
+   await q.context().close();
+   /* several activities: the module screen numbers its opening from 1, the first activity starts at 1 too */
+   q=await go('multi');
+   ok((await marks(q)).join()==='1'&&(await notes(q)).join().startsWith('1:'),'a module of several activities: the module screen\'s opening is mark 1 with its own endnote, 1 ('+(await marks(q))+' '+(await notes(q))+')');
+   ok(await q.locator('.mhead-pic use').count()===1&&await q.evaluate(()=>document.querySelector('.mhead-pic use').getAttribute('href'))==='#bs-compass','the large picture is the module\'s icon (compass)');
+   await q.locator('#main button.mode').first().click();await q.waitForTimeout(700);
+   ok((await marks(q)).join()==='1'&&(await notes(q)).join().startsWith('1:Activity'),'the first activity\'s citations start at 1 ('+(await marks(q))+' '+(await notes(q))+')');
+   ok(await q.locator('.mhead-pic').count()===0,'a module of several activities draws no head on an activity screen');
+   await q.context().close();
+   /* the large picture is the module's own icon, with or without an opening */
+   q=await go('iconOnly');
+   ok(await q.evaluate(()=>[...document.querySelectorAll('.mhead-pic use')].map(u=>u.getAttribute('href')).join())==='#bs-compass','a one-activity module with icon: and no opening: its icon, large');
+   await q.context().close();
+   q=await go('actIcon');
+   ok(await q.locator('.mhead-pic').count()===0&&/An opening/.test(await q.locator('#main').innerText()),'a one-activity module with an opening and no icon: of its own: no large picture (the activity\'s icon is its card\'s)');
+   await q.context().close();
+   /* a device switch while a style-only file is open */
+   q=await go('multi');await q.context().close();
+   const f4=path.join(OUT,'f012-style-only2.booklet.md');fs.writeFileSync(f4,FILE('briefing'));
+   const dctx=await b.newContext({viewport:{width:1100,height:900},colorScheme:'light'}),dp=await dctx.newPage();
+   dp.on('pageerror',e=>errs.push(e.message));
+   await dp.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
+   await dp.goto('https://bookletmd.test/app/');await dp.waitForTimeout(400);
+   await dp.getByRole('button',{name:'Add a booklet from a file'}).click();await dp.waitForTimeout(300);
+   await dp.locator('#fileIn').setInputFiles(f4);await dp.waitForTimeout(500);
+   await dp.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await dp.waitForTimeout(900);
+   const t1=await dp.evaluate(()=>document.documentElement.getAttribute('data-theme'));
+   await dp.emulateMedia({colorScheme:'dark'});await dp.waitForTimeout(400);
+   const t2=await dp.evaluate(()=>document.documentElement.getAttribute('data-theme')+'/'+document.documentElement.getAttribute('data-style'));
+   ok(t1==='paper'&&t2==='night/briefing','a style-only file still follows the device: light is Paper, switched to dark it is Night, still briefing ('+t1+' then '+t2+')');
+   await dctx.close();}
   ok(cons.length===0&&errs.length===0,'zero CSP violations and page errors '+cons.concat(errs).join('|'));
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);

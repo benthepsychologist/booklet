@@ -1092,8 +1092,7 @@ def check_format(f, text, fm):
             link.setdefault(aid, (par, n))
         for aid, (par, n) in link.items():
             if par not in known:
-                warn(f, f"line {n}: `parent:{par}` is not an activity of " + (f"the module {scope!r}" if scope else "this file's activities outside every module")
-                        + f", so {aid!r} sits at the top")
+                warn(f, f"line {n}: `parent:{par}` is not an activity of the module {scope!r}, so {aid!r} sits at the top")
                 continue
         # a loop: walk each chain once, keeping what is already settled, so a chain thousands deep costs one pass
         settled, loops = set(), set()

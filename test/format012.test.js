@@ -120,6 +120,16 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
  {const r=spawnSync("python3",[P.R+"/lint-booklet.py",P.R+"/test/fixtures/lint-parent-bare.md"],{encoding:"utf8"});
   chk("parent: between activities outside every module fence places nothing, and the linter says so",r.status===0&&/line 11: `parent:a` outside a module fence places nothing/.test(r.stdout),r.stdout);}
 
+ /* ---- review round 2 ---- */
+ chk("isModuleLink: a target whose path ends .booklet or .booklet.md, with a #… or ?… suffix or a space, is a module link; the reviewer's near misses are not",
+   ["week-2.booklet.md#Target","w.booklet.md?x=1","w x.booklet.md","x.booklet","a/b/x.booklet.md","w.booklet#Section"].every(A.isModuleLink)&&
+   !["w.booklet.md.bak","https://e.org/w.booklet.md","#x.booklet","mailto:a@b.booklet","x.md"].some(A.isModuleLink));
+ {const out=A.mdNodes("[a](week-2.booklet.md#Target) [b](w.booklet.md?x=1) [c](<w x.booklet.md>) [[d.booklet#Part]]",A.linkHooks(""));
+  chk("none of those leads off the page in prose",walk({children:out},x=>x.tagName==="a").length===0);}
+ {A.loadText(FM+"> [!module|m] M\n\nLead words.\n\n```\nline1\n<!-- keep -->\n\nline2\n```\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
+  const m=A.allModules()[0],o=A.openingNodes(m,m.activities[0].id);
+  chk("the lede is split off at the node level: a code fence in the opening keeps its comment line and its blank line",text(o.lede)==="Lead words."&&o.more.length===1&&text(o.more[0])==="line1\n<!-- keep -->\n\nline2",JSON.stringify(o.more.map(text)));}
+
  /* ---- the picture rule on a card ---- */
  {const g=A.cardPicture("🌱 Why it works",3,"compass"),n=A.cardPicture("🌱 Why it works",3,"no-such-picture"),z=A.cardPicture("Why",3,"compass");
   chk("icon: gives the card its picture and leaves the title alone, ahead of a leading emoji",g.picture.icon&&g.title==="🌱 Why it works"&&z.picture.icon&&!z.picture.emoji&&!z.picture.number);

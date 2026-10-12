@@ -32,7 +32,5 @@ chk("the card hues are the six, in the work item's order",A.CARD_HUES.join()==="
    ["fr","es"].every(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).length<=5),
    ["fr","es"].map(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).join()).join(" | "));
  const src=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
- /* the only drafts are the 0.12 problem messages, until the translation pass has checked them (then this list goes) */
- chk("no l10n: draft mark remains in STRINGS_SRC but on the 0.12 messages (the French and Spanish words were checked)",
-   src.split("\n").filter(l=>/l10n: draft/.test(l)&&!/^\s*(iconUnknown|iconOnEnd):/.test(l)).length===0);}
+ chk("no l10n: draft mark remains in STRINGS_SRC (the French and Spanish words were checked)",!/l10n: draft/.test(src));}
 console.log(fails?"\n"+fails+" FAILURES":"\ncallout checks passed");process.exit(fails?1:0);
