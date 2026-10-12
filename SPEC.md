@@ -357,7 +357,7 @@ A widget the reader operates (the body map, the feelings grid) is a `widget` lin
 
 Reading set apart is an Obsidian callout, with `>` on every line of its body. Use Obsidian's built-in kinds where they fit (`note`, `tip`, `example`, `quote`, `question`, `warning`), and Booklet's three for guided reading: `diff` (where this differs from the reader's own guide), `law` (the rule as it now stands), `opinion` (an author's view, not to be learned as a rule).
 
-A renderer draws each kind in its own colour and picture. A kind it does not know is drawn plain, with no tint, and an untitled one is called "Note" (the reference renderer's drawing, not something a file says).
+A renderer draws each kind in its own colour and picture. A kind it does not know is drawn as `note` is; folded with `-`, it is drawn plain, with no tint, and an untitled one is called "Note" (the reference renderer's drawing, not something a file says).
 
 ```markdown
 > [!diff] Your guide says the tide turns every six hours
@@ -802,7 +802,7 @@ None of this affects what already works: loading, reading, answering, and saving
 
 Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
 
-- **A hint and a solution right after a question** (section 6) are drawn inside that question's own block, not as rows of their own: a small control each, the hint first, as the author wrote them; shut, they give nothing away. A hint never opens by itself. A solution opens by itself under the reader's answer: for a `choice`, as soon as an option is picked; for a `multi`, when Check is pressed (only a question with a right answer, a `[x]` option, has Check). With a right answer it takes the good tone when the answer is right and the warn tone with "Look again" when it is not; a `choice` with no right answer opens in a neutral tone on a pick, and a `multi` with none opens only on request. Other question kinds open it on request only. (The reference renderer's drawing, not something a file says.)
+- **A folded hint and a folded solution right after a question** (section 6; one not folded with `-` stays a row of its own) are drawn inside that question's own block, not as rows of their own: a small control each, the hint first, as the author wrote them; shut, they give nothing away. A hint never opens by itself. A solution opens by itself under the reader's answer: for a `choice`, as soon as an option is picked; for a `multi`, when Check is pressed (only a question with a right answer, a `[x]` option, has Check). With a right answer it takes the good tone when the answer is right and the warn tone with "Look again" when it is not; a `choice` with no right answer opens in a neutral tone on a pick, and a `multi` with none opens only on request. Other question kinds open it on request only. (The reference renderer's drawing, not something a file says.)
 - **A folded callout of no known kind** (section 6), such as a `group`, is drawn on plain paper with no tint and no picture of its own, and an untitled one is called "Note", as before; kinds the renderer knows keep their colour and picture. (The reference renderer's drawing, not something a file says.)
 - **An activity's card** counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started").
 

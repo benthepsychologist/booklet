@@ -83,6 +83,16 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     await sols().nth(0).locator('summary').click();await wait(100);
     await p.evaluate(()=>render());await wait(200);
     ok(await sols().nth(0).evaluate(d=>!d.open&&d.classList.contains('sol-good')),`${W}px: a solution the reader shut stays shut after the page is drawn again`);
+    /* after a shut, a verdict the reader's own action produces opens it again (item 5: wrong pick, shut, unpick, pick) */
+    await p.locator('#main button.pill-btn').filter({hasText:/^Wrong 5/}).click();await wait(150);
+    await sols().nth(4).locator('summary').click();await wait(100);
+    ok(await sols().nth(4).evaluate(d=>!d.open&&d.classList.contains('sol-warn')),`${W}px: item 5 shut by the reader`);
+    await p.locator('#main button.pill-btn').filter({hasText:/^Wrong 5/}).click();await wait(100);
+    await p.locator('#main button.pill-btn').filter({hasText:/^Right 5/}).click();await wait(150);
+    ok(await sols().nth(4).evaluate(d=>d.open&&d.classList.contains('sol-good')),`${W}px: a new verdict from the reader's own pick opens a solution they had shut`);
+    await sols().nth(4).locator('summary').click();await wait(100);
+    await p.evaluate(()=>render());await wait(150);
+    ok(await sols().nth(4).evaluate(d=>!d.open),`${W}px: a redraw does not reopen it`);
     /* no right answer */
     await p.locator('#main button.pill-btn').filter({hasText:/^One/}).click();await wait(200);
     ok(await sols().nth(7).evaluate(d=>d.open&&d.classList.contains('sol-neutral')&&!/Look again/.test(d.innerText)),`${W}px: with no right answer it opens neutral`);
@@ -119,6 +129,20 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     const after=await p.evaluate(()=>[...document.querySelectorAll('#main details.sol-in')].slice(0,2).map(d=>d.open+':'+(d.className.match(/sol-(good|warn|neutral)/)||[''])[0]));
     ok(after.join()==='true:sol-good,true:sol-good',`${W}px: after a reload the saved answers show their solutions open in the right tone (${after.join(' ')})`);
     ok(errs.length===0,`${W}px: no page errors ${errs.join('|')}`);
+    await ctx.close();}
+  {const ctx=await b.newContext({viewport:{width:1280,height:900}}),p=await ctx.newPage();
+    await p.route('https://bookletmd.test/**',r=>{const u=new URL(r.request().url()).pathname;r.fulfill(u==='/app/'?{status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8'}}:{status:404,body:'nf'});});
+    const one=t=>head.replace('Sorting',t)+'> [!activity|a] Sort it\n\n'+sortItem(1);
+    const load=async t=>{await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(250);
+      await p.locator('#pasteIn').fill(one(t));await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);};
+    await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(500);
+    await load('Booklet A');
+    await p.locator('#main button.pill-btn').filter({hasText:/^Wrong 1/}).click();await p.waitForTimeout(150);
+    await p.locator('#main details.sol-in summary').click();await p.waitForTimeout(100);
+    for(let i=0;i<3;i++){if(await p.getByRole('button',{name:'Add a booklet from a file'}).count()) break;await p.locator('#btnHome').click();await p.waitForTimeout(300);}
+    await load('Booklet B');
+    await p.locator('#main button.pill-btn').filter({hasText:/^Wrong 1/}).click();await p.waitForTimeout(150);
+    ok(await p.locator('#main details.sol-in').evaluate(d=>d.open&&d.classList.contains('sol-warn')),'a solution shut in one booklet does not stay shut in another with the same ids');
     await ctx.close();}
   {const many=n=>head+'> [!activity|a] Many\n\n'+Array.from({length:n},(_,i)=>`> [!choice|c${i}] Q${i}\n- [ ] A\n- [x] B\n\n> [!hint]- \n> hint ${i}\n\n> [!solution]- Why\n> because ${i}\n\n`).join('');
     const bare=t=>t.replace(/> \[!(hint|solution)\][^]*?\n\n(?=> \[!|$)/g,'');

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-mWFn4Xzc8jSGmbNkGzkar1DJTfH+3FsLPEnHuKwXfyg=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-aFou2FYjZd1ccWRrIg2rjtiACq7f7MapYzkkXpcL57E=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4854,7 +4854,8 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
   const right=Array.isArray(b.answer)?b.answer:(b.answer?[b.answer]:[]);
   const graded=right.length>0,chosen=()=>picksOf(draft[K]);
   let checked=false;
-  const put=list=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();draw();};
+  let byReader=false;
+  const put=list=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();byReader=true;draw();};
   const toggle=n=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n]);};
   const addOwn=text=>{const t=String(text).trim();if(!t) return;
     const at=listed.findIndex(o=>sameWords(o,t));
@@ -4886,13 +4887,14 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
     if(b.open) ownEarlier(activityId,K,listed,now).forEach(t=>pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":"false",
       onclick:()=>addOwn(t)},t)));
     if(graded){const c=chosen(),shown=multi?checked:typeof c[0]==="number";
-      if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;draw();}},Q.check));
+      if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
       if(shown){const missed=right.some(n=>!c.includes(n)),extra=c.some(x=>typeof x==="number"&&!right.includes(x)),
           bad=multi?(missed||extra):!right.includes(c[0]);
         live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).join(", ")):Q.liveRight;
-        if(SP) SP.set(bad?"warn":"good");}
+        if(SP) SP.set(bad?"warn":"good",byReader);}
       else if(SP) SP.set(null);}
-    else if(SP) SP.set(!multi&&chosen().length?"neutral":null);
+    else if(SP) SP.set(!multi&&chosen().length?"neutral":null,byReader);
+    byReader=false;
     /* the options were rebuilt: the keyboard focus goes back to the one it was on */
     if(at>=0&&pills.children[at]&&pills.children[at].focus) pills.children[at].focus({preventScroll:true});
     else if(onCheck&&acts.children[0]&&acts.children[0].focus) acts.children[0].focus({preventScroll:true});};
@@ -4995,7 +4997,7 @@ function foldedCallout(b,draft,activityId,x){
    whose ids are the question's id and "-hint" or "-solution". Found from the blocks themselves (so it holds for a booklet kept by an
    earlier visit), once per stored list of blocks: the list is replaced, never changed in place, when a booklet or module is loaded. */
 const SOLS=new WeakMap();
-function solutionsOf(addr){const a=activityOf(addr),none={q:new Map(),s:new Set()};if(!a) return none;
+function solutionsOf(addr){const a=activityOf(addr);
   const key=a.pages||a.blocks;let r=key&&SOLS.get(key);if(r) return r;
   r={q:new Map(),s:new Set()};const all=allBlocksOf(a),by=new Map();
   all.forEach(x=>{if(x.type==="callout"&&x.kind===""&&placeOf(x)==="folded"&&!by.has(x.id)) by.set(x.id,x);});
@@ -5011,13 +5013,14 @@ const SOL_SHUT=new Set();
    reader has done: "good" (right), "warn" (not right, "Look again") or "neutral" (a choice with no right answer, once picked) opens
    it in that tone, and only when the tone changes, so a reader who shut it is not argued with; null (the answer no longer carries
    a verdict) takes the tone and label off and leaves it open or shut as the reader left it. */
-function solutionPart(sol,draft,activityId){const Q=strings("question"),key=activityId+"\n"+sol.id;let last=null,open=false;
+function solutionPart(sol,draft,activityId){const Q=strings("question"),key=(currentId||"")+"\n"+activityId+"\n"+sol.id;let last=null,open=false;
   const make=t=>foldedCallout(sol,draft,activityId,{inQ:true,sol:true,tone:t,open,status:t==="warn"?Q.lookAgain:t==="good"?Q.right:""});
   let cur=make(null);
   const keep=n=>n.addEventListener("toggle",()=>{if(n!==cur) return;open=n.open;if(open) SOL_SHUT.delete(key);else if(last) SOL_SHUT.add(key);});keep(cur);
   return {get node(){return cur;},
-    set(t){if(t===last||(!t&&!last)) return;const fresh=last===null;last=t;
-      if(t){if(!(fresh&&SOL_SHUT.has(key))){open=true;SOL_SHUT.delete(key);}}
+    set(t,byReader){if(t===last||(!t&&!last)) return;last=t;
+      /* a verdict the reader's own pick or Check produced opens it; a redraw never reopens one the reader shut */
+      if(t){if(byReader||!SOL_SHUT.has(key)){open=true;SOL_SHUT.delete(key);}}
       const next=make(t),old=cur;cur=next;keep(next);if(old.parentNode) old.replaceWith(next);}};}
 /* The hint and the solution of a question, as small controls in its own block (a hint first, as the author wrote them). */
 function qControls(q,draft,activityId){const e=solutionsOf(activityId).q.get(q);if(!e) return null;
