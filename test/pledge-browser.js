@@ -7,7 +7,7 @@
 // What the reader does here: starts a new booklet, adds two modules from an invented registry (served by page.route), answers
 // questions of every kind, adds an own option, keeps entries, renames the booklet, removes a module, opens and closes "Send or
 // save a copy", downloads, loads a file from disk and one by paste, switches language and theme, opens a booklet with a diagram
-// and a formula (so mermaid and Temml start), then opens a booklet by link (renderer 0.11.1: a copy of the page that declares a
+// and a formula (so mermaid and Temml start), draws a booklet's links to modules it does not hold (chips, zero requests), then opens a booklet by link (renderer 0.11.1: a copy of the page that declares a
 // store, under a header that allows reading from it; the link is read, an answer is typed into what it opened, and the store is
 // asked for the one checked name and nothing else).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pledge-browser.js <booklet.html> <outdir>
@@ -166,6 +166,19 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
     libs:{mermaid:typeof __esbuild_esm_mermaid_nm,temml:typeof temml}}));
   ok(figs.svg>=1&&figs.math>=1,'a diagram and a formula are drawn, so the libraries ran: '+JSON.stringify(figs));
   await harvest();
+  // 8b a booklet that links to modules it does not hold (renderer 0.12.0, item E): the links draw as chips, and drawing them asks for
+  // nothing; the registry is read only when a reader presses a chip (the wiki browser test does that), so none of that is here
+  await toList();
+  {const before=reqs.length;
+   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(300);
+   await p.locator('#pasteIn').fill(mod('linkdemo','Link demo','> [!activity|ld-a] Links\n\nThe next week is [[week-9.booklet]], and the one after is [Week 10](modules/week-10.booklet.md).\n\n```booklet data\n[{"label":"Week 11","link":"week-11.booklet"}]\n```\n^rows\n\n```booklet query\nfrom: rows\nas: list\n```\n\n'));
+   await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(900);
+   if(await p.evaluate(()=>document.body.dataset.view)!=='linkdemo/ld-a'){await p.locator('button.mode').first().click().catch(()=>{});await wait(500);}
+   ok(await p.locator('.mchip').count()===3,'links to modules the booklet does not hold draw as chips ('+await p.locator('.mchip').count()+')');
+   await wait(600);
+   const fresh=reqs.slice(before).filter(r=>/^https?:|^wss?:|^ftp:/i.test(r.url));
+   ok(fresh.length===0,'drawing those chips made no request at all ('+fresh.map(r=>r.url).join(', ')+')');
+   await harvest();}
   // 9 a booklet opened by link: read from the declared store, answered, nothing sent
   await p.goto(PAGE_ORIGIN+'/linked/#/open/pledge/linked.booklet.md');await wait(1200);
   ok(await p.evaluate(()=>document.body.dataset.view)==='linked/l-act','a booklet opened by link opens into its content');

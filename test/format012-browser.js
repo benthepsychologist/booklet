@@ -4,7 +4,7 @@
 //  - the summary line counts the activities and how many are started;
 //  - the picture rule on cards: icon:, else a leading emoji, else the number;
 //  - the theme block's `style:` wins over the host's default (bookletStyle.set), whatever colour theme the reader picks, and goes when the booklet closes;
-//  - a tile whose `link` role is a heading opens that heading, an `icon` role draws its picture, a module link stays plain text.
+//  - a tile whose `link` role is a heading opens that heading, an `icon` role draws its picture, a module link to a module that is not held is a chip (item E).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/format012-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
@@ -114,7 +114,7 @@ Text.
   const tiles=await p.evaluate(()=>[...document.querySelectorAll('#main .dv-tile')].map(t=>({txt:t.textContent,a:[...t.querySelectorAll('a')].map(a=>a.getAttribute('href')),use:[...t.querySelectorAll('use')].map(u=>u.getAttribute('href')),lead:t.classList.contains('dv-lead')})));
   ok(tiles.length===2,'two tiles drawn');
   ok(tiles[0].a.length===1&&tiles[0].lead&&tiles[0].use[0]==='#bi-house','the first tile leads (its label is a link) and draws its icon');
-  ok(tiles[1].a.length===0&&tiles[1].use.length===0&&/Another module/.test(tiles[1].txt),'a module link stays plain text, and an icon name that is not in the set draws nothing');
+  ok(tiles[1].a.length===0&&tiles[1].use.join()==='#bi-package'&&/Another module/.test(tiles[1].txt)&&/not in this booklet/.test(tiles[1].txt),'a module link to a module this booklet does not hold is a chip (no link, the module picture), and an icon name that is not in the set draws nothing');
   await p.locator('#main .dv-tile a').first().click();await p.waitForTimeout(700);
   ok(/You arrived/.test(await p.locator('#main').innerText()),'pressing the tile\'s label opens the heading it names');
   await p.close();
