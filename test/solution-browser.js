@@ -8,12 +8,12 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]);
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const head='---\nbooklet: "0.11"\ntitle: Sorting\nlang: en\n---\n\n';
-const sortItem=i=>`> [!choice|s${i}] Item ${i}\n- [ ] Wrong ${i}\n- [x] Right ${i}\n\n> [!solution]- Why\n> BECAUSE-${i}-SECRET\n\n`;
+const sortItem=i=>`> [!choice|s${i}] Item ${i}\n- [ ] Wrong ${i}\n- [x] Right ${i}\n\n${i===1?'> [!hint]- Nudge\n> HINT-1-SECRET\n\n':''}> [!solution]- Why\n> BECAUSE-${i}-SECRET\n\n`;
 const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('')+
   '> [!multi|m1] Pick both\n- [x] Alpha\n- [x] Beta\n- [ ] Gamma\n\n> [!solution]- Why\n> MULTI-SECRET\n\n'+
   '> [!choice|n1] No right answer\n- [ ] One\n- [ ] Two\n\n> [!solution]- Notes\n> NEUTRAL-SECRET\n\n'+
   '> [!lines|l1] Write lines\n\n> [!solution]- Model\n> LINES-SECRET\n\n'+
-  '> [!hint]- \n> A-HINT\n\n> [!group]- Background\n> Group words that say what is in the group.\n\n> [!note]- A note\n> Note words.\n';
+  '> [!hint]- \n> A-HINT\n\n> [!group]- Background\n> Group words that say what is in the group.\n\n> [!group]-\n> Untitled group words.\n\n> [!foo]-\n> Unknown kind words.\n\n> [!note]- A note\n> Note words.\n';
 (async()=>{
   const b=await chromium.launch();
   for(const W of [1280,390]){
@@ -28,9 +28,10 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     await openAll();
     const sols=()=>p.locator('#main details.sol-in');
     ok(await sols().count()===9,`${W}px: nine solutions sit inside their questions: six sort items, a multi, a choice with no right answer, a lines question (${await sols().count()})`);
-    const sep=await p.evaluate(()=>[...document.querySelectorAll('#main details.card-compact')].filter(d=>!d.classList.contains('sol-in')).map(d=>d.querySelector('summary').innerText.trim()));
-    ok(sep.join()==='Hint',`${W}px: no separate Why row; only the hint keeps its own row (${sep.join()})`);
-    ok(await p.locator('#main .sol-moved').count()===9,`${W}px: the solution blocks leave only a hidden placeholder`);
+    const sep=await p.evaluate(()=>[...document.querySelectorAll('#main details.card-compact')].filter(d=>!d.classList.contains('q-in')).map(d=>d.querySelector('summary').innerText.trim()));
+    ok(sep.join()==='',`${W}px: no separate Why or Hint row: a question's hint and solution are in the question (${sep.join()})`);
+    ok(await p.evaluate(()=>{const c=document.querySelector('#main .q-ctls');const k=[...c.children].map(x=>x.querySelector('summary').innerText.trim());return k.join()==='Nudge,Why'&&!c.children[0].classList.contains('sol-in');}),`${W}px: the hint control comes first, then the solution (the author's order)`);
+    ok(await p.locator('#main .sol-moved').count()===11,`${W}px: the solution blocks leave only a hidden placeholder`);
     ok(!/SECRET/.test(await p.locator('#main').innerText()),`${W}px: shut, no solution gives anything away`);
     const sum=sols().first().locator('summary');
     const h=await sum.evaluate(s=>s.getBoundingClientRect().height);
@@ -45,12 +46,12 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     ok(await d1.evaluate(d=>d.open&&d.classList.contains('sol-warn'))&&/Look again/.test(await d1.innerText()),`${W}px: a wrong pick opens the why in the warn tone with Look again`);
     ok(/BECAUSE-1-SECRET/.test(await d1.innerText()),`${W}px: and shows the why`);
     ok(await p.evaluate(()=>document.activeElement&&document.activeElement.tagName)!=='SUMMARY',`${W}px: the focus is not taken by the opened solution`);
-    {const v=await p.evaluate(()=>{const q=document.querySelector('#main .sol-in').parentElement;const l=q.querySelector('.q-live'),r=l.getBoundingClientRect(),w=q.querySelector('.pill-btn.q-wrong'),cs=getComputedStyle(document.documentElement);
+    {const v=await p.evaluate(()=>{const q=document.querySelector('#main .sol-in').closest('.q-ctls').parentElement;const l=q.querySelector('.q-live'),r=l.getBoundingClientRect(),w=q.querySelector('.pill-btn.q-wrong'),cs=getComputedStyle(document.documentElement);
         const probe=document.createElement('i');probe.style.color=cs.getPropertyValue('--tone-amber-deep');document.body.append(probe);const amber=getComputedStyle(probe).color;probe.remove();
         return {text:l.textContent,w:r.width,h:r.height,wrong:w&&getComputedStyle(w).color,amber};});
       ok(v.text.length>0&&v.w<=1&&v.h<=1,`${W}px: with a solution the verdict line is kept for screen readers only (${JSON.stringify(v.text)})`);
       ok(v.wrong===v.amber,`${W}px: a wrong pick is in the warn tone, not red (${v.wrong})`);}
-    {const sh=await sols().nth(3).evaluate(d=>({w:d.getBoundingClientRect().width,pw:d.parentElement.getBoundingClientRect().width,h:d.getBoundingClientRect().height,bg:getComputedStyle(d).backgroundColor,bw:getComputedStyle(d).borderTopColor}));
+    {const sh=await sols().nth(3).evaluate(d=>({w:d.getBoundingClientRect().width,pw:d.closest('.q-ctls').parentElement.getBoundingClientRect().width,h:d.getBoundingClientRect().height,bg:getComputedStyle(d).backgroundColor,bw:getComputedStyle(d).borderTopColor}));
       ok(sh.w<sh.pw*0.6&&sh.h>=44&&sh.bg==='rgba(0, 0, 0, 0)',`${W}px: a shut solution is a small control, not a bar (${Math.round(sh.w)} of ${Math.round(sh.pw)} px, ${Math.round(sh.h)} tall)`);}
     /* a right pick on item 2 */
     await p.locator('#main button.pill-btn').filter({hasText:/^Right 2/}).click();await wait(200);
@@ -66,6 +67,22 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     ok(await sols().nth(6).evaluate(d=>!d.open),`${W}px: a multi does not open its solution before Check`);
     await p.locator('#main button.small').filter({hasText:/^Check$/}).click();await wait(200);
     ok(await sols().nth(6).evaluate(d=>d.open&&d.classList.contains('sol-warn')),`${W}px: Check opens it, warn for a partly right answer`);
+    await p.locator('#main button.pill-btn').filter({hasText:/^Beta/}).click();await wait(150);
+    await p.locator('#main button.small').filter({hasText:/^Check$/}).click();await wait(200);
+    ok(await sols().nth(6).evaluate(d=>d.classList.contains('sol-good')&&/Right/.test(d.innerText)),`${W}px: both right and checked: good`);
+    await p.locator('#main button.pill-btn').filter({hasText:/^Gamma/}).click();await wait(200);
+    ok(await sols().nth(6).evaluate(d=>d.open&&!/sol-(good|warn)/.test(d.className)&&!/Right|Look again/.test(d.querySelector('summary').innerText)),`${W}px: a changed multi answer drops the verdict from the panel (it stays open)`);
+    await p.locator('#main button.pill-btn').filter({hasText:/^Wrong 3/}).click();await wait(150);
+    ok(await sols().nth(2).evaluate(d=>d.open&&d.classList.contains('sol-warn')),`${W}px: item 3 wrong pick opens in warn`);
+    await p.locator('#main button.pill-btn').filter({hasText:/^Wrong 3/}).click();await wait(150);
+    ok(await sols().nth(2).evaluate(d=>d.open&&!/sol-(good|warn)/.test(d.className)&&!/Look again/.test(d.innerText)),`${W}px: an unpicked choice drops the verdict from the panel`);
+    /* the keyboard keeps its place when an option is picked */
+    await p.locator('#main button.pill-btn').filter({hasText:/^Wrong 4/}).focus();await p.keyboard.press('Enter');await wait(150);
+    ok(await p.evaluate(()=>document.activeElement.tagName==='BUTTON'&&/^Wrong 4/.test(document.activeElement.innerText)),`${W}px: after picking with the keyboard the focus is still on that option`);
+    /* a solution the reader shut stays shut across a redraw */
+    await sols().nth(0).locator('summary').click();await wait(100);
+    await p.evaluate(()=>render());await wait(200);
+    ok(await sols().nth(0).evaluate(d=>!d.open&&d.classList.contains('sol-good')),`${W}px: a solution the reader shut stays shut after the page is drawn again`);
     /* no right answer */
     await p.locator('#main button.pill-btn').filter({hasText:/^One/}).click();await wait(200);
     ok(await sols().nth(7).evaluate(d=>d.open&&d.classList.contains('sol-neutral')&&!/Look again/.test(d.innerText)),`${W}px: with no right answer it opens neutral`);
@@ -79,6 +96,9 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     const pv=await sols().nth(5).evaluate(d=>{const x=d.querySelector('.cd-body');return !!x&&getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().height>0;});
     ok(pv,`${W}px: print shows a shut solution's words`);
     await p.emulateMedia({media:'screen'});
+    {const g=await p.evaluate(()=>[...document.querySelectorAll('#main details.card-plain')].map(d=>{d.open=true;const s=d.querySelector('summary');return {t:s.querySelector('.k').innerText.trim(),tile:!!s.querySelector('.cd-tile'),pad:parseFloat(getComputedStyle(d.querySelector('.cd-body')).paddingLeft),rem:parseFloat(getComputedStyle(document.documentElement).fontSize)};}));
+      const un=g.filter(x=>x.t==='Note');
+      ok(un.length===2&&un.every(x=>!x.tile&&x.pad<=x.rem*1.01),`${W}px: an untitled group or unknown kind is called Note, and with no tile its body is not indented for one (${JSON.stringify(g)})`);}
     /* the folded group draws on the card surface */
     for(const th of ['paper','night']){
       await p.evaluate(t=>window.bookletTheme.set(t),th);await wait(250);
@@ -100,6 +120,18 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     ok(after.join()==='true:sol-good,true:sol-good',`${W}px: after a reload the saved answers show their solutions open in the right tone (${after.join(' ')})`);
     ok(errs.length===0,`${W}px: no page errors ${errs.join('|')}`);
     await ctx.close();}
+  {const many=n=>head+'> [!activity|a] Many\n\n'+Array.from({length:n},(_,i)=>`> [!choice|c${i}] Q${i}\n- [ ] A\n- [x] B\n\n> [!hint]- \n> hint ${i}\n\n> [!solution]- Why\n> because ${i}\n\n`).join('');
+    const bare=t=>t.replace(/> \[!(hint|solution)\][^]*?\n\n(?=> \[!|$)/g,'');
+    const time=async txt=>{const ctx=await b.newContext({viewport:{width:1280,height:900}}),p=await ctx.newPage();
+      await p.route('https://bookletmd.test/**',r=>{const u=new URL(r.request().url()).pathname;r.fulfill(u==='/app/'?{status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8'}}:{status:404,body:'nf'});});
+      await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
+      await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(250);
+      await p.locator('#pasteIn').fill(txt);await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(1500);
+      const ms=await p.evaluate(()=>{render();const t=performance.now();for(let i=0;i<3;i++) render();return (performance.now()-t)/3;});await ctx.close();return ms;};
+    console.log(`render at 100 questions: ${(await time(many(100))).toFixed(0)} ms with hints and solutions`);
+    const withS=await time(many(150)),without=await time(bare(many(150)));
+    console.log(`render at 150 questions: ${withS.toFixed(0)} ms with hints and solutions, ${without.toFixed(0)} ms without`);
+    ok(withS<Math.max(2*without,150),`150 questions with a hint and a solution each draw in under twice the time of the same without (${withS.toFixed(0)} vs ${without.toFixed(0)} ms)`);}
   await b.close();
   if(fails.length){console.log('FAILED '+fails.length);process.exit(1);}
   console.log('solution checks passed');

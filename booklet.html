@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-+q56ycBMTP2ndIRWUSD6ewkHTNXXwRRZ3L0EFsYYNJo=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-mWFn4Xzc8jSGmbNkGzkar1DJTfH+3FsLPEnHuKwXfyg=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -383,14 +383,20 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* a folded callout with no kind of its own (a group) is plain paper with the neutral line, no tint */
   .card-plain{background:var(--surface);border-color:var(--rule)}
   /* a solution inside its question: in the question's row beside the pills, full width once open; opened by the answer in a tone */
-  .q-inline>.sol-in{grid-column:1}
-  .q-inline>.sol-in[open]{grid-column:1/-1}
-  .sol-in{margin:.1rem 0 .4rem}
+  .q-ctls{display:flex;flex-wrap:wrap;align-items:flex-start;gap:0 .5rem}
+  .q-ctls:empty{display:none}
+  .q-ctls>[open]{flex:1 1 100%}
+  .q-inline>.q-ctls{grid-column:1}
+  .q-inline>.q-ctls:has(>[open]){grid-column:1/-1}
+  .q-in{margin:.1rem 0 .4rem}
+  .card-sub.card-notile>.cd-body{padding-left:1rem}
   /* shut, it is a small control as wide as its label, not a bar; open, the panel is full width */
-  .sol-in:not([open]){width:fit-content;max-width:100%;justify-self:start}
-  .sol-in:not([open])>summary{padding-right:.4rem}
+  .q-in:not([open]){width:fit-content;max-width:100%}
+  .q-in:not([open])>summary{padding-right:.4rem}
   .sol-in.sol-good[open]{background:var(--tone-green);border-color:var(--tone-green-deep);--c-deep:var(--tone-green-deep)}
   .sol-in.sol-warn[open]{background:var(--tone-amber);border-color:var(--tone-amber-deep);--c-deep:var(--tone-amber-deep)}
+  .sol-in.sol-good[open]>summary:hover{background:color-mix(in srgb,var(--tone-green-deep) 12%,transparent)}
+  .sol-in.sol-warn[open]>summary:hover{background:color-mix(in srgb,var(--tone-amber-deep) 12%,transparent)}
   .sol-in.sol-good[open] .k,.sol-in.sol-good[open]>summary{color:var(--tone-green-deep)}
   .sol-in.sol-warn[open] .k,.sol-in.sol-warn[open]>summary{color:var(--tone-amber-deep)}
   @media (max-width:520px){.cd-tile{width:3.4rem;height:3.4rem;font-size:1.55rem}.card-go,.card-fold>summary{gap:.7rem}.card-sub>.cd-body{padding-left:1rem}}
@@ -4865,9 +4871,11 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
     return on?(isRight?"right":"wrong"):(isRight?"answer":null);};
   const MARK={right:["✓ ",Q.right],wrong:["✗ ",Q.notQuite],answer:["✓ ",Q.theAnswer]};
   const pills=el("div",{class:"pills"}),live=el("p",{class:"q-live hint","aria-live":"polite"}),acts=el("div",{class:"q-acts"});
-  const sol=solutionsOf(activityId).q.get(b),SP=sol?solutionPart(sol,draft,activityId):null;
+  const QC=qControls(b,draft,activityId),SP=QC&&QC.sol;
   if(SP) live.classList.add("q-live-sr");
-  const draw=()=>{pills.innerHTML="";acts.innerHTML="";live.textContent="";
+  const draw=()=>{const ae=document.activeElement,at=ae&&ae.parentNode===pills?Array.from(pills.children).indexOf(ae):-1,
+      onCheck=!!ae&&ae.parentNode===acts;
+    pills.innerHTML="";acts.innerHTML="";live.textContent="";
     listed.forEach((o,idx)=>{const n=idx+1,mark=markOf(n);
       pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),
         onclick:()=>toggle(n)},o,mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
@@ -4882,15 +4890,19 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
       if(shown){const missed=right.some(n=>!c.includes(n)),extra=c.some(x=>typeof x==="number"&&!right.includes(x)),
           bad=multi?(missed||extra):!right.includes(c[0]);
         live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).join(", ")):Q.liveRight;
-        if(SP) SP.set(bad?"warn":"good");}}
-    else if(SP&&!multi&&chosen().length) SP.set("neutral");};
+        if(SP) SP.set(bad?"warn":"good");}
+      else if(SP) SP.set(null);}
+    else if(SP) SP.set(!multi&&chosen().length?"neutral":null);
+    /* the options were rebuilt: the keyboard focus goes back to the one it was on */
+    if(at>=0&&pills.children[at]&&pills.children[at].focus) pills.children[at].focus({preventScroll:true});
+    else if(onCheck&&acts.children[0]&&acts.children[0].focus) acts.children[0].focus({preventScroll:true});};
   draw();box.append(pills);
   if(b.open){const inp=el("input",{type:"text",class:"field q-own","aria-label":Q.addOwn,placeholder:Q.addOwn,autocomplete:"off"});
     const go=()=>{const t=inp.value;inp.value="";addOwn(t);inp.focus();};
     inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go();}});
     box.append(el("div",{class:"q-ownrow"},inp,el("button",{type:"button",class:"small",onclick:go},Q.addBtn)));}
   if(graded) box.append(acts,live);
-  if(SP) box.append(SP.node);
+  if(QC) box.append(QC.node);
   return box;}
 function drawScale(b,draft,activityId){const box=el("div",{});const anchors=b.anchors||[];
   questionHead(box,b);
@@ -4946,7 +4958,7 @@ function renderBlock(b,draft,activityId){
   if(S.s.has(b)) return el("span",{class:"sol-moved",hidden:true});
   const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId)
     :el("p",{class:"hint"},STRINGS[lang].ui.unknownBlock(b.type||"?",b.id||"?"));
-  if(S.q.has(b)&&b.type!=="choice"&&b.type!=="multi") node.append(solutionPart(S.q.get(b),draft,activityId).node);
+  if(S.q.has(b)&&b.type!=="choice"&&b.type!=="multi") node.append(qControls(b,draft,activityId).node);
   if(placeOf(b)!=="folded") return node;
   return b.type==="callout"?foldedCallout(b,draft,activityId):
     cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),open:blockFilled(b,draft),body:[node]});}
@@ -4964,7 +4976,9 @@ function foldedCallout(b,draft,activityId,x){
   const Rt=strings("reading"),C=strings("cards"),hs=hintKind(b);x=x||{};
   /* a kind that means something keeps its colour and picture; any other (a group, no kind) is drawn on plain paper */
   const look=b.kind===""||hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
-  const title=nonEmpty(named)?named:hs?C[hs]:look?Rt.kind[look.label]:foldName(b);
+  /* an untitled callout is called by its kind's word; a kind the renderer does not know is called Note, as before, only drawn plain */
+  const word=look||(b.kind===""||hs?null:calloutLook(b.kind));
+  const title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
   const picture=emo?{emoji:emo}:look?{icon:icon(look.icon)}:hs?{icon:icon(hs==="hint"?"lightbulb":"circle-check")}:null;
@@ -4975,27 +4989,40 @@ function foldedCallout(b,draft,activityId,x){
   const body=parts.map(p=>p.n);
   if(b.unknown) body.unshift(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   /* a hint or a solution is a compact fold: one quiet line, a small icon, no tile, no teaser */
-  return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:hs?"":" card-plain")+(x.tone?" sol-"+x.tone:"")+(x.inQ?" sol-in":""),hue:look?look.hue:"slate",
+  return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:hs?"":" card-plain")+(!hs&&!look&&!picture?" card-notile":"")+(x.tone?" sol-"+x.tone:"")+(x.inQ?" q-in":"")+(x.sol?" sol-in":""),hue:look?look.hue:"slate",
     title:emo?lead.title:title,picture,teaser,status:x.status,size:hs?"compact":null,open:!!x.open||blockFilled(b,draft),body});}
-/* Which folded solution belongs to which question of an activity: the callout the parser made right after the question, whose id
-   is the question's id and "-solution". Found from the blocks themselves, so it holds for a booklet kept by an earlier visit. */
+/* Which folded hint and solution belong to which question of an activity: the callouts the parser made right after the question,
+   whose ids are the question's id and "-hint" or "-solution". Found from the blocks themselves (so it holds for a booklet kept by an
+   earlier visit), once per stored list of blocks: the list is replaced, never changed in place, when a booklet or module is loaded. */
 const SOLS=new WeakMap();
 function solutionsOf(addr){const a=activityOf(addr),none={q:new Map(),s:new Set()};if(!a) return none;
-  let r=SOLS.get(a);if(r) return r;
-  r={q:new Map(),s:new Set()};const all=allBlocksOf(a);
+  const key=a.pages||a.blocks;let r=key&&SOLS.get(key);if(r) return r;
+  r={q:new Map(),s:new Set()};const all=allBlocksOf(a),by=new Map();
+  all.forEach(x=>{if(x.type==="callout"&&x.kind===""&&placeOf(x)==="folded"&&!by.has(x.id)) by.set(x.id,x);});
   all.forEach(q=>{if(!QUESTION_KINDS.has(q.type)||!q.id) return;
-    const s=all.find(x=>x.type==="callout"&&x.kind===""&&placeOf(x)==="folded"&&x.id===q.id+"-solution"&&!r.s.has(x));
-    if(s){r.q.set(q,s);r.s.add(s);}});
-  SOLS.set(a,r);return r;}
+    const hint=by.get(q.id+"-hint"),sol=by.get(q.id+"-solution");
+    if((hint&&!r.s.has(hint))||(sol&&!r.s.has(sol))){
+      const e={hint:hint&&!r.s.has(hint)?hint:null,sol:sol&&!r.s.has(sol)?sol:null};
+      r.q.set(q,e);if(e.hint) r.s.add(e.hint);if(e.sol) r.s.add(e.sol);}});
+  if(key) SOLS.set(key,r);return r;}
+/* the solutions a reader has shut after an answer opened them, for this visit only (never saved, like RM_STATE) */
+const SOL_SHUT=new Set();
 /* A solution inside its question: the compact fold, shut, giving nothing away. `set(tone)` is how the question tells it what the
-   reader has done: "good" (right) or "warn" (not right, "Look again") or "neutral" (a question with no right answer) opens it
-   in that tone, and only when the tone changes, so a reader who shut it is not argued with; null leaves it as it is. */
-function solutionPart(sol,draft,activityId){const Q=strings("question");let last=null,open=false;
-  const make=t=>foldedCallout(sol,draft,activityId,{inQ:true,tone:t,open,status:t==="warn"?Q.lookAgain:t==="good"?Q.right:""});
+   reader has done: "good" (right), "warn" (not right, "Look again") or "neutral" (a choice with no right answer, once picked) opens
+   it in that tone, and only when the tone changes, so a reader who shut it is not argued with; null (the answer no longer carries
+   a verdict) takes the tone and label off and leaves it open or shut as the reader left it. */
+function solutionPart(sol,draft,activityId){const Q=strings("question"),key=activityId+"\n"+sol.id;let last=null,open=false;
+  const make=t=>foldedCallout(sol,draft,activityId,{inQ:true,sol:true,tone:t,open,status:t==="warn"?Q.lookAgain:t==="good"?Q.right:""});
   let cur=make(null);
-  const keep=()=>{cur.addEventListener("toggle",()=>{open=cur.open;});};keep();
+  const keep=n=>n.addEventListener("toggle",()=>{if(n!==cur) return;open=n.open;if(open) SOL_SHUT.delete(key);else if(last) SOL_SHUT.add(key);});keep(cur);
   return {get node(){return cur;},
-    set(t){if(!t||t===last) return;last=t;open=true;const next=make(t),old=cur;cur=next;keep();if(old.parentNode) old.replaceWith(next);}};}
+    set(t){if(t===last||(!t&&!last)) return;const fresh=last===null;last=t;
+      if(t){if(!(fresh&&SOL_SHUT.has(key))){open=true;SOL_SHUT.delete(key);}}
+      const next=make(t),old=cur;cur=next;keep(next);if(old.parentNode) old.replaceWith(next);}};}
+/* The hint and the solution of a question, as small controls in its own block (a hint first, as the author wrote them). */
+function qControls(q,draft,activityId){const e=solutionsOf(activityId).q.get(q);if(!e) return null;
+  const sol=e.sol?solutionPart(e.sol,draft,activityId):null;
+  return {node:el("div",{class:"q-ctls"},e.hint?foldedCallout(e.hint,draft,activityId,{inQ:true}):null,sol&&sol.node),sol};}
 /* An activity marked `upsert:"day"` (the file's `repeat daily`) keeps one entry per
    calendar day rather than one per Finalize: finalizing again on the same day
    replaces that day's entry instead of adding a second one. */
@@ -6420,14 +6447,13 @@ function activityProgress(a){
   const qs=repeats?[]:allBlocksOf(a).filter(b=>QUESTION_KINDS.has(b.type)),ans=peekAnswers(scopeOfAddr(a.id));
   const answered=qs.filter(b=>keysOf(b).some(k=>holdsSomething(ans[k]))).length;
   return {repeats,kept,total:qs.length,answered,tracked:repeats||qs.length>0,started:repeats?kept>0:answered>0};}
-/* the status line under a card's teaser */
 /* the folded callouts of an activity that are there to be read: not a hint or a solution, holding no question; the outer one only */
 function readsIn(a){let n=0;
   const walk=l=>(Array.isArray(l)?l:[]).forEach(b=>{if(!b||typeof b!=="object") return;
     if(b.type==="callout"&&placeOf(b)==="folded"&&!hintKind(b)&&!blocksAll([b]).some(isQuestion)) n++;
     else walk(b.blocks);});
   walk(activityBlocks(a));return n;}
-/* the line under an activity's card: its folded reads, then its questions, then how far the reader is, joined by " · ";
+/* the status line under an activity's card: its folded reads, then its questions, then how far the reader is, joined by " · ";
    a part with nothing in it is left out, so a plain activity keeps the old line */
 function activityStatus(a){const C=strings("cards"),p=activityProgress(a),reads=readsIn(a),qn=allBlocksOf(a).filter(isQuestion).length;
   const state=p.repeats?(p.kept?STRINGS[lang].ui.entriesN(p.kept):C.notStarted):!p.total?"":p.answered===0?C.notStarted:p.answered>=p.total?C.done:C.answeredOf(p.answered,p.total);

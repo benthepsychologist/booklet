@@ -357,7 +357,7 @@ A widget the reader operates (the body map, the feelings grid) is a `widget` lin
 
 Reading set apart is an Obsidian callout, with `>` on every line of its body. Use Obsidian's built-in kinds where they fit (`note`, `tip`, `example`, `quote`, `question`, `warning`), and Booklet's three for guided reading: `diff` (where this differs from the reader's own guide), `law` (the rule as it now stands), `opinion` (an author's view, not to be learned as a rule).
 
-A renderer draws each kind in its own colour and picture; a kind it does not know is drawn as `note` is.
+A renderer draws each kind in its own colour and picture. A kind it does not know is drawn plain, with no tint, and an untitled one is called "Note" (the reference renderer's drawing, not something a file says).
 
 ```markdown
 > [!diff] Your guide says the tide turns every six hours
@@ -802,7 +802,8 @@ None of this affects what already works: loading, reading, answering, and saving
 
 Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
 
-- **A folded callout** (section 6). A folded `solution` that follows a question is drawn inside that question's own block: a small control that opens on request, and that opens by itself when the reader picks an option of a `choice` or presses Check on a `multi` that has a right answer (in the good tone when right, the warn tone with "Look again" when not). A callout folded with `-` whose kind means nothing to the renderer (a `group`) is drawn on plain paper, not tinted.
+- **A hint and a solution right after a question** (section 6) are drawn inside that question's own block, not as rows of their own: a small control each, the hint first, as the author wrote them; shut, they give nothing away. A hint never opens by itself. A solution opens by itself under the reader's answer: for a `choice`, as soon as an option is picked; for a `multi`, when Check is pressed (only a question with a right answer, a `[x]` option, has Check). With a right answer it takes the good tone when the answer is right and the warn tone with "Look again" when it is not; a `choice` with no right answer opens in a neutral tone on a pick, and a `multi` with none opens only on request. Other question kinds open it on request only. (The reference renderer's drawing, not something a file says.)
+- **A folded callout of no known kind** (section 6), such as a `group`, is drawn on plain paper with no tint and no picture of its own, and an untitled one is called "Note", as before; kinds the renderer knows keep their colour and picture. (The reference renderer's drawing, not something a file says.)
 - **An activity's card** counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started").
 
 ### Changes in v0.11.11: wording only
@@ -816,7 +817,7 @@ Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no f
 Nothing a file may say has changed: the marker stays `booklet: "0.11"`, and no file needs touching.
 
 - **A page that draws a data block** (section 6). The sentence "A page that draws a data block is not a reading-only page: it stays open, not folded into sections." is deleted. A reading page's sections fold on any page, whatever else the page holds: questions, data views, kept entries.
-- **A folded callout** (section 6). A callout folded with `-` shows the first words of its text under its title, as a folded section does. A `hint` or `solution` shows nothing but its name while it is shut, so a closed one gives nothing away. A folded `solution` right after a question is drawn inside that question, not as a row of its own, and opens by itself under the reader's answer to a question that has a right one. (All of this is the reference renderer's drawing, not something a file says.)
+- **A folded callout** (section 6). A callout folded with `-` shows the first words of its text under its title, as a folded section does. A `hint` or `solution` shows nothing but its name while it is shut, so a closed one gives nothing away. (Both are the reference renderer's drawing, not something a file says.)
 
 ### Changes in v0.11.9: wording only
 
