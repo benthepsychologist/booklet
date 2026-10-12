@@ -69,9 +69,11 @@ function synthetic(){
     const built=await p.evaluate(()=>document.querySelectorAll('#main *').length);
     ok(built<1500,label+': only what is looked at is built ('+built+' elements on screen)');
     /* going down the tree and searching stay quick */
-    const card=p.locator('#main .wk-cards button.mode').first();
-    const down=await timed('down',async()=>{await card.click();await p.locator('.wk-crumbs').waitFor();await p.locator('#main .wk-cards button.mode').first().click();await p.locator('.wk-crumbs li').nth(2).waitFor();});
-    ok(down<1000*CI_FACTOR,label+': two levels down in '+down+' ms');
+    /* a press on a card, to the second frame after it, in the page's own clock (so the test's own waiting is not counted) */
+    const press=sel=>p.evaluate(s=>new Promise(res=>{const t0=performance.now();document.querySelector(s).click();
+      requestAnimationFrame(()=>requestAnimationFrame(()=>res(performance.now()-t0)));}),sel);
+    const down=Math.round((await press('#main .wk-cards button.mode'))+(await press('#main .wk-cards button.mode')));
+    ok(down<1000*CI_FACTOR,label+': two levels down in '+down+' ms (two presses, to the second frame)');
     const find=await timed('find',async()=>{await p.locator('.wk-q').fill('kobaris');await p.locator('.wk-results,.wk-none').first().waitFor({state:'attached'});});
     ok(find<2000*CI_FACTOR,label+': the first search, which reads every page once, in '+find+' ms');
     const again=await timed('again',async()=>{await p.locator('.wk-q').fill('bakomu');await p.waitForTimeout(0);});
