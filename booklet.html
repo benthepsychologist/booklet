@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-ntCcvH52+xH+YojsZdKV2T8iG+g9RlKllXhf61H7goI=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-aFou2FYjZd1ccWRrIg2rjtiACq7f7MapYzkkXpcL57E=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -380,6 +380,25 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .card-compact[open]{background:var(--c-soft);border-color:transparent}
   .card-compact[open]>summary{color:var(--ink)}
   .card-compact>.cd-body{padding:.1rem 1rem .8rem 2.5rem}
+  /* a folded callout with no kind of its own (a group) is plain paper with the neutral line, no tint */
+  .card-plain{background:var(--surface);border-color:var(--rule)}
+  /* a solution inside its question: in the question's row beside the pills, full width once open; opened by the answer in a tone */
+  .q-ctls{display:flex;flex-wrap:wrap;align-items:flex-start;gap:0 .5rem}
+  .q-ctls:empty{display:none}
+  .q-ctls>[open]{flex:1 1 100%}
+  .q-inline>.q-ctls{grid-column:1}
+  .q-inline>.q-ctls:has(>[open]){grid-column:1/-1}
+  .q-in{margin:.1rem 0 .4rem}
+  .card-sub.card-notile>.cd-body{padding-left:1rem}
+  /* shut, it is a small control as wide as its label, not a bar; open, the panel is full width */
+  .q-in:not([open]){width:fit-content;max-width:100%}
+  .q-in:not([open])>summary{padding-right:.4rem}
+  .sol-in.sol-good[open]{background:var(--tone-green);border-color:var(--tone-green-deep);--c-deep:var(--tone-green-deep)}
+  .sol-in.sol-warn[open]{background:var(--tone-amber);border-color:var(--tone-amber-deep);--c-deep:var(--tone-amber-deep)}
+  .sol-in.sol-good[open]>summary:hover{background:color-mix(in srgb,var(--tone-green-deep) 12%,transparent)}
+  .sol-in.sol-warn[open]>summary:hover{background:color-mix(in srgb,var(--tone-amber-deep) 12%,transparent)}
+  .sol-in.sol-good[open] .k,.sol-in.sol-good[open]>summary{color:var(--tone-green-deep)}
+  .sol-in.sol-warn[open] .k,.sol-in.sol-warn[open]>summary{color:var(--tone-amber-deep)}
   @media (max-width:520px){.cd-tile{width:3.4rem;height:3.4rem;font-size:1.55rem}.card-go,.card-fold>summary{gap:.7rem}.card-sub>.cd-body{padding-left:1rem}}
   .card-go .bkacts{margin-top:.3rem}
   .cd-foot{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin:1.75rem 0 0;padding-top:1.25rem;border-top:var(--bw) dashed var(--rule);font-family:var(--sans)}
@@ -434,11 +453,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .q-ownrow .field{flex:1;min-width:0}
   /* right or wrong, for a question whose options mark a correct one: the tone colours, and a mark and a word besides, so colour is never the only sign */
   .pill-btn.q-right,.pill-btn.q-right[aria-pressed="true"],.pill-btn.q-answer{background:var(--tone-green);border-color:var(--tone-green-deep);color:var(--tone-green-deep)}
-  .pill-btn.q-wrong,.pill-btn.q-wrong[aria-pressed="true"]{background:var(--tone-warm);border-color:var(--tone-warm-deep);color:var(--tone-warm-deep)}
+  .pill-btn.q-wrong,.pill-btn.q-wrong[aria-pressed="true"]{background:var(--tone-amber);border-color:var(--tone-amber-deep);color:var(--tone-amber-deep)}
   .pill-btn.q-answer{border-style:dashed}
   .q-mk{font-size:.82em;font-weight:700}
   .q-acts{display:flex;gap:.45rem;margin:-.4rem 0 .6rem} .q-acts:empty{display:none}
   .q-live{margin:0 0 1rem;min-height:1.2em} .q-live:empty{display:none}
+  /* a solution inside the question says the verdict in its own label; the line stays for screen readers only */
+  .q-live.q-live-sr{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
   .pills .pill-btn,.pill-x{min-height:44px;min-width:44px}
   /* short options sit beside their question when there is room */
   .q-inline{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1rem;align-items:center}
@@ -1314,7 +1335,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.11";
+const RENDERER_VERSION="0.11.12";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
@@ -1548,6 +1569,7 @@ const STRINGS_SRC={
       ownRemove: x=>`Remove “${x}”`,
       check: "Check",
       right: "Right",
+      lookAgain: "Look again",
       notQuite: "Not quite",
       theAnswer: "The answer",
       liveRight: "Right.",
@@ -1661,6 +1683,7 @@ const STRINGS_SRC={
       back: "Back to the overview",
       next: (n,t)=>`Next: ${n}. ${t}`,
       questionsN: n=>`${n} question${n===1?"":"s"}`,
+      readsN: n=>`${n} read${n===1?"":"s"}`,
       questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} answered`,
       rowsN: n=>`${n} row${n===1?"":"s"}`,
       noneYet: "None yet"
@@ -1848,6 +1871,7 @@ const STRINGS_SRC={
       ownRemove: x=>`Retirer « ${x} »`,
       check: "Vérifier",
       right: "Juste",
+      lookAgain: "Regardez de plus près",
       notQuite: "Pas tout à fait",
       theAnswer: "La réponse",
       liveRight: "Juste.",
@@ -1957,6 +1981,7 @@ const STRINGS_SRC={
       back: "Retour à l’aperçu",
       next: (n,t)=>`Suivante : ${n}. ${t}`,
       questionsN: n=>`${n} question${n>1?"s":""}`,
+      readsN: n=>`${n} texte${n>1?"s":""}`,
       questionsAnswered: (n,m)=>`${m} question${m>1?"s":""} · ${n} réponse${n>1?"s":""}`,
       rowsN: n=>`${n} ligne${n>1?"s":""}`,
       noneYet: "Aucune pour l’instant"
@@ -2144,6 +2169,7 @@ const STRINGS_SRC={
       ownRemove: x=>`Quitar “${x}”`,
       check: "Comprobar",
       right: "Correcto",
+      lookAgain: "Fíjate otra vez",
       notQuite: "No del todo",
       theAnswer: "La respuesta",
       liveRight: "Correcto.",
@@ -2253,6 +2279,7 @@ const STRINGS_SRC={
       back: "Volver a la vista general",
       next: (n,t)=>`Siguiente: ${n}. ${t}`,
       questionsN: n=>`${n} pregunta${n===1?"":"s"}`,
+      readsN: n=>`${n} lectura${n===1?"":"s"}`,
       questionsAnswered: (n,m)=>`${m} pregunta${m===1?"":"s"} · ${n} ${n===1?"respondida":"respondidas"}`,
       rowsN: n=>`${n} fila${n===1?"":"s"}`,
       noneYet: "Ninguna todavía"
@@ -2330,7 +2357,8 @@ const STRINGS_SRC={
       sub: "Un cuaderno de trabajo que vive en un solo archivo que conservás"
     },
     question: {
-      addOwn: "Agregá tu propia opción"
+      addOwn: "Agregá tu propia opción",
+      lookAgain: "Fijate otra vez"
     },
     query: {
       empty: "Todavía no guardaste nada acá."
@@ -4826,7 +4854,8 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
   const right=Array.isArray(b.answer)?b.answer:(b.answer?[b.answer]:[]);
   const graded=right.length>0,chosen=()=>picksOf(draft[K]);
   let checked=false;
-  const put=list=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();draw();};
+  let byReader=false;
+  const put=list=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();byReader=true;draw();};
   const toggle=n=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n]);};
   const addOwn=text=>{const t=String(text).trim();if(!t) return;
     const at=listed.findIndex(o=>sameWords(o,t));
@@ -4843,7 +4872,11 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
     return on?(isRight?"right":"wrong"):(isRight?"answer":null);};
   const MARK={right:["✓ ",Q.right],wrong:["✗ ",Q.notQuite],answer:["✓ ",Q.theAnswer]};
   const pills=el("div",{class:"pills"}),live=el("p",{class:"q-live hint","aria-live":"polite"}),acts=el("div",{class:"q-acts"});
-  const draw=()=>{pills.innerHTML="";acts.innerHTML="";live.textContent="";
+  const QC=qControls(b,draft,activityId),SP=QC&&QC.sol;
+  if(SP) live.classList.add("q-live-sr");
+  const draw=()=>{const ae=document.activeElement,at=ae&&ae.parentNode===pills?Array.from(pills.children).indexOf(ae):-1,
+      onCheck=!!ae&&ae.parentNode===acts;
+    pills.innerHTML="";acts.innerHTML="";live.textContent="";
     listed.forEach((o,idx)=>{const n=idx+1,mark=markOf(n);
       pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),
         onclick:()=>toggle(n)},o,mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
@@ -4854,16 +4887,24 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
     if(b.open) ownEarlier(activityId,K,listed,now).forEach(t=>pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":"false",
       onclick:()=>addOwn(t)},t)));
     if(graded){const c=chosen(),shown=multi?checked:typeof c[0]==="number";
-      if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;draw();}},Q.check));
+      if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
       if(shown){const missed=right.some(n=>!c.includes(n)),extra=c.some(x=>typeof x==="number"&&!right.includes(x)),
           bad=multi?(missed||extra):!right.includes(c[0]);
-        live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).join(", ")):Q.liveRight;}}};
+        live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).join(", ")):Q.liveRight;
+        if(SP) SP.set(bad?"warn":"good",byReader);}
+      else if(SP) SP.set(null);}
+    else if(SP) SP.set(!multi&&chosen().length?"neutral":null,byReader);
+    byReader=false;
+    /* the options were rebuilt: the keyboard focus goes back to the one it was on */
+    if(at>=0&&pills.children[at]&&pills.children[at].focus) pills.children[at].focus({preventScroll:true});
+    else if(onCheck&&acts.children[0]&&acts.children[0].focus) acts.children[0].focus({preventScroll:true});};
   draw();box.append(pills);
   if(b.open){const inp=el("input",{type:"text",class:"field q-own","aria-label":Q.addOwn,placeholder:Q.addOwn,autocomplete:"off"});
     const go=()=>{const t=inp.value;inp.value="";addOwn(t);inp.focus();};
     inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go();}});
     box.append(el("div",{class:"q-ownrow"},inp,el("button",{type:"button",class:"small",onclick:go},Q.addBtn)));}
   if(graded) box.append(acts,live);
+  if(QC) box.append(QC.node);
   return box;}
 function drawScale(b,draft,activityId){const box=el("div",{});const anchors=b.anchors||[];
   questionHead(box,b);
@@ -4914,8 +4955,12 @@ const DRAW_BLOCK={
   number:drawNumber,
   date:drawNumber};
 function renderBlock(b,draft,activityId){
+  /* a solution drawn inside its question leaves nothing in the list */
+  const S=solutionsOf(activityId);
+  if(S.s.has(b)) return el("span",{class:"sol-moved",hidden:true});
   const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId)
     :el("p",{class:"hint"},STRINGS[lang].ui.unknownBlock(b.type||"?",b.id||"?"));
+  if(S.q.has(b)&&b.type!=="choice"&&b.type!=="multi") node.append(qControls(b,draft,activityId).node);
   if(placeOf(b)!=="folded") return node;
   return b.type==="callout"?foldedCallout(b,draft,activityId):
     cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),open:blockFilled(b,draft),body:[node]});}
@@ -4929,10 +4974,13 @@ function hintKind(b){
 /* A callout folded with a minus sign, or a hint or solution folded under its question, as a fold card: its kind's
    picture, its title (a hint or a solution is called that, in the reader's language, not by the raw kind), and the
    first words of its text as the teaser. A hint or a solution has no teaser: a closed one gives nothing away. */
-function foldedCallout(b,draft,activityId){
-  const Rt=strings("reading"),C=strings("cards"),hs=hintKind(b);
-  const look=b.kind===""||hs?null:calloutLook(b.kind),named=tx(b.title,"");
-  const title=nonEmpty(named)?named:hs?C[hs]:look?Rt.kind[look.label]:foldName(b);
+function foldedCallout(b,draft,activityId,x){
+  const Rt=strings("reading"),C=strings("cards"),hs=hintKind(b);x=x||{};
+  /* a kind that means something keeps its colour and picture; any other (a group, no kind) is drawn on plain paper */
+  const look=b.kind===""||hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
+  /* an untitled callout is called by its kind's word; a kind the renderer does not know is called Note, as before, only drawn plain */
+  const word=look||(b.kind===""||hs?null:calloutLook(b.kind));
+  const title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
   const picture=emo?{emoji:emo}:look?{icon:icon(look.icon)}:hs?{icon:icon(hs==="hint"?"lightbulb":"circle-check")}:null;
@@ -4943,8 +4991,41 @@ function foldedCallout(b,draft,activityId){
   const body=parts.map(p=>p.n);
   if(b.unknown) body.unshift(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   /* a hint or a solution is a compact fold: one quiet line, a small icon, no tile, no teaser */
-  return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:""),hue:look?look.hue:"slate",title:emo?lead.title:title,picture,teaser,
-    size:hs?"compact":null,open:blockFilled(b,draft),body});}
+  return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:hs?"":" card-plain")+(!hs&&!look&&!picture?" card-notile":"")+(x.tone?" sol-"+x.tone:"")+(x.inQ?" q-in":"")+(x.sol?" sol-in":""),hue:look?look.hue:"slate",
+    title:emo?lead.title:title,picture,teaser,status:x.status,size:hs?"compact":null,open:!!x.open||blockFilled(b,draft),body});}
+/* Which folded hint and solution belong to which question of an activity: the callouts the parser made right after the question,
+   whose ids are the question's id and "-hint" or "-solution". Found from the blocks themselves (so it holds for a booklet kept by an
+   earlier visit), once per stored list of blocks: the list is replaced, never changed in place, when a booklet or module is loaded. */
+const SOLS=new WeakMap();
+function solutionsOf(addr){const a=activityOf(addr);
+  const key=a.pages||a.blocks;let r=key&&SOLS.get(key);if(r) return r;
+  r={q:new Map(),s:new Set()};const all=allBlocksOf(a),by=new Map();
+  all.forEach(x=>{if(x.type==="callout"&&x.kind===""&&placeOf(x)==="folded"&&!by.has(x.id)) by.set(x.id,x);});
+  all.forEach(q=>{if(!QUESTION_KINDS.has(q.type)||!q.id) return;
+    const hint=by.get(q.id+"-hint"),sol=by.get(q.id+"-solution");
+    if((hint&&!r.s.has(hint))||(sol&&!r.s.has(sol))){
+      const e={hint:hint&&!r.s.has(hint)?hint:null,sol:sol&&!r.s.has(sol)?sol:null};
+      r.q.set(q,e);if(e.hint) r.s.add(e.hint);if(e.sol) r.s.add(e.sol);}});
+  if(key) SOLS.set(key,r);return r;}
+/* the solutions a reader has shut after an answer opened them, for this visit only (never saved, like RM_STATE) */
+const SOL_SHUT=new Set();
+/* A solution inside its question: the compact fold, shut, giving nothing away. `set(tone)` is how the question tells it what the
+   reader has done: "good" (right), "warn" (not right, "Look again") or "neutral" (a choice with no right answer, once picked) opens
+   it in that tone, and only when the tone changes, so a reader who shut it is not argued with; null (the answer no longer carries
+   a verdict) takes the tone and label off and leaves it open or shut as the reader left it. */
+function solutionPart(sol,draft,activityId){const Q=strings("question"),key=(currentId||"")+"\n"+activityId+"\n"+sol.id;let last=null,open=false;
+  const make=t=>foldedCallout(sol,draft,activityId,{inQ:true,sol:true,tone:t,open,status:t==="warn"?Q.lookAgain:t==="good"?Q.right:""});
+  let cur=make(null);
+  const keep=n=>n.addEventListener("toggle",()=>{if(n!==cur) return;open=n.open;if(open) SOL_SHUT.delete(key);else if(last) SOL_SHUT.add(key);});keep(cur);
+  return {get node(){return cur;},
+    set(t,byReader){if(t===last||(!t&&!last)) return;last=t;
+      /* a verdict the reader's own pick or Check produced opens it; a redraw never reopens one the reader shut */
+      if(t){if(byReader||!SOL_SHUT.has(key)){open=true;SOL_SHUT.delete(key);}}
+      const next=make(t),old=cur;cur=next;keep(next);if(old.parentNode) old.replaceWith(next);}};}
+/* The hint and the solution of a question, as small controls in its own block (a hint first, as the author wrote them). */
+function qControls(q,draft,activityId){const e=solutionsOf(activityId).q.get(q);if(!e) return null;
+  const sol=e.sol?solutionPart(e.sol,draft,activityId):null;
+  return {node:el("div",{class:"q-ctls"},e.hint?foldedCallout(e.hint,draft,activityId,{inQ:true}):null,sol&&sol.node),sol};}
 /* An activity marked `upsert:"day"` (the file's `repeat daily`) keeps one entry per
    calendar day rather than one per Finalize: finalizing again on the same day
    replaces that day's entry instead of adding a second one. */
@@ -6369,11 +6450,18 @@ function activityProgress(a){
   const qs=repeats?[]:allBlocksOf(a).filter(b=>QUESTION_KINDS.has(b.type)),ans=peekAnswers(scopeOfAddr(a.id));
   const answered=qs.filter(b=>keysOf(b).some(k=>holdsSomething(ans[k]))).length;
   return {repeats,kept,total:qs.length,answered,tracked:repeats||qs.length>0,started:repeats?kept>0:answered>0};}
-/* the status line under a card's teaser */
-function activityStatus(a){const C=strings("cards"),p=activityProgress(a);
-  if(p.repeats) return p.kept?STRINGS[lang].ui.entriesN(p.kept):C.notStarted;
-  if(!p.total) return "";
-  return p.answered===0?C.notStarted:p.answered>=p.total?C.done:C.answeredOf(p.answered,p.total);}
+/* the folded callouts of an activity that are there to be read: not a hint or a solution, holding no question; the outer one only */
+function readsIn(a){let n=0;
+  const walk=l=>(Array.isArray(l)?l:[]).forEach(b=>{if(!b||typeof b!=="object") return;
+    if(b.type==="callout"&&placeOf(b)==="folded"&&!hintKind(b)&&!blocksAll([b]).some(isQuestion)) n++;
+    else walk(b.blocks);});
+  walk(activityBlocks(a));return n;}
+/* the status line under an activity's card: its folded reads, then its questions, then how far the reader is, joined by " · ";
+   a part with nothing in it is left out, so a plain activity keeps the old line */
+function activityStatus(a){const C=strings("cards"),p=activityProgress(a),reads=readsIn(a),qn=allBlocksOf(a).filter(isQuestion).length;
+  const state=p.repeats?(p.kept?STRINGS[lang].ui.entriesN(p.kept):C.notStarted):!p.total?"":p.answered===0?C.notStarted:p.answered>=p.total?C.done:C.answeredOf(p.answered,p.total);
+  const partial=!p.repeats&&p.total&&p.answered>0&&p.answered<p.total;
+  return [reads?C.readsN(reads):"",qn&&!partial?C.questionsN(qn):"",state].filter(nonEmpty).join(" · ");}
 function moduleStatus(acts){const C=strings("cards"),ps=acts.map(activityProgress).filter(p=>p.tracked);
   if(!ps.length) return "";
   const n=ps.filter(p=>p.started).length;return n?C.startedOf(n,ps.length):C.notStarted;}

@@ -51,7 +51,8 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     const hs=await hint.evaluate(d=>{const s=d.querySelector('summary'),r=s.getBoundingClientRect();return {open:d.open,h:Math.round(r.height),text:s.innerText.trim(),teaser:!!d.querySelector('.d'),tile:Math.round(d.querySelector('.cd-tile').getBoundingClientRect().height),vis:d.innerText.includes('SECRET')};});
     ok(!hs.open&&hs.text==='Hint'&&!hs.teaser&&!hs.vis,`${W}px: a closed hint is one line saying Hint, with no teaser and no answer (${JSON.stringify(hs)})`);
     ok(hs.h>=44&&hs.h<=60&&hs.tile<=32,`${W}px: it is compact: summary ${hs.h}px, icon ${hs.tile}px`);
-    ok(await p.locator('#main details.card-compact').count()===2&&!(await p.locator('#main').innerText()).includes('SOLUTION-SECRET'),`${W}px: both folds are compact and the solution's words are not on the page while it is shut`);
+    /* 0.11.12: the solution sits in its question, and opens (neutral, no right answer) once that question has been answered above */
+    ok(await p.locator('#main details.card-compact').count()===2&&(await p.locator('#main details.sol-in.sol-neutral[open]').count())===1&&(await p.locator('#main').innerText()).includes('SOLUTION-SECRET'),`${W}px: both folds are compact, and the solution of the answered question has opened in the neutral tone`);
     await hint.locator('summary').click();await wait(100);
     ok((await hint.innerText()).includes('HINT-SECRET-WORDS'),`${W}px: opening a hint shows it`);
 
