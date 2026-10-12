@@ -2,31 +2,31 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.11 format in SPEC.md.
+Lint a booklet file against the v0.12 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: "0.11"`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.12"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.11"`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: "0.12"`, one `lang:`), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
 title, queries and data blocks, and records that name an activity. Any file whose
-front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.11 (nothing before v1.0 is stable). A block id or a footnote
+front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.12 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
-        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.11") and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.12") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.11 file is written in one language, so it
+registry's CI line keeps working; a v0.12 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
@@ -35,7 +35,7 @@ import html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 BASE = pathlib.Path(__file__).resolve().parent
 
 # The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
-FORMAT_VERSION = "0.11"
+FORMAT_VERSION = "0.12"
 
 errors, warnings = [], []
 def err(f, m):  errors.append(f"{f}: {m}")
@@ -108,7 +108,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.11 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.12 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -120,13 +120,36 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end",), "activity": ("repeat", "daily", "hidden"), "row": ("end",), "text": ("long",),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
     "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
 }
 NUMBER_SETTINGS = ("min", "max", "step")
+# Booklet's icon set: the names in art/icons/ (Lucide 1.48). GENERATED: `node test/art-sprite.js --write booklet.html` rewrites
+# the list between the markers, and `--check` fails if it has drifted. An `icon:` setting or an `icon` role value outside it is reported.
+# icons:start
+ICON_NAMES = frozenset((
+    "activity", "anchor", "archive", "arrow-left", "arrow-right", "award", "badge-check", "bed", "book", "book-open",
+    "bookmark", "box", "brain", "briefcase", "bug", "calendar", "calendar-clock", "camera", "chart-column",
+    "chart-line", "chart-pie", "check", "chevron-down", "chevron-left", "chevron-right", "chevron-up", "circle",
+    "circle-alert", "circle-check", "circle-dashed", "circle-dot", "circle-help", "clipboard-list", "clock", "cloud",
+    "code", "coffee", "cog", "coins", "compass", "contrast", "database", "download", "droplet", "ear", "ellipsis",
+    "external-link", "eye", "feather", "fence", "file-text", "flag", "flame", "flask-conical", "folder",
+    "folder-open", "footprints", "gauge", "gavel", "gift", "git-compare", "glasses", "globe", "graduation-cap",
+    "hammer", "hand", "hand-heart", "handshake", "hash", "heart", "hourglass", "house", "image", "inbox", "info",
+    "key", "landmark", "layers", "layout-grid", "leaf", "life-buoy", "lightbulb", "link", "list", "list-checks",
+    "list-ordered", "list-tree", "lock", "mail", "map", "map-pin", "menu", "message-circle", "messages-square", "mic",
+    "microscope", "milestone", "minus", "moon", "mountain", "music", "notebook", "notebook-pen", "octagon-alert",
+    "package", "package-plus", "palette", "pause", "pen-line", "pencil", "phone", "piggy-bank", "play", "plus",
+    "puzzle", "quote", "refresh-cw", "repeat", "rocket", "rotate-ccw", "route", "ruler", "scale", "scissors",
+    "search", "send", "settings", "shapes", "shield", "ship-wheel", "shuffle", "signpost", "sliders-horizontal",
+    "smile", "sparkles", "sprout", "square-check", "star", "stethoscope", "sticky-note", "sun", "sunrise", "table",
+    "target", "telescope", "tent", "thumbs-up", "timer", "traffic-cone", "trees", "triangle-alert", "trophy",
+    "umbrella", "user", "users", "wallet", "waves", "wind", "wrench", "x", "zap",
+))
+# icons:end
 CALLOUT_FLAGS = {k: {s for s in v if not s.endswith(":")} for k, v in KIND_SETTINGS.items()}
 # the widget engines the renderer has
 ENGINES = ("svg-regions", "grid-select")
@@ -154,21 +177,21 @@ def callout_words(kind, s):
     return out
 
 
-# A query's twelve keys, the six views, and which keys each view draws. A new key or view needs two
+# A query's fourteen keys, the six views, and which keys each view draws. A new key or view needs two
 # real pages that need it (SPEC.md, design rules for views). `from`, `as` and `empty` apply to every view.
-QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone")
+QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon")
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 VIEW_DRAWS = {
-    "cards": ("fields", "limit"),
-    "table": ("fields", "group", "limit", "badge", "tone"),
-    "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent"),
-    "tiles": ("label", "value", "note", "tone", "group", "limit"),
+    "cards": ("fields", "limit", "link", "icon"),
+    "table": ("fields", "group", "limit", "badge", "tone", "link", "icon"),
+    "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon"),
+    "tiles": ("label", "value", "note", "tone", "group", "limit", "link", "icon"),
     "bars": ("label", "value", "tone", "limit"),
     "line": ("label", "value", "fields", "limit"),
 }
 QUERY_EVERY_VIEW = ("from", "as", "empty")
 # the settings that name a field of the rows being drawn
-QUERY_FIELD_KEYS = ("group", "parent", "label", "value", "note", "badge", "tone")
+QUERY_FIELD_KEYS = ("group", "parent", "label", "value", "note", "badge", "tone", "link", "icon")
 
 
 def _flat(v):
@@ -263,6 +286,14 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             for name in [x.strip() for x in s["fields"].split(",") if x.strip()]:
                 if name not in names:
                     warn(f, f"line {n}: the query's `fields: {name}` names a field the rows never carry")
+        # an `icon` role value is a name from Booklet's icon set (section 6); one that is not is not drawn
+        if src_data is not None and "icon" in drawn:
+            ikey = s.get("icon", "icon")
+            bad = sorted({str(r.get(ikey)).strip() for r in src_rows
+                          if str(r.get(ikey, "")).strip() and str(r.get(ikey)).strip() not in ICON_NAMES})
+            if bad:
+                shown = ", ".join(repr(x) for x in bad[:5]) + (f" and {len(bad) - 5} more" if len(bad) > 5 else "")
+                warn(f, f"line {n}: the rows' `{ikey}` holds {shown}, which {'is' if len(bad) == 1 else 'are'} not in Booklet's icon set (art/icons/), so no picture is drawn for {'it' if len(bad) == 1 else 'them'}")
         # nesting reads the field `id`, and a nested list is not grouped
         if src_data is not None and "parent" in s and "parent" not in ignored and "id" not in names:
             warn(f, f"line {n}: the query's `parent: {s['parent']}` needs rows with an `id` field, and these carry none")
@@ -311,6 +342,7 @@ TH_BASES = ("paper", "daylight", "night", "contrast")
 TH_COLOURS = ("paper", "ink", "accent", "good", "warn", "bad")
 TH_FONTS = ("default", "serif", "sans", "mono", "readable")
 TH_DENSITIES = ("compact", "comfortable", "roomy")
+TH_STYLES = ("teaching", "briefing")
 TH_HEX = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})")
 TH_BASE = {
     "paper": {
@@ -561,7 +593,7 @@ def check_theme(f, n, code, in_module, have_theme):
         key, val = m.group(1).lower(), m.group(2).strip()
         if len(val) >= 2 and ((val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")):
             val = val[1:-1]
-        lists = {"base": TH_BASES, "font": TH_FONTS, "density": TH_DENSITIES}
+        lists = {"base": TH_BASES, "font": TH_FONTS, "density": TH_DENSITIES, "style": TH_STYLES}
         if key in lists:
             if val in lists[key]:
                 spec[key] = val
@@ -573,7 +605,7 @@ def check_theme(f, n, code, in_module, have_theme):
             else:
                 err(f, f"line {at}: the theme's `{key}: {val}` must be a hex colour, #rgb or #rrggbb (no names, no rgb(), no CSS)")
         else:
-            err(f, f"line {at}: a theme has no setting {key!r} (it takes base, paper, ink, accent, good, warn, bad, font, density)")
+            err(f, f"line {at}: a theme has no setting {key!r} (it takes base, paper, ink, accent, good, warn, bad, font, density, style)")
     for key, pair, ratio in theme_derive(spec)["dropped"]:
         warn(f, f"line {n}: the theme's `{key}` leaves {pair} at {ratio}:1, under 4.5 to 1, so the renderer will use the base theme's {key} instead")
 
@@ -656,6 +688,12 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: a {kind} line takes no `{key}:` setting ({said})")
         elif key in NUMBER_SETTINGS and not re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", val.strip()):
             err(f, f"line {n}: `{key}:{val}` must be a number")
+        elif key == "icon" and "end" in w["flags"]:
+            err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
+        elif key == "icon" and val not in ICON_NAMES:
+            err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so the card would show its number")
+        elif key == "parent" and not ID_PATTERN.match(val):
+            err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
     for flag in sorted(w["flags"]):
         if flag not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
@@ -687,10 +725,10 @@ def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
 
 
 def check_format(f, text, fm):
-    """Lint a v0.11 booklet. Every problem names its line."""
+    """Lint a v0.12 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.11 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.12 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:
@@ -714,6 +752,7 @@ def check_format(f, text, fm):
     # (blocks and menus outside every fence), which every module may also use.
     ids, block_ids, embeds, entry_refs = {}, {}, [], []
     acts = {}                # scope -> {activity id: line}
+    parents = {}             # scope -> [(activity id, its parent: setting, line)]
     mod_ids = {}             # module ids (and a bare activity's own id, which is a module of its own) -> line
     note_defs = {}           # scope -> {footnote id: line}
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
@@ -917,6 +956,8 @@ def check_format(f, text, fm):
                     cur_act = w["id"] or None
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
+                        if w["set"].get("parent") is not None:
+                            parents.setdefault(open_mod, []).append((w["id"], w["set"]["parent"], n))
                         act_info.setdefault(open_mod, {})[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
                         if not open_mod:
                             # an activity outside every fence is a module of its own, and its id is that module's
@@ -1039,6 +1080,24 @@ def check_format(f, text, fm):
             other = ids.get(scope, {})
             if bid in other:
                 err(f, f"line {n}: the data block id ^{bid} is also the id on line {other[bid]}, so a query could not tell them apart")
+    for scope, rows in parents.items():
+        # `parent:` means what it means on a list row (SPEC.md section 3): a parent outside the module puts the activity at the
+        # top, and an activity that is its own ancestor is drawn once, at the top. The first of two activities with one id is used.
+        known = acts.get(scope, {})
+        link = {}
+        for aid, par, n in rows:
+            link.setdefault(aid, (par, n))
+        for aid, (par, n) in link.items():
+            if par not in known:
+                warn(f, f"line {n}: `parent:{par}` is not an activity of " + (f"the module {scope!r}" if scope else "this file's activities outside every module")
+                        + f", so {aid!r} sits at the top")
+                continue
+            seen, cur = [aid], par
+            while cur in link and cur not in seen:
+                seen.append(cur)
+                cur = link[cur][0]
+            if cur == aid:
+                warn(f, f"line {n}: `parent:{par}` loops back to {aid!r} (it is its own ancestor), so it is drawn once, at the top")
     for n, ref, scope in entry_refs:
         if ref not in acts.get(scope, {}):
             warn(f, f"line {n}: records for {ref!r}, which no activity line names")

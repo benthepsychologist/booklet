@@ -22,7 +22,7 @@ const flat=n=>textOf(n).replace(/\s+/g," ").trim();
 const findAll=(n,pred,out=[])=>{if(n&&typeof n==="object"){if(pred(n)) out.push(n);(n.children||[]).forEach(k=>findAll(k,pred,out));}return out;};
 const hasClass=(n,c)=>!!(n&&n.attrs&&typeof n.attrs.class==="string"&&n.attrs.class.split(/\s+/).includes(c));
 const byClass=(c,root)=>findAll(root||global.document.getElementById("main"),n=>hasClass(n,c));
-const FM='---\nbooklet: "0.11"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
 const FILE=FM+`> [!module|m] M\n\n> [!activity|a] A\n\nA plain one.[^ref] A quoted one.[^q] A bare quote.[^bare] A missing one.[^gone]\n\n`
  +`[^ref]: Northfield Health reminder trial, internal report, 2024.\n\n`
  +`[^q]: *The Harbour Tide Atlas*, 2nd edition (2019), p. 12: "The tide rises and falls twice in each lunar day." Verified 2026-09-20.\n\n`

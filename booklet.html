@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-SokpMpHp4RdyeHSqPa8QLnxpXprsmrinlNRt4EWLKro=' 'sha256-aFou2FYjZd1ccWRrIg2rjtiACq7f7MapYzkkXpcL57E=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-1+YcnWnDvm5Exp/6lsIry/QkAlwseJPe+H7xAyCyd5Y=' 'sha256-CSrv2Z/OuF814R0Vr62kUw4xYY2JiYxxwBL244XWn1Y=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -340,6 +340,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .cd-tile{flex:none;display:flex;align-items:center;justify-content:center;width:4.25rem;height:4.25rem;border-radius:var(--r-md);background:color-mix(in srgb,var(--c-solid) calc(var(--tile-solid)*100%),var(--c-soft));color:color-mix(in srgb,var(--on-solid) calc(var(--tile-solid)*100%),var(--c-vivid));font-size:1.9rem;line-height:1;overflow:hidden}
   .cd-tile.cd-n{font-family:var(--serif);font-weight:700;font-size:1.7rem}
   .cd-tile .ic{width:60%;height:60%}
+  .cd-tile .ic.sp{width:84%;height:84%}
   .cd-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:.25rem}
   .card-go .top,.card-fold .top{display:flex;align-items:baseline;gap:.4rem;min-width:0}
   .cd-num{font-family:var(--serif);font-weight:700;font-size:1.2rem;color:var(--c-deep)}
@@ -406,6 +407,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .cd-btn:hover{border-color:var(--accent);color:var(--accent)}
   .cd-btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
   .cd-btn .ic{width:1.1rem;height:1.1rem}
+  .mhead{display:flex;gap:1.5rem;align-items:flex-start;justify-content:space-between}
+  .mhead-text{min-width:0;flex:1 1 auto}
+  .mhead-lede{font-size:1.2rem;line-height:1.6;color:var(--muted);margin:.7rem 0 .6rem}
+  .mhead-lede>p,.mhead-more>p{margin:0 0 .6rem}
+  .mhead-more{color:var(--muted)}
+  .mhead-pic{flex:none;width:8rem;height:8rem;display:flex;align-items:center;justify-content:center;color:var(--accent)}
+  .mhead-pic .ic,.mhead-pic .ic.sp{width:100%;height:100%}
+  @media (max-width:520px){.mhead{flex-direction:column-reverse;gap:.5rem}.mhead-pic{width:5rem;height:5rem}}
   .cd-meta{margin:.2rem 0 0;font-family:var(--sans);font-size:.95rem;color:var(--muted)}
   @media (prefers-reduced-motion:reduce){.card-go,.cd-chev{transition:none}button.card-go:hover{transform:none}}
   .notice{border:var(--bw) dashed var(--rule);border-radius:12px;padding:.8rem 1rem;font-size:.9rem;color:var(--muted);margin:0 0 1.5rem;font-family:var(--sans)}
@@ -814,6 +823,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .dv-tile{position:relative;background:var(--surface);border:var(--bw) solid var(--rule);border-radius:14px;padding:calc(var(--v-pad)*1.5) 1rem;display:flex;flex-direction:column;gap:.15rem;min-width:0;overflow-wrap:anywhere}
   .dv-v{font-size:var(--tile-v);line-height:1.1;font-weight:700;color:var(--ink)}
   .dv-l{font-weight:600;color:var(--reader)}
+  /* an `icon` role's picture, and a `link` role's label that leads: on a tile the whole tile is the target */
+  .dv-i{display:inline-flex;align-items:center;flex:none;color:var(--accent)}
+  .dv-i .ic{width:1.15em;height:1.15em}
+  .dv-wrap td .dv-i{margin-right:.45rem;vertical-align:-.15em}
+  .dv-tile .cd-tile{width:2.2rem;height:2.2rem;margin-bottom:.35rem}
+  .dv-l a,.dv-t a,.dv-wrap td a{color:inherit}
+  .dv-tile.dv-lead:hover{border-color:var(--accent)}
+  .dv-tile.dv-lead .dv-l a::after{content:"";position:absolute;inset:0;border-radius:inherit}
+  .dv-tile.dv-lead:focus-within{box-shadow:0 0 0 2px var(--accent)}
   .dv-n{color:var(--muted);font-size:.88em}
   .dv-tile.tone-good{border-color:var(--tone-green-deep);background:var(--tone-green)}
   .dv-tile.tone-warn{border-color:var(--tone-amber-deep);background:var(--tone-amber)}
@@ -999,10 +1017,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
      with white art) or with the soft wash (0, with the vivid line) and `picture`, whether a card asks for a spot drawing or
      a line icon. (A tile's fill is a number, not the name of a hue variable: a name would be read once, on <html>, and every
      card would be the same hue. A number is read on each card, where its own hue is.)
-     data-style on <html> says which is on. Nothing a file says reaches this yet: every booklet draws as teaching. */
+     data-style on <html> says which is on. The host chooses a default with bookletStyle.set (docs/hosting.md); a booklet's own
+     `style:` (the theme block) wins over it while that booklet is open, whatever colour theme the reader has picked. */
   var STYLES={teaching:{"--r-lg":"22px","--r-md":"14px","--r-sm":"8px","--num-w":"2.25rem","--tile-solid":"0",picture:"spot"},
     briefing:{"--r-lg":"10px","--r-md":"6px","--r-sm":"4px","--num-w":"1.75rem","--tile-solid":"1",picture:"icon"}};
-  var STYLE_NAMES=["teaching","briefing"],styleOn="teaching",styleSet=[];
+  var STYLE_NAMES=["teaching","briefing"],styleOn="teaching",hostStyle="teaching",styleSet=[];
   var TOKEN=/^--(paper|paper-deep|ink|reader|field|surface|rule|muted|placeholder|on-ink|on-ink-soft|bar-bg|mark|accent|accent-soft|rg-on|on-accent|warn|warn-soft|tone-(warm|green|amber|slate|teal)(-deep)?|h-(sky|rose|sage|sun|lilac|petrol|slate)(-vivid|-solid|-deep)?|on-solid|spark)$/;
   function put(n,v){try{de.style.setProperty(n,v);applied.push(n);}catch(e){/* a value the browser will not take is skipped */}}
   function clearCustom(){applied.forEach(function(n){try{de.style.removeProperty(n);}catch(e){/* nothing to remove */}});applied=[];de.removeAttribute("data-theme-custom");}
@@ -1016,6 +1035,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   function stored(){var v=null;try{v=localStorage.getItem(KEY);}catch(e){/* storage may be blocked */}if(v==null)v=mem;return NAMES.indexOf(v)>=0?v:"auto";}
   function resolve(c){return c!=="auto"?c:(mq("(prefers-contrast: more)")||mq("(forced-colors: active)"))?"contrast":mq("(prefers-color-scheme: dark)")?"night":"paper";}
   function apply(fire){
+    showStyle(fire);
     var c=stored(),has=!!custom,use=c==="auto"&&has,r=use?custom.base:resolve(c),was=de.getAttribute("data-theme"),wasC=de.hasAttribute("data-theme-custom");
     de.setAttribute("data-theme",r);de.setAttribute("data-theme-choice",c);
     clearCustom();if(has) setCustom(use);
@@ -1033,7 +1053,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     for(var k in tab) if(k.indexOf("--")===0){try{de.style.setProperty(k,tab[k]);styleSet.push(k);}catch(e){/* a value the browser will not take is skipped */}}
     de.setAttribute("data-style",n);
     if(fire){try{window.dispatchEvent(new Event("booklet-style"));}catch(e){/* an old browser without Event */}}}
-  window.bookletStyle={names:STYLE_NAMES,get:function(){return styleOn;},picture:function(){return STYLES[styleOn].picture;},set:function(n){setStyle(n,true);}};
+  /* the style in force: the open booklet's own, else the host's choice */
+  function showStyle(fire){var n=custom&&STYLE_NAMES.indexOf(custom.style)>=0?custom.style:hostStyle;if(n!==styleOn) setStyle(n,fire);}
+  window.bookletStyle={names:STYLE_NAMES,get:function(){return styleOn;},picture:function(){return STYLES[styleOn].picture;},
+    set:function(n){if(STYLE_NAMES.indexOf(n)<0) return;hostStyle=n;showStyle(true);}};
   setStyle("teaching",false);
   apply(false);
   ["(prefers-color-scheme: dark)","(prefers-contrast: more)","(forced-colors: active)"].forEach(function(q){try{
@@ -1335,11 +1358,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.11.12";
-/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.11"`, and a
+const RENDERER_VERSION="0.12.0";
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.12"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
-const FORMAT_VERSION="0.11";
+const FORMAT_VERSION="0.12";
 const LANG_NAMES={en:"English",es:"Español","es-AR":"Español (Argentina)",fr:"Français"};
 /* the interface languages with a button (the variants, es-AR, have none), in the order offered */
 const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
@@ -1367,9 +1390,10 @@ const TH_BASES=["paper","daylight",TH_NIGHT,"contrast"];
 const TH_COLOURS=["paper","ink","accent","good","warn","bad"];
 const TH_FONTS=["default","serif","sans","mono","readable"];
 const TH_DENSITIES=["compact","comfortable","roomy"];
+const TH_STYLES=["teaching","briefing"];
 const TH_HEX=/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const READING_BLOCKS=new Set(["markdown","callout","query","row","cell"]);
-const ROLE_NAMES=["label","value","note","badge","tone"];
+const ROLE_NAMES=["label","value","note","badge","tone","link","icon"];
 /* Below this width the menu starts as the rail and opens over the page rather
    than beside it (the stylesheet uses the same breakpoint). */
 const PAGES_NARROW="(max-width: 699px)";
@@ -1392,7 +1416,7 @@ const SCENERY_KINDS=new Set(["manifest","menu"]);
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
-const KIND_SETTINGS={module:["end"],activity:["repeat","daily","hidden"],row:["end"],text:["long"],
+const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:"],row:["end"],text:["long"],
   lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],
   choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
 /* the settings above that must be numbers */
@@ -1405,12 +1429,12 @@ const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
    the parser keeps a module's ids apart from it: no module id can be spelled like it. */
 const ADDR_SEP="/";
 const SHARED="*";
-/* A query's twelve keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
-const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone"];
+/* A query's fourteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
+const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
-const VIEW_DRAWS={cards:["fields","limit"],table:["fields","group","limit","badge","tone"],
-  list:["label","value","note","badge","tone","fields","group","limit","parent"],
-  tiles:["label","value","note","tone","group","limit"],bars:["label","value","tone","limit"],line:["label","value","fields","limit"]};
+const VIEW_DRAWS={cards:["fields","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
+  list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
+  tiles:["label","value","note","tone","group","limit","link","icon"],bars:["label","value","tone","limit"],line:["label","value","fields","limit"]};
 
 /* ======================= 2. INTERFACE STRINGS =======================
    every word the renderer itself says, in four languages, and strings(group). */
@@ -1647,6 +1671,8 @@ const STRINGS_SRC={
       settingUnknown: (w,kind,s)=>`${w}: a ${kind} line takes no “${s}”, so it was ignored`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
       dailyAlone: w=>`${w}: \`daily\` only follows \`repeat\`, so it was ignored`,
+      iconUnknown: (w,n)=>`${w}: “${n}” is not a name in Booklet's icon set, so the card shows its number`,
+      iconOnEnd: w=>`${w}: a module's end line takes no “icon:”, so it was ignored`,
       kindUnknown: (w,k)=>`${w}: this page does not know the kind “${k}”, so it is shown as a callout`,
       queryKeyUnknown: (w,key)=>`${w}: a query has no setting “${key}”, so it was ignored`,
       queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number, so it was ignored`,
@@ -1945,6 +1971,8 @@ const STRINGS_SRC={
       settingUnknown: (w,kind,s)=>`${w} : une ligne ${kind} n’accepte pas « ${s} » ; il a donc été ignoré`,
       numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
       dailyAlone: w=>`${w} : \`daily\` ne vient qu’après \`repeat\` ; il a donc été ignoré`,
+      iconUnknown: (w,n)=>`${w} : « ${n} » n’est pas un nom de l’ensemble d’icônes de Booklet ; la carte montre donc son numéro`, /* l10n: draft */
+      iconOnEnd: w=>`${w} : la ligne de fin d’un module n’accepte pas « icon: » ; il a donc été ignoré`, /* l10n: draft */
       kindUnknown: (w,k)=>`${w} : cette page ne connaît pas le type « ${k} » ; il est donc affiché comme un encadré`,
       queryKeyUnknown: (w,key)=>`${w} : une requête n’a pas de réglage « ${key} » ; il a donc été ignoré`,
       queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est pas un nombre entier positif ; il a donc été ignoré`,
@@ -2243,6 +2271,8 @@ const STRINGS_SRC={
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
       dailyAlone: w=>`${w}: \`daily\` solo va después de \`repeat\`, así que se ignoró`,
+      iconUnknown: (w,n)=>`${w}: “${n}” no es un nombre del conjunto de íconos de Booklet, así que la tarjeta muestra su número`, /* l10n: draft */
+      iconOnEnd: w=>`${w}: la línea de cierre de un módulo no admite “icon:”, así que se ignoró`, /* l10n: draft */
       kindUnknown: (w,k)=>`${w}: esta página no conoce el tipo “${k}”, así que se muestra como un recuadro`,
       queryKeyUnknown: (w,key)=>`${w}: una consulta no tiene el ajuste “${key}”, así que se ignoró`,
       queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo, así que se ignoró`,
@@ -2442,6 +2472,7 @@ const sv=(tag,attrs={},...kids)=>{const n=document.createElementNS(SVG_NS,tag);
    id that is looked up, never a file or an address, so a name that is not in the sprite, or is not a plain
    lowercase name, gives null and the caller draws its fallback. The picture is decoration: aria-hidden. */
 const ART_NAME=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const iconKnown=name=>typeof name==="string"&&ART_NAME.test(name)&&document.getElementById("bi-"+name)!==null;
 const icon=(name,opts={})=>{
   if(typeof name!=="string"||!ART_NAME.test(name)) return null;
   const has=id=>document.getElementById(id)!==null;
@@ -2844,7 +2875,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.11 booklet is Markdown that reads as a document anywhere: front
+   A v0.12 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -2863,7 +2894,7 @@ const calloutLine=l=>CALLOUT_LINE.test(l)||ROW_END.test(l);
 const NOTICE_KEYS=["license","copyright","source","version"];
 /* the bare-word flags of each kind, read from the table of settings */
 const CALLOUT_FLAGS=Object.fromEntries(Object.entries(KIND_SETTINGS).map(([k,v])=>[k,v.filter(s=>!s.endsWith(":"))]));
-/* A file is read when its front matter says `booklet: "0.11"` (quoted or not, as text); another 0.x marker opens with a notice. */
+/* A file is read when its front matter says `booklet: "0.12"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -2882,7 +2913,7 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
   if(/^".*"$/.test(v)){try{v=JSON.parse(v);}catch(e){v=v.slice(1,-1);}}
   else if(/^'.*'$/.test(v)) v=v.slice(1,-1).replace(/''/g,"'");
   return [m[1],v];}
-/* The marker a file's front matter carries, quotes taken off: "0.11", "0.9", "1.0", "x", or "" when there is no
+/* The marker a file's front matter carries, quotes taken off: "0.12", "0.9", "1.0", "x", or "" when there is no
    `booklet:` line. A file is a booklet for this page when its marker is a 0.x version (two whole numbers, major
    0): its own version is read as it is; any other 0.x version, earlier or later, is opened by this page's rules
    with a notice and no promise (SPEC.md section 12). Anything else is not a booklet for this page. */
@@ -2904,7 +2935,10 @@ function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}};
 /* What a line's settings get wrong by KIND_SETTINGS: the messages, and the settings are taken off the line so
    that they are ignored. A kind outside the table is an unknown kind, said separately (unknownKind). */
 function checkSettings(it,where,P){const allowed=KIND_SETTINGS[it.kind],out=[];if(!allowed) return out;
+  /* a module's end line closes it and names nothing: its picture is written on the opening line */
+  if(it.kind==="module"&&it.flags.has("end")&&it.set.icon!==undefined){out.push(P.iconOnEnd(where));delete it.set.icon;}
   for(const [key,val] of Object.entries(it.set)){
+    if(key==="icon"&&allowed.includes("icon:")&&!iconKnown(val)){out.push(P.iconUnknown(where,val));delete it.set[key];continue;}
     if(!allowed.includes(key+":")){out.push(P.settingUnknown(where,it.kind,key+":"));delete it.set[key];continue;}
     if(NUMBER_SETTINGS.includes(key)&&!(String(val).trim()!==""&&Number.isFinite(Number(val)))){out.push(P.numberBad(where,key,val));delete it.set[key];}}
   for(const f of [...it.flags]) if(!allowed.includes(f)){out.push(P.settingUnknown(where,it.kind,f));it.flags.delete(f);}
@@ -3140,7 +3174,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
   const scopeMod=()=>section==="content"?mod:section==="data"?dataMod:null;
   /* a block id's scope: that module, else the data section */
   const blockScope=()=>{const m=scopeMod();return m?m.id:SHARED;};
-  const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__footnotes:[],__line:line};
+  const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__open:[],__footnotes:[],__line:line};
     modules.push(m);return m;};
   /* A file with no activity line (and no module fence) is one activity named by
      its front matter title (SPEC.md section 3): its prose and questions all
@@ -3150,6 +3184,10 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     claim(id,"line "+line,mod?mod.id:"");
     const a={id:addrOf(mod?mod.id:"",id),kind:w.flags.has("repeat")||w.flags.has("daily")?"entry":"board",title:title||undefined,pages:[{id:"p1",blocks:[]}]};
     if(w.flags.has("daily")) a.upsert="day";if(w.flags.has("hidden")) a.home=false;
+    /* `icon:` is a name from the sprite (checkSettings has said so if not); `parent:` is another activity's id in this module, kept
+       as the address it will have (activityTree places it) */
+    if(w.set&&w.set.icon) a.icon=w.set.icon;
+    if(w.set&&w.set.parent) a.parent=addrOf(mod?mod.id:"",w.set.parent);
     /* an activity outside any module fence is a module of its own */
     if(!mod) claimModule(id,"line "+line);
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
@@ -3216,7 +3254,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     const strip=stripFootnoteDefs(it.text);
     if(!act&&!mod&&implicit&&(strip.text||strip.defs.length)) page();
     const owner=mod||(act&&moduleHolding(modules,act));if(owner) owner.__footnotes.push(...strip.defs);
-    if(!act){if(mod&&strip.text) mod.__intro.push(strip.text);return;}
+    if(!act){if(mod&&strip.text){mod.__intro.push(strip.text);mod.__open.push(strip.text);}return;}
     if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;};
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
@@ -3258,7 +3296,8 @@ function readBlocks(items,fm,problems){const P=strings("problem");
         else if(it.id&&it.id!==mod.id) refuse(P.moduleEndMismatch(where,it.id,mod.id));
         mod=null;act=null;return;}
       if(mod) refuse(P.moduleNested(where,it.id,mod.id));
-      claimModule(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;return;}
+      claimModule(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;
+      if(it.set.icon) mod.icon=it.set.icon;return;}
     if(k==="activity"){newActivity(it,it.title,it.line);lastQ=null;return;}
     if(QUESTION_KINDS.has(k)){
       if(!it.id){problems.push(P.questionNoId(where,k));return;}
@@ -3355,12 +3394,26 @@ function notesOut(defs,tag){const sources=[],citations=[];
     let key;if(source){key=tag+(idx+1);sources.push({key,...source});}
     citations.push({id:d.id,source:key,...citation});});
   return {sources,citations};}
-function moduleOut(m){const {__intro,__line,__bare,__footnotes,activities,...rest}=m;
+/* Where activities sit under one another (SPEC.md section 3, `parent:`): the rule a list row has, because it is nestRows. An activity whose
+   parent is not among them sits at the top; one that is its own ancestor is drawn once, at the top; of two with one id, the first is the
+   parent. `acts` carry the address of their `parent`. Returns the activities depth-first (a file written parent first; children in the
+   file's order) and each one's effective parent address ("" at the top) and depth. */
+function activityTree(acts){
+  const rows=acts.map((a,i)=>({id:a.id,parent:a.parent||"",i})),t=nestRows(rows,"parent");
+  const parent=acts.map(()=>""),depth=acts.map(()=>0);
+  t.rows.forEach(r=>{const p=t.up.get(r);parent[r.i]=p?p.id:"";depth[r.i]=p?depth[p.i]+1:0;});
+  return {order:t.rows.map(r=>r.i),parent,depth};}
+function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities,...rest}=m;
   const acts=activities.map(activityOut);
+  /* a module whose activities sit under one another is kept depth-first, each with its effective parent and depth (and neither at the top) */
+  if(acts.some(a=>a.parent)){const t=activityTree(acts),was=acts.slice();
+    acts.splice(0,acts.length,...t.order.map(i=>was[i]));
+    t.order.forEach((i,k)=>{const a=acts[k];if(t.parent[i]) a.parent=t.parent[i];else delete a.parent;if(t.depth[i]) a.depth=t.depth[i];});}
+  const opening=__open.join("\n\n").trim();
   const blurb=firstPara(__intro.join("\n\n"));
   /* every footnote this module's own text defined */
   const {sources,citations}=notesOut(__footnotes,"s");
-  const o={...rest,...(blurb?{blurb}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
+  const o={...rest,...(blurb?{blurb}:{}),...(opening?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
   return o;}
 function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes},fm,L,source,problems){
@@ -3423,7 +3476,7 @@ function readTheme(code){const spec={},bad=[],dropped=[];
   for(const raw of String(code||"").split("\n")){const ln=raw.trim();if(!ln) continue;
     const kv=kvLine(ln);if(!kv){bad.push(ln);continue;}
     const k=kv[0].toLowerCase(),v=kv[1];
-    const list=k==="base"?TH_BASES:k==="font"?TH_FONTS:k==="density"?TH_DENSITIES:null;
+    const list=k==="base"?TH_BASES:k==="font"?TH_FONTS:k==="density"?TH_DENSITIES:k==="style"?TH_STYLES:null;
     if(list){if(typeof v==="string"&&list.includes(v)) spec[k]=v;else dropped.push(k);}
     else if(TH_COLOURS.includes(k)){if(typeof v==="string"&&TH_HEX.test(v)) spec[k]=v.toLowerCase();else dropped.push(k);}
     else bad.push(ln);}
@@ -3486,18 +3539,20 @@ function thOwes(tok,o,use){if(!(("--"+tok) in o)) return [];
 function themeDerive(spec,baseTable){
   spec=spec||{};const base=TH_BASES.includes(spec.base)?spec.base:"paper",B=baseTable(base)||{};
   const font=TH_FONTS.includes(spec.font)?spec.font:"default",density=TH_DENSITIES.includes(spec.density)?spec.density:"comfortable";
+  /* the booklet's look (SPEC.md section 7): "" when it names none, and the host's default holds */
+  const style=TH_STYLES.includes(spec.style)?spec.style:"";
   const use={},dropped=[];
   TH_COLOURS.forEach(k=>{if(typeof spec[k]==="string"&&TH_HEX.test(spec[k])) use[k]=spec[k];});
   for(let round=0;round<8;round++){
     const o=thBuild(B,use),val=t=>thRgb(o["--"+t]||B["--"+t]),fails=[];
     for(const [f,b,min] of TH_PAIRS){const r=thRatio(val(f),val(b));if(r<(min||4.5)) fails.push({f,b,r});}
-    if(!fails.length) return {base,tokens:o,font,density,dropped};
+    if(!fails.length) return {base,tokens:o,font,density,style,dropped};
     const hit=new Map();
     for(const x of fails){const d=[...thOwes(x.f,o,use),...thOwes(x.b,o,use)],pick=d.filter(k=>k!=="paper"&&k!=="ink");
       (pick.length?pick:d).forEach(k=>{if(!hit.has(k)) hit.set(k,x);});}
     if(!hit.size) break;
     hit.forEach((x,k)=>{delete use[k];dropped.push({key:k,pair:x.f+" on "+x.b,ratio:Math.round(x.r*100)/100});});}
-  return {base,tokens:{},font,density,dropped};}
+  return {base,tokens:{},font,density,style,dropped};}
 /* a base theme's token table, read from the page's own stylesheet */
 function themeBaseTable(name){const out={};
   try{for(const sh of document.styleSheets){for(const r of sh.cssRules){
@@ -4792,11 +4847,12 @@ function drawRow(b,draft,activityId){const box=el("div",{class:"pblock row"});
 /* read-only: what was kept elsewhere in this module; owns no answer key */
 function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"});
   const v={...(b.view||{}),fields:b.fields},key=activityId+":"+b.id;
-  if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,key}));return box;}
+  const scope=scopeOfAddr(activityId);
+  if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,key,scope}));return box;}
   const same=holderOf(b.from)&&scopeOfAddr(b.from)===scopeOfAddr(activityId);
   const q=b.field?blocksOf(b.from).find(x=>x.id===b.field):null;
   const none={kind:"entries",rows:[],keys:new Set(),own:[],first:"date",lab:k=>k,qs:[]};
-  box.append(...viewNodes(same&&(!b.field||q)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,key}));
+  box.append(...viewNodes(same&&(!b.field||q)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,key,scope}));
   return box;}
 /* A widget block names a widget; the widget names an engine. The renderer
    knows engines and nothing else, so an activity can carry a body map it
@@ -5094,14 +5150,14 @@ function queryEntries(from,activityId){
 /* A kept entry as a card: a `.when` line holding `whenKids` (none when null),
    then what each question in `qs` recorded, as a `dl`. Returns the card and how
    many questions had an answer to show. */
-function entryBody(e,qs,whenKids){
+function entryBody(e,qs,whenKids,extra){extra=extra||{};
   const dl=el("dl",{});let rows=0;
   for(const q of qs){const r=fieldSummary(q,e);if(r){rows++;dl.append(el("dt",{},r[0]),el("dd",{},r[1]));}}
-  return {card:cardNode({mode:"item",cls:"entry",kids:[whenKids?el("div",{class:"when"},...whenKids):null,dl]}),rows};}
-function queryCard(e,from,fields){
+  return {card:cardNode({mode:"item",cls:"entry",picture:extra.picture||null,kids:[whenKids?el("div",{class:"when"},...(extra.lead?extra.lead(whenKids):whenKids)):null,dl]}),rows};}
+function queryCard(e,from,fields,extra){
   /* `fields` names the questions, and their order is the order shown */
   const qs=fields?fields.map(id=>blocksOf(from).find(q=>q.id===id)).filter(Boolean):blocksOf(from);
-  const {card,rows}=entryBody(e,qs,e.ts?[fmtWhen(e.ts)]:null);
+  const {card,rows}=entryBody(e,qs,e.ts?[fmtWhen(e.ts)]:null,extra);
   return rows?card:null;}
 /* ---- query views: table, list and tiles over a data block's rows, or
    over kept entries. Nothing is computed here: no filter, no expression, no
@@ -5171,6 +5227,19 @@ const pill=(text,tone)=>el("span",{class:"pill"+(tone?" tone-"+tone:"")},text);
 const partsOf=x=>(Array.isArray(x)?x:[x]).map(cellText).filter(t=>t!=="");
 const rolePart=(r,k)=>k?cellText(r[k]):"";
 const toneWords=t=>t?el("span",{class:"dv-sr"},strings("dv").tone[t]):null;
+/* A `link` role's value as the words that lead a row: a heading (`#Heading`) or a web address leads there, as the same target does in
+   prose (linkHooks and mkLink are the prose path); anything else, a link to a module included until item E gives it somewhere to lead, is
+   plain text. The value is a target, never Markdown. */
+function leadNodes(set,r,roles,kids){
+  const t=roles.link?cellText(r[roles.link]).trim():"";
+  if(!t) return kids;
+  if(t[0]==="#"&&t[1]!=="^"){const H=linkHooks(set.scope||""),text=textOf(kids);
+    let n=H.link(t,text);if(typeof n==="string") n=H.anchor(t.slice(1).trim(),kids);
+    return n&&typeof n==="object"?[n]:kids;}
+  const {scheme}=cleanScheme(t);
+  return scheme==="http"||scheme==="https"?[mkLink(kids,t,undefined,{opts:{},refs:{}})]:kids;}
+/* an `icon` role's value drawn as the sprite's picture of that name; a value that is not a name in the sprite draws nothing */
+const iconOf=(r,roles)=>{const n=roles.icon?cellText(r[roles.icon]).trim():"";return n?icon(n):null;};
 function viewTable(set,groups,roles,cols,ctl){const dvText=strings("dv");
   const numeric=k=>set.rows.some(r=>typeof r[k]==="number")&&set.rows.every(r=>r[k]==null||typeof r[k]==="number");
   const table=el("table",{class:"dv-table"});
@@ -5182,9 +5251,13 @@ function viewTable(set,groups,roles,cols,ctl){const dvText=strings("dv");
     btn.addEventListener("click",()=>ctl.sortBy(c.key));
     return el("th",{scope:"col","aria-sort":on(c.key)?(ctl.state.dir===1?"ascending":"descending"):"none",class:cls},btn);});
   table.append(el("thead",{},el("tr",{},...heads)));
+  /* the first column that is not the badge leads the row: it carries the row's picture and its link */
+  const lead=(cols.find(c=>!(roles.badge&&c.key===roles.badge))||{}).key;
   const cell=(r,c)=>{
     if(roles.badge&&c.key===roles.badge){const t=rowTone(r,roles);
       return el("td",{},...partsOf(r[c.key]).map(x=>pill(x,t)),toneWords(t));}
+    if(c.key===lead&&(roles.link||roles.icon)){const pic=iconOf(r,roles);
+      return el("td",{class:numeric(c.key)?"num":null},pic?el("span",{class:"dv-i"},pic):null,...leadNodes(set,r,roles,[cellText(r[c.key])]));}
     return el("td",{class:numeric(c.key)?"num":null},cellText(r[c.key]));};
   groups.forEach(g=>{const body=el("tbody",{});
     if(g.name!==null) body.append(el("tr",{class:"dv-grouprow"},el("th",{scope:"rowgroup",colspan:String(cols.length)},
@@ -5197,9 +5270,11 @@ function viewList(set,groups,roles,cols,tree){
   const parts=r=>{const t=rowTone(r,roles),badges=roles.badge?partsOf(r[roles.badge]):[];
     const extras=cols.filter(c=>cellText(r[c.key])!=="");
     const val=rolePart(r,roles.value),lab=rolePart(r,roles.label),note=rolePart(r,roles.note);
+    const pic=iconOf(r,roles);
     return [
+      pic?el("span",{class:"dv-i"},pic):null,
       badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,
-      lab!==""?el("span",{class:"dv-t"},lab):null,
+      lab!==""?el("span",{class:"dv-t"},...leadNodes(set,r,roles,[lab])):null,
       extras.length?el("span",{class:"dv-x"},...extras.map(c=>el("span",{class:"dv-f",title:c.label},
         el("span",{class:"dv-sr"},c.label+": "),cellText(r[c.key])))):null,
       val!==""?el("span",{class:"dv-val"+(t&&!badges.length?" tone-"+t:"")},val):null,
@@ -5217,15 +5292,17 @@ function viewTiles(set,groups,roles){
   const pills=!roles.value||!set.rows.some(r=>cellText(r[roles.value])!=="");
   return groups.map(g=>el("ul",{class:"dv-tiles"+(pills?" dv-pills":"")},...g.rows.map(r=>{
     const t=rowTone(r,roles),note=rolePart(r,roles.note);
-    if(pills) return el("li",{class:"pill"+(t?" tone-"+t:"")},
-      el("span",{class:"dv-l"},rolePart(r,roles.label)),note!==""?el("span",{class:"dv-n"},note):null,toneWords(t));
-    return cardNode({mode:"item",tag:"li",cls:"dv-tile"+(t?" tone-"+t:""),kids:[
+    const pic=iconOf(r,roles);
+    if(pills) return el("li",{class:"pill"+(t?" tone-"+t:"")},pic?el("span",{class:"dv-i"},pic):null,
+      el("span",{class:"dv-l"},...leadNodes(set,r,roles,[rolePart(r,roles.label)])),note!==""?el("span",{class:"dv-n"},note):null,toneWords(t));
+    return cardNode({mode:"item",tag:"li",cls:"dv-tile"+(t?" tone-"+t:"")+(roles.link&&cellText(r[roles.link]).trim()?" dv-lead":""),picture:pic?{icon:pic}:null,kids:[
       el("span",{class:"dv-v"},rolePart(r,roles.value)),
-      el("span",{class:"dv-l"},rolePart(r,roles.label)),
+      el("span",{class:"dv-l"},...leadNodes(set,r,roles,[rolePart(r,roles.label)])),
       note!==""?el("span",{class:"dv-n"},note):null,toneWords(t)]});})));}
 /* kept entries as cards: one dated card per row, drawn by queryCard */
 function viewCards(set,groups,roles,cols){
-  return groups[0].rows.map(r=>queryCard(set.entryOf(r),set.from,cols.map(c=>c.key))).filter(Boolean);}
+  return groups[0].rows.map(r=>{const pic=iconOf(r,roles);
+    return queryCard(set.entryOf(r),set.from,cols.map(c=>c.key),{picture:pic?{icon:pic}:null,lead:kids=>leadNodes(set,r,roles,kids)});}).filter(Boolean);}
 /* ---- chart views: `as: bars` and `as: line`. Plain SVG from numbers and
    text nodes, coloured only through the theme's tokens (the CSS classes ch-*).
    Nothing is computed from the rows beyond the scale a picture needs: no
@@ -5364,7 +5441,7 @@ const uniq=a=>a.filter((x,i)=>x&&a.indexOf(x)===i);
 /* the other fields a view shows: a table's columns, a list row's extras, a chart's series, a card's questions */
 function colsOf(as,set,v,roles){
   const fields=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,mk=ks=>ks.map(k=>({key:k,label:set.lab(k)}));
-  if(as==="table") return mk(fields||set.own);
+  if(as==="table") return mk(fields||set.own.filter(k=>k!==roles.link&&k!==roles.icon));
   if(as==="list"){if(fields) return mk(fields);
     const skip=new Set([...ROLE_NAMES.map(n=>roles[n]),v.group,v.parent||"parent","id"]);
     return mk(set.own.filter(k=>!skip.has(k)));}
@@ -5421,6 +5498,7 @@ function viewControls(state,info,redraw){const K=strings("dv").ctl;
   const node=el("div",{class:"dv-ctl"},el("div",{class:"dv-ctl-top"},btn),bar,live);
   return {node,sync,clear:doClear,active};}
 function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
+  set={...set,scope:opts.scope||""};
   const as=v.as||(set.kind==="entries"?"cards":"table"),drawn=VIEW_DRAWS[as];
   let rows=set.rows,tree=null;
   const pk=v.parent||"parent";
@@ -6161,11 +6239,12 @@ function unsavedSpan(entries,changed){const t=STRINGS[lang].ui;
 const hostCovers=()=>hostActive()&&hookBook()&&HOST.status!=="failed"&&HOOK_LISTENERS.length>0;
 const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
 const SCREENS={home:renderHome,[LIB_SCREEN]:renderBooklets};
-function render(){citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
+let RENDERING=false;
+function render(){RENDERING=true;try{citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(SCREENS[screen]) SCREENS[screen](main);
   else if(isModuleScreen(screen)) renderModulePage(main,screen);
   else renderActivity(main,screen);
-  hostNoticeShow(main);}
+  hostNoticeShow(main);}finally{RENDERING=false;}}
 /* the notices at the top of an opened file's first screen. A file marked with another 0.x version says so in a
    sentence of its own, above and apart from the count: the page read it, so that is not a thing it could not read.
    Under it, how many things the page could not read (nothing is shown when there are none), the list inside a
@@ -6262,7 +6341,7 @@ function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   shown.forEach((card,i)=>{if(card.holder){activities.append(moduleCard(card.holder,card.acts,i));return;}
     const m=card.mode;const key=m.id;const mod=moduleOf(key)||{};
     /* the name is the module's text, so it goes in as text */
-    activities.append(activityCard(key,tx(mod.title,tx(m.title,shortId(key))),tx(mod.blurb,tx(m.blurb,tx(m.lede,""))),activityStatus(m),i));});
+    activities.append(activityCard(key,tx(mod.title,tx(m.title,shortId(key))),tx(mod.blurb,tx(m.blurb,tx(m.lede,""))),activityStatus(m),i,mod.icon||m.icon));});
   /* nothing is preloaded, so the empty page offers its own way forward */
   {const add=el("div",{class:"col addrow"});
     if(!shown.length) add.append(el("p",{class:"hint"},t.booklet.noActivities));
@@ -6404,10 +6483,14 @@ const keptCount=id=>{const a=(STATE.entries||{})[id];return Array.isArray(a)?a.l
 const LEAD_EMOJI=/^(\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}])*)\s*/u;
 /* The picture of a card from its title and its number in its list: a leading emoji moves into the tile (and leaves
    the title), else the number is the picture, else there is none. */
-function cardPicture(title,number){
+function cardPicture(title,number,iconName){
+  /* the line's `icon:` first: in teaching the spot drawing of that name when there is one, else the line icon (always the icon in briefing) */
+  const ic=iconName?icon(iconName,{spot:pictureIsSpot()}):null;
+  if(ic) return {title:String(title==null?"":title),picture:{icon:ic}};
   const t=String(title==null?"":title),m=LEAD_EMOJI.exec(t.trim());
   if(m&&t.trim().slice(m[0].length).trim()) return {title:t.trim().slice(m[0].length),picture:{emoji:m[1]}};
   return {title:t,picture:Number.isFinite(number)?{number}:null};}
+const pictureIsSpot=()=>{const S=window.bookletStyle;return !S||!S.picture||S.picture()==="spot";};
 const cardHue=i=>CARD_HUES[((Math.trunc(Number(i))||0)%CARD_HUES.length+CARD_HUES.length)%CARD_HUES.length];
 function cardNode(o){
   const mode=o.mode==="fold"||o.mode==="item"?o.mode:"go",pic=o.picture||null;
@@ -6467,29 +6550,38 @@ function moduleStatus(acts){const C=strings("cards"),ps=acts.map(activityProgres
   const n=ps.filter(p=>p.started).length;return n?C.startedOf(n,ps.length):C.notStarted;}
 /* the line under a module's blurb: how many activities, and how many are started */
 function moduleMeta(acts){const C=strings("cards"),ps=acts.map(activityProgress).filter(p=>p.tracked),n=ps.filter(p=>p.started).length;
-  return [C.activitiesN(acts.length),n?C.startedN(n):""].filter(nonEmpty).join(" · ");}
+  return [C.activitiesN(acts.length),n?C.startedN(n):ps.length?C.notStarted:""].filter(nonEmpty).join(" · ");}
 /* A card on the home page or a module's page: a button that opens view `to`. `i` is its place in the list it is in. */
-function activityCard(to,name,blurb,status,i){
-  const {title,picture}=cardPicture(name,i+1);
+function activityCard(to,name,blurb,status,i,iconName){
+  const {title,picture}=cardPicture(name,i+1,iconName);
   return cardNode({mode:"go",title,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,onclick:()=>go(to)});}
 function moduleCard(mod,acts,i){
-  return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),moduleStatus(acts),i);}
+  return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),moduleStatus(acts),i,mod.icon);}
 function renderModulePage(main,v){const mod=moduleForScreen(v);
   /* a module that has gone, or now holds one activity, leads where its card would */
   if(!mod||!isMulti(mod)){screen=mod?entryScreenOf(mod):"home";return render();}
   const W=strings("moduleView");
   {main.append(...openNotices());}
   const col=el("div",{class:"col"});
-  col.append(el("h2",{},tx(mod.title,mod.id)));
-  const lead=tx(mod.blurb,"");
-  if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));
   const acts=activitiesShown(mod);
-  /* the cards are the overview: the title, the blurb, one line of counts, then the cards */
-  if(acts.length) col.append(el("p",{class:"cd-meta"},moduleMeta(acts)));
+  /* the module's own screen: its title, its opening (the first paragraph at lede size, the rest under it), one line of counts, and
+     its `icon:` large beside the title; then the cards */
+  const text=el("div",{class:"mhead-text"},el("h2",{},tx(mod.title,mod.id)));
+  const open=tx(mod.opening,""),lead=tx(mod.blurb,"");
+  if(nonEmpty(open)){
+    const paras=open.split(/\n{2,}/),plain=p=>!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p);
+    const first=plain(paras[0])?paras.shift():"";
+    const hooks={...linkHooks(scopeOfModule(mod)||mod.id),idPrefix:"mo-",mark:()=>""};
+    if(first) text.append(el("div",{class:"mhead-lede"},...mdNodes(first,hooks).map(tableWrap)));
+    if(paras.length) text.append(el("div",{class:"mhead-more md"},...mdNodes(paras.join("\n\n"),hooks).map(tableWrap)));}
+  else if(nonEmpty(lead)) text.append(el("p",{class:"aside"},lead));
+  if(acts.length) text.append(el("p",{class:"cd-meta"},moduleMeta(acts)));
+  const big=mod.icon?icon(mod.icon,{spot:pictureIsSpot()}):null;
+  col.append(big?el("div",{class:"mhead"},text,el("div",{class:"mhead-pic","aria-hidden":"true"},big)):text);
   main.append(col);
   const grid=el("div",{class:"modes"});
   if(!acts.length) grid.append(el("p",{class:"hint"},W.noneShown));
-  acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i)));
+  acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon)));
   main.append(grid);
   const about=noticeNode(mod);if(about) main.append(el("div",{class:"col"},about));
   const rm=removeModuleControl(mod);if(rm) main.append(rm);
@@ -6890,6 +6982,8 @@ if(typeof window!=="undefined"){
   /* set once and never replaceable; a second copy of this script in the same window (a test harness) leaves the first */
   try{Object.defineProperty(window,"Booklet",{value:Object.freeze({version:RENDERER_VERSION,host:hostFn,onChange:onChangeFn,open:openFn,text:textFn}),
     writable:false,configurable:false,enumerable:true});}catch(e){}}
+/* a host that sets the style while a page is showing: draw it again (not while the page is drawing itself, which is when a booklet's own style arrives) */
+window.addEventListener("booklet-style",()=>{if(!RENDERING) render();});
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
 /* The menu stays in view below the page's own sticky bar, whose height changes

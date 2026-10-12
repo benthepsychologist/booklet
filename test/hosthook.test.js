@@ -7,7 +7,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const FM=t=>`---\nbooklet: "0.11"\ntitle: ${t}\nlang: en\n---\n\n`;
+const FM=t=>`---\nbooklet: "0.12"\ntitle: ${t}\nlang: en\n---\n\n`;
 const mod=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!activity|act] Answer ${t}\n\n> [!text|note] Note ${t}\n\n> [!activity|log repeat] Log ${t}\n\n> [!text|what] What ${t}\n\n> [!module|${id} end] End\n`;
 const NAME="reports/week.booklet.md";
 const BOOK=FM("Hook booklet")+mod("ma","A");
@@ -27,7 +27,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
 {const A=boot("fleet: booklets/reports"),B=A.BookletApi;
  chk("window.Booklet has exactly these members: version, host, onChange, open, text",Object.keys(B).sort().join()==="host,onChange,open,text,version",Object.keys(B).join());
  chk("it is frozen",Object.isFrozen(B));
- chk("version is the renderer's version, as text",B.version==="0.11.12"&&typeof B.version==="string");
+ chk("version is the renderer's version, as text",B.version==="0.12.0"&&typeof B.version==="string");
  chk("a member cannot be reassigned",(()=>{try{B.text=()=>"x";}catch(e){}return B.text()==="";})());
  chk("with no host, the bar says so: Kept in this browser only",barText()==="Kept in this browser only",barText());
  chk("text() is empty when no booklet is open",B.text()==="");
@@ -49,7 +49,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  chk("open() with a good name opens it as a view of that name",r2.ok&&A.PROVENANCE&&A.PROVENANCE.label==="reports/week.booklet.md"&&A.allModules().map(m=>m.id).join()==="mb");
  for(const n of ["../x.md","https://evil.test/x.md","a/.md","x.txt"]){
    const r3=B.open(BOOK,{name:n});chk("open() refuses the name "+JSON.stringify(n)+" and opens nothing new",r3.ok===false&&A.allModules().map(m=>m.id).join()==="mb");}
- const bad2=B.open("---\nbooklet: \"0.11\"\ntitle: X\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A\n\n> [!text|q] B\n\n> [!module|m end] E\n");
+ const bad2=B.open("---\nbooklet: \"0.12\"\ntitle: X\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A\n\n> [!text|q] B\n\n> [!module|m end] E\n");
  chk("a refused file keeps the booklet that was on screen",bad2.ok===false&&A.allModules().map(m=>m.id).join()==="mb",JSON.stringify(bad2));}
 
 /* ---- onChange: when, with what, collapsed, stopped ---- */
@@ -144,7 +144,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  chk("and the offer is gone",!/The file has changed where it is kept/.test(shown()));
  /* a refused text */
  const keep=B.text();
- h.fileChanged("---\nbooklet: \"0.11\"\ntitle: X\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A\n\n> [!text|q] B\n\n> [!module|m end] E\n");
+ h.fileChanged("---\nbooklet: \"0.12\"\ntitle: X\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A\n\n> [!text|q] B\n\n> [!module|m end] E\n");
  const btn2=P.find(P.main(),n=>n.tagName==="button"&&/Read the newer file/.test(P.texts(n)))[0];click(btn2);
  chk("a refused newer file shows its problems and keeps the booklet on screen",B.text()===keep&&/cannot be opened|used twice/.test(P.texts(P.byId("toast"))),P.texts(P.byId("toast")));
  h.fileChanged(NEWER);const dis=P.find(P.main(),n=>n.tagName==="button"&&/Dismiss/.test(P.texts(n)))[0];click(dis);

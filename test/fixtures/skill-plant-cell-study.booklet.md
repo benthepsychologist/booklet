@@ -1,5 +1,5 @@
 ---
-booklet: "0.11"
+booklet: "0.12"
 id: "local/plant-cell-study"
 title: "Plant cells: a study set"
 lang: en

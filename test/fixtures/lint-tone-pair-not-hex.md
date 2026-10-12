@@ -1,5 +1,5 @@
 ---
-booklet: "0.11"
+booklet: "0.12"
 id: fixture/tone-pair-not-hex
 title: A colour pair that is not a colour
 lang: en

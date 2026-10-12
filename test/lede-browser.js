@@ -9,7 +9,7 @@ const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const FILE=`---
-booklet: "0.11"
+booklet: "0.12"
 title: Folded previews
 lang: en
 ---

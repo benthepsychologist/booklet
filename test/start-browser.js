@@ -7,7 +7,7 @@ const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const head=(extra='',marker='"0.11"')=>`---\nbooklet: ${marker}\ntitle: Harbour notes\nlang: en\n${extra}---\n\n`;
+const head=(extra='',marker='"0.12"')=>`---\nbooklet: ${marker}\ntitle: Harbour notes\nlang: en\n${extra}---\n\n`;
 const act=(id,t)=>`> [!activity|${id}] ${t}\n\nSome words to read first.\n\n> [!text|${id}-q] What did you notice in ${t}?\n\n`;
 const F={
   one:head()+'> [!module|m] Harbour\n\n'+act('a','Low water')+'> [!module|m end] End\n',
@@ -52,7 +52,7 @@ const F={
     const note=p.locator('#main .filenotes');
     ok(await view()==='m/a'&&await note.count()===1&&!(await note.innerText()).includes("could not read"),`${W}px: a file marked 0.9 opens into its activity, with the notice at the top of that screen`);
     ok(await note.locator('summary').count()===0,`${W}px: the marker notice stands alone: no count, no list to open`);
-    ok((await note.innerText()).includes('This file says booklet: 0.9. This page reads format 0.11 and has opened it as it is'),`${W}px: and the notice says which marker the file carries and what the page did`);
+    ok((await note.innerText()).includes('This file says booklet: 0.9. This page reads format 0.12 and has opened it as it is'),`${W}px: and the notice says which marker the file carries and what the page did`);
     await p.screenshot({path:path.join(OUT,`start-old-${W}.png`)});
     ok(errs.length===0,`${W}px: zero page errors ${errs.join('|')}`);
     await ctx.close();}

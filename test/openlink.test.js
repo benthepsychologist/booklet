@@ -12,7 +12,7 @@ const PAGE="http://fleet/app/";
 global.location={href:PAGE,protocol:"http:",hostname:"fleet",hash:""};
 let META={};
 global.document.querySelector=sel=>{const m=/meta\[name="([^"]+)"\]/.exec(sel);const v=m&&META[m[1]];return v?{getAttribute:k=>k==="content"?v:null}:null;};
-const booklet=(title,extra)=>`---\nbooklet: "0.11"\ntitle: ${title}\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|m end] End\n${extra||""}`;
+const booklet=(title,extra)=>`---\nbooklet: "0.12"\ntitle: ${title}\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|m end] End\n${extra||""}`;
 const WEEK=booklet("Week report");
 const MOD=booklet("Daily journal");
 let CALLS=[],ROUTES={};
@@ -133,7 +133,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;const U=STORE+"week.md";RO
 reset();global.__ls["booklet.host.allowed"]="box";{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
  const calls=[];B.host({label:"box"});B.onChange(x=>calls.push(x));
  await A.openLink("#/open/week.md");answer(A,"m/a","mine");await sleep(700);A.flushSave();A.closeBooklet();
- const FILE="---\nbooklet: \"0.11\"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|m end] End\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n{\"q\": \"from another device\"}\n```\n\n%%\n";
+ const FILE="---\nbooklet: \"0.12\"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|m end] End\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n{\"q\": \"from another device\"}\n```\n\n%%\n";
  ROUTES[U]=FILE;const n0=calls.length;
  await A.openLink("#/open/week.md");await sleep(700);
  chk("a newer store file with a host registered is offered; the host is sent nothing while the offer waits",!!offer()&&calls.length===n0&&ans(A)==="mine",calls.length-n0);
@@ -196,10 +196,10 @@ reset();{const A=P.boot();
 
 /* ---- the marker notice: its own sentence, not counted ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;
- ROUTES[STORE+"old.md"]=WEEK.replace('booklet: "0.11"','booklet: "0.9"');
+ ROUTES[STORE+"old.md"]=WEEK.replace('booklet: "0.12"','booklet: "0.9"');
  await A.openLink("#/open/old.md");
  const n=P.find(P.main(),P.hasClass("filenotes"))[0];
- chk("a file marked 0.9 opened by link shows the marker sentence by itself",!!n&&/^This file says booklet: 0\.9\. This page reads format 0\.11 and has opened it as it is/.test(text(n))&&!/could not read/.test(text(n)),n?text(n):"none");
+ chk("a file marked 0.9 opened by link shows the marker sentence by itself",!!n&&/^This file says booklet: 0\.9\. This page reads format 0\.12 and has opened it as it is/.test(text(n))&&!/could not read/.test(text(n)),n?text(n):"none");
  chk("...and the provenance line is a separate box above it",P.find(P.main(),P.hasClass("openedby")).length===1);}
 
 /* ---- the three languages ---- */

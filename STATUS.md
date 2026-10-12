@@ -1,13 +1,26 @@
 # STATUS — Booklet
 
-*As of 2026-10-11*
+*As of 2026-10-12*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.11**: format v0.11 (files say `booklet: "0.11"`, in quotes) and renderer 0.11.12 (the v0.10 line: v0.10.1 was a wording patch to `SPEC.md` section 9; v0.10.2 was a renderer-only patch: a reader can remove a module; v0.10.3 fixed one sentence of its confirmation; v0.10.4 added tests that the published file sends nothing a reader writes, `lint-booklet.py --marker` and `--format-version` for generators, and a fix to a folded section's preview showing backticks).
+**project v0.12**: format v0.12 (files say `booklet: "0.12"`, in quotes) and renderer 0.12.0 (item D of the 0.12 update; the v0.10 line: v0.10.1 was a wording patch to `SPEC.md` section 9; v0.10.2 was a renderer-only patch: a reader can remove a module; v0.10.3 fixed one sentence of its confirmation; v0.10.4 added tests that the published file sends nothing a reader writes, `lint-booklet.py --marker` and `--format-version` for generators, and a fix to a folded section's preview showing backticks).
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
+
+## Current state — v0.12 (2026-10-12, item D: the format; the wiki tree, item E, and the tag follow)
+
+The format becomes 0.12. A file marked `"0.11"` now opens with the older-version notice; every file this repository holds that carried `"0.11"` is re-marked (fixtures that exist to carry another marker keep it, and the "later marker" fixture is now `"0.13"`). `SPEC.md` is titled v0.12.0, the skill is 0.12.0, the renderer 0.12.0.
+
+- **`icon:` on a module or an activity line, `parent:` on an activity line** (`KIND_SETTINGS`, the same in the renderer, the linter and `SPEC.md` section 4; `icon:` on a module's end line is an error). `icon:` takes a name from Booklet's icon set, the Lucide 1.48 icons in `art/icons/`. `test/art-sprite.js --write` writes that list into `lint-booklet.py` between `# icons:start` and `# icons:end`, and `--check` fails on drift; the linter reports a name outside it as an error, like a mistyped setting. `parent:` reads as `parent` does on a list row (it is `nestRows`): the linter warns on a parent not in the module and on a loop; the renderer keeps a module's activities depth first, each with its effective `parent` address and `depth` (the data item E draws as a tree; a module with no `parent` is untouched).
+- **A card's picture** is chosen in `cardPicture`, the one place: `icon:` (the spot of that name in teaching when `art/spots/` has one, the line icon otherwise and always in briefing), else a leading emoji, else the number.
+- **A module's opening.** Prose inside a module's fence before its first activity (its notice aside) is `module.opening`; the module's own screen draws it, its first paragraph at lede size and the rest under it, with the module's `icon:` large beside the title and a summary line ("6 activities · 1 started", or "· Not started"). Before 0.12 only that first paragraph was kept (as the card's blurb) and the rest was dropped; a reading callout there is still not drawn.
+- **Views.** `link` and `icon` are roles (seven in all, fourteen query keys), read by `table`, `list`, `tiles` and `cards`, not by `bars` or `line`. A `link` value is a heading (`#Heading`) or a web address and resolves through `linkHooks`/`mkLink`, as prose links do; a module link stays plain text until item E. An `icon` value draws through `icon()`; a name that is not in the sprite draws nothing.
+- **`style: teaching | briefing` in the theme block** is read by `readTheme` and the linter, and wins over the host's `bookletStyle.set` default while that booklet is open, whatever colour theme the reader picks (`docs/hosting.md`).
+- Tests: `test/format012.test.js`, `test/format012-browser.js`; the pinned lists in `guard.test.js` and `open.test.js` carry the new keys.
+- New interface words: two problem messages (`problem.iconUnknown`, `problem.iconOnEnd`), French and Spanish drafts marked `l10n: draft` until the translation pass.
+- Size: `booklet.html` 3,663,941 bytes (was 3,655,335); the hand-written part grew by 8,606 bytes, the sprite and fonts by none.
 
 ## Current state — v0.11 (2026-10-05)
 

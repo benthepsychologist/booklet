@@ -11,7 +11,7 @@ const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const WIDE='| Option | No-show rate | Reminder cost per month | No-show cost per month | Total per month | Saving against SMS only | Risk to watch | Who would run it |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| SMS only | 11% | $72 | $17,820 | $17,892 | none | cost of messages | front desk |\n| Email only | 14% | $0 | $22,680 | $22,680 | none, costs more | spam folders | front desk |\n| SMS plus email | 8% | $72 | $12,960 | $13,032 | about $4,860 | two systems | front desk |\n';
 const FILE=`---
-booklet: "0.11"
+booklet: "0.12"
 title: Report
 lang: en
 ---

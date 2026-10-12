@@ -1,0 +1,145 @@
+// Browser check for format 0.12 (renderer 0.12.0, item D), in a real page under the hosted Content-Security-Policy:
+//  - a module's opening is drawn on the module's own screen (first paragraph large, the rest under it) and not inside its first activity;
+//  - the module's icon: is a large picture beside the title (a spot of that name in teaching, the line icon in briefing), and absent without icon:;
+//  - the summary line counts the activities and how many are started;
+//  - the picture rule on cards: icon:, else a leading emoji, else the number;
+//  - the theme block's `style:` wins over the host's default (bookletStyle.set), whatever colour theme the reader picks, and goes when the booklet closes;
+//  - a tile whose `link` role is a heading opens that heading, an `icon` role draws its picture, a module link stays plain text.
+// Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/format012-browser.js <booklet.html> <outdir>
+const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const fs=require('fs'),path=require('path');
+const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
+const CSP=require('./csp.js');
+const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
+const THEME=s=>s?'```booklet theme\nstyle: '+s+'\n```\n\n':'';
+const FILE=style=>`---
+booklet: "0.12"
+title: Opening test
+lang: en
+---
+
+${THEME(style)}> [!module|a icon:compass] The first module
+
+First paragraph of the opening, drawn large.
+
+Second paragraph of the opening, drawn below it.
+
+> [!activity|one icon:target] One
+
+Prose of the first activity.
+
+## Where to next
+
+\`\`\`booklet data
+[{"label":"Go to the second","value":"2","link":"#Landing spot","icon":"house"},{"label":"Another module","value":"3","link":"week-2.booklet.md","icon":"no-such-picture"}]
+\`\`\`
+^pick
+
+\`\`\`booklet query
+from: pick
+as: tiles
+\`\`\`
+
+> [!activity|two] 🌱 Two
+
+## Landing spot
+
+You arrived.
+
+> [!activity|three] Three
+
+Plain.
+
+> [!text|q] A question
+
+> [!module|a end] End of the first
+
+> [!module|b] The second module
+
+> [!activity|x] X
+
+Text.
+
+> [!activity|y] Y
+
+Text.
+
+> [!module|b end] End of the second
+`;
+(async()=>{
+  fs.mkdirSync(OUT,{recursive:true});
+  const b=await chromium.launch();
+  const cons=[],errs=[];
+  const load=async(style,hostStyle)=>{
+    const file=path.join(OUT,'f012-'+(style||'none')+'.booklet.md');fs.writeFileSync(file,FILE(style));
+    const p=await (await b.newContext({viewport:{width:1100,height:900}})).newPage();
+    p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))cons.push(m.text());});p.on('pageerror',e=>errs.push(e.message));
+    await p.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
+    await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
+    if(hostStyle) await p.evaluate(s=>window.bookletStyle.set(s),hostStyle);
+    await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
+    await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
+    await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
+    if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
+    return p;};
+  const uses=p=>p.evaluate(()=>[...document.querySelectorAll('#main .cd-tile use')].map(u=>u.getAttribute('href')));
+  const styleOf=p=>p.evaluate(()=>document.documentElement.getAttribute('data-style'));
+
+  /* ---- a booklet with no style of its own, the host's default teaching ---- */
+  let p=await load(null,'teaching');
+  ok(await styleOf(p)==='teaching','no style: in the file, the host default holds (teaching)');
+  const homeUses=await uses(p);
+  ok(homeUses[0]==='#bs-compass','teaching: the first module card is the spot of its icon: ('+homeUses[0]+')');
+  ok(homeUses.length===1||!homeUses[1],'the second module has no icon: and no picture but its number');
+  await p.locator('#main button.mode').first().click();await p.waitForTimeout(700);
+  let m=await p.evaluate(()=>({h2:(document.querySelector('#main h2')||{}).textContent,lede:(document.querySelector('.mhead-lede')||{}).textContent||'',more:(document.querySelector('.mhead-more')||{}).textContent||'',
+    pic:[...document.querySelectorAll('.mhead-pic use')].map(u=>u.getAttribute('href')),meta:(document.querySelector('.cd-meta')||{}).textContent,
+    cards:[...document.querySelectorAll('#main button.mode')].map(c=>({t:c.querySelector('.k').textContent,tile:c.querySelector('.cd-tile').textContent.trim(),use:[...c.querySelectorAll('.cd-tile use')].map(u=>u.getAttribute('href'))})),
+    outside:/First paragraph of the opening/.test((document.getElementById('main').querySelector('.modes')||{textContent:''}).textContent)}));
+  ok(m.h2==='The first module','the module screen is headed by its title');
+  ok(m.lede==='First paragraph of the opening, drawn large.','the opening\'s first paragraph is drawn at lede size on the module screen');
+  ok(m.more==='Second paragraph of the opening, drawn below it.','the rest of the opening is drawn below it');
+  ok(!m.outside,'the opening is not in the activity cards');
+  ok(m.pic.join()==='#bs-compass','teaching: the module\'s icon: is a large picture beside the title, as its spot');
+  ok(/^3 activities · Not started$/.test(m.meta),'the summary line counts the activities: '+m.meta);
+  ok(m.cards[0].use[0]==='#bs-target','an activity\'s icon: is its card\'s picture (the target has a spot)');
+  ok(m.cards[1].tile==='🌱'&&m.cards[1].t==='Two','no icon: a leading emoji is the picture and leaves the title');
+  ok(m.cards[2].tile==='3'&&m.cards[2].use.length===0,'neither: the number '+JSON.stringify(m.cards[2]));
+  await p.screenshot({path:path.join(OUT,'f012-module-teaching.png')});
+  /* the first activity does not hold the opening */
+  await p.locator('#main button.mode').first().click();await p.waitForTimeout(700);
+  ok(!/First paragraph of the opening|Second paragraph of the opening/.test(await p.locator('#main').innerText()),'the opening is not drawn inside the first activity');
+  ok(/Prose of the first activity/.test(await p.locator('#main').innerText()),'the first activity keeps its own prose');
+  /* tiles: link and icon roles */
+  const tiles=await p.evaluate(()=>[...document.querySelectorAll('#main .dv-tile')].map(t=>({txt:t.textContent,a:[...t.querySelectorAll('a')].map(a=>a.getAttribute('href')),use:[...t.querySelectorAll('use')].map(u=>u.getAttribute('href')),lead:t.classList.contains('dv-lead')})));
+  ok(tiles.length===2,'two tiles drawn');
+  ok(tiles[0].a.length===1&&tiles[0].lead&&tiles[0].use[0]==='#bi-house','the first tile leads (its label is a link) and draws its icon');
+  ok(tiles[1].a.length===0&&tiles[1].use.length===0&&/Another module/.test(tiles[1].txt),'a module link stays plain text, and an icon name that is not in the set draws nothing');
+  await p.locator('#main .dv-tile a').first().click();await p.waitForTimeout(700);
+  ok(/You arrived/.test(await p.locator('#main').innerText()),'pressing the tile\'s label opens the heading it names');
+  await p.close();
+
+  /* ---- the file's style: briefing wins over the host's teaching, and over a theme the reader picks ---- */
+  p=await load('briefing','teaching');
+  ok(await styleOf(p)==='briefing','a file\'s style: briefing wins over the host\'s default (teaching)');
+  ok((await uses(p))[0]==='#bi-compass','briefing: the card\'s picture is always the line icon, never the spot');
+  await p.evaluate(()=>window.bookletTheme.set('night'));await p.waitForTimeout(300);
+  ok(await styleOf(p)==='briefing'&&await p.evaluate(()=>document.documentElement.getAttribute('data-theme'))==='night','it stays when the reader picks a theme of their own (Night)');
+  await p.evaluate(()=>window.bookletStyle.set('teaching'));await p.waitForTimeout(200);
+  ok(await styleOf(p)==='briefing','the host setting a style while the booklet is open does not change it');
+  await p.locator('#main button.mode').first().click();await p.waitForTimeout(700);
+  ok(await p.evaluate(()=>[...document.querySelectorAll('.mhead-pic use')].map(u=>u.getAttribute('href')).join())==='#bi-compass','briefing: the module\'s big picture is the line icon');
+  await p.screenshot({path:path.join(OUT,'f012-module-briefing.png')});
+  await p.locator('#btnHome').click().catch(()=>{});await p.waitForTimeout(300);
+  await p.locator('#btnHome').click().catch(()=>{});await p.waitForTimeout(500);
+  ok(await styleOf(p)==='teaching','back on the list of booklets the host\'s default (teaching) holds again');
+  await p.close();
+
+  /* ---- no style in the file, the host says briefing ---- */
+  p=await load(null,'briefing');
+  ok(await styleOf(p)==='briefing'&&(await uses(p))[0]==='#bi-compass','with no style: in the file the host\'s briefing draws');
+  await p.close();
+  ok(cons.length===0&&errs.length===0,'zero CSP violations and page errors '+cons.concat(errs).join('|'));
+  await b.close();
+  console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
+})();
