@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-Ka3ZtJ8s1nSjoqZD+D4XF3NoovcSe3Vh9fR59HA0/Bo=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-3/JQHzj09Knr3XauLDw1B9ytBRu90T7MM0O9GJ9d6z8=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7374,6 +7374,19 @@ window.addEventListener("booklet-style",()=>{if(RENDERING) return;
   if(at<0) return;
   const n=(a.id&&document.getElementById(a.id))||Array.from(document.querySelectorAll(CTL))[at];
   if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}});
+/* A wiki's menu is a disclosure on a narrow window and a column beside the page on a wide one, and a multi-page activity lists its pages in the page
+   itself on a narrow one: both are decided as the screen is drawn, so the screen is drawn again when the window crosses the width (one listener,
+   added once). The search words are WK's, so they come back; the caret stays in the box if it was there. */
+if(typeof window!=="undefined"&&typeof window.matchMedia==="function"){
+  const mq=window.matchMedia(PAGES_NARROW),again=()=>{
+    if(RENDERING||!currentId||BOOK===EMPTY_BOOKLET) return;
+    const mod=isModuleScreen(screen)?moduleForScreen(screen):holderOf(screen);
+    if(!wikiOf(mod)) return;
+    const a=document.activeElement,inBox=!!(a&&a.classList&&a.classList.contains("wk-q")),
+      ss=inBox&&typeof a.selectionStart==="number"?a.selectionStart:null,se=inBox&&typeof a.selectionEnd==="number"?a.selectionEnd:null;
+    render();
+    if(inBox){const n=document.querySelector(".wk-q");if(n){n.focus({preventScroll:true});try{if(ss!==null) n.setSelectionRange(ss,se);}catch(e){/* no caret */}}}};
+  if(typeof mq.addEventListener==="function") mq.addEventListener("change",again);else if(typeof mq.addListener==="function") mq.addListener(again);}
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
 /* The menu stays in view below the page's own sticky bar, whose height changes

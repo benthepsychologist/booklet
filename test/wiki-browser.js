@@ -227,6 +227,24 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
    ok((await h2(p)).trim()==='Child','"Next" from the hidden page goes on to the next shown page');
    await p.context().close();}
 
+  /* ---- the window crosses the narrow width: the screen is drawn again for the new width ---- */
+  {const PG='> [!activity|ID PAR] Title\n\n## First page\n\nAlpha.\n\n***\n\n## Second page\n\nBeta.\n\n***\n\n## Third page\n\nGamma.\n\n';
+   const RS='---\nbooklet: "0.12"\ntitle: RS\nlang: en\n---\n\n> [!module|rs] RS\n\n> [!activity|one] One\n\nTop.\n\n'+PG.replace('ID PAR','multi parent:one').replace('Title','Multi')+'> [!module|rs end] End\n';
+   p=await openBook(RS,600);
+   await cards(p).first().click();await p.waitForTimeout(250);await cards(p).first().click();await p.waitForTimeout(300);
+   ok(await p.locator('.wk-fold').evaluate(d=>!d.open)&&await p.locator('.wk-pagelist .wk-pitem').count()===3,'600 px: the menu is closed and the three pages are listed in the page');
+   await p.setViewportSize({width:1100,height:900});await p.waitForTimeout(400);
+   ok(await p.locator('.wk-tree').isVisible()&&await p.locator('.wk-q').isVisible()&&await p.locator('.wk-fold').evaluate(d=>d.open),'widened to 1100 px: the menu shows its tree and search box at once (no empty outlined box)');
+   ok(await p.locator('.wk-pagelist').count()===0&&await p.locator('.wk-menu .wk-pitem').count()===3,'and the pages are in the menu, not the page');
+   await p.locator('.wk-q').fill('multi');await p.waitForTimeout(150);
+   await p.locator('.wk-q').focus();
+   await p.setViewportSize({width:600,height:900});await p.waitForTimeout(400);
+   ok(await p.locator('.wk-fold').evaluate(d=>!d.open)&&await p.locator('.wk-pagelist .wk-pitem').count()===3,'narrowed back to 600 px: the menu is closed again and the in-page list is back');
+   await p.locator('.wk-fold > summary').click();await p.waitForTimeout(150);
+   ok(await p.locator('.wk-q').inputValue()==='multi','the words in the search box survive the redraw (the box itself is inside the closed menu, so it cannot keep the focus)');
+   ok((await h2(p)).trim()==='Multi','and the reader is still on the same page');
+   await p.context().close();}
+
   /* ---- a hidden parent: alone, it does not make a wiki ---- */
   {const HP='---\nbooklet: "0.12"\ntitle: HP\nlang: en\n---\n\n> [!module|hp] HP\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\ny\n\n> [!activity|h parent:a hidden] H\n\nz\n\n> [!module|hp end] End\n';
    p=await openBook(HP,1280);
