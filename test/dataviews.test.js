@@ -21,7 +21,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  /* ---- parsing ---- */
  const R=A.parseFile(FX);
  chk("the data-views fixture parses with nothing reported wrong",R.ok&&R.unread.length===0,JSON.stringify(R.unread));
- chk("it is marked 0.11",R.template.booklet==="0.12");
+ chk("it is marked 0.12",R.template.booklet==="0.12");
  const qs=queries(R);
  chk("four queries, each carrying its rows and its view",qs.length===4&&qs.map(q=>q.view.as||"").join()==="tiles,list,,list"&&qs.every(q=>q.data&&Array.isArray(q.data.rows)),JSON.stringify(qs.map(q=>q.view)));
  chk("a bare list of rows (no object) reads, and names no view (the renderer draws a table)",qs[2].data.rows.length===4&&qs[2].data.fields===undefined&&qs[2].view.as===undefined);
@@ -53,7 +53,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  P.wipe();const W=P.boot();W.loadText(FX);
  chk("loading the whole fixture and saving it again returns the design byte for byte",W.toMarkdown()===FX.replace(/\s+$/,"")+"\n");
  P.wipe();const W2=P.boot();await W2.createBooklet();
- chk("a booklet started in the renderer says 0.11",W2.BOOK.booklet==="0.12");
+ chk("a booklet started in the renderer says 0.12",W2.BOOK.booklet==="0.12");
  chk("the module adds",W2.addModuleText(FX).ok);
  const md=W2.toMarkdown();
  const blockText=id=>{const i=FX.indexOf("^"+id+"\n");const j=FX.lastIndexOf("```booklet data",i);return FX.slice(j,i+id.length+1);};

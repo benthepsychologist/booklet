@@ -691,7 +691,7 @@ def check_settings(f, n, kind, w):
         elif key == "icon" and "end" in w["flags"]:
             err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
         elif key == "icon" and val not in ICON_NAMES:
-            err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so the card would show its number")
+            err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so a renderer ignores it")
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
     for flag in sorted(w["flags"]):
@@ -956,7 +956,10 @@ def check_format(f, text, fm):
                     cur_act = w["id"] or None
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
-                        if w["set"].get("parent") is not None:
+                        if w["set"].get("parent") is not None and open_mod is None:
+                            warn(f, f"line {n}: `parent:{w['set']['parent']}` outside a module fence places nothing (an activity outside every module is a module of its own); "
+                                    "put both activities in one module")
+                        elif w["set"].get("parent") is not None:
                             parents.setdefault(open_mod, []).append((w["id"], w["set"]["parent"], n))
                         act_info.setdefault(open_mod, {})[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
                         if not open_mod:
@@ -1092,12 +1095,23 @@ def check_format(f, text, fm):
                 warn(f, f"line {n}: `parent:{par}` is not an activity of " + (f"the module {scope!r}" if scope else "this file's activities outside every module")
                         + f", so {aid!r} sits at the top")
                 continue
-            seen, cur = [aid], par
-            while cur in link and cur not in seen:
-                seen.append(cur)
-                cur = link[cur][0]
-            if cur == aid:
-                warn(f, f"line {n}: `parent:{par}` loops back to {aid!r} (it is its own ancestor), so it is drawn once, at the top")
+        # a loop: walk each chain once, keeping what is already settled, so a chain thousands deep costs one pass
+        settled, loops = set(), set()
+        for start in link:
+            if start in settled:
+                continue
+            path, on_path, cur = [], {}, start
+            while cur is not None and cur in link and cur not in settled and cur not in on_path:
+                on_path[cur] = len(path)
+                path.append(cur)
+                nxt = link[cur][0]
+                cur = nxt if nxt in known else None
+            if cur is not None and cur in on_path:
+                loops.update(path[on_path[cur]:])
+            settled.update(path)
+        for aid in sorted(loops, key=lambda x: link[x][1]):
+            par, n = link[aid]
+            warn(f, f"line {n}: `parent:{par}` loops back to {aid!r} (it is its own ancestor), so it is drawn once, at the top")
     for n, ref, scope in entry_refs:
         if ref not in acts.get(scope, {}):
             warn(f, f"line {n}: records for {ref!r}, which no activity line names")

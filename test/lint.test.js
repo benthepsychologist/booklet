@@ -260,7 +260,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
  E("lint-data-module-settings",/line 15: a data line takes no `repeat` setting \(it takes no settings at all\)/,"a data line with a setting");}
 
 {// v0.11: another 0.x marker is a warning, and the file is then checked by the current rules
- for(const n of ["0-2","0-3","0-4","0-5","0-6","0-7","0-8","0-9"]){const v=n.replace("-","."),r=lint(path.join(FX,"lint-old-format-"+n+".md"));
+ for(const n of ["0-2","0-3","0-4","0-5","0-6","0-7","0-8","0-9","0-11"]){const v=n.replace("-","."),r=lint(path.join(FX,"lint-old-format-"+n+".md"));
   chk(`a file still saying booklet: ${v} is one warning and no error, and is checked as 0.12`,r.status===0&&r.errors.length===0&&r.warns.length===1&&new RegExp(`this file says booklet: ${v.replace(".","\\.")}; the current format is 0\\.12, and it is checked as 0\\.12`).test(r.warns[0]||""),r.out);}
  {const r=lint(path.join(FX,"lint-marker-later.md"));
   chk("a later marker (0.13) is the same one warning",r.status===0&&r.errors.length===0&&r.warns.length===1&&/this file says booklet: 0\.13; the current format is 0\.12/.test(r.warns[0]||""),r.out);}

@@ -65,11 +65,11 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  const named=[...new Set([...Object.values(sd).flat(),"from","as","empty"])].sort();
  check("every key SPEC.md's table names is one of the fourteen",named,[...FROZEN_KEYS].sort());
  // a view reads the roles it is handed; the one control is drawn in one place; no view styles anything from a file's value
- const a=html.indexOf("function viewTable("),b=html.indexOf("/* ---- the pipeline");
+ const a=html.indexOf("const toneWords="),b=html.indexOf("/* ---- the pipeline");
  const views=a>0&&b>a?html.slice(a,b):"";
  const must=(label,ok)=>{if(ok) console.log("  ok    "+label);else{fails++;console.log("  FAIL  "+label);}};
  must("the view functions are found in the renderer source",views.length>2000);
- must("no view reads a raw query key (v.label, v.group, ...): they take resolved roles",!/\bv\.(from|as|fields|group|limit|parent|empty|label|value|note|badge|tone)\b/.test(views));
+ must("no view reads a raw query key (v.label, v.group, ...): they take resolved roles",!/\bv\.(from|as|fields|group|limit|parent|empty|label|value|note|badge|tone|link|icon)\b/.test(views));
  must("no view wires a listener except the table headings' one ("+(views.split("addEventListener(").length-1)+" found)",views.split("addEventListener(").length-1===1);
  must("no view builds an input or a select: the control is drawn in one place",!/el\("(input|select)"/.test(views));
  must("no view sets a style, from a file's value or otherwise",!/\bstyle\s*[:=]|\.style\b|setAttribute\("style"/.test(views));

@@ -68,7 +68,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
  chk("one activity is singular",A.moduleMeta([act("b")])==="1 activity");
  chk("a module of readers only has no status",A.moduleStatus([act("b")])==="");
  for(const k of Object.keys(ans)) delete ans[k];A.keptFor("m/c").length=0;
- chk("nothing started says so",A.moduleStatus(acts)==="Not started"&&A.moduleMeta(acts)==="4 activities · Not started");
+ chk("nothing started says so",A.moduleStatus(acts)==="Not started"&&A.moduleMeta(acts)==="4 activities");
 
  /* 5b (0.11.12). the card counts what is inside: folded reads, then questions, then the status, joined by " · " */
  {const R=FM+"> [!module|m] Module\n\nBlurb.\n\n> [!activity|r] Reads and questions\n\n> [!group]- One\n> words\n\n> [!note]- Two\n> words\n\n> [!tip]- Three\n> words\n\n"+
@@ -90,7 +90,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
  A.screen="module:m";A.render();
  const m=P.main(),cards=find(m,hasClass("mode"));
  chk("the module screen has a card for each shown activity",cards.length===4,String(cards.length));
- chk("it leads with the title, the blurb and the meta line",find(m,n=>n.tagName==="h2").length>=1&&find(m,hasClass("mhead-lede")).length===1&&texts(find(m,hasClass("cd-meta"))[0])==="4 activities · Not started");
+ chk("it leads with the title, the blurb and the meta line",find(m,n=>n.tagName==="h2").length>=1&&find(m,hasClass("mhead-lede")).length===1&&texts(find(m,hasClass("cd-meta"))[0])==="4 activities");
  chk("each card is numbered in file order and has its place's hue",cards.map(c=>texts(find(c,hasClass("cd-tile"))[0])).join()==="1,2,3,4"&&hasClass("hue-sky")(cards[0])&&hasClass("hue-petrol")(cards[0])===false&&hasClass("hue-rose")(cards[1]));
  chk("no second overview list: the only lists of links are the cards",find(m,n=>n.tagName==="ul"||n.tagName==="ol").length===0);
  chk("a card's status line is the activity's status",texts(find(cards[0],hasClass("c"))[0])==="3 questions · Not started");

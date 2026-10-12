@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-1+YcnWnDvm5Exp/6lsIry/QkAlwseJPe+H7xAyCyd5Y=' 'sha256-CSrv2Z/OuF814R0Vr62kUw4xYY2JiYxxwBL244XWn1Y=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-F3j7DtD8EF9OwzZzDJw12MP9SrCpMZUvK7o2ymvkYbk=' 'sha256-7TT1bBi3uyTWyoy837tYa6Acy1GIvMi5IiQ6GGeBrEE=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1002,8 +1002,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* the main script keeps the same names as TH_BASES; this script runs before it and cannot read it */
   var KEY="booklet.ui.theme",NAMES=["auto","paper","daylight","night","contrast"],de=document.documentElement,mem=null;
   /* A booklet's own look arrives here already worked out, as
-     {base, tokens, font, density}. Its colours apply only while the reader's choice
-     is Auto; its font and density, the page's layout, apply whatever the reader
+     {base, tokens, font, density, style, colours}. Its colours apply only while the reader's choice
+     is Auto, and only if it names a base or a colour (`colours` is not false); its font and density, the page's layout, apply whatever the reader
      chose for colour. Nothing a booklet wrote reaches the page as text: a token is set
      only if its name is a colour token and its value is exactly #rrggbb, and a
      font or a density is a name looked up in the two fixed tables below. */
@@ -1036,7 +1036,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   function resolve(c){return c!=="auto"?c:(mq("(prefers-contrast: more)")||mq("(forced-colors: active)"))?"contrast":mq("(prefers-color-scheme: dark)")?"night":"paper";}
   function apply(fire){
     showStyle(fire);
-    var c=stored(),has=!!custom,use=c==="auto"&&has,r=use?custom.base:resolve(c),was=de.getAttribute("data-theme"),wasC=de.hasAttribute("data-theme-custom");
+    /* a custom theme that names no base and no colour (colours: false) is font, density and style only: the reader's colours stand */
+    var c=stored(),has=!!custom,use=c==="auto"&&has&&custom.colours!==false,r=use?custom.base:resolve(c),was=de.getAttribute("data-theme"),wasC=de.hasAttribute("data-theme-custom");
     de.setAttribute("data-theme",r);de.setAttribute("data-theme-choice",c);
     clearCustom();if(has) setCustom(use);
     try{var m=document.querySelector('meta[name="theme-color"]'),v=getComputedStyle(de).getPropertyValue("--paper").trim();
@@ -1671,7 +1672,7 @@ const STRINGS_SRC={
       settingUnknown: (w,kind,s)=>`${w}: a ${kind} line takes no “${s}”, so it was ignored`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
       dailyAlone: w=>`${w}: \`daily\` only follows \`repeat\`, so it was ignored`,
-      iconUnknown: (w,n)=>`${w}: “${n}” is not a name in Booklet's icon set, so the card shows its number`,
+      iconUnknown: (w,n)=>`${w}: “${n}” is not a name in Booklet's icon set, so it was ignored`,
       iconOnEnd: w=>`${w}: a module's end line takes no “icon:”, so it was ignored`,
       kindUnknown: (w,k)=>`${w}: this page does not know the kind “${k}”, so it is shown as a callout`,
       queryKeyUnknown: (w,key)=>`${w}: a query has no setting “${key}”, so it was ignored`,
@@ -1971,8 +1972,8 @@ const STRINGS_SRC={
       settingUnknown: (w,kind,s)=>`${w} : une ligne ${kind} n’accepte pas « ${s} » ; il a donc été ignoré`,
       numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
       dailyAlone: w=>`${w} : \`daily\` ne vient qu’après \`repeat\` ; il a donc été ignoré`,
-      iconUnknown: (w,n)=>`${w} : « ${n} » n’est pas un nom de l’ensemble d’icônes de Booklet ; la carte montre donc son numéro`, /* l10n: draft */
-      iconOnEnd: w=>`${w} : la ligne de fin d’un module n’accepte pas « icon: » ; il a donc été ignoré`, /* l10n: draft */
+      iconUnknown: (w,n)=>`${w} : « ${n} » ne fait pas partie des icônes de Booklet ; il a donc été ignoré`,
+      iconOnEnd: w=>`${w} : la ligne de fin d’un module n’accepte pas « icon: » ; il a donc été ignoré`,
       kindUnknown: (w,k)=>`${w} : cette page ne connaît pas le type « ${k} » ; il est donc affiché comme un encadré`,
       queryKeyUnknown: (w,key)=>`${w} : une requête n’a pas de réglage « ${key} » ; il a donc été ignoré`,
       queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est pas un nombre entier positif ; il a donc été ignoré`,
@@ -2271,8 +2272,8 @@ const STRINGS_SRC={
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
       dailyAlone: w=>`${w}: \`daily\` solo va después de \`repeat\`, así que se ignoró`,
-      iconUnknown: (w,n)=>`${w}: “${n}” no es un nombre del conjunto de íconos de Booklet, así que la tarjeta muestra su número`, /* l10n: draft */
-      iconOnEnd: w=>`${w}: la línea de cierre de un módulo no admite “icon:”, así que se ignoró`, /* l10n: draft */
+      iconUnknown: (w,n)=>`${w}: “${n}” no está entre los íconos de Booklet, así que se ignoró`,
+      iconOnEnd: w=>`${w}: la línea de cierre de un módulo no admite “icon:”, así que se ignoró`,
       kindUnknown: (w,k)=>`${w}: esta página no conoce el tipo “${k}”, así que se muestra como un recuadro`,
       queryKeyUnknown: (w,key)=>`${w}: una consulta no tiene el ajuste “${key}”, así que se ignoró`,
       queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo, así que se ignoró`,
@@ -3155,7 +3156,7 @@ const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems){const P=strings("problem");
   const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[];
-  let mod=null,act=null,section="content",lastQ=null,seq=0,row=null,theme=null,recScope="",dataMod=null;
+  let mod=null,act=null,section="content",lastQ=null,seq=0,oseq=0,row=null,theme=null,recScope="",dataMod=null;
   const refuse=m=>{problems.push(m);problems.refused.push(m);};
   /* an id used twice: refused, and its id kept so Add a module can name it */
   const dup=(where,id)=>{const m=P.idTwice(where,id);refuse(m);problems.dupIds.push({id,m});};
@@ -3254,7 +3255,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     const strip=stripFootnoteDefs(it.text);
     if(!act&&!mod&&implicit&&(strip.text||strip.defs.length)) page();
     const owner=mod||(act&&moduleHolding(modules,act));if(owner) owner.__footnotes.push(...strip.defs);
-    if(!act){if(mod&&strip.text){mod.__intro.push(strip.text);mod.__open.push(strip.text);}return;}
+    if(!act){if(mod&&strip.text){mod.__intro.push(strip.text);mod.__open.push({id:"mo"+(++oseq),type:"markdown",text:strip.text});}return;}
     if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;};
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
@@ -3315,7 +3316,10 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       blocks:[{id:lastQ.id+"-"+k+"-md",type:"markdown",text:it.body.join("\n")}],placement:it.fold==="-"?"folded":undefined,label:it.title||k});return;}
     /* any other callout is reading set apart */
     const unk=unknownKind(it);if(unk) problems.push(P.kindUnknown(where,k));
-    if(!act&&mod){mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));return;}
+    if(!act&&mod){mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
+      /* a reading callout before the module's first activity is part of its opening, in the file's order with the prose */
+      mod.__open.push({id:"mo"+(++oseq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
+        ...(unk?{unknown:true}:{}),blocks:it.body.length?[{id:"mo"+oseq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});return;}
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       ...(unk?{unknown:true}:{}),
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;};
@@ -3409,11 +3413,11 @@ function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities
   if(acts.some(a=>a.parent)){const t=activityTree(acts),was=acts.slice();
     acts.splice(0,acts.length,...t.order.map(i=>was[i]));
     t.order.forEach((i,k)=>{const a=acts[k];if(t.parent[i]) a.parent=t.parent[i];else delete a.parent;if(t.depth[i]) a.depth=t.depth[i];});}
-  const opening=__open.join("\n\n").trim();
+  const opening=__open;
   const blurb=firstPara(__intro.join("\n\n"));
   /* every footnote this module's own text defined */
   const {sources,citations}=notesOut(__footnotes,"s");
-  const o={...rest,...(blurb?{blurb}:{}),...(opening?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
+  const o={...rest,...(blurb?{blurb}:{}),...(opening.length?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
   return o;}
 function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes},fm,L,source,problems){
@@ -3535,24 +3539,26 @@ function thOwes(tok,o,use){if(!(("--"+tok) in o)) return [];
     else{const m=/^tone-(green|amber|warm)$/.exec(tok);if(m) d=d.concat({green:"good",amber:"warn",warm:"bad"}[m[1]]);}}
   return d.filter(k=>use[k]);}
 /* spec (from readTheme) and baseTable (a base theme's name to its token table) in; out:
-   {base, tokens (#rrggbb by token name), font, density, dropped: [{key, pair, ratio}]} */
+   {base, tokens (#rrggbb by token name), font, density, style, colours, dropped: [{key, pair, ratio}]} */
 function themeDerive(spec,baseTable){
   spec=spec||{};const base=TH_BASES.includes(spec.base)?spec.base:"paper",B=baseTable(base)||{};
   const font=TH_FONTS.includes(spec.font)?spec.font:"default",density=TH_DENSITIES.includes(spec.density)?spec.density:"comfortable";
   /* the booklet's look (SPEC.md section 7): "" when it names none, and the host's default holds */
   const style=TH_STYLES.includes(spec.style)?spec.style:"";
+  /* A theme block that names no base and no colour leaves the colours to the reader, whatever font, density or style it sets (SPEC.md section 7). */
+  const colours=TH_BASES.includes(spec.base)||TH_COLOURS.some(k=>typeof spec[k]==="string"&&TH_HEX.test(spec[k]));
   const use={},dropped=[];
   TH_COLOURS.forEach(k=>{if(typeof spec[k]==="string"&&TH_HEX.test(spec[k])) use[k]=spec[k];});
   for(let round=0;round<8;round++){
     const o=thBuild(B,use),val=t=>thRgb(o["--"+t]||B["--"+t]),fails=[];
     for(const [f,b,min] of TH_PAIRS){const r=thRatio(val(f),val(b));if(r<(min||4.5)) fails.push({f,b,r});}
-    if(!fails.length) return {base,tokens:o,font,density,style,dropped};
+    if(!fails.length) return {base,tokens:o,font,density,style,colours,dropped};
     const hit=new Map();
     for(const x of fails){const d=[...thOwes(x.f,o,use),...thOwes(x.b,o,use)],pick=d.filter(k=>k!=="paper"&&k!=="ink");
       (pick.length?pick:d).forEach(k=>{if(!hit.has(k)) hit.set(k,x);});}
     if(!hit.size) break;
     hit.forEach((x,k)=>{delete use[k];dropped.push({key:k,pair:x.f+" on "+x.b,ratio:Math.round(x.r*100)/100});});}
-  return {base,tokens:{},font,density,style,dropped};}
+  return {base,tokens:{},font,density,style,colours,dropped};}
 /* a base theme's token table, read from the page's own stylesheet */
 function themeBaseTable(name){const out={};
   try{for(const sh of document.styleSheets){for(const r of sh.cssRules){
@@ -3990,8 +3996,13 @@ const urlOk=(raw,allowMailto)=>{const {scheme}=cleanScheme(raw);
   return scheme===null||scheme==="http"||scheme==="https"||(allowMailto&&scheme==="mailto");};
 const textOf=x=>Array.isArray(x)?x.map(textOf).join(""):typeof x==="string"?x:(x&&typeof x.textContent==="string"?x.textContent:"");
 /* slugify: reuses the page's own Unicode-aware slugify() (see exportName()); test/md.js supplies a simpler one when it runs this engine on its own. */
+/* a web address is written with no space in it: cleanScheme strips spaces to read a scheme, so `ht tps://x` would pass as https and keep its space */
+const WEB_ADDRESS=/^https?:\/\/\S+$/i;
+/* a link to a whole module (SPEC.md section 3): `x.booklet`, `x.booklet.md`, with or without a folder. This release reads it and draws it as plain text (SPEC.md section 13). */
+const isModuleLink=t=>cleanScheme(t).scheme===null&&/^(?:[^\s#]*\/)?[^\/\s#]+\.booklet(?:\.md)?$/i.test(String(t==null?"":t).trim());
 const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderInline(label,ctx):label;
-  if(!urlOk(url,true)) return textOf(kids);
+  if(!urlOk(url,true)||isModuleLink(url)) return textOf(kids);
+  {const sc=cleanScheme(url).scheme;if((sc==="http"||sc==="https")&&!WEB_ADDRESS.test(String(url).trim())) return textOf(kids);}
   /* a link to a heading in the same document: the page decides where that leads */
   if(typeof url==="string"&&url.startsWith("#")&&typeof ctx.opts.anchor==="function"){
     let n=null;try{n=ctx.opts.anchor(url.slice(1),kids);}catch(e){n=null;}
@@ -5236,8 +5247,7 @@ function leadNodes(set,r,roles,kids){
   if(t[0]==="#"&&t[1]!=="^"){const H=linkHooks(set.scope||""),text=textOf(kids);
     let n=H.link(t,text);if(typeof n==="string") n=H.anchor(t.slice(1).trim(),kids);
     return n&&typeof n==="object"?[n]:kids;}
-  const {scheme}=cleanScheme(t);
-  return scheme==="http"||scheme==="https"?[mkLink(kids,t,undefined,{opts:{},refs:{}})]:kids;}
+  return WEB_ADDRESS.test(t)?[mkLink(kids,t,undefined,{opts:{},refs:{}})]:kids;}
 /* an `icon` role's value drawn as the sprite's picture of that name; a value that is not a name in the sprite draws nothing */
 const iconOf=(r,roles)=>{const n=roles.icon?cellText(r[roles.icon]).trim():"";return n?icon(n):null;};
 function viewTable(set,groups,roles,cols,ctl){const dvText=strings("dv");
@@ -5434,14 +5444,15 @@ function nestRows(rows,pk,limit){
   const kids=new Map(),roots=[];
   rows.forEach(r=>{const p=up.get(r);if(p){if(!kids.has(p)) kids.set(p,[]);kids.get(p).push(r);}else roots.push(r);});
   const top=limit?roots.slice(0,limit):roots,flat=[];
-  const walk=r=>{flat.push(r);(kids.get(r)||[]).forEach(walk);};
+  /* depth first with a stack of its own: a chain thousands deep is a file that opens, not a stack overflow */
+  const walk=r=>{const st=[r];while(st.length){const x=st.pop();flat.push(x);const k=kids.get(x);if(k) for(let i=k.length-1;i>=0;i--) st.push(k[i]);}};
   top.forEach(walk);
   return {roots:top,kids,up,rows:flat};}
 const uniq=a=>a.filter((x,i)=>x&&a.indexOf(x)===i);
 /* the other fields a view shows: a table's columns, a list row's extras, a chart's series, a card's questions */
 function colsOf(as,set,v,roles){
   const fields=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,mk=ks=>ks.map(k=>({key:k,label:set.lab(k)}));
-  if(as==="table") return mk(fields||set.own.filter(k=>k!==roles.link&&k!==roles.icon));
+  if(as==="table") return mk(fields||set.own);
   if(as==="list"){if(fields) return mk(fields);
     const skip=new Set([...ROLE_NAMES.map(n=>roles[n]),v.group,v.parent||"parent","id"]);
     return mk(set.own.filter(k=>!skip.has(k)));}
@@ -5946,7 +5957,8 @@ function headingLink(hit,kids){
    is plain text, as a heading that is nowhere is. */
 const linkHooks=scope=>{const mods=()=>allModules().filter(m=>scopeOfModule(m)===scope);
   return {
-    link:(target,label)=>{if(target[0]!=="#"||target[1]==="^") return null;
+    link:(target,label)=>{if(isModuleLink(target)) return label!==undefined?label:target;
+      if(target[0]!=="#"||target[1]==="^") return null;
       const h=target.slice(1).trim(),text=label!==undefined?label:h,hit=findHeading(mods(),h,false);
       return hit?headingLink(hit,[text]):text;},
     anchor:(slug,kids)=>{const hit=findHeading(mods(),slug,true);
@@ -5995,7 +6007,10 @@ function citeBegin(activityId){
   /* places: every place each citation is marked, in reading order, as its
      page and how many marks of it come before on that page */
   const nums=new Map(),firstPage=new Map(),broken=new Set(),places=new Map();
-  for(const p of pagesOf(activityOf(activityId))){const onPage=new Map();
+  /* the module's opening is drawn with its first activity (on the module's screen, or on the activity's own when it is the only one), so its marks come first */
+  const pgs=pagesOf(activityOf(activityId)),first=activitiesOf(mod)[0];
+  if(first&&first.id===activityId&&Array.isArray(mod.opening)&&mod.opening.length) pgs.unshift({id:"opening",blocks:mod.opening});
+  for(const p of pgs){const onPage=new Map();
     for(const b of blocksIn(p))
       for(const s of markedTexts(b)) for(const id of citeIds(s)){
         if(!cites.has(id)){broken.add(id);continue;}
@@ -6440,9 +6455,11 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   const draft=answersFor(id);if(repeats) seedUpsertDraft(id,m,draft);
   const col=el("div",{class:"col"});
   const titleText=tx(mod.title,tx(m.title,shortId(id)));
-  col.append(el("h2",{},titleText));
-  const lead=tx(mod.blurb,tx(m.blurb,""));
-  if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));
+  /* a module that is one activity has no screen of its own: its activity's screen draws its head (title, opening, picture) */
+  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)) col.append(moduleHead({...mod,title:titleText},id,null,false,m.icon));
+  else{col.append(el("h2",{},titleText));
+    const lead=tx(mod.blurb,tx(m.blurb,""));
+    if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
   if(repeats) col.append(el("h3",{},u.earlier),chipStrip(id));
   /* the page on show and its blocks, and the pages menu beside them: see
      AN ACTIVITY'S PAGES. One draft serves every page. */
@@ -6468,7 +6485,7 @@ function activityFooter(id){const C=strings("cards"),holder=holderOf(id),shown=h
   const foot=el("div",{class:"cd-foot"},
     el("button",{type:"button",class:"cd-btn cd-back",onclick:()=>go(backTo)},icon("arrow-left"),C.back));
   if(next) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:()=>go(next.id)},
-    C.next(here+2,cardPicture(activityName(next),here+2).title),icon("arrow-right")));
+    C.next(here+2,cardPicture(activityName(next),here+2,next.icon).title),icon("arrow-right")));
   return foot;}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
@@ -6550,13 +6567,35 @@ function moduleStatus(acts){const C=strings("cards"),ps=acts.map(activityProgres
   const n=ps.filter(p=>p.started).length;return n?C.startedOf(n,ps.length):C.notStarted;}
 /* the line under a module's blurb: how many activities, and how many are started */
 function moduleMeta(acts){const C=strings("cards"),ps=acts.map(activityProgress).filter(p=>p.tracked),n=ps.filter(p=>p.started).length;
-  return [C.activitiesN(acts.length),n?C.startedN(n):ps.length?C.notStarted:""].filter(nonEmpty).join(" · ");}
+  return [C.activitiesN(acts.length),n?C.startedN(n):""].filter(nonEmpty).join(" · ");}
 /* A card on the home page or a module's page: a button that opens view `to`. `i` is its place in the list it is in. */
 function activityCard(to,name,blurb,status,i,iconName){
   const {title,picture}=cardPicture(name,i+1,iconName);
   return cardNode({mode:"go",title,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,onclick:()=>go(to)});}
 function moduleCard(mod,acts,i){
   return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),moduleStatus(acts),i,mod.icon);}
+/* The head of a module's own screen, and of the screen of a module that is one activity (which stands in for it): its title, its opening
+   (the first paragraph at lede size, the rest under it, reading callouts in the file's order), `meta` (one line of counts) and its
+   `icon:` large beside the title. A module with no opening falls back to its blurb. `activityId` is the activity the opening is drawn with. */
+function openingNodes(mod,activityId){
+  const bs=Array.isArray(mod.opening)?mod.opening:[];if(!bs.length||!activityId) return {lede:null,more:[]};
+  const draft=answersFor(activityId),more=[];let lede=null;
+  bs.forEach((b,i)=>{
+    if(b.type==="markdown"&&i===0){
+      const paras=String(b.text||"").replace(/<!--[\s\S]*?-->/g,"").trim().split(/\n{2,}/),plain=p=>!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p);
+      if(paras[0]&&plain(paras[0])){lede=el("div",{class:"mhead-lede"},...mdBlockNodes({text:paras.shift()},activityId));
+        if(paras.length) more.push(renderBlock({...b,text:paras.join("\n\n")},draft,activityId));
+        return;}}
+    more.push(renderBlock(b,draft,activityId));});
+  return {lede,more};}
+function moduleHead(mod,activityId,meta,showMeta,iconName){
+  const text=el("div",{class:"mhead-text"},el("h2",{},tx(mod.title,mod.id)));
+  const o=openingNodes(mod,activityId),lead=tx(mod.blurb,"");
+  if(o.lede||o.more.length){if(o.lede) text.append(o.lede);if(o.more.length) text.append(el("div",{class:"mhead-more"},...o.more));}
+  else if(nonEmpty(lead)) text.append(el("p",{class:"aside"},lead));
+  if(showMeta&&meta) text.append(meta);
+  const name=mod.icon||iconName,big=name?icon(name,{spot:pictureIsSpot()}):null;
+  return big?el("div",{class:"mhead"},text,el("div",{class:"mhead-pic","aria-hidden":"true"},big)):text;}
 function renderModulePage(main,v){const mod=moduleForScreen(v);
   /* a module that has gone, or now holds one activity, leads where its card would */
   if(!mod||!isMulti(mod)){screen=mod?entryScreenOf(mod):"home";return render();}
@@ -6564,20 +6603,7 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   {main.append(...openNotices());}
   const col=el("div",{class:"col"});
   const acts=activitiesShown(mod);
-  /* the module's own screen: its title, its opening (the first paragraph at lede size, the rest under it), one line of counts, and
-     its `icon:` large beside the title; then the cards */
-  const text=el("div",{class:"mhead-text"},el("h2",{},tx(mod.title,mod.id)));
-  const open=tx(mod.opening,""),lead=tx(mod.blurb,"");
-  if(nonEmpty(open)){
-    const paras=open.split(/\n{2,}/),plain=p=>!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p);
-    const first=plain(paras[0])?paras.shift():"";
-    const hooks={...linkHooks(scopeOfModule(mod)||mod.id),idPrefix:"mo-",mark:()=>""};
-    if(first) text.append(el("div",{class:"mhead-lede"},...mdNodes(first,hooks).map(tableWrap)));
-    if(paras.length) text.append(el("div",{class:"mhead-more md"},...mdNodes(paras.join("\n\n"),hooks).map(tableWrap)));}
-  else if(nonEmpty(lead)) text.append(el("p",{class:"aside"},lead));
-  if(acts.length) text.append(el("p",{class:"cd-meta"},moduleMeta(acts)));
-  const big=mod.icon?icon(mod.icon,{spot:pictureIsSpot()}):null;
-  col.append(big?el("div",{class:"mhead"},text,el("div",{class:"mhead-pic","aria-hidden":"true"},big)):text);
+  col.append(moduleHead(mod,activitiesOf(mod)[0]&&activitiesOf(mod)[0].id,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0));
   main.append(col);
   const grid=el("div",{class:"modes"});
   if(!acts.length) grid.append(el("p",{class:"hint"},W.noneShown));
@@ -6983,7 +7009,15 @@ if(typeof window!=="undefined"){
   try{Object.defineProperty(window,"Booklet",{value:Object.freeze({version:RENDERER_VERSION,host:hostFn,onChange:onChangeFn,open:openFn,text:textFn}),
     writable:false,configurable:false,enumerable:true});}catch(e){}}
 /* a host that sets the style while a page is showing: draw it again (not while the page is drawing itself, which is when a booklet's own style arrives) */
-window.addEventListener("booklet-style",()=>{if(!RENDERING) render();});
+window.addEventListener("booklet-style",()=>{if(RENDERING) return;
+  /* drawing again drops the focused control: find it again by its id, or by its place among the page's controls, and give back its caret */
+  const CTL="#main input,#main textarea,#main select,#main button,#main summary,#main a[href]",a=document.activeElement,
+    all=a&&a!==document.body&&document.querySelectorAll?Array.from(document.querySelectorAll(CTL)):[],at=all.indexOf(a),
+    ss=a&&typeof a.selectionStart==="number"?a.selectionStart:null,se=a&&typeof a.selectionEnd==="number"?a.selectionEnd:null;
+  render();
+  if(at<0) return;
+  const n=(a.id&&document.getElementById(a.id))||Array.from(document.querySelectorAll(CTL))[at];
+  if(n&&n.focus){n.focus();try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}});
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
 /* The menu stays in view below the page's own sticky bar, whose height changes

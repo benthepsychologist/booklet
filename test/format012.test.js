@@ -53,9 +53,10 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
  /* ---- a module's opening ---- */
  {const R=A.parseFile(FM+"> [!module|m] M\n\n> [!notice]\n> license: Free.\n\nFirst paragraph here.\n\nSecond one.\n\n> [!activity|a] A\n\nIn the activity.\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
   const a=acts(R);
-  chk("prose between a module's notice and its first activity is the module's opening",mod(R).opening==="First paragraph here.\n\nSecond one.",JSON.stringify(mod(R).opening));
+  chk("prose between a module's notice and its first activity is the module's opening, as blocks in the file's order",
+    mod(R).opening.length===1&&mod(R).opening[0].type==="markdown"&&mod(R).opening[0].text==="First paragraph here.\n\nSecond one.",JSON.stringify(mod(R).opening));
   chk("the opening is not drawn inside the first activity, and the activity keeps its own prose",!JSON.stringify(a[0].blocks).includes("First paragraph")&&JSON.stringify(a[0].blocks).includes("In the activity."));
-  chk("the notice is not part of it, and a module with none has no opening",!/Free/.test(mod(R).opening)&&mod(A.parseFile(FM+"> [!module|m] M\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\n> [!module|m end] End\n")).opening===undefined);
+  chk("the notice is not part of it, and a module with none has no opening",!/Free/.test(JSON.stringify(mod(R).opening))&&mod(A.parseFile(FM+"> [!module|m] M\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\n> [!module|m end] End\n")).opening===undefined);
   chk("the card's blurb is still its first paragraph",mod(R).blurb==="First paragraph here.");}
 
  /* ---- the roles ---- */
@@ -75,9 +76,9 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
    chk(as+": a web address opens apart, safely",links.some(x=>x.attrs.target==="_blank"&&/noopener/.test(x.attrs.rel||"")));
    const pics=walk(n,x=>x.tagName==="use").map(x=>x.attrs.href);
    chk(as+": an icon value is drawn through the sprite, and a name that is not in it is not drawn",pics.join()==="#bi-compass,#bi-house",pics.join());
-   chk(as+": the link and icon fields are not drawn as extras",!/compass|no-such/.test(text(n)));}
- {const n=draw(ROWS,{as:"table"});
-  chk("a table's link and icon fields are not columns (they are roles) unless fields: names them",!/Neap tides|example\.org/.test(text(n))&&/Neap tides|example/.test(text(draw(ROWS,{as:"table"},["label","link"]))));}
+   chk(as+": the link and icon fields are not drawn as list extras",as==="table"||!/compass|no-such/.test(text(n)));}
+ {const n=draw(ROWS,{as:"table"}),heads=walk(n,x=>x.tagName==="th").map(text);
+  chk("a table without fields: still shows every field as a column (link and icon too); its first cell leads to the row's link and carries its icon",heads.join()==="label,value,link,icon"&&walk(n,x=>x.tagName==="a").length===2&&walk(n,x=>x.tagName==="use").length===2,heads.join());}
  {const n=draw(ROWS,{as:"tiles",link:"to",icon:"pic"}),m=draw(ROWS.map(r=>({label:r.label,to:r.link,pic:r.icon})),{as:"tiles",link:"to",icon:"pic"});
   chk("a query key points the role at a field with another name",walk(m,x=>x.tagName==="a").length===2&&walk(m,x=>x.tagName==="use").length===2,String(walk(m,x=>x.tagName==="a").length));}
  {const n=draw(ROWS,{as:"bars"}),l=draw(ROWS,{as:"line"});
@@ -86,6 +87,38 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
   chk("a link value is a target, never Markdown or HTML",walk(n,x=>x.tagName==="a"||x.tagName==="b").length===0);}
  {const n=draw([{label:"A",link:"#Neap tides"},{label:"B",link:"#Spring tides"}],{as:"tiles"});
   chk("tiles with no value (pills) lead too, and a tile that leads says so for the stylesheet",walk(n,x=>x.tagName==="a").length===2);}
+
+ /* ---- review fixes: callouts in the opening, module links, web addresses, deep chains, bare parents ---- */
+ {const R=A.parseFile(FM+"> [!module|m] M\n\nLead.\n\n> [!tip] A tip\n> Tip body.\n\nAfter the tip.\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
+  chk("a reading callout before the first activity is part of the opening, in the file's order with the prose",
+    mod(R).opening.map(b=>b.type+":"+(b.kind||"")).join()==="markdown:,callout:tip,markdown:"&&R.unread.length===0,JSON.stringify(mod(R).opening.map(b=>b.type)));
+  A.loadText(FM+"> [!module|m] M\n\n<!-- note -->\n\nLead words.\n\nMore.\n\n> [!tip] A tip\n> Tip body.\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
+  const o=A.openingNodes(A.allModules()[0],A.allModules()[0].activities[0].id);
+  chk("an opening that starts with an HTML comment still has its lede; the rest and the callout follow",!!o.lede&&text(o.lede)==="Lead words."&&o.more.length===2&&/Tip body/.test(text(o.more[1])),o.lede&&text(o.lede));}
+ {const out=A.mdNodes("[Week 2](week-2.booklet.md) and [[week-3.booklet]] and [[week-4.booklet|Four]] and [site](https://example.org/x) and [mix](folder/w.booklet)",A.linkHooks("m"));
+  const links=walk({children:out},x=>x.tagName==="a");
+  chk("in prose a link to a whole module is plain text (never a relative link that leaves the page); a web address still leads",
+    links.length===1&&links[0].attrs.href==="https://example.org/x"&&/Week 2 and week-3\.booklet and Four/.test(out.map(text).join("")),out.map(text).join("")+" "+links.length);
+  chk("isModuleLink reads x.booklet and x.booklet.md, with a folder or without, and no web address or heading",
+    ["x.booklet","x.booklet.md","a/b/x.booklet.md"].every(A.isModuleLink)&&!["https://e.org/x.booklet.md","#x","x.md","mailto:a@b.c"].some(A.isModuleLink));
+  const sp=A.mdNodes("[a](ht tps://example.org/) [c](<ht tps://example.org/>) [d](<https://exa mple.org/>)",A.linkHooks("m"));
+  chk("a web address with a space in it is not a link, in prose",walk({children:sp},x=>x.tagName==="a").length===0);
+  const lead=draw([{label:"L",link:"ht tps://example.org/"}],{as:"list"});
+  chk("and not in the link role",walk(lead,x=>x.tagName==="a").length===0);}
+ {const N=10000,chain=Array.from({length:N},(_,i)=>"> [!activity|a"+i+(i?" parent:a"+(i-1):"")+"] A"+i+"\n\n").join("");
+  const t0=Date.now(),R=A.parseFile(FM+"> [!module|m] M\n\n"+chain+"> [!module|m end] End\n");
+  const a=acts(R);
+  chk("a chain of 10,000 activities each under the one before opens (no stack overflow) and keeps its order and depth",R.ok&&a.length===N&&a[N-1].depth===N-1&&a[0].id==="m/a0",R.ok+" "+a.length);
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"f012d-")),f=path.join(tmp,"deep.md");
+  fs.writeFileSync(f,FM+"> [!module|m] M\n\n"+chain+"> [!module|m end] End\n");
+  const t1=Date.now(),r=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"}),dt=Date.now()-t1;
+  chk("the linter walks that chain in under two seconds, with no warning",r.status===0&&dt<2000&&/0 errors · 0 warnings/.test(r.stdout),dt+"ms "+r.stdout.slice(-120));
+  const loopy=FM+"> [!module|m] M\n\n"+Array.from({length:3000},(_,i)=>"> [!activity|a"+i+" parent:a"+((i+1)%3000)+"] A"+i+"\n\n").join("")+"> [!module|m end] End\n";
+  fs.writeFileSync(f,loopy);const t2=Date.now(),r2=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"});
+  chk("a loop 3,000 long is reported once per member, fast",r2.status===0&&(r2.stdout.match(/loops back/g)||[]).length===3000&&Date.now()-t2<3000,String(Date.now()-t2));
+  fs.rmSync(tmp,{recursive:true,force:true});}
+ {const r=spawnSync("python3",[P.R+"/lint-booklet.py",P.R+"/test/fixtures/lint-parent-bare.md"],{encoding:"utf8"});
+  chk("parent: between activities outside every module fence places nothing, and the linter says so",r.status===0&&/line 11: `parent:a` outside a module fence places nothing/.test(r.stdout),r.stdout);}
 
  /* ---- the picture rule on a card ---- */
  {const g=A.cardPicture("🌱 Why it works",3,"compass"),n=A.cardPicture("🌱 Why it works",3,"no-such-picture"),z=A.cardPicture("Why",3,"compass");
@@ -102,7 +135,11 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
   chk("a hostile value reaches nothing",["Briefing","briefing;}","url(x)","__proto__","teaching briefing"].every(v=>A.readTheme("style: "+JSON.stringify(v)).spec.style===undefined&&A.readTheme("style: "+v).spec.style===undefined));
   const T=n=>({});
   chk("themeDerive hands the style on, and says nothing when the file names none",A.themeDerive({style:"briefing"},T).style==="briefing"&&A.themeDerive({},T).style===""&&A.themeDerive({style:"x"},T).style==="");
-  chk("the renderer's styles are the two the head script has",A.TH_STYLES.join()==="teaching,briefing");}
+  {const head=/var STYLE_NAMES=\[([^\]]*)\]/.exec(P.html);
+   chk("the renderer's styles are the two the head script has (STYLE_NAMES)",!!head&&A.TH_STYLES.join()===[...head[1].matchAll(/"(\w+)"/g)].map(m=>m[1]).join());}
+  chk("a theme with no base and no colour leaves the colours to the reader (colours: false), whatever font, density or style it sets",
+    ["style: briefing","font: serif","density: roomy","font: serif\ndensity: compact\nstyle: teaching"].every(b=>A.themeDerive(A.readTheme(b).spec,T).colours===false));
+  chk("a base or any colour makes it a colour theme (colours: true)",["base: night","accent: #0f3d47","style: briefing\nink: #222222","base: paper\nfont: serif"].every(b=>A.themeDerive(A.readTheme(b).spec,T).colours===true)&&A.themeDerive(A.readTheme("base: neon").spec,T).colours===false);}
  {const book2=FM+"```booklet theme\nstyle: briefing\n```\n\n> [!activity|a] A\n";
   const R=A.parseFile(book2);
   chk("a theme block with a style reads clean and keeps it",R.ok&&R.unread.length===0&&R.template.theme.style==="briefing",JSON.stringify(R.unread));}
@@ -124,7 +161,6 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
   chk("a loop is a warning, one per activity in it",l.status===0&&l.warns.length===2&&l.warns.every(w=>/loops back/.test(w)),l.out);
   l=lint("self.md",F("> [!activity|a parent:a] A\n\n"));
   chk("an activity under itself is a loop",l.warns.length===1&&/loops back/.test(l.warns[0]),l.out);
-  l=lint("pm.md",F("> [!module|n] N\n\n"));
   l=lint("par2.md",FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b parent:a] B\n\n> [!module|n end] End\n");
   chk("a parent in another module is not in this one",l.warns.length===1&&/`parent:a` is not an activity of the module 'n'/.test(l.warns[0]),l.out);
   l=lint("par3.md",F("> [!activity|a parent:bad id] A\n\n> [!activity|b parent:ok_x] B\n\n"));

@@ -42,7 +42,7 @@ const orphans=head+'> [!activity|a] Orphans\n\n> [!hint]-\n> ORPHAN-SECRET-ONE\n
     ok(await p.locator('#main button.mode a').count()===0&&await p.locator('#main button a').count()===0,`${W}px: no link inside a button`);
     const first=await p.locator('#main button.mode').first().innerText();
     ok(/First words with a link in them/.test(first)&&/Not started/.test(first),`${W}px: the first card's teaser reads the paragraph's words (link text, no link), and says Not started: ${JSON.stringify(first)}`);
-    ok(await p.locator('#main .cd-meta').innerText()==='7 activities · Not started',`${W}px: the screen leads with a meta line`);
+    ok(await p.locator('#main .cd-meta').innerText()==='7 activities',`${W}px: the screen leads with a meta line`);
     {const g=await p.evaluate(()=>{const r=e=>e.getBoundingClientRect(),m=r(document.querySelector('#main')),c=[...document.querySelectorAll('#main button.mode')].map(r),h=r(document.querySelector('#main h2'));
        return {left:Math.min(...c.map(x=>x.left))-m.left,right:m.right-Math.max(...c.map(x=>x.right)),h:h.left-Math.min(...c.map(x=>x.left)),w:Math.max(...c.map(x=>x.width)),rem:parseFloat(getComputedStyle(document.documentElement).fontSize)};});
      ok(Math.abs(g.left-g.right)<=2&&Math.abs(g.h)<=2&&g.w<=48*g.rem+2,`${W}px: the cards are one centred column, and the title lines up with them (${JSON.stringify(g)})`);}
