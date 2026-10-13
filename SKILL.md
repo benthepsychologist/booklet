@@ -239,8 +239,9 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   thing inside its fence: a `> [!notice]` callout whose lines are `key: value`
   for `license`, `copyright`, `source` and `version` (any may be left out;
   nothing else goes in it, and it takes no id). A file that holds one module and
-  no callout is covered by its front matter's `license`, `copyright`, `source`
-  and `version`, so a module file needs no change. Never invent terms nobody
+  no callout is covered by its front matter's `license`, `copyright` and
+  `source` (never `version`: the file's version is the file's), so a module
+  file needs no change. Never invent terms nobody
   gave you; copy a module's own notice, do not write one.
 - The **module's title** (after the id) is the words after the `]` on the
   same line — this is what shows on the home card, exactly as written, no
@@ -253,7 +254,8 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
 - **An activity's id** is a short prefix plus a name (`aw-notes`, `tw-learn`):
   lowercase letters, digits, dashes; unique **within its module** (two
   modules may each have an `intro`, and neither sees the other's; the same
-  holds for question, menu and block ids). Never `home` — the renderer uses that name itself.
+  holds for question, menu and block ids). The id is the **first word** after
+  the bar, so any word will do, and no id is reserved (not even `home`).
 - **Flags** (after the id, space-separated): `repeat` (kept as a dated
   entry), `repeat daily` (one entry per day), `hidden` (kept in the file, not
   offered). With none of these, the activity is answered once and edited in
@@ -446,7 +448,7 @@ between paragraphs (`\n\n`) for a new one.
 - **A pull-quote or a note set apart** is an Obsidian-style callout:
   `> [!note] …`, `> [!tip] …`, `> [!warning] …`, or Booklet's own `diff`
   (where a guide differs from this reading), `law` (a rule as it stands) or
-  `opinion` (an author's view). `> [!group]- Title` folds reading content
+  `opinion` (an author's view), and `group`, the plain fold: `> [!group]- Title` folds reading content
   shut until opened — fine for background material nobody has to read, never
   for a question (section 6).
 - **A citation is an ordinary footnote** — `[^id]` in the text, and its
@@ -469,7 +471,7 @@ between paragraphs (`\n\n`) for a new one.
   If they gave a reference and no quote, write the note as that reference, as
   given, with no quote and no `Verified`, and never make a quote up: the
   panel shows it as a plain reference, its words as written, with no check. Put nothing else in a note (`*` stays as typed).
-- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the activity holding that heading (an activity's own title counts) on the right page; the linter warns when no heading in the file matches.
+- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a page's name, a question's prompt or a callout's title), on the right page; the linter warns when no heading in the file matches.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
   module**. It is read-only and takes no answer. The kind goes on the fence
@@ -744,7 +746,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 ### Layout and look (optional, format 0.5)
 
 - **Rows.** `> [!row]` … `> [!row|end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`---`), an activity line or a module fence.
-- **Widget colours** are tone names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, not hex colours, so a widget reads in every theme.
+- **Widget colours** are colour names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, never hex colours (they are no colour), so a widget reads in every theme.
 - **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`, `style`) is only for a booklet that has a reason to look different. `style: teaching` (soft tiles with pictures, the default) or `style: briefing` (solid tiles with icons, for reading at a glance) is the booklet's look, and holds whatever colours the reader picks. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
 
 ## 10. Validation

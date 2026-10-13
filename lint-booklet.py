@@ -122,13 +122,13 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 KIND_SETTINGS = {
     "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
-    "data": (), "records": (), "manifest": (), "notice": (),
+    "data": (), "records": (), "manifest": (), "notice": (), "group": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
     "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
 }
 NUMBER_SETTINGS = ("min", "max", "step")
 # the kinds that take no id: their words are settings only
-NO_ID_KINDS = ("row", "notice", "manifest", "hint", "solution")
+NO_ID_KINDS = ("row", "notice", "manifest", "hint", "solution", "group")
 # Booklet's icon set: the names in art/icons/ (Lucide 1.48). GENERATED: `node test/art-sprite.js --write booklet.html` rewrites
 # the list between the markers, and `--check` fails if it has drifted. An `icon:` setting or an `icon` role value outside it is reported.
 # icons:start
@@ -156,7 +156,7 @@ ICON_NAMES = frozenset((
 ENGINES = ("svg-regions", "grid-select")
 COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
-STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice"}
+STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group"}
 # what a module's notice (`> [!notice]`) may say about itself
 NOTICE_KEYS = ("license", "copyright", "source", "version")
 

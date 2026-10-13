@@ -133,7 +133,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("and so does an activity called `repeat` or `home`",/0 errors/.test(lintOut(FM+"> [!activity|repeat] A\n\n> [!activity|home] B\n")));
   const NI=(txt)=>(txt.match(/NO_ID_KINDS\s*=\s*(?:new Set\()?[\[(]([^\])]*)[\])]/)||[])[1];
   const ids=t=>[...(t||"").matchAll(/"(\w+)"/g)].map(m=>m[1]).sort().join();
-  chk("the kinds that take no id are the same in the renderer and the linter, and in SPEC section 4",ids(NI(P.html))==="hint,manifest,notice,row,solution"&&ids(NI(fs.readFileSync(path.join(P.R,"lint-booklet.py"),"utf8")))===ids(NI(P.html))&&/\| `row`, `notice`, `manifest`, `hint`, `solution` \| no id \|/.test(fs.readFileSync(path.join(P.R,"SPEC.md"),"utf8")));}
+  chk("the kinds that take no id are the same in the renderer and the linter, and in SPEC section 4",ids(NI(P.html))==="group,hint,manifest,notice,row,solution"&&ids(NI(fs.readFileSync(path.join(P.R,"lint-booklet.py"),"utf8")))===ids(NI(P.html))&&/\*\*Kinds that take no id\*\* are `row`, `notice`, `manifest`, `hint`, `solution` and `group`/.test(fs.readFileSync(path.join(P.R,"SPEC.md"),"utf8")));}
  /* ---- D8: a reference across a module boundary draws nothing and never stops the file opening ---- */
  {const A=P.boot();
   const two=FM+"> [!module|m1] One\n\n> [!activity|a repeat] A\n\n> [!text|t] T\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|b] B\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] End\n";
@@ -148,6 +148,20 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const A=load(file);A.answersIn("").q="hello";
   const out=A.toMarkdown();
   chk("an unknown front-matter key survives a save, as written, and is not reported",out.startsWith(file.replace(/\s+$/,""))&&A.parseFile(file).unread.length===0,out.slice(0,160));}
+
+ /* ---- D13: group is a kind of Booklet's own, the plain fold ---- */
+ {const A=P.boot();
+  const body="> [!activity|a] A\n\n> [!group]- Notes on the week\n> Some words inside.\n\n> [!group] Not folded\n> More words.\n";
+  const R=A.parseFile(FM+body);
+  chk("`> [!group]- Title` is read as a kind of the format: nothing reported, not marked unknown",R.unread.length===0&&!R.template.modules[0].mode.blocks.some(b=>b.unknown),JSON.stringify(R.unread));
+  chk("`group` is in the table of kinds, and takes no settings",JSON.stringify(A.KIND_SETTINGS.group)==="[]");
+  const W=A.parseFile(FM+"> [!activity|a] A\n\n> [!group|x]- Title\n> body\n");
+  chk("a word after the bar on a group is a setting it does not take, reported like any other",W.unread.length===1&&/group line takes no “x”/.test(W.unread[0]),JSON.stringify(W.unread));
+  A.loadText(FM+body);A.screen="a";A.render();
+  const main=P.main();
+  chk("it is drawn as a plain fold: plain paper, the title, and no word about a kind this page does not know",P.find(main,P.hasClass("card-plain")).length===1&&/Notes on the week/.test(P.texts(main))&&!/does not know the kind/.test(P.texts(main)),P.texts(main));
+  chk("unfolded, it is a callout with no colour or picture of a kind",P.find(main,P.hasClass("rd-callout")).length===1&&P.find(main,P.hasClass("rd-hued")).length===0);
+  chk("and the linter takes it",/0 errors · 0 warnings/.test(lintOut(FM+body)),lintOut(FM+body));}
 
  console.log(fails?"\n"+fails+" FAILURES":"\nformat 0.13 checks passed");process.exit(fails?1:0);
 })();

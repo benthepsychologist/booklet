@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-hgIiTWi75BYCuz6cOJmaWcc8fYEj+toDW3LdxiboVVM=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-TpJBCpri/QVoH4AbjXWcuWqchjCfxUwvviG1EQaY6Gs=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1469,6 +1469,9 @@ const CALLOUT_LOOK={};
  ["bug","rose","bug"],["example","lilac","flask-conical"],["quote","slate","quote","cite"],["diff","petrol","git-compare"],
  ["law","slate","scale"],["opinion","rose","message-circle"]
 ].forEach(([k,hue,ic,...aka])=>{[k,...aka].forEach(n=>{CALLOUT_LOOK[n]={hue,icon:ic,label:k};});});
+/* `group` is Booklet's own kind for a plain fold (SPEC.md section 6): a callout with no colour, picture or word of its own, like the
+   folded callout of no kind that a hint or a solution is, so it is drawn as the unlabelled callout is */
+const plainCallout=b=>b.kind===""||b.kind==="group";
 const calloutLook=kind=>{const k=String(kind==null?"":kind).toLowerCase();return Object.prototype.hasOwnProperty.call(CALLOUT_LOOK,k)?CALLOUT_LOOK[k]:CALLOUT_LOOK.note;};
 const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","number","date","matrix"]);
 const SCENERY_KINDS=new Set(["manifest","menu"]);
@@ -1476,7 +1479,7 @@ const SCENERY_KINDS=new Set(["manifest","menu"]);
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
 const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:"],row:["end"],text:["long"],
-  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],
+  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],
   choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
 /* the settings above that must be numbers */
 const NUMBER_SETTINGS=["min","max","step"];
@@ -2996,7 +2999,7 @@ const NOTICE_KEYS=["license","copyright","source","version"];
 /* the front matter stands in for a notice through these three, never `version` (the file's version is the file's) */
 const FRONT_NOTICE_KEYS=["license","copyright","source"];
 /* the kinds that take no id: their words are settings only */
-const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution"]);
+const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group"]);
 /* A file is read when its front matter says `booklet: "0.13"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
@@ -5162,9 +5165,9 @@ function hintKind(b){
 function foldedCallout(b,draft,activityId,x){
   const Rt=strings("reading"),C=strings("cards"),hs=hintKind(b);x=x||{};
   /* a kind that means something keeps its colour and picture; any other (a group, no kind) is drawn on plain paper */
-  const look=b.kind===""||hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
+  const look=plainCallout(b)||hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
   /* an untitled callout is called by its kind's word; a kind the renderer does not know is called Note, as before, only drawn plain */
-  const word=look||(b.kind===""||hs?null:calloutLook(b.kind));
+  const word=look||(plainCallout(b)||hs?null:calloutLook(b.kind));
   const title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
@@ -6269,7 +6272,7 @@ function showTip(activityId,id,at){if(citeOpen()&&citeFrom===at) return;
 function hideTip(){if(citeTipEl) citeTipEl.setAttribute("hidden","");}
 /* ---- callouts ---- */
 let rdSeq=0;
-function calloutNode(b,draft,activityId){const Rt=strings("reading"),plain=b.kind==="",look=plain?null:calloutLook(b.kind),k=look?look.label:"";
+function calloutNode(b,draft,activityId){const Rt=strings("reading"),plain=plainCallout(b),look=plain?null:calloutLook(b.kind),k=look?look.label:"";
   const u="rd-c"+(++rdSeq),title=tx(b.title,"");
   const box=el("div",{class:"rd-callout"+(look?" rd-hued hue-"+look.hue+" rd-k-"+look.label:""),role:"note","data-kind":k||null});
   const head=el("div",{class:"rd-chead"}),named=[];
