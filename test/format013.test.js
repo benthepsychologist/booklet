@@ -392,15 +392,17 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("region: a `%%` … `%%` comment above the records stays in place with the question after it, and a save keeps both",o.includes("%%\nan author's note\n%%\n\n> [!text|q] Q\n\nProse after the comment.\n")&&A.allModules()[0].mode.blocks.some(b=>b.type==="text"&&b.id==="q")&&answersOf(o,"").q==="x"&&load(o).toMarkdown()===o,o);}
  {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+fence("booklet answers",'{"q":"x"}')+"%%\n\nProse after the region.\n\n> [!data] A data section\n\n```booklet data\n[{\"label\":\"x\"}]\n```\n^d1\n";
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
-  chk("region: prose and a data section after the closing `%%` are design: read, not reported",R.unread.length===0&&R.template.modules[0].mode.blocks.some(b=>b.type==="markdown"&&/Prose after the region/.test(b.text))&&R.template.dataSets!==0,JSON.stringify(R.unread));
-  chk("region: and written back after the region, where they were, on every save",o.indexOf("```booklet answers")<o.indexOf("Prose after the region")&&o.indexOf("Prose after the region")<o.indexOf("```booklet data")&&cnt(o,/Prose after the region/g)===1&&cnt(o,/```booklet data/g)===1&&load(o).toMarkdown()===o,o);}
+  chk("region: prose and a data section after the closing `%%` are design: read, and reported once as moved",R.unread.length===1&&/after the records is moved above them/.test(R.unread[0])&&R.template.modules[0].mode.blocks.some(b=>b.type==="markdown"&&/Prose after the region/.test(b.text)),JSON.stringify(R.unread));
+  chk("region: and written above the region on save, once, and the next open reports nothing",o.indexOf("Prose after the region")<o.indexOf("%%\n> [!records]")&&o.indexOf("```booklet data")<o.indexOf("%%\n> [!records]")&&cnt(o,/Prose after the region/g)===1&&cnt(o,/```booklet data/g)===1&&P.boot().parseFile(o).unread.length===0&&load(o).toMarkdown()===o,o);}
+ {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+fence("booklet answers",'{"q":"x"}')+"%%\n\n    indented code line one\n    indented code line two\n";
+  chk("region: only blank lines at the edges of the moved text are trimmed, never a first line's indentation",load(f).toMarkdown().includes("\n    indented code line one\n    indented code line two\n"));}
  {const mod="> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q1] One\n\n> [!widget|w] W\n> ![[#^grid]]\n\n> [!module|m end] End\n";
   const f=FM+mod+REC+rec("m",fence("booklet answers",'{"q1":"x"}'))+"> [!data] Data\n\n```booklet widget\n{\"engine\":\"grid-select\",\"cells\":[]}\n```\n^grid\n\n%%\n";
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
   chk("region: a `> [!data]` line inside the region is reported and kept as written, and the widget under it is not read",R.unread.length===2&&A.BOOK.widgets.length===0&&/> \[!data\] Data\n\n```booklet widget/.test(o)&&cnt(o,/\n\^grid\n/g)===1,JSON.stringify(R.unread));}
  {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+"> [!records] Again\n\n"+fence("booklet answers",'{"q":"x"}')+"%%\n\n> [!records] A second region?\n\n"+fence("booklet answers",'{"q":"y"}');
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
-  chk("region: a records line after the closing `%%` is design, reported, and left where it was",A.peekAnswers("").q==="x"&&R.unread.length===2&&/second region/.test(o)&&/"q":"y"/.test(o)&&cnt(o,/"q":"y"/g)===1,JSON.stringify(R.unread));}
+  chk("region: a records line after the closing `%%` is design, reported, and moves with the rest of it",A.peekAnswers("").q==="x"&&R.unread.length===3&&/second region/.test(o)&&/"q":"y"/.test(o)&&cnt(o,/"q":"y"/g)===1&&o.indexOf("second region")<o.indexOf("%%\n> [!records]"),JSON.stringify(R.unread));}
 
  /* nits */
  {const f=FM+MODE+REC+rec("m","A note someone wrote by hand.\n\n","> [!my_kind] Kept?\n> body\n\n")+"%%\n";
@@ -435,10 +437,49 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
  /* S4: every message is true where it is shown */
  {const A=P.boot();
   const out=A.parseFile(FM+"> [!activity|a] A\n\n> [!text|q] Q\n\n"+fence("booklet answers",'{"q":"x"}')+REC+"> [!records] r\n\n"+fence("booklet widget",'{"engine":"grid-select","cells":[]}').replace("```\n\n","```\n^w\n\n")+fence("booklet entries e",'{"items":5}')+fence("booklet sync",'{"x":1}')+"%%\n").unread;
-  chk("S4: an answers block outside a records line says where it belongs, not that the page does not read answers",/^line 11: a “booklet answers” block belongs under a records line/.test(out[0])&&!/not one this page reads/.test(out[0]),JSON.stringify(out));
+  chk("S4: an answers block outside a records line says where it belongs, not that the page does not read answers",/^line 11: a “booklet answers” block belongs in the records region/.test(out[0])&&!/not one this page reads/.test(out[0]),JSON.stringify(out));
   chk("S4: a widget block in the records says it is not a record, not that the page does not read widgets",out.some(x=>/this is not a record this page reads/.test(x))&&!out.some(x=>/“booklet widget”/.test(x)),JSON.stringify(out));
   chk("S4: an entries record with no list is kept, and does not say it was skipped; an unknown kind says only that the page does not read it",out.some(x=>/holds no list of items/.test(x)&&!/skipped/.test(x))&&out.some(x=>/“booklet sync” block is not one this page reads/.test(x)),JSON.stringify(out));
   chk("S4: the French and Spanish words for the changed messages are marked draft",["fr","es"].every(l=>/draft/.test(String(P.html.split("\n").filter(x=>/recordNoItems|recordOutside/.test(x)&&x.includes(l==="fr"?"enregistrement":"registro")).join("")))));}
+
+ /* round 3: design after the region is written above it (design first, records last) */
+ {const M=(id,t,q)=>"> [!module|"+id+"] "+t+"\n\n> [!activity|"+id+"-a] "+t+" A\n\n> [!text|"+q+"] Q "+q+"\n\n> [!module|"+id+" end] End\n";
+  const f=FM+M("m","M","q1")+REC+"> [!records|m] M\n\n"+fence("booklet answers",'{"q1":"x"}')+"> [!records|late] Late\n\n"+fence("booklet answers",'{"lq":"late answer"}')+"%%\n\nProse after the records.\n\n"+M("late","Late","lq")+"\nMore prose at the very end.\n";
+  const A=load(f),R=A.parseFile(f);
+  chk("R2-B2: a records line finds a module written after the region on the first open: its answer is read, nothing but the move is reported",A.peekAnswers("late").lq==="late answer"&&R.unread.length===1&&/moved above/.test(R.unread[0]),JSON.stringify(R.unread));
+  const r=A.addModuleText(FM.replace("title: T","title: Late")+M("late","Late v2","lq2"));
+  A.answersIn("late").lq2="v2 answer";
+  const o=A.toMarkdown(),B=load(o),R3=P.boot().parseFile(o);
+  chk("R2-B1: Add an update to a module that sits after the region: it adds, the file opens, `late` has one fence, nothing is refused",r.ok&&cnt(o,/\[!module\|late\]/g)===1&&R3.ok&&R3.refused.length===0,JSON.stringify([r,R3.refused]));
+  chk("R2-B1: its answers come back after a reopen, and the moved text sits above the region",B.peekAnswers("late").lq2==="v2 answer"&&o.indexOf("Prose after the records.")<o.indexOf("%%\n> [!records]")&&o.indexOf("More prose at the very end.")<o.indexOf("%%\n> [!records]")&&B.toMarkdown()===o,o.slice(o.indexOf("> [!module|m end]")));
+  const C=load(o);const rm=C.removeModule("late");const o2=C.toMarkdown();
+  chk("R2-B1: Remove sees a module that was written after the region",rm.ok&&!/\[!module\|late\]/.test(o2)&&P.boot().parseFile(o2).ok,JSON.stringify(rm));}
+ {const W="```booklet widget\n{\"engine\":\"grid-select\",\"cells\":[]}\n```\n^grid\n";
+  const mod=t=>"> [!module|m] "+t+"\n\n> [!activity|a] A\n\n> [!text|q1] One\n\n> [!widget|w] W\n> ![[#^grid]]\n\n> [!module|m end] End\n";
+  const f=FM+mod("M")+REC+"> [!records|m] M\n\n"+fence("booklet answers",'{"q1":"x"}')+"%%\n\n> [!data|m] Data for M\n\n"+W;
+  const A=load(f);
+  const r=A.addModuleText(FM.replace("title: T","title: M")+mod("M v2")+"\n> [!data] Data\n\n"+W);
+  const o=A.toMarkdown(),R2=P.boot().parseFile(o);
+  chk("R2-B1: Add an update to a module whose data section sits after the region: one ^grid block in the file, and it opens",r.ok&&cnt(o,/\n\^grid\n/g)===1&&R2.ok&&R2.refused.length===0,JSON.stringify([r,R2.refused]));}
+
+ /* S2 remainder: kept entries have no prototype either */
+ {const f=FM+"> [!module|m] X\n\n> [!activity|log repeat] L\n\n> [!text|constructor] C\n\n> [!text|x] X\n\n> [!module|m end] End\n";
+  const A=load(f);A.screen="m/log";A.render();A.draftFor("m/log").x="typed only x";
+  let why="";try{A.finalizeEntry("m/log");A.screen="m/log";A.render();
+   const e=A.STATE.entries["m/log"][0];if(Object.getPrototypeOf(e)!==null) why="kept entry has a prototype";
+   A.saveLocal();const B=P.boot();B.openBooklet(A.currentId);B.screen="m/log";B.render();
+   if(Object.getPrototypeOf(B.STATE.entries["m/log"][0])!==null) why="a reloaded entry has a prototype";
+   B.openChip["m/log"]=B.STATE.entries["m/log"][0].ts;B.render();}catch(e){why="threw: "+String(e.message).slice(0,60);}
+  chk("S2: keeping an entry with a blank `constructor` question: the redraw works, the entry is kept, in storage, and no entry has a prototype",why===""&&/typed only x/.test(A.toMarkdown()),why);
+  const g=FM+"> [!module|m] X\n\n> [!activity|log repeat] L\n\n> [!text|constructor] C\n\n> [!text|x] X\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\nas: cards\n```\n\n> [!module|m end] End\n"+REC+"> [!records|m] X\n\n"+fence("booklet entries log",'{"items":[{"ts":"2026-01-01T00:00:00Z","x":"only x"}]}')+"%%\n";
+  const C=load(g);let w2="";try{C.screen="m/look";C.render();if(/function|native code/.test(P.texts(P.main()))) w2="shows a function";C.screen="m/log";C.render();C.openChip["m/log"]="2026-01-01T00:00:00Z";C.render();}catch(e){w2="threw: "+String(e.message).slice(0,60);}
+  chk("S2: entries read from the file have no prototype: a cards query over them and opening a kept entry work",w2===""&&Object.getPrototypeOf(C.STATE.entries["m/log"][0])===null,w2);}
+
+ /* nit: a kept record whose scope names no module and whose foreign field is not text writes nothing stray */
+ {const A=load(FM+MODE+REC+rec("m",fence("booklet sync",'{"x":1}'))+"%%\n");
+  A.BOOK.raw.records=[{scope:"zz",text:"x",foreign:5},{scope:"m",text:"fine",foreign:{}}];
+  const o=A.toMarkdown();
+  chk("nit: corrupted storage writes no line `5` and no `[object Object]`",!/^5$/m.test(o)&&!/object Object/.test(o),o.slice(-200));}
 
  console.log(fails?"\n"+fails+" FAILURES":"\nformat 0.13 checks passed");process.exit(fails?1:0);
 })();

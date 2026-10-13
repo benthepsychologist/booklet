@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-wjI+fe5y7rFit2HzpyE04PC47EfxjeCxdhYO2DqProo=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-MlYJxmUTPMy1VysNNfHGn4734McUpXj6hrPKkAHKc2Y=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1418,7 +1418,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
 const RENDERER_VERSION="0.13.0";
-/* The format this renderer reads, as TEXT: `0.10` is not 0.1 (versionOf, versionCmp) */
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.13"`, and a
+   booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
+   it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
 const FORMAT_VERSION="0.13";
 const LANG_NAMES={en:"English",es:"Español","es-AR":"Español (Argentina)",fr:"Français"};
 /* the interface languages with a button (the variants, es-AR, have none), in the order offered */
@@ -1426,14 +1428,18 @@ const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
 const LANG_PREF_KEY="booklet.ui.lang";
 const MODULE_SCREEN="module:";
 const LIB_KEY="booklet.library.v1", bookKey=id=>"booklet.b."+id;
-/* a view's name takes a leading @ that no activity id has */
+/* "Your booklets" and a booklet's home are views of their own. Views and activity ids share one
+   namespace, and an activity id holds only letters, digits and dashes, so a view's name takes a
+   leading @ that no activity id has (and no activity id is reserved). */
 const LIB_SCREEN="@booklets",HOME_SCREEN="@home";
 /* every dialog the page has, by id */
 const VEIL_IDS=["veilLoad","veilClear","veilAddModule","veilExport"];
 /* the browser's own preference for the menu: "min" or "open" */
 const PAGES_MENU_KEY="booklet.ui.pagesMenu";
 const RM_KEY="booklet.ui.reading.";
-/* A colour in widget data is a colour name; any other is no colour */
+/* A colour in widget data is a colour name (warm, green, amber, slate, teal), drawn in the active
+   theme's own tone tokens with the theme's ink on it, so a cell looks right in every theme. A name
+   this list does not hold is no colour. (A "tone" is `good`, `warn` or `bad`, in a view.) */
 const COLOUR_NAMES=["warm","green","amber","slate","teal"];
 /* the built-in themes by name, in the order the menu offers them; the head
    script keeps a copy of this list (THEMES, and NAMES with "auto" first),
@@ -1732,7 +1738,8 @@ const STRINGS_SRC={
       queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number, so it was ignored`,
       queryInData: w=>`${w}: a query belongs in an activity's prose, not in the data section, so it was ignored`,
       recordNoItems: (w,id)=>`${w}: the entries record for “${id}” holds no list of items, so it is kept as written`,
-      recordOutside: (w,what)=>`${w}: a “booklet ${what}” block belongs under a records line, so it is not read here`,
+      recordOutside: (w,what)=>`${w}: a “booklet ${what}” block belongs in the records region, so it is not read here`,
+      designMoved: "The design after the records is moved above them when saved",
       langMissing: "The front matter has no `lang:`, so this page took the file to be in English",
       menuMissing: (w,menu,id)=>`${w}: the menu “${menu}” is not in this file, so the question “${id}” was not drawn`,
       queryRefused: (id,why)=>`a query in “${id}” ${why}, so it is not drawn`,
@@ -2050,7 +2057,8 @@ const STRINGS_SRC={
       queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est pas un nombre entier positif ; il a donc été ignoré`,
       queryInData: w=>`${w} : une requête doit se trouver dans le texte d’une activité, pas dans la section des données ; elle a donc été ignorée`,
       /* l10n: draft */ recordNoItems: (w,id)=>`${w} : l’enregistrement des entrées de « ${id} » ne contient aucune liste d’éléments ; il est donc conservé tel quel`,
-      /* l10n: draft */ recordOutside: (w,what)=>`${w} : un bloc « booklet ${what} » va sous une ligne d’enregistrements ; il n’est donc pas lu ici`,
+      /* l10n: draft */ recordOutside: (w,what)=>`${w} : un bloc « booklet ${what} » va dans la région des enregistrements ; il n’est donc pas lu ici`,
+      /* l10n: draft */ designMoved: "Le contenu après les enregistrements passe au-dessus d’eux à l’enregistrement",
       langMissing: "L’en-tête n’a pas de `lang:` ; cette page a donc supposé que le fichier est en anglais",
       menuMissing: (w,menu,id)=>`${w} : le menu « ${menu} » n’est pas dans ce fichier ; la question « ${id} » n’a donc pas été dessinée`,
       /* l10n: draft */ queryRefused: (id,why)=>`une requête dans « ${id} » ${why} ; elle n’est donc pas affichée`,
@@ -2368,7 +2376,8 @@ const STRINGS_SRC={
       queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo, así que se ignoró`,
       queryInData: w=>`${w}: una consulta va en el texto de una actividad, no en la sección de datos, así que se ignoró`,
       /* l10n: draft */ recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se conserva tal cual`,
-      /* l10n: draft */ recordOutside: (w,what)=>`${w}: un bloque “booklet ${what}” va bajo una línea de registros, así que no se lee aquí`,
+      /* l10n: draft */ recordOutside: (w,what)=>`${w}: un bloque “booklet ${what}” va en la región de registros, así que no se lee aquí`,
+      /* l10n: draft */ designMoved: "El contenido tras los registros pasa encima de ellos al guardar",
       langMissing: "El encabezado no tiene `lang:`, así que esta página tomó el archivo como escrito en inglés",
       menuMissing: (w,menu,id)=>`${w}: el menú “${menu}” no está en este archivo, así que la pregunta “${id}” no se dibujó`,
       /* l10n: draft */ queryRefused: (id,why)=>`una consulta en “${id}” ${why}, así que no se muestra`,
@@ -2665,8 +2674,8 @@ let BOOK = EMPTY_BOOKLET;
 /* `answers` are the once-answered questions, one map by scope: `answers[scope][questionId]`, where scope is
    a module's id, or "" for the module with no name (the activities outside any module fence);
    `entries` are kept entries, keyed by activity address */
-/* a map keyed by a file's ids has no prototype, so no id (`constructor`, `__proto__`) is a key the language already has */
-const nullMap=(o,deep)=>{const r=Object.create(null);if(isObj(o)) Object.keys(o).forEach(k=>{r[k]=deep&&isObj(o[k])?nullMap(o[k]):o[k];});return r;};
+/* maps keyed by a file's ids have no prototype, so no id (`constructor`, `__proto__`) is already a key */
+const nullMap=(o,deep)=>{const r=Object.create(null),one=v=>isObj(v)?nullMap(v):v;if(isObj(o)) Object.keys(o).forEach(k=>{r[k]=deep?(Array.isArray(o[k])?o[k].map(one):one(o[k])):o[k];});return r;};
 const emptyState=()=>({answers:nullMap(),entries:nullMap()});
 const emptyDrafts=()=>({custom:nullMap()});
 let STATE=emptyState();
@@ -2795,6 +2804,7 @@ const scopeOfAddr=a=>{const s=String(a==null?"":a),i=s.indexOf(ADDR_SEP);return 
 const shortId=a=>{const s=String(a==null?"":a);return s.slice(s.indexOf(ADDR_SEP)+1);};
 /* the scope a module's activities are in: its own id, or "" for a module outside every fence */
 const scopeOfModule=m=>scopeOfAddr((activitiesOf(m)[0]||{}).id);
+/* the module a fence made, by its id: the module held for a bare activity is not one (its id is its activity's, which may be a module's too) */
 const fencedModule=id=>allModules().find(m=>m.id===id&&scopeOfModule(m)!=="")||null;
 /* Where the once-answered questions of a scope are kept. peekAnswers never makes the store. */
 const answersIn=scope=>{STATE.answers=STATE.answers||nullMap();return hasOwn(STATE.answers,scope)?STATE.answers[scope]:(STATE.answers[scope]=nullMap());};
@@ -2927,7 +2937,7 @@ function clearLocal(){const key=slotKey();if(key) lsDel(key);
 function loadLocal(){const key=slotKey();if(!key) return false;
   try{const raw=lsGet(key);if(!raw) return false;const o=JSON.parse(raw);if(!o||!o.S) return false;
     const plain=x=>isObj(x)?x:{};
-    STATE={answers:nullMap(o.S.answers,1),entries:nullMap(o.S.entries)};
+    STATE={answers:nullMap(o.S.answers,1),entries:nullMap(o.S.entries,1)};
     DRAFTS={custom:nullMap((o.D||{}).custom,1)};
     if(o.lang&&STRINGS[o.lang]) lang=o.lang;
     dirty=!!o.dirty;unsavedEntries=Number(o.unsavedEntries)||0;
@@ -2998,7 +3008,6 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    and written back verbatim with fresh records under it: the file a person
    wrote is never rewritten by the page that reads it. */
 const CALLOUT_LINE=/^>[ \t]?\[!([A-Za-z0-9][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$/;
-/* any `> [!` line, readable or not: one CALLOUT_LINE cannot read is said, not left to read as prose in silence */
 const calloutLine=l=>/^>[ \t]?\[!/.test(l);
 /* A module's notice (SPEC.md section 3): the four things a module may say about itself, in the order a callout
    and a disclosure write them */
@@ -3153,11 +3162,12 @@ function parseBooklet(text){const {lines,head,next}=frontMatter(text,true);
   /* `start: home` is the one value; anything else is said and left out */
   if(fm.start!==undefined&&fm.start!=="home") problems.push(strings("problem").startBad(String(fm.start).slice(0,40)));
   if(!fm.lang) problems.push(strings("problem").langMissing);
-  const {items,source,tail}=splitItems(lines,next);
+  const {items,source,moved}=splitItems(lines,next);
+  if(moved) problems.push(strings("problem").designMoved);
   const doc=readBlocks(items,fm,problems);
   resolveMenus(doc,problems);
   linkQueries(doc,problems);
-  return shapeBooklet(doc,fm,L,source,problems,tail);}
+  return shapeBooklet(doc,fm,L,source,problems);}
 function splitItems(lines,start){let i=start;
   /* One pass over the lines, fences first: nothing inside a fence is ever a
      Booklet line, a page break or a comment marker. A choice/multi/scale
@@ -3201,8 +3211,10 @@ function splitItems(lines,start){let i=start;
     if(!buf.length) bufAt=i;
     buf.push(ln);}
   flush();
-  const source=lines.slice(0,rs===null?lines.length:rs).join("\n").replace(/\s+$/,"")+"\n",tail=re===null?"":lines.slice(re+1).join("\n").trim();
-  return {items,source,tail};}
+  /* the design is everything outside the records region; what follows it moves above it */
+  const post=re===null?[]:lines.slice(re+1);while(post.length&&!post[0].trim()) post.shift();while(post.length&&!post[post.length-1].trim()) post.pop();
+  const source=lines.slice(0,rs===null?lines.length:rs).join("\n").replace(/\s+$/,"")+"\n"+(post.length?"\n"+post.join("\n")+"\n":"");
+  return {items,source,moved:post.length>0};}
 /* What each kind of question line makes: {block} (and {menu:true} when its options come from a
    shared menu, filled in once the whole file is read), or {bad: message} when the line cannot be
    drawn. Called with the line, its hint text, where it is for a message, and the messages. */
@@ -3307,6 +3319,8 @@ function readBlocks(items,fm,problems){const P=strings("problem");
        as the address it will have (activityTree places it) */
     if(w.set&&w.set.icon) a.icon=w.set.icon;
     if(w.set&&w.set.parent) a.parent=addrOf(mod?mod.id:"",w.set.parent);
+    /* the activities outside every module fence are one module with no name (SPEC.md section 4): each is drawn as a card of its own
+       (so each is held by a module of its own here), but its id, its records and its `parent:` are in the one scope, "" */
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
     act=a;return a;};
   const page=()=>{if(!act) newActivity({id:null,flags:new Set()},fm.title,0);return act.pages[act.pages.length-1];};
@@ -3371,7 +3385,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     if(what==="draft") return void(drafts[at]=Object.assign(drafts[at]||nullMap(),o));
     if(!Array.isArray(o.items)) return no(P.recordNoItems(L,info[2]));
     if(!o.items.every(e=>e&&typeof e==="object"&&e.ts)) return no(P.recordsOther(L));
-    entries[at]=(entries[at]||[]).concat(o.items);}
+    entries[at]=(entries[at]||[]).concat(o.items.map(e=>nullMap(e)));}
   function onRecords(it,where){recForeign=null;const named=it.id&&modules.some(m=>m.id===it.id&&!m.__bare);recScope=named?it.id:"";
     if(it.id&&!named&&!modules.some(m=>m.id===it.id&&m.__bare)){recForeign={id:it.id,head:it.head};problems.push(P.recordsLineUnknown(where,it.id));}}
   const onRec=it=>{const L=P.line(it.line);
@@ -3451,14 +3465,14 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       ...(unk?{unknown:true}:{}),
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;};
-  for(const it of items){
-    if(it.rec) onRec(it);
-    else if(it.t==="fence") onFence(it);
+  for(const it of items.filter(x=>!x.rec)){
+    if(it.t==="fence") onFence(it);
     else if(it.t==="break") onBreak();
     else if(it.t==="text") onText(it);
     else if(it.t==="bad") problems.push(P.calloutUnreadable(P.line(it.line)));
     else onLine(it);}
   if(row) closeRow(P.rowNeverClosed);
+  items.filter(x=>x.rec).forEach(onRec);
   /* a data block's id is also one a query reads by, so it may not be a question's or an activity's too,
      within its module (a block outside every fence, in the module with no name) */
   dataBlocks.forEach(d=>{const set=ids.get(d.mod?d.mod.id:"");if(set&&set.has(d.id)) dup(P.line(d.line),d.id);});
@@ -3550,7 +3564,7 @@ function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities
   const o={...rest,...(blurb?{blurb}:{}),...(opening.length?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
   return o;}
-function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept},fm,L,source,problems,tail){
+function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept},fm,L,source,problems){
   /* a file that holds one module and no notice callout is covered by its own front matter: its license,
      copyright and source are that module's notice (a callout, when there is one, wins) */
   const holders=modules.filter(m=>m.activities.length);
@@ -3566,18 +3580,19 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
   const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,...(fm.start==="home"?{start:"home"}:{}),
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),
-    ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,...(tail?{tail}:{}),lang:L,...(recordsKept.length?{records:recordsKept}:{})}};
+    ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L,...(recordsKept.length?{records:recordsKept}:{})}};
   /* a file with its front matter and no module and no activity at all is an empty booklet with that name (what a
      booklet started here and not yet given a module downloads as); a module that holds no activity is still refused */
   const empty=!modules.length;
   return {ok:(out.length>0||empty)&&!problems.refused.length,empty:empty||undefined,unread:problems,refused:problems.refused,dupIds:problems.dupIds,markerNote:problems.markerNote,drafts:{activities:drafts},template:book,lang:L,S:st};}
+/* The file as written: the design as read (what sat after the region included), then the records region, each scope's kept blocks first so the reader's values win */
 function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
   const recs=[],mods=allModules();
-  const kept=[].concat(V.records||[]).filter(r=>r&&typeof r.text==="string");  /* storage may give back anything */
+  const kept=[].concat(V.records||[]).filter(r=>r&&typeof r.text==="string"&&(!r.foreign||typeof r.foreign==="string"));
   const scopes=["",...mods.map(scopeOfModule).filter(s=>s)];
   scopes.forEach(sc=>{const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(activitiesOf),own=[],gd=peekAnswers(sc);
-    /* kept as written first: the reader's own values below win (SPEC.md section 8) */
+    /* kept blocks first in their scope (or under the module's one line once a module has that id) */
     kept.filter(r=>(!r.foreign||fencedModule(r.scope))&&r.scope===sc).forEach(r=>own.push(r.text,""));
     const keys=new Set(),entryIds=new Set(acts.filter(a=>a.kind==="entry").map(a=>a.id));
     acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
@@ -3596,7 +3611,6 @@ function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").repla
     recs.push(...(m?["> [!records|"+m.id+"] "+tx(m.title,m.id),""]:[]),...own);});
   let head;kept.filter(r=>r.foreign&&!fencedModule(r.scope)).forEach(r=>{if(r.foreign!==head) recs.push(head=r.foreign,"");recs.push(r.text,"");});
   if(recs.length) out.push("%%","> [!records] App record — do not edit below this line","",...recs,"%%","");
-  if(V.tail) out.push(String(V.tail),"");
   return out.join("\n");}
 
 /* ======================= A BOOKLET'S OWN LOOK =======================
@@ -4002,9 +4016,7 @@ function addModuleText(text){
   /* the module as the composed file reads it: its notice, from its fence's callout, rides on it */
   (T.modules||[]).filter(m=>mine.has(m.id)&&scopeOfModule(m)!=="").forEach(mod=>{if(addModule(mod)) added.push(mod.id);});
   return {ok:true,added,renamed:renamedIds};}
-/* What the reader has kept in a module, as counts: the entries kept in its activities, the answers it holds
-   (the questions its once-answered activities write, as toMarkdown writes them) and the activities with a draft
-   under way. Read-only. */
+/* What the reader has kept in a module, as counts: entries and drafts at every address in its scope (orphans included) and every answer. Read-only. */
 function moduleWork(mod){
   const scope=scopeOfModule(mod),gd=peekAnswers(scope),keys=new Set(),mine=m=>Object.keys(m||{}).filter(k=>scopeOfAddr(k)===scope);
   activitiesOf(mod).filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
@@ -5235,7 +5247,7 @@ function qControls(q,draft,activityId){const e=solutionsOf(activityId).q.get(q);
 function finalizeEntry(id){const u=STRINGS[lang].ui;
   const draft=draftFor(id);
   if(!anyFilled(draft)){toast(u.nothingYet);return;}
-  const e=clone(draft);e.ts=new Date().toISOString();
+  const e=nullMap(clone(draft));e.ts=new Date().toISOString();
   /* lines typed and left blank are not kept, whichever block owns them */
   for(const k of Object.keys(e)) if(Array.isArray(e[k])&&e[k].every(x=>typeof x==="string")) e[k]=e[k].filter(nonEmpty);
   const kept=keptFor(id);
