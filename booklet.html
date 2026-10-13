@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-LCRonmKevF0BK/pgP+wDU5xCCutOSV6tuEoTtr1siaI=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-IqTOCEkimjgKDzScvhBGj7eMz0pQ0Yp+JPWlyqIq6+E=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4558,14 +4558,22 @@ function sanitizeDiagramSvg(text){
    The stored text spells `</script` as `<\/script` and `<!--` as `<\!--` so the
    HTML parser cannot end the block early; useLib() puts them back. */
 const LIB_ON={};
+/* A library is woken only once the whole page has arrived: until then the stored text at the end of the file is only part of
+   itself, and a script made from part of it is refused by the page's own policy (it matches no hash). A booklet opened by a
+   link can be drawn before that (LIB_WAITED: the page draws again when it has arrived, see the end of this script). Only a
+   wake that worked is remembered, so a failed one is tried again, never kept. */
+let LIB_WAITED=false;
+const LIB_UP={mermaid:()=>typeof __esbuild_esm_mermaid_nm!=="undefined",temml:()=>typeof temml!=="undefined"};
 function useLib(name){
   if(name in LIB_ON) return LIB_ON[name];
+  if(document.readyState==="loading"){LIB_WAITED=true;return false;}
   let ok=false;
   try{const box=document.getElementById("lib-"+name);
     if(box){const s=document.createElement("script");
       s.text=String(box.textContent).replace(/<\\\/script/g,"</script").replace(/<\\!--/g,"<!--");
-      document.head.append(s);s.remove();ok=true;}}catch(e){ok=false;}
-  return LIB_ON[name]=ok;}
+      document.head.append(s);s.remove();ok=hasOwn(LIB_UP,name)&&LIB_UP[name]();}}catch(e){ok=false;}
+  if(ok) LIB_ON[name]=true;
+  return ok;}
 /* math: $…$ inline, $$…$$ display. Temml turns TeX into MathML, which the
    browser draws itself. A formula Temml cannot read is shown as its TeX, in code style. */
 function mathNode(tex,display){
@@ -7487,6 +7495,8 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 /* The page opens on "Your booklets". */
 bootLibrary();
 render();
+/* a booklet drawn while the page was still arriving had no formula or diagram (useLib waits): it is drawn again now */
+document.addEventListener("DOMContentLoaded",()=>{if(LIB_WAITED){LIB_WAITED=false;render();}});
 /* a link in the address (see OPENING BY LINK): read when the page starts and whenever the fragment changes */
 openLink(typeof location!=="undefined"?location.hash:"");
 window.addEventListener("hashchange",()=>{openLink(location.hash);});
