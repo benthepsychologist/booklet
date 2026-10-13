@@ -17,4 +17,8 @@ lang: en
 - [ ] a month or less$ in all
 - [x] Free
 
+> [!tip] Plans
+> - Starter at $5
+> - a month or less$ in all
+
 > [!module|fixture-mod end]

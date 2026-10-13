@@ -25,6 +25,9 @@ Take your time.
 
 Some words first, with $a^2+b^2$ in prose.
 
+> [!tip] A tip about $\\frac{1}{2}$ and [docs](https://example.org)
+> Tip words.
+
 > [!choice|bigger] Which is bigger, $\\frac{2}{3}$ or $\\frac{3}{5}$?
 > Remember to **compare** the *denominators*.
 
@@ -96,6 +99,11 @@ from: jobs
 as: cards
 \`\`\`
 
+\`\`\`booklet query
+from: jobs
+as: list
+\`\`\`
+
 > [!activity|b] Elsewhere
 
 ## Elsewhere heading
@@ -103,7 +111,7 @@ as: cards
 You arrived by a card's link.
 
 \`\`\`booklet data
-[{"label":"Sow the carrots","where":"Bed 4","effort":"low","link":"#Elsewhere heading","icon":"leaf"},{"label":"Mend the gate","where":"Shed","effort":"high"}]
+[{"label":"Sow the carrots","where":"Bed 4","effort":"low","badge":"garden","tone":"good","link":"#Elsewhere heading","icon":"leaf"},{"label":"Mend the gate","where":"Shed","effort":"high","badge":"tools"}]
 \`\`\`
 ^jobs
 
@@ -169,7 +177,11 @@ You arrived by a card's link.
    ok(act.raw===0,'no formula is left as its TeX');
    ok(!/[$*`]/.test(act.doc),'the tab\'s title is plain words ('+act.doc+')');
    /* accessible names (WCAG 4.1.2): Chromium names a button holding only MathML by nothing, unless the formula names itself */
-   {const lab=await p.evaluate(()=>({prose:[...document.querySelectorAll('#main p math')].map(m=>m.getAttribute('aria-label')),opt:[...document.querySelectorAll('#main .pill-btn math')].map(m=>m.getAttribute('aria-label'))}));
+   {const cdp0=await p.context().newCDPSession(p);await cdp0.send('Accessibility.enable');
+    const named=(await cdp0.send('Accessibility.getFullAXTree')).nodes.map(n=>(n.name&&n.name.value)||'').filter(n=>/A tip about/.test(n));
+    ok(named.some(n=>/frac\{1\}\{2\}/.test(n)),'a callout titled with a formula is named with its TeX ('+named.join(' | ')+')');
+    ok(await p.evaluate(()=>{const t=document.querySelector('#main .rd-ctitle');return t.querySelectorAll('a').length===1&&t.querySelectorAll('math[aria-label]').length===1;}),'and its title keeps its link live (the formula is named, the title is not flat)');}
+   {const lab=await p.evaluate(()=>({prose:[...document.querySelectorAll('#main .pblock p math')].map(m=>m.getAttribute('aria-label')),opt:[...document.querySelectorAll('#main .pill-btn math')].map(m=>m.getAttribute('aria-label'))}));
     ok(lab.prose.length===1&&lab.prose[0]===null,'a formula in prose has no aria-label ('+JSON.stringify(lab.prose)+')');
     ok(lab.opt.length>=2&&lab.opt.every(x=>x),'a formula in a button is labelled by its TeX ('+JSON.stringify(lab.opt)+')');}
    {const cdp=await p.context().newCDPSession(p);await cdp.send('Accessibility.enable');
@@ -246,6 +258,21 @@ You arrived by a card's link.
    ok(c.length===2&&c[0].tag==='DIV'&&c[0].k==='Sow the carrots'&&c[0].dts.join()==='where,effort'&&c[0].dds.join()==='Bed 4,low','one card per row, the label the title, the other fields the lines ('+JSON.stringify(c[0])+')');
    ok(c[0].pic===1&&c[1].pic===0,'the icon is the card\'s picture, only where the row has one');
    ok(c[0].a===1&&c[1].a===0,'the row\'s link leads from its label; a row with none has a plain label');
+   /* a badge is the same pill in every view: an untoned card's pill looks as the list's does, and on a toned card it stays legible in every base */
+   const px=await p.evaluate(()=>{const cs=e=>{const s=getComputedStyle(e);return ['backgroundColor','color','paddingLeft','paddingTop','fontSize','fontWeight','borderRadius','boxShadow'].map(k=>s[k]).join('|');};
+     const cardPill=document.querySelectorAll('#main .dv-cards .card')[1].querySelector('.pill'),listPill=[...document.querySelectorAll('#main .dv-list .pill')].find(x=>x.textContent==='tools');
+     return {card:cs(cardPill),list:cs(listPill),parent:cardPill.parentNode.className};});
+   ok(px.card===px.list&&px.parent==='dv-b','an untoned card\'s badge pill looks exactly like the list\'s ('+px.card+' vs '+px.list+')');
+   for(const base of ['paper','daylight','night','contrast']){
+     await p.evaluate(t=>window.bookletTheme.set(t),base);await p.waitForTimeout(250);
+     const r=await p.evaluate(()=>{const lum=c=>{const m=c.match(/[\d.]+/g).map(Number);const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);};return .2126*f(m[0])+.7152*f(m[1])+.0722*f(m[2]);};
+       const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+       const card=document.querySelector('#main .dv-cards .card'),pill=card.querySelector('.pill'),out={};
+       for(const t of ['good','warn','bad']){card.className=card.className.replace(/tone-\w+/,'tone-'+t);pill.className=pill.className.replace(/tone-\w+/,'tone-'+t);
+         const s=getComputedStyle(pill),c=getComputedStyle(card);out[t]={text:ratio(s.color,s.backgroundColor),apart:ratio(s.backgroundColor,c.backgroundColor)};}
+       return out;});
+     for(const [t,v] of Object.entries(r)) ok(v.text>=4.5&&v.apart>1.05,base+': a badge on a '+t+' card: text '+v.text.toFixed(2)+':1 on its pill, and the pill stands off the card ('+v.apart.toFixed(2)+':1)');}
+   await p.evaluate(()=>window.bookletTheme.set('paper'));await p.waitForTimeout(250);
    await shot(p,'data-cards-1280-paper');
    await p.locator('#main .dv-cards .card .k a').first().click();await p.waitForTimeout(700);
    ok((await p.evaluate(()=>document.body.dataset.view)).endsWith('/b')||/b$/.test(await view(p)),'pressing the card\'s link opens the page it names ('+await view(p)+')');

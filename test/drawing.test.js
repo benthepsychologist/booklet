@@ -214,6 +214,7 @@ ${ROWS}
   chk("the `note` is the line under the title, not a field line",byClass(cards[0],"d").map(text).join()==="soon"&&!byTag(cards[0],"dt").some(d=>text(d)==="note"),text(cards[0]));
   chk("the `badge` is a pill, the `value` the card's figure (as a tile's), the `tone` colours the card and is said in words",
     byClass(cards[0],"pill").map(text).join()==="garden"&&byClass(cards[0],"dv-v").map(text).join()==="12"&&cls(cards[0]).includes("tone-good")&&byClass(cards[0],"dv-sr").length===1&&byClass(cards[1],"pill").length===0&&!cls(cards[1]).some(c=>/^tone-/.test(c)),text(cards[0]));
+  chk("the badge pill is the list's markup: a `dv-b` span of `pill tone-good` spans",byClass(cards[0],"dv-b").length===1&&byClass(byClass(cards[0],"dv-b")[0],"pill").length===1&&cls(byClass(cards[0],"pill")[0]).includes("tone-good"),text(cards[0]));
   const dl=byTag(cards[0],"dl")[0];
   chk("only the fields that play no role are lines, named, like a kept entry's lines",!!dl&&byTag(dl,"dt").map(text).join()==="where,effort,when"&&byTag(dl,"dd").map(text).join()==="Bed 4,low,This week",dl&&text(dl));
   chk("a field with no value is left out of the lines",byTag(cards[1],"dt").map(text).join()==="effort,when",byTag(cards[1],"dt").map(text).join());

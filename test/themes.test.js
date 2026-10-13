@@ -33,7 +33,7 @@ const pairs=[["ink","paper"],["ink","paper-deep"],["muted","paper"],["accent","p
   ["reader","field"],["ink","surface"],["accent","surface"],["muted","surface"],["warn","paper"],["on-ink","ink"],["on-ink","muted"],
   ["ink","accent-soft"],["ink","mark"],["warn","warn-soft"]];
 for(const t of ["warm","green","amber","slate","teal"]){pairs.push(["tone-"+t+"-deep","tone-"+t]);pairs.push(["ink","tone-"+t]);}
-/* the views (format 0.7): a plain pill, a toned value on a card, a quiet note and a label on a toned tile */
+/* the views (format 0.7): a plain pill, a toned value on a card (and a badge pill on a toned card: its deep colour on the surface), a quiet note and a label on a toned tile */
 pairs.push(["reader","paper-deep"],["muted","paper-deep"]);
 for(const t of ["warm","green","amber"]){pairs.push(["tone-"+t+"-deep","surface"]);pairs.push(["muted","tone-"+t]);pairs.push(["reader","tone-"+t]);}
 /* the hues (0.11.9): text pairs at 4.5 to 1, picture pairs (a third item, 3) at 3 to 1 */

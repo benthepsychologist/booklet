@@ -1502,10 +1502,11 @@ def check_prices(f, lines, start, regions):
             flush()
             continue
         # a booklet line (its title) and each list item are their own words: a `$` there does not pair with one on the next line
+        stripped = re.sub(r"^>[ \t]?", "", ln)
         line = bool(re.match(r"^>[ \t]*\[!", ln))
-        if line or re.match(r"^\s*(?:[-*+]|\d+[.)])\s", ln):
+        if line or re.match(r"^\s*(?:[-*+]|\d+[.)])\s", stripped):
             flush()
-        para.append((k, re.sub(r"^>[ \t]?", "", ln)))
+        para.append((k, stripped))
         if line:
             flush()
     flush()

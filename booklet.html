@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-2nK9d7MfqGJav97tmik/OXkPIR6BRgrRhbqywkXXoys=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-tZ4KiIZotaapYzJpOo06DhYEafd2tywmlhUrMYcQjzQ=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -945,6 +945,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* a data block's row as a card: a small picture and the label as its title above its lines */
   .entry-row .cd-tile{width:2.2rem;height:2.2rem;margin-bottom:.35rem}
   .dv-cards .dv-group{grid-column:1/-1;margin:.4rem 0 0}
+  /* a badge is the same pill in every view; on a toned card the pill's own tint would be the card's, so it sits on the surface, outlined in its deep colour */
+  .entry-row.tone-good .pill,.entry-row.tone-warn .pill,.entry-row.tone-bad .pill{background:var(--surface);box-shadow:inset 0 0 0 1px currentColor}
+  .entry-row .dv-b{margin:0 0 .4rem}
   .entry-row .dv-v{display:block;margin:0 0 .4rem}
   .entry-row .k{margin:0 0 .5rem;font-family:var(--serif);font-size:1.12rem;font-weight:600;line-height:1.3;color:var(--ink)}
   /* charts: bars and a line, drawn in the theme's own tokens, never a colour of their own */
@@ -3680,7 +3683,7 @@ const TH_PAIRS=[["ink","paper"],["ink","paper-deep"],["muted","paper"],["accent"
   ["reader","field"],["ink","surface"],["accent","surface"],["muted","surface"],["warn","paper"],["on-ink","ink"],["on-ink","muted"],
   ["ink","accent-soft"],["ink","mark"],["warn","warn-soft"]];
 COLOUR_NAMES.forEach(t=>{TH_PAIRS.push(["tone-"+t+"-deep","tone-"+t]);TH_PAIRS.push(["ink","tone-"+t]);});
-/* the views: a plain pill, a toned value on a card, a quiet note and a label on a toned tile */
+/* the views: a plain pill, a toned value on a card (and a badge pill on a toned card: its deep colour on the surface), a quiet note and a label on a toned tile */
 TH_PAIRS.push(["reader","paper-deep"],["muted","paper-deep"]);
 ["warm","green","amber"].forEach(t=>{TH_PAIRS.push(["tone-"+t+"-deep","surface"],["muted","tone-"+t],["reader","tone-"+t]);});
 /* the hues: deep text on its soft wash, on a card and on the page; ink on the wash; the vivid line on the wash and white on the solid fill (pictures) */
@@ -4604,9 +4607,9 @@ function mathNode(tex,display,named){
    screen reader, a message. Data values are never read this way. */
 const WORD_MARK=/[*_`~=$\[<\\!]|https?:/;
 const curScope=()=>{const m=moduleForScreen(screen);return m?scopeOfModule(m):scopeOfAddr(screen);};
-const wordsOpts=flat=>({...PLAIN_OPTS,math:tex=>mathNode(tex,false,flat),anchor:(h,k)=>textOf(k),flat,...(flat?{}:linkHooks(curScope()))});
-function words(s,flat){const t=String(s==null?"":s);if(!WORD_MARK.test(t)) return [t];
-  return renderInline(t,{opts:wordsOpts(flat),refs:{}});}
+const wordsOpts=(flat,named)=>({...PLAIN_OPTS,math:tex=>mathNode(tex,false,named),anchor:(h,k)=>textOf(k),flat,...(flat?{}:linkHooks(curScope()))});
+function words(s,flat,named){const t=String(s==null?"":s);if(!WORD_MARK.test(t)) return [t];
+  return renderInline(t,{opts:wordsOpts(flat,named===undefined?flat:named),refs:{}});}
 /* a message that holds a name (Next: …, Up: …) as nodes: the message's words around the name drawn as a booklet line's words */
 const withName=(f,name)=>{const [a,z]=f("\u0001").split("\u0001");return [a,...words(name,true),z];};
 function wordsNode(...parts){const lit=x=>typeof x==="object",ks=parts.map(x=>lit(x)?[x.lit]:words(x,true));
@@ -5524,9 +5527,9 @@ function viewCards(set,groups,roles,cols){
     const lab=rolePart(r,roles.label),note=rolePart(r,roles.note),val=rolePart(r,roles.value),t=rowTone(r,roles),
       badges=roles.badge?partsOf(r[roles.badge]):[],lines=cols.filter(c=>cellText(r[c.key])!==""),dl=el("dl",{});
     lines.forEach(c=>dl.append(el("dt",{},c.label),el("dd",{},cellText(r[c.key]))));
-    return cardNode({mode:"item",cls:"entry entry-row"+(t?" tone-"+t:""),picture,teaser:note,teaserCls:"dv-n",pills:badges.map(x=>pill(x,t)),
+    return cardNode({mode:"item",cls:"entry entry-row"+(t?" tone-"+t:""),picture,teaser:note,teaserCls:"dv-n",
       titleNode:lab!==""?el("div",{class:"k"},...leadNodes(set,r,roles,[lab])):null,
-      kids:[val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});}).filter(Boolean);}
+      kids:[badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});}).filter(Boolean);}
 /* ---- chart views: `as: bars` and `as: line`. Plain SVG from numbers and
    text nodes, coloured only through the theme's tokens (the CSS classes ch-*).
    Nothing is computed from the rows beyond the scale a picture needs: no
@@ -6374,7 +6377,7 @@ function calloutNode(b,draft,activityId){const Rt=strings("reading"),plain=b.kin
     head.append(el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
   box.append(head);
-  if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title)));named.push(u+"-t");}
+  if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title,false,true)));named.push(u+"-t");}
   if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
   blocksIn(b).forEach(x=>{if(x&&typeof x==="object") body.append(renderBlock(x,draft,activityId));});
