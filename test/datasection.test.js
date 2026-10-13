@@ -6,7 +6,7 @@
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
-const HEAD=`---\nbooklet: "0.12"\ntitle: Data sections\nlang: en\n---\n\n`;
+const HEAD=`---\nbooklet: "0.13"\ntitle: Data sections\nlang: en\n---\n\n`;
 const widget=(id,tag)=>`\`\`\`booklet widget\n{ "engine": "grid-select", "items": [{"id":"i-${tag}","label":"Item ${tag}"}] }\n\`\`\`\n^${id}`;
 const rows=(id,v)=>`\`\`\`booklet data\n[{"name":"${v}","n":1}]\n\`\`\`\n^${id}`;
 const modBody=(id,tag)=>`> [!module|${id}] Module ${id}\n\n> [!activity|act repeat] Act ${tag}\n\n> [!widget|w] Pick\n> ![[#^w]]\n\n> [!choice|pick menu:opts] Pick one\n\n> [!text|note long] Note.[^1]\n\n\`\`\`booklet query\nfrom: tbl\n\`\`\`\n\n> [!module|${id} end] End\n`;

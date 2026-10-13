@@ -26,7 +26,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 - The renderer, format, validator, and modules without a
   `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
-  module's prose and travels with the file (a one-module file's `copyright`, `license`, `source` and `version` are its notice, or a `> [!notice]` callout in its fence), since a v0.12 module is the
+  module's prose and travels with the file (a one-module file's `copyright`, `license`, `source` and `version` are its notice, or a `> [!notice]` callout in its fence), since a v0.13 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - Modules are not kept in this repo; they live in `booklet-registry`, and a
@@ -79,14 +79,14 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 7. **A format version is text, never a number.** `0.10` is not the number 0.1.
    Read the marker as text, compare versions as two whole numbers (major, minor)
    with `versionCmp` in the renderer and never `+FORMAT_VERSION`, and write it
-   quoted (`booklet: "0.12"`) so a YAML tool does not turn it into 0.1. A file
-   marked with another `0.x` version opens by the current rules with a notice (v0.12);
+   quoted (`booklet: "0.13"`) so a YAML tool does not turn it into 0.1. A file
+   marked with another `0.x` version opens by the current rules with a notice (v0.13);
    the renderer never changes the marker a file came with.
 8. **A wording-only change to `SPEC.md` is a patch.** When the spec's words change
    and nothing a file may say does, the spec's title, the renderer and the skill take
-   a third number (v0.12.1). The marker and `FORMAT_VERSION` stay as they are, no file
+   a third number (v0.13.1). The marker and `FORMAT_VERSION` stay as they are, no file
    is re-marked, and the registry needs no release. Any change to what a file may say
-   bumps the minor (v0.12) and re-marks every file this repository holds that carries the current marker (not the fixtures that exist to carry another).
+   bumps the minor (v0.13) and re-marks every file this repository holds that carries the current marker (not the fixtures that exist to carry another).
 
 ## Code that sends a reader's work never goes in `booklet.html`
 

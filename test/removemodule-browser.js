@@ -9,7 +9,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const FILE=`---\nbooklet: "0.12"\ntitle: Two modules\nlang: en\n---\n
+const FILE=`---\nbooklet: "0.13"\ntitle: Two modules\nlang: en\n---\n
 > [!module|dj] Daily journal
 
 > [!notice]

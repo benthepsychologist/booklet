@@ -1,5 +1,5 @@
 ---
-booklet: "0.12"
+booklet: "0.13"
 id: mensio/the-day
 title: Have a good day
 lang: en

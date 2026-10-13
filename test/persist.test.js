@@ -8,7 +8,7 @@ let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const LINE="This browser may clear booklets kept here. Download a copy of any you want to keep, or add this page to your home screen.";
-const FILE=`---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n`;
+const FILE=`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n`;
 const setNav=v=>Object.defineProperty(globalThis,"navigator",{value:v,configurable:true,writable:true});
 const stub=(persisted,grant)=>{const s={asked:0,checked:0,state:persisted,
   persisted(){s.checked++;return Promise.resolve(s.state);},

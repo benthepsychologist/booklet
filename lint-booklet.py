@@ -2,31 +2,31 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.12 format in SPEC.md.
+Lint a booklet file against the v0.13 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: "0.12"`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.13"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.12"`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: "0.13"`, one `lang:`), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
 title, queries and data blocks, and records that name an activity. Any file whose
-front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.12 (nothing before v1.0 is stable). A block id or a footnote
+front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.13 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [--registry] [path ...]
-        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.12") and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.13") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.12 file is written in one language, so it
+registry's CI line keeps working; a v0.13 file is written in one language, so it
 adds no rule of its own.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
@@ -35,7 +35,7 @@ import html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 BASE = pathlib.Path(__file__).resolve().parent
 
 # The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
-FORMAT_VERSION = "0.12"
+FORMAT_VERSION = "0.13"
 
 errors, warnings = [], []
 def err(f, m):  errors.append(f"{f}: {m}")
@@ -108,7 +108,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.12 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.13 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -725,10 +725,10 @@ def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
 
 
 def check_format(f, text, fm):
-    """Lint a v0.12 booklet. Every problem names its line."""
+    """Lint a v0.13 booklet. Every problem names its line."""
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.12 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.13 file is written in one language")
     else:
         why = lang_problem(lang)
         if why:

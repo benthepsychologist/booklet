@@ -5,7 +5,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-const FM='---\nbooklet: "0.12"\nid: local/fold\ntitle: "Fold"\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.13"\nid: local/fold\ntitle: "Fold"\nlang: en\n---\n\n';
 const A=P.boot();
 const Q=(id,n=2)=>`> [!choice|${id}] Question ${id}?\n- [ ] A\n- [ ] B\n\n`;
 const draw=id=>{A.screen=id;A.render();return P.main();};

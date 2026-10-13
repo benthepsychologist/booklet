@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-3/JQHzj09Knr3XauLDw1B9ytBRu90T7MM0O9GJ9d6z8=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-PoiZIROJp6n1zEaJPk2o6RajNq9rG9HuAzAVttTVk60=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1417,11 +1417,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.12.0";
-/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.12"`, and a
+const RENDERER_VERSION="0.13.0";
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.13"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
-const FORMAT_VERSION="0.12";
+const FORMAT_VERSION="0.13";
 const LANG_NAMES={en:"English",es:"Español","es-AR":"Español (Argentina)",fr:"Français"};
 /* the interface languages with a button (the variants, es-AR, have none), in the order offered */
 const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
@@ -2978,7 +2978,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.12 booklet is Markdown that reads as a document anywhere: front
+   A v0.13 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -2997,7 +2997,7 @@ const calloutLine=l=>CALLOUT_LINE.test(l)||ROW_END.test(l);
 const NOTICE_KEYS=["license","copyright","source","version"];
 /* the bare-word flags of each kind, read from the table of settings */
 const CALLOUT_FLAGS=Object.fromEntries(Object.entries(KIND_SETTINGS).map(([k,v])=>[k,v.filter(s=>!s.endsWith(":"))]));
-/* A file is read when its front matter says `booklet: "0.12"` (quoted or not, as text); another 0.x marker opens with a notice. */
+/* A file is read when its front matter says `booklet: "0.13"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -3016,7 +3016,7 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
   if(/^".*"$/.test(v)){try{v=JSON.parse(v);}catch(e){v=v.slice(1,-1);}}
   else if(/^'.*'$/.test(v)) v=v.slice(1,-1).replace(/''/g,"'");
   return [m[1],v];}
-/* The marker a file's front matter carries, quotes taken off: "0.12", "0.9", "1.0", "x", or "" when there is no
+/* The marker a file's front matter carries, quotes taken off: "0.13", "0.9", "1.0", "x", or "" when there is no
    `booklet:` line. A file is a booklet for this page when its marker is a 0.x version (two whole numbers, major
    0): its own version is read as it is; any other 0.x version, earlier or later, is opened by this page's rules
    with a notice and no promise (SPEC.md section 12). Anything else is not a booklet for this page. */
