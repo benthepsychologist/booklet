@@ -361,9 +361,9 @@ A widget the reader operates (the body map, the feelings grid) is a `widget` lin
 
 ### Callouts
 
-Reading set apart is an Obsidian callout, with `>` on every line of its body. Use Obsidian's built-in kinds where they fit (`note`, `tip`, `example`, `quote`, `question`, `warning`), and Booklet's three for guided reading: `diff` (where this differs from the reader's own guide), `law` (the rule as it now stands), `opinion` (an author's view, not to be learned as a rule). Booklet's fourth kind is `group`, the plain fold: a callout with no colour or picture of its own, for anything Markdown can hold, written `> [!group]- Title` to start folded.
+Reading set apart is an Obsidian callout, with `>` on every line of its body. Use Obsidian's built-in kinds where they fit (`note`, `tip`, `example`, `quote`, `question`, `warning`), and Booklet's three for guided reading: `diff` (where this differs from the reader's own guide), `law` (the rule as it now stands), `opinion` (an author's view, not to be learned as a rule). Booklet's fourth kind is `group`, the plain fold: a callout of no kind of its own, for anything Markdown can hold, written `> [!group]- Title` to start folded. It takes no id and no settings.
 
-A renderer draws each kind in its own colour and picture, and `group` plain, with no tint. A kind it does not know is drawn as `note` is; folded with `-`, it is drawn plain, and an untitled one is called "Note" (the reference renderer's drawing, not something a file says).
+A renderer draws each kind in its own colour and picture. `group`, and a kind it does not know, are drawn as `note` is; folded with `-`, they are drawn plain, with no tint, and an untitled one is called "Note" (the reference renderer's drawing, not something a file says). A kind the format does not define, written with an id or settings, is also reported (section 4); `group` is defined, so it never is.
 
 ```markdown
 > [!diff] Your guide says the tide turns every six hours

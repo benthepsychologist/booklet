@@ -66,7 +66,7 @@ const NAME='Ben\'s "spring" plan: #1';
   ok(await a2.count()===1,'a module that is one activity shows its notice at the foot of the activity');
   await a2.locator('summary').click();await p.waitForTimeout(200);
   const b2=await a2.textContent();
-  ok(/Shared under a licence given in front matter\./.test(b2)&&/Front Matter Press, 2025/.test(b2)&&/3\.1/.test(b2),'it came from the file\'s front matter');
+  ok(/Shared under a licence given in front matter\./.test(b2)&&/Front Matter Press, 2025/.test(b2)&&!/3\.1/.test(b2),'it came from the file\'s front matter, without its version (0.13)');
   ok(await a2.locator('a').count()===0&&/javascript:alert\(1\)/.test(b2),'a source that is not http or https is plain text, not a link');
   ok(await p.locator('h3').filter({hasText:'Sleep picker'}).count()>=1,'the shared data section\'s widget draws for the single-activity module');
   // ---- rename on the home screen
@@ -90,7 +90,7 @@ const NAME='Ben\'s "spring" plan: #1';
   ok(name==='ben-s-spring-plan-1.booklet.md','the download is named for the booklet: '+name);
   ok(md.split('\n')[2]==='title: '+JSON.stringify(NAME)&&/^booklet: "0\.13"$/m.test(md),'the file\'s title line is the name, quoted and escaped, and the marker is quoted: '+md.split('\n').slice(0,4).join(' | '));
   ok(/> \[!module\|ma\] Garden notes\n\nA short blurb[^\n]*\n\n> \[!notice\]\n> license: Free to copy/.test(md)||/> \[!module\|ma\] Garden notes\n\n> \[!notice\]/.test(md)||md.includes('> [!notice]\n> license: Free to copy and share, unmodified and with this notice intact.\n> copyright: Example Press, 2026\n> source: https://example.org/garden\n> version: 1.2'),'module a\'s notice callout is in the file byte for byte');
-  ok(/> \[!module\|mb\] Sleep log\n\n> \[!notice\]\n> license: Shared under a licence given in front matter\.\n> copyright: Front Matter Press, 2025\n> source: javascript:alert\(1\)\n> version: 3\.1\n/.test(md),'module b\'s notice, which was only in its front matter, was written into its fence as a callout');
+  ok(/> \[!module\|mb\] Sleep log\n\n> \[!notice\]\n> license: Shared under a licence given in front matter\.\n> copyright: Front Matter Press, 2025\n> source: javascript:alert\(1\)\n\n> \[!activity/.test(md),'module b\'s notice, which was only in its front matter, was written into its fence as a callout, without the front matter version (0.13)');
   ok(/> \[!data\|ma\] Data for Garden notes\n\n```booklet widget/.test(md),'module a\'s data is under its own data line');
   ok(/> \[!data\|mb\] Data for Sleep log\n\n```booklet widget/.test(md)&&!/^> \[!data\] /m.test(md),'module b\'s data, brought under a plain data line in a one-module file, is under its own data line');
   const out=path.join(OUT,'downloaded.booklet.md');fs.writeFileSync(out,md);

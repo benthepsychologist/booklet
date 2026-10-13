@@ -21,7 +21,7 @@ The format becomes 0.13, for what a reader keeps and how it reads a line. A file
 - **D9, D10, D14.** Wording and the new "Drafts" part of SPEC section 13 (the manifest, parts in other files, the sibling check).
 - **D11.** `> [!row|end]` is the only row close; `ROW_END` is gone; the linter reports `> [!row end]` with the fix.
 - **D12.** The hex-pair widget colour is gone (`colourOf`, `COLOUR_NAMES`); widget colours are colour names, and "tone" is `good`, `warn` or `bad`.
-- **D13.** `group` is a kind (`KIND_SETTINGS`, `plainCallout`): the plain fold, no longer drawn as a kind the page does not know.
+- **D13.** `group` is a kind (`KIND_SETTINGS`, `NO_ID_KINDS`): the plain fold, so a word after its bar is a setting it does not take, and it is never reported as a kind the page does not know. Its drawing is unchanged.
 - Tests: `test/format013.test.js`, `test/format013-browser.js`; `lint.test.js`, `open.test.js`, `notice.test.js`, `modulescope.test.js`, `theme-block.test.js` and `version.test.js` follow the new rules. No new interface words (every message reused).
 - Size: `booklet.html` 3,700,0xx bytes (was 3,697,535); the hand-written part grew by about 2.5 KB.
 

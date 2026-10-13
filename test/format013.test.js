@@ -167,7 +167,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   A.loadText(FM+body);A.screen="a";A.render();
   const main=P.main();
   chk("it is drawn as a plain fold: plain paper, the title, and no word about a kind this page does not know",P.find(main,P.hasClass("card-plain")).length===1&&/Notes on the week/.test(P.texts(main))&&!/does not know the kind/.test(P.texts(main)),P.texts(main));
-  chk("unfolded, it is a callout with no colour or picture of a kind",P.find(main,P.hasClass("rd-callout")).length===1&&P.find(main,P.hasClass("rd-hued")).length===0);
+  chk("unfolded, it is a callout and says nothing about a kind the page does not know",P.find(main,P.hasClass("rd-callout")).length===1&&P.find(main,P.hasClass("rd-unknown")).length===0);
   chk("and the linter takes it",/0 errors · 0 warnings/.test(lintOut(FM+body)),lintOut(FM+body));}
 
  /* ---- D11: a row closes with [!row|end] and no other way ---- */

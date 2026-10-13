@@ -343,7 +343,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   ok(asked().length===2&&/registry\.json$/.test(asked()[1])&&await p.locator('.mc-add').count()===1,'pressing it again asks again (the registry list, once more), and now offers "Add it"');
   await p.locator('.mc-add').click();await p.waitForTimeout(900);
   ok(asked().length===3&&/week-2\.md$/.test(asked()[2]),'"Add it" reads that module\'s file, and nothing else');
-  ok(/It says booklet: 0\.11, so it was read as format 0\.12/.test(await p.locator('#toast').innerText()),'a module marked "0.11" added from a chip shows the older-version notice, as Add a module does ('+(await p.locator('#toast').innerText()).slice(0,100)+')');
+  ok(/It says booklet: 0\.11, so it was read as format 0\.13/.test(await p.locator('#toast').innerText()),'a module marked "0.11" added from a chip shows the older-version notice, as Add a module does ('+(await p.locator('#toast').innerText()).slice(0,100)+')');
   await p.locator('#btnHome').click().catch(()=>{});await p.waitForTimeout(300);
   ok(await p.locator('#main button.mode').filter({hasText:'Week 2'}).count()===1,'the module is now in the booklet');
   await p.locator('#main button.mode').filter({hasText:'Programme'}).first().click();await p.waitForTimeout(300);
