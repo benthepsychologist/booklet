@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-ZXNPhTPZvOIPF+odQjGTwIlE0C6SdMDIPMbvddeHRwg=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-Y8825ateByAT7/IAK+dc/fiSv0vl/KMGnirtyF6ihMI=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1746,6 +1746,8 @@ const STRINGS_SRC={
       recordsLineUnknown: (w,id)=>`${w}: the records line names “${id}”, which is no module here; its blocks are kept as written`,
       recordsOther: w=>`${w}: this is not a record this page reads; it is kept as written`,
       calloutUnreadable: w=>`${w}: this “> [!” line cannot be read; it is left as text`,
+      activityNoId: w=>`${w}: this activity line has no id, so the page named it from its title; write one, \`> [!activity|my-id] Title\``,
+      moduleNoId: w=>`${w}: this module line has no id, so the page named it by its place in the file; write one, \`> [!module|my-id] Title\``,
       queryViewBad: (as,views)=>`has \`as: ${as}\`, which is not ${views.slice(0,-1).join(", ")} or ${views[views.length-1]}`,
       queryOtherModule: from=>`names “${from}”, which is in another module`,
       queryCardsData: from=>`has \`as: cards\` on the data block “${from}”, but cards draw kept entries`,
@@ -2065,6 +2067,8 @@ const STRINGS_SRC={
       /* l10n: draft */ recordsLineUnknown: (w,id)=>`${w} : la ligne d’enregistrements nomme « ${id} », qui n’est pas un module ici ; ses blocs sont conservés tels quels`,
       /* l10n: draft */ recordsOther: w=>`${w} : ce n’est pas un enregistrement lu ici ; il est conservé tel quel`,
       /* l10n: draft */ calloutUnreadable: w=>`${w} : cette ligne « > [! » est illisible ; elle reste du texte`,
+      /* l10n: draft */ activityNoId: w=>`${w} : cette ligne d’activité n’a pas d’identifiant ; la page l’a tiré du titre ; écrivez-en un, \`> [!activity|mon-id] Titre\``,
+      /* l10n: draft */ moduleNoId: w=>`${w} : cette ligne de module n’a pas d’identifiant ; la page l’a nommé d’après sa place dans le fichier ; écrivez-en un, \`> [!module|mon-id] Titre\``,
       queryViewBad: (as,views)=>`a \`as: ${as}\`, qui n’est pas ${views.slice(0,-1).join(", ")} ni ${views[views.length-1]}`,
       queryOtherModule: from=>`nomme « ${from} », qui est dans un autre module`,
       queryCardsData: from=>`a \`as: cards\` sur le bloc de données « ${from} », mais les cartes montrent des entrées gardées`,
@@ -2384,6 +2388,8 @@ const STRINGS_SRC={
       /* l10n: draft */ recordsLineUnknown: (w,id)=>`${w}: la línea de registros nombra “${id}”, que no es un módulo aquí; sus bloques se conservan tal cual`,
       /* l10n: draft */ recordsOther: w=>`${w}: no es un registro que esta página lea; se conserva tal cual`,
       /* l10n: draft */ calloutUnreadable: w=>`${w}: esta línea “> [!” no se puede leer; queda como texto`,
+      /* l10n: draft */ activityNoId: w=>`${w}: esta línea de actividad no tiene id, así que la página le puso uno a partir del título; escriba uno, \`> [!activity|mi-id] Título\``,
+      /* l10n: draft */ moduleNoId: w=>`${w}: esta línea de módulo no tiene id, así que la página lo nombró por su lugar en el archivo; escriba uno, \`> [!module|mi-id] Título\``,
       queryViewBad: (as,views)=>`tiene \`as: ${as}\`, que no es ${views.slice(0,-1).join(", ")} ni ${views[views.length-1]}`,
       queryOtherModule: from=>`nombra “${from}”, que está en otro módulo`,
       queryCardsData: from=>`tiene \`as: cards\` sobre el bloque de datos “${from}”, pero las tarjetas muestran entradas guardadas`,
@@ -3442,9 +3448,10 @@ function readBlocks(items,fm,problems){const P=strings("problem");
         else if(it.id&&it.id!==mod.id) refuse(P.moduleEndMismatch(where,it.id,mod.id));
         mod=null;act=null;return;}
       if(mod) refuse(P.moduleNested(where,it.id,mod.id));
+      if(!it.id) problems.push(P.moduleNoId(where));
       claimModule(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;
       if(it.set.icon) mod.icon=it.set.icon;return;}
-    if(k==="activity"){newActivity(it,it.title,it.line);lastQ=null;return;}
+    if(k==="activity"){if(!it.id) problems.push(P.activityNoId(where));newActivity(it,it.title,it.line);lastQ=null;return;}
     if(QUESTION_KINDS.has(k)){
       if(!it.id){problems.push(P.questionNoId(where,k));return;}
       claim(it.id,where);page();

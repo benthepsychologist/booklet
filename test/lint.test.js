@@ -91,11 +91,11 @@ for(const [name,what,rx] of CASES){
 }
 {// a widget block with no ^id: reported first, and the embed then has nothing to find
  const r=lint(path.join(FX,"lint-widget-no-id.md"));
- chk("a widget block with no ^id is an error naming the line",r.status===1&&/line 18: a widget block needs a \^id/.test(r.errors[0]||""),r.out);}
+ chk("a widget block with no ^id is an error naming the line (and the embed that then finds nothing is an error above it, in line order)",r.status===1&&/line 15: !\[\[#\^picker-data\]\] points at no block/.test(r.errors[0]||"")&&/line 18: a widget block needs a \^id/.test(r.errors[1]||""),r.out);}
 {// records naming no activity are a warning, not an error
  const r=lint(path.join(FX,"lint-records-no-activity.md"));
  chk("records for an activity no line names: one warning, no error",
-   r.status===0&&r.errors.length===0&&r.warns.length===1&&/line 27: records for 'elsewhere', which no activity line names/.test(r.warns[0]||""),r.out);}
+   r.status===0&&r.errors.length===0&&r.warns.length===1&&/line 28: records for 'elsewhere', which no activity line names/.test(r.warns[0]||""),r.out);}
 
 {// v0.8: the settings table, an unknown kind, languages, the marker's quotes, `booklet module`
  const W=(name,rx,label)=>{const r=lint(path.join(FX,name+".md"));

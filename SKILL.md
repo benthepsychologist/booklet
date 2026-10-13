@@ -752,14 +752,14 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 ## 10. Validation
 
 **With the linter:** `python3 lint-booklet.py <slug>.booklet.md`. It prints
-`ERROR` and `warn` lines and a summary, and exits 1 on any error. Done means
+`ERROR` and `warn` lines (in line order, so you can fix a file from the top down) and a summary, and exits 1 on any error. Done means
 **0 errors**. A clean file prints `1 booklet file checked · 0 errors · 0 warnings`:
 `status: draft` draws no warning. A warning you do get names something real
 (a remote image, a language with no strings, a chart that would draw nothing).
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.13 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.13 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` only follows `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -771,7 +771,9 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | an id reused | `the id 'x' is also used on line N` | rename one — module, activity and question ids all share one namespace-per-file check |
 | an id with bad characters | `the id 'my id!' may hold only letters, digits and dashes` | rename it |
 | a question with no id | `this text question has no id, so its answer would have nowhere to go` | add one, `[!text|id] …` |
-| a `choice`/`multi` with no options | (the question renders with nothing under it) | add a task list, `- [ ] Option`, with a blank line above unless it starts at `1.` |
+| an activity or module line with no id | `an activity line needs an id; write `> [!activity|my-id] Title`` / `a module line needs an id` | add the id; a kept entry is stored under the activity's id, so one made up from the title is lost when the title changes |
+| a `choice`/`multi` with no options | `this choice question 'x' has no options under it, so it is not drawn` (it adds "the bullets under it are plain bullets" if you wrote `- Red`) | add a task list, `- [ ] Option` (plain bullets are a menu's form), with a blank line above unless it starts at `1.` |
+| a `scale` with no numbered list, or a repeated number | `this scale question 'x' has no anchors under it` / `repeats anchor number 1` | write `1. Low`, `2. High`; the number is the stored answer, so use each once |
 | a widget with no data | `the widget 'x' names no data block (write ![[#^its-id]] under the line)` | add the embed line and the fenced `booklet widget` block |
 | a widget block that is not valid JSON | `the `booklet widget` block is not valid JSON (…, its line N)` | fix the comma or quote at that position |
 | a widget with a `<script>` in a figure | `the widget ^x has script (event handler onclick) in a figure — a figure is a drawing, never a program` | remove it; a figure is markup, never a program |
@@ -788,6 +790,17 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a data section for a module that is not in the file | `this data section names the module 'x', which the file has not opened` | use the module's id, or a plain `> [!data]` line |
 | an unquoted `booklet: 0.10` | `warn … write it in quotes, `booklet: "0.10"`` | write the marker in quotes |
 | a matrix with no items or anchors, or repeated anchor numbers | `the matrix 'x' has no items` / `has no anchors` / `repeats anchor number N` | write the bulleted items, then the numbered anchors, each number once |
+| records outside `%% … %%` | `the records section is not inside `%%` … `%%`` | put `%%` above `> [!records]` and another after the last record |
+| a records line naming a module the file lacks | `the records line names 'x', which is no module of this file` | name a module of the file, or write `> [!records]` with no id |
+| something in the records region that is not a record: prose, a callout, a data line or other block, an entry with no `ts`, an `entries` block with no `items` | `warn … inside the records region is not a record, so it is kept as written and not read` / `has no `ts`` | keep only record blocks there; give each entry a `ts` |
+| an `answers`, `entries` or `draft` block outside the records | `warn … outside the records region is not read` | move it under the `> [!records]` line, inside `%%` |
+| a `> [!` line the pattern cannot read | `warn this `> [!` line cannot be read … it ends the callout above it` | write `> [!kind|id words] Title` (the kind is letters, digits and dashes) |
+| `---` straight under a line of text | `warn `---` straight under text makes that line a heading, not a page break` | write `***`, or leave a blank line above |
+| a hint or solution not folded, or not directly under its question | `warn a hint that is not folded is drawn open …` / `is not directly under a question` | write `> [!hint]-`, straight under the question, with nothing between |
+| `[x]` in a menu | `warn a menu has no right answer, so `[x]` here marks nothing` | mark the answer on the question's own list |
+| a price in prose that reads as a formula | `warn `$5 a month ($` reads as a formula` | write `\$5` |
+| tiles over a data block with no `value:` | `warn the query's `as: tiles` has no `value:` …` | add `value: count` (the field that holds the number) |
+| an unknown `icon:` name | `` `icon:compas` is not a name in Booklet's icon set … did you mean `compass`? `` | use a name from the set |
 
 **Without the linter**, also check by hand:
 

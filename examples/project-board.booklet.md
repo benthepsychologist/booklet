@@ -211,6 +211,7 @@ from: log
 
 > [!module|board end] End of Studio project board
 
+%%
 > [!records] App record — do not edit below this line
 
 > [!records|board] Studio project board
@@ -229,3 +230,4 @@ from: log
 {"ts": "2026-09-30T09:00:00Z", "what": "Invoices sent", "mood": 2}
 ]}
 ```
+%%
