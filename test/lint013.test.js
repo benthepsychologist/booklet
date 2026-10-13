@@ -28,9 +28,9 @@ const ONE=[
  ["lint13-multi-no-options","a multi with no options","ERROR",13,/this multi question 'felt' has no options under it/,13,/this multi question has no options/],
  ["lint13-scale-no-anchors","a scale with no anchors","ERROR",13,/this scale question 'energy' has no anchors under it.*numbered list/,13,/this scale question has no anchors/],
  ["lint13-scale-plain-bullets","a scale whose anchors are plain bullets","ERROR",13,/no anchors under it.*the bullets under it are plain bullets, and a scale's anchors are numbered/,13,/has no anchors under it/],
- ["lint13-scale-dup-anchors","a scale that repeats an anchor number","ERROR",13,/the scale 'energy' repeats anchor number 1; the number is the stored answer/,null],
- ["lint13-records-unknown-module","a records line naming a module the file does not have","ERROR",20,/the records line names 'gone-mod', which is no module of this file.*kept as written and not read/,20,/the records line names “gone-mod”/],
- ["lint13-records-no-percent","a records section not inside %%","ERROR",17,/the records section is not inside `%%` … `%%`; put a `%%` line above/,null],
+ ["lint13-scale-dup-anchors","a scale that repeats an anchor number","ERROR",13,/the scale 'energy' repeats anchor number 1; the number is the stored answer/,13,/this scale uses the anchor number 1 twice/],
+ ["lint13-records-unknown-module","a records line naming a module the file does not have","warn",20,/the records line names 'gone-mod', which is no module of this file.*kept as written and not read/,20,/the records line names “gone-mod”/],
+ ["lint13-records-no-percent","a records section not inside %%","warn",17,/the records section is not inside `%%` … `%%`; put the records region between `%%` lines.*so editors hide it/,null],
  // done-when 2: warnings
  ["lint13-dash-under-text","`---` straight under text","warn",16,/`---` straight under text makes that line a heading, not a page break; write `\*\*\*`/,null],
  ["lint13-hint-unfolded","a hint not folded","warn",15,/a hint that is not folded is drawn open, outside its question; write `> \[!hint\]-`/,null],
@@ -69,6 +69,12 @@ for(const [name,what,kind,line,rx,rline,rrx] of ONE){
  chk("an unknown icon with no close spelling offers none",r.errors.length===1&&/`icon:flower` is not a name in Booklet's icon set/.test(r.errors[0])&&!/did you mean/.test(r.errors[0]),r.out);
  const two=lint(fx("lint13-icon-close")).errors[0]||"";
  chk("and at most three are offered",(two.match(/`[a-z-]+`/g)||[]).length<=1+3);}
+
+// ---- an invalid record is an error, and says why
+{const f=path.join(require("os").tmpdir(),"lint013-json-"+process.pid+".md");
+ fs.writeFileSync(f,fs.readFileSync(fx("lint13-records-ok"),"utf8").replace('{"items": [{"ts": "2026-09-21T09:00:00Z", "note": "a walk"}]}','{"items": [,]}'));
+ const r=lint(f);fs.unlinkSync(f);
+ chk("a record block that is not valid JSON stays an error, and says the page cannot use it",r.errors.length===1&&/not valid JSON.*cannot be read.*fix the comma or quote/.test(r.errors[0]),r.out);}
 
 // ---- done-when 1: the renderer says so too, the three notices
 {const un=n=>renderer(n).unread;

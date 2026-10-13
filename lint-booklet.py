@@ -927,7 +927,8 @@ def check_format(f, text, fm):
             try:
                 obj = json.loads(code)
             except ValueError as e:
-                err(f, f"line {n}: the `booklet {what}` block is not valid JSON ({e.msg}, its line {e.lineno})")
+                err(f, f"line {n}: the `booklet {what}` block is not valid JSON ({e.msg}, its line {e.lineno}); a record that cannot be read is a reader's "
+                       f"answers or entries the page cannot use, so fix the comma or quote")
                 return
             if not isinstance(obj, dict):
                 warn(f, f"line {n}: the `booklet {info}` block holds no object, so it is kept as written and not read; write a JSON object, `{{ ... }}`")
@@ -952,8 +953,8 @@ def check_format(f, text, fm):
             if rowst["open"]:
                 close_row(i, "runs into the records section")
             if not in_region[2]:
-                err(f, f"line {in_region[4] + 1}: the records section is not inside `%%` … `%%`; put a `%%` line above `> [!records]` and another "
-                       f"after the last record, so Obsidian's Reading view hides it")
+                warn(f, f"line {in_region[4] + 1}: the records section is not inside `%%` … `%%`; put the records region between `%%` lines "
+                    f"(one above `> [!records]`, one after the last record) so editors hide it; the renderer reads it either way")
         if in_region:
             if ln.strip() == "%%" and i == in_region[1] and in_region[3]:
                 in_region, section = None, saved_section        # the closing `%%`: the file is design again
@@ -1178,7 +1179,7 @@ def check_format(f, text, fm):
                     cur_act = w["id"] or "(an activity with no id)"
                     if not w["id"]:
                         err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "
-                               f"id, so an id the renderer makes up from the title is lost the day the title changes")
+                               f"id, so an id the renderer makes up from the title is lost the day the title changes, orphaning the entries")
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         if w["set"].get("parent") is not None:
@@ -1375,8 +1376,8 @@ def check_format(f, text, fm):
     one_activity = not seen_activity and not any_module
     for n, rid in rec_lines:
         if rid not in mod_ids and rid not in acts.get(None, {}) and not one_activity:
-            err(f, f"line {n}: the records line names {rid!r}, which is no module of this file (nor an activity outside every module), "
-                   f"so its blocks are kept as written and not read; name a module the file has, or write `> [!records]` with no id")
+            warn(f, f"line {n}: the records line names {rid!r}, which is no module of this file (nor an activity outside every module), "
+                    f"so its blocks are kept as written and not read; name a module the file has, or write `> [!records]` with no id")
     for n, ref, rid in entry_refs:
         if rid and rid not in mod_ids and rid not in acts.get(None, {}) and not one_activity:
             continue                                         # a records line naming nothing: reported on that line

@@ -790,8 +790,8 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a data section for a module that is not in the file | `this data section names the module 'x', which the file has not opened` | use the module's id, or a plain `> [!data]` line |
 | an unquoted `booklet: 0.10` | `warn … write it in quotes, `booklet: "0.10"`` | write the marker in quotes |
 | a matrix with no items or anchors, or repeated anchor numbers | `the matrix 'x' has no items` / `has no anchors` / `repeats anchor number N` | write the bulleted items, then the numbered anchors, each number once |
-| records outside `%% … %%` | `the records section is not inside `%%` … `%%`` | put `%%` above `> [!records]` and another after the last record |
-| a records line naming a module the file lacks | `the records line names 'x', which is no module of this file` | name a module of the file, or write `> [!records]` with no id |
+| records outside `%% … %%` | `warn the records section is not inside `%%` … `%%`` | put `%%` above `> [!records]` and another after the last record |
+| a records line naming a module the file lacks | `warn the records line names 'x', which is no module of this file` | name a module of the file, or write `> [!records]` with no id |
 | something in the records region that is not a record: prose, a callout, a data line or other block, an entry with no `ts`, an `entries` block with no `items` | `warn … inside the records region is not a record, so it is kept as written and not read` / `has no `ts`` | keep only record blocks there; give each entry a `ts` |
 | an `answers`, `entries` or `draft` block outside the records | `warn … outside the records region is not read` | move it under the `> [!records]` line, inside `%%` |
 | a `> [!` line the pattern cannot read | `warn this `> [!` line cannot be read … it ends the callout above it` | write `> [!kind|id words] Title` (the kind is letters, digits and dashes) |
