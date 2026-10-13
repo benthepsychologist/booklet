@@ -69,18 +69,18 @@ const REGJ={modules:[{id:'t/journal',title:'Daily journal',file:'journal.md'}]};
   ok(await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)<=0,'no sideways overflow at 1280px');
   // not kept yet
   const keptKeys=()=>p.evaluate(()=>{try{const l=JSON.parse(localStorage.getItem('booklet.library.v1')||'{"entries":[]}');return l.entries.length;}catch(e){return -1;}});
-  ok(await keptKeys()===0,'it is not in "Your booklets" while the reader has changed nothing');
+  ok(await keptKeys()===1&&await p.evaluate(()=>Object.keys(localStorage).filter(k=>/^booklet\.b\./.test(k)).length)===0,'it is listed in "Your booklets" as a pointer, with no copy of its content kept');
   // dismiss
   await line(p).locator('button').click();await wait(p,200);
   ok(await line(p).count()===0,'the line can be dismissed for the session');
   // 2 answering a question: it joins the list
   await p.locator('#main textarea').first().fill('QZXansweredhere');await wait(p,900);
-  ok(await keptKeys()===1,'answering a question keeps it: it is now one of "Your booklets"');
+  ok(await keptKeys()===1&&await p.evaluate(()=>Object.keys(localStorage).filter(k=>/^booklet\.b\./.test(k)).length)===1,'answering a question keeps its content: still the one entry');
   // 3 changing the fragment opens another, and a bad name requests nothing
   const n0=storeReqs().length;
   await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,900);
   ok(await view(p)==='other/ot'&&storeReqs().length===n0+1,'changing the fragment opens another booklet: '+await view(p));
-  ok(await keptKeys()===1,'...and the first, kept one is untouched (still one entry)');
+  ok(await keptKeys()===2,'...and the first, kept one is untouched (a second entry, for the second name)');
   const n1=storeReqs().length;
   for(const h of ['#/open/../x.md','#/open/https://evil.test/a.md','#/open/a%5Cb.md','#/open/x.txt']){await p.evaluate(h=>{location.hash=h;},h);await wait(p,300);}
   ok(storeReqs().length===n1,'bad names (up, a host, a backslash, not .md) request nothing');
@@ -89,12 +89,12 @@ const REGJ={modules:[{id:'t/journal',title:'Daily journal',file:'journal.md'}]};
   // 4 a name the browser keeps is one booklet: opening it again opens the kept booklet, and a changed file is offered
   await p.evaluate(()=>{location.hash='#/open/reports/week.booklet.md';});await wait(p,900);
   ok(await p.locator('#main textarea').first().inputValue()==='QZXansweredhere','opening the same name again opens the kept booklet, answer and all');
-  ok(!(await p.locator('#main').innerText()).includes('You also keep a copy')&&await p.locator('#main .hostnote').count()===0&&await keptKeys()===1,'no "You also keep a copy" line, no offer (the store file is as it was read), and still one entry');
+  ok(!(await p.locator('#main').innerText()).includes('You also keep a copy')&&await p.locator('#main .hostnote').count()===0&&await keptKeys()===2,'no "You also keep a copy" line, no offer (the store file is as it was read), and still two entries');
   await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,700);
   FILES['/pub/reports/week.booklet.md']=WEEK2;
   await p.evaluate(()=>{location.hash='#/open/reports/week.booklet.md';});await wait(p,900);
   ok(await p.locator('#main .hostnote').count()===1&&(await p.locator('#main .hostnote').innerText()).includes('The file has changed where it is kept'),'a changed store file is offered: '+(await p.locator('#main .hostnote').innerText().catch(()=>'none')).replace(/\n/g,' | '));
-  ok(await p.locator('#main textarea').count()===1&&await p.locator('#main textarea').first().inputValue()==='QZXansweredhere'&&await keptKeys()===1,'nothing changed yet: the kept booklet, one question, one entry');
+  ok(await p.locator('#main textarea').count()===1&&await p.locator('#main textarea').first().inputValue()==='QZXansweredhere'&&await keptKeys()===2,'nothing changed yet: the kept booklet, one question, no new entry');
   await wait(p,4000);
   await p.screenshot({path:path.join(OUT,'openlink-newer-1280.png')});
   await p.setViewportSize({width:400,height:900});await wait(p,300);
@@ -103,7 +103,7 @@ const REGJ={modules:[{id:'t/journal',title:'Daily journal',file:'journal.md'}]};
   await p.setViewportSize({width:1280,height:900});
   await p.locator('#main .hostnote button.primary').click();await wait(p,600);
   ok(await p.locator('#main textarea').count()===2&&await p.locator('#main textarea').first().inputValue()==='QZXansweredhere'&&await p.locator('#main .hostnote').count()===0,'reading it takes the new body (two questions) and keeps the reader\'s answer');
-  ok(await keptKeys()===1,'...into the same entry');
+  ok(await keptKeys()===2,'...into the same entry');
   await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,700);
   await p.evaluate(()=>{location.hash='#/open/reports/week.booklet.md';});await wait(p,900);
   ok(await p.locator('#main .hostnote').count()===0&&await p.locator('#main textarea').count()===2,'having read it, opening again offers nothing');
@@ -113,7 +113,7 @@ const REGJ={modules:[{id:'t/journal',title:'Daily journal',file:'journal.md'}]};
   // 6 refusals
   for(const [name,why] of [['missing.md','a file that is not there'],['redirect.md','a redirect'],['huge.md','a response over 5 MB'],['page.md','an HTML response']]){
     const before=await view(p);await p.evaluate(h=>{location.hash=h;},'#/open/'+name);await wait(p,900);
-    ok(await view(p)===before&&(await toastText(p)).length>5&&await keptKeys()===1,why+' is refused with a plain message and nothing opens or is kept: '+(await toastText(p)));}
+    ok(await view(p)===before&&(await toastText(p)).length>5&&await keptKeys()===3,why+' is refused with a plain message and nothing opens or is kept: '+(await toastText(p)));}
   // 7 module link
   await p.evaluate(()=>{location.hash='#/module/t%2Fjournal';});await wait(p,1200);
   ok(await view(p)==='journal/j','#/module/<id> opens that module: '+await view(p));

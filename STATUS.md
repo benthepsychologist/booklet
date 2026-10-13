@@ -22,6 +22,10 @@ What a booklet line says is drawn the way the prose around it is, a booklet's ow
 - Tests: `test/drawing.test.js` (the recording DOM), `test/drawing-browser.js` (MathML, the stepper, the wiki, the opening, a card's link), `test/libwake-browser.js` (serves the page in slow chunks and opens a booklet with a formula and a diagram by link; it fails on 0.13.0 before this change); `pagename`, `dataviews`, `lint`, `guard` and `svg-sanitize` follow the new rules.
 - Size: `booklet.html` 3,714,908 bytes (main is 3,706,356): the hand-written part grew by 8,552 bytes, the libraries are untouched.
 
+## Store booklets open from the store (renderer, 2026-10-13; on branch `fix/store-links-open-the-store-file`, not merged)
+
+For a booklet the host saves (`from: store:<name>`): it joins "Your booklets" as soon as it is read, as a pointer with no kept copy of its content (`hosted: true` on its entry, set when the host says it saved, cleared by any change made here); opening it from the list, or by its link, reads the store's file and draws that, never the kept copy first; a change the host has not yet saved keeps the old behaviour (the kept copy opens and the newer file is offered); "Your booklets" says "Opening <name>…" while the file is read (`LINK_LOADING`). Tests: `test/openlink.test.js` (new block, and the three checks that said a link's booklet is not listed). The box's store server compresses and revalidates its responses (booklet-hub, `tools/booklet-serve`).
+
 ## Current state — v0.13.0, format rules (item `v013-format-rules`; merged as #46, not yet released)
 
 The format becomes 0.13, for what a reader keeps and how it reads a line. A file marked `"0.12"` now opens with the older-version notice; every file this repository holds that carried `"0.12"` is re-marked (the "later marker" fixture is now `"0.14"`, and `lint-old-format-0-12` is new). `FORMAT_VERSION` and `lint-booklet.py --marker` say `0.13`; `RENDERER_VERSION` is `0.13.0`. `CHANGES.md` has "Changes from v0.12".

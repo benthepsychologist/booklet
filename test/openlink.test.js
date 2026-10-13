@@ -64,7 +64,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
  chk("bad names request nothing",CALLS.length===0,JSON.stringify(CALLS));
  chk("...and say so in plain words",/does not name a booklet/.test(text(P.byId("toast"))),text(P.byId("toast")));}
 
-/* ---- a store opens a booklet: a view ---- */
+/* ---- a store opens a booklet: a view that is listed as a pointer ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;
  ROUTES[STORE+"reports/week.booklet.md"]=WEEK;
  A.loadText(booklet("Kept already"));A.flushSave();A.closeBooklet();
@@ -73,12 +73,12 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
  chk("a name in the store opens the booklet",ok===true&&A.currentId!==null&&A.BOOK&&/Week report/.test(JSON.stringify(A.BOOK.head||A.BOOK.title||"")));
  chk("exactly one request, a GET with no body, no credentials, no redirect, to the store's address",CALLS.length===1&&CALLS[0].url===STORE+"reports/week.booklet.md"&&!CALLS[0].opts.method&&!CALLS[0].opts.body&&CALLS[0].opts.credentials==="omit"&&CALLS[0].opts.redirect==="error"&&!!CALLS[0].opts.signal,JSON.stringify(CALLS));
  chk("it opens into its one activity (the v0.11 rule), like a file from disk",A.screen==="m/a",A.screen);
- chk("it is not in the library until something changes: the list and every key are as they were",JSON.stringify(lib())===before&&Object.keys(global.__ls).sort().join()===keys,JSON.stringify(lib()));
- chk("the booklet kept before is untouched",lib().length===1&&/Kept already/.test(JSON.stringify(lib()[0].title)));
+ chk("it is listed under Your booklets as a pointer: its name, and no copy of its content kept",lib().length===2&&lib().some(e=>e.from==="store:reports/week.booklet.md"&&e.hosted===true&&/Week report/.test(JSON.stringify(e.title)))&&Object.keys(global.__ls).sort().join()===keys,JSON.stringify(lib()));
+ chk("the booklet kept before is untouched",lib().some(e=>/Kept already/.test(JSON.stringify(e.title))&&e.openedAt===JSON.parse(before)[0].openedAt));
  const pv=P.find(P.main(),P.hasClass("openedby"))[0];
  chk("a quiet line says where it came from, in these words",!!pv&&text(pv).startsWith("Opened by a link, from this page's own store: reports/week.booklet.md"),pv?text(pv):"none");
  chk("the line is its own: no problems notice, nothing counted as unread",!P.find(P.main(),P.hasClass("filenotes")).length&&!/could not read/.test(text(P.main())));
- A.flushSave();chk("leaving it unchanged still keeps nothing",lib().length===1);
+ A.flushSave();chk("leaving it unchanged keeps no content for it, and no second entry",lib().length===2&&Object.keys(global.__ls).sort().join()===keys);
  A.editBook(t=>{});A.flushSave();
  chk("when the reader changes something it joins \"Your booklets\" (a second entry, the first untouched)",lib().length===2&&lib().some(e=>/Kept already/.test(JSON.stringify(e.title)))&&lib().some(e=>e.from==="store:reports/week.booklet.md"),JSON.stringify(lib()));
  const pv2=P.find(P.main(),P.hasClass("openedby"));
@@ -191,6 +191,43 @@ reset();{const A=P.boot();META["booklet-registry"]="https://reg.test/registry.js
  A.closeBooklet();
  await A.openLink("#/module/t%2Ftwo");
  chk("a module link with no page opens as before",A.screen==="module:m",A.screen);}
+
+/* ---- a store booklet the store holds whole opens from the store, never from the kept copy ---- */
+{const HOSTED=()=>{reset();P.place("http:","fleet");global.__ls["booklet.host.allowed"]="L";META={"booklet-store":STORE};
+   const A=P.boot();A.BookletApi.host({label:"L"});return A;};
+ const URLW=STORE+"reports/week.booklet.md";
+ let A=HOSTED();ROUTES[URLW]=WEEK;
+ await A.openLink("#/open/reports/week.booklet.md");
+ const e0=lib().find(e=>e.from);
+ chk("a link opened with a host that saves is listed as a pointer (hosted, no content key)",!!e0&&e0.hosted===true&&!global.__ls["booklet.v1.b."+e0.id]&&lib().length===1,JSON.stringify(lib()));
+ A.closeBooklet();
+ // the store's file changes (regenerated); the entry is opened from "Your booklets"
+ ROUTES[URLW]=WEEK.replace("A question","A newer question");CALLS.length=0;
+ A.openFromList(e0.id);await new Promise(r=>setTimeout(r,30));
+ chk("opening it from the list reads the store's file: the newer text is what is drawn",CALLS.length===1&&CALLS[0].url===URLW&&/newer question/.test(JSON.stringify(A.BOOK)),JSON.stringify(CALLS.map(c=>c.url)));
+ chk("...with no offer to read a newer file, and still one entry",!P.find(P.main(),P.hasClass("hostnote")).length&&lib().length===1&&A.currentId===e0.id);
+ // opened by the link again: same
+ A.closeBooklet();ROUTES[URLW]=WEEK.replace("A question","A third question");
+ await A.openLink("#/open/reports/week.booklet.md");
+ chk("opened by its link again, the file just read is drawn and the entry is reused",/third question/.test(JSON.stringify(A.BOOK))&&lib().length===1&&A.currentId===e0.id);
+ // while the file is being read, the list says so
+ A.closeBooklet();let release;const gate=new Promise(r=>{release=r;});
+ ROUTES[URLW]=async()=>{await gate;return reply(WEEK);};
+ const pending=A.openLink("#/open/reports/week.booklet.md");await new Promise(r=>setTimeout(r,10));
+ chk("while the file is read, \"Your booklets\" says \"Opening <name>…\"",A.screen==="@booklets"&&/Opening reports\/week\.booklet\.md…/.test(text(P.main())),text(P.main()).slice(0,200));
+ release();await pending;
+ chk("...and the notice is gone when the booklet is open",A.currentId===e0.id&&!/Opening reports/.test(text(P.main())));
+ // a change made here that the host has not saved: the kept copy opens, with the offer
+ A.editBook(t=>{});A.flushSave();
+ chk("a change made here marks the entry as not held whole by the store",lib().find(e=>e.id===e0.id).hosted===false);
+ A.closeBooklet();ROUTES[URLW]=WEEK.replace("A question","A fourth question");
+ await A.openLink("#/open/reports/week.booklet.md");
+ chk("then the kept copy opens, not the file, and the newer file is offered",A.currentId===e0.id&&!/fourth question/.test(JSON.stringify(A.BOOK))&&P.find(P.main(),P.hasClass("hostnote")).length===1);
+ // the store does not answer: the list says so and nothing is lost
+ A.closeBooklet();ROUTES[URLW]=new Error("down");
+ const bad=await A.openLink("#/open/reports/week.booklet.md");
+ chk("a store that does not answer opens nothing, says so, and clears the notice",bad===false&&A.screen==="@booklets"&&!/Opening reports/.test(text(P.main())));
+}
 
 /* ---- the fetch refusals ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;

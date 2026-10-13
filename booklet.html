@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-tZ4KiIZotaapYzJpOo06DhYEafd2tywmlhUrMYcQjzQ=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-V5eotOKcnWClk2wo/y4aq4mm7imFGaUXl/KlOn3cH1U=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1614,6 +1614,7 @@ const STRINGS_SRC={
       linkMissing: "That booklet could not be found.",
       linkBig: "That file is too big to open here (the limit is 5 MB).",
       linkSlow: "That booklet took too long to arrive.",
+      linkLoading: n=>"Opening "+n+"…",
       linkNotText: "That is not a text file this page can open.",
       linkFailed: "That booklet could not be fetched. It may have moved, or you may be offline.",
       linkFromStore: n=>`Opened by a link, from this page's own store: ${n}`,
@@ -1940,6 +1941,7 @@ const STRINGS_SRC={
       linkMissing: "Ce carnet est introuvable.",
       linkBig: "Ce fichier est trop volumineux pour s’ouvrir ici (limite : 5 Mo).",
       linkSlow: "Ce carnet a mis trop de temps à arriver.",
+      linkLoading: n=>"Ouverture de "+n+"…",
       linkNotText: "Ce n’est pas un fichier texte que cette page peut ouvrir.",
       linkFailed: "Ce carnet n’a pas pu être récupéré. Il a peut-être changé d’adresse, ou vous êtes hors ligne.",
       linkFromStore: n=>`Ouvert par un lien, depuis le dépôt de cette page : ${n}`,
@@ -2262,6 +2264,7 @@ const STRINGS_SRC={
       linkMissing: "No se encontró ese cuadernillo.",
       linkBig: "Ese archivo es demasiado grande para abrirlo aquí (el límite es 5 MB).",
       linkSlow: "Ese cuadernillo tardó demasiado en llegar.",
+      linkLoading: n=>"Abriendo "+n+"…",
       linkNotText: "Ese no es un archivo de texto que esta página pueda abrir.",
       linkFailed: "No se pudo obtener ese cuadernillo. Puede que se haya movido, o que no tengas conexión.",
       linkFromStore: n=>`Abierto por un enlace, desde la reserva de esta página: ${n}`,
@@ -2942,10 +2945,21 @@ function askPersist(){if(PERSIST_ASKED) return;PERSIST_ASKED=true;
   try{Promise.resolve(s.persisted()).then(v=>{if(v) return PERSISTED=true;
     return Promise.resolve(s.persist()).then(g=>{PERSISTED=!!g;if(screen===LIB_SCREEN) render();});}).catch(()=>{});}catch(e){}}
 function noteSaved(){const id=currentId,now=new Date().toISOString();
-  const fresh={...describeBooklet(BOOK),updatedAt:now,dirty,unsavedEntries,lang};
+  /* a store booklet with something saved here is not, until the host says it saved it, held whole by the store */
+  const fresh={...describeBooklet(BOOK),updatedAt:now,dirty,unsavedEntries,lang,...(hostName()?{hosted:false}:{})};
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
     if(!e&&currentEntry){e={...currentEntry};L.entries.push(e);}
     if(e) Object.assign(e,fresh);});}
+/* A store booklet just read from the store is listed under "Your booklets" as a pointer: its name, title and opening
+   time, and no copy of its content (the store holds it, so there is nothing here to go stale). `hosted` says the store
+   holds everything this browser has of it; a change made here clears it (noteSaved), the host's "saved" sets it again
+   (hostSet), and an entry with it set is opened from the store (openFromList, openLinked). */
+function notePointer(){const id=currentId,now=new Date().toISOString();
+  const fresh={...describeBooklet(BOOK),openedAt:now,dirty:false,unsavedEntries:0,lang,hosted:true,from:currentEntry.from,storeSeen:currentEntry.storeSeen};
+  changeLib(L=>{let e=L.entries.find(x=>x.id===id);
+    if(!e){e={...currentEntry};L.entries.push(e);}
+    Object.assign(e,fresh);});
+  currentEntry.hosted=true;}
 function clearLocal(){const key=slotKey();if(key) lsDel(key);
   if(currentId) changeLib(L=>{const e=L.entries.find(x=>x.id===currentId);
     if(e) Object.assign(e,{title:null,parts:[],dirty:false,unsavedEntries:0,updatedAt:new Date().toISOString()});});}
@@ -6628,7 +6642,14 @@ function startScreen(){
   if(acts.length===1) return acts[0].id;
   if(mods.length===1&&acts.length>1) return moduleScreen(mods[0].id);
   return HOME_SCREEN;}
-function openFromList(id){if(openBooklet(id)===null){render();return;}
+function openFromList(id){LIB=readLib();const e=entryById(id);
+  /* a store booklet the store holds everything of is opened from the store: the file is read afresh, never the kept copy */
+  if(e&&e.from&&String(e.from).startsWith("store:")&&e.hosted===true&&storeUrl()!==""){
+    openLink("#/open/"+String(e.from).slice(6)).then(ok=>{
+      /* the store did not answer: what this browser still keeps of it opens instead, if anything */
+      if(ok===false&&!currentId&&lsGet(keyOfEntry(e))!==null){openBooklet(e.id);screen=startScreen();render();window.scrollTo({top:0});}});
+    return;}
+  if(openBooklet(id)===null){render();return;}
   screen=startScreen();render();window.scrollTo({top:0});}
 /* A new booklet starts empty: no modules, no answers, nothing seeded. */
 function createBooklet(){const e=addEntry();
@@ -6641,13 +6662,15 @@ function renderBooklets(main){const L=strings("library");
   LIB=readLib();
   main.append(el("div",{class:"hero col"},el("h1",{},L.title),el("p",{class:"sub"},L.sub)));
   if(!storageOk) main.append(el("div",{class:"notice col"},L.storageOff));
+  /* a link or a kept store booklet is being read: say so, so a slow read is not an empty list */
+  if(LINK_LOADING!==null) main.append(el("div",{class:"notice col",role:"status"},STRINGS[lang].booklet.linkLoading(LINK_LOADING)));
   const create=el("button",{type:"button",class:"small primary"},L.create);
   create.addEventListener("click",()=>createBooklet());
   main.append(el("div",{class:"col addrow"},create,el("button",{type:"button",class:"small",onclick:openLoad},L.load)));
   hostStopLine(main);
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
   const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
-  if(!list.length){main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
+  if(!list.length){if(LINK_LOADING===null) main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
   const cards=el("div",{class:"modes"});
   list.forEach(e=>cards.append(bookletCard(e)));
   main.append(cards);
@@ -7199,7 +7222,9 @@ function finishLoad(R,via,keep){const mine=!!langPref();
   const marker=R.markerNote?humanMsg(R.markerNote):"",list=(R.unread||[]).filter(m=>m!==R.markerNote).map(humanMsg);
   FILE_NOTES=list.length||marker?{marker,list,dismissed:false,at}:null;
   /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */
-  if(via){PROVENANCE={...via,dismissed:false,at};hookChanged();go(at);return;}
+  if(via){PROVENANCE={...via,dismissed:false,at};
+    if(via.store&&via.from&&currentEntry) notePointer();
+    hookChanged();go(at);return;}
   saveLocal();go(at);toast(STRINGS[lang].ui.loadOk);}
 
 /* ---- THE HOST'S LINE AND NOTICE ----
@@ -7244,6 +7269,9 @@ function hookFire(){HOOK_TIMER=null;HOOK_LAST=Date.now();
 function hostSet(status,message,silent){if(!hostActive()) return;const was=HOST.status;
   hookStopWait();HOST.silent=!!silent;
   HOST.status=status;HOST.message=status==="failed"?message||"":"";if(status==="saved") HOST.at=new Date();
+  if(status==="saved"&&hookBook()&&currentId){const id=currentId;
+    changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.hosted=true;});
+    if(currentEntry) currentEntry.hosted=true;}
   drawHostLine();
   if((was==="failed")!==(status==="failed")) render();}
 /* the refusal a file earns, as the sentences the reader would see */
@@ -7377,13 +7405,15 @@ async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.
 /* Open text as a view: the same parser, the same refusals, the same notices and the same start screen as a file picked
    by hand; but no entry is added to the list and nothing is saved until the reader changes something. `via` says where
    it came from: {store:true,label,from} or {store:false,label,from}. */
-function openAsView(text,via){const R=parseFile(text||"");
+function openAsView(text,via,reuse){const R=parseFile(text||"");
   if(!R.ok){toast(humanMsg(R.refused&&R.refused.length?STRINGS[lang].ui.loadRefused+" "+R.refused.join(" "):R.unread&&R.unread.length&&!R.template?R.unread.join(" "):STRINGS[lang].ui.loadErr));return false;}
   flushSave();resetBookletState();bookletGen++;
   const now=new Date().toISOString();
-  currentId=newId(Date.now().toString(36));currentKey=bookKey(currentId);
+  /* `reuse`: the library entry this link is for, which the store holds whole; it is read again and its old copy goes */
+  if(reuse){currentId=reuse.id;currentKey=keyOfEntry(reuse);lsDel(currentKey);}
+  else{currentId=newId(Date.now().toString(36));currentKey=bookKey(currentId);}
   /* storeSeen: which copy of its file this booklet was last read from (see openLinked) */
-  currentEntry={id:currentId,title:null,parts:[],createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,lang,from:via.from,
+  currentEntry={...(reuse||{}),id:currentId,title:null,parts:[],createdAt:reuse?reuse.createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,lang,from:via.from,
     ...(via.from?{storeSeen:textPrint(text)}:{})};
   finishLoad(R,via);return true;}
 /* One booklet per store name, and per module link, in a browser. When this browser keeps no booklet for the link it
@@ -7395,6 +7425,10 @@ function openAsView(text,via){const R=parseFile(text||"");
 const sameText=(a,b)=>{const n=x=>String(x==null?"":x).replace(/\r\n?/g,"\n").replace(/\s+$/,"");return n(a)===n(b);};
 function openLinked(text,via){const kept=entryFrom(via.from);
   if(!kept) return openAsView(text,via);
+  /* The store is the truth for a booklet it holds whole (the host saves every change into the file): the file just read
+     is drawn, and the kept copy is never drawn first. A kept copy that holds work the store may lack (a change made
+     here that the host has not saved; an older release's entry with unsaved work) opens as below, with the offer. */
+  if(via.store&&hostActive()&&(kept.hosted===true||(kept.hosted===undefined&&!kept.dirty&&!(Number(kept.unsavedEntries)>0)))) return openAsView(text,via,kept);
   const R=parseFile(text||"");
   if(!R.ok){toast(refusalList(R).join(" "));return false;}
   openBooklet(kept.id);
@@ -7408,7 +7442,7 @@ function openLinked(text,via){const kept=entryFrom(via.from);
     if(currentEntry) currentEntry.storeSeen=seen;
     changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=seen;});}
   render();window.scrollTo({top:0});return true;}
-let LINK_GEN=0,LINK_AT=null;   /* LINK_AT: the id of the page a link names, for the moment the booklet it opens picks its first screen */
+let LINK_GEN=0,LINK_AT=null,LINK_LOADING=null;   /* LINK_AT: the id of the page a link names, for the moment the booklet it opens picks its first screen; LINK_LOADING: the name of the file being read for a link, while it is */
 /* A link may name a page of what it opens, after the name: `#/open/<name>/<activity-id>` and `#/module/<id>/<activity-id>`. A store's
    name may itself hold slashes, so the page is what follows the final `.md/`; a registry id may too, so the id is the longest one
    the registry lists. The page is read from the fragment and nothing is ever written to it. */
@@ -7437,7 +7471,10 @@ async function openLink(hash){const L=linkOf(hash);if(!L) return false;
     const entry=hasOwn(REGISTRY_CACHE,id)?REGISTRY_CACHE[id]:null;
     if(!entry||!entry.url) return said("linkNoModule");
     url=entry.url;via={store:false,label:tx(entry.title,entry.id),from:"registry:"+entry.id};}
+  LINK_LOADING=via.label;if(screen===LIB_SCREEN) render();
   const got=await linkFetch(url);if(gen!==LINK_GEN) return false;
+  LINK_LOADING=null;
+  if(got.err){if(screen===LIB_SCREEN) render();}
   if(got.err) return said({missing:"linkMissing",big:"linkBig",slow:"linkSlow",notText:"linkNotText"}[got.err]||"linkFailed");
   LINK_AT=at||null;
   try{return openLinked(got.text,via);}finally{LINK_AT=null;}}
