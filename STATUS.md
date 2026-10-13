@@ -21,9 +21,9 @@ The format becomes 0.13, for what a reader keeps and how it reads a line. A file
 - **D9, D10, D14.** Wording and the new "Drafts" part of SPEC section 13 (the manifest, parts in other files, the sibling check).
 - **D11.** `> [!row|end]` is the only row close; `ROW_END` is gone; the linter reports `> [!row end]` with the fix.
 - **D12.** The hex-pair widget colour is gone (`colourOf`, `COLOUR_NAMES`); widget colours are colour names, and "tone" is `good`, `warn` or `bad`.
-- **D13.** `group` is a kind (`KIND_SETTINGS`, `NO_ID_KINDS`): the plain fold, so a word after its bar is a setting it does not take, and it is never reported as a kind the page does not know. Its drawing is unchanged.
-- Tests: `test/format013.test.js`, `test/format013-browser.js`; `lint.test.js`, `open.test.js`, `notice.test.js`, `modulescope.test.js`, `theme-block.test.js` and `version.test.js` follow the new rules. No new interface words (every message reused).
-- Size: `booklet.html` 3,699,989 bytes (was 3,697,535); the hand-written part grew by 2,454 bytes.
+- **D13.** `group`, `diff`, `law` and `opinion` are kinds (`KIND_SETTINGS`, `NO_ID_KINDS`): the plain fold, so a word after its bar is a setting it does not take, and it is never reported as a kind the page does not know. Its drawing is unchanged.
+- Tests: `test/format013.test.js`, `test/format013-browser.js`; `lint.test.js`, `open.test.js`, `notice.test.js`, `modulescope.test.js`, `theme-block.test.js` and `version.test.js` follow the new rules. Three new interface messages (a records line that names no module, a block that is not a record, a `> [!` line the page cannot read), their French and Spanish marked `l10n: draft`, as is the reworded cross-module query message.
+- Size: `booklet.html` 3,702,311 bytes (was 3,697,535); the hand-written part grew by 4,776 bytes.
 
 ## Current state — v0.12.0, released 2026-10-13 (items D and E: the format and the wiki tree)
 
