@@ -219,7 +219,9 @@ status: draft
   title). A booklet of one module opens straight into the module, so the
   home screen, and this opening with it, shows when the reader presses Back.
   Write the one or two sentences for a reader who has not opened the module
-  yet. Do not add a `##` heading there that looks like part of the
+  yet. Notes for whoever edits the file go in an HTML comment
+  (`<!-- … -->`), which is never drawn: anything else above the first
+  module line is shown to the reader. Do not add a `##` heading there that looks like part of the
   design — a heading is fine as ordinary reading, it just carries no
   structure of its own (headings never mean anything to the renderer).
 

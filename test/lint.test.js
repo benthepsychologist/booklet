@@ -71,6 +71,7 @@ const CASES=[
  ["lint-query-bad-as","a query whose `as:` is not a view",/line 25: the query's `as: chart` is not one of cards, table, list, tiles/],
  ["lint-query-bad-limit","a query whose `limit:` is not a positive integer",/line 25: the query's `limit: 0` must be a positive whole number/],
  ["lint-query-data-other-module","a query of a data block in another module",/line 13: the query's `from: short-list` is a data block in another module/],
+ ["lint-question-early","a question before the file's first module or activity line",/line 9: a text question belongs inside an activity, not before the file's first module or activity line/],
  ["lint-fence-unclosed","a fence opened and never closed",/line 25: a fence is opened and never closed/],
  ["lint-setting-unknown","a setting a kind does not take (`mx:5` for `max:5`)",/line 13: a number line takes no `mx:` setting \(it takes `min:`, `max:`, `step:`\)/],
  ["lint-setting-flag-unknown","a flag a kind does not take",/line 13: a text line takes no `lng` setting \(it takes `long`\)/],
@@ -120,6 +121,7 @@ for(const [name,what,rx] of CASES){
  const W=(name,rx,label)=>{const r=lint(path.join(FX,name+".md"));
    chk(label+": one warning, no error, naming the line",r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);};
  W("lint-query-ignored-key",/line 25: the query's `as: bars` does not draw `group`/,"a key the view does not draw");
+ W("lint-query-cards-label-entries",/line 15: the query's `label:` is not drawn on cards over kept entries/,"a `label:` on cards over kept entries");
  W("lint-query-ignored-cards",/line 23: the query's default view, `cards`, does not draw `parent`/,"a key the default view does not draw");
  W("lint-query-badge-field",/line 25: the query's `badge: nope` names a field the rows never carry/,"a `badge:` naming a field the rows never carry");
  W("lint-query-parent-field",/line 25: the query's `parent: nope` names a field the rows never carry/,"a `parent:` naming a field the rows never carry");

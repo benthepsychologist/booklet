@@ -31,6 +31,7 @@ Some words first.
 - [x] $\\frac{2}{3}$ is **bigger**
 - [ ] $\\frac{3}{5}$ is bigger
 - [ ] [a link](https://example.org) in an option
+- [ ] $\\frac{1}{4}$
 
 > [!scale|sure] How sure are you, $x^2$?
 
@@ -147,6 +148,9 @@ You arrived by a card's link.
    ok(cards.length===2&&cards[0].math===1&&/Which is 23 or bigger|Which is/.test(cards[0].txt),'an activity\'s card draws the formula in its title ('+JSON.stringify(cards[0])+')');
    ok(cards[1].em===1&&cards[1].txt==='A second activity','and its emphasis ('+cards[1].txt+')');
    ok(await p.evaluate(()=>document.querySelectorAll('#main button a, #main button.card a').length)===0,'no card or button holds a link');
+   {const cdp=await p.context().newCDPSession(p);await cdp.send('Accessibility.enable');
+    const names=(await cdp.send('Accessibility.getFullAXTree')).nodes.filter(n=>n.role&&n.role.value==='button'&&!n.ignored).map(n=>(n.name&&n.name.value)||'');
+    ok(names.some(n=>/Which is \\frac\{2\}\{3\} or bigger/.test(n)),'a card holding a formula in its title is named by it ('+names.filter(n=>/frac/.test(n)).join(' | ')+')');}
    await shot(p,'module-cards-math-1280-paper');
    /* the activity */
    await p.locator('#main button.mode').first().click();await p.waitForTimeout(600);
@@ -164,6 +168,16 @@ You arrived by a card's link.
    ok(act.opts[2].a===0&&/a link in an option/.test(act.opts[2].txt),'a link in an option is its words: the option is a button');
    ok(act.raw===0,'no formula is left as its TeX');
    ok(!/[$*`]/.test(act.doc),'the tab\'s title is plain words ('+act.doc+')');
+   /* accessible names (WCAG 4.1.2): Chromium names a button holding only MathML by nothing, unless the formula names itself */
+   {const cdp=await p.context().newCDPSession(p);await cdp.send('Accessibility.enable');
+    const tree=(await cdp.send('Accessibility.getFullAXTree')).nodes;
+    const btn=tree.filter(n=>n.role&&n.role.value==='button'&&!n.ignored);
+    const names=btn.map(n=>(n.name&&n.name.value)||'');
+    ok(names.some(n=>/\\frac\{2\}\{3\} is bigger/.test(n)),'an option that holds a formula is named by it ('+names.filter(n=>/frac/.test(n)).join(' | ')+')');
+    ok(!names.some(n=>n===''),'no button on the page has an empty name ('+names.length+' buttons)');
+    let axe=null;try{axe=fs.readFileSync(require.resolve('axe-core/axe.min.js',{paths:[path.dirname(process.env.PLAYWRIGHT||'.'),__dirname]}),'utf8');}catch(e){}
+    if(axe){await p.evaluate(axe);const v=await p.evaluate(async()=>(await axe.run(document,{runOnly:['button-name']})).violations.length);ok(v===0,'axe-core button-name: no violation ('+v+')');}
+    else console.log('NOTE axe-core is not installed here: its button-name rule was not run (the tree check above covers the same ground)');}
    await shot(p,'maths-question-1280-paper');
    /* pressing the option marks it right: the answer line speaks plain words */
    await p.locator('#main .pill-btn').nth(1).click();await p.waitForTimeout(300);

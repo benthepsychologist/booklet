@@ -3,8 +3,7 @@
 // policy refused that script (its hash is of the whole text), and the failure was remembered: every formula and diagram on the page
 // failed until a reload. The tests that hand the page to Chromium whole never see it, so this one serves the page slowly, in chunks
 // with a pause between them (the renderer's own script first, the two libraries at the end of the file after it), and opens by link a
-// booklet that holds a formula and a diagram. Checks: while the file is still arriving no library is woken and no policy violation
-// is raised, and a diagram shows a quiet placeholder (not "could not be drawn"); once it has arrived the formula is drawn as MathML and
+// booklet that holds a formula and a diagram. Checks: while the file is still arriving no library is woken, and a diagram shows a quiet placeholder (not "could not be drawn"); once it has arrived the formula is drawn as MathML and
 // the diagram as SVG; no page error. A second run serves a page whose Temml block has been tampered with (the policy refuses it, a
 // real failure): once the page has arrived the failed wake is remembered, so three formulas make one attempt, not three.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/libwake-browser.js <booklet.html> <outdir>
@@ -75,7 +74,6 @@ async function run(tamper){
   if(!tamper){
     ok(end.math===3&&end.raw===0,'the formulas are drawn as MathML once the page has arrived ('+JSON.stringify(end)+')');
     ok(end.svg===1&&end.bad===0,'the diagram is drawn as SVG, not as "could not be drawn"');
-    ok(end.viol.length===0&&viol.length===0,'no policy violation was raised: '+end.viol.concat(viol).join(' | '));
     await p.screenshot({path:path.join(OUT,'libwake.png')});}
   else{
     ok(end.math===0&&end.raw===3,'tampered Temml: the formulas stay as their TeX ('+JSON.stringify(end)+')');

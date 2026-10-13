@@ -219,7 +219,7 @@ ${ROWS}
   chk("a field with no value is left out of the lines",byTag(cards[1],"dt").map(text).join()==="effort,when",byTag(cards[1],"dt").map(text).join());
   chk("`id` is not a line",!byTag(cards[2],"dt").some(d=>text(d)==="id"),byTag(cards[2],"dt").map(text).join());
   chk("the row's `icon` is the card's picture",byClass(cards[0],"cd-tile").length===1);
-  chk("and its `link` leads from the label",byTag(byClass(cards[0],"k")[0],"a").length+byTag(byClass(cards[0],"k")[0],"button").length>=0&&cls(cards[0]).includes("card-item"),text(cards[0]));
+  chk("and its `link` leads from the label: a link in the title",byTag(byClass(cards[0],"k")[0],"a").length===1&&byTag(byClass(cards[1],"k")[0],"a").length===0,text(cards[0]));
   const lines2=byClass(boxes[1],"card");
   chk("`fields:` picks the lines and `limit:` the rows",lines2.length===2&&lines2.every(c=>byTag(c,"dt").every(d=>text(d)==="effort")),lines2.map(text).join("|"));
   const heads=byClass(boxes[2],"dv-group");
@@ -231,6 +231,78 @@ ${ROWS}
   B.keptFor("m/log").push({ts:"2026-10-02T09:00:00.000Z",what:"hello"});B.screen="m/look";B.render();
   const cs=byClass(P.main(),"dv-cards");
   chk("kept entries are still dated cards, titled by the date, their questions as lines",cs.length===1&&byClass(cs[0],"card").length===1&&byTag(cs[0],"dt").map(text).join()==="What?"&&byClass(cs[0],"when").length===1,text(cs[0]||""));}
+
+ /* ---------------- round 2: names, links, the opening's comments, a question out of place ---------------- */
+ {const R2=FM("Round two")+`<!-- note for whoever edits this file -->
+
+# Round two
+
+Opening words.[^x]
+
+> [!text|early] A question before any activity
+
+> [!module|m] Module
+
+> [!activity|a] First $\\frac{1}{2}$
+
+See the question: see [[#Target]] and [there](#target) and [[#Nope]] and $$y$$.
+
+> [!choice|pick] Which, [[#Target]], $$z$$?
+
+- [ ] Choice one
+- [x] Choice $\\frac{2}{3}$
+
+> [!activity|b] Second $\\frac{3}{4}$
+
+## Target
+
+Words.
+
+> [!activity|log repeat] Log
+
+> [!choice|opt] Choose
+
+- [ ] Plain
+- [ ] Marked **bold** $\\frac{1}{3}$
+
+> [!activity|look] Look
+
+\`\`\`booklet query
+from: log
+as: table
+\`\`\`
+
+\`\`\`booklet query
+from: jobs
+as: cards
+group: when
+\`\`\`
+
+\`\`\`booklet data
+[{"label":"One","when":"W1","parent":"p1","id":"i1"}]
+\`\`\`
+^jobs
+
+> [!module|m end] End
+`;
+  P.wipe();const B=P.boot();await B.createBooklet();const r=B.parseFile(R2);
+  chk("a question line before the first module or activity line is reported, and the file opens",r.ok&&r.unread.some(u=>/text question belongs inside an activity/.test(u))&&!r.refused.length,JSON.stringify(r.unread));
+  chk("it is drawn nowhere: no activity of its own, its id is not an id of the module",JSON.stringify(r.template).indexOf('"early"')<0);
+  B.loadText(R2);B.screen="@home";B.render();const home=P.main();
+  chk("an HTML comment in the booklet's opening is never drawn",!/note for whoever/.test(text(home))&&/Opening words/.test(text(home)),text(home).slice(0,160));
+  chk("a footnote mark in the opening is left out",!/\[\^x\]/.test(text(home)),text(home).slice(0,160));
+  B.screen="m/a";B.render();const m=P.main();
+  const h2=byTag(m,"h2")[0];
+  chk("a heading link in a title works as in prose: live, and without its #",byTag(walk(m,x=>x.tagName==="h3"&&/Which/.test(text(x)))[0],"a").length===1&&!/#/.test(text(walk(m,x=>x.tagName==="h3"&&/Which/.test(text(x)))[0])),text(m).slice(0,200));
+  chk("an unresolved heading link is its words, without the #",/Which, Target, /.test(text(walk(m,x=>x.tagName==="h3"&&/Which/.test(text(x)))[0])));
+  chk("a display formula in a title is drawn inline",byTag(walk(m,x=>x.tagName==="h3"&&/Which/.test(text(x)))[0],"div").length===0);
+  const nxt=byClass(m,"cd-next")[0];
+  chk("the footer's Next shows the next activity's formula as a formula, with the words around it",!!nxt&&byClass(nxt,"math").length===1&&/^Next: 2\. Second /.test(text(nxt)),nxt&&text(nxt));
+  B.keptFor("m/log").push({ts:"2026-10-04T09:00:00.000Z",opt:2});
+  B.screen="m/look";B.render();const lk=P.main();
+  chk("a table over kept entries draws a chosen option's formula, as the card does",byTag(lk,"td").some(td=>byClass(td,"math").length===1),byTag(lk,"td").map(text).join("|"));
+  const gc=byClass(byClass(lk,"dv-box")[1]||lk,"card")[0];
+  chk("on cards over a data block the group field is not a line (cards group), but the parent field is (cards do not nest)",!!gc&&byTag(gc,"dt").map(text).join()==="parent",gc&&byTag(gc,"dt").map(text).join());}
 
  /* ---------------- D18: a word typed into the feelings grid ---------------- */
  {P.wipe();const B=P.boot();await B.createBooklet();

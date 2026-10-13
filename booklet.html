@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-11ufhVUpv8CM4EwuaOYjO6K0lvBDiz0AxsAPEUtJK+0=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-Uzob9vwTcj/TL2/kHcJdQLBEHWU20nfSNju2MPP4Fhc=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1700,6 +1700,7 @@ const STRINGS_SRC={
       rowRunsSection: k=>`runs into the ${k} section`,
       rowNeverClosed: "is never closed",
       queryOutside: w=>`${w}: a query belongs in an activity's prose, so it was refused`,
+      questionOutside: (w,k)=>`${w}: a ${k} question belongs inside an activity, not before the file's first module or activity line, so it was left out`,
       queryBadLine: (w,x)=>`${w}: the query block has a line that is not \`key: value\` (${x}), so it was refused`,
       themeInModule: w=>`${w}: a theme belongs to the booklet, not to a module, so it was ignored`,
       themeSecond: w=>`${w}: a booklet has one theme block; this second one was ignored`,
@@ -2021,6 +2022,7 @@ const STRINGS_SRC={
       rowRunsSection: k=>`rencontre la section ${k}`,
       rowNeverClosed: "n’est jamais fermée",
       queryOutside: w=>`${w} : une requête doit se trouver dans le texte d’une activité ; elle a donc été refusée`,
+      /* l10n: draft */ questionOutside: (w,k)=>`${w} : une question ${k} doit se trouver dans une activité, pas avant la première ligne de module ou d’activité du fichier ; elle a donc été laissée de côté`,
       queryBadLine: (w,x)=>`${w} : le bloc de requête contient une ligne qui n’est pas de la forme \`clé: valeur\` (${x}) ; il a donc été refusé`,
       themeInModule: w=>`${w} : un thème appartient au carnet, pas à un module ; il a donc été ignoré`,
       themeSecond: w=>`${w} : un carnet n’a qu’un seul bloc de thème ; ce deuxième bloc a été ignoré`,
@@ -2342,6 +2344,7 @@ const STRINGS_SRC={
       rowRunsSection: k=>`se topa con la sección ${k}`,
       rowNeverClosed: "nunca se cierra",
       queryOutside: w=>`${w}: una consulta va en el texto de una actividad, así que se rechazó`,
+      /* l10n: draft */ questionOutside: (w,k)=>`${w}: una pregunta ${k} va dentro de una actividad, no antes de la primera línea de módulo o de actividad del archivo, así que se dejó fuera`,
       queryBadLine: (w,x)=>`${w}: el bloque de consulta tiene una línea que no es \`clave: valor\` (${x}), así que se rechazó`,
       themeInModule: w=>`${w}: un tema pertenece al cuadernillo, no a un módulo, así que se ignoró`,
       themeSecond: w=>`${w}: un cuadernillo tiene un solo bloque de tema; este segundo se ignoró`,
@@ -3466,6 +3469,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     if(k==="activity"){if(!it.id) problems.push(P.activityNoId(where));newActivity(it,it.title,it.line);lastQ=null;return;}
     if(QUESTION_KINDS.has(k)){
       if(!it.id){problems.push(P.questionNoId(where,k));return;}
+      if(!act&&!mod&&!started&&!implicit){problems.push(P.questionOutside(where,k));return;}
       claim(it.id,where);page();
       const build=QUESTION_BLOCK[k];
       if(!build){problems.push(P.kindNotDrawn(where,k));lastQ=null;return;}
@@ -3539,7 +3543,7 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=strings("pro
 /* a line's words as inline Markdown reads them: `snake_case` and `$x$` stay as written, emphasis marks, link
    addresses, footnote marks and image addresses go, and an image is its alt text (the section preview reads a
    paragraph the same way, and draws it) */
-const PLAIN_OPTS={image:alt=>alt||"",mark:()=>"",embed:()=>"",link:(t,lb)=>lb!==undefined?lb:t};
+const PLAIN_OPTS={image:alt=>alt||"",mark:()=>"",embed:()=>"",link:(t,lb)=>lb!==undefined?lb:t.replace(/^#/,"")};
 const plainText=s=>{const one=String(s==null?"":s).replace(/\s*\n\s*/g," ").trim();if(!one) return "";
   try{return textOf(renderInline(one,{opts:PLAIN_OPTS,refs:{}})).replace(/\s+/g," ").trim();}catch(e){return one;}};
 /* the first paragraph of some text that is plain prose (not a heading, a quote, a list or a fence), as plain words */
@@ -4587,7 +4591,10 @@ function mathNode(tex,display){
     /* throwOnError:true, so a formula Temml cannot read lands in the catch below and shows as
        its TeX; with false Temml paints the bad source red inside the MathML instead */
     temml.render(tex,box,{displayMode:!!display,throwOnError:true,trust:false});
-    return box.querySelector&&box.querySelector("math")?box:raw();
+    /* a formula names itself by its TeX: Chromium gives a button holding only MathML no name otherwise (alttext does not do it) */
+    const m=box.querySelector&&box.querySelector("math");
+    if(m) m.setAttribute("aria-label",tex);
+    return m?box:raw();
   }catch(e){return raw();}}
 /* The words of a booklet line (SPEC.md section 4: a title, help text, an option, an anchor, a matrix item, a menu entry) are inline
    Markdown, as the prose around them is. words(s) draws them; with `flat` a link is only its words (inside a button, and in a card,
@@ -4595,12 +4602,15 @@ function mathNode(tex,display){
    a span that remembers its plain words (a part written {lit:"…"} is not read as Markdown: the reader's own words). plainText (the parser's) is the words without their marks: a menu's text, a label for a
    screen reader, a message. Data values are never read this way. */
 const WORD_MARK=/[*_`~=$\[<\\!]|https?:/;
-const wordsOpts=flat=>({...PLAIN_OPTS,math:mathNode,anchor:(h,k)=>textOf(k),flat});
+const curScope=()=>{const m=moduleForScreen(screen);return m?scopeOfModule(m):scopeOfAddr(screen);};
+const wordsOpts=flat=>({...PLAIN_OPTS,math:tex=>mathNode(tex,false),anchor:(h,k)=>textOf(k),flat,...(flat?{}:linkHooks(curScope()))});
 function words(s,flat){const t=String(s==null?"":s);if(!WORD_MARK.test(t)) return [t];
   return renderInline(t,{opts:wordsOpts(flat),refs:{}});}
+/* a message that holds a name (Next: …, Up: …) as nodes: the message's words around the name drawn as a booklet line's words */
+const withName=(f,name)=>{const [a,z]=f("\u0001").split("\u0001");return [a,...words(name,true),z];};
 function wordsNode(...parts){const lit=x=>typeof x==="object",ks=parts.map(x=>lit(x)?[x.lit]:words(x,true));
   if(ks.every(k=>k.length===1&&typeof k[0]==="string")) return ks.map(k=>k[0]).join("");
-  const n=el("span",{},...ks.flat());n.plain=parts.map(x=>lit(x)?x.lit:plainText(x)).join("");return n;}
+  const n=el("span",{},...ks.flat());n.plain=parts.map(x=>lit(x)?x.lit:plainText(x)).join("");n.parts=parts;return n;}
 /* a diagram: a mermaid fence is drawn as SVG text (no HTML labels), then the
    SVG goes through sanitizeDiagramSvg, never innerHTML. A
    diagram that will not parse stays on the page as its source, with a note. */
@@ -5387,7 +5397,7 @@ function entrySet(b,activityId,as){
   const ents=b.field&&activityOf(b.from).kind!=="entry"?[peekAnswers(scopeOfAddr(b.from))]:queryEntries(b.from,activityId);
   const named=(b.fields&&!b.field)?qs.filter(q=>b.fields.includes(q.id)):[];
   const need=named.length?named:qs;
-  const raw=new Map(),ent=new Map();
+  const raw=new Map(),ent=new Map(),mk=new Map();
   let rows=ents.map(e=>{const r={},w={};
     if(e.ts){r.date=numeric?dayMonth(e.ts):fmtWhen(e.ts);
       const t=Date.parse(e.ts);w.date=Number.isFinite(t)?t:String(e.ts);}
@@ -5395,6 +5405,7 @@ function entrySet(b,activityId,as){
     for(const q of qs){const x=fieldSummary(q,e);if(!x) continue;
       const n=(q.type==="number"||q.type==="scale")&&isFinite(parseFloat(e[q.id]))?Number(e[q.id]):null;
       r[q.id]=numeric&&n!==null?n:nodeText(x[1]);
+      if(x[1]&&x[1].parts) mk.set(r,{...mk.get(r),[q.id]:x[1].parts});
       if(n!==null) w[q.id]=n;
       if(need.includes(q)) any=true;}
     if(!any) return null;
@@ -5403,7 +5414,7 @@ function entrySet(b,activityId,as){
   const own=["date",...qs.map(q=>q.id)];
   const labw=k=>k==="date"?undefined:fieldLabel(qs.find(q=>q.id===k));
   const lab=k=>k==="date"?strings("dv").date:plainText(labw(k));
-  return {kind:"entries",from:b.from,rows,keys:new Set(own),own,first:"date",lab,labw,qs,
+  return {kind:"entries",from:b.from,rows,keys:new Set(own),own,first:"date",lab,labw,qs,mk,
     entryOf:r=>ent.get(r),sortVal:(r,k)=>{const w=raw.get(r);return w&&hasOwn(w,k)?w[k]:r[k];}};}
 const unset=v=>v==null||v==="";
 const sortCmp=(a,b)=>{
@@ -5428,6 +5439,8 @@ const rowTone=(r,roles)=>{const t=roles.tone?cellText(r[roles.tone]).trim():"";r
 const pill=(text,tone)=>el("span",{class:"pill"+(tone?" tone-"+tone:"")},text);
 const partsOf=x=>(Array.isArray(x)?x:[x]).map(cellText).filter(t=>t!=="");
 const rolePart=(r,k)=>k?cellText(r[k]):"";
+/* a cell's words: over kept entries a chosen option's marks (a formula) are drawn, as the card draws them */
+const cellNode=(set,r,k)=>{const p=set.mk&&set.mk.get(r);return p&&p[k]?wordsNode(...p[k]):cellText(r[k]);};
 const toneWords=t=>t?el("span",{class:"dv-sr"},strings("dv").tone[t]):null;
 /* A `link` role's value as the words that lead a row: a heading (`#Heading`), a module (`x.booklet`) or a web address leads there, as the same
    target does in prose (linkHooks and mkLink are the prose path); anything else is plain text. The value is a target, never Markdown. */
@@ -5460,7 +5473,7 @@ function viewTable(set,groups,roles,cols,ctl){const dvText=strings("dv");
       return el("td",{},...partsOf(r[c.key]).map(x=>pill(x,t)),toneWords(t));}
     if(c.key===lead&&(roles.link||roles.icon)){const pic=iconOf(r,roles);
       return el("td",{class:numeric(c.key)?"num":null},pic?el("span",{class:"dv-i"},pic):null,...leadNodes(set,r,roles,[cellText(r[c.key])]));}
-    return el("td",{class:numeric(c.key)?"num":null},cellText(r[c.key]));};
+    return el("td",{class:numeric(c.key)?"num":null},cellNode(set,r,c.key));};
   groups.forEach(g=>{const body=el("tbody",{});
     if(g.name!==null) body.append(el("tr",{class:"dv-grouprow"},el("th",{scope:"rowgroup",colspan:String(cols.length)},
       g.name||"–",el("span",{class:"dv-count"},dvText.rows(g.rows.length)))));
@@ -5478,7 +5491,7 @@ function viewList(set,groups,roles,cols,tree){
       badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,
       lab!==""?el("span",{class:"dv-t"},...leadNodes(set,r,roles,[lab])):null,
       extras.length?el("span",{class:"dv-x"},...extras.map(c=>el("span",{class:"dv-f",title:c.label},
-        el("span",{class:"dv-sr"},c.label+": "),cellText(r[c.key])))):null,
+        el("span",{class:"dv-sr"},c.label+": "),cellNode(set,r,c.key)))):null,
       val!==""?el("span",{class:"dv-val"+(t&&!badges.length?" tone-"+t:"")},val):null,
       note!==""?el("span",{class:"dv-n"},note):null,
       toneWords(t)];};
@@ -5653,7 +5666,7 @@ const uniq=a=>a.filter((x,i)=>x&&a.indexOf(x)===i);
 function colsOf(as,set,v,roles){
   const fields=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,mk=ks=>ks.map(k=>({key:k,label:set.lab(k),raw:set.labw&&set.labw(k)}));
   /* the fields that play no role: a list's extras and a data block's card lines (never `id`, the group or the parent) */
-  const rest=()=>{const skip=new Set([...ROLE_NAMES.map(n=>roles[n]),v.group,v.parent||"parent","id"]);return set.own.filter(k=>!skip.has(k));};
+  const rest=()=>{const d=VIEW_DRAWS[as],skip=new Set([...ROLE_NAMES.map(n=>roles[n]),d.includes("group")?v.group:null,d.includes("parent")?v.parent||"parent":null,"id"]);return set.own.filter(k=>!skip.has(k));};
   if(as==="table") return mk(fields||set.own);
   if(as==="list") return mk(fields||rest());
   if(as==="line") return mk(fields||(roles.value?[roles.value]:[]));
@@ -5996,7 +6009,7 @@ function sectionLede(body){
 /* put a table in its own scrolling wrapper, so a wide one scrolls beside the page, not under it */
 const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
 const mdBlockNodes=(b,activityId,prefix)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",
-  mark:id=>{const c=citeText("[^"+id+"]",activityId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
+  mark:id=>{if(activityId==="") return "";const c=citeText("[^"+id+"]",activityId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
 /* keep the menu's dots and the count current, without redrawing the page */
 function rmRefresh(info){
   if(info.countEl) info.countEl.textContent=strings("fold").count(info.st.open.size,info.sections.length);
@@ -6726,10 +6739,10 @@ function activityFooter(id){const C=strings("cards"),holder=holderOf(id),W=wikiO
   const backTo=holder&&isMulti(holder)?moduleScreen(holder.id):HOME_SCREEN,up=W?wikiPath(W,id).pop():null;
   const to=x=>W?()=>wikiGo(x,false):()=>go(x);
   const foot=el("div",{class:"cd-foot"},
-    el("button",{type:"button",class:"cd-btn cd-back",onclick:to(up?up.id:backTo)},icon("arrow-left"),up?strings("wiki").up(plainText(activityName(up))):C.back));
-  if(next&&W) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:to(next.id)},strings("wiki").next(plainText(activityName(next))),icon("arrow-right")));
+    el("button",{type:"button",class:"cd-btn cd-back",onclick:to(up?up.id:backTo)},icon("arrow-left"),...(up?withName(strings("wiki").up,activityName(up)):[C.back])));
+  if(next&&W) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:to(next.id)},...withName(strings("wiki").next,activityName(next)),icon("arrow-right")));
   else if(next) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:()=>go(next.id)},
-    C.next(here+2,plainText(cardPicture(activityName(next),here+2,next.icon).title)),icon("arrow-right")));
+    ...withName(t=>C.next(here+2,t),cardPicture(activityName(next),here+2,next.icon).title),icon("arrow-right")));
   return foot;}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
@@ -6832,7 +6845,8 @@ function openingNodes(mod,activityId,title){
     if(b.type==="markdown"){
       const nodes=mdBlockNodes(b,activityId,"mo-");
       /* a leading heading that repeats the title above it is drawn once (the title is) */
-      if(i===0&&title&&nodes.length&&headLevel(nodes[0])&&sameWords(textOf(nodes[0]).replace(/\s+/g," "),title)) nodes.shift();
+      {const h=/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/m.exec(String(b.text).replace(/^\s+/,""));
+       if(i===0&&title&&nodes.length&&headLevel(nodes[0])&&h&&sameWords(plainText(h[1]),title)) nodes.shift();}
       if(i===0&&nodes.length&&tagOf(nodes[0])==="p"){lede=el("div",{class:"mhead-lede"},nodes[0]);nodes.shift();}
       if(nodes.length) more.push(el("div",{class:"pblock md"},...nodes));
       return;}

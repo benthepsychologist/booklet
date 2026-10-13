@@ -287,6 +287,9 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             warn(f, f"line {n}: the query's `as: {view}` does not draw `{key}`")
         else:
             warn(f, f"line {n}: the query's default view, `{view}`, does not draw `{key}`")
+    # cards over kept entries are titled by their date: a `label:` there is not drawn (over a data block it is the title)
+    if view == "cards" and src_act and "label" in s:
+        warn(f, f"line {n}: the query's `label:` is not drawn on cards over kept entries: each card is titled by its date")
     # a setting that names a field the rows never carry: a warning, never an error
     names = None
     if src_data is not None:
@@ -875,6 +878,7 @@ def check_format(f, text, fm):
     note_defs = {}           # scope -> {footnote id: line}
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
     loose_questions = []   # questions before any activity line
+    early_questions = []   # the same, with their line and kind, before the file's first module or activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
     rec_id = None            # the module id on the records line the blocks below sit under (None: the line names none)
     rec_lines = []           # (line, id) of every records line that names a module, checked once the file is read
@@ -1196,6 +1200,8 @@ def check_format(f, text, fm):
                         q_owner.setdefault(open_mod, {})[w["id"]] = cur_act
                     elif w["id"]:
                         loose_questions.append(w["id"])
+                        if not seen_activity and not any_module:
+                            early_questions.append((n, kind))
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go; write `> [!{kind}|my-id] Title`")
                     bad_q = False
@@ -1334,6 +1340,9 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ^{ref} is not a widget block")
     # A file with no activity line and no module line is one activity (SPEC section 3),
     # so its queries and questions belong to that one activity.
+    if seen_activity or any_module:
+        for n, kind in early_questions:
+            err(f, f"line {n}: a {kind} question belongs inside an activity, not before the file's first module or activity line")
     if not seen_activity and not any_module:
         act_info.setdefault(None, {})[IMPLICIT_ACTIVITY] = (None, False)
         for q in loose_questions:
