@@ -22,8 +22,10 @@ lang: en
 
 > [!module|fixture-mod end]
 
+%%
 > [!records]
 
 ```booklet entries elsewhere
-[]
+{"items": [{"ts": "2026-09-21T09:00:00Z"}]}
 ```
+%%

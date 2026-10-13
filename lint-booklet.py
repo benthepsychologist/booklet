@@ -14,7 +14,11 @@ What it checks: the front matter (`booklet: "0.13"`, one `lang:`), fences that a
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
-title, queries and data blocks, and records that name an activity. Any file whose
+title, queries and data blocks, and records that name an activity. It reports what the renderer refuses or drops (an activity or
+module line with no id; a choice or multi with no options and a scale with no or repeated anchors; a records line naming no module;
+records outside `%%`), what it keeps and reports (anything but a record inside the records region, an entry with no `ts`, a record
+block outside the region, a `> [!` line it cannot read), and six slips that draw wrong without a word (`---` straight under text, a hint
+or solution not folded or not under its question, `[x]` in a menu, a price that reads as a formula, tiles with no `value`). Any file whose
 front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.13 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
@@ -28,9 +32,10 @@ examples/ next to this script, skipping any of those directories that don't
 exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
 registry's CI line keeps working; a v0.13 file is written in one language, so it
 adds no rule of its own.
+Findings print in line order, file by file, an error marked `ERROR` and a warning `warn`.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
-import html, json, math, pathlib, re, sys, unicodedata, urllib.parse
+import difflib, html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 
 BASE = pathlib.Path(__file__).resolve().parent
 
@@ -38,8 +43,19 @@ BASE = pathlib.Path(__file__).resolve().parent
 FORMAT_VERSION = "0.13"
 
 errors, warnings = [], []
-def err(f, m):  errors.append(f"{f}: {m}")
-def warn(f, m): warnings.append(f"{f}: {m}")
+# Every finding, in the order found; main() prints each file's findings in line order. A finding's line is the one its message
+# names (`line 12: ...`); one that names none is about the whole file and prints first.
+findings = []
+FILE_NO = 0
+def _add(kind, f, m):
+    at = re.match(r"line (\d+)", m)
+    findings.append((FILE_NO, int(at.group(1)) if at else 0, len(findings), kind, f"{f}: {m}"))
+def err(f, m):
+    errors.append(f"{f}: {m}")
+    _add("ERROR", f, m)
+def warn(f, m):
+    warnings.append(f"{f}: {m}")
+    _add("warn ", f, m)
 
 
 # Script in a figure's SVG: an on* event handler, a <script> element, or a
@@ -247,7 +263,7 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     src_id = s.get("from", "")
     src_act, src_q, src_data, src_nums, src_rows = None, None, None, set(), []
     if not src_id:
-        err(f, f"line {n}: a query needs `from:`, the activity or question it shows")
+        err(f, f"line {n}: a query needs `from:`, the activity, question or data block it shows")
     elif src_id in act_info:
         src_act = src_id
     elif src_id in q_owner:
@@ -294,7 +310,7 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
                           if str(r.get(ikey, "")).strip() and str(r.get(ikey)).strip() not in ICON_NAMES})
             if bad:
                 shown = ", ".join(repr(x) for x in bad[:5]) + (f" and {len(bad) - 5} more" if len(bad) > 5 else "")
-                warn(f, f"line {n}: the rows' `{ikey}` holds {shown}, which {'is' if len(bad) == 1 else 'are'} not in Booklet's icon set (art/icons/), so no picture is drawn for {'it' if len(bad) == 1 else 'them'}")
+                warn(f, f"line {n}: the rows' `{ikey}` holds {shown}, which {'is' if len(bad) == 1 else 'are'} not in Booklet's icon set (art/icons/), so no picture is drawn for {'it' if len(bad) == 1 else 'them'}" + (icon_hint(bad[0]) if len(bad) == 1 else ""))
         # nesting reads the field `id`, and a nested list is not grouped
         if src_data is not None and "parent" in s and "parent" not in ignored and "id" not in names:
             warn(f, f"line {n}: the query's `parent: {s['parent']}` needs rows with an `id` field, and these carry none")
@@ -307,6 +323,11 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
                 warn(f, f"line {n}: the nested list has {ids.count(dup)} rows with the `id` {dup!r}; the first one is used")
         if "parent" in s and "group" in s and view == "list":
             warn(f, f"line {n}: a nested list is not grouped, so `group: {s['group']}` is not drawn")
+        # tiles draw the field `value`: with none, and a number in some other field, each tile is a pill with no number
+        if src_data is not None and view == "tiles" and "value" not in s and "value" not in names and src_nums:
+            num = next(k for r in src_rows for k in r if k in src_nums)
+            warn(f, f"line {n}: the query's `as: tiles` has no `value:` and no row has a `value` field, so each tile is a pill with no number; "
+                    f"`{num}` holds a number, so add `value: {num}`")
         # a chart draws numbers: a value field with no number in any row draws nothing
         if src_data is not None and view in ("bars", "line"):
             if view == "bars" or "fields" not in s:
@@ -674,6 +695,103 @@ def list_below(lines, i, pattern):
     return (out, j) if out else ([], i)
 
 
+# any line that starts like a Booklet line, readable or not (the renderer's `calloutLine`)
+CALLOUT_ANY = re.compile(r'^>[ \t]?\[!')
+FENCE_LINE = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
+RECORD_KINDS = ("answers", "entries", "draft")
+DESIGN_KINDS = ("widget", "data", "theme", "query")
+
+
+def fence_end(lines, i, mark):
+    """The index of the line that closes the fence opened at line i by `mark`, or len(lines) if it never closes."""
+    k = i + 1
+    while k < len(lines):
+        c = re.match(r'^ {0,3}(`{3,}|~{3,})[ \t]*$', lines[k])
+        if c and c.group(1)[0] == mark[0] and len(c.group(1)) >= len(mark):
+            break
+        k += 1
+    return k
+
+
+def body_end(lines, i):
+    """The index past the `>` lines that belong to the Booklet line at i. A `> [!` line ends them, readable or not."""
+    k = i + 1
+    while k < len(lines) and lines[k].startswith(">") and not CALLOUT_ANY.match(lines[k]):
+        k += 1
+    return k
+
+
+def claim_end(kind, lines, i):
+    """The index past everything the renderer reads as belonging to the Booklet line at i: its body, then the list straight under
+    a choice, multi (a task list), scale (a numbered list), menu (bullets) or matrix (bullets, then numbered anchors)."""
+    k = body_end(lines, i)
+    pat = {"choice": TASK, "multi": TASK, "scale": NUMBERED, "menu": BULLET, "matrix": BULLET}.get(kind)
+    if pat:
+        got, k2 = list_below(lines, k, pat)
+        if got:
+            k = k2
+            if kind == "matrix":
+                k = list_below(lines, k, NUMBERED)[1]
+    return k
+
+
+def records_regions(lines, start):
+    """The records regions of a file, found the way the renderer finds them (SPEC.md section 8): from the `%%` directly before a
+    records line (only blank lines between), or from the records line itself when no `%%` is there, to the `%%` that closes it, or
+    the end of the file. Returns [(first line index, last line index, opened by `%%`, closed by `%%`, the records line's index)]."""
+    regs, rs, via, rec_at, i = [], None, False, None, start
+    while i < len(lines):
+        ln = lines[i]
+        fm_ = FENCE_LINE.match(ln)
+        if fm_:
+            i = fence_end(lines, i, fm_.group(1)) + 1
+            continue
+        if ln.strip() == "%%":
+            if rs is not None:
+                regs.append((rs, i, via, True, rec_at))
+                rs = None
+            else:
+                j = i + 1
+                while j < len(lines) and not lines[j].strip():
+                    j += 1
+                if j < len(lines) and re.match(r'^>[ \t]?\[!records\b', lines[j], re.I):
+                    rs, via, rec_at = i, True, j
+            i += 1
+            continue
+        mm = CALLOUT_LINE.match(ln)
+        if mm:
+            if mm.group(1).lower() == "records" and rs is None:
+                rs, via, rec_at = i, False, i
+            i = claim_end(mm.group(1).lower(), lines, i)
+            continue
+        i += 1
+    if rs is not None:
+        regs.append((rs, len(lines) - 1, via, False, rec_at))
+    return regs
+
+
+def icon_close(name, n=3):
+    """Up to three names from the icon set that are close to `name`: the same words in another order (`check-circle`,
+    `circle-check`), a close spelling (`compas`), or a name sharing a word of four letters or more (`calendar-days`)."""
+    low = name.lower()
+    words = set(re.split(r"[-_ ]+", low)) - {""}
+    names = sorted(ICON_NAMES)
+    out = [low] if low in ICON_NAMES and name != low else []          # `Check` -> `check`
+    out += [c for c in names if set(c.split("-")) == words]
+    out += [c for c in names if any(len(x) >= 4 and x in c.split("-") for x in words)]
+    out += difflib.get_close_matches(low, names, n=n, cutoff=0.75)
+    seen = []
+    for c in out:
+        if c not in seen and (c != low or name != low):
+            seen.append(c)
+    return seen[:n]
+
+
+def icon_hint(name):
+    near = icon_close(name)
+    return f"; did you mean {', '.join('`' + c + '`' for c in near)}?" if near else ""
+
+
 def check_settings(f, n, kind, w):
     """A line's settings against KIND_SETTINGS, and an unknown kind (SPEC.md section 4)."""
     allowed = KIND_SETTINGS.get(kind)
@@ -694,7 +812,7 @@ def check_settings(f, n, kind, w):
         elif key == "icon" and "end" in w["flags"]:
             err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
         elif key == "icon" and val not in ICON_NAMES:
-            err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so a renderer ignores it")
+            err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so a renderer ignores it" + icon_hint(val))
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
     for flag in sorted(w["flags"]):
@@ -714,7 +832,7 @@ def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
         err(f, f"line {n}: the module {mod!r} has two notices (a module has one)")
     seen.add(mod)
     k = i + 1
-    while k < len(lines) and lines[k].startswith(">") and not CALLOUT_LINE.match(lines[k]):
+    while k < len(lines) and lines[k].startswith(">") and not CALLOUT_ANY.match(lines[k]):
         body = re.sub(r'^>[ \t]?', '', lines[k]).strip()
         if body:
             kv = re.match(r'^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$', body)
@@ -727,13 +845,14 @@ def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
 
 def check_format(f, text, fm):
     """Lint a v0.13 booklet. Every problem names its line."""
+    fm_title, fm_id = fm.get("title", ""), fm.get("id", "")
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.13 file is written in one language")
+        err(f, "front matter has no `lang:` — a v0.13 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
     else:
         why = lang_problem(lang)
         if why:
-            err(f, f"front matter `lang: {lang}`: {why}")
+            err(f, f"front matter `lang: {lang}`: {why}; write a language tag such as en, es, es-AR or fr")
         elif lang_warning(lang):
             warn(f, lang_warning(lang))
     if not fm.get("title"):
@@ -759,13 +878,20 @@ def check_format(f, text, fm):
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
     loose_questions = []   # questions before any activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
-    rec_scope = None
+    rec_id = None            # the module id on the records line the blocks below sit under (None: the line names none)
+    rec_lines = []           # (line, id) of every records line that names a module, checked once the file is read
     data_scope = None        # the module a `> [!data|module-id]` section belongs to, until the next data, records, module or activity line
     notice_seen, mod_has_activity = set(), False
     body_start = i
     menus, menu_uses, data_blocks = {}, [], {}
     theme_seen = False
     rowst = {"open": None, "start": 0}
+    noid_line = None         # the line of a module opened without an id, until something closes it
+    last_q = False           # a question is straight above: a hint or solution here folds under it (the renderer's lastQ)
+    prev_prose = False       # the line above is prose in the renderer's buffer, so `---` under it makes it a heading
+    regions = records_regions(lines, i)
+    reg_at = {r[0]: r for r in regions}
+    in_region, saved_section = None, "content"
 
     def scope_mod():
         """The module a block, menu or footnote belongs to: the one whose fence holds it or whose data section it is
@@ -785,8 +911,115 @@ def check_format(f, text, fm):
         elif cells == 1:
             warn(f, f"line {o}: this row has one cell, so nothing sits beside anything (start a second cell with another heading)")
 
+    def check_record_block(n, info, code):
+        """A fenced block inside the records region (SPEC.md section 8): a record is read, anything else is kept as written."""
+        words = info.split()
+        is_booklet = bool(words) and words[0].lower() == "booklet"
+        what = words[1].lower() if len(words) > 1 else ""
+        if not is_booklet or what in DESIGN_KINDS:
+            shown = f"a `booklet {what}` block" if is_booklet else "a fenced block"
+            warn(f, f"line {n}: {shown} inside the records region is not a record, so it is kept as written and not read; "
+                    f"move it above the records, or delete it")
+        elif what == "sync":
+            return                      # a record SPEC.md defines (section 8) that this renderer keeps and does not read
+        elif what not in RECORD_KINDS:
+            warn(f, f"line {n}: `booklet {what}` is not a block this format defines")
+        elif what != "answers" and len(words) < 3:
+            warn(f, f"line {n}: `booklet {what}` names no activity, so it is kept as written and not read; write `booklet {what} my-activity`")
+        else:
+            try:
+                obj = json.loads(code)
+            except ValueError as e:
+                err(f, f"line {n}: the `booklet {what}` block is not valid JSON ({e.msg}, its line {e.lineno}); a record that cannot be read is a reader's "
+                       f"answers or entries the page cannot use, so fix the comma or quote")
+                return
+            if not isinstance(obj, dict):
+                warn(f, f"line {n}: the `{info}` block holds no object, so it is kept as written and not read; write a JSON object, `{{ ... }}`")
+                return
+            if what == "entries":
+                items = obj.get("items")
+                if not isinstance(items, list):
+                    warn(f, f"line {n}: the `booklet entries {words[2]}` block holds no `items` list, so it is kept as written and not read; "
+                            f"write `{{\"items\": [ ... ]}}`")
+                elif not all(isinstance(e, dict) and e.get("ts") for e in items):
+                    warn(f, f"line {n}: an entry in the `booklet entries {words[2]}` block has no `ts`, so the block is kept as written and not read; "
+                            f"give every entry a `ts`, the time it was kept (`\"ts\": \"2026-09-27T14:02:00Z\"`)")
+            if what != "answers":
+                entry_refs.append((n, words[2], rec_id))
+
     while i < len(lines):
         ln, n = lines[i], i + 1
+        was_prose, prev_prose = prev_prose, False
+        if i in reg_at:
+            in_region, saved_section, section = reg_at[i], section, "records"
+            rec_id = None
+            if rowst["open"]:
+                close_row(i, "runs into the records section")
+            if not in_region[2]:
+                warn(f, f"line {in_region[4] + 1}: the records section is not inside `%%` … `%%`; put the records region between `%%` lines "
+                    f"(one above `> [!records]`, one after the last record) so editors hide it; the renderer reads it either way")
+        if in_region:
+            if ln.strip() == "%%" and i == in_region[1] and in_region[3]:
+                in_region, section = None, saved_section        # the closing `%%`: the file is design again
+                i += 1
+                continue
+            if not ln.strip() or (ln.strip() == "%%" and i == in_region[0]):
+                i += 1
+                continue
+            fr = FENCE_LINE.match(ln)
+            if fr:
+                k = fence_end(lines, i, fr.group(1))
+                m = k + 1
+                while m < len(lines) and not lines[m].strip():
+                    m += 1
+                has_id = m < len(lines) and re.match(r'^\^([A-Za-z0-9-]+)$', lines[m].strip())
+                if re.match(r'^booklet\b', fr.group(2).strip(), re.I) or has_id:
+                    if k >= len(lines):
+                        err(f, f"line {n}: a fence is opened and never closed")
+                    check_record_block(n, fr.group(2).strip(), "\n".join(lines[i + 1:k]))
+                    i = (m if has_id else k) + 1
+                    continue
+            else:
+                mm = CALLOUT_LINE.match(ln)
+                if mm:
+                    kind = mm.group(1).lower()
+                    if kind == "records":
+                        w = callout_words(kind, mm.group(2))
+                        check_settings(f, n, kind, w)
+                        for old in w["old"]:
+                            err(f, f"line {n}: settings are written key:value (found {old}); write {old.replace('=', ':', 1)}")
+                        rec_id = w["id"]
+                        if w["id"]:
+                            rec_lines.append((n, w["id"]))
+                    else:
+                        warn(f, f"line {n}: a `> [!{kind}]` line inside the records region is not a record, so it is kept as written and not read; "
+                                f"move it above the records, or delete it")
+                    i = claim_end(kind, lines, i)
+                    continue
+                if CALLOUT_ANY.match(ln):
+                    warn(f, f"line {n}: this `> [!` line cannot be read (a Booklet line is written `> [!kind|id words] Title`), so it is left as text"
+                            + (" and it ends the callout above it" if i > 0 and lines[i - 1].startswith(">") else ""))
+                    i = body_end(lines, i)
+                    continue
+            start = i          # prose: it runs to the next record, Booklet line or `%%`
+            while i < len(lines):
+                l2 = lines[i]
+                if l2.strip() == "%%" or CALLOUT_ANY.match(l2):
+                    break
+                f2 = FENCE_LINE.match(l2)
+                if f2:
+                    k = fence_end(lines, i, f2.group(1))
+                    m = k + 1
+                    while m < len(lines) and not lines[m].strip():
+                        m += 1
+                    if re.match(r'^booklet\b', f2.group(2).strip(), re.I) or (m < len(lines) and re.match(r'^\^[A-Za-z0-9-]+$', lines[m].strip())):
+                        break
+                    i = k + 1
+                    continue
+                i += 1
+            warn(f, f"line {start + 1}: this text sits inside the records region, where only records are read, so it is kept as written and not read; "
+                    f"move it above the records, or delete it")
+            continue
         fm_ = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', ln)
         if fm_:
             mark, info = fm_.group(1), fm_.group(2).strip()
@@ -808,12 +1041,15 @@ def check_format(f, text, fm):
                 if b:
                     bid = b.group(1)
                     bscope = scope_mod()
-                    if section != "records":
-                        if bid in block_ids.setdefault(bscope, {}):
-                            err(f, f"line {m + 1}: the block id ^{bid} is used twice" + (f" in the module {bscope!r}" if bscope else ""))
-                        block_ids[bscope][bid] = info
+                    if bid in block_ids.setdefault(bscope, {}):
+                        err(f, f"line {m + 1}: the block id ^{bid} is used twice" + (f" in the module {bscope!r}" if bscope else ""))
+                    block_ids[bscope][bid] = info
             words = info.split()
+            if not (words and words[0].lower() == "booklet") and not bid:
+                last_q = False                      # a plain code fence is prose to the renderer
+                prev_prose = True                   # and a `---` straight after it is no page break
             if words and words[0].lower() == "booklet" and len(words) > 1 and words[1].lower() == "query":
+                last_q = False
                 if section == "content":
                     queries.append((n, code, open_mod, cur_act))
                 elif section == "data":
@@ -821,14 +1057,18 @@ def check_format(f, text, fm):
                 i = (m if bid else k) + 1
                 continue
             if words and words[0].lower() == "booklet" and len(words) > 1 and words[1].lower() == "theme":
-                if section != "records":
-                    in_module = bool(scope_mod())
-                    check_theme(f, n, code, in_module, theme_seen)
-                    theme_seen = theme_seen or not in_module
+                in_module = bool(scope_mod())
+                check_theme(f, n, code, in_module, theme_seen)
+                theme_seen = theme_seen or not in_module
                 i = (m if bid else k) + 1
                 continue
             if words and words[0].lower() == "booklet":
                 what = words[1].lower() if len(words) > 1 else ""
+                if what in RECORD_KINDS or what == "sync":
+                    warn(f, f"line {n}: a `booklet {what}` block outside the records region is not read; "
+                            f"put it under a `> [!records]` line, inside `%%` … `%%`")
+                    i = (m if bid else k) + 1
+                    continue
                 try:
                     obj = json.loads(code)
                 except ValueError as e:
@@ -852,9 +1092,7 @@ def check_format(f, text, fm):
                             if bad:
                                 err(f, f"line {n}: the widget ^{bid} has {', '.join(bad)} in a figure — a figure is a drawing, never a program")
                 elif what == "data":
-                    if section == "records":
-                        pass
-                    elif not bid:
+                    if not bid:
                         err(f, f"line {n}: a data block needs a ^id on the line after it")
                     elif obj is not None:
                         why, rows, flds = data_problem(obj)
@@ -864,17 +1102,12 @@ def check_format(f, text, fm):
                             keys = set(flds) | {k for r in rows for k in r}
                             nums = {k for r in rows for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
                             data_blocks.setdefault(scope_mod(), {})[bid] = (keys, n, nums, rows)
-                elif what in ("entries", "draft"):
-                    if len(words) < 3:
-                        err(f, f"line {n}: `booklet {what}` needs the activity it belongs to")
-                    else:
-                        entry_refs.append((n, words[2], rec_scope))
-                elif what != "answers":
+                elif what != "sync":
                     warn(f, f"line {n}: `booklet {what}` is not a block this format defines")
             i = (m if bid else k) + 1
             continue
         nd = re.match(r'^\[\^([A-Za-z0-9][A-Za-z0-9_.:-]*)\]:[ \t]+\S', ln)
-        if nd and section != "records":
+        if nd:
             nscope = scope_mod()
             seen_note = note_defs.setdefault(nscope, {})
             if nd.group(1) in seen_note:
@@ -910,12 +1143,11 @@ def check_format(f, text, fm):
                         data_scope = w["id"]
                     else:
                         err(f, f"{where}: this data section names the module {w['id']!r}, which the file has not opened")
-            elif kind == "records":
-                section = "records"
-                data_scope = None
-                # the module id on a records line says whose the blocks below are, until the next records line
-                rec_scope = w["id"] if w["id"] and w["id"] in mod_ids else None
             elif section == "content":
+                if kind in ("menu", "manifest", "notice", "hint", "solution") or kind in QUESTION_KINDS or (kind == "row" and "end" in w["flags"]):
+                    pass                                    # these leave the question above them its hint and solution
+                else:
+                    last_q = False
                 if kind == "row":
                     if "end" in w["flags"]:
                         if not rowst["open"]:
@@ -928,7 +1160,10 @@ def check_format(f, text, fm):
                         rowst["open"], rowst["start"] = n, i + 1
                 elif kind == "module":
                     if "end" in w["flags"]:
-                        if not open_mod:
+                        if not open_mod and noid_line:
+                            err(f, f"{where}: this closes {w['id']!r}, but the module opened on line {noid_line} has no id, so nothing can close it")
+                            noid_line = None
+                        elif not open_mod:
                             err(f, f"{where}: a module is closed that was never opened")
                         elif w["id"] and w["id"] != open_mod:
                             err(f, f"{where}: this closes {w['id']!r}, but {open_mod!r} is open")
@@ -937,8 +1172,9 @@ def check_format(f, text, fm):
                         if open_mod:
                             err(f, f"{where}: {w['id']!r} opens before {open_mod!r} (line {open_line}) is closed")
                         if not w["id"]:
-                            err(f, f"{where}: a module line needs an id")
+                            err(f, f"{where}: a module line needs an id; write `> [!module|my-module] Title` (and close it with `> [!module|my-module end]`)")
                         open_mod, open_line = w["id"], n
+                        noid_line = None if w["id"] else n
                         mod_has_activity = False
                         any_module = True
                         if w["id"]:
@@ -948,7 +1184,10 @@ def check_format(f, text, fm):
                 elif kind == "activity":
                     seen_activity = True
                     mod_has_activity = True
-                    cur_act = w["id"] or None
+                    cur_act = w["id"] or "(an activity with no id)"
+                    if not w["id"]:
+                        err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "
+                               f"id, so an id the renderer makes up from the title is lost the day the title changes, orphaning the entries")
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         if w["set"].get("parent") is not None:
@@ -960,19 +1199,18 @@ def check_format(f, text, fm):
                     elif w["id"]:
                         loose_questions.append(w["id"])
                     if not w["id"]:
-                        err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go")
+                        err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go; write `> [!{kind}|my-id] Title`")
+                    bad_q = False
                     if kind == "widget":
-                        body = []
-                        k = i + 1
-                        while k < len(lines) and lines[k].startswith(">") and not CALLOUT_LINE.match(lines[k]):
-                            body.append(lines[k]); k += 1
+                        body = lines[i + 1:body_end(lines, i)]
                         e = re.search(r'!\[\[[^\]#|]*#\^([A-Za-z0-9-]+)', "\n".join(body))
                         if e:
                             embeds.append((n, e.group(1), open_mod))
                         else:
                             err(f, f"{where}: the widget {w['id']!r} names no data block (write ![[#^its-id]] under the line)")
+                    after_body = body_end(lines, i)        # a list is read from here: the renderer takes the body first
                     if kind == "matrix" and w["id"]:
-                        items, after = list_below(lines, i + 1, BULLET)
+                        items, after = list_below(lines, after_body, BULLET)
                         anchors, _ = list_below(lines, after, NUMBERED)
                         if not items:
                             err(f, f"{where}: the matrix {w['id']!r} has no items (a bulleted list under the line)")
@@ -982,23 +1220,56 @@ def check_format(f, text, fm):
                         dup = sorted({x for x in nums if nums.count(x) > 1}, key=int)
                         if dup:
                             err(f, f"{where}: the matrix {w['id']!r} repeats anchor number {', '.join(dup)} (each anchor needs its own number)")
-                    if kind in ("choice", "multi") and w["set"].get("menu"):
-                        own, _ = list_below(lines, i + 1, TASK)
-                        if own:
-                            err(f, f"{where}: the question {w['id']!r} has both `menu:{w['set']['menu']}` and a list of its own (use one)")
-                        menu_uses.append((n, w["set"]["menu"], open_mod))
+                    if kind in ("choice", "multi") and w["id"]:
+                        own, _ = list_below(lines, after_body, TASK)
+                        if w["set"].get("menu"):
+                            if own:
+                                err(f, f"{where}: the question {w['id']!r} has both `menu:{w['set']['menu']}` and a list of its own (use one)")
+                            menu_uses.append((n, w["set"]["menu"], open_mod))
+                        elif not own:
+                            bad_q = True
+                            plain, _ = list_below(lines, after_body, BULLET)
+                            err(f, f"{where}: this {kind} question {w['id']!r} has no options under it, so it is not drawn; write each option as a task list "
+                                   f"item, `- [ ] Option`, straight under the line or after one blank line" + (" (the bullets under it are plain bullets, which a menu takes, not a choice)" if plain else ""))
+                    if kind == "scale" and w["id"]:
+                        anchors, _ = list_below(lines, after_body, NUMBERED)
+                        if not anchors:
+                            bad_q = True
+                            plain, _ = list_below(lines, after_body, BULLET)
+                            err(f, f"{where}: this scale question {w['id']!r} has no anchors under it, so it is not drawn; write them as a numbered list, "
+                                   f"`1. Low`, `2. High`, straight under the line or after one blank line" + (" (the bullets under it are plain bullets, and a scale's anchors are numbered)" if plain else ""))
+                        else:
+                            nums = [a.group(1).lstrip("0") or "0" for a in anchors]
+                            dup = sorted({x for x in nums if nums.count(x) > 1}, key=int)
+                            if dup:
+                                err(f, f"{where}: the scale {w['id']!r} repeats anchor number {', '.join(dup)}; the number is the stored answer, "
+                                       f"so each anchor needs its own")
+                    if kind in ("choice", "multi", "scale") and w["id"] and not bad_q:
+                        got, after_list = list_below(lines, after_body, TASK if kind != "scale" else NUMBERED)
+                        if got and after_list < len(lines) and re.match(r"^[ \t]+\S", lines[after_list]) and not (TASK if kind != "scale" else NUMBERED).match(lines[after_list]):
+                            warn(f, f"line {after_list + 1}: the line after this list is indented, so the list ends there: put each option on one line")
+                    if w["id"] and not bad_q:
+                        last_q = True
                     # Markdown lets only a list starting at 1 interrupt a paragraph:
                     # a list starting at 0 (or 2…) straight under the line joins its title
                     nxt = lines[i + 1] if i + 1 < len(lines) else ""
                     if re.match(r'^ {0,3}(?!1[.)])\d+[.)][ \t]', nxt):
                         err(f, f"line {n + 1}: a numbered list that does not start at 1 needs a blank line above it, "
                                f"or Markdown reads it as part of the question's title")
-                elif kind not in STRUCTURE_KINDS:
-                    pass                                   # a reading callout; any kind is allowed
-            if kind == "menu" and section != "records":
-                items, _ = list_below(lines, i + 1, BULLET)
+                elif kind in ("hint", "solution"):
+                    if mm.group(3) != "-":
+                        warn(f, f"{where}: a {kind} that is not folded is drawn open, outside its question; write `> [!{kind}]-`")
+                    if not last_q:
+                        warn(f, f"{where}: this {kind} is not directly under a question, so it is drawn on its own; put it straight under the question "
+                                f"it belongs to, with nothing between (no text, no other callout)")
+            if kind == "menu":
+                items, after_menu = list_below(lines, body_end(lines, i), BULLET)
                 if not items:
                     err(f, f"{where}: the menu {w['id']!r} has no items (a bulleted list under the line)")
+                for off, im in enumerate(items):
+                    if re.match(r'^[ \t]*[-*+][ \t]+\[[xX]\]', im.string):
+                        warn(f, f"line {after_menu - len(items) + off + 1}: a menu cannot mark a right answer; to have one, give the question its "
+                                f"own task list (`- [x] Mars`) in place of `menu:`, or drop the `[x]`")
                 if w["id"]:
                     menus.setdefault(w["id"], []).append(scope_mod())
             for old in w["old"]:
@@ -1016,11 +1287,32 @@ def check_format(f, text, fm):
                 if key in table:
                     err(f, f"line {n}: the id {key!r} is also used on line {table[key]}" + (f" in the module {scope!r}" if scope and scope != "\0shared" else ""))
                 table.setdefault(key, n)
+            i = claim_end(kind, lines, i)
+            continue
+        # not a Booklet line: prose, a page break, or a line that starts like one and cannot be read
+        if ln.strip() == "%%":
+            prev_prose = was_prose              # a bare `%%` outside a region is nothing to the renderer: the line above still counts
+            i += 1
+            continue
+        if re.match(r'^ {1,3}>[ \t]?\[!', ln):
+            warn(f, f"line {n}: a Booklet line starts at the left edge; this one is indented, so it is read as text. Remove the spaces")
+        if CALLOUT_ANY.match(ln) and not OLD_ROW_END.match(ln):
+            warn(f, f"line {n}: this `> [!` line cannot be read (a Booklet line is written `> [!kind|id words] Title`: the kind is letters, digits and "
+                    f"dashes), so it is left as text" + (", and it ends the callout above it" if i > 0 and lines[i - 1].startswith(">") else ""))
+        if ln.strip():
+            brk = re.match(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$', ln)
+            if brk and re.match(r'^ {0,3}-', ln) and was_prose:
+                warn(f, f"line {n}: `{ln.strip()}` straight under text makes that line a heading and is not a page break; write `***`, "
+                        f"or leave a blank line above it; for a heading, write `## …`")
+            last_q = False
+            prev_prose = not brk or (re.match(r'^ {0,3}-', ln) is not None and was_prose)
         i += 1
     if rowst["open"]:
         close_row(len(lines), "is never closed")
     if not any(l.strip() for l in lines[body_start:]):
         warn(f, "this booklet holds nothing yet: no module and no activity (it opens as an empty booklet with this name)")
+    if noid_line:
+        err(f, f"line {noid_line}: the module opened here has no id, so it is never closed (an end line repeats the module's id)")
     if open_mod:
         err(f, f"line {open_line}: the module {open_mod!r} is opened and never closed")
     for n, mid, mod in menu_uses:
@@ -1098,7 +1390,19 @@ def check_format(f, text, fm):
         for aid in sorted(loops, key=lambda x: link[x][1]):
             par, n = link[aid]
             warn(f, f"line {n}: `parent:{par}` loops back to {aid!r} (it is its own ancestor), so it is drawn once, at the top")
-    for n, ref, scope in entry_refs:
+    # a records line is read by the exact id it carries: a module of this file, or an activity outside every module (the
+    # activities outside a module are one module with no name). One naming neither is reported by the renderer, which keeps its
+    # blocks as written and does not read them. A file with no activity line is one activity, named from its title: not checked.
+    one_activity = not seen_activity and not any_module
+    own = {re.sub(r"[^A-Za-z0-9-]+", "-", t.lower()).strip("-") for t in (fm_title, fm_id) if t} if one_activity else set()
+    for n, rid in rec_lines:
+        if rid not in mod_ids and rid not in acts.get(None, {}) and rid not in own:
+            warn(f, f"line {n}: the records line names {rid!r}, which is no module of this file (nor an activity outside every module), "
+                    f"so its blocks are kept as written and not read; name the module these records belong to; if that module is gone, delete them")
+    for n, ref, rid in entry_refs:
+        if rid and rid not in mod_ids and rid not in acts.get(None, {}) and rid not in own:
+            continue                                         # a records line naming nothing: reported on that line
+        scope = rid if rid in mod_ids else None
         if ref not in acts.get(scope, {}):
             warn(f, f"line {n}: records for {ref!r}, which no activity line names")
     # Booklet reads a block id or a footnote id in its own module. Obsidian reads `![[#^id]]` as the first block with that
@@ -1116,8 +1420,18 @@ def check_format(f, text, fm):
             names = " and ".join(("the module " + repr(sc)) if sc else "the data section or the activities outside every module" for sc in scopes)
             mark = f"^{key}" if what == "block" else f"[^{key}]"
             warn(f, f"the {what} id {mark} is used in {names}: Booklet reads each in its own module, but Obsidian and GitHub will show the first one for all of them")
+    # after a records region the file is design again, which a save moves above the records (SPEC.md section 8): said once
+    if regions:
+        inside = set()
+        for a, z, _, _, _ in regions:
+            inside.update(range(a, z + 1))
+        late = next((k for k in range(regions[0][0], len(lines)) if k not in inside and lines[k].strip()), None)
+        if late is not None:
+            warn(f, f"line {late + 1}: this comes after the records region, and a save moves it above the records (the records sit at the end of a "
+                    f"file); write it above the records yourself")
     check_links(f, lines)
     check_images(f, lines)
+    check_prices(f, lines, body_start, regions)
 
 
 def fence_skip(ln, fence):
@@ -1132,6 +1446,53 @@ def fence_skip(ln, fence):
             fence = None
         return fence, True
     return fence, fence is not None
+
+
+# Inline maths as the renderer reads it (INLINE_RE in booklet.html): a backslash escape, a code span, `$$display$$`, and `$inline$`,
+# whose text starts and ends on something that is not a space and whose closing `$` is not followed by a digit.
+MATH_RE = re.compile(
+    r"\\[\\`*_{}\[\]()#+.!~=$<>|-]"
+    r"|(?P<cf>`+)[\s\S]*?(?P=cf)"
+    r"|\$\$[\s\S]+?\$\$"
+    r"|\$(?P<math>(?:\\[\s\S]|[^\s$\\])(?:(?:\\[\s\S]|[^$\\])*?(?:\\[\s\S]|[^\s$\\]))?)\$(?![0-9])")
+
+
+# a word of two letters or more standing on its own: a price carries one ("a month"), ordinary arithmetic ("7 + 5", "2x") does not
+PRICE_WORD = re.compile(r"(?<![A-Za-z0-9\\])[A-Za-z]{2,}(?![A-Za-z0-9])")
+
+
+def check_prices(f, lines, start, regions):
+    """A price in prose that reads as a formula: `It costs $5 a month ($) or $50 a year` draws "5 a month (" in maths italics. Only a
+    formula that starts with a digit is reported (a formula that starts with a letter is maths, and the maths in this repository's
+    examples starts with one), and not one that carries maths markup (a backslash command, `^`, `_`, `{` or `=`)."""
+    skip = set()
+    for a, z, _, _, _ in regions:
+        skip.update(range(a, z + 1))
+    para, fence = [], None
+    lines = re.sub(r"<!--.*?-->", lambda m: re.sub(r"[^\n]", " ", m.group()), "\n".join(lines), flags=re.S).split("\n")   # a comment is not read
+
+    def flush():
+        if not para:
+            return
+        text = "\n".join(t for _, t in para)
+        for m in MATH_RE.finditer(text):
+            formula = m.group("math")
+            if formula and formula[0].isdigit() and not re.search(r"[\\^_{}=]", formula) and PRICE_WORD.search(formula):
+                at = para[text.count("\n", 0, m.start())][0]
+                formula = re.sub(r"\s+", " ", formula)
+                shown = formula if len(formula) <= 30 else formula[:30] + "..."
+                warn(f, f"line {at + 1}: `${shown}$` reads as a formula, drawn as maths, not as the text you wrote; "
+                        f"if it is a price, write each dollar sign as `\\$` (`\\$5`)")
+        para.clear()
+
+    for k in range(start, len(lines)):
+        ln = lines[k]
+        fence, skipped = fence_skip(ln, fence)
+        if k in skip or skipped or not ln.strip():
+            flush()
+            continue
+        para.append((k, re.sub(r"^>[ \t]?", "", ln)))
+    flush()
 
 
 def check_images(f, lines):
@@ -1163,7 +1524,7 @@ def check_images(f, lines):
         if flat.startswith("//") or (scheme and scheme.group(1).lower() in ("http", "https")):
             warn(f, f"line {n}: the image {shown} has a remote address; a renderer does not fetch remote images, so it shows the alt text and the address as text")
         elif scheme:
-            err(f, f"line {n}: the image {shown} has an address with the scheme `{scheme.group(1).lower()}:`; an image is linked by a relative path or an https address, never embedded or given another scheme")
+            err(f, f"line {n}: the image {shown} has an address with the scheme `{scheme.group(1).lower()}:`; an image is linked by a relative path, never embedded or given another scheme")
 
 
 def _plain_heading(s):
@@ -1232,6 +1593,8 @@ def check_links(f, lines):
 
 
 def check_file(path):
+    global FILE_NO
+    FILE_NO += 1
     # a path outside the repo is a normal thing to lint (a file someone was
     # handed, a temp copy), so name it plainly rather than insisting on a
     # repo-relative one
@@ -1291,10 +1654,8 @@ def main():
             continue
         check_file(p)
 
-    for w in warnings:
-        print(f"warn  {w}")
-    for e in errors:
-        print(f"ERROR {e}")
+    for _, _, _, kind, text in sorted(findings):
+        print(f"{kind} {text}")
     n = len(paths)
     print(f"\n{n} booklet file{'' if n == 1 else 's'} checked · "
           f"{len(errors)} error{'' if len(errors) == 1 else 's'} · "
