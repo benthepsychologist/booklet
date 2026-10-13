@@ -112,7 +112,7 @@ def front_matter(text):
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
-CALLOUT_LINE = re.compile(r'^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$')
+CALLOUT_LINE = re.compile(r'^>[ \t]?\[!([A-Za-z0-9][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$')
 # the old way to close a row (before 0.13), which a reader does not read: a row closes with `> [!row|end]`
 OLD_ROW_END = re.compile(r'^>[ \t]?\[!row[ \t]+end\]', re.I)
 ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
