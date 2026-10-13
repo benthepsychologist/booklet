@@ -1,6 +1,6 @@
 # STATUS — Booklet
 
-*As of 2026-10-12*
+*As of 2026-10-13*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
 **project v0.12**: format v0.12 (files say `booklet: "0.12"`, in quotes) and renderer 0.12.0 (item D of the 0.12 update; the v0.10 line: v0.10.1 was a wording patch to `SPEC.md` section 9; v0.10.2 was a renderer-only patch: a reader can remove a module; v0.10.3 fixed one sentence of its confirmation; v0.10.4 added tests that the published file sends nothing a reader writes, `lint-booklet.py --marker` and `--format-version` for generators, and a fix to a folded section's preview showing backticks).
@@ -9,7 +9,9 @@ This repository holds the format spec (`SPEC.md`), the reference renderer
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
-## Current state — v0.12 (2026-10-12, items D and E: the format and the wiki tree; the tag follows)
+## Current state — v0.12.0, released 2026-10-13 (items D and E: the format and the wiki tree)
+
+**Released 2026-10-13:** tag `v0.12.0` (f57b79b); bookletmd.org/app serves it byte for byte (bookletmd-site #29), and so does the box's store server; `booklet-registry`'s five modules are re-marked `"0.12"` (#15). The patch releases 0.11.8 to 0.11.12, which shipped untagged, were tagged the same day at their merge commits.
 
 The format becomes 0.12. A file marked `"0.11"` now opens with the older-version notice; every file this repository holds that carried `"0.11"` is re-marked (fixtures that exist to carry another marker keep it, and the "later marker" fixture is now `"0.13"`). `SPEC.md` is titled v0.12.0, the skill is 0.12.0, the renderer 0.12.0.
 
@@ -22,7 +24,7 @@ The format becomes 0.12. A file marked `"0.11"` now opens with the older-version
 - New interface words: two problem messages (`problem.iconUnknown`, `problem.iconOnEnd`) in English, French and Spanish.
 - Size: `booklet.html` 3,663,941 bytes (was 3,655,335); the hand-written part grew by 8,606 bytes, the sprite and fonts by none.
 
-**Item E, the wiki tree (2026-10-12, renderer 0.12.0; `RENDERER_VERSION` stays `0.12.0`, the tag follows).** Nothing a file may say changed; the renderer draws what item D let a file say.
+**Item E, the wiki tree (2026-10-12, renderer 0.12.0; released as `v0.12.0`).** Nothing a file may say changed; the renderer draws what item D let a file say.
 
 - **A tree from `parent:`.** A module whose activities carry `parent` is a wiki (`wikiOf`, a small adapter over `activityTree`, which is `nestRows`: a missing parent leaves a page at the top, a cycle draws each page once, the first of two with one id is the parent, siblings keep the file's order). Its module screen shows the top pages as cards, and every screen of it has a menu beside it (`wikiFrame`): a search box over the `.dv-tree` of the whole tree, the current page marked, branches that open and close. Above a page: breadcrumbs (the module, then each ancestor, each a button); after its words: its children as cards (`cardNode`, go mode) and "Mentioned on" (the pages whose prose links to it by a heading, `[[#Heading]]` or `](#slug)`, worked out once per open in `wikiMentions`); in the foot: "Up" to the parent and "Next", which goes depth first. A hidden page (`hidden`) stays in the tree but is left out of every list, its children taking its place; a link that reaches it shows its real breadcrumbs and children, and "Next" passes over it. A module with no `parent` never reaches any of this and draws as before.
 - **One menu.** On a wiki page the page's own sections (and its pages, when it has several) are listed in the wiki menu, under its entry, and the separate sections rail is not drawn; a flat module keeps the rail. A choice in the wiki closes the phone's menu and moves the focus (to the page's entry when the choice was made in the menu beside the page, else to the page's heading); every link, crumb, chip and tree entry is at least 44 px tall.
