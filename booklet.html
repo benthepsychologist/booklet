@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-D2g7ApeNZW/eKergNBUXc+pXV6DjpLgdgaxc90yhf3U=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-ZksRglTKsXCOw3wQEpv3LvA19NxYhE3shZ8Byaucv7Q=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1470,13 +1470,15 @@ const CALLOUT_LOOK={};
  ["law","slate","scale"],["opinion","rose","message-circle"]
 ].forEach(([k,hue,ic,...aka])=>{[k,...aka].forEach(n=>{CALLOUT_LOOK[n]={hue,icon:ic,label:k};});});
 const calloutLook=kind=>{const k=String(kind==null?"":kind).toLowerCase();return Object.prototype.hasOwnProperty.call(CALLOUT_LOOK,k)?CALLOUT_LOOK[k]:CALLOUT_LOOK.note;};
+/* the blocks under a records line that are records, and the booklet blocks that belong to the design and not there */
+const RECORD_KINDS=["answers","entries","draft"],RECORD_OTHER=["widget","data","theme","query"];
 const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","number","date","matrix"]);
 const SCENERY_KINDS=new Set(["manifest","menu"]);
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
 const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:"],row:["end"],text:["long"],
-  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],
+  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],
   choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
 /* the settings above that must be numbers */
 const NUMBER_SETTINGS=["min","max","step"];
@@ -1739,7 +1741,13 @@ const STRINGS_SRC={
       recordNoItems: (w,id)=>`${w}: the entries record for “${id}” holds no list of items, so it was skipped`,
       langMissing: "The front matter has no `lang:`, so this page took the file to be in English",
       menuMissing: (w,menu,id)=>`${w}: the menu “${menu}” is not in this file, so the question “${id}” was not drawn`,
-      queryRefused: (id,why)=>`a query in “${id}” ${why}, so it was refused`,
+      queryRefused: (id,why)=>`a query in “${id}” ${why}, so it is not drawn`,
+      recordsLineUnknown: (w,id)=>`${w}: the records line for “${id}” names no module this file has, or an id that is not letters, digits and dashes, so the blocks under it are kept as written and not read`,
+      recordsOther: w=>`${w}: this is not a record, but it sits under a records line; it is kept as written and not read`,
+      recordOutside: (w,what)=>`${w}: a ${what} record belongs under a records line, not here, so it was not read`,
+      recordItemsBad: (w,id)=>`${w}: an entry in the entries record for “${id}” is not an object with a date (“ts”), so the whole block is kept as written and not read`,
+      recordIdBad: (w,id)=>`${w}: “${id}” is not an activity id (letters, digits and dashes), so the block is kept as written and not read`,
+      calloutUnreadable: w=>`${w}: this line starts like a Booklet line, “> [!…”, but is not one this page can read, so it is left as text`,
       queryViewBad: (as,views)=>`has \`as: ${as}\`, which is not ${views.slice(0,-1).join(", ")} or ${views[views.length-1]}`,
       queryOtherModule: from=>`names “${from}”, which is in another module`,
       queryCardsData: from=>`has \`as: cards\` on the data block “${from}”, but cards draw kept entries`,
@@ -2053,7 +2061,13 @@ const STRINGS_SRC={
       recordNoItems: (w,id)=>`${w} : l’enregistrement des entrées de « ${id} » ne contient aucune liste d’éléments ; il a donc été ignoré`,
       langMissing: "L’en-tête n’a pas de `lang:` ; cette page a donc supposé que le fichier est en anglais",
       menuMissing: (w,menu,id)=>`${w} : le menu « ${menu} » n’est pas dans ce fichier ; la question « ${id} » n’a donc pas été dessinée`,
-      queryRefused: (id,why)=>`une requête dans « ${id} » ${why} ; elle a donc été refusée`,
+      /* l10n: draft */ queryRefused: (id,why)=>`une requête dans « ${id} » ${why} ; elle n’est donc pas affichée`,
+      /* l10n: draft */ recordsLineUnknown: (w,id)=>`${w} : la ligne d’enregistrements pour « ${id} » ne désigne aucun module de ce fichier, ou un identifiant qui n’est pas fait de lettres, de chiffres et de tirets ; les blocs en dessous sont donc conservés tels quels et non lus`,
+      /* l10n: draft */ recordsOther: w=>`${w} : ce n’est pas un enregistrement, mais il se trouve sous une ligne d’enregistrements ; il est conservé tel quel et non lu`,
+      /* l10n: draft */ recordOutside: (w,what)=>`${w} : un enregistrement ${what} va sous une ligne d’enregistrements, pas ici ; il n’a donc pas été lu`,
+      /* l10n: draft */ recordItemsBad: (w,id)=>`${w} : une entrée de l’enregistrement des entrées de « ${id} » n’est pas un objet avec une date (« ts ») ; le bloc entier est donc conservé tel quel et non lu`,
+      /* l10n: draft */ recordIdBad: (w,id)=>`${w} : « ${id} » n’est pas un identifiant d’activité (lettres, chiffres et tirets) ; le bloc est donc conservé tel quel et non lu`,
+      /* l10n: draft */ calloutUnreadable: w=>`${w} : cette ligne commence comme une ligne Booklet, « > [!… », mais cette page ne peut pas la lire ; elle est donc laissée comme texte`,
       queryViewBad: (as,views)=>`a \`as: ${as}\`, qui n’est pas ${views.slice(0,-1).join(", ")} ni ${views[views.length-1]}`,
       queryOtherModule: from=>`nomme « ${from} », qui est dans un autre module`,
       queryCardsData: from=>`a \`as: cards\` sur le bloc de données « ${from} », mais les cartes montrent des entrées gardées`,
@@ -2367,7 +2381,13 @@ const STRINGS_SRC={
       recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se omitió`,
       langMissing: "El encabezado no tiene `lang:`, así que esta página tomó el archivo como escrito en inglés",
       menuMissing: (w,menu,id)=>`${w}: el menú “${menu}” no está en este archivo, así que la pregunta “${id}” no se dibujó`,
-      queryRefused: (id,why)=>`una consulta en “${id}” ${why}, así que se rechazó`,
+      /* l10n: draft */ queryRefused: (id,why)=>`una consulta en “${id}” ${why}, así que no se muestra`,
+      /* l10n: draft */ recordsLineUnknown: (w,id)=>`${w}: la línea de registros de “${id}” no nombra ningún módulo de este archivo, o un id que no está hecho de letras, dígitos y guiones, así que los bloques debajo se conservan tal cual y no se leen`,
+      /* l10n: draft */ recordsOther: w=>`${w}: esto no es un registro, pero está bajo una línea de registros; se conserva tal cual y no se lee`,
+      /* l10n: draft */ recordOutside: (w,what)=>`${w}: un registro ${what} va bajo una línea de registros, no aquí, así que no se leyó`,
+      /* l10n: draft */ recordItemsBad: (w,id)=>`${w}: una entrada del registro de entradas de “${id}” no es un objeto con fecha (“ts”), así que todo el bloque se conserva tal cual y no se lee`,
+      /* l10n: draft */ recordIdBad: (w,id)=>`${w}: “${id}” no es un id de actividad (letras, dígitos y guiones), así que el bloque se conserva tal cual y no se lee`,
+      /* l10n: draft */ calloutUnreadable: w=>`${w}: esta línea empieza como una línea de Booklet, “> [!…”, pero esta página no puede leerla, así que se deja como texto`,
       queryViewBad: (as,views)=>`tiene \`as: ${as}\`, que no es ${views.slice(0,-1).join(", ")} ni ${views[views.length-1]}`,
       queryOtherModule: from=>`nombra “${from}”, que está en otro módulo`,
       queryCardsData: from=>`tiene \`as: cards\` sobre el bloque de datos “${from}”, pero las tarjetas muestran entradas guardadas`,
@@ -2658,8 +2678,11 @@ let BOOK = EMPTY_BOOKLET;
 /* `answers` are the once-answered questions, one map by scope: `answers[scope][questionId]`, where scope is
    a module's id, or "" for the module with no name (the activities outside any module fence);
    `entries` are kept entries, keyed by activity address */
-const emptyState=()=>({answers:{},entries:{}});
-const emptyDrafts=()=>({custom:{}});
+/* A map whose keys are a file's ids (modules, activities, questions) has no prototype, so no id (`constructor`, `__proto__`) is
+   ever a key the language already has */
+const nullMap=o=>Object.assign(Object.create(null),o&&typeof o==="object"&&!Array.isArray(o)?o:null);
+const emptyState=()=>({answers:nullMap(),entries:nullMap()});
+const emptyDrafts=()=>({custom:nullMap()});
 let STATE=emptyState();
 let DRAFTS=emptyDrafts();
 let lang="en", screen=HOME_SCREEN, dirty=false, unsavedEntries=0;
@@ -2789,8 +2812,8 @@ const scopeOfModule=m=>scopeOfAddr((activitiesOf(m)[0]||{}).id);
 /* the module a fence made, by its id: the module held for a bare activity is not one (its id is its activity's, which may be a module's too) */
 const fencedModule=id=>allModules().find(m=>m.id===id&&scopeOfModule(m)!=="")||null;
 /* Where the once-answered questions of a scope are kept. peekAnswers never makes the store. */
-const answersIn=scope=>{STATE.answers=STATE.answers||{};return STATE.answers[scope]||(STATE.answers[scope]={});};
-const peekAnswers=scope=>(STATE.answers||{})[scope]||{};
+const answersIn=scope=>{STATE.answers=STATE.answers||nullMap();return hasOwn(STATE.answers,scope)?STATE.answers[scope]:(STATE.answers[scope]=nullMap());};
+const peekAnswers=scope=>hasOwn(STATE.answers,scope)?STATE.answers[scope]:{};
 const holderOf=actId=>allModules().find(m=>activitiesOf(m).some(a=>a.id===actId))||null;
 const bookActivities=()=>allModules().flatMap(m=>activitiesOf(m).map(a=>({...a,__module:m.id})))
   .filter((m,i,a)=>a.findIndex(x=>x.id===m.id)===i);
@@ -2801,8 +2824,7 @@ const moduleOf=activityId=>{const m=holderOf(activityId);if(!m) return null;
   const a=activitiesOf(m).find(x=>x.id===activityId);return {title:a.title,blurb:a.blurb};};
 const isModuleScreen=v=>typeof v==="string"&&v.startsWith(MODULE_SCREEN);
 const moduleScreen=id=>MODULE_SCREEN+id;
-const moduleForScreen=v=>isModuleScreen(v)
-  ?(allModules().find(m=>m.id===v.slice(MODULE_SCREEN.length))||null):null;
+const moduleForScreen=v=>isModuleScreen(v)?fencedModule(v.slice(MODULE_SCREEN.length)):null;
 /* where a module's card leads: its one activity, or its own page */
 const entryScreenOf=m=>isMulti(m)?moduleScreen(m.id):((activitiesOf(m)[0]||{}).id||HOME_SCREEN);
 const activityOf=id=>bookActivities().find(m=>m.id===id)||{id,kind:"entry",blocks:[]};
@@ -2920,8 +2942,8 @@ function clearLocal(){const key=slotKey();if(key) lsDel(key);
 function loadLocal(){const key=slotKey();if(!key) return false;
   try{const raw=lsGet(key);if(!raw) return false;const o=JSON.parse(raw);if(!o||!o.S) return false;
     const plain=x=>isObj(x)?x:{};
-    STATE={answers:plain(o.S.answers),entries:plain(o.S.entries)};
-    DRAFTS={custom:plain((o.D||{}).custom)};
+    STATE={answers:nullMap(o.S.answers),entries:nullMap(o.S.entries)};
+    DRAFTS={custom:nullMap((o.D||{}).custom)};
     if(o.lang&&STRINGS[o.lang]) lang=o.lang;
     dirty=!!o.dirty;unsavedEntries=Number(o.unsavedEntries)||0;
     /* The booklet's own structure (which modules it holds) is part of what
@@ -2991,14 +3013,16 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    and written back verbatim with fresh records under it: the file a person
    wrote is never rewritten by the page that reads it. */
 const CALLOUT_LINE=/^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$/;
-const calloutLine=l=>CALLOUT_LINE.test(l);
+/* a line that starts like a Booklet line, readable or not: it ends the callout above it, and a line of this shape that CALLOUT_LINE
+   cannot read is said, not left to read as prose without a word */
+const calloutLine=l=>/^>[ \t]?\[!/.test(l);
 /* A module's notice (SPEC.md section 3): the four things a module may say about itself, in the order a callout
    and a disclosure write them */
 const NOTICE_KEYS=["license","copyright","source","version"];
 /* the front matter stands in for a notice through these three, never `version` (the file's version is the file's) */
 const FRONT_NOTICE_KEYS=["license","copyright","source"];
 /* the kinds that take no id: their words are settings only */
-const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group"]);
+const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","diff","law","opinion"]);
 /* A file is read when its front matter says `booklet: "0.13"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
@@ -3157,8 +3181,8 @@ function splitItems(lines,start){let i=start;
      Booklet line, a page break or a comment marker. A choice/multi/scale
      question also claims the option or anchor list straight under it, so
      that list is never re-read as ordinary prose. */
-  const items=[];let buf=[],cut=null;
-  const flush=()=>{if(buf.some(l=>l.trim())) items.push({t:"text",text:buf.join("\n").replace(/^\n+|\n+$/g,"")});buf=[];};
+  const items=[];let buf=[],cut=null,bufAt=0;
+  const flush=()=>{if(buf.some(l=>l.trim())) items.push({t:"text",text:buf.join("\n").replace(/^\n+|\n+$/g,""),line:bufAt+1});buf=[];};
   for(;i<lines.length;i++){const ln=lines[i];
     const f=FENCE_RE.exec(ln);
     if(f){const k=fenceEnd(lines,i,f);
@@ -3166,8 +3190,9 @@ function splitItems(lines,start){let i=start;
       const idm=n<lines.length?lines[n].trim().match(/^\^([A-Za-z0-9-]+)$/):null;
       const info=f[2].trim();
       if(/^booklet\b/i.test(info)||idm){flush();
-        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,k+1).join("\n")+(k<lines.length?"":"\n```"),id:idm?idm[1]:null,line:i+1});i=idm?n:k;}
-      else{buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
+        /* `raw` is the fence as written, its closing line (supplied, as the opening marker, when the file never closed it) and its ^id line */
+        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,(idm?n:k)+1).join("\n")+(k<lines.length?"":"\n"+f[1]),id:idm?idm[1]:null,line:i+1});i=idm?n:k;}
+      else{if(!buf.length) bufAt=i;buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
     if(ln.trim()==="%%"){if(cut===null&&lines.slice(i+1).some(x=>/^>[ \t]?\[!records\b/i.test(x))) cut=i;continue;}
     const m=ln.match(CALLOUT_LINE);
@@ -3180,10 +3205,12 @@ function splitItems(lines,start){let i=start;
       else if(kind==="matrix"){const r=bulletList(lines,k);
         if(r){items2=r.items;k=r.next;const a=anchorList(lines,k);if(a){anchors=a.anchors;k=a.next;}}}
       if(kind==="records"&&cut===null) cut=i;
-      items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,items:items2,line:i+1});i=k-1;continue;}
+      items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,items:items2,line:i+1,head:ln,raw:lines.slice(i,k).join("\n")});i=k-1;continue;}
+    if(calloutLine(ln)) items.push({t:"bad",line:i+1});
     /* a thematic break is a page break, except `---` straight under a line of
        text, which Markdown reads as that line's heading */
     if(/^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$/.test(ln)&&!(/^ {0,3}-/.test(ln)&&buf.length&&buf[buf.length-1].trim())){flush();items.push({t:"break",line:i+1});continue;}
+    if(!buf.length) bufAt=i;
     buf.push(ln);}
   flush();
   /* the design is everything above the records, kept exactly as written */
@@ -3258,9 +3285,9 @@ const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 /* a question's hint: the text of its body, less the lines that only embed a figure */
 const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems){const P=strings("problem");
-  const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Map(),blockIds=new Map(),modIds=new Set();
+  const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
-  let mod=null,act=null,section="content",lastQ=null,seq=0,oseq=0,row=null,theme=null,recScope="",dataMod=null;
+  let mod=null,act=null,section="content",lastQ=null,seq=0,oseq=0,row=null,theme=null,recScope="",recForeign=null,dataMod=null;
   const refuse=m=>{problems.push(m);problems.refused.push(m);};
   /* an id used twice: refused, and its id kept so Add a module can name it */
   const dup=(where,id)=>{const m=P.idTwice(where,id);refuse(m);problems.dupIds.push({id,m});};
@@ -3308,10 +3335,10 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     const info=it.info.split(/\s+/);
     /* a block in the records section that this page does not read as a record is kept as written, under the records line it
        sat under, and written back by toMarkdown (SPEC.md section 8) */
-    const keep=()=>{if(section==="records") recordsKept.push({scope:recScope,text:it.raw});};
+    if(section==="records") return onRecordFence(it,info);
     if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="query"){
       if(section==="data"){problems.push(P.queryInData(P.line(it.line)));return;}
-      if(section!=="content"){keep();return;}
+      if(section!=="content") return;
       if(!act){problems.push(P.queryOutside(P.line(it.line)));return;}
       const q=readQuery(it.code);
       if(q.bad){problems.push(P.queryBadLine(P.line(it.line),q.bad));return;}
@@ -3320,7 +3347,6 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,empty:q.empty,view:q.view})});lastQ=null;return;}
     if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="theme"){
       /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
-      if(section==="records"){keep();return;}
       if(scopeMod()){problems.push(P.themeInModule(P.line(it.line)));return;}
       if(theme){problems.push(P.themeSecond(P.line(it.line)));return;}
       const r=readTheme(it.code);theme=r.spec;
@@ -3328,19 +3354,20 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       r.dropped.forEach(k=>problems.push(P.themeDropped(P.line(it.line),k)));
       return;}
     if(!/^booklet$/i.test(info[0])){
-      if(it.id&&section!=="records"){claimIn(blockIds,blockScope(),it.id,P.line(it.line));
+      if(it.id){claimIn(blockIds,blockScope(),it.id,P.line(it.line));
         const key=addrOf(blockScope()===SHARED?"":blockScope(),it.id);
         if(!(key in figures)) figures[key]={lang:(info[0]||"").toLowerCase(),code:it.code};}
       return;}
     if(/^booklet$/i.test(info[0])){const what=(info[1]||"").toLowerCase();let o=null;
-      try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(P.line(it.line),what||"booklet"));keep();return;}
-      if(!o||typeof o!=="object"||(Array.isArray(o)&&(what==="answers"||what==="draft"||what==="entries"))){problems.push(P.blockNoObject(P.line(it.line),what));keep();return;}
-      if(what==="widget"){keep();if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
+      /* a record is read where records are, under the records line (onRecordFence); anywhere else it is said, and left in the design text */
+      if(RECORD_KINDS.includes(what)){problems.push(P.recordOutside(P.line(it.line),what));return;}
+      try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(P.line(it.line),what||"booklet"));return;}
+      if(!o||typeof o!=="object"){problems.push(P.blockNoObject(P.line(it.line),what));return;}
+      if(what==="widget"){if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
         claimIn(blockIds,blockScope(),it.id,P.line(it.line));
         const w={...o,id:it.id};{const sm=scopeMod();if(sm) w.module=sm.id;}
         widgets.push(w);}
       else if(what==="data"){
-        if(section==="records"){keep();return;}
         if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
         const here=scopeMod();
         if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
@@ -3348,16 +3375,31 @@ function readBlocks(items,fm,problems){const P=strings("problem");
         if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
         /* it lives where a widget's data lives: inside its module's fence or in its data section, or in the shared data section */
         dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,line:it.line});}
-      else if(what==="answers") answers[recScope]=Object.assign(answers[recScope]||{},o);
-      else if(what==="entries"&&info[2]){
-        if(!Array.isArray(o.items)){problems.push(P.recordNoItems(P.line(it.line),info[2]));keep();return;}
-        entries[addrOf(recScope,info[2])]=o.items.filter(e=>e&&e.ts);}
-      else if(what==="draft"&&info[2]) drafts[addrOf(recScope,info[2])]=o;
-      else{problems.push(P.blockUnknown(P.line(it.line),what));keep();}}
+      else problems.push(P.blockUnknown(P.line(it.line),what));}
   };
+  /* Everything under a records line is a record or it is said. A block of a kind this page reads is read; any other block, and any
+     prose or line that sits there, is kept as written under the records line it sat under and written back by toMarkdown (SPEC.md
+     section 8), so nothing is lost and nothing is read as design. */
+  const keepRec=(text,line)=>recordsKept.push(recForeign?{scope:recForeign.id,foreign:recForeign.head,text}:{scope:recScope,text});
+  function onRecordFence(it,info){const where=P.line(it.line),what=(info[1]||"").toLowerCase(),keep=()=>keepRec(it.raw);
+    if(!/^booklet$/i.test(info[0])||RECORD_OTHER.includes(what)){problems.push(P.recordsOther(where));return keep();}
+    if(!RECORD_KINDS.includes(what)){problems.push(P.blockUnknown(where,what));return keep();}
+    if(recForeign) return keep();
+    let o=null;
+    try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(where,what));return keep();}
+    if(!o||typeof o!=="object"||Array.isArray(o)){problems.push(P.blockNoObject(where,what));return keep();}
+    if(what==="answers"){answers[recScope]=Object.assign(answers[recScope]||nullMap(),o);return;}
+    if(!info[2]){problems.push(P.blockUnknown(where,what));return keep();}
+    if(!ID_PATTERN.test(info[2])){problems.push(P.recordIdBad(where,info[2]));return keep();}
+    const at=addrOf(recScope,info[2]);
+    if(what==="draft"){drafts[at]=Object.assign(drafts[at]||nullMap(),o);return;}
+    if(!Array.isArray(o.items)){problems.push(P.recordNoItems(where,info[2]));return keep();}
+    if(!o.items.every(e=>e&&typeof e==="object"&&!Array.isArray(e)&&e.ts)){problems.push(P.recordItemsBad(where,info[2]));return keep();}
+    entries[at]=(entries[at]||[]).concat(o.items);}
   const onBreak=()=>{if(row) closeRow(P.rowRunsPage);
     if(section==="content"&&act){act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});lastQ=null;}};
-  const onText=it=>{if(section==="data"){const defs=stripFootnoteDefs(it.text).defs;(dataMod?dataMod.__footnotes:sharedNotes).push(...defs);return;}
+  const onText=it=>{if(section==="records"){problems.push(P.recordsOther(P.line(it.line||0)));keepRec(it.text);return;}
+    if(section==="data"){const defs=stripFootnoteDefs(it.text).defs;(dataMod?dataMod.__footnotes:sharedNotes).push(...defs);return;}
     if(section!=="content") return;
     const strip=stripFootnoteDefs(it.text);
     if(!act&&!mod&&implicit&&(strip.text||strip.defs.length)) page();
@@ -3366,6 +3408,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;};
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
+    if(section==="records"&&k!=="records"&&k!=="data"){problems.push(P.recordsOther(where));keepRec(it.raw);return;}
     checkSettings(it,where,P).forEach(m=>problems.push(m));
     if(k==="notice"){
       /* a module's notice: one callout, inside the fence, before the module's first activity */
@@ -3390,9 +3433,14 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       if(it.id){const hit=modules.find(m=>m.id===it.id&&!m.__bare);
         if(hit) dataMod=hit;else problems.push(P.dataModuleUnknown(where,it.id));}
       return;}
-    if(k==="records"){section="records";act=null;dataMod=null;
-      /* the module id on a records line says whose the record blocks below it are, until the next records line */
-      recScope=it.id&&modules.some(m=>m.id===it.id&&!m.__bare)?it.id:"";return;}
+    if(k==="records"){section="records";act=null;dataMod=null;recForeign=null;
+      /* the module id on a records line says whose the record blocks below it are, until the next records line. The id of a bare
+         activity (or none) is the module with no name. An id that names no module the file has, or that is not letters, digits
+         and dashes, is said, and the blocks under it are kept as written and not read: no record goes under an id that is no scope */
+      const named=it.id&&ID_PATTERN.test(it.id)&&modules.some(m=>m.id===it.id&&!m.__bare);
+      recScope=named?it.id:"";
+      if(it.id&&!named&&!modules.some(m=>m.id===it.id&&m.__bare)){recForeign={id:it.id,head:it.head};problems.push(P.recordsLineUnknown(where,it.id));}
+      return;}
     /* a shared menu is never drawn; its list is kept for the questions that name it */
     if(k==="menu"&&section!=="records"){const sm=scopeMod();claim(it.id,where,sm?sm.id:SHARED);
       if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:sm});return;}
@@ -3434,6 +3482,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     if(it.t==="fence") onFence(it);
     else if(it.t==="break") onBreak();
     else if(it.t==="text") onText(it);
+    else if(it.t==="bad") problems.push(P.calloutUnreadable(P.line(it.line)));
     else onLine(it);}
   if(row) closeRow(P.rowNeverClosed);
   /* a data block's id is also one a query reads by, so it may not be a question's or an activity's too,
@@ -3539,7 +3588,7 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
   {const at=holders.map((m,i)=>m.__bare?i:-1).filter(i=>i>=0);
    if(at.some(i=>out[i].mode.parent)){const mods=at.map(i=>out[i]),t=activityTree(mods.map(m=>m.mode));
      t.order.forEach((k,n)=>{const m=mods[k],a=m.mode;if(t.parent[k]) a.parent=t.parent[k];else delete a.parent;if(t.depth[k]) a.depth=t.depth[k];out[at[n]]=m;});}}
-  const st=emptyState();st.entries=entries;st.answers=Object.fromEntries(Object.entries(answers).map(([k,v])=>[k,{...v}]));
+  const st=emptyState();st.entries=entries;Object.keys(answers).forEach(k=>{st.answers[k]=nullMap(answers[k]);});
   const shared=notesOut(sharedNotes||[],"d");
   const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,...(fm.start==="home"?{start:"home"}:{}),
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
@@ -3555,12 +3604,14 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
 function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
   const recs=[],mods=allModules();
+  /* what a browser's storage gave back may be anything: only well-formed kept blocks are written */
+  const kept=(Array.isArray(V.records)?V.records:[]).filter(r=>r&&typeof r==="object"&&typeof r.text==="string"&&typeof r.scope==="string"&&(r.foreign===undefined||typeof r.foreign==="string"));
   /* the module with no name is first, under the plain records line; each named module follows under its own */
   const scopes=["",...mods.map(scopeOfModule).filter(s=>s)];
   scopes.forEach(sc=>{const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(activitiesOf),own=[],gd=peekAnswers(sc);
     const keys=new Set(),entryIds=new Set(acts.filter(a=>a.kind==="entry").map(a=>a.id));
     acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
-    const ans={};Object.keys(gd).forEach(k=>{if(!keys.has(k)||holdsSomething(gd[k])) ans[k]=gd[k];});
+    const ans=nullMap();Object.keys(gd).forEach(k=>{if(!keys.has(k)||holdsSomething(gd[k])) ans[k]=gd[k];});
     if(Object.keys(ans).length) own.push(...fence("booklet answers",JSON.stringify(ans,null,1)));
     /* an entry or a draft is written for each activity that repeats, then for any other address the page holds one for */
     const held=Object.keys(STATE.entries||{}).concat(Object.keys((DRAFTS||{}).custom||{})).filter(k=>scopeOfAddr(k)===sc&&!entryIds.has(k));
@@ -3569,12 +3620,15 @@ function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").repla
       if(items.length) own.push(...fence("booklet entries "+fid,"{\"items\": [\n"+items.map(e=>JSON.stringify(e)).join(",\n")+"\n]}"));
       const d=DRAFTS.custom&&DRAFTS.custom[id];
       /* only what holds something: the empty lists an engine starts with are not work */
-      const kept=d&&Object.fromEntries(Object.entries(d).filter(([,v])=>holdsSomething(v)));
-      if(kept&&Object.keys(kept).length) own.push(...fence("booklet draft "+fid,JSON.stringify(kept)));});
-    (V.records||[]).filter(r=>r.scope===sc).forEach(r=>own.push(r.text,""));
+      const work=d&&Object.fromEntries(Object.entries(d).filter(([,v])=>holdsSomething(v)));
+      if(work&&Object.keys(work).length) own.push(...fence("booklet draft "+fid,JSON.stringify(work)));});
+    kept.filter(r=>r.foreign===undefined&&r.scope===sc).forEach(r=>own.push(r.text,""));
     if(!own.length) return;
     const m=sc&&fencedModule(sc);
     recs.push(...(m?["> [!records|"+m.id+"] "+tx(m.title,m.id),""]:[]),...own);});
+  /* blocks under a records line that names no scope this page has: under that same line, as it was written */
+  const lines=[];kept.filter(r=>r.foreign!==undefined).forEach(r=>{let g=lines.find(x=>x.head===r.foreign&&x.scope===r.scope);if(!g) lines.push(g={head:r.foreign,scope:r.scope,texts:[]});g.texts.push(r.text);});
+  lines.forEach(g=>recs.push(g.head,"",...g.texts.flatMap(t=>[t,""])));
   if(recs.length) out.push("%%","> [!records] App record — do not edit below this line","",...recs,"%%","");
   return out.join("\n");}
 
@@ -3985,14 +4039,14 @@ function addModuleText(text){
    (the questions its once-answered activities write, as toMarkdown writes them) and the activities with a draft
    under way. Read-only. */
 function moduleWork(mod){
-  const acts=activitiesOf(mod),scope=scopeOfModule(mod)||mod.id,gd=peekAnswers(scope);
+  const acts=activitiesOf(mod),scope=scopeOfModule(mod),gd=peekAnswers(scope);
   let entries=0,answers=0,drafts=0;
-  acts.forEach(a=>{
-    if(a.kind==="entry"){entries+=((STATE.entries||{})[a.id]||[]).filter(e=>e&&e.ts).length;
-      const d=(DRAFTS.custom||{})[a.id];
-      if(d&&Object.values(d).some(holdsSomething)) drafts++;}
-    else{const keys=new Set();allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k)));
-      keys.forEach(k=>{if(Object.prototype.hasOwnProperty.call(gd,k)&&holdsSomething(gd[k])) answers++;});}});
+  const keys=new Set();acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
+  /* as toMarkdown writes them: an answer to a question the page knows when it holds something, any other answer always */
+  answers=Object.keys(gd).filter(k=>!keys.has(k)||holdsSomething(gd[k])).length;
+  /* the entries and drafts under any address in the module, whether or not the design still has the activity */
+  Object.keys(STATE.entries||{}).forEach(k=>{if(scopeOfAddr(k)===scope&&Array.isArray(STATE.entries[k])) entries+=STATE.entries[k].filter(e=>e&&e.ts).length;});
+  Object.keys(DRAFTS.custom||{}).forEach(k=>{const d=scopeOfAddr(k)===scope?DRAFTS.custom[k]:null;if(d&&Object.values(d).some(holdsSomething)) drafts++;});
   return {entries,answers,drafts};}
 /* Remove a module takes out exactly what the module is in the file: its fence (open line to end line) and its own
    `> [!data|module-id]` section, found the way Add a module finds them (moduleSpanOf, dataSections). The shared
@@ -4023,10 +4077,10 @@ function removeModule(id){
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notReadable]};
   if(refused.length) return {ok:false,problems:refused};
   /* the reader's work in the module goes with it */
-  const addrs=activitiesOf(mod).map(a=>a.id),scope=scopeOfModule(mod)||id;
+  const addrs=activitiesOf(mod).map(a=>a.id),scope=scopeOfModule(mod);
+  /* all of it: the entries and drafts under any address in the module, kept or orphaned */
+  [STATE.entries,DRAFTS.custom].forEach(m=>{if(m) Object.keys(m).forEach(k=>{if(scopeOfAddr(k)===scope) delete m[k];});});
   addrs.forEach(a=>{
-    if(STATE.entries) delete STATE.entries[a];
-    if(DRAFTS.custom) delete DRAFTS.custom[a];
     delete openChip[a];
     Object.keys(PAGE_NOW).forEach(k=>{if(k.slice(k.indexOf("\n")+1)===a) delete PAGE_NOW[k];});
     Object.keys(RM_STATE).forEach(k=>{if(k.split("\n")[1]===a) delete RM_STATE[k];});
@@ -6432,7 +6486,7 @@ function noticeNode(mod){const n=mod&&mod.notice;if(!isObj(n)) return null;
 /* "Remove this module", a quiet control where "About this module" is drawn. It asks first, in place (as removing a
    booklet from "Your booklets" does), says in counts what work goes with the module, and does nothing on Cancel or
    Escape. The module's title is text. */
-function removeModuleControl(mod){if(!mod||!mod.id) return null;
+function removeModuleControl(mod){if(!mod||!mod.id||fencedModule(mod.id)!==mod) return null;
   const T=strings("notice"),box=el("div",{class:"removemod col",style:"margin-top:1.2rem"});
   const draw=asking=>{box.innerHTML="";
     if(!asking){const b=el("button",{type:"button",class:"quietlink"},T.remove);
@@ -6985,9 +7039,9 @@ function openExport(){const t=STRINGS[lang].ui;
 async function download(){const t=STRINGS[lang].ui;const md=toMarkdown();const name=exportName();
   try{const blob=new Blob([md],{type:"text/markdown;charset=utf-8"});const url=URL.createObjectURL(blob);const a=el("a",{href:url,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);dirty=false;unsavedEntries=0;saveLocal();toast(t.downloaded);render();}
   catch(e){toast(t.downloadFail);}}
-function draftsIn(o){if(!o||typeof o!=="object"||Array.isArray(o)) return {};
-  return Object.fromEntries(Object.entries(o).filter(([id,d])=>id!=="__proto__"
-    &&d&&typeof d==="object"&&!Array.isArray(d)));}
+function draftsIn(o){if(!o||typeof o!=="object"||Array.isArray(o)) return nullMap();
+  return nullMap(Object.fromEntries(Object.entries(o).filter(([id,d])=>id!=="__proto__"
+    &&d&&typeof d==="object"&&!Array.isArray(d))));}
 const veilExport=document.getElementById("veilExport");
 
 /* ===================== THE REGISTRY =====================

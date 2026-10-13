@@ -22,8 +22,6 @@ version: "0.1"
 %%
 > [!records] App record — do not edit below this line
 
-> [!records|journal] A daily note
-
 ```booklet entries journal
 {"items": [
 {"ts": "2026-09-27T08:00:00Z", "note": "Slept badly, but the walk helped more than I expected."}

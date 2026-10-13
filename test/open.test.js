@@ -225,7 +225,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
 /* ---- A5: the settings table ---- */
 {const A=P.boot();
  chk("KIND_SETTINGS is the table of SPEC.md section 4",JSON.stringify(A.KIND_SETTINGS)===JSON.stringify({module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:"],row:["end"],text:["long"],
-   lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]}));
+   lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]}));
  const mk=body=>A.parseFile("---\nbooklet: \"0.13\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n"+body+"\n");
  const q=(R,id)=>R.template.modules[0].mode.blocks.find(b=>b.id===id);
  let R=mk("> [!number|n mx:5 min:1] N");

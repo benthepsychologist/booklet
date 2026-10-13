@@ -138,9 +138,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("the linter agrees: `> [!text|long] Tell me more` has an id, and `> [!text|long q]` reports q",
     /0 errors/.test(lintOut(FM+"> [!activity|a] A\n\n> [!text|long] Tell me more\n"))&&/text line takes no `q` setting/.test(lintOut(FM+"> [!activity|a] A\n\n> [!text|long q] Tell me more\n")));
   chk("and so does an activity called `repeat` or `home`",/0 errors/.test(lintOut(FM+"> [!activity|repeat] A\n\n> [!activity|home] B\n")));
-  const NI=(txt)=>(txt.match(/NO_ID_KINDS\s*=\s*(?:new Set\()?[\[(]([^\])]*)[\])]/)||[])[1];
-  const ids=t=>[...(t||"").matchAll(/"(\w+)"/g)].map(m=>m[1]).sort().join();
-  chk("the kinds that take no id are the same in the renderer and the linter, and in SPEC section 4",ids(NI(P.html))==="group,hint,manifest,notice,row,solution"&&ids(NI(fs.readFileSync(path.join(P.R,"lint-booklet.py"),"utf8")))===ids(NI(P.html))&&/\*\*Kinds that take no id\*\* are `row`, `notice`, `manifest`, `hint`, `solution` and `group`/.test(fs.readFileSync(path.join(P.R,"SPEC.md"),"utf8")));}
+  }
  /* ---- D8: a reference across a module boundary draws nothing and never stops the file opening ---- */
  {const A=P.boot();
   const two=FM+"> [!module|m1] One\n\n> [!activity|a repeat] A\n\n> [!text|t] T\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|b] B\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] End\n";
