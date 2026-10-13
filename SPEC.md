@@ -495,7 +495,7 @@ So rows whose fields are already called `label`, `value` and so on need only `fr
 
 | `as:` | draws | reads |
 | --- | --- | --- |
-| `cards` | one card per row: a kept entry is a dated card; a data block's row is a card led by its label, its other fields as lines | `label`, `fields`, `limit`, `link`, `icon` |
+| `cards` | one card per row: a kept entry is a dated card; a data block's row is a card led by its label, its other fields as lines | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `link`, `icon` |
 | `table` | one row per row, one column per field | `fields`, `group`, `limit`, `badge`, `tone`, `link`, `icon` |
 | `list` | one line per row: badge, label, the other fields, value; the note beneath | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent`, `link`, `icon` |
 | `tiles` | one tile per row: a big value over a label | `label`, `value`, `note`, `tone`, `group`, `limit`, `link`, `icon` |
@@ -513,7 +513,7 @@ So rows whose fields are already called `label`, `value` and so on need only `fr
 - A `tone` of `good`, `warn` or `bad` colours the row's badge, or its value when it has no badge; a tile; a bar. Anything else is plain. A table's `tone` colours its badge column; a table with no badge column ignores `tone`. Tone is always also said in words to a screen reader.
 - A `badge` that is a list is drawn as several pills.
 - **Tiles with no value are pills.** When no row has a value, there is no big figure to draw, and each tile is a short pill holding its label: a strip of them reads as a status line.
-- Every view also works on kept entries (`from:` an activity): each kept entry is a row, its questions are the fields, and its date is the field `date`. Over a data block, `cards` draws one card per row: the `label` is its title (and where the row's `link` leads), the `icon` its picture, and every other field with a value a line under it, named by its label (`fields:` picks them and their order; the `id`, group and parent fields are never lines). Over kept entries a card is titled by its date, and its lines are the questions.
+- Every view also works on kept entries (`from:` an activity): each kept entry is a row, its questions are the fields, and its date is the field `date`. Over a data block, `cards` draws one card per row and reads the roles as every other view does: the `label` is its title (and where the row's `link` leads), the `note` the line under it, the `badge` pills, the `value` its figure, the `tone` its colour, the `icon` its picture, and every field that plays no role is a line under it, named by its label, as on a kept entry's card (`fields:` picks them and their order; the `id` and group fields are never lines). `group:` draws the cards under group headings. Over kept entries a card is titled by its date, and its lines are the questions.
 - Values are plain text: nothing in a data block is read as Markdown or HTML.
 - A query that sets a key its view does not read is not an error; the linter says so.
 
@@ -840,7 +840,7 @@ It would be required when anything lives in another file, and recommended always
 
 - **The words on a booklet line are inline Markdown** (section 4). A title, a question's help text, an option, an anchor, a matrix item and a menu entry draw emphasis, code, links and `$math$` wherever they appear; a button or a card shows a link as its words; a menu's text, a screen reader's label and the document title use the words without their marks. No real file draws differently (one title in 311 holds a mark, a lone `*`, which Markdown leaves alone).
 - **The booklet's opening** (section 3). Prose before the file's first module or activity line is drawn on the home screen under the title, as a module's opening is drawn on the module's screen, and a heading that repeats the title is drawn once. The reference renderer's own tagline under a booklet's title is gone.
-- **`as: cards` draws a data block** (section 6): one card per row, its `label` the title, its other fields the lines, its `link` and `icon` as the other views use them. Every view now draws every source; the refusal and its exception are gone, and `cards` reads `label`.
+- **`as: cards` draws a data block** (section 6): one card per row, reading the shared roles as the other views do (`label` the title, `note` under it, `badge`, `value`, `tone`, `link`, `icon`), its other fields the lines, and `group:` groups them. Every view now draws every source; the refusal and its exception are gone, and `cards` reads `label`.
 - **A footnote's indented lines belong to its note** (section 6), as in GFM, and **a citation with no italic title is a plain reference**, as section 6 always said.
 - **A page's name is drawn above the page only when the page has no heading of its own** (section 3): a heading that follows a sentence is shown once, in place. A word typed into the feelings grid reads back as the word on a kept entry's card and in a query.
 - **A reader writes back every record it read** (sections 8 and 12). Answers to a question it does not know or that the design no longer has, entries and drafts of any activity, and record blocks it does not read (`sync`, a kind a later version adds) or could not parse are kept as written; before, the first save deleted them. `sync`'s "not yet" mark in section 8 is gone; reading it stays unbuilt (section 13).

@@ -120,7 +120,7 @@ for(const [name,what,rx] of CASES){
  const W=(name,rx,label)=>{const r=lint(path.join(FX,name+".md"));
    chk(label+": one warning, no error, naming the line",r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);};
  W("lint-query-ignored-key",/line 25: the query's `as: bars` does not draw `group`/,"a key the view does not draw");
- W("lint-query-ignored-cards",/line 23: the query's default view, `cards`, does not draw `group`/,"a key the default view does not draw");
+ W("lint-query-ignored-cards",/line 23: the query's default view, `cards`, does not draw `parent`/,"a key the default view does not draw");
  W("lint-query-badge-field",/line 25: the query's `badge: nope` names a field the rows never carry/,"a `badge:` naming a field the rows never carry");
  W("lint-query-parent-field",/line 25: the query's `parent: nope` names a field the rows never carry/,"a `parent:` naming a field the rows never carry");
  W("lint-query-parent-no-id",/line 25: the query's `parent: due` needs rows with an `id` field/,"a `parent:` over rows with no `id`");

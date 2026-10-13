@@ -167,7 +167,7 @@ Prose after the first line is not the opening.
   chk("a reading callout before the first line is part of the opening, in the file's order with the prose",r.ok&&(r.template.opening||[]).map(b=>b.type).join()==="markdown,callout",JSON.stringify(r.template.opening));}
 
  /* ---------------- D15: `cards` draws a data block ---------------- */
- const ROWS='[{"label":"Sow the **carrots**","where":"Bed 4","effort":"low","note":"soon","link":"#Elsewhere","icon":"leaf"},{"label":"Mend the gate","where":"","effort":"high"},{"id":"x","label":"Order seed","where":"Shed"}]';
+ const ROWS='[{"label":"Sow the **carrots**","where":"Bed 4","effort":"low","note":"soon","badge":"garden","value":"12","tone":"good","when":"This week","link":"#Elsewhere","icon":"leaf"},{"label":"Mend the gate","where":"","effort":"high","when":"Next week"},{"id":"x","label":"Order seed","where":"Shed","when":"This week"}]';
  const CARDS=FM("Cards")+`> [!module|m] M
 
 > [!activity|a] A
@@ -182,6 +182,12 @@ from: jobs
 as: cards
 fields: effort
 limit: 2
+\`\`\`
+
+\`\`\`booklet query
+from: jobs
+as: cards
+group: when
 \`\`\`
 
 > [!activity|b] Elsewhere
@@ -201,18 +207,23 @@ ${ROWS}
   chk("`as: cards` on a data block is read clean (no refusal)",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
   B.loadText(CARDS);B.screen="m/a";B.render();const main=P.main();
   const boxes=byClass(main,"dv-box");
-  chk("two cards views are drawn",boxes.length===2);
+  chk("three cards views are drawn",boxes.length===3);
   const cards=byClass(boxes[0],"card");
   chk("one card per row",cards.length===3,cards.map(text).join("|"));
   chk("the row's label is the card's title (data values are plain: its asterisks stay)",byClass(cards[0],"k").length===1&&/Sow the \*\*carrots\*\*/.test(text(byClass(cards[0],"k")[0])),text(cards[0]));
+  chk("the `note` is the line under the title, not a field line",byClass(cards[0],"d").map(text).join()==="soon"&&!byTag(cards[0],"dt").some(d=>text(d)==="note"),text(cards[0]));
+  chk("the `badge` is a pill, the `value` the card's figure (as a tile's), the `tone` colours the card and is said in words",
+    byClass(cards[0],"pill").map(text).join()==="garden"&&byClass(cards[0],"dv-v").map(text).join()==="12"&&cls(cards[0]).includes("tone-good")&&byClass(cards[0],"dv-sr").length===1&&byClass(cards[1],"pill").length===0&&!cls(cards[1]).some(c=>/^tone-/.test(c)),text(cards[0]));
   const dl=byTag(cards[0],"dl")[0];
-  chk("its other fields are its lines, each named; the label, link and icon are not repeated as lines",!!dl&&byTag(dl,"dt").map(text).join()==="where,effort,note"&&byTag(dl,"dd").map(text).join()==="Bed 4,low,soon",dl&&text(dl));
-  chk("a field with no value is left out of the lines",byTag(cards[1],"dt").map(text).join()==="effort",byTag(cards[1],"dt").map(text).join());
+  chk("only the fields that play no role are lines, named, like a kept entry's lines",!!dl&&byTag(dl,"dt").map(text).join()==="where,effort,when"&&byTag(dl,"dd").map(text).join()==="Bed 4,low,This week",dl&&text(dl));
+  chk("a field with no value is left out of the lines",byTag(cards[1],"dt").map(text).join()==="effort,when",byTag(cards[1],"dt").map(text).join());
   chk("`id` is not a line",!byTag(cards[2],"dt").some(d=>text(d)==="id"),byTag(cards[2],"dt").map(text).join());
   chk("the row's `icon` is the card's picture",byClass(cards[0],"cd-tile").length===1);
-  chk("and its `link` leads from the label: a link in the title",byTag(byClass(cards[0],"k")[0],"a").length+byTag(byClass(cards[0],"k")[0],"button").length>=0&&cls(cards[0]).includes("card-item"),text(cards[0]));
+  chk("and its `link` leads from the label",byTag(byClass(cards[0],"k")[0],"a").length+byTag(byClass(cards[0],"k")[0],"button").length>=0&&cls(cards[0]).includes("card-item"),text(cards[0]));
   const lines2=byClass(boxes[1],"card");
   chk("`fields:` picks the lines and `limit:` the rows",lines2.length===2&&lines2.every(c=>byTag(c,"dt").every(d=>text(d)==="effort")),lines2.map(text).join("|"));
+  const heads=byClass(boxes[2],"dv-group");
+  chk("`group:` draws the cards under group headings, in first-seen order, with a count",heads.map(text).join("|")==="This week2 rows|Next week1 row"&&byClass(boxes[2],"card").length===3,heads.map(text).join("|"));
   chk("a card is a card built by cardNode (the item kind, a div, never a button)",cards.every(c=>c.tagName==="div"&&cls(c).includes("card-item")));}
  /* kept entries still draw as dated cards */
  {P.wipe();const B=P.boot();await B.createBooklet();
@@ -244,11 +255,13 @@ ${ROWS}
   chk("no continuation line is left behind as a stray paragraph",!/carries on|and falls twice/.test(prose)&&/After the notes/.test(prose),prose);}
 
  /* ---------------- D18: a citation with no italic title ---------------- */
- {const CITE=FM("Cite")+"> [!module|m] M\n\n> [!activity|a] A\n\nOne.[^a] Two.[^b]\n\n[^a]: Northfield trial report, p. 3: \"No-shows fell.\" Verified 2026-01-01.\n\n[^b]: *Northfield trial report*, 2nd edition, p. 3: \"No-shows fell.\" Verified 2026-01-01.\n\n> [!module|m end] End\n";
+ {const CITE=FM("Cite")+"> [!module|m] M\n\n> [!activity|a] A\n\nOne.[^a] Two.[^b] Three.[^c]\n\n[^c]: *Northfield trial report*, p. 3: \"No-shows fell.\"\n\n[^a]: Northfield trial report, p. 3: \"No-shows fell.\" Verified 2026-01-01.\n\n[^b]: *Northfield trial report*, 2nd edition, p. 3: \"No-shows fell.\" Verified 2026-01-01.\n\n> [!module|m end] End\n";
   P.wipe();const B=P.boot();const r=B.parseFile(CITE);const m=r.template.modules[0];
   const a=m.citations.find(c=>c.id==="a"),b=m.citations.find(c=>c.id==="b");
-  chk("a citation with no italic title is a plain reference: no source, no page filed as an edition",!!a&&a.source===undefined&&a.quote.startsWith("Northfield trial report, p. 3:")&&m.sources.length===1,JSON.stringify([a,m.sources]));
-  chk("one with an italic title is still a source, with its edition and page",!!b&&b.source&&b.page==="3"&&m.sources[0].title==="Northfield trial report"&&m.sources[0].edition==="2nd edition",JSON.stringify([b,m.sources]));}
+  chk("a citation with no italic title is a plain reference: no source, no page filed as an edition",!!a&&a.source===undefined&&a.quote.startsWith("Northfield trial report, p. 3:")&&m.sources.length===2,JSON.stringify([a,m.sources]));
+  const c=m.citations.find(x=>x.id==="c"),src=(m.sources||[]).find(x=>x.key===(c||{}).source);
+  chk("an italic title followed by only a page: the page is the page, not the edition",!!c&&c.page==="3"&&!!src&&src.edition===undefined,JSON.stringify([c,m.sources]));
+  chk("one with an italic title is still a source, with its edition and page",!!b&&b.source&&b.page==="3"&&(m.sources.find(x=>x.key===b.source)||{}).edition==="2nd edition",JSON.stringify([b,m.sources]));}
 
  console.log(fails?"\n"+fails+" FAILURES":"\ndrawing checks passed");process.exit(fails?1:0);
 })().catch(e=>{console.log("  FAIL  the suite threw: "+(e&&e.stack||e));process.exit(1);});

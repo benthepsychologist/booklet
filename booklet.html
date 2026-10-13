@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-TXeXI12/YNO6n/Hm1/iVlzabSTIbmmlzoTdVTV1RM2c=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-11ufhVUpv8CM4EwuaOYjO6K0lvBDiz0AxsAPEUtJK+0=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -891,9 +891,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .dv-tile.dv-lead .dv-l a::after{content:"";position:absolute;inset:0;border-radius:inherit}
   .dv-tile.dv-lead:focus-within{box-shadow:0 0 0 2px var(--accent)}
   .dv-n{color:var(--muted);font-size:.88em}
-  .dv-tile.tone-good{border-color:var(--tone-green-deep);background:var(--tone-green)}
-  .dv-tile.tone-warn{border-color:var(--tone-amber-deep);background:var(--tone-amber)}
-  .dv-tile.tone-bad{border-color:var(--tone-warm-deep);background:var(--tone-warm)}
+  .dv-tile.tone-good,.entry-row.tone-good{border-color:var(--tone-green-deep);background:var(--tone-green)}
+  .dv-tile.tone-warn,.entry-row.tone-warn{border-color:var(--tone-amber-deep);background:var(--tone-amber)}
+  .dv-tile.tone-bad,.entry-row.tone-bad{border-color:var(--tone-warm-deep);background:var(--tone-warm)}
   /* tiles with no value: a strip of pills that wraps */
   .dv-tiles.dv-pills{display:flex;flex-wrap:wrap;gap:.45rem .5rem}
   .dv-pills .pill{position:relative;display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:0 .5rem;min-width:0;max-width:100%;padding:.2rem .75rem;border-radius:1rem;font-size:var(--v-fs)}
@@ -944,6 +944,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .dv-cards>.entry{margin:0 0 1rem;min-width:0}
   /* a data block's row as a card: a small picture and the label as its title above its lines */
   .entry-row .cd-tile{width:2.2rem;height:2.2rem;margin-bottom:.35rem}
+  .dv-cards .dv-group{grid-column:1/-1;margin:.4rem 0 0}
+  .entry-row .dv-v{display:block;margin:0 0 .4rem}
   .entry-row .k{margin:0 0 .5rem;font-family:var(--serif);font-size:1.12rem;font-weight:600;line-height:1.3;color:var(--ink)}
   /* charts: bars and a line, drawn in the theme's own tokens, never a colour of their own */
   .ch{margin:0 0 1rem;min-width:0;max-width:100%;font-family:var(--sans)}
@@ -1495,7 +1497,7 @@ const SHARED="*";
 /* A query's fourteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
 const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
-const VIEW_DRAWS={cards:["label","fields","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
+const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
   list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
   tiles:["label","value","note","tone","group","limit","link","icon"],bars:["label","value","tone","limit"],line:["label","value","fields","limit"]};
 
@@ -1544,6 +1546,7 @@ const STRINGS_SRC={
       fileNotesShow: "See the list",
       fileNotesDismiss: "Dismiss",
       figureErr: "This diagram could not be drawn, so its source is shown instead.",
+      figureWait: "Drawing this diagram…",
       imgNotShown: "Image not shown",
       figureRisk: "This diagram has a part (an image, a link, a style or a setting) that could make the page ask for an address, so it is not drawn. Its source is shown instead.",
       clearTitle: "Clear everything on this page?",
@@ -1868,6 +1871,7 @@ const STRINGS_SRC={
       fileNotesShow: "Voir la liste",
       fileNotesDismiss: "Fermer",
       figureErr: "Ce diagramme n’a pas pu être dessiné; son texte source est affiché à la place.",
+      /* l10n: draft */ figureWait: "Dessin du diagramme en cours…",
       imgNotShown: "Image non affichée",
       figureRisk: "Ce diagramme contient un élément (une image, un lien, un style ou un réglage) qui pourrait pousser la page à demander une adresse ; il n’est donc pas dessiné. Son texte source est affiché à la place.",
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
@@ -2188,6 +2192,7 @@ const STRINGS_SRC={
       fileNotesShow: "Ver la lista",
       fileNotesDismiss: "Descartar",
       figureErr: "No se pudo dibujar este diagrama; se muestra su texto fuente.",
+      /* l10n: draft */ figureWait: "Dibujando el diagrama…",
       imgNotShown: "Imagen no mostrada",
       figureRisk: "Este diagrama tiene una parte (una imagen, un enlace, un estilo o un ajuste) que podría hacer que la página pida una dirección, así que no se dibuja. Se muestra su texto fuente.",
       clearTitle: "¿Borrar todo lo que hay en esta página?",
@@ -2488,6 +2493,7 @@ const STRINGS_SRC={
       loadHelp: "Elegí el archivo markdown que descargaste desde esta página, o pegá su contenido abajo.",
       loadOr: "O pegá el contenido del archivo:",
       figureErr: "No se pudo dibujar este diagrama; se muestra su texto fuente.",
+      /* l10n: draft */ figureWait: "Dibujando el diagrama…",
       tagPh: "Escribí o dictá palabras, separadas por comas",
       missingWidget: id=>`Esta actividad necesita un elemento que el archivo no incluye (${id}). Cargá el cuadernillo de origen, o agregá el módulo que lo aporta.`,
       downloaded: "Descargado. Guardá el archivo en un lugar donde puedas encontrarlo.",
@@ -3078,7 +3084,7 @@ const unknownKind=it=>!hasOwn(KIND_SETTINGS,it.kind)&&!!(it.id||it.flags.size||O
    This is a reading of free text, not new syntax — the file itself is just
    a footnote, exactly as CommonMark defines one. */
 const CITE_DEF=/^\[\^([A-Za-z0-9][A-Za-z0-9_.:-]*)\]:[ \t]+(.+)$/;
-const CITE_NOTE=/^\*([^*]+)\*(?:,\s*([^,:]+?))?(?:,\s*(?:pp?\.?|art\.?)\s*([^:]+))?:\s*["“]([^"”]+)["”]\.?\s*(?:Verified\s+(\d{4}-\d{2}-\d{2})\.?\s*(.*))?$/;
+const CITE_NOTE=/^\*([^*]+)\*(?:,(?!\s*(?:pp?\.?|art\.?)\s)\s*([^,:]+?))?(?:,\s*(?:pp?\.?|art\.?)\s*([^:]+))?:\s*["“]([^"”]+)["”]\.?\s*(?:Verified\s+(\d{4}-\d{2}-\d{2})\.?\s*(.*))?$/;
 /* strips any `[^id]: note` lines out of a chunk of text, so they never show as
    stray prose; returns the cleaned text and what it found. As in GFM, the indented lines straight under a definition
    (no blank line between) are part of its note, joined to it by a space (the Markdown reader skips them the same way) */
@@ -4559,10 +4565,9 @@ function sanitizeDiagramSvg(text){
 const LIB_ON={};
 /* A library is woken only once the whole page has arrived: until then the stored text at the end of the file is only part of
    itself, and a script made from part of it is refused by the page's own policy (it matches no hash). A booklet opened by a
-   link can be drawn before that (LIB_WAITED: the page draws again when it has arrived, see the end of this script). Only a
-   wake that worked is remembered, so a failed one is tried again, never kept. */
+   link can be drawn before that (LIB_WAITED: the page draws again when it has arrived, see the end of this script). Once the
+   page has arrived a wake that failed (a host's policy, say) is a real failure: it is remembered and not tried per formula. */
 let LIB_WAITED=false;
-const LIB_UP={mermaid:()=>typeof __esbuild_esm_mermaid_nm!=="undefined",temml:()=>typeof temml!=="undefined"};
 function useLib(name){
   if(name in LIB_ON) return LIB_ON[name];
   if(document.readyState==="loading"){LIB_WAITED=true;return false;}
@@ -4570,9 +4575,8 @@ function useLib(name){
   try{const box=document.getElementById("lib-"+name);
     if(box){const s=document.createElement("script");
       s.text=String(box.textContent).replace(/<\\\/script/g,"</script").replace(/<\\!--/g,"<!--");
-      document.head.append(s);s.remove();ok=hasOwn(LIB_UP,name)&&LIB_UP[name]();}}catch(e){ok=false;}
-  if(ok) LIB_ON[name]=true;
-  return ok;}
+      document.head.append(s);s.remove();ok=name==="temml"?typeof temml!=="undefined":typeof __esbuild_esm_mermaid_nm!=="undefined";}}catch(e){ok=false;}
+  return LIB_ON[name]=ok;}
 /* math: $…$ inline, $$…$$ display. Temml turns TeX into MathML, which the
    browser draws itself. A formula Temml cannot read is shown as its TeX, in code style. */
 function mathNode(tex,display){
@@ -4591,7 +4595,7 @@ function mathNode(tex,display){
    a span that remembers its plain words (a part written {lit:"…"} is not read as Markdown: the reader's own words). plainText (the parser's) is the words without their marks: a menu's text, a label for a
    screen reader, a message. Data values are never read this way. */
 const WORD_MARK=/[*_`~=$\[<\\!]|https?:/;
-const wordsOpts=flat=>({math:mathNode,image:alt=>alt||"",embed:()=>"",mark:()=>"",link:(t,lb)=>lb!==undefined?lb:t,anchor:(h,k)=>textOf(k),flat});
+const wordsOpts=flat=>({...PLAIN_OPTS,math:mathNode,anchor:(h,k)=>textOf(k),flat});
 function words(s,flat){const t=String(s==null?"":s);if(!WORD_MARK.test(t)) return [t];
   return renderInline(t,{opts:wordsOpts(flat),refs:{}});}
 function wordsNode(...parts){const lit=x=>typeof x==="object",ks=parts.map(x=>lit(x)?[x.lit]:words(x,true));
@@ -4697,6 +4701,8 @@ function mermaidNode(code){
   /* a diagram whose source could cause a request never reaches the library */
   if(diagramRisk(code)){box.classList.add("bad");
     box.append(el("p",{class:"mfig-note",role:"note"},STRINGS[lang].ui.figureRisk),codeBlock("mermaid",code));return box;}
+  /* the page is still arriving: the library is not woken yet, and the diagram is drawn again when it has */
+  if(document.readyState==="loading"){LIB_WAITED=true;box.append(el("p",{class:"mfig-note",role:"status"},STRINGS[lang].ui.figureWait));return box;}
   try{
     const lib=useLib("mermaid")&&typeof __esbuild_esm_mermaid_nm!=="undefined"?__esbuild_esm_mermaid_nm.mermaid:null;
     const M=lib&&(lib.default||lib);
@@ -5495,14 +5501,18 @@ function viewTiles(set,groups,roles){
       el("span",{class:"dv-v"},rolePart(r,roles.value)),
       el("span",{class:"dv-l"},...leadNodes(set,r,roles,[rolePart(r,roles.label)])),
       note!==""?el("span",{class:"dv-n"},note):null,toneWords(t)]});})));}
-/* cards: one card per row. A kept entry is a dated card, drawn by queryCard; a data block's row is a card led by its label (the
-   row's link, if it has one), its other fields as lines under it (a field with no value is left out), and its icon as the picture */
+/* cards: one card per row. A kept entry is a dated card, drawn by queryCard. A data block's row reads the shared roles as the other
+   views do: the label leads (and is the row's link), the note is the line under it, the badge is pills, the value is the figure (as a
+   tile's), the tone colours the card, the icon is the picture; every field that plays no role is a line, as on a kept entry's card. */
 function viewCards(set,groups,roles,cols){
   return groups[0].rows.map(r=>{const pic=iconOf(r,roles),picture=pic?{icon:pic}:null;
     if(set.kind==="entries") return queryCard(set.entryOf(r),set.from,cols.map(c=>c.key),{picture,lead:kids=>leadNodes(set,r,roles,kids)});
-    const lab=rolePart(r,roles.label),lines=cols.filter(c=>cellText(r[c.key])!==""),dl=el("dl",{});
+    const lab=rolePart(r,roles.label),note=rolePart(r,roles.note),val=rolePart(r,roles.value),t=rowTone(r,roles),
+      badges=roles.badge?partsOf(r[roles.badge]):[],lines=cols.filter(c=>cellText(r[c.key])!==""),dl=el("dl",{});
     lines.forEach(c=>dl.append(el("dt",{},c.label),el("dd",{},cellText(r[c.key]))));
-    return cardNode({mode:"item",cls:"entry entry-row",picture,titleNode:lab!==""?el("div",{class:"k"},...leadNodes(set,r,roles,[lab])):null,kids:[lines.length?dl:null]});}).filter(Boolean);}
+    return cardNode({mode:"item",cls:"entry entry-row"+(t?" tone-"+t:""),picture,teaser:note,teaserCls:"dv-n",pills:badges.map(x=>pill(x,t)),
+      titleNode:lab!==""?el("div",{class:"k"},...leadNodes(set,r,roles,[lab])):null,
+      kids:[val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});}).filter(Boolean);}
 /* ---- chart views: `as: bars` and `as: line`. Plain SVG from numbers and
    text nodes, coloured only through the theme's tokens (the CSS classes ch-*).
    Nothing is computed from the rows beyond the scale a picture needs: no
@@ -5736,8 +5746,8 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
       body.append(el("p",{class:"hint dv-none"},dvText.ctl.nothing+" ",el("button",{type:"button",class:"dv-clear",onclick:()=>ctl.clear()},dvText.ctl.clear)));
     }else if(shape) body.append(...viewList(set,groups,roles,cols,shape));
     else if(as==="table") body.append(...viewTable(set,groups,roles,cols,tctl));
-    else if(gk&&(as==="list"||as==="tiles")){
-      const draw=as==="list"?viewList:viewTiles;
+    else if(gk&&(as==="list"||as==="tiles"||as==="cards")){
+      const draw=as==="list"?viewList:as==="tiles"?viewTiles:viewCards;
       const part=g=>[el("div",{class:"dv-group",role:"heading","aria-level":"3"},g.name||"–",el("span",{class:"dv-count"},dvText.rows(g.rows.length))),...draw(set,[g],roles,cols)];
       /* a grouped list: each group a card, the cards in a row of columns when there is room */
       if(as==="list") body.append(el("div",{class:"dv-groups"},...groups.map(g=>el("div",{class:"dv-gcard"},...part(g)))));

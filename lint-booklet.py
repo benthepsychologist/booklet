@@ -199,7 +199,7 @@ def callout_words(kind, s):
 QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon")
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 VIEW_DRAWS = {
-    "cards": ("label", "fields", "limit", "link", "icon"),
+    "cards": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "link", "icon"),
     "table": ("fields", "group", "limit", "badge", "tone", "link", "icon"),
     "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon"),
     "tiles": ("label", "value", "note", "tone", "group", "limit", "link", "icon"),
