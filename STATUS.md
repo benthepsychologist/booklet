@@ -23,7 +23,7 @@ The format becomes 0.13, for what a reader keeps and how it reads a line. A file
 - **D12.** The hex-pair widget colour is gone (`colourOf`, `COLOUR_NAMES`); widget colours are colour names, and "tone" is `good`, `warn` or `bad`.
 - **D13.** `group`, `diff`, `law` and `opinion` are kinds (`KIND_SETTINGS`, `NO_ID_KINDS`): the plain fold, so a word after its bar is a setting it does not take, and it is never reported as a kind the page does not know. Its drawing is unchanged.
 - Tests: `test/format013.test.js`, `test/format013-browser.js`; `lint.test.js`, `open.test.js`, `notice.test.js`, `modulescope.test.js`, `theme-block.test.js` and `version.test.js` follow the new rules. Four new interface messages (a records line that names no module, a block that is not a record, a record block outside the records region, a `> [!` line the page cannot read), their French and Spanish marked `l10n: draft`, as is the reworded cross-module query message.
-- Size: `booklet.html` 3,704,003 bytes (was 3,697,535); the hand-written part grew by 6,468 bytes.
+- Size: `booklet.html` 3,704,422 bytes (was 3,697,535); the hand-written part grew by 6,887 bytes.
 
 ## Current state — v0.12.0, released 2026-10-13 (items D and E: the format and the wiki tree)
 

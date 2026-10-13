@@ -400,10 +400,20 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const f=FM+mod+REC+rec("m",fence("booklet answers",'{"q1":"x"}'))+"> [!data] Data\n\n```booklet widget\n{\"engine\":\"grid-select\",\"cells\":[]}\n```\n^grid\n\n%%\n";
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
   chk("region: a `> [!data]` line inside the region is reported and kept as written, and the widget under it is not read",R.unread.length===2&&A.BOOK.widgets.length===0&&/> \[!data\] Data\n\n```booklet widget/.test(o)&&cnt(o,/\n\^grid\n/g)===1,JSON.stringify(R.unread));}
- {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+"> [!records] Again\n\n"+fence("booklet answers",'{"q":"x"}')+"%%\n\n> [!records] A second region?\n\n"+fence("booklet answers",'{"q":"y"}');
+ {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+"> [!records] Again\n\n"+fence("booklet answers",'{"q":"x"}')+"%%\n\n> [!records] A second region\n\n"+fence("booklet answers",'{"q":"y"}');
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
-  chk("region: a records line after the closing `%%` is design, reported, and moves with the rest of it",A.peekAnswers("").q==="x"&&R.unread.length===3&&/second region/.test(o)&&/"q":"y"/.test(o)&&cnt(o,/"q":"y"/g)===1&&o.indexOf("second region")<o.indexOf("%%\n> [!records]"),JSON.stringify(R.unread));}
-
+  chk("region: a records line after the closing `%%` is read as records, not design: the later value wins, one region is written, nothing is reported",A.peekAnswers("").q==="y"&&R.unread.length===0&&cnt(o,/\[!records\]/g)===1&&cnt(o,/```booklet answers/g)===1&&!/"q":"x"/.test(o),JSON.stringify(R.unread));}
+ /* two complete saved booklets joined into one file: every record comes back once, in one region, and the file is stable */
+ {const D1="> [!module|a] A\n\n> [!activity|a1] A1\n\n> [!text|qa] QA\n\n> [!text|shared] S\n\n> [!activity|ea repeat] EA\n\n> [!text|ta] TA\n\n> [!module|a end] End\n";
+  const D2="> [!module|b] B\n\n> [!activity|b1] B1\n\n> [!text|qb] QB\n\n> [!activity|eb repeat] EB\n\n> [!text|tb] TB\n\n> [!module|b end] End\n";
+  const e=(t,k)=>fence("booklet entries "+k,items(entry(t,{x:k+t})));
+  const first=FM+D1+REC+rec("a",fence("booklet answers",'{"qa":"a-first","shared":"from first"}'),e("2026-01-01T00:00:00Z","ea"),fence("booklet draft ea",'{"ta":"draft a"}'))+"%%\n";
+  const second="\n"+D2+REC+rec("b",fence("booklet answers",'{"qb":"b-second"}'),e("2026-02-01T00:00:00Z","eb"),fence("booklet draft eb",'{"tb":"draft b"}'))+rec("a",fence("booklet answers",'{"shared":"from second"}'),e("2026-03-01T00:00:00Z","ea"))+"%%\n";
+  const f=first+second,A=load(f),o=A.toMarkdown(),B=load(o);
+  const ok=X=>X.peekAnswers("a").qa==="a-first"&&X.peekAnswers("a").shared==="from second"&&X.peekAnswers("b").qb==="b-second"&&(X.STATE.entries["a/ea"]||[]).length===2&&(X.STATE.entries["b/eb"]||[]).length===1&&X.DRAFTS.custom["a/ea"].ta==="draft a"&&X.DRAFTS.custom["b/eb"].tb==="draft b";
+  chk("joined booklets: every answer, entry and draft is read, the shared key takes the later value",ok(A)&&A.allModules().length===2,JSON.stringify([A.peekAnswers("a"),A.peekAnswers("b")]));
+  chk("joined booklets: one region is written, each record once, the design between the regions above it; a reopen reads the same with nothing reported",cnt(o,/^> \[!records\] App record/gm)===1&&cnt(o,/\[!records\|a\]/g)===1&&cnt(o,/\[!records\|b\]/g)===1&&cnt(o,/```booklet entries ea/g)===1&&cnt(o,/b-second/g)===1&&o.indexOf("[!module|b]")<o.indexOf("%%\n> [!records]")&&ok(B)&&B.parseFile(o).unread.length===0,o.slice(-700));
+  chk("joined booklets: a second save changes nothing",B.toMarkdown()===o);}
  /* nits */
  {const f=FM+MODE+REC+rec("m","A note someone wrote by hand.\n\n","> [!my_kind] Kept?\n> body\n\n")+"%%\n";
   const A=load(f),R=A.parseFile(f);

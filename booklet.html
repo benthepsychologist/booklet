@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-MlYJxmUTPMy1VysNNfHGn4734McUpXj6hrPKkAHKc2Y=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-ZXNPhTPZvOIPF+odQjGTwIlE0C6SdMDIPMbvddeHRwg=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3173,8 +3173,8 @@ function splitItems(lines,start){let i=start;
      Booklet line, a page break or a comment marker. A choice/multi/scale
      question also claims the option or anchor list straight under it, so
      that list is never re-read as ordinary prose. */
-  const items=[];let buf=[],bufAt=0,rs=null,re=null;  /* the records region: lines rs to re */
-  const rec=()=>rs!==null&&re===null;
+  const items=[];let buf=[],bufAt=0,rs=null;const regs=[];  /* the records regions: lines from rs to the closing `%%` */
+  const rec=()=>rs!==null;
   const flush=()=>{const n=buf.findIndex(l=>l.trim());if(n>=0) items.push({t:"text",text:buf.join("\n").replace(/^\n+|\n+$/g,""),line:bufAt+n+1,rec:rec()});buf=[];};
   const rest=k=>{while(k<lines.length&&/^>/.test(lines[k])&&!calloutLine(lines[k])) k++;return k;};
   for(;i<lines.length;i++){const ln=lines[i];
@@ -3188,8 +3188,8 @@ function splitItems(lines,start){let i=start;
       else{if(!buf.length) bufAt=i;buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
     if(ln.trim()==="%%"){
-      if(rec()){flush();re=i;}
-      else if(rs===null){let j=i+1;while(j<lines.length&&!lines[j].trim()) j++;if(j<lines.length&&/^>[ \t]?\[!records\b/i.test(lines[j])){flush();rs=i;}}
+      if(rec()){flush();regs.push([rs,i]);rs=null;}
+      else{let j=i+1;while(j<lines.length&&!lines[j].trim()) j++;if(j<lines.length&&/^>[ \t]?\[!records\b/i.test(lines[j])){flush();rs=i;}}
       continue;}
     const m=ln.match(CALLOUT_LINE);
     if(m){flush();const kind=m[1].toLowerCase(),body=[];let k=i+1;
@@ -3202,6 +3202,7 @@ function splitItems(lines,start){let i=start;
         if(r){items2=r.items;k=r.next;const a=anchorList(lines,k);if(a){anchors=a.anchors;k=a.next;}}}
       if(kind==="records"&&rs===null) rs=i;
       items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,items:items2,line:i+1,head:ln,raw:lines.slice(i,k).join("\n"),rec:rec()});i=k-1;continue;}
+    /* any `> [!` line, readable or not: one CALLOUT_LINE cannot read is said, not left to read as prose in silence */
     if(calloutLine(ln)){
       if(rec()){flush();const k=rest(i+1);items.push({t:"bad",line:i+1,raw:lines.slice(i,k).join("\n"),rec:true});i=k-1;continue;}
       items.push({t:"bad",line:i+1});}
@@ -3211,9 +3212,11 @@ function splitItems(lines,start){let i=start;
     if(!buf.length) bufAt=i;
     buf.push(ln);}
   flush();
-  /* the design is everything outside the records region; what follows it moves above it */
-  const post=re===null?[]:lines.slice(re+1);while(post.length&&!post[0].trim()) post.shift();while(post.length&&!post[post.length-1].trim()) post.pop();
-  const source=lines.slice(0,rs===null?lines.length:rs).join("\n").replace(/\s+$/,"")+"\n"+(post.length?"\n"+post.join("\n")+"\n":"");
+  if(rs!==null) regs.push([rs,lines.length-1]);
+  /* the design is everything outside the records regions; what follows the first one moves above it */
+  const first=regs.length?regs[0][0]:lines.length,gone=new Set();regs.forEach(([x,y])=>{for(let k=x;k<=y;k++) gone.add(k);});
+  const post=lines.slice(first).filter((l,k)=>!gone.has(first+k));while(post.length&&!post[0].trim()) post.shift();while(post.length&&!post[post.length-1].trim()) post.pop();
+  const source=lines.slice(0,first).join("\n").replace(/\s+$/,"")+"\n"+(post.length?"\n"+post.join("\n")+"\n":"");
   return {items,source,moved:post.length>0};}
 /* What each kind of question line makes: {block} (and {menu:true} when its options come from a
    shared menu, filled in once the whole file is read), or {bad: message} when the line cannot be
@@ -3472,6 +3475,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     else if(it.t==="bad") problems.push(P.calloutUnreadable(P.line(it.line)));
     else onLine(it);}
   if(row) closeRow(P.rowNeverClosed);
+  /* the regions are read last: a records line finds a module wherever the file has it */
   items.filter(x=>x.rec).forEach(onRec);
   /* a data block's id is also one a query reads by, so it may not be a question's or an activity's too,
      within its module (a block outside every fence, in the module with no name) */
