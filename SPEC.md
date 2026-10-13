@@ -656,6 +656,7 @@ density: roomy
 Records are JSON, written by the app, one fence per record, each parsed on its own so that one broken record costs one record. A file nobody has answered has none.
 
 ````markdown
+%%
 > [!records] App record — do not edit below this line
 
 ```booklet answers
@@ -671,6 +672,7 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 ```booklet draft rd-check
 {"noticed": "the printer aga"}
 ```
+%%
 ````
 
 - `answers` holds once-answered questions, keyed by question id within the module whose records line it sits under, so no activity prefix is needed. Records sit in the records section at the end, grouped by module under `> [!records|<module>]` lines, never inside a module's fence (section 3).

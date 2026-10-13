@@ -44,7 +44,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
     fence("booklet entries nowhere",'{"items": [\n{"ts":"2026-01-02T10:00:00Z","t":"an activity the design lost"}\n]}')+
     fence("booklet draft e",'{"t":"half","removed":"x"}')+fence("booklet later-kind 7",'{"anything":[1,2,3]}')+"%%\n";
   const A=load(file);
-  chk("p16: a block the page does not read is reported, and the file opens",A.BOOK.modules.length===1&&A.parseFile(file).unread.some(x=>/sync/.test(x)),JSON.stringify(A.parseFile(file).unread));
+  chk("p16: a block the page does not read is reported, and the file opens",A.BOOK.modules.length===1&&A.parseFile(file).unread.some(x=>/later-kind/.test(x)),JSON.stringify(A.parseFile(file).unread));
   const out=A.toMarkdown(),recs=recordsOf(out);
   const one=info=>recs.filter(r=>r.info===info);
   chk("p16: the sync block is written back, unchanged, once",one("booklet sync").length===1&&one("booklet sync")[0].code===sync&&one("booklet sync")[0].scope==="m",JSON.stringify(recs.map(r=>r.info)));
@@ -446,10 +446,10 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
 
  /* S4: every message is true where it is shown */
  {const A=P.boot();
-  const out=A.parseFile(FM+"> [!activity|a] A\n\n> [!text|q] Q\n\n"+fence("booklet answers",'{"q":"x"}')+REC+"> [!records] r\n\n"+fence("booklet widget",'{"engine":"grid-select","cells":[]}').replace("```\n\n","```\n^w\n\n")+fence("booklet entries e",'{"items":5}')+fence("booklet sync",'{"x":1}')+"%%\n").unread;
+  const out=A.parseFile(FM+"> [!activity|a] A\n\n> [!text|q] Q\n\n"+fence("booklet answers",'{"q":"x"}')+REC+"> [!records] r\n\n"+fence("booklet widget",'{"engine":"grid-select","cells":[]}').replace("```\n\n","```\n^w\n\n")+fence("booklet entries e",'{"items":5}')+fence("booklet later-kind 1",'{"x":1}')+fence("booklet sync",'{"x":1}')+"%%\n").unread;
   chk("S4: an answers block outside a records line says where it belongs, not that the page does not read answers",/^line 11: a “booklet answers” block belongs in the records region/.test(out[0])&&!/not one this page reads/.test(out[0]),JSON.stringify(out));
   chk("S4: a widget block in the records says it is not a record, not that the page does not read widgets",out.some(x=>/this is not a record this page reads/.test(x))&&!out.some(x=>/“booklet widget”/.test(x)),JSON.stringify(out));
-  chk("S4: an entries record with no list is kept, and does not say it was skipped; an unknown kind says only that the page does not read it",out.some(x=>/holds no list of items/.test(x)&&!/skipped/.test(x))&&out.some(x=>/“booklet sync” block is not one this page reads/.test(x)),JSON.stringify(out));
+  chk("S4: an entries record with no list is kept, and does not say it was skipped; an unknown kind says only that the page does not read it",out.some(x=>/holds no list of items/.test(x)&&!/skipped/.test(x))&&out.some(x=>/“booklet later-kind” block is not one this page reads/.test(x))&&!out.some(x=>/sync/.test(x)),JSON.stringify(out));
   chk("S4: the French and Spanish words for the changed messages are marked draft",["fr","es"].every(l=>/draft/.test(String(P.html.split("\n").filter(x=>/recordNoItems|recordOutside/.test(x)&&x.includes(l==="fr"?"enregistrement":"registro")).join("")))));}
 
  /* round 3: design after the region is written above it (design first, records last) */

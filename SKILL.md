@@ -791,13 +791,13 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | an unquoted `booklet: 0.10` | `warn … write it in quotes, `booklet: "0.10"`` | write the marker in quotes |
 | a matrix with no items or anchors, or repeated anchor numbers | `the matrix 'x' has no items` / `has no anchors` / `repeats anchor number N` | write the bulleted items, then the numbered anchors, each number once |
 | records outside `%% … %%` | `warn the records section is not inside `%%` … `%%`` | put `%%` above `> [!records]` and another after the last record |
-| a records line naming a module the file lacks | `warn the records line names 'x', which is no module of this file` | name a module of the file, or write `> [!records]` with no id |
+| a records line naming a module the file lacks | `warn the records line names 'x', which is no module of this file` | name the module these records belong to; if that module is gone, delete them |
 | something in the records region that is not a record: prose, a callout, a data line or other block, an entry with no `ts`, an `entries` block with no `items` | `warn … inside the records region is not a record, so it is kept as written and not read` / `has no `ts`` | keep only record blocks there; give each entry a `ts` |
 | an `answers`, `entries` or `draft` block outside the records | `warn … outside the records region is not read` | move it under the `> [!records]` line, inside `%%` |
 | a `> [!` line the pattern cannot read | `warn this `> [!` line cannot be read … it ends the callout above it` | write `> [!kind|id words] Title` (the kind is letters, digits and dashes) |
 | `---` straight under a line of text | `warn `---` straight under text makes that line a heading, not a page break` | write `***`, or leave a blank line above |
 | a hint or solution not folded, or not directly under its question | `warn a hint that is not folded is drawn open …` / `is not directly under a question` | write `> [!hint]-`, straight under the question, with nothing between |
-| `[x]` in a menu | `warn a menu has no right answer, so `[x]` here marks nothing` | mark the answer on the question's own list |
+| `[x]` in a menu | `warn a menu cannot mark a right answer` | give the question its own task list (`- [x] Mars`) in place of `menu:`, or drop the `[x]` |
 | a price in prose that reads as a formula | `warn `$5 a month ($` reads as a formula` | write `\$5` |
 | tiles over a data block with no `value:` | `warn the query's `as: tiles` has no `value:` …` | add `value: count` (the field that holds the number) |
 | an unknown `icon:` name | `` `icon:compas` is not a name in Booklet's icon set … did you mean `compass`? `` | use a name from the set |

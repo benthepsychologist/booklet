@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-XG7fTgQY8UyPiZyWRj685b7Nqnu5q3bVlPTg2e4rgaU=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-LCRonmKevF0BK/pgP+wDU5xCCutOSV6tuEoTtr1siaI=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3389,6 +3389,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
   function onRecordFence(it,info){const L=P.line(it.line),what=(info[1]||"").toLowerCase(),at=info[2]&&addrOf(recScope,info[2]);let o=null;
     const no=m=>{problems.push(m);keepRec(it.raw);};
     if(!/^booklet$/i.test(info[0])||DESIGN_KINDS.includes(what)) return no(P.recordsOther(L));
+    if(what==="sync") return keepRec(it.raw);   /* SPEC section 8: a record every reader keeps as written; this page does not read it */
     if(!RECORD_KINDS.includes(what)||(what!=="answers"&&!info[2])) return no(P.blockUnknown(L,what));
     if(recForeign) return keepRec(it.raw);
     try{o=JSON.parse(it.code);}catch(e){return no(P.blockBadJson(L,what));}
