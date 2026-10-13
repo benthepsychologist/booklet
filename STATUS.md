@@ -3,13 +3,25 @@
 *As of 2026-10-13*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.13, not yet released** (the format rules of the 0.13 update are in pull request #46, not merged; the last release is v0.12.0): format v0.13 (files say `booklet: "0.13"`, in quotes) and renderer 0.13.0. The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
+**project v0.13, not yet released** (the format rules of the 0.13 update merged as pull request #46, 0107a6d; the drawing half is in the pull request of item `v013-format-drawing`; the last release is v0.12.0): format v0.13 (files say `booklet: "0.13"`, in quotes) and renderer 0.13.0. The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
-## Current state — v0.13.0, format rules (item `v013-format-rules`; not yet released)
+## Current state — v0.13.0, drawing (item `v013-format-drawing`; not yet released)
+
+What a booklet line says is drawn the way the prose around it is, a booklet's own opening greets the reader, `cards` draws a data block, and five visible bugs are gone. The format stays `"0.13"`; `SPEC.md` section 14 lists each change.
+
+- **D4, inline Markdown on booklet lines.** `words(s, flat)` draws a line's words with `renderInline` (the one inline reader, with `mathNode` for `$…$`; `flat` makes a link only its words, since a button and a card hold none); `wordsNode` is the same for a place that wants one value (the string itself when there is nothing to draw); `plainText` (the parser's) is the words without their marks. Drawn through them: a question's title, help text, options, anchors and matrix items, a callout's title, a card's title (`cardNode`'s `marked`), a page head and a module's head, the breadcrumbs, the wiki tree, its search results and chips, a kept entry's card and a kept-entries table's column heads. Plain: the pages menu, the sentences a screen reader is given, the document title, the toasts, the search (it matches the plain words), and the check that a reader's own option equals a listed one. A formula in a plain place stays its TeX. Data values are still plain.
+- **D5, the booklet's opening.** `readBlocks` keeps the prose and reading callouts before the file's first module or activity line (`opening`, beside `modules`; `started` marks the first line); the home screen draws it through `openingNodes` under the title, the way a module's opening is drawn, and a leading heading that repeats the title is drawn once (a module's opening does the same). `home.sub`, the renderer's tagline, and `head.sub` are gone from the three language tables and `renderHome`. A footnote mark in the opening is drawn as written (marked in `SPEC.md` section 13).
+- **D15, `cards` over a data block.** `viewCards` draws one card per row (the item kind of `cardNode`, class `entry entry-row`): the label (and the row's link) as its title, the fields that play no role as `dl` lines, the icon as its picture. `cards` reads `label` (`VIEW_DRAWS`, the pinned list in `guard.test.js`, `SPEC.md`'s table and the linter's table all say so); the refusal is gone from the renderer, the linter and section 6, with its message `problem.queryCardsData` in all languages.
+- **D18, five bugs.** A word typed into the feelings grid reads back as the word on kept-entry cards and in queries: `ENGINES` entries carry `{draw, summary}`, so the label lookup (`gridLabel`) lives in one place. A footnote definition's indented continuation lines belong to its note (`stripFootnoteDefs`). A page's name is drawn above it only when the page has no heading of its own (`pageBody`; the `lead` flag is gone). A citation with no italic title is a plain reference (`CITE_NOTE`). And the library wake bug the diagram study found: `useLib` wakes mermaid or Temml only once the page has arrived (`document.readyState` past `loading`; the page draws again at `DOMContentLoaded` if it had to wait), and remembers a wake only if it worked.
+- **From the format rules' review:** the comment at `onLine`'s data branch now says what is true (a records line ends nothing there).
+- Tests: `test/drawing.test.js` (the recording DOM), `test/drawing-browser.js` (MathML, the stepper, the wiki, the opening, a card's link), `test/libwake-browser.js` (serves the page in slow chunks and opens a booklet with a formula and a diagram by link; it fails on 0.13.0 before this change); `pagename`, `dataviews`, `lint`, `guard` and `svg-sanitize` follow the new rules.
+- Size: `booklet.html` 3,709,426 bytes (was 3,704,422): the hand-written part grew by 5,004 bytes, the libraries are untouched.
+
+## Current state — v0.13.0, format rules (item `v013-format-rules`; merged as #46, not yet released)
 
 The format becomes 0.13, for what a reader keeps and how it reads a line. A file marked `"0.12"` now opens with the older-version notice; every file this repository holds that carried `"0.12"` is re-marked (the "later marker" fixture is now `"0.14"`, and `lint-old-format-0-12` is new). `FORMAT_VERSION` and `lint-booklet.py --marker` say `0.13`; `RENDERER_VERSION` is `0.13.0`. SPEC section 14 has "Changes from v0.12".
 

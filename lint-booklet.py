@@ -199,7 +199,7 @@ def callout_words(kind, s):
 QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon")
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 VIEW_DRAWS = {
-    "cards": ("fields", "limit", "link", "icon"),
+    "cards": ("label", "fields", "limit", "link", "icon"),
     "table": ("fields", "group", "limit", "badge", "tone", "link", "icon"),
     "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon"),
     "tiles": ("label", "value", "note", "tone", "group", "limit", "link", "icon"),
@@ -274,8 +274,6 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             err(f, f"line {n}: the query's `from: {src_id}` is a data block in another module (a query reads within its own module, or the data section)")
         else:
             src_data, src_nums, src_rows = d_keys, d_nums, d_rows
-            if s.get("as", "").lower() == "cards":
-                err(f, f"line {n}: the query's `as: cards` draws kept entries, not the data block {src_id!r}")
     else:
         err(f, f"line {n}: the query's `from: {src_id}` names no activity, question or data block in this file")
     # the view in force: the one named, else the default for what is read (cards for kept entries, a table for a data block)

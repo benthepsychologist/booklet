@@ -213,7 +213,13 @@ status: draft
   holds several modules, `lang` only sets the language of the renderer's own
   menus and defaults; it says nothing about the modules.)
 - The readable half above the module fence holds only `# Title` and plain
-  paragraphs. Do not add a `##` heading there that looks like part of the
+  paragraphs. It is the **booklet's opening**: the home screen draws it under
+  the booklet's title, the way a module's opening is drawn on the module's
+  screen (a `# Title` line that repeats the title is drawn once, as the
+  title). A booklet of one module opens straight into the module, so the
+  home screen, and this opening with it, shows when the reader presses Back.
+  Write the one or two sentences for a reader who has not opened the module
+  yet. Do not add a `##` heading there that looks like part of the
   design — a heading is fine as ordinary reading, it just carries no
   structure of its own (headings never mean anything to the renderer).
 
@@ -500,7 +506,7 @@ between paragraphs (`\n\n`) for a new one.
   module, in the module's own data section at the end (`> [!data|<module-slug>]`,
   the way records are tagged by module), or in the shared data section
   (`> [!data]`). A `booklet query` then draws it
-  with `as:` set to `table` (the default), `list`, `tiles`, `bars` or `line`. **Write the rows
+  with `as:` set to `table` (the default), `list`, `tiles`, `cards`, `bars` or `line` (`cards` draws a card per row: its `label` is the title, its other fields the lines). **Write the rows
   already ordered and counted: nothing is added up or computed when the page
   is drawn.** A reader may sort and filter what is on screen; the file never
   says how.
@@ -621,10 +627,11 @@ more questions one at a time.
 
 **Lead with the answer.** The first page says the verdict in one sentence,
 then the headline numbers as tiles, then the detail. A page of an activity with
-pages is named by its first heading, so begin each page with its heading, before
-any prose, and do not repeat it: a heading that follows prose is shown twice,
-once as the page's name. In a folded report each section's first paragraph is
-what shows, so make it one sentence that stands alone.
+pages is named by its first heading, wherever it stands: a page that opens with
+a sentence and then a heading is still named by that heading, and the heading
+is shown once, in place. A page with no heading is named "Page 2", above it.
+In a folded report each section's first paragraph is what shows, so make it
+one sentence that stands alone.
 
 **Data: which view for what.** Rows are written already ordered and counted;
 the page adds nothing up (the queries and roles are in section 7).
@@ -678,8 +685,17 @@ works: fractions, sums, roots, Greek letters, `\text{…}`, `cases`, matrices,
 when a non-space follows it, and the formula ends at the next `$` that follows a
 non-space and is not followed by a digit. So "costs $5 and $10" and "$38,500 of
 $60,000" stay prices, but "$5 a month ($)" turns into a formula. **Write every
-price in prose as `\$5`**: it is always a dollar sign. In a data value, write
-a plain `$`.
+price in prose as `\$5`**: it is always a dollar sign. This holds in a
+title, a help line, an option and an anchor too, because the words on a
+booklet line are inline Markdown (below). In a data value, write a plain `$`.
+
+**Marks on a booklet line.** The words on or under a booklet line (a title,
+a question's help text, an option, a scale's anchor, a matrix's item) are
+inline Markdown, as the prose around them is: `*emphasis*`, `**bold**`,
+`` `code` ``, `[a link](https://example.org)` and `$math$` all draw, so a
+maths question can say `> [!choice|bigger] Which is bigger, $\frac{2}{3}$ or
+$\frac{3}{5}$?`. A button or a card shows a link as its words only. Data
+values are plain text.
 
 **Sources and numbers.** Citations are footnotes (section 7). Numbers are
 written in, never computed: say where each came from, and state any assumption

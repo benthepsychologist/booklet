@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-IqTOCEkimjgKDzScvhBGj7eMz0pQ0Yp+JPWlyqIq6+E=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-TXeXI12/YNO6n/Hm1/iVlzabSTIbmmlzoTdVTV1RM2c=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -942,6 +942,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   @container (max-width:30rem){.dv-tree .dv-list{margin-left:.2rem;padding-left:.45rem}}
   .dv-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(22rem,100%),1fr));gap:0 var(--v-gap);align-items:start}
   .dv-cards>.entry{margin:0 0 1rem;min-width:0}
+  /* a data block's row as a card: a small picture and the label as its title above its lines */
+  .entry-row .cd-tile{width:2.2rem;height:2.2rem;margin-bottom:.35rem}
+  .entry-row .k{margin:0 0 .5rem;font-family:var(--serif);font-size:1.12rem;font-weight:600;line-height:1.3;color:var(--ink)}
   /* charts: bars and a line, drawn in the theme's own tokens, never a colour of their own */
   .ch{margin:0 0 1rem;min-width:0;max-width:100%;font-family:var(--sans)}
   .ch-bars{list-style:none;margin:0;padding:0}
@@ -1492,7 +1495,7 @@ const SHARED="*";
 /* A query's fourteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
 const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
-const VIEW_DRAWS={cards:["fields","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
+const VIEW_DRAWS={cards:["label","fields","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
   list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
   tiles:["label","value","note","tone","group","limit","link","icon"],bars:["label","value","tone","limit"],line:["label","value","fields","limit"]};
 
@@ -1619,8 +1622,7 @@ const STRINGS_SRC={
       removed: t=>`Removed “${t}”.`
     },
     home: {
-      h1: "Booklet",
-      sub: "A workbook that lives in one file you keep"
+      h1: "Booklet"
     },
     library: {
       title: "Your booklets",
@@ -1751,7 +1753,6 @@ const STRINGS_SRC={
       scaleAnchorRepeat: (w,n)=>`${w}: this scale uses the anchor number ${n} twice; the number is the stored answer, so give each its own`,
       queryViewBad: (as,views)=>`has \`as: ${as}\`, which is not ${views.slice(0,-1).join(", ")} or ${views[views.length-1]}`,
       queryOtherModule: from=>`names “${from}”, which is in another module`,
-      queryCardsData: from=>`has \`as: cards\` on the data block “${from}”, but cards draw kept entries`,
       queryNothing: from=>`names “${from}”, which is nothing in this module`,
       queryNoEntries: from=>`names “${from}”, which keeps no entries (only a repeat activity does)`,
       startBad: v=>`front matter says \`start: ${v}\`; the only value is \`start: home\`, so the page left it out`,
@@ -1945,8 +1946,7 @@ const STRINGS_SRC={
       removed: t=>`« ${t} » retiré.`
     },
     home: {
-      h1: "Booklet",
-      sub: "Un cahier qui tient dans un seul fichier, le vôtre"
+      h1: "Booklet"
     },
     library: {
       title: "Vos carnets",
@@ -2073,7 +2073,6 @@ const STRINGS_SRC={
       /* l10n: draft */ scaleAnchorRepeat: (w,n)=>`${w} : cette échelle utilise deux fois le numéro d’ancre ${n} ; le numéro est la réponse enregistrée, donnez-en un à chacune`,
       queryViewBad: (as,views)=>`a \`as: ${as}\`, qui n’est pas ${views.slice(0,-1).join(", ")} ni ${views[views.length-1]}`,
       queryOtherModule: from=>`nomme « ${from} », qui est dans un autre module`,
-      queryCardsData: from=>`a \`as: cards\` sur le bloc de données « ${from} », mais les cartes montrent des entrées gardées`,
       queryNothing: from=>`nomme « ${from} », qui n’existe pas dans ce module`,
       queryNoEntries: from=>`nomme « ${from} », qui ne garde aucune entrée (seule une activité répétée le fait)`,
       startBad: v=>`l’en-tête indique \`start: ${v}\` ; la seule valeur possible est \`start: home\`, la page l’a donc ignoré`,
@@ -2267,8 +2266,7 @@ const STRINGS_SRC={
       removed: t=>`“${t}” quitado.`
     },
     home: {
-      h1: "Booklet",
-      sub: "Un cuaderno de trabajo que vive en un solo archivo que conservas"
+      h1: "Booklet"
     },
     library: {
       title: "Tus cuadernillos",
@@ -2395,7 +2393,6 @@ const STRINGS_SRC={
       /* l10n: draft */ scaleAnchorRepeat: (w,n)=>`${w}: esta escala usa dos veces el número de ancla ${n}; el número es la respuesta guardada, dé uno distinto a cada una`,
       queryViewBad: (as,views)=>`tiene \`as: ${as}\`, que no es ${views.slice(0,-1).join(", ")} ni ${views[views.length-1]}`,
       queryOtherModule: from=>`nombra “${from}”, que está en otro módulo`,
-      queryCardsData: from=>`tiene \`as: cards\` sobre el bloque de datos “${from}”, pero las tarjetas muestran entradas guardadas`,
       queryNothing: from=>`nombra “${from}”, que no existe en este módulo`,
       queryNoEntries: from=>`nombra “${from}”, que no guarda entradas (solo una actividad repetible lo hace)`,
       startBad: v=>`el encabezado dice \`start: ${v}\`; el único valor es \`start: home\`, así que la página lo dejó de lado`,
@@ -2508,9 +2505,6 @@ const STRINGS_SRC={
     booklet: {
       noActivities: "Aquí todavía no hay nada. Agregá una actividad para empezar — o abrí un archivo que guardaste antes.",
       noShelf: "No se pudo cargar la lista de módulos. Revisá tu conexión e intentá de nuevo."
-    },
-    home: {
-      sub: "Un cuaderno de trabajo que vive en un solo archivo que conservás"
     },
     question: {
       addOwn: "Agregá tu propia opción",
@@ -2880,7 +2874,7 @@ const keyOfEntry=e=>(e&&e.key)||bookKey(e.id);
 function describeBooklet(t){t=t||{};
   const mods=(Array.isArray(t.modules)?t.modules:[]).filter(m=>m&&typeof m==="object");
   return {title:(t.head&&t.head.title)||t.title||null,
-    parts:mods.slice(0,3).map(m=>m.title||m.id).filter(Boolean)};}
+    parts:mods.slice(0,3).map(m=>plainText(m.title||m.id)).filter(Boolean)};}
 function addEntry(){const now=new Date().toISOString();let made=null;
   changeLib(L=>{let id;
     do{id=newId(Date.now().toString(36));}while(L.entries.some(e=>e.id===id));
@@ -3084,21 +3078,24 @@ const unknownKind=it=>!hasOwn(KIND_SETTINGS,it.kind)&&!!(it.id||it.flags.size||O
    This is a reading of free text, not new syntax — the file itself is just
    a footnote, exactly as CommonMark defines one. */
 const CITE_DEF=/^\[\^([A-Za-z0-9][A-Za-z0-9_.:-]*)\]:[ \t]+(.+)$/;
-const CITE_NOTE=/^(?:\*([^*]+)\*|([^,:"“]+))(?:,\s*([^,:]+?))?(?:,\s*(?:pp?\.?|art\.?)\s*([^:]+))?:\s*["“]([^"”]+)["”]\.?\s*(?:Verified\s+(\d{4}-\d{2}-\d{2})\.?\s*(.*))?$/;
+const CITE_NOTE=/^\*([^*]+)\*(?:,\s*([^,:]+?))?(?:,\s*(?:pp?\.?|art\.?)\s*([^:]+))?:\s*["“]([^"”]+)["”]\.?\s*(?:Verified\s+(\d{4}-\d{2}-\d{2})\.?\s*(.*))?$/;
 /* strips any `[^id]: note` lines out of a chunk of text, so they never show as
-   stray prose; returns the cleaned text and what it found */
-function stripFootnoteDefs(text){const defs=[],kept=[];
+   stray prose; returns the cleaned text and what it found. As in GFM, the indented lines straight under a definition
+   (no blank line between) are part of its note, joined to it by a space (the Markdown reader skips them the same way) */
+function stripFootnoteDefs(text){const defs=[],kept=[];let cur=null;
   String(text||"").split("\n").forEach(ln=>{const m=ln.match(CITE_DEF);
-    if(m) defs.push({id:m[1],note:m[2].trim()});else kept.push(ln);});
+    if(m){cur={id:m[1],note:m[2].trim()};defs.push(cur);return;}
+    if(cur&&ln.trim()&&/^(?: {2,}|\t)/.test(ln)){cur.note+=" "+ln.trim();return;}
+    cur=null;kept.push(ln);});
   return {text:kept.join("\n").replace(/\n{3,}/g,"\n\n").trim(),defs};}
 /* one footnote's note, read into a source (if a title parses out) and a
    citation; the quote is kept whichever way this goes */
 function parseCiteNote(note){const m=String(note||"").match(CITE_NOTE);
   if(!m) return {source:null,citation:{quote:String(note||"").trim()}};
-  const title=(m[1]||m[2]||"").trim();
-  return {source:title?{title,edition:(m[3]||"").trim()||undefined}:null,
-    citation:{page:(m[4]||"").trim()||undefined,quote:(m[5]||"").trim(),
-      verifiedOn:m[6]||undefined,verifiedBy:(m[7]||"").trim()||undefined}};}
+  const title=(m[1]||"").trim();
+  return {source:title?{title,edition:(m[2]||"").trim()||undefined}:null,
+    citation:{page:(m[3]||"").trim()||undefined,quote:(m[4]||"").trim(),
+      verifiedOn:m[5]||undefined,verifiedBy:(m[6]||"").trim()||undefined}};}
 /* the task list right under a choice/multi question: `- [ ] text` / `- [x] text`,
    zero or one blank line above it. Returns {opts,next} or null if none is there. */
 function optionList(lines,i){let j=i;let blanks=0;
@@ -3299,6 +3296,9 @@ function readBlocks(items,fm,problems){const P=strings("problem");
   const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
   let mod=null,act=null,section="content",lastQ=null,seq=0,oseq=0,row=null,theme=null,recScope="",recForeign=null,dataMod=null;
+  /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
+     as a module's opening is, and drawn on the home screen. `started` is set when that first line is met. */
+  const opening=[];let started=false;
   const refuse=m=>{problems.push(m);problems.refused.push(m);};
   /* an id used twice: refused, and its id kept so Add a module can name it */
   const dup=(where,id)=>{const m=P.idTwice(where,id);refuse(m);problems.dupIds.push({id,m});};
@@ -3317,13 +3317,13 @@ function readBlocks(items,fm,problems){const P=strings("problem");
   const scopeMod=()=>section==="content"?mod:section==="data"?dataMod:null;
   /* a block id's scope: that module, else the data section */
   const blockScope=()=>{const m=scopeMod();return m?m.id:SHARED;};
-  const newModule=(id,title,line)=>{const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__open:[],__footnotes:[],__line:line};
+  const newModule=(id,title,line)=>{started=true;const m={id,version:fm.version||"",title:title||fm.title||id,activities:[],__intro:[],__open:[],__footnotes:[],__line:line};
     modules.push(m);return m;};
   /* A file with no activity line (and no module fence) is one activity named by
      its front matter title (SPEC.md section 3): its prose and questions all
      belong to it. The id is the title's letters and digits, as dashes. */
   const implicit=!items.some(x=>x.t==="line"&&(x.kind==="activity"||x.kind==="module"));
-  const newActivity=(w,title,line)=>{const id=w.id||idWord(title||fm.title||"")||idWord(fm.id||"")||"activity-"+(++seq);
+  const newActivity=(w,title,line)=>{started=true;const id=w.id||idWord(title||fm.title||"")||idWord(fm.id||"")||"activity-"+(++seq);
     claim(id,"line "+line,mod?mod.id:"");
     const a={id:addrOf(mod?mod.id:"",id),kind:w.flags.has("repeat")||w.flags.has("daily")?"entry":"board",title:title||undefined,pages:[{id:"p1",blocks:[]}]};
     if(w.flags.has("daily")) a.upsert="day";if(w.flags.has("hidden")) a.home=false;
@@ -3412,7 +3412,8 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     const strip=stripFootnoteDefs(it.text);
     if(!act&&!mod&&implicit&&(strip.text||strip.defs.length)) page();
     const owner=mod||(act&&moduleHolding(modules,act));if(owner) owner.__footnotes.push(...strip.defs);
-    if(!act){if(mod&&strip.text){mod.__intro.push(strip.text);mod.__open.push({id:"mo"+(++oseq),type:"markdown",text:strip.text});}return;}
+    if(!act){if(strip.text&&(mod||!started)){if(mod) mod.__intro.push(strip.text);
+      (mod?mod.__open:opening).push({id:"mo"+(++oseq),type:"markdown",text:strip.text});}return;}
     if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;};
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
@@ -3435,8 +3436,9 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       if(row){problems.push(P.rowNested(where));return;}
       page();row={blocks:[],line:it.line};lastQ=null;return;}
     if(k==="data"){section="data";act=null;dataMod=null;
-      /* the module id on a data line says whose the blocks below it are, until the next data, records, module or
-         activity line (the same as on a records line); a module this file has not opened is reported */
+      /* the module id on a data line says whose the blocks below it are, until the next data, module or activity line (the same as
+         on a records line); a records line ends nothing here, since the records region is read in a second pass and these lines
+         never see it; a module this file has not opened is reported */
       if(it.id){const hit=modules.find(m=>m.id===it.id&&!m.__bare);
         if(hit) dataMod=hit;else problems.push(P.dataModuleUnknown(where,it.id));}
       return;}
@@ -3473,9 +3475,9 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       blocks:[{id:lastQ.id+"-"+k+"-md",type:"markdown",text:it.body.join("\n")}],placement:it.fold==="-"?"folded":undefined,label:it.title||k});return;}
     /* any other callout is reading set apart */
     const unk=unknownKind(it);if(unk) problems.push(P.kindUnknown(where,k));
-    if(!act&&mod){mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
-      /* a reading callout before the module's first activity is part of its opening, in the file's order with the prose */
-      mod.__open.push({id:"mo"+(++oseq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
+    if(!act&&(mod||(!started&&!implicit))){if(mod) mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
+      /* a reading callout before the module's first activity (or the file's first line) is part of its opening, in the file's order with the prose */
+      (mod?mod.__open:opening).push({id:"mo"+(++oseq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
         ...(unk?{unknown:true}:{}),blocks:it.body.length?[{id:"mo"+oseq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});return;}
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       ...(unk?{unknown:true}:{}),
@@ -3493,7 +3495,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
      within its module (a block outside every fence, in the module with no name) */
   dataBlocks.forEach(d=>{const set=ids.get(d.mod?d.mod.id:"");if(set&&set.has(d.id)) dup(P.line(d.line),d.id);});
   if(mod) refuse(P.moduleNeverClosed(P.line(mod.__line),mod.id));
-  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme,sharedNotes,recordsKept};}
+  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme,sharedNotes,recordsKept,opening};}
 function resolveMenus({menus,menuUses,modules},problems){const P=strings("problem");
   /* a question that names a shared menu takes its options from it: from its own module's menus first,
      then from the data section's (a menu outside every fence), never from another module's */
@@ -3521,7 +3523,6 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=strings("pro
      if(as!==undefined&&!QUERY_VIEWS.has(as)){drop(P.queryViewBad(as,[...QUERY_VIEWS]));continue;}
      if(!src){const d=q.from&&(dataBlocks.find(z=>z.id===q.from&&z.mod===here)||dataBlocks.find(z=>z.id===q.from&&z.mod===null));
        if(d){
-         if(as==="cards"){drop(P.queryCardsData(q.from));continue;}
          block.data={rows:d.rows,fields:d.fields};continue;}
        if(elsewhere()){drop(P.queryOtherModule(q.from));continue;}
        drop(P.queryNothing(q.from||""));continue;}
@@ -3546,10 +3547,7 @@ function activityOut(a){const {pages,...ra}=a;
      It is the card's alone (the paragraph is still drawn in the page), so it is not `blurb`, which the activity's own screen draws above the page. */
   {const f=pages[0]&&pages[0].blocks[0],l=f&&f.type==="markdown"?firstPara(f.text):"";if(l) ra.lede=l;}
   if(pages.length===1) return {...ra,blocks:pages[0].blocks};
-  /* `lead`: the page's name is its own first heading, and that heading is the first thing on the page */
-  const lead=p=>{const b=p.blocks[0],l=b&&b.type==="markdown"?String(b.text).split("\n").find(x=>x.trim()!==""):"";
-    const h=l&&l.match(/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/);return !!h&&plainText(h[1])===pageHeading(p);};
-  return {...ra,pages:pages.map(p=>({id:p.id,title:pageHeading(p),...(lead(p)?{lead:true}:{}),blocks:p.blocks}))};}
+  return {...ra,pages:pages.map(p=>({id:p.id,title:pageHeading(p),blocks:p.blocks}))};}
 /* a module as the page keeps it: its activities, its blurb, and the sources and citations its footnotes define */
 /* footnote definitions read into the source and citation registries the citation panel already knows how
    to draw; `tag` keeps one list's source keys apart from another's */
@@ -3580,7 +3578,7 @@ function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities
   const o={...rest,...(blurb?{blurb}:{}),...(opening.length?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
   return o;}
-function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept},fm,L,source,problems){
+function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept,opening},fm,L,source,problems){
   /* a file that holds one module and no notice callout is covered by its own front matter: its license,
      copyright and source are that module's notice (a callout, when there is one, wins) */
   const holders=modules.filter(m=>m.activities.length);
@@ -3594,7 +3592,7 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
   const st=emptyState();st.entries=entries;Object.keys(answers).forEach(k=>{st.answers[k]=nullMap(answers[k]);});
   const shared=notesOut(sharedNotes||[],"d");
   const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,...(fm.start==="home"?{start:"home"}:{}),
-    title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
+    title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,...(opening.length?{opening}:{}),languages:[L],modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),
     ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L,...(recordsKept.length?{records:recordsKept}:{})}};
   /* a file with its front matter and no module and no activity at all is an empty booklet with that name (what a
@@ -4169,6 +4167,7 @@ const WEB_ADDRESS=/^https?:\/\/\S+$/i;
 /* a link to a whole module (SPEC.md section 3): `x.booklet`, `x.booklet.md`, with or without a folder. The page that draws the prose says how (opts.moduleLink: see moduleLinkNode); a reader of Markdown with no page around it shows the words. */
 const isModuleLink=t=>cleanScheme(t).scheme===null&&/^[^#?]*\.booklet(?:\.md)?(?:[#?].*)?$/i.test(String(t==null?"":t).trim());
 const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderInline(label,ctx):label;
+  if(ctx.opts.flat) return textOf(kids);
   if(isModuleLink(url)) return typeof ctx.opts.moduleLink==="function"?ctx.opts.moduleLink(url,kids):textOf(kids);
   if(!urlOk(url,true)) return textOf(kids);
   {const sc=cleanScheme(url).scheme;if((sc==="http"||sc==="https")&&!WEB_ADDRESS.test(String(url).trim())) return textOf(kids);}
@@ -4586,6 +4585,18 @@ function mathNode(tex,display){
     temml.render(tex,box,{displayMode:!!display,throwOnError:true,trust:false});
     return box.querySelector&&box.querySelector("math")?box:raw();
   }catch(e){return raw();}}
+/* The words of a booklet line (SPEC.md section 4: a title, help text, an option, an anchor, a matrix item, a menu entry) are inline
+   Markdown, as the prose around them is. words(s) draws them; with `flat` a link is only its words (inside a button, and in a card,
+   which holds no link). wordsNode is the same for a place that wants one value: the string itself when there is nothing to draw, else
+   a span that remembers its plain words (a part written {lit:"…"} is not read as Markdown: the reader's own words). plainText (the parser's) is the words without their marks: a menu's text, a label for a
+   screen reader, a message. Data values are never read this way. */
+const WORD_MARK=/[*_`~=$\[<\\!]|https?:/;
+const wordsOpts=flat=>({math:mathNode,image:alt=>alt||"",embed:()=>"",mark:()=>"",link:(t,lb)=>lb!==undefined?lb:t,anchor:(h,k)=>textOf(k),flat});
+function words(s,flat){const t=String(s==null?"":s);if(!WORD_MARK.test(t)) return [t];
+  return renderInline(t,{opts:wordsOpts(flat),refs:{}});}
+function wordsNode(...parts){const lit=x=>typeof x==="object",ks=parts.map(x=>lit(x)?[x.lit]:words(x,true));
+  if(ks.every(k=>k.length===1&&typeof k[0]==="string")) return ks.map(k=>k[0]).join("");
+  const n=el("span",{},...ks.flat());n.plain=parts.map(x=>lit(x)?x.lit:plainText(x)).join("");return n;}
 /* a diagram: a mermaid fence is drawn as SVG text (no HTML labels), then the
    SVG goes through sanitizeDiagramSvg, never innerHTML. A
    diagram that will not parse stays on the page as its source, with a note. */
@@ -4895,13 +4906,15 @@ function svgRegions(e,W,keys){const key=keys[0];
    keyed by field id. The widget supplies the axes, the cells (with their tone),
    the items and the vocabulary; read-only, it shows what was chosen and nothing
    to press. */
+/* a grid-select answer's item as words: a word the reader typed is kept as "x|cell|word" and reads back as the word */
+const gridLabel=(W,id)=>{if(String(id).startsWith("x|")) return id.split("|").slice(2).join("|");
+  const it=(W.items||[]).find(x=>x.id===id);return it?tx(it.label,id):id;};
 function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const u=STRINGS[lang].ui;
   const cells=W.cells||[];const ax=W.axes||{};
   const chosen=()=>e[key]||(e[key]=[]);
   const extra=id=>id.startsWith("x|");
-  const itemLabel=id=>{if(extra(id)) return id.split("|").slice(2).join("|");
-    const it=(W.items||[]).find(x=>x.id===id);return it?tx(it.label,id):id;};
+  const itemLabel=id=>gridLabel(W,id);
   const box=el("div",{});
   const wrap=el("div",{class:"quadwrap"});
   wrap.append(el("div",{class:"ax",style:"grid-column:2;grid-row:1"},tx(ax.top,"")),
@@ -4956,7 +4969,11 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
         el("strong",{style:`color:${cellColor(c,ci).deep}`},tx(c.label,c.id)),tx(c.note,"")))));
   return box;}
 
-const ENGINES={"svg-regions":svgRegions,"grid-select":gridSelect};
+/* what each engine kept, as words: the one place that knows how its answer reads back (the kept-entry card and a query use it).
+   A svg-regions answer is a list of {id}; a grid-select one a list of item ids, or "x|cell|word" for a word the reader typed. */
+const regionNames=(W,vals)=>vals.map(r=>{const rg=(W.regions||[]).find(x=>x.id===r.id);return rg?tx(rg.label,r.id):r.id;});
+const gridNames=(W,vals)=>vals.map(id=>gridLabel(W,id));
+const ENGINES={"svg-regions":{draw:svgRegions,summary:regionNames},"grid-select":{draw:gridSelect,summary:gridNames}};
 
 /* ======================= 9. QUESTIONS AND BLOCKS =======================
    drawing a block (a question, prose, a row, a widget), and keeping an activity's drafts and entries. */
@@ -4974,7 +4991,7 @@ function renderBlocks(list,draft,activityId){const host=el("div",{});
 function entryCard(e,type,onDelete){const u=STRINGS[lang].ui;
   const tag=tx((moduleOf(type)||{}).title,shortId(activityOf(type).id));
   /* an entry is read back through the blocks that asked for it */
-  const {card}=entryBody(e,blocksOf(type),[el("span",{class:"tag"},tag),fmtWhen(e.ts)]);
+  const {card}=entryBody(e,blocksOf(type),[el("span",{class:"tag"},...words(tag,true)),fmtWhen(e.ts)]);
   if(onDelete){const foot=el("div",{class:"foot"});const btn=el("button",{type:"button",class:"small danger"},u.del);
     btn.addEventListener("click",()=>{foot.innerHTML="";foot.append(el("span",{class:"inlineconfirm"},u.delConfirm,
       el("button",{type:"button",class:"small danger",onclick:onDelete},u.yes),el("button",{type:"button",class:"small",onclick:()=>{foot.innerHTML="";foot.append(btn);}},u.no)));});
@@ -5011,9 +5028,9 @@ const blockFilled=(b,draft)=>(b.blocks||[b]).flatMap(keysOf)
    question puts its hint inside its label, so it is drawn on its own.) */
 function questionHead(box,b,forId){
   const head=tx(b.label,"");
-  if(nonEmpty(head)) box.append(forId?el("label",{class:"lbl",for:forId},head):el("h3",{},head));
-  const hint=tx(b.hint,"");if(nonEmpty(hint)) box.append(el("p",{class:"aside"},hint));
-  return head;}
+  if(nonEmpty(head)) box.append(forId?el("label",{class:"lbl",for:forId},...words(head,true)):el("h3",{},...words(head)));
+  const hint=tx(b.hint,"");if(nonEmpty(hint)) box.append(el("p",{class:"aside"},...words(hint)));
+  return plainText(head);}
 /* The drawing of each kind of block (below, DRAW_BLOCK), each called as (block, draft, activityId).
    A booklet's prose, drawn from its Markdown: see mdNodes. A citation mark,
    [^id], becomes a numbered superscript: see READING MATERIAL. */
@@ -5046,16 +5063,16 @@ function drawWidget(b,draft,activityId){const W=widgetOf(b.widget,b.module);
   const eng=ENGINES[W.engine];
   if(!eng){box.append(el("p",{class:"hint"},STRINGS[lang].ui.missingEngine(W.engine||"?")));return box;}
   const C=wordsOf(W.copy);
-  const head=tx(b.label,C.h);if(nonEmpty(head)) box.append(el("h3",{},head));
-  const lead=tx(b.hint,C.p);if(nonEmpty(lead)) box.append(el("p",{class:"aside"},lead));
+  const head=tx(b.label,C.h);if(nonEmpty(head)) box.append(el("h3",{},...(typeof b.label==="string"?words(head):[head])));
+  const lead=tx(b.hint,C.p);if(nonEmpty(lead)) box.append(el("p",{class:"aside"},...(typeof b.hint==="string"?words(lead):[lead])));
   [C.stance,C.invite].filter(nonEmpty).forEach(x=>box.append(el("p",{class:"hint"},x)));
-  box.append(eng(draft,W,keysOf(b),engOpts(b)));
+  box.append(eng.draw(draft,W,keysOf(b),engOpts(b)));
   return box;}
 /* the question kinds of SPEC.md section 5: declared on the line, answered as
    a position or a string, never invented syntax */
 function drawText(b,draft,activityId){const box=el("div",{});const id=newId("f_");
   const head=tx(b.label,"");const hint=tx(b.hint,"");
-  box.append(el("label",{class:"lbl",for:id},head,nonEmpty(hint)?el("span",{class:"hint"},hint):null));
+  box.append(el("label",{class:"lbl",for:id},...words(head,true),nonEmpty(hint)?el("span",{class:"hint"},...words(hint,true)):null));
   const ta=textField(draft,keysOf(b)[0],b.rows||2);ta.id=id;box.append(ta);return box;}
 function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[0];
   const head=questionHead(box,b);
@@ -5080,7 +5097,7 @@ const picksOf=v=>Array.isArray(v)?v:(v===null||v===undefined||v===""?[]:[v]);
 function ownEarlier(activityId,K,listed,now){const out=[];
   const kept=[...(((STATE.entries||{})[activityId])||[])].sort((a,x)=>String(x.ts).localeCompare(String(a.ts)));
   for(const e of kept) for(const x of picksOf(e[K])){if(typeof x!=="string") continue;const t=x.trim();
-    if(!t||listed.some(o=>sameWords(o,t))||now.some(o=>typeof o==="string"&&sameWords(o,t))||out.some(o=>sameWords(o,t))) continue;
+    if(!t||listed.some(o=>sameWords(plainText(o),t))||now.some(o=>typeof o==="string"&&sameWords(o,t))||out.some(o=>sameWords(o,t))) continue;
     out.push(t);if(out.length>=12) return out;}
   return out;}
 /* Options short enough (at most four, each at most 24 characters) sit as pills beside their question when there is room,
@@ -5097,7 +5114,7 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
   const put=list=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();byReader=true;draw();};
   const toggle=n=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n]);};
   const addOwn=text=>{const t=String(text).trim();if(!t) return;
-    const at=listed.findIndex(o=>sameWords(o,t));
+    const at=listed.findIndex(o=>sameWords(plainText(o),t));
     if(at>=0){if(!chosen().includes(at+1)) toggle(at+1);return;}
     if(chosen().some(x=>typeof x==="string"&&sameWords(x,t))) return;
     put(multi?[...chosen(),t]:[t]);};
@@ -5118,7 +5135,7 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
     pills.innerHTML="";acts.innerHTML="";live.textContent="";
     listed.forEach((o,idx)=>{const n=idx+1,mark=markOf(n);
       pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),
-        onclick:()=>toggle(n)},o,mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
+        onclick:()=>toggle(n)},...words(o,true),mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
     const now=chosen();
     now.filter(x=>typeof x==="string").forEach(t=>pills.append(el("span",{class:"pill-own"},
       el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
@@ -5129,7 +5146,7 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
       if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
       if(shown){const missed=right.some(n=>!c.includes(n)),extra=c.some(x=>typeof x==="number"&&!right.includes(x)),
           bad=multi?(missed||extra):!right.includes(c[0]);
-        live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).join(", ")):Q.liveRight;
+        live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).map(plainText).join(", ")):Q.liveRight;
         if(SP) SP.set(bad?"warn":"good",byReader);}
       else if(SP) SP.set(null);}
     else if(SP) SP.set(!multi&&chosen().length?"neutral":null,byReader);
@@ -5150,25 +5167,25 @@ function drawScale(b,draft,activityId){const box=el("div",{});const anchors=b.an
   const K=b.keys[0];const pills=el("div",{class:"pills"});
   const draw=()=>{pills.innerHTML="";anchors.forEach(a=>{const on=draft[K]===a.n;
     pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(on),onclick:()=>{
-      draft[K]=on?null:a.n;markDirty();draw();}},a.text));});};
+      draft[K]=on?null:a.n;markDirty();draw();}},...words(a.text,true)));});};
   draw();box.append(pills);return box;}
 function drawMatrix(b,draft,activityId){const box=el("div",{});const items=b.items||[],anchors=b.anchors||[];
   questionHead(box,b);
   const K=b.keys[0];const uid=newId("m_");
   const cols="--mxcols:"+anchors.length;
   const grid=el("div",{class:"mx",style:cols});
-  grid.append(el("div",{class:"mxhead","aria-hidden":"true"},el("span",{}),...anchors.map(a=>el("span",{},a.text))));
+  grid.append(el("div",{class:"mxhead","aria-hidden":"true"},el("span",{}),...anchors.map(a=>el("span",{},...words(a.text)))));
   items.forEach((it,i)=>{
-    const row=el("div",{class:"mxrow",role:"radiogroup","aria-label":it});
-    row.append(el("span",{class:"mxitem"},it));
+    const row=el("div",{class:"mxrow",role:"radiogroup","aria-label":plainText(it)});
+    row.append(el("span",{class:"mxitem"},...words(it)));
     const opts=el("div",{class:"mxopts"});
     anchors.forEach(a=>{const cur=Array.isArray(draft[K])?draft[K][i]:null;
-      const inp=el("input",{type:"radio",name:uid+"_"+i,value:String(a.n),"aria-label":it+": "+a.text});
+      const inp=el("input",{type:"radio",name:uid+"_"+i,value:String(a.n),"aria-label":plainText(it)+": "+plainText(a.text)});
       if(cur===a.n) inp.checked=true;
       inp.addEventListener("change",()=>{const arr=Array.isArray(draft[K])?draft[K].slice():[];
         while(arr.length<items.length) arr.push(null);
         arr[i]=a.n;draft[K]=arr;markDirty();});
-      opts.append(el("label",{class:"mxopt"},inp,el("span",{},a.text)));});
+      opts.append(el("label",{class:"mxopt"},inp,el("span",{},...words(a.text,true))));});
     row.append(opts);grid.append(row);});
   box.append(el("div",{class:"mxwrap"},grid));return box;}
 function drawNumber(b,draft,activityId){const box=el("div",{});const K=b.keys[0];
@@ -5202,7 +5219,7 @@ function renderBlock(b,draft,activityId){
   if(S.q.has(b)&&b.type!=="choice"&&b.type!=="multi") node.append(qControls(b,draft,activityId).node);
   if(placeOf(b)!=="folded") return node;
   return b.type==="callout"?foldedCallout(b,draft,activityId):
-    cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),open:blockFilled(b,draft),body:[node]});}
+    cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),marked:true,open:blockFilled(b,draft),body:[node]});}
 /* Is this callout a hint or a solution ("hint", "solution", or ""): the one place that decides, for both ways the parser
    makes one: folded under its question (kind "", id ending -hint or -solution) or on its own (kind hint or solution,
    when no question comes right before it). Either way it never shows a teaser. */
@@ -5231,7 +5248,7 @@ function foldedCallout(b,draft,activityId,x){
   if(b.unknown) body.unshift(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   /* a hint or a solution is a compact fold: one quiet line, a small icon, no tile, no teaser */
   return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:hs?"":" card-plain")+(!hs&&!look&&!picture?" card-notile":"")+(x.tone?" sol-"+x.tone:"")+(x.inQ?" q-in":"")+(x.sol?" sol-in":""),hue:look?look.hue:"slate",
-    title:emo?lead.title:title,picture,teaser,status:x.status,size:hs?"compact":null,open:!!x.open||blockFilled(b,draft),body});}
+    title:emo?lead.title:title,marked:nonEmpty(named)||!(hs||word),picture,teaser,status:x.status,size:hs?"compact":null,open:!!x.open||blockFilled(b,draft),body});}
 /* Which folded hint and solution belong to which question of an activity: the callouts the parser made right after the question,
    whose ids are the question's id and "-hint" or "-solution". Found from the blocks themselves (so it holds for a booklet kept by an
    earlier visit), once per stored list of blocks: the list is replaced, never changed in place, when a booklet or module is loaded. */
@@ -5295,19 +5312,14 @@ const fieldLabel=b=>tx(b.label,b.id);
 const choiceSummary=(b,e,k)=>{const ns=picksOf(e[k]).filter(x=>typeof x==="string"?x.trim()!=="":x!==null&&x!==undefined);
   if(!ns.length) return null;const listed=b.options||[];
   /* a position is the listed option's words; a string is the reader's own option, as they wrote it */
-  return [fieldLabel(b),ns.map(n=>typeof n==="string"?n:(listed[n-1]||("#"+n))).join(", ")];};
+  return [fieldLabel(b),wordsNode(...ns.flatMap((n,i)=>[...(i?[{lit:", "}]:[]),typeof n==="string"?{lit:n}:(listed[n-1]||{lit:"#"+n})]))];};
 const numberSummary=(b,e,k)=>{const v=e[k];if(v==null||v==="") return null;
   return [fieldLabel(b),String(v)];};
 const SUMMARY={
   widget:(b,e,k)=>{const W=widgetOf(b.widget,b.module);if(!W) return null;
     const vals=e[k];if(!Array.isArray(vals)||!vals.length) return null;
-    if(W.engine==="svg-regions"){
-      const names=vals.map(r=>{const rg=(W.regions||[]).find(x=>x.id===r.id);return rg?tx(rg.label,r.id):r.id;});
-      return [fieldLabel(b),names.join(", ")];}
-    if(W.engine==="grid-select"){
-      const names=vals.map(id=>{const it=(W.items||[]).find(x=>x.id===id);return it?tx(it.label,id):id;});
-      return [fieldLabel(b),names.join(", ")];}
-    return null;},
+    const eng=hasOwn(ENGINES,W.engine)?ENGINES[W.engine]:null;
+    return eng?[fieldLabel(b),eng.summary(W,vals).join(", ")]:null;},
   lines:(b,e,k)=>{const items=(e[k]||[]).filter(nonEmpty);if(!items.length) return null;
     return [fieldLabel(b),el("ul",{class:"plain"},...items.map(x=>el("li",{},x.trim())))];},
   text:(b,e,k)=>{const v=e[k];if(!nonEmpty(v)) return null;
@@ -5315,11 +5327,11 @@ const SUMMARY={
   choice:choiceSummary,
   multi:choiceSummary,
   scale:(b,e,k)=>{const v=e[k];if(v==null) return null;const a=(b.anchors||[]).find(x=>x.n===v);
-    return [fieldLabel(b),a?a.text:String(v)];},
+    return [fieldLabel(b),a?wordsNode(a.text):String(v)];},
   matrix:(b,e,k)=>{const v=e[k];if(!Array.isArray(v)||!v.some(x=>typeof x==="number")) return null;
     const items=b.items||[];
     return [fieldLabel(b),el("ul",{class:"plain"},...items.map((it,i)=>{const a=(b.anchors||[]).find(x=>x.n===v[i]);
-      return el("li",{},it+": "+(typeof v[i]==="number"?(a?a.text:String(v[i])):"\u2013"));}))];},
+      return el("li",{},wordsNode(it,{lit:": "},typeof v[i]==="number"?(a?a.text:{lit:String(v[i])}):{lit:"\u2013"}));}))];},
   number:numberSummary,
   date:numberSummary};
 function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
@@ -5335,7 +5347,7 @@ function queryEntries(from,activityId){
    many questions had an answer to show. */
 function entryBody(e,qs,whenKids,extra){extra=extra||{};
   const dl=el("dl",{});let rows=0;
-  for(const q of qs){const r=fieldSummary(q,e);if(r){rows++;dl.append(el("dt",{},r[0]),el("dd",{},r[1]));}}
+  for(const q of qs){const r=fieldSummary(q,e);if(r){rows++;dl.append(el("dt",{},wordsNode(r[0])),el("dd",{},r[1]));}}
   return {card:cardNode({mode:"item",cls:"entry",picture:extra.picture||null,kids:[whenKids?el("div",{class:"when"},...(extra.lead?extra.lead(whenKids):whenKids)):null,dl]}),rows};}
 function queryCard(e,from,fields,extra){
   /* `fields` names the questions, and their order is the order shown */
@@ -5350,7 +5362,7 @@ function queryCard(e,from,fields,extra){
 const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
 const cellText=v=>v==null?"":Array.isArray(v)?v.map(x=>x==null?"":String(x)).join(", "):String(v);
 /* the text of a drawn cell, parts joined by "; " (textOf, further down, joins with nothing: it reads headings and paragraphs) */
-const nodeText=n=>typeof n==="string"?n:(n&&n.nodeType===3?n.textContent:Array.from((n&&(n.childNodes||n.children))||[]).map(nodeText).join("; "));
+const nodeText=n=>typeof n==="string"?n:(n&&typeof n.plain==="string"?n.plain:n&&n.nodeType===3?n.textContent:Array.from((n&&(n.childNodes||n.children))||[]).map(nodeText).join("; "));
 /* what a view draws from: {kind, rows, keys:Set, own:[key], first, lab(key), sortVal(row,key)}.
    `own` is the source's own fields in order, and `first` is the first of them,
    whatever the query's `fields:` says. */
@@ -5383,8 +5395,9 @@ function entrySet(b,activityId,as){
     raw.set(r,w);ent.set(r,e);return r;}).filter(Boolean);
   if(numeric) rows.reverse();
   const own=["date",...qs.map(q=>q.id)];
-  const lab=k=>k==="date"?strings("dv").date:fieldLabel(qs.find(q=>q.id===k));
-  return {kind:"entries",from:b.from,rows,keys:new Set(own),own,first:"date",lab,qs,
+  const labw=k=>k==="date"?undefined:fieldLabel(qs.find(q=>q.id===k));
+  const lab=k=>k==="date"?strings("dv").date:plainText(labw(k));
+  return {kind:"entries",from:b.from,rows,keys:new Set(own),own,first:"date",lab,labw,qs,
     entryOf:r=>ent.get(r),sortVal:(r,k)=>{const w=raw.get(r);return w&&hasOwn(w,k)?w[k]:r[k];}};}
 const unset=v=>v==null||v==="";
 const sortCmp=(a,b)=>{
@@ -5428,8 +5441,9 @@ function viewTable(set,groups,roles,cols,ctl){const dvText=strings("dv");
   const on=k=>ctl&&ctl.state.sk===k&&ctl.state.dir!==0;
   const heads=cols.map(c=>{
     const cls=numeric(c.key)?"num":null;
-    if(!ctl) return el("th",{scope:"col",class:cls},c.label);
-    const btn=el("button",{type:"button",class:"dv-sort","data-key":c.key,"aria-label":dvText.sortBy(c.label)},c.label);
+    const name=c.raw?words(c.raw,true):[c.label];
+    if(!ctl) return el("th",{scope:"col",class:cls},...name);
+    const btn=el("button",{type:"button",class:"dv-sort","data-key":c.key,"aria-label":dvText.sortBy(c.label)},...name);
     btn.addEventListener("click",()=>ctl.sortBy(c.key));
     return el("th",{scope:"col","aria-sort":on(c.key)?(ctl.state.dir===1?"ascending":"descending"):"none",class:cls},btn);});
   table.append(el("thead",{},el("tr",{},...heads)));
@@ -5481,10 +5495,14 @@ function viewTiles(set,groups,roles){
       el("span",{class:"dv-v"},rolePart(r,roles.value)),
       el("span",{class:"dv-l"},...leadNodes(set,r,roles,[rolePart(r,roles.label)])),
       note!==""?el("span",{class:"dv-n"},note):null,toneWords(t)]});})));}
-/* kept entries as cards: one dated card per row, drawn by queryCard */
+/* cards: one card per row. A kept entry is a dated card, drawn by queryCard; a data block's row is a card led by its label (the
+   row's link, if it has one), its other fields as lines under it (a field with no value is left out), and its icon as the picture */
 function viewCards(set,groups,roles,cols){
-  return groups[0].rows.map(r=>{const pic=iconOf(r,roles);
-    return queryCard(set.entryOf(r),set.from,cols.map(c=>c.key),{picture:pic?{icon:pic}:null,lead:kids=>leadNodes(set,r,roles,kids)});}).filter(Boolean);}
+  return groups[0].rows.map(r=>{const pic=iconOf(r,roles),picture=pic?{icon:pic}:null;
+    if(set.kind==="entries") return queryCard(set.entryOf(r),set.from,cols.map(c=>c.key),{picture,lead:kids=>leadNodes(set,r,roles,kids)});
+    const lab=rolePart(r,roles.label),lines=cols.filter(c=>cellText(r[c.key])!==""),dl=el("dl",{});
+    lines.forEach(c=>dl.append(el("dt",{},c.label),el("dd",{},cellText(r[c.key]))));
+    return cardNode({mode:"item",cls:"entry entry-row",picture,titleNode:lab!==""?el("div",{class:"k"},...leadNodes(set,r,roles,[lab])):null,kids:[lines.length?dl:null]});}).filter(Boolean);}
 /* ---- chart views: `as: bars` and `as: line`. Plain SVG from numbers and
    text nodes, coloured only through the theme's tokens (the CSS classes ch-*).
    Nothing is computed from the rows beyond the scale a picture needs: no
@@ -5623,13 +5641,13 @@ function nestRows(rows,pk,limit){
 const uniq=a=>a.filter((x,i)=>x&&a.indexOf(x)===i);
 /* the other fields a view shows: a table's columns, a list row's extras, a chart's series, a card's questions */
 function colsOf(as,set,v,roles){
-  const fields=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,mk=ks=>ks.map(k=>({key:k,label:set.lab(k)}));
+  const fields=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,mk=ks=>ks.map(k=>({key:k,label:set.lab(k),raw:set.labw&&set.labw(k)}));
+  /* the fields that play no role: a list's extras and a data block's card lines (never `id`, the group or the parent) */
+  const rest=()=>{const skip=new Set([...ROLE_NAMES.map(n=>roles[n]),v.group,v.parent||"parent","id"]);return set.own.filter(k=>!skip.has(k));};
   if(as==="table") return mk(fields||set.own);
-  if(as==="list"){if(fields) return mk(fields);
-    const skip=new Set([...ROLE_NAMES.map(n=>roles[n]),v.group,v.parent||"parent","id"]);
-    return mk(set.own.filter(k=>!skip.has(k)));}
+  if(as==="list") return mk(fields||rest());
   if(as==="line") return mk(fields||(roles.value?[roles.value]:[]));
-  if(as==="cards") return mk(fields?fields.filter(k=>set.qs.some(q=>q.id===k)):set.qs.map(q=>q.id));
+  if(as==="cards") return mk(set.kind!=="entries"?(fields||rest()):fields?fields.filter(k=>set.qs.some(q=>q.id===k)):set.qs.map(q=>q.id));
   return [];}
 const sortRows=(rows,set,state)=>{
   return rows.map((r,i)=>({r,i,k:set.sortVal(r,state.sk)})).sort((x,y)=>
@@ -5691,7 +5709,7 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   const roles=rolesOf({...set,rows},v,as),cols=colsOf(as,set,v,roles);
   if(as==="table"&&!(roles.badge&&cols.some(c=>c.key===roles.badge))){roles.badge=null;roles.tone=null;}
   const gk=drawn.includes("group")&&v.group&&!tree?v.group:null,canSort=as!=="line";
-  const shown=uniq([...(as==="cards"?["date"]:[]),roles.badge,roles.label,roles.value,roles.note,roles.tone,...cols.map(c=>c.key)]);
+  const shown=uniq([...(as==="cards"&&set.kind==="entries"?["date"]:[]),roles.badge,roles.label,roles.value,roles.note,roles.tone,...cols.map(c=>c.key)]);
   const sortKeys=canSort?uniq([...(set.kind==="entries"?["date"]:[]),roles.label,roles.value,...cols.map(c=>c.key)]):[];
   const state=viewState(opts.key);
   if(!state.opens) state.opens=new Set();
@@ -5796,8 +5814,8 @@ function refocus(sel){const n=document.querySelector(sel);if(n&&!n.disabled) n.f
 /* The page on show: its name and its blocks. The list is read afresh on every redraw. */
 function pageBody(id,draft){const ps=pagesOf(activityOf(id));const cur=currentPage(id);
   const box=el("div",{class:"ap-body"});
-  /* a page named by its own first heading is not named twice: that heading is the name */
-  if(ps.length>1&&!cur.lead){const i=ps.indexOf(cur);
+  /* a page with a heading of its own is named by it, where it stands in the page (the menu uses it too); only a page with none is named above */
+  if(ps.length>1&&!cur.title){const i=ps.indexOf(cur);
     box.append(el("div",{class:"ap-name"},el("h3",{class:"ap-title"},pageName(cur,i))));}
   /* reading material (see READING MATERIAL): the endnotes print shows go below
      the blocks, and only when there is something for them */
@@ -5834,7 +5852,7 @@ function withPages(id,content){const P=strings("pages");const ps=pagesOf(activit
     "aria-label":P.toggle,title:open?P.minimize:P.expand},el("span",{"aria-hidden":"true"},open?"«":"»"));
   tog.addEventListener("click",togglePagesMenu);
   const ol=el("ol",{id:"ap-pages"});
-  ps.forEach((p,i)=>{const name=ps.length<2?tx((moduleOf(id)||{}).title,tx(activityOf(id).title,shortId(id))):pageName(p,i);const t=el("span",{class:"ap-t"},name);
+  ps.forEach((p,i)=>{const name=ps.length<2?plainText(tx((moduleOf(id)||{}).title,tx(activityOf(id).title,shortId(id)))):pageName(p,i);const t=el("span",{class:"ap-t"},name);
     const b=el("button",{type:"button",class:"ap-item","aria-current":p.id===cur.id?"page":null,title:open?null:name},
       el("span",{class:"ap-n","aria-hidden":"true"},String(i+1)),t);
     b.addEventListener("click",()=>choosePage(id,p.id));b.addEventListener("keydown",pageMenuKeys);
@@ -6093,12 +6111,12 @@ function headingsOf(text){const out=[];let fence=null;
   return out;}
 /* every heading an activity holds, with the page it is on */
 function activityHeadings(a){const ps=pagesOf(a),out=[];
-  const t=tx(a.title,null);if(typeof t==="string"&&t.trim()) out.push({text:t,page:ps[0].id});
+  const t=plainText(tx(a.title,null));if(t) out.push({text:t,page:ps[0].id});
   ps.forEach(p=>{const pt=tx(p.title,null);if(typeof pt==="string"&&pt.trim()) out.push({text:pt,page:p.id});
     const walk=list=>list.forEach(b=>{
       if(b.type==="markdown") headingsOf(b.text).forEach(h=>out.push({text:h,page:p.id}));
       else if(b.type==="row"||b.type==="cell") walk(blocksIn(b));
-      else{const l=tx(b.label,null);if(typeof l==="string"&&l.trim()) out.push({text:l,page:p.id});}});
+      else{const l=plainText(tx(b.label,null));if(l) out.push({text:l,page:p.id});}});
     walk(blocksIn(p));});
   return out;}
 /* The first activity (page) in the booklet holding a heading with this text, or,
@@ -6332,7 +6350,7 @@ function calloutNode(b,draft,activityId){const Rt=strings("reading"),plain=b.kin
     head.append(el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
   box.append(head);
-  if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},title));named.push(u+"-t");}
+  if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title)));named.push(u+"-t");}
   if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
   blocksIn(b).forEach(x=>{if(x&&typeof x==="object") body.append(renderBlock(x,draft,activityId));});
@@ -6489,7 +6507,7 @@ function removeModuleControl(mod){if(!mod||!mod.id||fencedModule(mod.id)!==mod) 
   const draw=asking=>{box.innerHTML="";
     if(!asking){const b=el("button",{type:"button",class:"quietlink"},T.remove);
       b.addEventListener("click",()=>draw(true));box.append(b);return;}
-    const w=moduleWork(mod),title=tx(mod.title,mod.id),parts=[];
+    const w=moduleWork(mod),title=plainText(tx(mod.title,mod.id)),parts=[];
     if(w.entries) parts.push(T.removeN.entries(w.entries));
     if(w.answers) parts.push(T.removeN.answers(w.answers));
     if(w.drafts) parts.push(T.removeN.drafts(w.drafts));
@@ -6529,7 +6547,10 @@ const centreScreen=main=>{Array.from(main.children||[]).forEach(n=>{if(n&&n.clas
 function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   main.append(...openNotices());
   const hero=el("div",{class:"hero col"});
-  hero.append(nameRow(),el("p",{class:"sub"},tx((BOOK.head||{}).sub,t.home.sub)));
+  hero.append(nameRow());
+  /* the booklet's own opening, under its name, drawn as a module's opening is (no tagline of the renderer's) */
+  {const o=openingNodes(BOOK,"",tx((BOOK.head||{}).title,""));
+   if(o.lede) hero.append(o.lede);if(o.more.length) hero.append(el("div",{class:"mhead-more"},...o.more));}
   main.append(hero);
   /* One card per module. A module with one activity is its activity's card; a
      module with several gets one card that names them and opens the module's
@@ -6668,7 +6689,7 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
      by its front matter title): draw the title once */
   const same=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
   const firstH=body.querySelector("h1,h2,h3,h4,h5,h6");
-  if(firstH&&same(titleText)&&same(firstH.textContent)===same(titleText)) firstH.remove();
+  if(firstH&&same(textOf(words(titleText)))&&same(firstH.textContent)===same(textOf(words(titleText)))) firstH.remove();
   col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
   if(W) col.append(...wikiAfter(W,id));
@@ -6683,9 +6704,9 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
    that name in teaching, the line icon in briefing) in the card's own tile and colour, to the left of the title. No `icon:`: the title alone. */
 function pageHead(id,m,titleText,W){
   const cp=m.icon?cardPicture(titleText,NaN,m.icon):null,pic=cp&&cp.picture;
-  if(!pic||!pic.icon) return el("h2",{},titleText);
+  if(!pic||!pic.icon) return el("h2",{},...words(titleText));
   const holder=holderOf(id),sib=W?wikiSiblings(W,id):holder?activitiesShown(holder):[],at=Math.max(0,sib.findIndex(a=>a.id===id));
-  return el("div",{class:"phead hue-"+cardHue(at)},cardTile(pic),el("h2",{},cp.title));}
+  return el("div",{class:"phead hue-"+cardHue(at)},cardTile(pic),el("h2",{},...words(cp.title)));}
 /* The foot of an activity's page: back to the overview (the module's page, or the home screen), and on to the next
    activity of its module in file order, named with its number. */
 function activityFooter(id){const C=strings("cards"),holder=holderOf(id),W=wikiOf(holder),shown=W?W.acts.filter(isShown):holder?activitiesShown(holder):[];
@@ -6695,10 +6716,10 @@ function activityFooter(id){const C=strings("cards"),holder=holderOf(id),W=wikiO
   const backTo=holder&&isMulti(holder)?moduleScreen(holder.id):HOME_SCREEN,up=W?wikiPath(W,id).pop():null;
   const to=x=>W?()=>wikiGo(x,false):()=>go(x);
   const foot=el("div",{class:"cd-foot"},
-    el("button",{type:"button",class:"cd-btn cd-back",onclick:to(up?up.id:backTo)},icon("arrow-left"),up?strings("wiki").up(activityName(up)):C.back));
-  if(next&&W) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:to(next.id)},strings("wiki").next(activityName(next)),icon("arrow-right")));
+    el("button",{type:"button",class:"cd-btn cd-back",onclick:to(up?up.id:backTo)},icon("arrow-left"),up?strings("wiki").up(plainText(activityName(up))):C.back));
+  if(next&&W) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:to(next.id)},strings("wiki").next(plainText(activityName(next))),icon("arrow-right")));
   else if(next) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:()=>go(next.id)},
-    C.next(here+2,cardPicture(activityName(next),here+2,next.icon).title),icon("arrow-right")));
+    C.next(here+2,plainText(cardPicture(activityName(next),here+2,next.icon).title)),icon("arrow-right")));
   return foot;}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
@@ -6732,7 +6753,7 @@ function cardNode(o){
   const tile=cardTile(pic);
   const t=mode==="go"?"span":"div";
   const num=o.number!=null&&!(pic&&pic.number!=null)?el("span",{class:"cd-num","aria-hidden":"true"},String(o.number)):null;
-  const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k"},o.title):null);
+  const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k"},...(o.marked?words(o.title,true):[o.title])):null);
   const main=(title||o.teaser||o.status||(o.pills||[]).length||(o.foot||[]).length)?el(t,{class:"cd-main"},
     title?el(t,{class:"top"},num,title):null,
     nonEmpty(o.teaser)?el(t,{class:"d"+(mode==="fold"?" cd-dup":"")+(o.teaserCls?" "+o.teaserCls:"")},o.teaser):null,
@@ -6787,27 +6808,29 @@ function moduleMeta(acts){const C=strings("cards"),ps=acts.map(activityProgress)
 /* A card on the home page or a module's page: a button that opens view `to`. `i` is its place in the list it is in. */
 function activityCard(to,name,blurb,status,i,iconName,onclick){
   const {title,picture}=cardPicture(name,i+1,iconName);
-  return cardNode({mode:"go",title,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,onclick:onclick||(()=>go(to))});}
+  return cardNode({mode:"go",title,marked:true,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,onclick:onclick||(()=>go(to))});}
 function moduleCard(mod,acts,i){
   return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),moduleStatus(acts),i,mod.icon);}
 /* The head of a module's own screen, and of the screen of a module that is one activity (which stands in for it): its title, its opening
    (the first paragraph at lede size, the rest under it, reading callouts in the file's order), `meta` (one line of counts) and its
    `icon:` large beside the title. A module with no opening falls back to its blurb. `activityId` is the activity the opening is drawn with. */
-function openingNodes(mod,activityId){
-  const bs=Array.isArray(mod.opening)?mod.opening:[];if(!bs.length||!activityId) return {lede:null,more:[]};
-  const draft=answersFor(activityId),more=[];let lede=null;
+function openingNodes(mod,activityId,title){
+  const bs=Array.isArray(mod.opening)?mod.opening:[];if(!bs.length||activityId==null||activityId===undefined) return {lede:null,more:[]};
+  const draft=activityId===""?nullMap():answersFor(activityId),more=[];let lede=null;
   /* the opening's headings carry their own id prefix, so a heading of the same words in the activity is still found by its links */
   bs.forEach((b,i)=>{
     if(b.type==="markdown"){
       const nodes=mdBlockNodes(b,activityId,"mo-");
+      /* a leading heading that repeats the title above it is drawn once (the title is) */
+      if(i===0&&title&&nodes.length&&headLevel(nodes[0])&&sameWords(textOf(nodes[0]).replace(/\s+/g," "),title)) nodes.shift();
       if(i===0&&nodes.length&&tagOf(nodes[0])==="p"){lede=el("div",{class:"mhead-lede"},nodes[0]);nodes.shift();}
       if(nodes.length) more.push(el("div",{class:"pblock md"},...nodes));
       return;}
     more.push(renderBlock(b,draft,activityId));});
   return {lede,more};}
 function moduleHead(mod,activityId,meta,showMeta){
-  const text=el("div",{class:"mhead-text"},el("h2",{},tx(mod.title,mod.id)));
-  const o=openingNodes(mod,activityId),lead=tx(mod.blurb,"");
+  const text=el("div",{class:"mhead-text"},el("h2",{},...words(tx(mod.title,mod.id))));
+  const o=openingNodes(mod,activityId,plainText(tx(mod.title,mod.id))),lead=tx(mod.blurb,"");
   if(o.lede||o.more.length){if(o.lede) text.append(o.lede);if(o.more.length) text.append(el("div",{class:"mhead-more"},...o.more));}
   else if(nonEmpty(lead)) text.append(el("p",{class:"aside"},lead));
   if(showMeta&&meta) text.append(meta);
@@ -6870,12 +6893,12 @@ function wikiMentions(W){
 const wikiPlain=s=>String(s).replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g,"$2").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1");
 /* the search: every word typed must be in the page's title or its prose; titles first, at most WK_FOUND */
 function wikiFind(W,q){
-  const words=String(q).toLowerCase().split(/\s+/).filter(Boolean);if(!words.length) return [];
+  const terms=String(q).toLowerCase().split(/\s+/).filter(Boolean);if(!terms.length) return [];
   const text=a=>{let t=W.text.get(a.id);
-    if(t===undefined){t=(activityName(a)+" "+wikiPlain(wikiTexts(a).join(" "))).toLowerCase();W.text.set(a.id,t);}return t;};
+    if(t===undefined){t=(plainText(activityName(a))+" "+wikiPlain(wikiTexts(a).join(" "))).toLowerCase();W.text.set(a.id,t);}return t;};
   const hit=[],rest=[];
-  for(const a of W.acts){if(!isShown(a)) continue;const t=text(a);if(!words.every(w=>t.includes(w))) continue;
-    (words.every(w=>activityName(a).toLowerCase().includes(w))?hit:rest).push(a);
+  for(const a of W.acts){if(!isShown(a)) continue;const t=text(a);if(!terms.every(w=>t.includes(w))) continue;
+    (terms.every(w=>plainText(activityName(a)).toLowerCase().includes(w))?hit:rest).push(a);
     if(hit.length>=WK_FOUND) break;}
   return hit.concat(rest).slice(0,WK_FOUND);}
 /* a long row of cards or chips: the first WK_BATCH, then a button for the next WK_BATCH, labelled with what it will draw */
@@ -6918,7 +6941,7 @@ function wkInside(id,rd,own){const F=strings("fold"),ps=pagesOf(activityOf(id)),
     ol.append(el("li",{},b,p.id===cur.id?secs(false):null));});
   return ol;}
 function wkNode(W,a,cur,rd){const k=wikiKids(W,a.id),here=a.id===cur,inside=here?wkInside(a.id,rd):null;
-  const b=el("button",{type:"button",class:"wk-link","aria-current":here?"page":null,"data-id":a.id,onclick:()=>wikiGo(a.id,true)},activityName(a));
+  const b=el("button",{type:"button",class:"wk-link","aria-current":here?"page":null,"data-id":a.id,onclick:()=>wikiGo(a.id,true)},...words(activityName(a),true));
   if(!k.length) return el("li",{class:"dv-row"},b,inside);
   const d=el("details",{"data-id":a.id,open:WK.open.has(a.id)},el("summary",{class:"dv-row"},b));
   if(inside) d.append(inside);
@@ -6936,9 +6959,9 @@ function wikiMenu(W,cur,rd){const K=strings("wiki");
   const draw=()=>{const q=WK.q.trim(),hits=q?wikiFind(W,q):[];
     setHidden(tree,!!q);setHidden(res,!q||!hits.length);setHidden(none,!q||hits.length>0);
     res.innerHTML="";
-    hits.forEach(a=>{const path=wikiPath(W,a.id).map(activityName).join(" › ");
+    hits.forEach(a=>{const path=wikiPath(W,a.id).map(x=>plainText(activityName(x))).join(" › ");
       res.append(el("li",{class:"dv-row wk-hit"},
-        el("button",{type:"button",class:"wk-link","aria-current":a.id===cur?"page":null,onclick:()=>wikiGo(a.id,true)},activityName(a)),
+        el("button",{type:"button",class:"wk-link","aria-current":a.id===cur?"page":null,onclick:()=>wikiGo(a.id,true)},...words(activityName(a),true)),
         path?el("span",{class:"wk-path"},path):null,a.id===cur?wkInside(cur,rd):null));});};
   inp.addEventListener("input",()=>{WK.q=inp.value;draw();});
   draw();
@@ -6947,13 +6970,13 @@ function wikiMenu(W,cur,rd){const K=strings("wiki");
   return el("nav",{class:"wk-menu","aria-label":K.menu},fold);}
 const wikiFrame=(W,cur,nodes)=>el("div",{class:"wk-frame"},wikiMenu(W,cur,cur?RM_CUR:null),el("div",{class:"wk-content"},...nodes));
 function wikiCrumbs(W,id){const K=strings("wiki"),mod=W.mod;
-  const crumb=(name,to)=>el("li",{},to?el("button",{type:"button",class:"wk-crumb",onclick:()=>wikiGo(to,false)},name):el("span",{"aria-current":"page"},name));
+  const crumb=(name,to)=>el("li",{},to?el("button",{type:"button",class:"wk-crumb",onclick:()=>wikiGo(to,false)},...words(name,true)):el("span",{"aria-current":"page"},...words(name,true)));
   return el("nav",{class:"wk-crumbs","aria-label":K.crumbs},el("ol",{},
     crumb(tx(mod.title,mod.id),moduleScreen(mod.id)),...wikiPath(W,id).map(a=>crumb(activityName(a),a.id)),crumb(activityName(W.byId.get(id)||activityOf(id)),null)));}
 /* what follows a page's own words: the pages under it as cards, and the pages that mention it */
 function wikiAfter(W,id){const K=strings("wiki"),out=[],kids=wikiKids(W,id),ment=(wikiMentions(W).get(id)||[]).filter(isShown);
   if(kids.length) out.push(...wikiBatched(kids,wikiCard,"modes wk-cards"));
-  if(ment.length) out.push(el("h3",{class:"wk-h"},K.mentioned),...wikiBatched(ment,a=>el("button",{type:"button",class:"wk-chip",onclick:()=>wikiGo(a.id,false)},activityName(a)),"wk-chips"));
+  if(ment.length) out.push(el("h3",{class:"wk-h"},K.mentioned),...wikiBatched(ment,a=>el("button",{type:"button",class:"wk-chip",onclick:()=>wikiGo(a.id,false)},...words(activityName(a),true)),"wk-chips"));
   return out;}
 /* ---- a link to a whole module ----
    `[[x.booklet]]` and `[t](x.booklet.md)` name the module x. The booklet holds it: the link opens it. It does not: a chip says so,
@@ -6965,7 +6988,7 @@ const moduleLinkId=t=>{let s=String(t==null?"":t).trim().replace(/[#?].*$/,"").s
   return s.replace(/\.booklet(?:\.md)?$/i,"");};
 function moduleLinkNode(target,kids){const id=moduleLinkId(target),mod=fencedModule(id);
   if(!id) return kids&&kids.length?textOf(kids):String(target);
-  const label=kids&&kids.length?kids:[mod?tx(mod.title,id):id];
+  const label=kids&&kids.length?kids:words(mod?tx(mod.title,id):id,true);
   if(mod) return el("a",{href:"#",class:"alink",onclick:e=>{if(e&&e.preventDefault) e.preventDefault();go(entryScreenOf(mod));}},...label);
   return moduleChip(id,label);}
 function moduleChip(id,label){const K=strings("wiki");
@@ -7093,7 +7116,7 @@ function addModuleFromText(text,say){say=say||addDialogSay;
     if(!r.ok){say(humanMsg(r.problems.join(" ")));return false;}
     renamed=r.renamed||[];}
   veilAddModule.removeAttribute("open");saveLocal();render();
-  toast(STRINGS[lang].booklet.added(tx((R.template.modules[0]||{}).title,""))+(renamed.length?" "+STRINGS[lang].booklet.renamed(renamed):"")+(otherMarker(text)?" "+STRINGS[lang].booklet.addedOtherMarker(otherMarker(text)):""));
+  toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,"")))+(renamed.length?" "+STRINGS[lang].booklet.renamed(renamed):"")+(otherMarker(text)?" "+STRINGS[lang].booklet.addedOtherMarker(otherMarker(text)):""));
   return true;}
 /* the module a registry entry names, read (with the size limit and the words for a slow or missing file) and added */
 async function addFromRegistry(id,say){const gen=bookletGen,got=await registryRead(id),B=STRINGS[lang].booklet;
@@ -7249,7 +7272,7 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
   if(N.via.store===false){const r=addModuleText(N.text);
     if(!r.ok){toast(humanMsg(r.problems.join(" ")));render();return;}
-    saveLocal();render();toast(STRINGS[lang].booklet.added(tx((R.template.modules[0]||{}).title,"")));}
+    saveLocal();render();toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,""))));}
   else if(HOST&&hostName()) finishLoad(R);
   else finishLoad(R,null,{S:STATE,D:DRAFTS,dirty,unsavedEntries});
   if(currentId!==id) return;

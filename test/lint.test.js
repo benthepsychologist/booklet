@@ -70,7 +70,6 @@ const CASES=[
  ["lint-data-id-clash","a data block id that is also a question's id",/line 19: the data block id \^situation is also the id on line 13/],
  ["lint-query-bad-as","a query whose `as:` is not a view",/line 25: the query's `as: chart` is not one of cards, table, list, tiles/],
  ["lint-query-bad-limit","a query whose `limit:` is not a positive integer",/line 25: the query's `limit: 0` must be a positive whole number/],
- ["lint-query-cards-on-data","`as: cards` on a data block",/line 25: the query's `as: cards` draws kept entries, not the data block 'short-list'/],
  ["lint-query-data-other-module","a query of a data block in another module",/line 13: the query's `from: short-list` is a data block in another module/],
  ["lint-fence-unclosed","a fence opened and never closed",/line 25: a fence is opened and never closed/],
  ["lint-setting-unknown","a setting a kind does not take (`mx:5` for `max:5`)",/line 13: a number line takes no `mx:` setting \(it takes `min:`, `max:`, `step:`\)/],
@@ -130,6 +129,11 @@ for(const [name,what,rx] of CASES){
  W("lint-query-nested-no-id",/line 25: the nested list has 1 row\(s\) with no `id`/,"a nested list with a row that has no `id`");
  const ok=lint(path.join(FX,"lint-query-roles-ok.md"));
  chk("a list with every role key, `fields:` and `parent:` lints clean",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);}
+
+{// `as: cards` draws a data block (0.13), and prose before the first module line is the booklet's opening: both lint clean
+ const r=lint(path.join(FX,"lint-query-cards-data-ok.md"));
+ chk("`as: cards` over a data block, with `label:`, `fields:` and `limit:`, lints clean (cards draw label, fields, limit, link, icon)",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);
+ chk("and so does the prose and the reading callout before the file's first module line (the booklet's opening)",r.status===0&&r.errors.length===0&&r.warns.length===0,r.out);}
 
 {// a query written correctly is clean
  const r=lint(path.join(FX,"lint-query-ok.md"));
