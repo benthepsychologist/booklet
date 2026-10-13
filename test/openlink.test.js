@@ -163,6 +163,35 @@ reset();{const A=P.boot();META["booklet-registry"]="https://reg.test/registry.js
  A.closeBooklet();await A.openLink("#/module/t%2Fdaily");
  chk("having read it, the same module makes no offer",!offer()&&lib().length===1);}
 
+/* ---- item E: a link may name a page of what it opens ---- */
+const TWO=`---\nbooklet: "0.12"\ntitle: Two pages\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] First\n\nx\n\n> [!activity|b] Second\n\ny\n\n> [!module|m end] End\n`;
+reset();{const A=P.boot();META["booklet-store"]=STORE;
+ ROUTES[STORE+"reports/week.booklet.md"]=TWO;
+ const ok=await A.openLink("#/open/reports/week.booklet.md/b");
+ chk("a store link with a page opens on that page, and reads only the booklet's file",ok===true&&A.screen==="m/b"&&CALLS.length===1&&CALLS[0].url===STORE+"reports/week.booklet.md",A.screen+" "+JSON.stringify(CALLS.map(c=>c.url)));
+ chk("the quiet line of where it came from is on that page",P.find(P.main(),P.hasClass("openedby")).length===1);
+ A.closeBooklet();CALLS=[];
+ await A.openLink("#/open/reports/week.booklet.md/no-such-page");
+ chk("a page the booklet does not have is ignored: it opens as it would without one",A.screen==="module:m",A.screen);
+ A.closeBooklet();
+ await A.openLink("#/open/reports/week.booklet.md/%62");
+ chk("the page is decoded once",A.screen==="m/b",A.screen);}
+reset();{const A=P.boot();META["booklet-store"]=STORE;
+ ROUTES[STORE+"a.md/b.md"]=TWO;
+ const ok=await A.openLink("#/open/a.md/b.md/a");
+ chk("a store name may hold .md/ itself: the split is after the final one",ok===true&&A.screen==="m/a"&&CALLS[0].url===STORE+"a.md/b.md",A.screen+" "+(CALLS[0]||{}).url);}
+reset();{const A=P.boot();META["booklet-registry"]="https://reg.test/registry.json";
+ ROUTES["https://reg.test/registry.json"]=JSON.stringify({modules:[{id:"t/two",title:"Two pages",file:"two.md"},{id:"plain",title:"Plain",file:"plain.md"}]});
+ ROUTES["https://reg.test/two.md"]=TWO;ROUTES["https://reg.test/plain.md"]=TWO;
+ await A.openLink("#/module/t%2Ftwo/b");
+ chk("a module link with a page opens on it (a registry id may hold a slash)",A.screen==="m/b",A.screen);
+ A.closeBooklet();
+ await A.openLink("#/module/plain/b");
+ chk("...and an id with no slash does too",A.screen==="m/b",A.screen);
+ A.closeBooklet();
+ await A.openLink("#/module/t%2Ftwo");
+ chk("a module link with no page opens as before",A.screen==="module:m",A.screen);}
+
 /* ---- the fetch refusals ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;
  const tryit=async(route,why)=>{ROUTES={};ROUTES[STORE+"x.md"]=route;const n0=lib().length;const ok=await A.openLink("#/open/x.md");

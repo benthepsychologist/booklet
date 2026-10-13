@@ -143,7 +143,7 @@ It is required when anything lives in another file, and recommended always, as t
 
 **Paths follow Obsidian's conventions.** `[[week-2.booklet]]` (Obsidian resolves a note by name anywhere in the vault) or an ordinary Markdown link, `[Week 2](modules/week-2.booklet.md)`, relative to the booklet's own folder. A block in another file is `![[week-2.booklet#^body-map]]`. Absolute machine paths such as `~/notes/…` are outside what Obsidian (vault-relative) or a browser (no file system) can read, so they are not supported; an unresolved link is shown as one and breaks nothing.
 
-**A link to a whole module.** `[[week-2.booklet]]` or `[Week 2](week-2.booklet.md)` in prose names the module `week-2`: the file's name before `.booklet`. A manifest line that names the path settles which module it is; otherwise a module's file is named by its id. Such a link is for a module that may not be in this booklet, one in a registry or one the reader has not been given yet: a renderer opens the module if the booklet holds it, and otherwise shows the link as a module that is not here, asking the network for nothing until the reader acts. To move within a file, link to a heading (below). (The reference renderer does not do this yet; see section 13.)
+**A link to a whole module.** `[[week-2.booklet]]` or `[Week 2](week-2.booklet.md)` in prose names the module `week-2`: the file's name before `.booklet`. A manifest line that names the path settles which module it is; otherwise a module's file is named by its id. Such a link is for a module that may not be in this booklet, one in a registry or one the reader has not been given yet: a renderer opens the module if the booklet holds it, and otherwise shows the link as a module that is not here, asking the network for nothing until the reader acts. To move within a file, link to a heading (below).
 
 **Navigating the file in an editor.** Every part opens with a line of one shape, so searching for `[!module|`, `[!activity|`, `[!data` or `[!records` walks the file, and the manifest at the top is its table of contents.
 
@@ -814,7 +814,6 @@ This is a young format, and the reference renderer does not yet do everything th
 - **The manifest** (section 3). The linter check of the manifest against the file, and parts that live in another file (`[[week-2.booklet]]`, a data block in another file). The renderer reads one file and skips the manifest.
 - **`sync`**, the record of where a file is kept (section 8).
 - **Showing images** (section 6). The reference renderer shows no image yet. It draws an image's alt text in a quiet box that says the image is not shown, with the address as text beneath. A later version will read images from a store its host declares.
-- **Links to a whole module** (section 3) are read but not yet drawn: the reference renderer shows them as plain text.
 - **`readonly` and `describe` on a widget line** (section 7). `grid-select` honours them; `svg-regions` does not yet.
 
 None of this affects what already works: loading, reading, answering, and saving a v0.12 booklet with every question kind above, its widgets, and its citations.

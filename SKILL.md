@@ -277,6 +277,36 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   file's name before `.booklet`. A renderer opens it if the booklet holds it and
   shows it as not here otherwise. Use `[[#Heading]]` to move within a file.
 
+A small wiki, three pages in a tree and a link to a module the booklet may not
+hold. The renderer draws the top page as a card, the tree in a menu beside the
+pages, a trail of ancestors above each page, the pages under it as cards below,
+and a "Mentioned on" list of the pages that link to it:
+
+```markdown
+---
+booklet: "0.12"
+title: Harbour notes
+lang: en
+---
+
+> [!module|harbour icon:anchor] Harbour notes
+
+> [!activity|tides icon:waves] Tides
+
+How the water moves. The two tidal ranges are in [[#Spring tides]]; a second week of
+the course is in [[week-2.booklet]].
+
+> [!activity|spring parent:tides] Spring tides
+
+The widest range, twice a month. Back to [[#Tides]].
+
+> [!activity|neap parent:tides] Neap tides
+
+The narrowest range. Compare [[#Spring tides]].
+
+> [!module|harbour end] End of Harbour notes
+```
+
 An activity with pages (a page is a step; the answers of all its pages are
 kept together as one entry):
 

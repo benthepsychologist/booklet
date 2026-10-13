@@ -71,16 +71,16 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
  for(const as of ["tiles","list","table"]){
    const n=draw(ROWS,{as});
    const links=walk(n,x=>x.tagName==="a"),hrefs=links.map(x=>x.attrs.href);
-   chk(as+": a heading link and a web address lead, and nothing else does (a module link, a missing heading, a script are plain text)",
-     links.length===2&&hrefs.includes("#")&&hrefs.includes("https://example.org/x")&&!/week-2|javascript/.test(JSON.stringify(hrefs)),JSON.stringify(hrefs));
+   chk(as+": a heading link and a web address lead, a module that is not here is a chip, and a missing heading and a script are plain text",
+     links.length===2&&hrefs.includes("#")&&hrefs.includes("https://example.org/x")&&!/week-2|javascript/.test(JSON.stringify(hrefs))&&walk(n,x=>/(^|\s)mchip(\s|$)/.test((x.attrs||{}).class||"")).length===1,JSON.stringify(hrefs));
    chk(as+": a web address opens apart, safely",links.some(x=>x.attrs.target==="_blank"&&/noopener/.test(x.attrs.rel||"")));
    const pics=walk(n,x=>x.tagName==="use").map(x=>x.attrs.href);
-   chk(as+": an icon value is drawn through the sprite, and a name that is not in it is not drawn",pics.join()==="#bi-compass,#bi-house",pics.join());
+   chk(as+": an icon value is drawn through the sprite, and a name that is not in it is not drawn",pics.join()==="#bi-compass,#bi-house,#bi-package",pics.join());
    chk(as+": the link and icon fields are not drawn as list extras",as==="table"||!/compass|no-such/.test(text(n)));}
  {const n=draw(ROWS,{as:"table"}),heads=walk(n,x=>x.tagName==="th").map(text);
-  chk("a table without fields: still shows every field as a column (link and icon too); its first cell leads to the row's link and carries its icon",heads.join()==="label,value,link,icon"&&walk(n,x=>x.tagName==="a").length===2&&walk(n,x=>x.tagName==="use").length===2,heads.join());}
+  chk("a table without fields: still shows every field as a column (link and icon too); its first cell leads to the row's link and carries its icon",heads.join()==="label,value,link,icon"&&walk(n,x=>x.tagName==="a").length===2&&walk(n,x=>x.tagName==="use").length===3,heads.join());}
  {const n=draw(ROWS,{as:"tiles",link:"to",icon:"pic"}),m=draw(ROWS.map(r=>({label:r.label,to:r.link,pic:r.icon})),{as:"tiles",link:"to",icon:"pic"});
-  chk("a query key points the role at a field with another name",walk(m,x=>x.tagName==="a").length===2&&walk(m,x=>x.tagName==="use").length===2,String(walk(m,x=>x.tagName==="a").length));}
+  chk("a query key points the role at a field with another name",walk(m,x=>x.tagName==="a").length===2&&walk(m,x=>x.tagName==="use").length===3,String(walk(m,x=>x.tagName==="a").length));}
  {const n=draw(ROWS,{as:"bars"}),l=draw(ROWS,{as:"line"});
   chk("bars and line do not read link or icon",walk(n,x=>x.tagName==="a"||x.tagName==="use").length===0&&walk(l,x=>x.tagName==="a"||x.tagName==="use").length===0);}
  {const n=draw([{label:"x",value:"1",link:"<b>#Neap tides</b>"}],{as:"list"});
@@ -97,8 +97,8 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
   chk("an opening that starts with an HTML comment still has its lede; the rest and the callout follow",!!o.lede&&text(o.lede)==="Lead words."&&o.more.length===2&&/Tip body/.test(text(o.more[1])),o.lede&&text(o.lede));}
  {const out=A.mdNodes("[Week 2](week-2.booklet.md) and [[week-3.booklet]] and [[week-4.booklet|Four]] and [site](https://example.org/x) and [mix](folder/w.booklet)",A.linkHooks("m"));
   const links=walk({children:out},x=>x.tagName==="a");
-  chk("in prose a link to a whole module is plain text (never a relative link that leaves the page); a web address still leads",
-    links.length===1&&links[0].attrs.href==="https://example.org/x"&&/Week 2 and week-3\.booklet and Four/.test(out.map(text).join("")),out.map(text).join("")+" "+links.length);
+  chk("in prose a link to a module this booklet does not hold is a chip (never a relative link that leaves the page); a web address still leads",
+    links.length===1&&links[0].attrs.href==="https://example.org/x"&&walk({children:out},x=>x.tagName==="button"&&/mchip/.test(x.attrs.class)).length===4&&/Week 2.*not in this booklet.*week-3.*Four/.test(out.map(text).join("")),out.map(text).join("")+" "+links.length);
   chk("isModuleLink reads x.booklet and x.booklet.md, with a folder or without, and no web address or heading",
     ["x.booklet","x.booklet.md","a/b/x.booklet.md"].every(A.isModuleLink)&&!["https://e.org/x.booklet.md","#x","x.md","mailto:a@b.c"].some(A.isModuleLink));
   const sp=A.mdNodes("[a](ht tps://example.org/) [c](<ht tps://example.org/>) [d](<https://exa mple.org/>)",A.linkHooks("m"));

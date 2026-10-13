@@ -46,6 +46,15 @@ chk("SKILL.md names its own version, separate from the format generation and the
 const worked=skill.slice(skill.indexOf("## 11. Worked examples"));
 const examples=[...worked.matchAll(/````markdown\n([\s\S]*?)\n````/g)].map(m=>m[1]+"\n");
 chk("SKILL.md carries four worked examples",examples.length===4);
+/* the small wiki in the module section (three pages with parent:, and a module link) lints clean and loads as a tree */
+{const m=/A small wiki, three pages[\s\S]*?```markdown\n([\s\S]*?)\n```/.exec(skill);
+ chk("SKILL.md shows a small wiki: three activities, two with parent:, and a link to a module",!!m&&(m[1].match(/\[!activity\|/g)||[]).length===3&&(m[1].match(/ parent:/g)||[]).length===2&&/\[\[week-2\.booklet\]\]/.test(m[1]));
+ if(m){const f=path.join(fs.mkdtempSync(path.join(os.tmpdir(),"booklet-wiki-")),"wiki.booklet.md");fs.writeFileSync(f,m[1]+"\n");
+  const lint=spawnSync("python3",[path.join(R,"lint-booklet.py"),f],{encoding:"utf8"});
+  chk("the small wiki lints clean",lint.status===0&&!/^(ERROR|warn)/m.test(lint.stdout),lint.stdout);
+  A.fresh();A.applyParsed(A.parseFile(m[1]+"\n"),"replace");
+  const acts=A.allModules()[0]&&A.activitiesOf(A.allModules()[0]);
+  chk("and loads with its tree: three pages, the second and third under the first",!!acts&&acts.length===3&&acts[1].parent===acts[0].id&&acts[2].parent===acts[0].id);}}
 
 const files=[
   ...examples.map((t,i)=>{const f=path.join(tmp,`worked-example-${i+1}.booklet.md`);fs.writeFileSync(f,t);return f;}),

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-3lwMIyXogVD7vQ8Z91sKtAIaOyUOVDwOhr/JptaF/AA=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-3/JQHzj09Knr3XauLDw1B9ytBRu90T7MM0O9GJ9d6z8=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -709,6 +709,64 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       max-height:calc(100vh - var(--ap-top,9rem) - 1rem);overflow-y:auto;
       background:var(--paper);border:var(--bw) solid var(--rule);border-radius:0 14px 14px 0;padding:.5rem .5rem .6rem;box-shadow:0 12px 30px -14px color-mix(in srgb,var(--shadow) 50%,transparent)}
   }
+  /* ── a wiki: activities under activities (SPEC.md section 3, `parent:`) ──────────────
+     A menu on the left holds a search box and the tree (the `.dv-tree` of a list view); the page is beside it. Below 700px the menu
+     is a disclosure above the page. The page on show is marked by weight, tint and a bar, never by colour alone. */
+  .page:has(.wk-frame){max-width:calc(var(--content-w) + 4rem + 4rem)}
+  .wk-frame{display:grid;grid-template-columns:minmax(13rem,17rem) minmax(0,1fr);gap:0 2rem;align-items:start;font-family:var(--sans)}
+  .wk-frame>*{min-width:0}
+  .wk-content{max-width:var(--content-w)}
+  .wk-content .modes{max-width:none;grid-template-columns:repeat(auto-fill,minmax(min(18rem,100%),1fr))}
+  .wk-menu{position:sticky;top:var(--ap-top,4.4rem);max-height:calc(100vh - var(--ap-top,4.4rem) - .75rem);overflow-y:auto;padding:.9rem .8rem;border:var(--bw) solid var(--rule);border-radius:var(--r-lg);background:var(--surface);--v-pad:.3rem}
+  .wk-menu details.wk-fold{margin:0;padding:0;border:0;border-radius:0;background:none}
+  .wk-fold>summary{display:none;padding:0;min-height:44px;align-items:center;cursor:pointer;font-weight:700;list-style:none}
+  .wk-q{width:100%;box-sizing:border-box;min-height:44px;margin:0 0 .6rem;padding:.4rem .9rem;border:var(--bw) solid var(--rule);border-radius:999px;background:var(--paper);color:var(--ink);font:inherit;font-size:.92rem}
+  .wk-q:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:1px}
+  .wk-menu .dv-list{margin:0;padding:0;border:0}
+  .wk-menu .dv-list li,.wk-menu .dv-row{border:0}
+  .wk-menu .dv-list li{padding:0}
+  .wk-tree details>summary.dv-row{flex-wrap:nowrap;align-items:center;padding-top:0;padding-bottom:0}
+  .wk-tree details>summary.dv-row::before{align-self:center;margin-top:0}
+  .wk-menu .dv-list .dv-list{margin-left:.3rem;padding-left:.4rem;border-left:1px solid var(--rule)}
+  .wk-menu li.dv-row{padding-left:1.1rem}
+  .wk-link{display:flex;align-items:center;flex:1 1 auto;min-width:0;min-height:44px;padding:.2rem .5rem;border:0;border-left:3px solid transparent;border-radius:0 8px 8px 0;background:transparent;color:var(--ink);font:inherit;font-size:.92rem;line-height:1.3;text-align:left;overflow-wrap:anywhere;cursor:pointer}
+  .wk-link:hover{color:var(--accent)}
+  .wk-link[aria-current="page"]{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:700}
+  .wk-hit{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:0}
+  .wk-hit .wk-link{flex:none;width:100%}
+  .wk-hit .wk-secs,.wk-hit .wk-pages{width:100%}
+  .wk-path{padding:0 .5rem;color:var(--muted);font-size:.8rem;line-height:1.3}
+  .wk-none{margin:.2rem 0 0}
+  .phead{display:flex;align-items:center;gap:1rem;margin:0 0 .4rem}
+  .phead h2{margin:0;min-width:0}
+  .wk-pages{list-style:none;margin:0 0 .3rem .5rem;padding:0}
+  .wk-crumbs ol{list-style:none;margin:0 0 .9rem;padding:0;display:flex;flex-wrap:wrap;gap:.1rem .35rem;color:var(--muted);font-size:.9rem}
+  .wk-crumbs li{display:flex;align-items:center;min-height:44px}
+  .wk-menu .ap-sec{min-height:44px;align-items:center}
+  .wk-pagelist{margin:0 0 1rem;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.3rem .5rem}
+  .wk-pagelist>li{display:block}
+  .wk-pagelist .wk-link{border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);padding:.2rem 1rem}
+  .wk-pagelist .wk-link[aria-current="step"]{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+  .wk-pages .wk-link[aria-current="step"]{font-weight:700;color:var(--accent)}
+  .wk-crumbs li+li::before{content:"›";margin-right:.35rem}
+  .wk-crumb{display:inline-flex;align-items:center;min-height:44px;padding:.25rem 0;border:0;background:transparent;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
+  .wk-h{margin:1.75rem 0 .6rem;font-family:var(--serif);font-size:1.2rem}
+  .wk-chips{display:flex;flex-wrap:wrap;gap:.5rem}
+  .wk-chip{min-height:44px;padding:.2rem .9rem;border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);color:var(--accent);font:inherit;font-size:.92rem;cursor:pointer}
+  .wk-chip:hover{border-color:var(--accent)}
+  .wk-morerow{margin:.8rem 0 0}
+  .wk-morerow:empty{display:none}
+  .mchip{display:inline-flex;align-items:center;min-height:44px;gap:.35rem;max-width:100%;padding:.05rem .7rem;border:var(--bw) dashed var(--rule);border-radius:999px;background:var(--paper-deep);color:var(--muted);font:inherit;font-size:.92em;line-height:1.5;cursor:pointer}
+  .mchip:hover{border-color:var(--accent);color:var(--accent)}
+  .mchip .ic{width:1em;height:1em;flex:none}
+  .mc-ask{display:inline-flex;align-items:center;gap:.5rem;margin-left:.5rem;font-family:var(--sans);font-size:.9em;color:var(--muted)}
+  @media (max-width:699px){
+    .wk-frame{grid-template-columns:minmax(0,1fr);gap:1rem 0}
+    .wk-menu{position:static;max-height:none;padding:.2rem .8rem}
+    .wk-fold>summary{display:flex}
+    .wk-fold[open]>summary{margin-bottom:.4rem}
+  }
+  @media print{.wk-menu,.wk-crumbs,.wk-morerow{display:none}.wk-frame{display:block}}
   /* ── reading material: citation marks, the source panel, callouts, sources ──
      Quiet by default: a mark is a small petrol number that keeps the line's
      rhythm (line-height 0 on the superscript). A callout's kind is told by its
@@ -1698,6 +1756,20 @@ const STRINGS_SRC={
     moduleView: {
       noneShown: "Nothing in this module is shown at the moment."
     },
+    wiki: {
+      crumbs: "Where you are",
+      menu: "Pages in this module",
+      search: "Search these pages",
+      noMatch: "No page matches.",
+      mentioned: "Mentioned on",
+      up: t=>`Up: ${t}`,
+      next: t=>`Next: ${t}`,
+      more: n=>`Show ${n} more`,
+      notHere: "not in this booklet",
+      looking: "Looking in the registry…",
+      add: "Add it",
+      notListed: "The registry does not offer it."
+    },
     cards: {
       hint: "Hint",
       solution: "Solution",
@@ -1998,6 +2070,20 @@ const STRINGS_SRC={
     moduleView: {
       noneShown: "Rien dans ce module n’est affiché pour l’instant."
     },
+    wiki: {
+      crumbs: "Où vous êtes",
+      menu: "Pages de ce module",
+      search: "Chercher dans ces pages",
+      noMatch: "Aucune page ne correspond.",
+      mentioned: "Pages qui renvoient ici",
+      up: t=>`Remonter : ${t}`,
+      next: t=>`Suivante : ${t}`,
+      more: n=>`En afficher ${n} de plus`,
+      notHere: "absent de ce carnet",
+      looking: "Recherche dans le registre…",
+      add: "Ajouter",
+      notListed: "Le registre ne le propose pas."
+    },
     cards: {
       hint: "Indice",
       solution: "Solution",
@@ -2297,6 +2383,20 @@ const STRINGS_SRC={
     },
     moduleView: {
       noneShown: "Por ahora no se muestra nada en este módulo."
+    },
+    wiki: {
+      crumbs: "Dónde estás",
+      menu: "Páginas de este módulo",
+      search: "Buscar en estas páginas",
+      noMatch: "Ninguna página coincide.",
+      mentioned: "Se menciona en",
+      up: t=>`Página superior: ${t}`,
+      next: t=>`Siguiente: ${t}`,
+      more: n=>`Mostrar ${n} más`,
+      notHere: "no está en este cuadernillo",
+      looking: "Buscando en el registro…",
+      add: "Agregar",
+      notListed: "El registro no lo ofrece."
     },
     cards: {
       hint: "Pista",
@@ -2632,6 +2732,8 @@ let HOOK_ANSWER_MS=20000,HOOK_ANSWER_TIMER=null;
 function hookStopWait(){clearTimeout(HOOK_ANSWER_TIMER);HOOK_ANSWER_TIMER=null;}
 /* the reader's sort and filter for each query on the page (see viewControls): kept while this booklet is open, never saved */
 const VIEWSTATE=new Map();
+/* a wiki's menu: the branches the reader has opened, what is typed in its search box, and whether the phone's menu is open. This visit's, in memory, never written. */
+const WK={open:new Set(),q:"",menu:false,mod:null};
 /* ---- the reader's language: this browser's choice, never a booklet's ----
    The language a reader picks (the header's EN / ES / FR) is kept in this
    browser under a key of its own, apart from every booklet's saved data. So it
@@ -2843,7 +2945,7 @@ function resetBookletState(){
   lang=langPref()||lang;
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
   screen="home";dirty=false;unsavedEntries=0;
-  openChip={};VIEWSTATE.clear();FILE_NOTES=null;PROVENANCE=null;LINK_NEWER=null;
+  openChip={};VIEWSTATE.clear();WK.open.clear();WK.q="";WK.menu=false;WK.mod=null;FILE_NOTES=null;PROVENANCE=null;LINK_NEWER=null;
   hookStopWait();
   if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;}
   clearTimeout(saveTimer);saveTimer=null;
@@ -3998,10 +4100,11 @@ const textOf=x=>Array.isArray(x)?x.map(textOf).join(""):typeof x==="string"?x:(x
 /* slugify: reuses the page's own Unicode-aware slugify() (see exportName()); test/md.js supplies a simpler one when it runs this engine on its own. */
 /* a web address is written with no space in it: cleanScheme strips spaces to read a scheme, so `ht tps://x` would pass as https and keep its space */
 const WEB_ADDRESS=/^https?:\/\/\S+$/i;
-/* a link to a whole module (SPEC.md section 3): `x.booklet`, `x.booklet.md`, with or without a folder. This release reads it and draws it as plain text (SPEC.md section 13). */
+/* a link to a whole module (SPEC.md section 3): `x.booklet`, `x.booklet.md`, with or without a folder. The page that draws the prose says how (opts.moduleLink: see moduleLinkNode); a reader of Markdown with no page around it shows the words. */
 const isModuleLink=t=>cleanScheme(t).scheme===null&&/^[^#?]*\.booklet(?:\.md)?(?:[#?].*)?$/i.test(String(t==null?"":t).trim());
 const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderInline(label,ctx):label;
-  if(!urlOk(url,true)||isModuleLink(url)) return textOf(kids);
+  if(isModuleLink(url)) return typeof ctx.opts.moduleLink==="function"?ctx.opts.moduleLink(url,kids):textOf(kids);
+  if(!urlOk(url,true)) return textOf(kids);
   {const sc=cleanScheme(url).scheme;if((sc==="http"||sc==="https")&&!WEB_ADDRESS.test(String(url).trim())) return textOf(kids);}
   /* a link to a heading in the same document: the page decides where that leads */
   if(typeof url==="string"&&url.startsWith("#")&&typeof ctx.opts.anchor==="function"){
@@ -4796,7 +4899,7 @@ function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});
   return ta;}
 /* render a list of blocks, in reading order */
 function renderBlocks(list,draft,activityId){const host=el("div",{});
-  const draw=()=>{host.innerHTML="";citeBegin(activityId);
+  const draw=()=>{host.innerHTML="";citeKeep(activityId);
     list().forEach(b=>host.append(renderBlock(b,draft,activityId)));};
   draw();return host;}
 function entryCard(e,type,onDelete){const u=STRINGS[lang].ui;
@@ -5238,12 +5341,12 @@ const pill=(text,tone)=>el("span",{class:"pill"+(tone?" tone-"+tone:"")},text);
 const partsOf=x=>(Array.isArray(x)?x:[x]).map(cellText).filter(t=>t!=="");
 const rolePart=(r,k)=>k?cellText(r[k]):"";
 const toneWords=t=>t?el("span",{class:"dv-sr"},strings("dv").tone[t]):null;
-/* A `link` role's value as the words that lead a row: a heading (`#Heading`) or a web address leads there, as the same target does in
-   prose (linkHooks and mkLink are the prose path); anything else, a link to a module included until item E gives it somewhere to lead, is
-   plain text. The value is a target, never Markdown. */
+/* A `link` role's value as the words that lead a row: a heading (`#Heading`), a module (`x.booklet`) or a web address leads there, as the same
+   target does in prose (linkHooks and mkLink are the prose path); anything else is plain text. The value is a target, never Markdown. */
 function leadNodes(set,r,roles,kids){
   const t=roles.link?cellText(r[roles.link]).trim():"";
   if(!t) return kids;
+  if(isModuleLink(t)) return [moduleLinkNode(t,kids)];
   if(t[0]==="#"&&t[1]!=="^"){const H=linkHooks(set.scope||""),text=textOf(kids);
     let n=H.link(t,text);if(typeof n==="string") n=H.anchor(t.slice(1).trim(),kids);
     return n&&typeof n==="object"?[n]:kids;}
@@ -5629,7 +5732,7 @@ function pageBody(id,draft){const ps=pagesOf(activityOf(id));const cur=currentPa
     box.append(el("div",{class:"ap-name"},el("h3",{class:"ap-title"},pageName(cur,i))));}
   /* reading material (see READING MATERIAL): the endnotes print shows go below
      the blocks, and only when there is something for them */
-  readingBegin(id);
+  /* (the citation scope began in renderActivity, before the head was drawn) */
   /* a page that only reads is drawn by READING MODE, folded where it has sections */
   RM_CUR=null;ANSWER_TICKS.length=0;
   /* three or more questions: the reader may take them one at a time (kept per booklet, like the fold choice) */
@@ -5647,8 +5750,8 @@ function choosePage(id,pid){showPage(id,pid);pagesOverlay=false;render();
   refocus('.ap-item[aria-current="page"]');}
 /* Up and down (and Home, End) move between the menu's items. */
 function pageMenuKeys(e){const k=e.key;if(!["ArrowDown","ArrowUp","Home","End"].includes(k)) return;
-  const me=e.currentTarget,nav=me&&me.closest?me.closest(".ap-menu"):null;if(!nav) return;
-  const items=[...nav.querySelectorAll(".ap-item,.ap-sec")],i=items.indexOf(me);if(i<0) return;
+  const me=e.currentTarget,nav=me&&me.closest?me.closest(".ap-menu,.wk-plist"):null;if(!nav) return;
+  const items=[...nav.querySelectorAll(".ap-item,.ap-sec,.wk-pitem")],i=items.indexOf(me);if(i<0) return;
   const j=k==="Home"?0:k==="End"?items.length-1:Math.min(items.length-1,Math.max(0,i+(k==="ArrowDown"?1:-1)));
   e.preventDefault();items[j].focus();}
 /* Wrap an activity's view in its pages: the menu on the left when it has
@@ -5708,7 +5811,7 @@ function stepControl(one){const S=strings("steps");
       setOatPref(val);render();refocus('.oat-ctl button[aria-pressed="true"]');}},text);};
   return el("div",{class:"oat-ctl",role:"group","aria-label":S.label},btn("one",S.one),btn("all",S.all));}
 function stepPage(id,draft,units){const S=strings("steps"),page=currentPage(id),key=(currentId||"")+"\n"+id+"\n"+page.id;
-  citeBegin(id);
+  citeKeep(id);
   const done=u=>blocksAll(u.blocks).filter(isQuestion).every(q=>keysOf(q).some(k=>holdsSomething(draft[k])));
   if(!(key in OAT_AT)){const f=units.findIndex(u=>!done(u));OAT_AT[key]=f<0?0:f;}
   const n=units.length,host=el("div",{class:"oat"});
@@ -5835,7 +5938,7 @@ function readingPage(id,draft){
   const page=currentPage(id);
   if(!foldable(activityOf(id),page)) return null;
   const list=blocksIn(page);
-  citeBegin(id);
+  citeKeep(id);
   const items=[],groups=[];
   list.forEach(b=>{
     if(b.type==="markdown"){const ns=mdBlockNodes(b,id);ns.forEach(n=>items.push({n,md:true}));groups.push({ns});}
@@ -5957,7 +6060,8 @@ function headingLink(hit,kids){
    is plain text, as a heading that is nowhere is. */
 const linkHooks=scope=>{const mods=()=>allModules().filter(m=>scopeOfModule(m)===scope);
   return {
-    link:(target,label)=>{if(isModuleLink(target)) return label!==undefined?label:target;
+    moduleLink:(target,kids)=>moduleLinkNode(target,kids),
+    link:(target,label)=>{if(isModuleLink(target)) return moduleLinkNode(target,label!==undefined?[label]:null);
       if(target[0]!=="#"||target[1]==="^") return null;
       const h=target.slice(1).trim(),text=label!==undefined?label:h,hit=findHeading(mods(),h,false);
       return hit?headingLink(hit,[text]):text;},
@@ -6004,6 +6108,13 @@ const SCOPES={};
    module's own screen otherwise, where it is numbered in a scope of its own (the first activity's id and a mark, \u0001); CITE_OPENING says which is being drawn. */
 let CITE_OPENING=false;
 const openingWithActivity=mod=>!!mod&&!isMulti(mod)&&Array.isArray(mod.opening)&&mod.opening.length>0;
+/* A scope is begun once for each draw of the screen (render): by readingBegin for a page, before its head is drawn, and for a module's
+   opening on the module's screen. What draws the page's blocks afterwards takes that scope as it is, so the marks the head drew
+   (a module that is one activity draws its opening there) and the marks of the page are one numbering, and no anchor is used twice. */
+let CITE_GEN=0;
+function citeKeep(raw){
+  const open=CITE_OPENING||String(raw).endsWith("\u0001"),key=String(raw).replace(/\u0001$/,"")+(open?"\u0001":""),R=SCOPES[key];
+  return R&&R.gen===CITE_GEN&&R.lang===lang&&R.tpl===BOOK?R:citeBegin(raw);}
 function citeBegin(raw){
   const open=CITE_OPENING||String(raw).endsWith("\u0001"),activityId=String(raw).replace(/\u0001$/,""),key=activityId+(open?"\u0001":"");
   const mod=typeof activityId==="string"?holderOf(activityId):null;
@@ -6022,7 +6133,7 @@ function citeBegin(raw){
         const n=onPage.get(id)||0;onPage.set(id,n+1);
         if(!places.has(id)) places.set(id,[]);places.get(id).push({page:p.id,n});}}
   return SCOPES[key]={modeId:key,mod,sources,cites,nums,firstPage,places,broken,lang,tpl:BOOK,
-    marks:new Map(),drawn:new Map()};}
+    marks:new Map(),drawn:new Map(),gen:CITE_GEN};}
 const citeScope=raw=>{const key=CITE_OPENING&&!String(raw).endsWith("\u0001")?raw+"\u0001":raw,R=SCOPES[key];
   return R&&R.lang===lang&&R.tpl===BOOK?R:citeBegin(key);};/* A text with its marks drawn: the same single string when it has none. A
    mark is held to the word before it (and to a mark right before it), because
@@ -6121,7 +6232,11 @@ function citeReopen(id){const a=citeAgain;citeAgain=null;if(!a||a.modeId!==id) r
   const drawn=R.drawn.get(a.id)||[];
   openCite(id,a.id,drawn[a.occ]||drawn[0]||null,{focus:false});}
 /* leaving the activity closes its panel, and gives the page its room back */
-function citeLeave(v){if(citeOpen()&&!(citeAt&&citeAt.modeId===v)) closeCite(false);}
+function citeLeave(v){if(!citeOpen()) return;
+  const at=citeAt&&citeAt.modeId;
+  /* the panel of the opening on a module's own screen belongs to that screen, whose name is not the scope's key */
+  const mine=at&&(at===v||(isModuleScreen(v)&&at.endsWith("\u0001")&&(holderOf(at.slice(0,-1))||{}).id===v.slice(MODULE_SCREEN.length)));
+  if(!mine) closeCite(false);}
 /* ---- the hover preview: a mouse's glance at the quote, and nothing else ---- */
 function citeTip(){if(citeTipEl) return citeTipEl;
   const t=el("div",{class:"rd-tip","aria-hidden":"true",hidden:true});document.body.append(t);return citeTipEl=t;}
@@ -6260,7 +6375,7 @@ const hostCovers=()=>hostActive()&&hookBook()&&HOST.status!=="failed"&&HOOK_LIST
 const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
 const SCREENS={home:renderHome,[LIB_SCREEN]:renderBooklets};
 let RENDERING=false;
-function render(){RENDERING=true;try{citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
+function render(){RENDERING=true;CITE_GEN++;try{citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(SCREENS[screen]) SCREENS[screen](main);
   else if(isModuleScreen(screen)) renderModulePage(main,screen);
   else renderActivity(main,screen);
@@ -6387,6 +6502,10 @@ function bootLibrary(){LIB=readLib();lang=langPref()||lang;
    still leads to the home screen. Called when a booklet is opened (a file, a paste, a drop, "Your booklets"),
    never when a module is added. */
 function startScreen(){
+  /* a link that names a page of the booklet it opens (`#/open/<name>/<activity>`, `#/module/<id>/<activity>`): that page, if the booklet has it */
+  if(LINK_AT&&BOOK){const at=LINK_AT;LINK_AT=null;
+    const hit=bookActivities().find(a=>shortId(a.id)===at);
+    if(hit) return hit.id;}
   if(!BOOK||BOOK.start==="home") return "home";
   const mods=allModules(),acts=bookActivities();
   if(acts.length===1) return acts[0].id;
@@ -6455,16 +6574,23 @@ function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;cons
    kept so far and a Finalize that keeps the next one; any other keeps its
    answers in the booklet's own `answers`, exactly as the file's record does. */
 function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id);const mod=moduleOf(id)||{};
+  const W=wikiOf(holderOf(id));
+  /* the citation scope of this page begins first: a module that is one activity draws its opening in the page's own scope,
+     and the opening's marks must be numbered with the page's, not left to the scope of the draw before */
+  readingBegin(id);
   {main.append(...openNotices());}
   const repeats=m.kind==="entry";
   const draft=answersFor(id);if(repeats) seedUpsertDraft(id,m,draft);
   const col=el("div",{class:"col"});
+  if(W) col.append(wikiCrumbs(W,id));
   const titleText=tx(mod.title,tx(m.title,shortId(id)));
   /* a module that is one activity has no screen of its own: its activity's screen draws its head (title, opening, picture) */
   if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)) col.append(moduleHead({...mod,title:titleText},id,null,false));
-  else{col.append(el("h2",{},titleText));
+  else{col.append(pageHead(id,m,titleText,W));
     const lead=tx(mod.blurb,tx(m.blurb,""));
     if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
+  /* a wiki page's own pages are listed in the menu; where the menu is not on screen (a phone, or a hidden page that has no entry) they are listed here */
+  if(W&&pagesOf(m).length>1&&(narrowPages()||!isShown(m))) col.append(wkInside(id,null,true));
   if(repeats) col.append(el("h3",{},u.earlier),chipStrip(id));
   /* the page on show and its blocks, and the pages menu beside them: see
      AN ACTIVITY'S PAGES. One draft serves every page. */
@@ -6476,20 +6602,33 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   if(firstH&&same(titleText)&&same(firstH.textContent)===same(titleText)) firstH.remove();
   col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
+  if(W) col.append(...wikiAfter(W,id));
   col.append(activityFooter(id));
   /* a module that is one activity shows its notice at the foot of that activity */
   {const holder=holderOf(id),single=holder&&!isMulti(holder),about=single?noticeNode(holder):null;
     if(about) col.append(about);
     const rm=single?removeModuleControl(holder):null;if(rm) col.append(rm);}
-  main.append(withPages(id,col));}
+  /* a wiki page's pages and sections are listed in the wiki's own menu, under the page's entry: no second rail beside it */
+  main.append(W?wikiFrame(W,id,[col]):withPages(id,col));}
+/* The head of an activity's page: its title, and, when its line names an `icon:`, the picture its card shows (cardPicture decides: the spot of
+   that name in teaching, the line icon in briefing) in the card's own tile and colour, to the left of the title. No `icon:`: the title alone. */
+function pageHead(id,m,titleText,W){
+  const cp=m.icon?cardPicture(titleText,NaN,m.icon):null,pic=cp&&cp.picture;
+  if(!pic||!pic.icon) return el("h2",{},titleText);
+  const holder=holderOf(id),sib=W?wikiSiblings(W,id):holder?activitiesShown(holder):[],at=Math.max(0,sib.findIndex(a=>a.id===id));
+  return el("div",{class:"phead hue-"+cardHue(at)},cardTile(pic),el("h2",{},cp.title));}
 /* The foot of an activity's page: back to the overview (the module's page, or the home screen), and on to the next
    activity of its module in file order, named with its number. */
-function activityFooter(id){const C=strings("cards"),holder=holderOf(id),shown=holder?activitiesShown(holder):[];
-  const here=shown.findIndex(a=>a.id===id),next=here>=0?shown[here+1]:null;
-  const backTo=holder&&isMulti(holder)?moduleScreen(holder.id):"home";
+function activityFooter(id){const C=strings("cards"),holder=holderOf(id),W=wikiOf(holder),shown=W?W.acts.filter(isShown):holder?activitiesShown(holder):[];
+  /* in a wiki the page after this one is the next shown page in the tree's order, whether or not this one is shown */
+  const here=W?W.acts.findIndex(a=>a.id===id):shown.findIndex(a=>a.id===id),
+    next=W?(W.acts.slice(here+1).find(isShown)||null):here>=0?shown[here+1]:null;
+  const backTo=holder&&isMulti(holder)?moduleScreen(holder.id):"home",up=W?wikiPath(W,id).pop():null;
+  const to=x=>W?()=>wikiGo(x,false):()=>go(x);
   const foot=el("div",{class:"cd-foot"},
-    el("button",{type:"button",class:"cd-btn cd-back",onclick:()=>go(backTo)},icon("arrow-left"),C.back));
-  if(next) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:()=>go(next.id)},
+    el("button",{type:"button",class:"cd-btn cd-back",onclick:to(up?up.id:backTo)},icon("arrow-left"),up?strings("wiki").up(activityName(up)):C.back));
+  if(next&&W) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:to(next.id)},strings("wiki").next(activityName(next)),icon("arrow-right")));
+  else if(next) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:()=>go(next.id)},
     C.next(here+2,cardPicture(activityName(next),here+2,next.icon).title),icon("arrow-right")));
   return foot;}
 /* An activity's own name: its `title`, else its id. */
@@ -6514,11 +6653,14 @@ function cardPicture(title,number,iconName){
   return {title:t,picture:Number.isFinite(number)?{number}:null};}
 const pictureIsSpot=()=>{const S=window.bookletStyle;return !S||!S.picture||S.picture()==="spot";};
 const cardHue=i=>CARD_HUES[((Math.trunc(Number(i))||0)%CARD_HUES.length+CARD_HUES.length)%CARD_HUES.length];
+/* the picture tile of a card, and of the head of a page whose line names an `icon:` (one builder for both) */
+function cardTile(pic){
+  const art=pic?(pic.icon||pic.emoji||(pic.number!=null?String(pic.number):null)):null;
+  return art==null?null:el("span",{class:"cd-tile"+(pic.number!=null&&!pic.emoji&&!pic.icon?" cd-n":""),"aria-hidden":"true"},art);}
 function cardNode(o){
   const mode=o.mode==="fold"||o.mode==="item"?o.mode:"go",pic=o.picture||null;
   const cls=["card","card-"+mode].concat(mode==="go"?["mode"]:[],o.hue?["hue-"+o.hue]:[],o.size==="compact"?["card-compact"]:[],o.cls?[o.cls]:[]).join(" ");
-  const art=pic?(pic.icon||pic.emoji||(pic.number!=null?String(pic.number):null)):null;
-  const tile=art==null?null:el("span",{class:"cd-tile"+(pic.number!=null&&!pic.emoji&&!pic.icon?" cd-n":""),"aria-hidden":"true"},art);
+  const tile=cardTile(pic);
   const t=mode==="go"?"span":"div";
   const num=o.number!=null&&!(pic&&pic.number!=null)?el("span",{class:"cd-num","aria-hidden":"true"},String(o.number)):null;
   const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k"},o.title):null);
@@ -6574,9 +6716,9 @@ function moduleStatus(acts){const C=strings("cards"),ps=acts.map(activityProgres
 function moduleMeta(acts){const C=strings("cards"),ps=acts.map(activityProgress).filter(p=>p.tracked),n=ps.filter(p=>p.started).length;
   return [C.activitiesN(acts.length),n?C.startedN(n):""].filter(nonEmpty).join(" · ");}
 /* A card on the home page or a module's page: a button that opens view `to`. `i` is its place in the list it is in. */
-function activityCard(to,name,blurb,status,i,iconName){
+function activityCard(to,name,blurb,status,i,iconName,onclick){
   const {title,picture}=cardPicture(name,i+1,iconName);
-  return cardNode({mode:"go",title,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,onclick:()=>go(to)});}
+  return cardNode({mode:"go",title,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,onclick:onclick||(()=>go(to))});}
 function moduleCard(mod,acts,i){
   return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),moduleStatus(acts),i,mod.icon);}
 /* The head of a module's own screen, and of the screen of a module that is one activity (which stands in for it): its title, its opening
@@ -6603,27 +6745,209 @@ function moduleHead(mod,activityId,meta,showMeta){
   /* the large picture is the module's own `icon:`, on both screens (an activity's icon is its card's picture) */
   const big=mod.icon?icon(mod.icon,{spot:pictureIsSpot()}):null;
   return big?el("div",{class:"mhead"},text,el("div",{class:"mhead-pic","aria-hidden":"true"},big)):text;}
+/* ======================= A WIKI: ACTIVITIES UNDER ACTIVITIES, AND LINKS TO MODULES =======================
+   A module whose activities carry `parent:` (SPEC.md section 3) reads as a wiki. Nothing here is a second idea of a tree: the
+   activities go through activityTree, which is nestRows (a missing parent leaves an activity at the top, a cycle draws each
+   activity once, the first of two with one id is the parent, children keep the file's order), and the menu is the `.dv-tree`
+   of a list view. A module with no `parent` never comes here and draws as it always did.
+   The tree is the file's whole structure, hidden pages included. Wherever a list of pages is drawn (the top cards, a page's cards,
+   the menu, a search) a hidden page is left out and its children take its place; a hidden page that a link reaches shows its
+   own place in the tree and its own children, and "Next" passes over it.
+   What is drawn is only what is looked at: the page on show, the first cards of a long row of them (the rest on a press) and
+   the branches of the menu that are open. What the whole module needs (the tree, the pages that mention each page, the words
+   of each page for the search) is worked out once, the first time it is wanted, and kept for as long as the booklet is open.
+   Nothing here is written anywhere: the open branches, the search and the phone's menu are this visit's, in memory. */
+const WK_CACHE=new WeakMap();
+const WK_BATCH=24,WK_FOUND=40;
+function wikiOf(mod){
+  if(!mod||!Array.isArray(mod.activities)||mod.activities.length<2) return null;
+  let W=WK_CACHE.get(mod);
+  if(W&&W.src===mod.activities&&W.lang===lang) return W.tree?W:null;
+  const acts=activitiesOf(mod),t=acts.some(a=>a.parent)?activityTree(acts):null;
+  W={src:mod.activities,lang,mod,tree:!!t,acts,kids:new Map(),up:new Map(),roots:[],byId:new Map(acts.map(a=>[a.id,a])),text:new Map(),mentions:null};
+  if(t){W.acts=t.order.map(i=>acts[i]);
+    t.order.forEach(i=>{const a=acts[i],p=t.parent[i]?W.byId.get(t.parent[i]):null;
+      W.up.set(a.id,p||null);
+      if(p){if(!W.kids.has(p.id)) W.kids.set(p.id,[]);W.kids.get(p.id).push(a);}else W.roots.push(a);});
+    W.top=wikiShown(W,W.roots);
+    /* a wiki is a module where a shown page sits under a shown page: a `parent:` that only reaches a hidden page makes no tree to show */
+    W.tree=acts.some(a=>isShown(a)&&wikiPath(W,a.id).length>0);}
+  WK_CACHE.set(mod,W);return W.tree?W:null;}
+/* a list of pages as it is drawn: a hidden page gives its place to its children */
+function wikiShown(W,list){const out=[],walk=l=>l.forEach(a=>{if(isShown(a)) out.push(a);else walk(W.kids.get(a.id)||[]);});walk(list);return out;}
+const wikiKids=(W,id)=>wikiShown(W,W.kids.get(id)||[]);
+/* a page's ancestors that are drawn, nearest last */
+function wikiPath(W,id){const out=[];for(let a=W.up.get(id);a;a=W.up.get(a.id)) if(isShown(a)) out.unshift(a);return out;}
+/* the pages a page sits among, for its place in the list (and so its colour) */
+function wikiSiblings(W,id){const p=wikiPath(W,id).pop();return p?wikiKids(W,p.id):W.top;}
+/* the texts a page's prose holds (every page of the activity, in order) */
+const wikiTexts=a=>pagesOf(a).flatMap(p=>blocksIn(p).flatMap(markedTexts));
+/* "Mentioned on": for each page, the pages whose prose links to it. A link is a heading link, `[[#Heading]]` or `](#slug)`, found as the
+   reader finds it (linkHooks, findHeading): in this module, by the text or the slug of a heading, an activity's title being one. */
+const WK_LINK=/\[\[#([^\]|]+)(?:\|[^\]]*)?\]\]|\]\(#([^)\s]+)\)/g;
+function wikiMentions(W){
+  if(W.mentions) return W.mentions;
+  const byText=new Map(),bySlug=new Map(),into=new Map();
+  W.acts.forEach(a=>activityHeadings(a).forEach(h=>{const n=linkNorm(h.text),s=linkSlug(h.text);
+    if(n&&!byText.has(n)) byText.set(n,a);if(s&&!bySlug.has(s)) bySlug.set(s,a);}));
+  W.acts.forEach(a=>{const seen=new Set();
+    wikiTexts(a).forEach(s=>{if(!s.includes("#")) return;
+      for(const m of s.matchAll(WK_LINK)){let t;
+        if(m[1]!==undefined) t=byText.get(linkNorm(m[1]));
+        else{let k=m[2];try{k=decodeURIComponent(k);}catch(e){/* as written */}t=bySlug.get(linkSlug(k));}
+        if(t&&t!==a&&!seen.has(t.id)){seen.add(t.id);if(!into.has(t.id)) into.set(t.id,[]);into.get(t.id).push(a);}}});});
+  return W.mentions=into;}
+/* a page's words as the search reads them: link markup gives its label */
+const wikiPlain=s=>String(s).replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g,"$2").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1");
+/* the search: every word typed must be in the page's title or its prose; titles first, at most WK_FOUND */
+function wikiFind(W,q){
+  const words=String(q).toLowerCase().split(/\s+/).filter(Boolean);if(!words.length) return [];
+  const text=a=>{let t=W.text.get(a.id);
+    if(t===undefined){t=(activityName(a)+" "+wikiPlain(wikiTexts(a).join(" "))).toLowerCase();W.text.set(a.id,t);}return t;};
+  const hit=[],rest=[];
+  for(const a of W.acts){if(!isShown(a)) continue;const t=text(a);if(!words.every(w=>t.includes(w))) continue;
+    (words.every(w=>activityName(a).toLowerCase().includes(w))?hit:rest).push(a);
+    if(hit.length>=WK_FOUND) break;}
+  return hit.concat(rest).slice(0,WK_FOUND);}
+/* a long row of cards or chips: the first WK_BATCH, then a button for the next WK_BATCH, labelled with what it will draw */
+function wikiBatched(list,draw,cls){
+  const box=el("div",{class:cls}),foot=el("div",{class:"wk-morerow"});let at=0;
+  const more=()=>{const from=at;list.slice(at,at+WK_BATCH).forEach((x,i)=>box.append(draw(x,at+i)));at=Math.min(list.length,at+WK_BATCH);
+    foot.innerHTML="";
+    if(at<list.length) foot.append(el("button",{type:"button",class:"cd-btn",onclick:()=>{more();const n=box.children[from];if(n&&n.focus) n.focus();}},strings("wiki").more(Math.min(WK_BATCH,list.length-at))));};
+  more();return [box,foot];}
+/* A choice in a wiki. The phone's menu closes (whatever was chosen, and wherever), and the focus goes where the reader will look:
+   to the entry for the page just chosen when the choice was made in the menu beside the page, else to the page's heading. */
+function wikiGo(id,fromMenu){const side=fromMenu&&!narrowPages();WK.menu=false;go(id);
+  const own=side?document.querySelector(WK.q.trim()?".wk-results [aria-current=\"page\"]":".wk-tree [aria-current=\"page\"]"):null;
+  if(own&&own.focus){own.focus({preventScroll:true});return;}
+  const h=document.querySelector("#main .wk-content h2");
+  if(h){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}}
+const wikiCard=(a,i)=>activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon,()=>wikiGo(a.id,false));
+/* ---- the menu: a search box over the whole tree ---- */
+/* the page on show, inside its entry: its pages (when it has several) and the sections the page holds, as the rail listed them.
+   `own` is the list drawn in the page itself (a phone, or a hidden page with no entry in the menu): its pages only. */
+function wkPagePick(id,pid,fromList){showPage(id,pid);WK.menu=false;pagesOverlay=false;render();window.scrollTo({top:0});
+  /* the focus goes to the entry for the page chosen, in the list it was chosen from if that is still on screen */
+  const vis=n=>n&&n.offsetParent!==null,a=document.querySelector((fromList?".wk-pagelist":".wk-menu")+" [aria-current=\"step\"]"),
+    b=document.querySelector((fromList?".wk-menu":".wk-pagelist")+" [aria-current=\"step\"]"),n=vis(a)?a:vis(b)?b:null;
+  if(n&&n.focus) n.focus({preventScroll:true});}
+function wkInside(id,rd,own){const F=strings("fold"),ps=pagesOf(activityOf(id)),cur=currentPage(id);
+  const secs=top=>{if(!rd||own) return null;
+    const sl=el("ol",{class:"ap-secs wk-secs"+(top?" wk-plist":""),"aria-label":F.sections});
+    rd.sections.forEach(sec=>{const seen=rd.st.seen.has(sec.k);
+      const sb=el("button",{type:"button",class:"ap-sec","data-k":String(sec.k),title:sec.title},
+        el("span",{class:"ap-dot"+(seen?" on":""),"aria-hidden":"true"}),el("span",{class:"ap-t"},sec.title),
+        el("span",{class:"rd-sr ap-sr"},seen?F.seen:""));
+      sb.addEventListener("click",()=>rmGo(rd,sec.k));sb.addEventListener("keydown",pageMenuKeys);sl.append(el("li",{},sb));});
+    return sl;};
+  if(ps.length<2) return secs(true);
+  const ol=el("ol",{class:"wk-pages wk-plist"+(own?" wk-pagelist":""),"aria-label":strings("pages").heading});
+  ps.forEach((p,i)=>{const b=el("button",{type:"button",class:"wk-link wk-pitem","aria-current":p.id===cur.id?"step":null,
+      onclick:()=>wkPagePick(id,p.id,!!own)},pageName(p,i));
+    b.addEventListener("keydown",pageMenuKeys);
+    ol.append(el("li",{},b,p.id===cur.id?secs(false):null));});
+  return ol;}
+function wkNode(W,a,cur,rd){const k=wikiKids(W,a.id),here=a.id===cur,inside=here?wkInside(a.id,rd):null;
+  const b=el("button",{type:"button",class:"wk-link","aria-current":here?"page":null,"data-id":a.id,onclick:()=>wikiGo(a.id,true)},activityName(a));
+  if(!k.length) return el("li",{class:"dv-row"},b,inside);
+  const d=el("details",{"data-id":a.id,open:WK.open.has(a.id)},el("summary",{class:"dv-row"},b));
+  if(inside) d.append(inside);
+  let built=false;const build=()=>{if(built) return;built=true;d.append(wkList(W,k,cur,rd,false));};
+  if(WK.open.has(a.id)) build();
+  d.addEventListener("toggle",()=>{if(d.open){WK.open.add(a.id);build();}else WK.open.delete(a.id);});
+  return el("li",{class:"dv-node"},d);}
+const wkList=(W,list,cur,rd,top)=>el("ul",{class:"dv-list"+(top?" dv-tree wk-tree":"")},...list.map(a=>wkNode(W,a,cur,rd)));
+function wikiMenu(W,cur,rd){const K=strings("wiki");
+  if(WK.mod!==W.mod){WK.mod=W.mod;WK.q="";}
+  if(cur){wikiPath(W,cur).forEach(a=>WK.open.add(a.id));if(wikiKids(W,cur).length) WK.open.add(cur);}
+  const inp=el("input",{type:"search",class:"wk-q",placeholder:K.search,"aria-label":K.search,autocomplete:"off",spellcheck:"false"});
+  inp.value=WK.q;
+  const tree=wkList(W,W.top,cur,rd,true),res=el("ul",{class:"dv-list wk-results"}),none=el("p",{class:"hint wk-none"},K.noMatch);
+  const draw=()=>{const q=WK.q.trim(),hits=q?wikiFind(W,q):[];
+    setHidden(tree,!!q);setHidden(res,!q||!hits.length);setHidden(none,!q||hits.length>0);
+    res.innerHTML="";
+    hits.forEach(a=>{const path=wikiPath(W,a.id).map(activityName).join(" › ");
+      res.append(el("li",{class:"dv-row wk-hit"},
+        el("button",{type:"button",class:"wk-link","aria-current":a.id===cur?"page":null,onclick:()=>wikiGo(a.id,true)},activityName(a)),
+        path?el("span",{class:"wk-path"},path):null,a.id===cur?wkInside(cur,rd):null));});};
+  inp.addEventListener("input",()=>{WK.q=inp.value;draw();});
+  draw();
+  const fold=el("details",{class:"wk-fold",open:!narrowPages()||WK.menu},el("summary",{},K.menu),inp,tree,res,none);
+  fold.addEventListener("toggle",()=>{if(narrowPages()) WK.menu=fold.open;});
+  return el("nav",{class:"wk-menu","aria-label":K.menu},fold);}
+const wikiFrame=(W,cur,nodes)=>el("div",{class:"wk-frame"},wikiMenu(W,cur,cur?RM_CUR:null),el("div",{class:"wk-content"},...nodes));
+function wikiCrumbs(W,id){const K=strings("wiki"),mod=W.mod;
+  const crumb=(name,to)=>el("li",{},to?el("button",{type:"button",class:"wk-crumb",onclick:()=>wikiGo(to,false)},name):el("span",{"aria-current":"page"},name));
+  return el("nav",{class:"wk-crumbs","aria-label":K.crumbs},el("ol",{},
+    crumb(tx(mod.title,mod.id),moduleScreen(mod.id)),...wikiPath(W,id).map(a=>crumb(activityName(a),a.id)),crumb(activityName(W.byId.get(id)||activityOf(id)),null)));}
+/* what follows a page's own words: the pages under it as cards, and the pages that mention it */
+function wikiAfter(W,id){const K=strings("wiki"),out=[],kids=wikiKids(W,id),ment=(wikiMentions(W).get(id)||[]).filter(isShown);
+  if(kids.length) out.push(...wikiBatched(kids,wikiCard,"modes wk-cards"));
+  if(ment.length) out.push(el("h3",{class:"wk-h"},K.mentioned),...wikiBatched(ment,a=>el("button",{type:"button",class:"wk-chip",onclick:()=>wikiGo(a.id,false)},activityName(a)),"wk-chips"));
+  return out;}
+/* ---- a link to a whole module ----
+   `[[x.booklet]]` and `[t](x.booklet.md)` name the module x. The booklet holds it: the link opens it. It does not: a chip says so,
+   and nothing is asked of anyone to draw it. Pressed, the chip reads the registry's list (the read Add a module makes) and offers
+   the module if the list has it; the offer adds it as Add a module does (addFromRegistry). A link that names no module (`[[.booklet]]`)
+   is its words. */
+const moduleLinkId=t=>{let s=String(t==null?"":t).trim().replace(/[#?].*$/,"").split("/").pop();
+  try{s=decodeURIComponent(s);}catch(e){/* as written */}
+  return s.replace(/\.booklet(?:\.md)?$/i,"");};
+function moduleLinkNode(target,kids){const id=moduleLinkId(target),mod=allModules().find(m=>m.id===id);
+  if(!id) return kids&&kids.length?textOf(kids):String(target);
+  const label=kids&&kids.length?kids:[mod?tx(mod.title,id):id];
+  if(mod) return el("a",{href:"#",class:"alink",onclick:e=>{if(e&&e.preventDefault) e.preventDefault();go(entryScreenOf(mod));}},...label);
+  return moduleChip(id,label);}
+function moduleChip(id,label){const K=strings("wiki");
+  const btn=el("button",{type:"button",class:"mchip","aria-expanded":"false"},icon("package"),el("span",{},...label),el("span",{class:"mc-n"},"· "+K.notHere));
+  const box=el("span",{class:"mc-box"},btn);let asked=false,ask=null;
+  btn.addEventListener("click",async()=>{if(asked) return;asked=true;btn.setAttribute("aria-expanded","true");
+    if(ask) ask.remove();
+    ask=el("span",{class:"mc-ask",role:"status"},K.looking);box.append(ask);
+    const gen=bookletGen,url=registryUrl(),ok=url?await loadRegistry(url):false;
+    if(gen!==bookletGen) return;
+    const say=m=>{ask.textContent=m;};
+    /* a registry that could not be read says so, and may be asked again; one that does not list the module says that */
+    if(!ok){say(STRINGS[lang].booklet.noShelf);asked=false;return;}
+    const list=registryList(),entry=list.find(e=>e.id===id)||list.find(e=>String(e.id).split("/").pop()===id);
+    if(!entry){say(K.notListed);return;}
+    const add=el("button",{type:"button",class:"small primary mc-add"},K.add);
+    add.addEventListener("click",async()=>{add.disabled=true;
+      if(gen!==bookletGen) return;
+      if(!(await addFromRegistry(entry.id,m=>toast(m)))&&gen===bookletGen) add.disabled=false;});
+    ask.textContent="";ask.append(add);});
+  return box;}
 function renderModulePage(main,v){const mod=moduleForScreen(v);
   /* a module that has gone, or now holds one activity, leads where its card would */
   if(!mod||!isMulti(mod)){screen=mod?entryScreenOf(mod):"home";return render();}
-  const W=strings("moduleView");
+  const W=wikiOf(mod),W2=strings("moduleView");
   {main.append(...openNotices());}
   const col=el("div",{class:"col"});
   const acts=activitiesShown(mod);
   const first=activitiesOf(mod)[0]&&activitiesOf(mod)[0].id;
+  /* the opening's sources are numbered in a scope of their own, begun here, afresh on every draw, so that a panel opened from the
+     opening survives a language switch (it is opened again below, once its mark is drawn) */
+  const okey=first?first+"\u0001":"";
   CITE_OPENING=true;
-  try{col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0));
+  try{if(first&&Array.isArray(mod.opening)&&mod.opening.length) readingBegin(okey);
+    col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0));
     /* the opening's own sources, numbered from 1 in a scope of its own, close it at the foot of the screen */
-    var openNotes=first&&Array.isArray(mod.opening)&&mod.opening.length?endnotesFor(first,true):null;}
+    var openNotes=first&&Array.isArray(mod.opening)&&mod.opening.length?endnotesFor(first,true):null;
+    if(openNotes) citeReopen(okey);}
   finally{CITE_OPENING=false;}
-  main.append(col);
+  const parts=[col];
   const grid=el("div",{class:"modes"});
-  if(!acts.length) grid.append(el("p",{class:"hint"},W.noneShown));
-  acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon)));
-  main.append(grid);
-  if(openNotes) main.append(el("div",{class:"col"},openNotes));
-  const about=noticeNode(mod);if(about) main.append(el("div",{class:"col"},about));
-  const rm=removeModuleControl(mod);if(rm) main.append(rm);
+  if(!acts.length) grid.append(el("p",{class:"hint"},W2.noneShown));
+  /* a wiki shows the pages at its top, and every other page is under one of them */
+  if(W) parts.push(...wikiBatched(W.top,wikiCard,"modes wk-cards"));
+  else{acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon)));
+    parts.push(grid);}
+  if(openNotes) parts.push(el("div",{class:"col"},openNotes));
+  const about=noticeNode(mod);if(about) parts.push(el("div",{class:"col"},about));
+  const rm=removeModuleControl(mod);if(rm) parts.push(rm);
+  if(W){main.append(wikiFrame(W,null,parts));return;}
+  main.append(...parts);
   centreScreen(main);
 }
 /* What a file is called comes from the booklet's own title, never from the
@@ -6689,19 +7013,27 @@ async function loadRegistry(url){REGISTRY_CACHE={};
     data.modules.forEach(e=>registryPut(e,url));
     return true;
   }catch(e){return false;}}
-function addModuleFromText(text){
-  const msg=document.getElementById("addModMsg");
+/* Add a module's one step, from the text of a module: the same checks, the same words, whichever control asks. `say` is where a
+   refusal is reported: the dialog's own line (Add a module) or a toast (a chip in the prose). */
+const addDialogSay=m=>{const msg=document.getElementById("addModMsg");msg.className="msg err";msg.textContent=m;};
+function addModuleFromText(text,say){say=say||addDialogSay;
   const problems=moduleTextProblems(text);
-  if(problems.length){msg.className="msg err";msg.textContent=humanMsg(problems.join(" "));return false;}
+  if(problems.length){say(humanMsg(problems.join(" ")));return false;}
   const R=parseFile(text);let renamed=[];
   /* a module is added to the booklet, whatever the booklet holds so far: an empty booklet does not become the module's
      file, because the booklet's name is its own and a module's title is the module's (SPEC.md section 2) */
   {const r=addModuleText(text);
-    if(!r.ok){msg.className="msg err";msg.textContent=humanMsg(r.problems.join(" "));return false;}
+    if(!r.ok){say(humanMsg(r.problems.join(" ")));return false;}
     renamed=r.renamed||[];}
   veilAddModule.removeAttribute("open");saveLocal();render();
   toast(STRINGS[lang].booklet.added(tx((R.template.modules[0]||{}).title,""))+(renamed.length?" "+STRINGS[lang].booklet.renamed(renamed):"")+(otherMarker(text)?" "+STRINGS[lang].booklet.addedOtherMarker(otherMarker(text)):""));
   return true;}
+/* the module a registry entry names, read (with the size limit and the words for a slow or missing file) and added */
+async function addFromRegistry(id,say){const gen=bookletGen,got=await registryRead(id),B=STRINGS[lang].booklet;
+  /* the reader moved to another booklet while the file was coming: it is not added to that one */
+  if(gen!==bookletGen) return false;
+  if(!got.text){say(B[got.err==="slow"?"addSlow":got.err==="big"?"addBig":"addFailed"]);return false;}
+  return addModuleFromText(got.text,say);}
 /* the text behind a registry entry, fetched fresh: an entry only ever carries a
    URL, never the text itself */
 async function registryRead(id){const L=REGISTRY_CACHE[id];if(!L||!L.url) return {err:"missing"};
@@ -6714,9 +7046,7 @@ function renderAddModuleList(){const box=document.getElementById("addModList");b
     const btn=el("button",{type:"button",class:"small primary"},STRINGS[lang].ui.addModAdd);
     btn.addEventListener("click",async()=>{btn.disabled=true;
       const msg=document.getElementById("addModMsg");msg.className="msg";msg.textContent="";
-      const got=await registryRead(L.id),text=got.text;
-      if(!text){msg.className="msg err";msg.textContent=STRINGS[lang].booklet[got.err==="slow"?"addSlow":got.err==="big"?"addBig":"addFailed"];btn.disabled=false;return;}
-      if(!addModuleFromText(text)) btn.disabled=false;});
+      if(!(await addFromRegistry(L.id,addDialogSay))) btn.disabled=false;});
     box.append(el("div",{class:"bkrow"},
       el("span",{class:"bkname"},tx(L.title,L.id)+(tx(L.blurb,"")?" — "+tx(L.blurb,""):"")),
       el("span",{class:"bkacts"},btn)));});}
@@ -6960,26 +7290,39 @@ function openLinked(text,via){const kept=entryFrom(via.from);
     if(currentEntry) currentEntry.storeSeen=seen;
     changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=seen;});}
   render();window.scrollTo({top:0});return true;}
-let LINK_GEN=0;
+let LINK_GEN=0,LINK_AT=null;   /* LINK_AT: the id of the page a link names, for the moment the booklet it opens picks its first screen */
+/* A link may name a page of what it opens, after the name: `#/open/<name>/<activity-id>` and `#/module/<id>/<activity-id>`. A store's
+   name may itself hold slashes, so the page is what follows the final `.md/`; a registry id may too, so the id is the longest one
+   the registry lists. The page is read from the fragment and nothing is ever written to it. */
+function linkSplit(raw){const i=String(raw).lastIndexOf(".md/");
+  if(i<0||i+4>=raw.length) return {name:raw,act:""};
+  let act=raw.slice(i+4);try{act=decodeURIComponent(act);}catch(e){act="";}
+  return {name:raw.slice(0,i+3),act};}
 /* open what the fragment asks for; a link that is not one of the two shapes is left alone */
 async function openLink(hash){const L=linkOf(hash);if(!L) return false;
   const B=()=>STRINGS[lang].booklet,gen=++LINK_GEN,said=k=>{toast(B()[k]);return false;};
-  let url,via;
+  let url,via,at="";
   if(L.kind==="open"){
-    const name=linkName(L.raw);
+    const sp=linkSplit(L.raw),name=linkName(sp.name);
+    at=sp.act;
     if(!storeUrl()) return said("linkNoStore");
     if(name===null||!(url=storeAddress(name))) return said("linkBadName");
     via={store:true,label:name,from:"store:"+name};}
   else{
-    const id=L.raw.length<=LINK_NAME_MAX?(()=>{try{return decodeURIComponent(L.raw);}catch(e){return "";}})():"";
+    let id=L.raw.length<=LINK_NAME_MAX?(()=>{try{return decodeURIComponent(L.raw);}catch(e){return "";}})():"";
     if(!id||!registryUrl()) return said(id?"linkNoModule":"linkBadName");
     await loadRegistry(registryUrl());if(gen!==LINK_GEN) return false;
+    /* the whole text is an id the registry lists, or an id and then a page: the longest listed id that the text begins with */
+    if(!hasOwn(REGISTRY_CACHE,id)){
+      for(let i=id.lastIndexOf("/");i>0;i=id.lastIndexOf("/",i-1))
+        if(hasOwn(REGISTRY_CACHE,id.slice(0,i))&&id.slice(i+1)){at=id.slice(i+1);id=id.slice(0,i);break;}}
     const entry=hasOwn(REGISTRY_CACHE,id)?REGISTRY_CACHE[id]:null;
     if(!entry||!entry.url) return said("linkNoModule");
     url=entry.url;via={store:false,label:tx(entry.title,entry.id),from:"registry:"+entry.id};}
   const got=await linkFetch(url);if(gen!==LINK_GEN) return false;
   if(got.err) return said({missing:"linkMissing",big:"linkBig",slow:"linkSlow",notText:"linkNotText"}[got.err]||"linkFailed");
-  return openLinked(got.text,via);}
+  LINK_AT=at||null;
+  try{return openLinked(got.text,via);}finally{LINK_AT=null;}}
 
 /* ======================= 13. WIRING AND BOOT =======================
    event listeners and the page's first draw. Runs last, so everything it names exists. */
@@ -7031,6 +7374,19 @@ window.addEventListener("booklet-style",()=>{if(RENDERING) return;
   if(at<0) return;
   const n=(a.id&&document.getElementById(a.id))||Array.from(document.querySelectorAll(CTL))[at];
   if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}});
+/* A wiki's menu is a disclosure on a narrow window and a column beside the page on a wide one, and a multi-page activity lists its pages in the page
+   itself on a narrow one: both are decided as the screen is drawn, so the screen is drawn again when the window crosses the width (one listener,
+   added once). The search words are WK's, so they come back; the caret stays in the box if it was there. */
+if(typeof window!=="undefined"&&typeof window.matchMedia==="function"){
+  const mq=window.matchMedia(PAGES_NARROW),again=()=>{
+    if(RENDERING||!currentId||BOOK===EMPTY_BOOKLET) return;
+    const mod=isModuleScreen(screen)?moduleForScreen(screen):holderOf(screen);
+    if(!wikiOf(mod)) return;
+    const a=document.activeElement,inBox=!!(a&&a.classList&&a.classList.contains("wk-q")),
+      ss=inBox&&typeof a.selectionStart==="number"?a.selectionStart:null,se=inBox&&typeof a.selectionEnd==="number"?a.selectionEnd:null;
+    render();
+    if(inBox){const n=document.querySelector(".wk-q");if(n){n.focus({preventScroll:true});try{if(ss!==null) n.setSelectionRange(ss,se);}catch(e){/* no caret */}}}};
+  if(typeof mq.addEventListener==="function") mq.addEventListener("change",again);else if(typeof mq.addListener==="function") mq.addListener(again);}
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
 /* The menu stays in view below the page's own sticky bar, whose height changes
