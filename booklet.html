@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-Uzob9vwTcj/TL2/kHcJdQLBEHWU20nfSNju2MPP4Fhc=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-2nK9d7MfqGJav97tmik/OXkPIR6BRgrRhbqywkXXoys=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4583,7 +4583,7 @@ function useLib(name){
   return LIB_ON[name]=ok;}
 /* math: $…$ inline, $$…$$ display. Temml turns TeX into MathML, which the
    browser draws itself. A formula Temml cannot read is shown as its TeX, in code style. */
-function mathNode(tex,display){
+function mathNode(tex,display,named){
   const raw=()=>el(display?"div":"span",{class:"math raw"},tex);
   try{
     if(!useLib("temml")||typeof temml==="undefined") return raw();
@@ -4591,9 +4591,10 @@ function mathNode(tex,display){
     /* throwOnError:true, so a formula Temml cannot read lands in the catch below and shows as
        its TeX; with false Temml paints the bad source red inside the MathML instead */
     temml.render(tex,box,{displayMode:!!display,throwOnError:true,trust:false});
-    /* a formula names itself by its TeX: Chromium gives a button holding only MathML no name otherwise (alttext does not do it) */
+    /* a formula drawn as flat words (inside a button, a card, a menu) names itself by its TeX: Chromium gives a control holding only
+       MathML no name otherwise (alttext does not do it). A formula in prose is left to the reader's own MathML support. */
     const m=box.querySelector&&box.querySelector("math");
-    if(m) m.setAttribute("aria-label",tex);
+    if(m&&named) m.setAttribute("aria-label",tex);
     return m?box:raw();
   }catch(e){return raw();}}
 /* The words of a booklet line (SPEC.md section 4: a title, help text, an option, an anchor, a matrix item, a menu entry) are inline
@@ -4603,7 +4604,7 @@ function mathNode(tex,display){
    screen reader, a message. Data values are never read this way. */
 const WORD_MARK=/[*_`~=$\[<\\!]|https?:/;
 const curScope=()=>{const m=moduleForScreen(screen);return m?scopeOfModule(m):scopeOfAddr(screen);};
-const wordsOpts=flat=>({...PLAIN_OPTS,math:tex=>mathNode(tex,false),anchor:(h,k)=>textOf(k),flat,...(flat?{}:linkHooks(curScope()))});
+const wordsOpts=flat=>({...PLAIN_OPTS,math:tex=>mathNode(tex,false,flat),anchor:(h,k)=>textOf(k),flat,...(flat?{}:linkHooks(curScope()))});
 function words(s,flat){const t=String(s==null?"":s);if(!WORD_MARK.test(t)) return [t];
   return renderInline(t,{opts:wordsOpts(flat),refs:{}});}
 /* a message that holds a name (Next: …, Up: …) as nodes: the message's words around the name drawn as a booklet line's words */

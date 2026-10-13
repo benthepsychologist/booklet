@@ -122,6 +122,10 @@ for(const [name,what,rx] of CASES){
    chk(label+": one warning, no error, naming the line",r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);};
  W("lint-query-ignored-key",/line 25: the query's `as: bars` does not draw `group`/,"a key the view does not draw");
  W("lint-query-cards-label-entries",/line 15: the query's `label:` is not drawn on cards over kept entries/,"a `label:` on cards over kept entries");
+ {const r=lint(path.join(FX,"lint-query-cards-roles-entries.md"));
+  chk("cards over kept entries: each of label, value, note, badge and tone is its own warning, naming the fix",r.status===0&&r.errors.length===0&&r.warns.length===5&&["label","value","note","badge","tone"].every(k=>r.warns.some(w=>w.includes("`"+k+":` is not drawn on cards over kept entries")&&/use `as: list` or `as: table`/.test(w))),r.out);}
+ {const r=lint(path.join(FX,"lint-price-lines.md"));
+  chk("a `$` on a booklet line's title does not pair with one on its help line, nor one option's with the next option's (no false price warning)",r.status===0&&r.warns.length===0&&r.errors.length===0,r.out);}
  W("lint-query-ignored-cards",/line 23: the query's default view, `cards`, does not draw `parent`/,"a key the default view does not draw");
  W("lint-query-badge-field",/line 25: the query's `badge: nope` names a field the rows never carry/,"a `badge:` naming a field the rows never carry");
  W("lint-query-parent-field",/line 25: the query's `parent: nope` names a field the rows never carry/,"a `parent:` naming a field the rows never carry");

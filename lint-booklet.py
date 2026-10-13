@@ -287,9 +287,12 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             warn(f, f"line {n}: the query's `as: {view}` does not draw `{key}`")
         else:
             warn(f, f"line {n}: the query's default view, `{view}`, does not draw `{key}`")
-    # cards over kept entries are titled by their date: a `label:` there is not drawn (over a data block it is the title)
-    if view == "cards" and src_act and "label" in s:
-        warn(f, f"line {n}: the query's `label:` is not drawn on cards over kept entries: each card is titled by its date")
+    # cards over kept entries are titled by their date and list their questions: the roles that name a row's parts are not drawn there
+    # (over a data block they are: `label` the title, `value` the figure, `note`, `badge`, `tone`)
+    if view == "cards" and src_act:
+        for key in ("label", "value", "note", "badge", "tone"):
+            if key in s:
+                warn(f, f"line {n}: the query's `{key}:` is not drawn on cards over kept entries (each card is titled by its date and lists its questions); use `as: list` or `as: table` to draw it")
     # a setting that names a field the rows never carry: a warning, never an error
     names = None
     if src_data is not None:
@@ -1498,7 +1501,13 @@ def check_prices(f, lines, start, regions):
         if k in skip or skipped or not ln.strip():
             flush()
             continue
+        # a booklet line (its title) and each list item are their own words: a `$` there does not pair with one on the next line
+        line = bool(re.match(r"^>[ \t]*\[!", ln))
+        if line or re.match(r"^\s*(?:[-*+]|\d+[.)])\s", ln):
+            flush()
         para.append((k, re.sub(r"^>[ \t]?", "", ln)))
+        if line:
+            flush()
     flush()
 
 

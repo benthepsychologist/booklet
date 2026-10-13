@@ -23,7 +23,7 @@ Take your time.
 
 > [!activity|size] Which is $\\frac{2}{3}$ or bigger?
 
-Some words first.
+Some words first, with $a^2+b^2$ in prose.
 
 > [!choice|bigger] Which is bigger, $\\frac{2}{3}$ or $\\frac{3}{5}$?
 > Remember to **compare** the *denominators*.
@@ -169,6 +169,9 @@ You arrived by a card's link.
    ok(act.raw===0,'no formula is left as its TeX');
    ok(!/[$*`]/.test(act.doc),'the tab\'s title is plain words ('+act.doc+')');
    /* accessible names (WCAG 4.1.2): Chromium names a button holding only MathML by nothing, unless the formula names itself */
+   {const lab=await p.evaluate(()=>({prose:[...document.querySelectorAll('#main p math')].map(m=>m.getAttribute('aria-label')),opt:[...document.querySelectorAll('#main .pill-btn math')].map(m=>m.getAttribute('aria-label'))}));
+    ok(lab.prose.length===1&&lab.prose[0]===null,'a formula in prose has no aria-label ('+JSON.stringify(lab.prose)+')');
+    ok(lab.opt.length>=2&&lab.opt.every(x=>x),'a formula in a button is labelled by its TeX ('+JSON.stringify(lab.opt)+')');}
    {const cdp=await p.context().newCDPSession(p);await cdp.send('Accessibility.enable');
     const tree=(await cdp.send('Accessibility.getFullAXTree')).nodes;
     const btn=tree.filter(n=>n.role&&n.role.value==='button'&&!n.ignored);
