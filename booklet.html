@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-TpJBCpri/QVoH4AbjXWcuWqchjCfxUwvviG1EQaY6Gs=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-g+/eafyEmIHo6b5fjputRJB1wrbEF0ED6NSDZuy09zs=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2789,6 +2789,8 @@ const scopeOfAddr=a=>{const s=String(a==null?"":a),i=s.indexOf(ADDR_SEP);return 
 const shortId=a=>{const s=String(a==null?"":a);return s.slice(s.indexOf(ADDR_SEP)+1);};
 /* the scope a module's activities are in: its own id, or "" for a module outside every fence */
 const scopeOfModule=m=>scopeOfAddr((activitiesOf(m)[0]||{}).id);
+/* the module a fence made, by its id: the module held for a bare activity is not one (its id is its activity's, which may be a module's too) */
+const fencedModule=id=>allModules().find(m=>m.id===id&&scopeOfModule(m)!=="")||null;
 /* Where the once-answered questions of a scope are kept. peekAnswers never makes the store. */
 const answersIn=scope=>{STATE.answers=STATE.answers||{};return STATE.answers[scope]||(STATE.answers[scope]={});};
 const peekAnswers=scope=>(STATE.answers||{})[scope]||{};
@@ -3574,7 +3576,7 @@ function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").repla
       if(kept&&Object.keys(kept).length) own.push(...fence("booklet draft "+fid,JSON.stringify(kept)));});
     (V.records||[]).filter(r=>r.scope===sc).forEach(r=>own.push(r.text,""));
     if(!own.length) return;
-    const m=sc&&mods.find(x=>x.id===sc);
+    const m=sc&&fencedModule(sc);
     recs.push(...(m?["> [!records|"+m.id+"] "+tx(m.title,m.id),""]:[]),...own);});
   if(recs.length) out.push("%%","> [!records] App record — do not edit below this line","",...recs,"%%","");
   return out.join("\n");}
@@ -3907,7 +3909,7 @@ function addModuleText(text){
     let mod=lines.slice(sp.openAt,sp.closeAt+1);
     /* the notice: written into the fence when the module has it only in its file's front matter */
     {const has=(()=>{const mk=codeMask(mod);return mod.some((ln,i)=>{if(mk[i]) return false;const x=ln.match(CALLOUT_LINE);return !!x&&x[1].toLowerCase()==="notice";});})();
-     const n=(R.template.modules.find(x=>x.id===sp.id)||{}).notice,nl=has?[]:noticeLines(n);
+     const n=(R.template.modules.find(x=>x.id===sp.id&&scopeOfModule(x)!=="")||{}).notice,nl=has?[]:noticeLines(n);
      if(nl.length) mod=[mod[0],"",...nl,...(mod[1]!==undefined&&mod[1].trim()?[""]:[]),...mod.slice(1)];}
     const title=((lines[sp.openAt].match(CALLOUT_LINE)||[])[4]||"").trim()||sp.id||"";
     let dat=(dataOf.get(sp.id)||[]).join("\n\n").split("\n");
@@ -3980,7 +3982,7 @@ function addModuleText(text){
   (T.widgets||[]).filter(w=>w.module?mine.has(w.module):extraIds.has(w.id)).forEach(addWidget);
   const added=[];
   /* the module as the composed file reads it: its notice, from its fence's callout, rides on it */
-  (T.modules||[]).filter(m=>mine.has(m.id)).forEach(mod=>{if(addModule(mod)) added.push(mod.id);});
+  (T.modules||[]).filter(m=>mine.has(m.id)&&scopeOfModule(m)!=="").forEach(mod=>{if(addModule(mod)) added.push(mod.id);});
   return {ok:true,added,renamed:renamedIds};}
 /* What the reader has kept in a module, as counts: the entries kept in its activities, the answers it holds
    (the questions its once-answered activities write, as toMarkdown writes them) and the activities with a draft
@@ -4003,7 +4005,7 @@ function moduleWork(mod){
    query view state, the open chip). Nothing is changed unless the file this makes is one the renderer reads with
    nothing refused. Returns {ok} or {ok:false,problems}. */
 function removeModule(id){
-  const mod=id?allModules().find(m=>m.id===id):null;
+  const mod=id?fencedModule(id):null;
   if(!mod||!BOOK) return {ok:false,problems:[strings("problem").noFence]};
   const cur=String((BOOK.raw||{}).source||"").split("\n");
   const old=moduleSpanOf(cur,id);
@@ -4037,7 +4039,7 @@ function removeModule(id){
   if(unsavedEntries>left) unsavedEntries=left;
   editBook(t=>{t.raw={...(t.raw||{}),source:newSource};
     if((t.raw.records||[]).some(r=>r.scope===id)){const left=t.raw.records.filter(r=>r.scope!==id);if(left.length) t.raw.records=left;else delete t.raw.records;}
-    t.modules=(t.modules||[]).filter(m=>m.id!==id);
+    t.modules=(t.modules||[]).filter(m=>!(m.id===id&&scopeOfModule(m)!==""));
     t.widgets=(t.widgets||[]).filter(w=>w.module!==id);
     const keep=Object.fromEntries(Object.entries(t.figures||{}).filter(([k])=>scopeOfAddr(k)!==id));
     if(Object.keys(keep).length) t.figures=keep;else delete t.figures;});
@@ -4073,7 +4075,7 @@ function addWidget(w){if(!w||typeof w!=="object"||typeof w.id!=="string"||!w.eng
   return true;}
 function addModule(mod){if(!moduleOk(mod)) return false;
   editBook(t=>{t.modules=t.modules||[];
-    const i=t.modules.findIndex(m=>m.id===mod.id);
+    const i=t.modules.findIndex(m=>m.id===mod.id&&scopeOfModule(m)!=="");
     if(i>=0) t.modules[i]=mod; else t.modules.push(mod);});
   return true;}
 /* the two kinds of activity a file can declare: one that repeats (`entry`) and one answered once */
@@ -6912,7 +6914,7 @@ function wikiAfter(W,id){const K=strings("wiki"),out=[],kids=wikiKids(W,id),ment
 const moduleLinkId=t=>{let s=String(t==null?"":t).trim().replace(/[#?].*$/,"").split("/").pop();
   try{s=decodeURIComponent(s);}catch(e){/* as written */}
   return s.replace(/\.booklet(?:\.md)?$/i,"");};
-function moduleLinkNode(target,kids){const id=moduleLinkId(target),mod=allModules().find(m=>m.id===id);
+function moduleLinkNode(target,kids){const id=moduleLinkId(target),mod=fencedModule(id);
   if(!id) return kids&&kids.length?textOf(kids):String(target);
   const label=kids&&kids.length?kids:[mod?tx(mod.title,id):id];
   if(mod) return el("a",{href:"#",class:"alink",onclick:e=>{if(e&&e.preventDefault) e.preventDefault();go(entryScreenOf(mod));}},...label);

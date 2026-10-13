@@ -105,6 +105,13 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const o=B.toMarkdown();
   chk("and is written back under the plain records line, once, with no activity's name on a records line",!/\[!records\|/.test(o)&&(o.match(/\[!records/g)||[]).length===1&&answersOf(o,"").q==="one"&&answersOf(o,"").r==="two",o.slice(-400));
   chk("load, save, load, save changes nothing",load(o).toMarkdown()===o);
+  /* a bare activity and a module that share an id are two things: adding the module leaves the activity, removing it leaves the activity */
+  {const X=load(FM+"> [!activity|inbox] Bare\n\n> [!text|q] Q\n");X.answersIn("").q="mine";
+   const r=X.addModuleText(FM.replace("title: T","title: Mod")+"> [!module|inbox] Module inbox\n\n> [!activity|a] A\n\n> [!module|inbox end] End\n");
+   chk("adding a module whose id is a bare activity's id adds a module and leaves the activity",r.ok&&X.allModules().map(m=>m.id+":"+(m.mode||{}).id).join()==="inbox:inbox,inbox:inbox/a",JSON.stringify(r)+X.allModules().map(m=>m.id).join());
+   chk("and the file it writes opens with both, the bare activity's answer under the plain records line",(q=>q.ok&&q.refused.length===0&&q.template.modules.length===2)(X.parseFile(X.toMarkdown()))&&answersOf(X.toMarkdown(),"").q==="mine");
+   const rm=X.removeModule("inbox");
+   chk("removing the module leaves the bare activity",rm.ok&&X.allModules().map(m=>m.id).join()==="inbox"&&X.allModules()[0].mode.id==="inbox",JSON.stringify(rm)+X.allModules().map(m=>m.id).join());}
   /* Remove a module takes its unread records with it, and no one else's */
   const two=FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b] B\n\n> [!text|r] R\n\n> [!module|n end] End\n"+REC+
     "> [!records|m] M\n\n"+fence("booklet sync",'{"for":"m"}')+"> [!records|n] N\n\n"+fence("booklet sync",'{"for":"n"}')+"%%\n";
@@ -162,6 +169,18 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("it is drawn as a plain fold: plain paper, the title, and no word about a kind this page does not know",P.find(main,P.hasClass("card-plain")).length===1&&/Notes on the week/.test(P.texts(main))&&!/does not know the kind/.test(P.texts(main)),P.texts(main));
   chk("unfolded, it is a callout with no colour or picture of a kind",P.find(main,P.hasClass("rd-callout")).length===1&&P.find(main,P.hasClass("rd-hued")).length===0);
   chk("and the linter takes it",/0 errors · 0 warnings/.test(lintOut(FM+body)),lintOut(FM+body));}
+
+ /* ---- D11: a row closes with [!row|end] and no other way ---- */
+ {const A=P.boot();
+  const row=close=>FM+"> [!activity|a] A\n\n> [!row]\n\n### One\n\nx\n\n### Two\n\ny\n\n"+close+"\n";
+  const ok=A.parseFile(row("> [!row|end]"));
+  chk("`> [!row|end]` closes a row: two cells, nothing reported",ok.ok&&ok.unread.length===0&&ok.template.modules[0].mode.blocks.some(b=>b.type==="row"&&b.blocks.length===2),JSON.stringify(ok.unread));
+  const old=A.parseFile(row("> [!row end]"));
+  chk("the renderer does not read `> [!row end]` as a close: the row is reported as never closed",old.ok&&old.unread.some(x=>/never closed|not closed/i.test(x)),JSON.stringify(old.unread));
+  const L=lint(row("> [!row end]"));
+  chk("the linter reports `> [!row end]` and says to write `> [!row|end]`",L.status===1&&/line 19: `> \[!row end\]` is not a row's close \(0\.13\); write `> \[!row\|end\]`/.test(L.out),L.out);
+  chk("and is clean with the new form",lint(row("> [!row|end]")).status===0);
+  chk("neither tool has a ROW_END",!/\bROW_END\b/.test(P.html)&&!/\bROW_END\b/.test(fs.readFileSync(path.join(P.R,"lint-booklet.py"),"utf8")));}
 
  console.log(fails?"\n"+fails+" FAILURES":"\nformat 0.13 checks passed");process.exit(fails?1:0);
 })();

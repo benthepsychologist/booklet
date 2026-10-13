@@ -3,11 +3,27 @@
 *As of 2026-10-13*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.12**: format v0.12 (files say `booklet: "0.12"`, in quotes) and renderer 0.12.0 (item D of the 0.12 update; the v0.10 line: v0.10.1 was a wording patch to `SPEC.md` section 9; v0.10.2 was a renderer-only patch: a reader can remove a module; v0.10.3 fixed one sentence of its confirmation; v0.10.4 added tests that the published file sends nothing a reader writes, `lint-booklet.py --marker` and `--format-version` for generators, and a fix to a folded section's preview showing backticks).
+**project v0.13, not yet released** (the format rules of the 0.13 update have landed on `main` once this is merged; the last release is v0.12.0): format v0.13 (files say `booklet: "0.13"`, in quotes) and renderer 0.13.0. The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
+
+## Current state — v0.13.0, format rules (item `v013-format-rules`; not yet released)
+
+The format becomes 0.13, for what a reader keeps and how it reads a line. A file marked `"0.12"` now opens with the older-version notice; every file this repository holds that carried `"0.12"` is re-marked (the "later marker" fixture is now `"0.14"`, and `lint-old-format-0-12` is new). `FORMAT_VERSION` and `lint-booklet.py --marker` say `0.13`; `RENDERER_VERSION` is `0.13.0`. SPEC section 14 has "Changes from v0.12".
+
+- **D1, records kept.** `toMarkdown` merges what it parsed with what it changed: answers to a question of an unknown kind or one the design no longer has, entries and drafts of any activity address, and every record block it does not read (`sync`, an unknown kind) or could not parse are written back as they were, once. The parser keeps such blocks in `raw.records` (each `{scope, text}`, the fence as written); Remove a module drops its scope's. Reading `sync` stays unbuilt (section 13).
+- **D2, bare activities are one nameless module.** Their records are written under the plain `> [!records]` line (`> [!records|<bare-id>]` is still read when no module has that id); `parent:` places among them (`shapeBooklet`, `activityTree` over all of them); the rule that a bare id may not equal a module id is gone from both tools; the page keeps one model per bare activity for its card, and looks a module up by `fencedModule(id)` so a bare activity and a module may share an id.
+- **D3, the first word after the bar is the id.** `calloutWords` and `callout_words`; `NO_ID_KINDS` (`row`, `notice`, `manifest`, `hint`, `solution`, `group`) takes settings only. The home view is the screen `@home` (`HOME_SCREEN`), so `home` is an ordinary id; `SCREENS` is read with `hasOwn`, so an activity called `constructor` is no longer a screen either.
+- **D6.** The front matter stands in for a notice through `license`, `copyright` and `source` only (`FRONT_NOTICE_KEYS`).
+- **D8.** A query across a module boundary draws nothing and is listed with the file's problems; it no longer stops the file opening. The linter keeps it an error.
+- **D9, D10, D14.** Wording and the new "Drafts" part of SPEC section 13 (the manifest, parts in other files, the sibling check).
+- **D11.** `> [!row|end]` is the only row close; `ROW_END` is gone; the linter reports `> [!row end]` with the fix.
+- **D12.** The hex-pair widget colour is gone (`colourOf`, `COLOUR_NAMES`); widget colours are colour names, and "tone" is `good`, `warn` or `bad`.
+- **D13.** `group` is a kind (`KIND_SETTINGS`, `plainCallout`): the plain fold, no longer drawn as a kind the page does not know.
+- Tests: `test/format013.test.js`, `test/format013-browser.js`; `lint.test.js`, `open.test.js`, `notice.test.js`, `modulescope.test.js`, `theme-block.test.js` and `version.test.js` follow the new rules. No new interface words (every message reused).
+- Size: `booklet.html` 3,700,0xx bytes (was 3,697,535); the hand-written part grew by about 2.5 KB.
 
 ## Current state — v0.12.0, released 2026-10-13 (items D and E: the format and the wiki tree)
 
