@@ -80,7 +80,7 @@ Text.
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
     await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
-    if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
+    if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
     return p;};
   const uses=p=>p.evaluate(()=>[...document.querySelectorAll('#main .cd-tile use')].map(u=>u.getAttribute('href')));
   const styleOf=p=>p.evaluate(()=>document.documentElement.getAttribute('data-style'));
@@ -179,7 +179,7 @@ Only prose.
    const sol=await q.evaluate(()=>({h2:(document.querySelector('#main h2')||{}).textContent,lede:(document.querySelector('.mhead-lede')||{}).textContent||'',
      more:(document.querySelector('.mhead-more')||{}).textContent||'',pic:[...document.querySelectorAll('.mhead-pic use')].map(u=>u.getAttribute('href')),
      tip:/The tip body/.test((document.querySelector('.mhead-more')||{textContent:''}).textContent)}));
-   ok(view.indexOf('/')>0||view!=='home','a module that is one activity opens on its activity ('+view+')');
+   ok(view.indexOf('/')>0||view!=='@home','a module that is one activity opens on its activity ('+view+')');
    ok(sol.h2==='Solo module'&&sol.lede==='Solo lede words.'&&/Solo second paragraph/.test(sol.more)&&sol.pic.join()==='#bs-compass','a one-activity module draws its head on the activity screen: title, lede (after an HTML comment), the rest, large picture');
    ok(sol.tip,'a reading callout before the first activity is drawn in the opening');
    ok(!/Solo lede words/.test(await q.locator('#main .pblock').first().innerText().catch(()=>'')),'and the opening is not repeated in the activity\'s own prose');
@@ -195,7 +195,7 @@ Only prose.
    await q.getByRole('button',{name:'Add a booklet from a file'}).click();await q.waitForTimeout(300);
    await q.locator('#fileIn').setInputFiles(f2);await q.waitForTimeout(500);
    await q.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await q.waitForTimeout(900);
-   if(await q.evaluate(()=>document.body.dataset.view)!=='home'){await q.locator('#btnHome').click();await q.waitForTimeout(400);}
+   if(await q.evaluate(()=>document.body.dataset.view)!=='@home'){await q.locator('#btnHome').click();await q.waitForTimeout(400);}
    await q.locator('#main button.mode').first().click();await q.waitForTimeout(700);
    const before=await q.evaluate(()=>[...document.querySelectorAll('#main .cd-tile use')].map(u=>u.getAttribute('href')));
    await q.evaluate(()=>window.bookletStyle.set('briefing'));await q.waitForTimeout(400);

@@ -193,7 +193,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  const L=listen(A);
  const r=B.open(HOSTILE);
  const screens=[A.screen];
- for(const s of [A.screen,"m/a","home"]){try{A.screen=s;A.render();}catch(e){}}
+ for(const s of [A.screen,"m/a","@home"]){try{A.screen=s;A.render();}catch(e){}}
  const html=JSON.stringify(P.main(),(k,v)=>typeof v==="function"?"fn":v);
  chk("a hostile booklet opens or is refused, and either way registers no host",A.HOST===null,JSON.stringify(r).slice(0,100));
  chk("no listener was added by it (only the test's own)",A.HOOK_LISTENERS.length===calls0+1);

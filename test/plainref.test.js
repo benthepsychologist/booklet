@@ -14,7 +14,7 @@ global.document.createElement=tag=>{const n=mk0(tag);
 const API={};
 eval(src+`
 ;Object.assign(API,{render,parseFile,applyParsed,getPanel:()=>citePanelEl,getTip:()=>citeTipEl,getBook:()=>BOOK,setScreen:v=>{screen=v},
-  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="home";lang="en";}});`);
+  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="@home";lang="en";}});`);
 const A=API;
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const textOf=n=>n==null?"":typeof n==="string"?n:(n._text||"")+" "+(n.children||[]).map(textOf).join(" ");

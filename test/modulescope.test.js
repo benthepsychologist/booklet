@@ -31,7 +31,7 @@ const section=(md,id)=>{const i=md.indexOf("> [!records|"+id+"]");if(i<0) return
  const ok=A.parseFile(FM+"> [!module|m1] M\n\n> [!activity|a] A\n\n> [!text|rows] Q\n\n> [!module|m1 end] E\n\n> [!module|m2] M\n\n> [!activity|a] A\n\n```booklet data\n[{\"x\":1}]\n```\n^rows\n\n> [!module|m2 end] E\n");
  chk("a block in one module may share its id with a question in another",ok.ok&&ok.refused.length===0,JSON.stringify(ok.refused));
  const refQ=A.parseFile(FM+"> [!module|m1] M\n\n> [!activity|a repeat] A\n\n> [!text|q] Q\n\n> [!module|m1 end] E\n\n> [!module|m2] M\n\n> [!activity|b] B\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] E\n");
- chk("a query cannot read another module's activity: refused, as before",refQ.ok===false&&refQ.refused.some(x=>/in another module/.test(x)),JSON.stringify(refQ.refused));
+ chk("a query cannot read another module's activity: it draws nothing and is reported, and the file still opens (0.13)",refQ.ok===true&&refQ.refused.length===0&&refQ.unread.some(x=>/in another module/.test(x)),JSON.stringify(refQ.unread));
  const own=A.parseFile(FM+"> [!module|m1] M\n\n> [!activity|a repeat] A\n\n> [!text|q] Q\n\n> [!activity|v] V\n\n```booklet query\nfrom: a\n```\n\n> [!module|m1 end] E\n\n> [!module|m2] M\n\n> [!activity|a repeat] A\n\n> [!text|q] Q\n\n> [!activity|v] V\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] E\n");
  const qf=m=>m.activities.find(a=>a.id===m.id+"/v").blocks.find(b=>b.type==="query").from;
  chk("two modules each query their own activity of the same id",own.ok&&own.template.modules.map(qf).join()==="m1/a,m2/a",JSON.stringify(own.refused));}

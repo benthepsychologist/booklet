@@ -35,7 +35,7 @@ let LIST='good';
   await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
   await p.locator('#fileIn').setInputFiles(path.join(R,'test/fixtures/questions-open.booklet.md'));await p.waitForTimeout(500);
-  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
+  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
   const tabs=()=>p.locator('button.mode').count();
   const before=await tabs();
   await p.getByRole('button',{name:'Add a module'}).first().click();await p.waitForTimeout(800);

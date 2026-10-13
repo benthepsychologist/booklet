@@ -26,7 +26,7 @@ const changed=X=>{const e=X.readLib().entries.find(x=>x.id===X.currentId);return
  const fileName=()=>A.exportName();
  chk("its screen says Untitled booklet, and its file says it too",heading()===U&&titleOf(A.toMarkdown())===U,heading());
  chk("the download is named for it",fileName()==="untitled-booklet.booklet.md",fileName());
- const listText=()=>{A.screen="@booklets";A.render();const t=texts(P.main());A.screen="home";return t;};
+ const listText=()=>{A.screen="@booklets";A.render();const t=texts(P.main());A.screen="@home";return t;};
  {const id=A.currentId;A.flushSave();const BL=P.boot();BL.screen="@booklets";const rows=()=>{BL.render();return find(P.main(),hasClass("mode")).map(n=>texts(n));};
   const row=rows();chk("and so does its row in Your booklets",row.length===1&&row[0].startsWith(U),JSON.stringify(row));}
  chk("the tab is named for it",A.tabName()===U);
@@ -74,7 +74,7 @@ const changed=X=>{const e=X.readLib().entries.find(x=>x.id===X.currentId);return
  /* a booklet opened from a file can be renamed too, and only its title line changes */
  {const B=P.boot();await B.createBooklet();
   const file=MOD("Opened from a file","mod-file");
-  B.loadText(file);B.screen="home";B.render();
+  B.loadText(file);B.screen="@home";B.render();
   chk("a booklet opened from a file shows the file's title",heading()==="Opened from a file");
   renameHome(B,"My own name");
   const was=file.split("\n"),now=B.toMarkdown().split("\n").slice(0,was.length);

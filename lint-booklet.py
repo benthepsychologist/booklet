@@ -113,8 +113,8 @@ def front_matter(text):
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
 CALLOUT_LINE = re.compile(r'^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$')
-# a row closes with `> [!row end]`: the one booklet line whose flag follows the kind, since a row has no id
-ROW_END = re.compile(r'^>[ \t]?\[!(row)([ \t]+end)\]([+-]?)[ \t]*(.*)$', re.I)
+# the old way to close a row (before 0.13), which a reader does not read: a row closes with `> [!row|end]`
+OLD_ROW_END = re.compile(r'^>[ \t]?\[!row[ \t]+end\]', re.I)
 ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
@@ -127,6 +127,8 @@ KIND_SETTINGS = {
     "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
 }
 NUMBER_SETTINGS = ("min", "max", "step")
+# the kinds that take no id: their words are settings only
+NO_ID_KINDS = ("row", "notice", "manifest", "hint", "solution")
 # Booklet's icon set: the names in art/icons/ (Lucide 1.48). GENERATED: `node test/art-sprite.js --write booklet.html` rewrites
 # the list between the markers, and `--check` fails if it has drifted. An `icon:` setting or an `icon` role value outside it is reported.
 # icons:start
@@ -150,10 +152,9 @@ ICON_NAMES = frozenset((
     "umbrella", "user", "users", "wallet", "waves", "wind", "wrench", "x", "zap",
 ))
 # icons:end
-CALLOUT_FLAGS = {k: {s for s in v if not s.endswith(":")} for k, v in KIND_SETTINGS.items()}
 # the widget engines the renderer has
 ENGINES = ("svg-regions", "grid-select")
-TONE_NAMES = ("warm", "green", "amber", "slate", "teal")
+COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
 STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice"}
 # what a module's notice (`> [!notice]`) may say about itself
@@ -161,17 +162,17 @@ NOTICE_KEYS = ("license", "copyright", "source", "version")
 
 
 def callout_words(kind, s):
+    """`kind|id words` -> the id, the flags and the key:value settings. For a kind that takes an id (SPEC.md section 4) the
+    first word is the id, whatever it is called, and every word after it is a setting; a kind that takes none has settings only."""
     out = {"id": None, "flags": set(), "set": {}, "old": []}
-    for w in (s or "").split():
+    for n, w in enumerate((s or "").split()):
         kv = re.match(r'^([A-Za-z][A-Za-z0-9-]*):(.*)$', w)
-        if kv:
+        if n == 0 and kind not in NO_ID_KINDS:
+            out["id"] = w
+        elif kv:
             out["set"][kv.group(1).lower()] = kv.group(2)
         elif re.match(r'^[A-Za-z][A-Za-z0-9-]*=', w):
             out["old"].append(w)
-        elif w.lower() in CALLOUT_FLAGS.get(kind, set()):
-            out["flags"].add(w.lower())
-        elif out["id"] is None:
-            out["id"] = w
         else:
             out["flags"].add(w.lower())
     return out
@@ -610,7 +611,7 @@ def check_theme(f, n, code, in_module, have_theme):
         warn(f, f"line {n}: the theme's `{key}` leaves {pair} at {ratio}:1, under 4.5 to 1, so the renderer will use the base theme's {key} instead")
 
 
-# ---- Rows (format 0.5): `> [!row]` ... `> [!row end]` -----------------------------------------------
+# ---- Rows (format 0.5): `> [!row]` ... `> [!row|end]` -----------------------------------------------
 def row_cells(rows):
     """How many cells a row's lines make, by the renderer's rule: each heading at the shallowest level used
     starts a cell (what comes before the first is one more); with no headings each block is a cell."""
@@ -710,10 +711,8 @@ def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
     if mod in seen:
         err(f, f"line {n}: the module {mod!r} has two notices (a module has one)")
     seen.add(mod)
-    if w["id"]:
-        err(f, f"line {n}: a notice takes no id (found {w['id']!r})")
     k = i + 1
-    while k < len(lines) and lines[k].startswith(">") and not (CALLOUT_LINE.match(lines[k]) or ROW_END.match(lines[k])):
+    while k < len(lines) and lines[k].startswith(">") and not CALLOUT_LINE.match(lines[k]):
         body = re.sub(r'^>[ \t]?', '', lines[k]).strip()
         if body:
             kv = re.match(r'^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$', body)
@@ -753,7 +752,7 @@ def check_format(f, text, fm):
     ids, block_ids, embeds, entry_refs = {}, {}, [], []
     acts = {}                # scope -> {activity id: line}
     parents = {}             # scope -> [(activity id, its parent: setting, line)]
-    mod_ids = {}             # module ids (and a bare activity's own id, which is a module of its own) -> line
+    mod_ids = {}             # module ids -> line
     note_defs = {}           # scope -> {footnote id: line}
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
     loose_questions = []   # questions before any activity line
@@ -844,16 +843,8 @@ def check_format(f, text, fm):
                         for cell in obj.get("cells") or []:
                             if isinstance(cell, dict) and "color" in cell:
                                 col = cell["color"]
-                                if isinstance(col, str):
-                                    if col not in TONE_NAMES:
-                                        err(f, f"line {n}: the widget ^{bid} has the colour {col!r}, which is not a tone name ({', '.join(TONE_NAMES)}); a pair of hex colours is an object with `tint` and `deep`")
-                                elif not isinstance(col, dict):
-                                    err(f, f"line {n}: the widget ^{bid} has a colour that is neither a tone name ({', '.join(TONE_NAMES)}) nor a pair of hex colours")
-                                else:
-                                    for part in ("tint", "deep"):
-                                        v = col.get(part)
-                                        if v is not None and not (isinstance(v, str) and re.fullmatch(r"#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})", v)):
-                                            err(f, f"line {n}: the widget ^{bid} has a `{part}` of {v!r}, which is not a hex colour (#rgb or #rrggbb); the renderer will not use it")
+                                if not (isinstance(col, str) and col in COLOUR_NAMES):
+                                    err(f, f"line {n}: the widget ^{bid} has the colour {col!r}, which is not a colour name ({', '.join(COLOUR_NAMES)})")
                         for fig in obj.get("figures") or []:
                             bad = svg_script_in((fig or {}).get("svg") or "") if isinstance(fig, dict) else None
                             if bad:
@@ -894,7 +885,9 @@ def check_format(f, text, fm):
             under_text = prev.strip() and not prev.lstrip().startswith(">") and not re.match(r'^ {0,3}(`{3,}|~{3,})', prev)
             if not (ln.lstrip().startswith("-") and under_text):
                 close_row(i, "runs into a page break")
-        mm = CALLOUT_LINE.match(ln) or ROW_END.match(ln)
+        if OLD_ROW_END.match(ln):
+            err(f, f"line {n}: `> [!row end]` is not a row's close (0.13); write `> [!row|end]`")
+        mm = CALLOUT_LINE.match(ln)
         if mm:
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
@@ -911,7 +904,7 @@ def check_format(f, text, fm):
                 section = "data"
                 data_scope = None
                 if w["id"]:
-                    if w["id"] in mod_ids and not mod_ids[w["id"]][1]:
+                    if w["id"] in mod_ids:
                         data_scope = w["id"]
                     else:
                         err(f, f"{where}: this data section names the module {w['id']!r}, which the file has not opened")
@@ -919,7 +912,7 @@ def check_format(f, text, fm):
                 section = "records"
                 data_scope = None
                 # the module id on a records line says whose the blocks below are, until the next records line
-                rec_scope = w["id"] if w["id"] and w["id"] in mod_ids and not mod_ids[w["id"]][1] else None
+                rec_scope = w["id"] if w["id"] and w["id"] in mod_ids else None
             elif section == "content":
                 if kind == "row":
                     if "end" in w["flags"]:
@@ -948,25 +941,17 @@ def check_format(f, text, fm):
                         any_module = True
                         if w["id"]:
                             if w["id"] in mod_ids:
-                                err(f, f"{where}: the module id {w['id']!r} is also used on line {mod_ids[w['id']][0]}")
-                            mod_ids.setdefault(w["id"], (n, False))
+                                err(f, f"{where}: the module id {w['id']!r} is also used on line {mod_ids[w['id']]}")
+                            mod_ids.setdefault(w["id"], n)
                 elif kind == "activity":
                     seen_activity = True
                     mod_has_activity = True
                     cur_act = w["id"] or None
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
-                        if w["set"].get("parent") is not None and open_mod is None:
-                            warn(f, f"line {n}: `parent:{w['set']['parent']}` outside a module fence places nothing (an activity outside every module is a module of its own); "
-                                    "put both activities in one module")
-                        elif w["set"].get("parent") is not None:
+                        if w["set"].get("parent") is not None:
                             parents.setdefault(open_mod, []).append((w["id"], w["set"]["parent"], n))
                         act_info.setdefault(open_mod, {})[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
-                        if not open_mod:
-                            # an activity outside every fence is a module of its own, and its id is that module's
-                            if w["id"] in mod_ids:
-                                err(f, f"{where}: the id {w['id']!r} is also used on line {mod_ids[w['id']][0]}")
-                            mod_ids.setdefault(w["id"], (n, True))
                 elif kind in QUESTION_KINDS:
                     if w["id"] and cur_act:
                         q_owner.setdefault(open_mod, {})[w["id"]] = cur_act
@@ -977,7 +962,7 @@ def check_format(f, text, fm):
                     if kind == "widget":
                         body = []
                         k = i + 1
-                        while k < len(lines) and lines[k].startswith(">") and not (CALLOUT_LINE.match(lines[k]) or ROW_END.match(lines[k])):
+                        while k < len(lines) and lines[k].startswith(">") and not CALLOUT_LINE.match(lines[k]):
                             body.append(lines[k]); k += 1
                         e = re.search(r'!\[\[[^\]#|]*#\^([A-Za-z0-9-]+)', "\n".join(body))
                         if e:
@@ -1092,7 +1077,7 @@ def check_format(f, text, fm):
             link.setdefault(aid, (par, n))
         for aid, (par, n) in link.items():
             if par not in known:
-                warn(f, f"line {n}: `parent:{par}` is not an activity of the module {scope!r}, so {aid!r} sits at the top")
+                warn(f, f"line {n}: `parent:{par}` is not an activity of " + (f"the module {scope!r}" if scope else "the module with no name (the activities outside every module fence)") + f", so {aid!r} sits at the top")
                 continue
         # a loop: walk each chain once, keeping what is already settled, so a chain thousands deep costs one pass
         settled, loops = set(), set()

@@ -11,7 +11,7 @@ let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FA
  const md=A.toMarkdown();
  const R=A.parseFile(md);
  chk("the empty booklet's own download parses ok, as empty, with its name",R.ok&&R.empty&&R.template.title==='Empty "one": #1'&&R.refused.length===0,JSON.stringify([R.ok,R.unread]));
- const B=P.boot();await B.createBooklet();B.loadText(md);B.screen="home";B.render();
+ const B=P.boot();await B.createBooklet();B.loadText(md);B.screen="@home";B.render();
  chk("opened, it is an empty booklet with that name and Add a module",heading()==='Empty "one": #1'&&B.allModules().length===0&&/Add a module/.test(P.texts(P.main())),P.texts(P.main()).slice(0,200));
  chk("and its download round-trips byte for byte",B.toMarkdown()===md);
  chk("Add a module on such a file still says it holds no module",A.moduleTextProblems(md).join()===A.STRINGS.en.problem.noModule,JSON.stringify(A.moduleTextProblems(md)));

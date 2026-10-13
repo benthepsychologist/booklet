@@ -18,6 +18,6 @@ chk("lines join with a space; nothing at all is empty",pt("one\ntwo")==="one two
 const FILE=`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\nA **bold** start with snake_case, $x$ and ![alt text](https://t.example/p.png), see [the guide](g.md).\nSecond line of it.\n\nNot the blurb.\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!activity|b] B\n\n> [!text|r] R\n\n> [!module|m end] End\n`;
 {const R=A.parseFile(FILE),mod=R.template.modules[0];
  chk("the module's blurb reads the first paragraph as inline Markdown",mod.blurb==="A bold start with snake_case, x and alt text, see the guide. Second line of it.",JSON.stringify(mod.blurb));
- P.wipe();const B=P.boot();B.loadText(FILE);B.screen="home";B.render();
+ P.wipe();const B=P.boot();B.loadText(FILE);B.screen="@home";B.render();
  chk("and the card on the home screen shows that line",P.texts(P.main()).includes("A bold start with snake_case, x and alt text, see the guide."),P.texts(P.main()).slice(0,300));}
 console.log(fails?"\n"+fails+" FAILURES":"\nblurb checks passed");P.closePages();process.exit(fails?1:0);

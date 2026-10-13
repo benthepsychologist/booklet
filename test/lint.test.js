@@ -174,8 +174,9 @@ const CASES5=[
  ["lint-theme-in-module","a theme inside a module fence",/line 13: a theme belongs to the booklet, not to a module/],
  ["lint-row-end-alone","a row closed that was never opened",/line 13: a row is closed that was never opened/],
  ["lint-row-unclosed","a row never closed",/line 13: the row opened here runs into a module fence/],
- ["lint-tone-bad-name","a widget colour that is not a tone name",/line 16: the widget \^picker-data has the colour 'pink', which is not a tone name \(warm, green, amber, slate, teal\)/],
- ["lint-tone-not-string-or-pair","a widget colour that is neither a name nor a pair",/line 16: the widget \^picker-data has a colour that is neither a tone name/],
+ ["lint-tone-bad-name","a widget colour that is not a tone name",/line 16: the widget \^picker-data has the colour 'pink', which is not a colour name \(warm, green, amber, slate, teal\)/],
+ ["lint-tone-hex-pair","a widget colour that is a pair of hex colours (0.13: colours are names only)",/line 16: the widget \^picker-data has the colour \{'tint': '#F0D9CF', 'deep': '#A04E34'\}, which is not a colour name/],
+ ["lint-tone-not-string-or-pair","a widget colour that is not a string",/line 16: the widget \^picker-data has the colour .*, which is not a colour name/],
 ];
 for(const [name,what,rx] of CASES5){
   const r=lint(path.join(FX,name+".md"));
@@ -192,7 +193,7 @@ for(const [name,rx] of [["lint-row-empty",/line 13: this row is empty/],["lint-r
     ["lint-theme-low-contrast",/line 9: the theme's `accent` leaves accent on paper at 1\.04:1, under 4\.5 to 1, so the renderer will use the base theme's accent instead/]]){
   const r=lint(path.join(FX,name+".md"));
   chk(`${name}: one warning naming the place, no error`,r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);}
-for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-pair-ok","theme-and-rows.booklet"]){
+for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.booklet"]){
   const r=lint(path.join(FX,name+".md"));
   chk(`${name} lints clean`,r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
 {// a theme block needs no ^id, and one given is ignored
@@ -200,16 +201,12 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
  const f=path.join(require("os").tmpdir(),"lint-theme-id-"+process.pid+".md");fs.writeFileSync(f,t);
  const r=lint(f);fs.unlinkSync(f);
  chk("a theme block with a ^id after it is fine",r.status===0&&/0 errors/.test(r.out),r.out);}
-{// the registry's modules, copied, re-marked and linted: hex pairs and tone names both stay valid
+{// the registry's modules, copied, re-marked and linted: the colour names stay valid
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
    for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/m,"booklet: \"0.13\""));
    const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
    chk("the registry's modules, copied and re-marked to 0.10, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
-
-{// a widget colour pair must be two hex colours: it is drawn into a style attribute
- const r=lint(path.join(FX,"lint-tone-pair-not-hex.md"));
- chk("a `tint` that is not a hex colour is an error",r.errors.some(l=>/not a hex colour/.test(l)),r.out);}
 
 {// v0.9: an id belongs to its module (SPEC.md section 4)
  const ok=lint(path.join(FX,"lint-data-section-shared-ok.md"));
@@ -248,7 +245,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","lint-tone-hex-p
  E("lint-notice-outside",/line 9: a notice belongs inside a module's fence, before the module's first activity/,"a notice outside every module fence");
  E("lint-notice-after-activity",/line 13: a notice belongs inside a module's fence, before the module's first activity/,"a notice after the module's first activity");
  {const r=lint(path.join(FX,"lint-notice-with-id.md"));
-  chk("a notice with an id: an error naming it",r.status===1&&r.errors.some(l=>/line 11: a notice takes no id \(found 'legal'\)/.test(l)),r.out);}
+  chk("a notice with a word after the bar: an error naming it as a setting it does not take",r.status===1&&r.errors.some(l=>/line 11: a notice line takes no `legal` setting \(it takes no settings at all\)/.test(l)),r.out);}
  {const r=lint(path.join(FX,"lint-marker-unquoted.md"));
   chk("an unquoted `booklet: 0.10` says to write it in quotes (a YAML tool reads it as 0.1), besides the other-marker warning, and is no error",r.status===0&&r.errors.length===0&&r.warns.length===2&&r.warns.some(w=>/without quotes; write it in quotes.*YAML tool will read it as 0\.1$/.test(w))&&r.warns.some(w=>/booklet: 0\.10; the current format is 0\.13/.test(w)),r.out);}
  const dm=lint(path.join(FX,"lint-data-module-ok.md"));

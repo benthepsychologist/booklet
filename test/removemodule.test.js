@@ -86,8 +86,8 @@ const work=()=>{P.wipe();const A=P.boot();A.loadText(SRC);
 
 /* ---- the screen was on the removed module's activity ---- */
 {const A=work();A.screen="mb/log";A.render();
- let err=null;try{A.removeModule("mb");A.screen="home";A.render();}catch(e){err=e;}
- chk("afterwards the home screen shows, with no error",!err&&A.screen==="home"&&!/Module B/.test(P.texts(P.main()))&&/Module A/.test(P.texts(P.main())),err&&String(err.stack));
+ let err=null;try{A.removeModule("mb");A.screen="@home";A.render();}catch(e){err=e;}
+ chk("afterwards the home screen shows, with no error",!err&&A.screen==="@home"&&!/Module B/.test(P.texts(P.main()))&&/Module A/.test(P.texts(P.main())),err&&String(err.stack));
  const B=work();B.screen="mb/log";B.render();B.removeModule("mb");
  let e2=null;try{B.render();}catch(e){e2=e;}
  chk("even a render left on the removed activity does not throw",!e2,e2&&String(e2.stack));}
@@ -111,12 +111,12 @@ const work=()=>{P.wipe();const A=P.boot();A.loadText(SRC);
  al._on.keydown({key:"Escape",preventDefault(){},stopPropagation(){}});
  chk("Escape changes nothing either",mods(A)==="ma,mb,mc"&&A.keptFor("mb/log").length===4&&P.find(P.main(),x=>(x.attrs||{}).role==="alert").length===0);
  btn(P.main(),"Remove this module")[0]._on.click();btn(P.main(),"Remove")[0]._on.click();
- chk("Remove removes: home screen, module gone",mods(A)==="ma,mc"&&A.screen==="home"&&!/Module B/.test(P.texts(P.main())));
+ chk("Remove removes: home screen, module gone",mods(A)==="ma,mc"&&A.screen==="@home"&&!/Module B/.test(P.texts(P.main())));
  /* a one-activity module: the control is at the foot of the activity */
  P.wipe();const B=P.boot();B.loadText(FM+"> [!module|solo] Solo <b>x</b>\n\n> [!activity|act] Solo\n\n> [!text|note] Note\n\n> [!module|solo end] End\n");
  B.screen="solo/act";B.render();
  const s=btn(P.main(),"Remove this module");
- chk("a one-activity module shows it at the foot of the activity, and the home cards do not",s.length===1&&(B.screen="home",B.render(),btn(P.main(),"Remove this module").length===0));
+ chk("a one-activity module shows it at the foot of the activity, and the home cards do not",s.length===1&&(B.screen="@home",B.render(),btn(P.main(),"Remove this module").length===0));
  B.screen="solo/act";B.render();btn(P.main(),"Remove this module")[0]._on.click();
  const t=P.texts(P.find(P.main(),x=>(x.attrs||{}).role==="alert")[0]);
  chk("a title is text: markup in it is shown as written",t.includes("<b>x</b>"),t);}

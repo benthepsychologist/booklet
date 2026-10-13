@@ -10,6 +10,6 @@ lang: en
 
 > [!activity|walk] A walk
 
-> [!row end]
+> [!row|end]
 
 > [!module|fixture-mod end]

@@ -75,7 +75,7 @@ One trial only.
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
     await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
-    if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
+    if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
     await p.locator('button.mode').first().click();await p.waitForTimeout(700);
     const cards=await p.evaluate(()=>[...document.querySelectorAll('button.mode')].map(c=>({k:c.querySelector('.k').textContent,d:(c.querySelector('.d')||{textContent:''}).textContent})));   // a card with no words draws no teaser line (0.11.10)
     ok(cards.length===2,W+': the module screen has two activity cards');

@@ -34,7 +34,9 @@ const texts=P.texts,find=P.find,hasClass=P.hasClass;
  /* ---- the one-module file's front matter ---- */
  {const fm=`license: "Licence in front matter"\ncopyright: "Front Matter Press"\nsource: https://example.org/fm\nversion: "3.1"\n`;
   const R=A.parseFile(FM(fm)+mod1("m",""));
-  chk("a one-module file with no callout: its front matter is the module's notice",JSON.stringify(R.template.modules[0].notice)===JSON.stringify({license:"Licence in front matter",copyright:"Front Matter Press",source:"https://example.org/fm",version:"3.1"}),JSON.stringify(R.template.modules[0].notice));
+  chk("a one-module file with no callout: its front matter is the module's notice",JSON.stringify(R.template.modules[0].notice)===JSON.stringify({license:"Licence in front matter",copyright:"Front Matter Press",source:"https://example.org/fm"}),JSON.stringify(R.template.modules[0].notice));
+  {const only=A.parseFile(FM(`version: "0.1"\n`)+mod1("m",""));
+   chk("a front matter with only a version gives no notice (0.13: the file's version is the file's)",only.ok&&only.template.modules[0].notice===undefined,JSON.stringify(only.template.modules[0].notice));}
   const R2=A.parseFile(FM(fm)+mod1("m",NOTE));
   chk("when both are present the callout wins",R2.template.modules[0].notice.copyright==="Example Press, 2026"&&R2.template.modules[0].notice.version==="1.2");
   const R3=A.parseFile(FM(fm)+mod1("a","")+"\n"+mod1("b",""));
@@ -47,9 +49,9 @@ const texts=P.texts,find=P.find,hasClass=P.hasClass;
   const r=A.addModuleText(fmMod);
   const out=A.toMarkdown(),src=A.BOOK.raw.source;
   chk("a module with its notice only in front matter is added",r.ok,JSON.stringify(r));
-  chk("it is written into the booklet's fence as a notice callout, first inside the fence",/> \[!module\|fmmod\] Module fmmod\n\n> \[!notice\]\n> license: Front matter licence\n> copyright: Front Matter Press\n> source: https:\/\/example\.org\/fm\n> version: 3\.1\n\n> \[!activity\|/.test(out),out);
+  chk("it is written into the booklet's fence as a notice callout, first inside the fence",/> \[!module\|fmmod\] Module fmmod\n\n> \[!notice\]\n> license: Front matter licence\n> copyright: Front Matter Press\n> source: https:\/\/example\.org\/fm\n\n> \[!activity\|/.test(out),out);
   chk("so the notice is in the file the reader downloads, and the file reads back with it",A.parseFile(out).template.modules[0].notice.copyright==="Front Matter Press"&&A.parseFile(out).refused.length===0&&A.parseFile(out).unread.length===0,JSON.stringify(A.parseFile(out).unread));
-  chk("the booklet's design carries it (read back from the written file)",A.allModules()[0].notice.license==="Front matter licence"&&A.allModules()[0].notice.version==="3.1");
+  chk("the booklet's design carries it (read back from the written file)",A.allModules()[0].notice.license==="Front matter licence"&&A.allModules()[0].notice.version===undefined);
   chk("the booklet's own front matter is untouched by the module's",!/^license:/m.test(out)&&/^title: "Untitled booklet"$/m.test(out));
   /* a module that already holds the callout is added as it is */
   const before=A.toMarkdown();

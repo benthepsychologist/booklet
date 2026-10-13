@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-PoiZIROJp6n1zEaJPk2o6RajNq9rG9HuAzAVttTVk60=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-hgIiTWi75BYCuz6cOJmaWcc8fYEj+toDW3LdxiboVVM=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1428,19 +1428,19 @@ const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
 const LANG_PREF_KEY="booklet.ui.lang";
 const MODULE_SCREEN="module:";
 const LIB_KEY="booklet.library.v1", bookKey=id=>"booklet.b."+id;
-/* "Your booklets" is a view of its own. Views and activity ids share one
-   namespace (as "home" does), and an activity id holds only letters, digits and
-   dashes, so the name takes a leading @ that no activity id has. */
-const LIB_SCREEN="@booklets";
+/* "Your booklets" and a booklet's home are views of their own. Views and activity ids share one
+   namespace, and an activity id holds only letters, digits and dashes, so a view's name takes a
+   leading @ that no activity id has (and no activity id is reserved). */
+const LIB_SCREEN="@booklets",HOME_SCREEN="@home";
 /* every dialog the page has, by id */
 const VEIL_IDS=["veilLoad","veilClear","veilAddModule","veilExport"];
 /* the browser's own preference for the menu: "min" or "open" */
 const PAGES_MENU_KEY="booklet.ui.pagesMenu";
 const RM_KEY="booklet.ui.reading.";
-/* A colour in widget data is a tone name (warm, green, amber, slate, teal), drawn in the active
-   theme's own tone tokens with the theme's ink on it, so a cell looks right in every theme. A pair
-   of colours, {tint, deep}, is drawn exactly as given. A name this list does not hold is no colour. */
-const TONE_NAMES=["warm","green","amber","slate","teal"];
+/* A colour in widget data is a colour name (warm, green, amber, slate, teal), drawn in the active
+   theme's own tone tokens with the theme's ink on it, so a cell looks right in every theme. A name
+   this list does not hold is no colour. (A "tone" is `good`, `warn` or `bad`, in a view.) */
+const COLOUR_NAMES=["warm","green","amber","slate","teal"];
 /* the built-in themes by name, in the order the menu offers them; the head
    script keeps a copy of this list (THEMES, and NAMES with "auto" first),
    the one place the page cannot read it from */
@@ -2662,7 +2662,7 @@ const emptyState=()=>({answers:{},entries:{}});
 const emptyDrafts=()=>({custom:{}});
 let STATE=emptyState();
 let DRAFTS=emptyDrafts();
-let lang="en", screen="home", dirty=false, unsavedEntries=0;
+let lang="en", screen=HOME_SCREEN, dirty=false, unsavedEntries=0;
 let openChip={};
 /* ---- which booklet is in memory ----
    currentId is the open entry, or null on "Your booklets". bookletGen moves on
@@ -2802,7 +2802,7 @@ const moduleScreen=id=>MODULE_SCREEN+id;
 const moduleForScreen=v=>isModuleScreen(v)
   ?(allModules().find(m=>m.id===v.slice(MODULE_SCREEN.length))||null):null;
 /* where a module's card leads: its one activity, or its own page */
-const entryScreenOf=m=>isMulti(m)?moduleScreen(m.id):((activitiesOf(m)[0]||{}).id||"home");
+const entryScreenOf=m=>isMulti(m)?moduleScreen(m.id):((activitiesOf(m)[0]||{}).id||HOME_SCREEN);
 const activityOf=id=>bookActivities().find(m=>m.id===id)||{id,kind:"entry",blocks:[]};
 const keysOf=b=>READING_BLOCKS.has(b.type)?[]:(b.keys||[b.id]);
 /* what a block asks of the engine drawing it — a page explaining a widget
@@ -2944,7 +2944,7 @@ function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=nul
 function resetBookletState(){
   lang=langPref()||lang;
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
-  screen="home";dirty=false;unsavedEntries=0;
+  screen=HOME_SCREEN;dirty=false;unsavedEntries=0;
   openChip={};VIEWSTATE.clear();WK.open.clear();WK.q="";WK.menu=false;WK.mod=null;FILE_NOTES=null;PROVENANCE=null;LINK_NEWER=null;
   hookStopWait();
   if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;}
@@ -2958,7 +2958,7 @@ function openBooklet(id){flushSave();LIB=readLib();const e=entryById(id);if(!e) 
   resetBookletState();bookletGen++;
   currentId=e.id;currentKey=keyOfEntry(e);currentEntry={...e};
   const restored=loadLocal();
-  screen="home";
+  screen=HOME_SCREEN;
   changeLib(L=>{const x=L.entries.find(y=>y.id===e.id);if(x) x.openedAt=new Date().toISOString();});
   hookChanged();
   return restored;}
@@ -2989,14 +2989,14 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    and written back verbatim with fresh records under it: the file a person
    wrote is never rewritten by the page that reads it. */
 const CALLOUT_LINE=/^>[ \t]?\[!([A-Za-z][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$/;
-/* a row closes with `> [!row end]`: the one booklet line whose flag follows the kind, since a row has no id */
-const ROW_END=/^>[ \t]?\[!(row)([ \t]+end)\]([+-]?)[ \t]*(.*)$/i;
-const calloutLine=l=>CALLOUT_LINE.test(l)||ROW_END.test(l);
+const calloutLine=l=>CALLOUT_LINE.test(l);
 /* A module's notice (SPEC.md section 3): the four things a module may say about itself, in the order a callout
    and a disclosure write them */
 const NOTICE_KEYS=["license","copyright","source","version"];
-/* the bare-word flags of each kind, read from the table of settings */
-const CALLOUT_FLAGS=Object.fromEntries(Object.entries(KIND_SETTINGS).map(([k,v])=>[k,v.filter(s=>!s.endsWith(":"))]));
+/* the front matter stands in for a notice through these three, never `version` (the file's version is the file's) */
+const FRONT_NOTICE_KEYS=["license","copyright","source"];
+/* the kinds that take no id: their words are settings only */
+const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution"]);
 /* A file is read when its front matter says `booklet: "0.13"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
@@ -3027,13 +3027,13 @@ function markerOf(text){const {head}=frontMatter(text);
 function isBooklet(text){const v=versionOf(markerOf(text));return !!v&&v[0]===0&&/^\d+\.\d+$/.test(markerOf(text));}
 /* the marker of a booklet that is not this page's own version ("" for its own, or for a file that is no booklet) */
 function otherMarker(text){return isBooklet(text)&&markerOf(text)!==FORMAT_VERSION?markerOf(text):"";}
-/* `kind|id words` → the id, the flags and the key:value settings; a bare word
-   the kind knows is a flag, and the first other bare word is the id */
-function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}};
-  String(s||"").trim().split(/\s+/).filter(Boolean).forEach(w=>{const kv=w.match(/^([A-Za-z][A-Za-z0-9-]*):(.*)$/);
-    if(kv) out.set[kv[1].toLowerCase()]=kv[2];
-    else if((CALLOUT_FLAGS[kind]||[]).includes(w.toLowerCase())) out.flags.add(w.toLowerCase());
-    else if(out.id===null) out.id=w; else out.flags.add(w.toLowerCase());});
+/* `kind|id words` → the id, the flags and the key:value settings. For a kind that takes an id (SPEC.md section 4) the first word is
+   the id, whatever it is called, and every word after it is a setting; a kind that takes none has settings only. */
+function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}},noId=NO_ID_KINDS.has(kind);
+  String(s||"").trim().split(/\s+/).filter(Boolean).forEach((w,n)=>{const kv=w.match(/^([A-Za-z][A-Za-z0-9-]*):(.*)$/);
+    if(n===0&&!noId) out.id=w;
+    else if(kv) out.set[kv[1].toLowerCase()]=kv[2];
+    else out.flags.add(w.toLowerCase());});
   return out;}
 /* What a line's settings get wrong by KIND_SETTINGS: the messages, and the settings are taken off the line so
    that they are ignored. A kind outside the table is an unknown kind, said separately (unknownKind). */
@@ -3164,11 +3164,11 @@ function splitItems(lines,start){let i=start;
       const idm=n<lines.length?lines[n].trim().match(/^\^([A-Za-z0-9-]+)$/):null;
       const info=f[2].trim();
       if(/^booklet\b/i.test(info)||idm){flush();
-        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),id:idm?idm[1]:null,line:i+1});i=idm?n:k;}
+        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,k+1).join("\n")+(k<lines.length?"":"\n```"),id:idm?idm[1]:null,line:i+1});i=idm?n:k;}
       else{buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
     if(ln.trim()==="%%"){if(cut===null&&lines.slice(i+1).some(x=>/^>[ \t]?\[!records\b/i.test(x))) cut=i;continue;}
-    const m=ln.match(CALLOUT_LINE)||ln.match(ROW_END);
+    const m=ln.match(CALLOUT_LINE);
     if(m){flush();const kind=m[1].toLowerCase(),body=[];let k=i+1;
       while(k<lines.length&&/^>/.test(lines[k])&&!calloutLine(lines[k])){body.push(lines[k].replace(/^>[ \t]?/,""));k++;}
       let opts=null,anchors=null,items2=null;
@@ -3257,7 +3257,7 @@ const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems){const P=strings("problem");
   const modules=[],widgets=[],answers={},entries={},drafts={},ids=new Map(),blockIds=new Map(),modIds=new Set();
-  const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[];
+  const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
   let mod=null,act=null,section="content",lastQ=null,seq=0,oseq=0,row=null,theme=null,recScope="",dataMod=null;
   const refuse=m=>{problems.push(m);problems.refused.push(m);};
   /* an id used twice: refused, and its id kept so Add a module can name it */
@@ -3291,8 +3291,8 @@ function readBlocks(items,fm,problems){const P=strings("problem");
        as the address it will have (activityTree places it) */
     if(w.set&&w.set.icon) a.icon=w.set.icon;
     if(w.set&&w.set.parent) a.parent=addrOf(mod?mod.id:"",w.set.parent);
-    /* an activity outside any module fence is a module of its own */
-    if(!mod) claimModule(id,"line "+line);
+    /* the activities outside every module fence are one module with no name (SPEC.md section 4): each is drawn as a card of its own
+       (so each is held by a module of its own here), but its id, its records and its `parent:` are in the one scope, "" */
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
     act=a;return a;};
   const page=()=>{if(!act) newActivity({id:null,flags:new Set()},fm.title,0);return act.pages[act.pages.length-1];};
@@ -3304,9 +3304,12 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     page().blocks.push({id:"row"+(++seq),type:"row",blocks:cells.map(bs=>({id:"cell"+(++seq),type:"cell",blocks:bs}))});};
   const onFence=it=>{
     const info=it.info.split(/\s+/);
+    /* a block in the records section that this page does not read as a record is kept as written, under the records line it
+       sat under, and written back by toMarkdown (SPEC.md section 8) */
+    const keep=()=>{if(section==="records") recordsKept.push({scope:recScope,text:it.raw});};
     if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="query"){
       if(section==="data"){problems.push(P.queryInData(P.line(it.line)));return;}
-      if(section!=="content") return;
+      if(section!=="content"){keep();return;}
       if(!act){problems.push(P.queryOutside(P.line(it.line)));return;}
       const q=readQuery(it.code);
       if(q.bad){problems.push(P.queryBadLine(P.line(it.line),q.bad));return;}
@@ -3315,7 +3318,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,empty:q.empty,view:q.view})});lastQ=null;return;}
     if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="theme"){
       /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
-      if(section==="records") return;
+      if(section==="records"){keep();return;}
       if(scopeMod()){problems.push(P.themeInModule(P.line(it.line)));return;}
       if(theme){problems.push(P.themeSecond(P.line(it.line)));return;}
       const r=readTheme(it.code);theme=r.spec;
@@ -3328,14 +3331,14 @@ function readBlocks(items,fm,problems){const P=strings("problem");
         if(!(key in figures)) figures[key]={lang:(info[0]||"").toLowerCase(),code:it.code};}
       return;}
     if(/^booklet$/i.test(info[0])){const what=(info[1]||"").toLowerCase();let o=null;
-      try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(P.line(it.line),what||"booklet"));return;}
-      if(!o||typeof o!=="object"){problems.push(P.blockNoObject(P.line(it.line),what));return;}
-      if(what==="widget"){if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
+      try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(P.line(it.line),what||"booklet"));keep();return;}
+      if(!o||typeof o!=="object"||(Array.isArray(o)&&(what==="answers"||what==="draft"||what==="entries"))){problems.push(P.blockNoObject(P.line(it.line),what));keep();return;}
+      if(what==="widget"){keep();if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
         claimIn(blockIds,blockScope(),it.id,P.line(it.line));
         const w={...o,id:it.id};{const sm=scopeMod();if(sm) w.module=sm.id;}
         widgets.push(w);}
       else if(what==="data"){
-        if(section==="records") return;
+        if(section==="records"){keep();return;}
         if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
         const here=scopeMod();
         if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
@@ -3345,10 +3348,10 @@ function readBlocks(items,fm,problems){const P=strings("problem");
         dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,line:it.line});}
       else if(what==="answers") answers[recScope]=Object.assign(answers[recScope]||{},o);
       else if(what==="entries"&&info[2]){
-        if(!Array.isArray(o.items)) problems.push(P.recordNoItems(P.line(it.line),info[2]));
-        entries[addrOf(recScope,info[2])]=(Array.isArray(o.items)?o.items:[]).filter(e=>e&&e.ts);}
+        if(!Array.isArray(o.items)){problems.push(P.recordNoItems(P.line(it.line),info[2]));keep();return;}
+        entries[addrOf(recScope,info[2])]=o.items.filter(e=>e&&e.ts);}
       else if(what==="draft"&&info[2]) drafts[addrOf(recScope,info[2])]=o;
-      else problems.push(P.blockUnknown(P.line(it.line),what));}
+      else{problems.push(P.blockUnknown(P.line(it.line),what));keep();}}
   };
   const onBreak=()=>{if(row) closeRow(P.rowRunsPage);
     if(section==="content"&&act){act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});lastQ=null;}};
@@ -3435,7 +3438,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
      within its module (a block outside every fence, in the module with no name) */
   dataBlocks.forEach(d=>{const set=ids.get(d.mod?d.mod.id:"");if(set&&set.has(d.id)) dup(P.line(d.line),d.id);});
   if(mod) refuse(P.moduleNeverClosed(P.line(mod.__line),mod.id));
-  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme,sharedNotes};}
+  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme,sharedNotes,recordsKept};}
 function resolveMenus({menus,menuUses,modules},problems){const P=strings("problem");
   /* a question that names a shared menu takes its options from it: from its own module's menus first,
      then from the data section's (a menu outside every fence), never from another module's */
@@ -3455,7 +3458,7 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=strings("pro
    modules.forEach(m=>{const sc=scopeOf(m),t=where.get(sc)||where.set(sc,new Map()).get(sc);
      m.activities.forEach(a=>{t.set(shortId(a.id),{m,a});
        a.pages.forEach(pg=>rowWalk(pg.blocks,b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) t.set(b.id,{m,a,q:b});}));});});
-   for(const x of queries){const {q,block}=x,drop=(why,hard)=>{const m=P.queryRefused(shortId(x.act.id),why);problems.push(m);if(hard) problems.refused.push(m);
+   for(const x of queries){const {q,block}=x,drop=why=>{problems.push(P.queryRefused(shortId(x.act.id),why));
        x.act.pages.forEach(pg=>stripBlock(pg.blocks,block));};
      const here=moduleHolding(modules,x.act),sc=scopeOf(here),as=(q.view||{}).as;
      const src=q.from&&(where.get(sc)||new Map()).get(q.from);
@@ -3465,7 +3468,7 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=strings("pro
        if(d){
          if(as==="cards"){drop(P.queryCardsData(q.from));continue;}
          block.data={rows:d.rows,fields:d.fields};continue;}
-       if(elsewhere()){drop(P.queryOtherModule(q.from),true);continue;}
+       if(elsewhere()){drop(P.queryOtherModule(q.from));continue;}
        drop(P.queryNothing(q.from||""));continue;}
      if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};}
      else if(src.a.kind!=="entry"){drop(P.queryNoEntries(q.from));continue;}
@@ -3512,7 +3515,7 @@ function activityTree(acts){
 function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities,...rest}=m;
   const acts=activities.map(activityOut);
   /* a module whose activities sit under one another is kept depth-first, each with its effective parent and depth (and neither at the top) */
-  if(acts.some(a=>a.parent)){const t=activityTree(acts),was=acts.slice();
+  if(!__bare&&acts.some(a=>a.parent)){const t=activityTree(acts),was=acts.slice();
     acts.splice(0,acts.length,...t.order.map(i=>was[i]));
     t.order.forEach((i,k)=>{const a=acts[k];if(t.parent[i]) a.parent=t.parent[i];else delete a.parent;if(t.depth[i]) a.depth=t.depth[i];});}
   const opening=__open;
@@ -3522,38 +3525,54 @@ function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities
   const o={...rest,...(blurb?{blurb}:{}),...(opening.length?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
   return o;}
-function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes},fm,L,source,problems){
+function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept},fm,L,source,problems){
   /* a file that holds one module and no notice callout is covered by its own front matter: its license,
-     copyright, source and version are that module's notice (a callout, when there is one, wins) */
+     copyright and source are that module's notice (a callout, when there is one, wins) */
   const holders=modules.filter(m=>m.activities.length);
-  if(holders.length===1&&!holders[0].notice){const n={};NOTICE_KEYS.forEach(k=>{if(fm[k]) n[k]=String(fm[k]);});
+  if(holders.length===1&&!holders[0].notice){const n={};FRONT_NOTICE_KEYS.forEach(k=>{if(fm[k]) n[k]=String(fm[k]);});
     if(Object.keys(n).length) holders[0].notice=n;}
   const out=holders.map(moduleOut);
+  /* `parent:` places among the activities outside every module fence as it does inside a module: the one rule, over all of them, in
+     their cards' order on the home screen */
+  {const at=holders.map((m,i)=>m.__bare?i:-1).filter(i=>i>=0);
+   if(at.some(i=>out[i].mode.parent)){const mods=at.map(i=>out[i]),t=activityTree(mods.map(m=>m.mode));
+     t.order.forEach((k,n)=>{const m=mods[k],a=m.mode;if(t.parent[k]) a.parent=t.parent[k];else delete a.parent;if(t.depth[k]) a.depth=t.depth[k];out[at[n]]=m;});}}
   const st=emptyState();st.entries=entries;st.answers=Object.fromEntries(Object.entries(answers).map(([k,v])=>[k,{...v}]));
   const shared=notesOut(sharedNotes||[],"d");
   const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,...(fm.start==="home"?{start:"home"}:{}),
     title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,languages:[L],modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),
-    ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L}};
+    ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L,...(recordsKept.length?{records:recordsKept}:{})}};
   /* a file with its front matter and no module and no activity at all is an empty booklet with that name (what a
      booklet started here and not yet given a module downloads as); a module that holds no activity is still refused */
   const empty=!modules.length;
   return {ok:(out.length>0||empty)&&!problems.refused.length,empty:empty||undefined,unread:problems,refused:problems.refused,dupIds:problems.dupIds,markerNote:problems.markerNote,drafts:{activities:drafts},template:book,lang:L,S:st};}
+/* The file as the page writes it: the design as read, and the records under it. A reader writes back every record it read,
+   unless the reader changed it (SPEC.md section 8): the answers it holds, whether or not it still knows the question, the
+   entries and drafts of every activity it holds anything for, and the record blocks it does not read, as they were written. */
 function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
-  const recs=[];
-  allModules().forEach(m=>{const acts=activitiesOf(m),own=[],gd=peekAnswers(scopeOfModule(m));
-    const keys=new Set();acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
-    const ans={};keys.forEach(k=>{if(Object.prototype.hasOwnProperty.call(gd,k)&&holdsSomething(gd[k])) ans[k]=gd[k];});
+  const recs=[],mods=allModules();
+  /* the module with no name is first, under the plain records line; each named module follows under its own */
+  const scopes=["",...mods.map(scopeOfModule).filter(s=>s)];
+  scopes.forEach(sc=>{const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(activitiesOf),own=[],gd=peekAnswers(sc);
+    const keys=new Set(),entryIds=new Set(acts.filter(a=>a.kind==="entry").map(a=>a.id));
+    acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
+    const ans={};Object.keys(gd).forEach(k=>{if(!keys.has(k)||holdsSomething(gd[k])) ans[k]=gd[k];});
     if(Object.keys(ans).length) own.push(...fence("booklet answers",JSON.stringify(ans,null,1)));
-    acts.filter(a=>a.kind==="entry").forEach(a=>{
-      const fid=shortId(a.id),items=((STATE.entries||{})[a.id]||[]).filter(e=>e&&e.ts).slice().sort((x,y)=>String(x.ts).localeCompare(String(y.ts)));
+    /* an entry or a draft is written for each activity that repeats, then for any other address the page holds one for */
+    const held=Object.keys(STATE.entries||{}).concat(Object.keys((DRAFTS||{}).custom||{})).filter(k=>scopeOfAddr(k)===sc&&!entryIds.has(k));
+    [...acts.filter(a=>a.kind==="entry").map(a=>a.id),...[...new Set(held)].sort()].forEach(id=>{
+      const fid=shortId(id),items=((STATE.entries||{})[id]||[]).filter(e=>e&&e.ts).slice().sort((x,y)=>String(x.ts).localeCompare(String(y.ts)));
       if(items.length) own.push(...fence("booklet entries "+fid,"{\"items\": [\n"+items.map(e=>JSON.stringify(e)).join(",\n")+"\n]}"));
-      const d=DRAFTS.custom&&DRAFTS.custom[a.id];
+      const d=DRAFTS.custom&&DRAFTS.custom[id];
       /* only what holds something: the empty lists an engine starts with are not work */
       const kept=d&&Object.fromEntries(Object.entries(d).filter(([,v])=>holdsSomething(v)));
       if(kept&&Object.keys(kept).length) own.push(...fence("booklet draft "+fid,JSON.stringify(kept)));});
-    if(own.length) recs.push("> [!records|"+m.id+"] "+tx(m.title,m.id),"",...own);});
+    (V.records||[]).filter(r=>r.scope===sc).forEach(r=>own.push(r.text,""));
+    if(!own.length) return;
+    const m=sc&&mods.find(x=>x.id===sc);
+    recs.push(...(m?["> [!records|"+m.id+"] "+tx(m.title,m.id),""]:[]),...own);});
   if(recs.length) out.push("%%","> [!records] App record — do not edit below this line","",...recs,"%%","");
   return out.join("\n");}
 
@@ -3599,7 +3618,7 @@ const thTint=(P,tgt,t0,fgs,gfx)=>{for(const k of [1,.7,.4,0]){const c=thMix(P,tg
 const TH_PAIRS=[["ink","paper"],["ink","paper-deep"],["muted","paper"],["accent","paper"],["on-accent","accent"],["ink","field"],
   ["reader","field"],["ink","surface"],["accent","surface"],["muted","surface"],["warn","paper"],["on-ink","ink"],["on-ink","muted"],
   ["ink","accent-soft"],["ink","mark"],["warn","warn-soft"]];
-TONE_NAMES.forEach(t=>{TH_PAIRS.push(["tone-"+t+"-deep","tone-"+t]);TH_PAIRS.push(["ink","tone-"+t]);});
+COLOUR_NAMES.forEach(t=>{TH_PAIRS.push(["tone-"+t+"-deep","tone-"+t]);TH_PAIRS.push(["ink","tone-"+t]);});
 /* the views: a plain pill, a toned value on a card, a quiet note and a label on a toned tile */
 TH_PAIRS.push(["reader","paper-deep"],["muted","paper-deep"]);
 ["warm","green","amber"].forEach(t=>{TH_PAIRS.push(["tone-"+t+"-deep","surface"],["muted","tone-"+t],["reader","tone-"+t]);});
@@ -3624,7 +3643,7 @@ function thBuild(B,use){
   if(use.accent||pi){set("accent",A);set("accent-soft",thTint(P,A,dark?.14:.1,[I]));set("rg-on",thMix(P,A,dark?.25:.1));
     let best=g("on-accent");[P,I].forEach(x=>{if(thRatio(x,A)>thRatio(best,A)) best=x;});set("on-accent",best);}
   if(use.bad||pi){set("warn",deep.warm);set("warn-soft",thTint(P,deep.warm,dark?.2:.12,[deep.warm]));}
-  for(const t of TONE_NAMES){
+  for(const t of COLOUR_NAMES){
     const own=(t==="green"&&use.good)||(t==="amber"&&use.warn)||(t==="warm"&&use.bad);
     if(own) set("tone-"+t+"-deep",deep[t]);
     if(own||pi) set("tone-"+t,thTint(P,deep[t],dark?.16:.14,[deep[t],I]));}
@@ -4014,6 +4033,7 @@ function removeModule(id){
   const left=Object.values(STATE.entries||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);
   if(unsavedEntries>left) unsavedEntries=left;
   editBook(t=>{t.raw={...(t.raw||{}),source:newSource};
+    if((t.raw.records||[]).some(r=>r.scope===id)){const left=t.raw.records.filter(r=>r.scope!==id);if(left.length) t.raw.records=left;else delete t.raw.records;}
     t.modules=(t.modules||[]).filter(m=>m.id!==id);
     t.widgets=(t.widgets||[]).filter(w=>w.module!==id);
     const keep=Object.fromEntries(Object.entries(t.figures||{}).filter(([k])=>scopeOfAddr(k)!==id));
@@ -4722,15 +4742,10 @@ function tagInput(opts){
    neutral ramp by position, so an uncoloured widget still reads as a grid
    rather than a list. */
 const FALLBACK_TINT=[0,1,2,3,4,5].map(i=>"var(--cell-"+i+")");
-const toneOf=c=>c&&typeof c.color==="string"&&TONE_NAMES.includes(c.color)?c.color:null;
-const cellColor=(c,i)=>{const t=toneOf(c);
+const colourOf=c=>c&&typeof c.color==="string"&&COLOUR_NAMES.includes(c.color)?c.color:null;
+const cellColor=(c,i)=>{const t=colourOf(c);
   if(t) return {tint:"var(--tone-"+t+")",deep:"var(--tone-"+t+"-deep)",tone:true};
-  /* these two strings go into a style attribute, so only a plain hex colour is ever used:
-     anything else in a file's widget data (a url(), a second declaration) is not a colour */
-  const hex=v=>typeof v==="string"&&/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)?v:null;
-  const pair=c&&c.color&&typeof c.color==="object"?c.color:{};
-  return {tint:hex(pair.tint)||FALLBACK_TINT[i%FALLBACK_TINT.length],
-          deep:hex(pair.deep)||"var(--tint-ink)"};};
+  return {tint:FALLBACK_TINT[i%FALLBACK_TINT.length],deep:"var(--tint-ink)"};};
 const cellStyle=(c,i)=>{const k=cellColor(c,i);return `background:${k.tint};--qd:${k.deep}`+(k.tone?`;--qt:${k.tint}`:"");};
 
 /* ======================= ENGINE: svg-regions =======================
@@ -4838,7 +4853,7 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
   wrap.append(el("div",{class:"ax",style:"grid-column:2;grid-row:1"},tx(ax.top,"")),
               el("div",{class:"ax v",style:"grid-column:1;grid-row:2"},tx(ax.left,"")));
   const grid=el("div",{class:"quad",role:"group"});
-  cells.forEach((c,ci)=>{const qb=el("div",{class:"q"+(toneOf(c)?" toned":""),style:cellStyle(c,ci)},el("div",{class:"qn"},tx(c.label,c.id)));
+  cells.forEach((c,ci)=>{const qb=el("div",{class:"q"+(colourOf(c)?" toned":""),style:cellStyle(c,ci)},el("div",{class:"qn"},tx(c.label,c.id)));
     const btns=el("div",{class:"qb"});
     let tag=null;
     /* a freeform word is kept in the same answer, as "x|cell|word" */
@@ -4883,7 +4898,7 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
   box.append(wrap);
   if(opts.describe&&cells.some(c=>c.note))
     box.append(el("div",{class:"qdesc"},...cells.map((c,ci)=>
-      el("div",{class:"qd"+(toneOf(c)?" toned":""),style:cellStyle(c,ci)},
+      el("div",{class:"qd"+(colourOf(c)?" toned":""),style:cellStyle(c,ci)},
         el("strong",{style:`color:${cellColor(c,ci).deep}`},tx(c.label,c.id)),tx(c.note,"")))));
   return box;}
 
@@ -6332,8 +6347,8 @@ function renderBar(){const t=STRINGS[lang].ui;const atList=screen===LIB_SCREEN,L
   document.documentElement.lang=lang;document.title=atList?Lb.title:tabName();document.body.dataset.view=screen;syncBookletTheme();
   /* The way out climbs one level: an activity leads to its booklet's home,
      and a booklet's home leads to "Your booklets". */
-  const toList=screen==="home"&&!!currentId;
-  document.getElementById("btnHome").textContent=atList?t.app:toList?"← "+Lb.back:(screen==="home"?"":"← ")+t.app;
+  const toList=screen===HOME_SCREEN&&!!currentId;
+  document.getElementById("btnHome").textContent=atList?t.app:toList?"← "+Lb.back:(screen===HOME_SCREEN?"":"← ")+t.app;
   const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());
   document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));
   document.getElementById("dropZone").textContent=t.dropZone;document.getElementById("dropVeil").textContent=t.dropVeil;
@@ -6373,10 +6388,10 @@ function unsavedSpan(entries,changed){const t=STRINGS[lang].ui;
 /* a host that reports saves succeeding is keeping the work, so the "not yet downloaded" note rests until a save fails */
 const hostCovers=()=>hostActive()&&hookBook()&&HOST.status!=="failed"&&HOOK_LISTENERS.length>0;
 const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
-const SCREENS={home:renderHome,[LIB_SCREEN]:renderBooklets};
+const SCREENS={[HOME_SCREEN]:renderHome,[LIB_SCREEN]:renderBooklets};
 let RENDERING=false;
 function render(){RENDERING=true;CITE_GEN++;try{citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
-  if(SCREENS[screen]) SCREENS[screen](main);
+  if(hasOwn(SCREENS,screen)) SCREENS[screen](main);
   else if(isModuleScreen(screen)) renderModulePage(main,screen);
   else renderActivity(main,screen);
   hostNoticeShow(main);}finally{RENDERING=false;}}
@@ -6387,7 +6402,7 @@ function render(){RENDERING=true;CITE_GEN++;try{citeLeave(screen);renderBar();co
 function fileNotesNode(){const u=STRINGS[lang].ui;
   if(!FILE_NOTES||FILE_NOTES.dismissed||!(FILE_NOTES.list.length||FILE_NOTES.marker)) return null;
   /* on the home screen, and on the screen the file opened into when that is not the home screen */
-  if(screen!=="home"&&FILE_NOTES.at!==screen) return null;
+  if(screen!==HOME_SCREEN&&FILE_NOTES.at!==screen) return null;
   const box=el("div",{class:"notice col filenotes",role:"status"});
   if(FILE_NOTES.marker) box.append(el("p",{style:"margin:0 0 .4rem"},FILE_NOTES.marker));
   if(FILE_NOTES.list.length) box.append(el("p",{style:"margin:0 0 .4rem"},u.fileNotes(FILE_NOTES.list.length)),
@@ -6396,7 +6411,7 @@ function fileNotesNode(){const u=STRINGS[lang].ui;
   return box;}
 /* the quiet line for a booklet opened by a link: where it came from. Its own line, smaller than the problems notice. */
 function provenanceNode(){if(!PROVENANCE||PROVENANCE.dismissed) return null;
-  if(screen!=="home"&&PROVENANCE.at!==screen) return null;
+  if(screen!==HOME_SCREEN&&PROVENANCE.at!==screen) return null;
   const u=STRINGS[lang].ui,B=STRINGS[lang].booklet;
   const box=el("div",{class:"notice col openedby",role:"status"});
   const row=el("p",{style:"margin:0"},PROVENANCE.host?B.openedFromHost(PROVENANCE.label):PROVENANCE.store?B.linkFromStore(PROVENANCE.label):B.linkFromRegistry(PROVENANCE.label));
@@ -6428,7 +6443,7 @@ function removeModuleControl(mod){if(!mod||!mod.id) return null;
     keep.addEventListener("click",()=>draw(false));
     go.addEventListener("click",()=>{const r=removeModule(mod.id);
       if(!r.ok){toast((r.problems||[])[0]||"");draw(false);return;}
-      screen="home";render();window.scrollTo({top:0});toast(T.removed(title));});
+      screen=HOME_SCREEN;render();window.scrollTo({top:0});toast(T.removed(title));});
     const alert=el("div",{role:"alert",style:"font-family:var(--sans)"},
       el("p",{style:"margin:.3rem 0 .6rem;font-weight:700"},T.removeAsk(title,parts)),
       el("span",{class:"bkacts"},keep,go));
@@ -6491,9 +6506,9 @@ function renderHome(main){const t=STRINGS[lang];const u=t.ui;
   centreScreen(main);
 }
 function homeButton(){
-  if(screen==="home"&&currentId){closeBooklet();render();window.scrollTo({top:0});return;}
+  if(screen===HOME_SCREEN&&currentId){closeBooklet();render();window.scrollTo({top:0});return;}
   if(screen===LIB_SCREEN){render();return;}
-  go("home");}
+  go(HOME_SCREEN);}
 function bootLibrary(){LIB=readLib();lang=langPref()||lang;
   screen=LIB_SCREEN;}
 /* Where an opened booklet starts. A booklet that holds exactly one activity opens in it, and one that holds
@@ -6506,16 +6521,16 @@ function startScreen(){
   if(LINK_AT&&BOOK){const at=LINK_AT;LINK_AT=null;
     const hit=bookActivities().find(a=>shortId(a.id)===at);
     if(hit) return hit.id;}
-  if(!BOOK||BOOK.start==="home") return "home";
+  if(!BOOK||BOOK.start==="home") return HOME_SCREEN;
   const mods=allModules(),acts=bookActivities();
   if(acts.length===1) return acts[0].id;
   if(mods.length===1&&acts.length>1) return moduleScreen(mods[0].id);
-  return "home";}
+  return HOME_SCREEN;}
 function openFromList(id){if(openBooklet(id)===null){render();return;}
   screen=startScreen();render();window.scrollTo({top:0});}
 /* A new booklet starts empty: no modules, no answers, nothing seeded. */
 function createBooklet(){const e=addEntry();
-  openBooklet(e.id);BOOK=blankBook();saveLocal();go("home");return e;}
+  openBooklet(e.id);BOOK=blankBook();saveLocal();go(HOME_SCREEN);return e;}
 const bookletName=e=>{const t=tx(e.title,"");if(nonEmpty(t)) return t.trim();
   const p=(e.parts||[]).map(x=>tx(x,"")).filter(nonEmpty);
   return p.length?p.join(", "):strings("library").untitled;};
@@ -6623,7 +6638,7 @@ function activityFooter(id){const C=strings("cards"),holder=holderOf(id),W=wikiO
   /* in a wiki the page after this one is the next shown page in the tree's order, whether or not this one is shown */
   const here=W?W.acts.findIndex(a=>a.id===id):shown.findIndex(a=>a.id===id),
     next=W?(W.acts.slice(here+1).find(isShown)||null):here>=0?shown[here+1]:null;
-  const backTo=holder&&isMulti(holder)?moduleScreen(holder.id):"home",up=W?wikiPath(W,id).pop():null;
+  const backTo=holder&&isMulti(holder)?moduleScreen(holder.id):HOME_SCREEN,up=W?wikiPath(W,id).pop():null;
   const to=x=>W?()=>wikiGo(x,false):()=>go(x);
   const foot=el("div",{class:"cd-foot"},
     el("button",{type:"button",class:"cd-btn cd-back",onclick:to(up?up.id:backTo)},icon("arrow-left"),up?strings("wiki").up(activityName(up)):C.back));
@@ -6920,7 +6935,7 @@ function moduleChip(id,label){const K=strings("wiki");
   return box;}
 function renderModulePage(main,v){const mod=moduleForScreen(v);
   /* a module that has gone, or now holds one activity, leads where its card would */
-  if(!mod||!isMulti(mod)){screen=mod?entryScreenOf(mod):"home";return render();}
+  if(!mod||!isMulti(mod)){screen=mod?entryScreenOf(mod):HOME_SCREEN;return render();}
   const W=wikiOf(mod),W2=strings("moduleView");
   {main.append(...openNotices());}
   const col=el("div",{class:"col"});
@@ -7410,7 +7425,7 @@ document.getElementById("fileIn").addEventListener("change",e=>readFileInto(e.ta
 document.getElementById("addModCancel").addEventListener("click",()=>veilAddModule.removeAttribute("open"));
 document.getElementById("loadGo").addEventListener("click",()=>loadText(document.getElementById("pasteIn").value));
 document.getElementById("clearCancel").addEventListener("click",()=>veilClear.removeAttribute("open"));
-document.getElementById("clearGo").addEventListener("click",()=>{STATE=emptyState();DRAFTS=emptyDrafts();dirty=false;unsavedEntries=0;openChip={};clearLocal();veilClear.removeAttribute("open");go("home");});
+document.getElementById("clearGo").addEventListener("click",()=>{STATE=emptyState();DRAFTS=emptyDrafts();dirty=false;unsavedEntries=0;openChip={};clearLocal();veilClear.removeAttribute("open");go(HOME_SCREEN);});
 /* the dialogs that close on a click on their backdrop and on Escape */
 const dismissable=[veilLoad,veilClear,veilExport,veilAddModule];
 dismissable.forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));

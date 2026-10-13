@@ -41,7 +41,7 @@ Two tables, side by side when there is room and one under the other when there i
 | Tuesday | Check the slugs |
 | Wednesday | Collect the rainwater |
 
-> [!row end]
+> [!row|end]
 
 Three short cells, one of them a question.
 
@@ -63,7 +63,7 @@ Mostly dry, a cold night on Thursday.
 
 > [!text|note] Anything to remember?
 
-> [!row end]
+> [!row|end]
 
 > [!widget|feel] How are the beds?
 > ![[#^beds]]

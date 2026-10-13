@@ -46,7 +46,7 @@ More.
   await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
   await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
-  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
+  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
   await p.locator('button.mode').first().click();await p.waitForTimeout(900);
   const secs=await p.evaluate(()=>[...document.querySelectorAll('details.rm-sec')].map(d=>({open:d.open,
     head:d.querySelector('summary h3').textContent,lede:(d.querySelector('summary .rm-lede')||{}).textContent||'',

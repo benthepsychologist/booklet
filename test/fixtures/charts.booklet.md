@@ -120,7 +120,7 @@ value: count
 | Saturday | 10 to 2 |
 | Sunday | Closed |
 
-> [!row end]
+> [!row|end]
 
 ## Change from last month
 

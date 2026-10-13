@@ -159,7 +159,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   await toList();
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(300);
   await p.locator('#fileIn').setInputFiles(path.join(R,'test/fixtures/figures.booklet.md'));await wait(500);
-  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(1000);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await wait(400);}
+  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(1000);if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await wait(400);}
   await p.locator('button.mode').first().click();await wait(1000);
   await p.getByText('Diagrams and formulas').first().click({timeout:3000}).catch(()=>{});await wait(2500);
   const figs=await p.evaluate(()=>({svg:document.querySelectorAll('.mfig svg').length,math:document.querySelectorAll('math').length,

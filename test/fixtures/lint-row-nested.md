@@ -18,12 +18,12 @@ lang: en
 
 r
 
-> [!row end]
+> [!row|end]
 
 ### Right
 
 r
 
-> [!row end]
+> [!row|end]
 
 > [!module|fixture-mod end]

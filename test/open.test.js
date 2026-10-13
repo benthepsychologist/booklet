@@ -180,7 +180,8 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  refused("a module closed by another's id",mk("> [!module|m1] One\n\n> [!activity|a] A\n\n> [!module|m2 end] E\n"),/this closes/);
  refused("an id used twice",mk("> [!activity|a] A\n\n> [!text|a] Again\n"),/“a” is used twice/);
  refused("a data block id that is also a question's",mk("> [!activity|a] A\n\n> [!text|rows] Q\n\n```booklet data\n[{\"x\":1}]\n```\n^rows\n"),/“rows” is used twice/);
- refused("a reference across a module boundary",mk("> [!module|m1] One\n\n> [!activity|a repeat] A\n\n> [!text|q] Q\n\n> [!module|m1 end] E\n\n> [!module|m2] Two\n\n> [!activity|b] B\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] E\n"),/in another module/);
+ {const x=A.parseFile(mk("> [!module|m1] One\n\n> [!activity|a repeat] A\n\n> [!text|q] Q\n\n> [!module|m1 end] E\n\n> [!module|m2] Two\n\n> [!activity|b] B\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] E\n"));
+  chk("a reference across a module boundary is reported and drawn as nothing, and the file opens (0.13)",x.ok&&x.refused.length===0&&x.unread.some(m=>/in another module/.test(m)),JSON.stringify(x.refused));}
  const R=A.parseFile(read("problems-reported.booklet.md"));
  chk("everything else is reported: the file opens, with each message in order",R.ok&&R.refused.length===0&&R.unread.length===6,JSON.stringify(R.unread));
  chk("a record block that cannot be read is among them, skipped",R.unread.some(x=>/entries record for “day” holds no list/.test(x)));
@@ -199,7 +200,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("the list is inside a disclosure",tag(note(),"details").length===1&&byClass(tag(note(),"details")[0],"plain").length===1&&/“sticker”/.test(text(tag(note(),"details")[0])));
  click(tag(note(),"button")[0]);
  chk("Dismiss removes it for the session",!note()&&C.FILE_NOTES.dismissed===true);
- C.screen="home";C.render();chk("and it stays gone when the screen is drawn again",!note());
+ C.screen="@home";C.render();chk("and it stays gone when the screen is drawn again",!note());
  P.wipe();const D=P.boot();D.loadText(OPEN);chk("a clean file shows no notice",!byClass(P.main(),"filenotes").length&&D.FILE_NOTES===null);
  /* in French the words are French */
  P.wipe();const F=P.boot();F.loadText(read("problems-reported.booklet.md").replace("lang: en","lang: fr"));

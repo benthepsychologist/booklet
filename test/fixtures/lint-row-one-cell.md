@@ -16,6 +16,6 @@ lang: en
 
 l
 
-> [!row end]
+> [!row|end]
 
 > [!module|fixture-mod end]

@@ -30,6 +30,6 @@ l
 
 r
 
-> [!row end]
+> [!row|end]
 
 > [!module|fixture-mod end]

@@ -64,7 +64,7 @@ const FILE=`---\nbooklet: "0.13"\ntitle: Two modules\nlang: en\n---\n
     await p.evaluate(()=>window.bookletTheme&&window.bookletTheme.set('paper'));
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
     await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
-    await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
+    await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
     return {p,ctx};}
   let {p,ctx}=await open(src);
   const cards=()=>p.locator('#main button.mode');

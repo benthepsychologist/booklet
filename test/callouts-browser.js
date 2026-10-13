@@ -33,7 +33,7 @@ ${KINDS.map(([k])=>`> [!${k}] A ${k} callout\n> Some words inside the ${k} callo
   await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
   await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
-  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
+  await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
   await p.locator('button.mode').first().click();await p.waitForTimeout(900);
   const read=()=>p.evaluate(()=>[...document.querySelectorAll('.rd-callout')].map(c=>{const cs=getComputedStyle(c),ci=c.querySelector('.rd-ci'),cl=c.querySelector('.rd-cl'),u=c.querySelector('.rd-ci use');
     return {kind:c.dataset.kind,hue:(c.className.match(/hue-(\w+)/)||[])[1],border:cs.borderLeftColor,bg:cs.backgroundColor,icon:ci?getComputedStyle(ci).color:null,
@@ -79,7 +79,7 @@ ${KINDS.map(([k])=>`> [!${k}] A ${k} callout\n> Some words inside the ${k} callo
   await p2.getByRole('button',{name:/Add a booklet from a file|Ajouter/}).first().click();await p2.waitForTimeout(300);
   await p2.locator('#fileIn').setInputFiles(frFile);await p2.waitForTimeout(500);
   await p2.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p2.waitForTimeout(900);
-  if(await p2.evaluate(()=>document.body.dataset.view)!=='home'){await p2.locator('#btnHome').click();await p2.waitForTimeout(400);}
+  if(await p2.evaluate(()=>document.body.dataset.view)!=='@home'){await p2.locator('#btnHome').click();await p2.waitForTimeout(400);}
   await p2.locator('button.mode').first().click();await p2.waitForTimeout(900);
   const fr=await p2.evaluate(()=>[...document.querySelectorAll('.rd-cl')].map(e=>e.textContent));
   ok(fr.includes('Astuce')&&fr.includes('Résumé')&&fr.includes('Échec'),'the labels are said in French ('+[...new Set(fr)].join(', ')+')');

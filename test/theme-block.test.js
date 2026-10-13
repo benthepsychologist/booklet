@@ -184,7 +184,7 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
  const last=()=>mockTheme.calls[mockTheme.calls.length-1];
  chk("opening a booklet with a theme hands the page its derived look",last()&&last().base==="daylight"&&last().tokens["--accent"]==="#7a1f5c"&&last().font==="serif"&&last().density==="roomy",JSON.stringify(last()));
  chk("the look the page is given passes the floor",passes("daylight",last().tokens));
- const n=mockTheme.calls.length;A.screen="home";A.render();A.render();
+ const n=mockTheme.calls.length;A.screen="@home";A.render();A.render();
  chk("redrawing does not hand it over again",mockTheme.calls.length===n);
  A.closeBooklet();A.render();
  chk("leaving the booklet (to Your booklets) removes it",last()===null);
@@ -219,31 +219,31 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
 const ROWFM=FM+"> [!activity|a] A\n\n";
 const shape=a=>a.blocks.map(b=>b.type==="row"?"row["+b.blocks.map(c=>c.blocks.map(x=>x.type==="markdown"?"md":x.type).join("+")).join("|")+"]":b.type).join(",");
 const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mode};};
-{let x=mode("> [!row]\n\n### One\n\nText one.\n\n### Two\n\nText two.\n\n> [!row end]\n");
+{let x=mode("> [!row]\n\n### One\n\nText one.\n\n### Two\n\nText two.\n\n> [!row|end]\n");
  chk("each heading at the shallowest level starts a cell",x.r.ok&&shape(x.a)==="row[md|md]"&&x.r.unread.length===0,shape(x.a)+JSON.stringify(x.r.unread));
- x=mode("> [!row]\n\nLead words.\n\n## One\n\nA\n\n#### Deeper\n\nstays in One\n\n## Two\n\nB\n\n> [!row end]\n");
+ x=mode("> [!row]\n\nLead words.\n\n## One\n\nA\n\n#### Deeper\n\nstays in One\n\n## Two\n\nB\n\n> [!row|end]\n");
  chk("what comes before the first heading is a cell of its own, and a deeper heading stays inside its cell",shape(x.a)==="row[md|md|md]"&&/Deeper/.test(x.a.blocks[0].blocks[1].blocks[0].text),shape(x.a));
- x=mode("> [!row]\n\nFirst paragraph.\n\nSecond paragraph.\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n> [!row end]\n");
+ x=mode("> [!row]\n\nFirst paragraph.\n\nSecond paragraph.\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n> [!row|end]\n");
  chk("with no headings each block is a cell",shape(x.a)==="row[md|md|md]",shape(x.a));
- x=mode("> [!row]\n\n### Ask\n\n> [!text|q1] Q?\n\n> [!hint]- Hint\n> a hint\n\n### Other\n\nx\n\n> [!row end]\n");
+ x=mode("> [!row]\n\n### Ask\n\n> [!text|q1] Q?\n\n> [!hint]- Hint\n> a hint\n\n### Other\n\nx\n\n> [!row|end]\n");
  chk("a question and its hint stay in one cell",shape(x.a)==="row[md+text+callout|md]",shape(x.a));
- x=mode("> [!row]\n\n> [!text|q1] Q?\n\n> [!hint]- Hint\n> a hint\n\n> [!text|q2] R?\n\n> [!row end]\n");
+ x=mode("> [!row]\n\n> [!text|q1] Q?\n\n> [!hint]- Hint\n> a hint\n\n> [!text|q2] R?\n\n> [!row|end]\n");
  chk("and with no headings a hint stays with its question",shape(x.a)==="row[text+callout|text]",shape(x.a));
- x=mode("> [!row]\n\n### A\n\n```python\n# not a heading\nprint(1)\n```\n\n### B\n\nx\n\n> [!row end]\n");
+ x=mode("> [!row]\n\n### A\n\n```python\n# not a heading\nprint(1)\n```\n\n### B\n\nx\n\n> [!row|end]\n");
  chk("a # line inside a code fence is not a heading",shape(x.a)==="row[md|md]",shape(x.a));
- x=mode("Before.\n\n> [!row]\n\n### A\n\nx\n\n### B\n\ny\n\n> [!row end]\n\nAfter.\n");
+ x=mode("Before.\n\n> [!row]\n\n### A\n\nx\n\n### B\n\ny\n\n> [!row|end]\n\nAfter.\n");
  chk("prose before and after the row stays outside it",shape(x.a)==="markdown,row[md|md],markdown",shape(x.a));
- x=mode("> [!row]\n\n### A\n\nx\n\n---\n\n### B\n\ny\n\n> [!row end]\n");
+ x=mode("> [!row]\n\n### A\n\nx\n\n---\n\n### B\n\ny\n\n> [!row|end]\n");
  chk("a page break closes the row there, and says so",x.r.unread.some(r=>/runs into a page break/.test(r))&&x.a.pages&&x.a.pages.length===2,JSON.stringify(x.r.unread));
- x=mode("> [!row]\n\n### A\n\nx\n\n> [!activity|b] B\n\n### B\n\ny\n\n> [!row end]\n");
+ x=mode("> [!row]\n\n### A\n\nx\n\n> [!activity|b] B\n\n### B\n\ny\n\n> [!row|end]\n");
  chk("an activity line closes it there, and the stray end is reported",x.r.unread.some(r=>/runs into an activity line/.test(r))&&x.r.unread.some(r=>/closed that was never opened/.test(r)),JSON.stringify(x.r.unread));
  x=mode("> [!row]\n\n### A\n\nx\n");
  chk("a row never closed is reported and its content is still shown",x.r.unread.some(r=>/never closed/.test(r))&&shape(x.a)==="row[md]",shape(x.a)+JSON.stringify(x.r.unread));
- x=mode("> [!row]\n\n### A\n\n> [!row]\n\nnested\n\n> [!row end]\n\nafter\n");
+ x=mode("> [!row]\n\n### A\n\n> [!row]\n\nnested\n\n> [!row|end]\n\nafter\n");
  chk("a row inside a row is ignored and reported",x.r.unread.some(r=>/inside a row/.test(r)),JSON.stringify(x.r.unread));
- x=mode("> [!row end]\n\ntext\n");
+ x=mode("> [!row|end]\n\ntext\n");
  chk("a row end with no row is reported",x.r.unread.some(r=>/never opened/.test(r)),JSON.stringify(x.r.unread));
- x=mode("> [!row]\n\n> [!row end]\n\ntext\n");
+ x=mode("> [!row]\n\n> [!row|end]\n\ntext\n");
  chk("an empty row draws nothing",shape(x.a)==="markdown",shape(x.a));
  const mfence=A.parseFile(FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!row]\n\n### A\n\nx\n\n> [!module|m end] End\n");
  chk("a module fence closes it there",mfence.unread.some(r=>/runs into a module fence/.test(r)),JSON.stringify(mfence.unread));
@@ -253,28 +253,28 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  A.loadText(text);
  const S0=A.STATE;S0.answers[""]={};S0.answers[""].mood=2;S0.answers[""].note="Cut the kale back";
  const out=A.toMarkdown();
- chk("the answers are written under the booklet's record, not inside the row",/booklet answers\n\{[^}]*"mood": 2[^}]*"note": "Cut the kale back"/.test(out)&&out.indexOf("booklet answers")>out.indexOf("[!row end]"),out.slice(-500));
+ chk("the answers are written under the booklet's record, not inside the row",/booklet answers\n\{[^}]*"mood": 2[^}]*"note": "Cut the kale back"/.test(out)&&out.indexOf("booklet answers")>out.indexOf("[!row|end]"),out.slice(-500));
  A.loadText(out);
  chk("they are there again after a reload, and the rows are as they were",A.STATE.answers[""].mood===2&&A.STATE.answers[""].note==="Cut the kale back"&&shape(A.activityOf("week"))==="markdown,row[md|md],markdown,row[md|md+scale|md+text],widget",shape(A.activityOf("week")));
  chk("the question inside a cell keeps its own key",(()=>{const r=A.activityOf("week").blocks.find((b,i)=>b.type==="row"&&i>2);const q=r.blocks[1].blocks.find(x=>x.type==="scale");return q&&q.keys[0]==="mood";})());
  chk("saved a second time, the file is identical (rows and theme write back as found)",A.toMarkdown()===out);
  /* reading mode: sections are the headings OUTSIDE rows */
- const reads=FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\nl\n\n### Right\n\nr\n\n> [!row end]\n\n## Second\n\nTwo.\n";
+ const reads=FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\nl\n\n### Right\n\nr\n\n> [!row|end]\n\n## Second\n\nTwo.\n";
  A.loadText(reads);
  chk("an activity of prose and rows still folds into sections",A.foldable(A.activityOf("a")));
  A.screen="a";A.render();
  const secs=P.find(P.main(),P.hasClass("rm-sec"));
  chk("its sections are the headings outside the row (two), the row is one block inside the first",secs.length===2&&P.find(secs[0],P.hasClass("rowcell")).length===2&&P.find(secs[1],P.hasClass("rowcell")).length===0,String(secs.length));
- A.loadText(FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\n```booklet data\n[{\"a\":1}]\n```\n^rows\n\n```booklet query\nfrom: rows\nas: table\n```\n\n### Right\n\nr\n\n> [!row end]\n\n## Second\n\nTwo.\n");
+ A.loadText(FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\n```booklet data\n[{\"a\":1}]\n```\n^rows\n\n```booklet query\nfrom: rows\nas: table\n```\n\n### Right\n\nr\n\n> [!row|end]\n\n## Second\n\nTwo.\n");
  chk("a row holding a data-drawing query folds like any page of sections (0.11.10)",A.foldable(A.activityOf("a")));
  /* a link to a heading inside a row still finds its page */
- A.loadText(FM+"> [!activity|a] A\n\nGo to [[#Right side]].\n\n> [!activity|b] B\n\n> [!row]\n\n### Left side\n\nl\n\n### Right side\n\nr\n\n> [!row end]\n");
+ A.loadText(FM+"> [!activity|a] A\n\nGo to [[#Right side]].\n\n> [!activity|b] B\n\n> [!row]\n\n### Left side\n\nl\n\n### Right side\n\nr\n\n> [!row|end]\n");
  const mods=A.allModules();
  const hit=(()=>{for(const m of mods)for(const ac of (m.activities||[m.mode])) if(ac.blocks&&ac.blocks.some(b=>b.type==="row")) return ac.id;})();
  chk("activity links find a heading inside a row",hit==="b");
 }
 /* a query in a row reads within its module like any other, and one whose source is a question in another cell works */
-{const x=A.parseFile(ROWFM.replace("> [!activity|a] A\n\n","> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n")+"> [!row]\n\n### Shown\n\n```booklet query\nfrom: log\n```\n\n### Missing\n\n```booklet query\nfrom: nothing\n```\n\n> [!row end]\n");
+{const x=A.parseFile(ROWFM.replace("> [!activity|a] A\n\n","> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n")+"> [!row]\n\n### Shown\n\n```booklet query\nfrom: log\n```\n\n### Missing\n\n```booklet query\nfrom: nothing\n```\n\n> [!row|end]\n");
  const row=x.template.modules.map(m=>m.mode).find(a=>a.id==="look").blocks.find(b=>b.type==="row");
  chk("a query naming nothing is refused inside a row too, and the other draws",x.unread.some(r=>/nothing/.test(r))&&row.blocks[0].blocks.some(b=>b.type==="query")&&!row.blocks[1].blocks.some(b=>b.type==="query"),JSON.stringify(x.unread));
 }
@@ -285,9 +285,9 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  chk("a tone name draws in the theme's own tone tokens",k.tint==="var(--tone-warm)"&&k.deep==="var(--tone-warm-deep)"&&k.tone===true);
  chk("every one of the five names resolves",["warm","green","amber","slate","teal"].every(n=>A.cellColor(cell(n),0).tint==="var(--tone-"+n+")"));
  chk("its style names the theme's tokens only",A.cellStyle(cell("green"),0)==="background:var(--tone-green);--qd:var(--tone-green-deep);--qt:var(--tone-green)");
- chk("a pair of hex colours is drawn exactly as given",A.cellColor(cell({tint:"#F0D9CF",deep:"#A04E34"}),0).tint==="#F0D9CF"&&A.cellStyle(cell({tint:"#F0D9CF",deep:"#A04E34"}),0)==="background:#F0D9CF;--qd:#A04E34");
- chk("an unknown name falls back to the default cell tints",A.cellColor(cell("chartreuse"),2).tint==="var(--cell-2)"&&A.cellColor(cell("chartreuse"),2).deep==="var(--tint-ink)"&&!A.toneOf(cell("chartreuse")));
- chk("a name that is not a plain string name never reaches a style",["constructor","__proto__","warm;background:red",["warm"],{}].every(v=>A.cellStyle(cell(v),0).indexOf("red")<0&&!A.toneOf(cell(v))));
+ chk("a pair of hex colours is no colour (0.13): the cell takes the default tint",A.cellColor(cell({tint:"#F0D9CF",deep:"#A04E34"}),1).tint==="var(--cell-1)"&&A.cellStyle(cell({tint:"#F0D9CF",deep:"#A04E34"}),1).indexOf("#F0D9CF")<0);
+ chk("an unknown name falls back to the default cell tints",A.cellColor(cell("chartreuse"),2).tint==="var(--cell-2)"&&A.cellColor(cell("chartreuse"),2).deep==="var(--tint-ink)"&&!A.colourOf(cell("chartreuse")));
+ chk("a name that is not a plain string name never reaches a style",["constructor","__proto__","warm;background:red",["warm"],{}].every(v=>A.cellStyle(cell(v),0).indexOf("red")<0&&!A.colourOf(cell(v))));
  /* the tone tokens exist in every theme, with ink readable on them */
  chk("every theme has the five tone tints and deep colours, and the floor checks them",["paper","daylight","night","contrast"].every(n=>["warm","green","amber","slate","teal"].every(t=>TABLES[n]["--tone-"+t]&&TABLES[n]["--tone-"+t+"-deep"])&&passes(n,{})));
  chk("Night's tones are dark tints (a cell does not glare)",lum(rgb(TABLES.night["--tone-green"]))<.05&&lum(rgb(TABLES.paper["--tone-green"]))>.5);
@@ -298,11 +298,9 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  chk("and loads, its cells carrying the names",r.ok&&w.cells.map(c=>c.color).join()==="warm,green,slate,teal",JSON.stringify(w.cells.map(c=>c.color)));
 }
 
-/* a hex pair from a file goes into a style attribute: only plain hex colours are ever used */
+/* a colour from a file goes into a style attribute only as a name from the list */
 {const bad=A.cellStyle({color:{tint:"#fff;background:url(https://x.test/a.png)",deep:"red;position:fixed"}},0);
- chk("a colour pair that is not hex never reaches the style",!/url\(|position|;background:|red/.test(bad),bad);
- const good=A.cellStyle({color:{tint:"#F0D9CF",deep:"#A04E34"}},0);
- chk("a hex pair is drawn as given",/#F0D9CF/.test(good)&&/#A04E34/.test(good),good);}
+ chk("an object where a colour name goes never reaches the style",!/url\(|position|;background:|red/.test(bad),bad);}
 
 /* the interface */
 chk("Auto has a hint in every language saying it is the booklet's look or the device's",["en","fr","es"].every(l=>A.STRINGS[l].ui.themeAutoTip&&A.STRINGS[l].ui.themeAutoTip.length>20));

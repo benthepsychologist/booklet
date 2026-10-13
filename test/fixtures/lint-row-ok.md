@@ -22,7 +22,7 @@ l
 
 r
 
-> [!row end]
+> [!row|end]
 
 > [!row]
 
@@ -30,6 +30,6 @@ One paragraph.
 
 Another paragraph.
 
-> [!row end]
+> [!row|end]
 
 > [!module|fixture-mod end]

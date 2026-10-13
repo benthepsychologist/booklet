@@ -18,7 +18,7 @@ global.document.createElement=tag=>{const n=mk0(tag);
 const A={};
 eval(src+`
 ;Object.assign(A,{render,parseFile,applyParsed,getPanel:()=>citePanelEl,setScreen:v=>{screen=v},getScreen:()=>screen,setLang:l=>{lang=l},getBook:()=>BOOK,
-  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="home";lang="en";}});`);
+  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="@home";lang="en";}});`);
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const findAll=(n,pred,out=[])=>{if(n&&typeof n==="object"){if(pred(n)) out.push(n);(n.children||[]).forEach(k=>findAll(k,pred,out));}return out;};
 const main=()=>global.document.getElementById("main");

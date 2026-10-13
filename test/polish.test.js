@@ -27,7 +27,7 @@ function load(source){const API={};
   eval(source+`
 ;Object.assign(API,{render,parseFile,applyParsed,STRINGS_SRC,
   getPanel:()=>citePanelEl,getBook:()=>BOOK,setScreen:v=>{screen=v},setLang:l=>{lang=l},
-  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="home";lang="en";}});`);
+  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="@home";lang="en";}});`);
   return API;}
 const A=load(src);
 
