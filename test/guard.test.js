@@ -102,6 +102,12 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  const words=t=>[...t.matchAll(/"(\w+)"/g)].map(x=>x[1]);
  must("its kinds are the question kinds and the structure kinds the linter knows, and no others",
    !!(qk&&pk&&ps)&&JSON.stringify(Object.keys(fromRenderer).sort())===JSON.stringify([...new Set([...words(qk[1]),...words(ps[1])])].sort())&&JSON.stringify(words(qk[1]).sort())===JSON.stringify(words(pk[1]).sort()));
+ // the kinds that take no id (the first word after the bar is the id for every other kind): the same list in the renderer, the linter and SPEC.md
+ {const nr=html.match(/const NO_ID_KINDS=new Set\(\[([^\]]*)\]\)/),np=py.match(/^NO_ID_KINDS = \(([^)]*)\)/m),ns=spec.match(/\*\*Kinds that take no id\*\* are ([^;]*?);/);
+  const quoted=t=>t?[...t.matchAll(/"(\w+)"/g)].map(x=>x[1]).sort().join():"";
+  must("the kinds that take no id are found in the renderer, the linter and SPEC.md section 4",!!(nr&&np&&ns));
+  must("and are the same in all three, each a kind in KIND_SETTINGS",nr&&np&&ns&&quoted(nr[1])===quoted(np[1])&&quoted(nr[1])===[...ns[1].matchAll(/`(\w+)`/g)].map(x=>x[1]).sort().join()&&quoted(nr[1]).split(",").every(k=>k in fromRenderer),
+    nr&&np&&ns&&[quoted(nr[1]),quoted(np[1]),ns[1]].join(" / "));}
  // the unused card engine is gone, and no word of it is left but in the change list of SPEC.md section 14
  const needle="card"+"-board",gone=[];
  const walk=d=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){if(/^(\.git|node_modules|__pycache__)$/.test(e.name)) continue;

@@ -1,5 +1,5 @@
 ---
-booklet: "0.12"
+booklet: "0.13"
 title: Lint fixture
 lang: en
 ---
@@ -10,7 +10,7 @@ lang: en
 
 > [!activity|walk repeat] A walk
 
-> [!text|long] What did you notice?
+> [!text] What did you notice?
 
 > [!widget|picker] Pick a spot
 > ![[#^picker-data]]

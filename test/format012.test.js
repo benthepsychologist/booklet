@@ -11,7 +11,7 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
-const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
 (async()=>{
  const A=P.boot();
  const mod=R=>R.template.modules[0];
@@ -118,7 +118,7 @@ const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
   chk("a loop 3,000 long is reported once per member, fast",r2.status===0&&(r2.stdout.match(/loops back/g)||[]).length===3000&&Date.now()-t2<3000,String(Date.now()-t2));
   fs.rmSync(tmp,{recursive:true,force:true});}
  {const r=spawnSync("python3",[P.R+"/lint-booklet.py",P.R+"/test/fixtures/lint-parent-bare.md"],{encoding:"utf8"});
-  chk("parent: between activities outside every module fence places nothing, and the linter says so",r.status===0&&/line 11: `parent:a` outside a module fence places nothing/.test(r.stdout),r.stdout);}
+  chk("parent: between activities outside every module fence places among them (0.13), and the linter has nothing to say",r.status===0&&/0 errors · 0 warnings/.test(r.stdout),r.stdout);}
 
  /* ---- review round 2 ---- */
  chk("isModuleLink: a target whose path ends .booklet or .booklet.md, with a #… or ?… suffix or a space, is a module link; the reviewer's near misses are not",

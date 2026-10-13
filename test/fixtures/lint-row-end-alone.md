@@ -1,5 +1,5 @@
 ---
-booklet: "0.12"
+booklet: "0.13"
 title: Lint fixture
 lang: en
 ---
@@ -10,6 +10,6 @@ lang: en
 
 > [!activity|walk] A walk
 
-> [!row end]
+> [!row|end]
 
 > [!module|fixture-mod end]

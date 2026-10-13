@@ -1,5 +1,5 @@
 ---
-booklet: "0.12"
+booklet: "0.13"
 title: Lint fixture
 lang: en
 ---
@@ -18,12 +18,12 @@ lang: en
 
 r
 
-> [!row end]
+> [!row|end]
 
 ### Right
 
 r
 
-> [!row end]
+> [!row|end]
 
 > [!module|fixture-mod end]

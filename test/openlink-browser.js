@@ -17,7 +17,7 @@ const PAGE='https://bookletmd.test',STORE=PAGE,REG='https://raw.githubuserconten
 const HOST_CSP=CSP.replace('connect-src https://raw.githubusercontent.com','connect-src https://raw.githubusercontent.com '+STORE);
 if(HOST_CSP===CSP) throw new Error('csp.js no longer has the expected connect-src: update this test');
 const page=(withStore)=>fs.readFileSync(HTML,'utf8').replace('<meta name="theme-color"',(withStore?'<meta name="booklet-store" content="'+STORE+'/pub/">\n':'')+'<meta name="theme-color"');
-const bk=(id,title,body,after)=>`---\nbooklet: "0.12"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title} module\n\n${body}\n> [!module|${id} end] End\n${after||''}`;
+const bk=(id,title,body,after)=>`---\nbooklet: "0.13"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title} module\n\n${body}\n> [!module|${id} end] End\n${after||''}`;
 const WEEK=bk('week','Week report','> [!activity|wk] The week\n\n> [!text|wq long] What stood out?\n\n');
 const WEEK2=bk('week','Week report','> [!activity|wk] The week\n\n> [!text|wq long] What stood out?\n\n> [!text|wq2 long] And what was hard?\n\n');
 const OTHER=bk('other','Other booklet','> [!activity|ot] The other one\n\n> [!text|oq long] Anything else?\n\n');

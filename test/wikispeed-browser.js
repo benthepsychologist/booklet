@@ -26,7 +26,7 @@ function synthetic(){
   const pages=[];
   const add=(parent)=>{const i=pages.length+1,id='s'+String(i).padStart(4,'0');pages.push({id,parent,title:'Page '+word()+' '+word()+' '+i});return id;};
   for(let a=0;a<12;a++){const A=add('');for(let b=0;b<8;b++){const B=add(A);for(let c=0;c<7;c++)add(B);}}
-  let out='---\nbooklet: "0.12"\nid: "synthetic-wiki"\ntitle: "Synthetic wiki"\nlang: en\n---\n\n```booklet theme\nstyle: briefing\n```\n\n> [!module|wiki] Synthetic wiki\n\n';
+  let out='---\nbooklet: "0.13"\nid: "synthetic-wiki"\ntitle: "Synthetic wiki"\nlang: en\n---\n\n```booklet theme\nstyle: briefing\n```\n\n> [!module|wiki] Synthetic wiki\n\n';
   for(const p of pages){
     out+='> [!activity|'+p.id+(p.parent?' parent:'+p.parent:'')+'] '+p.title+'\n\n';
     out+='*Page · planned*\n\n'+para()+'\n\n'+para()+'\n\n';

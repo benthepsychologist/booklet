@@ -148,7 +148,7 @@ A.openChip={eod:"x"};
 A.screen="eod";
 A.openBooklet(b.id);
 chk("the open entry and the view are cleared on a switch",
-  Object.keys(A.openChip).length===0&&A.screen==="home");
+  Object.keys(A.openChip).length===0&&A.screen==="@home");
 A.openBooklet(a.id);
 A.editBook(t=>{t.head={title:"A's own design"};});A.saveLocal();
 const c=await A.createBooklet();
@@ -240,7 +240,7 @@ chk("the same file loaded again is a second booklet, deliberately",A.readLib().e
  A.loadText(modText("daily-journal"));
  const L=A.readLib();
  chk("a module file loaded on the list starts a new booklet holding that module, and opens it (into its one activity, v0.11)",
-   L.entries.length===1&&A.currentId===L.entries[0].id&&A.screen===A.startScreen()&&A.screen!=="home"&&A.allModules().map(m=>m.id).join(",")==="example-daily-journal",
+   L.entries.length===1&&A.currentId===L.entries[0].id&&A.screen===A.startScreen()&&A.screen!=="@home"&&A.allModules().map(m=>m.id).join(",")==="example-daily-journal",
    JSON.stringify({n:L.entries.length,mods:A.allModules().map(m=>m.id)}));
  main().prepend=keptPrepend;}
 

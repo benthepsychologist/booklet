@@ -9,9 +9,9 @@ const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.dirname(HTML);
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const MOD=`---\nbooklet: "0.12"\ntitle: Shore walk\nlang: en\n---\n\n> [!module|shore] Shore module\n\n> [!activity|walk] Shore walk\n\n> [!text|what long] What did you notice?\n\n> [!choice|tide] The tide was\n- [ ] In\n- [ ] Out\n\n> [!module|shore end] End\n`;
+const MOD=`---\nbooklet: "0.13"\ntitle: Shore walk\nlang: en\n---\n\n> [!module|shore] Shore module\n\n> [!activity|walk] Shore walk\n\n> [!text|what long] What did you notice?\n\n> [!choice|tide] The tide was\n- [ ] In\n- [ ] Out\n\n> [!module|shore end] End\n`;
 const REG={modules:[{id:'t/regmod',title:'Registry module',file:'regmod.md'}]};
-const REGMOD=`---\nbooklet: "0.12"\ntitle: Registry module\nlang: en\n---\n\n> [!module|regmod] Registry module\n\n> [!activity|ra] Registry activity\n\n> [!text|rq] A registry question\n\n> [!module|regmod end] End\n`;
+const REGMOD=`---\nbooklet: "0.13"\ntitle: Registry module\nlang: en\n---\n\n> [!module|regmod] Registry module\n\n> [!activity|ra] Registry activity\n\n> [!text|rq] A registry question\n\n> [!module|regmod end] End\n`;
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
@@ -51,11 +51,11 @@ const REGMOD=`---\nbooklet: "0.12"\ntitle: Registry module\nlang: en\n---\n\n> [
   // 2 a module from a file on disk
   const modPath=path.join(OUT,'filepage-shore.booklet.md');fs.writeFileSync(modPath,MOD);
   await loadFile(modPath);
-  if(await p.evaluate(()=>document.body.dataset.view)==='home'){}
+  if(await p.evaluate(()=>document.body.dataset.view)==='@home'){}
   ok(await p.locator('#main').innerText().then(t=>/Shore/.test(t)),'a module file from disk loads and is shown');
   // 3 open it, answer, keep an entry
   const view0=await p.evaluate(()=>document.body.dataset.view);
-  if(view0==='home'||/^module:/.test(view0)){await p.locator('button.mode').first().click();await wait(500);}
+  if(view0==='@home'||/^module:/.test(view0)){await p.locator('button.mode').first().click();await wait(500);}
   await p.locator('.ap-body textarea').first().fill('QZXfileanswer');
   const pills=p.locator('.ap-body .pills > button.pill-btn');if(await pills.count())await pills.first().click();await wait(300);
   ok((await p.locator('.ap-body textarea').first().inputValue())==='QZXfileanswer','an answer is typed and held');
@@ -68,7 +68,7 @@ const REGMOD=`---\nbooklet: "0.12"\ntitle: Registry module\nlang: en\n---\n\n> [
   // 6 a diagram and a formula, drawn at 1280px under the policy's script hashes
   for(const [f,act,shot] of [['examples/how-tides-work.booklet.md','Why the sea rises twice a day','tides'],['test/fixtures/figures.booklet.md','Diagrams and formulas','figures']]){
     await loadFile(path.join(R,f));
-    if(await p.evaluate(()=>document.body.dataset.view)==='home'){}else{await p.locator('#btnHome').click();await wait(400);}
+    if(await p.evaluate(()=>document.body.dataset.view)==='@home'){}else{await p.locator('#btnHome').click();await wait(400);}
     await p.locator('button.mode').first().click();await wait(1000);
     await p.getByText(act).first().click({timeout:3000}).catch(()=>{});await wait(3000);
     const g=await p.evaluate(()=>({svg:document.querySelectorAll('.mfig svg').length,math:document.querySelectorAll('math').length,mermaid:typeof __esbuild_esm_mermaid_nm,temml:typeof temml}));

@@ -7,7 +7,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const FM=t=>`---\nbooklet: "0.12"\ntitle: ${t}\nlang: en\n---\n\n`;
+const FM=t=>`---\nbooklet: "0.13"\ntitle: ${t}\nlang: en\n---\n\n`;
 const BOOK=FM("Lock booklet")+"> [!module|ma] Module A\n\n> [!activity|act] Answer\n\n> [!text|note] Note\n\n> [!module|ma end] End\n";
 const NAME="reports/week.booklet.md";
 const KEY="booklet.host.allowed";

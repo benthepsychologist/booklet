@@ -11,7 +11,7 @@ const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const WIDE='| Option | No-show rate | Reminder cost per month | No-show cost per month | Total per month | Saving against SMS only | Risk to watch | Who would run it |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| SMS only | 11% | $72 | $17,820 | $17,892 | none | cost of messages | front desk |\n| Email only | 14% | $0 | $22,680 | $22,680 | none, costs more | spam folders | front desk |\n| SMS plus email | 8% | $72 | $12,960 | $13,032 | about $4,860 | two systems | front desk |\n';
 const FILE=`---
-booklet: "0.12"
+booklet: "0.13"
 title: Report
 lang: en
 ---
@@ -75,7 +75,7 @@ One trial only.
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
     await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
-    if(await p.evaluate(()=>document.body.dataset.view)!=='home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
+    if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
     await p.locator('button.mode').first().click();await p.waitForTimeout(700);
     const cards=await p.evaluate(()=>[...document.querySelectorAll('button.mode')].map(c=>({k:c.querySelector('.k').textContent,d:(c.querySelector('.d')||{textContent:''}).textContent})));   // a card with no words draws no teaser line (0.11.10)
     ok(cards.length===2,W+': the module screen has two activity cards');

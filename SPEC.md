@@ -1,17 +1,17 @@
-# The booklet format, v0.12.0
+# The booklet format, v0.13.0
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Anything that is data, and anything a reader answers, lives in fenced blocks at the end of the file. A new booklet that nobody has answered yet contains no JSON at all.
 
-> **Status: v0.12, draft.** This is a young, evolving format. Nothing before v1.0 is stable: this
-> spec, the renderer, the skill, the tests, and the `booklet: "0.12"` that a file's front matter
-> declares are all the same number, v0.12, and it will change again. A file names the version it is
+> **Status: v0.13, draft.** This is a young, evolving format. Nothing before v1.0 is stable: this
+> spec, the renderer, the skill, the tests, and the `booklet: "0.13"` that a file's front matter
+> declares are all the same number, v0.13, and it will change again. A file names the version it is
 > written in. A reader must read its own version. It should also open a file marked with another
 > `0.x` version, earlier or later, by its own rules and say so, but it makes no promise about what
 > such a file draws: what its rules do not understand is reported like any other problem. Nobody
 > maintains backwards compatibility before v1.0, so a tool that writes booklets should still write
-> the current marker (`lint-booklet.py --marker` prints the line). A third number (v0.12.1) is a
+> the current marker (`lint-booklet.py --marker` prints the line). A third number (v0.13.1) is a
 > patch to the wording here or to the renderer: it changes no file, and files go on saying
-> `booklet: "0.12"`. There is no earlier format to compare against or convert from.
+> `booklet: "0.13"`. There is no earlier format to compare against or convert from.
 >
 > **This document may describe things the reference renderer does not do yet.** The spec is allowed to have
 > options the renderer can't do yet. Each one is marked where it is described, in the words "The reference
@@ -59,7 +59,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: "0.12"
+booklet: "0.13"
 id: example/tides
 title: How tides work
 lang: en
@@ -69,13 +69,14 @@ license: CC-BY-4.0
 ---
 ```
 
-- `booklet` is the file format version this file uses (see the status note above): `0.12` here. A file marked with another `0.x` version is opened by this version's rules, with a notice (section 12); a file with no marker, or one that is not a `0.x` version (`1.0`, `2`, words), is not a booklet for this version. `id` names this booklet across its translations and versions. `lang` is the language of the page around the content, the renderer's own words and defaults; in a module's own file it is also the language the module is written in (section 9).
+- `booklet` is the file format version this file uses (see the status note above): `0.13` here. A file marked with another `0.x` version is opened by this version's rules, with a notice (section 12); a file with no marker, or one that is not a `0.x` version (`1.0`, `2`, words), is not a booklet for this version. `id` names this booklet across its translations and versions. `lang` is the language of the page around the content, the renderer's own words and defaults; in a module's own file it is also the language the module is written in (section 9).
 - **The front matter's `id` is the booklet's own name, not an id in the sense of section 4.** It may hold slashes (`example/tides`), and it is not one of the ids a question, an activity or a module carries, so the rule for those (letters, digits and dashes, unique in the file) does not apply to it.
 - `title` is the booklet's own name: the one name its home screen, its row in a list of booklets and the name of the file a renderer saves all show. A module file's own `title` names the module and never the booklet, so adding a module leaves the booklet's name alone. A renderer may let a reader rename the booklet, which rewrites this one line, with the new name as a quoted string.
-- **Write the marker in quotes: `booklet: "0.12"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way, so the linter warns on any unquoted marker whose minor ends in 0. A renderer reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9; `booklet: 0.12`, `"0.12"` and `'0.12'` are all this format, and `booklet: 0.1` is the earlier version 0.1, not 0.10. A renderer never changes a file's marker: a file it opened with another marker is saved back with the marker it came with, and a booklet it makes itself says `"0.12"`. The linter warns on the unquoted form, and a renderer writes the quoted one.
+- **Write the marker in quotes: `booklet: "0.13"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way, so the linter warns on any unquoted marker whose minor ends in 0. A renderer reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9; `booklet: 0.13`, `"0.13"` and `'0.13'` are all this format, and `booklet: 0.1` is the earlier version 0.1, not 0.10. A renderer never changes a file's marker: a file it opened with another marker is saved back with the marker it came with, and a booklet it makes itself says `"0.13"`. The linter warns on the unquoted form, and a renderer writes the quoted one.
 - `start` is optional and has one value, `start: home`. Without it, a booklet that holds exactly one activity opens straight into that activity, and one that holds exactly one module (with several activities) opens on that module's own screen; any other booklet opens on its home screen. An author writes `start: home` for a booklet they are still building, or one whose home screen says something a reader should see first. Any other value is an error in the linter, and a renderer reports it and ignores it. The back control from the activity or module still leads to the home screen.
-- `copyright`, `license`, `source` and `version` live in front matter — the file is the unit that travels (section 3), so the front matter travels with it. In a file that holds one module and no notice callout, they are that module's notice (section 3).
+- `copyright`, `license` and `source` live in front matter — the file is the unit that travels (section 3), so the front matter travels with it. In a file that holds one module and no notice callout, they are that module's notice (section 3). `version` is the file's own and is never a module's notice.
 - Reserved by Obsidian and therefore never used for anything else: `tags`, `aliases`, `cssclasses`.
+- **Any other key is kept as written and ignored.** A reader that does not know a key neither reports it nor drops it: it is still there when the file is saved.
 
 ---
 
@@ -98,12 +99,12 @@ license: CC-BY-4.0
 ```
 
 - A linter and a renderer refuse a file whose module is opened and not closed, closed and not opened, or whose fences overlap. Modules bleeding into each other is the failure this rule prevents.
-- Within a module, an activity may read another's answers and entries by id. Across modules it may not, and a renderer refuses a reference that crosses.
-- **Bare activities and modules may share a file.** A bare activity sits outside any module fence, by convention before the first one, and refers to nothing else. A file with no module fence is bare activities only: a worksheet needs no more.
+- Within a module, an activity may read another's answers and entries by id. Across modules it may not: the linter reports a reference that crosses a module boundary (a query's `from:`, a `menu:`, an embed) as an error, and a renderer draws nothing for it and lists it with the file's other problems. The file still opens.
+- **Bare activities and modules may share a file.** A bare activity sits outside any module fence, by convention before the first one. Bare activities together are one module with no name (section 4): they may read one another's answers and entries, `parent:` places them as it does inside a module, and their records sit under the plain `> [!records]` line. A bare activity may have the id of a module. A file with no module fence is bare activities only: a worksheet needs no more.
 - A module id is used once in a file, and stays unique across a person's collection; adding a module whose id is already present replaces it. Any other id a module uses is its own (section 4).
 - **A module's opening.** Prose inside a module's fence before its first activity, other than its notice, is the module's opening: a renderer shows it on the module's own screen, above the module's activities, and nowhere else. A module with none opens on its title and its activities.
 
-**Where data goes: inline, at the end, or in another file.** The blocks a module's activities refer to (widgets, figures, menus, image definitions) may sit inside the module's own fence, in a data section at the end of the file, or in another file that the manifest names. A data section is opened by a `> [!data] Data` line, which is shared, or by a `> [!data|week-1] Data for Week 1` line, which belongs to the module whose id it carries, the way a records section does. A block inside a module's fence is that module's, and no other module can use it. **A block under a `> [!data|week-1]` line is that module's too, as if it sat inside the fence**, until the next `data`, `records`, `module` or `activity` line; a block under a plain `> [!data]` line is shared. A reference is looked up in the module's own fence, then the module's own data section, then the shared data section, then the files the manifest names (the manifest is not read yet; section 13), and never in another module's fence or data section (section 4). A file may have several data sections. A data line takes an optional module id and no settings. A tool that adds a module to a booklet puts the data it brings under the module's own `> [!data|module-id]` line, and an update of the module replaces exactly its fence and that section. A file that holds one module may keep all its data under a plain `> [!data]` line; those blocks are that module's when the module is added to a booklet, and inside the file they are found either way.
+**Where data goes: inside the module, or at the end.** The blocks a module's activities refer to (widgets, figures, menus, image definitions) may sit inside the module's own fence or in a data section at the end of the file. A data section is opened by a `> [!data] Data` line, which is shared, or by a `> [!data|week-1] Data for Week 1` line, which belongs to the module whose id it carries, the way a records section does. A block inside a module's fence is that module's, and no other module can use it. **A block under a `> [!data|week-1]` line is that module's too, as if it sat inside the fence**, until the next `data`, `records`, `module` or `activity` line; a block under a plain `> [!data]` line is shared. A reference is looked up in the module's own fence, then the module's own data section, then the shared data section, and never in another module's fence or data section (section 4). A file may have several data sections. A data line takes an optional module id and no settings. A tool that adds a module to a booklet puts the data it brings under the module's own `> [!data|module-id]` line, and an update of the module replaces exactly its fence and that section. A file that holds one module may keep all its data under a plain `> [!data]` line; those blocks are that module's when the module is added to a booklet, and inside the file they are found either way.
 
 ### A module's notice
 
@@ -122,30 +123,17 @@ A module may state its terms where they travel with it, in a `notice` callout, t
 ```
 
 - Each line is `key: value`, and the keys are `license`, `copyright`, `source` and `version`; any may be left out, and anything else in it is a linter error. A notice takes no id and no settings, a module has at most one, and it sits inside the module's fence before the module's first activity. A notice outside a module's fence, or after its first activity, is an error in the linter and is ignored by a renderer, which reports it. A notice's `version` is the module's, and need not look like the booklet's.
-- **A file that holds one module and no notice callout is still covered:** its front matter's `license`, `copyright`, `source` and `version` are that module's notice, so nobody has to rewrite a module file; either form may be used, and when both are present the callout wins.
+- **A file that holds one module and no notice callout is still covered:** its front matter's `license`, `copyright` and `source` are that module's notice, so nobody has to rewrite a module file; either form may be used, and when both are present the callout wins. The front matter's `version` is the file's own and is never a module's notice: a module's own version is written in its notice callout.
 - A tool that adds a module whose notice is only in its file's front matter writes it into the module's fence as a `> [!notice]` callout, so the notice is in the booklet's own file, and an update replaces it with the module's. A renderer keeps the callout exactly as written.
 - A renderer shows a module's notice as a quiet disclosure, closed until opened, headed "About this module": the licence, the copyright, the source (a link only when it is an `http://` or `https://` address, otherwise plain text) and the version, on the module's own page and at the foot of a module that is one activity. A module with no notice shows nothing. Every value is text.
 
-**Answers never travel inside a module.** A module used for months would drag hundreds of lines of JSON with it. Records sit in the records section at the end, opened by `> [!records] App record`, and grouped by module under `> [!records|week-1] Week 1`, so the right JSON is one search away. **The module id on a records line is what ties the record blocks under it to that module**, until the next records line: its `answers` are that module's, and the activity named on an `entries` or `draft` block is that module's activity. Record blocks under the plain `> [!records]` line, with no module line before them, belong to the bare activities. To take a module and its answers somewhere else, copy two sections.
+**Answers never travel inside a module.** A module used for months would drag hundreds of lines of JSON with it. Records sit in the records section at the end, opened by `> [!records] App record`, and grouped by module under `> [!records|week-1] Week 1`, so the right JSON is one search away. **The module id on a records line is what ties the record blocks under it to that module**, until the next records line: its `answers` are that module's, and the activity named on an `entries` or `draft` block is that module's activity. Record blocks under the plain `> [!records]` line, with no module line before them, belong to the bare activities, which are one module with no name; a records line that names a bare activity (`> [!records|inbox]`) is read the same when no module has that id. To take a module and its answers somewhere else, copy two sections.
 
-**One manifest says where everything is.** Right after the front matter, a `manifest` callout lists the booklet's parts in order, each `inline` or a link to the file that holds it:
+**A booklet's parts in other files, and a manifest that lists them, are a draft** (section 13, "Drafts"). Nothing in this document depends on them: a booklet is one file.
 
-```markdown
-> [!manifest] How tides work
-> - module week-1: inline
-> - module week-2: [[week-2.booklet]]
-> - data body-map: [[shared/widgets.booklet#^body-map]]
-> - data: inline
-> - records: inline
-```
+**A link to a whole module.** `[[week-2.booklet]]` or `[Week 2](week-2.booklet.md)` in prose names the module `week-2`: the file's name before `.booklet`, which is the module's id. Such a link is for a module that may not be in this booklet, one in a registry or one the reader has not been given yet: a renderer opens the module if the booklet holds it, and otherwise shows the link as a module that is not here, asking the network for nothing until the reader acts. To move within a file, link to a heading (below).
 
-It is required when anything lives in another file, and recommended always, as the table of contents an editor sees first. A linter checks it against the file and reports a part it names that is missing, or a part in the file it doesn't name. (The reference renderer does not do this yet; see section 13.) The reference renderer reads one file and skips the manifest, parts that live in another file (`[[week-2.booklet]]`, a data block in another file) are not read, and the reference linter does not check the manifest. It all works as one file; the referenced-out form is described here and not yet done. A whole-note embed, `![[week-2.booklet]]`, may stand in a manifest line where the module should render inline in Obsidian.
-
-**Paths follow Obsidian's conventions.** `[[week-2.booklet]]` (Obsidian resolves a note by name anywhere in the vault) or an ordinary Markdown link, `[Week 2](modules/week-2.booklet.md)`, relative to the booklet's own folder. A block in another file is `![[week-2.booklet#^body-map]]`. Absolute machine paths such as `~/notes/…` are outside what Obsidian (vault-relative) or a browser (no file system) can read, so they are not supported; an unresolved link is shown as one and breaks nothing.
-
-**A link to a whole module.** `[[week-2.booklet]]` or `[Week 2](week-2.booklet.md)` in prose names the module `week-2`: the file's name before `.booklet`. A manifest line that names the path settles which module it is; otherwise a module's file is named by its id. Such a link is for a module that may not be in this booklet, one in a registry or one the reader has not been given yet: a renderer opens the module if the booklet holds it, and otherwise shows the link as a module that is not here, asking the network for nothing until the reader acts. To move within a file, link to a heading (below).
-
-**Navigating the file in an editor.** Every part opens with a line of one shape, so searching for `[!module|`, `[!activity|`, `[!data` or `[!records` walks the file, and the manifest at the top is its table of contents.
+**Navigating the file in an editor.** Every part opens with a line of one shape, so searching for `[!module|`, `[!activity|`, `[!data` or `[!records` walks the file.
 
 **An activity starts at an activity line and runs to the next one.** A file with no activity line is one activity, named by the front matter title. So a one-page worksheet needs no structure at all.
 
@@ -177,7 +165,7 @@ The words after the id are the activity's **settings**:
 > [!activity|v1-0-release parent:booklet-dev] Booklet v1.0: the stable format
 ```
 
-It means what `parent` means on a list row (section 6): an activity whose parent is not in its module sits at the top, and the linter warns; one that is its own ancestor is drawn once, at the top; when two activities share an id, the first is used. Activities under the same parent keep the file's order, and moving on from an activity goes to its first child, then its next sibling, then back up: the order of a file written parent first. A module whose activities carry no `parent` is a flat list, as before. `parent` places an activity; it does not let one read another's answers.
+It means what `parent` means on a list row (section 6): an activity whose parent is not in its module (or, for a bare activity, not among the bare activities) sits at the top, and the linter warns; one that is its own ancestor is drawn once, at the top; when two activities share an id, the first is used. Activities under the same parent keep the file's order, and moving on from an activity goes to its first child, then its next sibling, then back up: the order of a file written parent first. A module whose activities carry no `parent` is a flat list, as before. `parent` places an activity; it does not let one read another's answers.
 
 **A card's picture.** A renderer that draws modules, activities and sections as cards gives each a picture, chosen the same way everywhere: the line's `icon:` if it has one; otherwise an emoji at the start of its title, which is then not repeated in the title; otherwise its number in its list. `icon:` takes a name from Booklet's icon set, the Lucide 1.48 icons listed in the booklet repository's `art/icons/` (lucide.dev): `icon:compass`, `icon:notebook-pen`. The set may grow in a later version. A name outside it is reported and ignored, like a mistyped setting. Sections and callouts take no settings, so a leading emoji is how they choose a picture. A renderer may draw the picture as that icon or as an illustration of the same name; that is its look, not the file's.
 
@@ -185,7 +173,7 @@ It means what `parent` means on a list row (section 6): an activity whose parent
 
 ⚠️ `---` needs a blank line above it, or Markdown turns the line before it into a heading and the page break vanishes. `***` has no such trap. Both are accepted.
 
-**Links between activities** are ordinary heading links, which Obsidian resolves natively: `[[#Check yourself]]` or `[Check yourself](#check-yourself)`. The renderer opens the activity that contains that heading, **looked for in the link's own module** (the bare activities together are one module), never in another module's fence; a link whose heading only another module has is shown as plain text, like a link to a heading that is nowhere, and the linter warns. Reading another activity's *answers* is a module matter, above.
+**Links between activities** are ordinary heading links, which Obsidian resolves natively: `[[#Check yourself]]` or `[Check yourself](#check-yourself)`. A link opens the first place in the link's own module whose heading or title reads those words: a heading, an activity's title, a page's name, a question's prompt or a callout's title. It is **looked for in the link's own module** (the bare activities together are one module), never in another module's fence; a link whose words only another module has is shown as plain text, like a link to words that are nowhere, and the linter warns. Reading another activity's *answers* is a module matter, above.
 
 ### Rows: things side by side
 
@@ -206,10 +194,10 @@ from: overdue
 from: due-soon
 ```
 
-> [!row end]
+> [!row|end]
 ```
 
-- A row opens with `> [!row]` and closes with `> [!row end]`, like a module's fence.
+- A row opens with `> [!row]` and closes with `> [!row|end]`: the word after the bar is a setting, as `end` is on a module's closing line.
 - **Each heading at the shallowest level inside the row starts a cell.** Anything before the first heading is a cell of its own. With no headings at all, each block is a cell.
 - A renderer decides how many cells fit across, and puts them one under another, in file order, on a narrow screen. A file never states widths, columns or breakpoints.
 - Anything may go in a cell: prose, questions, widgets, queries, figures.
@@ -224,13 +212,15 @@ from: due-soon
 > [!kind|id setting:value flag] Title
 ```
 
-- **`kind`** says what the line is: an activity, a question kind, a widget, a menu, a row, or a reading callout. Kinds are Booklet's own vocabulary, and the set is meant to grow (section 5).
-- **`id`** is required for anything that stores an answer or is referenced (activities, questions, widgets, menus). Letters, digits and dashes only, so every id is also valid wherever Obsidian wants one. Unique within its module (below). Reading callouts need none, and neither does a row (`> [!row]` … `> [!row end]`, section 3), which is structure like a page break.
-- **Settings** follow the id, separated by spaces: `menu:feelings`, `min:0`, `open`, `repeat`.
+- **`kind`** says what the line is: an activity, a question kind, a widget, a menu, a row, or a reading callout. Kinds are Booklet's own vocabulary, and the set is meant to grow (section 5). A kind is written with the same characters as an id (letters, digits and dashes), so `> [!2col]` is a callout; a `> [!` line whose kind has any other character, such as `> [!my_kind]` or `> [!café]`, is not a Booklet line, and a renderer reports it and leaves it as text.
+- **A module's end line repeats its module's id** (`> [!module|week-1 end]`): the id is the first word, as on any line, and `end` is a setting. `> [!module|end]` opens a module whose id is `end`.
+- **`id`** is required for anything that stores an answer or is referenced (activities, questions, widgets, menus). Letters, digits and dashes only, so every id is also valid wherever Obsidian wants one. Unique within its module (below). Reading callouts need none, and neither does a row (`> [!row]` … `> [!row|end]`, section 3), which is structure like a page break.
+- **The first word after the bar is the id, for every kind that takes one, and every later word is a setting.** No id is reserved: an activity may be called `repeat`, `long`, `end` or `home`. **Kinds that take no id** are `row`, `notice`, `manifest`, `hint`, `solution` and Booklet's own reading kinds `group`, `diff`, `law` and `opinion`; all their words are settings, so `> [!row|end]` closes a row, and a word after the bar on a `hint` is a setting it does not take.
+- **Settings** follow the id, separated by spaces: `menu:feelings`, `min:0`, `open`, `repeat`. A setting written before the id is read as the id, and the id after it is reported as a setting the kind does not take.
 - **The title** is the words a reader sees: the question, the activity name, the caption.
 - **A fold marker** may follow the bracket, as in Obsidian: `> [!hint]- Hint` starts folded.
 
-**An id belongs to its module.** An id is unique within its module: activity ids, question ids, widget-line ids, menu ids, block ids (`^id`) and footnote ids. Two modules in one file may use the same id for different things, and neither can see the other's. Module ids are unique within the file. Activities outside any module fence (bare activities) together count as one module with no name. A module's scope is its fence and its data section (`> [!data|module-id]`, section 3): an id under that line is in the module's scope, as if it sat inside the fence. The plain data section at the end of the file (`> [!data] Data`) is shared: a block there (a widget, a figure, a data block, a menu) may be used by any module, and its ids are unique among the blocks in that section. **A reference is looked up in its own module first (its fence, then its data section), then in the shared data section, and never in another module's fence or data section.** That holds for an embed `![[#^id]]`, a `menu:id`, a query's `from:` and a footnote mark `[^id]`. What a reader answered is tied to its module by the module id on a records line (section 8), so the same question id in two modules holds two answers. A file whose ids were unique across the whole file, as v0.8 required, still has unique ids under this rule.
+**An id belongs to its module.** An id is unique within its module: activity ids, question ids, widget-line ids, menu ids, block ids (`^id`) and footnote ids. Two modules in one file may use the same id for different things, and neither can see the other's. Module ids are unique within the file. Activities outside any module fence (bare activities) together count as one module with no name: their ids are in one scope, the scope of a plain `> [!records]` line. That scope is not a module's, so a bare activity and a module may have the same id. A module's scope is its fence and its data section (`> [!data|module-id]`, section 3): an id under that line is in the module's scope, as if it sat inside the fence. The plain data section at the end of the file (`> [!data] Data`) is shared: a block there (a widget, a figure, a data block, a menu) may be used by any module, and its ids are unique among the blocks in that section. **A reference is looked up in its own module first (its fence, then its data section), then in the shared data section, and never in another module's fence or data section.** That holds for an embed `![[#^id]]`, a `menu:id`, a query's `from:` and a footnote mark `[^id]`. What a reader answered is tied to its module by the module id on a records line (section 8), so the same question id in two modules holds two answers. A file whose ids were unique across the whole file, as v0.8 required, still has unique ids under this rule.
 
 **What comes after the line.**
 - A **list** belongs to the line (a question's options, a menu's entries). It may follow directly or after one blank line; two blank lines end the question. **One exception, from Markdown itself:** only a numbered list that starts at `1.` may interrupt a paragraph, so a list starting at `0.` (or any other number) directly under the line is swallowed into the title. Put the blank line in; the reference linter requires it there and allows it everywhere else.
@@ -246,14 +236,14 @@ from: due-soon
 | `activity` | `repeat`, `repeat daily`, `hidden`, `icon:`, `parent:` |
 | `row` | `end` |
 | `text` | `long` |
-| `lines`, `scale`, `matrix`, `date`, `menu`, `hint`, `solution`, `data`, `records`, `manifest`, `notice` | none |
+| `lines`, `scale`, `matrix`, `date`, `menu`, `hint`, `solution`, `data`, `records`, `manifest`, `notice`, `group`, `diff`, `law`, `opinion` | none |
 | `choice`, `multi` | `open`, `menu:<id>` |
 | `number` | `min:`, `max:`, `step:` (numbers) |
 | `widget` | `readonly`, `describe` |
 
 `icon:` takes an icon name and `parent:` an activity id (section 3). Neither is written on a module's end line.
 
-**Unknown kinds.** A line with an id or settings whose kind is not in this table is an **unknown kind**. A renderer draws it as a callout, with a quiet line under its title saying that it does not know the kind, and reports it; the linter warns. A line with no id and no settings is a reading callout of whatever kind its author chose (`note`, `tip`, Booklet's `diff`, and so on, section 6), drawn with no notice.
+**Unknown kinds.** A line with an id or settings whose kind is not in this table is an **unknown kind**. A renderer draws it as a callout, with a quiet line under its title saying that it does not know the kind, and reports it; the linter warns. A line with no id and no settings is a reading callout of whatever kind its author chose (`note`, `tip`, Booklet's `diff`, and so on, section 6), drawn with no notice. `group`, `diff`, `law` and `opinion`, Booklet's own reading kinds (section 6), are in the table above and take no settings. A line that starts `> [!` but cannot be read as a Booklet line is reported, and is read as text.
 
 **Case.** Kinds, settings, query keys and `as:` are read without regard to case. Ids and values (theme values, tone names, and the words a person wrote) are exactly as written.
 
@@ -372,9 +362,9 @@ A widget the reader operates (the body map, the feelings grid) is a `widget` lin
 
 ### Callouts
 
-Reading set apart is an Obsidian callout, with `>` on every line of its body. Use Obsidian's built-in kinds where they fit (`note`, `tip`, `example`, `quote`, `question`, `warning`), and Booklet's three for guided reading: `diff` (where this differs from the reader's own guide), `law` (the rule as it now stands), `opinion` (an author's view, not to be learned as a rule).
+Reading set apart is an Obsidian callout, with `>` on every line of its body. Use Obsidian's built-in kinds where they fit (`note`, `tip`, `example`, `quote`, `question`, `warning`), and Booklet's three for guided reading: `diff` (where this differs from the reader's own guide), `law` (the rule as it now stands), `opinion` (an author's view, not to be learned as a rule). Booklet's fourth kind is `group`, the plain fold, for anything Markdown can hold, written `> [!group]- Title` to start folded. All four take no id and no settings.
 
-A renderer draws each kind in its own colour and picture. A kind it does not know is drawn as `note` is; folded with `-`, it is drawn plain, with no tint, and an untitled one is called "Note" (the reference renderer's drawing, not something a file says).
+A renderer draws each kind in its own colour and picture. `group` is a known kind that the reference renderer draws as `note` is, like a kind it does not know; folded with `-`, either is drawn plain, with no tint, and an untitled one is called "Note" (the reference renderer's drawing, not something a file says). A kind the format does not define, written with an id or settings, is reported (section 4); the four kinds above are defined, so they never are.
 
 ```markdown
 > [!diff] Your guide says the tide turns every six hours
@@ -469,7 +459,7 @@ empty: Nothing logged yet.
 - `limit:` (optional) shows only that many of the most recent entries.
 - `empty:` (optional) is what shows while nothing is kept. Without it, the renderer shows its own short line.
 - It reads kept entries and given answers only, never a draft in progress.
-- A query never reads across modules. One whose `from:` names nothing, or something in another module, is refused: the linter reports an error and a renderer draws nothing for it. The activities outside any module fence are one module for this rule.
+- A query never reads across modules. One whose `from:` names nothing, or something in another module, cannot be drawn: the linter reports an error, and a renderer draws nothing for it and reports it. The file still opens. The activities outside any module fence are one module for this rule.
 - The kind, `query`, is on the fence line; the settings are the block's lines, `key: value`. Ids follow the rule in section 4 (letters, digits and dashes).
 - In Obsidian without a Booklet plugin, and on GitHub, the block shows as a short code block.
 
@@ -498,7 +488,7 @@ group: why
 
 So rows whose fields are already called `label`, `value` and so on need only `from:` and `as:`. A line such as `label: bucket` points a role at a field with another name. A role no row carries is simply not drawn.
 
-**Tone.** A view's `tone` is `good`, `warn` or `bad`, exactly as written. A theme's `good`, `warn` and `bad` keys (section 7) set those same three colours, and they are the colours a widget calls `green`, `amber` and `warm` (section 7). A widget may also use `slate` and `teal`, which have no tone.
+**Tone.** A view's `tone` is `good`, `warn` or `bad`, exactly as written. A theme's `good`, `warn` and `bad` keys (section 7) set those same three colours, which a widget names `green`, `amber` and `warm` (section 7). A widget may also use the colour names `slate` and `teal`, which have no tone.
 
 **Link and icon.** A `link` value is a link target written as prose writes one: `#Heading`, `week-2.booklet.md` or a web address. A view makes the row's label lead there, and a target it cannot follow is plain text. An `icon` value is an icon name (section 3); a name that is not one is not drawn. Both stay plain text in the data: a target is followed, never read as Markdown.
 
@@ -548,7 +538,7 @@ fields: hours
 
 **Sorting and filtering are the reader's.** A renderer may let the reader sort and filter the rows of any view on screen, and should offer the same control on every view. A renderer may offer it only on longer views, and a line chart keeps its order. It is saved nowhere, and a file never states it: a page always opens in the order its rows were written.
 
-A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the six views, is refused like any other query that cannot be drawn. A query key this section does not list is ignored, and a renderer reports it; the linter reports an error.
+A query that names a data block in another module, or `as: cards` on a data block, or an `as:` that is not one of the six views, is not drawn, and is reported, like any other query that cannot be drawn. A query key this section does not list is ignored, and a renderer reports it; the linter reports an error.
 
 **Design rules for views.** These bind anyone extending the format.
 
@@ -581,7 +571,7 @@ A query that names a data block in another module, or `as: cards` on a data bloc
 - **An `svg-regions` figure** marks each region the reader can tap as a shape with `class="rg"` and a `data-r` attribute naming the region id. Every other shape in the figure is drawn as a plain outline, and the renderer styles both; a figure needs no styling of its own.
 - **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
 - Every `svg` string is sanitized before drawing.
-- **Colours are tone names.** A colour in widget data is a **tone name**: `warm`, `green`, `amber`, `slate` or `teal`, exactly as written. The renderer draws the tone in the active theme's colours, so a widget looks right in every theme. `green`, `amber` and `warm` are the colours the three tones `good`, `warn` and `bad` use (section 6); `slate` and `teal` have no tone. (A pair of hex colours, `{ "tint": "#…", "deep": "#…" }`, is still read and drawn exactly as given.)
+- **Colours are colour names.** A colour in widget data is a **colour name**: `warm`, `green`, `amber`, `slate` or `teal`, exactly as written; anything else is no colour, and the linter reports it. The renderer draws the name in the active theme's colours, so a widget looks right in every theme. `green`, `amber` and `warm` are the colours the three tones `good`, `warn` and `bad` use (section 6); `slate` and `teal` have no tone. "Tone" means `good`, `warn` or `bad` and nothing else.
 
 **What each engine reads.** The keys of a widget's data, and nothing else is read.
 
@@ -599,12 +589,12 @@ A query that names a data block in another module, or `as: cards` on a data bloc
 
 | key | what it holds |
 | --- | --- |
-| `cells` | the grid's cells: `{ "id", "label", "note", "color" }`; `note` is shown with `describe` |
+| `cells` | the grid's cells: `{ "id", "label", "note", "color" }`; `color` is a colour name; `note` is shown with `describe` |
 | `axes` | the four edge labels: `{ "top", "left", "right", "bottom" }` |
 | `items` | what can be pressed: `{ "id", "cell": a cell id, "label" }` |
 | `copy` | the words the widget says: `h`, `p`, `stance`, `invite` |
 
-**Data blocks live inside their module's fence, in the module's own data section at the end (`> [!data|module-id]`), in the shared data section (`> [!data] Data`), or in a file the manifest names (section 3). The renderer finds fences by their language word and block id, never by a heading.
+**Data blocks live inside their module's fence, in the module's own data section at the end (`> [!data|module-id]`), or in the shared data section (`> [!data] Data`) (section 3).** The renderer finds fences by their language word and block id, never by a heading.
 
 ### Data: rows a generator wrote
 
@@ -668,8 +658,6 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 ````markdown
 > [!records] App record — do not edit below this line
 
-> [!records|rd-tides] How tides work
-
 ```booklet answers
 { "noticed": "How much the range changes over a fortnight", "biggest": 2, "mood": 3 }
 ```
@@ -689,7 +677,10 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 - `entries <activity>` holds a `repeat` activity's kept entries, each with a `ts`, identified by timestamp. `draft <activity>` holds what is typed and not yet kept. Each names the activity by the id the file gives it, in the module whose records line it sits under.
 - A choice is stored as the option's position from 1, a scale as the anchor's number. Words are shown by the renderer from the file's own lists. A string in a choice or multi answer is the reader's own option (`open`, section 5): it is shown as it was written.
 - **The whole records section sits inside `%%` … `%%`**, which hides it from Obsidian's Reading view. A block a `![[…]]` embed points to is never put inside `%%`, because an embed cannot reach a block hidden that way — only data no other part of the file references belongs there, and the records section is exactly that.
-- `sync` (where the file is kept) is a record too, preserved unchanged by any reader that doesn't understand it. (The reference renderer does not do this yet; see section 13.) The reference renderer reads no `sync` record.
+- **A reader writes back every record it read, unchanged, unless the reader changed it.** That covers an answer to a question the reader does not know (a kind from a later version) or that the design no longer has; an entry or a draft for an activity the design no longer has; a record block the reader does not understand, such as `sync` or a kind a later version adds; and a block it could not parse, which is written back exactly as it was and is still reported (section 12). A record is dropped only when the reader changes it: an answer the reader clears, a module the reader removes. A reader may write a record's JSON with other spacing, and may sort a list of entries; it changes no value.
+- **The records region** runs from the `%%` directly before the first records line (only blank lines between) to the `%%` that closes it; with no `%%` before the records line it starts at that line, and with no closing `%%` it runs to the end of the file. Only records are read inside it. Anything else there, such as a block of another kind (a `widget` or `data` block, a `> [!data]` line), prose or a line, is reported and kept as written. A file is written with one records region; records found after it (a second region, for example from two saved booklets pasted together) are read as records, exactly as if they sat in the one region, and merge under the rule below. After the closing `%%` the file is design again: it is read as design (prose, a module, a data section), reported once, and written above the region when the booklet is saved, because the records sit at the end; the region itself is read after the rest of the file, so a records line finds a module wherever the file writes it. A `%%` … `%%` comment anywhere else is design text and stays where it is. A record block outside the region is reported and not read.
+- **Blocks for one scope are read in file order, and the reader's values come last.** A later block adds what an earlier one lacks, and for a key both hold the later wins; this is the same for `answers`, `entries` (two blocks for one activity are one list) and `draft`. So a reader writes what it kept as written before its own `answers`, `entries` and `draft` blocks, and a file with a broken block fixed by hand keeps both the old values and the new ones. A records line is read by the exact id it carries, and so is an activity named in an `entries` or `draft` block. A records line whose id names no module the file has and no bare activity is reported, and the blocks under it are kept as written and not read; adding a module with that id makes them that module's. An entry is an object with a `ts`, and a block with an entry that is not is reported and kept as written.
+- `sync` (where the file is kept) is a record like any other that a reader may not understand, so it is kept as written. The reference renderer does not read it (section 13).
 
 ---
 
@@ -701,15 +692,13 @@ A regional variant (`es-AR`) is its own sibling file, no longer a layer of strin
 
 **In a booklet, `lang` is about the page around the content, not the content.** It sets the language of the renderer's own words (its menus, buttons and dialogs) and its defaults, such as how a date is written and what a new booklet is called. It does not say what language a booklet's modules are in: a booklet may hold modules written in different languages, and adding a module never changes the booklet's `lang`. A reader who has chosen a language for the renderer keeps that choice, whatever a booklet says. Any well-formed tag is allowed: a lowercase language with an optional region (`en`, `es-AR`, `de`, `pt-BR`). The renderer's own words (its buttons and dialogs) come in `en`, `fr`, `es` and `es-AR` (`es-AR` → `es` → `en`); for any other language they appear in English. A file with no `lang` is read as English, and a renderer reports it. The linter requires `lang`, rejects a tag that is not well formed, and warns when the interface has no strings for the language.
 
-A linter, given the siblings, checks that ids match and lists have equal length.
-
 ---
 
 ## 10. Obsidian and GitHub: what to expect
 
 **Obsidian: nothing here should cause a problem.** The things that would, and how they are avoided:
 - `#word` anywhere becomes a tag, so no `#` appears in Booklet syntax outside headings.
-- `[[…]]` is a link Obsidian may rewrite on rename. Booklet writes double brackets for Obsidian's own embeds, `![[#^id]]`, for heading links, `[[#Heading]]`, and for a manifest line or a link to a whole module, `[[week-2.booklet]]`.
+- `[[…]]` is a link Obsidian may rewrite on rename. Booklet writes double brackets for Obsidian's own embeds, `![[#^id]]`, for heading links, `[[#Heading]]`, and for a link to a whole module, `[[week-2.booklet]]`.
 - `%%` hides text in Reading view, and Booklet uses it only for the record wrapper. `==text==` highlights, in Obsidian and in the Booklet renderer, so a file may use it.
 - Block ids allow letters, digits and dashes only; every Booklet id follows that rule.
 - The Properties editor may rewrite front matter; the front matter is flat and readers accept any form of it.
@@ -732,7 +721,7 @@ A linter, given the siblings, checks that ids match and lists have equal length.
 
 ````markdown
 ---
-booklet: "0.12"
+booklet: "0.13"
 id: example/tides
 title: How tides work
 lang: en
@@ -792,15 +781,15 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: "0.12"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; refuse an activity's reference to another activity's answers or entries across a module boundary; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names (no image, no diagram image or style, no font), and draw a link to a module it does not hold without fetching anything, so that opening a file asks the network for nothing.
+A conforming reader must: read a file whose front matter declares `booklet: "0.13"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names (no image, no diagram image or style, no font), and draw a link to a module it does not hold without fetching anything, so that opening a file asks the network for nothing.
 
-A conforming reader should open a file marked with another `0.x` version, earlier or later (`0.3`, `0.10`, `0.13`), by its own rules, with a notice that says so first among the file's problems ("This file says booklet: 0.9. This page reads format 0.12 and has opened it as it is; some of it may not draw."), and make no promise about what such a file draws: whatever its rules do not understand is reported like any other problem. The conditions above that refuse a file (a module opened and not closed, an id used twice in a module, and the rest) still refuse it whatever the marker. A reader never changes the marker of a file it opened: it saves the file back with the marker it came with, and a module file with another `0.x` marker may be added to a booklet, with the same notice. Nothing before v1.0 is stable, so none of this is a promise that an old file keeps working.
+A conforming reader should open a file marked with another `0.x` version, earlier or later (`0.3`, `0.10`, `0.14`), by its own rules, with a notice that says so first among the file's problems ("This file says booklet: 0.9. This page reads format 0.13 and has opened it as it is; some of it may not draw."), and make no promise about what such a file draws: whatever its rules do not understand is reported like any other problem. The conditions above that refuse a file (a module opened and not closed, an id used twice in a module, and the rest) still refuse it whatever the marker. A reader never changes the marker of a file it opened: it saves the file back with the marker it came with, and a module file with another `0.x` marker may be added to a booklet, with the same notice. Nothing before v1.0 is stable, so none of this is a promise that an old file keeps working.
 
 **This document may describe things the reference renderer does not do yet.** Each is marked where it is described and listed in section 13.
 
-A conforming writer must: emit front matter with `booklet: "0.12"`, the marker `lint-booklet.py --marker` prints (a generator one version behind writes files that open with a notice and no promise); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with `booklet: "0.13"`, the marker `lint-booklet.py --marker` prints (a generator one version behind writes files that open with a notice and no promise); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read, unchanged (in value, not in spacing), unless the reader changed it (section 8); write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: "0.12"` files, and is the reference implementation of "is this file valid." A file with another `0.x` marker is checked as 0.12 and gets one warning ("this file says booklet: 0.9; the current format is 0.12, and it is checked as 0.12"); a file with no marker, or a marker that is not a `0.x` version, is an error.
+`lint-booklet.py` in this repository checks `booklet: "0.13"` files, and is the reference implementation of "is this file valid." A file with another `0.x` marker is checked as 0.13 and gets one warning ("this file says booklet: 0.9; the current format is 0.13, and it is checked as 0.13"); a file with no marker, or a marker that is not a `0.x` version, is an error.
 
 ---
 
@@ -811,16 +800,53 @@ This is a young format, and the reference renderer does not yet do everything th
 - **Editing a booklet's design in the browser.** Today, editing a file's design means a text editor, not the renderer — a deliberate, temporary scope decision so the format and the read-only renderer could be proven first.
 - **A Booklet plugin for Obsidian.** Section 6, 7 and 11 describe how one would draw widgets and figures; none exists yet.
 - **A second, independent implementation.** The renderer in this repository is the only reader so far.
-- **The manifest** (section 3). The linter check of the manifest against the file, and parts that live in another file (`[[week-2.booklet]]`, a data block in another file). The renderer reads one file and skips the manifest.
-- **`sync`**, the record of where a file is kept (section 8).
+- **The drafts below.** The manifest and the linter's sibling check are written down and not built.
+- **Reading `sync`**, the record of where a file is kept (section 8). A reader keeps the block as written; it does not read it.
 - **Showing images** (section 6). The reference renderer shows no image yet. It draws an image's alt text in a quiet box that says the image is not shown, with the address as text beneath. A later version will read images from a store its host declares.
 - **`readonly` and `describe` on a widget line** (section 7). `grid-select` honours them; `svg-regions` does not yet.
 
-None of this affects what already works: loading, reading, answering, and saving a v0.12 booklet with every question kind above, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.13 booklet with every question kind above, its widgets, and its citations.
+
+### Drafts
+
+These are described so that nothing is lost, and they are not part of the format: no reader reads them and the linter does not check them. Each stands alone, so a later edit can lift it whole into a draft appendix.
+
+**Draft: a manifest.** Right after the front matter, a `manifest` callout would list a booklet's parts in order, each `inline` or a link to the file that holds it:
+
+```markdown
+> [!manifest] How tides work
+> - module week-1: inline
+> - module week-2: [[week-2.booklet]]
+> - data body-map: [[shared/widgets.booklet#^body-map]]
+> - data: inline
+> - records: inline
+```
+
+It would be required when anything lives in another file, and recommended always, as the table of contents an editor sees first. A linter would check it against the file and report a part it names that is missing, or a part in the file it does not name. A manifest line that names a path would settle which module a link to a whole module (section 3) means; otherwise a module's file is named by its id. A whole-note embed, `![[week-2.booklet]]`, could stand in a manifest line where the module should render inline in Obsidian. `manifest` stays a kind the format knows (section 4): it takes no settings, and the reference renderer skips it and the reference linter does not check it.
+
+**Draft: parts in other files.** A part of a booklet, a module or a data block, could live in another file. Paths follow Obsidian's conventions: `[[week-2.booklet]]` (Obsidian resolves a note by name anywhere in the vault) or an ordinary Markdown link, `[Week 2](modules/week-2.booklet.md)`, relative to the booklet's own folder; a block in another file is `![[week-2.booklet#^body-map]]`. Absolute machine paths such as `~/notes/…` are outside what Obsidian (vault-relative) or a browser (no file system) can read, so they would not be supported; an unresolved link is shown as one and breaks nothing. A reference would be looked up in the module's fence, its data section, the shared data section, and then the files the manifest names. The reference renderer reads one file: a part that lives in another file is not read.
+
+**Draft: a check of translation siblings.** A translation is a sibling file (section 9). A linter, given the siblings, would check that ids match and lists have equal length. `lint-booklet.py` has no such check, and no translation exists yet.
 
 ---
 
 ## 14. Changes
+
+### Changes from v0.12
+
+- **A reader writes back every record it read** (sections 8 and 12). Answers to a question it does not know or that the design no longer has, entries and drafts of any activity, and record blocks it does not read (`sync`, a kind a later version adds) or could not parse are kept as written; before, the first save deleted them. `sync`'s "not yet" mark in section 8 is gone; reading it stays unbuilt (section 13).
+- **Bare activities are one module with no name** (sections 3, 4 and 8). Their records sit under the plain `> [!records]` line (`> [!records|<id>]` is still read when no module has that id), `parent:` places among them, and a bare activity may have the id of a module. Section 3's "refers to nothing else" is gone.
+- **The first word after the bar is the id** (section 4). Every later word is a setting, and kinds that take no id (`row`, `notice`, `manifest`, `hint`, `solution`, `group`) take settings only. Before, a bare word the kind knew as a flag (`long`, `open`, `end`, `repeat`...) could not be an id. No id is reserved: `home` is an ordinary activity id.
+- **A row closes with `> [!row|end]`** (sections 3 and 4). `> [!row end]` is no longer read; the linter says to write `> [!row|end]`.
+- **The front matter's `version` is no module's notice** (sections 2 and 3). The front matter stands in for a notice through `license`, `copyright` and `source` only.
+- **A link opens any title in its module** (section 3), as both tools already did: a heading, an activity's title, a page's name, a question's prompt or a callout's title.
+- **A reference across a module boundary is reported, not refused** (sections 3, 6 and 12). The file opens, the reference draws nothing, and the linter still reports an error.
+- **Any other front-matter key is kept as written and ignored** (section 2).
+- **The manifest and the translation-sibling check are drafts** (section 13). `manifest` stays a kind that takes no settings.
+- **Widget colours are colour names** (section 7). The hex pair `{ "tint", "deep" }` is no longer read; "tone" means `good`, `warn` or `bad` only.
+- **`group` is a kind of Booklet's own** (sections 4 and 6): the plain fold.
+
+The marker is `booklet: "0.13"`. A file marked `"0.12"` opens with a notice; change its marker to `"0.13"`, and write `> [!row|end]` where it has `> [!row end]`.
 
 ### Changes from v0.11
 

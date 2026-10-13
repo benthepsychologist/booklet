@@ -5,9 +5,9 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.12.0** — matches the project's current version (SPEC.md's
-"v0.12") now that this skill teaches v0.12, the current format. Write
-the marker in quotes, `booklet: "0.12"`: unquoted, a YAML tool reads `0.10` as
+**Skill version: 0.13.0** — matches the project's current version (SPEC.md's
+"v0.13") now that this skill teaches v0.13, the current format. Write
+the marker in quotes, `booklet: "0.13"`: unquoted, a YAML tool reads `0.10` as
 the number 0.1. A tool that writes booklets should ask the linter for the marker
 (`python3 lint-booklet.py --marker` prints the whole line) and
 not hard-code it. A file marked with another `0.x` version still opens, with a notice and no
@@ -74,7 +74,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.12"`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.13"`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -175,7 +175,7 @@ Copy this exactly and fill in the `<…>` parts.
 
 ````markdown
 ---
-booklet: "0.12"
+booklet: "0.13"
 id: "local/<booklet-slug>"
 title: "<Booklet title>"
 lang: <en|es|es-AR|fr>
@@ -239,8 +239,9 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   thing inside its fence: a `> [!notice]` callout whose lines are `key: value`
   for `license`, `copyright`, `source` and `version` (any may be left out;
   nothing else goes in it, and it takes no id). A file that holds one module and
-  no callout is covered by its front matter's `license`, `copyright`, `source`
-  and `version`, so a module file needs no change. Never invent terms nobody
+  no callout is covered by its front matter's `license`, `copyright` and
+  `source` (never `version`: the file's version is the file's), so a module
+  file needs no change. Never invent terms nobody
   gave you; copy a module's own notice, do not write one.
 - The **module's title** (after the id) is the words after the `]` on the
   same line — this is what shows on the home card, exactly as written, no
@@ -253,7 +254,8 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
 - **An activity's id** is a short prefix plus a name (`aw-notes`, `tw-learn`):
   lowercase letters, digits, dashes; unique **within its module** (two
   modules may each have an `intro`, and neither sees the other's; the same
-  holds for question, menu and block ids). Never `home` — the renderer uses that name itself.
+  holds for question, menu and block ids). The id is the **first word** after
+  the bar, so any word will do, and no id is reserved (not even `home`).
 - **Flags** (after the id, space-separated): `repeat` (kept as a dated
   entry), `repeat daily` (one entry per day), `hidden` (kept in the file, not
   offered). With none of these, the activity is answered once and edited in
@@ -284,7 +286,7 @@ and a "Mentioned on" list of the pages that link to it:
 
 ```markdown
 ---
-booklet: "0.12"
+booklet: "0.13"
 title: Harbour notes
 lang: en
 ---
@@ -415,7 +417,7 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **A question is never hidden by a file, but a page's sections fold.** v0.12
+- **A question is never hidden by a file, but a page's sections fold.** v0.13
   has no way to write "optional questions, folded shut until opened" as a
   question's own setting. If a request calls for that ("a couple more if you
   want them"), put the extra questions under their own `##` heading: on any
@@ -424,7 +426,7 @@ itself is never shown.
   opens the first section with an unanswered question. Or put the extra
   material as ordinary prose right after the question it answers, or on its
   own page after a `***`.
-- **Nothing reads another activity's answers yet.** v0.12 has no kind that
+- **Nothing reads another activity's answers yet.** v0.13 has no kind that
   draws a list of options pulled live from a different activity's own
   answers, or a tick-list of what was actually done from it (`SPEC.md`
   §13). If a request needs this, say so plainly and offer a plain `text` or
@@ -446,7 +448,7 @@ between paragraphs (`\n\n`) for a new one.
 - **A pull-quote or a note set apart** is an Obsidian-style callout:
   `> [!note] …`, `> [!tip] …`, `> [!warning] …`, or Booklet's own `diff`
   (where a guide differs from this reading), `law` (a rule as it stands) or
-  `opinion` (an author's view). `> [!group]- Title` folds reading content
+  `opinion` (an author's view), and `group`, the plain fold: `> [!group]- Title` folds reading content
   shut until opened — fine for background material nobody has to read, never
   for a question (section 6).
 - **A citation is an ordinary footnote** — `[^id]` in the text, and its
@@ -469,7 +471,7 @@ between paragraphs (`\n\n`) for a new one.
   If they gave a reference and no quote, write the note as that reference, as
   given, with no quote and no `Verified`, and never make a quote up: the
   panel shows it as a plain reference, its words as written, with no check. Put nothing else in a note (`*` stays as typed).
-- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the activity holding that heading (an activity's own title counts) on the right page; the linter warns when no heading in the file matches.
+- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a page's name, a question's prompt or a callout's title), on the right page; the linter warns when no heading in the file matches.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
   module**. It is read-only and takes no answer. The kind goes on the fence
@@ -743,8 +745,8 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 ### Layout and look (optional, format 0.5)
 
-- **Rows.** `> [!row]` … `> [!row end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`---`), an activity line or a module fence.
-- **Widget colours** are tone names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, not hex colours, so a widget reads in every theme.
+- **Rows.** `> [!row]` … `> [!row|end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`---`), an activity line or a module fence.
+- **Widget colours** are colour names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, never hex colours (they are no colour), so a widget reads in every theme.
 - **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`, `style`) is only for a booklet that has a reason to look different. `style: teaching` (soft tiles with pictures, the default) or `style: briefing` (solid tiles with icons, for reading at a glance) is the booklet's look, and holds whatever colours the reader picks. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
 
 ## 10. Validation
@@ -757,7 +759,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.12 file is written in one language` | add it |
+| no `lang:` | `front matter has no `lang:` — a v0.13 file is written in one language` | add it |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` only follows `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -789,7 +791,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.12"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.13"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
@@ -807,7 +809,7 @@ the renderer. Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.12"
+booklet: "0.13"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -843,7 +845,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: "0.12"
+booklet: "0.13"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -904,7 +906,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.12"
+booklet: "0.13"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -940,7 +942,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ````markdown
 ---
-booklet: "0.12"
+booklet: "0.13"
 id: "local/reminders-report"
 title: "Reminders: SMS or email?"
 lang: en
@@ -1022,7 +1024,7 @@ flowchart LR
 ## 12. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.12 file, one language, its
+same way as any other booklet above — one v0.13 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

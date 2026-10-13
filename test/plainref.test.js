@@ -14,7 +14,7 @@ global.document.createElement=tag=>{const n=mk0(tag);
 const API={};
 eval(src+`
 ;Object.assign(API,{render,parseFile,applyParsed,getPanel:()=>citePanelEl,getTip:()=>citeTipEl,getBook:()=>BOOK,setScreen:v=>{screen=v},
-  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="home";lang="en";}});`);
+  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="@home";lang="en";}});`);
 const A=API;
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const textOf=n=>n==null?"":typeof n==="string"?n:(n._text||"")+" "+(n.children||[]).map(textOf).join(" ");
@@ -22,7 +22,7 @@ const flat=n=>textOf(n).replace(/\s+/g," ").trim();
 const findAll=(n,pred,out=[])=>{if(n&&typeof n==="object"){if(pred(n)) out.push(n);(n.children||[]).forEach(k=>findAll(k,pred,out));}return out;};
 const hasClass=(n,c)=>!!(n&&n.attrs&&typeof n.attrs.class==="string"&&n.attrs.class.split(/\s+/).includes(c));
 const byClass=(c,root)=>findAll(root||global.document.getElementById("main"),n=>hasClass(n,c));
-const FM='---\nbooklet: "0.12"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
 const FILE=FM+`> [!module|m] M\n\n> [!activity|a] A\n\nA plain one.[^ref] A quoted one.[^q] A bare quote.[^bare] A missing one.[^gone]\n\n`
  +`[^ref]: Northfield Health reminder trial, internal report, 2024.\n\n`
  +`[^q]: *The Harbour Tide Atlas*, 2nd edition (2019), p. 12: "The tide rises and falls twice in each lunar day." Verified 2026-09-20.\n\n`
