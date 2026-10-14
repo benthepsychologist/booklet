@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-hHk1vd/qlQQumaT+IYVmxVhVOheFx6/J04o+shuQrB0=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-ebVPVU+g4cDI1kIEbT2iegCyzVFlbkKx7i1kSDZH9ig=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2992,15 +2992,20 @@ function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return tr
    one outside every module, and X and every activity its records name (an entry's or a draft's activity) all live in
    exactly one scope of the new body, which may be "" (the activities outside every module). Anything else stays as
    written: a module that still exists keeps its records even if some of its activities moved, and an activity whose
-   records name activities now in different modules is not followed. It is applied to this copy and to the base, from
-   the new body (T, the file's design) alone, so it follows a move whether or not the store had records under X yet (a
-   first answer here, unsent when the generator moved the activity, lands in the new module). Returns [here, base]. */
+   records name activities now in different modules is not followed. A module line with no id is no module to the
+   store (it reads the line), so such a module, and its activities, count for nothing here either. It is applied to
+   this copy and to the base, from the new body (T, the file's design), so it follows a move whether or not the store
+   had records under X yet (a first answer here, unsent when the generator moved the activity, lands in the new
+   module); but the activities X's records name are counted from the base alone, the records the store held, since
+   that is what the store decided from: work only this browser holds (an entry the store never got) must not make it
+   refuse a move the store made. Work under a scope the move leaves without a module is kept by keepUnowned.
+   Returns [here, base]. */
 function followMoves(here,base,T){const mods=new Set(),acts=new Map();
-  (isObj(T)&&Array.isArray(T.modules)?T.modules:[]).filter(isObj).forEach(m=>{const sc=scopeOfModule(m);if(sc) mods.add(sc);
+  (isObj(T)&&Array.isArray(T.modules)?T.modules:[]).filter(m=>isObj(m)&&!m.noId).forEach(m=>{const sc=scopeOfModule(m);if(sc) mods.add(sc);
     activitiesOf(m).forEach(a=>{const id=shortId(a.id);if(!acts.has(id)) acts.set(id,new Set());acts.get(id).add(sc);});});
-  /* each scope the two copies hold records under, with the activities those records name */
-  const named=new Map();[here,base].forEach(r=>flatWork(r).forEach((v,k)=>{const p=k.split(SEP),sc=p[0]==="a"?p[1]:scopeOfAddr(p[1]);
-    if(!named.has(sc)) named.set(sc,new Set([sc]));if(p[0]!=="a") named.get(sc).add(shortId(p[1]));}));
+  /* each scope the two copies hold records under, with the activities the base's records there name */
+  const named=new Map();[[here,false],[base,true]].forEach(([r,names])=>flatWork(r).forEach((v,k)=>{const p=k.split(SEP),sc=p[0]==="a"?p[1]:scopeOfAddr(p[1]);
+    if(!named.has(sc)) named.set(sc,new Set([sc]));if(names&&p[0]!=="a") named.get(sc).add(shortId(p[1]));}));
   const moves=new Map();
   named.forEach((want,x)=>{if(x===""||mods.has(x)||!acts.has(x)||acts.get(x).has("")) return;
     if(![...want].every(a=>acts.has(a))) return;
@@ -3632,6 +3637,8 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       if(mod) refuse(P.moduleNested(where,it.id,mod.id));
       if(!it.id) problems.push(P.moduleNoId(where));
       claimModule(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;
+      /* named after its place, not by its line: a reader of the line itself (the box's storefile) sees no module here */
+      if(!it.id) mod.noId=true;
       if(it.set.icon) mod.icon=it.set.icon;return;}
     if(k==="activity"){if(!it.id) problems.push(P.activityNoId(where));newActivity(it,it.title,it.line);lastQ=null;return;}
     if(QUESTION_KINDS.has(k)){
@@ -7380,7 +7387,9 @@ function loadText(text){const t=STRINGS[lang].ui;const msg=document.getElementBy
 function finishLoad(R,via,keep){const mine=!!langPref();
   applyParsed(mine?{...R,lang:null}:R);
   /* `keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
-  if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;}
+  if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;
+    /* work for a scope the design has no module for, kept as written with the file's own such records (keepUnowned) */
+    if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET) BOOK.raw={...(BOOK.raw||{}),records:[...((BOOK.raw||{}).records||[]),...keep.records]};}
   const at=startScreen();
   /* the other-marker sentence stands apart from the problems: only real problems are counted */
   const marker=R.markerNote?humanMsg(R.markerNote):"",list=(R.unread||[]).filter(m=>m!==R.markerNote).map(humanMsg);
@@ -7492,7 +7501,7 @@ function hostAccept(){if(!newerWaiting()) return;
   const R=parseFile(text);
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
   /* the same rule as a newer file a link found (acceptWork): what the reader typed since the host's last save stays */
-  const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries});}
+  const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records});}
 /* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
    generator owns the body and the reader owns the records (the store contract).
    - A store booklet: the new file's body is taken, with the work acceptWork gives (the one rule for reading a newer
@@ -7507,7 +7516,7 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   if(N.via.store===false){const r=addModuleText(N.text);
     if(!r.ok){toast(humanMsg(r.problems.join(" ")));render();return;}
     saveLocal();render();toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,""))));}
-  else{const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries});}
+  else{const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records});}
   if(currentId!==id) return;
   if(currentEntry) currentEntry.storeSeen=N.seen;
   changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=N.seen;});}
@@ -7522,7 +7531,30 @@ const acceptWork=R=>{if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};
   if(!BASE) return withFileWork(R);
   const file=recsOfParse(R),[here,base]=followMoves(clone({answers:STATE.answers||{},entries:STATE.entries||{},drafts:DRAFTS.custom||{}}),BASE,R.template);
   const m=mergeWork(here,base,file);
-  return {S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}};};
+  return keepUnowned({S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}},R.template);};
+/* Work the merge leaves under a scope the new design has no module for (a move neither this page nor the store
+   followed, or a module the generator removed): this page would never write it, so it is written back as records
+   blocks kept as written under that scope's records line, the way the file's own records for a missing module are kept
+   (SPEC section 8, "kept as written"), and it survives exactly as they do. The work then lives in the design's kept
+   records (BOOK.raw.records, by finishLoad) and no longer in STATE, so it is written once. Only what the merge kept
+   from here reaches it: what was unchanged here is already in the file's kept records. Returns {S, D, records}. */
+function keepUnowned(W,T){const own=scopesOfBook(T),heads=new Map(),by=new Map(),recs=[];
+  ((isObj(T)&&isObj(T.raw)&&Array.isArray(T.raw.records))?T.raw.records:[]).forEach(r=>{if(isObj(r)&&r.foreign&&!heads.has(r.scope)) heads.set(r.scope,r.foreign);});
+  const S={answers:nullMap(),entries:nullMap()},D={custom:nullMap()};
+  const of=sc=>{if(!by.has(sc)) by.set(sc,{answers:nullMap(),entries:[],drafts:[]});return by.get(sc);};
+  const A=W.S.answers||{},E=W.S.entries||{},C=W.D.custom||{};
+  Object.keys(A).forEach(sc=>{if(own.has(sc)){S.answers[sc]=A[sc];return;}
+    Object.keys(A[sc]||{}).forEach(k=>{if(!emptyWork(A[sc][k])) of(sc).answers[k]=A[sc][k];});});
+  Object.keys(E).forEach(at=>{const sc=scopeOfAddr(at);if(own.has(sc)){S.entries[at]=E[at];return;}
+    const items=(Array.isArray(E[at])?E[at]:[]).filter(x=>isObj(x)&&x.ts);if(items.length) of(sc).entries.push([shortId(at),items]);});
+  Object.keys(C).forEach(at=>{const sc=scopeOfAddr(at);if(own.has(sc)){D.custom[at]=C[at];return;}
+    const work=Object.fromEntries(Object.entries(C[at]||{}).filter(([,v])=>!emptyWork(v)));if(Object.keys(work).length) of(sc).drafts.push([shortId(at),work]);});
+  const fence=(info,body)=>"```"+info+"\n"+body+"\n```";
+  by.forEach((b,sc)=>{const foreign=heads.get(sc)||"> [!records|"+sc+"]",keep=text=>recs.push({scope:sc,foreign,text});
+    if(Object.keys(b.answers).length) keep(fence("booklet answers",JSON.stringify(b.answers,null,1)));
+    b.entries.forEach(([id,items])=>keep(fence("booklet entries "+id,"{\"items\": [\n"+items.map(e=>JSON.stringify(e)).join(",\n")+"\n]}")));
+    b.drafts.forEach(([id,work])=>keep(fence("booklet draft "+id,JSON.stringify(work))));});
+  return {S,D,records:recs};}
 /* An answer that names its change (hostSet): a "saved" for the latest change sent for that booklet makes the records that
    change sent its base, since the store now holds exactly them; either answer settles that change and those sent before
    it for the same booklet. The booklet need not be open (a change told to the host as it was left). */

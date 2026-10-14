@@ -504,7 +504,36 @@ const THREE=FM("Three")+"> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!
  chk("refused move setup: the store's records stay under the old module",/records\|a/.test(ROUTES[U]));
  await A.openLink("#/open/sp.md");press(/Read the newer file/);
  chk("a move the store's rule refuses is not followed here either: nothing is put in the new modules",ans(A,"n","q")===undefined&&!((A.DRAFTS.custom||{})["c/b"]||{}).what,JSON.stringify(A.STATE.answers));
- await sleep(800);chk("...and the store's records under the old module are kept as written",/records\|a/.test(ROUTES[U])&&/q saved|q edited/.test(ROUTES[U]));}
+ chk("...and the unsent edit, under a scope no module owns now, is written back kept as written under the old records line",/> \[!records\|a\][\s\S]*q edited, unsent/.test(A.toMarkdown())&&ans(A,"a","q")===undefined,A.toMarkdown().split("%%")[1]);
+ await sleep(800);
+ chk("...and the store then holds it beside its own records kept as written (the saved answer and the draft)",/records\|a/.test(ROUTES[U])&&/q edited, unsent/.test(ROUTES[U])&&/q saved/.test(ROUTES[U])&&/a draft for b/.test(ROUTES[U]),split(ROUTES[U])[1]);
+ A.closeBooklet();await A.openLink("#/open/sp.md");
+ chk("...and the next open draws the file, with nothing written twice",!offer()&&(ROUTES[U].match(/q edited, unsent/g)||[]).length===1&&(A.toMarkdown().match(/q edited, unsent/g)||[]).length===1);}
+// p20's shape: the store moves `a` to `n` deciding from its own records; an entry only this browser holds, for an
+// activity that now lives elsewhere, must not make the renderer refuse that move
+{const V1=FM("Split")+"> [!module|a] Alone\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!activity|b repeat] Log\n\n> [!text|w] What happened?\n\n> [!module|a end] End\n";
+ const V2=FM("Split")+"> [!module|n] New home\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|n end] End\n\n> [!module|p] Log home\n\n> [!activity|b repeat] Log\n\n> [!text|w] What happened?\n\n> [!module|p end] End\n";
+ const U=STORE+"p20.md";const A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=V1;
+ await A.openLink("#/open/p20.md");await sleep(600);typeIn(A,"a/a","answer, saved");await sleep(1200);
+ down=true;typeIn(A,"a/b","UNSENT LOG ENTRY");await sleep(500);A.finalizeEntry("a/b");await sleep(1200);A.closeBooklet();down=false;
+ chk("p20 setup: the store's records under `a` name only the answer",/records\|a/.test(ROUTES[U])&&!/UNSENT LOG ENTRY/.test(ROUTES[U]));
+ /* the store, from its own records (one answers block), moves `a` to `n` */
+ ROUTES[U]=merge(V2,ROUTES[U]).replace(/> \[!records\|a\][^\n]*/,"> [!records|n] New home");
+ await A.openLink("#/open/p20.md");press(/Read the newer file/);
+ chk("p20 the renderer makes the store's move too: the saved answer is in `n`",ans(A,"n","q")==="answer, saved",JSON.stringify(A.STATE.answers));
+ chk("p20 ...and the entry only this browser held is kept and written",/UNSENT LOG ENTRY/.test(A.toMarkdown()),JSON.stringify(Object.keys(A.STATE.entries)));
+ await sleep(800);chk("p20 ...and it reaches the file",/UNSENT LOG ENTRY/.test(ROUTES[U]));}
+// a module line with no id is no module to the store (it reads the line): the renderer does not move work into it either
+{const V1=FM("NoId")+"> [!module|a] Alone\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|a end] End\n";
+ const V2=FM("NoId")+"> [!module] New home\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|module-1 end] End\n";
+ const U=STORE+"noid.md";const A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=V1;
+ await A.openLink("#/open/noid.md");await sleep(600);typeIn(A,"a/a","q saved");await sleep(1200);
+ down=true;typeIn(A,"a/a","q edited, unsent");await sleep(1200);A.closeBooklet();down=false;
+ /* storefile sees activity `a` outside every module there (the line has no id), so it leaves `> [!records|a]` as written */
+ ROUTES[U]=merge(V2,ROUTES[U]);
+ await A.openLink("#/open/noid.md");press(/Read the newer file/);
+ chk("a module line with no id: no work is moved into the module the page named after its place",ans(A,"module-1","q")===undefined,JSON.stringify(A.STATE.answers));
+ chk("...and the unsent edit is kept as written under the old records line, as the store keeps its own",/> \[!records\|a\][\s\S]*q edited, unsent/.test(A.toMarkdown()));}
 
 /* ---- the second review's N2: a change in the last half second before the tab closes is sent ---- */
 {const U=STORE+"w.md";const A=boot();const h=host(A);ROUTES[U]=booklet("Week");
