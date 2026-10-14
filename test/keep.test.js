@@ -55,7 +55,7 @@ section("IndexedDB is the store: read once at start, nothing drawn before");
  chk("local storage holds nothing of the renderer's",lsKeys().length===0,lsKeys().join());
  const B=reload();await started(B);
  chk("after a reload the list holds the booklet",listIds(B).join()===id);
- B.openFromList(id);
+ await B.openFromList(id);
  chk("and opening it finds the answer whole",B.answersIn("").q==="typed into the store",B.answersIn("").q);
  chk("lsGet gives the list whole, as text, as local storage did",JSON.parse(B.lsGet(B.LIB_KEY)).entries[0].id===id);
 
@@ -73,13 +73,17 @@ section("IndexedDB is the store: read once at start, nothing drawn before");
  seg=IDB.log.slice(mark);txs=seg.filter(x=>x.tx==="readwrite").length;puts=seg.filter(x=>x.put==="booklet.b."+id&&x.store==="kv").length;
  chk("changes made while a transaction is on its way wait for it, and go as one more (two in all)",txs===2&&puts===2,txs+" transactions, "+puts+" puts");
  chk("the store ends with the newest",/on its way 9/.test(keptText(id)));
- mark=IDB.log.length;IDB.ctl.failNext="UnknownError";
+ mark=IDB.log.length;IDB.ctl.failNext="DataError";
  B.answersIn("").q="lost by the store";B.saveLocal();await idle(B);
  chk("a transaction that fails lands nothing: the store still holds the copy before it",/on its way 9/.test(keptText(id))&&!/lost by the store/.test(keptText(id)));
  chk("its change stays in memory and in the queue",/lost by the store/.test(B.lsGet("booklet.b."+id))&&B.KEEP.pending.has("booklet.b."+id));
  chk("the reader is told the store failed, not that the browser is in private mode",B.KEEP.problem==="failed"&&/could not save your latest changes/.test(toast())&&!/private mode/.test(toast()),toast());
  B.answersIn("").q="the next change";B.saveLocal();await idle(B);
- chk("the next change writes it, and the problem is over",/the next change/.test(keptText(id))&&B.KEEP.problem==="",B.KEEP.problem);}
+ chk("the next change writes it, and the problem is over",/the next change/.test(keptText(id))&&B.KEEP.problem==="",B.KEEP.problem);
+ /* the connection itself lost (as Safari loses it after a while in the background, or closed for a newer version) */
+ IDB.ctl.kill();
+ B.answersIn("").q="written after the connection was lost";B.saveLocal();await sleep(50);await idle(B);
+ chk("a lost connection is opened again, and what failed is written",/after the connection was lost/.test(keptText(id))&&B.KEEP.problem==="",B.KEEP.problem+" "+keptText(id).slice(0,60));}
 
 section("the store's own limit: QuotaExceededError from IndexedDB");
 {fresh();
@@ -92,13 +96,13 @@ section("the store's own limit: QuotaExceededError from IndexedDB");
  A.closeBooklet();A.render();
  const words=P.texts(P.main());
  chk("\"Your booklets\" says so too, and not private mode",/run out of room/.test(words)&&!/private mode/.test(words),words.slice(0,300));
- chk("for the visit nothing is lost: both booklets are listed and the big one opens with its answer",listIds(A).length===2&&(A.openFromList(big),A.answersIn("").q==="the big one"));
+ chk("for the visit nothing is lost: both booklets are listed and the big one opens with its answer",listIds(A).length===2&&(await A.openFromList(big),A.answersIn("").q==="the big one"));
  chk("the store holds the last state it confirmed: the small booklet, whole, and no half of the big one",/the small one/.test(keptText(small))&&!IDB.kv("booklet.library.v1#"+big)&&!IDB.kv("booklet.b."+big));
  A.closeBooklet();
  A.removeBooklet(small);await idle(A);
  chk("a removal still lands when the store is full (removals go first)",!IDB.kv("booklet.b."+small),IDB.keys().join());
  IDB.ctl.quota=null;
- A.openFromList(big);A.answersIn("").q="the big one, with room";A.markDirty();await idle(A);
+ await A.openFromList(big);A.answersIn("").q="the big one, with room";A.markDirty();await idle(A);
  chk("with room again the next change writes everything waiting, and the notice goes",/with room/.test(keptText(big))&&A.KEEP.problem===""&&!!IDB.kv("booklet.library.v1#"+big));
  A.closeBooklet();A.render();
  chk("\"Your booklets\" no longer says it is full",!/run out of room/.test(P.texts(P.main())));}
@@ -118,11 +122,11 @@ for(const name of ["0.12.0","0.13.0","0.13.1-pre"]){
   chk(name+": local storage then keeps only the theme's mirror",lsKeys().join()==="booklet.ui.theme",lsKeys().join());
   const B=reload();await started(B);
   const by=t=>B.readLib().entries.find(e=>e.title===t);
-  B.openFromList(by("Studio project board").id);
+  await B.openFromList(by("Studio project board").id);
   const log=(B.STATE.entries||{})["board/log"]||[];
   chk(name+": the board's kept entry is there",log.some(e=>e.what==="Seed "+name+": kept entry"),JSON.stringify(log).slice(0,200));
   chk(name+": and its draft",((B.DRAFTS.custom||{})["board/log"]||{}).what==="Seed "+name+": a draft not yet kept");
-  B.closeBooklet();B.openFromList(by("A garden week").id);
+  B.closeBooklet();await B.openFromList(by("A garden week").id);
   chk(name+": the garden week's answer is there",B.answersIn("").note==="Seed "+name+": the garden note",B.answersIn("").note);
   B.closeBooklet();
   chk(name+": the blank booklet is listed",B.readLib().entries.length===3);}
@@ -144,10 +148,10 @@ section("a copy already made is never made again over newer work");
  const A=P.boot();await started(A);await idle(A);
  const g=A.readLib().entries.find(e=>e.title==="A garden week").id;
  chk("the copy landed, and local storage still holds what was copied",IDB.kv("booklet.b."+g)===seed["booklet.b."+g]&&LS["booklet.b."+g]===seed["booklet.b."+g]);
- A.openFromList(g);A.answersIn("").note="newer, typed after the move";A.markDirty();await idle(A);
+ await A.openFromList(g);A.answersIn("").note="newer, typed after the move";A.markDirty();await idle(A);
  global.localStorage.removeItem=orig;
  const B=reload();await started(B);await idle(B);
- B.openFromList(g);
+ await B.openFromList(g);
  chk("the next start does not copy the old leftover over the newer answer",B.answersIn("").note==="newer, typed after the move",B.answersIn("").note);
  chk("and it removes the leftovers from local storage",lsKeys().join()==="booklet.ui.theme",lsKeys().join());}
 
@@ -170,7 +174,7 @@ for(const how of ["refuse","throwOpen"]){
   chk(how+": every booklet is listed, and local storage is untouched",listIds(A).length===3&&Object.keys(seed).filter(k=>k!=="_about").every(k=>LS[k]===seed[k]));
   A.render();const w=P.texts(P.main());
   chk(how+": \"Your booklets\" says the browser would not open its larger store, and nothing about private mode",/(n’a pas voulu ouvrir son grand espace|would not open its larger store)/.test(w)&&!/(private mode|navigation privée)/.test(w),w.slice(0,400));
-  const g=A.readLib().entries.find(e=>e.title==="A garden week");A.openFromList(g.id);A.answersIn("").note="kept in local storage";A.markDirty();A.flushSave();
+  const g=A.readLib().entries.find(e=>e.title==="A garden week");await A.openFromList(g.id);A.answersIn("").note="kept in local storage";A.markDirty();A.flushSave();
   chk(how+": a change is written to local storage, as before",/kept in local storage/.test(LS["booklet.b."+g.id]||""));
   chk(how+": nothing reached IndexedDB",IDB.keys().length===0);}
 {fresh();IDB.ctl.refuse="InvalidStateError";
@@ -196,14 +200,65 @@ section("two tabs: a stale tab clobbers no more than the last write");
  A.closeBooklet();B.closeBooklet();
  await B.keepRefresh();
  chk("B, back in view, reads the store again and lists A's booklet",listIds(B).includes(a));
- A.openFromList(a);A.answersIn("").q="A's newer answer";A.markDirty();await idle(A);A.closeBooklet();
- await B.keepRefresh();B.openFromList(a);
- chk("B, back in view, opens A's booklet with A's newer answer, not the copy it read before",B.answersIn("").q==="A's newer answer",B.answersIn("").q);
+ await A.openFromList(a);A.answersIn("").q="A's newer answer";A.markDirty();await idle(A);A.closeBooklet();
+ await B.openFromList(a);
+ chk("B opens A's booklet with A's newer answer, not the copy it read before: Open reads the store again first, with no focus needed",B.answersIn("").q==="A's newer answer",B.answersIn("").q);
  B.closeBooklet();await idle(B);
  await A.keepRefresh();const gone=A.removeBooklet(b);await idle(A);
- B.openFromList(a);B.closeBooklet();await idle(B);
+ /* B, not back in view, still lists b, and changes another entry (a rename from its list writes only that entry) */
+ B.renameStored(a,"Renamed in B");await idle(B);
  const D=P.boot();await started(D);
  chk("a booklet removed in A does not come back when B, which still lists it, changes another entry",gone===true&&!listIds(D).includes(b)&&listIds(D).includes(a),gone+" "+listIds(D).join());}
+
+section("two tabs: a write that failed does not later overwrite another tab's");
+{fresh();
+ const A=P.boot();await started(A);
+ A.loadText(BARE("Shared"));const x=A.currentId;A.answersIn("").q="first";A.markDirty();await idle(A);A.closeBooklet();
+ const B=P.boot();await started(B);
+ await A.openFromList(x);await idle(A);IDB.ctl.failNext="DataError";A.answersIn("").q="A's, never written";A.saveLocal();await idle(A);
+ chk("A's write failed and waits in A's queue",A.KEEP.failed.has("booklet.b."+x)&&A.KEEP.pending.has("booklet.b."+x));
+ await B.openFromList(x);B.answersIn("").q="B's, written after";B.markDirty();await idle(B);
+ await A.keepRefresh();
+ A.lsSet("booklet.ui.pagesMenu","open");await idle(A);
+ chk("A, back in view, takes B's write, and its next change does not write its failed one over it",/B's, written after/.test(keptText(x)),keptText(x).slice(0,80));}
+
+section("leaving with a write on its way: what is handed over holds a whole state");
+{fresh();
+ const A=P.boot();await started(A);
+ A.loadText(BARE("Copy and base"));const x=A.currentId;A.answersIn("").q="C0";A.markDirty();await idle(A);
+ A.lsSet("booklet.base."+x,"B0");await idle(A);
+ IDB.ctl.hold=true;IDB.ctl.failNext="DataError";
+ A.answersIn("").q="C1";A.saveLocal();await sleep(10);
+ /* a host confirms: the base moves, with no save waiting (the copy is already on its way) */
+ A.lsSet("booklet.base."+x,"B1");
+ P.closePages();IDB.ctl.kill();IDB.ctl.release();await sleep(60);
+ const B=reload();await started(B);
+ chk("the first transaction failed, and the one handed over as the page went holds the copy with the base, so the base is not ahead of it",/"q":"C1"/.test(keptText(x))&&IDB.kv("booklet.base."+x)==="B1",keptText(x).slice(0,60)+" / "+IDB.kv("booklet.base."+x));}
+
+section("before the store is read: a dropped file waits; a full local storage is still moved; others' keys stay");
+{fresh();
+ const A=P.boot();await started(A);A.loadText(BARE("Already kept"));await idle(A);
+ const B=reload();
+ B.loadText(BARE("Dropped while the store was read"));
+ chk("a file dropped before the store is read waits (nothing is drawn or kept yet)",B.KEEP.mode==="wait"&&!B.currentId);
+ await started(B);await idle(B);
+ const titles=B.readLib().entries.map(e=>e.title).sort().join(" | ");
+ chk("once the store is read it opens, beside every booklet already kept",titles==="Already kept | Dropped while the store was read",titles);}
+{fresh();const seed=SEED("0.13.0");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
+ LS["booklet.someone-else"]="a key of the same prefix that is not the renderer's";
+ const orig=global.localStorage.setItem;
+ global.localStorage.setItem=(k,v)=>{throw Object.assign(new Error("full"),{name:"QuotaExceededError"});};
+ const A=P.boot();await started(A);await idle(A);
+ chk("local storage too full to take a write is still read, and everything in it moved",listIds(A).length===3&&Object.keys(seed).filter(k=>/^booklet\.b\./.test(k)).every(k=>IDB.kv(k)===seed[k]),listIds(A).join());
+ chk("and the store says nothing is wrong",A.KEEP.problem===""&&A.storageOk===true,A.KEEP.problem);
+ global.localStorage.setItem=orig;
+ chk("the moved keys leave local storage; a key that is not the renderer's stays",!LS["booklet.library.v1"]&&LS["booklet.someone-else"]==="a key of the same prefix that is not the renderer's"&&IDB.kv("booklet.someone-else")===undefined,lsKeys().join());}
+{fresh();IDB.ctl.refuse="SecurityError";
+ const orig=global.localStorage.setItem;
+ global.localStorage.setItem=(k,v)=>{throw Object.assign(new Error("full"),{name:"QuotaExceededError"});};
+ const A=P.boot();await started(A);A.render();
+ chk("without IndexedDB, local storage that is full at start says it is full, not private mode",A.KEEP.problem==="full"&&/run out of room/.test(P.texts(P.main()))&&!/private mode/.test(P.texts(P.main())),A.KEEP.problem);
+ global.localStorage.setItem=orig;}
 
 section("a host before the store is read; the mirrors");
 {fresh();P.place("http:","fleet");LS["booklet.host.allowed"]="fleet: store";
@@ -221,9 +276,12 @@ section("a host before the store is read; the mirrors");
  LS["booklet.host.allowed"]="another label";
  const B=reload();const h2=B.BookletApi.host({label:"fleet: store"});
  chk("a mirror that disagrees decides only until the store is read",h2.state()==="waiting");
- await started(B);
- chk("the store holds the truth: the host is active, and the mirror is written again from the store",h2.state()==="active"&&LS["booklet.host.allowed"]==="fleet: store");
- B.lsSet(B.THEME_KEY,"night");await idle(B);
+ await started(B);await idle(B);
+ chk("the reader's yes is kept only where the store and its mirror agree: here it is forgotten, and the host asks again",h2.state()==="waiting"&&LS["booklet.host.allowed"]===undefined&&IDB.kv("booklet.host.allowed")===undefined,h2.state());
+ B.lsSet(B.HOST_KEY,"fleet: store");await idle(B);delete LS["booklet.host.allowed"];
+ const B2=reload();const h3=B2.BookletApi.host({label:"fleet: store"});await started(B2);await idle(B2);
+ chk("a Stop made where only local storage was written (its mirror gone) is not undone by the store",h3.state()==="waiting"&&IDB.kv("booklet.host.allowed")===undefined,h3.state());
+ B2.lsSet(B2.THEME_KEY,"night");await idle(B2);
  chk("the theme is kept in the store and in its mirror",IDB.kv("booklet.ui.theme")==="night"&&LS["booklet.ui.theme"]==="night");
  delete LS["booklet.ui.theme"];reload();await sleep(30);
  chk("a mirror local storage lost is written again from the store",LS["booklet.ui.theme"]==="night");
@@ -239,14 +297,14 @@ section("leaving the page: what is still queued is handed over as the page goes"
  /* pagehide runs, then the page is gone: no callback reaches it again, and it can start nothing more */
  P.closePages();IDB.ctl.kill();
  IDB.ctl.release();await sleep(60);
- const B=reload();await started(B);B.openFromList(id);
+ const B=reload();await started(B);await B.openFromList(id);
  chk("a change made while a write was on its way, the page left at once, is in the store (handed over at pagehide)",B.answersIn("").q==="typed just before the page went",B.answersIn("").q);
  IDB.ctl.hold=true;
  B.answersIn("").q="on its way, and lost";B.saveLocal();await sleep(10);
  B.answersIn("").q="handed over as the page went, and lost";B.markDirty();
  IDB.ctl.failAll="UnknownError";
  P.closePages();IDB.ctl.kill();IDB.ctl.release();await sleep(60);IDB.ctl.failAll=null;
- const C=reload();await started(C);C.openFromList(id);
+ const C=reload();await started(C);await C.openFromList(id);
  chk("if what was handed over cannot land, the store holds the last state it confirmed",C.answersIn("").q==="typed just before the page went",C.answersIn("").q);}
 
 section("Clear everything: the store and any local storage leftover");
