@@ -9,7 +9,7 @@ This repository holds the format spec (`SPEC.md`), the reference renderer
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
-## Current state — renderer 0.13.1, storage (item `v013-renderer-storage`; pull request #PR)
+## Current state — renderer 0.13.1, storage (item `v013-renderer-storage`; pull request #54)
 
 The renderer's library moves from local storage to IndexedDB, so a booklet of any realistic size can be kept. The box's 3.4 MB dashboard made a kept copy of about 6.8 million characters at its first keystroke (on 0.13.0, which the box serves), more than local storage's cap of about 5.2 million characters for a whole site (Chromium, measured); one `QuotaExceeded` then switched saving off for the visit, and the notice blamed private mode. The format is unchanged; `CHANGES.md` lists what a reader notices (under v0.13.1).
 
@@ -26,6 +26,7 @@ The renderer's library moves from local storage to IndexedDB, so a booklet of an
 - **Drawing:** every screen of the 205 fixtures and examples (1,090 screens) draws the same tree as `cf07bc4`'s in the recording DOM, with the store in local storage and in IndexedDB (the shim), once the random ids are set aside (the adapter draws one random number at load, which shifts them).
 - **Size:** `booklet.html` 3,774,786 bytes, 27,957 more than `cf07bc4` (3,746,829): script code 16,420 more (3,829 of it the new strings in four languages), comments 11,276 more, the head's comment the rest; the libraries are untouched.
 - **The box's host script** (`booklet-hub/tools/booklet-serve/booklet-host.js`) reads and writes none of the renderer's keys: it calls `Booklet.host`, `onChange`, `saved` / `failed` and `fileChanged`, and stores nothing.
+
 ## Current state — renderer 0.13.1, consolidations (item `v013-renderer-consolidations`, review D19: R5, R6, R7, R9, R14)
 
 Each thing the renderer knows lives in one shape and is worked out in one place. The format is unchanged; one commit per proposal.
