@@ -268,10 +268,14 @@ Reading the newer file takes its body, with one rule for the records whether a l
 module link instead updates the module in place, as Add a module does). With a host registered, the two are merged place by
 place against the base: what changed here and not in the file is this browser's; what changed in the file and not here is
 the file's (another device's newer answer, an entry it added); what changed on both is this browser's, since the reader is
-looking at it and pressed Read. An entry deleted here stays deleted unless the file changed it, and then it stays, changed. An
-answer a generator moved to another module, with the store moving its records, is followed: an edit made here under the old
-module lands in the new one, unless the move was into or out of the activities outside every module, or could have gone to
-two modules, in which case that edit stays under the old module, unused. A kept copy with no base (one an older release
+looking at it and pressed Read, except that something removed here (an answer cleared, an entry deleted, a draft
+emptied) and changed in the file since stays, with the file's change; removed here and unchanged in the file, it stays
+removed. When a generator has moved an activity to another module, the move is read from the new file's design by the rule
+the box's store uses for its records (`storefile._retarget`): work kept under a module the design no longer has, whose
+id is also the id of an activity in the new design (one inside a module), goes to the module that now holds that
+activity, when every activity the work names now lives in that one module. A module that still exists keeps its work even if
+some of its activities moved, and work whose activities are now in different modules stays where it was, unused, as it
+does in the store. A kept copy with no base (one an older release
 kept) is merged the older way, once: what holds something here wins and the file fills in the rest. The host then saves the
 result. With no host, the reader's own answers, entries and drafts stay as they are.
 A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")

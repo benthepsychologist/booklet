@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-fmtrNBKQ2iBoxCfZHtSfmP86OyqmTZIvCtOWeRAccEo=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-hHk1vd/qlQQumaT+IYVmxVhVOheFx6/J04o+shuQrB0=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2896,8 +2896,12 @@ const storeNameOf=e=>e&&typeof e.from==="string"&&e.from.startsWith("store:")?e.
    A store booklet (`from` is "store:<name>") is listed under "Your booklets" as soon as it is read, as a pointer: its
    entry, with no kept copy of its content (notePointer). A kept copy (booklet.b.<id>) appears only once the reader
    changes something, and it is only a buffer for work the store may not have yet. Beside it is its base
-   (booklet.base.<id>, below): the records of the file text it is based on. Whether the store already has what is kept
-   here is a fact about content, decided when the booklet is opened (openLinked: by its link, from the list, or by a
+   (booklet.base.<id>): the records (answers, entries, drafts; never the body, so it is small) of the file text the copy
+   is based on, which is the file it last drew or read, or the text a host last confirmed for it with saved(change), the
+   change being the latest sent for that booklet (hostAnswered). It is what lets an open tell work changed here since
+   (the reader's own, which the store may not have) from work changed in the file since (another device's, or a
+   generator's). It is written with the kept copy (saveLocal) and on each such confirmation, and goes with it. Whether
+   the store already has what is kept here is a fact about content, decided when the booklet is opened (openLinked: by its link, from the list, or by a
    host's Booklet.open), so it does not matter whether the host has registered yet, how fast it answered, which tab it
    answered in or whether the reader downloaded since.
    The file is drawn into the same entry, and the kept copy goes (storeHolds), when nothing is kept (a pointer); or when
@@ -2932,15 +2936,10 @@ function workWithin(S,D,R){const own=(o,k)=>isObj(o)&&hasOwn(o,k)?o[k]:undefined
   for(const at of Object.keys(dr)){if(!isObj(dr[at])) continue;
     for(const k of Object.keys(dr[at])) if(!emptyWork(dr[at][k])&&!same(dr[at][k],own(own(fd,at),k))) return false;}
   return true;}
-/* ---- a store booklet's base ----
-   The records (answers, entries, drafts; never the body) of the file text a store booklet's kept copy is based on: the
-   file it last drew or accepted, or the text a host last confirmed for it with saved(change), the change being the latest
-   sent for that booklet (hostAnswered). It is what lets an open tell work changed here since (the reader's own, which the
-   store may not have) from work changed in the file since (another device's, or a generator's). Kept under
-   booklet.base.<id>, written with the kept copy (saveLocal) and on each such confirmation; small, since it holds no body.
-   BASE is the open booklet's, in memory: set when a file is drawn (openAsView) or read (finishLoad), read back with a kept
-   copy (openBooklet). A records "copy" here is {answers: {scope: {key: value}}, entries: {activity: [entry]}, drafts:
-   {activity: {field: value}}}. */
+/* ---- the base, in memory and in storage (see "a store booklet" above) ----
+   BASE is the open booklet's: set when a file is drawn (openAsView) or read (finishLoad), read back with a kept copy
+   (openBooklet). A records "copy" here, the base's shape, is {answers: {scope: {key: value}}, entries: {activity:
+   [entry]}, drafts: {activity: {field: value}}}. */
 let BASE=null;
 const baseKey=id=>"booklet.base."+id;
 function readBase(id){let o=null;try{o=JSON.parse(lsGet(baseKey(id))||"null");}catch(e){o=null;}return isObj(o)?o:null;}
@@ -2986,31 +2985,40 @@ function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return tr
   /* something changed here (or there is no base): drawn only when the file holds exactly this work, so that a removal
      made here, which the store never heard of, does not come back */
   return sameFlat(here,flatWork(recsOfParse(R),keep));}
-/* A generator may move an activity into another module, and the store moves its records with it (the box's
-   write_generated retargets the records line). Seen against the base, that is a scope the base holds records for and
-   the file no longer does, whose records the file now holds unchanged under exactly one scope the base had none for.
-   Such a move is followed in this copy and in the base before they are merged (mergeWork), so work typed here under the
-   old scope lands in the new one. Only a move the base proves is followed; a move into or out of the activities outside
-   every module (scope ""), or one with two candidates, is not, and is merged as it stands. Returns [here, base]. */
-function followMoves(here,base,file){
-  const scopes=r=>{const s=new Set();flatWork(r).forEach((v,k)=>{const p=k.split(SEP);s.add(p[0]==="a"?p[1]:scopeOfAddr(p[1]));});return s;};
-  const part=(r,sc)=>canon([...flatWork(r,new Set([sc]))].map(([k,v])=>{const p=k.split(SEP);return [p[0],p[0]==="a"?"":shortId(p[1]),p[2],v];}).sort((x,y)=>canon(x).localeCompare(canon(y))));
-  const bs=scopes(base),fs=scopes(file),moves=new Map();
-  bs.forEach(s=>{if(s===""||fs.has(s)) return;const p=part(base,s);
-    const hits=[...fs].filter(t=>t!==""&&!bs.has(t)&&part(file,t)===p);
-    if(hits.length===1) moves.set(s,hits[0]);});
+/* A generator may move an activity into another module, and the store then moves its records with it: the box's
+   storefile._retarget, which points a records line `> [!records|X]` at the scope its activities now live in. The rule,
+   ported here so that this browser and the store agree on every move: X (a scope the records are under) is moved only
+   when it is not a module of the new body, is itself an activity of the new body (that is what proves the move) and not
+   one outside every module, and X and every activity its records name (an entry's or a draft's activity) all live in
+   exactly one scope of the new body, which may be "" (the activities outside every module). Anything else stays as
+   written: a module that still exists keeps its records even if some of its activities moved, and an activity whose
+   records name activities now in different modules is not followed. It is applied to this copy and to the base, from
+   the new body (T, the file's design) alone, so it follows a move whether or not the store had records under X yet (a
+   first answer here, unsent when the generator moved the activity, lands in the new module). Returns [here, base]. */
+function followMoves(here,base,T){const mods=new Set(),acts=new Map();
+  (isObj(T)&&Array.isArray(T.modules)?T.modules:[]).filter(isObj).forEach(m=>{const sc=scopeOfModule(m);if(sc) mods.add(sc);
+    activitiesOf(m).forEach(a=>{const id=shortId(a.id);if(!acts.has(id)) acts.set(id,new Set());acts.get(id).add(sc);});});
+  /* each scope the two copies hold records under, with the activities those records name */
+  const named=new Map();[here,base].forEach(r=>flatWork(r).forEach((v,k)=>{const p=k.split(SEP),sc=p[0]==="a"?p[1]:scopeOfAddr(p[1]);
+    if(!named.has(sc)) named.set(sc,new Set([sc]));if(p[0]!=="a") named.get(sc).add(shortId(p[1]));}));
+  const moves=new Map();
+  named.forEach((want,x)=>{if(x===""||mods.has(x)||!acts.has(x)||acts.get(x).has("")) return;
+    if(![...want].every(a=>acts.has(a))) return;
+    const common=[...want].reduce((c,a)=>c===null?new Set(acts.get(a)):new Set([...c].filter(z=>acts.get(a).has(z))),null);
+    if(common.size===1) moves.set(x,[...common][0]);});
   if(!moves.size) return [here,base];
   const to=s=>moves.has(s)?moves.get(s):s,at=a=>{const s=scopeOfAddr(a);return moves.has(s)?addrOf(moves.get(s),shortId(a)):a;};
   const move=r=>{const out=new Map();flatWork(r).forEach((v,k)=>{const p=k.split(SEP);out.set(p[0]+SEP+(p[0]==="a"?to(p[1]):at(p[1]))+SEP+p[2],v);});return unflatWork(out);};
   return [move(here),move(base)];}
 /* Three-way, place by place, between what is here, what the file holds and the base both came from: changed here and
    not there, here's; changed there and not here, the file's; changed on both, here's (the reader is looking at it, and
-   pressed Read); unchanged on both, either. An entry deleted here and changed there stays, changed; one deleted here and
-   unchanged there stays deleted. A draft emptied here (an entry finalized from it, say) is a change here. Returns a
-   records copy. */
+   pressed Read), except that a removal here (an answer cleared, an entry deleted, a draft emptied) loses to a change
+   there, which then stays, changed; unchanged on both, either. So a removal here that the file did not touch stays
+   removed (an entry finalized from a draft leaves no draft behind), and one the file changed since comes back with the
+   change. Returns a records copy. */
 function mergeWork(here,base,file){const H=flatWork(here),B=flatWork(base),F=flatWork(file),out=new Map(),c=v=>v===undefined?undefined:canon(v);
   new Set([...H.keys(),...B.keys(),...F.keys()]).forEach(k=>{const h=c(H.get(k)),b=c(B.get(k)),f=c(F.get(k));
-    const v=h===b?F.get(k):f===b?H.get(k):k[0]==="e"&&h===undefined?F.get(k):H.get(k);
+    const v=h===b?F.get(k):f===b?H.get(k):h===undefined?F.get(k):H.get(k);
     if(v!==undefined) out.set(k,v);});
   return unflatWork(out);}
 function describeBooklet(t){t=t||{};
@@ -7512,7 +7520,7 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
 const acceptWork=R=>{if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};
   /* a kept booklet with no base (written before bases were kept) can only be weighed on what holds something */
   if(!BASE) return withFileWork(R);
-  const file=recsOfParse(R),[here,base]=followMoves(clone({answers:STATE.answers||{},entries:STATE.entries||{},drafts:DRAFTS.custom||{}}),BASE,file);
+  const file=recsOfParse(R),[here,base]=followMoves(clone({answers:STATE.answers||{},entries:STATE.entries||{},drafts:DRAFTS.custom||{}}),BASE,R.template);
   const m=mergeWork(here,base,file);
   return {S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}};};
 /* An answer that names its change (hostSet): a "saved" for the latest change sent for that booklet makes the records that
@@ -7520,6 +7528,10 @@ const acceptWork=R=>{if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};
    it for the same booklet. The booklet need not be open (a change told to the host as it was left). */
 function hostAnswered(status,n){const s=HOOK_SENT.find(x=>x.change===n);if(!s) return;
   if(status==="saved"&&!HOOK_SENT.some(x=>x.id===s.id&&x.change>n)&&(LIB=readLib(),entryById(s.id))){
+    /* the open booklet's kept copy is written first (its save may still be waiting out its 400 ms), so the base is never
+       ahead of the copy: a crash in between would leave a copy older than its base, whose older answers would then read
+       as changes made here */
+    if(s.id===currentId) flushSave();
     lsSet(baseKey(s.id),JSON.stringify(s.recs));if(s.id===currentId) BASE=s.recs;}
   HOOK_SENT=HOOK_SENT.filter(x=>!(x.id===s.id&&x.change<=n));}
 /* For a kept booklet with no base only (written before bases were kept), when a newer file is read: the kept booklet's

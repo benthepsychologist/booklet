@@ -448,6 +448,64 @@ const THREE=FM("Three")+"> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!
  const go=P.find(P.main(),x=>x.tagName==="button"&&/Remove/.test(text(x))&&x!==rm[0]);go[go.length-1]._on.click({});
  chk("removing the booklet removes its base with its kept copy",!lib().some(e=>e.id===id)&&!(("booklet.base."+id) in LSX)&&!kept(id));}
 
+/* ---- the final check: the base is never ahead of the kept copy; one removal rule; moves followed from the new body ---- */
+// a fast host confirms a change before the 400 ms local save, and the browser dies right then (no pagehide)
+{const U=STORE+"w.md";let A=boot();host(A);ROUTES[U]=booklet("Week");
+ await A.openLink("#/open/w.md");const id=A.currentId;await sleep(600);typeIn(A,"m/a","EARLIER");await sleep(1200);
+ typeIn(A,"m/a","LAST-TYPED");await sleep(150);
+ const died={...LSX};
+ chk("crash setup: the host confirmed LAST-TYPED within 150 ms, before the 400 ms local save",/LAST-TYPED/.test(ROUTES[U])&&/LAST-TYPED/.test(died["booklet.base."+id]||""));
+ chk("the kept copy is written before the base moves: what the dead browser left holds LAST-TYPED in both",/LAST-TYPED/.test(died[keyOf(id)]||""),"kept copy has "+((died[keyOf(id)]||"").match(/LAST-TYPED|EARLIER/)||["nothing"])[0]);
+ useDevice(died);A=devPage();host(A);await A.openLink("#/open/w.md");press(/Read the newer file/);await sleep(50);
+ chk("...so the next open shows LAST-TYPED, the store's, and Read never puts EARLIER back",ans(A)==="LAST-TYPED",JSON.stringify(A.STATE.answers));}
+// an answer cleared on the laptop (unsent), and edited on the phone: the phone's edit is kept
+{const U=STORE+"clr.md";P.wipe();ROUTES={};CALLS=[];ROUTES[U]=booklet("Clr");
+ let A=devPage();let down=false;host(A,{fail:()=>down});await A.openLink("#/open/clr.md");await sleep(600);
+ typeIn(A,"m/a","BASE ANSWER");await sleep(1200);down=true;typeIn(A,"m/a","");await sleep(1200);A.closeBooklet();down=false;
+ const laptop=takeDevice();
+ useDevice({});A=devPage();host(A);await A.openLink("#/open/clr.md");await sleep(600);typeIn(A,"m/a","PHONE EDIT");await sleep(1200);A.closeBooklet();
+ useDevice(laptop);A=devPage();host(A);await A.openLink("#/open/clr.md");
+ chk("removal vs edit setup: the laptop's cleared answer opens as kept, with the offer",!ans(A)&&offer()===1);
+ press(/Read the newer file/);
+ chk("an answer cleared here and edited on another device: reading the file keeps the other device's edit",ans(A)==="PHONE EDIT",JSON.stringify(A.STATE.answers));
+ await sleep(800);chk("...and the file keeps it",/PHONE EDIT/.test(ROUTES[U]));}
+// M8: a module whose activity a generator moves had no records in the store yet; the reader's first answer to it was unsent
+{const V1=FM("Moves")+"> [!module|k] Keep\n\n> [!activity|k] K\n\n> [!text|kq] Kept question\n\n> [!module|k end] End\n\n> [!module|a] Alone\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|a end] End\n";
+ const V2=V1.replace("> [!module|a] Alone","> [!module|n] New home").replace("> [!module|a end] End","> [!module|n end] End");
+ const U=STORE+"mv8.md";const A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=V1;
+ await A.openLink("#/open/mv8.md");await sleep(600);typeIn(A,"k/k","k answered");await sleep(1200);
+ down=true;typeIn(A,"a/a","FIRST ANSWER, unsent");await sleep(1200);A.closeBooklet();down=false;
+ chk("M8 setup: the store has no records for the module yet",!/records\|a/.test(ROUTES[U]));
+ /* the generator moves activity `a` into module `n`; the store had nothing under `a` to retarget */
+ ROUTES[U]=merge(V2,ROUTES[U]);
+ await A.openLink("#/open/mv8.md");
+ chk("M8 the kept copy, with the unsent first answer, opens with the offer",ans(A,"a","q")==="FIRST ANSWER, unsent"&&offer()===1);
+ press(/Read the newer file/);
+ chk("M8 reading the moved file puts the unsent first answer in the new module (the move is read from the new body)",ans(A,"n","q")==="FIRST ANSWER, unsent"&&ans(A,"k","kq")==="k answered",JSON.stringify(A.STATE.answers));
+ await sleep(800);chk("M8 ...and it reaches the file",/FIRST ANSWER, unsent/.test(ROUTES[U])&&/records\|n/.test(ROUTES[U]));}
+// a partial move the rule follows: of two modules, only one's activity moves; unsent edits to both
+{const V1=FM("Two")+"> [!module|a] Alone\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|a end] End\n\n> [!module|c] Stays\n\n> [!activity|c] C\n\n> [!text|cq] C question\n\n> [!module|c end] End\n";
+ const V2=V1.replace("> [!module|a] Alone","> [!module|n] New home").replace("> [!module|a end] End","> [!module|n end] End");
+ const U=STORE+"pm.md";const A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=V1;
+ await A.openLink("#/open/pm.md");await sleep(600);typeIn(A,"a/a","a saved");await sleep(800);typeIn(A,"c/c","c saved");await sleep(1200);
+ down=true;typeIn(A,"a/a","a edited, unsent");await sleep(500);typeIn(A,"c/c","c edited, unsent");await sleep(1200);A.closeBooklet();down=false;
+ /* the store retargets `a`'s records line to `n` (the activity moved); `c` stays */
+ ROUTES[U]=merge(V2,ROUTES[U]).replace(/> \[!records\|a\][^\n]*/,"> [!records|n] New home");
+ await A.openLink("#/open/pm.md");press(/Read the newer file/);
+ chk("a partial move: the moved module's unsent edit lands in its new module, and the other module's stays where it is",ans(A,"n","q")==="a edited, unsent"&&ans(A,"c","cq")==="c edited, unsent",JSON.stringify(A.STATE.answers));}
+// a move the rule refuses, as the store does: the module's records name activities that now live in two modules
+{const V1=FM("Split")+"> [!module|a] Both\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!activity|b repeat] B\n\n> [!text|what] What?\n\n> [!module|a end] End\n";
+ const V2=FM("Split")+"> [!module|n] First\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|n end] End\n\n> [!module|c] Second\n\n> [!activity|b repeat] B\n\n> [!text|what] What?\n\n> [!module|c end] End\n";
+ const U=STORE+"sp.md";const A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=V1;
+ await A.openLink("#/open/sp.md");await sleep(600);typeIn(A,"a/a","q saved");await sleep(800);typeIn(A,"a/b","a draft for b");await sleep(1200);
+ down=true;typeIn(A,"a/a","q edited, unsent");await sleep(1200);A.closeBooklet();down=false;
+ /* storefile leaves `> [!records|a]` as written: its blocks name `a` and `b`, which now live in two modules */
+ ROUTES[U]=merge(V2,ROUTES[U]);
+ chk("refused move setup: the store's records stay under the old module",/records\|a/.test(ROUTES[U]));
+ await A.openLink("#/open/sp.md");press(/Read the newer file/);
+ chk("a move the store's rule refuses is not followed here either: nothing is put in the new modules",ans(A,"n","q")===undefined&&!((A.DRAFTS.custom||{})["c/b"]||{}).what,JSON.stringify(A.STATE.answers));
+ await sleep(800);chk("...and the store's records under the old module are kept as written",/records\|a/.test(ROUTES[U])&&/q saved|q edited/.test(ROUTES[U]));}
+
 /* ---- the second review's N2: a change in the last half second before the tab closes is sent ---- */
 {const U=STORE+"w.md";const A=boot();const h=host(A);ROUTES[U]=booklet("Week");
  await A.openLink("#/open/w.md");await sleep(700);const n0=h.log.length;
