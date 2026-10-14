@@ -20,9 +20,9 @@ const SEED=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"seeds","ls-"+n+".j
 const lsKeys=()=>Object.keys(LS).filter(k=>k.startsWith("booklet.")).sort();
 let IDB=null;
 /* a fresh browser: no local storage, an empty IndexedDB */
-function fresh(){P.wipe();IDB=makeIDB();global.indexedDB=IDB.indexedDB;}
-/* a reload: the page goes, what the browser keeps stays */
-function reload(){P.closePages();IDB.ctl.gone=false;return P.boot();}
+function fresh(){if(IDB) IDB.ctl.kill();P.wipe();IDB=makeIDB();global.indexedDB=IDB.indexedDB;}
+/* a reload: the page goes (nothing reaches it again), what the browser keeps stays */
+function reload(){P.closePages();IDB.ctl.kill();return P.boot();}
 const started=async A=>{await A.KEEP.started;return A;};
 /* the page and the store quiet: no save waiting its 400 ms, nothing queued or on its way, nothing left to move */
 async function idle(A){A.flushSave();
@@ -137,6 +137,20 @@ section("a copy that does not land leaves local storage as it was");
  const B=reload();await started(B);await idle(B);
  chk("on the next visit with room the copy lands, and only then are the local storage keys removed",lsKeys().join()==="booklet.ui.theme"&&Object.keys(seed).filter(k=>k.startsWith("booklet.b.")).every(k=>IDB.kv(k)===seed[k]),lsKeys().join());}
 
+section("a copy already made is never made again over newer work");
+{fresh();const seed=SEED("0.13.1-pre");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
+ /* the copy lands, but its removal from local storage does not happen (as if the page went first) */
+ const orig=global.localStorage.removeItem;global.localStorage.removeItem=k=>{if(/\.probe$/.test(k)) return orig(k);throw Object.assign(new Error("blocked"),{name:"SecurityError"});};
+ const A=P.boot();await started(A);await idle(A);
+ const g=A.readLib().entries.find(e=>e.title==="A garden week").id;
+ chk("the copy landed, and local storage still holds what was copied",IDB.kv("booklet.b."+g)===seed["booklet.b."+g]&&LS["booklet.b."+g]===seed["booklet.b."+g]);
+ A.openFromList(g);A.answersIn("").note="newer, typed after the move";A.markDirty();await idle(A);
+ global.localStorage.removeItem=orig;
+ const B=reload();await started(B);await idle(B);
+ B.openFromList(g);
+ chk("the next start does not copy the old leftover over the newer answer",B.answersIn("").note==="newer, typed after the move",B.answersIn("").note);
+ chk("and it removes the leftovers from local storage",lsKeys().join()==="booklet.ui.theme",lsKeys().join());}
+
 section("an older release's tab still open after the move");
 {fresh();const seed=SEED("0.13.1-pre");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
  const A=P.boot();await started(A);await idle(A);
@@ -223,7 +237,7 @@ section("leaving the page: what is still queued is handed over as the page goes"
  A.answersIn("").q="on its way when the page went";A.saveLocal();await sleep(10);
  A.answersIn("").q="typed just before the page went";A.markDirty();
  /* pagehide runs, then the page is gone: no callback reaches it again, and it can start nothing more */
- P.closePages();IDB.ctl.gone=true;
+ P.closePages();IDB.ctl.kill();
  IDB.ctl.release();await sleep(60);
  const B=reload();await started(B);B.openFromList(id);
  chk("a change made while a write was on its way, the page left at once, is in the store (handed over at pagehide)",B.answersIn("").q==="typed just before the page went",B.answersIn("").q);
@@ -231,7 +245,7 @@ section("leaving the page: what is still queued is handed over as the page goes"
  B.answersIn("").q="on its way, and lost";B.saveLocal();await sleep(10);
  B.answersIn("").q="handed over as the page went, and lost";B.markDirty();
  IDB.ctl.failAll="UnknownError";
- P.closePages();IDB.ctl.gone=true;IDB.ctl.release();await sleep(60);IDB.ctl.failAll=null;
+ P.closePages();IDB.ctl.kill();IDB.ctl.release();await sleep(60);IDB.ctl.failAll=null;
  const C=reload();await started(C);C.openFromList(id);
  chk("if what was handed over cannot land, the store holds the last state it confirmed",C.answersIn("").q==="typed just before the page went",C.answersIn("").q);}
 

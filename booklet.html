@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-oPJCYwMxCHcsVES31hZSxh48mOR1L8IM8vrrOmKd6eQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-SOgVmAKRF477LkKybG9VlL5J80AvfRVh1cOb2JseWzo=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2721,6 +2721,8 @@ try{localStorage.setItem(LIB_KEY+".probe","1");localStorage.removeItem(LIB_KEY+"
 /* what local storage would not take, in mode "ls", kept for the visit */
 const MEM={};
 const KEEP_DB="booklet",KEEP_KV="kv",KEEP_STAMP="stamp",THEME_KEY="booklet.ui.theme",LIB_REC="#";
+/* in the store only: what was copied from local storage, key to fingerprint (keepAdopt) */
+const KEEP_MOVED="booklet.moved.v1";
 /* how long opening the store may take before the page gives up on it and uses local storage */
 const KEEP_OPEN_MS=5000;
 /* The store's state. mode: "ls" (local storage, as before 0.13.1), "wait" (IndexedDB being opened and read: nothing
@@ -2730,7 +2732,7 @@ const KEEP_OPEN_MS=5000;
    knew. pending: the changes not yet handed to the browser, key to {v, seq} (v null for a removal). inflight: the
    transactions handed over and not yet done; failed: the keys a failed one held, until one that holds them lands.
    seq: a count of every change; last: each key's latest seq. left and leftAt: the local storage keys copied into the
-   store, waiting to be removed (keepLeft). later: what waits for the store to be read (a host's Booklet.open). lib:
+   store, waiting to be removed (keepLeft), key to {v, copied} (copied: by an earlier start). later: what waits for the store to be read (a host's Booklet.open). lib:
    the list as text, joined from its records (libJoined). refreshing: a re-read in progress (keepRefresh). */
 const KEEP={mode:"ls",ready:true,db:null,problem:lsOk?"":"off",why:"",idbWhy:"",cache:new Map(),stamps:new Map(),pending:new Map(),
   inflight:[],failed:new Set(),seq:0,last:new Map(),left:new Map(),leftAt:0,leftBusy:false,later:[],tab:newId(""),n:0,queued:false,lib:null,
@@ -2846,9 +2848,9 @@ function keepLeft(){if(!KEEP.left.size||KEEP.leftBusy) return;
   if(open) return;
   KEEP.leftBusy=true;
   const end=keys=>{KEEP.leftBusy=false;if(!keys) return;const have=new Set(keys);
-    KEEP.left.forEach((v,k)=>{const there=k===LIB_KEY?have.has(LIB_KEY)||keys.some(isLibRec)||have.has(LIB_KEY+".unreadable"):have.has(k);
+    KEEP.left.forEach((x,k)=>{const there=x.copied||(k===LIB_KEY?have.has(LIB_KEY)||keys.some(isLibRec)||have.has(LIB_KEY+".unreadable"):have.has(k));
       if(!there) return;
-      try{if(localStorage.getItem(k)===v) localStorage.removeItem(k);}catch(e){/* local storage refused: it stays */}
+      try{if(localStorage.getItem(k)===x.v) localStorage.removeItem(k);}catch(e){/* local storage refused: it stays, and is only removed next time */}
       KEEP.left.delete(k);});};
   let tx;try{tx=KEEP.db.transaction([KEEP_KV],"readonly");}catch(e){end(null);return;}
   const r=tx.objectStore(KEEP_KV).getAllKeys();
@@ -2863,7 +2865,9 @@ function keepStart(then){
     /* a host that registered before the store was read was decided by its mirror: decided again by the store */
     if(HOST&&HOST.early){HOST.early=false;const yes=HOST.label!==""&&hostAllowed()===HOST.label;
       if(HOST.state==="waiting"&&yes) HOST.state="active";else if(HOST.state==="active"&&!yes) HOST.state="waiting";}
-    then();KEEP.later.splice(0).forEach(f=>{try{f();}catch(e){/* one late call failing does not stop the others */}});keepFlush();};
+    then();KEEP.later.splice(0).forEach(f=>{try{f();}catch(e){/* one late call failing does not stop the others */}});
+    /* the copies are written now; a leftover an earlier start already copied is removed now too, with nothing to write */
+    keepFlush();keepLeft();};
   if(!idb){go();return KEEP.started=Promise.resolve();}
   KEEP.mode="wait";KEEP.ready=false;
   return KEEP.started=new Promise(done=>{let over=false,timer=null;
@@ -2906,14 +2910,22 @@ function keepAdopt(){
     const o=JSON.parse(localStorage.getItem(LIB_KEY)||"null");
     if(isObj(o)&&Array.isArray(o.entries)) o.entries.forEach(e=>{if(isObj(e)&&typeof e.key==="string"&&!keys.includes(e.key)&&localStorage.getItem(e.key)!==null) keys.push(e.key);});}
   catch(e){/* local storage would not be read: nothing more is moved */}
+  /* What earlier starts copied, key to the copy's fingerprint (textPrint), kept in the store with the copies. A key that
+     still holds exactly what was copied was not removed (the page went before its removal could run): it is removed now,
+     and never copied again over what the store holds since. */
+  let moved={};try{const o=JSON.parse(lsGet(KEEP_MOVED)||"{}");if(isObj(o)) moved=o;}catch(e){moved={};}
+  const now={};
   keys.forEach(k=>{const v=lsRaw(k);if(v===null) return;
     if(mirrored(k)){if(!KEEP.cache.has(k)) keepPut(k,v);return;}
+    const fp=textPrint(v);
+    if(hasOwn(moved,k)&&moved[k]===fp){now[k]=fp;KEEP.left.set(k,{v,copied:true});return;}
     /* a list that will not parse is set aside in the store as readLib sets one aside; a second one, unlike the first,
        stays in local storage, where it is still findable by hand */
     if(k===LIB_KEY){const m=libMerge(lsGet(LIB_KEY),v),u=LIB_KEY+".unreadable";
       if(m===null){const had=lsGet(u);if(had===null) keepPut(u,v);else if(had!==v) return;}else libWrite(m);}
     else keepPut(k,v);
-    KEEP.left.set(k,v);});
+    now[k]=fp;KEEP.left.set(k,{v,copied:false});});
+  if(JSON.stringify(now)!==JSON.stringify(moved)&&(Object.keys(now).length||lsGet(KEEP_MOVED)!==null)) keepPut(KEEP_MOVED,JSON.stringify(now));
   KEEP.leftAt=KEEP.seq;
   [THEME_KEY,HOST_KEY].forEach(k=>{const t=KEEP.cache.has(k)?KEEP.cache.get(k):null;
     if(t!==null&&lsRaw(k)!==t){mirror(k,t);if(k===THEME_KEY&&typeof window!=="undefined"&&window.bookletTheme) window.bookletTheme.set(t);}});}
