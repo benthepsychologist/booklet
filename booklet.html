@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-2UoA+dRN6K/JnOtKhhDFEpUpkG4uhqZ2UxR9kZKbkHs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-HrYuwRGgqoSQWh6sJZDbsvzeXJ6/mvEI8QEyCFhk44k=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1931,8 +1931,8 @@ const STRINGS_SRC={
       pLang: "Langue",
       pTheme: "Thème de couleurs", themeAuto: "Auto", themeAutoTip: "L'apparence propre au carnet s'il en a une, sinon celle de votre appareil", themePaper: "Papier", themeDaylight: "Plein jour", themeNight: "Nuit", themeContrast: "Contraste",
       storageOff: "Ce navigateur ne conserve pas vos entrées d’une visite à l’autre (navigation privée, ou données de site bloquées). Téléchargez avant de fermer l’onglet.",
-      /* l10n: draft */ storageFull: small=>small?"Ce navigateur n’a plus de place pour cette page. Il garde les carnets d’ici dans son petit espace (environ 5 Mo), car il n’a pas voulu ouvrir le plus grand. Vos dernières modifications durent jusqu’à la fermeture de l’onglet : téléchargez une copie.":"Ce navigateur n’a plus de place pour cette page : vos dernières modifications ne durent que jusqu’à la fermeture de l’onglet. Téléchargez une copie, ou retirez de Vos carnets ceux dont vous n’avez plus besoin.",
-      /* l10n: draft */ storageFailed: "Ce navigateur n’a pas pu enregistrer vos dernières modifications (son stockage a signalé une erreur). Elles durent jusqu’à la fermeture de l’onglet : téléchargez une copie.",
+      storageFull: small=>small?"Ce navigateur n’a plus de place pour cette page. Il garde les carnets d’ici dans son petit espace (environ 5 Mo), car il n’a pas voulu ouvrir le plus grand. Vos dernières modifications durent jusqu’à la fermeture de l’onglet : téléchargez une copie.":"Ce navigateur n’a plus de place pour cette page : vos dernières modifications ne durent que jusqu’à la fermeture de l’onglet. Téléchargez une copie, ou retirez de « Vos carnets » ceux dont vous n’avez plus besoin.",
+      storageFailed: "Ce navigateur n’a pas pu enregistrer vos dernières modifications (son stockage a signalé une erreur). Elles durent jusqu’à la fermeture de l’onglet : téléchargez une copie.",
       clearHelpStored: "Cela efface aussi ce que ce navigateur a conservé. Si vous n’avez pas téléchargé vos entrées, elles seront perdues définitivement."
     },
     booklet: {
@@ -1991,8 +1991,8 @@ const STRINGS_SRC={
       removed: "Retiré.",
       storageOff: "Ce navigateur ne garde rien d’une visite à l’autre (navigation privée, ou données du site bloquées). Les carnets d’ici durent jusqu’à la fermeture de l’onglet : téléchargez une copie de ceux que vous voulez garder.",
       mayClear: "Ce navigateur peut effacer les carnets gardés ici. Téléchargez une copie de ceux que vous voulez conserver, ou ajoutez cette page à votre écran d’accueil.",
-      /* l10n: draft */ storageSmall: "Ce navigateur n’a pas voulu ouvrir son grand espace pour cette page : les carnets qui y étaient gardés ne sont donc pas affichés, et les carnets sont gardés dans le petit (environ 5 Mo), comme avant. Un grand carnet peut ne pas y tenir : téléchargez une copie de ceux que vous voulez conserver.",
-      /* l10n: draft */ storageLate: "Ce navigateur n’a pas ouvert à temps son espace pour cette page : les carnets gardés ici n’ont donc pas pu être lus cette fois. Rechargez la page pour les retrouver. D’ici là, ce que vous commencez ici est gardé dans son petit espace (environ 5 Mo)."
+      storageSmall: "Ce navigateur n’a pas voulu ouvrir son grand espace pour cette page : les carnets qui y étaient gardés ne sont donc pas affichés, et les carnets sont gardés dans le petit espace (environ 5 Mo), comme avant. Un grand carnet peut ne pas y tenir : téléchargez une copie de ceux que vous voulez conserver.",
+      storageLate: "Ce navigateur n’a pas ouvert à temps son espace pour cette page : les carnets gardés ici n’ont donc pas pu être lus cette fois. Rechargez la page pour les retrouver. D’ici là, ce que vous commencez ici est gardé dans son petit espace (environ 5 Mo)."
     },
     question: {
       addOwn: "Ajoutez votre propre option",
@@ -2259,8 +2259,8 @@ const STRINGS_SRC={
       pLang: "Idioma",
       pTheme: "Tema de color", themeAuto: "Auto", themeAutoTip: "El aspecto propio del cuadernillo si lo tiene; si no, el de tu dispositivo", themePaper: "Papel", themeDaylight: "Luz de día", themeNight: "Noche", themeContrast: "Contraste",
       storageOff: "Este navegador no está conservando tus entradas entre visitas (modo privado, o los datos del sitio están bloqueados). Descarga antes de cerrar la pestaña.",
-      /* l10n: draft */ storageFull: small=>small?"Este navegador se quedó sin espacio para esta página. Guarda los cuadernillos de aquí en su espacio pequeño (unos 5 MB), porque no quiso abrir el más grande. Tus últimos cambios duran hasta que cierres la pestaña, así que descarga una copia.":"Este navegador se quedó sin espacio para esta página, así que tus últimos cambios duran solo hasta que cierres la pestaña. Descarga una copia, o quita de Tus cuadernillos los que ya no necesites.",
-      /* l10n: draft */ storageFailed: "Este navegador no pudo guardar tus últimos cambios (su almacenamiento informó un error). Duran hasta que cierres la pestaña, así que descarga una copia.",
+      storageFull: small=>small?"Este navegador se quedó sin espacio para esta página: los cuadernillos de aquí se guardan en su espacio pequeño (unos 5 MB), porque no quiso abrir el más grande. Tus últimos cambios duran hasta que cierres la pestaña, así que descarga una copia.":"Este navegador se quedó sin espacio para esta página, así que tus últimos cambios duran solo hasta que cierres la pestaña. Descarga una copia, o quita de «Tus cuadernillos» los que ya no necesites.",
+      storageFailed: "Este navegador no pudo guardar tus últimos cambios (su almacenamiento informó un error). Duran hasta que cierres la pestaña, así que descarga una copia.",
       clearHelpStored: "Esto también borra lo que este navegador ha guardado. Si no descargaste tus entradas, se perderán para siempre."
     },
     booklet: {
@@ -2319,8 +2319,8 @@ const STRINGS_SRC={
       removed: "Quitado.",
       storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descarga una copia de los que quieras conservar.",
       mayClear: "Este navegador puede borrar los cuadernillos guardados aquí. Descarga una copia de los que quieras conservar, o agrega esta página a tu pantalla de inicio.",
-      /* l10n: draft */ storageSmall: "Este navegador no quiso abrir su espacio grande para esta página, así que no se muestran los cuadernillos guardados en él, y los cuadernillos se guardan en el pequeño (unos 5 MB), como antes. Un cuadernillo grande puede no caber ahí: descarga una copia de los que quieras conservar.",
-      /* l10n: draft */ storageLate: "Este navegador no abrió a tiempo su espacio para esta página, así que esta vez no se pudieron leer los cuadernillos guardados aquí. Recarga la página para recuperarlos. Mientras tanto, lo que empieces aquí se guarda en su espacio pequeño (unos 5 MB)."
+      storageSmall: "Este navegador no quiso abrir su espacio grande para esta página, así que no se muestran los cuadernillos que ya estaban guardados en él, y los cuadernillos se guardan en el espacio pequeño (unos 5 MB), como antes. Es posible que un cuadernillo grande no quepa ahí: descarga una copia de los que quieras conservar.",
+      storageLate: "Este navegador no abrió a tiempo su espacio para esta página, así que esta vez no se pudieron leer los cuadernillos guardados aquí. Recarga la página para recuperarlos. Mientras tanto, lo que empieces aquí se guarda en su espacio pequeño (unos 5 MB)."
     },
     question: {
       addOwn: "Agrega tu propia opción",
@@ -2527,8 +2527,8 @@ const STRINGS_SRC={
       dropZone: "…o soltá el archivo aquí",
       dropVeil: "Soltá para cargar tus notas",
       storageOff: "Este navegador no está conservando tus entradas entre visitas (modo privado, o los datos del sitio están bloqueados). Descargá antes de cerrar la pestaña.",
-      /* l10n: draft */ storageFull: small=>small?"Este navegador se quedó sin espacio para esta página. Guarda los cuadernillos de acá en su espacio chico (unos 5 MB), porque no quiso abrir el más grande. Tus últimos cambios duran hasta que cierres la pestaña, así que descargá una copia.":"Este navegador se quedó sin espacio para esta página, así que tus últimos cambios duran solo hasta que cierres la pestaña. Descargá una copia, o quitá de Tus cuadernillos los que ya no necesites.",
-      /* l10n: draft */ storageFailed: "Este navegador no pudo guardar tus últimos cambios (su almacenamiento informó un error). Duran hasta que cierres la pestaña, así que descargá una copia.",
+      storageFull: small=>small?"Este navegador se quedó sin espacio para esta página: los cuadernillos de acá se guardan en su espacio chico (unos 5 MB), porque no quiso abrir el más grande. Tus últimos cambios duran hasta que cierres la pestaña, así que descargá una copia.":"Este navegador se quedó sin espacio para esta página, así que tus últimos cambios duran solo hasta que cierres la pestaña. Descargá una copia, o quitá de «Tus cuadernillos» los que ya no necesites.",
+      storageFailed: "Este navegador no pudo guardar tus últimos cambios (su almacenamiento informó un error). Duran hasta que cierres la pestaña, así que descargá una copia.",
       leaving: "Tus entradas se guardan en este navegador, pero todavía no descargaste una copia en este dispositivo.",
       addModHelp: "Agregá uno de la lista de abajo. Se revisa antes de que cambie nada."
     },
@@ -2561,8 +2561,8 @@ const STRINGS_SRC={
       removeUnsaved: x=>`Tiene cambios que todavía no descargaste. Para conservarlos, abrilo y usá “${x}” primero.`,
       storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descargá una copia de los que quieras conservar.",
       mayClear: "Este navegador puede borrar los cuadernillos guardados acá. Descargá una copia de los que quieras conservar, o agregá esta página a tu pantalla de inicio.",
-      /* l10n: draft */ storageSmall: "Este navegador no quiso abrir su espacio grande para esta página, así que no se muestran los cuadernillos guardados en él, y los cuadernillos se guardan en el chico (unos 5 MB), como antes. Un cuadernillo grande puede no entrar ahí: descargá una copia de los que quieras conservar.",
-      /* l10n: draft */ storageLate: "Este navegador no abrió a tiempo su espacio para esta página, así que esta vez no se pudieron leer los cuadernillos guardados acá. Recargá la página para recuperarlos. Mientras tanto, lo que empieces acá se guarda en su espacio chico (unos 5 MB)."
+      storageSmall: "Este navegador no quiso abrir su espacio grande para esta página, así que no se muestran los cuadernillos que ya estaban guardados en él, y los cuadernillos se guardan en el espacio chico (unos 5 MB), como antes. Es posible que un cuadernillo grande no entre ahí: descargá una copia de los que quieras conservar.",
+      storageLate: "Este navegador no abrió a tiempo su espacio para esta página, así que esta vez no se pudieron leer los cuadernillos guardados acá. Recargá la página para recuperarlos. Mientras tanto, lo que empieces acá se guarda en su espacio chico (unos 5 MB)."
     }
   }
 };
