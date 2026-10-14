@@ -6,6 +6,8 @@
 // What a test can ask of it (ctl):
 //   ctl.refuse = "SecurityError"   every open fails with that error (a browser that refuses IndexedDB)
 //   ctl.throwOpen = "SecurityError" indexedDB.open throws
+//   ctl.hangOpen = true            an open never answers (Safari's first-open hang)
+//   ctl.hangRead = true            a readonly transaction never ends (a store that does not answer its first read)
 //   ctl.quota = <characters>       a readwrite transaction that would leave more than this many characters in the
 //                                  database aborts with QuotaExceededError (the browser's own limit)
 //   ctl.failNext = "UnknownError"  the next readwrite transaction aborts with that error
@@ -22,7 +24,7 @@ function makeIDB(){
   const err=name=>Object.assign(new Error(name),{name});
   const later=f=>setTimeout(f,0);
   const conns=[];
-  const ctl={refuse:null,throwOpen:null,quota:null,failNext:null,failAll:null,hold:false,
+  const ctl={refuse:null,throwOpen:null,hangOpen:false,hangRead:false,quota:null,failNext:null,failAll:null,hold:false,
     release(){ctl.hold=false;held.splice(0).forEach(f=>f());},
     kill(){conns.forEach(c=>{c.dead=true;});}};
   const chars=d=>{let n=0;(d?[d]:[...dbs.values()]).forEach(x=>x.stores.forEach(m=>m.forEach(v=>{n+=typeof v==="string"?v.length:JSON.stringify(v).length;})));return n;};
@@ -30,6 +32,7 @@ function makeIDB(){
     if(ctl.throwOpen) throw err(ctl.throwOpen);
     const req={result:null,error:null,onsuccess:null,onerror:null,onupgradeneeded:null,onblocked:null};
     later(()=>{
+      if(ctl.hangOpen) return;
       if(ctl.refuse){req.error=err(ctl.refuse);if(req.onerror) req.onerror({preventDefault(){}});return;}
       let d=dbs.get(name);if(!d){d={version:0,stores:new Map(),queue:[],running:false};dbs.set(name,d);}
       const conn=connection(d);req.result=conn;
@@ -55,7 +58,7 @@ function makeIDB(){
       delete:k=>{if(tx.mode!=="readwrite") throw err("ReadOnlyError");return q("delete",k);},
       getAll:()=>q("getAll"),getAllKeys:()=>q("getAllKeys"),clear:()=>q("clear")};}
   function pump(d){if(d.running||!d.queue.length) return;d.running=true;const tx=d.queue[0];
-    const go=()=>run(d,tx);if(ctl.hold&&tx.mode==="readwrite") held.push(go);else go();}
+    const go=()=>run(d,tx);if(ctl.hold&&tx.mode==="readwrite") held.push(go);else if(ctl.hangRead&&tx.mode==="readonly") return;else go();}
   function run(d,tx){
     const stage=new Map();tx._st=n=>{if(tx.mode!=="readwrite") return d.stores.get(n);if(!stage.has(n)) stage.set(n,new Map(d.stores.get(n)));return stage.get(n);};
     while(tx._reqs.length){const r=tx._reqs.shift(),m=tx._st(r.n),keys=()=>[...m.keys()].sort();

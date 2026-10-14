@@ -155,6 +155,37 @@ section("a copy already made is never made again over newer work");
  chk("the next start does not copy the old leftover over the newer answer",B.answersIn("").note==="newer, typed after the move",B.answersIn("").note);
  chk("and it removes the leftovers from local storage",lsKeys().join()==="booklet.ui.theme",lsKeys().join());}
 
+section("newer wins after the move: an older release's tab, or a visit that fell back to local storage, against this one");
+/* what an older release's tab still open after the move writes when the reader types there: its kept copy, and a list
+   holding only its own entry (it re-reads local storage, which the move emptied) with updatedAt now (noteSaved) */
+function oldTabSaves(seed,id,note){const k="booklet.b."+id,o=JSON.parse(seed[k]);o.S.answers[""].note=note;o.dirty=true;
+  LS[k]=JSON.stringify(o);const e=JSON.parse(seed["booklet.library.v1"]).entries.find(x=>x.id===id);
+  LS["booklet.library.v1"]=JSON.stringify({v:1,entries:[{...e,updatedAt:new Date().toISOString(),dirty:true}]});}
+for(const storeLater of [true,false]){
+  const said=storeLater?"this tab typed later":"the older tab typed later";
+  fresh();const seed=SEED("0.13.0");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
+  const A=P.boot();await started(A);await idle(A);
+  const g=A.readLib().entries.find(e=>e.title==="A garden week").id;
+  if(storeLater){oldTabSaves(seed,g,"the older tab's, earlier");await sleep(5);await A.openFromList(g);A.answersIn("").note="this tab's, later";A.markDirty();await idle(A);}
+  else{await A.openFromList(g);A.answersIn("").note="this tab's, earlier";A.markDirty();await idle(A);await sleep(5);oldTabSaves(seed,g,"the older tab's, later");}
+  const B=reload();await started(B);await idle(B);await B.openFromList(g);
+  chk(said+": the later answer wins, whichever side wrote it",B.answersIn("").note===(storeLater?"this tab's, later":"the older tab's, later"),B.answersIn("").note);
+  chk(said+": one entry for the booklet, never two, and every other booklet still listed",B.readLib().entries.filter(e=>e.title==="A garden week").length===1&&listIds(B).length===3,listIds(B).join());
+  chk(said+": local storage is emptied of it",!LS["booklet.b."+g]&&!LS["booklet.library.v1"],lsKeys().join());}
+for(const storeLater of [true,false]){
+  const said=storeLater?"fallback visit, this tab typed later":"fallback visit, it typed later";
+  fresh();const seed=SEED("0.13.1-pre");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
+  IDB.ctl.refuse="SecurityError";const F=P.boot();await started(F);IDB.ctl.refuse=null;
+  const g=F.readLib().entries.find(e=>e.title==="A garden week").id;F.openFromList(g);
+  const A=P.boot();await started(A);await idle(A);
+  chk(said+": the visit uses local storage, and the move has emptied it",F.KEEP.mode==="ls"&&!LS["booklet.b."+g]);
+  const fType=async w=>{F.answersIn("").note=w;F.markDirty();F.flushSave();await sleep(5);};
+  if(storeLater){await fType("the fallback visit's, earlier");await A.openFromList(g);A.answersIn("").note="this tab's, later";A.markDirty();await idle(A);}
+  else{await A.openFromList(g);A.answersIn("").note="this tab's, earlier";A.markDirty();await idle(A);await sleep(5);await fType("the fallback visit's, later");}
+  const B=reload();await started(B);await idle(B);await B.openFromList(g);
+  chk(said+": the later answer wins",B.answersIn("").note===(storeLater?"this tab's, later":"the fallback visit's, later"),B.answersIn("").note);
+  chk(said+": one entry for the booklet",B.readLib().entries.filter(e=>e.title==="A garden week").length===1&&listIds(B).length===3,listIds(B).join());}
+
 section("an older release's tab still open after the move");
 {fresh();const seed=SEED("0.13.1-pre");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
  const A=P.boot();await started(A);await idle(A);
@@ -259,6 +290,58 @@ section("before the store is read: a dropped file waits; a full local storage is
  const A=P.boot();await started(A);A.render();
  chk("without IndexedDB, local storage that is full at start says it is full, not private mode",A.KEEP.problem==="full"&&/run out of room/.test(P.texts(P.main()))&&!/private mode/.test(P.texts(P.main())),A.KEEP.problem);
  global.localStorage.setItem=orig;}
+
+section("the line on \"Your booklets\" when IndexedDB is not used, even with nothing listed");
+{fresh();const A=P.boot();await started(A);A.loadText(BARE("Kept in IndexedDB"));await idle(A);
+ P.closePages();IDB.ctl.kill();IDB.ctl.refuse="SecurityError";
+ const B=P.boot();await started(B);B.closeBooklet();B.render();const w=P.texts(P.main());
+ chk("refused after the move: the list is empty, and says the larger store was not opened, so what it holds is not shown",/would not open its larger store/.test(w)&&/not shown/.test(w)&&B.readLib().entries.length===0,w.slice(0,300));}
+{fresh();const A=P.boot();await started(A);A.loadText(BARE("Kept in IndexedDB"));await idle(A);
+ /* time runs a hundred times faster for the waits of five seconds and more, so the test does not take them */
+ const realST=global.setTimeout;global.setTimeout=(f,ms,...x)=>realST(f,ms>=5000?ms/100:ms,...x);
+ for(const how of ["hangOpen","hangRead"]){
+   P.closePages();IDB.ctl.kill();IDB.ctl.refuse=null;IDB.ctl.hangOpen=how==="hangOpen";IDB.ctl.hangRead=how==="hangRead";
+   const B=P.boot();await started(B);B.render();const w=P.texts(P.main());
+   chk(how+": a store that does not answer is given up on, and the page draws",B.KEEP.mode==="ls"&&B.KEEP.idbWhy==="TimeoutError"&&B.KEEP.ready,B.KEEP.mode+" "+B.KEEP.idbWhy);
+   chk(how+": the list says the booklets kept here could not be read this time, and that a reload brings them back",/could not be read this time/.test(w)&&/Reload the page/.test(w),w.slice(0,300));}
+ global.setTimeout=realST;IDB.ctl.hangOpen=false;IDB.ctl.hangRead=false;}
+
+section("local storage full at start, IndexedDB fine: no false \"run out of room\"");
+{fresh();const orig=global.localStorage.setItem;
+ global.localStorage.setItem=(k,v)=>{throw Object.assign(new Error("full"),{name:"QuotaExceededError"});};
+ const A=P.boot();await started(A);A.render();const w=P.texts(P.main());await sleep(450);
+ chk("the list says nothing about room, and no toast does either",!/run out of room/.test(w)&&!/run out of room/.test(toast())&&A.KEEP.problem==="",A.KEEP.problem+" | "+toast());
+ global.localStorage.setItem=orig;}
+
+section("the theme: the latest pick wins");
+{fresh();const A=P.boot();await started(A);A.lsSet(A.THEME_KEY,"night");await idle(A);
+ LS["booklet.ui.theme"]="contrast";   /* picked where only local storage was written */
+ const B=reload();await started(B);await idle(B);
+ chk("a mirror that differs from the store holds the latest pick, and the store takes it",IDB.kv("booklet.ui.theme")==="contrast"&&LS["booklet.ui.theme"]==="contrast");
+ const orig=global.localStorage.setItem;global.localStorage.setItem=(k,v)=>{throw Object.assign(new Error("full"),{name:"QuotaExceededError"});};
+ LS["booklet.ui.theme"]="paper";B.lsSet(B.THEME_KEY,"daylight");await idle(B);
+ const C=reload();await started(C);await idle(C);
+ chk("unless local storage takes no write (its mirror is stale then): the store's stays",IDB.kv("booklet.ui.theme")==="daylight");
+ global.localStorage.setItem=orig;}
+
+section("a lost connection: tried again by itself");
+{fresh();const A=P.boot();await started(A);A.loadText(BARE("Reconnects"));const id=A.currentId;await idle(A);
+ IDB.ctl.kill();A.answersIn("").q="after the first loss";A.saveLocal();await sleep(60);await idle(A);
+ chk("the first loss: opened again at once, and written",/after the first loss/.test(keptText(id)));
+ IDB.ctl.kill();A.answersIn("").q="after a second loss, within five seconds";A.saveLocal();await sleep(200);
+ chk("a second loss within five seconds waits",!/second loss/.test(keptText(id)));
+ await sleep(5200);
+ chk("and is opened again when they are up, by itself, with no further change",/second loss/.test(keptText(id)),keptText(id).slice(0,80));}
+
+section("a failed write the page-hide hand-over carries is not written twice");
+{fresh();const A=P.boot();await started(A);A.loadText(BARE("Carried"));const x=A.currentId;await idle(A);
+ IDB.ctl.hold=true;IDB.ctl.failNext="DataError";
+ A.answersIn("").q="carried";A.saveLocal();await sleep(10);
+ A.lsSet("booklet.ui.pagesMenu","open");A.KEEP.queued=false;A.keepFlush(true);   /* hidden: handed over at once */
+ const mark=IDB.log.length;IDB.ctl.release();await sleep(60);A.lsSet("booklet.ui.pagesMenu","min");await idle(A);
+ const puts=IDB.log.slice(mark).filter(e=>e.put==="booklet.b."+x&&e.store==="kv").length;
+ chk("the copy is in the store, from the hand-over",/"q":"carried"/.test(keptText(x)));
+ chk("and it was written twice in all (the failed transaction, the hand-over), not a third time after",puts===2,puts+" writes");}
 
 section("a host before the store is read; the mirrors");
 {fresh();P.place("http:","fleet");LS["booklet.host.allowed"]="fleet: store";

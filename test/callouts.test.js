@@ -32,9 +32,9 @@ chk("the card hues are the six, in the work item's order",A.CARD_HUES.join()==="
    ["fr","es"].every(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).length<=5),
    ["fr","es"].map(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).join()).join(" | "));
  const src=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
- /* 0.13.1's three storage notices (storageFull, storageFailed, storageSmall: the move to IndexedDB) are drafts in fr, es
-    and es-AR until /localize checks them; any other draft mark is a string nobody checked */
- const drafts=src.split("\n").filter(l=>/l10n: draft/.test(l)),pending=/l10n: draft \*\/ (storageFull|storageFailed|storageSmall):/;
+ /* 0.13.1's four storage notices (storageFull, storageFailed, storageSmall, storageLate: the move to IndexedDB) are drafts
+    in fr, es and es-AR until /localize checks them; any other draft mark is a string nobody checked */
+ const drafts=src.split("\n").filter(l=>/l10n: draft/.test(l)),pending=/l10n: draft \*\/ (storageFull|storageFailed|storageSmall|storageLate):/;
  chk("no l10n: draft mark remains in STRINGS_SRC but the storage notices waiting for /localize: every other interface string is checked (0.13.0's were checked by /localize, 2026-10-14)",
-   drafts.every(l=>pending.test(l))&&drafts.length<=9,drafts.filter(l=>!pending.test(l)).map(l=>l.trim().slice(0,60)).join(" | "));}
+   drafts.every(l=>pending.test(l))&&drafts.length<=12,drafts.filter(l=>!pending.test(l)).map(l=>l.trim().slice(0,60)).join(" | "));}
 console.log(fails?"\n"+fails+" FAILURES":"\ncallout checks passed");process.exit(fails?1:0);

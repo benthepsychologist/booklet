@@ -5,6 +5,9 @@
 // entry kept in its log, with a second one left as a draft; the garden week example is added and its note answered; a
 // blank booklet is started; the theme is set to Night and the language to French. Everything the page left in local
 // storage is written to test/seeds/ls-<release>.json, with `_about` saying where it came from.
+// It also writes test/seeds/booklet-0.13.0.html.gz, the 0.13.0 renderer itself for keep-browser.js to run in a second tab
+// (an older release's tab still open after the move): v0.13.0's booklet.html with the bodies of its two libraries
+// emptied (they are stored as text and woken only to draw a diagram or a formula, which that test never does), gzipped.
 // Usage: PLAYWRIGHT=/path/to/playwright-core node test/seeds/make-seeds.js     (needs the release tags)
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path'),cp=require('child_process');
@@ -12,6 +15,8 @@ const ROOT=path.join(__dirname,'..','..');
 const RELEASES=[['0.12.0','v0.12.0'],['0.13.0','v0.13.0'],['0.13.1-pre','cf07bc4']];
 const show=(rev,f)=>cp.execFileSync('git',['-C',ROOT,'show',rev+':'+f],{encoding:'utf8',maxBuffer:64<<20});
 (async()=>{
+  {const t=show('v0.13.0','booklet.html').replace(/(<script type="text\/plain" id="lib-[a-z]+">)[\s\S]*?(<\/script>)/g,'$1$2');
+   fs.writeFileSync(path.join(__dirname,'booklet-0.13.0.html.gz'),require('zlib').gzipSync(t,{level:9}));}
   const b=await chromium.launch();
   for(const [name,rev] of RELEASES){
     const html=show(rev,'booklet.html'),board=show(rev,'examples/project-board.booklet.md'),garden=show(rev,'examples/garden-week.booklet.md');

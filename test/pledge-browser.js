@@ -232,7 +232,16 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   ok(keys.every(k=>/^booklet\./.test(k)),'localStorage holds only the renderer\'s own keys (since 0.13.1 at most its two mirrors): '+keys.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));
   {const dbs=await p.evaluate(async()=>indexedDB.databases?(await indexedDB.databases()).map(d=>d.name):['(no databases() to list them)']);
    const K=Object.keys(await kept(p));
-   ok(dbs.join()==='booklet'&&K.length>0&&K.every(k=>/^booklet\./.test(k)),'IndexedDB holds only the renderer\'s own database, `booklet`, with only its own keys: '+dbs.join()+' / '+K.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));}
+   ok(dbs.join()==='booklet'&&K.length>0&&K.every(k=>/^booklet\./.test(k)),'IndexedDB holds only the renderer\'s own database, `booklet`, with only its own keys: '+dbs.join()+' / '+K.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));
+   /* and that database holds only its two stores, and the stamps only the renderer's keys and which tab wrote them (a tab
+      id and a count): nothing a reader wrote */
+   const shape=await p.evaluate(()=>new Promise(res=>{const r=indexedDB.open('booklet');r.onerror=()=>res(null);r.onsuccess=()=>{const db=r.result,stores=[...db.objectStoreNames];
+     if(!stores.includes('stamp')){db.close();res({stores,keys:[],vals:[]});return;}
+     const tx=db.transaction(['stamp'],'readonly'),s=tx.objectStore('stamp'),ks=s.getAllKeys(),vs=s.getAll();
+     tx.oncomplete=()=>{db.close();res({stores,keys:ks.result,vals:vs.result});};};}));
+   ok(!!shape&&shape.stores.slice().sort().join()==='kv,stamp','the database holds only its two object stores, kv and stamp: '+(shape&&shape.stores.join()));
+   ok(!!shape&&shape.keys.length>0&&shape.keys.every(k=>/^booklet\./.test(k))&&shape.vals.every(v=>typeof v==='string'&&/^[0-9a-z]+\.\d+$/.test(v))&&!shape.vals.concat(shape.keys).some(x=>Object.values(S).some(w=>String(x).includes(w))),
+     'the stamps hold only the renderer\'s keys and tab ids with a count, no content: '+(shape?shape.keys.length+' stamps, e.g. '+shape.vals.slice(0,2).join(', '):'none'));}
   const ss=await p.evaluate(()=>Object.keys(sessionStorage));
   ok(ss.length===0,'sessionStorage is empty: '+ss.join(','));
   ok(viol.length===0&&cons.length===0,'zero CSP violations: '+viol.concat(cons).join('|'));
