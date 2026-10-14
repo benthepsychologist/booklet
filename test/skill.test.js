@@ -70,6 +70,8 @@ chk("SKILL.md carries four worked examples",examples.length===4);
 /* the guide teaches a solution, and no clinical example is left in it */
 chk("SKILL.md teaches a solution callout with an example",/> \[!solution\]- Solution\n/.test(skill));
 chk("SKILL.md has no symptom questionnaire, PHQ item or mood rating among its examples",!/phq|bothered by|\[!scale\|mood\]|symptom questionnaire/i.test(skill));
+{const spec=fs.readFileSync(path.join(R,"SPEC.md"),"utf8");
+ chk("SPEC.md has no symptom questionnaire, PHQ item, mood rating, feelings list or clinical practice name among its examples",!/phq|bothered by|\bmood\b|symptom|feelings|mensio|do you feel it|depress/i.test(spec),(spec.match(/phq|bothered by|\bmood\b|symptom|feelings|mensio|do you feel it|depress/ig)||[]).join(","));}
 
 const files=[
   ...examples.map((t,i)=>{const f=path.join(tmp,`worked-example-${i+1}.booklet.md`);fs.writeFileSync(f,t);return f;}),

@@ -26,6 +26,8 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
  chk("the three booklets built blind from SKILL.md have no errors",blind.length===3&&b.errors.length===0,b.errors.join(" | "));
  const reg=lint(...["module-daily-journal","module-the-day","module-check-in"].map(n=>path.join(FX,n+".md")));
  chk("the module fixtures (copies of real registry modules) lint clean as v0.5",reg.status===0&&/0 errors/.test(reg.out),reg.out);
+ const flag=lint("--registry",path.join(FX,"lint-ok.md"));
+ chk("booklet-registry's CI still passes --registry: it is ignored, and a clean file stays clean (exit 0, no findings)",flag.status===0&&/0 errors · 0 warnings/.test(flag.out),flag.out);
 }
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
@@ -75,7 +77,7 @@ const CASES=[
  ["lint-setting-unknown","a setting a kind does not take (`mx:5` for `max:5`)",/line 13: a number line takes no `mx:` setting \(it takes `min:`, `max:`, `step:`\)/],
  ["lint-setting-flag-unknown","a flag a kind does not take",/line 13: a text line takes no `lng` setting \(it takes `long`\)/],
  ["lint-setting-open-on-text","`open` on a kind other than choice and multi",/line 13: a text line takes no `open` setting/],
- ["lint-setting-daily-alone","`daily` without `repeat`",/line 15: `daily` only follows `repeat`/],
+ ["lint-setting-daily-alone","`daily` without `repeat`",/line 15: `daily` needs `repeat`/],
  ["lint-setting-number-not-number","a `min:` that is not a number",/line 13: `min:abc` must be a number/],
  ["lint-setting-date-min","`min:` on a date (it draws neither)",/line 13: a date line takes no `min:` setting \(it takes no settings at all\)/],
  ["lint-query-in-data","a query in the data section",/line 19: a query belongs in an activity's prose, not in the data section/],

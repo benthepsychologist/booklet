@@ -1,6 +1,6 @@
 # The booklet format, v0.13.0
 
-**A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Data, and anything a reader answers, lives in fenced blocks. A booklet that nobody has answered yet holds no answers, and its only JSON is the data of its widgets and data blocks.
+**A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Data, and anything a reader answers, lives in fenced blocks. Before anyone has answered, the only JSON in a booklet is the data of its widgets and data blocks.
 
 > **Status: v0.13, draft.** This format is young and will change. Nothing before v1.0 is stable, and
 > nobody keeps older files working. This spec, the renderer, the skill, the tests and the file marker
@@ -129,15 +129,15 @@ A reference is looked up in the module's own fence, then the module's own data s
 A module may state its terms where they travel with it, in a `notice` callout inside its fence:
 
 ```markdown
-> [!module|mensio-check-in] A mindful check-in
+> [!module|check-in] A daily check-in
 
 > [!notice]
 > license: Free to copy and share, unmodified and with this notice intact.
-> copyright: Mensio Mental Health, 2026
+> copyright: Example Press, 2026
 > source: https://example.org/check-in
 > version: 1.2
 
-> [!activity|check-in repeat] Mindful check-in
+> [!activity|check-in-log repeat] Check in
 ```
 
 - Each line is `key: value`, and the keys are `license`, `copyright`, `source` and `version`; any may be left out, and anything else in it is a linter error. A notice takes no id and no settings. A module has at most one, and it sits inside the module's fence before the module's first activity. A notice outside a module's fence, or after its first activity, is an error in the linter. A renderer ignores it and reports it. A notice's `version` is the module's, and need not look like the booklet's.
@@ -307,7 +307,7 @@ In Obsidian, an unknown kind renders as a note-style callout with the title, so 
 - `choice` takes one answer, `multi` any number. `open` lets the reader add options of their own.
 - **The reader's own option.** With `open`, a field and an Add button sit under the options. An option the reader adds is stored in the answer as the words they wrote, a string, in the place a position would be: a `choice` holds the position or the string, a `multi` a list of positions and strings. Text equal to a listed option (ignoring case and spaces) presses that option instead; an own option is never added twice, and nothing is ever written into the file's list of options. A renderer should offer again, in an activity that keeps entries, the own options the reader added to that question in earlier kept entries, as ordinary unpressed options after the listed ones. A shared menu (`menu:id`) with `open` behaves the same.
 - **`[x]` marks a correct option**, for study booklets. A worksheet with no right answer leaves every box `[ ]`. A renderer shows the reader whether they were right once they have answered: for a `choice`, as soon as they pick, the picked option is marked right or not, and the correct one is marked as the answer; for a `multi`, a Check button marks each option picked and right, picked and not right, or right and missed. Nothing is scored and nothing is stored: the answer is recorded as usual and the file never says whether it was right. An own option (`open`) is neither right nor wrong. A `choice` with more than one `[x]` has the first as its answer. **The correct option is visible to anyone who opens the file as text.** In Obsidian's Reading view, a click on a checkbox rewrites `[ ]` to `[x]` in the file — a real behavior, and the accepted trade-off: a booklet's own reader answers it in Booklet, never by clicking a checkbox in an Obsidian note, so the answer key is never at risk from ordinary use.
-- **Options are identified by position, not by id.** The third option is the third option in every language file too, so a whole questionnaire carries one id. This is what removes per-item tags. A file that reorders options after people have answered breaks its own answers.
+- **Options are identified by position, not by id.** The third option is the third option in every language file too, so a whole list carries one id. This is what removes per-item tags. A file that reorders options after people have answered breaks its own answers.
 
 ### Scale, number, date
 
@@ -583,7 +583,7 @@ A query that names a data block in another module, or an `as:` that is not one o
 **A widget is data, never code**. Its data is a fenced block named `booklet widget`, with a block id after it, and it is placed and operated through a `widget` line:
 
 ````markdown
-> [!widget|body] Where do you feel it?
+> [!widget|body] Which muscles did you stretch?
 > ![[#^body-map]]
 
 ```booklet widget
@@ -596,7 +596,7 @@ A query that names a data block in another module, or an `as:` that is not one o
 
 - The fence holds JSON, as a data block's does. The widget's title is the title on the widget line, not a key in the data.
 - `engine` names what draws it: `svg-regions` or `grid-select`. An engine a renderer does not have is shown as a notice, and the linter reports an error for one that does not exist. Labels are plain strings, because the file has one language.
-- Settings on the widget line: `readonly` (shown, not operated) and `describe` (followed by what each part says about itself). A widget engine should honour both. `grid-select` does. **The reference renderer does not do this yet for `svg-regions`:** it ignores both there (section 13).
+- Settings on the widget line: `readonly` (shown, not operated) and `describe` (followed by what each part says about itself). `grid-select` honours both. `svg-regions` should too. **The reference renderer does not do this yet:** it ignores both on an `svg-regions` widget (section 13).
 - **An `svg-regions` figure** marks each region the reader can tap as a shape with `class="rg"` and a `data-r` attribute naming the region id. Every other shape in the figure is drawn as a plain outline, and the renderer styles both; a figure needs no styling of its own.
 - **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
 - Every `svg` string is sanitized before drawing.
@@ -737,7 +737,7 @@ A regional variant (`es-AR`) is its own sibling file.
 - **Obsidian and GitHub show images their own way**, outside the rule in section 6.
 - `---` on the first line opens front matter, which is intended; `---` directly under text makes a heading, so page breaks need a blank line above or use `***`.
 - **Two modules in one file may use the same block id or footnote id, and Obsidian and GitHub do not know about modules.** Booklet reads every reference inside its own module (section 4). Obsidian resolves `![[#^id]]` to the first block with that id in the note. Obsidian and GitHub resolve a footnote mark `[^id]` and its definition across the whole file. So when two modules use `^fig` or `[^1]`, Booklet shows each module its own, and those hosts show the first one's for both.
-  - This holds under a module's own data section too. It does not arise in a file with one module.
+  - This holds for a block id or a footnote id under a module's own data section too. It does not arise in a file with one module.
   - Question, activity and menu ids never matter to a host: they are callout metadata.
   - A tool that puts modules together may rename a clashing block id or footnote id by prefixing the module's id (`fig` becomes `week-2-fig`, with every reference to it inside that module), as the reference renderer's Add a module does. An author never needs to prefix an id by hand.
   - The reference linter warns about a block id or a footnote id that two modules share.
@@ -800,9 +800,9 @@ Twice a month the sun and the moon pull together.
 
 > [!text|noticed] What surprised you?
 
-[^atlas-12]: *The Harbour Tide Atlas*, 2nd edition (2019), p. 12: "The tide rises and falls twice in each lunar day." Verified 2026-09-20.
-
 > [!data] Data
+
+[^atlas-12]: *The Harbour Tide Atlas*, 2nd edition (2019), p. 12: "The tide rises and falls twice in each lunar day." Verified 2026-09-20.
 
 ```mermaid
 graph LR; New --> Spring --> Quarter --> Neap --> Full
@@ -818,9 +818,16 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 A conforming reader must: read a file whose front matter declares `booklet: "0.13"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names (no image, no diagram image or style, no font), and draw a link to a module it does not hold without fetching anything, so that opening a file asks the network for nothing.
 
-A conforming reader should open a file marked with another `0.x` version, earlier or later, by its own rules and with the notice that section 2 describes. The conditions above that refuse a file (a module opened and not closed, an id used twice in a module, and the rest) refuse it whatever the marker.
+A conforming reader should open a file marked with another `0.x` version, earlier or later, by its own rules and with the notice that section 2 describes. A reader saves such a file back with the marker it came with.
 
-A reader may also offer conveniences that this document does not define and that conformance does not test: a library of the reader's booklets (rename, remove, and a request that the browser keep its storage); a host hook, `window.Booklet`, through which a page that serves the reader supplies a store and opens booklets by link; one at a time, which takes a page of three or more questions one by one; reading mode, which folds a page into sections at its shallowest heading level; a theme menu with Auto, which follows the booklet's own look if it asks for one and the device otherwise; and "draw the title once", which leaves out a report's first heading when it repeats the title. The reference renderer has all of them. A conforming reader needs none.
+A reader may also offer conveniences that this document does not define and that conformance does not test. The reference renderer has all six, and a conforming reader needs none:
+
+- a library of the reader's booklets, with rename, remove, and a request that the browser keep its storage;
+- a host hook, `window.Booklet`, through which a page that serves the reader supplies a store, a line and offers; and opening a booklet by link (`#/open/<name>`) from a store that the host's copy names in a `booklet-store` meta tag;
+- one at a time, which takes a page of three or more questions one by one;
+- reading mode, which folds a page into sections at its shallowest heading level;
+- a theme menu with Auto, which follows the booklet's own look if it asks for one and the device otherwise;
+- "draw the title once", which leaves out the first heading of an activity's page when that heading repeats the activity's title.
 
 A conforming writer must: emit front matter with the current marker, `booklet: "0.13"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read, unchanged (in value, not in spacing), unless the reader changed it (section 8); write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 

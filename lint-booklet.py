@@ -819,7 +819,7 @@ def check_settings(f, n, kind, w):
         if flag not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
     if "daily" in w["flags"] and "repeat" not in w["flags"]:
-        err(f, f"line {n}: `daily` only follows `repeat` (write `repeat daily`)")
+        err(f, f"line {n}: `daily` needs `repeat` (write `repeat daily`)")
 
 
 def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):

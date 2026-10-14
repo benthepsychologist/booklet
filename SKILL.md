@@ -53,7 +53,7 @@ Booklet > modules > activities > (pages, by a rule) > booklet lines and prose.
   day, replacing today's on a second finalize; with neither, the activity is
   answered once and edited in place, with one current answer and no history.
 - **Pages** split one long activity into steps. Any thematic break inside an
-  activity is a page break; a page with no break is one page. ⚠️ Write `***` on
+  activity is a page break; an activity with no break is one page. ⚠️ Write `***` on
   its own line, not `---`: a bare `---` right under a line of text is read by
   Markdown as that line's heading instead.
 - **Booklet lines** (`> [!kind|id …] Title`) are everything Booklet needs to
@@ -233,7 +233,7 @@ Write one booklet line for each question (section 6) where `my-question` stands.
 | `# Title` and the prose above the first module or activity line | as the booklet's opening, on the home screen under the title (a `# Title` that repeats the title is drawn once) |
 | the module's title, the words after `]` on its opening line | on the module's card, and as the heading of its own screen |
 | prose inside the module before its first activity | as the module's opening, on the module's own screen above its activities; its first paragraph is also the card's blurb |
-| the activity's title | on the activity's card on its module's screen |
+| the activity's title | on the activity's card on its module's screen, and as the heading of its own page |
 | the activity's first paragraph | on its card, under the title |
 
 A module that holds one activity is named by the module's title, and the
@@ -454,7 +454,8 @@ no prose in between.
   reader asks.
 - `> [!solution]- Solution` explains *after* the reader has answered. Under a
   `choice` or `multi` with an `[x]` it opens by itself once the reader answers
-  (for a `multi`, when the reader presses Check). Under any other question it
+  (for a `multi`, when the reader presses Check). Under a `choice` with no `[x]`
+  it opens by itself on a pick, in a neutral tone. Under any other question it
   opens when the reader asks.
 
 ```markdown
@@ -470,9 +471,9 @@ no prose in between.
 ```
 
 **A list used by several questions is written once, as a menu.** Put a
-`menu` line and its bulleted list anywhere in the file (inside the module is
-best, so the module travels whole), and name it on each question with
-`menu:<id>`. The question has no list of its own; `open` still works. The menu
+`menu` line and its bulleted list inside the module whose questions use it, or
+under a `> [!data]` line for every module to use, and name it on each question
+with `menu:<id>`. The question has no list of its own; `open` still works. The menu
 itself is never shown.
 
 ```markdown
@@ -549,7 +550,7 @@ between paragraphs for a new one. Section 4 says what a heading does.
   If they gave a reference and no quote, write the note as that reference, as
   given, with no quote and no `Verified`, and never make a quote up: the
   panel shows it as a plain reference, its words as written, with no check. Put nothing else in a note (`*` stays as typed).
-- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a page's name, a question's prompt or a callout's title), on the right page; the linter warns when no heading in the file matches.
+- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a page's name, a question's prompt or a callout's title), on the right page; the linter warns when nothing in the link's own module reads those words.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
   module**. It is read-only and takes no answer. The kind goes on the fence
@@ -856,7 +857,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | no `lang:` | `front matter has no `lang:` — a v0.13 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
-| `daily` alone, or a `min:` that is not a number | `` `daily` only follows `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
+| `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
 | a kind the format does not define | `warn `sticker` is not a kind this format defines …` | use a kind from section 6, or leave the id and settings off for a plain reading callout |
 | region spelled wrong | `'fr-ca' is not spelled the way a tag is: lowercase language, uppercase region (es-AR)` | `fr-CA` |
 | a module opened twice | `'x' opens before 'y' (line N) is closed` | close the first module before opening another |
@@ -932,7 +933,7 @@ A journal for the minutes after a walk.
 
 Write down what you noticed, and anything worth keeping.
 
-> [!activity|aw-notes repeat] Walk notes
+> [!activity|aw-notes repeat] After a walk
 
 Write while it is fresh. Short answers are fine, and skipping any of these is fine too.
 
@@ -1029,7 +1030,7 @@ Unas líneas cada día sobre lo que estás leyendo.
 
 Qué leíste hoy y qué te quedó.
 
-> [!activity|rl-dia repeat daily] Mi rato de lectura
+> [!activity|rl-dia repeat daily] Registro de lectura
 
 Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retomas lo que ya guardaste.
 
@@ -1065,7 +1066,7 @@ A short briefing on appointment reminders, with one question at the end.
 
 Whether to add email to SMS reminders. The figures are invented for the example.
 
-> [!activity|brief] The briefing
+> [!activity|brief] Reminders: SMS or email?
 
 ## The answer
 

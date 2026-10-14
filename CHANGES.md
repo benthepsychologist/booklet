@@ -20,7 +20,14 @@ What changed in each version of the format, newest first. `SPEC.md` states the r
 - **The manifest and the translation-sibling check are drafts** (section 13). `manifest` stays a kind that takes no settings.
 - **Widget colours are colour names** (section 7). The hex pair `{ "tint", "deep" }` is no longer read; "tone" means `good`, `warn` or `bad` only.
 - **`group` is a kind of Booklet's own** (sections 4 and 6): the plain fold.
-- **Wording only, across `SPEC.md` and `SKILL.md`.** No rule changed. This list moved here from `SPEC.md`, which now states each rule once and keeps no history. The marker rule is in section 2 alone. Section 3's data section is a list. Section 11's complete booklet ends with a `> [!data] Data` line, not a heading. Section 12 names the reader conveniences outside conformance (the library, the host hook, one at a time, reading mode, the theme menu with Auto, "draw the title once"). The examples in both files are neutral (a topic matrix, a clarity scale, an outdoors list, a menu of places). The reference renderer's drawing notes moved to `README.md`. `SKILL.md` teaches `solution`, lists the icon names, says what each title and heading does, and has a skeleton that lints clean. The linter no longer explains the old `key=value` setting form, and `--registry` is gone from its usage text (it is still ignored if given).
+- **Wording only, across `SPEC.md` and `SKILL.md`.** No rule changed.
+  - This list moved here from `SPEC.md`, which now states each rule once and keeps no history. Section 2 sets out the marker rule in full.
+  - Section 3's data section is a list. Section 11's complete booklet ends with a `> [!data] Data` line, not a heading, and its citation sits under that line.
+  - Section 12 names the reader conveniences outside conformance: the library, the host hook, one at a time, reading mode, the theme menu with Auto, and "draw the title once".
+  - The examples in both files are neutral (a topic matrix, a clarity scale, an outdoors list, a menu of places).
+  - The reference renderer's drawing notes moved to `README.md`.
+  - `SKILL.md` teaches `solution`, lists the icon names, says what each title and heading does, and has a skeleton that lints clean.
+  - The linter no longer explains the old `key=value` setting form, `--registry` is gone from its usage text (it is still ignored if given), and its `daily` message says "needs `repeat`".
 
 The marker is `booklet: "0.13"`. A file marked `"0.12"` opens with a notice; change its marker to `"0.13"`, and write `> [!row|end]` where it has `> [!row end]`.
 
