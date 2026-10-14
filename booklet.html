@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-qK/F2QFAb+Dnq3co2vpbjs8QI0eQvKVDX5owD/fVHMY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-ZMcLhHI2L1d99tekS8+AaSOuCg60d+MTE0FtXjC7wDI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3539,7 +3539,10 @@ let PERSISTED=null,PERSIST_ASKED=false;
 const storageApi=()=>{try{const s=typeof navigator!=="undefined"&&navigator?navigator.storage:null;return s&&typeof s.persisted==="function"?s:null;}catch(e){return null;}};
 /* what the browser says now; redraws "Your booklets" when that is news */
 function checkPersisted(){const s=storageApi();
-  if(!s){if(PERSISTED!==false){PERSISTED=false;if(screen===LIB_SCREEN) render();}return;}
+  /* (with no navigator.storage, as on an http: page that is not localhost, this is known at once, inside the draw that
+     asked: that draw reads PERSISTED next, so it is drawn again only from outside a draw. Drawing again inside one
+     drew "Your booklets" twice into the same page: its cards, and a host's notice, twice over) */
+  if(!s){if(PERSISTED!==false){PERSISTED=false;if(screen===LIB_SCREEN&&!RENDERING) render();}return;}
   try{Promise.resolve(s.persisted()).then(v=>{v=!!v;if(v!==PERSISTED){PERSISTED=v;if(screen===LIB_SCREEN) render();}},()=>{});}catch(e){}}
 function askPersist(){if(PERSIST_ASKED) return;PERSIST_ASKED=true;
   const s=storageApi();if(!s||typeof s.persist!=="function") return;

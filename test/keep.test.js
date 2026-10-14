@@ -396,6 +396,16 @@ section("a first read that ends after the visit fell back is not loaded");
  chk("and when the read ends, nothing of it is loaded into the page",B.KEEP.cache.size===0,B.KEEP.cache.size);
  global.setTimeout=realST;IDB.ctl.slowRead=0;}
 
+section("a host waiting when \"Your booklets\" is first drawn, on a page with no navigator.storage");
+/* the store's first draw comes after a host's script has registered; with no navigator.storage (an http: page that is
+   not localhost, and Node) the first list asks checkPersisted, which used to draw again inside that draw */
+{fresh();P.place("http:","fleet");const A=P.boot();await started(A);A.loadText(BARE("Listed once"));await idle(A);
+ P.closePages();IDB.ctl.kill();
+ const B=P.boot();const h=B.BookletApi.host({label:"a label not allowed"});await started(B);
+ const asks=P.find(P.main(),P.hasClass("hostask")).length,cards=(P.texts(P.main()).match(/Listed once/g)||[]).length;
+ chk("the list is drawn once: one host notice, one card for the booklet",h.state()==="waiting"&&asks===1&&cards===1,asks+" notices, "+cards+" cards");
+ delete global.location;}
+
 section("a host before the store is read; the mirrors");
 {fresh();P.place("http:","fleet");LS["booklet.host.allowed"]="fleet: store";
  const A=P.boot();
