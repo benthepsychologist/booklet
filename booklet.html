@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-oVgLXTNErqzpuY7T7II+72meHSfKolTc2tUvwr/+Zvk=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-zPse/PgZvCrT4fUulFn6TXcxVeUZIwG2hWROpwqjjQY=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2893,20 +2893,27 @@ const storeNameOf=e=>e&&typeof e.from==="string"&&e.from.startsWith("store:")?e.
 /* ---- a store booklet: the store's file is the truth, the kept copy only a buffer ----
    A store booklet (`from` is "store:<name>") is listed under "Your booklets" as soon as it is read, as a pointer: its
    entry, with no kept copy of its content (notePointer). A kept copy (booklet.b.<id>) appears only once the reader
-   changes something, and it is only a buffer for work the store may not have yet. Whether the store has all of it is a
-   fact about content, decided when the booklet is opened and never a flag set when a host answers, so it does not
-   matter whether the host has registered yet, how fast it answered, which tab it answered in or whether the reader
-   downloaded since. The store holds what is kept here (storeHolds) when nothing is kept (a pointer); or when the kept
-   copy holds no change to the booklet itself (`customized`: a rename inside it, a module added or removed, which the
-   store cannot hold, since it keeps its own body) and the file just read holds every answer, entry and draft the kept
-   copy holds, each with the same value in the same place (workWithin). A kept copy with no module in it (a blank one)
-   is judged on its answers alone: its body is never worth keeping over the file's. When the store holds it, the file is
-   drawn and the kept copy goes (openLinked); otherwise the kept copy opens and the newer file is offered, as before. */
+   changes something, and it is only a buffer for work the store may not have yet. Whether the store already has what
+   is kept here is a fact about content, decided when the booklet is opened (openLinked: by its link, from the list, or
+   by a host's Booklet.open) and never a flag set when a host answers (hostSet), so it does not matter whether the host
+   has registered yet, how fast it answered, which tab it answered in or whether the reader downloaded since.
+   The store holds what is kept here (storeHolds) when nothing is kept (a pointer); or when the kept copy holds no change
+   to the booklet itself (`customized`: a rename inside it, a module added or removed, which the store cannot hold, since
+   it keeps its own body) and the kept copy and the file just read hold the same work: every answer, entry and draft in
+   either one is in the other, with the same value in the same place (workWithin, both ways). Both ways, because a
+   removal is work too: an answer cleared here, an entry deleted or a draft emptied while the store did not hear of it
+   (the box down, the host waiting for Allow, the offer showing, a save refused) must not come back from the file. The
+   price is that work another device added makes the kept copy open, with the offer, where the file would be right.
+   A kept copy with no module in it (a blank one) is judged one way only, on its own answers: it holds nothing worth
+   keeping over the file's. When the store holds it, the file is drawn into the same entry and the kept copy goes;
+   otherwise the kept copy opens, the newer file is offered if it changed, and reading it keeps the reader's answers,
+   entries and drafts (linkAccept). */
 /* a value written the same way whatever order its keys were set in, for comparing two of them */
 const canon=v=>JSON.stringify(v,(k,x)=>isObj(x)?Object.keys(x).sort().reduce((o,y)=>{o[y]=x[y];return o;},{}):x);
-/* Whether every piece of a reader's work in a kept copy (S: its answers and entries; D: its drafts) is in a file's
-   parse (R): each answer and draft field that holds something has the same value there, and each kept entry is among the
-   file's entries for that activity. What holds nothing (a blank answer, an empty list) is not work and is not looked for. */
+/* Whether every piece of a reader's work in one copy (S: its answers and entries; D: its drafts) is in another, given in
+   a parse's shape (R: R.S, R.drafts.activities): each answer and draft field that holds something has the same value
+   there, and each entry is among the other's entries for that activity. What holds nothing (a blank answer, an empty
+   list) is not work and is not looked for, so a value cleared in one copy is seen only from the copy that still holds it. */
 function workWithin(S,D,R){const own=(o,k)=>isObj(o)&&hasOwn(o,k)?o[k]:undefined,fs=R&&R.S||{},fd=draftsIn(((R&&R.drafts)||{}).activities);
   const same=(a,b)=>b!==undefined&&canon(a)===canon(b);
   const ans=isObj(S&&S.answers)?S.answers:{};
@@ -2926,8 +2933,10 @@ function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return tr
   let o=null;try{o=JSON.parse(raw);}catch(x){o=null;}
   if(!isObj(o)||!isObj(o.S)) return false;
   const T=isObj(o.TPL)?o.TPL:null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
-  if(T&&T.customized&&!blank) return false;
-  return workWithin(o.S,o.D,R);}
+  if(blank) return workWithin(o.S,o.D,R);
+  if(T&&T.customized) return false;
+  /* both ways: the file holds the kept copy's work, and the kept copy holds the file's (so a removal made here counts) */
+  return workWithin(o.S,o.D,R)&&workWithin((R&&R.S)||{},{custom:draftsIn(((R&&R.drafts)||{}).activities)},{S:o.S,drafts:{activities:(isObj(o.D)&&o.D.custom)||{}}});}
 function describeBooklet(t){t=t||{};
   const mods=(Array.isArray(t.modules)?t.modules:[]).filter(m=>m&&typeof m==="object");
   return {title:(t.head&&t.head.title)||t.title||null,
@@ -3000,11 +3009,10 @@ function noteSaved(){const id=currentId,now=new Date().toISOString();
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
     if(!e&&currentEntry){e={...currentEntry};L.entries.push(e);}
     if(e) Object.assign(e,fresh);});}
-/* A store booklet just read from the store is listed under "Your booklets" as a pointer: its title, where it is kept,
-   the fingerprint of the file read and when it was opened, and no copy of its content (the store holds it, so there is
-   nothing here to go stale). A name the reader gave it in the list (`named`) stays. Opening it again, from the list or by
-   its link, reads the store's file afresh (openFromList, openLinked). Called only on a page that declares a store, so
-   the list can always read the file again. */
+/* A store booklet just read from the store is listed as a pointer (see "a store booklet" above storeHolds): its title,
+   where it is kept, the fingerprint of the file read and when it was opened, and no copy of its content. A name the
+   reader gave it in the list (`named`) stays. Called only on a page that declares a store, so the list can always read
+   the file again. */
 function notePointer(){const id=currentId,now=new Date().toISOString();
   const fresh={...describeBooklet(BOOK),openedAt:now,dirty:false,unsavedEntries:0,lang,from:currentEntry.from,storeSeen:currentEntry.storeSeen};
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
@@ -7338,12 +7346,11 @@ function hookFire(){HOOK_TIMER=null;HOOK_LAST=Date.now();
   hookStopWait();
   if(HOST) HOOK_ANSWER_TIMER=setTimeout(()=>{HOOK_ANSWER_TIMER=null;if(HOST&&HOST.status==="saving")hostSet("failed","",true);},HOOK_ANSWER_MS);
   HOOK_LISTENERS.slice().forEach(fn=>{try{fn({...info});}catch(e){HOOK_SEEN="";hostSet("failed",hookText(e&&e.message,200));}});}
-/* A host reports: status "saved", or "failed" with a message. What it reports is shown in the top bar and nowhere else:
-   whether the store holds a booklet's work is read from the store's file when the booklet is opened (storeHolds), never
-   taken from an answer. An answer may name the change it answers (`change`, the object onChange gave or its `change`
-   number; docs/hosting.md): one for a change sent before the latest, or for a booklet no longer open, leaves the bar as
-   it is, so "Saved" never stands for a change still on its way. An answer that names none is about the open booklet's
-   latest change, as it always was. */
+/* A host reports: status "saved", or "failed" with a message. It changes the top bar and nothing else (whether the store
+   holds a booklet is read from its file: see storeHolds). An answer may name the change it answers (`change`, the object
+   onChange gave or its `change` number; docs/hosting.md): one for a change sent before the latest, or for a booklet no
+   longer open, leaves the bar as it is, so "Saved" never stands for a change still on its way. An answer that names
+   none is about the open booklet's latest change, as it always was. */
 function hostSet(status,message,silent,change){if(!hostActive()) return;
   const n=typeof change==="number"?change:isObj(change)&&typeof change.change==="number"?change.change:null;
   if(n!==null&&!(HOOK_OUT!==null&&n===HOOK_OUT.change&&HOOK_OUT.id===currentId)) return;
@@ -7395,10 +7402,14 @@ function hostAccept(){if(!newerWaiting()) return;
   finishLoad(R);}
 /* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
    generator owns the body and the reader owns the records (the store contract).
-   - A host's booklet with a host registered: the store file is the truth (the host saves every change, from any device),
-     so it is read whole, into the same entry.
-   - Otherwise the store file never held the reader's work: the new file's body is taken and the kept booklet's own
-     answers, entries and drafts stay as they are (an answer to a question the new body no longer has stays unused).
+   - A store booklet: the new file's body is taken and the kept booklet's own answers, entries and drafts stay as they
+     are (an answer to a question the new body no longer has stays unused). With a host, the offer stands only when the
+     kept copy and the file hold different work (storeHolds), and the difference may be just what the store never heard
+     of (the box down, a refused save, the host waiting for Allow), so the kept copy's work wins; but the file's records
+     are the reader's too there (the host saves them from any device), so the file fills in every place the kept copy
+     holds nothing at all for (withFileWork): an answer a generator moved to another module, work another device put
+     where this copy never was. A place the kept copy holds, even empty (an answer cleared, an entry deleted, but also a
+     list of lines that was only looked at), keeps the kept copy's value, and the host then saves the result.
    - A registry module (#/module/<id>) is updated in place the way Add a module updates a module already present.
    Either way the entry remembers the text just read (storeSeen). A text the page refuses changes nothing but says why. */
 function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
@@ -7407,11 +7418,22 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   if(N.via.store===false){const r=addModuleText(N.text);
     if(!r.ok){toast(humanMsg(r.problems.join(" ")));render();return;}
     saveLocal();render();toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,""))));}
-  else if(HOST&&hostName()) finishLoad(R);
+  else if(HOST&&hostName()){const W=withFileWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries});}
   else finishLoad(R,null,{S:STATE,D:DRAFTS,dirty,unsavedEntries});
   if(currentId!==id) return;
   if(currentEntry) currentEntry.storeSeen=N.seen;
   changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=N.seen;});}
+/* The kept booklet's work (STATE, DRAFTS) laid over a file's (R, its parse): every answer and draft field the kept
+   booklet holds, and every activity's list of entries it holds, stays exactly as it is, even an empty one; the file's
+   fills only the places the kept booklet holds nothing for. Returns {S, D}, ready for finishLoad; changes nothing. */
+function withFileWork(R){const fa=nullMap((R.S||{}).answers,1),fe=nullMap((R.S||{}).entries,1),fd=draftsIn((R.drafts||{}).activities);
+  const ka=isObj(STATE.answers)?STATE.answers:{},ke=isObj(STATE.entries)?STATE.entries:{},kd=isObj(DRAFTS.custom)?DRAFTS.custom:{};
+  const lay=(into,from)=>{for(const k of Object.keys(from)){if(!isObj(from[k])) continue;
+    const t=hasOwn(into,k)&&isObj(into[k])?into[k]:(into[k]=nullMap());
+    for(const f of Object.keys(from[k])) t[f]=from[k][f];}};
+  lay(fa,ka);lay(fd,kd);
+  for(const at of Object.keys(ke)) fe[at]=ke[at];
+  return {S:{answers:fa,entries:fe},D:{custom:fd}};}
 /* the host hands over a booklet to show: as a file picked by hand, or, when it names where it lives, as a view of that
    store name. Returns {ok, problems}. */
 function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=raw===null?null:linkName(raw);
@@ -7512,12 +7534,9 @@ function openLinked(text,via,id){
   if(!kept) return openAsView(text,via);
   const R=parseFile(text||"");
   if(!R.ok){toast(refusalList(R).join(" "));return false;}
-  /* The store's file is the truth for a store booklet. When it holds everything this browser keeps of it (nothing is kept:
-     a pointer; or the kept copy changes nothing of the booklet itself and the file holds every answer, entry and draft it
-     holds: storeHolds), the file just read is drawn, into the same entry, and the kept copy is never drawn. That is
-     decided on content alone, so it holds whether or not the host has registered yet. A kept copy with work the file
-     lacks opens as below, with the offer. A page that declares no store (a host's Booklet.open) cannot read the file
-     again from the list, so there the kept copy opens as before. */
+  /* A store booklet whose file holds what is kept here (storeHolds, and the account above it) is drawn from the file just
+     read, into the same entry, and its kept copy is never drawn; any other opens as below. A page that declares no store
+     (a host's Booklet.open) cannot read the file again from the list, so there the kept copy opens as before. */
   if(via.store&&storeUrl()!==""&&storeHolds(kept,R)) return openAsView(text,via,kept,R);
   openBooklet(kept.id);
   if(BOOK===EMPTY_BOOKLET){/* an entry whose saved copy is gone is not a booklet kept */
@@ -7672,8 +7691,9 @@ window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.class
 window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&!(hostActive()&&hookBook()&&HOST.status==="saved")){e.preventDefault();e.returnValue=STRINGS[lang].ui.leaving;}});
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
-window.addEventListener("pagehide",flushSave);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden") flushSave();});
+/* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers */
+window.addEventListener("pagehide",()=>{flushSave();hookFlush();});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();}});
 /* The page opens on "Your booklets". */
 bootLibrary();
 render();

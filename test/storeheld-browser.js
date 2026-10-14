@@ -142,6 +142,19 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await p.screenshot({path:path.join(OUT,'store-kept-offer-1280.png')});
   viol.push(...await p.evaluate(()=>window.__viol||[]));await p.close();
 
+  // 4 the second review's b5: answer (Saved), clear it (the store refuses, 409), click the link again: it stays cleared
+  FILES['clear.md']=bk('Clear','Anything to regret?');
+  p=await open();
+  await p.goto(PAGE+'/app/#/open/clear.md');await ready(p);await sleep(1000);
+  await p.locator('#main textarea').first().fill('QZXregret');
+  ok(await until(()=>/QZXregret/.test(FILES['clear.md']))&&await until(async()=>/Saved/.test(await p.locator('#hostLine').innerText())),'an answer is saved into the file');
+  await p.locator('#main textarea').first().fill('');
+  ok(await until(async()=>/Not saved/.test(await p.locator('#hostLine').innerText())),'clearing every answer is refused by the store, and the bar says Not saved');
+  await p.goto(PAGE+'/');await p.goto(PAGE+'/app/#/open/clear.md');await ready(p);await sleep(1200);
+  const s5=await seen(p);
+  ok(await answer(p)===''&&!/QZXregret/.test(s5)&&await offer(p)===1,'opened by its link again, the answer stays cleared (never on screen), with the offer');
+  viol.push(...await p.evaluate(()=>window.__viol||[]));await p.close();
+
   ok(viol.length===0&&csp.length===0,'zero CSP violations: '+viol.concat(csp).join('|'));
   ok(errs.length===0,'zero page errors '+errs.join('|'));
   await b.close();

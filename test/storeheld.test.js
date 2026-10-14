@@ -298,6 +298,73 @@ for(const delay of [0,300]){
  typeIn(A,"m/a","");await sleep(1200);
  chk("a refused save (every answer cleared) leaves the file's record and says Not saved",/RECORD-IN-STORE/.test(ROUTES[U])&&/Not saved/.test(A.hostLineText(A.STRINGS.en.ui)),A.hostLineText(A.STRINGS.en.ui));}
 
+/* ---- the second review: a removal the store never heard of came back from the file, with no offer (45a4396). The
+   check is now both ways: the kept copy and the file must hold the same work. Each block fails on 45a4396. ---- */
+const LOG=FM("Log")+"> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!text|what] What happened?\n\n> [!module|m end] End\n";
+const entries=(A,at)=>((A.STATE.entries||{})[at||"m/log"]||[]).map(x=>x.what);
+const draft=(A,at)=>((A.DRAFTS.custom||{})[at||"m/log"]||{}).what;
+// a cleared answer, with the box down
+{const U=STORE+"w.md";let A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=booklet("Week");
+ await A.openLink("#/open/w.md");const id=A.currentId;await sleep(600);typeIn(A,"m/a","SENSITIVE");await sleep(1200);
+ down=true;typeIn(A,"m/a","");await sleep(1200);A.closeBooklet();down=false;
+ chk("removal setup: the file still holds the answer, the kept copy holds it cleared",/SENSITIVE/.test(ROUTES[U])&&kept(id)&&!/SENSITIVE/.test(global.__ls[keyOf(id)]));
+ await A.openLink("#/open/w.md");
+ chk("an answer cleared here while the box was down stays cleared: the kept copy opens (with the offer), not the file",!ans(A)&&kept(id)&&offer()===1,JSON.stringify(ans(A))+" offer="+offer());
+ A=boot({keep:true});await A.openLink("#/open/w.md");
+ chk("...and the same on a fresh page load, with the host not yet registered",!ans(A)&&kept(id));}
+// an entry deleted, and a draft emptied, with the box down (a repeating activity: the entry and draft parts of the check)
+{const U=STORE+"log.md";let A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=LOG;
+ await A.openLink("#/open/log.md");const id=A.currentId;await sleep(600);
+ typeIn(A,"m/log","an entry");await sleep(500);A.finalizeEntry("m/log");await sleep(800);
+ typeIn(A,"m/log","a draft in progress");await sleep(1200);
+ chk("repeating setup: the file holds the entry and the draft",/an entry/.test(ROUTES[U])&&/a draft in progress/.test(ROUTES[U]));
+ A.closeBooklet();ROUTES[U]=merge(LOG.replace("What happened?","What happened today?"),ROUTES[U]);
+ await A.openLink("#/open/log.md");
+ chk("a kept copy whose entry and draft are both in the rewritten file: the file is drawn, with both, no offer (a guard: it passes on 45a4396 too)",/today/.test(drawn(A))&&entries(A).join()==="an entry"&&draft(A)==="a draft in progress"&&!offer()&&!kept(id));
+ down=true;A.STATE.entries["m/log"].splice(0,1);A.markDirty();await sleep(1200);A.closeBooklet();down=false;
+ await A.openLink("#/open/log.md");
+ chk("an entry deleted here while the box was down is not brought back from the file",entries(A).length===0&&kept(id),JSON.stringify(entries(A))+" offer="+offer());
+ down=true;typeIn(A,"m/log","");await sleep(1200);A.closeBooklet();down=false;
+ A=boot({keep:true});host(A,{fail:()=>down});await A.openLink("#/open/log.md");
+ chk("a draft emptied here while the box was down is not brought back from the file",!draft(A)&&entries(A).length===0&&kept(id),JSON.stringify(draft(A)));}
+// every answer cleared: the box refuses the save (409); the next open keeps it cleared, with the offer
+{const U=STORE+"w.md";let A=boot();host(A,{refuseEmpty:true});ROUTES[U]=booklet("Week");
+ await A.openLink("#/open/w.md");const id=A.currentId;await sleep(600);typeIn(A,"m/a","PRIVATE");await sleep(1200);
+ typeIn(A,"m/a","");await sleep(1200);
+ chk("409 setup: the box refused the save, the bar says so, the file keeps the answer",/Not saved/.test(A.hostLineText(A.STRINGS.en.ui))&&/PRIVATE/.test(ROUTES[U]));
+ A.closeBooklet();A=boot({keep:true});await A.openLink("#/open/w.md");host(A,{refuseEmpty:true});await sleep(50);
+ chk("the next open after a refused save keeps the answer cleared and offers the file (it does not say Saved over the old answer)",!ans(A)&&offer()===1&&kept(id),JSON.stringify(ans(A))+" offer="+offer());}
+// "Read the newer file" with work the file lacks: the new body, and the reader's work, which the host then saves
+{const U=STORE+"w.md";let A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=booklet("Week");
+ await A.openLink("#/open/w.md");const id=A.currentId;await sleep(600);
+ down=true;typeIn(A,"m/a","WRITTEN-WHILE-DOWN");await sleep(1200);A.closeBooklet();down=false;
+ ROUTES[U]=merge(booklet("Week","A regenerated question"),ROUTES[U]);
+ await A.openLink("#/open/w.md");
+ chk("accept setup: the kept copy, with the answer the store never got, opens with the offer",ans(A)==="WRITTEN-WHILE-DOWN"&&offer()===1);
+ press(/Read the newer file/);
+ chk("Read the newer file takes the file's body and keeps the reader's answer",/regenerated question/.test(drawn(A))&&ans(A)==="WRITTEN-WHILE-DOWN");
+ await sleep(800);chk("...and the host then saves it into the file",/WRITTEN-WHILE-DOWN/.test(ROUTES[U])&&/regenerated question/.test(ROUTES[U]));
+ A.closeBooklet();await A.openLink("#/open/w.md");
+ chk("...after which the store holds everything: the next open draws the file, and the kept copy goes",ans(A)==="WRITTEN-WHILE-DOWN"&&!offer()&&!kept(id));}
+// ...with the host, the file fills in what the kept copy has no place for: an answer a generator moved to another module
+{const V1=FM("Moves")+"> [!module|a] Alone\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|a end] End\n";
+ const V2=FM("Moves")+"> [!module|n] New home\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|n end] End\n";
+ const U=STORE+"mv.md";const A=boot();host(A);ROUTES[U]=V1;
+ await A.openLink("#/open/mv.md");await sleep(600);typeIn(A,"a/a","BEFORE-MOVE");await sleep(1200);A.closeBooklet();
+ /* the generator moved activity `a` into module `n`, and the store retargeted its records line (storefile.write_generated) */
+ ROUTES[U]=merge(V2,ROUTES[U]).replace("> [!records|a] Alone","> [!records|n] New home");
+ await A.openLink("#/open/mv.md");
+ chk("scope move setup: the kept copy opens, with the offer (its answer is under the old module)",ans(A,"a","q")==="BEFORE-MOVE"&&offer()===1);
+ press(/Read the newer file/);
+ chk("Read the newer file shows the answer in its new place (the file fills in what the kept copy has no place for)",ans(A,"n","q")==="BEFORE-MOVE",JSON.stringify(A.STATE.answers));
+ await sleep(800);chk("...and the file keeps it",/BEFORE-MOVE/.test(ROUTES[U]));}
+
+/* ---- the second review's N2: a change in the last half second before the tab closes is sent ---- */
+{const U=STORE+"w.md";const A=boot();const h=host(A);ROUTES[U]=booklet("Week");
+ await A.openLink("#/open/w.md");await sleep(700);const n0=h.log.length;
+ typeIn(A,"m/a","LAST-WORDS");P.closePages();
+ chk("a change made just before the page is closed is told to the host as it goes (pagehide)",h.log.length>n0&&/LAST-WORDS/.test(h.log[h.log.length-1].text)&&/LAST-WORDS/.test(ROUTES[U]));}
+
 P.closePages();
 console.log(fails?"\n"+fails+" FAILURES":"\nstore-held checks passed");process.exit(fails?1:0);
 })();

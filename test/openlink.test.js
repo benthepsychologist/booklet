@@ -132,18 +132,20 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;const U=STORE+"week.md";RO
  A.closeBooklet();
  ROUTES[U]="not a booklet";const r=await A.openLink("#/open/week.md");
  chk("a store file the page refuses opens nothing and says why",r===false&&A.currentId===null&&/\S/.test(text(P.byId("toast"))));}
-// with a host registered and the booklet the host's: the store file is the truth
+// with a host registered and the booklet the host's: the kept copy and the file hold different answers, so it is offered;
+// reading it takes the new body and keeps this browser's answer (it may be one the store never heard of), which the host
+// then saves. An answer another device saved for the same question is replaced: nothing tells it from one changed here.
 reset();global.__ls["booklet.host.allowed"]="box";{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
  const calls=[];B.host({label:"box"});B.onChange(x=>calls.push(x));
  await A.openLink("#/open/week.md");answer(A,"m/a","mine");await sleep(700);A.flushSave();A.closeBooklet();
- const FILE="---\nbooklet: \"0.13\"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|m end] End\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n{\"q\": \"from another device\"}\n```\n\n%%\n";
+ const FILE="---\nbooklet: \"0.13\"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A newer question\n\n> [!module|m end] End\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n{\"q\": \"from another device\"}\n```\n\n%%\n";
  ROUTES[U]=FILE;const n0=calls.length;
  await A.openLink("#/open/week.md");await sleep(700);
  chk("a newer store file with a host registered is offered; the host is sent nothing while the offer waits",!!offer()&&calls.length===n0&&ans(A)==="mine",calls.length-n0);
  press(/Read the newer file/);
- chk("reading it takes the store file whole: its answer is the booklet's now",ans(A)==="from another device"&&lib().length===1,JSON.stringify(A.STATE.answers));
+ chk("reading it takes the store file's body and keeps this browser's answer",/A newer question/.test(JSON.stringify(A.BOOK))&&ans(A)==="mine"&&lib().length===1,JSON.stringify(A.STATE.answers));
  await sleep(700);
- chk("...and the host then hears of the booklet as it now is",calls.length>n0&&/from another device/.test(calls[calls.length-1].text));}
+ chk("...and the host then hears of the booklet as it now is",calls.length>n0&&/mine/.test(calls[calls.length-1].text)&&/A newer question/.test(calls[calls.length-1].text));}
 // a host that saved: the store holds exactly what the booklet writes, so nothing is offered
 reset();global.__ls["booklet.host.allowed"]="box";{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
  B.host({label:"box"});B.onChange(x=>{ROUTES[U]=x.text;});
