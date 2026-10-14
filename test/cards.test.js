@@ -106,7 +106,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
 
 /* 8. a hint or solution has no teaser and is called by its name in the reader's language */
 {A.loadText(FM+"> [!activity|a] A\n\n> [!text|q] Q?\n\n> [!hint]- \n> Try the second one first.\n\n> [!solution]- The way\n> The answer is forty-two.\n\n> [!group]- Extra\n> A line of words that tells you what is inside.\n");
- const blocks=A.activityOf("a").blocks.filter(b=>b.type==="callout"&&b.placement==="folded");
+ const blocks=A.activityOf("a").pages[0].blocks.filter(b=>b.type==="callout"&&b.placement==="folded");
  const mk=b=>A.foldedCallout(b,{},"a");
  chk("the fixture parsed to three folded callouts",blocks.length===3,blocks.map(b=>b.kind+"/"+b.id).join());
  const h=mk(blocks[0]),s=mk(blocks[1]),g=mk(blocks[2]);
@@ -126,7 +126,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
   ["an upper-case kind","> [!activity|a] A\n\n> [!SOLUTION]-\n> SECRET-FOUR words here.\n","solution","SECRET-FOUR"]];
  for(const [name,src,kind,secret] of cases){
    A.loadText(FM+src);
-   const b=A.activityOf("a").blocks.find(x=>x.type==="callout"&&x.placement==="folded"&&/SECRET/.test(JSON.stringify(x)));
+   const b=A.activityOf("a").pages[0].blocks.find(x=>x.type==="callout"&&x.placement==="folded"&&/SECRET/.test(JSON.stringify(x)));
    chk("orphan ("+name+"): the parser kept a folded callout",!!b);
    if(!b) continue;
    chk("orphan ("+name+"): it is told to be a "+kind,A.hintKind(b)===kind,String(A.hintKind(b)));

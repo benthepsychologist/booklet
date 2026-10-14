@@ -13,7 +13,7 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const text=n=>typeof n==="string"?n:kids(n).map(text).join("");
-const blocksOf=(R,mod,id)=>{const m=R.template.modules.find(x=>x.id===mod);const a=(m.mode&&m.mode.id===mod+"/"+id?m.mode:(m.activities||[]).find(x=>x.id===mod+"/"+id));return a.blocks;};
+const blocksOf=(R,mod,id)=>{const m=R.template.modules.find(x=>x.id===mod);const a=m.activities.find(x=>x.id===mod+"/"+id);return a.pages[0].blocks;};
 const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
 
 (async()=>{
@@ -28,13 +28,13 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("the object form keeps its `fields` labels",qs[1].data.fields.task==="Job"&&qs[1].view.limit===6&&qs[1].view.group==="when"&&qs[1].fields.join()==="where,effort");
  chk("a data block in the data section is read by a query in the module",qs[2].from==="harvest"&&qs[3].data.rows.length===0);
  chk("a data block is not drawn where it sits, and owns no answer slot",
-   blocksOf(R,"allotment","status").every(b=>b.type==="markdown"||b.type==="query")&&!R.template.modules[0].mode.blocks.some(b=>b.type==="data"));
+   blocksOf(R,"allotment","status").every(b=>b.type==="markdown"||b.type==="query")&&!R.template.modules[0].activities[0].pages[0].blocks.some(b=>b.type==="data"));
  chk("a data block is not a widget",R.template.widgets.length===0);
 
  const mk=(body,extra="")=>A.parseFile(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n${extra}\`\`\`booklet query\n${body}\n\`\`\`\n\n> [!module|m end] End\n`);
  const ROWS='```booklet data\n[{"x":1,"y":"a"}]\n```\n^d\n\n';
  {const r=mk("from: d",ROWS);chk("a data block and a query in one module read clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
- {const r=mk("from: d\nas: cards",ROWS);chk("`as: cards` on a data block reads clean, like every other view (0.13; test/drawing.test.js draws it)",r.ok&&r.unread.length===0&&r.template.modules[0].mode.blocks.some(b=>b.type==="query"&&b.view.as==="cards"&&b.data),JSON.stringify(r.unread));}
+ {const r=mk("from: d\nas: cards",ROWS);chk("`as: cards` on a data block reads clean, like every other view (0.13; test/drawing.test.js draws it)",r.ok&&r.unread.length===0&&r.template.modules[0].activities[0].pages[0].blocks.some(b=>b.type==="query"&&b.view.as==="cards"&&b.data),JSON.stringify(r.unread));}
  {const r=mk("from: d\nas: chart",ROWS);chk("an unknown `as:` is refused, with a reason",r.unread.some(p=>/as: chart.*not cards, table, list, tiles, bars or line/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",'```booklet data\n[{"x":{"deep":1}}]\n```\n^d\n\n');chk("a nested value is refused: the block is skipped and the query then names nothing",
     r.unread.some(p=>/data block \^d has a value that nests deeper/.test(p))&&r.unread.some(p=>/names “d”/.test(p)),JSON.stringify(r.unread));}
@@ -46,7 +46,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  {const bare=`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: tiles\n\`\`\`\n\n${ROWS}`;
   const r=A.parseFile(bare);chk("in a file with no module fence, a data block is read by any activity",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
  chk("a query over kept entries carries no data, and only the keys it wrote in its view",(()=>{const r=A.parseFile(QFX);
-   const q=r.template.modules.find(m=>m.id==="fixture-query").activities.find(a=>a.id==="fixture-query/look").blocks.filter(b=>b.type==="query");
+   const q=r.template.modules.find(m=>m.id==="fixture-query").activities.find(a=>a.id==="fixture-query/look").pages[0].blocks.filter(b=>b.type==="query");
    return r.ok&&q.length===3&&q.every(b=>!b.data)&&Object.keys(q[0].view).length===0&&Object.keys(q[2].view).join()==="limit";})());
 
  /* ---- write-back: a data block is saved exactly as it was found ---- */
@@ -97,7 +97,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
    P.wipe();const C=P.boot();C.addModuleText(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
    C.screen="m/a";C.render();return r.ok&&text(P.main()).includes("**bold** <b>x</b> [l](http://e.com)")&&walk(P.main(),x=>x.tagName==="a"||x.tagName==="b"||x.tagName==="strong").length===0;})());
  chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
-   P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.foldable(r.template.modules[0].mode);})());
+   P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.foldable(r.template.modules[0].activities[0]);})());
 
  /* ---- the same words in the reader's language: a booklet started by a reader who chose it ---- */
  const inLang=async l=>{const L=P.boot();L.render();L.toggle.press(l);await L.createBooklet();L.addModuleText(FX);L.screen="allotment/status";L.render();return L;};

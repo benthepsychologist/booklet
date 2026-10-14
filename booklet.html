@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-yfhrOdrcEFbKBOLE7GXdecLSOAQfGwfj6smDPhT6tw4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-cWIQmE7pPq9yXPtlw+6JcWVLy3wT8PGq1TFPJV5+dUA=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2843,44 +2843,42 @@ const bookWidgets=()=>BOOK.widgets||[];
 const widgetOf=(id,scope)=>{const ws=bookWidgets();
   return (scope&&ws.find(w=>w.id===id&&w.module===scope))||ws.find(w=>w.id===id&&!w.module)||null;};
 const allModules=()=>BOOK.modules||[];
-/* a booklet holds modules and a module holds activities: one in `mode`, several in `activities` */
-const activitiesOf=m=>{if(!m||typeof m!=="object") return [];
-  if(Array.isArray(m.activities)) return m.activities.filter(a=>a&&typeof a==="object");
-  return m.mode&&typeof m.mode==="object"?[m.mode]:[];};
+/* a booklet holds modules, a module holds its activities (`activities`, one or several) and an activity its pages
+   (`pages`, one or several): one shape each, whatever their number */
 /* a module with more than one activity opens on a page of its own */
-const isMulti=m=>activitiesOf(m).length>1;
+const isMulti=m=>m.activities.length>1;
 const addrOf=(scope,id)=>scope?scope+ADDR_SEP+id:id;
 /* the module an address is in ("" for the module with no name), and the id the file gives it */
 const scopeOfAddr=a=>{const s=String(a==null?"":a),i=s.indexOf(ADDR_SEP);return i<0?"":s.slice(0,i);};
 const shortId=a=>{const s=String(a==null?"":a);return s.slice(s.indexOf(ADDR_SEP)+1);};
 /* the scope a module's activities are in: its own id, or "" for a module outside every fence */
-const scopeOfModule=m=>scopeOfAddr((activitiesOf(m)[0]||{}).id);
+const scopeOfModule=m=>scopeOfAddr((m.activities[0]||{}).id);
 /* the module a fence made, by its id, among `mods` (else the booklet's): the module held for a bare activity is not one
    (its id is its activity's, which may be a module's too) */
 const fencedModule=(id,mods)=>(mods||allModules()).find(m=>m.id===id&&scopeOfModule(m)!=="")||null;
 /* Where the once-answered questions of a scope are kept. peekAnswers never makes the store. */
 const answersIn=scope=>{STATE.answers=STATE.answers||nullMap();return hasOwn(STATE.answers,scope)?STATE.answers[scope]:(STATE.answers[scope]=nullMap());};
 const peekAnswers=scope=>hasOwn(STATE.answers,scope)?STATE.answers[scope]:nullMap();
-const holderOf=actId=>allModules().find(m=>activitiesOf(m).some(a=>a.id===actId))||null;
-const bookActivities=()=>allModules().flatMap(m=>activitiesOf(m).map(a=>({...a,__module:m.id})))
+const holderOf=actId=>allModules().find(m=>m.activities.some(a=>a.id===actId))||null;
+const bookActivities=()=>allModules().flatMap(m=>m.activities.map(a=>({...a,__module:m.id})))
   .filter((m,i,a)=>a.findIndex(x=>x.id===m.id)===i);
 /* what names an activity and describes it: its module when the module holds that one
    activity, else the activity itself */
 const moduleOf=activityId=>{const m=holderOf(activityId);if(!m) return null;
-  if(!Array.isArray(m.activities)) return m;
-  const a=activitiesOf(m).find(x=>x.id===activityId);return {title:a.title,blurb:a.blurb};};
+  if(!isMulti(m)) return m;
+  const a=m.activities.find(x=>x.id===activityId);return {title:a.title,blurb:a.blurb};};
 const isModuleScreen=v=>typeof v==="string"&&v.startsWith(MODULE_SCREEN);
 const moduleScreen=id=>MODULE_SCREEN+id;
 const moduleForScreen=v=>isModuleScreen(v)?fencedModule(v.slice(MODULE_SCREEN.length)):null;
 /* where a module's card leads: its one activity, or its own page */
-const entryScreenOf=m=>isMulti(m)?moduleScreen(m.id):((activitiesOf(m)[0]||{}).id||HOME_SCREEN);
-const activityOf=id=>bookActivities().find(m=>m.id===id)||{id,kind:"entry",blocks:[]};
+const entryScreenOf=m=>isMulti(m)?moduleScreen(m.id):((m.activities[0]||{}).id||HOME_SCREEN);
+const activityOf=id=>bookActivities().find(m=>m.id===id)||{id,kind:"entry",pages:[{id:"p1",blocks:[]}]};
 const keysOf=b=>READING_BLOCKS.has(b.type)?[]:(b.keys||[b.id]);
 /* what a block asks of the engine drawing it — a page explaining a widget
    wants the real one, shown but not operable */
 const engOpts=b=>({readonly:!!b.readonly,describe:!!b.describe});
 const placeOf=b=>b.placement||"open";
-const blocksOf=id=>pagesOf(activityOf(id)).flatMap(blocksIn);
+const blocksOf=id=>activityBlocks(activityOf(id));
 
 /* ======================= WHERE BOOKLETS ARE KEPT =======================
    A booklet is modules plus what was written in them, so two booklets with the
@@ -3008,7 +3006,7 @@ function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return tr
   let o=null;try{o=JSON.parse(raw);}catch(x){o=null;}
   if(!isObj(o)||!isObj(o.S)) return false;
   /* the kept design: the parse of the kept text, or an older release's design (TPL) */
-  const T=typeof o.text==="string"?parseFile(o.text).template||null:isObj(o.TPL)?o.TPL:null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
+  const T=typeof o.text==="string"?parseFile(o.text).template||null:isObj(o.TPL)?keptShape(o.TPL):null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
   if(blank) return workWithin(o.S,o.D,R);
   if(keptCustomized(o)) return false;
   const keep=T?scopesOfBook(T):null,here=flatWork({answers:o.S.answers,entries:o.S.entries,drafts:isObj(o.D)?o.D.custom:{}},keep);
@@ -3035,7 +3033,7 @@ function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return tr
    Returns [here, base]. */
 function followMoves(here,base,T){const mods=new Set(),acts=new Map();
   (isObj(T)&&Array.isArray(T.modules)?T.modules:[]).filter(m=>isObj(m)&&!m.noId).forEach(m=>{const sc=scopeOfModule(m);if(sc) mods.add(sc);
-    activitiesOf(m).forEach(a=>{const id=shortId(a.id);if(!acts.has(id)) acts.set(id,new Set());acts.get(id).add(sc);});});
+    m.activities.forEach(a=>{const id=shortId(a.id);if(!acts.has(id)) acts.set(id,new Set());acts.get(id).add(sc);});});
   /* each scope the two copies hold records under, with the activities the base's records there name */
   const named=new Map();[[here,false],[base,true]].forEach(([r,names])=>flatWork(r).forEach((v,k)=>{const p=k.split(SEP),sc=p[0]==="a"?p[1]:scopeOfAddr(p[1]);
     if(!named.has(sc)) named.set(sc,new Set([sc]));if(names&&p[0]!=="a") named.get(sc).add(shortId(p[1]));}));
@@ -3061,7 +3059,7 @@ function mergeWork(here,base,file){const H=flatWork(here),B=flatWork(base),F=fla
   return unflatWork(out);}
 function describeBooklet(t){t=t||{};
   const mods=(Array.isArray(t.modules)?t.modules:[]).filter(m=>m&&typeof m==="object");
-  return {title:(t.head&&t.head.title)||t.title||null,
+  return {title:t.title||null,
     parts:mods.slice(0,3).map(m=>plainText(m.title||m.id)).filter(Boolean)};}
 function addEntry(){const now=new Date().toISOString();let made=null;
   changeLib(L=>{let id;
@@ -3094,9 +3092,9 @@ function renameStored(id,name){const n=cleanName(name);if(!n) return false;
   let o=null;try{o=JSON.parse(lsGet(keyOfEntry(e))||"null");}catch(x){o=null;}
   if(!o||typeof o!=="object") o={S:emptyState(),D:emptyDrafts()};
   const kept=storedText(o),text=kept||blankText(),R=parseFile(text);
-  if(R.template&&n===tx((R.template.head||{}).title,R.template.title)) return false;
+  if(R.template&&n===R.template.title) return false;
   /* an older design this release refuses stays the design, renamed; else the text is, and the design it came from goes */
-  if(typeof o.text!=="string"&&R.refused&&R.refused.length&&oldDesign(o.TPL)) o.TPL=namedDesign(o.TPL,n);
+  if(typeof o.text!=="string"&&R.refused&&R.refused.length&&oldDesign(keptShape(o.TPL))) o.TPL=namedDesign(keptShape(o.TPL),n);
   else{o.text=setTitleIn(text,n);if(kept!==null) delete o.TPL;}
   o.dirty=true;
   lsSet(keyOfEntry(e),JSON.stringify(o));
@@ -3167,16 +3165,29 @@ function loadLocal(){const key=slotKey();if(!key) return false;
        notice shows until the reader fixes the file. */
     const old=typeof o.text!=="string",text=storedText(o),R=text===null?null:parseFile(text);
     if(R&&R.template){const no=R.refused.length>0;
-      if(no&&old&&oldDesign(o.TPL)){BOOK={...o.TPL,widgets:Array.isArray(o.TPL.widgets)?o.TPL.widgets:[]};OLD_DESIGN=true;}
+      if(no&&old&&oldDesign(keptShape(o.TPL))){const T=keptShape(o.TPL);BOOK={...T,widgets:Array.isArray(T.widgets)?T.widgets:[]};OLD_DESIGN=true;}
       else{adoptParse(R);if(old) lsSet(key,snapshot());}
       if(old||no) FILE_NOTES=fileNotesOf(R,startScreen());}
     return true;
   }catch(e){return false;}}
-/* an older release's kept design, if it is shaped as one: modules holding activities with string ids, of a kind this page draws */
+/* An older release's kept design (TPL) in this release's shape, checked by nothing (oldDesign checks it). Releases before
+   0.13.1 kept a module's one activity as `mode`, a one-page activity's blocks as `blocks`, and the booklet's name in
+   `head.title` as well as `title`; anything that is not an object is left out, as their readers left it out. A design this
+   release kept (a TPL saved back) is in its shape already. */
+function keptShape(t){if(!isObj(t)) return t;const {head,...out}=t;
+  if(isObj(head)&&typeof head.title==="string") out.title=head.title;
+  const thing=x=>!!x&&typeof x==="object";
+  if(Array.isArray(t.modules)) out.modules=t.modules.map(m=>{if(!isObj(m)) return m;const {mode,...mo}=m;
+    const acts=Array.isArray(m.activities)?m.activities.filter(thing):thing(mode)?[mode]:[];
+    mo.activities=acts.map(a=>{const {blocks,...ac}=a,ps=Array.isArray(a.pages)?a.pages.filter(thing):[];
+      ac.pages=ps.length?ps:[{id:"p1",blocks:Array.isArray(blocks)?blocks:[]}];return ac;});
+    return mo;});
+  return out;}
+/* an older release's kept design, if it is shaped as one (keptShape): modules holding activities with string ids, of a kind this page draws */
 const oldDesign=t=>isObj(t)&&Array.isArray(t.modules)&&t.modules.every(m=>isObj(m)&&typeof m.id==="string"
-  &&activitiesOf(m).every(a=>typeof a.id==="string"&&(a.kind==="entry"||a.kind==="board")));
+  &&m.activities.every(a=>typeof a.id==="string"&&(a.kind==="entry"||a.kind==="board")));
 /* an older release's kept design, renamed (its source's `title:` line too) */
-const namedDesign=(t,n)=>({...t,title:n,head:{...(t.head||{}),title:n},raw:{...(t.raw||{}),source:setTitleIn((t.raw||{}).source,n,(t.raw||{}).lang)}});
+const namedDesign=(t,n)=>({...t,title:n,raw:{...(t.raw||{}),source:setTitleIn((t.raw||{}).source,n,(t.raw||{}).lang)}});
 /* the text a snapshot keeps, or null; an older one's (TPL) is its design's source with the records it kept as written */
 function storedText(o){if(typeof o.text==="string") return o.text;
   const raw=isObj(o.TPL)&&isObj(o.TPL.raw)?o.TPL.raw:null,R=raw?parseFile(String(raw.source||"")):null;
@@ -3781,13 +3792,12 @@ const firstPara=s=>plainText(String(s||"").replace(/<!--[\s\S]*?-->/g,"").split(
 /* a page's name: the words of its first heading */
 const pageHeading=p=>{for(const b of p.blocks){if(b.type!=="markdown") continue;
   const h=String(b.text).match(/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/m);if(h) return plainText(h[1]);}return undefined;};
-/* an activity as the page keeps it: a one-page activity is its `blocks`, any other its `pages` */
+/* an activity as the page keeps it: its pages, a page of several named by its first heading (`title`, the pages menu's name) */
 function activityOut(a){const {pages,...ra}=a;
   /* `lede`: the first paragraph under the activity's title, read as a module's blurb is, for the activity's card on its module's screen.
      It is the card's alone (the paragraph is still drawn in the page), so it is not `blurb`, which the activity's own screen draws above the page. */
   {const f=pages[0]&&pages[0].blocks[0],l=f&&f.type==="markdown"?firstPara(f.text):"";if(l) ra.lede=l;}
-  if(pages.length===1) return {...ra,blocks:pages[0].blocks};
-  return {...ra,pages:pages.map(p=>({id:p.id,title:pageHeading(p),blocks:p.blocks}))};}
+  return {...ra,pages:pages.map(p=>({id:p.id,...(pages.length>1?{title:pageHeading(p)}:{}),blocks:p.blocks}))};}
 /* a module as the page keeps it: its activities, its blurb, and the sources and citations its footnotes define */
 /* footnote definitions read into the source and citation registries the citation panel already knows how
    to draw; `tag` keeps one list's source keys apart from another's */
@@ -3816,7 +3826,7 @@ function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities
   /* every footnote this module's own text defined */
   const {sources,citations}=notesOut(__footnotes,"s");
   const o={...rest,...(blurb?{blurb}:{}),...(opening.length?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
-  if(acts.length===1) o.mode=acts[0]; else o.activities=acts;
+  o.activities=acts;
   return o;}
 function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept,opening},fm,L,source,problems){
   /* a file that holds one module and no notice callout is covered by its own front matter: its license,
@@ -3827,12 +3837,12 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
   const out=holders.map(moduleOut);
   /* `parent:` places among the activities outside every module fence as it does in a module */
   {const at=holders.map((m,i)=>m.__bare?i:-1).filter(i=>i>=0);
-   if(at.some(i=>out[i].mode.parent)){const mods=at.map(i=>out[i]),t=activityTree(mods.map(m=>m.mode));
-     t.order.forEach((k,n)=>{const m=mods[k],a=m.mode;if(t.parent[k]) a.parent=t.parent[k];else delete a.parent;if(t.depth[k]) a.depth=t.depth[k];out[at[n]]=m;});}}
+   if(at.some(i=>out[i].activities[0].parent)){const mods=at.map(i=>out[i]),t=activityTree(mods.map(m=>m.activities[0]));
+     t.order.forEach((k,n)=>{const m=mods[k],a=m.activities[0];if(t.parent[k]) a.parent=t.parent[k];else delete a.parent;if(t.depth[k]) a.depth=t.depth[k];out[at[n]]=m;});}}
   const st=emptyState();st.entries=entries;Object.keys(answers).forEach(k=>{st.answers[k]=nullMap(answers[k]);});
   const shared=notesOut(sharedNotes||[],"d");
   const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",...(fm.start==="home"?{start:"home"}:{}),
-    title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,...(opening.length?{opening}:{}),modules:out,widgets,
+    title:fm.title||undefined,...(opening.length?{opening}:{}),modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),
     ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L,...(recordsKept.length?{records:recordsKept}:{})}};
   /* a file with its front matter and no module and no activity at all is an empty booklet with that name (what a
@@ -3848,7 +3858,7 @@ function fileText(book,S,D){const V=book.raw||{};const out=[String(V.source||"")
   const recs=[],mods=book.modules||[],fenced=id=>fencedModule(id,mods);
   const kept=[].concat(V.records||[]).filter(r=>r&&typeof r.text==="string"&&(!r.foreign||typeof r.foreign==="string"));
   const scopes=["",...mods.map(scopeOfModule).filter(s=>s)];
-  scopes.forEach(sc=>{const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(activitiesOf),own=[],gd=hasOwn(S.answers,sc)?S.answers[sc]:nullMap();
+  scopes.forEach(sc=>{const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(m=>m.activities),own=[],gd=hasOwn(S.answers,sc)?S.answers[sc]:nullMap();
     /* kept blocks first in their scope (or under the module's one line once a module has that id) */
     kept.filter(r=>(!r.foreign||fenced(r.scope))&&r.scope===sc).forEach(r=>own.push(r.text,""));
     const keys=new Set(),entryIds=new Set(acts.filter(a=>a.kind==="entry").map(a=>a.id));
@@ -4020,7 +4030,7 @@ function setTitleIn(source,name,langTag){
 /* a booklet just started here: its front matter and nothing else (its id is its title's slug, as any file's) */
 const blankText=()=>setTitleIn("",strings("library").untitled,lang);
 /* Rename the booklet in memory: its text with the new `title:` line, read again. An empty name keeps the old one. */
-function renameBooklet(name){const n=cleanName(name);if(!n||n===tx((BOOK.head||{}).title,BOOK.title)) return false;
+function renameBooklet(name){const n=cleanName(name);if(!n||n===BOOK.title) return false;
   if(OLD_DESIGN) BOOK=namedDesign(BOOK,n);else adoptText(setTitleIn(bookText(BOOK),n,(BOOK.raw||{}).lang));
   CUSTOMIZED=true;markDirty();flushSave();return true;}
 
@@ -4273,7 +4283,7 @@ function addModuleText(text){
 /* What the reader has kept in a module, as counts: entries and drafts at every address in its scope (orphans included) and every answer. Read-only. */
 function moduleWork(mod){
   const scope=scopeOfModule(mod),gd=peekAnswers(scope),keys=new Set(),mine=m=>Object.keys(m||{}).filter(k=>scopeOfAddr(k)===scope);
-  activitiesOf(mod).filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
+  mod.activities.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
   return {entries:mine(STATE.entries).reduce((n,k)=>n+[].concat(STATE.entries[k]).filter(e=>e&&e.ts).length,0),
     answers:Object.keys(gd).filter(k=>!keys.has(k)||holdsSomething(gd[k])).length,
     drafts:mine(DRAFTS.custom).filter(k=>Object.values(DRAFTS.custom[k]).some(holdsSomething)).length};}
@@ -4305,7 +4315,7 @@ function removeModule(id){
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[PROBLEM.notReadable]};
   if(refused.length) return {ok:false,problems:refused};
   /* the reader's work in the module goes with it */
-  const addrs=activitiesOf(mod).map(a=>a.id),scope=scopeOfModule(mod);
+  const addrs=mod.activities.map(a=>a.id),scope=scopeOfModule(mod);
   [STATE.entries,DRAFTS.custom].forEach(m=>{if(m) Object.keys(m).forEach(k=>{if(scopeOfAddr(k)===scope) delete m[k];});});
   viewReset(currentId,addrs);
   if(STATE.answers) delete STATE.answers[scope];
@@ -5521,7 +5531,7 @@ function foldedCallout(b,draft,activityId,dc,x){
    replaced, never changed in place. */
 const SOLS=new WeakMap();
 function solutionsOf(addr){const a=activityOf(addr);
-  const key=a.pages||a.blocks;let r=key&&SOLS.get(key);if(r) return r;
+  const key=a.pages;let r=SOLS.get(key);if(r) return r;
   r={q:new Map(),s:new Set()};const all=allBlocksOf(a),by=new Map();
   all.forEach(x=>{if(x.type==="callout"&&x.kind===""&&placeOf(x)==="folded"&&!by.has(x.id)) by.set(x.id,x);});
   all.forEach(q=>{if(!QUESTION_KINDS.has(q.type)||!q.id) return;
@@ -5529,7 +5539,7 @@ function solutionsOf(addr){const a=activityOf(addr);
     if((hint&&!r.s.has(hint))||(sol&&!r.s.has(sol))){
       const e={hint:hint&&!r.s.has(hint)?hint:null,sol:sol&&!r.s.has(sol)?sol:null};
       r.q.set(q,e);if(e.hint) r.s.add(e.hint);if(e.sol) r.s.add(e.sol);}});
-  if(key) SOLS.set(key,r);return r;}
+  SOLS.set(key,r);return r;}
 /* A solution inside its question: the compact fold, shut, giving nothing away. `set(tone)` is how the question tells it what the
    reader has done: "good" (right), "warn" (not right, "Look again") or "neutral" (a choice with no right answer, once picked) opens
    it in that tone, and only when the tone changes, so a reader who shut it is not argued with; null (the answer no longer carries
@@ -6041,33 +6051,24 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
    an activity's pages, folding a report, links between activities, citations and callouts. */
 
 /* ======================= AN ACTIVITY'S PAGES =======================
-   An activity is a list of blocks, or, when a thematic break splits it, a list
-   of PAGES, each a list of blocks: `pages: [{id, title, blocks}, …]`, never
-   alongside `blocks`. Pages are layout and nothing else. The activity keeps
-   one id, one draft and one set of kept entries whichever page a block is on.
+   An activity is a list of PAGES, each a list of blocks: `pages: [{id, title,
+   blocks}, …]`, one page when no thematic break splits it. Pages are layout and
+   nothing else. The activity keeps one id, one draft and one set of kept
+   entries whichever page a block is on.
 
    The pages are listed in a menu on the LEFT of the activity. Which page is
    showing is view state for this visit, per activity, and goes neither in the
    file nor in the browser save. The menu can be minimized to a thin rail of
    page numbers; that is the browser's preference (PAGES_MENU_KEY), not the
-   booklet's, and never enters the record. A one-page activity has no menu.
-
-   Everything reads an activity through pagesOf(), so a one-page activity
-   written as `blocks` is read the same way as a paged one. */
-const isPaged=a=>!!a&&Array.isArray(a.pages)&&a.pages.some(p=>p&&typeof p==="object");
+   booklet's, and never enters the record. A one-page activity has no menu. */
 const blocksIn=p=>p&&Array.isArray(p.blocks)?p.blocks:[];
-/* An activity's pages in order, never none. A one-page activity is one page whose
-   blocks are the activity's own `blocks`. */
-function pagesOf(a){
-  if(!isPaged(a)) return [{id:"",blocks:blocksIn(a)}];
-  return a.pages.filter(p=>p&&typeof p==="object");}
 /* every block an activity holds, on whichever page, as stored */
-const activityBlocks=a=>pagesOf(a).flatMap(blocksIn);
+const activityBlocks=a=>a.pages.flatMap(blocksIn);
 /* a page's name: its own title, else its place in the menu */
 const pageName=(p,i)=>tx(p&&p.title,null)||strings("pages").nth(i+1);
 /* ---- which page is showing: this visit only (the view's) ---- */
 const showPage=(id,pid)=>{viewAt(id).page=pid;};
-function currentPage(id){const ps=pagesOf(activityOf(id)),at=viewAt(id).page;
+function currentPage(id){const ps=activityOf(id).pages,at=viewAt(id).page;
   return ps.find(p=>p.id===at)||ps[0];}
 const pageBlocksShown=id=>blocksIn(currentPage(id));
 /* ---- the menu's preference: the browser's, never the booklet's ---- */
@@ -6086,7 +6087,7 @@ function togglePagesMenu(){if(narrowPages()) pagesOverlay=!pagesOverlay;
 function refocus(sel){const n=document.querySelector(sel);if(n&&!n.disabled) n.focus();}
 /* ---- drawing ---- */
 /* The page on show: its name and its blocks. The list is read afresh on every redraw. */
-function pageBody(id,draft,dc){const ps=pagesOf(activityOf(id));const cur=currentPage(id);
+function pageBody(id,draft,dc){const ps=activityOf(id).pages;const cur=currentPage(id);
   const box=el("div",{class:"ap-body"});
   /* a page with a heading of its own is named by it, where it stands in the page (the menu uses it too); only a page with none is named above */
   if(ps.length>1&&!cur.title){const i=ps.indexOf(cur);
@@ -6116,7 +6117,7 @@ function pageMenuKeys(e){const k=e.key;if(!["ArrowDown","ArrowUp","Home","End"].
   e.preventDefault();items[j].focus();}
 /* Wrap an activity's view in its pages: the menu on the left when it has
    several, or nothing at all (the page's sections from the draw's reading plan). */
-function withPages(id,content,dc){const P=strings("pages");const ps=pagesOf(activityOf(id));
+function withPages(id,content,dc){const P=strings("pages");const ps=activityOf(id).pages;
   const inner=el("div",{class:"ap-content"},content);
   const rd=dc.reading;
   if(ps.length<2&&!rd) return content;
@@ -6227,7 +6228,7 @@ function mdHeadNodes(text){const out=[];let fence=null;
     if(was||fence) continue;
     const m=ATX_RE.exec(ln);if(m&&m[2]) out.push({tagName:"h"+m[1].length});}
   return out;}
-const foldable=(a,page)=>!!a&&(page?[page]:pagesOf(a)).some(pg=>{const nodes=[];
+const foldable=(a,page)=>!!a&&(page?[page]:a.pages).some(pg=>{const nodes=[];
   blocksIn(pg).forEach(b=>{if(b&&b.type==="markdown"&&placeOf(b)!=="folded") nodes.push(...mdHeadNodes(b.text));else nodes.push({tagName:"div"});});
   return !!readingPlan(nodes);});
 /* Where the sections of one page start. `nodes` are the page's top-level nodes
@@ -6388,7 +6389,7 @@ function headingsOf(text){const out=[];let fence=null;
     const m=ATX_RE.exec(ln);if(m&&m[2]){const h=plainHeading(m[2]);if(h) out.push(h);}}
   return out;}
 /* every heading an activity holds, with the page it is on */
-function activityHeadings(a){const ps=pagesOf(a),out=[];
+function activityHeadings(a){const ps=a.pages,out=[];
   const t=plainText(tx(a.title,null));if(t) out.push({text:t,page:ps[0].id});
   ps.forEach(p=>{const pt=tx(p.title,null);if(typeof pt==="string"&&pt.trim()) out.push({text:pt,page:p.id});
     const walk=list=>list.forEach(b=>{
@@ -6402,7 +6403,7 @@ function activityHeadings(a){const ps=pagesOf(a),out=[];
 function findHeading(mods,target,bySlug){
   let want;try{want=bySlug?linkSlug(decodeURIComponent(target)):linkNorm(target);}catch(e){want=bySlug?linkSlug(target):linkNorm(target);}
   if(!want) return null;
-  for(const m of mods) for(const a of activitiesOf(m)) for(const h of activityHeadings(a))
+  for(const m of mods) for(const a of m.activities) for(const h of activityHeadings(a))
     if((bySlug?linkSlug(h.text):linkNorm(h.text))===want) return {act:a.id,page:h.page,heading:h.text};
   return null;}
 function scrollToHeading(text){const want=linkNorm(text);
@@ -6488,7 +6489,7 @@ function citeBegin(id,dc){
   /* places: every place each citation is marked, in reading order, as its
      page and how many marks of it come before on that page */
   const nums=new Map(),firstPage=new Map(),broken=new Set(),places=new Map();
-  const pgs=open?[{id:"opening",blocks:mod.opening||[]}]:pagesOf(activityOf(activityId)).slice();
+  const pgs=open?[{id:"opening",blocks:mod.opening||[]}]:activityOf(activityId).pages.slice();
   if(!open&&openingWithActivity(mod)) pgs.unshift({id:"opening",blocks:mod.opening});
   for(const p of pgs){const onPage=new Map();
     for(const b of blocksIn(p))
@@ -6809,11 +6810,11 @@ function nameEditor(current,save,cancel){
   requestAnimationFrame(()=>{inp.focus();if(inp.select) inp.select();});
   return inp;}
 /* the booklet's name on its home screen: the heading, and beside it a small Rename */
-function nameRow(){const L=strings("library"),cur=tx((BOOK.head||{}).title,tx(BOOK.title,"")),shown=cur||L.untitled;
+function nameRow(){const L=strings("library"),cur=tx(BOOK.title,""),shown=cur||L.untitled;
   const row=el("div",{class:"namerow"});
   const draw=editing=>{row.innerHTML="";
     if(editing){row.append(nameEditor(shown,v=>{renameBooklet(v);render();},()=>draw(false)),el("span",{class:"hint"},L.renameHint));return;}
-    row.append(el("h1",{},tx((BOOK.head||{}).title,STRINGS[lang].home.h1)));
+    row.append(el("h1",{},tx(BOOK.title,STRINGS[lang].home.h1)));
     if(currentId) row.append(el("button",{type:"button",class:"quietlink",title:L.renameFor(shown),"aria-label":L.renameFor(shown),onclick:()=>draw(true)},L.rename));};
   draw(false);return row;}
 /* centre what a screen has drawn so far in one column (the cards' width) */
@@ -6823,7 +6824,7 @@ function renderHome(main,dc){const t=STRINGS[lang];const u=t.ui;
   const hero=el("div",{class:"hero col"});
   hero.append(nameRow());
   /* the booklet's own opening, under its name, drawn as a module's opening is (no tagline of the renderer's) */
-  {const o=openingNodes(BOOK,"",tx((BOOK.head||{}).title,""),dc);
+  {const o=openingNodes(BOOK,"",tx(BOOK.title,""),dc);
    if(o.lede) hero.append(o.lede);if(o.more.length) hero.append(el("div",{class:"mhead-more"},...o.more));}
   main.append(hero);
   /* One card per module. A module with one activity is its activity's card; a
@@ -6969,7 +6970,7 @@ function renderActivity(main,id,dc){const u=STRINGS[lang].ui;const m=activityOf(
     const lead=tx(mod.blurb,tx(m.blurb,""));
     if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
   /* a wiki page's own pages are listed in the menu; where the menu is not on screen (a phone, or a hidden page that has no entry) they are listed here */
-  if(W&&pagesOf(m).length>1&&(narrowPages()||!isShown(m))) col.append(wkInside(id,null,true));
+  if(W&&m.pages.length>1&&(narrowPages()||!isShown(m))) col.append(wkInside(id,null,true));
   if(repeats) col.append(el("h3",{},u.earlier),chipStrip(id));
   /* the page on show and its blocks, and the pages menu beside them: see
      AN ACTIVITY'S PAGES. One draft serves every page. */
@@ -7012,7 +7013,7 @@ function activityFooter(id){const C=strings("cards"),holder=holderOf(id),W=wikiO
   return foot;}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
-const activitiesShown=mod=>activitiesOf(mod).filter(isShown);
+const activitiesShown=mod=>mod.activities.filter(isShown);
 const keptCount=id=>{const a=(STATE.entries||{})[id];return Array.isArray(a)?a.length:0;};
 /* ---- CARDS ----
    Every card is made here and nowhere else (test/guard.test.js fails if another function gives an element the card class).
@@ -7142,10 +7143,10 @@ function moduleHead(mod,activityId,meta,showMeta,dc){
 const WK_CACHE=new WeakMap();
 const WK_BATCH=24,WK_FOUND=40;
 function wikiOf(mod){
-  if(!mod||!Array.isArray(mod.activities)||mod.activities.length<2) return null;
+  if(!mod||mod.activities.length<2) return null;
   let W=WK_CACHE.get(mod);
   if(W&&W.src===mod.activities&&W.lang===lang) return W.tree?W:null;
-  const acts=activitiesOf(mod),t=acts.some(a=>a.parent)?activityTree(acts):null;
+  const acts=mod.activities,t=acts.some(a=>a.parent)?activityTree(acts):null;
   W={src:mod.activities,lang,mod,tree:!!t,acts,kids:new Map(),up:new Map(),roots:[],byId:new Map(acts.map(a=>[a.id,a])),text:new Map(),mentions:null};
   if(t){W.acts=t.order.map(i=>acts[i]);
     t.order.forEach(i=>{const a=acts[i],p=t.parent[i]?W.byId.get(t.parent[i]):null;
@@ -7163,7 +7164,7 @@ function wikiPath(W,id){const out=[];for(let a=W.up.get(id);a;a=W.up.get(a.id)) 
 /* the pages a page sits among, for its place in the list (and so its colour) */
 function wikiSiblings(W,id){const p=wikiPath(W,id).pop();return p?wikiKids(W,p.id):W.top;}
 /* the texts a page's prose holds (every page of the activity, in order) */
-const wikiTexts=a=>pagesOf(a).flatMap(p=>blocksIn(p).flatMap(markedTexts));
+const wikiTexts=a=>a.pages.flatMap(p=>blocksIn(p).flatMap(markedTexts));
 /* "Mentioned on": for each page, the pages whose prose links to it. A link is a heading link, `[[#Heading]]` or `](#slug)`, found as the
    reader finds it (linkHooks, findHeading): in this module, by the text or the slug of a heading, an activity's title being one. */
 const WK_LINK=/\[\[#([^\]|]+)(?:\|[^\]]*)?\]\]|\]\(#([^)\s]+)\)/g;
@@ -7214,7 +7215,7 @@ function wkPagePick(id,pid,fromList){showPage(id,pid);VIEW.wiki.menu=false;pages
   const vis=n=>n&&n.offsetParent!==null,a=document.querySelector((fromList?".wk-pagelist":".wk-menu")+" [aria-current=\"step\"]"),
     b=document.querySelector((fromList?".wk-menu":".wk-pagelist")+" [aria-current=\"step\"]"),n=vis(a)?a:vis(b)?b:null;
   if(n&&n.focus) n.focus({preventScroll:true});}
-function wkInside(id,rd,own){const F=strings("fold"),ps=pagesOf(activityOf(id)),cur=currentPage(id);
+function wkInside(id,rd,own){const F=strings("fold"),ps=activityOf(id).pages,cur=currentPage(id);
   const secs=top=>{if(!rd||own) return null;
     const sl=el("ol",{class:"ap-secs wk-secs"+(top?" wk-plist":""),"aria-label":F.sections});
     rd.sections.forEach(sec=>{const seen=rd.st.seen.has(sec.k);
@@ -7307,7 +7308,7 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
   {main.append(...openNotices());}
   const col=el("div",{class:"col"});
   const acts=activitiesShown(mod);
-  const first=activitiesOf(mod)[0]&&activitiesOf(mod)[0].id;
+  const first=(mod.activities[0]||{}).id;
   /* the opening's sources are numbered in a scope of their own (`opening`), begun here, afresh on every draw, so that a
      panel opened from the opening survives a language switch (it is opened again below, once its mark is drawn) */
   const opened=!!first&&Array.isArray(mod.opening)&&mod.opening.length>0,odc={...dc,opening:true};
@@ -7335,7 +7336,7 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
    end-of-day.booklet.md. `.booklet.md` is the extension SPEC.md recommends; a
    reader still takes any plain .md. A booklet with no title of its own (or one
    whose title has no letters or digits in it) is saved as booklet.booklet.md. */
-const fileBase=()=>slugify(tx((BOOK.head||{}).title,BOOK.title))||"booklet";
+const fileBase=()=>slugify(BOOK.title)||"booklet";
 const exportName=()=>fileBase()+".booklet.md";
 function openExport(){const t=STRINGS[lang].ui;
   const veil=document.getElementById("veilExport"),box=document.getElementById("exportPanel");box.innerHTML="";

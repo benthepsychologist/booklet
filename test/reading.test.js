@@ -12,19 +12,19 @@ const A=P.boot();
 {const R=A.parseFile(FM+"# Title\n\nSome prose.\n\n## One\n\nFirst.\n\n## Two\n\nSecond.\n");
  chk("prose only parses",R.ok,JSON.stringify(R.unread));
  const ms=R.template.modules;
- chk("one module, one activity",ms.length===1&&ms[0].mode&&!ms[0].activities,JSON.stringify(ms.map(m=>Object.keys(m))));
- const a=ms[0].mode;
+ chk("one module, one activity (its activities list holds just one)",ms.length===1&&ms[0].activities.length===1,JSON.stringify(ms.map(m=>Object.keys(m))));
+ const a=ms[0].activities[0];
  chk("its id is the title as letters, digits and dashes",a.id==="week-view"&&/^[A-Za-z0-9-]+$/.test(a.id),a.id);
  chk("it keeps one answer set, not entries",a.kind==="board");
- chk("the prose is in it",a.blocks.length===1&&/Some prose/.test(a.blocks[0].text)&&/Second/.test(a.blocks[0].text));
+ chk("the prose is in it",a.pages[0].blocks.length===1&&/Some prose/.test(a.pages[0].blocks[0].text)&&/Second/.test(a.pages[0].blocks[0].text));
  chk("nothing is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
  const Q=A.parseFile(FM+"Worksheet intro.\n\n> [!text|noticed] What stood out?\n\n> [!lines|wins] Wins\n");
- const qa=Q.template.modules[0].mode;
- chk("with questions: one activity, intro then both questions",Q.ok&&qa.blocks.map(b=>b.type).join()==="markdown,text,lines",qa.blocks.map(b=>b.type).join());
+ const qa=Q.template.modules[0].activities[0];
+ chk("with questions: one activity, intro then both questions",Q.ok&&qa.pages[0].blocks.map(b=>b.type).join()==="markdown,text,lines",qa.pages[0].blocks.map(b=>b.type).join());
  chk("the id comes from the front matter id when the title has no letters",
-   A.parseFile('---\nbooklet: "0.13"\nid: example/tides\ntitle: "—"\n---\n\nHi.\n').template.modules[0].mode.id==="tides"||
-   A.parseFile('---\nbooklet: "0.13"\nid: example/tides\ntitle: "—"\n---\n\nHi.\n').template.modules[0].mode.id==="example-tides");
- chk("a file with activity lines keeps text before the first one out",A.parseFile(FM+"Intro.\n\n> [!activity|a1] A\n\nBody.\n").template.modules[0].mode.id==="a1");
+   A.parseFile('---\nbooklet: "0.13"\nid: example/tides\ntitle: "—"\n---\n\nHi.\n').template.modules[0].activities[0].id==="tides"||
+   A.parseFile('---\nbooklet: "0.13"\nid: example/tides\ntitle: "—"\n---\n\nHi.\n').template.modules[0].activities[0].id==="example-tides");
+ chk("a file with activity lines keeps text before the first one out",A.parseFile(FM+"Intro.\n\n> [!activity|a1] A\n\nBody.\n").template.modules[0].activities[0].id==="a1");
  chk("the three real reports still load without the hand-added line",["weekly-report","week-view","acceptance"].every(n=>{
    const f="/tmp/claude-1000/-workspace-fleet-hubs-booklet-hub/6b4250e5-57b1-4e3b-8323-a32f8be662b4/scratchpad/reading/"+n+".booklet.md";
    return !fs.existsSync(f)||A.parseFile(fs.readFileSync(f,"utf8").replace(/^booklet: 0\.3$/m,"booklet: \"0.13\"")).ok;}));

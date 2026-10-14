@@ -19,7 +19,7 @@ const section=(md,id)=>{const i=md.indexOf("> [!records|"+id+"]");if(i<0) return
  const R=A.parseFile(TWO);
  chk("two modules with the same activity and question ids open with nothing reported",R.ok&&R.unread.length===0&&R.refused.length===0,JSON.stringify(R.unread));
  chk("an activity is known by its module and its id, and the file's own ids are unchanged",R.template.modules.map(m=>m.activities.map(a=>a.id).join()).join("|")==="ma/act,ma/log|mb/act,mb/log"
-   &&R.template.modules[0].activities[0].blocks[0].id==="note");
+   &&R.template.modules[0].activities[0].pages[0].blocks[0].id==="note");
  chk("an address is the module's id, a slash and the activity's id; one outside every fence is just its id",A.addrOf("ma","act")==="ma/act"&&A.addrOf("","solo")==="solo"&&A.scopeOfAddr("ma/act")==="ma"&&A.scopeOfAddr("solo")===""&&A.shortId("ma/act")==="act"&&A.shortId("solo")==="solo");
  const twice=(label,body,rx)=>{const r=A.parseFile(FM+body);chk(label,r.ok===false&&r.refused.some(x=>rx.test(x)),JSON.stringify(r.refused));};
  twice("an activity id used twice in one module is refused","> [!module|m] M\n\n> [!activity|a] A\n\n> [!activity|a] B\n\n> [!module|m end] E\n",/“a” is used twice/);
@@ -33,7 +33,7 @@ const section=(md,id)=>{const i=md.indexOf("> [!records|"+id+"]");if(i<0) return
  const refQ=A.parseFile(FM+"> [!module|m1] M\n\n> [!activity|a repeat] A\n\n> [!text|q] Q\n\n> [!module|m1 end] E\n\n> [!module|m2] M\n\n> [!activity|b] B\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] E\n");
  chk("a query cannot read another module's activity: it draws nothing and is reported, and the file still opens (0.13)",refQ.ok===true&&refQ.refused.length===0&&refQ.unread.some(x=>/in another module/.test(x)),JSON.stringify(refQ.unread));
  const own=A.parseFile(FM+"> [!module|m1] M\n\n> [!activity|a repeat] A\n\n> [!text|q] Q\n\n> [!activity|v] V\n\n```booklet query\nfrom: a\n```\n\n> [!module|m1 end] E\n\n> [!module|m2] M\n\n> [!activity|a repeat] A\n\n> [!text|q] Q\n\n> [!activity|v] V\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] E\n");
- const qf=m=>m.activities.find(a=>a.id===m.id+"/v").blocks.find(b=>b.type==="query").from;
+ const qf=m=>m.activities.find(a=>a.id===m.id+"/v").pages[0].blocks.find(b=>b.type==="query").from;
  chk("two modules each query their own activity of the same id",own.ok&&own.template.modules.map(qf).join()==="m1/a,m2/a",JSON.stringify(own.refused));}
 
 /* ---- answers apart; written under each module's own records line; read back to their own module ---- */

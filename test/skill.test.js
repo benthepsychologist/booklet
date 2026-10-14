@@ -19,7 +19,7 @@ global.document.createElement=tag=>{const n=mk0(tag);
   return n;};
 const A={};
 eval(src+`
-;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,allModules,activitiesOf,pagesOf,isPaged,showPage,
+;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,allModules,showPage,
   tx,
   setScreen:v=>{screen=v},getLang:()=>lang,bookLang:()=>tableTag((BOOK.raw||{}).lang),
   fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
@@ -53,7 +53,7 @@ chk("SKILL.md carries four worked examples",examples.length===4);
   const lint=spawnSync("python3",[path.join(R,"lint-booklet.py"),f],{encoding:"utf8"});
   chk("the small wiki lints clean",lint.status===0&&!/^(ERROR|warn)/m.test(lint.stdout),lint.stdout);
   A.fresh();A.applyParsed(A.parseFile(m[1]+"\n"),"replace");
-  const acts=A.allModules()[0]&&A.activitiesOf(A.allModules()[0]);
+  const acts=A.allModules()[0]&&A.allModules()[0].activities;
   chk("and loads with its tree: three pages, the second and third under the first",!!acts&&acts.length===3&&acts[1].parent===acts[0].id&&acts[2].parent===acts[0].id);}}
 
 /* the skeleton in section 4 lints clean as it stands: its ids and language are real ones, not placeholders */
@@ -102,10 +102,10 @@ for(const file of files){
   let home="";
   try{A.setScreen("@home");A.render();home=textOf(main());}catch(e){problems.push(`home: ${e.message}`);}
   for(const m of mods) if(!home.includes(A.tx(m.title,"\u0000"))) problems.push(`${m.id}: its title is not on the home page`);
-  for(const act of mods.flatMap(A.activitiesOf)){
-    for(const pg of A.pagesOf(act)){
+  for(const act of mods.flatMap(m=>m.activities)){
+    for(const pg of act.pages){
       let shown="";
-      try{A.setScreen(act.id);if(A.isPaged(act)) A.showPage(act.id,pg.id);A.render();shown=textOf(main());}
+      try{A.setScreen(act.id);if(act.pages.length>1) A.showPage(act.id,pg.id);A.render();shown=textOf(main());}
       catch(e){problems.push(`${act.id}/${pg.id}: ${e.message}`);continue;}
       for(const b of flat(pg.blocks)){
         if(!QUESTIONS.includes(b.type)||b.type==="widget") continue;

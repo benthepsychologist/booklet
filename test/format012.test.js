@@ -15,7 +15,7 @@ const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
 (async()=>{
  const A=P.boot();
  const mod=R=>R.template.modules[0];
- const acts=R=>mod(R).activities||[mod(R).mode];
+ const acts=R=>mod(R).activities;
 
  /* ---- the settings table ---- */
  chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, icon: and parent:",
@@ -55,7 +55,7 @@ const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
   const a=acts(R);
   chk("prose between a module's notice and its first activity is the module's opening, as blocks in the file's order",
     mod(R).opening.length===1&&mod(R).opening[0].type==="markdown"&&mod(R).opening[0].text==="First paragraph here.\n\nSecond one.",JSON.stringify(mod(R).opening));
-  chk("the opening is not drawn inside the first activity, and the activity keeps its own prose",!JSON.stringify(a[0].blocks).includes("First paragraph")&&JSON.stringify(a[0].blocks).includes("In the activity."));
+  chk("the opening is not drawn inside the first activity, and the activity keeps its own prose",!JSON.stringify(a[0].pages[0].blocks).includes("First paragraph")&&JSON.stringify(a[0].pages[0].blocks).includes("In the activity."));
   chk("the notice is not part of it, and a module with none has no opening",!/Free/.test(JSON.stringify(mod(R).opening))&&mod(A.parseFile(FM+"> [!module|m] M\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\n> [!module|m end] End\n")).opening===undefined);
   chk("the card's blurb is still its first paragraph",mod(R).blurb==="First paragraph here.");}
 

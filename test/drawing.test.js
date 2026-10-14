@@ -324,7 +324,7 @@ group: when
   const c1=m.citations.find(c=>c.id==="n"),c2=m.citations.find(c=>c.id==="p");
   chk("a note that wraps still reads as a source and a quote (the lines are joined by a space)",!!c1&&c1.quote==="The tide rises and falls twice in each lunar day."&&c1.verifiedOn==="2026-09-20"&&(m.sources||[])[0]&&m.sources[0].title==="The Harbour Tide Atlas",JSON.stringify([c1,m.sources]));
   chk("a plain reference keeps its whole text",!!c2&&c2.quote==="A plain reference that carries on to a second line.",JSON.stringify(c2));
-  const prose=JSON.stringify(m.mode.blocks);
+  const prose=JSON.stringify(m.activities[0].pages[0].blocks);
   chk("no continuation line is left behind as a stray paragraph",!/carries on|and falls twice/.test(prose)&&/After the notes/.test(prose),prose);}
 
  /* ---------------- D18: a citation with no italic title ---------------- */

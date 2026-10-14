@@ -84,12 +84,12 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
  {const A=P.boot();
   const bare=(parent)=>FM+"> [!activity|top] Top\n\n> [!activity|kid parent:top] Kid\n\n> [!activity|other] Other\n\n> [!activity|grand parent:kid] Grand\n";
   const R=A.parseFile(bare());
-  const acts=R.template.modules.map(m=>m.mode);
+  const acts=R.template.modules.map(m=>m.activities[0]);
   chk("parent: places among bare activities: depth first, each with its parent's address and its depth",
     acts.map(a=>a.id).join()==="top,kid,grand,other"&&acts.map(a=>(a.parent||"-")+"@"+(a.depth||0)).join()==="-@0,top@1,kid@2,-@0",acts.map(a=>a.id+":"+a.parent+"@"+a.depth).join());
   chk("and nothing is reported",R.unread.length===0&&R.ok,JSON.stringify(R.unread));
   const miss=A.parseFile(FM+"> [!activity|a parent:nope] A\n\n> [!activity|b] B\n");
-  chk("a parent that is no bare activity leaves the activity at the top, as in a module",miss.template.modules[0].mode.parent===undefined&&miss.ok);
+  chk("a parent that is no bare activity leaves the activity at the top, as in a module",miss.template.modules[0].activities[0].parent===undefined&&miss.ok);
   const L=lintOut(bare());
   chk("the linter accepts parent: between bare activities, and no longer says it places nothing",/0 errors · 0 warnings/.test(L)&&!/places nothing/.test(L),L);
   chk("the linter warns on a parent that is not among the bare activities, naming the module with no name",/`parent:nope` is not an activity of the module with no name/.test(lintOut(FM+"> [!activity|a parent:nope] A\n")));
@@ -108,10 +108,10 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   /* a bare activity and a module that share an id are two things: adding the module leaves the activity, removing it leaves the activity */
   {const X=load(FM+"> [!activity|inbox] Bare\n\n> [!text|q] Q\n");X.answersIn("").q="mine";
    const r=X.addModuleText(FM.replace("title: T","title: Mod")+"> [!module|inbox] Module inbox\n\n> [!activity|a] A\n\n> [!module|inbox end] End\n");
-   chk("adding a module whose id is a bare activity's id adds a module and leaves the activity",r.ok&&X.allModules().map(m=>m.id+":"+(m.mode||{}).id).join()==="inbox:inbox,inbox:inbox/a",JSON.stringify(r)+X.allModules().map(m=>m.id).join());
+   chk("adding a module whose id is a bare activity's id adds a module and leaves the activity",r.ok&&X.allModules().map(m=>m.id+":"+m.activities[0].id).join()==="inbox:inbox,inbox:inbox/a",JSON.stringify(r)+X.allModules().map(m=>m.id).join());
    chk("and the file it writes opens with both, the bare activity's answer under the plain records line",(q=>q.ok&&q.refused.length===0&&q.template.modules.length===2)(X.parseFile(X.toMarkdown()))&&answersOf(X.toMarkdown(),"").q==="mine");
    const rm=X.removeModule("inbox");
-   chk("removing the module leaves the bare activity",rm.ok&&X.allModules().map(m=>m.id).join()==="inbox"&&X.allModules()[0].mode.id==="inbox",JSON.stringify(rm)+X.allModules().map(m=>m.id).join());}
+   chk("removing the module leaves the bare activity",rm.ok&&X.allModules().map(m=>m.id).join()==="inbox"&&X.allModules()[0].activities[0].id==="inbox",JSON.stringify(rm)+X.allModules().map(m=>m.id).join());}
   /* Remove a module takes its unread records with it, and no one else's */
   const two=FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b] B\n\n> [!text|r] R\n\n> [!module|n end] End\n"+REC+
     "> [!records|m] M\n\n"+fence("booklet sync",'{"for":"m"}')+"> [!records|n] N\n\n"+fence("booklet sync",'{"for":"n"}')+"%%\n";
@@ -123,7 +123,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
  /* ---- D3: the first word after the bar is the id ---- */
  {const A=P.boot();
   const q=(kind,words)=>A.parseFile(FM+"> [!activity|a] A\n\n> ["+"!"+kind+"|"+words+"] Tell me more\n");
-  const blockOf=R=>{const a=R.template.modules[0].mode;return (a.blocks||[]).find(b=>b.type==="text");};
+  const blockOf=R=>{const a=R.template.modules[0].activities[0];return a.pages.flatMap(p=>p.blocks).find(b=>b.type==="text");};
   for(const w of ["long","open","end","repeat","daily","hidden","readonly","describe"]){
     const R=q("text",w);
     chk("p05: `> [!text|"+w+"] Tell me more` is a question with the id “"+w+"”",R.ok&&blockOf(R)&&blockOf(R).id===w&&R.unread.length===0,JSON.stringify(R.unread));}
@@ -132,14 +132,14 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   {const R=q("text","long q");
    chk("a setting before the id is reported: `long q` is the id long and q is a setting a text line does not take",R.unread.length===1&&/\bq\b/.test(R.unread[0])&&blockOf(R).id==="long",JSON.stringify(R.unread));}
   {const R=A.parseFile(FM+"> [!activity|repeat a2] A\n");
-   chk("`> [!activity|repeat a2]` is the activity “repeat”; a2 is not a setting an activity takes",R.template.modules[0].mode.id==="repeat"&&R.unread.length===1&&/a2/.test(R.unread[0]),JSON.stringify(R.unread));}
+   chk("`> [!activity|repeat a2]` is the activity “repeat”; a2 is not a setting an activity takes",R.template.modules[0].activities[0].id==="repeat"&&R.unread.length===1&&/a2/.test(R.unread[0]),JSON.stringify(R.unread));}
   {const R=A.parseFile(FM+"> [!activity|a] A\n\n> [!hint|extra] A hint\n\n> [!notice|legal] Notice\n");
    chk("a kind that takes no id (hint, notice, row, manifest, solution) reads every word as a setting, and reports it",R.unread.filter(x=>/takes no/.test(x)).length>=2,JSON.stringify(R.unread));}
   chk("the linter agrees: `> [!text|long] Tell me more` has an id, and `> [!text|long q]` reports q",
     /0 errors/.test(lintOut(FM+"> [!activity|a] A\n\n> [!text|long] Tell me more\n"))&&/text line takes no `q` setting/.test(lintOut(FM+"> [!activity|a] A\n\n> [!text|long q] Tell me more\n")));
   {const both=FM+"> [!activity|repeat] A\n\n> [!activity|home] B\n",R=A.parseFile(both);
    chk("and so does an activity called `repeat` or `home`: the renderer reads the ids `repeat` and `home`, neither is a setting, and the linter has no error",
-     R.unread.length===0&&R.template.modules.map(m=>m.mode.id).join()==="repeat,home"&&!R.template.modules.some(m=>m.mode.kind==="entry")&&/0 errors/.test(lintOut(both)),JSON.stringify(R.template.modules.map(m=>m.mode.id)));}
+     R.unread.length===0&&R.template.modules.map(m=>m.activities[0].id).join()==="repeat,home"&&!R.template.modules.some(m=>m.activities[0].kind==="entry")&&/0 errors/.test(lintOut(both)),JSON.stringify(R.template.modules.map(m=>m.activities[0].id)));}
   }
  /* ---- D8: a reference across a module boundary draws nothing and never stops the file opening ---- */
  {const A=P.boot();
@@ -147,7 +147,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const R=A.parseFile(two);
   chk("p15: a query naming an activity of another module: the file opens",R.ok&&R.refused.length===0&&R.template.modules.length===2,JSON.stringify(R.refused));
   chk("p15: and the notice names the query",R.unread.some(x=>/query in “b”/.test(x)&&/“a”, which is in another module/.test(x)),JSON.stringify(R.unread));
-  chk("p15: nothing is drawn for it",!JSON.stringify(R.template.modules[1].mode.blocks).includes('"type":"query"'));
+  chk("p15: nothing is drawn for it",!JSON.stringify(R.template.modules[1].activities[0].pages[0].blocks).includes('"type":"query"'));
   chk("the linter keeps it an error",/`from: a` is in another module/.test(lintOut(two))&&lint(two).status===1,lintOut(two));
   chk("a menu: across a module boundary draws no options and the file opens",(r=>r.ok&&r.refused.length===0)(A.parseFile(FM+"> [!module|m1] One\n\n> [!menu|feels]\n- Calm\n\n> [!activity|a] A\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|b] B\n\n> [!choice|c menu:feels] C\n\n> [!module|m2 end] End\n")));}
  /* ---- D9: front-matter keys a reader does not know are kept ---- */
@@ -160,7 +160,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
  {const A=P.boot();
   const body="> [!activity|a] A\n\n> [!group]- Notes on the week\n> Some words inside.\n\n> [!group] Not folded\n> More words.\n";
   const R=A.parseFile(FM+body);
-  chk("`> [!group]- Title` is read as a kind of the format: nothing reported, not marked unknown",R.unread.length===0&&!R.template.modules[0].mode.blocks.some(b=>b.unknown),JSON.stringify(R.unread));
+  chk("`> [!group]- Title` is read as a kind of the format: nothing reported, not marked unknown",R.unread.length===0&&!R.template.modules[0].activities[0].pages[0].blocks.some(b=>b.unknown),JSON.stringify(R.unread));
   chk("`group` is in the table of kinds, and takes no settings",JSON.stringify(A.KIND_SETTINGS.group)==="[]");
   const W=A.parseFile(FM+"> [!activity|a] A\n\n> [!group|x]- Title\n> body\n");
   chk("a word after the bar on a group is a setting it does not take, reported like any other",W.unread.length===1&&/group line takes no “x”/.test(W.unread[0]),JSON.stringify(W.unread));
@@ -175,7 +175,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
  {const A=P.boot();
   const row=close=>FM+"> [!activity|a] A\n\n> [!row]\n\n### One\n\nx\n\n### Two\n\ny\n\n"+close+"\n";
   const ok=A.parseFile(row("> [!row|end]"));
-  chk("`> [!row|end]` closes a row: two cells, nothing reported",ok.ok&&ok.unread.length===0&&ok.template.modules[0].mode.blocks.some(b=>b.type==="row"&&b.blocks.length===2),JSON.stringify(ok.unread));
+  chk("`> [!row|end]` closes a row: two cells, nothing reported",ok.ok&&ok.unread.length===0&&ok.template.modules[0].activities[0].pages[0].blocks.some(b=>b.type==="row"&&b.blocks.length===2),JSON.stringify(ok.unread));
   const old=A.parseFile(row("> [!row end]"));
   chk("the renderer does not read `> [!row end]` as a close: the row is reported as never closed",old.ok&&old.unread.some(x=>/never closed|not closed/i.test(x)),JSON.stringify(old.unread));
   const L=lint(row("> [!row end]"));
@@ -231,7 +231,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   P.find(box,P.hasClass("danger"))[0]._on.click({});
   const out=A.toMarkdown();
   chk("B2: Remove takes the module, its entries, its orphan entries and its drafts; the bare activity and its answer stay",
-    A.allModules().map(m=>m.id).join()==="inbox"&&A.allModules()[0].mode.id==="inbox"&&Object.keys(A.STATE.entries).length===0&&Object.keys(A.DRAFTS.custom).length===0&&answersOf(out,"").q==="bare answer"&&!/orphan|module answer/.test(out),out.slice(-300));
+    A.allModules().map(m=>m.id).join()==="inbox"&&A.allModules()[0].activities[0].id==="inbox"&&Object.keys(A.STATE.entries).length===0&&Object.keys(A.DRAFTS.custom).length===0&&answersOf(out,"").q==="bare answer"&&!/orphan|module answer/.test(out),out.slice(-300));
   /* the activity of the fenced module goes Back to the module's own page */
   const B=load(f);B.screen="inbox/a";B.render();
   const back=P.find(P.main(),n=>n.tagName==="button"&&P.hasClass("cd-back")(n))[0];
@@ -291,7 +291,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   for(const ln of lines){const f=FM+"> [!activity|a] A\n\nBefore.\n\n"+ln+"\n\nAfter.\n";
    const R=load(f)&&P.boot().parseFile(f);
    chk("should-fix 7: `"+ln+"` is reported at its own line (line 11) as a line the page cannot read",R.unread.length>=1&&R.unread.some(x=>/^line 11: /.test(x)&&/> \[!/.test(x)),JSON.stringify(R.unread));
-   chk("should-fix 7: and is left as text, not lost",JSON.stringify(R.template.modules[0].mode.blocks).includes(ln.replace(/\\/g,"")),JSON.stringify(R.template.modules[0].mode.blocks).slice(0,300));}
+   chk("should-fix 7: and is left as text, not lost",JSON.stringify(R.template.modules[0].activities[0].pages[0].blocks).includes(ln.replace(/\\/g,"")),JSON.stringify(R.template.modules[0].activities[0].pages[0].blocks).slice(0,300));}
   const fine=FM+"> [!activity|a] A\n\n> [!note] A note\n> body\n\n```\n> [!row end]\n```\n\n> [!2col] Two columns\n> words\n";
   chk("should-fix 7: a readable callout, a `> [!` line inside a code fence, and a kind that starts with a digit (`> [!2col]`) are not reported",P.boot().parseFile(fine).unread.length===0,JSON.stringify(P.boot().parseFile(fine).unread));}
 
@@ -301,7 +301,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const A=load(f),R=A.parseFile(f),out=A.toMarkdown();
   chk("records-only: prose, a callout, a figure, a data block, a data line and a widget inside the region are each reported once",R.unread.length===6,JSON.stringify(R.unread));
   chk("records-only: and kept as written, each once",["A note someone wrote by hand.","> [!note] Kept?","graph TD; A-->B\n```\n^fig1","[{\"label\":\"x\"}]\n```\n^d1"].every(t=>cnt(out,new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"g"))===1),out.slice(-400));
-  chk("records-only: they are not read as design: no widget, no data section, no note drawn, and the data line and the widget fence survive a save",A.BOOK.widgets.length===0&&A.allModules().length===1&&R.template.modules[0].mode.blocks.every(b=>b.type!=="callout"&&b.type!=="markdown")&&cnt(out,/> \[!data\] A data section/g)===1&&cnt(out,/\^w9/g)===1,JSON.stringify(R.template.modules[0].mode.blocks.map(b=>b.type)));
+  chk("records-only: they are not read as design: no widget, no data section, no note drawn, and the data line and the widget fence survive a save",A.BOOK.widgets.length===0&&A.allModules().length===1&&R.template.modules[0].activities[0].pages[0].blocks.every(b=>b.type!=="callout"&&b.type!=="markdown")&&cnt(out,/> \[!data\] A data section/g)===1&&cnt(out,/\^w9/g)===1,JSON.stringify(R.template.modules[0].activities[0].pages[0].blocks.map(b=>b.type)));
   chk("records-only: load, save, load, save changes nothing",load(out).toMarkdown()===out);}
 
  /* nit: a malformed `raw.records` (what a browser's storage gave back) does not stop a save */
@@ -339,7 +339,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("and for a choice called `open` and an activity called `hidden`",/`open` is this choice's id/.test(lintOut(FM+"> [!activity|a] A\n\n> [!choice|open] Pick\n\n- One\n- Two\n"))&&/`hidden` is this activity's id/.test(lintOut(FM+"> [!activity|hidden] N\n")));
   chk("but not for `home`, an ordinary id, nor for an id that is no setting, nor when the word follows the id",
     !/^warn/m.test(lintOut(FM+"> [!activity|home] A\n\n> [!text|q long] Q\n"))&&!/^warn/m.test(lintOut(FM+"> [!activity|a repeat] A\n\n> [!text|note long] N\n")));
-  chk("and an activity called `repeat` is not a repeating one",(R=>R.template.modules[0].mode.kind!=="entry"&&R.template.modules[1].mode.id==="home")(P.boot().parseFile(FM+"> [!activity|repeat] A\n\n> [!activity|home] B\n")));}
+  chk("and an activity called `repeat` is not a repeating one",(R=>R.template.modules[0].activities[0].kind!=="entry"&&R.template.modules[1].activities[0].id==="home")(P.boot().parseFile(FM+"> [!activity|repeat] A\n\n> [!activity|home] B\n")));}
 
 
  /* ======== fix round 2 (the second cold review of #46): each check below failed on 16bd3da ======== */
@@ -389,10 +389,10 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
  /* the records region: from the `%%` before the first records line to its closing `%%`; design before and after it */
  {const f=FM+"> [!activity|a] A\n\n%%\nan author's note\n%%\n\n> [!text|q] Q\n\nProse after the comment.\n"+REC+fence("booklet answers",'{"q":"x"}')+"%%\n";
   const A=load(f),o=A.toMarkdown();
-  chk("region: a `%%` … `%%` comment above the records stays in place with the question after it, and a save keeps both",o.includes("%%\nan author's note\n%%\n\n> [!text|q] Q\n\nProse after the comment.\n")&&A.allModules()[0].mode.blocks.some(b=>b.type==="text"&&b.id==="q")&&answersOf(o,"").q==="x"&&load(o).toMarkdown()===o,o);}
+  chk("region: a `%%` … `%%` comment above the records stays in place with the question after it, and a save keeps both",o.includes("%%\nan author's note\n%%\n\n> [!text|q] Q\n\nProse after the comment.\n")&&A.allModules()[0].activities[0].pages[0].blocks.some(b=>b.type==="text"&&b.id==="q")&&answersOf(o,"").q==="x"&&load(o).toMarkdown()===o,o);}
  {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+fence("booklet answers",'{"q":"x"}')+"%%\n\nProse after the region.\n\n> [!data] A data section\n\n```booklet data\n[{\"label\":\"x\"}]\n```\n^d1\n";
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
-  chk("region: prose and a data section after the closing `%%` are design: read, and reported once as moved",R.unread.length===1&&/after the records is moved above them/.test(R.unread[0])&&R.template.modules[0].mode.blocks.some(b=>b.type==="markdown"&&/Prose after the region/.test(b.text)),JSON.stringify(R.unread));
+  chk("region: prose and a data section after the closing `%%` are design: read, and reported once as moved",R.unread.length===1&&/after the records is moved above them/.test(R.unread[0])&&R.template.modules[0].activities[0].pages[0].blocks.some(b=>b.type==="markdown"&&/Prose after the region/.test(b.text)),JSON.stringify(R.unread));
   chk("region: and written above the region on save, once, and the next open reports nothing",o.indexOf("Prose after the region")<o.indexOf("%%\n> [!records]")&&o.indexOf("```booklet data")<o.indexOf("%%\n> [!records]")&&cnt(o,/Prose after the region/g)===1&&cnt(o,/```booklet data/g)===1&&P.boot().parseFile(o).unread.length===0&&load(o).toMarkdown()===o,o);}
  {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+fence("booklet answers",'{"q":"x"}')+"%%\n\n    indented code line one\n    indented code line two\n";
   chk("region: only blank lines at the edges of the moved text are trimmed, never a first line's indentation",load(f).toMarkdown().includes("\n    indented code line one\n    indented code line two\n"));}

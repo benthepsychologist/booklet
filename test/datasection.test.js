@@ -20,9 +20,9 @@ const TWO=HEAD+modBody("mod-a","a")+"\n"+modBody("mod-b","b")+"\n"+dataFor("mod-
   chk("two modules, each with its own ^w, ^tbl, menu and footnote 1 under its own data section: nothing refused, nothing reported",R.ok&&R.refused.length===0&&R.unread.length===0,JSON.stringify(R.unread));
   const ws=R.template.widgets;
   chk("each widget is that module's, as if it sat in the fence",ws.length===2&&ws.find(w=>w.module==="mod-a").items[0].id==="i-a"&&ws.find(w=>w.module==="mod-b").items[0].id==="i-b",JSON.stringify(ws));
-  const act=id=>{const m=R.template.modules.find(x=>x.id===id);return m.mode;};
-  chk("each module's menu question takes its own module's menu",act("mod-a").blocks.find(b=>b.id==="pick").options.join()==="a-one,a-two"&&act("mod-b").blocks.find(b=>b.id==="pick").options.join()==="b-one,b-two");
-  chk("each module's query reads its own data block",act("mod-a").blocks.find(b=>b.type==="query").data.rows[0].name==="a-row"&&act("mod-b").blocks.find(b=>b.type==="query").data.rows[0].name==="b-row");
+  const act=id=>{const m=R.template.modules.find(x=>x.id===id);return m.activities[0];};
+  chk("each module's menu question takes its own module's menu",act("mod-a").pages[0].blocks.find(b=>b.id==="pick").options.join()==="a-one,a-two"&&act("mod-b").pages[0].blocks.find(b=>b.id==="pick").options.join()==="b-one,b-two");
+  chk("each module's query reads its own data block",act("mod-a").pages[0].blocks.find(b=>b.type==="query").data.rows[0].name==="a-row"&&act("mod-b").pages[0].blocks.find(b=>b.type==="query").data.rows[0].name==="b-row");
   chk("each module's footnote definition under its data section is that module's",R.template.modules.find(x=>x.id==="mod-a").citations.map(c=>c.quote).join()==="quote a"&&R.template.modules.find(x=>x.id==="mod-b").citations.map(c=>c.quote).join()==="quote b");
   A.loadText(TWO);
   chk("the page looks a widget up in its own module",A.widgetOf("w","mod-a").items[0].id==="i-a"&&A.widgetOf("w","mod-b").items[0].id==="i-b");}

@@ -139,12 +139,12 @@ for(const bare of [false,true]){const tag=bare?" (a host that names no change)":
  A.renameBooklet("My own name");await sleep(800);
  chk("B3 setup: the store kept its own title and offered its file",!/My own name/.test(ROUTES[U])&&offer()===1);
  A.closeBooklet();await A.openLink("#/open/r.md");
- chk("a booklet renamed inside it opens as kept, with the reader's name (the store's file is unchanged: no offer)",/My own name/.test(JSON.stringify(A.BOOK.head||{}))&&!offer()&&A.currentId===id);
+ chk("a booklet renamed inside it opens as kept, with the reader's name (the store's file is unchanged: no offer)",/My own name/.test(JSON.stringify(A.BOOK.title))&&!offer()&&A.currentId===id);
  // the generator rewrites the file: then the newer file is offered too
  A.closeBooklet();ROUTES[U]=booklet("Report","A newer question");await A.openLink("#/open/r.md");
- chk("...and with the file rewritten since, it opens as kept with the offer",/My own name/.test(JSON.stringify(A.BOOK.head||{}))&&offer()===1&&A.currentId===id);
+ chk("...and with the file rewritten since, it opens as kept with the offer",/My own name/.test(JSON.stringify(A.BOOK.title))&&offer()===1&&A.currentId===id);
  A.closeBooklet();A.openFromList(id);await sleep(30);
- chk("...and from the list the same",/My own name/.test(JSON.stringify(A.BOOK.head||{}))&&offer()===1);
+ chk("...and from the list the same",/My own name/.test(JSON.stringify(A.BOOK.title))&&offer()===1);
  // reading the newer file takes the store's booklet; after that the store holds everything, and the file is drawn
  press(/Read the newer file/);await sleep(800);A.closeBooklet();ROUTES[U]=merge(booklet("Report","A regenerated question"),ROUTES[U]);
  await A.openLink("#/open/r.md");
@@ -255,7 +255,7 @@ for(const delay of [0,300]){
  let rel;const gate=new Promise(r=>{rel=r;});ROUTES[STORE+"two.md"]=async()=>{await gate;return reply(booklet("Two"));};
  const p=A.openLink("#/open/two.md");await sleep(10);
  chk("N3: a link opened from inside a booklet says Opening <name>… on that booklet's screen",A.screen!=="@booklets"&&/Opening two\.md…/.test(text(P.main())),A.screen);
- rel();await p;chk("...and the notice goes when the booklet opens",/Two/.test(JSON.stringify(A.BOOK.head))&&!/Opening two\.md…/.test(text(P.main())));}
+ rel();await p;chk("...and the notice goes when the booklet opens",/Two/.test(JSON.stringify(A.BOOK.title))&&!/Opening two\.md…/.test(text(P.main())));}
 
 /* ---- N4: a pointer was re-created under a new id on each fresh load ---- */
 {let A=boot();ROUTES[STORE+"q.md"]=booklet("Queue");await A.openLink("#/open/q.md");const id=A.currentId;

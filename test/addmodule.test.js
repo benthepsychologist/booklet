@@ -29,7 +29,7 @@ const mk=(mod,body)=>`---\nbooklet: "0.13"\ntitle: T ${mod}\nlang: en\n---\n\n> 
    const before=A.toMarkdown(),mods=A.allModules().map(m=>m.id).join();
    const r2=A.addModuleText(b.t);
    if(r2.ok){const out=A.toMarkdown(),R=A.parseFile(out);
-     const onScreen=A.allModules().map(m=>m.id+":"+(m.mode?[m.mode]:m.activities).map(x=>x.id).join("+")).join(),inFile=R.template.modules.map(m=>m.id+":"+(m.mode?[m.mode]:m.activities).map(x=>x.id).join("+")).join();
+     const onScreen=A.allModules().map(m=>m.id+":"+m.activities.map(x=>x.id).join("+")).join(),inFile=R.template.modules.map(m=>m.id+":"+m.activities.map(x=>x.id).join("+")).join();
      if(R.refused.length) bad.push(a.name+" + "+b.name+": written file refused: "+R.refused.join(" | "));
      else if(onScreen!==inFile) bad.push(a.name+" + "+b.name+": the screen shows "+onScreen+" but the file holds "+inFile);
      else okPairs++;}
@@ -78,8 +78,8 @@ const mk=(mod,body)=>`---\nbooklet: "0.13"\ntitle: T ${mod}\nlang: en\n---\n\n> 
   chk("two modules sharing a question, activity, menu, widget block and footnote id both add",r1.ok&&r2.ok&&A.allModules().length===2,JSON.stringify([r1,r2]));
   const out=A.toMarkdown(),R=A.parseFile(out);
   chk("the file they make opens with nothing refused",R.refused.length===0&&R.template.modules.length===2,JSON.stringify(R.refused));
-  const opts=m=>R.template.modules.find(x=>x.id===m).mode||R.template.modules.find(x=>x.id===m).activities[0];
-  chk("each module's menu question takes its own module's menu",opts("mod-a").blocks.find(b=>b.id==="pick").options.join()==="a-one,a-two"&&opts("mod-b").blocks.find(b=>b.id==="pick").options.join()==="b-one,b-two");
+  const opts=m=>R.template.modules.find(x=>x.id===m).activities[0];
+  chk("each module's menu question takes its own module's menu",opts("mod-a").pages[0].blocks.find(b=>b.id==="pick").options.join()==="a-one,a-two"&&opts("mod-b").pages[0].blocks.find(b=>b.id==="pick").options.join()==="b-one,b-two");
   chk("each module's widget is its own",A.BOOK.widgets.length===2&&A.BOOK.widgets.filter(w=>w.module==="mod-a")[0].items[0].id==="i-a"&&A.BOOK.widgets.filter(w=>w.module==="mod-b")[0].items[0].id==="i-b");}
 
 

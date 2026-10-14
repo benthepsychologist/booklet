@@ -45,12 +45,12 @@ const changed=X=>{const e=X.readLib().entries.find(x=>x.id===X.currentId);return
   chk("it survives a save and a reload: heading, title line and download name",heading()==="Sleep & mood, spring"&&titleOf(B.toMarkdown())==="Sleep & mood, spring"&&B.exportName()==="sleep-mood-spring.booklet.md");
   B.addModuleText(MOD("A module with its own title"));
   chk("adding a module with a different title leaves the booklet's name alone",heading()==="Sleep & mood, spring"||(B.render(),heading()==="Sleep & mood, spring"));
-  chk("and the file still names the booklet, not the module",titleOf(B.toMarkdown())==="Sleep & mood, spring"&&B.BOOK.head.title==="Sleep & mood, spring"&&B.allModules()[0].title==="A module with its own title");
+  chk("and the file still names the booklet, not the module",titleOf(B.toMarkdown())==="Sleep & mood, spring"&&B.BOOK.title==="Sleep & mood, spring"&&B.allModules()[0].title==="A module with its own title");
   const md=B.toMarkdown();
   P.closePages();P.wipe&&0;
   const C=P.boot();await C.createBooklet();
   const r=C.loadText(md);
-  chk("download, then open: the downloaded file opens as a booklet with the same name",titleOf(C.toMarkdown())==="Sleep & mood, spring"&&C.BOOK.head.title==="Sleep & mood, spring",C.BOOK&&C.BOOK.head&&C.BOOK.head.title);}
+  chk("download, then open: the downloaded file opens as a booklet with the same name",titleOf(C.toMarkdown())==="Sleep & mood, spring"&&C.BOOK.title==="Sleep & mood, spring",C.BOOK&&C.BOOK.title);}
  /* the awkward names */
  for(const NAME of ['He said "hi": a #1 \\ name','Tab:\tcolon #hash "quotes" \\back','<b>bold</b> *star* [x](javascript:alert(1)) `tick`',"Ünïcode – ✓ 名前","# not a heading"]){
   const B=P.boot();await B.createBooklet();B.render();
