@@ -6,6 +6,8 @@
 //       hint or solution is a callout of its kind where it stands; the question's help text is `help`. No id is read for it.
 //   R6. Citations are numbered once per booklet, a pure function of the design (citeScope, one per screen); a draw only reads
 //       the numbers, keeping its own marks.
+//   R9. One copy of each small job. Two copies had drifted: Remove and Update a module now find a module's fence as Add does,
+//       outside code fences; and a page is named by its first heading outside code fences, as its links find it.
 // Run: node test/consolidate.test.js   (node only; nothing to install)
 const P=require("./page.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
@@ -100,6 +102,25 @@ const LS=global.__ls;
  chk("a draw reads it, with marks of its own; nothing else about citations is in the draw",d1.cite.nums===R.nums&&d2.cite.nums===R.nums&&d1.cite.drawn!==d2.cite.drawn&&!("opening" in d1)&&!("cites" in d1),Object.keys(d1).join());
  const marks=P.find(P.main(),P.hasClass("rd-mark")).map(P.texts).join();
  chk("and draws the numbers: the opening, then the page on show",marks==="1,2,1",marks);}
+
+/* ---- R9: a module's fence, found outside code fences by Remove and Update as by Add ---- */
+{P.wipe();const A=P.boot();A.createBooklet();
+ const FENCE="```";
+ const guide=FM("Guide")+"> [!module|guide] Guide\n\n> [!activity|how] How\n\nA module is written like this:\n\n"+FENCE+"markdown\n> [!module|tides] Tides\n\n> [!module|tides end] End\n"+FENCE+"\n\n> [!module|guide end] End\n";
+ const tides=FM("Tides")+"> [!module|tides] Tides\n\n> [!activity|t] T\n\nWords.\n\n> [!module|tides end] End\n";
+ chk("set up: a guide whose prose shows a module line in a code block, and the module itself",A.addModuleText(guide).ok&&A.addModuleText(tides).ok&&A.allModules().map(m=>m.id).join()==="guide,tides");
+ const src=A.BOOK.raw.source,example=src.slice(src.indexOf(FENCE+"markdown"),src.indexOf(FENCE+"\n\n> [!module|guide end]"));
+ const r=A.removeModule("tides");
+ chk("Remove takes out the module, not the lines in the code block that look like it",r.ok&&A.allModules().map(m=>m.id).join()==="guide"&&A.BOOK.raw.source.includes(example),json(r)+" "+A.BOOK.raw.source.slice(0,400));
+ A.addModuleText(tides);
+ const upd=A.addModuleText(tides.replace("Words.","New words."));
+ chk("an Update replaces the module where it sits, and leaves the code block as it was",upd.ok&&A.BOOK.raw.source.includes(example)&&/New words\./.test(A.BOOK.raw.source)&&!/\nWords\./.test(A.BOOK.raw.source),json(upd));}
+
+/* ---- R9: a page's name is its first heading outside code fences ---- */
+{P.wipe();const A=P.boot();const FENCE="```";
+ const R=A.parseFile(FM("Pages")+"> [!activity|a] A\n\n"+FENCE+"sh\n# a comment in a script\n"+FENCE+"\n\n## The first page\n\nWords.\n\n---\n\n## The second page\n\nMore.\n");
+ const ps=R.template.modules[0].activities[0].pages;
+ chk("a heading-like line in a code block does not name the page; its first heading does, as its links find it",ps.map(p=>p.title).join("|")==="The first page|The second page",ps.map(p=>p.title).join("|"));}
 
 P.wipe();
 console.log(fails?`\n${fails} FAILURES`:"\nconsolidation checks passed");

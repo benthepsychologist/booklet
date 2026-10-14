@@ -13,6 +13,8 @@ Nothing a file may say has changed: the marker stays `booklet: "0.13"`, and no f
 - **A kept entry records only what was answered**: no empty list for a lines question or a widget left untouched.
 - **A booklet an earlier release kept is read by this release's rules when it opens.** If they accept it, it shows the notices a file opened afresh would show, once. If they refuse it, it opens from the design that release kept, and its notice shows on every open until the file is fixed. Before, it opened silently as kept.
 - **A record kept as written for a module the booklet lacked joins the reader's work as soon as that module is added** (section 8), so the file written changes then, not at the next download and reopen.
+- **Remove a module and an update of one find the module's fence outside code fences**, as Add a module always did. Before, a module line shown in a code block (a guide that shows how a module is written) could be taken for the module itself, and the lines removed or replaced were the example's.
+- **A page of several is named in the pages menu by its first heading outside code fences**, the heading its links find. Before, a line in a code block that looked like a heading (`# a comment` in a script) could name the page.
 - **Not carried over:** the design of a booklet kept before v0.3 (it opens without it, and it is lost at its first save), and the one-at-a-time and folding choices 0.13.0 kept for booklets started here, which all shared one key.
 
 ## Changes from v0.12

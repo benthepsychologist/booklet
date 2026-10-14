@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-umkg4W3TVcIRU7piuvP4Y5xPXbxMrU1OZJSuozvEzXc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-hyYwckDPMwIs0zus+s81TxaWon0Clsunpzcth72sCtk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -467,8 +467,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .q-mk{font-size:.82em;font-weight:700}
   .q-acts{display:flex;gap:.45rem;margin:-.4rem 0 .6rem} .q-acts:empty{display:none}
   .q-live{margin:0 0 1rem;min-height:1.2em} .q-live:empty{display:none}
-  /* a solution inside the question says the verdict in its own label; the line stays for screen readers only */
-  .q-live.q-live-sr{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
   .pills .pill-btn,.pill-x{min-height:44px;min-width:44px}
   /* short options sit beside their question when there is room */
   .q-inline{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1rem;align-items:center}
@@ -509,7 +507,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mxopt:hover span{background:var(--accent-soft)}
   .mxopt input:checked+span{background:var(--accent);color:var(--on-accent)}
   .mxopt input:focus-visible+span{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
-  .dv-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   @container (max-width:560px){
     .mxrow{display:block;padding:.6rem 0}
     .mxitem{display:block;margin:0 0 .4rem;font-weight:600}
@@ -697,7 +694,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .ap-title{font-family:var(--serif);font-weight:600;font-size:1.25rem;line-height:1.3;color:var(--ink);margin:.25rem 0 .9rem}
   /* minimized: the numbers only */
   .ap-min .ap-top{justify-content:center}
-  .ap-min .ap-head,.ap-min .ap-t,.rd-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  /* Hidden, but kept for screen readers (one rule for all of them): the minimized menu's words; a citation's and a view's words
+     beside their marks; and a solution inside the question says the verdict in its own label, so the question's line stays
+     for screen readers only. */
+  .ap-min .ap-head,.ap-min .ap-t,.rd-sr,.dv-sr,.q-live.q-live-sr{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
   .ap-min .ap-item{justify-content:center;padding:.4rem 0}
   .ap-min .ap-n{min-width:0}
 
@@ -2582,7 +2582,7 @@ function problemText(p){if(!isProblem(p)) return String(p==null?"":p);
 /* problems as the one sentence a reader is shown */
 const problemWords=list=>humanMsg(list.map(problemText).join(" "));
 /* the words that stand where an image would be (the Markdown engine reads them through this, when it has a page around it) */
-const imgNoteText=()=>((STRINGS[lang]||{}).ui||{}).imgNotShown||STRINGS.en.ui.imgNotShown;
+const imgNoteText=()=>strings("ui").imgNotShown;
 
 /* ======================= 3. SMALL HELPERS =======================
    el, sv, text and date helpers, ids, copies, storage access, localised text. */
@@ -3191,15 +3191,13 @@ function keptShape(t){if(!isObj(t)) return t;t=clone(t);const {head,...out}=t;
    "-hint" or "-solution". The first folded one of each for a question in the activity is that question's own, as that release
    drew it; any other was drawn where it stood, and stays there as a callout of its kind, `outside`. This is the one place that
    reads that id. */
-function keptHelps(pages){const all=[],walk=l=>(Array.isArray(l)?l:[]).forEach(b=>{if(b&&typeof b==="object"){all.push(b);walk(b.blocks);}});
-  pages.forEach(p=>walk(p.blocks));
+function keptHelps(pages){const all=blocksAll(pages.flatMap(blocksIn));
   const qs=new Map(),seen=new Set(),gone=new Set();
   all.forEach(x=>{if(!QUESTION_KINDS.has(x.type)) return;if(typeof x.hint==="string"){x.help=x.hint;delete x.hint;}if(x.id&&!qs.has(x.id)) qs.set(x.id,x);});
   all.forEach(c=>{const m=c.type==="callout"&&c.kind===""?/^(.*)-(hint|solution)$/.exec(String(c.id||"")):null;if(!m) return;
     const q=qs.get(m[1]),fold=placeOf(c)==="folded",first=fold&&!seen.has(c.id);if(fold) seen.add(c.id);
     if(q&&first&&!isObj(q[m[2]])){q[m[2]]={...c,kind:m[2]};gone.add(c);}else{c.kind=m[2];c.outside=true;}});
-  const drop=l=>{if(!Array.isArray(l)) return;for(let i=l.length-1;i>=0;i--){if(gone.has(l[i])) l.splice(i,1);else if(l[i]&&typeof l[i]==="object") drop(l[i].blocks);}};
-  pages.forEach(p=>drop(p.blocks));}
+  [...pages,...all].map(blocksIn).forEach(l=>{for(let i=l.length-1;i>=0;i--) if(gone.has(l[i])) l.splice(i,1);});}
 /* an older release's kept design, if it is shaped as one (keptShape): modules holding activities with string ids, of a kind this page draws */
 const oldDesign=t=>isObj(t)&&Array.isArray(t.modules)&&t.modules.every(m=>isObj(m)&&typeof m.id==="string"
   &&m.activities.every(a=>typeof a.id==="string"&&(a.kind==="entry"||a.kind==="board")));
@@ -3274,6 +3272,35 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    wrote is never rewritten by the page that reads it. */
 const CALLOUT_LINE=/^>[ \t]?\[!([A-Za-z0-9][A-Za-z0-9-]*)(?:\|([^\]]*))?\]([+-]?)[ \t]*(.*)$/;
 const calloutLine=l=>/^>[ \t]?\[!/.test(l);
+/* ---- what the format's readers find in a file's lines, each found one way ----
+   The parser, Add and Remove a module, Rename on a clash and the drawing all ask these. */
+const BLOCK_ID_LINE=/^\^([A-Za-z0-9-]+)$/;
+/* The code fence opening at line `i` (its FENCE_RE match `f`): the line it closes on (`end`, lines.length when it never
+   does), its info words, its fence (`mark`) and the block id written under it (`id`, on line `idAt`: a `^id` line after
+   blank lines only; null and -1 when there is none). */
+function fenceAt(lines,i,f){const end=fenceEnd(lines,i,f);let n=end+1;while(n<lines.length&&!lines[n].trim()) n++;
+  const m=n<lines.length?lines[n].trim().match(BLOCK_ID_LINE):null;
+  return {start:i,end,info:f[2].trim(),mark:f[1],id:m?m[1]:null,idAt:m?n:-1};}
+/* every code fence in some lines, in order (as fenceAt gives them) */
+function codeFences(lines){const out=[];
+  for(let i=0;i<lines.length;i++){const f=FENCE_RE.exec(lines[i]);if(!f) continue;const F=fenceAt(lines,i,f);out.push(F);i=F.end;}
+  return out;}
+/* which lines of a file are fenced code (the fence lines included) */
+function codeMask(lines){const mask=new Array(lines.length).fill(false);
+  codeFences(lines).forEach(F=>{for(let j=F.start;j<=Math.min(F.end,lines.length-1);j++) mask[j]=true;});
+  return mask;}
+/* every booklet line (`> [!kind|…]`) outside fenced code, in order: {i, kind (lower case), m (its CALLOUT_LINE match)} */
+function bookletLines(lines){const mask=codeMask(lines),out=[];
+  lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CALLOUT_LINE);if(m) out.push({i,kind:m[1].toLowerCase(),m});});
+  return out;}
+/* every ATX heading line of some Markdown outside its code fences, in order: {i, level, text (its words as written, "" for
+   none), ln (the line)} */
+function atxLines(text){const out=[];let fence=null;
+  String(text||"").split("\n").forEach((ln,i)=>{const was=fence;fence=fenceStep(fence,ln,true);if(was||fence) return;
+    const m=ATX_RE.exec(ln);if(m) out.push({i,level:m[1].length,text:m[2]||"",ln});});
+  return out;}
+/* a heading line's words, as a page's name and an opening's leading heading read them (trailing spaces and marks off) */
+const HEADING_WORDS=/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/;
 /* A module's notice (SPEC.md section 3): the four things a module may say about itself, in the order a callout
    and a disclosure write them */
 const NOTICE_KEYS=["license","copyright","source","version"];
@@ -3359,29 +3386,21 @@ function parseCiteNote(note){const m=String(note||"").match(CITE_NOTE);
   return {source:title?{title,edition:(m[2]||"").trim()||undefined}:null,
     citation:{page:(m[3]||"").trim()||undefined,quote:(m[4]||"").trim(),
       verifiedOn:m[5]||undefined,verifiedBy:(m[6]||"").trim()||undefined}};}
-/* the task list right under a choice/multi question: `- [ ] text` / `- [x] text`,
-   zero or one blank line above it. Returns {opts,next} or null if none is there. */
-function optionList(lines,i){let j=i;let blanks=0;
-  while(j<lines.length&&!lines[j].trim()){j++;blanks++;if(blanks>1) return null;}
-  const opts=[];
-  while(j<lines.length){const m=lines[j].match(/^[ \t]*[-*+][ \t]+\[([ xX])\][ \t]+(.*)$/);if(!m) break;
-    opts.push({text:m[2].trim(),correct:/[xX]/.test(m[1])});j++;}
-  return opts.length?{opts,next:j}:null;}
-/* the numbered list right under a scale question: `0. text`, `1. text`, … */
-function anchorList(lines,i){let j=i;let blanks=0;
-  while(j<lines.length&&!lines[j].trim()){j++;blanks++;if(blanks>1) return null;}
-  const anchors=[];
-  while(j<lines.length){const m=lines[j].match(/^[ \t]*(\d+)[.)][ \t]+(.*)$/);if(!m) break;
-    anchors.push({n:Number(m[1]),text:m[2].trim()});j++;}
-  return anchors.length?{anchors,next:j}:null;}
-/* a bulleted list, zero or one blank line below the line it belongs to: a
-   matrix's items or a shared menu's entries (`- text`; a `[ ]` box is dropped) */
-function bulletList(lines,i){let j=i;let blanks=0;
+/* The list right under a booklet line, zero or one blank line above it: the lines `re` matches, each made by `item`.
+   Returns {items, next} or null if none is there. Three lists are read so (LISTS): */
+function listUnder(lines,i,re,item){let j=i;let blanks=0;
   while(j<lines.length&&!lines[j].trim()){j++;blanks++;if(blanks>1) return null;}
   const items=[];
-  while(j<lines.length){const m=lines[j].match(/^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$/);if(!m) break;
-    items.push(m[1].trim());j++;}
+  while(j<lines.length){const m=lines[j].match(re);if(!m) break;items.push(item(m));j++;}
   return items.length?{items,next:j}:null;}
+const LISTS={
+  /* the task list right under a choice/multi question: `- [ ] text` / `- [x] text` */
+  options:[/^[ \t]*[-*+][ \t]+\[([ xX])\][ \t]+(.*)$/,m=>({text:m[2].trim(),correct:/[xX]/.test(m[1])})],
+  /* the numbered list right under a scale question (or a matrix's items): `0. text`, `1. text`, … */
+  anchors:[/^[ \t]*(\d+)[.)][ \t]+(.*)$/,m=>({n:Number(m[1]),text:m[2].trim()})],
+  /* a bulleted list: a matrix's items or a shared menu's entries (`- text`; a `[ ]` box is dropped) */
+  bullets:[/^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$/,m=>m[1].trim()]};
+const listOf=(what,lines,i)=>listUnder(lines,i,...LISTS[what]);
 /* A query block's body: `key: value` lines (YAML's plainest form). Returns
    its settings, or `bad` with the first line that is not one; `unknown` names the keys a query does not
    have, and `limitBad` a `limit` that is not a positive whole number (both are ignored). */
@@ -3449,12 +3468,9 @@ function splitItems(lines,start){let i=start;
   const rest=k=>{while(k<lines.length&&/^>/.test(lines[k])&&!calloutLine(lines[k])) k++;return k;};
   for(;i<lines.length;i++){const ln=lines[i];
     const f=FENCE_RE.exec(ln);
-    if(f){const k=fenceEnd(lines,i,f);
-      let n=k+1;while(n<lines.length&&!lines[n].trim()) n++;
-      const idm=n<lines.length?lines[n].trim().match(/^\^([A-Za-z0-9-]+)$/):null;
-      const info=f[2].trim();
-      if(/^booklet\b/i.test(info)||idm){flush();
-        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,(idm?n:k)+1).join("\n")+(k<lines.length?"":"\n"+f[1]),id:idm?idm[1]:null,line:i+1,rec:rec()});i=idm?n:k;}
+    if(f){const F=fenceAt(lines,i,f),k=F.end,last=F.id?F.idAt:k,info=F.info;
+      if(/^booklet\b/i.test(info)||F.id){flush();
+        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,last+1).join("\n")+(k<lines.length?"":"\n"+F.mark),id:F.id,line:i+1,rec:rec()});i=last;}
       else{if(!buf.length) bufAt=i;buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
     if(ln.trim()==="%%"){
@@ -3465,11 +3481,11 @@ function splitItems(lines,start){let i=start;
     if(m){flush();const kind=m[1].toLowerCase(),body=[];let k=i+1;
       while(k<lines.length&&/^>/.test(lines[k])&&!calloutLine(lines[k])){body.push(lines[k].replace(/^>[ \t]?/,""));k++;}
       let opts=null,anchors=null,items2=null;
-      if(kind==="choice"||kind==="multi"){const r=optionList(lines,k);if(r){opts=r.opts;k=r.next;}}
-      else if(kind==="scale"){const r=anchorList(lines,k);if(r){anchors=r.anchors;k=r.next;}}
-      else if(kind==="menu"){const r=bulletList(lines,k);if(r){items2=r.items;k=r.next;}}
-      else if(kind==="matrix"){const r=bulletList(lines,k);
-        if(r){items2=r.items;k=r.next;const a=anchorList(lines,k);if(a){anchors=a.anchors;k=a.next;}}}
+      if(kind==="choice"||kind==="multi"){const r=listOf("options",lines,k);if(r){opts=r.items;k=r.next;}}
+      else if(kind==="scale"){const r=listOf("anchors",lines,k);if(r){anchors=r.items;k=r.next;}}
+      else if(kind==="menu"){const r=listOf("bullets",lines,k);if(r){items2=r.items;k=r.next;}}
+      else if(kind==="matrix"){const r=listOf("bullets",lines,k);
+        if(r){items2=r.items;k=r.next;const a=listOf("anchors",lines,k);if(a){anchors=a.items;k=a.next;}}}
       if(kind==="records"&&rs===null) rs=i;
       items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,items:items2,line:i+1,head:ln,raw:lines.slice(i,k).join("\n"),rec:rec()});i=k-1;continue;}
     /* any `> [!` line, readable or not: one CALLOUT_LINE cannot read is said, not left to read as prose in silence */
@@ -3527,8 +3543,7 @@ const idWord=s=>slugify(s).replace(/[^A-Za-z0-9-]+/g,"-").replace(/^-+|-+$/g,"")
    a row with no heading at all makes a cell of each block. A hint or solution drawn outside its question (`outside`: one not
    folded, or a second one) stays in its question's cell; a question's own is on the question. */
 function rowCells(blocks,nextSeq){
-  const heads=t=>{const out=[];let fence=null;String(t).split("\n").forEach((ln,i)=>{const was=fence;fence=fenceStep(fence,ln,true);
-    if(was||fence) return;const m=ATX_RE.exec(ln);if(m&&m[2]) out.push({i,l:m[1].length});});return out;};
+  const heads=t=>atxLines(t).filter(h=>h.text).map(h=>({i:h.i,l:h.level}));
   let min=7;blocks.forEach(b=>{if(b.type==="markdown") heads(b.text).forEach(h=>{if(h.l<min) min=h.l;});});
   const cells=[];let cur=null;
   const open=()=>{cur=[];cells.push(cur);};
@@ -3548,14 +3563,18 @@ function rowCells(blocks,nextSeq){
     cuts.forEach((a,n)=>{const t=clip(a,n+1<cuts.length?cuts[n+1]:L.length);
       if(!t.trim()) return;if(hs.includes(a)||!cur) open();cur.push(md(t));});});
   return cells;}
-/* calls fn on every block in a list, descending into rows and their cells */
-const rowWalk=(list,fn)=>list.forEach(b=>{fn(b);if(b.type==="row"||b.type==="cell") rowWalk(b.blocks,fn);});
 /* a question's own hint and solution (the callouts the parser put on it), in the order the file wrote them: the order they
    were set */
 const qParts=b=>Object.keys(b).filter(k=>(k==="hint"||k==="solution")&&isObj(b[k])).map(k=>b[k]);
+/* Every block in a list, depth first: what it holds (`blocks`: a row's cells, a cell's or a callout's blocks), then a question's
+   own hint and solution. `fn` is called on each; a block it returns false for is not gone into. */
+function eachBlock(list,fn){(Array.isArray(list)?list:[]).forEach(b=>{if(!b||typeof b!=="object") return;
+  if(fn(b)!==false) eachBlock([...blocksIn(b),...qParts(b)],fn);});}
+/* every block in a list as one list, in eachBlock's order */
+const blocksAll=l=>{const out=[];eachBlock(l,b=>{out.push(b);});return out;};
 /* takes a block out of a list, wherever it sits in a row; a question's own hint and solution stay where it stood, drawn there */
-const stripBlock=(list,blk)=>{const i=list.indexOf(blk);if(i>=0) list.splice(i,1,...qParts(blk).map(c=>({...c,outside:true})));
-  list.forEach(b=>{if(b.type==="row"||b.type==="cell") stripBlock(b.blocks,blk);});};
+const stripBlock=(list,blk)=>[list,...blocksAll(list).map(blocksIn)].forEach(l=>{const i=l.indexOf(blk);
+  if(i>=0) l.splice(i,1,...qParts(blk).map(c=>({...c,outside:true})));});
 /* the module that holds an activity */
 const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 /* a question's help text: the text of its body, less the lines that only embed a figure */
@@ -3789,7 +3808,7 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
    const where=new Map();
    modules.forEach(m=>{const sc=scopeOf(m),t=where.get(sc)||where.set(sc,new Map()).get(sc);
      m.activities.forEach(a=>{t.set(shortId(a.id),{m,a});
-       a.pages.forEach(pg=>rowWalk(pg.blocks,b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) t.set(b.id,{m,a,q:b});}));});});
+       blocksAll(activityBlocks(a)).forEach(b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) t.set(b.id,{m,a,q:b});});});});
    for(const x of queries){const {q,block}=x,drop=why=>{problems.push(P.queryRefused(shortId(x.act.id),why));
        x.act.pages.forEach(pg=>stripBlock(pg.blocks,block));};
      const here=moduleHolding(modules,x.act),sc=scopeOf(here),as=(q.view||{}).as;
@@ -3816,7 +3835,7 @@ const plainText=s=>{const one=String(s==null?"":s).replace(/\s*\n\s*/g," ").trim
 const firstPara=s=>plainText(String(s||"").replace(/<!--[\s\S]*?-->/g,"").split(/\n{2,}/).find(p=>p.trim()&&!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p))||"");
 /* a page's name: the words of its first heading */
 const pageHeading=p=>{for(const b of p.blocks){if(b.type!=="markdown") continue;
-  const h=String(b.text).match(/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/m);if(h) return plainText(h[1]);}return undefined;};
+  const h=atxLines(b.text).map(x=>HEADING_WORDS.exec(x.ln)).find(Boolean);if(h) return plainText(h[1]);}return undefined;};
 /* an activity as the page keeps it: its pages, a page of several named by its first heading (`title`, the pages menu's name) */
 function activityOut(a){const {pages,...ra}=a;
   /* `lede`: the first paragraph under the activity's title, read as a module's blurb is, for the activity's card on its module's screen.
@@ -4042,9 +4061,9 @@ const cleanName=s=>String(s==null?"":s).replace(/\s+/g," ").trim().slice(0,200);
 /* a file's text with its `title:` line set to `name`; a text with no front matter gets one. Line endings and every
    other line are kept as they were. */
 function setTitleIn(source,name,langTag){
-  const q=JSON.stringify(name),L=String(source||"").split("\n");
-  if((L[0]||"").replace(/^﻿/,"").trim()==="---"){
-    let j=1;while(j<L.length&&L[j].trim()!=="---") j++;
+  const q=JSON.stringify(name),L=String(source||"").split("\n"),fm=frontMatter(source);
+  if(fm.head){
+    const j=fm.next-1;
     if(j<L.length){
       let at=-1;for(let k=1;k<j;k++) if(/^title:/.test(L[k])) at=k;
       const cr=at>=0&&L[at].endsWith("\r")?"\r":(L[0].endsWith("\r")?"\r":"");
@@ -4066,27 +4085,18 @@ function renameBooklet(name){const n=cleanName(name);if(!n||n===BOOK.title) retu
    data section. This is the only way a booklet's design grows (there is no
    in-browser design editor, SPEC.md section 13). The text comes from the
    registry's module file. */
-function moduleSpanOf(lines,id){let openAt=-1;
-  for(let i=0;i<lines.length;i++){const m=lines[i].match(CALLOUT_LINE);
-    if(m&&m[1].toLowerCase()==="module"){const w=calloutWords("module",m[2]);
-      if(w.flags.has("end")){if(openAt>=0&&(w.id===null||w.id===id)) return {openAt,closeAt:i};}
-      else if(openAt<0&&w.id===id) openAt=i;}}
-  return null;}
-function fencedSpans(lines,from,to){
-  const out=[];
-  for(let i=from;i<to;i++){const f=FENCE_RE.exec(lines[i]);
-    if(!f){continue;}
-    const k=fenceEnd(lines,i,f);
-    let n=k+1;while(n<lines.length&&!lines[n].trim()) n++;
-    const idm=n<lines.length?lines[n].trim().match(/^\^([A-Za-z0-9-]+)$/):null;
-    if(/^booklet\b/i.test(f[2].trim())||idm){out.push({start:i,end:idm?n:k});i=idm?n:k;}
-    else i=k;}
-  return out;}
+/* the module with this id, among some lines (moduleSpans): {id, openAt, closeAt}, or null */
+const moduleSpanOf=(lines,id)=>moduleSpans(lines).find(s=>s.id===id)||null;
+/* the fenced blocks a booklet reads (a `booklet` fence, or any fence with an id after it) that open between lines `from` and
+   `to`: {start, end}, the end being the id line when there is one */
+const fencedSpans=(lines,from,to)=>codeFences(lines).filter(F=>F.start>=from&&F.start<to&&(/^booklet\b/i.test(F.info)||F.id))
+  .map(F=>({start:F.start,end:F.id?F.idAt:F.end}));
 /* What is wrong with a module file, as problems a person uploading their own
    can act on — never a stack trace. Empty means it is safe to add. */
-function moduleTextProblems(text){
+/* (`R`: the text's parse, when the caller has it) */
+function moduleTextProblems(text,R){
   if(!isBooklet(text)) return [PROBLEM.notReadable];
-  const R=parseFile(text);
+  R=R||parseFile(text);
   /* another 0.x marker is no reason to refuse: it is said when the module is added */
   if(R.unread.filter(m=>m!==R.markerNote).length) return R.unread.filter(m=>m!==R.markerNote);
   if(!(R.template.modules||[]).length) return [PROBLEM.noModule];
@@ -4103,16 +4113,9 @@ function moduleTextProblems(text){
    nothing is left exactly as the author wrote it, and question, activity, widget-line and menu ids are never
    renamed (nothing a host resolves depends on them). An update runs it again on the module's own text, so
    the result is the same. This whole block, and its one call in addModuleText, can be taken out alone. */
-/* which lines of a file are fenced code (the fence lines included) */
-function codeMask(lines){const mask=new Array(lines.length).fill(false);
-  for(let i=0;i<lines.length;i++){const f=FENCE_RE.exec(lines[i]);if(!f) continue;
-    const k=Math.min(fenceEnd(lines,i,f),lines.length-1);
-    for(let j=i;j<=k;j++) mask[j]=true;i=k;}
-  return mask;}
-const BLOCK_ID_LINE=/^\^([A-Za-z0-9-]+)$/;
 /* the ids of the blocks (`^id` after a fence) in some lines, by the line the id is on */
 function blockIdLines(lines){const out=new Map();
-  fencedSpans(lines,0,lines.length).forEach(s=>{const m=s.end>s.start?(lines[s.end]||"").trim().match(BLOCK_ID_LINE):null;if(m) out.set(s.end,m[1]);});
+  codeFences(lines).forEach(F=>{if(F.id) out.set(F.idAt,F.id);});
   return out;}
 /* the ids of the footnotes defined in some lines (`[^id]: note`, outside fenced code), by line */
 function noteIdLines(lines){const mask=codeMask(lines),out=new Map();
@@ -4136,8 +4139,8 @@ function renameClashingIds(lines,takenBlocks,takenNotes,modId){
   const usedB=new Set(bl.values()),usedN=new Set(nl.values());
   /* the ids the module's own lines give to activities, questions and menus: a query's `from:` that names one of
      these names that, not a block */
-  const own=new Set();lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CALLOUT_LINE);
-    if(m&&["activity","menu","module"].concat([...QUESTION_KINDS]).includes(m[1].toLowerCase())){const w=calloutWords(m[1].toLowerCase(),m[2]);if(w.id) own.add(w.id);}});
+  const own=new Set();bookletLines(lines).forEach(x=>{
+    if(["activity","menu","module"].concat([...QUESTION_KINDS]).includes(x.kind)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}});
   const fresh=(id,taken,used)=>{let n=modId+"-"+id,k=2;while(taken.has(n)||used.has(n)){n=modId+"-"+id+"-"+k;k++;}used.add(n);return n;};
   const mapB=new Map(),mapN=new Map(),renamed=[];
   for(const id of [...usedB]) if(takenBlocks.has(id)){const to=fresh(id,takenBlocks,usedB);mapB.set(id,to);renamed.push({what:"block",from:id,to});}
@@ -4145,10 +4148,7 @@ function renameClashingIds(lines,takenBlocks,takenNotes,modId){
   if(!renamed.length) return {lines,renamed};
   /* the `from:` lines of query fences */
   const fromLines=new Set();
-  for(let i=0;i<lines.length;i++){const f=FENCE_RE.exec(lines[i]);if(!f) continue;
-    const k=Math.min(fenceEnd(lines,i,f),lines.length-1);
-    if(/^booklet[ \t]+query\b/i.test(f[2].trim())) for(let j=i+1;j<k;j++) fromLines.add(j);
-    i=k;}
+  codeFences(lines).forEach(F=>{if(/^booklet[ \t]+query\b/i.test(F.info)) for(let j=F.start+1;j<Math.min(F.end,lines.length-1);j++) fromLines.add(j);});
   const out=lines.map((ln,i)=>{
     if(bl.has(i)&&mapB.has(bl.get(i))) return ln.replace(/\^[A-Za-z0-9-]+/,"^"+mapB.get(bl.get(i)));
     if(fromLines.has(i)){const m=ln.match(/^(\s*from:\s*)(["']?)([A-Za-z0-9-]+)\2(\s*)$/i);
@@ -4160,17 +4160,16 @@ function renameClashingIds(lines,takenBlocks,takenNotes,modId){
       return seg;});});
   return {lines:out,renamed};}
 /* every module fence in some lines, in order: {id, openAt, closeAt} */
-function moduleSpans(lines){const mask=codeMask(lines),out=[];let at=-1,id=null;
-  lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CALLOUT_LINE);
-    if(!m||m[1].toLowerCase()!=="module") return;const w=calloutWords("module",m[2]);
+function moduleSpans(lines){const out=[];let at=-1,id=null;
+  bookletLines(lines).forEach(({i,kind,m})=>{if(kind!=="module") return;const w=calloutWords("module",m[2]);
     if(w.flags.has("end")){if(at>=0){out.push({id,openAt:at,closeAt:i});at=-1;}}
     else if(at<0){at=i;id=w.id;}});
   return out;}
 /* Where a booklet's data sections are: from each `> [!data]` or `> [!data|module-id]` line to the next data,
    records, module or activity line (outside fenced code), or the end. {at, end (exclusive), id: the module's, or null
    for the shared section}. */
-function dataSections(lines){const mask=codeMask(lines),out=[];let cur=null;
-  lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CALLOUT_LINE);if(!m) return;const k=m[1].toLowerCase();
+function dataSections(lines){const out=[];let cur=null;
+  bookletLines(lines).forEach(({i,kind:k,m})=>{
     if(k!=="data"&&k!=="records"&&k!=="module"&&k!=="activity") return;
     if(cur){cur.end=i;out.push(cur);cur=null;}
     if(k==="data") cur={at:i,end:lines.length,id:calloutWords("data",m[2]).id||null};});
@@ -4206,11 +4205,12 @@ function spliceApart(lines,at,ins){
    fence, so the notice is in the file the reader downloads. Nothing is changed unless the file this makes is one
    the renderer reads with nothing refused; then the booklet's design is read from that file, so what is on screen
    is what the written file holds. */
-function addModuleText(text){
-  const problems=moduleTextProblems(text);
+/* (`R`: the module text's parse, when the caller has it: the text is read once) */
+function addModuleText(text,R){
+  R=R||(isBooklet(text)?parseFile(text):null);
+  const problems=moduleTextProblems(text,R);
   if(problems.length) return {ok:false,problems};
   if(!BOOK) return {ok:false,problems:[PROBLEM.noBooklet]};
-  const R=parseFile(text);
   const lines=String((R.template.raw||{}).source||"").split("\n");
   const spans=moduleSpans(lines);
   if(!spans.length) return {ok:false,problems:[PROBLEM.noFence]};
@@ -4236,13 +4236,11 @@ function addModuleText(text){
   let cur=String((BOOK.raw||{}).source||"").split("\n");
   const blank=!cur.join("").trim(),renamedIds=[],incoming=[];
   /* the first data line outside fenced code: modules are added before it */
-  const firstData=ls=>{const m=codeMask(ls);
-    for(let i=0;i<ls.length;i++){if(m[i]) continue;const x=ls[i].match(CALLOUT_LINE);if(x&&x[1].toLowerCase()==="data") return i;}
-    return -1;};
+  const firstData=ls=>{const x=bookletLines(ls).find(y=>y.kind==="data");return x?x.i:-1;};
   for(const sp of spans){
     let mod=lines.slice(sp.openAt,sp.closeAt+1);
     /* the notice: written into the fence when the module has it only in its file's front matter */
-    {const has=(()=>{const mk=codeMask(mod);return mod.some((ln,i)=>{if(mk[i]) return false;const x=ln.match(CALLOUT_LINE);return !!x&&x[1].toLowerCase()==="notice";});})();
+    {const has=bookletLines(mod).some(x=>x.kind==="notice");
      const n=(R.template.modules.find(x=>x.id===sp.id&&scopeOfModule(x)!=="")||{}).notice,nl=has?[]:noticeLines(n);
      if(nl.length) mod=[mod[0],"",...nl,...(mod[1]!==undefined&&mod[1].trim()?[""]:[]),...mod.slice(1)];}
     const title=((lines[sp.openAt].match(CALLOUT_LINE)||[])[4]||"").trim()||sp.id||"";
@@ -4290,8 +4288,8 @@ function addModuleText(text){
       cur=spliceApart(cur,sh.end,extraChunks.join("\n\n").split("\n"));}
     else cur=spliceApart(cur,cur.length,["> [!data] Data","",...extraChunks.join("\n\n").split("\n")]);}
   /* a booklet with no text (its saved copy gone) has no front matter yet; without it the file would not be one */
-  const head=blank?"---\nbooklet: \""+FORMAT_VERSION+"\"\ntitle: "+JSON.stringify(strings("library").untitled)+"\nlang: "+((BOOK.raw||{}).lang||lang)+"\n---\n\n":"";
-  const newSource=head+cur.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
+  const body=cur.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
+  const newSource=blank?setTitleIn(body,strings("library").untitled,(BOOK.raw||{}).lang||lang):body;
 
   /* read the booklet this would make (with its kept records) before changing anything: if the renderer would refuse
      that file, nothing is added and the reader is told why. An id another module uses is no clash (an id is unique
@@ -4979,12 +4977,12 @@ function mermaidNode(code){
   const box=el("div",{class:"mfig"});
   /* the diagram as its source with a note: the library refused it, or could not be had (key: which note) */
   const fail=key=>{box.innerHTML="";box.classList.add("bad");
-    box.append(el("p",{class:"mfig-note",role:"note"},STRINGS[lang].ui[typeof key==="string"?key:"figureErr"]),codeBlock("mermaid",code));};
+    box.append(el("p",{class:"mfig-note",role:"note"},strings("ui")[typeof key==="string"?key:"figureErr"]),codeBlock("mermaid",code));};
   /* a diagram whose source could cause a request never reaches the library */
   if(diagramRisk(code)){box.classList.add("bad");
     fail("figureRisk");return box;}
   /* the page is still arriving: the library is not woken yet, and the diagram is drawn again when it has */
-  if(document.readyState==="loading"){LIB_WAITED=true;box.append(el("p",{class:"mfig-note",role:"status"},STRINGS[lang].ui.figureWait));return box;}
+  if(document.readyState==="loading"){LIB_WAITED=true;box.append(el("p",{class:"mfig-note",role:"status"},strings("ui").figureWait));return box;}
   /* the library is awake: draw the diagram into the box */
   const draw=()=>{try{
     const lib=typeof __esbuild_esm_mermaid_nm!=="undefined"?__esbuild_esm_mermaid_nm.mermaid:null;
@@ -4998,7 +4996,7 @@ function mermaidNode(code){
     if(useLib("mermaid")){draw();return box;}
     /* the library is a part beside this page and is on its way: a quiet line now, the drawing when it arrives, and the source with
        a note if it cannot be had (that failure holds for this open of the booklet only: the next open asks again) */
-    box.append(el("p",{class:"mfig-note",role:"status"},STRINGS[lang].ui.figureWait));
+    box.append(el("p",{class:"mfig-note",role:"status"},strings("ui").figureWait));
     /* a box the page no longer shows (a redraw while the part was on its way replaced it: its isConnected is false) is left as
        it is, so a part that arrives after redraws costs one drawing per diagram on the page, not one per box ever made */
     const arrived=ok=>{if(box.isConnected===false) return;if(!ok){fail("figurePart");return;}box.innerHTML="";draw();};
@@ -5117,7 +5115,7 @@ const cellStyle=(c,i)=>{const k=cellColor(c,i);return `background:${k.tint};--qd
    a `data-r` region id — let a person point at a region and say what it is
    like there. The renderer knows the interaction; the widget knows the body. */
 function svgRegions(e,W,keys){const key=keys[0];
-  const u=STRINGS[lang].ui;
+  const u=strings("ui");
   const C=wordsOf(W.copy);
   const figs=W.figures||[];
   const labelOf=id=>{const r=(W.regions||[]).find(x=>x.id===id);return r?tx(r.label,id):id;};
@@ -5210,7 +5208,7 @@ function svgRegions(e,W,keys){const key=keys[0];
 const gridLabel=(W,id)=>{if(String(id).startsWith("x|")) return id.split("|").slice(2).join("|");
   const it=(W.items||[]).find(x=>x.id===id);return it?tx(it.label,id):id;};
 function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
-  const u=STRINGS[lang].ui;
+  const u=strings("ui");
   const cells=W.cells||[];const ax=W.axes||{};
   /* drawing reads the answer; only a press or a typed word writes it */
   const chosen=()=>e[key]||[];
@@ -5289,7 +5287,7 @@ function renderBlocks(list,draft,activityId,dc){const host=el("div",{});
   const draw=()=>{host.innerHTML="";
     list().forEach(b=>host.append(renderBlock(b,draft,activityId,dc)));};
   draw();return host;}
-function entryCard(e,type,onDelete){const u=STRINGS[lang].ui;
+function entryCard(e,type,onDelete){const u=strings("ui");
   const tag=tx((moduleOf(type)||{}).title,shortId(activityOf(type).id));
   /* an entry is read back through the blocks that asked for it */
   const {card}=entryBody(e,blocksOf(type),[el("span",{class:"tag"},...words(tag,true)),fmtWhen(e.ts)]);
@@ -5298,17 +5296,17 @@ function entryCard(e,type,onDelete){const u=STRINGS[lang].ui;
       el("button",{type:"button",class:"small danger",onclick:onDelete},u.yes),el("button",{type:"button",class:"small",onclick:()=>{foot.innerHTML="";foot.append(btn);}},u.no)));});
     foot.append(btn);card.append(foot);}
   return card;}
-function chipStrip(id){const t=STRINGS[lang];const list=[...keptFor(id)].sort((a,b)=>b.ts.localeCompare(a.ts));
+function chipStrip(id){const u=strings("ui");const list=[...keptFor(id)].sort((a,b)=>b.ts.localeCompare(a.ts));
   const wrap=el("div",{});
-  if(!list.length){wrap.append(el("p",{class:"chips-empty"},t.ui.noEarlier));return wrap;}
-  const strip=el("div",{class:"chips",role:"group","aria-label":t.ui.earlier});const panel=el("div",{});
+  if(!list.length){wrap.append(el("p",{class:"chips-empty"},u.noEarlier));return wrap;}
+  const strip=el("div",{class:"chips",role:"group","aria-label":u.earlier});const panel=el("div",{});
   const draw=()=>{strip.innerHTML="";panel.innerHTML="";
     list.forEach(e=>{const on=viewAt(id).chip===e.ts;const c=el("button",{type:"button",class:"chip","aria-pressed":String(on)},fmtWhen(e.ts));
       c.addEventListener("click",()=>{viewAt(id).chip=on?null:e.ts;draw();});strip.append(c);
       if(on) panel.append(entryCard(e,id,()=>{removeEntry(id,e.ts);viewAt(id).chip=null;render();}));});};
   draw();wrap.append(strip,panel);return wrap;}
 function removeEntry(id,ts){const arr=keptFor(id);const i=arr.findIndex(x=>x.ts===ts);if(i>=0){arr.splice(i,1);markDirty();}}
-function finalizeRow(onFinalize){const t=STRINGS[lang];return el("div",{class:"finrow"},el("button",{type:"button",class:"finalize",onclick:onFinalize},t.ui.finalize),el("span",{class:"hint"},t.ui.finalizeHint),unsavedNote());}
+function finalizeRow(onFinalize){const u=strings("ui");return el("div",{class:"finrow"},el("button",{type:"button",class:"finalize",onclick:onFinalize},u.finalize),el("span",{class:"hint"},u.finalizeHint),unsavedNote());}
 /* every activity keeps its drafts and its kept entries under its own id */
 const anyFilled=e=>Object.keys(e||{}).some(k=>holdsSomething(e[k]));
 const draftFor=id=>{DRAFTS.custom=DRAFTS.custom||nullMap();return hasOwn(DRAFTS.custom,id)?DRAFTS.custom[id]:(DRAFTS.custom[id]=nullMap());};
@@ -5317,8 +5315,7 @@ const keptFor=id=>{STATE.entries=STATE.entries||{};STATE.entries[id]=STATE.entri
    booklet's answers, keyed by question id as the file's own `answers` record is */
 const answersFor=id=>activityOf(id).kind==="entry"?draftFor(id):answersIn(scopeOfAddr(id));
 /* every block of an activity, on every page and inside every group */
-const allBlocksOf=a=>{const out=[];const walk=l=>(Array.isArray(l)?l:[]).forEach(b=>{if(b&&typeof b==="object"){out.push(b);walk(b.blocks);}});
-  walk(activityBlocks(a));return out;};
+const allBlocksOf=a=>blocksAll(activityBlocks(a));
 const writesKeys=b=>{const k=keysOf(b);return Array.isArray(k)?k.filter(x=>typeof x==="string"):[];};
 const foldName=b=>tx(b.label,b.id);
 const blockFilled=(b,draft)=>(b.blocks||[b]).flatMap(keysOf)
@@ -5351,19 +5348,17 @@ function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"}
   const v={...(b.view||{}),fields:b.fields},state=queryView(activityId,b);
   const scope=scopeOfAddr(activityId);
   if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,state,scope}));return box;}
-  const same=holderOf(b.from)&&scopeOfAddr(b.from)===scopeOfAddr(activityId);
-  const q=b.field?blocksOf(b.from).find(x=>x.id===b.field):null;
   const none={kind:"entries",rows:[],keys:new Set(),own:[],first:"date",lab:k=>k,qs:[]};
-  box.append(...viewNodes(same&&(!b.field||q)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}));
+  box.append(...viewNodes(queryReads(b,activityId)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}));
   return box;}
 /* A widget block names a widget; the widget names an engine. The renderer
    knows engines and nothing else, so an activity can carry a body map it
    has never seen before as long as the file brings the widget with it. */
 function drawWidget(b,draft,activityId){const W=widgetOf(b.widget,b.module);
   const box=el("div",{});
-  if(!W){box.append(el("p",{class:"hint"},STRINGS[lang].ui.missingWidget(b.widget||"?")));return box;}
+  if(!W){box.append(el("p",{class:"hint"},strings("ui").missingWidget(b.widget||"?")));return box;}
   const eng=ENGINES[W.engine];
-  if(!eng){box.append(el("p",{class:"hint"},STRINGS[lang].ui.missingEngine(W.engine||"?")));return box;}
+  if(!eng){box.append(el("p",{class:"hint"},strings("ui").missingEngine(W.engine||"?")));return box;}
   const C=wordsOf(W.copy);
   const head=tx(b.label,C.h);if(nonEmpty(head)) box.append(el("h3",{},...(typeof b.label==="string"?words(head):[head])));
   const lead=tx(b.help,C.p);if(nonEmpty(lead)) box.append(el("p",{class:"aside"},...(typeof b.help==="string"?words(lead):[lead])));
@@ -5517,7 +5512,7 @@ function renderBlock(b,draft,activityId,dc){
      reader did) and drawn at the end of its block */
   const qc=qControls(b,draft,activityId,dc);
   const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc,qc)
-    :el("p",{class:"hint"},STRINGS[lang].ui.unknownBlock(b.type||"?",b.id||"?"));
+    :el("p",{class:"hint"},strings("ui").unknownBlock(b.type||"?",b.id||"?"));
   if(qc) node.append(qc.node);
   if(placeOf(b)!=="folded") return node;
   return b.type==="callout"?foldedCallout(b,draft,activityId,dc):
@@ -5568,7 +5563,7 @@ function qControls(q,draft,activityId,dc){const sol=isObj(q.solution)?solutionPa
 /* An activity marked `upsert:"day"` (the file's `repeat daily`) keeps one entry per
    calendar day rather than one per Finalize: finalizing again on the same day
    replaces that day's entry instead of adding a second one. */
-function finalizeEntry(id){const u=STRINGS[lang].ui;
+function finalizeEntry(id){const u=strings("ui");
   const draft=draftFor(id);
   if(!anyFilled(draft)){toast(u.nothingYet);return;}
   const e=nullMap(clone(draft));e.ts=new Date().toISOString();
@@ -5623,8 +5618,12 @@ function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
 /* A query reads what was kept in the SAME module: the kept entries of an
    activity that keeps them, newest first, and nothing across a module boundary
    (the activities outside every module fence are one module). `from` and `activityId` are addresses. */
+/* whether `from` is an activity of the module activity `activityId` is in, and whether a query reads it (a question it names, `field`,
+   being one of its blocks): the one test both draws and status lines make */
+const sameModule=(from,activityId)=>!!holderOf(from)&&scopeOfAddr(from)===scopeOfAddr(activityId);
+const queryReads=(b,activityId)=>sameModule(b.from,activityId)&&(!b.field||blocksOf(b.from).some(x=>x.id===b.field));
 function queryEntries(from,activityId){
-  if(!holderOf(from)||scopeOfAddr(from)!==scopeOfAddr(activityId)) return [];
+  if(!sameModule(from,activityId)) return [];
   return [...keptFor(from)].sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
 /* A kept entry as a card: a `.when` line holding `whenKids` (none when null),
    then what each question in `qs` recorded, as a `dl`. Returns the card and how
@@ -6229,12 +6228,7 @@ const headLevel=n=>{const m=/^h([1-6])$/.exec(tagOf(n));return m?+m[1]:0;};
 /* A page that can fold: two or more headings at the same level (not counting a title heading that stands alone above
    them), on any page, whatever else it holds: questions, data views, kept entries. Each page decides for itself. With no
    page given, the question is whether any page of the activity can. */
-const blocksAll=l=>{const out=[];const walk=x=>(Array.isArray(x)?x:[]).forEach(b=>{if(b&&typeof b==="object"){out.push(b);walk(b.blocks);}});walk(l);return out;};
-function mdHeadNodes(text){const out=[];let fence=null;
-  for(const ln of String(text||"").split("\n")){const was=fence;fence=fenceStep(fence,ln,true);
-    if(was||fence) continue;
-    const m=ATX_RE.exec(ln);if(m&&m[2]) out.push({tagName:"h"+m[1].length});}
-  return out;}
+const mdHeadNodes=text=>atxLines(text).filter(h=>h.text).map(h=>({tagName:"h"+h.level}));
 const foldable=(a,page)=>!!a&&(page?[page]:a.pages).some(pg=>{const nodes=[];
   blocksIn(pg).forEach(b=>{if(b&&b.type==="markdown"&&placeOf(b)!=="folded") nodes.push(...mdHeadNodes(b.text));else nodes.push({tagName:"div"});});
   return !!readingPlan(nodes);});
@@ -6298,10 +6292,9 @@ function rmGo(info,k){
 function queryStatus(b,activityId){const C=strings("cards");
   try{let n;
     if(b.data) n=dataSet(b.data).rows.length;
-    else{const same=holderOf(b.from)&&scopeOfAddr(b.from)===scopeOfAddr(activityId),q=b.field?blocksOf(b.from).find(x=>x.id===b.field):null;
-      if(!(same&&(!b.field||q))) return "";
+    else{if(!queryReads(b,activityId)) return "";
       n=entrySet(b,activityId,"cards").rows.length;}
-    if(n) return b.data?C.rowsN(n):STRINGS[lang].ui.entriesN(n);
+    if(n) return b.data?C.rowsN(n):strings("ui").entriesN(n);
     const e=tx(b.empty,"");return nonEmpty(e)?e:C.noneYet;
   }catch(err){return "";}}
 /* Draw a page that only reads. Returns null for any other page
@@ -6389,20 +6382,17 @@ const plainHeading=s=>String(s).replace(/[ \t]+#+[ \t]*$/,"")
   .replace(/\[\[([^\]|]*)\|([^\]]*)\]\]/g,"$2").replace(/\[\[([^\]]*)\]\]/g,"$1")
   .replace(/!?\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/[*_`]+/g,"").trim();
 /* the ATX headings of a chunk of Markdown, outside its code fences */
-function headingsOf(text){const out=[];let fence=null;
-  for(const ln of String(text||"").split("\n")){const was=fence;fence=fenceStep(fence,ln,true);
-    if(was||fence) continue;
-    const m=ATX_RE.exec(ln);if(m&&m[2]){const h=plainHeading(m[2]);if(h) out.push(h);}}
-  return out;}
+const headingsOf=text=>atxLines(text).map(h=>h.text?plainHeading(h.text):"").filter(Boolean);
 /* every heading an activity holds, with the page it is on */
 function activityHeadings(a){const ps=a.pages,out=[];
   const t=plainText(tx(a.title,null));if(t) out.push({text:t,page:ps[0].id});
   ps.forEach(p=>{const pt=tx(p.title,null);if(typeof pt==="string"&&pt.trim()) out.push({text:pt,page:p.id});
-    const walk=list=>list.forEach(b=>{
-      if(b.type==="markdown") headingsOf(b.text).forEach(h=>out.push({text:h,page:p.id}));
-      else if(b.type==="row"||b.type==="cell") walk(blocksIn(b));
-      else [b,...qParts(b)].forEach(x=>{const l=plainText(tx(x.label,null));if(l) out.push({text:l,page:p.id});});});
-    walk(blocksIn(p));});
+    /* prose gives its headings, a row and its cells are gone into, any other block gives its title (a question's, then its own
+       hint's and solution's) */
+    eachBlock(blocksIn(p),b=>{if(b.type==="markdown"){headingsOf(b.text).forEach(h=>out.push({text:h,page:p.id}));return false;}
+      if(b.type==="row"||b.type==="cell") return true;
+      const l=plainText(tx(b.label,null));if(l) out.push({text:l,page:p.id});
+      return QUESTION_KINDS.has(b.type);});});
   return out;}
 /* The first activity (page) in the booklet holding a heading with this text, or,
    with bySlug, whose heading has this GitHub-style slug. Nothing when none does. */
@@ -6468,11 +6458,7 @@ function registries(mod){const sources=new Map(),cites=new Map();
       cites.set(c.id,srcs.some(s=>s.key===c.source)?{...c,source:key(c.source)}:c);});
   return {sources,cites};}
 /* The texts of a block that may carry marks, in the file's order (a question's are its own hint's and solution's). */
-function markedTexts(b){if(!b||typeof b!=="object") return [];
-  switch(b.type){
-    case "callout":case "row":case "cell": return blocksIn(b).flatMap(markedTexts);
-    case "markdown": return [String(b.text||"")];
-    default: return qParts(b).flatMap(markedTexts);}}
+function markedTexts(b){const out=[];eachBlock([b],x=>{if(x.type==="markdown") out.push(String(x.text||""));});return out;}
 /* ---- the scope: one screen's numbering, worked out once per booklet ---- */
 /* A module's opening is drawn with its activity when the module is one activity (so its marks and the activity's number on
    together, 1, 2, ...), and on the module's own screen otherwise, where it is numbered on its own. */
@@ -6671,8 +6657,8 @@ function go(v,o){screen=v;const dc=render(o);window.scrollTo({top:0});return dc;
 function tabName(){const d=describeBooklet(BOOK);const t=tx(d.title,"");
   if(typeof t==="string"&&nonEmpty(t)) return t.trim();
   const p=d.parts.map(x=>tx(x,"")).filter(x=>typeof x==="string"&&nonEmpty(x));
-  return p.length?p.join(", "):STRINGS[lang].home.h1;}
-function renderBar(){const t=STRINGS[lang].ui;const atList=screen===LIB_SCREEN,Lb=strings("library");
+  return p.length?p.join(", "):strings("home").h1;}
+function renderBar(){const t=strings("ui");const atList=screen===LIB_SCREEN,Lb=strings("library");
   /* a tab is named after the booklet in it, so several open booklets can be told
      apart, and by the same name "Your booklets" gives it */
   document.documentElement.lang=lang;document.title=atList?Lb.title:tabName();document.body.dataset.view=screen;syncBookletTheme();
@@ -6680,7 +6666,7 @@ function renderBar(){const t=STRINGS[lang].ui;const atList=screen===LIB_SCREEN,L
      and a booklet's home leads to "Your booklets". */
   const toList=screen===HOME_SCREEN&&!!currentId;
   document.getElementById("btnHome").textContent=atList?t.app:toList?"← "+Lb.back:(screen===HOME_SCREEN?"":"← ")+t.app;
-  const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());
+  const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;markAttention();
   document.getElementById("dropZone").textContent=t.dropZone;document.getElementById("dropVeil").textContent=t.dropVeil;
   for(const [id,key] of [["loadTitle","loadTitle"],["loadHelp","loadHelp"],["loadOr","loadOr"],["loadCancel","loadCancel"],["loadGo","loadGo"],
     ["clearTitle","clearTitle"],["clearHelp","clearHelp"],["clearCancel","clearCancel"],["clearGo","clearGo"]]) document.getElementById(id).textContent=t[key];
@@ -6712,7 +6698,7 @@ function drawThemeSelect(t){const s=document.getElementById("themeSel"),B=window
   s.setAttribute("aria-label",t.pTheme);s.setAttribute("title",t.pTheme);s.value=B.get();}
 /* The "not yet downloaded" note for a count of unsaved entries and a flag for
    unsaved changes; null when there is nothing to say. */
-function unsavedSpan(entries,changed){const t=STRINGS[lang].ui;
+function unsavedSpan(entries,changed){const t=strings("ui");
   if(entries>0) return el("span",{class:"unsaved"},t.unsavedEntries(entries));
   if(changed) return el("span",{class:"unsaved"},t.unsavedChanges);return null;}
 /* a host that reports saves succeeding is keeping the work, so the "not yet downloaded" note rests until a save fails */
@@ -6736,12 +6722,12 @@ function render(o){RENDERING=true;const dc=newDraw(o);DRAWN=dc;
   if(LINK_LOADING!==null&&screen!==LIB_SCREEN) main.prepend(loadingNotice());}finally{RENDERING=false;}
   return dc;}
 /* "Opening <name>…": a file is being read for a link, or for a store booklet opened from the list */
-const loadingNotice=()=>el("div",{class:"notice col",role:"status"},STRINGS[lang].booklet.linkLoading(LINK_LOADING.label));
+const loadingNotice=()=>el("div",{class:"notice col",role:"status"},strings("booklet").linkLoading(LINK_LOADING.label));
 /* the notices at the top of an opened file's first screen. A file marked with another 0.x version says so in a
    sentence of its own, above and apart from the count: the page read it, so that is not a thing it could not read.
    Under it, how many things the page could not read (nothing is shown when there are none), the list inside a
    disclosure, and a way to dismiss it for the session */
-function fileNotesNode(){const u=STRINGS[lang].ui;
+function fileNotesNode(){const u=strings("ui");
   if(!FILE_NOTES||FILE_NOTES.dismissed||!(FILE_NOTES.list.length||FILE_NOTES.marker)) return null;
   /* on the home screen, and on the screen the file opened into when that is not the home screen */
   if(screen!==HOME_SCREEN&&FILE_NOTES.at!==screen) return null;
@@ -6754,7 +6740,7 @@ function fileNotesNode(){const u=STRINGS[lang].ui;
 /* the quiet line for a booklet opened by a link: where it came from. Its own line, smaller than the problems notice. */
 function provenanceNode(){if(!PROVENANCE||PROVENANCE.dismissed) return null;
   if(screen!==HOME_SCREEN&&PROVENANCE.at!==screen) return null;
-  const u=STRINGS[lang].ui,B=STRINGS[lang].booklet;
+  const u=strings("ui"),B=strings("booklet");
   const box=el("div",{class:"notice col openedby",role:"status"});
   const row=el("p",{style:"margin:0"},PROVENANCE.host?B.openedFromHost(PROVENANCE.label):PROVENANCE.store?B.linkFromStore(PROVENANCE.label):B.linkFromRegistry(PROVENANCE.label));
   box.append(row);
@@ -6809,12 +6795,12 @@ function nameRow(){const L=strings("library"),cur=tx(BOOK.title,""),shown=cur||L
   const row=el("div",{class:"namerow"});
   const draw=editing=>{row.innerHTML="";
     if(editing){row.append(nameEditor(shown,v=>{renameBooklet(v);render();},()=>draw(false)),el("span",{class:"hint"},L.renameHint));return;}
-    row.append(el("h1",{},tx(BOOK.title,STRINGS[lang].home.h1)));
+    row.append(el("h1",{},tx(BOOK.title,strings("home").h1)));
     if(currentId) row.append(el("button",{type:"button",class:"quietlink",title:L.renameFor(shown),"aria-label":L.renameFor(shown),onclick:()=>draw(true)},L.rename));};
   draw(false);return row;}
 /* centre what a screen has drawn so far in one column (the cards' width) */
 const centreScreen=main=>{Array.from(main.children||[]).forEach(n=>{if(n&&n.classList) n.classList.add("cd-col");});};
-function renderHome(main,dc){const t=STRINGS[lang];const u=t.ui;
+function renderHome(main,dc){const u=strings("ui");
   main.append(...openNotices());
   const hero=el("div",{class:"hero col"});
   hero.append(nameRow());
@@ -6839,7 +6825,7 @@ function renderHome(main,dc){const t=STRINGS[lang];const u=t.ui;
     activities.append(activityCard(key,tx(mod.title,tx(m.title,shortId(key))),tx(mod.blurb,tx(m.blurb,tx(m.lede,""))),activityStatus(m),i,mod.icon||m.icon));});
   /* nothing is preloaded, so the empty page offers its own way forward */
   {const add=el("div",{class:"col addrow"});
-    if(!shown.length) add.append(el("p",{class:"hint"},t.booklet.noActivities));
+    if(!shown.length) add.append(el("p",{class:"hint"},strings("booklet").noActivities));
     const addMod=el("button",{type:"button",class:shown.length?"quietlink":"primary"},u.addModTitle);
     addMod.addEventListener("click",openAddModule);
     add.append(addMod);
@@ -6882,7 +6868,7 @@ function openFromList(id){LIB=readLib();const e=entryById(id);const name=storeNa
         openBooklet(e.id);screen=startScreen();render();window.scrollTo({top:0});}});
     return;}
   /* a pointer on a page that declares no store: there is nothing here to open, and no store to read it from */
-  if(name&&lsGet(keyOfEntry(e))===null){toast(STRINGS[lang].booklet.linkNoStore);return;}
+  if(name&&lsGet(keyOfEntry(e))===null){toast(strings("booklet").linkNoStore);return;}
   if(openBooklet(id)===null){render();return;}
   screen=startScreen();render();window.scrollTo({top:0});}
 /* A new booklet starts empty: no modules, no answers, nothing seeded. */
@@ -6913,7 +6899,7 @@ function renderBooklets(main){const L=strings("library");
   checkPersisted();
   if(PERSISTED===false&&storageOk) main.append(el("p",{class:"col hint",style:"margin-top:1.2rem"},L.mayClear));
   centreScreen(main);}
-function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;const name=bookletName(e);
+function bookletCard(e){const L=strings("library");const u=strings("ui");const name=bookletName(e);
   const unsaved=Number(e.unsavedEntries)>0||!!e.dirty;
   /* the card stays where it is and is drawn again inside itself: the row, the rename field or the question before removing */
   const card=cardNode({mode:"go",as:"div",noChevron:true});
@@ -6948,7 +6934,7 @@ function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;cons
    their blocks. One that repeats (the file's `repeat`) also shows the entries
    kept so far and a Finalize that keeps the next one; any other keeps its
    answers in the booklet's own `answers`, exactly as the file's record does. */
-function renderActivity(main,id,dc){const u=STRINGS[lang].ui;const m=activityOf(id);const mod=moduleOf(id)||{};
+function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id);const mod=moduleOf(id)||{};
   const W=wikiOf(holderOf(id));
   /* the citation scope of this page begins first: a module that is one activity draws its opening in the page's own scope,
      and the opening's marks must be numbered with the page's, not left to the scope of the draw before */
@@ -7074,14 +7060,12 @@ function activityProgress(a){
   return {repeats,kept,total:qs.length,answered,tracked:repeats||qs.length>0,started:repeats?kept>0:answered>0};}
 /* the folded callouts of an activity that are there to be read: not a hint or a solution, holding no question; the outer one only */
 function readsIn(a){let n=0;
-  const walk=l=>(Array.isArray(l)?l:[]).forEach(b=>{if(!b||typeof b!=="object") return;
-    if(b.type==="callout"&&placeOf(b)==="folded"&&!hintKind(b)&&!blocksAll([b]).some(isQuestion)) n++;
-    else walk(b.blocks);});
-  walk(activityBlocks(a));return n;}
+  eachBlock(activityBlocks(a),b=>{if(b.type==="callout"&&placeOf(b)==="folded"&&!hintKind(b)&&!blocksAll([b]).some(isQuestion)){n++;return false;}});
+  return n;}
 /* the status line under an activity's card: its folded reads, then its questions, then how far the reader is, joined by " · ";
    a part with nothing in it is left out, so a plain activity keeps the old line */
 function activityStatus(a){const C=strings("cards"),p=activityProgress(a),reads=readsIn(a),qn=allBlocksOf(a).filter(isQuestion).length;
-  const state=p.repeats?(p.kept?STRINGS[lang].ui.entriesN(p.kept):C.notStarted):!p.total?"":p.answered===0?C.notStarted:p.answered>=p.total?C.done:C.answeredOf(p.answered,p.total);
+  const state=p.repeats?(p.kept?strings("ui").entriesN(p.kept):C.notStarted):!p.total?"":p.answered===0?C.notStarted:p.answered>=p.total?C.done:C.answeredOf(p.answered,p.total);
   const partial=!p.repeats&&p.total&&p.answered>0&&p.answered<p.total;
   return [reads?C.readsN(reads):"",qn&&!partial?C.questionsN(qn):"",state].filter(nonEmpty).join(" · ");}
 function moduleStatus(acts){const C=strings("cards"),ps=acts.map(activityProgress).filter(p=>p.tracked);
@@ -7107,7 +7091,7 @@ function openingNodes(mod,activityId,title,dc){
     if(b.type==="markdown"){
       const nodes=mdBlockNodes(b,activityId,"mo-",dc);
       /* a leading heading that repeats the title above it is drawn once (the title is) */
-      {const h=/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/m.exec(String(b.text).replace(/^\s+/,""));
+      {const h=atxLines(String(b.text).replace(/^\s+/,"")).map(x=>HEADING_WORDS.exec(x.ln)).find(Boolean);
        if(i===0&&title&&nodes.length&&headLevel(nodes[0])&&h&&sameWords(plainText(h[1]),title)) nodes.shift();}
       if(i===0&&nodes.length&&tagOf(nodes[0])==="p"){lede=el("div",{class:"mhead-lede"},nodes[0]);nodes.shift();}
       if(nodes.length) more.push(el("div",{class:"pblock md"},...nodes));
@@ -7289,7 +7273,7 @@ function moduleChip(id,label){const K=strings("wiki");
     if(gen!==bookletGen) return;
     const say=m=>{ask.textContent=m;};
     /* a registry that could not be read says so, and may be asked again; one that does not list the module says that */
-    if(!ok){say(STRINGS[lang].booklet.noShelf);asked=false;return;}
+    if(!ok){say(strings("booklet").noShelf);asked=false;return;}
     const list=registryList(),entry=list.find(e=>e.id===id)||list.find(e=>String(e.id).split("/").pop()===id);
     if(!entry){say(K.notListed);return;}
     const add=el("button",{type:"button",class:"small primary mc-add"},K.add);
@@ -7333,7 +7317,7 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
    whose title has no letters or digits in it) is saved as booklet.booklet.md. */
 const fileBase=()=>slugify(BOOK.title)||"booklet";
 const exportName=()=>fileBase()+".booklet.md";
-function openExport(){const t=STRINGS[lang].ui;
+function openExport(){const t=strings("ui");
   const veil=document.getElementById("veilExport"),box=document.getElementById("exportPanel");box.innerHTML="";
   const close=()=>veil.removeAttribute("open");
   const choices=el("div",{class:"exportchoices"},el("button",{type:"button",class:"exportchoice primary",onclick:()=>{close();download();}},
@@ -7341,7 +7325,7 @@ function openExport(){const t=STRINGS[lang].ui;
   box.append(el("h3",{id:"exportH"},t.exportH),el("p",{},t.exportP),choices,
     el("div",{class:"actions"},el("button",{type:"button",onclick:close},t.cancel)));
   veil.setAttribute("open","");}
-async function download(){const t=STRINGS[lang].ui;const md=toMarkdown();const name=exportName();
+async function download(){const t=strings("ui");const md=toMarkdown();const name=exportName();
   /* a store booklet of which nothing is kept here and in which nothing has changed (a pointer) has no copy to mark as
      downloaded, and none is made for it: a copy made only to say so would be a 3 MB write for a large file */
   const keep=!(hostName()&&!dirty&&!(unsavedEntries>0)&&!saveTimer&&lsGet(currentKey)===null);
@@ -7394,19 +7378,19 @@ async function loadRegistry(url){REGISTRY_CACHE={};
    refusal is reported: the dialog's own line (Add a module) or a toast (a chip in the prose). */
 const addDialogSay=m=>{const msg=document.getElementById("addModMsg");msg.className="msg err";msg.textContent=m;};
 function addModuleFromText(text,say){say=say||addDialogSay;
-  const problems=moduleTextProblems(text);
+  const R=isBooklet(text)?parseFile(text):null,problems=moduleTextProblems(text,R);
   if(problems.length){say(problemWords(problems));return false;}
-  const R=parseFile(text);let renamed=[];
+  let renamed=[];
   /* a module is added to the booklet, whatever the booklet holds so far: an empty booklet does not become the module's
      file, because the booklet's name is its own and a module's title is the module's (SPEC.md section 2) */
-  {const r=addModuleText(text);
+  {const r=addModuleText(text,R);
     if(!r.ok){say(problemWords(r.problems));return false;}
     renamed=r.renamed||[];}
   veilAddModule.removeAttribute("open");saveLocal();render();
-  toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,"")))+(renamed.length?" "+STRINGS[lang].booklet.renamed(renamed):"")+(otherMarker(text)?" "+STRINGS[lang].booklet.addedOtherMarker(otherMarker(text)):""));
+  toast(strings("booklet").added(plainText(tx((R.template.modules[0]||{}).title,"")))+(renamed.length?" "+strings("booklet").renamed(renamed):"")+(otherMarker(text)?" "+strings("booklet").addedOtherMarker(otherMarker(text)):""));
   return true;}
 /* the module a registry entry names, read (with the size limit and the words for a slow or missing file) and added */
-async function addFromRegistry(id,say){const gen=bookletGen,got=await registryRead(id),B=STRINGS[lang].booklet;
+async function addFromRegistry(id,say){const gen=bookletGen,got=await registryRead(id),B=strings("booklet");
   /* the reader moved to another booklet while the file was coming: it is not added to that one */
   if(gen!==bookletGen) return false;
   if(!got.text){say(B[got.err==="slow"?"addSlow":got.err==="big"?"addBig":"addFailed"]);return false;}
@@ -7418,16 +7402,16 @@ async function registryRead(id){const L=REGISTRY_CACHE[id];if(!L||!L.url) return
 async function registryText(id){const got=await registryRead(id);return got.text==null?null:got.text;}
 function renderAddModuleList(){const box=document.getElementById("addModList");box.innerHTML="";
   const items=registryList();
-  if(!items.length){box.append(el("p",{class:"hint"},STRINGS[lang].booklet.noShelf));return;}
+  if(!items.length){box.append(el("p",{class:"hint"},strings("booklet").noShelf));return;}
   items.forEach(L=>{
-    const btn=el("button",{type:"button",class:"small primary"},STRINGS[lang].ui.addModAdd);
+    const btn=el("button",{type:"button",class:"small primary"},strings("ui").addModAdd);
     btn.addEventListener("click",async()=>{btn.disabled=true;
       const msg=document.getElementById("addModMsg");msg.className="msg";msg.textContent="";
       if(!(await addFromRegistry(L.id,addDialogSay))) btn.disabled=false;});
     box.append(el("div",{class:"bkrow"},
       el("span",{class:"bkname"},tx(L.title,L.id)+(tx(L.blurb,"")?" — "+tx(L.blurb,""):"")),
       el("span",{class:"bkacts"},btn)));});}
-async function openAddModule(){const t=STRINGS[lang].ui;
+async function openAddModule(){const t=strings("ui");
   document.getElementById("addModTitle").textContent=t.addModTitle;
   document.getElementById("addModHelp").textContent=t.addModHelp;
   document.getElementById("addModCancel").textContent=t.addModCancel;
@@ -7442,7 +7426,7 @@ const veilAddModule=document.getElementById("veilAddModule");
 const veilLoad=document.getElementById("veilLoad"),veilClear=document.getElementById("veilClear"),dropVeil=document.getElementById("dropVeil");
 function openLoad(){const m=document.getElementById("loadMsg");m.textContent="";m.className="msg";document.getElementById("pasteIn").value="";document.getElementById("fileIn").value="";veilLoad.setAttribute("open","");}
 function readFileInto(file,cb){if(!file) return;const r=new FileReader();r.onload=()=>cb(String(r.result||""));r.readAsText(file);}
-function loadText(text){const t=STRINGS[lang].ui;const msg=document.getElementById("loadMsg");
+function loadText(text){const t=strings("ui");const msg=document.getElementById("loadMsg");
   const R=parseFile(text||"");
   if(!R.ok){const why=refusalList(R).join(" ");
     if(veilLoad.hasAttribute("open")){msg.className="msg err";msg.textContent=why;} else toast(why);return;}
@@ -7472,7 +7456,7 @@ function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
     hookChanged();go(at);return;}
   /* the file just read is what the store holds: the base of what is kept from now on (a newer file read on the offer) */
   BASE=recsOfParse(R);
-  saveLocal();go(at);toast(STRINGS[lang].ui.loadOk);}
+  saveLocal();go(at);toast(strings("ui").loadOk);}
 
 /* ---- THE HOST'S LINE AND NOTICE ----
    What the top bar says about where saves go, and the offer to read a newer file. The host's words (a label, a failure
@@ -7493,9 +7477,9 @@ function hostLineText(u){if(!hostActive()||(hookOpen()&&!hookBook())) return u.h
   const st=HOST.status==="saving"?u.hostSaving:HOST.status==="saved"?u.hostSaved(hostTime(HOST.at)):HOST.status==="failed"?u.hostFailed(HOST.silent?u.hostNoAnswer:HOST.message):"";
   return [head,st].filter(Boolean).join(" · ");}
 function drawHostLine(){const n=document.getElementById("hostLine");if(!n) return;
-  const txt=hostLineText(STRINGS[lang].ui);n.textContent=txt;n.setAttribute("title",txt);
+  const txt=hostLineText(strings("ui"));n.textContent=txt;n.setAttribute("title",txt);
   n.setAttribute("class","hostline"+(HOST&&HOST.status==="failed"?" bad":""));
-  const dl=document.getElementById("btnExport");if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());}
+  markAttention();}
 /* a change was made to the open booklet: a host that is registered shows "Saving…" at once, and the listeners hear of it
    a moment later (at most one call about every half second, and always one after the last change) */
 function hookChanged(){if(!hookBook()||!hostActive()) return;
@@ -7532,7 +7516,7 @@ function hostSet(status,message,silent,change){if(!hostActive()) return;
   drawHostLine();
   if((was==="failed")!==(status==="failed")) render();}
 /* the refusal a file earns, as the sentences the reader would see */
-function refusalList(R){const t=STRINGS[lang].ui;
+function refusalList(R){const t=strings("ui");
   return (R.refused&&R.refused.length?[t.loadRefused+" "+R.refused.map(problemText).join(" ")]:R.unread&&R.unread.length&&!R.template?R.unread.map(problemText):[t.loadErr]).map(humanMsg);}
 /* a newer file is waiting: the host said so (fileChanged), or opening a link found the store's file changed since the
    kept booklet last read it (LINK_NEWER) */
@@ -7541,7 +7525,7 @@ const newerWaiting=()=>hookOpen()&&(!!LINK_NEWER||(hostActive()&&HOST.pending!=n
    is the reader's own (event.isTrusted), so a page's script cannot press it for the reader: element.click() and dispatched
    events are not trusted. That is all this stops. A site that edits this renderer, or reads its own page some other way,
    can do anything; that is caught by the checksum (docs/hosting.md), not here. */
-function hostAsk(main){const u=STRINGS[lang].ui;
+function hostAsk(main){const u=strings("ui");
   main.prepend(el("div",{class:"notice col hostnote hostask",role:"status"},
     el("p",{style:"margin:0 0 .4rem"},u.hostAsk+" ",el("em",{},HOST.label),". "+u.hostAskStay),
     el("button",{type:"button",class:"small primary",onclick:e=>{if(!e||e.isTrusted!==true) return;hostAllowNow();}},u.hostAllow)," ",
@@ -7554,16 +7538,16 @@ function hostStopNow(){lsDel(HOST_KEY);
     if(HOOK_TIMER){clearTimeout(HOOK_TIMER);HOOK_TIMER=null;}}
   render();}
 /* on "Your booklets": a site the reader has allowed says so, and offers to take it back */
-function hostStopLine(main){const lab=hostAllowed();if(!lab) return;const u=STRINGS[lang].ui;
+function hostStopLine(main){const lab=hostAllowed();if(!lab) return;const u=strings("ui");
   main.append(el("p",{class:"col hint hoststop",style:"margin-top:1.2rem"},u.hostMay+" ",el("em",{},lab),". ",
     el("button",{type:"button",class:"small",onclick:e=>{if(!e||e.isTrusted!==true) return;hostStopNow();}},u.hostStop)));}
 function hostNoticeShow(main){
   if(HOST&&HOST.state==="waiting"&&!HOST.dismissed) hostAsk(main);
   if(!newerWaiting()) return;
-  const u=STRINGS[lang].ui;
+  const u=strings("ui");
   main.prepend(el("div",{class:"notice col hostnote",role:"status"},el("p",{style:"margin:0 0 .4rem"},u.hostChanged),
     el("button",{type:"button",class:"small primary",onclick:hostAccept},u.hostRead)," ",
-    el("button",{type:"button",class:"small",onclick:()=>{LINK_NEWER=null;if(HOST) HOST.pending=null;render();}},STRINGS[lang].ui.fileNotesDismiss)));}
+    el("button",{type:"button",class:"small",onclick:()=>{LINK_NEWER=null;if(HOST) HOST.pending=null;render();}},strings("ui").fileNotesDismiss)));}
 /* the reader pressed: the newer file replaces what is on screen, through the same parser and refusals as any file. A
    refused text changes nothing but says why. */
 function hostAccept(){if(!newerWaiting()) return;
@@ -7584,9 +7568,9 @@ function hostAccept(){if(!newerWaiting()) return;
 function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   const R=parseFile(N.text),id=currentId;
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
-  if(N.via.store===false){const r=addModuleText(N.text);
+  if(N.via.store===false){const r=addModuleText(N.text,R);
     if(!r.ok){toast(problemWords(r.problems));render();return;}
-    saveLocal();render();toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,""))));}
+    saveLocal();render();toast(strings("booklet").added(plainText(tx((R.template.modules[0]||{}).title,""))));}
   else{const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});}
   if(currentId!==id) return;
   if(currentEntry) currentEntry.storeSeen=N.seen;
@@ -7654,7 +7638,7 @@ function withFileWork(R){const fa=nullMap((R.S||{}).answers,1),fe=nullMap((R.S||
 /* the host hands over a booklet to show: as a file picked by hand, or, when it names where it lives, as a view of that
    store name. Returns {ok, problems}. */
 function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=raw===null?null:linkName(raw);
-  if(raw!==null&&nm===null) return {ok:false,problems:[STRINGS[lang].booklet.linkBadName]};
+  if(raw!==null&&nm===null) return {ok:false,problems:[strings("booklet").linkBadName]};
   const R=parseFile(typeof text==="string"?text:"");
   if(!R.ok){const why=refusalList(R);toast(why.join(" "));return {ok:false,problems:why};}
   if(nm) openLinked(text,{store:true,host:true,label:nm,from:"store:"+nm});
@@ -7785,7 +7769,7 @@ function linkSplit(raw){const i=String(raw).lastIndexOf(".md/");
    the list asked for (openFromList). While the file is read, the screen says "Opening <name>…"; the notice goes when the
    read ends however it ends, and as soon as a newer link takes over. Resolves to true when something opened. */
 async function openLink(hash,o){const L=linkOf(hash);if(!L) return false;
-  const B=()=>STRINGS[lang].booklet,gen=++LINK_GEN,said=k=>{toast(B()[k]);return false;};
+  const B=()=>strings("booklet"),gen=++LINK_GEN,said=k=>{toast(B()[k]);return false;};
   if(LINK_LOADING!==null){LINK_LOADING=null;render();}
   let url,via,at="";
   if(L.kind==="open"){
