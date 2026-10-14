@@ -9,6 +9,7 @@
 //   ctl.quota = <characters>       a readwrite transaction that would leave more than this many characters in the
 //                                  database aborts with QuotaExceededError (the browser's own limit)
 //   ctl.failNext = "UnknownError"  the next readwrite transaction aborts with that error
+//   ctl.failAll = "UnknownError"   every readwrite transaction aborts with that error, until it is set back to null
 //   ctl.hold = true                readwrite transactions wait (nothing commits) until ctl.release() is called
 //   ctl.gone = true                the page is gone: transactions already made still commit (that is the browser's
 //                                  side), but no callback reaches the page any more and it can make no new one
@@ -19,7 +20,7 @@ function makeIDB(){
   const dbs=new Map(),log=[],held=[];
   const err=name=>Object.assign(new Error(name),{name});
   const later=f=>setTimeout(f,0);
-  const ctl={refuse:null,throwOpen:null,quota:null,failNext:null,hold:false,gone:false,
+  const ctl={refuse:null,throwOpen:null,quota:null,failNext:null,failAll:null,hold:false,gone:false,
     release(){ctl.hold=false;held.splice(0).forEach(f=>f());}};
   const chars=d=>{let n=0;(d?[d]:[...dbs.values()]).forEach(x=>x.stores.forEach(m=>m.forEach(v=>{n+=typeof v==="string"?v.length:JSON.stringify(v).length;})));return n;};
   function open(name,version){
@@ -65,7 +66,8 @@ function makeIDB(){
     tx._ended=true;
     let fail=tx._abort||null;
     if(!fail&&tx.mode==="readwrite"){
-      if(ctl.failNext){fail=err(ctl.failNext);ctl.failNext=null;}
+      if(ctl.failAll) fail=err(ctl.failAll);
+      else if(ctl.failNext){fail=err(ctl.failNext);ctl.failNext=null;}
       else if(ctl.quota!=null){let n=0;d.stores.forEach((m,name)=>{(stage.get(name)||m).forEach(v=>{n+=typeof v==="string"?v.length:0;});});
         if(n>ctl.quota) fail=err("QuotaExceededError");}}
     if(!fail) stage.forEach((m,name)=>d.stores.set(name,m));

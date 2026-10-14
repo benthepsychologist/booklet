@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-LZqZgLJweWRfpBcEo4x8ocM4TsW6hCVkiMIWLUADeJY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-oPJCYwMxCHcsVES31hZSxh48mOR1L8IM8vrrOmKd6eQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -8207,9 +8207,11 @@ window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.class
 window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&hostCovers()!=="saved"){e.preventDefault();e.returnValue=strings("ui").leaving;}});
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
-/* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers */
-window.addEventListener("pagehide",()=>{flushSave();hookFlush();});
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();}});
+/* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers; and what
+   the store has not been handed yet is handed to the browser at once (keepFlush(true)), even while an earlier write is
+   still on its way, which would otherwise hand it on only when it ends, after the page has gone */
+window.addEventListener("pagehide",()=>{flushSave();hookFlush();keepFlush(true);});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();keepFlush(true);}});
 /* a booklet drawn while the page was still arriving had no formula or diagram (useLib waits): it is drawn again now */
 document.addEventListener("DOMContentLoaded",()=>{if(LIB_WAITED){LIB_WAITED=false;render();}});
 /* The page opens on "Your booklets", once it has read what this browser keeps (keepStart: from local storage at once,

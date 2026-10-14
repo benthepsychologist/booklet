@@ -215,6 +215,26 @@ section("a host before the store is read; the mirrors");
  chk("a mirror local storage lost is written again from the store",LS["booklet.ui.theme"]==="night");
  delete global.location;}
 
+section("leaving the page: what is still queued is handed over as the page goes");
+{fresh();
+ const A=P.boot();await started(A);
+ A.loadText(BARE("Left at once"));const id=A.currentId;A.answersIn("").q="the first answer";A.markDirty();await idle(A);
+ IDB.ctl.hold=true;
+ A.answersIn("").q="on its way when the page went";A.saveLocal();await sleep(10);
+ A.answersIn("").q="typed just before the page went";A.markDirty();
+ /* pagehide runs, then the page is gone: no callback reaches it again, and it can start nothing more */
+ P.closePages();IDB.ctl.gone=true;
+ IDB.ctl.release();await sleep(60);
+ const B=reload();await started(B);B.openFromList(id);
+ chk("a change made while a write was on its way, the page left at once, is in the store (handed over at pagehide)",B.answersIn("").q==="typed just before the page went",B.answersIn("").q);
+ IDB.ctl.hold=true;
+ B.answersIn("").q="on its way, and lost";B.saveLocal();await sleep(10);
+ B.answersIn("").q="handed over as the page went, and lost";B.markDirty();
+ IDB.ctl.failAll="UnknownError";
+ P.closePages();IDB.ctl.gone=true;IDB.ctl.release();await sleep(60);IDB.ctl.failAll=null;
+ const C=reload();await started(C);C.openFromList(id);
+ chk("if what was handed over cannot land, the store holds the last state it confirmed",C.answersIn("").q==="typed just before the page went",C.answersIn("").q);}
+
 section("Clear everything: the store and any local storage leftover");
 {fresh();
  const A=P.boot();await started(A);
