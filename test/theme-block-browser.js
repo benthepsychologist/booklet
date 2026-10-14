@@ -30,7 +30,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
   const openAct=async p=>{await p.locator('button.mode').first().click();await p.waitForTimeout(900);};
   const look=p=>p.evaluate(()=>{const de=document.documentElement,cs=getComputedStyle(de);
     return {theme:de.dataset.theme,choice:de.dataset.themeChoice,custom:de.hasAttribute('data-theme-custom'),
-      bg:cs.backgroundColor,ink:cs.color,accent:cs.getPropertyValue('--accent').trim(),inline:[...de.style].filter(n=>n!=='--ap-top'&&!/^--(r-lg|r-md|r-sm|num-w|tile-solid)$/.test(n)).length,
+      bg:cs.backgroundColor,ink:cs.color,accent:cs.getPropertyValue('--accent').trim(),inline:[...de.style].filter(n=>n!=='--ap-top'&&!/^--(r-lg|r-md|r-sm|tile-solid)$/.test(n)).length,
       font:getComputedStyle(document.querySelector('.md')||document.body).fontFamily,meta:document.querySelector('meta[name=theme-color]').content};});
   const over=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   const lum=css=>{const m=css.match(/\d+(\.\d+)?/g).map(Number);const [r,g,bl]=m.slice(0,3).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*r+.7152*g+.0722*bl;};

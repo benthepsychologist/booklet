@@ -68,8 +68,7 @@ const FILE=`---\nbooklet: "0.13"\ntitle: Two modules\nlang: en\n---\n
     return {p,ctx};}
   let {p,ctx}=await open(src);
   const cards=()=>p.locator('#main button.mode');
-  const dl=async()=>{const [d]=await Promise.all([p.waitForEvent('download'),(async()=>{await p.locator('#btnExport').click();await p.waitForTimeout(300);
-    await p.locator('#exportPanel .exportchoice').first().click();})()]);return fs.readFileSync(await d.path(),'utf8');};
+  const dl=async()=>{const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#btnExport').click()]);return fs.readFileSync(await d.path(),'utf8');};
   const keepEntry=async(card,act,words)=>{await cards().filter({hasText:card}).first().click();await p.waitForTimeout(300);
     if(act) {await cards().filter({hasText:act}).first().click();await p.waitForTimeout(300);}
     await p.locator('textarea, input[type=text]').first().fill(words);await p.locator('.finalize').click();await p.waitForTimeout(400);

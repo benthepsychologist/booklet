@@ -84,8 +84,7 @@ const NAME='Ben\'s "spring" plan: #1';
   await p.locator('input.nameedit').fill(NAME);await p.keyboard.press('Enter');await p.waitForTimeout(300);
   ok((await h1())===NAME,'Enter saves: the heading is the name as typed (text, not markup): '+await h1());
   // ---- the download
-  const dl=async()=>{const [d]=await Promise.all([p.waitForEvent('download'),(async()=>{await p.locator('#btnExport').click();await p.waitForTimeout(300);
-    await p.locator('#exportPanel .exportchoice').first().click();})()]);return {name:d.suggestedFilename(),md:fs.readFileSync(await d.path(),'utf8')};};
+  const dl=async()=>{const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#btnExport').click()]);return {name:d.suggestedFilename(),md:fs.readFileSync(await d.path(),'utf8')};};
   const {name,md}=await dl();
   ok(name==='ben-s-spring-plan-1.booklet.md','the download is named for the booklet: '+name);
   ok(md.split('\n')[2]==='title: '+JSON.stringify(NAME)&&/^booklet: "0\.13"$/m.test(md),'the file\'s title line is the name, quoted and escaped, and the marker is quoted: '+md.split('\n').slice(0,4).join(' | '));

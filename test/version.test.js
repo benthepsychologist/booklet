@@ -7,12 +7,8 @@ let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const A=P.boot();
 const file=(marker,extra="")=>`---\nbooklet: ${marker}\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n${extra}`;
-const cmp=A.versionCmp;
 chk("the format version is the text 0.13",A.FORMAT_VERSION==="0.13"&&typeof A.FORMAT_VERSION==="string");
-chk("0.9 is before 0.10",cmp("0.9","0.10")===-1&&cmp("0.10","0.9")===1);
-chk("0.10 equals \"0.10\"; 0.1 is before 0.10 and is not equal to it",cmp("0.10","0.10")===0&&cmp("0.1","0.10")===-1&&cmp("0.10","0.1")===1);
-chk("major counts before minor, and something that is not a version compares as nothing",cmp("1.0","0.10")===1&&cmp("0.10","1.0")===-1&&cmp("x","0.10")===null&&cmp(undefined,"0.10")===null&&cmp(null,"0.9")===null&&cmp("0.9.1","0.9")===null);
-chk("versionOf reads text into [major, minor], and a number is no version (a version is text)",JSON.stringify([A.versionOf("0.10"),A.versionOf(" 0.8 "),A.versionOf(""),A.versionOf(0.9)])==="[[0,10],[0,8],null,null]"&&cmp(0.9,"0.10")===null);
+chk("versionOf reads text into [major, minor], and a number is no version (a version is text)",JSON.stringify([A.versionOf("0.10"),A.versionOf(" 0.8 "),A.versionOf(""),A.versionOf(0.9),A.versionOf("0.9.1")])==="[[0,10],[0,8],null,null,null]");
 /* the marker, read as text */
 for(const m of ['"0.13"',"'0.13'","0.13"]){const r=A.parseFile(file(m));chk("a file marked booklet: "+m+" loads, with no notice",r.ok&&r.refused.length===0&&r.unread.length===0&&r.template.booklet==="0.13",JSON.stringify(r.unread));}
 for(const m of ['"0.10"',"0.1","0.9",'"0.11"','"0.12"',"0.100"]){const r=A.parseFile(file(m)),v=m.replace(/"/g,"");

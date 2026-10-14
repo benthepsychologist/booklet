@@ -34,7 +34,7 @@ const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
  const tree=lines=>{const R=A.parseFile(FM+"> [!module|m] M\n\n"+lines.map(([i,p])=>act(i,p)).join("")+"> [!module|m end] End\n");return {R,a:acts(R)};};
  {const {R,a}=tree([["root"],["x","root"],["y","x"],["z","root"],["w"]]);
   chk("a tree is kept depth first: a parent, its first child and that child's children, then the next sibling",a.map(x=>x.id).join()==="m/root,m/x,m/y,m/z,m/w",a.map(x=>x.id).join());
-  chk("each activity keeps its parent's address and its depth; the top has neither",a.map(x=>(x.parent||"-")+"@"+(x.depth||0)).join()==="-@0,m/root@1,m/x@2,m/root@1,-@0",a.map(x=>x.parent+"@"+x.depth).join());
+  chk("each activity keeps its parent's address; the top has none, and the renderer keeps no depth",a.map(x=>x.parent||"-").join()==="-,m/root,m/x,m/root,-"&&a.every(x=>x.depth===undefined),a.map(x=>x.parent).join());
   chk("a file written parent first reports nothing",R.unread.length===0);}
  {const {a}=tree([["a"],["b","a"],["c"],["d","a"]]);
   chk("children of one parent keep the file's order, even with another activity between them",a.map(x=>x.id).join()==="m/a,m/b,m/d,m/c",a.map(x=>x.id).join());}
@@ -43,7 +43,7 @@ const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
  {const {a}=tree([["a","b"],["b","a"],["c","c"]]);
   chk("an activity that is its own ancestor is drawn once, at the top",a.length===3&&new Set(a.map(x=>x.id)).size===3&&a.filter(x=>!x.parent).length>=2&&a.every(x=>x.id!==x.parent),JSON.stringify(a.map(x=>[x.id,x.parent])));}
  {const {R,a}=tree([["a"],["b"],["c"]]);
-  chk("a module with no parent anywhere is a flat list, as before: no parent, no depth, the file's order",a.map(x=>x.id).join()==="m/a,m/b,m/c"&&a.every(x=>x.parent===undefined&&x.depth===undefined)&&R.unread.length===0);}
+  chk("a module with no parent anywhere is a flat list, as before: no parent, the file's order",a.map(x=>x.id).join()==="m/a,m/b,m/c"&&a.every(x=>x.parent===undefined)&&R.unread.length===0);}
  {const T=A.activityTree([{id:"m/a"},{id:"m/b",parent:"m/a"},{id:"m/a",parent:"m/b"}]);
   chk("when two activities share an id the first is the one a parent names",T.order.length===3&&T.parent[1]==="m/a");}
  {const R=A.parseFile(FM+"> [!module|p] P\n\n"+act("a")+act("b","a")+"> [!module|p end] End\n\n> [!module|q] Q\n\n"+act("a")+act("b","zzz")+"> [!module|q end] End\n");
@@ -108,7 +108,7 @@ const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
  {const N=10000,chain=Array.from({length:N},(_,i)=>"> [!activity|a"+i+(i?" parent:a"+(i-1):"")+"] A"+i+"\n\n").join("");
   const t0=Date.now(),R=A.parseFile(FM+"> [!module|m] M\n\n"+chain+"> [!module|m end] End\n");
   const a=acts(R);
-  chk("a chain of 10,000 activities each under the one before opens (no stack overflow) and keeps its order and depth",R.ok&&a.length===N&&a[N-1].depth===N-1&&a[0].id==="m/a0",R.ok+" "+a.length);
+  chk("a chain of 10,000 activities each under the one before opens (no stack overflow) and keeps its order and its parents",R.ok&&a.length===N&&a[N-1].parent==="m/a"+(N-2)&&a[0].id==="m/a0",R.ok+" "+a.length);
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"f012d-")),f=path.join(tmp,"deep.md");
   fs.writeFileSync(f,FM+"> [!module|m] M\n\n"+chain+"> [!module|m end] End\n");
   const t1=Date.now(),r=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"}),dt=Date.now()-t1;

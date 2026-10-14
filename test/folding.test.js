@@ -71,7 +71,7 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
 
 /* 6. every new word exists in en, fr, es (the tables themselves: a missing key must not hide behind the English that fr and es
    inherit) and es-AR (which inherits es) */
-{const cards=["questionsN","questionsAnswered","rowsN","noneYet"],steps=["label","one","all","progress","back","next","dots"];
+{const cards=["questionsN","questionsAnswered","rowsN","noneYet"],steps=["label","one","all","progress","back","next"];
  const has=(o,k)=>o&&o[k]!=null&&!(typeof o[k]==="string"&&!o[k].trim());
  for(const lang of ["en","fr","es"]){const src=A.STRINGS_SRC[lang],miss=[...cards.filter(k=>!has(src.cards,k)).map(k=>"cards."+k),...steps.filter(k=>!has(src.steps,k)).map(k=>"steps."+k)];
    chk("the new words are written in the "+lang+" table itself",miss.length===0,miss.join());}

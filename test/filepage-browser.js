@@ -66,8 +66,7 @@ const REGMOD=`---\nbooklet: "0.13"\ntitle: Registry module\nlang: en\n---\n\n> [
   const pills=p.locator('.ap-body .pills > button.pill-btn');if(await pills.count())await pills.first().click();await wait(300);
   ok((await p.locator('.ap-body textarea').first().inputValue())==='QZXfileanswer','an answer is typed and held');
   // 4 download a copy and read it back
-  await p.locator('#btnExport').click();await wait(300);
-  const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#exportPanel .exportchoice').first().click()]);
+  const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#btnExport').click()]);
   const saved=fs.readFileSync(await d.path(),'utf8');
   ok(saved.includes('QZXfileanswer')&&saved.includes('Shore walk'),'the downloaded copy (a blob: link, allowed to the page) holds the answer and the module');
   await harvest();

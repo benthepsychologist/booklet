@@ -25,7 +25,7 @@ global.document={createElement:mk,createElementNS:(ns,t)=>mk(t),
   querySelectorAll:sel=>sel==='symbol[id^="bi-"]'?[..._realIds].filter(i=>i.startsWith("bi-")).map(id=>({id})):[],documentElement:mk("html"),get title(){return ""},set title(v){}};
 global.document.body.dataset={};
 global.window={addEventListener(){},scrollTo(){}};
-global.Blob=class{constructor(){}};global.URL={createObjectURL:()=>"blob:x",revokeObjectURL(){}};
+global.Blob=class{constructor(){}};global.URL=Object.assign(require("url").URL,{createObjectURL:()=>"blob:x",revokeObjectURL(){}});
 global.FileReader=class{readAsText(){}};
 global.requestAnimationFrame=()=>{};
 global.setTimeout=setTimeout;

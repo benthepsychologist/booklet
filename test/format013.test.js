@@ -85,8 +85,8 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const bare=(parent)=>FM+"> [!activity|top] Top\n\n> [!activity|kid parent:top] Kid\n\n> [!activity|other] Other\n\n> [!activity|grand parent:kid] Grand\n";
   const R=A.parseFile(bare());
   const acts=R.template.modules.map(m=>m.activities[0]);
-  chk("parent: places among bare activities: depth first, each with its parent's address and its depth",
-    acts.map(a=>a.id).join()==="top,kid,grand,other"&&acts.map(a=>(a.parent||"-")+"@"+(a.depth||0)).join()==="-@0,top@1,kid@2,-@0",acts.map(a=>a.id+":"+a.parent+"@"+a.depth).join());
+  chk("parent: places among bare activities: depth first, each with its parent's address",
+    acts.map(a=>a.id).join()==="top,kid,grand,other"&&acts.map(a=>a.parent||"-").join()==="-,top,kid,-",acts.map(a=>a.id+":"+a.parent).join());
   chk("and nothing is reported",R.unread.length===0&&R.ok,JSON.stringify(R.unread));
   const miss=A.parseFile(FM+"> [!activity|a parent:nope] A\n\n> [!activity|b] B\n");
   chk("a parent that is no bare activity leaves the activity at the top, as in a module",miss.template.modules[0].activities[0].parent===undefined&&miss.ok);
