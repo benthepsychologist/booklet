@@ -255,11 +255,11 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  const have=tags[0]?tags[0][1]:"";
  /* the fixed part, written out here so that weakening the template in csp-hash.js cannot pass by changing both together */
  const FIXED="default-src 'none'; script-src 'self' "+csp.scripts(full).map(()=>"H").join(" ")+"; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'";
- must("the policy is exactly the one this renderer carries (the four script hashes aside)",have.replace(/'sha256-[A-Za-z0-9+\/]+={0,2}'/g,"H")===FIXED,have);
+ must("the policy is exactly the one this renderer carries (its script hashes aside: one per script the file holds)",have.replace(/'sha256-[A-Za-z0-9+\/]+={0,2}'/g,"H")===FIXED,have);
  const sc=(/script-src ([^;]*)/.exec(have)||["",""])[1];
  must("scripts: no unsafe-inline, no unsafe-eval, no strict-dynamic, no wildcard, no host but 'self'",!/unsafe-inline|unsafe-eval|strict-dynamic|\*|https?:/.test(sc),sc);
  must("the policy names exactly one hash for the theme-boot script, the main script and each part the file holds as a block ("+(2+csp.held(full).length)+")",(sc.match(/'sha256-/g)||[]).length===2+csp.held(full).length);
- must("the hashes are of the scripts as they stand now (theme-boot, main, mermaid and temml as useLib() starts them)",csp.problems(full).length===0,csp.problems(full).join(" | "));
+ must("the hashes are of the scripts as they stand now (theme-boot, main, and each library block the file holds as useLib() starts it: temml in the core, temml and mermaid in the one-file build)",csp.problems(full).length===0,csp.problems(full).join(" | "));
  must("the DNS-prefetch tag follows it: x-dns-prefetch-control is off",full.includes(csp.CHARSET+"\n"+csp.tagFor(full)+"\n"+csp.DNS+"\n")&&/<meta http-equiv="x-dns-prefetch-control" content="off">/.test(head));
  /* what the policy leaves out is as much of the promise as what it names: no frame, worker, media, manifest or font source is opened */
  must("nothing else is opened: no frame-src, worker-src, media-src, manifest-src or child-src, so default-src 'none' closes them; the one source the renderer opens is its own fonts",

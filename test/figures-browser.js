@@ -23,9 +23,12 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
     const csp=[],errs=[],parts=[];p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))csp.push(m.text());});
     p.on('pageerror',e=>errs.push(e.message));
     const state={partUp:!opts.partDown};
+    /* opts.hold: the part's answer waits until the test calls state.release() (a slow host, without guessing how slow) */
+    if(opts.hold) state.held=new Promise(go=>{state.release=go;});
     await p.route('https://bookletmd.test/**',async r=>{const u=new URL(r.request().url()).pathname;
       if(u==='/app/')return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}});
-      if(PARTS.nameAt(u,'/app/')){parts.push(u);const s=state.partUp&&PARTS.serve(HTML,u,'/app/');if(s)return r.fulfill(s);}
+      if(PARTS.nameAt(u,'/app/')){parts.push(u);if(state.held) await state.held;
+        const s=state.partUp&&PARTS.serve(HTML,u,'/app/');if(s)return r.fulfill(s);}
       r.fulfill({status:404,body:'nf'});});
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(500);
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
@@ -99,6 +102,20 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    ok(t.parts.length===first+1,'part back: the next open asked for the part again, once ('+first+' then '+t.parts.length+' requests)');
    ok(up.svgs===2&&up.bad.length===1,'part back: both diagrams draw this time; only the broken one shows its source ('+up.svgs+' drawn, '+up.bad.length+' source)');
    ok(t.csp.length===0,'part missing then back: zero CSP violations '+t.csp.join('|'));ok(t.errs.length===0,'part missing then back: zero page errors '+t.errs.join('|'));}
+  // 5 a slow part: the host holds its answer while the page is drawn again four times. When the part arrives only the diagrams still
+  //   on the page are drawn (one drawing each; MM_SEQ counts every mermaid render), not every box the redraws left behind
+  if(HAS_PART){
+   const t=await load(path.join(R,'test/fixtures/figures.booklet.md'),'figures-slowpart',{hold:true});await enter(t.p,'Diagrams and formulas');
+   const press=async l=>{await t.p.locator('.lang button[data-lang="'+l+'"]').click();await t.p.waitForTimeout(300);};
+   for(const l of ['fr','es','fr','en']) await press(l);
+   const early=await t.p.evaluate(()=>({svgs:document.querySelectorAll('.mfig svg').length,renders:MM_SEQ}));
+   ok(early.svgs===0&&early.renders===0&&t.parts.length===1,'slow part: drawn again four times while the part is on its way, nothing is rendered yet and it was asked for once ('+JSON.stringify(early)+', '+t.parts.length+' requests)');
+   t.state.release();await t.p.waitForTimeout(3000);
+   const late=await t.p.evaluate(()=>({svgs:document.querySelectorAll('.mfig svg').length,bad:document.querySelectorAll('.mfig.bad').length,renders:MM_SEQ,boxes:MM_BOXES.length}));
+   ok(late.svgs===2&&late.bad===1,'slow part: when it arrives the diagrams on the page draw, and the broken one shows its source ('+late.svgs+' drawn, '+late.bad+' source)');
+   ok(late.renders===3&&late.boxes===3,'slow part: three renders for the three diagrams on the page, none for the boxes the redraws replaced ('+late.renders+' renders, '+late.boxes+' boxes kept)');
+   ok(t.parts.length===1,'slow part: asked for once in all ('+t.parts.length+')');
+   ok(t.csp.length===0&&t.errs.length===0,'slow part: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));}
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
 })();

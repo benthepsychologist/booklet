@@ -74,7 +74,7 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and it asks the network for nothing but its own parts. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads v0.3 only — no earlier format opens |
+| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads v0.3 only — no earlier format opens |
 | [`SPEC.md`](SPEC.md) | the current format (v0.13), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
@@ -129,8 +129,8 @@ and Temml, both MIT. The renderer is a core and its parts: Temml is kept inside
 `booklet.html` as inert text and woken the first time a booklet has a formula, and
 mermaid is the file `parts/mermaid.js`, which sits beside `booklet.html` and is
 loaded the first time a booklet has a diagram. A booklet with neither never runs
-them and makes no request: the renderer asks the network for nothing except its own
-parts, from where it came, and only when a booklet needs one. A build can always make
+them and makes no request: opening a file asks the network for nothing except the
+renderer's own parts, from where it came, and only when a booklet needs one. A build can always make
 the renderer one file again (`node test/one-file.js` writes `build/booklet.html` with
 every part inside it). Straight off disk, keep `parts/` beside the file or use the
 one-file build; a diagram whose part is not there shows its source under a short note.

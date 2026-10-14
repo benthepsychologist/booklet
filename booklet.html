@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-VBKNDTtTdN/b+YCcU2EPtMeAw7G/02Q0FRMoWs/YPFU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-tf76CQzHv6+evu9ja/Yw0JpcBU8InRMJIf/FlXPDEtU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4952,7 +4952,10 @@ function mermaidNode(code){
     /* the library is a part beside this page and is on its way: a quiet line now, the drawing when it arrives, and the source with
        a note if it cannot be had (that failure holds for this open of the booklet only: the next open asks again) */
     box.append(el("p",{class:"mfig-note",role:"status"},STRINGS[lang].ui.figureWait));
-    whenLib("mermaid").then(ok=>{if(!ok){fail("figurePart");return;}box.innerHTML="";draw();},()=>fail("figurePart"));
+    /* a box the page no longer shows (a redraw while the part was on its way replaced it: its isConnected is false) is left as
+       it is, so a part that arrives after redraws costs one drawing per diagram on the page, not one per box ever made */
+    const arrived=ok=>{if(box.isConnected===false) return;if(!ok){fail("figurePart");return;}box.innerHTML="";draw();};
+    whenLib("mermaid").then(arrived,()=>arrived(false));
   }catch(e){fail();}
   return box;}
 /* one figure, by the id on its fence: a mermaid fence is drawn, any other

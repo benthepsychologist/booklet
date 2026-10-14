@@ -208,6 +208,9 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   ok(net.length>0,'requests were recorded');
   ok(net.every(r=>r.method==='GET'),'every request is a GET: '+[...new Set(net.map(r=>r.method))].join(','));
   ok(net.filter(r=>new URL(r.url).origin===PAGE_ORIGIN).every(r=>{const u=new URL(r.url).pathname;return u==='/app/'||u==='/linked/'||u==='/favicon.ico'||u===PART_PATH||u.startsWith('/pub/');}),'on the page\'s own origin it asked for the page itself, a favicon, the declared store and the one part: '+[...new Set(net.filter(r=>new URL(r.url).origin===PAGE_ORIGIN).map(r=>new URL(r.url).pathname))].join(', '));
+  /* counted again at the end of the run, as the second run and the box run count theirs: the path check above allows the part's
+     address but not how often, and steps 8b and 9 come after step 8's count */
+  ok(reqs.filter(r=>/\/parts\//.test(r.url)).map(r=>r.method+' '+r.url).join()===(HAS_PART?'GET '+PAGE_ORIGIN+PART_PATH:''),'over the whole run the renderer asked for a part once, the diagram library at its own address, if the file does not hold it ('+reqs.filter(r=>/\/parts\//.test(r.url)).length+'): '+reqs.filter(r=>/\/parts\//.test(r.url)).map(r=>r.url).join(', '));
   ok(net.every(r=>origins.has(new URL(r.url).origin)),'every request goes to the page\'s own origin, the registry\'s origin or the declared store\'s origin: '+[...new Set(net.map(r=>new URL(r.url).origin))].join(', '));
   ok(local.every(r=>/^(data|blob|about):/.test(r.url)),'anything not over the network is data:, blob: or about: (local to the browser): '+[...new Set(local.map(r=>r.url.split(':')[0]))].join(','));
   ok(net.filter(r=>new URL(r.url).origin===registryOrigin).every(r=>/registry\.json$|\/(kitchen|garden)\.md$/.test(new URL(r.url).pathname)),'the registry origin was asked only for the registry list and the two module files');
