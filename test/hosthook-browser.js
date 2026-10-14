@@ -3,7 +3,7 @@
 // on disk and the published renderer hold none of it). It registers a label through window.Booklet.host and records what
 // onChange gives it. Checks: the label shows in the top bar; opening a booklet gives one onChange; an answer gives one with
 // the answer in `text`; saved() shows "Saved"; failed("disk full") shows it and brings back the not-downloaded mark;
-// fileChanged(text) shows the offer and a press shows the new text; with no host the bar says "Kept in this browser only";
+// fileChanged(text) shows the offer and a press reads the new text, keeping the answer typed here (it holds something); with no host the bar says "Kept in this browser only";
 // a hostile booklet registers nothing and calls nothing; and the renderer itself made no request for any of it: every
 // recorded request is the page, a GET. Zero CSP violations and page errors. Screenshots of the bar (host and no host, 1280px
 // and 400px) are written to <outdir>.
@@ -104,7 +104,7 @@ const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS
   ok(await p.locator('#main textarea').first().inputValue()==='QZXanswerone','and nothing changes until the reader presses');
   await p.screenshot({path:path.join(OUT,'bar-host-offer-1280.png')});
   await p.locator('#main .hostnote button.primary').click();await wait(p,300);
-  ok(await p.locator('#main textarea').first().inputValue()==='QZXfromthefile','a press shows the newer file: '+await p.locator('#main textarea').first().inputValue());
+  ok(await p.locator('#main textarea').first().inputValue()==='QZXanswerone','a press reads the newer file and keeps the answer typed here over the file\'s: '+await p.locator('#main textarea').first().inputValue());
   ok(await p.locator('#main .hostnote').count()===0,'and the offer is gone');
   // 400px with a host: long label, failure
   await p.evaluate(()=>{localStorage.setItem('booklet.host.allowed','fleet: booklets/reports/with/a/rather/long/folder/name');window.__h.leave();window.__h=window.Booklet.host({label:'fleet: booklets/reports/with/a/rather/long/folder/name'});window.__h.failed('disk full, and a rather long explanation follows');});

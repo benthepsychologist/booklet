@@ -20,6 +20,13 @@ What changed in each version of the format, newest first. `SPEC.md` states the r
 - **The manifest and the translation-sibling check are drafts** (section 13). `manifest` stays a kind that takes no settings.
 - **Widget colours are colour names** (section 7). The hex pair `{ "tint", "deep" }` is no longer read; "tone" means `good`, `warn` or `bad` only.
 - **`group` is a kind of Booklet's own** (sections 4 and 6): the plain fold.
+- **Store booklets and the host hook** (the reference renderer and `docs/hosting.md`; no rule of `SPEC.md` changed, and no file changes).
+  - A booklet opened from the page's store joins "Your booklets" at once, with no copy of its content. The browser keeps a copy only once the reader changes something, with a base beside it: the records of the file that copy came from.
+  - Opening it again reads the store's file. The file is drawn when nothing changed in the browser since the base, or when the browser's copy and the file hold the same work. Otherwise the browser's copy opens, with "Read the newer file". While a file is read, the page says "Opening <name>…".
+  - "Read the newer file" follows one rule, whether a link found the file or the host pushed it with `fileChanged`. It takes the file's body and merges the records against the base. A change made only in the browser stays. A change made only in the file is taken. A change made in both keeps the browser's, except that a removal in the browser gives way to a change in the file. With no host, the reader's own records stay as they are.
+  - `onChange` gives `change`, a number naming the call. A host passes it back as `saved(change)` or `failed(message, change)`. An answer about an earlier change, or about another booklet, leaves the top bar alone. A `saved(change)` for the latest change tells the browser that the store now holds exactly those records. A host that names no change still works.
+  - When a generator moves an activity to another module, the browser follows the move by the rule the box's store uses for its records lines. Work left under a module the new design no longer has is written back as records kept as written under its old records line (section 8).
+  - Renaming a store booklet in "Your booklets" names it in the list only.
 - **Wording only, across `SPEC.md` and `SKILL.md`.** No rule changed.
   - This list moved here from `SPEC.md`, which now states each rule once and keeps no history. Section 2 sets out the marker rule in full.
   - Section 3's data section is a list. Section 11's complete booklet ends with a `> [!data] Data` line, not a heading, and its citation sits under that line.

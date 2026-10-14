@@ -64,7 +64,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
  chk("bad names request nothing",CALLS.length===0,JSON.stringify(CALLS));
  chk("...and say so in plain words",/does not name a booklet/.test(text(P.byId("toast"))),text(P.byId("toast")));}
 
-/* ---- a store opens a booklet: a view ---- */
+/* ---- a store opens a booklet: a view that is listed as a pointer ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;
  ROUTES[STORE+"reports/week.booklet.md"]=WEEK;
  A.loadText(booklet("Kept already"));A.flushSave();A.closeBooklet();
@@ -73,12 +73,12 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
  chk("a name in the store opens the booklet",ok===true&&A.currentId!==null&&A.BOOK&&/Week report/.test(JSON.stringify(A.BOOK.head||A.BOOK.title||"")));
  chk("exactly one request, a GET with no body, no credentials, no redirect, to the store's address",CALLS.length===1&&CALLS[0].url===STORE+"reports/week.booklet.md"&&!CALLS[0].opts.method&&!CALLS[0].opts.body&&CALLS[0].opts.credentials==="omit"&&CALLS[0].opts.redirect==="error"&&!!CALLS[0].opts.signal,JSON.stringify(CALLS));
  chk("it opens into its one activity (the v0.11 rule), like a file from disk",A.screen==="m/a",A.screen);
- chk("it is not in the library until something changes: the list and every key are as they were",JSON.stringify(lib())===before&&Object.keys(global.__ls).sort().join()===keys,JSON.stringify(lib()));
- chk("the booklet kept before is untouched",lib().length===1&&/Kept already/.test(JSON.stringify(lib()[0].title)));
+ chk("it is listed under Your booklets as a pointer: its name, and no copy of its content kept",lib().length===2&&lib().some(e=>e.from==="store:reports/week.booklet.md"&&/Week report/.test(JSON.stringify(e.title)))&&Object.keys(global.__ls).sort().join()===keys,JSON.stringify(lib()));
+ chk("the booklet kept before is untouched",lib().some(e=>/Kept already/.test(JSON.stringify(e.title))&&e.openedAt===JSON.parse(before)[0].openedAt));
  const pv=P.find(P.main(),P.hasClass("openedby"))[0];
  chk("a quiet line says where it came from, in these words",!!pv&&text(pv).startsWith("Opened by a link, from this page's own store: reports/week.booklet.md"),pv?text(pv):"none");
  chk("the line is its own: no problems notice, nothing counted as unread",!P.find(P.main(),P.hasClass("filenotes")).length&&!/could not read/.test(text(P.main())));
- A.flushSave();chk("leaving it unchanged still keeps nothing",lib().length===1);
+ A.flushSave();chk("leaving it unchanged keeps no content for it, and no second entry",lib().length===2&&Object.keys(global.__ls).sort().join()===keys);
  A.editBook(t=>{});A.flushSave();
  chk("when the reader changes something it joins \"Your booklets\" (a second entry, the first untouched)",lib().length===2&&lib().some(e=>/Kept already/.test(JSON.stringify(e.title)))&&lib().some(e=>e.from==="store:reports/week.booklet.md"),JSON.stringify(lib()));
  const pv2=P.find(P.main(),P.hasClass("openedby"));
@@ -104,43 +104,48 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;const U=STORE+"week.md";RO
    answer(A,"m/a","answer "+round);A.flushSave();A.closeBooklet();}
  chk("three opens with an answer each time leave one entry and one stored copy",lib().length===1&&stored().length===1&&lib()[0].from==="store:week.md",lib().length+" "+stored().length);
  chk("the entry remembers a fingerprint of what it read, not the text",typeof lib()[0].storeSeen==="string"&&lib()[0].storeSeen.length<30&&!/Week report/.test(JSON.stringify(lib()[0].storeSeen)));
- // the store file is exactly what the kept booklet would write: nothing to offer
+ // the store file is exactly what the kept booklet would write (as if a host had saved it): it holds all the kept copy
+ // holds, so it is drawn, with nothing to offer, and the kept copy goes (the store's file is the truth for a store booklet)
  await A.openLink("#/open/week.md");const mine=A.toMarkdown();A.closeBooklet();
  ROUTES[U]=mine;await A.openLink("#/open/week.md");
- chk("a store file identical to the kept text makes no offer, and updates what was seen",!offer()&&lib().length===1&&lib()[0].storeSeen!==undefined);A.closeBooklet();
+ chk("a store file identical to the kept text makes no offer, is drawn, and the kept copy goes",!offer()&&lib().length===1&&lib()[0].storeSeen!==undefined&&ans(A)==="answer 3"&&stored().length===0);
+ // work the store's file lacks: a fourth answer, kept here only (no host)
+ answer(A,"m/a","answer 4");A.flushSave();A.closeBooklet();
  // a changed store file: the offer; dismissing changes nothing
  const NEWER=WEEK.replace("A question","A newer question").replace("> [!text|q] A newer question","> [!text|q] A newer question\n\n> [!text|q2] A second question");
  ROUTES[U]=NEWER;await A.openLink("#/open/week.md");
  chk("a changed store file shows the offer, with Read the newer file and Dismiss",!!offer()&&/The file has changed where it is kept/.test(text(offer()))&&P.find(offer(),n=>n.tagName==="button"&&/Dismiss/.test(text(n))).length===1);
  const before=JSON.stringify([A.toMarkdown(),lib()]);
  press(/Dismiss/);
- chk("dismissing changes nothing",!offer()&&JSON.stringify([A.toMarkdown(),lib()])===before&&ans(A)==="answer 3"&&!/newer question/.test(JSON.stringify(A.BOOK)));A.closeBooklet();
+ chk("dismissing changes nothing",!offer()&&JSON.stringify([A.toMarkdown(),lib()])===before&&ans(A)==="answer 4"&&!/newer question/.test(JSON.stringify(A.BOOK)));A.closeBooklet();
  // reading it, with no host: the new body, the reader's own answers
  await A.openLink("#/open/week.md");A.screen="m/a";
  press(/Read the newer file/);
- chk("reading it with no host takes the new body and keeps the reader's answer",/A second question/.test(JSON.stringify(A.BOOK))&&ans(A)==="answer 3"&&/answer 3/.test(A.toMarkdown())&&!offer(),JSON.stringify(A.STATE.answers));
- chk("...into the same entry: still one, and what it saved holds both",lib().length===1&&stored().length===1&&/answer 3/.test(JSON.stringify(stored()[0].S))&&/second question/.test(JSON.stringify(stored()[0].TPL)));
+ chk("reading it with no host takes the new body and keeps the reader's answer",/A second question/.test(JSON.stringify(A.BOOK))&&ans(A)==="answer 4"&&/answer 4/.test(A.toMarkdown())&&!offer(),JSON.stringify(A.STATE.answers));
+ chk("...into the same entry: still one, and what it saved holds both",lib().length===1&&stored().length===1&&/answer 4/.test(JSON.stringify(stored()[0].S))&&/second question/.test(JSON.stringify(stored()[0].TPL)));
  A.closeBooklet();await A.openLink("#/open/week.md");
  chk("having read it, opening again offers nothing",!offer()&&lib().length===1);A.closeBooklet();
  // entries and drafts are kept too, and an answer to a question the new body dropped stays unused
  ROUTES[U]=WEEK.replace("> [!text|q] A question","> [!text|z] Something else");
  await A.openLink("#/open/week.md");press(/Read the newer file/);
- chk("an answer to a question the new body no longer has stays kept, unused",ans(A)==="answer 3"&&/Something else/.test(JSON.stringify(A.BOOK)),JSON.stringify(A.STATE.answers));
+ chk("an answer to a question the new body no longer has stays kept, unused",ans(A)==="answer 4"&&/Something else/.test(JSON.stringify(A.BOOK)),JSON.stringify(A.STATE.answers));
  A.closeBooklet();
  ROUTES[U]="not a booklet";const r=await A.openLink("#/open/week.md");
  chk("a store file the page refuses opens nothing and says why",r===false&&A.currentId===null&&/\S/.test(text(P.byId("toast"))));}
-// with a host registered and the booklet the host's: the store file is the truth
+// with a host registered and the booklet the host's: the kept copy and the file hold different answers, so it is offered;
+// reading it takes the new body and keeps this browser's answer (it may be one the store never heard of), which the host
+// then saves. An answer another device saved for the same question is replaced: nothing tells it from one changed here.
 reset();global.__ls["booklet.host.allowed"]="box";{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
  const calls=[];B.host({label:"box"});B.onChange(x=>calls.push(x));
  await A.openLink("#/open/week.md");answer(A,"m/a","mine");await sleep(700);A.flushSave();A.closeBooklet();
- const FILE="---\nbooklet: \"0.13\"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|m end] End\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n{\"q\": \"from another device\"}\n```\n\n%%\n";
+ const FILE="---\nbooklet: \"0.13\"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A newer question\n\n> [!module|m end] End\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n{\"q\": \"from another device\"}\n```\n\n%%\n";
  ROUTES[U]=FILE;const n0=calls.length;
  await A.openLink("#/open/week.md");await sleep(700);
  chk("a newer store file with a host registered is offered; the host is sent nothing while the offer waits",!!offer()&&calls.length===n0&&ans(A)==="mine",calls.length-n0);
  press(/Read the newer file/);
- chk("reading it takes the store file whole: its answer is the booklet's now",ans(A)==="from another device"&&lib().length===1,JSON.stringify(A.STATE.answers));
+ chk("reading it takes the store file's body and keeps this browser's answer",/A newer question/.test(JSON.stringify(A.BOOK))&&ans(A)==="mine"&&lib().length===1,JSON.stringify(A.STATE.answers));
  await sleep(700);
- chk("...and the host then hears of the booklet as it now is",calls.length>n0&&/from another device/.test(calls[calls.length-1].text));}
+ chk("...and the host then hears of the booklet as it now is",calls.length>n0&&/mine/.test(calls[calls.length-1].text)&&/A newer question/.test(calls[calls.length-1].text));}
 // a host that saved: the store holds exactly what the booklet writes, so nothing is offered
 reset();global.__ls["booklet.host.allowed"]="box";{const A=P.boot(),B=A.BookletApi;META["booklet-store"]=STORE;const U=STORE+"week.md";ROUTES[U]=WEEK;
  B.host({label:"box"});B.onChange(x=>{ROUTES[U]=x.text;});
@@ -191,6 +196,43 @@ reset();{const A=P.boot();META["booklet-registry"]="https://reg.test/registry.js
  A.closeBooklet();
  await A.openLink("#/module/t%2Ftwo");
  chk("a module link with no page opens as before",A.screen==="module:m",A.screen);}
+
+/* ---- a store booklet the store holds whole opens from the store, never from the kept copy ---- */
+{const HOSTED=()=>{reset();P.place("http:","fleet");global.__ls["booklet.host.allowed"]="L";META={"booklet-store":STORE};
+   const A=P.boot();A.BookletApi.host({label:"L"});return A;};
+ const URLW=STORE+"reports/week.booklet.md";
+ let A=HOSTED();ROUTES[URLW]=WEEK;
+ await A.openLink("#/open/reports/week.booklet.md");
+ const e0=lib().find(e=>e.from);
+ chk("a link opened with a host that saves is listed as a pointer (no content key)",!!e0&&!(("booklet.b."+e0.id) in global.__ls)&&lib().length===1,JSON.stringify(lib()));
+ A.closeBooklet();
+ // the store's file changes (regenerated); the entry is opened from "Your booklets"
+ ROUTES[URLW]=WEEK.replace("A question","A newer question");CALLS.length=0;
+ A.openFromList(e0.id);await new Promise(r=>setTimeout(r,30));
+ chk("opening it from the list reads the store's file: the newer text is what is drawn",CALLS.length===1&&CALLS[0].url===URLW&&/newer question/.test(JSON.stringify(A.BOOK)),JSON.stringify(CALLS.map(c=>c.url)));
+ chk("...with no offer to read a newer file, and still one entry",!P.find(P.main(),P.hasClass("hostnote")).length&&lib().length===1&&A.currentId===e0.id);
+ // opened by the link again: same
+ A.closeBooklet();ROUTES[URLW]=WEEK.replace("A question","A third question");
+ await A.openLink("#/open/reports/week.booklet.md");
+ chk("opened by its link again, the file just read is drawn and the entry is reused",/third question/.test(JSON.stringify(A.BOOK))&&lib().length===1&&A.currentId===e0.id);
+ // while the file is being read, the list says so
+ A.closeBooklet();let release;const gate=new Promise(r=>{release=r;});
+ ROUTES[URLW]=async()=>{await gate;return reply(WEEK);};
+ const pending=A.openLink("#/open/reports/week.booklet.md");await new Promise(r=>setTimeout(r,10));
+ chk("while the file is read, \"Your booklets\" says \"Opening <name>…\"",A.screen==="@booklets"&&/Opening reports\/week\.booklet\.md…/.test(text(P.main())),text(P.main()).slice(0,200));
+ release();await pending;
+ chk("...and the notice is gone when the booklet is open",A.currentId===e0.id&&!/Opening reports/.test(text(P.main())));
+ // a change to the booklet itself (which the store cannot hold: it keeps its own body): the kept copy opens, with the offer
+ A.editBook(t=>{});A.flushSave();
+ chk("a change made here is kept here, marked as a change to the booklet itself",("booklet.b."+e0.id) in global.__ls&&JSON.parse(global.__ls["booklet.b."+e0.id]).TPL.customized===true);
+ A.closeBooklet();ROUTES[URLW]=WEEK.replace("A question","A fourth question");
+ await A.openLink("#/open/reports/week.booklet.md");
+ chk("then the kept copy opens, not the file, and the newer file is offered",A.currentId===e0.id&&!/fourth question/.test(JSON.stringify(A.BOOK))&&P.find(P.main(),P.hasClass("hostnote")).length===1);
+ // the store does not answer: the list says so and nothing is lost
+ A.closeBooklet();ROUTES[URLW]=new Error("down");
+ const bad=await A.openLink("#/open/reports/week.booklet.md");
+ chk("a store that does not answer opens nothing, says so, and clears the notice",bad===false&&A.screen==="@booklets"&&!/Opening reports/.test(text(P.main())));
+}
 
 /* ---- the fetch refusals ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;

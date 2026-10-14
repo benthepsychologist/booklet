@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-tZ4KiIZotaapYzJpOo06DhYEafd2tywmlhUrMYcQjzQ=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-ebVPVU+g4cDI1kIEbT2iegCyzVFlbkKx7i1kSDZH9ig=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1614,6 +1614,7 @@ const STRINGS_SRC={
       linkMissing: "That booklet could not be found.",
       linkBig: "That file is too big to open here (the limit is 5 MB).",
       linkSlow: "That booklet took too long to arrive.",
+      linkLoading: n=>`Opening ${n}…`,
       linkNotText: "That is not a text file this page can open.",
       linkFailed: "That booklet could not be fetched. It may have moved, or you may be offline.",
       linkFromStore: n=>`Opened by a link, from this page's own store: ${n}`,
@@ -1940,9 +1941,10 @@ const STRINGS_SRC={
       linkMissing: "Ce carnet est introuvable.",
       linkBig: "Ce fichier est trop volumineux pour s’ouvrir ici (limite : 5 Mo).",
       linkSlow: "Ce carnet a mis trop de temps à arriver.",
+      /* l10n: draft */ linkLoading: n=>`Ouverture : ${n}…`,
       linkNotText: "Ce n’est pas un fichier texte que cette page peut ouvrir.",
       linkFailed: "Ce carnet n’a pas pu être récupéré. Il a peut-être changé d’adresse, ou vous êtes hors ligne.",
-      linkFromStore: n=>`Ouvert par un lien, depuis le dépôt de cette page : ${n}`,
+      /* l10n: draft */ linkFromStore: n=>`Ouvert par un lien, depuis le dépôt de cette page : ${n}`,
       linkFromRegistry: n=>`Ouvert par un lien, depuis le registre de cette page : ${n}`,
       openedFromHost: n=>`Ouvert depuis l’hôte de cette page : ${n}`
     },
@@ -2262,9 +2264,10 @@ const STRINGS_SRC={
       linkMissing: "No se encontró ese cuadernillo.",
       linkBig: "Ese archivo es demasiado grande para abrirlo aquí (el límite es 5 MB).",
       linkSlow: "Ese cuadernillo tardó demasiado en llegar.",
+      /* l10n: draft */ linkLoading: n=>`Abriendo ${n}…`,
       linkNotText: "Ese no es un archivo de texto que esta página pueda abrir.",
       linkFailed: "No se pudo obtener ese cuadernillo. Puede que se haya movido, o que no tengas conexión.",
-      linkFromStore: n=>`Abierto por un enlace, desde la reserva de esta página: ${n}`,
+      /* l10n: draft */ linkFromStore: n=>`Abierto por un enlace, desde la reserva de esta página: ${n}`,
       linkFromRegistry: n=>`Abierto por un enlace, desde el registro de esta página: ${n}`,
       openedFromHost: n=>`Abierto desde el anfitrión de esta página: ${n}`
     },
@@ -2759,6 +2762,10 @@ const hostAllowed=()=>HOST_OWN?hookText(lsGet(HOST_KEY),80):"";
 /* a host's hook works only while HOST is on a page in the reader's own place and the reader has said yes (state "active") */
 const hostActive=()=>!!HOST&&HOST.state==="active";
 let HOOK_TIMER=null,HOOK_LAST=0,HOOK_SEEN="";
+/* the last change told to the host: its number (`change`, counted from 1 in this page) and the booklet it was for */
+let HOOK_SEQ=0,HOOK_OUT=null;
+/* the changes told to the host and not yet answered, with the records each one sent: {change, id, recs} (the last 20) */
+let HOOK_SENT=[];
 const HOOK_EVERY_MS=500;
 /* how long a host has to answer an onChange call with saved() or failed() before the reader is told it did not */
 let HOOK_ANSWER_MS=20000,HOOK_ANSWER_TIMER=null;
@@ -2883,6 +2890,142 @@ function entryFrom(from){if(!from) return null;let best=null;const at=e=>String(
   readLib().entries.forEach(e=>{if(e.from===from&&(!best||at(e)>at(best))) best=e;});
   return best;}
 const keyOfEntry=e=>(e&&e.key)||bookKey(e.id);
+/* the store name a library entry is for ("" when it is not a store booklet) */
+const storeNameOf=e=>e&&typeof e.from==="string"&&e.from.startsWith("store:")?e.from.slice(6):"";
+/* ---- a store booklet: the store's file is the truth, the kept copy only a buffer ----
+   A store booklet (`from` is "store:<name>") is listed under "Your booklets" as soon as it is read, as a pointer: its
+   entry, with no kept copy of its content (notePointer). A kept copy (booklet.b.<id>) appears only once the reader
+   changes something, and it is only a buffer for work the store may not have yet. Beside it is its base
+   (booklet.base.<id>): the records (answers, entries, drafts; never the body, so it is small) of the file text the copy
+   is based on, which is the file it last drew or read, or the text a host last confirmed for it with saved(change), the
+   change being the latest sent for that booklet (hostAnswered). It is what lets an open tell work changed here since
+   (the reader's own, which the store may not have) from work changed in the file since (another device's, or a
+   generator's). It is written with the kept copy (saveLocal) and on each such confirmation, and goes with it. Whether
+   the store already has what is kept here is a fact about content, decided when the booklet is opened (openLinked: by its link, from the list, or by a
+   host's Booklet.open), so it does not matter whether the host has registered yet, how fast it answered, which tab it
+   answered in or whether the reader downloaded since.
+   The file is drawn into the same entry, and the kept copy goes (storeHolds), when nothing is kept (a pointer); or when
+   the kept copy holds no change to the booklet itself (`customized`: a rename inside it, a module added or removed,
+   which the store cannot hold, since it keeps its own body) and either nothing changed here since the base, so that
+   the file is the truth whatever it holds now (work another device added just appears), or the kept copy and the file
+   hold exactly the same work. A kept copy with no base (one written before bases were kept) is judged on that second
+   test alone. A blank kept copy (no module in it) is judged one way only, on its own answers: it holds nothing worth
+   keeping over the file's. Otherwise the kept copy opens, the newer file is offered if it changed, and reading it
+   merges the two against the base, place by place (acceptWork, mergeWork). */
+/* What "empty" is for a reader's work: nothing typed or picked at any depth (holdsSomething), so "", [""] (a list of
+   lines only looked at), [] (an activity's entries, or a list never filled) and a draft with nothing in it are all
+   empty. A page that was only viewed makes such values, so an empty value counts as no value at all. That is the rule
+   wherever two copies are compared or merged (flatWork), and in the two older tests kept for copies the base cannot
+   help with: a blank kept copy (workWithin) and a kept copy with no base when a newer file is read (withFileWork). */
+const emptyWork=v=>!holdsSomething(v);
+/* a value written the same way whatever order its keys were set in, for comparing two of them */
+const canon=v=>JSON.stringify(v,(k,x)=>isObj(x)?Object.keys(x).sort().reduce((o,y)=>{o[y]=x[y];return o;},{}):x);
+/* Whether every piece of a reader's work in one copy (S: its answers and entries; D: its drafts) is in another, given in
+   a parse's shape (R: R.S, R.drafts.activities): each answer and draft field that holds something has the same value
+   there, and each entry is among the other's entries for that activity. Used one way only, for a blank kept copy. */
+function workWithin(S,D,R){const own=(o,k)=>isObj(o)&&hasOwn(o,k)?o[k]:undefined,fs=R&&R.S||{},fd=draftsIn(((R&&R.drafts)||{}).activities);
+  const same=(a,b)=>b!==undefined&&canon(a)===canon(b);
+  const ans=isObj(S&&S.answers)?S.answers:{};
+  for(const sc of Object.keys(ans)){if(!isObj(ans[sc])) continue;
+    for(const k of Object.keys(ans[sc])) if(!emptyWork(ans[sc][k])&&!same(ans[sc][k],own(own(fs.answers,sc),k))) return false;}
+  const ents=isObj(S&&S.entries)?S.entries:{};
+  for(const at of Object.keys(ents)){const list=Array.isArray(ents[at])?ents[at]:[],there=own(fs.entries,at);
+    const have=new Set((Array.isArray(there)?there:[]).map(canon));
+    if(list.some(x=>isObj(x)&&x.ts&&!have.has(canon(x)))) return false;}
+  const dr=isObj(D&&D.custom)?D.custom:{};
+  for(const at of Object.keys(dr)){if(!isObj(dr[at])) continue;
+    for(const k of Object.keys(dr[at])) if(!emptyWork(dr[at][k])&&!same(dr[at][k],own(own(fd,at),k))) return false;}
+  return true;}
+/* ---- the base, in memory and in storage (see "a store booklet" above) ----
+   BASE is the open booklet's: set when a file is drawn (openAsView) or read (finishLoad), read back with a kept copy
+   (openBooklet). A records "copy" here, the base's shape, is {answers: {scope: {key: value}}, entries: {activity:
+   [entry]}, drafts: {activity: {field: value}}}. */
+let BASE=null;
+const baseKey=id=>"booklet.base."+id;
+function readBase(id){let o=null;try{o=JSON.parse(lsGet(baseKey(id))||"null");}catch(e){o=null;}return isObj(o)?o:null;}
+/* a file's records (from its parse), and the records of the work in memory (as a save sends them: the scopes the
+   booklet's modules write), each a clone */
+const recsOfParse=R=>clone({answers:(R&&R.S&&R.S.answers)||{},entries:(R&&R.S&&R.S.entries)||{},drafts:draftsIn(((R&&R.drafts)||{}).activities)});
+function recsHere(){const sc=new Set(["",...allModules().map(scopeOfModule).filter(Boolean)]);
+  const pick=(o,f)=>{const r={};if(isObj(o)) Object.keys(o).forEach(k=>{if(f(k)) r[k]=o[k];});return r;};
+  return clone({answers:pick(STATE.answers,k=>sc.has(k)),entries:pick(STATE.entries,k=>sc.has(scopeOfAddr(k))),drafts:pick(DRAFTS.custom,k=>sc.has(scopeOfAddr(k)))});}
+/* the scopes a booklet design writes records for */
+const scopesOfBook=T=>new Set(["",...(isObj(T)&&Array.isArray(T.modules)?T.modules:[]).filter(isObj).map(scopeOfModule).filter(Boolean)]);
+/* A records copy as one flat map, place to value, holding only what is not empty (emptyWork): "a" scope key for an
+   answer, "d" activity field for a draft field, "e" activity ts for a kept entry (an entry is known by the moment it
+   was kept, which never changes). `keep`, a set of scopes, limits it to those. */
+const SEP="\u0000";
+function flatWork(r,keep){const out=new Map(),ok=s=>!keep||keep.has(s);
+  const A=isObj(r&&r.answers)?r.answers:{},E=isObj(r&&r.entries)?r.entries:{},D=isObj(r&&r.drafts)?r.drafts:{};
+  Object.keys(A).forEach(sc=>{if(ok(sc)&&isObj(A[sc])) Object.keys(A[sc]).forEach(k=>{if(!emptyWork(A[sc][k])) out.set("a"+SEP+sc+SEP+k,A[sc][k]);});});
+  Object.keys(D).forEach(at=>{if(ok(scopeOfAddr(at))&&isObj(D[at])) Object.keys(D[at]).forEach(k=>{if(!emptyWork(D[at][k])) out.set("d"+SEP+at+SEP+k,D[at][k]);});});
+  Object.keys(E).forEach(at=>{if(ok(scopeOfAddr(at))&&Array.isArray(E[at])) E[at].forEach(x=>{if(isObj(x)&&x.ts) out.set("e"+SEP+at+SEP+x.ts,x);});});
+  return out;}
+const sameFlat=(x,y)=>x.size===y.size&&[...x].every(([k,v])=>y.has(k)&&canon(y.get(k))===canon(v));
+/* back from the flat map to a records copy (entries in the order they were kept) */
+function unflatWork(m){const r={answers:nullMap(),entries:nullMap(),drafts:nullMap()},into=(o,k,v)=>(hasOwn(o,k)?o[k]:(o[k]=v));
+  m.forEach((v,key)=>{const p=key.split(SEP);
+    if(p[0]==="a") into(r.answers,p[1],nullMap())[p[2]]=v;
+    else if(p[0]==="d") into(r.drafts,p[1],nullMap())[p[2]]=v;
+    else into(r.entries,p[1],[]).push(v);});
+  Object.keys(r.entries).forEach(at=>r.entries[at].sort((x,y)=>String(x.ts).localeCompare(String(y.ts))));
+  return r;}
+/* Whether the file just read for a store entry (R, its parse) holds everything this browser keeps of it (see "a store
+   booklet" above). A kept copy that cannot be read is not judged here: it takes the old path, which says what it can. */
+function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return true;
+  let o=null;try{o=JSON.parse(raw);}catch(x){o=null;}
+  if(!isObj(o)||!isObj(o.S)) return false;
+  const T=isObj(o.TPL)?o.TPL:null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
+  if(blank) return workWithin(o.S,o.D,R);
+  if(T&&T.customized) return false;
+  const keep=T?scopesOfBook(T):null,here=flatWork({answers:o.S.answers,entries:o.S.entries,drafts:isObj(o.D)?o.D.custom:{}},keep);
+  const base=readBase(e.id);
+  /* nothing changed here since the base: the file is the truth, whatever it holds now */
+  if(base&&sameFlat(here,flatWork(base,keep))) return true;
+  /* something changed here (or there is no base): drawn only when the file holds exactly this work, so that a removal
+     made here, which the store never heard of, does not come back */
+  return sameFlat(here,flatWork(recsOfParse(R),keep));}
+/* A generator may move an activity into another module, and the store then moves its records with it: the box's
+   storefile._retarget, which points a records line `> [!records|X]` at the scope its activities now live in. The rule,
+   ported here so that this browser and the store agree on every move: X (a scope the records are under) is moved only
+   when it is not a module of the new body, is itself an activity of the new body (that is what proves the move) and not
+   one outside every module, and X and every activity its records name (an entry's or a draft's activity) all live in
+   exactly one scope of the new body, which may be "" (the activities outside every module). Anything else stays as
+   written: a module that still exists keeps its records even if some of its activities moved, and an activity whose
+   records name activities now in different modules is not followed. A module line with no id is no module to the
+   store (it reads the line), so such a module, and its activities, count for nothing here either. It is applied to
+   this copy and to the base, from the new body (T, the file's design), so it follows a move whether or not the store
+   had records under X yet (a first answer here, unsent when the generator moved the activity, lands in the new
+   module); but the activities X's records name are counted from the base alone, the records the store held, since
+   that is what the store decided from: work only this browser holds (an entry the store never got) must not make it
+   refuse a move the store made. Work under a scope the move leaves without a module is kept by keepUnowned.
+   Returns [here, base]. */
+function followMoves(here,base,T){const mods=new Set(),acts=new Map();
+  (isObj(T)&&Array.isArray(T.modules)?T.modules:[]).filter(m=>isObj(m)&&!m.noId).forEach(m=>{const sc=scopeOfModule(m);if(sc) mods.add(sc);
+    activitiesOf(m).forEach(a=>{const id=shortId(a.id);if(!acts.has(id)) acts.set(id,new Set());acts.get(id).add(sc);});});
+  /* each scope the two copies hold records under, with the activities the base's records there name */
+  const named=new Map();[[here,false],[base,true]].forEach(([r,names])=>flatWork(r).forEach((v,k)=>{const p=k.split(SEP),sc=p[0]==="a"?p[1]:scopeOfAddr(p[1]);
+    if(!named.has(sc)) named.set(sc,new Set([sc]));if(names&&p[0]!=="a") named.get(sc).add(shortId(p[1]));}));
+  const moves=new Map();
+  named.forEach((want,x)=>{if(x===""||mods.has(x)||!acts.has(x)||acts.get(x).has("")) return;
+    if(![...want].every(a=>acts.has(a))) return;
+    const common=[...want].reduce((c,a)=>c===null?new Set(acts.get(a)):new Set([...c].filter(z=>acts.get(a).has(z))),null);
+    if(common.size===1) moves.set(x,[...common][0]);});
+  if(!moves.size) return [here,base];
+  const to=s=>moves.has(s)?moves.get(s):s,at=a=>{const s=scopeOfAddr(a);return moves.has(s)?addrOf(moves.get(s),shortId(a)):a;};
+  const move=r=>{const out=new Map();flatWork(r).forEach((v,k)=>{const p=k.split(SEP);out.set(p[0]+SEP+(p[0]==="a"?to(p[1]):at(p[1]))+SEP+p[2],v);});return unflatWork(out);};
+  return [move(here),move(base)];}
+/* Three-way, place by place, between what is here, what the file holds and the base both came from: changed here and
+   not there, here's; changed there and not here, the file's; changed on both, here's (the reader is looking at it, and
+   pressed Read), except that a removal here (an answer cleared, an entry deleted, a draft emptied) loses to a change
+   there, which then stays, changed; unchanged on both, either. So a removal here that the file did not touch stays
+   removed (an entry finalized from a draft leaves no draft behind), and one the file changed since comes back with the
+   change. Returns a records copy. */
+function mergeWork(here,base,file){const H=flatWork(here),B=flatWork(base),F=flatWork(file),out=new Map(),c=v=>v===undefined?undefined:canon(v);
+  new Set([...H.keys(),...B.keys(),...F.keys()]).forEach(k=>{const h=c(H.get(k)),b=c(B.get(k)),f=c(F.get(k));
+    const v=h===b?F.get(k):f===b?H.get(k):h===undefined?F.get(k):H.get(k);
+    if(v!==undefined) out.set(k,v);});
+  return unflatWork(out);}
 function describeBooklet(t){t=t||{};
   const mods=(Array.isArray(t.modules)?t.modules:[]).filter(m=>m&&typeof m==="object");
   return {title:(t.head&&t.head.title)||t.title||null,
@@ -2898,13 +3041,22 @@ function addEntry(){const now=new Date().toISOString();let made=null;
    browser: the person asked for it gone. */
 function removeBooklet(id){const e=(LIB=readLib(),entryById(id));if(!e) return false;
   if(id===currentId) closeBooklet();
-  lsDel(keyOfEntry(e));
+  /* the booklet whose file is being read for a link is the one removed: that read is dropped, so it neither opens the
+     booklet nor lists it again when it arrives */
+  if(LINK_LOADING!==null&&e.from&&LINK_LOADING.from===e.from){LINK_GEN++;LINK_LOADING=null;}
+  lsDel(keyOfEntry(e));lsDel(baseKey(id));
   changeLib(L=>{L.entries=L.entries.filter(x=>x.id!==id);});
   return true;}
 /* Rename a booklet that is not open, from "Your booklets": its saved snapshot is renamed in the store (a booklet kept
-   before it had a design gets a blank one, named), and its row in the list. An empty name keeps the old one. */
+   before it had a design gets a blank one, named), and its row in the list. An empty name keeps the old one.
+   A store booklet is different: its title and its body are its file's, and the store keeps its own body, so a name
+   written into a kept copy would be dropped, and one written into a pointer would make a blank booklet that a host
+   could then save over the file. Rename gives it a name of its own in this list (`named`), and nothing else changes. */
 function renameStored(id,name){const n=cleanName(name);if(!n) return false;
   LIB=readLib();const e=entryById(id);if(!e) return false;
+  if(storeNameOf(e)){if(n===bookletName(e)) return false;
+    changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.named=n;});
+    return true;}
   if(id===currentId) return renameBooklet(n);
   let o=null;try{o=JSON.parse(lsGet(keyOfEntry(e))||"null");}catch(x){o=null;}
   if(!o||typeof o!=="object") o={S:emptyState(),D:emptyDrafts(),lang:e.lang||lang};
@@ -2920,6 +3072,8 @@ function renameStored(id,name){const n=cleanName(name);if(!n) return false;
 function slotKey(){return currentId?currentKey:null;}
 function saveLocal(){const key=slotKey();if(!key) return;
   lsSet(key,JSON.stringify({S:STATE,D:DRAFTS,TPL:BOOK,lang,dirty,unsavedEntries}));
+  /* a store booklet's kept copy is written with its base (see "a store booklet's base") */
+  if(BASE&&hostName()) lsSet(baseKey(currentId),JSON.stringify(BASE));
   if(currentId) noteSaved();
   askPersist();
   hookChanged();}
@@ -2946,7 +3100,16 @@ function noteSaved(){const id=currentId,now=new Date().toISOString();
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
     if(!e&&currentEntry){e={...currentEntry};L.entries.push(e);}
     if(e) Object.assign(e,fresh);});}
-function clearLocal(){const key=slotKey();if(key) lsDel(key);
+/* A store booklet just read from the store is listed as a pointer (see "a store booklet" above storeHolds): its title,
+   where it is kept, the fingerprint of the file read and when it was opened, and no copy of its content. A name the
+   reader gave it in the list (`named`) stays. Called only on a page that declares a store, so the list can always read
+   the file again. */
+function notePointer(){const id=currentId,now=new Date().toISOString();
+  const fresh={...describeBooklet(BOOK),openedAt:now,dirty:false,unsavedEntries:0,lang,from:currentEntry.from,storeSeen:currentEntry.storeSeen};
+  changeLib(L=>{let e=L.entries.find(x=>x.id===id);
+    if(!e){e={...currentEntry};L.entries.push(e);}
+    Object.assign(e,fresh);});}
+function clearLocal(){const key=slotKey();if(key) lsDel(key);if(currentId) lsDel(baseKey(currentId));
   if(currentId) changeLib(L=>{const e=L.entries.find(x=>x.id===currentId);
     if(e) Object.assign(e,{title:null,parts:[],dirty:false,unsavedEntries:0,updatedAt:new Date().toISOString()});});}
 function loadLocal(){const key=slotKey();if(!key) return false;
@@ -2975,9 +3138,13 @@ const ANSWER_TICKS=[];
 function markDirty(){dirty=true;markAttention();hookChanged();ANSWER_TICKS.forEach(f=>{try{f();}catch(e){}});clearTimeout(saveTimer);const gen=bookletGen;
   saveTimer=setTimeout(()=>{saveTimer=null;if(gen===bookletGen) saveLocal();},400);}
 function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=null;saveLocal();}
+/* A change the host has not yet been told of (its half-second wait is still running) is told now, while the booklet it was
+   made in is still the one in memory: leaving a booklet, or opening another, would otherwise send the next booklet's text
+   in its place, and the change would reach the store only when this booklet is next opened. */
+function hookFlush(){if(!HOOK_TIMER) return;clearTimeout(HOOK_TIMER);HOOK_TIMER=null;hookFire();}
 function resetBookletState(){
   lang=langPref()||lang;
-  STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
+  STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;BASE=null;
   screen=HOME_SCREEN;dirty=false;unsavedEntries=0;
   openChip={};VIEWSTATE.clear();WK.open.clear();WK.q="";WK.menu=false;WK.mod=null;FILE_NOTES=null;PROVENANCE=null;LINK_NEWER=null;
   hookStopWait();
@@ -2988,15 +3155,17 @@ function resetBookletState(){
    the globals are cleared, and this one is read from its own key. Returns
    what loadLocal does — whether something of the reader's own came back —
    or null for an id the list does not have. */
-function openBooklet(id){flushSave();LIB=readLib();const e=entryById(id);if(!e) return null;
+function openBooklet(id){flushSave();hookFlush();LIB=readLib();const e=entryById(id);if(!e) return null;
   resetBookletState();bookletGen++;
   currentId=e.id;currentKey=keyOfEntry(e);currentEntry={...e};
   const restored=loadLocal();
+  /* a store booklet's kept copy comes back with its base, if it has one */
+  if(hostName()) BASE=readBase(e.id);
   screen=HOME_SCREEN;
   changeLib(L=>{const x=L.entries.find(y=>y.id===e.id);if(x) x.openedAt=new Date().toISOString();});
   hookChanged();
   return restored;}
-function closeBooklet(){flushSave();resetBookletState();bookletGen++;
+function closeBooklet(){flushSave();hookFlush();resetBookletState();bookletGen++;
   currentId=currentKey=currentEntry=null;screen=LIB_SCREEN;}
 /* Whether anything was typed or picked, at any depth: a blank string, an empty
    list and nothing at all all mean no answer. It is what decides whether a
@@ -3468,6 +3637,8 @@ function readBlocks(items,fm,problems){const P=strings("problem");
       if(mod) refuse(P.moduleNested(where,it.id,mod.id));
       if(!it.id) problems.push(P.moduleNoId(where));
       claimModule(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;
+      /* named after its place, not by its line: a reader of the line itself (the box's storefile) sees no module here */
+      if(!it.id) mod.noId=true;
       if(it.set.icon) mod.icon=it.set.icon;return;}
     if(k==="activity"){if(!it.id) problems.push(P.activityNoId(where));newActivity(it,it.title,it.line);lastQ=null;return;}
     if(QUESTION_KINDS.has(k)){
@@ -6493,7 +6664,11 @@ function render(){RENDERING=true;CITE_GEN++;try{citeLeave(screen);renderBar();co
   if(hasOwn(SCREENS,screen)) SCREENS[screen](main);
   else if(isModuleScreen(screen)) renderModulePage(main,screen);
   else renderActivity(main,screen);
-  hostNoticeShow(main);}finally{RENDERING=false;}}
+  hostNoticeShow(main);
+  /* a link is being read while a booklet is on screen: its notice goes at the top (the list says it in its own place) */
+  if(LINK_LOADING!==null&&screen!==LIB_SCREEN) main.prepend(loadingNotice());}finally{RENDERING=false;}}
+/* "Opening <name>…": a file is being read for a link, or for a store booklet opened from the list */
+const loadingNotice=()=>el("div",{class:"notice col",role:"status"},STRINGS[lang].booklet.linkLoading(LINK_LOADING.label));
 /* the notices at the top of an opened file's first screen. A file marked with another 0.x version says so in a
    sentence of its own, above and apart from the count: the page read it, so that is not a thing it could not read.
    Under it, how many things the page could not read (nothing is shown when there are none), the list inside a
@@ -6628,12 +6803,26 @@ function startScreen(){
   if(acts.length===1) return acts[0].id;
   if(mods.length===1&&acts.length>1) return moduleScreen(mods[0].id);
   return HOME_SCREEN;}
-function openFromList(id){if(openBooklet(id)===null){render();return;}
+function openFromList(id){LIB=readLib();const e=entryById(id);const name=storeNameOf(e);
+  /* A store booklet opens from the store: its file is read afresh, and it is drawn unless this browser keeps work the
+     file lacks, which then opens with the offer to read the file (openLinked decides, on content). */
+  if(name&&storeUrl()!==""){
+    const p=openLink("#/open/"+name,{entry:e.id}),gen=LINK_GEN;
+    p.then(ok=>{
+      /* the store did not answer, or sent a file the page refuses, and nothing newer has been asked for since (a second
+         Open, another link): what this browser still keeps of it opens instead, if anything */
+      if(ok===false&&gen===LINK_GEN&&!currentId&&lsGet(keyOfEntry(e))!==null&&(LIB=readLib(),entryById(e.id))){
+        openBooklet(e.id);screen=startScreen();render();window.scrollTo({top:0});}});
+    return;}
+  /* a pointer on a page that declares no store: there is nothing here to open, and no store to read it from */
+  if(name&&lsGet(keyOfEntry(e))===null){toast(STRINGS[lang].booklet.linkNoStore);return;}
+  if(openBooklet(id)===null){render();return;}
   screen=startScreen();render();window.scrollTo({top:0});}
 /* A new booklet starts empty: no modules, no answers, nothing seeded. */
 function createBooklet(){const e=addEntry();
   openBooklet(e.id);BOOK=blankBook();saveLocal();go(HOME_SCREEN);return e;}
-const bookletName=e=>{const t=tx(e.title,"");if(nonEmpty(t)) return t.trim();
+const bookletName=e=>{const own=tx(e.named,"");if(nonEmpty(own)) return own.trim();
+  const t=tx(e.title,"");if(nonEmpty(t)) return t.trim();
   const p=(e.parts||[]).map(x=>tx(x,"")).filter(nonEmpty);
   return p.length?p.join(", "):strings("library").untitled;};
 function renderBooklets(main){const L=strings("library");
@@ -6641,13 +6830,15 @@ function renderBooklets(main){const L=strings("library");
   LIB=readLib();
   main.append(el("div",{class:"hero col"},el("h1",{},L.title),el("p",{class:"sub"},L.sub)));
   if(!storageOk) main.append(el("div",{class:"notice col"},L.storageOff));
+  /* a link or a kept store booklet is being read: say so, so a slow read is not an empty list */
+  if(LINK_LOADING!==null) main.append(loadingNotice());
   const create=el("button",{type:"button",class:"small primary"},L.create);
   create.addEventListener("click",()=>createBooklet());
   main.append(el("div",{class:"col addrow"},create,el("button",{type:"button",class:"small",onclick:openLoad},L.load)));
   hostStopLine(main);
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
   const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
-  if(!list.length){main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
+  if(!list.length){if(LINK_LOADING===null) main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
   const cards=el("div",{class:"modes"});
   list.forEach(e=>cards.append(bookletCard(e)));
   main.append(cards);
@@ -7086,7 +7277,10 @@ function openExport(){const t=STRINGS[lang].ui;
     el("div",{class:"actions"},el("button",{type:"button",onclick:close},t.cancel)));
   veil.setAttribute("open","");}
 async function download(){const t=STRINGS[lang].ui;const md=toMarkdown();const name=exportName();
-  try{const blob=new Blob([md],{type:"text/markdown;charset=utf-8"});const url=URL.createObjectURL(blob);const a=el("a",{href:url,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);dirty=false;unsavedEntries=0;saveLocal();toast(t.downloaded);render();}
+  /* a store booklet of which nothing is kept here and in which nothing has changed (a pointer) has no copy to mark as
+     downloaded, and none is made for it: a copy made only to say so would be a 3 MB write for a large file */
+  const keep=!(hostName()&&!dirty&&!(unsavedEntries>0)&&!saveTimer&&lsGet(currentKey)===null);
+  try{const blob=new Blob([md],{type:"text/markdown;charset=utf-8"});const url=URL.createObjectURL(blob);const a=el("a",{href:url,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);dirty=false;unsavedEntries=0;if(keep) saveLocal();toast(t.downloaded);render();}
   catch(e){toast(t.downloadFail);}}
 function draftsIn(o){const r=nullMap(o,1);Object.keys(r).forEach(k=>{if(!isObj(r[k])) delete r[k];});return r;}
 const veilExport=document.getElementById("veilExport");
@@ -7193,13 +7387,20 @@ function loadText(text){const t=STRINGS[lang].ui;const msg=document.getElementBy
 function finishLoad(R,via,keep){const mine=!!langPref();
   applyParsed(mine?{...R,lang:null}:R);
   /* `keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
-  if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;}
+  if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;
+    /* work for a scope the design has no module for, kept as written with the file's own such records (keepUnowned) */
+    if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET) BOOK.raw={...(BOOK.raw||{}),records:[...((BOOK.raw||{}).records||[]),...keep.records]};}
   const at=startScreen();
   /* the other-marker sentence stands apart from the problems: only real problems are counted */
   const marker=R.markerNote?humanMsg(R.markerNote):"",list=(R.unread||[]).filter(m=>m!==R.markerNote).map(humanMsg);
   FILE_NOTES=list.length||marker?{marker,list,dismissed:false,at}:null;
   /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */
-  if(via){PROVENANCE={...via,dismissed:false,at};hookChanged();go(at);return;}
+  if(via){PROVENANCE={...via,dismissed:false,at};
+    /* a store booklet joins the list at once, as a pointer, on a page that can read it from the store again */
+    if(via.store&&via.from&&currentEntry&&storeUrl()!=="") notePointer();
+    hookChanged();go(at);return;}
+  /* the file just read is what the store holds: the base of what is kept from now on (a newer file read on the offer) */
+  BASE=recsOfParse(R);
   saveLocal();go(at);toast(STRINGS[lang].ui.loadOk);}
 
 /* ---- THE HOST'S LINE AND NOTICE ----
@@ -7232,16 +7433,29 @@ function hookChanged(){if(!hookBook()||!hostActive()) return;
   HOOK_TIMER=setTimeout(hookFire,Math.max(100,HOOK_EVERY_MS-(Date.now()-HOOK_LAST)));}
 function hookFire(){HOOK_TIMER=null;HOOK_LAST=Date.now();
   const calm=()=>{if(HOST&&HOST.status==="saving"&&HOOK_ANSWER_TIMER===null){HOST.status=HOST.prev||"idle";drawHostLine();}};
-  if(!hookBook()||!hostActive()||!HOOK_LISTENERS.length||LINK_NEWER) return calm();
+  /* a booklet with no module holds nothing a reader could have written, so it is never sent: a blank copy can never be
+     saved over a file and its records */
+  if(!hookBook()||!hostActive()||!HOOK_LISTENERS.length||LINK_NEWER||!allModules().length) return calm();
   const text=toMarkdown(),key=currentId+"\u0000"+text;
   if(key===HOOK_SEEN) return calm();
   HOOK_SEEN=key;
-  const info={text,name:hostName(),title:hookText(tx(describeBooklet(BOOK).title,""),200)};
+  /* `change` names this call, so an answer can say which change it answers (hostSet) */
+  HOOK_OUT={change:++HOOK_SEQ,id:currentId};
+  HOOK_SENT.push({...HOOK_OUT,recs:recsHere()});if(HOOK_SENT.length>20) HOOK_SENT.shift();
+  const info={text,name:hostName(),title:hookText(tx(describeBooklet(BOOK).title,""),200),change:HOOK_OUT.change};
   hookStopWait();
   if(HOST) HOOK_ANSWER_TIMER=setTimeout(()=>{HOOK_ANSWER_TIMER=null;if(HOST&&HOST.status==="saving")hostSet("failed","",true);},HOOK_ANSWER_MS);
   HOOK_LISTENERS.slice().forEach(fn=>{try{fn({...info});}catch(e){HOOK_SEEN="";hostSet("failed",hookText(e&&e.message,200));}});}
-/* a host reports: status "saved", or "failed" with a message */
-function hostSet(status,message,silent){if(!hostActive()) return;const was=HOST.status;
+/* A host reports: status "saved", or "failed" with a message. It changes the top bar and nothing else (whether the store
+   holds a booklet is read from its file: see storeHolds). An answer may name the change it answers (`change`, the object
+   onChange gave or its `change` number; docs/hosting.md): one for a change sent before the latest, or for a booklet no
+   longer open, leaves the bar as it is, so "Saved" never stands for a change still on its way. An answer that names
+   none is about the open booklet's latest change, as it always was. */
+function hostSet(status,message,silent,change){if(!hostActive()) return;
+  const n=typeof change==="number"?change:isObj(change)&&typeof change.change==="number"?change.change:null;
+  if(n!==null) hostAnswered(status,n);
+  if(n!==null&&!(HOOK_OUT!==null&&n===HOOK_OUT.change&&HOOK_OUT.id===currentId)) return;
+  const was=HOST.status;
   hookStopWait();HOST.silent=!!silent;
   HOST.status=status;HOST.message=status==="failed"?message||"":"";if(status==="saved") HOST.at=new Date();
   drawHostLine();
@@ -7286,13 +7500,14 @@ function hostAccept(){if(!newerWaiting()) return;
   const text=HOST.pending;HOST.pending=null;
   const R=parseFile(text);
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
-  finishLoad(R);}
+  /* the same rule as a newer file a link found (acceptWork): what the reader typed since the host's last save stays */
+  const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records});}
 /* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
    generator owns the body and the reader owns the records (the store contract).
-   - A host's booklet with a host registered: the store file is the truth (the host saves every change, from any device),
-     so it is read whole, into the same entry.
-   - Otherwise the store file never held the reader's work: the new file's body is taken and the kept booklet's own
-     answers, entries and drafts stay as they are (an answer to a question the new body no longer has stays unused).
+   - A store booklet: the new file's body is taken, with the work acceptWork gives (the one rule for reading a newer
+     file, here and in hostAccept): with no host, the kept booklet's own answers, entries and drafts as they are (an
+     answer to a question the new body no longer has stays unused); with a host, the kept booklet's work and the file's
+     merged against their base (mergeWork). The host then saves the result.
    - A registry module (#/module/<id>) is updated in place the way Add a module updates a module already present.
    Either way the entry remembers the text just read (storeSeen). A text the page refuses changes nothing but says why. */
 function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
@@ -7301,11 +7516,70 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   if(N.via.store===false){const r=addModuleText(N.text);
     if(!r.ok){toast(humanMsg(r.problems.join(" ")));render();return;}
     saveLocal();render();toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,""))));}
-  else if(HOST&&hostName()) finishLoad(R);
-  else finishLoad(R,null,{S:STATE,D:DRAFTS,dirty,unsavedEntries});
+  else{const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records});}
   if(currentId!==id) return;
   if(currentEntry) currentEntry.storeSeen=N.seen;
   changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=N.seen;});}
+/* The one rule for reading a newer file the reader was offered, whether a link found it (linkAccept) or the host pushed
+   it (hostAccept): the reader's work to keep with the file's body. With a host, the file's records are the reader's own
+   too (the host saves them from any device), so they are merged with what is here, place by place, against the base
+   (mergeWork, after followMoves), or by withFileWork for a kept booklet with no base. With none, the file never held the
+   reader's work, and what is here stays as it is. Returns {S, D}, ready for finishLoad (which makes the file's records
+   the new base). */
+const acceptWork=R=>{if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};
+  /* a kept booklet with no base (written before bases were kept) can only be weighed on what holds something */
+  if(!BASE) return withFileWork(R);
+  const file=recsOfParse(R),[here,base]=followMoves(clone({answers:STATE.answers||{},entries:STATE.entries||{},drafts:DRAFTS.custom||{}}),BASE,R.template);
+  const m=mergeWork(here,base,file);
+  return keepUnowned({S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}},R.template);};
+/* Work the merge leaves under a scope the new design has no module for (a move neither this page nor the store
+   followed, or a module the generator removed): this page would never write it, so it is written back as records
+   blocks kept as written under that scope's records line, the way the file's own records for a missing module are kept
+   (SPEC section 8, "kept as written"), and it survives exactly as they do. The work then lives in the design's kept
+   records (BOOK.raw.records, by finishLoad) and no longer in STATE, so it is written once. Only what the merge kept
+   from here reaches it: what was unchanged here is already in the file's kept records. Returns {S, D, records}. */
+function keepUnowned(W,T){const own=scopesOfBook(T),heads=new Map(),by=new Map(),recs=[];
+  ((isObj(T)&&isObj(T.raw)&&Array.isArray(T.raw.records))?T.raw.records:[]).forEach(r=>{if(isObj(r)&&r.foreign&&!heads.has(r.scope)) heads.set(r.scope,r.foreign);});
+  const S={answers:nullMap(),entries:nullMap()},D={custom:nullMap()};
+  const of=sc=>{if(!by.has(sc)) by.set(sc,{answers:nullMap(),entries:[],drafts:[]});return by.get(sc);};
+  const A=W.S.answers||{},E=W.S.entries||{},C=W.D.custom||{};
+  Object.keys(A).forEach(sc=>{if(own.has(sc)){S.answers[sc]=A[sc];return;}
+    Object.keys(A[sc]||{}).forEach(k=>{if(!emptyWork(A[sc][k])) of(sc).answers[k]=A[sc][k];});});
+  Object.keys(E).forEach(at=>{const sc=scopeOfAddr(at);if(own.has(sc)){S.entries[at]=E[at];return;}
+    const items=(Array.isArray(E[at])?E[at]:[]).filter(x=>isObj(x)&&x.ts);if(items.length) of(sc).entries.push([shortId(at),items]);});
+  Object.keys(C).forEach(at=>{const sc=scopeOfAddr(at);if(own.has(sc)){D.custom[at]=C[at];return;}
+    const work=Object.fromEntries(Object.entries(C[at]||{}).filter(([,v])=>!emptyWork(v)));if(Object.keys(work).length) of(sc).drafts.push([shortId(at),work]);});
+  const fence=(info,body)=>"```"+info+"\n"+body+"\n```";
+  by.forEach((b,sc)=>{const foreign=heads.get(sc)||"> [!records|"+sc+"]",keep=text=>recs.push({scope:sc,foreign,text});
+    if(Object.keys(b.answers).length) keep(fence("booklet answers",JSON.stringify(b.answers,null,1)));
+    b.entries.forEach(([id,items])=>keep(fence("booklet entries "+id,"{\"items\": [\n"+items.map(e=>JSON.stringify(e)).join(",\n")+"\n]}")));
+    b.drafts.forEach(([id,work])=>keep(fence("booklet draft "+id,JSON.stringify(work))));});
+  return {S,D,records:recs};}
+/* An answer that names its change (hostSet): a "saved" for the latest change sent for that booklet makes the records that
+   change sent its base, since the store now holds exactly them; either answer settles that change and those sent before
+   it for the same booklet. The booklet need not be open (a change told to the host as it was left). */
+function hostAnswered(status,n){const s=HOOK_SENT.find(x=>x.change===n);if(!s) return;
+  if(status==="saved"&&!HOOK_SENT.some(x=>x.id===s.id&&x.change>n)&&(LIB=readLib(),entryById(s.id))){
+    /* the open booklet's kept copy is written first (its save may still be waiting out its 400 ms), so the base is never
+       ahead of the copy: a crash in between would leave a copy older than its base, whose older answers would then read
+       as changes made here */
+    if(s.id===currentId) flushSave();
+    lsSet(baseKey(s.id),JSON.stringify(s.recs));if(s.id===currentId) BASE=s.recs;}
+  HOOK_SENT=HOOK_SENT.filter(x=>!(x.id===s.id&&x.change<=n));}
+/* For a kept booklet with no base only (written before bases were kept), when a newer file is read: the kept booklet's
+   work (STATE, DRAFTS) laid over the file's (R, its parse). Every answer and draft field, and every activity's list of
+   entries, that holds something here stays exactly as it is; wherever this copy's value is empty (emptyWork) or missing,
+   the file's is taken. With no base nothing tells a change made here from an old value kept here, so an old value held
+   here wins over another device's newer one, and a removal made here is undone; the base, set by this very read, ends
+   that for the next one. Returns {S, D}; changes nothing. */
+function withFileWork(R){const fa=nullMap((R.S||{}).answers,1),fe=nullMap((R.S||{}).entries,1),fd=draftsIn((R.drafts||{}).activities);
+  const ka=isObj(STATE.answers)?STATE.answers:{},ke=isObj(STATE.entries)?STATE.entries:{},kd=isObj(DRAFTS.custom)?DRAFTS.custom:{};
+  const lay=(into,from)=>{for(const k of Object.keys(from)){if(!isObj(from[k])) continue;
+    for(const f of Object.keys(from[k])){if(emptyWork(from[k][f])) continue;
+      const t=hasOwn(into,k)&&isObj(into[k])?into[k]:(into[k]=nullMap());t[f]=from[k][f];}}};
+  lay(fa,ka);lay(fd,kd);
+  for(const at of Object.keys(ke)) if(!emptyWork(ke[at])) fe[at]=ke[at];
+  return {S:{answers:fa,entries:fe},D:{custom:fd}};}
 /* the host hands over a booklet to show: as a file picked by hand, or, when it names where it lives, as a view of that
    store name. Returns {ok, problems}. */
 function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=raw===null?null:linkName(raw);
@@ -7326,9 +7600,10 @@ function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=
    what is asked for is always the declared store's address plus a name that passed linkName(), or an address the
    registry's own list gave for an id it lists. Opening is a read of that one file, with no method, no body, no
    credentials, no redirect, a size cap and a timeout; the text then goes through the same parser as a file picked by
-   hand. What opens, when this browser keeps nothing for the link, is a view: it joins "Your booklets" only when the
-   reader changes something in it (noteSaved adds the entry then). When it does keep one, that booklet opens, never a
-   second one (see openLinked). */
+   hand. What opens, when this browser keeps nothing for the link, is a view. A store booklet joins "Your booklets" at
+   once, as a pointer with no kept copy (notePointer); a module link joins it only when the reader changes something in
+   it (noteSaved adds the entry then). When the browser does keep one, that booklet opens, never a second one (see
+   openLinked). */
 const LINK_NAME_MAX=200,LINK_BYTES=5*1024*1024,LINK_MS=15000;
 /* the other two reads share the reader below: the registry's list is capped at 1 MB, a module's file at 5 MB */
 const REGISTRY_LIST_BYTES=1024*1024,REGISTRY_MODULE_BYTES=5*1024*1024;
@@ -7375,32 +7650,47 @@ async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.
   }catch(e){return {err:ac.signal.aborted?"slow":"failed"};}
   finally{clearTimeout(timer);}}
 /* Open text as a view: the same parser, the same refusals, the same notices and the same start screen as a file picked
-   by hand; but no entry is added to the list and nothing is saved until the reader changes something. `via` says where
-   it came from: {store:true,label,from} or {store:false,label,from}. */
-function openAsView(text,via){const R=parseFile(text||"");
+   by hand; but nothing is saved until the reader changes something, and no entry is added to the list then except a
+   store booklet's pointer (finishLoad). `via` says where it came from: {store:true,label,from} or {store:false,label,from}. */
+function openAsView(text,via,reuse,parsed){const R=parsed||parseFile(text||"");
   if(!R.ok){toast(humanMsg(R.refused&&R.refused.length?STRINGS[lang].ui.loadRefused+" "+R.refused.join(" "):R.unread&&R.unread.length&&!R.template?R.unread.join(" "):STRINGS[lang].ui.loadErr));return false;}
-  flushSave();resetBookletState();bookletGen++;
+  flushSave();hookFlush();resetBookletState();bookletGen++;
   const now=new Date().toISOString();
-  currentId=newId(Date.now().toString(36));currentKey=bookKey(currentId);
+  /* `reuse`: the library entry this link is for, whose file storeHolds says may be drawn; it is drawn into that entry,
+     and the old copy and its base go. `parsed`: the file's parse, when the caller already has it. */
+  if(reuse){currentId=reuse.id;currentKey=keyOfEntry(reuse);lsDel(currentKey);lsDel(baseKey(reuse.id));}
+  else{currentId=newId(Date.now().toString(36));currentKey=bookKey(currentId);}
   /* storeSeen: which copy of its file this booklet was last read from (see openLinked) */
-  currentEntry={id:currentId,title:null,parts:[],createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,lang,from:via.from,
+  currentEntry={...(reuse||{}),id:currentId,title:null,parts:[],createdAt:reuse?reuse.createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,lang,from:via.from,
     ...(via.from?{storeSeen:textPrint(text)}:{})};
+  /* the file drawn is the base of whatever is kept of it from now on; an answer still due for an earlier change no longer
+     moves it */
+  BASE=recsOfParse(R);HOOK_SENT=HOOK_SENT.filter(x=>x.id!==currentId);
   finishLoad(R,via);return true;}
 /* One booklet per store name, and per module link, in a browser. When this browser keeps no booklet for the link it
-   opens as a view, as above. When it does, the KEPT booklet opens (never a second entry), and the file just read is
-   compared with the one the kept booklet last read (storeSeen, a fingerprint kept in its library entry): the same, or
-   exactly what the kept booklet would write now (a host that saves has already put its work in the file), and nothing
-   more happens; otherwise the offer to read the newer file is shown (see linkAccept), and nothing changes until the
-   reader presses. */
+   opens as a view, as above. When it keeps a store booklet whose file storeHolds says may be drawn (no kept copy, or no
+   change here since its base, or the same work as the file), the file just read is drawn into that same entry. Otherwise the KEPT booklet opens (never a
+   second entry), and the file just read is compared with the one the kept booklet last read (storeSeen, a fingerprint
+   kept in its library entry): the same, or exactly what the kept booklet would write now (a host that saves has already
+   put its work in the file), and nothing more happens; otherwise the offer to read the newer file is shown (see
+   linkAccept), and nothing changes until the reader presses. */
 const sameText=(a,b)=>{const n=x=>String(x==null?"":x).replace(/\r\n?/g,"\n").replace(/\s+$/,"");return n(a)===n(b);};
-function openLinked(text,via){const kept=entryFrom(via.from);
+function openLinked(text,via,id){
+  /* a change still waiting out its 400 ms is written first, so what is decided below is decided on what is really kept */
+  flushSave();
+  /* `id`: the entry the list asked for, when it is still the one for this link; else the one this browser keeps for it */
+  const asked=id?(LIB=readLib(),entryById(id)):null,kept=asked&&asked.from===via.from?asked:entryFrom(via.from);
   if(!kept) return openAsView(text,via);
   const R=parseFile(text||"");
   if(!R.ok){toast(refusalList(R).join(" "));return false;}
+  /* A store booklet whose file holds what is kept here (storeHolds, and the account above it) is drawn from the file just
+     read, into the same entry, and its kept copy is never drawn; any other opens as below. A page that declares no store
+     (a host's Booklet.open) cannot read the file again from the list, so there the kept copy opens as before. */
+  if(via.store&&storeUrl()!==""&&storeHolds(kept,R)) return openAsView(text,via,kept,R);
   openBooklet(kept.id);
   if(BOOK===EMPTY_BOOKLET){/* an entry whose saved copy is gone is not a booklet kept */
-    changeLib(L=>{L.entries=L.entries.filter(x=>x.id!==kept.id);});
-    return openAsView(text,via);}
+    changeLib(L=>{L.entries=L.entries.filter(x=>x.id!==kept.id);});lsDel(baseKey(kept.id));
+    return openAsView(text,via,null,R);}
   const seen=textPrint(text);
   screen=startScreen();PROVENANCE={...via,dismissed:false,at:screen};
   if(kept.storeSeen!==seen&&!sameText(text,toMarkdown())) LINK_NEWER={text,seen,via};
@@ -7408,7 +7698,7 @@ function openLinked(text,via){const kept=entryFrom(via.from);
     if(currentEntry) currentEntry.storeSeen=seen;
     changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=seen;});}
   render();window.scrollTo({top:0});return true;}
-let LINK_GEN=0,LINK_AT=null;   /* LINK_AT: the id of the page a link names, for the moment the booklet it opens picks its first screen */
+let LINK_GEN=0,LINK_AT=null,LINK_LOADING=null;   /* LINK_AT: the id of the page a link names, for the moment the booklet it opens picks its first screen; LINK_LOADING: the file being read for a link, while it is ({gen, label, from}) */
 /* A link may name a page of what it opens, after the name: `#/open/<name>/<activity-id>` and `#/module/<id>/<activity-id>`. A store's
    name may itself hold slashes, so the page is what follows the final `.md/`; a registry id may too, so the id is the longest one
    the registry lists. The page is read from the fragment and nothing is ever written to it. */
@@ -7416,9 +7706,12 @@ function linkSplit(raw){const i=String(raw).lastIndexOf(".md/");
   if(i<0||i+4>=raw.length) return {name:raw,act:""};
   let act=raw.slice(i+4);try{act=decodeURIComponent(act);}catch(e){act="";}
   return {name:raw.slice(0,i+3),act};}
-/* open what the fragment asks for; a link that is not one of the two shapes is left alone */
-async function openLink(hash){const L=linkOf(hash);if(!L) return false;
+/* Open what the fragment asks for; a link that is not one of the two shapes is left alone. `o.entry`: the library entry
+   the list asked for (openFromList). While the file is read, the screen says "Opening <name>…"; the notice goes when the
+   read ends however it ends, and as soon as a newer link takes over. Resolves to true when something opened. */
+async function openLink(hash,o){const L=linkOf(hash);if(!L) return false;
   const B=()=>STRINGS[lang].booklet,gen=++LINK_GEN,said=k=>{toast(B()[k]);return false;};
+  if(LINK_LOADING!==null){LINK_LOADING=null;render();}
   let url,via,at="";
   if(L.kind==="open"){
     const sp=linkSplit(L.raw),name=linkName(sp.name);
@@ -7437,10 +7730,16 @@ async function openLink(hash){const L=linkOf(hash);if(!L) return false;
     const entry=hasOwn(REGISTRY_CACHE,id)?REGISTRY_CACHE[id]:null;
     if(!entry||!entry.url) return said("linkNoModule");
     url=entry.url;via={store:false,label:tx(entry.title,entry.id),from:"registry:"+entry.id};}
+  LINK_LOADING={gen,label:via.label,from:via.from};render();
   const got=await linkFetch(url);if(gen!==LINK_GEN) return false;
-  if(got.err) return said({missing:"linkMissing",big:"linkBig",slow:"linkSlow",notText:"linkNotText"}[got.err]||"linkFailed");
+  LINK_LOADING=null;
+  if(got.err){render();return said({missing:"linkMissing",big:"linkBig",slow:"linkSlow",notText:"linkNotText"}[got.err]||"linkFailed");}
   LINK_AT=at||null;
-  try{return openLinked(got.text,via);}finally{LINK_AT=null;}}
+  let ok=false;
+  try{ok=openLinked(got.text,via,o&&o.entry);}finally{LINK_AT=null;}
+  /* a file the page refuses opens nothing: the screen is drawn again, without the notice */
+  if(!ok) render();
+  return ok;}
 
 /* ======================= 13. WIRING AND BOOT =======================
    event listeners and the page's first draw. Runs last, so everything it names exists. */
@@ -7469,8 +7768,8 @@ if(typeof window!=="undefined"){
     if(mine.state==="waiting") render();else hookChanged();
     const live=f=>(...a)=>{if(HOST===mine) f(...a);};
     return Object.freeze({
-      saved:live(()=>hostSet("saved")),
-      failed:live(m=>hostSet("failed",hookText(m,200))),
+      saved:live(c=>hostSet("saved","",false,c)),
+      failed:live((m,c)=>hostSet("failed",hookText(m,200),false,c)),
       fileChanged:live(t=>{if(typeof t!=="string"||!hookBook()||mine.state!=="active") return;mine.pending=t;render();}),
       state:()=>HOST===mine?mine.state:"refused",
       leave:live(()=>{hookStopWait();const was=mine.status==="failed"||mine.pending!=null||mine.state==="waiting";HOST=null;drawHostLine();if(was) render();})});};
@@ -7541,8 +7840,9 @@ window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.class
 window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&!(hostActive()&&hookBook()&&HOST.status==="saved")){e.preventDefault();e.returnValue=STRINGS[lang].ui.leaving;}});
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
-window.addEventListener("pagehide",flushSave);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden") flushSave();});
+/* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers */
+window.addEventListener("pagehide",()=>{flushSave();hookFlush();});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();}});
 /* The page opens on "Your booklets". */
 bootLibrary();
 render();

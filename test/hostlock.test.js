@@ -107,7 +107,7 @@ const listen=A=>{const calls=[];A.BookletApi.onChange(x=>calls.push(x));return c
  chk("...the notice is gone",!btn(/^Allow$/)&&!/wants to save/.test(shown()));
  await sleep(900);
  chk("...the listener hears the open booklet once, at once",calls2.length===1&&calls2[0].name===NAME&&calls2[0].text===A2.BookletApi.text(),calls2.length);
- chk("...and it is told only text, name and title",Object.keys(calls2[0]).sort().join()==="name,text,title");
+ chk("...and it is told only text, name, title and change",Object.keys(calls2[0]).sort().join()==="change,name,text,title");
  chk("...the bar now says where saves go",/^Saves go to: <img/.test(barText()),barText());
  chk("...text() returns the booklet",A2.BookletApi.text().length>0);
  await sleep(700);
