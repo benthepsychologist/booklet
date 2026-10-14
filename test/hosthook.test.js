@@ -132,15 +132,18 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
 
 /* ---- fileChanged: an offer, and nothing changes until the reader presses ---- */
 {const A=boot("box"),B=A.BookletApi;B.open(BOOK,{name:NAME});typeIn(A,"ma/act","mine");
+ /* the reader also looks at the log, which leaves an empty draft there */
+ A.screen="ma/log";A.render();
  const h=B.host({label:"box"});
- const NEWER=FM("Hook booklet")+mod("ma","A")+"\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|ma] Module A\n\n```booklet answers\n{\"note\": \"from the file\"}\n```\n\n%%\n";
+ const NEWER=FM("Hook booklet")+mod("ma","A").replace("Note A","Note A, reworded")+"\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|ma] Module A\n\n```booklet answers\n{\"note\": \"from the file\"}\n```\n\n```booklet draft log\n{\"what\": \"a draft from the file\"}\n```\n\n%%\n";
  const before=B.text();
  h.fileChanged(NEWER);
  chk("fileChanged shows an offer to read the newer file, and changes nothing",/The file has changed where it is kept/.test(shown())&&B.text()===before);
  const btn=P.find(P.main(),n=>n.tagName==="button"&&/Read the newer file/.test(P.texts(n)))[0];
  chk("the offer has a button",!!btn);
  click(btn);
- chk("on a press the newer file is on screen (its answer is the reader's now)",/from the file/.test(B.text())&&!/mine/.test(B.text()),B.text().slice(-200));
+ chk("on a press the newer file is on screen, and the reader's own answer, which holds something, is kept over the file's",/Note A, reworded/.test(B.text())&&/mine/.test(B.text())&&!/"from the file"/.test(B.text()),B.text().slice(-260));
+ chk("...while a place the reader only looked at (an empty draft) takes the file's value",/a draft from the file/.test(B.text()),B.text().slice(-260));
  chk("and the offer is gone",!/The file has changed where it is kept/.test(shown()));
  /* a refused text */
  const keep=B.text();

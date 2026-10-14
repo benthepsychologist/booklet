@@ -262,11 +262,13 @@ is a view that joins the list only when the reader changes something in it. Whil
 "Opening <name>…". In one browser a store name is one booklet, and so is a module link: opening one the browser already keeps
 opens that booklet, never a second. When the kept booklet's work differs from the file's, it is what opens. The page remembers
 a short fingerprint of the file the kept booklet was last read from; if the file now is different, it offers "Read the newer
-file", and nothing changes until the reader presses. Reading it never loses the work this browser holds: the new file's body
-is taken and the reader's own answers, entries and drafts stay as they are (a module link updates the module in place, as
-Add a module does). With a host registered, the file's records fill in only what the kept booklet holds nothing for (an
-answer a generator moved to another module, work another device saved where this browser never was), and the host then saves
-the result; where both hold a value, this browser's wins. A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
+file", and nothing changes until the reader presses. Reading it takes the new file's body, with one rule for the records
+whether a link found the file or the host pushed it (a module link instead updates the module in place, as Add a module
+does). With a host registered, every answer, entry and draft this browser holds that is not empty stays, and the file's
+records fill in the rest (an answer a generator moved to another module, work another device saved where this browser holds
+nothing or only an empty value), and the host then saves the result; so work typed here is never lost, and an answer or
+entry removed here while the store could not hear of it comes back from the file. With no host, the reader's own answers,
+entries and drafts stay as they are. A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
 and can be dismissed. The page reads the link when it starts and whenever the fragment changes, and the link stays in the
 address bar, so a reload opens the same thing.
 

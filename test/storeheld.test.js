@@ -359,6 +359,47 @@ const draft=(A,at)=>((A.DRAFTS.custom||{})[at||"m/log"]||{}).what;
  chk("Read the newer file shows the answer in its new place (the file fills in what the kept copy has no place for)",ans(A,"n","q")==="BEFORE-MOVE",JSON.stringify(A.STATE.answers));
  await sleep(800);chk("...and the file keeps it",/BEFORE-MOVE/.test(ROUTES[U]));}
 
+/* ---- the third round: one rule for reading a newer file, from a link or pushed by the host. What holds something here
+   wins; an empty value (a page only looked at: [""], [], an empty draft) never wins over the file's. ---- */
+const MIX=FM("Mix")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!lines|ll] Some lines\n\n> [!activity|log repeat] Log\n\n> [!text|what] What happened?\n\n> [!module|m end] End\n";
+const recsOf=o=>"\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n"+JSON.stringify(o.answers,null,1)+"\n```\n\n"
+  +(o.entries?"```booklet entries log\n{\"items\": [\n"+o.entries.map(e=>JSON.stringify(e)).join(",\n")+"\n]}\n```\n\n":"")+"%%\n";
+// device B looked at the lines and the log but answered only the question; device A answered the lines and kept an entry
+{const U=STORE+"mix.md";let A=boot();host(A);ROUTES[U]=MIX;
+ await A.openLink("#/open/mix.md");const id=A.currentId;await sleep(600);
+ A.screen="m/a";A.render();A.screen="m/log";A.render();
+ typeIn(A,"m/a","B-OWN");await sleep(1200);A.closeBooklet();
+ chk("two devices setup: B's kept copy holds an empty lines answer and an empty log, only looked at",(()=>{const o=JSON.parse(global.__ls[keyOf(id)]||"{}");
+   return o.S&&o.S.answers.m.q==="B-OWN"&&JSON.stringify(o.S.answers.m.ll)==='[""]'&&Array.isArray(o.S.entries["m/log"])&&o.S.entries["m/log"].length===0;})());
+ /* device A saved its work into the store file (and changed the question's answer too) */
+ ROUTES[U]=split(MIX)[0].replace(/\s+$/,"")+"\n"+recsOf({answers:{q:"A-CHANGED",ll:["a line from A"]},entries:[{ts:"2026-10-14T10:00:00.000Z",what:"an entry from A"}]});
+ await A.openLink("#/open/mix.md");
+ chk("opened on B, the kept copy and the file differ: B's kept copy opens, with the offer",offer()===1&&ans(A)==="B-OWN");
+ press(/Read the newer file/);
+ chk("reading it on B keeps A's lines answer and A's entry, where B had only looked (an empty value never wins)",JSON.stringify(ans(A,"m","ll"))==='["a line from A"]'&&entries(A).join()==="an entry from A",JSON.stringify(A.STATE));
+ chk("...and B's own answer, which holds something, still wins over A's",ans(A)==="B-OWN");
+ await sleep(800);
+ chk("...and the file then holds A's work and B's answer",/a line from A/.test(ROUTES[U])&&/an entry from A/.test(ROUTES[U])&&/B-OWN/.test(ROUTES[U])&&!/A-CHANGED/.test(ROUTES[U]));}
+// the host pushes a newer file (fileChanged), and the reader types on before pressing: what they typed since stays
+{const U=STORE+"w.md";const A=boot();let mode="ok";host(A,{fail:()=>mode==="fail"});ROUTES[U]=booklet("Week");
+ await A.openLink("#/open/w.md");await sleep(600);
+ ROUTES[U]=booklet("Week","A regenerated question");
+ typeIn(A,"m/a","one");await sleep(1200);
+ chk("pushed setup: the host saved the answer into the regenerated file and pushed it (the offer)",offer()===1&&/regenerated question/.test(ROUTES[U])&&/one/.test(ROUTES[U]));
+ mode="fail";typeIn(A,"m/a","one two");await sleep(1200);
+ press(/Read the newer file/);
+ chk("Read the newer file on a pushed file takes its body and keeps what was typed after the host's last save",/regenerated question/.test(drawn(A))&&ans(A)==="one two",JSON.stringify(A.STATE.answers));
+ mode="ok";A.closeBooklet();await sleep(800);
+ chk("...and the host is told of it as the booklet is left",/one two/.test(ROUTES[U]));}
+// the accepted cost: a removal made here while the store could not hear of it is undone by Read the newer file
+{const U=STORE+"w.md";const A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=booklet("Week");
+ await A.openLink("#/open/w.md");await sleep(600);typeIn(A,"m/a","WILL-COME-BACK");await sleep(1200);
+ down=true;typeIn(A,"m/a","");await sleep(1200);A.closeBooklet();down=false;
+ await A.openLink("#/open/w.md");
+ chk("cost setup: the cleared answer opens as kept, cleared, with the offer (open is unchanged)",!ans(A)&&offer()===1);
+ press(/Read the newer file/);
+ chk("the accepted cost: Read the newer file brings the file's answer back over an empty one",ans(A)==="WILL-COME-BACK");}
+
 /* ---- the second review's N2: a change in the last half second before the tab closes is sent ---- */
 {const U=STORE+"w.md";const A=boot();const h=host(A);ROUTES[U]=booklet("Week");
  await A.openLink("#/open/w.md");await sleep(700);const n0=h.log.length;

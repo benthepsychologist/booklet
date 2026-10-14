@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-zPse/PgZvCrT4fUulFn6TXcxVeUZIwG2hWROpwqjjQY=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-78BqcAXhHb5Ook5uwV9z7vrhZBlf6VSRzbf/iZJxKXA=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2907,7 +2907,12 @@ const storeNameOf=e=>e&&typeof e.from==="string"&&e.from.startsWith("store:")?e.
    A kept copy with no module in it (a blank one) is judged one way only, on its own answers: it holds nothing worth
    keeping over the file's. When the store holds it, the file is drawn into the same entry and the kept copy goes;
    otherwise the kept copy opens, the newer file is offered if it changed, and reading it keeps the reader's answers,
-   entries and drafts (linkAccept). */
+   entries and drafts that hold something (acceptWork). */
+/* What "empty" is for a reader's work, in both places that weigh it (workWithin, and withFileWork when a newer file is
+   read): nothing typed or picked at any depth (holdsSomething), so "", [""] (a list of lines only looked at), [] (an
+   activity's entries, or a list never filled) and a draft with nothing in it are all empty. A page that was only viewed
+   makes such values, so an empty one says nothing about what the reader meant. */
+const emptyWork=v=>!holdsSomething(v);
 /* a value written the same way whatever order its keys were set in, for comparing two of them */
 const canon=v=>JSON.stringify(v,(k,x)=>isObj(x)?Object.keys(x).sort().reduce((o,y)=>{o[y]=x[y];return o;},{}):x);
 /* Whether every piece of a reader's work in one copy (S: its answers and entries; D: its drafts) is in another, given in
@@ -2918,14 +2923,14 @@ function workWithin(S,D,R){const own=(o,k)=>isObj(o)&&hasOwn(o,k)?o[k]:undefined
   const same=(a,b)=>b!==undefined&&canon(a)===canon(b);
   const ans=isObj(S&&S.answers)?S.answers:{};
   for(const sc of Object.keys(ans)){if(!isObj(ans[sc])) continue;
-    for(const k of Object.keys(ans[sc])) if(holdsSomething(ans[sc][k])&&!same(ans[sc][k],own(own(fs.answers,sc),k))) return false;}
+    for(const k of Object.keys(ans[sc])) if(!emptyWork(ans[sc][k])&&!same(ans[sc][k],own(own(fs.answers,sc),k))) return false;}
   const ents=isObj(S&&S.entries)?S.entries:{};
   for(const at of Object.keys(ents)){const list=Array.isArray(ents[at])?ents[at]:[],there=own(fs.entries,at);
     const have=new Set((Array.isArray(there)?there:[]).map(canon));
     if(list.some(x=>isObj(x)&&x.ts&&!have.has(canon(x)))) return false;}
   const dr=isObj(D&&D.custom)?D.custom:{};
   for(const at of Object.keys(dr)){if(!isObj(dr[at])) continue;
-    for(const k of Object.keys(dr[at])) if(holdsSomething(dr[at][k])&&!same(dr[at][k],own(own(fd,at),k))) return false;}
+    for(const k of Object.keys(dr[at])) if(!emptyWork(dr[at][k])&&!same(dr[at][k],own(own(fd,at),k))) return false;}
   return true;}
 /* Whether the file just read for a store entry (R, its parse) holds everything this browser keeps of it (see above).
    A kept copy that cannot be read is not judged here: it takes the old path, which says what it can. */
@@ -7399,17 +7404,15 @@ function hostAccept(){if(!newerWaiting()) return;
   const text=HOST.pending;HOST.pending=null;
   const R=parseFile(text);
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
-  finishLoad(R);}
+  /* the same rule as a newer file a link found (acceptWork): what the reader typed since the host's last save stays */
+  const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries});}
 /* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
    generator owns the body and the reader owns the records (the store contract).
-   - A store booklet: the new file's body is taken and the kept booklet's own answers, entries and drafts stay as they
-     are (an answer to a question the new body no longer has stays unused). With a host, the offer stands only when the
-     kept copy and the file hold different work (storeHolds), and the difference may be just what the store never heard
-     of (the box down, a refused save, the host waiting for Allow), so the kept copy's work wins; but the file's records
-     are the reader's too there (the host saves them from any device), so the file fills in every place the kept copy
-     holds nothing at all for (withFileWork): an answer a generator moved to another module, work another device put
-     where this copy never was. A place the kept copy holds, even empty (an answer cleared, an entry deleted, but also a
-     list of lines that was only looked at), keeps the kept copy's value, and the host then saves the result.
+   - A store booklet: the new file's body is taken, with the work acceptWork gives (the one rule for reading a newer
+     file, here and in hostAccept): with no host, the kept booklet's own answers, entries and drafts as they are (an
+     answer to a question the new body no longer has stays unused); with a host, every value of the kept booklet's that
+     holds something wins, and the file's records, which are the reader's too there, fill in the rest (withFileWork).
+     The host then saves the result.
    - A registry module (#/module/<id>) is updated in place the way Add a module updates a module already present.
    Either way the entry remembers the text just read (storeSeen). A text the page refuses changes nothing but says why. */
 function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
@@ -7418,21 +7421,30 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   if(N.via.store===false){const r=addModuleText(N.text);
     if(!r.ok){toast(humanMsg(r.problems.join(" ")));render();return;}
     saveLocal();render();toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,""))));}
-  else if(HOST&&hostName()){const W=withFileWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries});}
-  else finishLoad(R,null,{S:STATE,D:DRAFTS,dirty,unsavedEntries});
+  else{const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries});}
   if(currentId!==id) return;
   if(currentEntry) currentEntry.storeSeen=N.seen;
   changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=N.seen;});}
-/* The kept booklet's work (STATE, DRAFTS) laid over a file's (R, its parse): every answer and draft field the kept
-   booklet holds, and every activity's list of entries it holds, stays exactly as it is, even an empty one; the file's
-   fills only the places the kept booklet holds nothing for. Returns {S, D}, ready for finishLoad; changes nothing. */
+/* The one rule for reading a newer file the reader was offered, whether a link found it (linkAccept) or the host pushed
+   it (hostAccept): the reader's work to keep with the file's body. With a host, the file's records are the reader's own
+   too (the host saves them from any device), so they are merged with what is here (withFileWork); with none, the file
+   never held the reader's work, and what is here stays as it is. Returns {S, D}, ready for finishLoad. */
+const acceptWork=R=>HOST&&hostName()?withFileWork(R):{S:STATE,D:DRAFTS};
+/* The kept booklet's work (STATE, DRAFTS) laid over a file's (R, its parse): every answer and draft field, and every
+   activity's list of entries, that holds something here stays exactly as it is; wherever this copy's value is empty
+   (emptyWork) or missing, the file's is taken. So work typed here wins (what the store never got: the box down, a refused
+   save, keystrokes after the host's last save), an answer a generator moved to another module comes back in its new
+   place, and a page this copy only looked at never wipes another device's answer. The price: a removal made here while
+   the store could not hear of it (an answer cleared, an entry deleted) is undone, since the reader asked for the file.
+   (Telling the two apart needs the records this copy was based on, for a three-way merge: not kept yet.) Returns {S, D};
+   changes nothing. */
 function withFileWork(R){const fa=nullMap((R.S||{}).answers,1),fe=nullMap((R.S||{}).entries,1),fd=draftsIn((R.drafts||{}).activities);
   const ka=isObj(STATE.answers)?STATE.answers:{},ke=isObj(STATE.entries)?STATE.entries:{},kd=isObj(DRAFTS.custom)?DRAFTS.custom:{};
   const lay=(into,from)=>{for(const k of Object.keys(from)){if(!isObj(from[k])) continue;
-    const t=hasOwn(into,k)&&isObj(into[k])?into[k]:(into[k]=nullMap());
-    for(const f of Object.keys(from[k])) t[f]=from[k][f];}};
+    for(const f of Object.keys(from[k])){if(emptyWork(from[k][f])) continue;
+      const t=hasOwn(into,k)&&isObj(into[k])?into[k]:(into[k]=nullMap());t[f]=from[k][f];}}};
   lay(fa,ka);lay(fd,kd);
-  for(const at of Object.keys(ke)) fe[at]=ke[at];
+  for(const at of Object.keys(ke)) if(!emptyWork(ke[at])) fe[at]=ke[at];
   return {S:{answers:fa,entries:fe},D:{custom:fd}};}
 /* the host hands over a booklet to show: as a file picked by hand, or, when it names where it lives, as a view of that
    store name. Returns {ok, problems}. */
