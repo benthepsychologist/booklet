@@ -78,6 +78,7 @@ and it draws those too, as long as they use engines it has.
 | [`SPEC.md`](SPEC.md) | the current format (v0.13), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
+| [`CHANGES.md`](CHANGES.md) | what changed in each version of the format, newest first; `SPEC.md` states the rules as they are and keeps no history |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
 | [`examples/`](examples/) | complete booklets you can open: `how-tides-work` (reading, a citation, a quiz that says right or not), `mindful-check-in` (widgets, a module's notice and its own data section), `garden-week` (a theme and rows), `status-page` (tiles, a grouped list, tables and charts from data), `project-board` (row roles, a nested list, a question a reader can add to) |
@@ -111,11 +112,9 @@ A tool that writes booklets should ask the linter for the marker (`python3 lint-
 
 A plain Markdown file with booklet front matter (`booklet: "0.13"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
-status or a run's acceptance report, can be read in the renderer. A page that only reads (no question, no
-widget, no query) and has at least two sections opens **folded**: each section shows its heading and its first
+status or a run's acceptance report, can be read in the renderer. A page with at least two sections opens **folded**: each section shows its heading and its first
 paragraph and opens on a click, with "Open everything" and "Fold everything" above them and a dot in the left
-menu for each section opened. Each page of an activity decides for itself, so one activity can fold its prose
-pages and draw its last page, with the questions, open; an activity that repeats never folds. The choice is kept in the browser only. HTML comments (`<!-- … -->`) are not
+menu for each section opened. Which pages fold is under "What the renderer draws that a file does not say", below. The choice is kept in the browser only. HTML comments (`<!-- … -->`) are not
 drawn, and tables are styled.
 
 A file added from "Your booklets" is always a booklet of its own, in the list. The
@@ -180,6 +179,22 @@ against them found two more couplings the old suite never could: an empty state
 pre-seeded with four particular cell ids, and question wording hard-coded to
 three scope names, which had quietly meant a *new* activity could never word its
 own questions.
+
+---
+
+## What the renderer draws that a file does not say
+
+`SPEC.md` says what a file may say. These are the reference renderer's own drawing choices, and another renderer may draw them differently.
+
+- **A hint or a solution** that is folded with `-` and sits right after a question is drawn inside that question's own block, as a small control each, the hint first, as the author wrote them. Shut, they give nothing away. One that is not folded stays a row of its own.
+- **A hint never opens by itself.** A solution opens by itself under the reader's answer: for a `choice`, as soon as an option is picked; for a `multi`, when Check is pressed (only a question with a right answer, an `[x]` option, has Check). With a right answer it takes the good tone when the answer is right, and the warn tone with "Look again" when it is not. A `choice` with no right answer opens in a neutral tone on a pick. A `multi` with no right answer has no Check, so its solution opens only on request, as it does for every other question kind.
+- **A callout folded with `-`** shows the first words of its text under its title. A hint or a solution shows only its name while it is shut, so a closed one gives nothing away.
+- **A folded callout of a kind with no colour of its own** (a `group`, or a kind with no colour of its own) is drawn on plain paper with no tint and no picture of its own. An untitled one is called "Note". Kinds the renderer draws keep their colour and picture.
+- **An activity's card** shows the activity's first paragraph under its title, read as inline Markdown as a module card's blurb is. An activity with no paragraph shows its title alone. The card counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started").
+- **An unfolded `group`**, or a kind with no colour of its own, is drawn as a `note` is.
+- **A page's name** is drawn above the page only when the page has no heading of its own. A heading that follows a sentence is shown once, in place.
+- **Fonts.** Headings are set in Lexend and body text in Atkinson Hyperlegible, unless the theme's `font` says otherwise.
+- **Reading mode** folds a page into sections when the page has two or more, page by page, whatever else the page holds: questions, data views, kept entries.
 
 ---
 

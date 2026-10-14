@@ -23,15 +23,13 @@ front matter has no `booklet:` marker, or one that is not a 0.x version, is reje
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
-Usage:  python3 lint-booklet.py [--registry] [path ...]
+Usage:  python3 lint-booklet.py [path ...]
         python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.13") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
 examples/ next to this script, skipping any of those directories that don't
-exist and skipping readme.md (case-insensitive). `--registry` is accepted so the
-registry's CI line keeps working; a v0.13 file is written in one language, so it
-adds no rule of its own.
+exist and skipping readme.md (case-insensitive).
 Findings print in line order, file by file, an error marked `ERROR` and a warning `warn`.
 Exit 0 clean, 1 on any error. Warnings never fail the build.
 """
@@ -180,15 +178,13 @@ NOTICE_KEYS = ("license", "copyright", "source", "version")
 def callout_words(kind, s):
     """`kind|id words` -> the id, the flags and the key:value settings. For a kind that takes an id (SPEC.md section 4) the
     first word is the id, whatever it is called, and every word after it is a setting; a kind that takes none has settings only."""
-    out = {"id": None, "flags": set(), "set": {}, "old": []}
+    out = {"id": None, "flags": set(), "set": {}}
     for n, w in enumerate((s or "").split()):
         kv = re.match(r'^([A-Za-z][A-Za-z0-9-]*):(.*)$', w)
         if n == 0 and kind not in NO_ID_KINDS:
             out["id"] = w
         elif kv:
             out["set"][kv.group(1).lower()] = kv.group(2)
-        elif re.match(r'^[A-Za-z][A-Za-z0-9-]*=', w):
-            out["old"].append(w)
         else:
             out["flags"].add(w.lower())
     return out
@@ -823,7 +819,7 @@ def check_settings(f, n, kind, w):
         if flag not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
     if "daily" in w["flags"] and "repeat" not in w["flags"]:
-        err(f, f"line {n}: `daily` only follows `repeat` (write `repeat daily`)")
+        err(f, f"line {n}: `daily` needs `repeat` (write `repeat daily`)")
 
 
 def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
@@ -991,8 +987,6 @@ def check_format(f, text, fm):
                     if kind == "records":
                         w = callout_words(kind, mm.group(2))
                         check_settings(f, n, kind, w)
-                        for old in w["old"]:
-                            err(f, f"line {n}: settings are written key:value (found {old}); write {old.replace('=', ':', 1)}")
                         rec_id = w["id"]
                         if w["id"]:
                             rec_lines.append((n, w["id"]))
@@ -1279,8 +1273,6 @@ def check_format(f, text, fm):
                                 f"own task list (`- [x] Mars`) in place of `menu:`, or drop the `[x]`")
                 if w["id"]:
                     menus.setdefault(w["id"], []).append(scope_mod())
-            for old in w["old"]:
-                err(f, f"line {n}: settings are written key:value (found {old}); write {old.replace('=', ':', 1)}")
             for key in (w["id"],) if kind in QUESTION_KINDS | {"module", "activity", "menu"} and w["id"] else ():
                 if not ID_PATTERN.match(key):
                     err(f, f"line {n}: the id {key!r} may hold only letters, digits and dashes")
