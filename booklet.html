@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-c5Y5eELiQyif9MfyPPOmE3cEEMS/OJlATeI6nXBqhPA=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-6bF/qGGfsIGF9lT8Y35CKkbej5j6LnnYoqUr1/WWrqw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1479,7 +1479,6 @@ const CALLOUT_LOOK={};
 const calloutLook=kind=>{const k=String(kind==null?"":kind).toLowerCase();return Object.prototype.hasOwnProperty.call(CALLOUT_LOOK,k)?CALLOUT_LOOK[k]:CALLOUT_LOOK.note;};
 const RECORD_KINDS=["answers","entries","draft"],DESIGN_KINDS=["widget","data","theme","query"];
 const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","number","date","matrix"]);
-const SCENERY_KINDS=new Set(["manifest","menu"]);
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
@@ -3629,9 +3628,16 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     if(why) problems.push(P.rowClosed(P.line(r.line),why));
     const cells=rowCells(r.blocks,nextSeq);if(!cells.length) return;
     page().blocks.push({id:"row"+(++seq),type:"row",blocks:cells.map(bs=>({id:"cell"+(++seq),type:"cell",blocks:bs}))});};
-  const onFence=it=>{
-    const info=it.info.split(/\s+/);
-    if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="query"){
+  /* FENCES. What each `booklet <kind>` fence makes (SPEC.md section 7), by its kind (FENCE_KIND); a fence of any other language
+     is a figure's source when an id is written after it (onFigure). The body of a widget, a data block and a `booklet` fence of
+     a kind not here is JSON, read first (withJson), so a kind the page does not know is said only once its JSON is read; a
+     record outside the records region is said at once. */
+  const withJson=fn=>(it,what)=>{let o=null;
+    try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(P.line(it.line),what||"booklet"));return;}
+    if(!o||typeof o!=="object"){problems.push(P.blockNoObject(P.line(it.line),what));return;}
+    fn(it,o,what);};
+  const FENCE_KIND={
+    query:it=>{
       if(section==="data"){problems.push(P.queryInData(P.line(it.line)));return;}
       if(section!=="content") return;
       if(!act){problems.push(P.queryOutside(P.line(it.line)));return;}
@@ -3639,38 +3645,36 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       if(q.bad){problems.push(P.queryBadLine(P.line(it.line),q.bad));return;}
       q.unknown.forEach(k=>problems.push(P.queryKeyUnknown(P.line(it.line),k)));
       if(q.limitBad!==undefined) problems.push(P.queryLimitBad(P.line(it.line),q.limitBad));
-      queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,empty:q.empty,view:q.view})});lastQ=null;return;}
-    if(/^booklet$/i.test(info[0])&&(info[1]||"").toLowerCase()==="theme"){
-      /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
+      queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,empty:q.empty,view:q.view})});lastQ=null;},
+    /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
+    theme:it=>{
       if(scopeMod()){problems.push(P.themeInModule(P.line(it.line)));return;}
       if(theme){problems.push(P.themeSecond(P.line(it.line)));return;}
       const r=readTheme(it.code);theme=r.spec;
       r.bad.forEach(x=>problems.push(P.themeBadLine(P.line(it.line),x)));
-      r.dropped.forEach(k=>problems.push(P.themeDropped(P.line(it.line),k)));
-      return;}
-    if(!/^booklet$/i.test(info[0])){
-      if(it.id){claimIn(blockIds,blockScope(),it.id,P.line(it.line));
-        const key=addrOf(blockScope()===SHARED?"":blockScope(),it.id);
-        if(!(key in figures)) figures[key]={lang:(info[0]||"").toLowerCase(),code:it.code};}
-      return;}
-    if(/^booklet$/i.test(info[0])){const what=(info[1]||"").toLowerCase();let o=null;
-      if(RECORD_KINDS.includes(what)){problems.push(P.recordOutside(P.line(it.line),what));return;}
-      try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(P.line(it.line),what||"booklet"));return;}
-      if(!o||typeof o!=="object"){problems.push(P.blockNoObject(P.line(it.line),what));return;}
-      if(what==="widget"){if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
-        claimIn(blockIds,blockScope(),it.id,P.line(it.line));
-        const w={...o,id:it.id};{const sm=scopeMod();if(sm) w.module=sm.id;}
-        widgets.push(w);}
-      else if(what==="data"){
-        if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
-        const here=scopeMod();
-        if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
-        const d=readData(o);
-        if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
-        /* it lives where a widget's data lives: inside its module's fence or in its data section, or in the shared data section */
-        dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,line:it.line});}
-      else problems.push(P.blockUnknown(P.line(it.line),what));}
-  };
+      r.dropped.forEach(k=>problems.push(P.themeDropped(P.line(it.line),k)));},
+    widget:withJson((it,o)=>{if(!it.id){problems.push(P.widgetNeedsId(P.line(it.line)));return;}
+      claimIn(blockIds,blockScope(),it.id,P.line(it.line));
+      const w={...o,id:it.id};{const sm=scopeMod();if(sm) w.module=sm.id;}
+      widgets.push(w);}),
+    data:withJson((it,o)=>{
+      if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
+      const here=scopeMod();
+      if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
+      const d=readData(o);
+      if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
+      /* it lives where a widget's data lives: inside its module's fence or in its data section, or in the shared data section */
+      dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,line:it.line});})};
+  const onFigure=(it,info)=>{if(!it.id) return;
+    claimIn(blockIds,blockScope(),it.id,P.line(it.line));
+    const key=addrOf(blockScope()===SHARED?"":blockScope(),it.id);
+    if(!(key in figures)) figures[key]={lang:(info[0]||"").toLowerCase(),code:it.code};};
+  const onFence=it=>{const info=it.info.split(/\s+/);
+    if(!/^booklet$/i.test(info[0])) return onFigure(it,info);
+    const what=(info[1]||"").toLowerCase();
+    if(hasOwn(FENCE_KIND,what)) return FENCE_KIND[what](it,what);
+    if(RECORD_KINDS.includes(what)) return void problems.push(P.recordOutside(P.line(it.line),what));
+    withJson((x,o,w)=>problems.push(P.blockUnknown(P.line(x.line),w)))(it,what);};
   /* in the region a block is a record or is kept as written and said (SPEC.md section 8) */
   const keepRec=(text,line)=>recordsKept.push(recForeign?{scope:recForeign.id,foreign:recForeign.head,text}:{scope:recScope,text});
   function onRecordFence(it,info){const L=P.line(it.line),what=(info[1]||"").toLowerCase(),at=info[2]&&addrOf(recScope,info[2]);let o=null;
@@ -3702,11 +3706,12 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     if(!act){if(strip.text&&(mod||!started)){if(mod) mod.__intro.push(strip.text);
       (mod?mod.__open:opening).push({id:"mo"+(++oseq),type:"markdown",text:strip.text});}return;}
     if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;};
-  const onLine=it=>{/* a Booklet line */
-    const k=it.kind,where=P.line(it.line);
-    checkSettings(it,where,P,icons).forEach(m=>problems.push(m));
-    if(k==="notice"){
-      /* a module's notice: one callout, inside the fence, before the module's first activity */
+  /* BOOKLET LINES. What each kind of booklet line does (SPEC.md section 4), by its kind (LINE_KIND); any other kind, a reading
+     callout or one the format does not define, is reading set apart (onReading). Inside a data section only notice, row, data,
+     records, menu, manifest, module and activity lines are read; the rest are the booklet's own text (inText). */
+  const inText=fn=>(it,where)=>{if(section==="content") fn(it,where);};
+  /* a module's notice: one callout, inside the fence, before the module's first activity */
+  const onNotice=(it,where)=>{
       if(section!=="content"||!mod||act){problems.push(P.noticeMisplaced(where));return;}
       if(mod.notice){problems.push(P.noticeSecond(where));return;}
       const n={};
@@ -3716,27 +3721,23 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
         const key=kv[0].toLowerCase();
         if(!NOTICE_KEYS.includes(key)){problems.push(P.noticeKeyUnknown(where,kv[0]));return;}
         if(kv[1]!=="") n[key]=kv[1];});
-      mod.notice=n;return;}
-    if(row&&(k==="data"||k==="records"||k==="module"||k==="activity")) closeRow(k==="module"?P.rowRunsModule:k==="activity"?P.rowRunsActivity:P.rowRunsSection(k));
-    if(k==="row"&&section==="content"){
+      mod.notice=n;};
+  const onRow=inText((it,where)=>{
       if(it.flags.has("end")){if(!row) problems.push(P.rowEndStray(where));else closeRow();return;}
       if(row){problems.push(P.rowNested(where));return;}
-      page();row={blocks:[],line:it.line};lastQ=null;return;}
-    if(k==="data"){section="data";act=null;dataMod=null;
+      page();row={blocks:[],line:it.line};lastQ=null;});
+  const onData=(it,where)=>{section="data";act=null;dataMod=null;
       /* the module id on a data line says whose the blocks below it are, until the next data, module or activity line (the same as
          on a records line); a records line ends nothing here, since the records region is read in a second pass and these lines
          never see it; a module this file has not opened is reported */
       if(it.id){const hit=modules.find(m=>m.id===it.id&&!m.__bare);
-        if(hit) dataMod=hit;else problems.push(P.dataModuleUnknown(where,it.id));}
-      return;}
-    if(k==="records"){problems.push(P.recordsOther(where));return;}
-    /* a shared menu is never drawn; its list is kept for the questions that name it */
-    if(k==="menu"){const sm=scopeMod();claim(it.id,where,sm?sm.id:SHARED);
-      if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:sm});return;}
-    /* a module or an activity line ends a data section: what follows is the booklet's own text again */
-    if(section==="data"&&(k==="module"||k==="activity")){section="content";dataMod=null;}
-    if(section!=="content"||SCENERY_KINDS.has(k)) return;
-    if(k==="module"){
+        if(hit) dataMod=hit;else problems.push(P.dataModuleUnknown(where,it.id));}};
+  /* a shared menu is never drawn; its list is kept for the questions that name it */
+  const onMenu=(it,where)=>{const sm=scopeMod();claim(it.id,where,sm?sm.id:SHARED);
+      if(it.id&&it.items) menus.push({id:it.id,items:it.items,mod:sm});};
+  /* a module or an activity line ends a data section: what follows is the booklet's own text again */
+  const endsData=fn=>(it,where)=>{if(section==="data"){section="content";dataMod=null;}fn(it,where);};
+  const onModule=endsData((it,where)=>{
       if(it.flags.has("end")){if(!mod) refuse(P.moduleEndStray(where));
         else if(it.id&&it.id!==mod.id) refuse(P.moduleEndMismatch(where,it.id,mod.id));
         mod=null;act=null;return;}
@@ -3745,9 +3746,9 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       claimModule(it.id,where);mod=newModule(it.id||"module-"+(++seq),it.title,it.line);act=null;
       /* named after its place, not by its line: a reader of the line itself (the box's storefile) sees no module here */
       if(!it.id) mod.noId=true;
-      if(it.set.icon) mod.icon=it.set.icon;return;}
-    if(k==="activity"){if(!it.id) problems.push(P.activityNoId(where));newActivity(it,it.title,it.line);lastQ=null;return;}
-    if(QUESTION_KINDS.has(k)){
+      if(it.set.icon) mod.icon=it.set.icon;});
+  const onActivity=endsData((it,where)=>{if(!it.id) problems.push(P.activityNoId(where));newActivity(it,it.title,it.line);lastQ=null;});
+  const onQuestion=inText((it,where)=>{const k=it.kind;
       if(!it.id){problems.push(P.questionNoId(where,k));return;}
       if(!act&&!mod&&!started&&!implicit){problems.push(P.questionOutside(where,k));return;}
       claim(it.id,where);page();
@@ -3758,16 +3759,16 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       if(k==="scale"){const seen=new Set(),d=it.anchors.find(a=>seen.size===seen.add(a.n).size);if(d) problems.push(P.scaleAnchorRepeat(where,d.n));}
       if(r.block.type==="widget"&&mod) r.block.module=mod.id;
       lastQ=put(r.block);lastQAct=act;
-      if(r.menu) menuUses.push({block:lastQ,menu:it.set.menu,mod,where});
-      return;}
-    /* A hint or a solution straight after a question belongs to it (SPEC.md section 6). Folded, it is the question's own `hint` or
-       `solution` (the first of each in the question's activity), drawn inside the question; any other (not folded, or a second
-       one) is drawn where it stands, a callout of its kind marked `outside`. */
-    if((k==="hint"||k==="solution")&&lastQ){const q=lastQ;page();
+      if(r.menu) menuUses.push({block:lastQ,menu:it.set.menu,mod,where});});
+  /* A hint or a solution straight after a question belongs to it (SPEC.md section 6). Folded, it is the question's own `hint` or
+     `solution` (the first of each in the question's activity), drawn inside the question; any other (not folded, or a second
+     one) is drawn where it stands, a callout of its kind marked `outside`. One with no question straight above it is reading. */
+  const onHelp=inText((it,where)=>{const k=it.kind;if(!lastQ) return onReading(it,where);const q=lastQ;page();
       const c={id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,
         blocks:[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}],placement:it.fold==="-"?"folded":undefined,label:it.title||k};
-      if(c.placement==="folded"&&!q[k]&&act===lastQAct) q[k]=c;else put({...c,outside:true});return;}
-    /* any other callout is reading set apart */
+      if(c.placement==="folded"&&!q[k]&&act===lastQAct) q[k]=c;else put({...c,outside:true});});
+  /* any other callout is reading set apart */
+  const onReading=(it,where)=>{const k=it.kind;
     const unk=unknownKind(it);if(unk) problems.push(P.kindUnknown(where,k));
     if(!act&&(mod||(!started&&!implicit))){if(mod) mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
       /* a reading callout before the module's first activity (or the file's first line) is part of its opening, in the file's order with the prose */
@@ -3776,6 +3777,16 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       ...(unk?{unknown:true}:{}),
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;};
+  const LINE_KIND={notice:onNotice,row:onRow,data:onData,records:(it,where)=>problems.push(P.recordsOther(where)),menu:onMenu,
+    /* a manifest is scenery: never drawn */
+    manifest:()=>{},module:onModule,activity:onActivity,hint:onHelp,solution:onHelp};
+  QUESTION_KINDS.forEach(k=>{LINE_KIND[k]=onQuestion;});
+  const onLine=it=>{/* a Booklet line */
+    const k=it.kind,where=P.line(it.line);
+    checkSettings(it,where,P,icons).forEach(m=>problems.push(m));
+    /* a data, records, module or activity line closes the row that is open, and says so */
+    if(row&&(k==="data"||k==="records"||k==="module"||k==="activity")) closeRow(k==="module"?P.rowRunsModule:k==="activity"?P.rowRunsActivity:P.rowRunsSection(k));
+    (hasOwn(LINE_KIND,k)?LINE_KIND[k]:inText(onReading))(it,where);};
   for(const it of items.filter(x=>!x.rec)){
     if(it.t==="fence") onFence(it);
     else if(it.t==="break") onBreak();
@@ -5721,7 +5732,12 @@ function leadNodes(set,r,roles,kids){
   return WEB_ADDRESS.test(t)?[mkLink(kids,t,undefined,{opts:{},refs:{}})]:kids;}
 /* an `icon` role's value drawn as the sprite's picture of that name; a value that is not a name in the sprite draws nothing */
 const iconOf=(r,roles)=>{const n=roles.icon?cellText(r[roles.icon]).trim():"";return n?icon(n):null;};
-function viewTable(set,groups,roles,cols,ctl){const dvText=strings("dv");
+/* Every view is called the same way, (set, groups, roles, cols, o): the rows to draw in their groups (one group with no name
+   unless the query groups them), the roles resolved, the other fields, and `o` with a nested list's tree (`tree`) and the
+   table's sort headings (`sort`). A view draws its groups' headings itself (groupHead). */
+const isGrouped=groups=>groups.some(g=>g.name!==null);
+const groupHead=g=>el("div",{class:"dv-group",role:"heading","aria-level":"3"},g.name||"–",el("span",{class:"dv-count"},strings("dv").rows(g.rows.length)));
+function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.sort;
   const numeric=k=>set.rows.some(r=>typeof r[k]==="number")&&set.rows.every(r=>r[k]==null||typeof r[k]==="number");
   const table=el("table",{class:"dv-table"});
   const on=k=>ctl&&ctl.state.sk===k&&ctl.state.dir!==0;
@@ -5747,7 +5763,7 @@ function viewTable(set,groups,roles,cols,ctl){const dvText=strings("dv");
     g.rows.forEach(r=>body.append(el("tr",{},...cols.map(c=>cell(r,c)))));
     table.append(body);});
   return [el("div",{class:"md-table dv-wrap"},table)];}
-function viewList(set,groups,roles,cols,tree){
+function viewList(set,groups,roles,cols,o){const tree=o&&o.tree;
   /* the parts of one row, shared by a plain row and by the summary of a row that has children */
   const parts=r=>{const t=rowTone(r,roles),badges=roles.badge?partsOf(r[roles.badge]):[];
     const extras=cols.filter(c=>cellText(r[c.key])!=="");
@@ -5768,11 +5784,14 @@ function viewList(set,groups,roles,cols,tree){
     return el("li",{class:"dv-node"},el("details",{"data-id":cellText(r.id).trim(),open:tree.open(r)},
       el("summary",{class:"dv-row"},...parts(r)),el("ul",{class:"dv-list"},...kids.map(node))));};
   if(tree) return [el("ul",{class:"dv-list dv-tree"},...tree.roots.map(node))];
-  return groups.map(g=>el("ul",{class:"dv-list"},...g.rows.map(row)));}
+  const list=g=>el("ul",{class:"dv-list"},...g.rows.map(row));
+  /* a grouped list: each group a card, the cards in a row of columns when there is room */
+  if(isGrouped(groups)) return [el("div",{class:"dv-groups"},...groups.map(g=>el("div",{class:"dv-gcard"},groupHead(g),list(g))))];
+  return groups.map(list);}
 function viewTiles(set,groups,roles){
   /* no row carries a value: there is no big figure to draw, so the tiles are a strip of pills */
   const pills=!roles.value||!set.rows.some(r=>cellText(r[roles.value])!=="");
-  return groups.map(g=>el("ul",{class:"dv-tiles"+(pills?" dv-pills":"")},...g.rows.map(r=>{
+  const tiles=g=>el("ul",{class:"dv-tiles"+(pills?" dv-pills":"")},...g.rows.map(r=>{
     const t=rowTone(r,roles),note=rolePart(r,roles.note);
     const pic=iconOf(r,roles);
     if(pills) return el("li",{class:"pill"+(t?" tone-"+t:"")},pic?el("span",{class:"dv-i"},pic):null,
@@ -5780,19 +5799,21 @@ function viewTiles(set,groups,roles){
     return cardNode({mode:"item",tag:"li",cls:"dv-tile"+(t?" tone-"+t:"")+(roles.link&&cellText(r[roles.link]).trim()?" dv-lead":""),picture:pic?{icon:pic}:null,kids:[
       el("span",{class:"dv-v"},rolePart(r,roles.value)),
       el("span",{class:"dv-l"},...leadNodes(set,r,roles,[rolePart(r,roles.label)])),
-      note!==""?el("span",{class:"dv-n"},note):null,toneWords(t)]});})));}
+      note!==""?el("span",{class:"dv-n"},note):null,toneWords(t)]});}));
+  return isGrouped(groups)?groups.flatMap(g=>[groupHead(g),tiles(g)]):groups.map(tiles);}
 /* cards: one card per row. A kept entry is a dated card, drawn by queryCard. A data block's row reads the shared roles as the other
    views do: the label leads (and is the row's link), the note is the line under it, the badge is pills, the value is the figure (as a
    tile's), the tone colours the card, the icon is the picture; every field that plays no role is a line, as on a kept entry's card. */
 function viewCards(set,groups,roles,cols){
-  return groups[0].rows.map(r=>{const pic=iconOf(r,roles),picture=pic?{icon:pic}:null;
+  const cards=g=>g.rows.map(r=>{const pic=iconOf(r,roles),picture=pic?{icon:pic}:null;
     if(set.kind==="entries") return queryCard(set.entryOf(r),set.from,cols.map(c=>c.key),{picture,lead:kids=>leadNodes(set,r,roles,kids)});
     const lab=rolePart(r,roles.label),note=rolePart(r,roles.note),val=rolePart(r,roles.value),t=rowTone(r,roles),
       badges=roles.badge?partsOf(r[roles.badge]):[],lines=cols.filter(c=>cellText(r[c.key])!==""),dl=el("dl",{});
     lines.forEach(c=>dl.append(el("dt",{},c.label),el("dd",{},cellText(r[c.key]))));
     return cardNode({mode:"item",cls:"entry entry-row"+(t?" tone-"+t:""),picture,teaser:note,teaserCls:"dv-n",
       titleNode:lab!==""?el("div",{class:"k"},...leadNodes(set,r,roles,[lab])):null,
-      kids:[badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});}).filter(Boolean);}
+      kids:[badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});}).filter(Boolean);
+  return isGrouped(groups)?groups.flatMap(g=>[groupHead(g),...cards(g)]):cards(groups[0]);}
 /* ---- chart views: `as: bars` and `as: line`. Plain SVG from numbers and
    text nodes, coloured only through the theme's tokens (the CSS classes ch-*).
    Nothing is computed from the rows beyond the scale a picture needs: no
@@ -5897,7 +5918,8 @@ function viewLine(set,groups,roles,cols){const dvText=strings("dv"),C=dvText.cha
     const w=Math.round(es[0].contentRect.width);if(w>0&&Math.abs(w-last)>=4){last=w;draw(w);}}).observe(holder);
   box.append(...[legend,holder,chartNumbers(set,[lk,...keys],rows)].filter(Boolean));
   return [box];}
-/* the view functions by the names QUERY_VIEWS lists (the contract test pins that list), each drawing a data set's rows */
+/* the view functions by the names QUERY_VIEWS lists (the contract test pins that list), each drawing a data set's rows, its
+   groups and a nested list's tree (see "Every view is called the same way") */
 const VIEW_FNS={cards:viewCards,table:viewTable,list:viewList,tiles:viewTiles,bars:viewBars,line:viewLine};
 /* ---- the pipeline: the one place that decides what a query draws. The
    default view, the empty text, `limit`, the reader's filter and sort, and the
@@ -6027,15 +6049,7 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
     body.textContent="";
     if(!kept.length){
       body.append(el("p",{class:"hint dv-none"},dvText.ctl.nothing+" ",el("button",{type:"button",class:"dv-clear",onclick:()=>ctl.clear()},dvText.ctl.clear)));
-    }else if(shape) body.append(...viewList(set,groups,roles,cols,shape));
-    else if(as==="table") body.append(...viewTable(set,groups,roles,cols,tctl));
-    else if(gk&&(as==="list"||as==="tiles"||as==="cards")){
-      const draw=as==="list"?viewList:as==="tiles"?viewTiles:viewCards;
-      const part=g=>[el("div",{class:"dv-group",role:"heading","aria-level":"3"},g.name||"–",el("span",{class:"dv-count"},dvText.rows(g.rows.length))),...draw(set,[g],roles,cols)];
-      /* a grouped list: each group a card, the cards in a row of columns when there is room */
-      if(as==="list") body.append(el("div",{class:"dv-groups"},...groups.map(g=>el("div",{class:"dv-gcard"},...part(g)))));
-      else body.append(...groups.flatMap(part));}
-    else body.append(...VIEW_FNS[as](set,groups,roles,cols));
+    }else body.append(...VIEW_FNS[as](set,groups,roles,cols,{tree:shape,sort:tctl}));
     if(ctl) ctl.sync(kept.length);
     if(focusKey!=null&&body.querySelectorAll){const b=Array.from(body.querySelectorAll("button.dv-sort")).find(x=>x.getAttribute("data-key")===focusKey);if(b&&b.focus) b.focus();}};
   /* the table's headings set the same state the control does: ascending, descending, off */

@@ -9,6 +9,8 @@
 //   R9. One copy of each small job. Two copies had drifted: Remove and Update a module now find a module's fence as Add does,
 //       outside code fences; and a page is named by its first heading outside code fences, as its links find it.
 //       Leaving the page warns unless the host says the work is saved, one rule (hostCovers) with the Download button's mark.
+//   R14. The parser dispatches on two tables (fence kinds, line kinds); the view pipeline calls VIEW_FNS[as] and nothing else,
+//       each view drawing its own groups and a nested list's tree.
 // Run: node test/consolidate.test.js   (node only; nothing to install)
 const P=require("./page.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
@@ -139,6 +141,19 @@ const LS=global.__ls;
  h.failed("disk full");
  chk("and a failed save warns",leave());
  P.closePages();delete global.location;}
+
+/* ---- R14: every view through VIEW_FNS, grouped and nested alike ---- */
+{P.wipe();const A=P.boot();
+ const rows=[{id:"a",name:"Alpha",kind:"x",n:1},{id:"b",name:"Beta",kind:"y",n:2,parent:"a"},{id:"c",name:"Gamma",kind:"x",n:3}];
+ const set=A.dataSet({rows}),seen=[];
+ for(const as of ["table","list","tiles","cards","bars","line"]){const f=A.VIEW_FNS[as];
+   A.VIEW_FNS[as]=(...x)=>{seen.push(as+(x[1].some(g=>g.name!==null)?":grouped":"")+(x[4]&&x[4].tree?":tree":""));return f(...x);};}
+ [["list",{}],["list",{group:"kind",parent:"none"}],["tiles",{group:"kind"}],["cards",{group:"kind",label:"name"}],["table",{group:"kind"}],["bars",{label:"name",value:"n"}],["line",{label:"name",value:"n"}]]
+   .forEach(([as,v])=>A.viewNodes(set,{as,...v},{}));
+ chk("the pipeline draws every view by VIEW_FNS[as]: a nested list, a grouped list, grouped tiles and cards, a table and the charts",
+   json(seen)===json(["list:tree","list:grouped","tiles:grouped","cards:grouped","table:grouped","bars","line"]),json(seen));
+ const n=A.viewNodes(set,{as:"tiles",group:"kind"},{});
+ chk("and a view draws its groups' headings itself",P.find(n[0],P.hasClass("dv-group")).map(P.texts).join("|")==="x 2 rows|y 1 row",P.find(n[0],P.hasClass("dv-group")).map(P.texts).join("|"));}
 
 P.wipe();
 console.log(fails?`\n${fails} FAILURES`:"\nconsolidation checks passed");
