@@ -70,7 +70,8 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   get PROVENANCE(){return PROVENANCE}, get REGISTRY_CACHE(){return REGISTRY_CACHE}, linkName, storeUrl, storeAddress, linkOf, linkFetch, openLink, openAsView, loadRegistry, registryUrl, fileNotesNode, provenanceNode, markDirty, get dirty(){return dirty}, registryRead, registryText,
   get BookletApi(){return window.Booklet}, get HOST(){return HOST}, get HOOK_LISTENERS(){return HOOK_LISTENERS}, hookFire, setAnswerMs:v=>{HOOK_ANSWER_MS=v}, hostAccept, hostLineText, hostNoticeShow, unsavedNote, saveLocal, ownPlace, hostAllowed, HOST_KEY, get HOST_OWN(){return HOST_OWN}
 }));`);
-  API.toggle=toggle;return API;}
+  /* the page's own window listeners (pagehide, beforeunload, …), run as the browser would: dispatch(type, event) */
+  API.toggle=toggle;API.dispatch=(k,e)=>{(on[k]||[]).forEach(f=>f(e));return e;};return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};
 
 /* every node under n that pred picks */

@@ -8,6 +8,7 @@
 //       the numbers, keeping its own marks.
 //   R9. One copy of each small job. Two copies had drifted: Remove and Update a module now find a module's fence as Add does,
 //       outside code fences; and a page is named by its first heading outside code fences, as its links find it.
+//       Leaving the page warns unless the host says the work is saved, one rule (hostCovers) with the Download button's mark.
 // Run: node test/consolidate.test.js   (node only; nothing to install)
 const P=require("./page.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
@@ -121,6 +122,23 @@ const LS=global.__ls;
  const R=A.parseFile(FM("Pages")+"> [!activity|a] A\n\n"+FENCE+"sh\n# a comment in a script\n"+FENCE+"\n\n## The first page\n\nWords.\n\n---\n\n## The second page\n\nMore.\n");
  const ps=R.template.modules[0].activities[0].pages;
  chk("a heading-like line in a code block does not name the page; its first heading does, as its links find it",ps.map(p=>p.title).join("|")==="The first page|The second page",ps.map(p=>p.title).join("|"));}
+
+/* ---- R9: leaving the page warns unless the host says the work is saved ---- */
+{P.wipe();P.place("http:","fleet");LS["booklet.host.allowed"]="h";const A=P.boot(),B=A.BookletApi,h=B.host({label:"h"});
+ const calls=[];const stop=B.onChange(x=>calls.push(x));
+ B.open(FM("Hosted")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n",{name:"hosted.booklet.md"});
+ const leave=()=>{let warned=false;A.dispatch("beforeunload",{preventDefault(){warned=true;},returnValue:""});return warned;};
+ let mark=null;P.byId("btnExport").classList.toggle=(c,on)=>{if(c==="attention") mark=!!on;};
+ A.screen="m/a";A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea")[0];ta.value="an answer";ta._on.input();
+ chk("set up: a host that listens, and a change it has not answered (Saving…)",A.HOST.status==="saving"&&A.dirty,A.HOST&&A.HOST.status);
+ chk("leaving now warns: a save on its way is not the host's yet; the Download button is marked, by the same rule",leave()&&mark===true,String(mark));
+ h.saved();
+ chk("once the host says it is saved, leaving does not warn and the mark goes",A.HOST.status==="saved"&&!leave()&&mark===false,A.HOST.status+" "+mark);
+ stop();
+ chk("a host that no longer listens has nothing: leaving warns again",leave());
+ h.failed("disk full");
+ chk("and a failed save warns",leave());
+ P.closePages();delete global.location;}
 
 P.wipe();
 console.log(fails?`\n${fails} FAILURES`:"\nconsolidation checks passed");

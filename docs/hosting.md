@@ -119,7 +119,7 @@ The renderer opens `text` as a booklet, by the same path as a file picked by han
 
 ### What the reader sees
 
-- With an active host, the top bar carries a small line: "Saves go to: *label*", then "Saved 10:42", "Saving…" (between a change and the host's `saved()`) or "Not saved: *message*". While the host reports saves succeeding, the "changes not yet downloaded" note rests; it comes back when a save fails.
+- With an active host, the top bar carries a small line: "Saves go to: *label*", then "Saved 10:42", "Saving…" (between a change and the host's `saved()`) or "Not saved: *message*". The "changes not yet downloaded" note and the Download button's mark rest only while the host's answer to the latest change is `saved()`: they show while a save is on its way ("Saving…"), before the host has answered, when a save fails and when nothing listens through `onChange`. Leaving the page (closing the tab, reloading) asks the reader first in the same cases, whenever there is work not yet downloaded.
 - A host that is waiting for the reader's Allow, or refused, shows the same line as no host: "Kept in this browser only".
 - With no host, the same place says "Kept in this browser only". This is true of bookletmd.org and of any plain copy.
 - "Send or save a copy" and everything else work the same either way.
