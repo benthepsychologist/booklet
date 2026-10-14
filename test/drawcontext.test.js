@@ -4,7 +4,9 @@
 // - The one-at-a-time and folding preferences are kept under the booklet's library entry, so two booklets started here
 //   (which once both had the id local/booklet) keep their own; a booklet opened by a link keeps its own across opens.
 // - The view (VIEW) holds one record per activity address and is cleared in one place.
-// - Drawing every screen leaves the reader's work, `dirty`, the language and the screen as they were.
+// - Drawing every screen leaves the reader's work, `dirty`, the language and the screen as they were. So does a booklet whose
+//   diagram part cannot be had (item 11), through its failed load and the source drawn after it, and the part is asked for
+//   once per open of the booklet.
 // - The activities outside every module fence are one module: a footnote one of them defines is found from another.
 //
 // Run: node test/drawcontext.test.js      (Needs node; nothing to install.)
@@ -102,6 +104,42 @@ const allOpen=()=>byClass(P.main(),"rm-sec").every(d=>d.attrs.open!==undefined);
   for(const s of screens){F.screen=s;F.render();if(F.screen!==s) moved.push(s);F.render();}
   chk(f+": drawing every screen ("+screens.length+") twice changes no work, no design, nothing dirty, no language, no screen",
     JSON.stringify([F.toMarkdown(),F.dirty,F.lang,JSON.stringify(F.BOOK)])===JSON.stringify(before)&&!moved.length,moved.join());}
+ /* a booklet with diagrams whose part cannot be had (0.13.1, item 11: mermaid is parts/mermaid.js beside the core). The page is
+    at an http address and every part script it adds fails to load, as a host that does not serve parts/ would. Drawing, the
+    failed load (which notes the open it failed in) and the source drawn in each diagram's place afterwards write nothing of the
+    booklet's, the reader's, the screen's or the language's; the part is asked for once in that open, however often it is drawn,
+    and once more on the next open. */
+ P.wipe();{P.place("http:","fleet");const asked=[],tick=()=>new Promise(r=>setTimeout(r,20)),stubURL=global.URL;
+  /* a real URL, so the page can make the part's address (the harness's stub has only the blob calls) */
+  global.URL=Object.assign(function(...a){return new (require("url").URL)(...a);},{createObjectURL:()=>"blob:x",revokeObjectURL(){}});
+  global.document.head={append(s){if(/\/parts\/mermaid\.js$/.test(s.src||"")) asked.push(s.src);setTimeout(()=>s.onerror&&s.onerror(),0);}};
+  const FIGS=fs.readFileSync(P.R+"/test/fixtures/figures.booklet.md","utf8"),FIGS_B=FIGS.replace("id: test/figures","id: test/figures-b").replace("title: Figures and math","title: Figures again");
+  const F=P.boot();F.loadText(FIGS);F.flushSave();const id=F.currentId;
+  const screens=["@home",...F.allModules().filter(m=>F.isMulti(m)).map(m=>F.moduleScreen(m.id)),...F.bookActivities().map(a=>a.id)];
+  const fig=screens.find(s=>/rd-figs$/.test(s));
+  /* the draws of the screen that holds the three diagrams (the open's own draw counts when it opened onto that screen) */
+  let figDraws=F.screen===fig?1:0;const draw=s=>{F.screen=s;F.render();if(s===fig) figDraws++;};
+  const before=[F.toMarkdown(),F.dirty,F.lang,JSON.stringify(F.BOOK)],moved=[];
+  for(const s of screens){draw(s);if(F.screen!==s) moved.push(s);draw(s);}
+  await tick();
+  draw(fig);await tick();
+  const noted=P.find(P.main(),P.hasClass("mfig-note")).map(P.texts).filter(t=>/part that draws diagrams could not be loaded/.test(t)).length;
+  chk("diagrams whose part cannot be had: drawing every screen ("+screens.length+") twice, the failed load and the source drawn after it change no work, no design, nothing dirty, no language, no screen",
+    JSON.stringify([F.toMarkdown(),F.dirty,F.lang,JSON.stringify(F.BOOK)])===JSON.stringify(before)&&!moved.length,moved.join());
+  chk("and each of its three diagrams shows the part note when drawn again in that open",noted===3,String(noted));
+  chk("the part was asked for once in that open, though the screen with its three diagrams was drawn "+figDraws+" times",asked.length===1&&figDraws>=3,asked.length+" requests, "+figDraws+" draws");
+  F.closeBooklet();F.openBooklet(id);draw(fig);await tick();draw(fig);await tick();
+  chk("closed and opened again from the list (a new open: bookletGen moves on), it is asked for once more, and only once",asked.length===2,String(asked.length));
+  /* opens that do not go through closeBooklet, each made while a booklet whose part failed is still open: every one is a new
+     open of its own (openBooklet and openAsView move bookletGen on themselves), so each asks for the part once */
+  F.loadText(FIGS_B);F.flushSave();const idB=F.currentId;draw(fig);await tick();draw(fig);await tick();
+  chk("a second booklet picked as a file while the first is open (loadText, then openBooklet) asks for the part once",idB!==id&&asked.length===3,asked.length+" requests; "+idB);
+  F.openFromList(id);draw(fig);await tick();draw(fig);await tick();
+  chk("the first opened from Your booklets while the second is open (openFromList, then openBooklet) asks for it once",F.currentId===id&&asked.length===4,String(asked.length));
+  F.openAsView(FIGS_B.replace("id: test/figures-b","id: test/figures-link"),{store:false,label:"figures-link.md",from:"https://elsewhere.test/figures-link.md"});
+  draw(fig);await tick();draw(fig);await tick();
+  chk("a booklet opened by a link while the first is open (openAsView) asks for it once",F.currentId!==id&&F.currentId!==idB&&asked.length===5,String(asked.length));
+  delete global.document.head;delete global.location;global.URL=stubURL;}
  /* what a lines question shows is not written into its draft by drawing it */
  P.wipe();{const G=P.boot();G.loadText(FM("Lines")+"> [!activity|a repeat] A\n\n> [!lines|l] Lines?\n\n> [!text|t] Text?\n");G.screen="a";G.render();
   chk("a lines question drawn and not typed in leaves its draft empty",!("l" in G.draftFor("a"))&&P.find(P.main(),n=>n.tagName==="input").length===1);}

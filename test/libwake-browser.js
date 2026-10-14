@@ -6,10 +6,14 @@
 // booklet that holds a formula and a diagram. Checks: while the file is still arriving no library is woken, and a diagram shows a quiet placeholder (not "could not be drawn"); once it has arrived the formula is drawn as MathML and
 // the diagram as SVG; no page error. A second run serves a page whose Temml block has been tampered with (the policy refuses it, a
 // real failure): once the page has arrived the failed wake is remembered, so three formulas make one attempt, not three.
+// 0.13.1 (item 11): in the core, mermaid is the part parts/mermaid.js, served beside the page. Checks added for it: while the file is
+// still arriving the part is not asked for either, and once it has arrived the diagram draws from the part (one request). Served
+// the one-file build, both libraries sit at the end of the file as before and no part is asked for.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/libwake-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path'),http=require('http');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
+const PARTS=require('./parts.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const BOOK=`---
 booklet: "0.13"
@@ -38,18 +42,21 @@ async function run(tamper){
   fs.mkdirSync(OUT,{recursive:true});
   let html=fs.readFileSync(HTML,'utf8');
   if(tamper) html=html.replace('<script type="text/plain" id="lib-temml">','<script type="text/plain" id="lib-temml">/*tampered*/');
-  const cut=html.indexOf('<!-- LIBRARY: @mermaid-js/tiny');
-  if(cut<0) throw new Error('the library blocks are no longer found where this test expects them');
+  /* the tail is what follows the renderer's script: the notices and any library block (Temml in the core; mermaid and Temml in the build) */
+  const cut=Math.min(...['<!-- PART: ','<!-- LIBRARY: '].map(s=>html.indexOf(s)).filter(i=>i>=0));
+  if(!isFinite(cut)) throw new Error('the library blocks are no longer found where this test expects them');
   const head=html.slice(0,cut),tail=html.slice(cut);
   const CHUNKS=8,size=Math.ceil(tail.length/CHUNKS);
-  let server;
+  let server;const partReqs=[];let arrived=false;
   const origin=await new Promise(res=>{server=http.createServer(async(req,rsp)=>{
     const u=new URL(req.url,'http://x').pathname;
     if(u==='/app/'){
       rsp.writeHead(200,{'content-type':'text/html; charset=utf-8'});
       rsp.write(head.replace('<meta name="theme-color"','<meta name="booklet-store" content="'+origin+'/pub/">\n<meta name="theme-color"'));
       for(let i=0;i<CHUNKS;i++){await new Promise(r=>setTimeout(r,250));rsp.write(tail.slice(i*size,(i+1)*size));}
-      rsp.end();return;}
+      arrived=true;rsp.end();return;}
+    if(PARTS.nameAt(u,'/app/')){partReqs.push({u,arrived});const s=PARTS.serve(HTML,u,'/app/');
+      if(s){rsp.writeHead(s.status,s.headers);rsp.end(s.body);return;}}
     if(u==='/pub/wake.booklet.md'){rsp.writeHead(200,{'content-type':'text/markdown; charset=utf-8'});rsp.end(BOOK);return;}
     rsp.writeHead(404);rsp.end('nf');});
     server.listen(0,'127.0.0.1',()=>res('http://127.0.0.1:'+server.address().port));});
@@ -67,6 +74,7 @@ async function run(tamper){
   const mid=await p.evaluate(()=>({state:document.readyState,mermaid:typeof __esbuild_esm_mermaid_nm,temml:typeof temml}));
   ok(mid.state==='loading','the booklet was drawn while the page was still arriving ('+mid.state+'): the test reaches the case it is for');
   ok(mid.mermaid==='undefined'&&mid.temml==='undefined','and no library was woken from part of its text ('+JSON.stringify(mid)+')');
+  ok(partReqs.length===0,'while the file is still arriving the diagram part is not asked for either ('+partReqs.length+' requests)');
   await p.waitForFunction(()=>document.readyState==='complete',null,{timeout:20000});
   await p.waitForTimeout(1500);
   const end=await p.evaluate(()=>({math:document.querySelectorAll('#main math').length,raw:document.querySelectorAll('#main .math.raw').length,
@@ -74,6 +82,7 @@ async function run(tamper){
   if(!tamper){
     ok(end.math===3&&end.raw===0,'the formulas are drawn as MathML once the page has arrived ('+JSON.stringify(end)+')');
     ok(end.svg===1&&end.bad===0,'the diagram is drawn as SVG, not as "could not be drawn"');
+    ok(partReqs.length===(PARTS.has(HTML,'mermaid')?1:0)&&partReqs.every(r=>r.arrived),'and the part was asked for once, after the page had arrived, if the file does not hold it ('+JSON.stringify(partReqs)+')');
     await p.screenshot({path:path.join(OUT,'libwake.png')});}
   else{
     ok(end.math===0&&end.raw===3,'tampered Temml: the formulas stay as their TeX ('+JSON.stringify(end)+')');

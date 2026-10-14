@@ -6,12 +6,15 @@
 // (3) a matrix of style, classDef, directive and front-matter forms with an address in each (url, quoted url, protocol-relative,
 // relative, image-set ...) in many diagram types makes no request either. Then, as information, it hands the image-node source to
 // the library directly and says whether the library itself would have asked: that is why the refusal exists.
+// 0.13.1 (item 11): in the core the library is the part parts/mermaid.js, which this page asks for at its own address (served here,
+// and counted: not more than once, and no other address); in the one-file build the library is in the file and none is asked for.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/mermaid-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]);
+const PARTS=require('./parts.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const PAGE='https://plain.test/app/',PROBE='probe.example';
+const PAGE='https://plain.test/app/',PROBE='probe.example',PART=PAGE+'parts/mermaid.js';
 const U=id=>`https://${PROBE}/${id}`;
 const BENIGN={
  flowchart:"flowchart LR\n  A[Start] --> B{Choice}\n  B -->|yes| C[Done]\n  B -->|no| D((Stop))\n  style A fill:#f9f,stroke:#333\n  classDef big fill:#bbf,stroke:#333,stroke-width:2px;\n  class C big\n  subgraph one [Group]\n    E --> F\n  end\n",
@@ -72,6 +75,7 @@ const CFG=[(k,v)=>`%%{init: {"${k}": "${v}"}}%%\nflowchart LR\n A --> B`,(k,v)=>
   p.on('request',r=>seen.push(r.url()));p.on('pageerror',e=>errs.push(e.message));
   await p.route('**/*',r=>{const u=r.request().url();
     if(u===PAGE)return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8'}});
+    {const s=u.startsWith(PAGE)&&PARTS.serve(HTML,new URL(u).pathname,'/app/');if(s)return r.fulfill(s);}
     if(/^(data|blob|about):/.test(u))return r.continue();
     r.abort();});
   await p.goto(PAGE);await p.waitForTimeout(500);
@@ -85,7 +89,8 @@ const CFG=[(k,v)=>`%%{init: {"${k}": "${v}"}}%%\nflowchart LR\n A --> B`,(k,v)=>
     return out;},codes);
   // 1 ordinary diagrams are drawn, and ask for nothing
   const ben=await through(Object.entries(BENIGN));
-  ok(seen.every(u=>u===PAGE||/^(data|blob|about):/.test(u)),'drawing '+ben.length+' ordinary diagrams made no request beyond the page: '+seen.filter(u=>u!==PAGE).slice(0,3).join(', '));
+  ok(seen.every(u=>u===PAGE||u===PART||/^(data|blob|about):/.test(u)),'drawing '+ben.length+' ordinary diagrams made no request beyond the page and the renderer\'s own diagram part: '+seen.filter(u=>u!==PAGE).slice(0,3).join(', '));
+  ok(seen.filter(u=>u===PART).length===(PARTS.has(HTML,'mermaid')?1:0),'the diagram part was asked for once if the file does not hold it, and not at all if it does ('+seen.filter(u=>u===PART).length+')');
   for(const [id,r] of ben) ok(r.svg&&!r.bad,'an ordinary '+id+' diagram is drawn (not refused)'+(r.svg?'':' - '+r.note.slice(0,60)));
   // 2 the refused list: shown as source, with the line, and no request
   const before=seen.length;
@@ -104,7 +109,7 @@ const CFG=[(k,v)=>`%%{init: {"${k}": "${v}"}}%%\nflowchart LR\n A --> B`,(k,v)=>
   ok(errs.length===0,'zero page errors '+errs.join('|'));
   // information: what the library does by itself with the image-node source, and the control that this page sees requests
   const base=seen.length;
-  const raw=await p.evaluate(async src=>{useLib('mermaid');let M=__esbuild_esm_mermaid_nm.mermaid;M=M.default||M;M.initialize(mermaidConfig());
+  const raw=await p.evaluate(async src=>{if(!useLib('mermaid')) await whenLib('mermaid');let M=__esbuild_esm_mermaid_nm.mermaid;M=M.default||M;M.initialize(mermaidConfig());
     try{await Promise.race([M.render('rawimg',src),new Promise((_,j)=>setTimeout(()=>j(new Error('t')),2500))]);}catch(e){}
     await new Promise(r=>setTimeout(r,400));return true;},REFUSED['image node (img:)']('raw'));
   const asked=seen.slice(base).some(u=>u.includes('/raw'));

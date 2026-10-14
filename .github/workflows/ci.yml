@@ -54,6 +54,9 @@ jobs:
       - run: npm i --no-save playwright
       - run: npx playwright install --with-deps chromium
       - run: bash test/run-browser.sh
+      # the one-file build (test/one-file.js): the checks that protect the promise, on the renderer with every part inside it
+      - run: node test/one-file.js build/booklet.html
+      - run: bash test/run-browser.sh build/booklet.html pledge figures libwake mermaid filepage themes
 
   # Publishes booklet.html, examples/, docs, etc. — the
   # whole repo root, exactly as the old "Deploy from a branch" source did

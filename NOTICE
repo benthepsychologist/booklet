@@ -8,9 +8,11 @@ terms, and SPEC.md for the file format the software implements.
 
 Third-party components
 
-booklet.html carries two libraries, stored inside it and run only when a
-booklet has a diagram or a formula to draw. Both are MIT licensed, and their
-copyright notices are kept in the comments above their blocks in booklet.html.
+The renderer uses two libraries, run only when a booklet has a diagram or a
+formula to draw: Temml is stored inside booklet.html, and mermaid is the file
+parts/mermaid.js beside it (the one-file build, made by test/one-file.js, stores
+both inside one file). Both are MIT licensed, and their copyright notices are kept
+in the comments above their places in booklet.html.
 
 - mermaid (@mermaid-js/tiny 12.1.0), https://github.com/mermaid-js/mermaid
   The MIT License (MIT). Copyright (c) 2014 - 2022 Knut Sveidqvist.
