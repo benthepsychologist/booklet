@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-6bF/qGGfsIGF9lT8Y35CKkbej5j6LnnYoqUr1/WWrqw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-PnyJyg6fdhAT4XUi9j0AU2TIr7ShwUlH+ciAu80/cK4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -6952,8 +6952,8 @@ function bookletCard(e){const L=strings("library");const u=strings("ui");const n
    answers in the booklet's own `answers`, exactly as the file's record does. */
 function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id);const mod=moduleOf(id)||{};
   const W=wikiOf(holderOf(id));
-  /* the citation scope of this page begins first: a module that is one activity draws its opening in the page's own scope,
-     and the opening's marks must be numbered with the page's, not left to the scope of the draw before */
+  /* the panel of the draw before is closed first (readingBegin): a module that is one activity draws its opening here, and
+     the opening's marks are numbered with the page's (the screen's numbering, dc.cite), not the draw before's */
   readingBegin(dc);
   {main.append(...openNotices());}
   const repeats=m.kind==="entry";
