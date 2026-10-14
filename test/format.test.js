@@ -12,10 +12,11 @@ const html=read("booklet.html");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
 const A=eval(src+"\n({exportName,slugify,"+
   "emptyState,emptyDrafts,setState:v=>{STATE=v},setDrafts:v=>{DRAFTS=v},setLang:l=>{lang=l},"+
-  "resetBook:()=>{BOOK=EMPTY_BOOKLET;REGISTRY_CACHE={}},editBook,STRINGS})");
+  "resetBook:()=>{BOOK=EMPTY_BOOKLET;REGISTRY_CACHE={}},adoptText,setTitleIn,STRINGS})");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d?"   → "+d:""));};
 const fresh=()=>{A.setState(A.emptyState());A.setDrafts(A.emptyDrafts());A.resetBook();A.setLang("en");};
-const titled=title=>A.editBook(t=>{t.head={title};});
+/* a booklet named `title`: the text its front matter says it in, read as the page reads any booklet's text */
+const titled=title=>A.adoptText(A.setTitleIn("",title,"en"));
 
 // ---- the export name: <slug of the booklet's own title>.booklet.md
 fresh();
@@ -30,8 +31,8 @@ fresh();titled("Daily journal");
 chk("the slug is of the title as the file wrote it, whatever language the interface shows",
   A.exportName()==="daily-journal.booklet.md"&&(A.setLang("fr"),A.exportName()==="daily-journal.booklet.md"),A.exportName());
 A.setLang("en");
-fresh();A.editBook(t=>{t.title="Weekly review";});
-chk("a booklet that has only a title (no headline) is named from it",A.exportName()==="weekly-review.booklet.md",A.exportName());
+fresh();A.adoptText('---\nbooklet: "0.13"\nlang: en\ntitle: Weekly review\n---\n\nSome prose.\n');
+chk("a booklet whose title is written unquoted, after other lines, is named from it",A.exportName()==="weekly-review.booklet.md",A.exportName());
 
 // ---- the renderer's own names: "Booklet", in every language, nothing else
 for(const l of ["en","fr"]){

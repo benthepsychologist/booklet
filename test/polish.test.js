@@ -26,8 +26,8 @@ global.document.createElement=tag=>{const n=mk0(tag);
 function load(source){const API={};
   eval(source+`
 ;Object.assign(API,{render,parseFile,applyParsed,STRINGS_SRC,
-  getPanel:()=>citePanelEl,getBook:()=>BOOK,setScreen:v=>{screen=v},setLang:l=>{lang=l},
-  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="@home";lang="en";}});`);
+  getPanel:()=>citePanelEl,getBook:()=>BOOK,setScreen:v=>{screen=v},setLang:l=>{setLangPref(l)},
+  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="@home";lang="en";lsDel(LANG_PREF_KEY);}});`);
   return API;}
 const A=load(src);
 
@@ -80,9 +80,7 @@ guard("notes",()=>{open();
 
 console.log("# switching the interface language keeps the panel open, in the new language");
 guard("a language switch",()=>{open("en");
-  /* the file declares its one language, so the toggle would hold the page to it:
-     let it offer the three the interface has */
-  A.getBook().languages=["en","fr","es"];
+  /* the reader's choice (setLang) is followed whatever the booklet's own language */
   click(marks()[1]);
   const langButton={tagName:"button",lang:true};global.__focused=langButton;
   A.setLang("fr");A.render();

@@ -17,8 +17,9 @@ global.document.createElement=tag=>{const n=mk0(tag);
   return n;};
 const A={};
 eval(src+`
-;Object.assign(A,{render,parseFile,applyParsed,getPanel:()=>citePanelEl,setScreen:v=>{screen=v},getScreen:()=>screen,setLang:l=>{lang=l},getBook:()=>BOOK,
-  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="@home";lang="en";}});`);
+;Object.assign(A,{render,parseFile,applyParsed,getPanel:()=>citePanelEl,setScreen:v=>{screen=v},getScreen:()=>screen,setLang:l=>{setLangPref(l)},getBook:()=>BOOK,
+  fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;screen="@home";lang="en";lsDel(LANG_PREF_KEY);}});`);
+/* a language switch is the reader's choice (setLang), which every booklet follows */
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const findAll=(n,pred,out=[])=>{if(n&&typeof n==="object"){if(pred(n)) out.push(n);(n.children||[]).forEach(k=>findAll(k,pred,out));}return out;};
 const main=()=>global.document.getElementById("main");
@@ -31,7 +32,7 @@ const FM='---\nbooklet: "0.13"\ntitle: Cites\nlang: en\n---\n\n';
 const NOTE='\n[^s1]: *The Harbour Tide Atlas*, p. 12: "Twice a day." Verified 2026-09-20.\n';
 const ONE=FM+"> [!module|m] Tides\n\nThe opening says it first.[^s1]\n\n> [!activity|a] Tides\n\nThe activity says it again.[^s1]\n\nAnd a second time.[^s1]\n"+NOTE+"\n> [!module|m end] End\n";
 const MANY=FM+"> [!module|m] Tides\n\nThe opening says it first.[^s1]\n\n> [!activity|a] First\n\nThe first activity.[^s1]\n\n> [!activity|b] Second\n\nThe second.\n"+NOTE+"\n> [!module|m end] End\n";
-const open=(text,screen)=>{A.fresh();A.applyParsed(A.parseFile(text),"replace");A.getBook().languages=["en","fr"];A.setScreen(screen);A.render();};
+const open=(text,screen)=>{A.fresh();A.applyParsed(A.parseFile(text),"replace");A.setScreen(screen);A.render();};
 const guard=(name,fn)=>{try{fn();}catch(e){chk(name+": runs to the end",false,e.stack);}};
 
 guard("one-activity module",()=>{open(ONE,"m/a");

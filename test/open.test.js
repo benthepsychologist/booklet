@@ -219,7 +219,8 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("the callout says so quietly under its title",quiet.length===1&&/This page does not know the kind “sticker”/.test(text(quiet[0])),text(P.main()).slice(0,300));
  chk("and the reading callout has no such line",byClass(P.main(),"rd-callout").length===2);}
  {P.wipe();const D=P.boot();D.loadText("---\nbooklet: \"0.13\"\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n");
-  const notes=(D.FILE_NOTES||{}).list||[];
+  /* what the notice draws: its list, worded as the reader reads it */
+  const notes=P.find(P.find(P.main(),P.hasClass("filenotes"))[0]||{},n=>n.tagName==="li").map(P.texts);
   chk("a problem shown to the reader carries no Markdown backticks: what was between them is in quotation marks",notes.length>0&&notes.every(x=>!/`/.test(x))&&notes.some(x=>/“daily” only follows “repeat”/.test(x)),JSON.stringify(notes));}
 
 /* ---- A5: the settings table ---- */

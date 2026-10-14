@@ -111,7 +111,9 @@ const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS
   await p.setViewportSize({width:400,height:800});await wait(p,300);
   await p.screenshot({path:path.join(OUT,'bar-host-failed-400.png')});
   ok(await noScroll(p)<=0,'no sideways overflow at 400px with a host and a failure');
-  ok((await barBox(p)).height<170,'the bar stays compact at 400px with a host: '+(await barBox(p)).height);
+  /* four rows at most: the name; Download and the language toggle; the theme and the version; the host's line (the toggle
+     shows in every booklet since 0.13.1, as it did on "Your booklets", which is one row more than 0.13.0's 170px budget) */
+  ok((await barBox(p)).height<210,'the bar stays compact at 400px with a host: '+(await barBox(p)).height);
   await p.evaluate(()=>window.__h.saved());await wait(p,200);
   await p.screenshot({path:path.join(OUT,'bar-host-saved-400.png')});
   viol.push(...await p.evaluate(()=>window.__viol||[]));

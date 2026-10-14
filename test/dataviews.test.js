@@ -99,11 +99,12 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
    P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.foldable(r.template.modules[0].mode);})());
 
- /* ---- the same words in the reader's language ---- */
- B.lang="fr";B.render();
+ /* ---- the same words in the reader's language: a booklet started by a reader who chose it ---- */
+ const inLang=async l=>{const L=P.boot();L.render();L.toggle.press(l);await L.createBooklet();L.addModuleText(FX);L.screen="allotment/status";L.render();return L;};
+ await inLang("fr");
  chk("a group's count is in the interface language (French)",byClass(P.main(),"dv-count").map(text).join("|").includes("3 lignes")&&byClass(P.main(),"dv-count").map(text).join("|").includes("1 ligne"));
  chk("a table's sort button is named in the interface language (French)",walk(P.main(),x=>x.tagName==="button"&&cls(x).includes("dv-sort")).map(b=>b.attrs["aria-label"])[0]==="Trier par crop");
- B.lang="es";B.render();
+ await inLang("es");
  chk("and in Spanish",byClass(P.main(),"dv-count").map(text).join("|").includes("3 filas"));
  chk("every language table carries the new strings",["fr","es"].every(l=>A.STRINGS_SRC[l].dv&&A.STRINGS_SRC[l].dv.sortBy&&A.STRINGS_SRC[l].dv.tone&&A.STRINGS_SRC[l].dv.rows)&&!!A.STRINGS_SRC["es-AR"].dv.empty);
 

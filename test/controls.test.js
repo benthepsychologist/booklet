@@ -21,7 +21,9 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
  const WORDS=["Ash","Birch","Cedar","Dogwood","Elm","Fir","Gum","Hazel","Iroko","Juniper"];
  const ROWS=WORDS.map((w,i)=>({label:w,value:[7,3,9,1,5,8,2,10,4,6][i],area:["north","south","east"][i%3],note:i<4?"n"+i:"",tags:i%2?["x","y"]:["x"],uniq:"u"+i,sparse:i<4?"s"+i:"",tone:["good","warn","bad",""][i%4]}));
  const FIELDS={label:"Name",value:"Size",area:"Area",tags:"Tags"};
- const box=(as,rows=ROWS,extra={},key=null,fields)=>A.viewNodes(A.dataSet({rows,fields:FIELDS}),{as,...extra,fields:fields||extra.fields},{empty:"EMPTY",key})[0];
+ /* a query's state is handed to viewNodes by whatever draws it (the page keeps it in the view, queryView); here, one per key */
+ const ST=new Map(),st=k=>{if(k==null) return undefined;if(!ST.has(k)) ST.set(k,A.newViewState());return ST.get(k);};
+ const box=(as,rows=ROWS,extra={},key=null,fields)=>A.viewNodes(A.dataSet({rows,fields:FIELDS}),{as,...extra,fields:fields||extra.fields},{empty:"EMPTY",state:st(key)})[0];
  const labels={table:b=>tag(b,"tbody").flatMap(t=>tag(t,"tr").filter(r=>!cls(r).includes("dv-grouprow"))).map(r=>text(tag(r,"td")[0])),
    list:b=>byClass(b,"dv-t").map(text),tiles:b=>byClass(b,"dv-l").map(text),bars:b=>byClass(b,"ch-l").map(text)};
  const order=(as,b)=>labels[as](b).join(",");
@@ -53,11 +55,11 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
    ["filter by text 'e', in the order written",{q:"e"},ROWS.filter(r=>/e/i.test(r.label+r.area+r.value+r.note+r.tone+r.tags)).map(r=>r.label).join()],
    ["filter to the good rows, sorted by name descending",{fk:"tone",fv:"good",sk:"label",dir:-1},ROWS.filter(r=>r.tone==="good").map(r=>r.label).sort().reverse().join()],
  ]){
-   const out=AS.map(as=>{A.VIEWSTATE.clear();A.VIEWSTATE.set("K-"+as,{open:false,q:"",fk:"",fv:"",sk:"",dir:0,...state});
+   const out=AS.map(as=>{ST.clear();ST.set("K-"+as,{open:false,q:"",fk:"",fv:"",sk:"",dir:0,...state});
      return order(as,box(as,ROWS,{},"K-"+as,as==="table"?["label","value","tone"]:undefined));});
    if(name.startsWith("filter by text")){/* the text matches what the view shows, which differs between views: only table, list and tiles share it */}
    else chk(`${name}: table, list, tiles and bars show the same order`,out.every(x=>x===expect),out.join(" | ")+" vs "+expect);}
- {A.VIEWSTATE.clear();const b=box("list",ROWS,{},"K1");type(b,"cedar");
+ {ST.clear();const b=box("list",ROWS,{},"K1");type(b,"cedar");
   chk("typing in the search box filters to the rows that show it (case-insensitively)",order("list",b)==="Cedar"&&text(byClass(b,"dv-live")[0])==="1 of 10 shown",order("list",b));
   type(b,"north");chk("search reads the extras too: the area is shown",order("list",b)==="Ash,Dogwood,Gum,Juniper",order("list",b));
   type(b,"zzz");chk("nothing matching is said in a line, with a Clear button in it",/Nothing matches\./.test(text(byClass(b,"dv-none")[0]))&&byClass(b,"dv-none")[0].children.some(k=>cls(k).includes("dv-clear")),text(b));
@@ -65,7 +67,7 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   chk("that Clear button clears the filter",order("list",b)===WORDS.join()&&text(byClass(b,"dv-live")[0])==="",order("list",b));}
 
  /* ---- Show: only fields with 2 to 8 distinct values and a repeat ---- */
- {A.VIEWSTATE.clear();const b=box("list",ROWS,{fields:["area","tags","uniq","sparse","value"]},"K2");
+ {ST.clear();const b=box("list",ROWS,{fields:["area","tags","uniq","sparse","value"]},"K2");
   const sel=byClass(b,"dv-sel").find(s=>s.attrs["aria-label"]==="Show");
   const groups=tag(sel,"optgroup").map(g=>g.attrs.label+":"+tag(g,"option").map(text).join("/"));
   chk("Show offers area (3 values) and tags (x, y: a list counts each element), and the numbers with a repeat",groups.some(g=>g==="Area:north/south/east")&&groups.some(g=>g==="tags:x/y"||g==="Tags:x/y"),groups.join(" | "));
@@ -79,7 +81,7 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   chk("Sort by offers the original order, then the label, the value and the extras",tag(by,"option").map(text).join()==="Original order,Name,Size,Area,Tags,uniq,sparse",tag(by,"option").map(text).join());}
 
  /* ---- groups ---- */
- {A.VIEWSTATE.clear();const b=box("list",ROWS,{group:"area"},"K3");
+ {ST.clear();const b=box("list",ROWS,{group:"area"},"K3");
   const heads=()=>byClass(b,"dv-group").map(text).join("|");
   chk("grouped: a card per group, with its count",heads()==="north4 rows|south3 rows|east3 rows",heads());
   type(b,"dogwood");chk("a group with no rows left is not drawn, and the counts follow the filter",heads()==="north1 row",heads());
@@ -87,12 +89,12 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   const by=byClass(b,"dv-sel").find(s=>s.attrs["aria-label"]==="Sort by");by.value="value";press(by,"change");
   const sorted=byClass(b,"dv-gcard").map(g=>byClass(g,"dv-t").map(text));
   chk("rows sort inside each group, and the groups keep their first-seen order",heads()==="north4 rows|south3 rows|east3 rows"&&sorted.every(g=>g.map(l=>ROWS.find(r=>r.label===l).value).every((v,i,a)=>i===0||a[i-1]<=v)),sorted.join("|"));}
- {A.VIEWSTATE.clear();const t=box("table",ROWS,{group:"area"},"K4",["label","area"]);
+ {ST.clear();const t=box("table",ROWS,{group:"area"},"K4",["label","area"]);
   chk("grouped table: group rows with counts",byClass(t,"dv-grouprow").length===3);
   type(t,"zz");chk("a grouped table with nothing matching draws the line, not group rows",byClass(t,"dv-grouprow").length===0&&byClass(t,"dv-none").length===1);}
 
  /* ---- table headings and the control share one state ---- */
- {A.VIEWSTATE.clear();const t=box("table",ROWS,{},"K5",["label","value","area"]);
+ {ST.clear();const t=box("table",ROWS,{},"K5",["label","value","area"]);
   const heads=()=>tag(t,"th").filter(h=>h.attrs.scope==="col");
   const btn=i=>tag(heads()[i],"button")[0];
   press(btn(1));
@@ -108,21 +110,21 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   press(dir);chk("the direction button reverses it",heads()[0].attrs["aria-sort"]==="descending"&&order("table",t)===[...WORDS].sort().reverse().join());
   press(byClass(t,"dv-clear")[0]);
   chk("Clear returns to the file's order",order("table",t)===WORDS.join()&&heads().every(h=>h.attrs["aria-sort"]==="none"));}
- {A.VIEWSTATE.clear();const t=box("table",ROWS.slice(0,5),{},"K6",["label","value"]);
+ {ST.clear();const t=box("table",ROWS.slice(0,5),{},"K6",["label","value"]);
   const b=tag(tag(t,"th")[1],"button")[0];press(b);
   chk("a table of 8 rows or fewer still sorts by its headings (sizes 1, 3, 5, 7, 9), with no control bar in the DOM",order("table",t)==="Dogwood,Birch,Elm,Ash,Cedar"&&byClass(t,"dv-ctl").length===0,order("table",t));}
 
  /* ---- the line chart: filter only ---- */
- {A.VIEWSTATE.clear();const rows=ROWS.map((r,i)=>({...r,label:"d"+i}));
-  const b=A.viewNodes(A.dataSet({rows}),{as:"line",value:"value"},{key:"K7"})[0];
+ {ST.clear();const rows=ROWS.map((r,i)=>({...r,label:"d"+i}));
+  const b=A.viewNodes(A.dataSet({rows}),{as:"line",value:"value"},{state:st("K7")})[0];
   chk("a line over 10 rows has the control, with search and Show, but no Sort by and no direction button",byClass(b,"dv-ctl").length===1&&byClass(b,"dv-q").length===1
     &&!byClass(b,"dv-sel").some(s=>s.attrs["aria-label"]==="Sort by")&&byClass(b,"dv-dir").length===0,byClass(b,"dv-sel").map(s=>s.attrs["aria-label"]).join());
   type(b,"d3");chk("filtering a line redraws it with the rows that match",byClass(b,"ch-pt").length===1);
   chk("the chart's numbers table shows the same filtered rows",walk(byClass(b,"ch-nums")[0],x=>x.tagName==="tr").length===2);
-  A.VIEWSTATE.clear();A.VIEWSTATE.set("K8",{open:false,q:"",fk:"",fv:"",sk:"value",dir:1});
-  const c=A.viewNodes(A.dataSet({rows}),{as:"line",value:"value"},{key:"K8"})[0];
+  ST.clear();ST.set("K8",{open:false,q:"",fk:"",fv:"",sk:"value",dir:1});
+  const c=A.viewNodes(A.dataSet({rows}),{as:"line",value:"value"},{state:st("K8")})[0];
   chk("a line ignores a sort: its row order is its axis",walk(byClass(c,"ch-nums")[0],x=>x.tagName==="tr").slice(1).map(r=>text(tag(r,"td")[0])).join()===rows.map(r=>r.label).join());
-  const d=A.viewNodes(A.dataSet({rows}),{as:"bars",value:"value"},{key:"K9"})[0];type(d,"d1");
+  const d=A.viewNodes(A.dataSet({rows}),{as:"bars",value:"value"},{state:st("K9")})[0];type(d,"d1");
   chk("filtering bars redraws them, and the numbers table follows",byClass(d,"ch-row").length===1&&walk(byClass(d,"ch-nums")[0],x=>x.tagName==="tr").length===2);}
 
  /* ---- kept entries: cards go through the same pipeline ---- */
@@ -134,7 +136,6 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   const cards=()=>byClass(P.main(),"entry").map(c=>text(byClass(c,"when")[0]));
   chk("kept entries draw as cards, newest first, with the control (10 entries)",cards().length===10&&byClass(main,"dv-ctl").length===1);
   const when0=cards()[0];
-  const key=[...B.VIEWSTATE.keys()][0]||"";
   let sel=byClass(main,"dv-sel").find(s=>s.attrs["aria-label"]==="Sort by"),dir=byClass(main,"dv-dir")[0];
   sel.value="date";press(sel,"change");
   chk("Sort by date sorts by the entry's time, not by the words of the date: oldest first",/Sep 21/.test(cards()[0])&&/Sep 30/.test(cards()[9]),cards().join(" | "));
@@ -142,14 +143,15 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   chk("and descending is newest first",/Sep 30/.test(cards()[0])&&/Sep 21/.test(cards()[9]),cards().join(" | "));
   pick(B.screen&&P.main(),"Good");
   chk("Show a mood: only the entries that answered it that way",cards().length===5&&byClass(P.main(),"dv-live").map(text).join()==="5 of 10 shown",cards().length+" / "+byClass(P.main(),"dv-live").map(text).join());
-  chk("the reader's state is kept in memory under the query's own key",B.VIEWSTATE.size===1&&/^board\/look:/.test([...B.VIEWSTATE.keys()][0]),[...B.VIEWSTATE.keys()].join());
+  const qs=()=>[...B.VIEW.at.values()].reduce((n,v)=>n+v.queries.size,0),look=B.VIEW.at.get("board/look");
+  chk("the reader's state is kept in the view of the query's activity, under the query's place among its queries",qs()===1&&!!look&&look.queries.has(0)&&look.queries.get(0).fv==="Good",String(qs()));
   B.render();
   chk("a re-draw of the page keeps the sort and the filter",cards().length===5&&/Sep 29/.test(cards()[0])&&byClass(P.main(),"dv-live").map(text).join()==="5 of 10 shown",cards().join(" | "));
   chk("saving the booklet writes the same file as before any of it",B.toMarkdown()===md0);
   B.keptFor("board/log").push({ts:"2026-10-01T09:00:00Z",what:"One more",mood:3});B.render();
   chk("the file still carries only what was written: the control is never in the records",!/dv-|VIEWSTATE|"sk"|"fv"/.test(B.toMarkdown()));
   B.closeBooklet();
-  chk("opening or closing a booklet clears the reader's state",B.VIEWSTATE.size===0);}
+  chk("opening or closing a booklet clears the reader's state",B.VIEW.at.size===0);}
  {P.wipe();const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
   const B=P.boot();await B.createBooklet();B.loadText(FX);
   B.screen="board/look";B.render();

@@ -55,11 +55,11 @@ function boot(){const API={};
   get lang(){return lang},set lang(v){lang=v}, get screen(){return screen},set screen(v){screen=v},
   get dirty(){return dirty},set dirty(v){dirty=v}, get unsavedEntries(){return unsavedEntries},set unsavedEntries(v){unsavedEntries=v},
 
-  get openChip(){return openChip},set openChip(v){openChip=v},
+  get VIEW(){return VIEW}, viewAt,
   get currentId(){return currentId}, get storageOk(){return storageOk},
   LIB_SCREEN, emptyState, emptyDrafts,
   readLib, openBooklet, clearLocal, closeBooklet, removeBooklet, createBooklet, saveLocal, markDirty,
-  toMarkdown, parseFile, applyParsed, addModuleText, editBook, allModules, render, loadText,
+  toMarkdown, parseFile, applyParsed, addModuleText, renameBooklet, allModules, render, loadText,
   homeButton, bookletName, startScreen,
   orphanSaveTimer(){saveTimer=null;}      // a timer whose handle was lost: only bookletGen can stop it now
 }));`);
@@ -88,9 +88,10 @@ function fillRich(A,tag){
   S.entries={eod:[{ts:"2026-09-20T10:00:00.000Z",blocker:"meetings "+tag}]};
   S.answers={"":{note:"an answer for "+tag+"\n\nsecond paragraph",tags:["one "+tag,"two"]}};
   D.custom={eod:{blocker:"half-typed "+tag}};
-  A.openChip={eod:"2026-09-20T10:00:00.000Z"};
-  A.lang="fr";A.dirty=true;A.unsavedEntries=3;}
-const snapOf=A=>JSON.parse(JSON.stringify({STATE:A.STATE,DRAFTS:A.DRAFTS,BOOK:A.BOOK,lang:A.lang,dirty:A.dirty,unsavedEntries:A.unsavedEntries}));
+  A.viewAt("eod").chip="2026-09-20T10:00:00.000Z";
+  A.dirty=true;A.unsavedEntries=3;}
+/* (the interface language is the reader's choice or the booklet's own `lang`, never a booklet's saved data: test/language-pref.test.js) */
+const snapOf=A=>JSON.parse(JSON.stringify({STATE:A.STATE,DRAFTS:A.DRAFTS,BOOK:A.BOOK,dirty:A.dirty,unsavedEntries:A.unsavedEntries}));
 
 (async()=>{
 
@@ -144,13 +145,13 @@ chk("a save timer that outlives its booklet does nothing when it fires",
 
 // ---- a switch clears everything that belongs to a booklet ----------------
 A.openBooklet(a.id);
-A.openChip={eod:"x"};
+A.viewAt("eod").chip="x";
 A.screen="eod";
 A.openBooklet(b.id);
 chk("the open entry and the view are cleared on a switch",
-  Object.keys(A.openChip).length===0&&A.screen==="@home");
+  A.VIEW.at.size===0&&A.screen==="@home");
 A.openBooklet(a.id);
-A.editBook(t=>{t.head={title:"A's own design"};});A.saveLocal();
+A.renameBooklet("A's own design");A.saveLocal();
 const c=await A.createBooklet();
 chk("the next booklet opens on its own design, never the last one's",A.allModules().length===0&&(A.BOOK.head||{}).title==="Untitled booklet");
 
@@ -163,7 +164,7 @@ A.openBooklet(r1.id);const back=snapOf(A);
 for(const k of Object.keys(before))
   chk("a switch away and back keeps "+k+" exactly",same(before[k],back[k]),JSON.stringify(back[k]).slice(0,160));
 {const B2=boot();B2.openBooklet(r1.id);const again=snapOf(B2);
- chk("and so does a reload: S, D (with every activity's drafts), BOOK, lang, dirty, unsavedEntries",
+ chk("and so does a reload: S, D (with every activity's drafts), BOOK, dirty, unsavedEntries",
    Object.keys(before).every(k=>same(before[k],again[k])));}
 
 // ---- no earlier save format is adopted — no compat, no exceptions ---------
@@ -193,7 +194,7 @@ wipe();A=boot();
 const v1=await A.createBooklet();addMod(A,"daily-journal");A.saveLocal();
 await sleep(5);                                  // so "last opened" differs by more than a clock tick
 const v2=await A.createBooklet();addMod(A,"the-day");
-A.editBook(t=>{t.head={title:"Week by week"};});A.saveLocal();
+A.renameBooklet("Week by week");A.saveLocal();
 A.render();
 chk("inside a booklet, its home leads back out to the list",global.document.getElementById("btnHome").textContent==="← Your booklets");
 A.homeButton();
@@ -203,9 +204,9 @@ chk("the list names each booklet: its own headline, or its modules",
   /Week by week/.test(shown)&&/Daily journal|daily-journal/i.test(shown),shown.slice(0,300));
 chk("with when it was last opened",/Last opened/.test(shown));
 chk("most recently opened first",shown.indexOf("Week by week")<shown.search(/Daily journal/i));
-A.lang="fr";A.render();
-chk("the list speaks French too, and a booklet's own title stays as written",/Vos carnets/.test(texts(main()))&&/Week by week/.test(texts(main())));
-A.lang="en";A.render();
+LS["booklet.ui.lang"]="fr";A.render();
+chk("the list speaks French too, for a reader who chose it, and a booklet's own title stays as written",/Vos carnets/.test(texts(main()))&&/Week by week/.test(texts(main())));
+delete LS["booklet.ui.lang"];A.render();
 {const card=findAll(main(),n=>n.attrs&&/\bmode\b/.test(n.attrs.class||"")&&texts(n).includes("Week by week"))[0];
  click(button(card,"Remove"));
  chk("Remove asks first, in place, and says what is lost",

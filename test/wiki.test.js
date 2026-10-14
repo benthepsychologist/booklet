@@ -69,10 +69,10 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
   chk("[[.booklet]] and the like stay plain text",walk({children:out},x=>x.tagName==="button"||x.tagName==="a").length===0&&/\.booklet.*words.*label/.test(out.map(text).join("")),out.map(text).join("|"));}
  /* the search box is emptied when the reader moves to another module */
  {const TWOW=FM+"> [!module|m1] One\n\n> [!activity|a] A\n\nx\n\n> [!activity|b parent:a] B\n\ny\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|c] C\n\nx\n\n> [!activity|d parent:c] D\n\ny\n\n> [!module|m2 end] End\n";
-  A.loadText(TWOW);A.screen=A.moduleScreen("m1");A.render();A.WK.q="typed";A.render();
-  chk("the words in the search box stay for the module they were typed in",A.WK.q==="typed");
+  A.loadText(TWOW);A.screen=A.moduleScreen("m1");A.render();A.VIEW.wiki.q="typed";A.render();
+  chk("the words in the search box stay for the module they were typed in",A.VIEW.wiki.q==="typed");
   A.screen=A.moduleScreen("m2");A.render();
-  chk("and are cleared on moving to another module",A.WK.q==="");}
+  chk("and are cleared on moving to another module",A.VIEW.wiki.q==="");}
  /* ---- a link may name a page ---- */
  chk("the link's page is what follows the final .md/ (a store name may hold slashes)",
    JSON.stringify(A.linkSplit("a.md/b.md/page-one"))===JSON.stringify({name:"a.md/b.md",act:"page-one"})

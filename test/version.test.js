@@ -9,14 +9,14 @@ const A=P.boot();
 const file=(marker,extra="")=>`---\nbooklet: ${marker}\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n${extra}`;
 const cmp=A.versionCmp;
 chk("the format version is the text 0.13",A.FORMAT_VERSION==="0.13"&&typeof A.FORMAT_VERSION==="string");
-chk("0.9 is before 0.10 (as text and as a number a 0.9 save holds)",cmp("0.9","0.10")===-1&&cmp(0.9,"0.10")===-1&&cmp("0.10","0.9")===1);
-chk("0.10 equals \"0.10\"; 0.1 is before 0.10 and is not equal to it",cmp("0.10","0.10")===0&&cmp("0.1","0.10")===-1&&cmp(0.1,"0.10")===-1&&cmp("0.10","0.1")===1);
+chk("0.9 is before 0.10",cmp("0.9","0.10")===-1&&cmp("0.10","0.9")===1);
+chk("0.10 equals \"0.10\"; 0.1 is before 0.10 and is not equal to it",cmp("0.10","0.10")===0&&cmp("0.1","0.10")===-1&&cmp("0.10","0.1")===1);
 chk("major counts before minor, and something that is not a version compares as nothing",cmp("1.0","0.10")===1&&cmp("0.10","1.0")===-1&&cmp("x","0.10")===null&&cmp(undefined,"0.10")===null&&cmp(null,"0.9")===null&&cmp("0.9.1","0.9")===null);
-chk("versionOf reads text and numbers into [major, minor]",JSON.stringify([A.versionOf("0.10"),A.versionOf(0.9),A.versionOf(" 0.8 "),A.versionOf("")])==="[[0,10],[0,9],[0,8],null]");
+chk("versionOf reads text into [major, minor], and a number is no version (a version is text)",JSON.stringify([A.versionOf("0.10"),A.versionOf(" 0.8 "),A.versionOf(""),A.versionOf(0.9)])==="[[0,10],[0,8],null,null]"&&cmp(0.9,"0.10")===null);
 /* the marker, read as text */
 for(const m of ['"0.13"',"'0.13'","0.13"]){const r=A.parseFile(file(m));chk("a file marked booklet: "+m+" loads, with no notice",r.ok&&r.refused.length===0&&r.unread.length===0&&r.template.booklet==="0.13",JSON.stringify(r.unread));}
 for(const m of ['"0.10"',"0.1","0.9",'"0.11"','"0.12"',"0.100"]){const r=A.parseFile(file(m)),v=m.replace(/"/g,"");
- chk("a file marked booklet: "+m+" opens by the current rules, and its first problem is the notice",r.ok&&r.refused.length===0&&r.unread[0]===`This file says booklet: ${v}. This page reads format 0.13 and has opened it as it is; some of it may not draw.`&&r.template.booklet==="0.13"&&/^booklet: /m.test(r.template.raw.source)&&r.template.raw.source.includes("booklet: "+m),JSON.stringify(r.unread));}
+ chk("a file marked booklet: "+m+" opens by the current rules, and its first problem is the notice",r.ok&&r.refused.length===0&&String(r.unread[0])===`This file says booklet: ${v}. This page reads format 0.13 and has opened it as it is; some of it may not draw.`&&r.template.booklet==="0.13"&&/^booklet: /m.test(r.template.raw.source)&&r.template.raw.source.includes("booklet: "+m),JSON.stringify(r.unread));}
 chk("a marker that is no 0.x version (1.0, 2, 0.9.1, words, none) is refused",["1.0","2","0.9.1","latest",""].every(m=>{const r=A.parseFile(file(m).replace(/booklet: \n/,""));return !r.ok&&!r.template;}));
 chk("a module marked 0.9 can be added to a booklet, and the page says so in the toast words",A.moduleTextProblems(file("0.9")).length===0&&/booklet: 0\.9/.test(A.STRINGS.en.booklet.addedOtherMarker("0.9")));
 /* what the renderer writes */
@@ -25,18 +25,18 @@ chk("a module marked 0.9 can be added to a booklet, and the page says so in the 
  chk("a new booklet's file says booklet: \"0.13\", quoted",/^booklet: "0\.13"$/m.test(A.BOOK.raw.source)&&A.BOOK.booklet==="0.13",A.BOOK.raw.source);
  A.addModuleText(file('"0.13"'));
  chk("and so does the file it writes after a module is added",/^booklet: "0\.13"$/m.test(A.toMarkdown())&&A.parseFile(A.toMarkdown()).ok);
- /* a booklet saved in the browser with another 0.x version in its design is loaded as it was saved */
+ /* a booklet kept in the browser whose own text says another 0.x version opens from that text, its marker as it was */
  const old=P.boot();
  const text=fs.readFileSync(P.R+"/test/fixtures/module-check-in.md","utf8");
  await old.createBooklet();old.addModuleText(text);old.flushSave();
  const id=old.currentId,key="booklet.b."+id;
  const snap=JSON.parse(global.__ls[key]);
- snap.TPL.booklet="0.10";
+ snap.text=snap.text.replace(/^booklet: .*$/m,'booklet: "0.10"');
  snap.S.answers={ma:{keep:"x"}};
  global.__ls[key]=JSON.stringify(snap);
  P.closePages();
  const B=P.boot();B.openBooklet(id);
- chk("a booklet saved with booklet: \"0.10\" in its design opens, its design untouched",B.BOOK.booklet==="0.10",String(B.BOOK.booklet));
+ chk("a booklet kept with booklet: \"0.10\" in its text opens, read by the current rules, its text untouched",B.allModules().length===1&&B.BOOK.booklet==="0.13"&&/^booklet: "0\.10"$/m.test(B.toMarkdown()),String(B.BOOK.booklet));
  chk("its answers are where they were",JSON.stringify(B.STATE.answers)===JSON.stringify({ma:{keep:"x"}}));
  chk("a module can be added to it",B.addModuleText(fs.readFileSync(P.R+"/test/fixtures/module-daily-journal.md","utf8")).ok);
  chk("what it downloads opens again",B.parseFile(B.toMarkdown()).ok);

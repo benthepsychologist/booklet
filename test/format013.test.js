@@ -270,7 +270,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
  /* should-fix 5: records outside a records line are said and left in the design text */
  {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n\n"+fence("booklet answers",'{"q":"in the design"}')+fence("booklet entries a",items(entry("2026-01-01T10:00:00Z",{x:"y"})))+fence("booklet draft a",'{"q":"d"}')+"> [!activity|c] C\n";
   const A=load(f),R=A.parseFile(f);
-  chk("should-fix 5: an answers, an entries and a draft block outside a records line are each reported",R.unread.length===3&&["answers","entries","draft"].every(k=>R.unread.some(x=>x.includes("“booklet "+k+"”"))),JSON.stringify(R.unread));
+  chk("should-fix 5: an answers, an entries and a draft block outside a records line are each reported",R.unread.length===3&&["answers","entries","draft"].every(k=>R.unread.some(x=>String(x).includes("“booklet "+k+"”"))),JSON.stringify(R.unread));
   chk("should-fix 5: none is read",A.peekAnswers("").q===undefined&&Object.keys(A.STATE.entries).length===0&&Object.keys(A.DRAFTS.custom).length===0);
   A.answersIn("").q="mine";
   const out=A.toMarkdown();
@@ -417,7 +417,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
  /* nits */
  {const f=FM+MODE+REC+rec("m","A note someone wrote by hand.\n\n","> [!my_kind] Kept?\n> body\n\n")+"%%\n";
   const A=load(f),R=A.parseFile(f);
-  chk("nit: prose in the records is reported at its own line (not the blank line before it); an unreadable `> [!` line there is one notice, in line order",R.unread.length===2&&R.unread[0].startsWith("line "+(f.split("\n").indexOf("A note someone wrote by hand.")+1)+": ")&&R.unread[1].startsWith("line "+(f.split("\n").indexOf("> [!my_kind] Kept?")+1)+": ")&&/> \[!/.test(R.unread[1]),JSON.stringify(R.unread));
+  chk("nit: prose in the records is reported at its own line (not the blank line before it); an unreadable `> [!` line there is one notice, in line order",R.unread.length===2&&String(R.unread[0]).startsWith("line "+(f.split("\n").indexOf("A note someone wrote by hand.")+1)+": ")&&String(R.unread[1]).startsWith("line "+(f.split("\n").indexOf("> [!my_kind] Kept?")+1)+": ")&&/> \[!/.test(R.unread[1]),JSON.stringify(R.unread));
   const o=A.toMarkdown();
   chk("nit: and both are kept as written, once",cnt(o,/A note someone wrote by hand\./g)===1&&cnt(o,/> \[!my_kind\] Kept\?\n> body/g)===1);}
  {const A=load(FM+MODE+REC+rec("m",fence("booklet sync",'{"x":1}'))+"%%\n");
@@ -479,10 +479,10 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
    const e=A.STATE.entries["m/log"][0];if(Object.getPrototypeOf(e)!==null) why="kept entry has a prototype";
    A.saveLocal();const B=P.boot();B.openBooklet(A.currentId);B.screen="m/log";B.render();
    if(Object.getPrototypeOf(B.STATE.entries["m/log"][0])!==null) why="a reloaded entry has a prototype";
-   B.openChip["m/log"]=B.STATE.entries["m/log"][0].ts;B.render();}catch(e){why="threw: "+String(e.message).slice(0,60);}
+   B.viewAt("m/log").chip=B.STATE.entries["m/log"][0].ts;B.render();}catch(e){why="threw: "+String(e.message).slice(0,60);}
   chk("S2: keeping an entry with a blank `constructor` question: the redraw works, the entry is kept, in storage, and no entry has a prototype",why===""&&/typed only x/.test(A.toMarkdown()),why);
   const g=FM+"> [!module|m] X\n\n> [!activity|log repeat] L\n\n> [!text|constructor] C\n\n> [!text|x] X\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\nas: cards\n```\n\n> [!module|m end] End\n"+REC+"> [!records|m] X\n\n"+fence("booklet entries log",'{"items":[{"ts":"2026-01-01T00:00:00Z","x":"only x"}]}')+"%%\n";
-  const C=load(g);let w2="";try{C.screen="m/look";C.render();if(/function|native code/.test(P.texts(P.main()))) w2="shows a function";C.screen="m/log";C.render();C.openChip["m/log"]="2026-01-01T00:00:00Z";C.render();}catch(e){w2="threw: "+String(e.message).slice(0,60);}
+  const C=load(g);let w2="";try{C.screen="m/look";C.render();if(/function|native code/.test(P.texts(P.main()))) w2="shows a function";C.screen="m/log";C.render();C.viewAt("m/log").chip="2026-01-01T00:00:00Z";C.render();}catch(e){w2="threw: "+String(e.message).slice(0,60);}
   chk("S2: entries read from the file have no prototype: a cards query over them and opening a kept entry work",w2===""&&Object.getPrototypeOf(C.STATE.entries["m/log"][0])===null,w2);}
 
  /* nit: a kept record whose scope names no module and whose foreign field is not text writes nothing stray */

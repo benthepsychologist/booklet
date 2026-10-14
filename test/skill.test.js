@@ -20,8 +20,8 @@ global.document.createElement=tag=>{const n=mk0(tag);
 const A={};
 eval(src+`
 ;Object.assign(A,{parseFile,applyParsed,toMarkdown,render,allModules,activitiesOf,pagesOf,isPaged,showPage,
-  tx,declaredLangs,offeredLangs,
-  setScreen:v=>{screen=v},getLang:()=>lang,
+  tx,
+  setScreen:v=>{screen=v},getLang:()=>lang,bookLang:()=>tableTag((BOOK.raw||{}).lang),
   fresh:()=>{STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;
     screen="@home";lang="en";}});`);
 
@@ -94,13 +94,11 @@ for(const file of files){
   A.applyParsed(P,"replace");
   const mods=A.allModules();
   chk(`${name}: and keeps its module`,mods.length===1,`${mods.length} modules`);
-  const declared=A.declaredLangs();
-  chk(`${name}: it declares its one language and opens in it`,declared.length===1&&A.getLang()===declared[0],
+  const declared=A.bookLang();
+  A.setScreen("@home");A.render();
+  chk(`${name}: it declares its one language, and a reader who chose none reads it in that language`,!!declared&&A.getLang()===declared,
     JSON.stringify({declared,lang:A.getLang()}));
-  chk(`${name}: the language switch offers only the one it declares`,
-    JSON.stringify(A.offeredLangs())===JSON.stringify(declared),JSON.stringify(A.offeredLangs()));
   const problems=[];
-  const l=declared[0];
   let home="";
   try{A.setScreen("@home");A.render();home=textOf(main());}catch(e){problems.push(`home: ${e.message}`);}
   for(const m of mods) if(!home.includes(A.tx(m.title,"\u0000"))) problems.push(`${m.id}: its title is not on the home page`);
@@ -121,7 +119,7 @@ for(const file of files){
     !problems.length,problems.slice(0,4).join("; "));
   const back=A.toMarkdown();A.fresh();A.applyParsed(A.parseFile(back),"replace");
   chk(`${name}: written back by the renderer and read again, it keeps its module and its language`,
-    A.allModules().map(m=>m.id).join()===mods.map(m=>m.id).join()&&JSON.stringify(A.declaredLangs())===JSON.stringify(declared));
+    A.allModules().map(m=>m.id).join()===mods.map(m=>m.id).join()&&A.bookLang()===declared);
 }
 
 fs.rmSync(tmp,{recursive:true,force:true});

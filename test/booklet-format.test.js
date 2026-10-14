@@ -24,7 +24,7 @@ chk("the example parses",R.ok,JSON.stringify(R.unread));
 chk("nothing in the example is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
 const t=R.template||{};
 chk("it is marked v0.13",t.booklet==="0.13");
-chk("its one language is declared",JSON.stringify(t.languages)==='["en"]');
+chk("its one language is its own, from its front matter, and the design names no others",t.raw.lang==="en"&&!("languages" in t));
 chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0].id==="mensio-check-in",JSON.stringify((t.modules||[]).map(m=>m.id)));
 const m=(t.modules||[])[0]||{};
 chk("the module's blurb is its opening paragraph",m.blurb==="Body, feelings, thoughts — noticed, named, kept.",m.blurb);
@@ -91,7 +91,7 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
 {const FILE=m=>'---\nbooklet: '+m+'\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n';
  for(const v of ["0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","0.12","0.14"]){
   const r=A.parseFile(FILE(v));
-  chk(`a booklet: ${v} file opens, and its first problem says which marker it carries and what this page did`,r.ok===true&&r.refused.length===0&&r.unread[0]===`This file says booklet: ${v}. This page reads format 0.13 and has opened it as it is; some of it may not draw.`,JSON.stringify(r.unread));
+  chk(`a booklet: ${v} file opens, and its first problem says which marker it carries and what this page did`,r.ok===true&&r.refused.length===0&&String(r.unread[0])===`This file says booklet: ${v}. This page reads format 0.13 and has opened it as it is; some of it may not draw.`,JSON.stringify(r.unread));
   chk(`  it is saved back with the marker it came with (${v})`,new RegExp("^booklet: "+v.replace(".","\\.")+"$","m").test(r.template.raw.source)&&r.template.booklet==="0.13");}
  const bad=A.parseFile('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
  chk("a module opened and never closed still refuses a 0.3 file, whatever the marker",bad.ok===false&&bad.refused.length===1&&/never closed/.test(bad.refused[0])&&/booklet: 0\.3/.test(bad.unread[0]),JSON.stringify(bad.unread));

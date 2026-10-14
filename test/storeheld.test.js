@@ -87,19 +87,22 @@ const press=(re,within)=>{const b=P.find(within||P.main(),n=>n.tagName==="button
  chk("with the host waiting for Allow: Open from the list after a rename draws the store's booklet",A.allModules().length===1&&ans(A)==="RECORD-IN-STORE");
  chk("...and after Allow the host is sent only text that holds the record",press(/Allow/)&&(await sleep(800),h.log.length>0&&h.log.every(c=>/RECORD-IN-STORE/.test(c.text))),h.log.length+" sent");
  chk("...and the store's file keeps it",/RECORD-IN-STORE/.test(ROUTES[U]));}
-// a blank kept copy already in a browser (what the first version's rename wrote): it is treated as empty, never drawn or sent
-{const U=STORE+"w.md";
+// a blank kept copy already in a browser (what the first version's rename wrote): it is treated as empty, never drawn or sent.
+// It is tried as 0.13.0 kept it (its design, TPL) and as this release keeps a booklet (its text).
+for(const form of ["TPL","text"]){const U=STORE+"w.md",at=" ("+form+")";
  let A=boot();ROUTES[U]=withAnswer(booklet("Week"),"RECORD-IN-STORE");
  await A.openLink("#/open/w.md");const id=A.currentId;A.closeBooklet();
- const blank=A.nameBooklet(A.blankBook(),"Week (mine)");
- global.__ls[keyOf(id)]=JSON.stringify({S:{answers:{},entries:{}},D:{custom:{}},TPL:blank,lang:"en",dirty:true,unsavedEntries:0});
+ const src=A.setTitleIn("","Week (mine)","en");
+ const blank={booklet:"0.13",id:"local/booklet",version:"1",customized:false,modules:[],widgets:[],raw:{source:src,lang:"en"},title:"Week (mine)",head:{title:"Week (mine)"}};
+ const snap=()=>JSON.stringify({S:{answers:{},entries:{}},D:{custom:{}},...(form==="TPL"?{TPL:blank,lang:"en"}:{text:src}),dirty:true,unsavedEntries:0});
+ global.__ls[keyOf(id)]=snap();
  A=boot({keep:true});await A.openLink("#/open/w.md");const h=host(A);await sleep(800);
- chk("a blank kept copy of a store booklet is not drawn: the store's booklet is, and the blank copy goes",A.allModules().length===1&&ans(A)==="RECORD-IN-STORE"&&!kept(id));
- chk("...and nothing without the record is ever sent",h.log.every(c=>/RECORD-IN-STORE/.test(c.text))&&/RECORD-IN-STORE/.test(ROUTES[U]));
+ chk("a blank kept copy of a store booklet is not drawn: the store's booklet is, and the blank copy goes"+at,A.allModules().length===1&&ans(A)==="RECORD-IN-STORE"&&!kept(id));
+ chk("...and nothing without the record is ever sent"+at,h.log.every(c=>/RECORD-IN-STORE/.test(c.text))&&/RECORD-IN-STORE/.test(ROUTES[U]));
  // the store does not answer: the list falls back to what is kept, and a blank booklet that opens that way is never sent
- A.closeBooklet();global.__ls[keyOf(id)]=JSON.stringify({S:{answers:{},entries:{}},D:{custom:{}},TPL:blank,lang:"en",dirty:true,unsavedEntries:0});
+ A.closeBooklet();global.__ls[keyOf(id)]=snap();
  const n0=h.log.length;ROUTES[U]=new Error("down");A.openFromList(id);await sleep(800);
- chk("a store booklet with no module open on screen is never sent to the host",A.currentId===id&&A.allModules().length===0&&h.log.length===n0,"sent "+(h.log.length-n0));}
+ chk("a store booklet with no module open on screen is never sent to the host"+at,A.currentId===id&&A.allModules().length===0&&h.log.length===n0,"sent "+(h.log.length-n0));}
 
 /* ---- B2: a host's late saved() for booklet A marked booklet B, which then lost its unsaved work ---- */
 for(const bare of [false,true]){const tag=bare?" (a host that names no change)":"";
@@ -505,6 +508,7 @@ const THREE=FM("Three")+"> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!
  await A.openLink("#/open/sp.md");press(/Read the newer file/);
  chk("a move the store's rule refuses is not followed here either: nothing is put in the new modules",ans(A,"n","q")===undefined&&!((A.DRAFTS.custom||{})["c/b"]||{}).what,JSON.stringify(A.STATE.answers));
  chk("...and the unsent edit, under a scope no module owns now, is written back kept as written under the old records line",/> \[!records\|a\][\s\S]*q edited, unsent/.test(A.toMarkdown())&&ans(A,"a","q")===undefined,A.toMarkdown().split("%%")[1]);
+ chk("...and the design holding it is its text's parse (0.13.1, R1)",JSON.stringify(A.BOOK)===JSON.stringify(A.parseFile(A.bookText(A.BOOK)).template));
  await sleep(800);
  chk("...and the store then holds it beside its own records kept as written (the saved answer and the draft)",/records\|a/.test(ROUTES[U])&&/q edited, unsent/.test(ROUTES[U])&&/q saved/.test(ROUTES[U])&&/a draft for b/.test(ROUTES[U]),split(ROUTES[U])[1]);
  A.closeBooklet();await A.openLink("#/open/sp.md");
