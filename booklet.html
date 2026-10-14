@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-9R5mp02o1ik3Y1Uvqr+TdIZBOpjrF0sGIty5uLdC1S0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-xXmB2sr8Ynh7vRA1g5eKtpZxT77eosibK3XamK39vWg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4061,7 +4061,9 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     if(what==="draft") return void(drafts[at]=Object.assign(drafts[at]||nullMap(),o));
     if(!Array.isArray(o.items)) return no(P.recordNoItems(L,info[2]));
     if(!o.items.every(e=>e&&typeof e==="object"&&e.ts)) return no(P.recordsOther(L));
-    entries[at]=(entries[at]||[]).concat(o.items.map(e=>nullMap(e)));}
+    /* SPEC section 8: two blocks for one activity are one list, an entry is identified by its `ts`, and for a key both hold the later wins */
+    const list=entries[at]||(entries[at]=[]);
+    o.items.forEach(e=>{const n=nullMap(e),same=list.find(x=>x.ts===n.ts);if(same) Object.assign(same,n);else list.push(n);});}
   function onRecords(it,where){recForeign=null;const named=it.id&&modules.some(m=>m.id===it.id&&!m.__bare);recScope=named?it.id:"";
     if(it.id&&!named&&!modules.some(m=>m.id===it.id&&m.__bare)){recForeign={id:it.id,head:it.head};problems.push(P.recordsLineUnknown(where,it.id));}}
   const onRec=it=>{const L=P.line(it.line);

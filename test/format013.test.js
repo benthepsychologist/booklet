@@ -200,6 +200,17 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("B1: and a later draft block fills in keys without wiping the earlier one's",JSON.stringify(A.DRAFTS.custom["m/e"])==='{"a":"one","b":"three","c":"four"}',JSON.stringify(A.DRAFTS.custom["m/e"]));
   const out=A.toMarkdown(),r=recordsOf(out);
   chk("B1: a save writes them as one block each, nothing lost",r.filter(x=>x.info==="booklet entries e").length===1&&/first block/.test(r[0].code+r[1].code)&&cnt(out,/second block/g)===1&&cnt(out,/first block/g)===1,out.slice(-400));}
+ /* B1b (0.13.1, SPEC section 8): entries are identified by `ts`; an entry two blocks both hold is one entry, and for a key both hold the later wins */
+ {const T1="2026-01-01T10:00:00Z",T2="2026-01-02T10:00:00Z",T3="2026-01-03T10:00:00Z";
+  const file=FM+MODE+REC+rec("m",fence("booklet entries e",items(entry(T1,{t:"old",u:"only in the first"}),entry(T2,{t:"two"}))),
+    fence("booklet entries e",items(entry(T1,{t:"new",v:"only in the second"}),entry(T3,{t:"three"}))))+"%%\n";
+  const A=load(file),got=A.STATE.entries["m/e"]||[];
+  chk("B1b: an entry both blocks hold is one entry: three entries, in the order they first appear",got.map(x=>x.ts).join()===[T1,T2,T3].join(),JSON.stringify(got));
+  chk("B1b: for a key both hold the later wins, and a key only one holds is kept",got[0].t==="new"&&got[0].u==="only in the first"&&got[0].v==="only in the second",JSON.stringify(got[0]));
+  chk("B1b: the entries only one block holds are untouched",got[1].t==="two"&&got[2].t==="three");
+  const out=A.toMarkdown();
+  chk("B1b: a save writes the merged entry once, and nothing of the overwritten value",cnt(out,/"ts":"2026-01-01T10:00:00Z"/g)===1&&cnt(out,/"t":"old"/g)===0,out.slice(-500));
+  chk("B1b: load, save, load, save changes nothing",load(out).toMarkdown()===out);}
  {/* the flow that lost data: a broken block is kept, a new entry is added beside it, the reader fixes the comma by hand, the next load and save keep both */
   const broken=items(entry("2026-01-01T10:00:00Z",{t:"old entry 1"}),entry("2026-01-02T10:00:00Z",{t:"old entry 2"})).replace(/\n\]\}$/,",\n]}");
   const A=load(FM+MODE+REC+rec("m",fence("booklet entries e",broken))+"%%\n");
