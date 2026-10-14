@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-3eTme8L43SHO7BEO9+9qGwdt+JYTyhF9TMLGT+xBdGY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-Vra/VlFvm4jHIqV3rTMhTy9f+qNpYhQ2LAT/oiUTYtY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3192,7 +3192,10 @@ function keptShape(t){if(!isObj(t)) return t;t=clone(t);const {head,...out}=t;
    reads that id. */
 function keptHelps(pages){const all=blocksAll(pages.flatMap(blocksIn));
   const qs=new Map(),seen=new Set(),gone=new Set();
-  all.forEach(x=>{if(!QUESTION_KINDS.has(x.type)) return;if(typeof x.hint==="string"){x.help=x.hint;delete x.hint;}if(x.id&&!qs.has(x.id)) qs.set(x.id,x);});
+  /* its help text, a string, is `help`; anything else under `hint` or `solution` (not a callout this release put there) was never
+     drawn, and is not taken for the question's own */
+  all.forEach(x=>{if(!QUESTION_KINDS.has(x.type)) return;if(typeof x.hint==="string"){x.help=x.hint;delete x.hint;}
+    ["hint","solution"].forEach(k=>{if(x[k]!==undefined&&!ownPart(x,k)) delete x[k];});if(x.id&&!qs.has(x.id)) qs.set(x.id,x);});
   all.forEach(c=>{const m=c.type==="callout"&&c.kind===""?/^(.*)-(hint|solution)$/.exec(String(c.id||"")):null;if(!m) return;
     const q=qs.get(m[1]),fold=placeOf(c)==="folded",first=fold&&!seen.has(c.id);if(fold) seen.add(c.id);
     if(q&&first&&!isObj(q[m[2]])){q[m[2]]={...c,kind:m[2]};gone.add(c);}else{c.kind=m[2];c.outside=true;}});
@@ -3562,9 +3565,11 @@ function rowCells(blocks,nextSeq){
     cuts.forEach((a,n)=>{const t=clip(a,n+1<cuts.length?cuts[n+1]:L.length);
       if(!t.trim()) return;if(hs.includes(a)||!cur) open();cur.push(md(t));});});
   return cells;}
-/* a question's own hint and solution (the callouts the parser put on it), in the order the file wrote them: the order they
-   were set */
-const qParts=b=>Object.keys(b).filter(k=>(k==="hint"||k==="solution")&&isObj(b[k])).map(k=>b[k]);
+/* a question's own hint or solution (`k`): the callout the parser put on it, or null (anything else there is not one) */
+const ownPart=(b,k)=>isObj(b[k])&&b[k].type==="callout"?b[k]:null;
+/* a question's own hint and solution, in the order the file wrote them (the order they were set): the reading order of what
+   is drawn inside the question, which comes before what follows it (an unfolded hint written between them included) */
+const qParts=b=>Object.keys(b).filter(k=>(k==="hint"||k==="solution")&&ownPart(b,k)).map(k=>b[k]);
 /* Every block in a list, depth first: what it holds (`blocks`: a row's cells, a cell's or a callout's blocks), then a question's
    own hint and solution. `fn` is called on each; a block it returns false for is not gone into. */
 function eachBlock(list,fn){(Array.isArray(list)?list:[]).forEach(b=>{if(!b||typeof b!=="object") return;
@@ -5568,7 +5573,7 @@ function solutionPart(q,draft,activityId,dc){const sol=q.solution,Q=strings("que
       const next=make(t),old=cur;cur=next;keep(next);if(old.parentNode) old.replaceWith(next);}};}
 /* A question's own hint and solution (the parser put them on it), as small controls in its own block, a hint first (as the author
    writes them); null for a block with neither. */
-function qControls(q,draft,activityId,dc){const sol=isObj(q.solution)?solutionPart(q,draft,activityId,dc):null,hint=isObj(q.hint)?q.hint:null;
+function qControls(q,draft,activityId,dc){const sol=ownPart(q,"solution")?solutionPart(q,draft,activityId,dc):null,hint=ownPart(q,"hint");
   if(!sol&&!hint) return null;
   return {node:el("div",{class:"q-ctls"},hint?foldedCallout(hint,draft,activityId,dc,{inQ:true}):null,sol&&sol.node),sol};}
 /* An activity marked `upsert:"day"` (the file's `repeat daily`) keeps one entry per
@@ -6471,7 +6476,8 @@ function registries(mod){const sources=new Map(),cites=new Map();
     for(const c of regList(o&&o.citations)) if(typeof c.id==="string"&&c.id&&!cites.has(c.id))
       cites.set(c.id,srcs.some(s=>s.key===c.source)?{...c,source:key(c.source)}:c);});
   return {sources,cites};}
-/* The texts of a block that may carry marks, in the file's order (a question's are its own hint's and solution's). */
+/* The texts of a block that may carry marks, in reading order: a question's are its own hint's and solution's, drawn inside it,
+   so they come before anything after the question (an unfolded hint written between them included). */
 function markedTexts(b){const out=[];eachBlock([b],x=>{if(x.type==="markdown") out.push(String(x.text||""));});return out;}
 /* ---- the scope: one screen's numbering, worked out once per booklet ---- */
 /* A module's opening is drawn with its activity when the module is one activity (so its marks and the activity's number on

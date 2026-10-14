@@ -71,6 +71,20 @@ const LS=global.__ls;
  chk("each question draws its own controls inside it: a choice and a text question alike",qs.length===2&&/Nudge/.test(P.texts(qs[0]))&&/Why/.test(P.texts(qs[0]))&&/Model/.test(P.texts(qs[1])),qs.map(P.texts).join(" | "));
  chk("nothing is left where a solution stood",!P.find(P.main(),P.hasClass("sol-moved")).length);}
 
+
+/* ---- R5: reading order around a question's own hint and solution (the cold review's S1, S2) ---- */
+{P.wipe();const A=P.boot();const N='\n[^a]: A note.\n[^b]: B note.\n[^c]: C note.\n';
+ A.loadText(FM("Order")+"> [!activity|a] A\n\n> [!text|q] Q?\n\n> [!hint]- H1\n> See[^a]\n\n> [!hint] H2\n> See[^b]\n\n> [!solution]- S\n> See[^c]\n"+N);
+ A.screen="a";A.render();
+ const marks=P.find(P.main(),P.hasClass("rd-mark")).map(n=>n.attrs["data-cite"]+"="+P.texts(n)).join(" ");
+ chk("marks are numbered in reading order: the folded hint and solution inside the question first, the unfolded hint after",marks==="a=1 c=2 b=3",marks);
+ const R=A.parseFile(FM("Gone")+"> [!activity|a] A\n\n> [!choice|q menu:none] Q?\n\n> [!hint]- H1\n> x\n\n> [!hint] H2\n> y\n\n> [!solution]- S\n> z\n");
+ const list=R.template.modules[0].activities[0].pages[0].blocks.map(b=>b.title).join(",");
+ chk("a question that is not drawn leaves its own hint and solution where it stood, ahead of an unfolded hint",list==="H1,S,H2",list);
+ const R2=A.parseFile(FM("Row")+"> [!activity|a] A\n\n> [!row]\n\n> [!text|q1] Q1?\n\n> [!text|my-hint] Q2?\n\n> [!row|end]\n");
+ const cells=R2.template.modules[0].activities[0].pages[0].blocks[0].blocks.map(c=>c.blocks.map(b=>b.id).join("+")).join(" | ");
+ chk("in a row with no headings, a question whose id ends in -hint has a cell of its own",cells==="q1 | my-hint",cells);}
+
 /* ---- R5: an older release's hints and solutions, read where its design is read ---- */
 {P.wipe();let A=P.boot();A.createBooklet();
  const then=FM("Kept by 0.13.0")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|long seen] Seen?\n\n> [!text|long heard] Heard?\n\n> [!module|m end] End\n";
@@ -79,7 +93,7 @@ const LS=global.__ls;
    {id:"q1",type:"text",label:"Seen?",hint:"Help words.",keys:["q1"]},
    {id:"q1-hint",type:"callout",kind:"",title:"Nudge",blocks:[md("q1-hint-md","Think.")],placement:"folded",label:"Nudge"},
    {id:"q1-solution",type:"callout",kind:"",title:"Why",blocks:[md("q1-solution-md","SECRET-WHY")],placement:"folded",label:"Why"},
-   {id:"q2",type:"text",label:"Heard?",keys:["q2"]},
+   {id:"q2",type:"text",label:"Heard?",keys:["q2"],hint:{text:"not a string"}},
    {id:"q2-hint",type:"callout",kind:"",title:"Open",blocks:[md("q2-hint-md","Not folded.")],label:"Open"}]}}],widgets:[],raw:{source:then,lang:"en"}};
  const id=A.currentId,key="booklet.b."+id;A.flushSave();
  const o=JSON.parse(LS[key]);delete o.text;o.TPL=TPL;LS[key]=json(o);
@@ -87,6 +101,7 @@ const LS=global.__ls;
  const b=A.allModules()[0].activities[0].pages[0].blocks;
  chk("0.13.0's hint and solution (callouts of no kind, by id) are the question's own, its help text is `help`",b.length===3&&b[0].help==="Help words."&&b[0].hint.kind==="hint"&&b[0].solution.kind==="solution",json(b).slice(0,300));
  chk("one it drew where it stood stays there, a callout of its kind",b[2].type==="callout"&&b[2].kind==="hint"&&b[2].outside===true,json(b[2]));
+ chk("a hint on an old question that is not a string was never drawn, and is not taken for its own",!("hint" in b[1])&&b[1].help===undefined,json(b[1]));
  A.screen="m/a";A.render();
  const ctl=P.find(P.main(),P.hasClass("q-ctls"));
  chk("and they are drawn in their question, closed, giving nothing away",ctl.length===1&&/Nudge/.test(P.texts(ctl[0]))&&!/SECRET-WHY/.test(P.texts(P.find(ctl[0],n=>n.tagName==="summary")[1]||{})),ctl.map(P.texts).join());}
@@ -127,7 +142,7 @@ const LS=global.__ls;
  chk("a heading-like line in a code block does not name the page; its first heading does, as its links find it",ps.map(p=>p.title).join("|")==="The first page|The second page",ps.map(p=>p.title).join("|"));}
 
 /* ---- R9: hostCovers is saved, saving or unsaved; leaving warns unless saved, the mark and the note show only on unsaved ---- */
-{const T=FM("Hosted")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n";
+(async()=>{const T=FM("Hosted")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n";
  const rig=A=>{const r={mark:null,leave:()=>{let warned=false;A.dispatch("beforeunload",{preventDefault(){warned=true;},returnValue:""});return warned;}};
    P.byId("btnExport").classList.toggle=(c,on)=>{if(c==="attention") r.mark=!!on;};
    r.type=w=>{A.screen="m/a";A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea")[0];ta.value=w;ta._on.input();};return r;};
@@ -138,13 +153,23 @@ const LS=global.__ls;
  chk("a save on its way is saving: leaving warns, and neither the Download mark nor the note shows",A.hostCovers()==="saving"&&r.leave()&&r.mark===false&&A.unsavedNote()===null,A.hostCovers()+" "+r.mark);
  h.saved();
  chk("once the host says it is saved, saved: no warning, no mark, no note",A.hostCovers()==="saved"&&!r.leave()&&r.mark===false&&A.unsavedNote()===null,A.hostCovers()+" "+r.mark);
+ r.type("a newer answer");
+ chk("a newer change after saved is saving again: leaving warns, no mark",A.hostCovers()==="saving"&&r.leave()&&r.mark===false,A.hostCovers()+" "+r.mark);
+ await new Promise(z=>setTimeout(z,700));
+ chk("a host that has not answered stays saving (it has been told: onChange gave it the newer answer), and leaving warns",calls.some(c=>/a newer answer/.test(c.text))&&A.hostCovers()==="saving"&&r.leave()&&r.mark===false,calls.length+" "+A.hostCovers());
+ A.setAnswerMs(50);r.type("another answer");await new Promise(z=>setTimeout(z,800));
+ chk("one that does not answer within its time is a failed save, unsaved: leaving warns and the mark comes back",A.hostCovers()==="unsaved"&&r.leave()&&r.mark===true,A.hostCovers()+" "+r.mark);
+ A.setAnswerMs(20000);h.saved();
  h.failed("disk full");
  chk("after a failed save, unsaved: leaving warns, and the mark and the note come back",A.hostCovers()==="unsaved"&&r.leave()&&r.mark===true&&A.unsavedNote()!==null,A.hostCovers()+" "+r.mark);
  h.saved();stop();
  chk("a host that no longer listens covers nothing, unsaved: leaving warns, and the mark comes back",A.hostCovers()==="unsaved"&&r.leave()&&r.mark===true,A.hostCovers()+" "+r.mark);
  P.closePages();delete global.location;
  P.wipe();const N=P.boot();N.loadText(T);const n=rig(N);n.type("an answer");
- chk("with no host, unsaved, as before: leaving warns, and the mark and the note show",N.hostCovers()==="unsaved"&&n.leave()&&n.mark===true&&N.unsavedNote()!==null,N.hostCovers()+" "+n.mark);}
+ chk("with no host, unsaved, as before: leaving warns, and the mark and the note show",N.hostCovers()==="unsaved"&&n.leave()&&n.mark===true&&N.unsavedNote()!==null,N.hostCovers()+" "+n.mark);
+
+REST();})().catch(e=>{console.log("  FAIL  the suite threw: "+(e&&e.stack||e));process.exit(1);});
+function REST(){
 
 /* ---- R14: every view through VIEW_FNS, grouped and nested alike ---- */
 {P.wipe();const A=P.boot();
@@ -162,3 +187,4 @@ const LS=global.__ls;
 P.wipe();
 console.log(fails?`\n${fails} FAILURES`:"\nconsolidation checks passed");
 process.exit(fails?1:0);
+}
