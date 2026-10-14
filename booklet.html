@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-ZMcLhHI2L1d99tekS8+AaSOuCg60d+MTE0FtXjC7wDI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-VIoU49uPDmQDQHnxsoV60hlnZBgVLucdcapFCLkecdk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3025,11 +3025,11 @@ function keepAdopt(){
        booklet removed here whose entry an older tab still listed: it is not listed again, as an empty booklet */
     if(le&&lc===null&&here(ck)===null&&!storeNameOf(le)){if(lb!==null) leave(bk,lb);return;}
     if(le){const i=out.findIndex(e=>isObj(e)&&e.id===id);if(i>=0) out[i]=le;else out.push(le);listChanged=true;}
-    /* a kept copy and its base always come from the same side: with local storage's copy, its base (or none); with no
-       copy there, the store's copy stays (a kept copy is never removed for want of one) and loses its base, rather than
-       sit beside local storage's; and with no copy on either side, no base is kept either */
+    /* a kept copy and its base are one side's pair: with local storage's copy, its base (or none) replaces the store's;
+       with no copy there, the store's copy stays (a kept copy is never removed for want of one) with the store's own
+       base, and local storage's base is never put beside it; with no copy on either side, the store keeps no base */
     if(lc!==null){take(ck,lc);if(lb!==null) take(bk,lb);else if(here(bk)!==null) keepPut(bk,null);}
-    else{if(lb!==null) leave(bk,lb);if(here(bk)!==null) keepPut(bk,null);}});
+    else{if(lb!==null) leave(bk,lb);if(here(ck)===null&&here(bk)!==null) keepPut(bk,null);}});
   if(listChanged) libWrite(JSON.stringify({...(storeList||{v:1}),entries:out}));
   if(lsList) KEEP.left.set(LIB_KEY,{v:lsListRaw,copied:!listChanged});
   /* the rest: preferences, and anything else of the renderer's */

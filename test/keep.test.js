@@ -385,6 +385,18 @@ section("a kept copy and its base never come from different sides");
  B=reload();await started(B);await idle(B);
  chk("both sides changed and the store wins: its copy and its own base stay together",IDB.kv("booklet.b."+g)===copy&&IDB.kv("booklet.base."+g)==="the store's base"&&!LS["booklet.base."+g],String(IDB.kv("booklet.base."+g)));}
 
+section("a store pointer an older tab writes after the move keeps the store's copy and base together");
+{fresh();const seed=SEED("0.13.0");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
+ const A=P.boot();await started(A);await idle(A);
+ const g=A.readLib().entries.find(e=>e.title==="A garden week").id,copy=IDB.kv("booklet.b."+g);
+ A.lsSet("booklet.base."+g,"the store's base");await idle(A);
+ /* a 0.13.0 tab re-opens the store booklet after the move: its list holds the entry as a pointer, with no copy and no base */
+ const e=JSON.parse(seed["booklet.library.v1"]).entries.find(x=>x.id===g);
+ LS["booklet.library.v1"]=JSON.stringify({v:1,entries:[{...e,from:"store:garden.md",storeSeen:"x.1",openedAt:new Date().toISOString(),updatedAt:new Date().toISOString(),dirty:false,unsavedEntries:0}]});
+ const B=reload();await started(B);await idle(B);
+ const be=B.readLib().entries.find(x=>x.id===g);
+ chk("local storage's pointer entry is taken, and the store keeps its kept copy and its own base, as a pair",!!be&&be.from==="store:garden.md"&&IDB.kv("booklet.b."+g)===copy&&IDB.kv("booklet.base."+g)==="the store's base",JSON.stringify({from:be&&be.from,base:IDB.kv("booklet.base."+g)}));}
+
 section("a first read that ends after the visit fell back is not loaded");
 {fresh();const A=P.boot();await started(A);A.loadText(BARE("Kept, read late"));await idle(A);
  P.closePages();IDB.ctl.kill();
