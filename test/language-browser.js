@@ -38,7 +38,7 @@ const NOTED='---\nbooklet: 0.9\ntitle: Harbour notes\nlang: en\n---\n\n> [!activ
   await press('fr');
   const fr=await notes();
   ok(await p.evaluate(()=>document.documentElement.lang)==='fr'&&await pressed()==='fr',"pressing FR puts the booklet's page in French");
-  ok(!!fr&&fr.items.length===2&&fr.items.every((x,i)=>x!==en.items[i])&&fr.items.some(x=>/“daily” demande “repeat”/.test(x)),"and the same notices, drawn again, are in French"+" "+JSON.stringify(fr));
+  ok(!!fr&&fr.items.length===2&&fr.items.every((x,i)=>x!==en.items[i])&&fr.items.some(x=>/“daily” nécessite “repeat”/.test(x)),"and the same notices, drawn again, are in French"+" "+JSON.stringify(fr));
   ok(!!fr&&fr.marker!==en.marker&&/0\.9/.test(fr.marker),"the marker sentence too",fr&&fr.marker);
   await p.screenshot({path:path.join(OUT,'language-notices-fr.png')});
   await press('en');
