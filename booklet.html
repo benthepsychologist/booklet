@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-tf76CQzHv6+evu9ja/Yw0JpcBU8InRMJIf/FlXPDEtU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-yfhrOdrcEFbKBOLE7GXdecLSOAQfGwfj6smDPhT6tw4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4753,12 +4753,21 @@ function sanitizeDiagramSvg(text){
    to draw. test/csp-hash.js and test/one-file.js keep the two layouts apart: this core
    holds Temml and loads mermaid, and the one-file build holds both. The stored text
    spells `</script` as `<\/script` and `<!--` as `<\!--` so the HTML parser cannot end
-   the block early; useLib() puts them back. The part is NOT given an integrity
-   attribute: a page opened from disk cannot check one (Chromium refuses the script), and
-   a part is trusted as the renderer is, from the same address and the same release. */
+   the block early; useLib() puts them back. On an http or https page the part's script
+   carries an integrity attribute, the sha256 of the pinned file (LIB_SRI below, the same
+   digest as the hex in the part's notice at the end of this file), so the browser itself
+   refuses a part that is not that file: a stale part from another release, a wrong file,
+   a changed one. A part refused so is a part that could not be had (the diagram shows its
+   source under its note; LIB_MISS). A page opened from disk gets no integrity attribute:
+   it cannot check one, and Chromium refuses even the right file then ("requires the
+   request to be CORS enabled"), so from disk a part is trusted as the renderer is, from
+   the same folder and the same release. */
 const LIB_ON={};
 /* the parts this renderer knows, and the global name each defines once it has run: the only names a part address is made from */
 const LIB_GLOBAL={mermaid:"__esbuild_esm_mermaid_nm",temml:"temml"};
+/* the sha256 of each part, as an integrity value (base64 of the digest whose hex its notice gives): what an http or https page asks
+   the browser to check a part against. test/figures.test.js holds each to its notice and to the part itself. */
+const LIB_SRI={mermaid:"sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=",temml:"sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU="};
 const libAwake=name=>typeof globalThis[LIB_GLOBAL[name]]!=="undefined";
 /* A library is woken only once the whole page has arrived: until then the stored text at the end of the file is only part of
    itself, and a script made from part of it is refused by the page's own policy (it matches no hash). A booklet opened by a
@@ -4786,6 +4795,9 @@ function loadPart(name){
     try{const s=document.createElement("script");
       s.onload=()=>{s.remove();done(libAwake(name));};
       s.onerror=()=>{s.remove();done(false);};
+      /* over http or https the browser checks the part against its pinned sha256 (a page from disk cannot: see above); a part with
+         no digest is not loaded over the network at all */
+      if(/^https?:/.test(url)){if(!LIB_SRI[name]) throw new Error("no digest for "+name);s.integrity=LIB_SRI[name];}
       s.src=url;document.head.append(s);}catch(e){done(false);}
   }).then(ok=>{delete LIB_PART[name];if(ok) LIB_ON[name]=true;else LIB_MISS[name]=bookletGen;return ok;});}
 /* true when the library is awake now. When the file holds it, it is woken here. When it is a part beside the page it is not awake

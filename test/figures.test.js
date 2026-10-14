@@ -49,7 +49,16 @@ for(const [name,pkg,ver,url] of LIBS){
   chk(name+": the library text hashes to the sha256 in the notice (the downloaded file, byte for byte)",
     crypto.createHash("sha256").update(Buffer.from(back,"utf8")).digest("hex")===sha);
   chk(name+": the library text is substantial",back.length>100000);
+  /* the integrity value an http or https page checks the part against (LIB_SRI) is that same sha256: the notice's hex as base64, and
+     the part's own digest, so a part changed without the core, or a core changed without its part, fails here */
+  const sri=((new RegExp(name+':"(sha256-[A-Za-z0-9+/]+={0,2})"').exec((/const LIB_SRI=\{[^}]*\}/.exec(src)||[""])[0]))||[])[1];
+  chk(name+": LIB_SRI holds an integrity value for it",!!sri);
+  chk(name+": that value is the notice's sha256, as base64",!!sha&&sri==="sha256-"+Buffer.from(sha,"hex").toString("base64"),sri);
+  chk(name+": and the sha256 of the library text itself ("+(blockText!==undefined?"the block":"parts/"+name+".js")+")",sri==="sha256-"+crypto.createHash("sha256").update(Buffer.from(back,"utf8")).digest("base64"),sri);
 }
+{const sriNames=Object.keys(Function("return "+((/const LIB_SRI=(\{[^}]*\})/.exec(src)||["","{}"])[1]))()).sort().join();
+ const globalNames=Object.keys(Function("return "+((/const LIB_GLOBAL=(\{[^}]*\})/.exec(src)||["","{}"])[1]))()).sort().join();
+ chk("LIB_SRI names exactly the parts LIB_GLOBAL names (every part a page can load has a digest)",sriNames===globalNames&&sriNames==="mermaid,temml",sriNames+" / "+globalNames);}
 chk("any library block sits after the renderer script, so the renderer's own source is unchanged in shape",
   html.indexOf('id="lib-temml"')>html.indexOf("\n</script>")&&(html.indexOf('id="lib-mermaid"')<0||html.indexOf('id="lib-mermaid"')>html.indexOf("\n</script>")));
 chk("the renderer never evals: no eval( and no new Function",!/\beval\s*\(|new\s+Function\b/.test(src));

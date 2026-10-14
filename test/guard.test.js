@@ -166,7 +166,13 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("the file has no <script> with a src: nothing is fetched by markup, so the only way the page loads a part is useLib()",!/<script\b[^>]*\bsrc\s*=/i.test(full));
  must("the renderer makes a script with a src in exactly one place (loadPart), and the address it gets is made in exactly one place (partAddress): parts/NAME.js, under the page's own address, for a name it carries",
    count(hand,"s.src=url")===1&&count(hand,'new URL("parts/"+name+".js",location.href)')===1&&count(hand,'createElement("script")')===2&&/const LIB_GLOBAL=\{mermaid:"__esbuild_esm_mermaid_nm",temml:"temml"\}/.test(hand)&&/hasOwnProperty\.call\(LIB_GLOBAL,name\)/.test(hand));
- must("a part's script gets no integrity attribute (a page opened from disk cannot check one) and no crossorigin attribute",!/\bintegrity\b/.test(hand.replace(/\/\*[\s\S]*?\*\//g,""))&&!/crossOrigin|crossorigin/.test(hand.replace(/\/\*[\s\S]*?\*\//g,"")));
+ /* 0.13.1 (item 11): over http or https a part's script carries its pinned sha256 as an integrity attribute, so the browser refuses a
+    part that is not the pinned file; a page opened from disk cannot check one (Chromium refuses even the right file), so it gets none.
+    test/figures.test.js holds LIB_SRI to the part notices and to the parts themselves. */
+ {const code=hand.replace(/\/\*[\s\S]*?\*\//g,"");
+  must("a part's script gets an integrity attribute in exactly one place, from LIB_SRI, and only when its address is http or https; a part with no digest is not loaded over the network; and no crossorigin attribute",
+    count(code,"integrity")===1&&count(hand,'if(/^https?:/.test(url)){if(!LIB_SRI[name]) throw new Error("no digest for "+name);s.integrity=LIB_SRI[name];}')===1&&
+    /const LIB_SRI=\{mermaid:"sha256-[A-Za-z0-9+\/]{43}=",temml:"sha256-[A-Za-z0-9+\/]{43}="\};/.test(hand)&&!/crossOrigin|crossorigin/.test(code));}
  for(const n of NAMES) must("the hand-written renderer has no "+n,count(hand,n)===0,count(hand,n)+" found");
  must("it has no <form with an action",!/<form\b[^>]*\baction\b/i.test(hand)&&!/<form\b/i.test(hand),"a <form> is present");
  must("it never writes document.cookie",count(hand,"document.cookie")===0);

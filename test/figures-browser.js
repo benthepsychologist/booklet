@@ -28,7 +28,10 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
     await p.route('https://bookletmd.test/**',async r=>{const u=new URL(r.request().url()).pathname;
       if(u==='/app/')return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}});
       if(PARTS.nameAt(u,'/app/')){parts.push(u);if(state.held) await state.held;
-        const s=state.partUp&&PARTS.serve(HTML,u,'/app/');if(s)return r.fulfill(s);}
+        const s=state.partUp&&PARTS.serve(HTML,u,'/app/');
+        /* opts.tamper: the host serves the part with one byte changed ("use strict" becomes "use strick": still a script that runs) */
+        if(s&&opts.tamper){const t=Buffer.from(s.body);if(t.toString('latin1',0,12)!=='"use strict"') throw new Error('the part does not start as expected');t[10]=0x6b;s.body=t;}
+        if(s)return r.fulfill(s);}
       r.fulfill({status:404,body:'nf'});});
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(500);
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
@@ -116,6 +119,18 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    ok(late.renders===3&&late.boxes===3,'slow part: three renders for the three diagrams on the page, none for the boxes the redraws replaced ('+late.renders+' renders, '+late.boxes+' boxes kept)');
    ok(t.parts.length===1,'slow part: asked for once in all ('+t.parts.length+')');
    ok(t.csp.length===0&&t.errs.length===0,'slow part: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));}
+  // 6 a changed part: the host serves parts/mermaid.js with one byte changed (a stale or altered file). Over https the page asks the
+  //   browser to check the part against its pinned sha256 (LIB_SRI), so the browser refuses it: nothing of it runs, each diagram shows
+  //   its source under the part note, and the part is asked for once in that open (a redraw asks no more)
+  if(HAS_PART){
+   const t=await load(path.join(R,'test/fixtures/figures.booklet.md'),'figures-changedpart',{tamper:true});await enter(t.p,'Diagrams and formulas');await t.p.waitForTimeout(2500);
+   const shape=()=>t.p.evaluate(()=>({svgs:document.querySelectorAll('.mfig svg').length,bad:[...document.querySelectorAll('.mfig.bad')].map(x=>x.innerText),mermaid:typeof __esbuild_esm_mermaid_nm}));
+   const g=await shape();
+   ok(g.mermaid==='undefined','changed part: the browser refused it, so none of it ran ('+g.mermaid+')');
+   ok(g.svgs===0&&g.bad.length===3&&g.bad.every(x=>/part that draws diagrams could not be loaded/.test(x)),'changed part: every diagram shows its source under the part note ('+g.bad.length+' shown, '+g.svgs+' drawn)');
+   await t.p.locator('.lang button[data-lang="fr"]').click();await t.p.waitForTimeout(800);await t.p.locator('.lang button[data-lang="en"]').click();await t.p.waitForTimeout(800);
+   ok(t.parts.join()==='/app/parts/mermaid.js','changed part: asked for once in that open, two redraws included ('+t.parts.join(',')+')');
+   ok(t.csp.length===0&&t.errs.length===0,'changed part: no policy violation and no page error (the refusal is the browser\'s integrity check) '+t.csp.concat(t.errs).join('|'));}
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
 })();
