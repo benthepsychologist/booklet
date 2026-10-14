@@ -235,12 +235,12 @@ for(const [where,svg] of figures)
   const W={id:"t/evil",engine:"svg-regions",regions:[{id:"a",label:"A"}],
     figures:[{id:"f",label:"F",regions:["a"],
       svg:`<svg viewBox="0 0 10 10" onload="ATTACK()"><image href="x" onerror="ATTACK()"/><a href="javascript:ATTACK()"><rect class="rg" data-r="a"/></a><set attributeName="href" to="javascript:ATTACK()"/><script>ATTACK()</script></svg>`}]};
-  let drawn,err=null;try{drawn=figDiv(API.ENGINES["svg-regions"]({},W,["regions"]));}catch(e){err=e;}
+  let drawn,err=null;try{drawn=figDiv(API.ENGINES["svg-regions"].draw({},W,["regions"]));}catch(e){err=e;}
   chk("svg-regions draws a hostile figure without throwing",!err&&!!drawn,err&&err.message);
   chk("and what it drew runs nothing, while keeping the region to tap",
     !!drawn&&detonate(drawn.children)===0&&find(drawn.children,n=>n.getAttribute("data-r")==="a").length===1);
   const B=JSON.parse(fs.readFileSync(path.join(R,"test/fixtures/module-check-in.md"),"utf8").match(/```booklet widget\n([\s\S]*?)\n```/)[1]);
-  const body=figDiv(API.ENGINES["svg-regions"]({},B,["regions"]));
+  const body=figDiv(API.ENGINES["svg-regions"].draw({},B,["regions"]));
   chk("svg-regions draws the real body map exactly as innerHTML did",
     !!body&&shape(body.children)===shape(nodesOf(B.figures[0].svg)));}
 

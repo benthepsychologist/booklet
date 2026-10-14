@@ -199,7 +199,7 @@ def callout_words(kind, s):
 QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon")
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 VIEW_DRAWS = {
-    "cards": ("fields", "limit", "link", "icon"),
+    "cards": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "link", "icon"),
     "table": ("fields", "group", "limit", "badge", "tone", "link", "icon"),
     "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon"),
     "tiles": ("label", "value", "note", "tone", "group", "limit", "link", "icon"),
@@ -274,8 +274,6 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             err(f, f"line {n}: the query's `from: {src_id}` is a data block in another module (a query reads within its own module, or the data section)")
         else:
             src_data, src_nums, src_rows = d_keys, d_nums, d_rows
-            if s.get("as", "").lower() == "cards":
-                err(f, f"line {n}: the query's `as: cards` draws kept entries, not the data block {src_id!r}")
     else:
         err(f, f"line {n}: the query's `from: {src_id}` names no activity, question or data block in this file")
     # the view in force: the one named, else the default for what is read (cards for kept entries, a table for a data block)
@@ -289,6 +287,12 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             warn(f, f"line {n}: the query's `as: {view}` does not draw `{key}`")
         else:
             warn(f, f"line {n}: the query's default view, `{view}`, does not draw `{key}`")
+    # cards over kept entries are titled by their date and list their questions: the roles that name a row's parts are not drawn there
+    # (over a data block they are: `label` the title, `value` the figure, `note`, `badge`, `tone`)
+    if view == "cards" and src_act:
+        for key in ("label", "value", "note", "badge", "tone"):
+            if key in s:
+                warn(f, f"line {n}: the query's `{key}:` is not drawn on cards over kept entries (each card is titled by its date and lists its questions); use `as: list` or `as: table` to draw it")
     # a setting that names a field the rows never carry: a warning, never an error
     names = None
     if src_data is not None:
@@ -877,6 +881,7 @@ def check_format(f, text, fm):
     note_defs = {}           # scope -> {footnote id: line}
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
     loose_questions = []   # questions before any activity line
+    early_questions = []   # the same, with their line and kind, before the file's first module or activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
     rec_id = None            # the module id on the records line the blocks below sit under (None: the line names none)
     rec_lines = []           # (line, id) of every records line that names a module, checked once the file is read
@@ -1198,6 +1203,8 @@ def check_format(f, text, fm):
                         q_owner.setdefault(open_mod, {})[w["id"]] = cur_act
                     elif w["id"]:
                         loose_questions.append(w["id"])
+                        if not seen_activity and not any_module:
+                            early_questions.append((n, kind))
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go; write `> [!{kind}|my-id] Title`")
                     bad_q = False
@@ -1336,6 +1343,9 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ^{ref} is not a widget block")
     # A file with no activity line and no module line is one activity (SPEC section 3),
     # so its queries and questions belong to that one activity.
+    if seen_activity or any_module:
+        for n, kind in early_questions:
+            err(f, f"line {n}: a {kind} question belongs inside an activity, not before the file's first module or activity line")
     if not seen_activity and not any_module:
         act_info.setdefault(None, {})[IMPLICIT_ACTIVITY] = (None, False)
         for q in loose_questions:
@@ -1491,7 +1501,14 @@ def check_prices(f, lines, start, regions):
         if k in skip or skipped or not ln.strip():
             flush()
             continue
-        para.append((k, re.sub(r"^>[ \t]?", "", ln)))
+        # a booklet line (its title) and each list item are their own words: a `$` there does not pair with one on the next line
+        stripped = re.sub(r"^>[ \t]?", "", ln)
+        line = bool(re.match(r"^>[ \t]*\[!", ln))
+        if line or re.match(r"^\s*(?:[-*+]|\d+[.)])\s", stripped):
+            flush()
+        para.append((k, stripped))
+        if line:
+            flush()
     flush()
 
 

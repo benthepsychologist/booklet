@@ -70,8 +70,8 @@ const CASES=[
  ["lint-data-id-clash","a data block id that is also a question's id",/line 19: the data block id \^situation is also the id on line 13/],
  ["lint-query-bad-as","a query whose `as:` is not a view",/line 25: the query's `as: chart` is not one of cards, table, list, tiles/],
  ["lint-query-bad-limit","a query whose `limit:` is not a positive integer",/line 25: the query's `limit: 0` must be a positive whole number/],
- ["lint-query-cards-on-data","`as: cards` on a data block",/line 25: the query's `as: cards` draws kept entries, not the data block 'short-list'/],
  ["lint-query-data-other-module","a query of a data block in another module",/line 13: the query's `from: short-list` is a data block in another module/],
+ ["lint-question-early","a question before the file's first module or activity line",/line 9: a text question belongs inside an activity, not before the file's first module or activity line/],
  ["lint-fence-unclosed","a fence opened and never closed",/line 25: a fence is opened and never closed/],
  ["lint-setting-unknown","a setting a kind does not take (`mx:5` for `max:5`)",/line 13: a number line takes no `mx:` setting \(it takes `min:`, `max:`, `step:`\)/],
  ["lint-setting-flag-unknown","a flag a kind does not take",/line 13: a text line takes no `lng` setting \(it takes `long`\)/],
@@ -121,7 +121,12 @@ for(const [name,what,rx] of CASES){
  const W=(name,rx,label)=>{const r=lint(path.join(FX,name+".md"));
    chk(label+": one warning, no error, naming the line",r.status===0&&r.errors.length===0&&r.warns.length===1&&rx.test(r.warns[0]||""),r.out);};
  W("lint-query-ignored-key",/line 25: the query's `as: bars` does not draw `group`/,"a key the view does not draw");
- W("lint-query-ignored-cards",/line 23: the query's default view, `cards`, does not draw `group`/,"a key the default view does not draw");
+ W("lint-query-cards-label-entries",/line 15: the query's `label:` is not drawn on cards over kept entries/,"a `label:` on cards over kept entries");
+ {const r=lint(path.join(FX,"lint-query-cards-roles-entries.md"));
+  chk("cards over kept entries: each of label, value, note, badge and tone is its own warning, naming the fix",r.status===0&&r.errors.length===0&&r.warns.length===5&&["label","value","note","badge","tone"].every(k=>r.warns.some(w=>w.includes("`"+k+":` is not drawn on cards over kept entries")&&/use `as: list` or `as: table`/.test(w))),r.out);}
+ {const r=lint(path.join(FX,"lint-price-lines.md"));
+  chk("a `$` on a booklet line's title does not pair with one on its help line, nor one option's with the next option's (no false price warning)",r.status===0&&r.warns.length===0&&r.errors.length===0,r.out);}
+ W("lint-query-ignored-cards",/line 23: the query's default view, `cards`, does not draw `parent`/,"a key the default view does not draw");
  W("lint-query-badge-field",/line 25: the query's `badge: nope` names a field the rows never carry/,"a `badge:` naming a field the rows never carry");
  W("lint-query-parent-field",/line 25: the query's `parent: nope` names a field the rows never carry/,"a `parent:` naming a field the rows never carry");
  W("lint-query-parent-no-id",/line 25: the query's `parent: due` needs rows with an `id` field/,"a `parent:` over rows with no `id`");
@@ -130,6 +135,11 @@ for(const [name,what,rx] of CASES){
  W("lint-query-nested-no-id",/line 25: the nested list has 1 row\(s\) with no `id`/,"a nested list with a row that has no `id`");
  const ok=lint(path.join(FX,"lint-query-roles-ok.md"));
  chk("a list with every role key, `fields:` and `parent:` lints clean",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);}
+
+{// `as: cards` draws a data block (0.13), and prose before the first module line is the booklet's opening: both lint clean
+ const r=lint(path.join(FX,"lint-query-cards-data-ok.md"));
+ chk("`as: cards` over a data block, with `label:`, `fields:` and `limit:`, lints clean (cards draw label, fields, limit, link, icon)",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);
+ chk("and so does the prose and the reading callout before the file's first module line (the booklet's opening)",r.status===0&&r.errors.length===0&&r.warns.length===0,r.out);}
 
 {// a query written correctly is clean
  const r=lint(path.join(FX,"lint-query-ok.md"));

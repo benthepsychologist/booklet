@@ -6,6 +6,11 @@ lang: en
 
 # Lint fixture
 
+The booklet's opening: prose before the first module line, which the linter reads as the booklet's own words.
+
+> [!tip] A reading callout in the opening
+> It is part of the opening too.
+
 > [!module|fixture-mod] A fixture module
 
 > [!activity|log repeat] Log
@@ -25,6 +30,9 @@ lang: en
 ```booklet query
 from: short-list
 as: cards
+label: title
+fields: due, n
+limit: 5
 ```
 
 > [!module|fixture-mod end]

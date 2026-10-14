@@ -34,7 +34,7 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  const mk=(body,extra="")=>A.parseFile(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n${extra}\`\`\`booklet query\n${body}\n\`\`\`\n\n> [!module|m end] End\n`);
  const ROWS='```booklet data\n[{"x":1,"y":"a"}]\n```\n^d\n\n';
  {const r=mk("from: d",ROWS);chk("a data block and a query in one module read clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
- {const r=mk("from: d\nas: cards",ROWS);chk("`as: cards` on a data block is refused, with a reason",r.unread.some(p=>/as: cards.*“d”/.test(p)),JSON.stringify(r.unread));}
+ {const r=mk("from: d\nas: cards",ROWS);chk("`as: cards` on a data block reads clean, like every other view (0.13; test/drawing.test.js draws it)",r.ok&&r.unread.length===0&&r.template.modules[0].mode.blocks.some(b=>b.type==="query"&&b.view.as==="cards"&&b.data),JSON.stringify(r.unread));}
  {const r=mk("from: d\nas: chart",ROWS);chk("an unknown `as:` is refused, with a reason",r.unread.some(p=>/as: chart.*not cards, table, list, tiles, bars or line/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",'```booklet data\n[{"x":{"deep":1}}]\n```\n^d\n\n');chk("a nested value is refused: the block is skipped and the query then names nothing",
     r.unread.some(p=>/data block \^d has a value that nests deeper/.test(p))&&r.unread.some(p=>/names “d”/.test(p)),JSON.stringify(r.unread));}

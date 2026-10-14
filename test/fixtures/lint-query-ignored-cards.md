@@ -23,7 +23,7 @@ lang: en
 ```booklet query
 from: log
 fields: ease, situation
-group: situation
+parent: situation
 empty: Nothing logged yet.
 ```
 

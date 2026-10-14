@@ -39,7 +39,7 @@ if(/\.bodyfig/.test(html)){fails++;console.log("  FAIL  booklet.html styles a mo
 // changing this list on purpose, in the same change as SPEC.md's table and the linter's list.
 const FROZEN_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon"];
 const FROZEN_VIEWS=["cards","table","list","tiles","bars","line"];
-const FROZEN_DRAWS={cards:["fields","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
+const FROZEN_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
   list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
   tiles:["label","value","note","tone","group","limit","link","icon"],bars:["label","value","tone","limit"],line:["label","value","fields","limit"]};
 const WHY=" A new key or view needs two real pages that need it (SPEC.md, design rules for views).";
@@ -116,7 +116,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
        if((t.slice(0,i)+t.slice(j)).includes(needle)) gone.push(f);}else if(t.includes(needle)) gone.push(f);}}};
  walk(path.join(__dirname,".."));
  must("the "+needle+" engine is mentioned nowhere in the repository outside SPEC.md's change list for v0.8",gone.length===0,gone.join(", "));
- must("and the renderer has the two engines that remain",/const ENGINES=\{"svg-regions":svgRegions,"grid-select":gridSelect\};/.test(html));
+ must("and the renderer has the two engines that remain",/const ENGINES=\{"svg-regions":\{draw:svgRegions,summary:regionNames\},"grid-select":\{draw:gridSelect,summary:gridNames\}\};/.test(html));
  must("showTags is read nowhere",!/showTags/.test(html));}
 // A browser ends the main <script> at the first `</script` it meets outside "double escaped" script data. A `<!--` in the
 // code (the Markdown reader looks for HTML comments) opens the escaped state until the next `-->`, and a `<script` written
