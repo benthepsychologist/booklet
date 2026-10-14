@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-iwkAWjPxygXcM+YTkDnshuubSmCD4dxjEf04Nb8c4UY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-9R5mp02o1ik3Y1Uvqr+TdIZBOpjrF0sGIty5uLdC1S0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1718,7 +1718,7 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: this scale question has no anchors under it (a numbered list)`,
       settingUnknown: (w,kind,s)=>`${w}: a ${kind} line takes no “${s}”, so it was ignored`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
-      dailyAlone: w=>`${w}: \`daily\` only follows \`repeat\`, so it was ignored`,
+      dailyAlone: w=>`${w}: \`daily\` needs \`repeat\`, so it was ignored`,
       iconUnknown: (w,n)=>`${w}: “${n}” is not a name in Booklet's icon set, so it was ignored`,
       iconOnEnd: w=>`${w}: a module's end line takes no “icon:”, so it was ignored`,
       kindUnknown: (w,k)=>`${w}: this page does not know the kind “${k}”, so it is shown as a callout`,
@@ -2040,7 +2040,7 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w} : cette question scale n’a pas d’ancres en dessous (une liste numérotée)`,
       settingUnknown: (w,kind,s)=>`${w} : une ligne ${kind} n’accepte pas « ${s} » ; il a donc été ignoré`,
       numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
-      dailyAlone: w=>`${w} : \`daily\` ne vient qu’après \`repeat\` ; il a donc été ignoré`,
+      /* l10n: draft */ dailyAlone: w=>`${w} : \`daily\` demande \`repeat\` ; il a donc été ignoré`,
       iconUnknown: (w,n)=>`${w} : « ${n} » ne fait pas partie des icônes de Booklet ; il a donc été ignoré`,
       iconOnEnd: w=>`${w} : la ligne de fin d’un module n’accepte pas « icon: » ; il a donc été ignoré`,
       kindUnknown: (w,k)=>`${w} : cette page ne connaît pas le type « ${k} » ; il est donc affiché comme un encadré`,
@@ -2362,7 +2362,7 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: esta pregunta scale no tiene anclas debajo (una lista numerada)`,
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
-      dailyAlone: w=>`${w}: \`daily\` solo va después de \`repeat\`, así que se ignoró`,
+      /* l10n: draft */ dailyAlone: w=>`${w}: \`daily\` necesita \`repeat\`, así que se ignoró`,
       iconUnknown: (w,n)=>`${w}: “${n}” no está entre los íconos de Booklet, así que se ignoró`,
       iconOnEnd: w=>`${w}: la línea de cierre de un módulo no admite “icon:”, así que se ignoró`,
       kindUnknown: (w,k)=>`${w}: esta página no conoce el tipo “${k}”, así que se muestra como un recuadro`,

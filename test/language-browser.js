@@ -34,11 +34,11 @@ const NOTED='---\nbooklet: 0.9\ntitle: Harbour notes\nlang: en\n---\n\n> [!activ
   await load(NOTED);
   ok(await shown()==='en,es,fr',"inside a booklet the toggle still shows EN, ES and FR");
   const en=await notes();
-  ok(!!en&&/This file says booklet: 0\.9/.test(en.marker)&&en.items.length===2&&en.items.some(x=>/“daily” only follows “repeat”/.test(x)),"the file's notices are in English: the marker sentence and two problems"+" "+JSON.stringify(en));
+  ok(!!en&&/This file says booklet: 0\.9/.test(en.marker)&&en.items.length===2&&en.items.some(x=>/“daily” needs “repeat”/.test(x)),"the file's notices are in English: the marker sentence and two problems"+" "+JSON.stringify(en));
   await press('fr');
   const fr=await notes();
   ok(await p.evaluate(()=>document.documentElement.lang)==='fr'&&await pressed()==='fr',"pressing FR puts the booklet's page in French");
-  ok(!!fr&&fr.items.length===2&&fr.items.every((x,i)=>x!==en.items[i])&&fr.items.some(x=>/“daily” ne vient qu’après “repeat”/.test(x)),"and the same notices, drawn again, are in French"+" "+JSON.stringify(fr));
+  ok(!!fr&&fr.items.length===2&&fr.items.every((x,i)=>x!==en.items[i])&&fr.items.some(x=>/“daily” demande “repeat”/.test(x)),"and the same notices, drawn again, are in French"+" "+JSON.stringify(fr));
   ok(!!fr&&fr.marker!==en.marker&&/0\.9/.test(fr.marker),"the marker sentence too",fr&&fr.marker);
   await p.screenshot({path:path.join(OUT,'language-notices-fr.png')});
   await press('en');
