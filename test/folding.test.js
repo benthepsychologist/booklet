@@ -53,7 +53,8 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
 /* 5. one at a time: units */
 {const mk=(type,id,extra={})=>({type,id,keys:[id],...extra});
  const md=t=>({type:"markdown",id:"m"+t,text:t});
- const hint={type:"callout",kind:"",id:"q1-hint",blocks:[md("h")]};
+ /* a hint drawn where it stands (one not folded) goes with the question above it; a question's own hint is on it */
+ const hint={type:"callout",kind:"hint",outside:true,id:"q1-hint",blocks:[md("h")]};
  const u=A.stepUnits([md("lead"),mk("choice","q1"),hint,md("between"),mk("choice","q2"),mk("text","q3"),md("tail")]);
  chk("three questions make three steps",u.length===3);
  chk("prose goes with the question after it; a hint goes with its question; the last prose with the last question",

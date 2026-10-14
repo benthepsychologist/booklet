@@ -226,9 +226,12 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].ac
  x=mode("> [!row]\n\nFirst paragraph.\n\nSecond paragraph.\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n> [!row|end]\n");
  chk("with no headings each block is a cell",shape(x.a)==="row[md|md|md]",shape(x.a));
  x=mode("> [!row]\n\n### Ask\n\n> [!text|q1] Q?\n\n> [!hint]- Hint\n> a hint\n\n### Other\n\nx\n\n> [!row|end]\n");
- chk("a question and its hint stay in one cell",shape(x.a)==="row[md+text+callout|md]",shape(x.a));
+ const cellQ=a=>a.pages[0].blocks[0].blocks.flatMap(c=>c.blocks).find(b=>b.type==="text");
+ chk("a question and its hint stay in one cell: the hint is the question's own",shape(x.a)==="row[md+text|md]"&&!!cellQ(x.a).hint,shape(x.a));
  x=mode("> [!row]\n\n> [!text|q1] Q?\n\n> [!hint]- Hint\n> a hint\n\n> [!text|q2] R?\n\n> [!row|end]\n");
- chk("and with no headings a hint stays with its question",shape(x.a)==="row[text+callout|text]",shape(x.a));
+ chk("and with no headings a hint stays with its question",shape(x.a)==="row[text|text]"&&!!cellQ(x.a).hint,shape(x.a));
+ x=mode("> [!row]\n\n> [!text|q1] Q?\n\n> [!hint] Hint\n> a hint\n\n> [!text|q2] R?\n\n> [!row|end]\n");
+ chk("and one not folded, drawn where it stands, stays in its question's cell",shape(x.a)==="row[text+callout|text]"&&!cellQ(x.a).hint,shape(x.a));
  x=mode("> [!row]\n\n### A\n\n```python\n# not a heading\nprint(1)\n```\n\n### B\n\nx\n\n> [!row|end]\n");
  chk("a # line inside a code fence is not a heading",shape(x.a)==="row[md|md]",shape(x.a));
  x=mode("Before.\n\n> [!row]\n\n### A\n\nx\n\n### B\n\ny\n\n> [!row|end]\n\nAfter.\n");

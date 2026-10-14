@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-cWIQmE7pPq9yXPtlw+6JcWVLy3wT8PGq1TFPJV5+dUA=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-lkXLRWRkLnhnV/IlrGDY7tJGHRJo5EoTRxqE7sohBdQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3094,7 +3094,8 @@ function renameStored(id,name){const n=cleanName(name);if(!n) return false;
   const kept=storedText(o),text=kept||blankText(),R=parseFile(text);
   if(R.template&&n===R.template.title) return false;
   /* an older design this release refuses stays the design, renamed; else the text is, and the design it came from goes */
-  if(typeof o.text!=="string"&&R.refused&&R.refused.length&&oldDesign(keptShape(o.TPL))) o.TPL=namedDesign(keptShape(o.TPL),n);
+  const T=typeof o.text!=="string"&&R.refused&&R.refused.length?keptShape(o.TPL):null;
+  if(T&&oldDesign(T)) o.TPL=namedDesign(T,n);
   else{o.text=setTitleIn(text,n);if(kept!==null) delete o.TPL;}
   o.dirty=true;
   lsSet(keyOfEntry(e),JSON.stringify(o));
@@ -3165,7 +3166,8 @@ function loadLocal(){const key=slotKey();if(!key) return false;
        notice shows until the reader fixes the file. */
     const old=typeof o.text!=="string",text=storedText(o),R=text===null?null:parseFile(text);
     if(R&&R.template){const no=R.refused.length>0;
-      if(no&&old&&oldDesign(keptShape(o.TPL))){const T=keptShape(o.TPL);BOOK={...T,widgets:Array.isArray(T.widgets)?T.widgets:[]};OLD_DESIGN=true;}
+      const T=old?keptShape(o.TPL):null;
+      if(no&&old&&oldDesign(T)){BOOK={...T,widgets:Array.isArray(T.widgets)?T.widgets:[]};OLD_DESIGN=true;}
       else{adoptParse(R);if(old) lsSet(key,snapshot());}
       if(old||no) FILE_NOTES=fileNotesOf(R,startScreen());}
     return true;
@@ -3174,15 +3176,29 @@ function loadLocal(){const key=slotKey();if(!key) return false;
    0.13.1 kept a module's one activity as `mode`, a one-page activity's blocks as `blocks`, and the booklet's name in
    `head.title` as well as `title`; anything that is not an object is left out, as their readers left it out. A design this
    release kept (a TPL saved back) is in its shape already. */
-function keptShape(t){if(!isObj(t)) return t;const {head,...out}=t;
+function keptShape(t){if(!isObj(t)) return t;t=clone(t);const {head,...out}=t;
   if(isObj(head)&&typeof head.title==="string") out.title=head.title;
   const thing=x=>!!x&&typeof x==="object";
   if(Array.isArray(t.modules)) out.modules=t.modules.map(m=>{if(!isObj(m)) return m;const {mode,...mo}=m;
     const acts=Array.isArray(m.activities)?m.activities.filter(thing):thing(mode)?[mode]:[];
     mo.activities=acts.map(a=>{const {blocks,...ac}=a,ps=Array.isArray(a.pages)?a.pages.filter(thing):[];
-      ac.pages=ps.length?ps:[{id:"p1",blocks:Array.isArray(blocks)?blocks:[]}];return ac;});
+      ac.pages=ps.length?ps:[{id:"p1",blocks:Array.isArray(blocks)?blocks:[]}];keptHelps(ac.pages);return ac;});
     return mo;});
   return out;}
+/* An older release's hints and solutions, in one activity's pages (keptShape's copy, changed in place): a question's help text
+   was its `hint`, and a hint or solution straight after a question was a callout of kind "" whose id is the question's and
+   "-hint" or "-solution". The first folded one of each for a question in the activity is that question's own, as that release
+   drew it; any other was drawn where it stood, and stays there as a callout of its kind, `outside`. This is the one place that
+   reads that id. */
+function keptHelps(pages){const all=[],walk=l=>(Array.isArray(l)?l:[]).forEach(b=>{if(b&&typeof b==="object"){all.push(b);walk(b.blocks);}});
+  pages.forEach(p=>walk(p.blocks));
+  const qs=new Map(),seen=new Set(),gone=new Set();
+  all.forEach(x=>{if(!QUESTION_KINDS.has(x.type)) return;if(typeof x.hint==="string"){x.help=x.hint;delete x.hint;}if(x.id&&!qs.has(x.id)) qs.set(x.id,x);});
+  all.forEach(c=>{const m=c.type==="callout"&&c.kind===""?/^(.*)-(hint|solution)$/.exec(String(c.id||"")):null;if(!m) return;
+    const q=qs.get(m[1]),fold=placeOf(c)==="folded",first=fold&&!seen.has(c.id);if(fold) seen.add(c.id);
+    if(q&&first&&!isObj(q[m[2]])){q[m[2]]={...c,kind:m[2]};gone.add(c);}else{c.kind=m[2];c.outside=true;}});
+  const drop=l=>{if(!Array.isArray(l)) return;for(let i=l.length-1;i>=0;i--){if(gone.has(l[i])) l.splice(i,1);else if(l[i]&&typeof l[i]==="object") drop(l[i].blocks);}};
+  pages.forEach(p=>drop(p.blocks));}
 /* an older release's kept design, if it is shaped as one (keptShape): modules holding activities with string ids, of a kind this page draws */
 const oldDesign=t=>isObj(t)&&Array.isArray(t.modules)&&t.modules.every(m=>isObj(m)&&typeof m.id==="string"
   &&m.activities.every(a=>typeof a.id==="string"&&(a.kind==="entry"||a.kind==="board")));
@@ -3473,41 +3489,42 @@ function splitItems(lines,start){let i=start;
   return {items,source,moved:post.length>0};}
 /* What each kind of question line makes: {block} (and {menu:true} when its options come from a
    shared menu, filled in once the whole file is read), or {bad: message} when the line cannot be
-   drawn. Called with the line, its hint text, where it is for a message, and the messages. */
-const choiceBlock=kind=>(it,hint,where,P)=>{
+   drawn. Called with the line, its help text, where it is for a message, and the messages. */
+const choiceBlock=kind=>(it,help,where,P)=>{
   if(!it.opts&&!it.set.menu) return {bad:P.choiceNoOptions(where,kind)};
-  if(!it.opts) return {menu:true,block:{id:it.id,type:kind,label:it.title,hint:hint||undefined,keys:[it.id],
+  if(!it.opts) return {menu:true,block:{id:it.id,type:kind,label:it.title,help:help||undefined,keys:[it.id],
     open:it.flags.has("open")||undefined,options:[],answer:kind==="choice"?undefined:[]}};
-  return {block:{id:it.id,type:kind,label:it.title,hint:hint||undefined,keys:[it.id],
+  return {block:{id:it.id,type:kind,label:it.title,help:help||undefined,keys:[it.id],
     open:it.flags.has("open")||undefined,options:it.opts.map(o=>o.text),
     answer:kind==="choice"?(it.opts.findIndex(o=>o.correct)+1)||undefined:it.opts.map((o,n)=>o.correct?n+1:null).filter(Boolean)}};};
-const numberBlock=kind=>(it,hint)=>({block:{id:it.id,type:kind,label:it.title,hint:hint||undefined,keys:[it.id],
+const numberBlock=kind=>(it,help)=>({block:{id:it.id,type:kind,label:it.title,help:help||undefined,keys:[it.id],
   min:it.set.min!==undefined?Number(it.set.min):undefined,max:it.set.max!==undefined?Number(it.set.max):undefined,
   step:it.set.step!==undefined?Number(it.set.step):undefined}});
 const QUESTION_BLOCK={
-  text:(it,hint)=>({block:{id:it.id,type:"text",label:it.title,hint:hint||undefined,keys:[it.id],rows:it.flags.has("long")?6:undefined}}),
-  lines:(it,hint)=>({block:{id:it.id,type:"lines",label:it.title,hint:hint||undefined,keys:[it.id]}}),
-  widget:(it,hint,where,P)=>{const emb=it.body.join("\n").match(/!\[\[[^\]#|]*#\^([A-Za-z0-9-]+)[^\]]*\]\]/);
+  text:(it,help)=>({block:{id:it.id,type:"text",label:it.title,help:help||undefined,keys:[it.id],rows:it.flags.has("long")?6:undefined}}),
+  lines:(it,help)=>({block:{id:it.id,type:"lines",label:it.title,help:help||undefined,keys:[it.id]}}),
+  widget:(it,help,where,P)=>{const emb=it.body.join("\n").match(/!\[\[[^\]#|]*#\^([A-Za-z0-9-]+)[^\]]*\]\]/);
     if(!emb) return {bad:P.widgetNoData(where,it.id)};
-    const b={id:it.id,type:"widget",widget:emb[1],keys:[it.id],label:it.title||undefined,hint:hint||undefined};
+    const b={id:it.id,type:"widget",widget:emb[1],keys:[it.id],label:it.title||undefined,help:help||undefined};
     ["readonly","describe"].forEach(f=>{if(it.flags.has(f)) b[f]=true;});
     return {block:b};},
   choice:choiceBlock("choice"),
   multi:choiceBlock("multi"),
-  matrix:(it,hint,where,P)=>{
+  matrix:(it,help,where,P)=>{
     if(!it.items) return {bad:P.matrixNoItems(where)};
     if(!it.anchors) return {bad:P.matrixNoAnchors(where)};
-    return {block:{id:it.id,type:"matrix",label:it.title,hint:hint||undefined,keys:[it.id],items:it.items,anchors:it.anchors}};},
-  scale:(it,hint,where,P)=>{
+    return {block:{id:it.id,type:"matrix",label:it.title,help:help||undefined,keys:[it.id],items:it.items,anchors:it.anchors}};},
+  scale:(it,help,where,P)=>{
     if(!it.anchors) return {bad:P.scaleNoAnchors(where)};
-    return {block:{id:it.id,type:"scale",label:it.title,hint:hint||undefined,keys:[it.id],anchors:it.anchors}};},
+    return {block:{id:it.id,type:"scale",label:it.title,help:help||undefined,keys:[it.id],anchors:it.anchors}};},
   number:numberBlock("number"),
-  date:(it,hint)=>({block:{id:it.id,type:"date",label:it.title,hint:hint||undefined,keys:[it.id]}})};
+  date:(it,help)=>({block:{id:it.id,type:"date",label:it.title,help:help||undefined,keys:[it.id]}})};
 /* an activity's id from its title: letters and digits, as dashes */
 const idWord=s=>slugify(s).replace(/[^A-Za-z0-9-]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-");
 /* ROWS: the blocks put while a row is open are held, then split into cells: each heading at
    the shallowest level the row's prose uses starts a cell (what comes before the first is a cell of its own);
-   a row with no heading at all makes a cell of each block. A hint or solution stays with its question. */
+   a row with no heading at all makes a cell of each block. A hint or solution drawn outside its question (`outside`: one not
+   folded, or a second one) stays in its question's cell; a question's own is on the question. */
 function rowCells(blocks,nextSeq){
   const heads=t=>{const out=[];let fence=null;String(t).split("\n").forEach((ln,i)=>{const was=fence;fence=fenceStep(fence,ln,true);
     if(was||fence) return;const m=ATX_RE.exec(ln);if(m&&m[2]) out.push({i,l:m[1].length});});return out;};
@@ -3517,7 +3534,7 @@ function rowCells(blocks,nextSeq){
   const md=t=>({id:"md"+nextSeq(),type:"markdown",text:t});
   blocks.forEach(b=>{
     if(b.type!=="markdown"){
-      if(min===7){if(/-(hint|solution)$/.test(b.id||"")&&cur) cur.push(b);else{open();cur.push(b);}}
+      if(min===7){if(b.outside&&cur) cur.push(b);else{open();cur.push(b);}}
       else{if(!cur) open();cur.push(b);}
       return;}
     const L=b.text.split("\n"),clip=(a,z)=>L.slice(a,z).join("\n").replace(/^\n+|\n+$/g,"");
@@ -3532,17 +3549,20 @@ function rowCells(blocks,nextSeq){
   return cells;}
 /* calls fn on every block in a list, descending into rows and their cells */
 const rowWalk=(list,fn)=>list.forEach(b=>{fn(b);if(b.type==="row"||b.type==="cell") rowWalk(b.blocks,fn);});
-/* takes a block out of a list, wherever it sits in a row */
-const stripBlock=(list,blk)=>{const i=list.indexOf(blk);if(i>=0) list.splice(i,1);
+/* a question's own hint and solution (the callouts the parser put on it), in the order the file wrote them: the order they
+   were set */
+const qParts=b=>Object.keys(b).filter(k=>(k==="hint"||k==="solution")&&isObj(b[k])).map(k=>b[k]);
+/* takes a block out of a list, wherever it sits in a row; a question's own hint and solution stay where it stood, drawn there */
+const stripBlock=(list,blk)=>{const i=list.indexOf(blk);if(i>=0) list.splice(i,1,...qParts(blk).map(c=>({...c,outside:true})));
   list.forEach(b=>{if(b.type==="row"||b.type==="cell") stripBlock(b.blocks,blk);});};
 /* the module that holds an activity */
 const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
-/* a question's hint: the text of its body, less the lines that only embed a figure */
-const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
+/* a question's help text: the text of its body, less the lines that only embed a figure */
+const helpOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
-  let mod=null,act=null,section="content",lastQ=null,seq=0,oseq=0,row=null,theme=null,recScope="",recForeign=null,dataMod=null;
+  let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,theme=null,recScope="",recForeign=null,dataMod=null;
   /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
      as a module's opening is, and drawn on the home screen. `started` is set when that first line is met. */
   const opening=[];let started=false;
@@ -3713,16 +3733,20 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       claim(it.id,where);page();
       const build=QUESTION_BLOCK[k];
       if(!build){problems.push(P.kindNotDrawn(where,k));lastQ=null;return;}
-      const r=build(it,hintOf(it.body),where,P);
+      const r=build(it,helpOf(it.body),where,P);
       if(r.bad){problems.push(r.bad);return;}
       if(k==="scale"){const seen=new Set(),d=it.anchors.find(a=>seen.size===seen.add(a.n).size);if(d) problems.push(P.scaleAnchorRepeat(where,d.n));}
       if(r.block.type==="widget"&&mod) r.block.module=mod.id;
-      lastQ=put(r.block);
+      lastQ=put(r.block);lastQAct=act;
       if(r.menu) menuUses.push({block:lastQ,menu:it.set.menu,mod,where});
       return;}
-    /* a hint or solution straight after a question is folded under it */
-    if((k==="hint"||k==="solution")&&lastQ){put({id:lastQ.id+"-"+k,type:"callout",kind:"",title:it.title||undefined,
-      blocks:[{id:lastQ.id+"-"+k+"-md",type:"markdown",text:it.body.join("\n")}],placement:it.fold==="-"?"folded":undefined,label:it.title||k});return;}
+    /* A hint or a solution straight after a question belongs to it (SPEC.md section 6). Folded, it is the question's own `hint` or
+       `solution` (the first of each in the question's activity), drawn inside the question; any other (not folded, or a second
+       one) is drawn where it stands, a callout of its kind marked `outside`. */
+    if((k==="hint"||k==="solution")&&lastQ){const q=lastQ;page();
+      const c={id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,
+        blocks:[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}],placement:it.fold==="-"?"folded":undefined,label:it.title||k};
+      if(c.placement==="folded"&&!q[k]&&act===lastQAct) q[k]=c;else put({...c,outside:true});return;}
     /* any other callout is reading set apart */
     const unk=unknownKind(it);if(unk) problems.push(P.kindUnknown(where,k));
     if(!act&&(mod||(!started&&!implicit))){if(mod) mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
@@ -5299,15 +5323,16 @@ const foldName=b=>tx(b.label,b.id);
 const blockFilled=(b,draft)=>(b.blocks||[b]).flatMap(keysOf)
   .some(k=>Array.isArray(draft[k])?draft[k].length>0:nonEmpty(draft[k]));
 /* A question's heading and hint, drawn into `box`: the heading as an h3 (as a
-   label for the field with id `forId`, when one is given) and the hint as an
+   label for the field with id `forId`, when one is given) and the help text as an
    aside, each only when there is one. Returns the heading's text. (A text
-   question puts its hint inside its label, so it is drawn on its own.) */
+   question puts its help text inside its label, so it is drawn on its own.) */
 function questionHead(box,b,forId){
   const head=tx(b.label,"");
   if(nonEmpty(head)) box.append(forId?el("label",{class:"lbl",for:forId},...words(head,true)):el("h3",{},...words(head)));
-  const hint=tx(b.hint,"");if(nonEmpty(hint)) box.append(el("p",{class:"aside"},...words(hint)));
+  const help=tx(b.help,"");if(nonEmpty(help)) box.append(el("p",{class:"aside"},...words(help)));
   return plainText(head);}
-/* The drawing of each kind of block (below, DRAW_BLOCK), each called as (block, draft, activityId, the draw).
+/* The drawing of each kind of block (below, DRAW_BLOCK), each called as (block, draft, activityId, the draw, the question's
+   controls: its own hint and solution, which renderBlock draws at its end; null for any other block).
    A booklet's prose, drawn from its Markdown: see mdNodes. A citation mark,
    [^id], becomes a numbered superscript: see READING MATERIAL. */
 function drawMarkdown(b,draft,activityId,dc){const box=el("div",{class:"pblock md"});
@@ -5340,15 +5365,15 @@ function drawWidget(b,draft,activityId){const W=widgetOf(b.widget,b.module);
   if(!eng){box.append(el("p",{class:"hint"},STRINGS[lang].ui.missingEngine(W.engine||"?")));return box;}
   const C=wordsOf(W.copy);
   const head=tx(b.label,C.h);if(nonEmpty(head)) box.append(el("h3",{},...(typeof b.label==="string"?words(head):[head])));
-  const lead=tx(b.hint,C.p);if(nonEmpty(lead)) box.append(el("p",{class:"aside"},...(typeof b.hint==="string"?words(lead):[lead])));
+  const lead=tx(b.help,C.p);if(nonEmpty(lead)) box.append(el("p",{class:"aside"},...(typeof b.help==="string"?words(lead):[lead])));
   [C.stance,C.invite].filter(nonEmpty).forEach(x=>box.append(el("p",{class:"hint"},x)));
   box.append(eng.draw(draft,W,keysOf(b),engOpts(b)));
   return box;}
 /* the question kinds of SPEC.md section 5: declared on the line, answered as
    a position or a string, never invented syntax */
 function drawText(b,draft,activityId){const box=el("div",{});const id=newId("f_");
-  const head=tx(b.label,"");const hint=tx(b.hint,"");
-  box.append(el("label",{class:"lbl",for:id},...words(head,true),nonEmpty(hint)?el("span",{class:"hint"},...words(hint,true)):null));
+  const head=tx(b.label,"");const help=tx(b.help,"");
+  box.append(el("label",{class:"lbl",for:id},...words(head,true),nonEmpty(help)?el("span",{class:"hint"},...words(help,true)):null));
   const ta=textField(draft,keysOf(b)[0],b.rows||2);ta.id=id;box.append(ta);return box;}
 function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[0];
   const head=questionHead(box,b);
@@ -5380,7 +5405,7 @@ function ownEarlier(activityId,K,listed,now){const out=[];
 /* Options short enough (at most four, each at most 24 characters) sit as pills beside their question when there is room,
    under it when there is not; any longer list stands under the question as before. */
 const shortOptions=l=>Array.isArray(l)&&l.length>0&&l.length<=4&&l.every(o=>typeof o==="string"&&o.length<=24);
-function drawChoice(b,draft,activityId,dc){const listed=b.options||[],Q=strings("question");
+function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strings("question");
   const box=el("div",{class:shortOptions(listed)&&!b.open?"q-inline":null});
   questionHead(box,b);
   const K=b.keys[0],multi=b.type==="multi";
@@ -5405,7 +5430,7 @@ function drawChoice(b,draft,activityId,dc){const listed=b.options||[],Q=strings(
     return on?(isRight?"right":"wrong"):(isRight?"answer":null);};
   const MARK={right:["✓ ",Q.right],wrong:["✗ ",Q.notQuite],answer:["✓ ",Q.theAnswer]};
   const pills=el("div",{class:"pills"}),live=el("p",{class:"q-live hint","aria-live":"polite"}),acts=el("div",{class:"q-acts"});
-  const QC=qControls(b,draft,activityId,dc),SP=QC&&QC.sol;
+  const SP=qc&&qc.sol;
   if(SP) live.classList.add("q-live-sr");
   const draw=()=>{const ae=document.activeElement,at=ae&&ae.parentNode===pills?Array.from(pills.children).indexOf(ae):-1,
       onCheck=!!ae&&ae.parentNode===acts;
@@ -5437,7 +5462,6 @@ function drawChoice(b,draft,activityId,dc){const listed=b.options||[],Q=strings(
     inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go();}});
     box.append(el("div",{class:"q-ownrow"},inp,el("button",{type:"button",class:"small",onclick:go},Q.addBtn)));}
   if(graded) box.append(acts,live);
-  if(QC) box.append(QC.node);
   return box;}
 function drawScale(b,draft,activityId){const box=el("div",{});const anchors=b.anchors||[];
   questionHead(box,b);
@@ -5488,31 +5512,27 @@ const DRAW_BLOCK={
   number:drawNumber,
   date:drawNumber};
 function renderBlock(b,draft,activityId,dc){
-  /* a solution drawn inside its question leaves nothing in the list */
-  const S=solutionsOf(activityId);
-  if(S.s.has(b)) return el("span",{class:"sol-moved",hidden:true});
-  const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc)
+  /* a question's own hint and solution are its controls: handed to its drawer (choice and multi tell the solution what the
+     reader did) and drawn at the end of its block */
+  const qc=qControls(b,draft,activityId,dc);
+  const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc,qc)
     :el("p",{class:"hint"},STRINGS[lang].ui.unknownBlock(b.type||"?",b.id||"?"));
-  if(S.q.has(b)&&b.type!=="choice"&&b.type!=="multi") node.append(qControls(b,draft,activityId,dc).node);
+  if(qc) node.append(qc.node);
   if(placeOf(b)!=="folded") return node;
   return b.type==="callout"?foldedCallout(b,draft,activityId,dc):
     cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),marked:true,open:blockFilled(b,draft),body:[node]});}
-/* Is this callout a hint or a solution ("hint", "solution", or ""): the one place that decides, for both ways the parser
-   makes one: folded under its question (kind "", id ending -hint or -solution) or on its own (kind hint or solution,
-   when no question comes right before it). Either way it never shows a teaser. */
-function hintKind(b){
-  const k=String(b&&b.kind==null?"":b.kind).toLowerCase();
-  if(k==="hint"||k==="solution") return k;
-  return k===""?(/-(hint|solution)$/.exec(String(b&&b.id||""))||[])[1]||"":"";}
+/* Is this callout a hint or a solution ("hint", "solution", or ""): its kind says, whether it is a question's own (drawn in the
+   question) or one drawn where it stands. Either way it never shows a teaser. */
+function hintKind(b){const k=String(b&&b.kind!=null?b.kind:"").toLowerCase();return k==="hint"||k==="solution"?k:"";}
 /* A callout folded with a minus sign, or a hint or solution folded under its question, as a fold card: its kind's
    picture, its title (a hint or a solution is called that, in the reader's language, not by the raw kind), and the
    first words of its text as the teaser. A hint or a solution has no teaser: a closed one gives nothing away (`x`: one in its question). */
 function foldedCallout(b,draft,activityId,dc,x){
   const Rt=strings("reading"),C=strings("cards"),hs=hintKind(b);x=x||{};
-  /* a kind that means something keeps its colour and picture; any other (a group, no kind) is drawn on plain paper */
-  const look=b.kind===""||hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
+  /* a kind that means something keeps its colour and picture; any other (a group) is drawn on plain paper */
+  const look=hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
   /* an untitled callout is called by its kind's word; a kind the renderer does not know is called Note, as before, only drawn plain */
-  const word=look||(b.kind===""||hs?null:calloutLook(b.kind));
+  const word=look||(hs?null:calloutLook(b.kind));
   const title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
@@ -5526,37 +5546,24 @@ function foldedCallout(b,draft,activityId,dc,x){
   /* a hint or a solution is a compact fold: one quiet line, a small icon, no tile, no teaser */
   return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:hs?"":" card-plain")+(!hs&&!look&&!picture?" card-notile":"")+(x.tone?" sol-"+x.tone:"")+(x.inQ?" q-in":"")+(x.sol?" sol-in":""),hue:look?look.hue:"slate",
     title:emo?lead.title:title,marked:nonEmpty(named)||!(hs||word),picture,teaser,status:x.status,size:hs?"compact":null,open:!!x.open||blockFilled(b,draft),body});}
-/* Which folded hint and solution belong to which question of an activity: the callouts the parser made right after the question,
-   whose ids are the question's id and "-hint" or "-solution". Found from the blocks themselves, once per list of blocks: a list is
-   replaced, never changed in place. */
-const SOLS=new WeakMap();
-function solutionsOf(addr){const a=activityOf(addr);
-  const key=a.pages;let r=SOLS.get(key);if(r) return r;
-  r={q:new Map(),s:new Set()};const all=allBlocksOf(a),by=new Map();
-  all.forEach(x=>{if(x.type==="callout"&&x.kind===""&&placeOf(x)==="folded"&&!by.has(x.id)) by.set(x.id,x);});
-  all.forEach(q=>{if(!QUESTION_KINDS.has(q.type)||!q.id) return;
-    const hint=by.get(q.id+"-hint"),sol=by.get(q.id+"-solution");
-    if((hint&&!r.s.has(hint))||(sol&&!r.s.has(sol))){
-      const e={hint:hint&&!r.s.has(hint)?hint:null,sol:sol&&!r.s.has(sol)?sol:null};
-      r.q.set(q,e);if(e.hint) r.s.add(e.hint);if(e.sol) r.s.add(e.sol);}});
-  SOLS.set(key,r);return r;}
 /* A solution inside its question: the compact fold, shut, giving nothing away. `set(tone)` is how the question tells it what the
    reader has done: "good" (right), "warn" (not right, "Look again") or "neutral" (a choice with no right answer, once picked) opens
    it in that tone, and only when the tone changes, so a reader who shut it is not argued with; null (the answer no longer carries
-   a verdict) takes the tone and label off and leaves it open or shut as the reader left it (the view's `shut`). */
-function solutionPart(sol,draft,activityId,dc){const Q=strings("question"),shut=viewAt(activityId).shut;let last=null,open=false;
+   a verdict) takes the tone and label off and leaves it open or shut as the reader left it (the view's `shut`, by question). */
+function solutionPart(q,draft,activityId,dc){const sol=q.solution,Q=strings("question"),shut=viewAt(activityId).shut;let last=null,open=false;
   const make=t=>foldedCallout(sol,draft,activityId,dc,{inQ:true,sol:true,tone:t,open,status:t==="warn"?Q.lookAgain:t==="good"?Q.right:""});
   let cur=make(null);
-  const keep=n=>n.addEventListener("toggle",()=>{if(n!==cur) return;open=n.open;if(open) shut.delete(sol.id);else if(last) shut.add(sol.id);});keep(cur);
+  const keep=n=>n.addEventListener("toggle",()=>{if(n!==cur) return;open=n.open;if(open) shut.delete(q.id);else if(last) shut.add(q.id);});keep(cur);
   return {get node(){return cur;},
     set(t,byReader){if(t===last||(!t&&!last)) return;last=t;
       /* a verdict the reader's own pick or Check produced opens it; a redraw never reopens one the reader shut */
-      if(t){if(byReader||!shut.has(sol.id)){open=true;shut.delete(sol.id);}}
+      if(t){if(byReader||!shut.has(q.id)){open=true;shut.delete(q.id);}}
       const next=make(t),old=cur;cur=next;keep(next);if(old.parentNode) old.replaceWith(next);}};}
-/* The hint and the solution of a question, as small controls in its own block (a hint first, as the author wrote them). */
-function qControls(q,draft,activityId,dc){const e=solutionsOf(activityId).q.get(q);if(!e) return null;
-  const sol=e.sol?solutionPart(e.sol,draft,activityId,dc):null;
-  return {node:el("div",{class:"q-ctls"},e.hint?foldedCallout(e.hint,draft,activityId,dc,{inQ:true}):null,sol&&sol.node),sol};}
+/* A question's own hint and solution (the parser put them on it), as small controls in its own block, a hint first (as the author
+   writes them); null for a block with neither. */
+function qControls(q,draft,activityId,dc){const sol=isObj(q.solution)?solutionPart(q,draft,activityId,dc):null,hint=isObj(q.hint)?q.hint:null;
+  if(!sol&&!hint) return null;
+  return {node:el("div",{class:"q-ctls"},hint?foldedCallout(hint,draft,activityId,dc,{inQ:true}):null,sol&&sol.node),sol};}
 /* An activity marked `upsert:"day"` (the file's `repeat daily`) keeps one entry per
    calendar day rather than one per Finalize: finalizing again on the same day
    replaces that day's entry instead of adding a second one. */
@@ -6395,7 +6402,7 @@ function activityHeadings(a){const ps=a.pages,out=[];
     const walk=list=>list.forEach(b=>{
       if(b.type==="markdown") headingsOf(b.text).forEach(h=>out.push({text:h,page:p.id}));
       else if(b.type==="row"||b.type==="cell") walk(blocksIn(b));
-      else{const l=plainText(tx(b.label,null));if(l) out.push({text:l,page:p.id});}});
+      else [b,...qParts(b)].forEach(x=>{const l=plainText(tx(x.label,null));if(l) out.push({text:l,page:p.id});});});
     walk(blocksIn(p));});
   return out;}
 /* The first activity (page) in the booklet holding a heading with this text, or,
@@ -6461,12 +6468,12 @@ function registries(mod){const sources=new Map(),cites=new Map();
     for(const c of regList(o&&o.citations)) if(typeof c.id==="string"&&c.id&&!cites.has(c.id))
       cites.set(c.id,srcs.some(s=>s.key===c.source)?{...c,source:key(c.source)}:c);});
   return {sources,cites};}
-/* The texts of a block that may carry marks, in the order it draws them. */
+/* The texts of a block that may carry marks, in the file's order (a question's are its own hint's and solution's). */
 function markedTexts(b){if(!b||typeof b!=="object") return [];
   switch(b.type){
     case "callout":case "row":case "cell": return blocksIn(b).flatMap(markedTexts);
     case "markdown": return [String(b.text||"")];
-    default: return [];}}
+    default: return qParts(b).flatMap(markedTexts);}}
 /* ---- the scope: one activity's numbering, and what was drawn for it ---- */
 /* Number an activity's marks: every page in order, every block the reader can
    see, in order. No module holding the activity means no scope, and text
@@ -6618,7 +6625,8 @@ function showTip(R,id,at){if(citeOpen()&&citeFrom===at) return;
 function hideTip(){if(citeTipEl) citeTipEl.setAttribute("hidden","");}
 /* ---- callouts ---- */
 let rdSeq=0;
-function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),plain=b.kind==="",look=plain?null:calloutLook(b.kind),k=look?look.label:"";
+/* a hint or a solution straight after a question but drawn outside it (`outside`) is drawn plain: no kind's colour or label */
+function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),plain=!!b.outside,look=plain?null:calloutLook(b.kind),k=look?look.label:"";
   const u="rd-c"+(++rdSeq),title=tx(b.title,"");
   const box=el("div",{class:"rd-callout"+(look?" rd-hued hue-"+look.hue+" rd-k-"+look.label:""),role:"note","data-kind":k||null});
   const head=el("div",{class:"rd-chead"}),named=[];

@@ -24,8 +24,8 @@ const p2=chk_.pages[0].blocks;
 const choice=p2.find(b=>b.id==="biggest");
 chk("the choice question has its two options",JSON.stringify(choice.options)===JSON.stringify(["At the quarter moons","Near the new and the full moon"]));
 chk("the correct option is the second, from its [x]",choice.answer===2,choice.answer);
-const hint=p2.find(b=>b.id==="biggest-hint");
-chk("its hint is folded under it",hint&&hint.placement==="folded",JSON.stringify(hint));
+const hint=choice.hint;
+chk("its hint is folded under it: the question's own",!!hint&&hint.placement==="folded"&&hint.kind==="hint"&&!p2.some(b=>b.type==="callout"&&b.kind==="hint"),JSON.stringify(hint));
 const scale=p2.find(b=>b.id==="confidence");
 chk("the scale question has its three anchors, numbered from the file",JSON.stringify(scale.anchors)===JSON.stringify([{n:1,text:"Guessing"},{n:2,text:"Fairly sure"},{n:3,text:"Certain"}]));
 

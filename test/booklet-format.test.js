@@ -34,7 +34,7 @@ chk("one activity, repeating, so it keeps entries",a.id==="mensio-check-in/check
 const types=a.pages.flatMap(p=>p.blocks).map(b=>b.type+":"+b.id);
 chk("its blocks, in order",JSON.stringify(types)===JSON.stringify(["markdown:md1","widget:body","widget:emotions","text:other","lines:thoughts"]),JSON.stringify(types));
 const other=a.pages.flatMap(p=>p.blocks).find(b=>b.id==="other")||{};
-chk("the text question is worded by the file",other.label==="Something else"&&other.hint==="In your own words.",JSON.stringify(other));
+chk("the text question is worded by the file",other.label==="Something else"&&other.help==="In your own words.",JSON.stringify(other));
 chk("a module carries no copy tables of its own",m.copy===undefined,JSON.stringify(m.copy));
 
 /* 2. widgets */
