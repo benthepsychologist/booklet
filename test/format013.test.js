@@ -311,11 +311,11 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
    A.BOOK.raw.records=bad;try{const o=A.toMarkdown();if(typeof o!=="string") throw new Error("not text");}catch(e){all=false;why+=JSON.stringify(bad)+" ";}}
   chk("a malformed raw.records does not stop toMarkdown",all,why);}
 
- /* nit: the cross-module query message does not say "refused", and fr and es are marked draft */
+ /* nit: the cross-module query message does not say "refused"; fr and es were checked by /localize (2026-10-14) */
  {const two=FM+"> [!module|m1] One\n\n> [!activity|a repeat] A\n\n> [!text|t] T\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|b] B\n\n```booklet query\nfrom: a\n```\n\n> [!module|m2 end] End\n";
   const R=P.boot().parseFile(two),src=P.html.split("\n");
   chk("the cross-module query message says the query is not drawn, and does not say refused",R.unread.some(x=>/query in “b”.*not drawn/.test(x))&&!R.unread.some(x=>/refused/.test(x)),JSON.stringify(R.unread));
-  chk("fr and es queryRefused no longer say refused (refusé, rechazó), and are marked l10n: draft",src.filter(l=>/queryRefused:/.test(l)).length===3&&src.filter(l=>/l10n: draft/.test(l)&&/queryRefused:/.test(l)).length===2&&!src.some(l=>/queryRefused:/.test(l)&&/refus|rechaz|rejet|rejected/i.test(l.replace("queryRefused",""))));}
+  chk("fr and es queryRefused no longer say refused (refusé, rechazó), and are checked (no l10n: draft mark, /localize 2026-10-14)",src.filter(l=>/queryRefused:/.test(l)).length===3&&src.filter(l=>/l10n: draft/.test(l)&&/queryRefused:/.test(l)).length===0&&!src.some(l=>/queryRefused:/.test(l)&&/refus|rechaz|rejet|rejected/i.test(l.replace("queryRefused",""))));}
 
  /* nit: diff, law and opinion sit beside group in the kind table and the no-id list, the same in the renderer, the linter and SPEC */
  {const NI=txt=>(txt.match(/NO_ID_KINDS\s*=\s*(?:new Set\()?[\[(]([^\])]*)[\])]/)||[])[1];
@@ -450,7 +450,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("S4: an answers block outside a records line says where it belongs, not that the page does not read answers",/^line 11: a “booklet answers” block belongs in the records region/.test(out[0])&&!/not one this page reads/.test(out[0]),JSON.stringify(out));
   chk("S4: a widget block in the records says it is not a record, not that the page does not read widgets",out.some(x=>/this is not a record this page reads/.test(x))&&!out.some(x=>/“booklet widget”/.test(x)),JSON.stringify(out));
   chk("S4: an entries record with no list is kept, and does not say it was skipped; an unknown kind says only that the page does not read it",out.some(x=>/holds no list of items/.test(x)&&!/skipped/.test(x))&&out.some(x=>/“booklet later-kind” block is not one this page reads/.test(x))&&!out.some(x=>/sync/.test(x)),JSON.stringify(out));
-  chk("S4: the French and Spanish words for the changed messages are marked draft",["fr","es"].every(l=>/draft/.test(String(P.html.split("\n").filter(x=>/recordNoItems|recordOutside/.test(x)&&x.includes(l==="fr"?"enregistrement":"registro")).join("")))));}
+  chk("S4: the French and Spanish words for the changed messages are checked (registre, registro; no draft mark)",["fr","es"].every(l=>{const s=P.html.split("\n").filter(x=>/recordNoItems|recordOutside/.test(x)&&x.includes(l==="fr"?"registre":"registro")).join("");return s.length>0&&!/draft/.test(s);}));}
 
  /* round 3: design after the region is written above it (design first, records last) */
  {const M=(id,t,q)=>"> [!module|"+id+"] "+t+"\n\n> [!activity|"+id+"-a] "+t+" A\n\n> [!text|"+q+"] Q "+q+"\n\n> [!module|"+id+" end] End\n";
