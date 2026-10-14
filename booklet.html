@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-lkXLRWRkLnhnV/IlrGDY7tJGHRJo5EoTRxqE7sohBdQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-umkg4W3TVcIRU7piuvP4Y5xPXbxMrU1OZJSuozvEzXc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2735,9 +2735,10 @@ const viewAt=addr=>{let v=VIEW.at.get(addr);
 /* ---- one draw ----
    render() hands a draw context, `dc`, to every part of the screen: `ticks`, what redraws in place when an answer
    changes; `reading`, the page's reading plan, for the menus that list its sections; `reveal`, a heading a link asked
-   for, and `revealed`; `cites`, the citation scopes begun (a head and its page number as one); `opening`, set while a
-   module's opening is drawn on its own screen. DRAWN is the screen on show's (an answer runs its ticks). */
-const newDraw=o=>({ticks:[],reading:null,reveal:(o&&o.reveal)||null,revealed:false,cites:new Map(),opening:false});
+   for, and `revealed`; `cite`, the citation marks it draws, its screen's numbering with the marks drawn (citeDraw); `again`,
+   the citation panel to open again once its mark is drawn (a language switch). DRAWN is the screen on show's (an answer runs
+   its ticks). */
+const newDraw=o=>({ticks:[],reading:null,reveal:(o&&o.reveal)||null,revealed:false,cite:null,again:null});
 let DRAWN=newDraw();
 /* ---- which booklet is in memory ----
    currentId is the open entry, or null on "Your booklets". bookletGen moves on
@@ -5285,7 +5286,7 @@ function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});
   return ta;}
 /* render a list of blocks, in reading order */
 function renderBlocks(list,draft,activityId,dc){const host=el("div",{});
-  const draw=()=>{host.innerHTML="";citeScope(activityId,dc);
+  const draw=()=>{host.innerHTML="";
     list().forEach(b=>host.append(renderBlock(b,draft,activityId,dc)));};
   draw();return host;}
 function entryCard(e,type,onDelete){const u=STRINGS[lang].ui;
@@ -6111,7 +6112,7 @@ function pageBody(id,draft,dc){const ps=activityOf(id).pages;const cur=currentPa
   else if(rd){dc.reading=rd.info;box.append(rd.node);}
   else box.append(renderBlocks(()=>blocksIn(currentPage(id)),draft,id,dc));
   const notes=endnotesFor(id,false,dc);if(notes) box.append(notes);
-  citeReopen(id,dc);
+  citeReopen(dc);
   return box;}
 function choosePage(id,pid){showPage(id,pid);pagesOverlay=false;render();
   window.scrollTo({top:0});
@@ -6184,7 +6185,6 @@ function stepControl(one){const S=strings("steps");
       setOatPref(val);render();refocus('.oat-ctl button[aria-pressed="true"]');}},text);};
   return el("div",{class:"oat-ctl",role:"group","aria-label":S.label},btn("one",S.one),btn("all",S.all));}
 function stepPage(id,draft,units,dc){const S=strings("steps"),page=currentPage(id),steps=viewAt(id).steps,key=page.id;
-  citeScope(id,dc);
   const done=u=>blocksAll(u.blocks).filter(isQuestion).every(q=>keysOf(q).some(k=>holdsSomething(draft[k])));
   /* arriving, the first step with a question still to answer is shown */
   if(!(key in steps)){const f=units.findIndex(u=>!done(u));steps[key]=f<0?0:f;}
@@ -6271,7 +6271,7 @@ function sectionLede(body){
 /* put a table in its own scrolling wrapper, so a wide one scrolls beside the page, not under it */
 const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
 const mdBlockNodes=(b,activityId,prefix,dc)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",
-  mark:id=>{if(activityId==="") return "";const c=citeText("[^"+id+"]",activityId,dc);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
+  mark:id=>{if(activityId==="") return "";const c=citeText("[^"+id+"]",dc);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
 /* keep the menu's dots and the count current, without redrawing the page */
 function rmRefresh(info){
   if(info.countEl) info.countEl.textContent=strings("fold").count(info.st.open.size,info.sections.length);
@@ -6311,7 +6311,6 @@ function readingPage(id,draft,dc){
   const page=currentPage(id);
   if(!foldable(activityOf(id),page)) return null;
   const list=blocksIn(page);
-  citeScope(id,dc);
   const items=[],groups=[];
   list.forEach(b=>{
     if(b.type==="markdown"){const ns=mdBlockNodes(b,id,undefined,dc);ns.forEach(n=>items.push({n,md:true}));groups.push({ns});}
@@ -6474,46 +6473,40 @@ function markedTexts(b){if(!b||typeof b!=="object") return [];
     case "callout":case "row":case "cell": return blocksIn(b).flatMap(markedTexts);
     case "markdown": return [String(b.text||"")];
     default: return qParts(b).flatMap(markedTexts);}}
-/* ---- the scope: one activity's numbering, and what was drawn for it ---- */
-/* Number an activity's marks: every page in order, every block the reader can
-   see, in order. No module holding the activity means no scope, and text
-   drawn as it is. */
-/* A module's opening is drawn with its activity when the module is one activity (so its marks and the activity's number on together, 1, 2, ...), and on the
-   module's own screen otherwise, where it is numbered in a scope of its own (the first activity's id and a mark, \u0001; dc.opening). */
+/* ---- the scope: one screen's numbering, worked out once per booklet ---- */
+/* A module's opening is drawn with its activity when the module is one activity (so its marks and the activity's number on
+   together, 1, 2, ...), and on the module's own screen otherwise, where it is numbered on its own. */
 const openingWithActivity=mod=>!!mod&&!isMulti(mod)&&Array.isArray(mod.opening)&&mod.opening.length>0;
-/* A scope is begun once in each draw (render): by readingBegin for a page, before its head is drawn, and for a module's
-   opening on the module's screen; the draw keeps it (dc.cites). What draws the page's blocks afterwards takes that scope as it is, so the marks the head drew
-   (a module that is one activity draws its opening there) and the marks of the page are one numbering, and no anchor is used twice. A mark
-   holds its scope for its panel and preview. */
-const citeKey=(id,dc)=>String(id)+(dc.opening?"\u0001":"");
-/* activity `id`'s scope in the draw `dc`, begun if it has none */
-const citeScope=(id,dc)=>{const key=citeKey(id,dc);return dc.cites.has(key)?dc.cites.get(key):citeBegin(id,dc);};
-function citeBegin(id,dc){
-  const open=dc.opening,activityId=String(id),key=citeKey(id,dc);
-  const mod=holderOf(activityId);
-  if(!mod){dc.cites.set(key,null);return null;}
-  const {sources,cites}=registries(mod);
-  /* places: every place each citation is marked, in reading order, as its
-     page and how many marks of it come before on that page */
-  const nums=new Map(),firstPage=new Map(),broken=new Set(),places=new Map();
-  const pgs=open?[{id:"opening",blocks:mod.opening||[]}]:activityOf(activityId).pages.slice();
-  if(!open&&openingWithActivity(mod)) pgs.unshift({id:"opening",blocks:mod.opening});
-  for(const p of pgs){const onPage=new Map();
-    for(const b of blocksIn(p))
-      for(const s of markedTexts(b)) for(const id of citeIds(s)){
-        if(!cites.has(id)){broken.add(id);continue;}
-        if(!nums.has(id)){nums.set(id,nums.size+1);firstPage.set(id,p.id);}
-        const n=onPage.get(id)||0;onPage.set(id,n+1);
-        if(!places.has(id)) places.set(id,[]);places.get(id).push({page:p.id,n});}}
-  const R={modeId:key,mod,sources,cites,nums,firstPage,places,broken,marks:new Map(),drawn:new Map()};
-  dc.cites.set(key,R);return R;}
+/* The numbering of the marks screen `v` draws: an activity's screen numbers every page in order, every block the reader can
+   see, in order, after the opening of a module that is that one activity; a module's own screen numbers its opening. It is
+   a pure function of the design: {screen, mod, sources, cites, nums}, worked out the first time a screen asks and kept for
+   as long as the design is (a design is replaced, never changed), so drawing only reads it. Null for a screen that draws
+   no marks (the home screen, the list, a module's screen with no opening) or an activity no module holds, whose text is
+   drawn as it is. */
+const CITE_SCOPES=new WeakMap();
+function citeScope(v){let all=CITE_SCOPES.get(BOOK);if(!all) CITE_SCOPES.set(BOOK,all=new Map());
+  if(all.has(v)) return all.get(v);
+  const own=isModuleScreen(v)?moduleForScreen(v):null,mod=own||(hasOwn(SCREENS,v)?null:holderOf(v));
+  const lists=own?(own.activities.length&&Array.isArray(own.opening)&&own.opening.length?[own.opening]:null)
+    :mod?[...(openingWithActivity(mod)?[mod.opening]:[]),...activityOf(v).pages.map(blocksIn)]:null;
+  let R=null;
+  if(lists){const {sources,cites}=registries(mod),nums=new Map();
+    for(const list of lists) for(const b of list) for(const s of markedTexts(b)) for(const id of citeIds(s))
+      if(cites.has(id)&&!nums.has(id)) nums.set(id,nums.size+1);
+    R={screen:v,mod,sources,cites,nums};}
+  all.set(v,R);return R;}
+/* The marks a draw draws: its screen's numbering, with the draw's own bookkeeping, the first mark of each citation (it
+   carries the anchor) and every mark drawn, in order (the sources list's ways back, a language switch). render() makes it
+   for the screen on show, so the marks a page's head draws (a module that is one activity draws its opening there) and
+   the marks of its blocks are one numbering, and no anchor is used twice. A mark holds it for its panel and preview. */
+const citeDraw=v=>{const R=citeScope(v);return R&&{...R,marks:new Map(),drawn:new Map()};};
 /* A text with its marks drawn: the same single string when it has none. A
    mark is held to the word before it (and to a mark right before it), because
    a browser may otherwise break the line just before a button and leave the
    number alone at the start of the next line. */
-function citeText(s,activityId,dc){s=s==null?"":String(s);
+function citeText(s,dc){s=s==null?"":String(s);
   if(!s.includes("[^")) return [s];
-  const R=citeScope(activityId,dc);if(!R) return [s];
+  const R=dc.cite;if(!R) return [s];
   const out=[];let at=0,glue=null;
   for(const m of s.matchAll(CITE_RX)){
     const pre=s.slice(at,m.index),mk=markNode(R,m[1]);
@@ -6543,9 +6536,9 @@ function markNode(R,id){const Rt=strings("reading"),n=R.nums.get(id);
   return el("sup",{class:"rd-sup"},b);}
 /* ---- the panel: one for the page, made the first time a mark is drawn ---- */
 let citePanelEl=null,citeTipEl=null,citeFrom=null;
-/* which citation the open panel shows, from which of its marks on the page,
-   and in what language; and one to open again once a redraw has drawn it */
-let citeAt=null,citeAgain=null;
+/* which citation the open panel shows: the screen whose numbering it is, which of its marks on the page, and in what
+   language (one to open again once a redraw has drawn it is the draw's: dc.again) */
+let citeAt=null;
 function citePanel(){if(citePanelEl) return citePanelEl;
   const p=el("div",{class:"rd-panel",id:"rd-panel",role:"dialog","aria-modal":"false",
     "aria-labelledby":"rd-panel-h",hidden:true});
@@ -6577,7 +6570,7 @@ function citeDetail(c,src,Rt){const out=[];
 function openCite(R,id,from,opts){const c=R&&R.cites.get(id);if(!c) return false;
   const Rt=strings("reading"),p=citePanel(),src=R.sources.get(c.source)||null;
   const at=from?(R.drawn.get(id)||[]).indexOf(from):-1;
-  citeAt={modeId:R.modeId,id,occ:at<0?0:at,lang};
+  citeAt={screen:R.screen,id,occ:at<0?0:at,lang};
   /* the page moves over to make room beside it (from 900px wide; see the CSS) */
   document.documentElement.setAttribute("data-cite-open","");
   if(citeFrom&&citeFrom!==from) citeFrom.setAttribute("aria-expanded","false");
@@ -6598,16 +6591,11 @@ function closeCite(refocus){if(!citeOpen()) return;citePanelEl.setAttribute("hid
   const f=citeFrom;citeFrom=null;
   if(f){f.setAttribute("aria-expanded","false");if(refocus!==false) f.focus();}}
 /* after a redraw for a language switch: the same citation, from the same mark */
-function citeReopen(id,dc){const a=citeAgain;citeAgain=null;if(!a||a.modeId!==citeKey(id,dc)) return;
-  const R=citeScope(id,dc);if(!R||!R.cites.has(a.id)) return;
+function citeReopen(dc){const a=dc.again,R=dc.cite;dc.again=null;if(!a||!R||a.screen!==R.screen||!R.cites.has(a.id)) return;
   const drawn=R.drawn.get(a.id)||[];
   openCite(R,a.id,drawn[a.occ]||drawn[0]||null,{focus:false});}
-/* leaving the activity closes its panel, and gives the page its room back */
-function citeLeave(v){if(!citeOpen()) return;
-  const at=citeAt&&citeAt.modeId;
-  /* the panel of the opening on a module's own screen belongs to that screen, whose name is not the scope's key */
-  const mine=at&&(at===v||(isModuleScreen(v)&&at.endsWith("\u0001")&&(holderOf(at.slice(0,-1))||{}).id===v.slice(MODULE_SCREEN.length)));
-  if(!mine) closeCite(false);}
+/* leaving the screen closes its panel, and gives the page its room back */
+function citeLeave(v){if(citeOpen()&&!(citeAt&&citeAt.screen===v)) closeCite(false);}
 /* ---- the hover preview: a mouse's glance at the quote, and nothing else ---- */
 function citeTip(){if(citeTipEl) return citeTipEl;
   const t=el("div",{class:"rd-tip","aria-hidden":"true",hidden:true});document.body.append(t);return citeTipEl=t;}
@@ -6641,15 +6629,14 @@ function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),plain=!!
   blocksIn(b).forEach(x=>{if(x&&typeof x==="object") body.append(renderBlock(x,draft,activityId,dc));});
   box.append(body);
   return box;}
-/* Before an activity's blocks are drawn: the numbering taken afresh and the
-   panel closed (the mark it came from is being redrawn). */
-function readingBegin(id,dc){
+/* Before a page's head is drawn (and a module's opening on its own screen): the panel closed (the mark it came from is being
+   redrawn). */
+function readingBegin(dc){
   /* A switch of the interface language redraws the page: the panel is opened
-     again once its mark is drawn (citeReopen), in the new language, and the
+     again once its mark is drawn (citeReopen, dc.again), in the new language, and the
      focus stays where the reader put it. Any other redraw closes it. */
-  citeAgain=citeOpen()&&citeAt&&citeAt.modeId===citeKey(id,dc)&&citeAt.lang!==lang?citeAt:null;
-  closeCite(false);hideTip();
-  citeBegin(id,dc);}
+  dc.again=citeOpen()&&citeAt&&dc.cite&&citeAt.screen===dc.cite.screen&&citeAt.lang!==lang?citeAt:null;
+  closeCite(false);hideTip();}
 /* ---- print: the citations as endnotes at the end of the page on show ---- */
 function citeRefText(c,src,Rt){const bits=[];
   if(src){const ed=tx(src.edition,"");bits.push(tx(src.title,src.key)+(nonEmpty(ed)?", "+ed:""));}
@@ -6657,8 +6644,8 @@ function citeRefText(c,src,Rt){const bits=[];
   const q=tx(c.quote,"");
   return bits.join(". ")+(bits.length&&nonEmpty(q)?". ":"")+(nonEmpty(q)?(plainRef(c,src)?q:Rt.quoted(q)):"");}
 /* the endnotes of the page on show (or, `openingOnly`, of a module's opening on its own screen) */
-function endnotesFor(id,openingOnly,dc){const R=citeScope(id,dc);if(!R) return null;
-  const here=[],mod=holderOf(id),shown=openingOnly?(mod&&mod.opening||[]):[...(openingWithActivity(mod)?mod.opening:[]),...pageBlocksShown(id)];
+function endnotesFor(id,openingOnly,dc){const R=dc.cite;if(!R) return null;
+  const here=[],mod=R.mod,shown=openingOnly?(mod.opening||[]):[...(openingWithActivity(mod)?mod.opening:[]),...pageBlocksShown(id)];
   for(const b of shown) for(const s of markedTexts(b)) for(const cid of citeIds(s))
     if(R.nums.has(cid)&&!here.includes(cid)) here.push(cid);
   if(!here.length) return null;
@@ -6740,7 +6727,7 @@ function settle(){lang=uiLang();
   if(!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)){const m=activityOf(screen);if(m.kind==="entry") seedUpsertDraft(screen,m,answersFor(screen));}}
 /* draw the screen in force afresh, in a draw of its own (one draw, region 4) told `o`, and return it */
 function render(o){RENDERING=true;const dc=newDraw(o);DRAWN=dc;
-  try{settle();citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
+  try{settle();dc.cite=citeDraw(screen);citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(hasOwn(SCREENS,screen)) SCREENS[screen](main,dc);
   else if(isModuleScreen(screen)) renderModulePage(main,screen,dc);
   else renderActivity(main,screen,dc);
@@ -6965,7 +6952,7 @@ function renderActivity(main,id,dc){const u=STRINGS[lang].ui;const m=activityOf(
   const W=wikiOf(holderOf(id));
   /* the citation scope of this page begins first: a module that is one activity draws its opening in the page's own scope,
      and the opening's marks must be numbered with the page's, not left to the scope of the draw before */
-  readingBegin(id,dc);
+  readingBegin(dc);
   {main.append(...openNotices());}
   const repeats=m.kind==="entry";
   const draft=answersFor(id);
@@ -7317,14 +7304,14 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
   const col=el("div",{class:"col"});
   const acts=activitiesShown(mod);
   const first=(mod.activities[0]||{}).id;
-  /* the opening's sources are numbered in a scope of their own (`opening`), begun here, afresh on every draw, so that a
-     panel opened from the opening survives a language switch (it is opened again below, once its mark is drawn) */
-  const opened=!!first&&Array.isArray(mod.opening)&&mod.opening.length>0,odc={...dc,opening:true};
-  if(opened) readingBegin(first,odc);
-  col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0,odc));
-  /* the opening's own sources, numbered from 1 in a scope of its own, close it at the foot of the screen */
-  const openNotes=opened?endnotesFor(first,true,odc):null;
-  if(openNotes) citeReopen(first,odc);
+  /* the opening's sources are numbered on their own (the screen's scope, citeScope), so that a panel opened from the opening
+     survives a language switch (it is opened again below, once its mark is drawn) */
+  const opened=!!first&&Array.isArray(mod.opening)&&mod.opening.length>0;
+  if(opened) readingBegin(dc);
+  col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0,dc));
+  /* the opening's sources, numbered from 1 on their own, close it at the foot of the screen */
+  const openNotes=opened?endnotesFor(first,true,dc):null;
+  if(openNotes) citeReopen(dc);
   const parts=[col];
   const grid=el("div",{class:"modes"});
   if(!acts.length) grid.append(el("p",{class:"hint"},W2.noneShown));

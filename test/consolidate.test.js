@@ -4,6 +4,8 @@
 //       older release kept (a snapshot's TPL: `mode`, `blocks`, `head`) is read into that shape where it is read.
 //   R5. A folded hint or solution straight after a question is the question's own (`hint`, `solution`), drawn in it; any other
 //       hint or solution is a callout of its kind where it stands; the question's help text is `help`. No id is read for it.
+//   R6. Citations are numbered once per booklet, a pure function of the design (citeScope, one per screen); a draw only reads
+//       the numbers, keeping its own marks.
 // Run: node test/consolidate.test.js   (node only; nothing to install)
 const P=require("./page.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
@@ -82,6 +84,22 @@ const LS=global.__ls;
  A.screen="m/a";A.render();
  const ctl=P.find(P.main(),P.hasClass("q-ctls"));
  chk("and they are drawn in their question, closed, giving nothing away",ctl.length===1&&/Nudge/.test(P.texts(ctl[0]))&&!/SECRET-WHY/.test(P.texts(P.find(ctl[0],n=>n.tagName==="summary")[1]||{})),ctl.map(P.texts).join());}
+
+/* ---- R6: citations numbered once, from the design ---- */
+{P.wipe();const A=P.boot();
+ const N='\n[^s1]: *Atlas*, p. 1: "One."\n[^s2]: *Atlas*, p. 2: "Two."\n[^s3]: *Atlas*, p. 3: "Three."\n';
+ A.loadText(FM("Cites")+"> [!module|one] One\n\nThe opening.[^s2]\n\n> [!activity|a] A\n\nFirst.[^s1] Again.[^s2]\n\n---\n\nPage two.[^s3]\n"+N+"\n> [!module|one end] End\n\n"+
+   "> [!module|many] Many\n\nIts opening.[^s3][^s1]\n\n> [!activity|b] B\n\nB says.[^s1]\n\n> [!activity|c] C\n\nC says.[^s2]\n"+N+"\n> [!module|many end] End\n");
+ const nums=v=>{const R=A.citeScope(v);return R?[...R.nums].map(([k,n])=>k+"="+n).join():null;};
+ chk("a module that is one activity numbers its opening first, then every page in order",nums("one/a")==="s2=1,s1=2,s3=3",nums("one/a"));
+ chk("a module's own screen numbers its opening on its own; its activities do not count it",nums("module:many")==="s3=1,s1=2"&&nums("many/b")==="s1=1"&&nums("many/c")==="s2=1",[nums("module:many"),nums("many/b"),nums("many/c")].join(" | "));
+ chk("a screen that draws no marks has no numbering",nums("@home")===null&&nums("@booklets")===null);
+ const R=A.citeScope("one/a");
+ chk("the numbering is worked out once for the booklet: the same each time it is asked",A.citeScope("one/a")===R&&Object.keys(R).sort().join()==="cites,mod,nums,screen,sources",Object.keys(R).join());
+ A.screen="one/a";const d1=A.render(),d2=A.render();
+ chk("a draw reads it, with marks of its own; nothing else about citations is in the draw",d1.cite.nums===R.nums&&d2.cite.nums===R.nums&&d1.cite.drawn!==d2.cite.drawn&&!("opening" in d1)&&!("cites" in d1),Object.keys(d1).join());
+ const marks=P.find(P.main(),P.hasClass("rd-mark")).map(P.texts).join();
+ chk("and draws the numbers: the opening, then the page on show",marks==="1,2,1",marks);}
 
 P.wipe();
 console.log(fails?`\n${fails} FAILURES`:"\nconsolidation checks passed");
