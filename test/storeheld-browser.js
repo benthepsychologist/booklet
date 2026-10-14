@@ -54,7 +54,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const b=await chromium.launch();
   const errs=[],viol=[],csp=[];
   const ctx=await b.newContext({viewport:{width:1280,height:900}});
-  await ctx.route(PAGE+'/**',async r=>{const q=r.request(),u=new URL(q.url()).pathname;
+  /* the test's box, for any browser context: its pages, the host's script and the store */
+  const box=async r=>{const q=r.request(),u=new URL(q.url()).pathname;
     if(u==='/app/') return r.fulfill({status:200,body:HTMLPAGE,headers:{'content-type':'text/html; charset=utf-8','content-security-policy':BOX_CSP}});
     if(u==='/app/host.js'){await sleep(HOST_DELAY);return r.fulfill({status:200,body:HOSTJS,headers:{'content-type':'text/javascript'}});}
     if(u==='/') return r.fulfill({status:200,body:'<!doctype html><title>box</title>',headers:{'content-type':'text/html'}});
@@ -68,8 +69,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
         return r.fulfill({status:200,body:JSON.stringify(kept?{ok:true,bodyKept:true,text:m}:{ok:true,bodyKept:false}),headers:{'content-type':'application/json'}});}
       if(GET_DELAY[name]) await sleep(GET_DELAY[name]);
       return name in FILES?r.fulfill({status:200,body:FILES[name],headers:{'content-type':'text/markdown; charset=utf-8'}}):r.fulfill({status:404,body:'nf'});}
-    r.fulfill({status:404,body:'nf'});});
-  const open=async()=>{const p=await ctx.newPage();
+    r.fulfill({status:404,body:'nf'});};
+  await ctx.route(PAGE+'/**',box);
+  /* a page in a context: `c` is another browser (its own storage), the main one when not given */
+  const open=async c=>{const p=await (c||ctx).newPage();
     p.on('pageerror',e=>errs.push(e.message));
     p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))csp.push(m.text());});
     await p.addInitScript(l=>{try{localStorage.setItem('booklet.host.allowed',l);}catch(e){}},LABEL);
@@ -154,6 +157,24 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const s5=await seen(p);
   ok(await answer(p)===''&&!/QZXregret/.test(s5)&&await offer(p)===1,'opened by its link again, the answer stays cleared (never on screen), with the offer');
   viol.push(...await p.evaluate(()=>window.__viol||[]));await p.close();
+
+  // 5 two devices, each its own browser and storage, one store (the fourth round's b6): the laptop answers, the phone
+  // answers on top and adds a second answer, the laptop opens the link again having changed nothing since its save
+  FILES['two.md']=FM('Two')+'> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q long] Where are we?\n\n> [!text|r long] What next?\n\n> [!module|m end] End\n';
+  const lap=await b.newContext(),ph=await b.newContext();await lap.route(PAGE+'/**',box);await ph.route(PAGE+'/**',box);
+  const L1=await open(lap);await L1.goto(PAGE+'/app/#/open/two.md');await ready(L1);await sleep(800);
+  await L1.locator('#main textarea').first().fill('QZXlaptop planning');
+  ok(await until(()=>/QZXlaptop planning/.test(FILES['two.md'])),'two devices: the laptop\'s answer reaches the file');
+  await L1.goto(PAGE+'/');
+  const P1=await open(ph);await P1.goto(PAGE+'/app/#/open/two.md');await ready(P1);await sleep(800);
+  await P1.locator('#main textarea').first().fill('QZXphone shipped it');await P1.locator('#main textarea').nth(1).fill('QZXphone next step');
+  ok(await until(()=>/QZXphone shipped it/.test(FILES['two.md'])&&/QZXphone next step/.test(FILES['two.md'])),'two devices: the phone\'s answers reach the file');
+  await L1.goto(PAGE+'/app/#/open/two.md');await ready(L1);await sleep(1200);
+  ok(await answer(L1)==='QZXphone shipped it'&&await L1.locator('#main textarea').nth(1).inputValue()==='QZXphone next step'&&await offer(L1)===0&&!/QZXlaptop planning/.test(await seen(L1)),'the laptop, which changed nothing since its save, draws the file with the phone\'s answers, no offer, its own old answer never on screen');
+  await sleep(1500);
+  ok(/QZXphone shipped it/.test(FILES['two.md'])&&/QZXphone next step/.test(FILES['two.md'])&&!/QZXlaptop planning/.test(FILES['two.md']),'...and the file keeps the phone\'s answers');
+  for(const x of [L1,P1]) viol.push(...await x.evaluate(()=>window.__viol||[]));
+  await lap.close();await ph.close();
 
   ok(viol.length===0&&csp.length===0,'zero CSP violations: '+viol.concat(csp).join('|'));
   ok(errs.length===0,'zero page errors '+errs.join('|'));

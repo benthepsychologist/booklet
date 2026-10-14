@@ -252,23 +252,29 @@ What opens is read once, as text (a plain read: no method, no body, no credentia
 and then goes through the same parser as a file picked by hand, with the same refusals and notices. It opens with its records,
 if the file has them. For a store booklet the store's file is the truth, and what the browser keeps of it is only a buffer for
 work the store may not have yet. It joins "Your booklets" as soon as it has been read, as a pointer (its name and title, no copy
-of its content); a copy is kept only once the reader changes something. Opening it again, by its link or from the list, reads
-the store's file afresh and draws it, and drops the kept copy, whenever the file and the kept copy hold the same answers,
-entries and drafts (each in the other, so an answer cleared or an entry deleted here, which the store never heard of, counts)
-and the kept copy changes nothing of the booklet itself (a rename inside it, a module added or removed, which the store does
-not take). That is decided on content when the booklet opens, so it holds whether or not the host has registered yet; work
-another device added makes the kept copy open, with the offer. Rename in the list gives a store booklet a name of its own there and changes nothing else. A module link opened by hand
-is a view that joins the list only when the reader changes something in it. While a file is being read, the page says
-"Opening <name>…". In one browser a store name is one booklet, and so is a module link: opening one the browser already keeps
-opens that booklet, never a second. When the kept booklet's work differs from the file's, it is what opens. The page remembers
-a short fingerprint of the file the kept booklet was last read from; if the file now is different, it offers "Read the newer
-file", and nothing changes until the reader presses. Reading it takes the new file's body, with one rule for the records
-whether a link found the file or the host pushed it (a module link instead updates the module in place, as Add a module
-does). With a host registered, every answer, entry and draft this browser holds that is not empty stays, and the file's
-records fill in the rest (an answer a generator moved to another module, work another device saved where this browser holds
-nothing or only an empty value), and the host then saves the result; so work typed here is never lost, and an answer or
-entry removed here while the store could not hear of it comes back from the file. With no host, the reader's own answers,
-entries and drafts stay as they are. A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
+of its content); a copy is kept only once the reader changes something, and beside it a small base: the answers, entries and
+drafts (never the body) of the file it is based on, which is the file it last read, or the text the host last said it saved.
+Opening it again, by its link or from the list, reads the store's file afresh and draws it, and drops the kept copy, when the
+kept copy changes nothing of the booklet itself (a rename inside it, a module added or removed, which the store does not take)
+and either nothing has changed here since the base, so that whatever the file now holds is drawn (work another device saved
+just appears), or the kept copy and the file hold exactly the same work. That is decided on content when the booklet opens, so
+it holds whether or not the host has registered yet. Otherwise the kept booklet opens, with "Read the newer file" offered if
+the file changed since it was last read, and nothing changes until the reader presses. Rename in the list gives a store
+booklet a name of its own there and changes nothing else. A module link opened by hand is a view that joins the list only
+when the reader changes something in it. While a file is being read, the page says "Opening <name>…". In one browser a store
+name is one booklet, and so is a module link: opening one the browser already keeps opens that booklet, never a second.
+
+Reading the newer file takes its body, with one rule for the records whether a link found the file or the host pushed it (a
+module link instead updates the module in place, as Add a module does). With a host registered, the two are merged place by
+place against the base: what changed here and not in the file is this browser's; what changed in the file and not here is
+the file's (another device's newer answer, an entry it added); what changed on both is this browser's, since the reader is
+looking at it and pressed Read. An entry deleted here stays deleted unless the file changed it, and then it stays, changed. An
+answer a generator moved to another module, with the store moving its records, is followed: an edit made here under the old
+module lands in the new one, unless the move was into or out of the activities outside every module, or could have gone to
+two modules, in which case that edit stays under the old module, unused. A kept copy with no base (one an older release
+kept) is merged the older way, once: what holds something here wins and the file fills in the rest. The host then saves the
+result. With no host, the reader's own answers, entries and drafts stay as they are.
+A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
 and can be dismissed. The page reads the link when it starts and whenever the fragment changes, and the link stays in the
 address bar, so a reload opens the same thing.
 

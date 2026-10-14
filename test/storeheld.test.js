@@ -346,59 +346,107 @@ const draft=(A,at)=>((A.DRAFTS.custom||{})[at||"m/log"]||{}).what;
  await sleep(800);chk("...and the host then saves it into the file",/WRITTEN-WHILE-DOWN/.test(ROUTES[U])&&/regenerated question/.test(ROUTES[U]));
  A.closeBooklet();await A.openLink("#/open/w.md");
  chk("...after which the store holds everything: the next open draws the file, and the kept copy goes",ans(A)==="WRITTEN-WHILE-DOWN"&&!offer()&&!kept(id));}
-// ...with the host, the file fills in what the kept copy has no place for: an answer a generator moved to another module
+/* ---- the fourth round: each kept copy has a base, the records of the file it is based on (the file it last drew or
+   read, or the text the host last confirmed). On open, a copy that changed nothing since its base is drawn from the
+   file, whatever the file holds; reading a newer file merges here and there place by place against the base. ---- */
+const LSX=global.__ls;
+/* two devices share the store (ROUTES) and nothing else: each has its own browser storage */
+const takeDevice=()=>({...LSX});
+const useDevice=o=>{P.closePages();for(const k of Object.keys(LSX)) delete LSX[k];Object.assign(LSX,o);};
+const devPage=()=>{P.closePages();P.place("http:","fleet");LSX["booklet.host.allowed"]=LABEL;installFetch();META={"booklet-store":STORE};return P.boot();};
+const typeAt=(A,addr,i,words)=>{A.screen=addr;A.render();const ta=P.find(P.main(),x=>x.tagName==="textarea")[i];ta.value=words;ta._on.input();};
+const THREE=FM("Three")+"> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!text|what] What happened?\n\n> [!activity|a] A\n\n> [!text|q] First\n\n> [!text|r] Second\n\n> [!text|s] Third\n\n> [!module|m end] End\n";
+{const U=STORE+"three.md";P.wipe();ROUTES={};CALLS=[];ROUTES[U]=THREE;
+ // the laptop keeps an entry and answers the first question; its host saves both
+ let A=devPage();host(A);await A.openLink("#/open/three.md");const id=A.currentId;await sleep(600);
+ typeIn(A,"m/log","laptop entry");await sleep(500);A.finalizeEntry("m/log");await sleep(800);
+ typeAt(A,"m/a",0,"laptop wrote this");await sleep(1200);A.closeBooklet();await sleep(200);
+ chk("base setup: the kept copy has a base, which holds the laptop's work and no body",("booklet.base."+id) in LSX&&/laptop wrote this/.test(LSX["booklet.base."+id])&&!/First/.test(LSX["booklet.base."+id]));
+ const laptop=takeDevice();
+ // the phone, in its own browser, keeps an entry and changes the first answer
+ useDevice({});A=devPage();host(A);await A.openLink("#/open/three.md");await sleep(600);
+ typeIn(A,"m/log","phone entry");await sleep(500);A.finalizeEntry("m/log");await sleep(800);
+ typeAt(A,"m/a",0,"phone changed it");await sleep(1200);A.closeBooklet();await sleep(200);
+ chk("two devices setup: the store holds both entries and the phone's answer",/laptop entry/.test(ROUTES[U])&&/phone entry/.test(ROUTES[U])&&/phone changed it/.test(ROUTES[U]));
+ let phone=takeDevice();
+ // the laptop, which changed nothing since its base, opens the link with its host registering late
+ useDevice(laptop);A=devPage();await A.openLink("#/open/three.md");host(A);await sleep(50);
+ chk("M2 a copy that changed nothing since its base: the file is drawn, with the other device's newer answer, and no offer",ans(A)==="phone changed it"&&!offer()&&!kept(id),JSON.stringify(A.STATE.answers)+" offer="+offer());
+ chk("M1 ...and both devices' entries are there",entries(A).sort().join()==="laptop entry,phone entry",JSON.stringify(entries(A)));
+ await sleep(600);
+ // the laptop, with the box down, answers the second and third questions and deletes both entries
+ let down=true;A.closeBooklet();A=devPage();host(A,{fail:()=>down});await A.openLink("#/open/three.md");await sleep(600);
+ typeAt(A,"m/a",1,"laptop's second");await sleep(300);typeAt(A,"m/a",2,"laptop's third");await sleep(300);
+ A.STATE.entries["m/log"].splice(0);A.markDirty();await sleep(1200);A.closeBooklet();down=false;
+ const laptop2=takeDevice();
+ // the phone changes the first and third answers; elsewhere, the phone's entry is edited in the file (the same entry)
+ useDevice(phone);A=devPage();host(A);await A.openLink("#/open/three.md");await sleep(600);
+ typeAt(A,"m/a",0,"phone's first, again");await sleep(300);typeAt(A,"m/a",2,"phone's third");await sleep(1200);A.closeBooklet();await sleep(200);
+ ROUTES[U]=ROUTES[U].replace('"phone entry"','"phone entry, edited"');
+ chk("merge setup: the file has the phone's work and the edited entry, not the laptop's unsent work",/phone's first, again/.test(ROUTES[U])&&/phone entry, edited/.test(ROUTES[U])&&!/laptop's second/.test(ROUTES[U]));
+ // the laptop opens: it changed things since its base, so it opens as kept, with the offer
+ useDevice(laptop2);A=devPage();host(A);await A.openLink("#/open/three.md");
+ chk("a copy with changes since its base opens as kept, with the offer",ans(A,"m","r")==="laptop's second"&&offer()===1&&kept(id));
+ press(/Read the newer file/);
+ chk("M2 on reading the file: an answer changed there and not here takes the file's (the phone's first answer)",ans(A)==="phone's first, again",JSON.stringify(A.STATE.answers));
+ chk("...an answer changed here and not there keeps this browser's (the laptop's second)",ans(A,"m","r")==="laptop's second");
+ chk("...an answer changed on both keeps this browser's (the laptop's third, over the phone's)",ans(A,"m","s")==="laptop's third");
+ chk("...an entry deleted here and unchanged there stays deleted; one deleted here and changed there stays, changed",entries(A).join()==="phone entry, edited",JSON.stringify(entries(A)));
+ await sleep(800);
+ chk("...and the host saves the merge into the file",/phone's first, again/.test(ROUTES[U])&&/laptop's second/.test(ROUTES[U])&&/laptop's third/.test(ROUTES[U])&&!/phone's third/.test(ROUTES[U])&&/phone entry, edited/.test(ROUTES[U])&&!/laptop entry/.test(ROUTES[U]));
+ A.closeBooklet();await A.openLink("#/open/three.md");
+ chk("...after which nothing has changed here since the base: the next open draws the file, no offer",!offer()&&!kept(id)&&ans(A,"m","r")==="laptop's second");}
+// a removal made here, which the store never heard of, stays removed when the newer file is read (changed here, not there)
+{const U=STORE+"w.md";const A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=booklet("Week");
+ await A.openLink("#/open/w.md");await sleep(600);typeIn(A,"m/a","CLEARED-HERE");await sleep(1200);
+ down=true;typeIn(A,"m/a","");await sleep(1200);A.closeBooklet();down=false;
+ ROUTES[U]=merge(booklet("Week","A regenerated question"),ROUTES[U]);
+ await A.openLink("#/open/w.md");
+ chk("removal setup: the cleared answer opens as kept, cleared, with the offer",!ans(A)&&offer()===1);
+ press(/Read the newer file/);
+ chk("Read the newer file keeps the answer cleared (the reader removed it; the file did not change it) and takes the new body",!ans(A)&&/regenerated question/.test(drawn(A)),JSON.stringify(A.STATE.answers));}
+// M4: the host pushes a newer file holding a draft; the reader finalizes the entry before pressing: no duplicate
+{const U=STORE+"push.md";const A=boot();let hold=false;host(A,{delay:()=>hold?100000:0});ROUTES[U]=LOG;
+ await A.openLink("#/open/push.md");await sleep(600);
+ typeIn(A,"m/log","entry being written");await sleep(1200);
+ ROUTES[U]=merge(LOG.replace("What happened?","What happened, rewritten?"),ROUTES[U]);
+ typeIn(A,"m/log","entry being written, finished");await sleep(1200);
+ chk("M4 setup: the host pushed the rewritten file, holding the draft",A.HOST.pending!=null&&/entry being written, finished/.test(A.HOST.pending));
+ hold=true;A.finalizeEntry("m/log");await sleep(300);
+ press(/Read the newer file/);
+ chk("M4 after a finalize, reading the pushed file keeps the entry and does not bring its draft back",entries(A).join()==="entry being written, finished"&&!draft(A)&&/rewritten/.test(drawn(A)),JSON.stringify(entries(A))+" draft="+JSON.stringify(draft(A)));}
+// a generator moves an activity to another module (the store retargets its records line)
 {const V1=FM("Moves")+"> [!module|a] Alone\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|a end] End\n";
  const V2=FM("Moves")+"> [!module|n] New home\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!module|n end] End\n";
- const U=STORE+"mv.md";const A=boot();host(A);ROUTES[U]=V1;
- await A.openLink("#/open/mv.md");await sleep(600);typeIn(A,"a/a","BEFORE-MOVE");await sleep(1200);A.closeBooklet();
- /* the generator moved activity `a` into module `n`, and the store retargeted its records line (storefile.write_generated) */
- ROUTES[U]=merge(V2,ROUTES[U]).replace("> [!records|a] Alone","> [!records|n] New home");
+ const moved=t=>merge(V2,t).replace("> [!records|a] Alone","> [!records|n] New home");
+ let U=STORE+"mv.md";let A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=V1;
+ await A.openLink("#/open/mv.md");await sleep(600);typeIn(A,"a/a","first, saved");await sleep(1200);A.closeBooklet();
+ ROUTES[U]=moved(ROUTES[U]);
  await A.openLink("#/open/mv.md");
- chk("scope move setup: the kept copy opens, with the offer (its answer is under the old module)",ans(A,"a","q")==="BEFORE-MOVE"&&offer()===1);
+ chk("M3 nothing changed here: the moved file is drawn, the answer in its new place, no offer",ans(A,"n","q")==="first, saved"&&!offer());
+ A.closeBooklet();ROUTES[U]=V1;A=boot();host(A,{fail:()=>down});ROUTES[U]=V1;
+ await A.openLink("#/open/mv.md");await sleep(600);typeIn(A,"a/a","first, saved");await sleep(1200);
+ down=true;typeIn(A,"a/a","second, typed while the box was down");await sleep(1200);A.closeBooklet();down=false;
+ ROUTES[U]=moved(ROUTES[U]);
+ await A.openLink("#/open/mv.md");
+ chk("M3 an edit the store never got: the kept copy opens, with the offer",ans(A,"a","q")==="second, typed while the box was down"&&offer()===1);
  press(/Read the newer file/);
- chk("Read the newer file shows the answer in its new place (the file fills in what the kept copy has no place for)",ans(A,"n","q")==="BEFORE-MOVE",JSON.stringify(A.STATE.answers));
- await sleep(800);chk("...and the file keeps it",/BEFORE-MOVE/.test(ROUTES[U]));}
-
-/* ---- the third round: one rule for reading a newer file, from a link or pushed by the host. What holds something here
-   wins; an empty value (a page only looked at: [""], [], an empty draft) never wins over the file's. ---- */
-const MIX=FM("Mix")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!lines|ll] Some lines\n\n> [!activity|log repeat] Log\n\n> [!text|what] What happened?\n\n> [!module|m end] End\n";
-const recsOf=o=>"\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n"+JSON.stringify(o.answers,null,1)+"\n```\n\n"
-  +(o.entries?"```booklet entries log\n{\"items\": [\n"+o.entries.map(e=>JSON.stringify(e)).join(",\n")+"\n]}\n```\n\n":"")+"%%\n";
-// device B looked at the lines and the log but answered only the question; device A answered the lines and kept an entry
-{const U=STORE+"mix.md";let A=boot();host(A);ROUTES[U]=MIX;
- await A.openLink("#/open/mix.md");const id=A.currentId;await sleep(600);
- A.screen="m/a";A.render();A.screen="m/log";A.render();
- typeIn(A,"m/a","B-OWN");await sleep(1200);A.closeBooklet();
- chk("two devices setup: B's kept copy holds an empty lines answer and an empty log, only looked at",(()=>{const o=JSON.parse(global.__ls[keyOf(id)]||"{}");
-   return o.S&&o.S.answers.m.q==="B-OWN"&&JSON.stringify(o.S.answers.m.ll)==='[""]'&&Array.isArray(o.S.entries["m/log"])&&o.S.entries["m/log"].length===0;})());
- /* device A saved its work into the store file (and changed the question's answer too) */
- ROUTES[U]=split(MIX)[0].replace(/\s+$/,"")+"\n"+recsOf({answers:{q:"A-CHANGED",ll:["a line from A"]},entries:[{ts:"2026-10-14T10:00:00.000Z",what:"an entry from A"}]});
- await A.openLink("#/open/mix.md");
- chk("opened on B, the kept copy and the file differ: B's kept copy opens, with the offer",offer()===1&&ans(A)==="B-OWN");
+ chk("M3 ...and reading the moved file follows the move: the reader's latest edit is in the new place",ans(A,"n","q")==="second, typed while the box was down",JSON.stringify(A.STATE.answers));
+ await sleep(800);chk("M3 ...and it reaches the file",/second, typed while the box was down/.test(ROUTES[U])&&/records\|n/.test(ROUTES[U]));}
+// a kept copy an older release left, with no base: the two-way rule on open, and what holds something weighed on reading
+{const U=STORE+"old.md";let A=boot();host(A);ROUTES[U]=booklet("Old");
+ await A.openLink("#/open/old.md");const id=A.currentId;await sleep(600);typeIn(A,"m/a","OLD-ANSWER");await sleep(1200);A.closeBooklet();
+ delete LSX["booklet.base."+id];
+ ROUTES[U]=merge(booklet("Old","A regenerated question"),ROUTES[U]).replace("OLD-ANSWER","FROM-ELSEWHERE");
+ A=boot({keep:true});host(A);await A.openLink("#/open/old.md");
+ chk("no base: a kept copy whose work differs from the file's opens as kept, with the offer (the two-way rule)",ans(A)==="OLD-ANSWER"&&offer()===1);
  press(/Read the newer file/);
- chk("reading it on B keeps A's lines answer and A's entry, where B had only looked (an empty value never wins)",JSON.stringify(ans(A,"m","ll"))==='["a line from A"]'&&entries(A).join()==="an entry from A",JSON.stringify(A.STATE));
- chk("...and B's own answer, which holds something, still wins over A's",ans(A)==="B-OWN");
- await sleep(800);
- chk("...and the file then holds A's work and B's answer",/a line from A/.test(ROUTES[U])&&/an entry from A/.test(ROUTES[U])&&/B-OWN/.test(ROUTES[U])&&!/A-CHANGED/.test(ROUTES[U]));}
-// the host pushes a newer file (fileChanged), and the reader types on before pressing: what they typed since stays
-{const U=STORE+"w.md";const A=boot();let mode="ok";host(A,{fail:()=>mode==="fail"});ROUTES[U]=booklet("Week");
- await A.openLink("#/open/w.md");await sleep(600);
- ROUTES[U]=booklet("Week","A regenerated question");
- typeIn(A,"m/a","one");await sleep(1200);
- chk("pushed setup: the host saved the answer into the regenerated file and pushed it (the offer)",offer()===1&&/regenerated question/.test(ROUTES[U])&&/one/.test(ROUTES[U]));
- mode="fail";typeIn(A,"m/a","one two");await sleep(1200);
- press(/Read the newer file/);
- chk("Read the newer file on a pushed file takes its body and keeps what was typed after the host's last save",/regenerated question/.test(drawn(A))&&ans(A)==="one two",JSON.stringify(A.STATE.answers));
- mode="ok";A.closeBooklet();await sleep(800);
- chk("...and the host is told of it as the booklet is left",/one two/.test(ROUTES[U]));}
-// the accepted cost: a removal made here while the store could not hear of it is undone by Read the newer file
-{const U=STORE+"w.md";const A=boot();let down=false;host(A,{fail:()=>down});ROUTES[U]=booklet("Week");
- await A.openLink("#/open/w.md");await sleep(600);typeIn(A,"m/a","WILL-COME-BACK");await sleep(1200);
- down=true;typeIn(A,"m/a","");await sleep(1200);A.closeBooklet();down=false;
- await A.openLink("#/open/w.md");
- chk("cost setup: the cleared answer opens as kept, cleared, with the offer (open is unchanged)",!ans(A)&&offer()===1);
- press(/Read the newer file/);
- chk("the accepted cost: Read the newer file brings the file's answer back over an empty one",ans(A)==="WILL-COME-BACK");}
+ chk("no base: reading the file keeps this browser's answer, which holds something, and takes the new body",ans(A)==="OLD-ANSWER"&&/regenerated question/.test(drawn(A)));
+ await sleep(800);A.closeBooklet();
+ chk("...and from then on the copy has a base",("booklet.base."+id) in LSX);
+ A.render();const rm=P.find(P.main(),x=>x.tagName==="button"&&/^Remove$/.test(text(x)));rm[0]._on.click({});
+ const go=P.find(P.main(),x=>x.tagName==="button"&&/Remove/.test(text(x))&&x!==rm[0]);go[go.length-1]._on.click({});
+ chk("removing the booklet removes its base with its kept copy",!lib().some(e=>e.id===id)&&!(("booklet.base."+id) in LSX)&&!kept(id));}
 
 /* ---- the second review's N2: a change in the last half second before the tab closes is sent ---- */
 {const U=STORE+"w.md";const A=boot();const h=host(A);ROUTES[U]=booklet("Week");
