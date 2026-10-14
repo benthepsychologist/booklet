@@ -3,6 +3,8 @@
 // them hold. Also: an activity's card on its module's screen shows the activity's first paragraph, as a module's card shows
 // the module's. Run: node test/pagefold.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
+/* the sections opened on each page, from the view: [activity and page, {open, seen}] */
+const foldsOf=A=>[...A.VIEW.at.entries()].flatMap(([a,v])=>Object.keys(v.folds).map(p=>[a+" "+p,v.folds[p]]));
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
@@ -37,13 +39,13 @@ const PROSE2="## Three\n\nThird.\n\n## Four\n\nFourth.\n\n## Five\n\nFifth.\n\n"
  /* the open state is kept across a redraw and a page change */
  draw("m/a","p1");
   secs()[1].open=true;secs()[1]._on.toggle();
- chk("the page remembers which section was opened",Object.values(A.RM_STATE).some(s=>s.open.has(1)));
+ chk("the page remembers which section was opened",foldsOf(A).some(([,s])=>s.open.has(1)));
  A.render();
  chk("a redraw draws that section open again, the other still folded",secs().length===2&&isOpen(secs()[1])&&!isOpen(secs()[0]),JSON.stringify(secs().map(isOpen)));
  chk("the count follows",/1 of 2/.test(counts()[0]||""),JSON.stringify(counts()));
  draw("m/a","p2");draw("m/a","p1");
  chk("a page change and back keeps it",isOpen(secs()[1])&&/1 of 2/.test(counts()[0]||""));
- chk("every state key is per page, so page two's sections are its own",new Set(Object.keys(A.RM_STATE)).size>=2,Object.keys(A.RM_STATE).join("|"));
+ chk("every state key is per page, so page two's sections are its own",foldsOf(A).length>=2,foldsOf(A).map(x=>x[0]).join("|"));
 }
 
 /* 2. a page with a booklet query is drawn open, its sibling prose page folds */

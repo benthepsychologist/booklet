@@ -123,15 +123,20 @@ const changed=X=>{const e=X.readLib().entries.find(x=>x.id===X.currentId);return
   chk("a booklet with no saved design can be renamed from the list too",heading()==="Named after the fact"&&titleOf(B.toMarkdown())==="Named after the fact",heading());
   chk("Escape in the list changes nothing",(()=>{B.closeBooklet();B.screen="@booklets";B.render();const before=JSON.stringify(B.readLib().entries.map(x=>x.title));rename(0,"Nope","Escape");return JSON.stringify(B.readLib().entries.map(x=>x.title))===before;})());
   P.closePages();}
- /* a booklet kept by 0.9 with a module and the old default title, but no title on screen: the screen and the file agree once it is renamed */
+ /* A booklet kept by 0.9 (to 0.13.0): its snapshot holds the parsed design (TPL), with the text it was read from in
+    TPL.raw.source, the old default title and a design that says nothing of a title on screen. It opens from that text:
+    the screen says what the text says, the file keeps its own marker, and a rename makes the screen and the file agree. */
  {P.closePages();for(const k of Object.keys(global.__ls)) delete global.__ls[k];
   const B=P.boot();await B.createBooklet();B.addModuleText(MOD("Module title","mod-m"));B.flushSave();
   const id=B.currentId,key="booklet.b."+id,snap=JSON.parse(global.__ls[key]);
-  delete snap.TPL.title;delete snap.TPL.head;snap.TPL.booklet=0.9;
-  snap.TPL.raw.source=snap.TPL.raw.source.replace(/^booklet: .*$/m,"booklet: 0.9").replace(/^title: .*$/m,'title: "Untitled booklet"');
+  const old=snap.text.replace(/^booklet: .*$/m,"booklet: 0.9").replace(/^title: .*$/m,'title: "Untitled booklet"');
+  delete snap.text;snap.TPL={booklet:0.9,id:"local/booklet",version:"1",customized:true,modules:[{id:"stale",mode:{id:"stale",kind:"board",blocks:[]}}],widgets:[],raw:{source:old,lang:"en"}};
   global.__ls[key]=JSON.stringify(snap);P.closePages();
   const C=P.boot();C.openBooklet(id);C.render();
-  chk("a booklet saved by 0.9 opens as it was saved and says Untitled booklet in its file",C.BOOK.booklet===0.9&&titleOf(C.toMarkdown())==="Untitled booklet"&&/^booklet: 0\.9$/m.test(C.toMarkdown()));
+  chk("a booklet saved by 0.9 opens from its own text: its modules, its title, and its file says booklet: 0.9 and Untitled booklet",
+    C.allModules().map(m=>m.id).join()==="mod-m"&&heading()==="Untitled booklet"&&titleOf(C.toMarkdown())==="Untitled booklet"&&/^booklet: 0\.9$/m.test(C.toMarkdown()),C.allModules().map(m=>m.id).join()+" / "+heading());
+  C.markDirty();C.flushSave();
+  chk("its next save keeps the text, and drops the old parsed design",(()=>{const o=JSON.parse(global.__ls[key]);return !("TPL" in o)&&/^booklet: 0\.9$/m.test(o.text);})());
   renameHome(C,"Now named");
   chk("renamed, its screen and its file agree",heading()==="Now named"&&titleOf(C.toMarkdown())==="Now named"&&C.parseFile(C.toMarkdown()).ok);
   P.closePages();}

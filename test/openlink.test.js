@@ -79,7 +79,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
  chk("a quiet line says where it came from, in these words",!!pv&&text(pv).startsWith("Opened by a link, from this page's own store: reports/week.booklet.md"),pv?text(pv):"none");
  chk("the line is its own: no problems notice, nothing counted as unread",!P.find(P.main(),P.hasClass("filenotes")).length&&!/could not read/.test(text(P.main())));
  A.flushSave();chk("leaving it unchanged keeps no content for it, and no second entry",lib().length===2&&Object.keys(global.__ls).sort().join()===keys);
- A.editBook(t=>{});A.flushSave();
+ {const ta=P.find(P.main(),n=>n.tagName==="textarea"||n.tagName==="input")[0];ta.value="an answer kept here";ta._on.input();}A.flushSave();
  chk("when the reader changes something it joins \"Your booklets\" (a second entry, the first untouched)",lib().length===2&&lib().some(e=>/Kept already/.test(JSON.stringify(e.title)))&&lib().some(e=>e.from==="store:reports/week.booklet.md"),JSON.stringify(lib()));
  const pv2=P.find(P.main(),P.hasClass("openedby"));
  A.closeBooklet();
@@ -122,7 +122,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;const U=STORE+"week.md";RO
  await A.openLink("#/open/week.md");A.screen="m/a";
  press(/Read the newer file/);
  chk("reading it with no host takes the new body and keeps the reader's answer",/A second question/.test(JSON.stringify(A.BOOK))&&ans(A)==="answer 4"&&/answer 4/.test(A.toMarkdown())&&!offer(),JSON.stringify(A.STATE.answers));
- chk("...into the same entry: still one, and what it saved holds both",lib().length===1&&stored().length===1&&/answer 4/.test(JSON.stringify(stored()[0].S))&&/second question/.test(JSON.stringify(stored()[0].TPL)));
+ chk("...into the same entry: still one, and what it saved holds both",lib().length===1&&stored().length===1&&/answer 4/.test(JSON.stringify(stored()[0].S))&&/second question/.test(stored()[0].text));
  A.closeBooklet();await A.openLink("#/open/week.md");
  chk("having read it, opening again offers nothing",!offer()&&lib().length===1);A.closeBooklet();
  // entries and drafts are kept too, and an answer to a question the new body dropped stays unused
@@ -223,8 +223,8 @@ reset();{const A=P.boot();META["booklet-registry"]="https://reg.test/registry.js
  release();await pending;
  chk("...and the notice is gone when the booklet is open",A.currentId===e0.id&&!/Opening reports/.test(text(P.main())));
  // a change to the booklet itself (which the store cannot hold: it keeps its own body): the kept copy opens, with the offer
- A.editBook(t=>{});A.flushSave();
- chk("a change made here is kept here, marked as a change to the booklet itself",("booklet.b."+e0.id) in global.__ls&&JSON.parse(global.__ls["booklet.b."+e0.id]).TPL.customized===true);
+ A.renameBooklet("Renamed here");A.flushSave();
+ chk("a change made here is kept here, marked as a change to the booklet itself",("booklet.b."+e0.id) in global.__ls&&JSON.parse(global.__ls["booklet.b."+e0.id]).customized===true);
  A.closeBooklet();ROUTES[URLW]=WEEK.replace("A question","A fourth question");
  await A.openLink("#/open/reports/week.booklet.md");
  chk("then the kept copy opens, not the file, and the newer file is offered",A.currentId===e0.id&&!/fourth question/.test(JSON.stringify(A.BOOK))&&P.find(P.main(),P.hasClass("hostnote")).length===1);

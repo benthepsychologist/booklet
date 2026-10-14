@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-aM5JewlMCfG/qF+l8Ch9N2+0iEDnbkYa5ebBVJkTEcc=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-JePjnfP2fiSiPqrxeikLsBlT85042Wiwufm98uJildQ=' 'sha256-FDwbk0XEWWP/Qp2kvc2QUTFqQ1Iuqe3XzLeof/lHqAQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1425,14 +1425,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.13.0";
+const RENDERER_VERSION="0.13.1";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.13"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is compared as two whole numbers (versionOf, versionCmp, in the small helpers). */
 const FORMAT_VERSION="0.13";
-const LANG_NAMES={en:"English",es:"Español","es-AR":"Español (Argentina)",fr:"Français"};
-/* the interface languages with a button (the variants, es-AR, have none), in the order offered */
-const BASE_LANGS=Object.keys(LANG_NAMES).filter(l=>!l.includes("-"));
+/* the toggle's languages, each named in itself (es-AR has strings but no button) */
+const LANG_NAMES={en:"English",es:"Español",fr:"Français"};
 const LANG_PREF_KEY="booklet.ui.lang";
 const MODULE_SCREEN="module:";
 const LIB_KEY="booklet.library.v1", bookKey=id=>"booklet.b."+id;
@@ -2563,17 +2562,31 @@ function buildTables(){
 buildTables();
 /* One group of the interface table, in the reader's language, else English. */
 const strings=g=>(STRINGS[lang]&&STRINGS[lang][g])||STRINGS.en[g];
+/* ---- a problem: a code, worded only when shown ----
+   A problem is {code, args, refuses}: `code` names its message in the `problem` group, `args` what it is given (a part
+   that is a message, "line 12", is a problem too), `refuses` that the file cannot open (SPEC.md section 12). problemText
+   words it where it is drawn, so a parse knows no interface language and notices follow a language switch.
+   PROBLEM.idTwice(where, id) makes one (PROBLEM.langMissing, one that takes nothing); its string is its words. */
+const PROBLEM_WORDS={toString(){return problemText(this);}};
+const PROBLEM={};
+Object.keys(STRINGS_SRC.en.problem).forEach(code=>{const make=(...args)=>Object.assign(Object.create(PROBLEM_WORDS),{code,args,refuses:false});
+  if(typeof STRINGS_SRC.en.problem[code]==="function") PROBLEM[code]=make;else Object.defineProperty(PROBLEM,code,{get:make,enumerable:true});});
+const isProblem=x=>!!x&&typeof x==="object"&&typeof x.code==="string"&&Array.isArray(x.args);
+/* a problem in the language in force, its parts that are messages too; anything else as it is */
+function problemText(p){if(!isProblem(p)) return String(p==null?"":p);
+  const w=strings("problem")[p.code],a=p.args.map(x=>isProblem(x)?problemText(x):x);
+  return typeof w==="function"?w(...a):typeof w==="string"?w:p.code;}
+/* problems as the one sentence a reader is shown */
+const problemWords=list=>humanMsg(list.map(problemText).join(" "));
 /* the words that stand where an image would be (the Markdown engine reads them through this, when it has a page around it) */
 const imgNoteText=()=>((STRINGS[lang]||{}).ui||{}).imgNotShown||STRINGS.en.ui.imgNotShown;
 
 /* ======================= 3. SMALL HELPERS =======================
    el, sv, text and date helpers, ids, copies, storage access, localised text. */
 /* A format version is two whole numbers, major and minor, never one decimal number: 0.10 is later than 0.9
-   (as a number it would be 0.1). versionOf reads text ("0.10", "0.9") or a number a design saved by 0.9 holds
-   (0.9) and gives [major, minor], or null when it is neither; versionCmp is -1, 0 or 1, or null when either
-   is not a version. */
+   (as a number it would be 0.1). versionOf reads text ("0.10", "0.9") and gives [major, minor], or null when
+   it is not a version (a number is not one); versionCmp is -1, 0 or 1, or null when either is not a version. */
 function versionOf(v){
-  if(typeof v==="number"&&Number.isFinite(v)) v=String(v);
   const m=typeof v==="string"?v.trim().match(/^(\d+)\.(\d+)$/):null;
   return m?[Number(m[1]),Number(m[2])]:null;}
 function versionCmp(a,b){const x=versionOf(a),y=versionOf(b);
@@ -2608,7 +2621,8 @@ const sv=(tag,attrs={},...kids)=>{const n=document.createElementNS(SVG_NS,tag);
    id that is looked up, never a file or an address, so a name that is not in the sprite, or is not a plain
    lowercase name, gives null and the caller draws its fallback. The picture is decoration: aria-hidden. */
 const ART_NAME=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const iconKnown=name=>typeof name==="string"&&ART_NAME.test(name)&&document.getElementById("bi-"+name)!==null;
+/* the sprite's icon names, read once as the page loads; the parser is handed them (lint-booklet.py has the same list) */
+const ICON_NAMES=new Set(Array.from(document.querySelectorAll('symbol[id^="bi-"]'),s=>String(s.id).slice(3)));
 const icon=(name,opts={})=>{
   if(typeof name!=="string"||!ART_NAME.test(name)) return null;
   const has=id=>document.getElementById(id)!==null;
@@ -2665,28 +2679,21 @@ const tx=(v,fallback)=>typeof v==="string"?v:fallback;
 /* A widget's own words (its `copy`): one object of words, or none. */
 const wordsOf=v=>isObj(v)?v:{};
 /* ---- languages ----
-   A booklet is written in one language, the `lang` of its front matter, which is the one language its design
-   declares (`languages`, a list of one tag). The interface speaks that language where the renderer has strings
-   for it and English where it has not. The reader's own choice (the header's EN / ES / FR) wins over it
-   wherever the booklet offers it: see prefLang. */
+   A booklet's `lang` (its front matter's, kept as raw.lang) is the language of the page around it (SPEC.md section
+   9): the interface speaks it where the renderer has strings for it, and English where it has not. The reader's own
+   choice (the header's EN / ES / FR) wins over it, whatever a booklet says: see uiLang. */
 const primaryOf=l=>String(l||"").split("-")[0].toLowerCase();
 /* es-ar → es-AR, ES → es: the one spelling every table and slot uses */
 const normTag=x=>{const p=String(x||"").trim().split("-");if(!/^[A-Za-z]{2,3}$/.test(p[0])) return "";
   return [p[0].toLowerCase(),...p.slice(1).map(q=>q.length===2?q.toUpperCase():q)].join("-");};
 /* the interface table a tag reads from: itself, else its primary language, else none */
 const tableTag=x=>{const t=normTag(x);return STRINGS[t]?t:(STRINGS[primaryOf(t)]?primaryOf(t):"");};
-function declaredLangs(){const d=BOOK&&BOOK.languages;
-  return Array.isArray(d)?[...new Set(d.map(normTag).filter(Boolean))]:[];}
-function offeredLangs(){
-  const d=[...new Set(declaredLangs().map(tableTag).filter(Boolean))];
-  return d.length?d:BASE_LANGS;}
-function chooseLang(base){if(primaryOf(lang)===base) return lang;
-  return offeredLangs().find(x=>primaryOf(x)===base)||tableTag(base)||lang;}
 
 /* ======================= 4. STATE AND SAVING =======================
    the open booklet, the reader's answers and drafts, the screen showing, the library of booklets, saving and loading. */
 /* An empty booklet. This is what the page holds before a file arrives: no
-   modules, no widgets, nothing of its own. */
+   modules, no widgets, nothing of its own. No design is edited in place: one is
+   only replaced, by a text's parse (adoptText). */
 const EMPTY_BOOKLET={booklet:FORMAT_VERSION, id:"", version:"", modules:[], widgets:[], raw:{source:""}};
 /* the booklet in force */
 let BOOK = EMPTY_BOOKLET;
@@ -2700,15 +2707,49 @@ const emptyDrafts=()=>({custom:nullMap()});
 let STATE=emptyState();
 let DRAFTS=emptyDrafts();
 let lang="en", screen=HOME_SCREEN, dirty=false, unsavedEntries=0;
-let openChip={};
+/* ---- the view: what this visit shows of a booklet, never saved ----
+   A view has a record per activity address (viewAt): the entry open under its chips (`chip`), the page on show
+   (`page`), by page the step one at a time shows (`steps`) and the sections opened and seen (`folds`), the solutions
+   shut (`shut`), each query's sort and filter (`queries`, see queryView), its wiki branch (`branch`); `wiki` is a wiki
+   menu's search, its module, the phone's menu. VIEWS keeps one per library entry for the visit; VIEW is the open
+   booklet's. A draw may note there what it first shows (an arrival's section, the branches to a page), nothing else. */
+const VIEWS=new Map();
+let VIEW=null;
+/* The one place a view is chosen or cleared, for entry `id` (null: none): "open" keeps the visit's but its chips, query
+   sorts and wiki menu; "all" clears it (Clear everything, a newer file read over it); "gone" drops it (the booklet
+   removed); a list of addresses drops theirs (a module removed). */
+function viewReset(id,what){let v=id?VIEWS.get(id):null;
+  if(what==="gone") return void VIEWS.delete(id);
+  if(Array.isArray(what)) return void(v&&what.forEach(a=>v.at.delete(a)));
+  const wiki={q:"",menu:false,mod:null};
+  if(!v||what==="all"){v={at:new Map(),wiki};if(id) VIEWS.set(id,v);}
+  else{v.wiki=wiki;v.at.forEach(r=>{r.chip=null;r.queries.clear();r.branch=false;});}
+  VIEW=v;}
+viewReset(null);
+const viewAt=addr=>{let v=VIEW.at.get(addr);
+  if(!v) VIEW.at.set(addr,v={chip:null,page:null,steps:Object.create(null),folds:Object.create(null),shut:new Set(),queries:new Map(),branch:false});
+  return v;};
+/* ---- one draw ----
+   render() hands a draw context, `dc`, to every part of the screen: `ticks`, what redraws in place when an answer
+   changes; `reading`, the page's reading plan, for the menus that list its sections; `reveal`, a heading a link asked
+   for, and `revealed`; `cites`, the citation scopes begun (a head and its page number as one); `opening`, set while a
+   module's opening is drawn on its own screen. DRAWN is the screen on show's (an answer runs its ticks). */
+const newDraw=o=>({ticks:[],reading:null,reveal:(o&&o.reveal)||null,revealed:false,cites:new Map(),opening:false});
+let DRAWN=newDraw();
 /* ---- which booklet is in memory ----
    currentId is the open entry, or null on "Your booklets". bookletGen moves on
    every open and close; anything scheduled or awaited for one booklet checks
    it before touching the globals, which by then may belong to another. */
 let currentId=null, currentKey=null, currentEntry=null, bookletGen=0;
-/* what a file opened with that this page could not read (its reported problems), and whether the reader has dismissed
-   the notice; kept in memory for the session, never saved */
+/* what a file opened with that this page could not read (its reported problems, worded when drawn), and whether the
+   reader has dismissed the notice; kept in memory for the session, never saved */
 let FILE_NOTES=null;
+/* the booklet in force is an older release's kept design (TPL), as this release refuses its text: it is saved back as
+   that design, not as text, until the reader fixes the file (loadLocal) */
+let OLD_DESIGN=false;
+/* the design in memory was changed here (renamed, a module added or removed) since it was last read from a file: kept
+   with its snapshot (`customized`), since a store cannot hold such a change (storeHolds) */
+let CUSTOMIZED=false;
 /* where a booklet opened by a link came from (see OPENING BY LINK in the shell): its own quiet line, never counted among
    the things the page could not read; in memory for the session, never saved */
 let PROVENANCE=null;
@@ -2771,34 +2812,18 @@ const HOOK_EVERY_MS=500;
 /* how long a host has to answer an onChange call with saved() or failed() before the reader is told it did not */
 let HOOK_ANSWER_MS=20000,HOOK_ANSWER_TIMER=null;
 function hookStopWait(){clearTimeout(HOOK_ANSWER_TIMER);HOOK_ANSWER_TIMER=null;}
-/* the reader's sort and filter for each query on the page (see viewControls): kept while this booklet is open, never saved */
-const VIEWSTATE=new Map();
-/* a wiki's menu: the branches the reader has opened, what is typed in its search box, and whether the phone's menu is open. This visit's, in memory, never written. */
-const WK={open:new Set(),q:"",menu:false,mod:null};
 /* ---- the reader's language: this browser's choice, never a booklet's ----
    The language a reader picks (the header's EN / ES / FR) is kept in this
    browser under a key of its own, apart from every booklet's saved data. So it
    holds on "Your booklets" and in every booklet on this origin, and a reload
-   keeps it whether or not anything was edited since.
-   Wherever the booklet in force offers it, it wins over the language that
-   booklet was saved in: a booklet's own `lang` is only the fallback, for a
-   reader who has never chosen, or a booklet that does not offer their choice (a
-   single-language booklet always reads in its one language). A choice of a
-   language (es) takes the booklet's own variant of it (es-AR), exactly as the
-   ES button does; a variant (es-AR) is recorded only when the reader picked it
-   over another variant the booklet offered. Every access is guarded, and with
-   storage off the choice holds for the visit. */
+   keeps it whether or not anything was edited since. Every access is guarded,
+   and with storage off the choice holds for the visit (MEM). */
 function langPref(){const v=normTag(lsGet(LANG_PREF_KEY));return v&&STRINGS[v]?v:null;}
-function setLangPref(v){v=normTag(v);if(!v||!STRINGS[v]) return;lsSet(LANG_PREF_KEY,v);}
-function prefLang(){const p=langPref();if(!p) return null;
-  if(screen===LIB_SCREEN) return p;
-  const off=offeredLangs(),declared=declaredLangs().length>0;
-  const ok=x=>off.includes(x)||(!declared&&!!STRINGS[x]);
-  if(declared&&off.includes(p)) return p;
-  if(ok(p)&&p!==primaryOf(p)) return p;
-  const base=primaryOf(p);
-  if(primaryOf(lang)===base&&ok(lang)) return lang;
-  return off.find(x=>primaryOf(x)===base)||null;}
+function setLangPref(v){v=normTag(v);if(!v||!STRINGS[v]) return;lsSet(LANG_PREF_KEY,v);if(langPref()!==v) MEM[LANG_PREF_KEY]=v;}
+/* The interface language (SPEC.md section 9), set before each draw: the reader's choice, whatever a booklet says (a
+   choice of the base of the booklet's own variant reads that variant: es in an es-AR booklet is es-AR); else the
+   booklet's `lang` where there are strings for it (es-MX reads es); else English. */
+const uiLang=()=>{const p=langPref(),b=tableTag((BOOK.raw||{}).lang);return p?(b&&primaryOf(b)===p?b:p):b||"en";};
 /* an activity flagged `hidden` stays in the file and is not offered */
 const isShown=a=>(a||{}).home!==false;
 /* The booklet in force is read through these: its widgets, its modules, and the
@@ -2827,8 +2852,9 @@ const scopeOfAddr=a=>{const s=String(a==null?"":a),i=s.indexOf(ADDR_SEP);return 
 const shortId=a=>{const s=String(a==null?"":a);return s.slice(s.indexOf(ADDR_SEP)+1);};
 /* the scope a module's activities are in: its own id, or "" for a module outside every fence */
 const scopeOfModule=m=>scopeOfAddr((activitiesOf(m)[0]||{}).id);
-/* the module a fence made, by its id: the module held for a bare activity is not one (its id is its activity's, which may be a module's too) */
-const fencedModule=id=>allModules().find(m=>m.id===id&&scopeOfModule(m)!=="")||null;
+/* the module a fence made, by its id, among `mods` (else the booklet's): the module held for a bare activity is not one
+   (its id is its activity's, which may be a module's too) */
+const fencedModule=(id,mods)=>(mods||allModules()).find(m=>m.id===id&&scopeOfModule(m)!=="")||null;
 /* Where the once-answered questions of a scope are kept. peekAnswers never makes the store. */
 const answersIn=scope=>{STATE.answers=STATE.answers||nullMap();return hasOwn(STATE.answers,scope)?STATE.answers[scope]:(STATE.answers[scope]=nullMap());};
 const peekAnswers=scope=>hasOwn(STATE.answers,scope)?STATE.answers[scope]:nullMap();
@@ -2859,9 +2885,11 @@ const blocksOf=id=>pagesOf(activityOf(id)).flatMap(blocksIn);
    entry with its own id and its own saved snapshot, and they never share a key:
 
      booklet.library.v1   the list: one small record per booklet
-     booklet.b.<id>       one booklet's snapshot, stored as {S, D, TPL, lang, dirty,
-                          unsavedEntries}: S is STATE, D is DRAFTS, TPL is BOOK (the
-                          short keys are what saves already made hold)
+     booklet.b.<id>       one booklet's snapshot, stored as {S, D, text, dirty,
+                          unsavedEntries}: S is STATE, D is DRAFTS (the short keys are
+                          what saves already made hold), text its text with nothing of
+                          the reader's in it (bookText), parsed again on open. An older
+                          snapshot holds the parsed design (TPL) instead (storedText).
 
    Plain localStorage, and only ever getItem/setItem/removeItem on known keys;
    nothing enumerates it. */
@@ -2976,9 +3004,10 @@ function unflatWork(m){const r={answers:nullMap(),entries:nullMap(),drafts:nullM
 function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return true;
   let o=null;try{o=JSON.parse(raw);}catch(x){o=null;}
   if(!isObj(o)||!isObj(o.S)) return false;
-  const T=isObj(o.TPL)?o.TPL:null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
+  /* the kept design: the parse of the kept text, or an older release's design (TPL) */
+  const T=typeof o.text==="string"?parseFile(o.text).template||null:isObj(o.TPL)?o.TPL:null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
   if(blank) return workWithin(o.S,o.D,R);
-  if(T&&T.customized) return false;
+  if(keptCustomized(o)) return false;
   const keep=T?scopesOfBook(T):null,here=flatWork({answers:o.S.answers,entries:o.S.entries,drafts:isObj(o.D)?o.D.custom:{}},keep);
   const base=readBase(e.id);
   /* nothing changed here since the base: the file is the truth, whatever it holds now */
@@ -3035,7 +3064,7 @@ function addEntry(){const now=new Date().toISOString();let made=null;
   changeLib(L=>{let id;
     do{id=newId(Date.now().toString(36));}while(L.entries.some(e=>e.id===id));
     made={id,title:null,parts:[],createdAt:now,updatedAt:now,openedAt:null,
-      dirty:false,unsavedEntries:0,lang};
+      dirty:false,unsavedEntries:0};
     L.entries.push(made);});
   return made;}
 /* Removing a booklet deletes it and everything written in it from this
@@ -3045,10 +3074,10 @@ function removeBooklet(id){const e=(LIB=readLib(),entryById(id));if(!e) return f
   /* the booklet whose file is being read for a link is the one removed: that read is dropped, so it neither opens the
      booklet nor lists it again when it arrives */
   if(LINK_LOADING!==null&&e.from&&LINK_LOADING.from===e.from){LINK_GEN++;LINK_LOADING=null;}
-  lsDel(keyOfEntry(e));lsDel(baseKey(id));
+  lsDel(keyOfEntry(e));lsDel(baseKey(id));viewReset(id,"gone");
   changeLib(L=>{L.entries=L.entries.filter(x=>x.id!==id);});
   return true;}
-/* Rename a booklet that is not open, from "Your booklets": its saved snapshot is renamed in the store (a booklet kept
+/* Rename a booklet that is not open, from "Your booklets": the `title:` line of its kept text is rewritten (a booklet kept
    before it had a design gets a blank one, named), and its row in the list. An empty name keeps the old one.
    A store booklet is different: its title and its body are its file's, and the store keeps its own body, so a name
    written into a kept copy would be dropped, and one written into a pointer would make a blank booklet that a host
@@ -3060,10 +3089,13 @@ function renameStored(id,name){const n=cleanName(name);if(!n) return false;
     return true;}
   if(id===currentId) return renameBooklet(n);
   let o=null;try{o=JSON.parse(lsGet(keyOfEntry(e))||"null");}catch(x){o=null;}
-  if(!o||typeof o!=="object") o={S:emptyState(),D:emptyDrafts(),lang:e.lang||lang};
-  const tpl=o.TPL&&typeof o.TPL==="object"?o.TPL:blankBook();
-  if(n===tx((tpl.head||{}).title,tpl.title)) return false;
-  o.TPL=nameBooklet(tpl,n);o.dirty=true;
+  if(!o||typeof o!=="object") o={S:emptyState(),D:emptyDrafts()};
+  const kept=storedText(o),text=kept||blankText(),R=parseFile(text);
+  if(R.template&&n===tx((R.template.head||{}).title,R.template.title)) return false;
+  /* an older design this release refuses stays the design, renamed; else the text is, and the design it came from goes */
+  if(typeof o.text!=="string"&&R.refused&&R.refused.length&&oldDesign(o.TPL)) o.TPL=namedDesign(o.TPL,n);
+  else{o.text=setTitleIn(text,n);if(kept!==null) delete o.TPL;}
+  o.dirty=true;
   lsSet(keyOfEntry(e),JSON.stringify(o));
   changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) Object.assign(x,{title:n,dirty:true,updatedAt:new Date().toISOString()});});
   return true;}
@@ -3071,8 +3103,12 @@ function renameStored(id,name){const n=cleanName(name);if(!n) return false;
    there is nothing of the reader's to save yet — saveLocal() below is a no-op
    until a booklet is actually created or opened. */
 function slotKey(){return currentId?currentKey:null;}
+/* the snapshot of the booklet in memory, as it is stored */
+const snapshot=()=>JSON.stringify({S:STATE,D:DRAFTS,...(OLD_DESIGN?{TPL:BOOK}:{text:bookText(BOOK)}),...(CUSTOMIZED?{customized:true}:{}),dirty,unsavedEntries});
+/* whether a snapshot's design was changed here (CUSTOMIZED); an older release's kept it in its design (TPL) */
+const keptCustomized=o=>isObj(o)&&(o.customized===true||(isObj(o.TPL)&&o.TPL.customized===true));
 function saveLocal(){const key=slotKey();if(!key) return;
-  lsSet(key,JSON.stringify({S:STATE,D:DRAFTS,TPL:BOOK,lang,dirty,unsavedEntries}));
+  lsSet(key,snapshot());
   /* a store booklet's kept copy is written with its base (see "a store booklet's base") */
   if(BASE&&hostName()) lsSet(baseKey(currentId),JSON.stringify(BASE));
   if(currentId) noteSaved();
@@ -3097,7 +3133,7 @@ function askPersist(){if(PERSIST_ASKED) return;PERSIST_ASKED=true;
   try{Promise.resolve(s.persisted()).then(v=>{if(v) return PERSISTED=true;
     return Promise.resolve(s.persist()).then(g=>{PERSISTED=!!g;if(screen===LIB_SCREEN) render();});}).catch(()=>{});}catch(e){}}
 function noteSaved(){const id=currentId,now=new Date().toISOString();
-  const fresh={...describeBooklet(BOOK),updatedAt:now,dirty,unsavedEntries,lang};
+  const fresh={...describeBooklet(BOOK),updatedAt:now,dirty,unsavedEntries};
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
     if(!e&&currentEntry){e={...currentEntry};L.entries.push(e);}
     if(e) Object.assign(e,fresh);});}
@@ -3106,7 +3142,7 @@ function noteSaved(){const id=currentId,now=new Date().toISOString();
    reader gave it in the list (`named`) stays. Called only on a page that declares a store, so the list can always read
    the file again. */
 function notePointer(){const id=currentId,now=new Date().toISOString();
-  const fresh={...describeBooklet(BOOK),openedAt:now,dirty:false,unsavedEntries:0,lang,from:currentEntry.from,storeSeen:currentEntry.storeSeen};
+  const fresh={...describeBooklet(BOOK),openedAt:now,dirty:false,unsavedEntries:0,from:currentEntry.from,storeSeen:currentEntry.storeSeen};
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
     if(!e){e={...currentEntry};L.entries.push(e);}
     Object.assign(e,fresh);});}
@@ -3118,15 +3154,30 @@ function loadLocal(){const key=slotKey();if(!key) return false;
     const plain=x=>isObj(x)?x:{};
     STATE={answers:nullMap(o.S.answers,1),entries:nullMap(o.S.entries,1)};
     DRAFTS={custom:nullMap((o.D||{}).custom,1)};
-    if(o.lang&&STRINGS[o.lang]) lang=o.lang;
-    dirty=!!o.dirty;unsavedEntries=Number(o.unsavedEntries)||0;
+    dirty=!!o.dirty;unsavedEntries=Number(o.unsavedEntries)||0;CUSTOMIZED=keptCustomized(o);
     /* The booklet's own structure (which modules it holds) is part of what
-       "saved in the browser" promises, exactly like an entry: restore it the
-       way a loaded file adopts one. */
-    const savedBook=bookOk(o.TPL)?o.TPL:null;
-    const bookRestored=savedBook?adoptBook(savedBook):false;
-    return (bookRestored&&!!savedBook.customized)||hasKept();
+       "saved in the browser" promises, exactly like an entry: the parse of its
+       kept text. One an older release kept (TPL) gets the notices a file opened
+       afresh would, once: its snapshot is rewritten as text there and then (no
+       save: nothing is told and nothing marked as changed). If this release
+       refuses it, it opens from that release's design (OLD_DESIGN), and the
+       notice shows until the reader fixes the file. */
+    const old=typeof o.text!=="string",text=storedText(o),R=text===null?null:parseFile(text);
+    if(R&&R.template){const no=R.refused.length>0;
+      if(no&&old&&oldDesign(o.TPL)){BOOK={...o.TPL,widgets:Array.isArray(o.TPL.widgets)?o.TPL.widgets:[]};OLD_DESIGN=true;}
+      else{adoptParse(R);if(old) lsSet(key,snapshot());}
+      if(old||no) FILE_NOTES=fileNotesOf(R,startScreen());}
+    return true;
   }catch(e){return false;}}
+/* an older release's kept design, if it is shaped as one: modules holding activities with string ids, of a kind this page draws */
+const oldDesign=t=>isObj(t)&&Array.isArray(t.modules)&&t.modules.every(m=>isObj(m)&&typeof m.id==="string"
+  &&activitiesOf(m).every(a=>typeof a.id==="string"&&(a.kind==="entry"||a.kind==="board")));
+/* an older release's kept design, renamed (its source's `title:` line too) */
+const namedDesign=(t,n)=>({...t,title:n,head:{...(t.head||{}),title:n},raw:{...(t.raw||{}),source:setTitleIn((t.raw||{}).source,n,(t.raw||{}).lang)}});
+/* the text a snapshot keeps, or null; an older one's (TPL) is its design's source with the records it kept as written */
+function storedText(o){if(typeof o.text==="string") return o.text;
+  const raw=isObj(o.TPL)&&isObj(o.TPL.raw)?o.TPL.raw:null,R=raw?parseFile(String(raw.source||"")):null;
+  return R&&R.template?bookText({...R.template,raw:{...R.template.raw,records:raw.records}}):null;}
 /* the Download button's mark, kept in step with every change (not only with a redraw) */
 function markAttention(){const dl=document.getElementById("btnExport");
   if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());}
@@ -3134,9 +3185,8 @@ function markAttention(){const dl=document.getElementById("btnExport");
    writes any save still pending to that booklet's own key first (flushSave),
    and a timer that somehow outlives its booklet finds bookletGen moved on and
    does nothing — it can never write one booklet's globals under another's. */
-/* what a page redraws in place when an answer changes (a section's status line, the stepper's dots) */
-const ANSWER_TICKS=[];
-function markDirty(){dirty=true;markAttention();hookChanged();ANSWER_TICKS.forEach(f=>{try{f();}catch(e){}});clearTimeout(saveTimer);const gen=bookletGen;
+/* a change to the reader's work (the screen on show redraws its answers' marks in place: its draw's ticks) */
+function markDirty(){dirty=true;markAttention();hookChanged();DRAWN.ticks.forEach(f=>{try{f();}catch(e){}});clearTimeout(saveTimer);const gen=bookletGen;
   saveTimer=setTimeout(()=>{saveTimer=null;if(gen===bookletGen) saveLocal();},400);}
 function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=null;saveLocal();}
 /* A change the host has not yet been told of (its half-second wait is still running) is told now, while the booklet it was
@@ -3144,21 +3194,20 @@ function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=nul
    in its place, and the change would reach the store only when this booklet is next opened. */
 function hookFlush(){if(!HOOK_TIMER) return;clearTimeout(HOOK_TIMER);HOOK_TIMER=null;hookFire();}
 function resetBookletState(){
-  lang=langPref()||lang;
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;BASE=null;
   screen=HOME_SCREEN;dirty=false;unsavedEntries=0;
-  openChip={};VIEWSTATE.clear();WK.open.clear();WK.q="";WK.menu=false;WK.mod=null;FILE_NOTES=null;PROVENANCE=null;LINK_NEWER=null;
+  viewReset(null);FILE_NOTES=null;OLD_DESIGN=false;CUSTOMIZED=false;PROVENANCE=null;LINK_NEWER=null;
   hookStopWait();
   if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;}
   clearTimeout(saveTimer);saveTimer=null;
   VEIL_IDS.forEach(id=>{const v=document.getElementById(id);if(v) v.removeAttribute("open");});}
 /* Open one entry: whatever the last booklet had pending is written to it,
    the globals are cleared, and this one is read from its own key. Returns
-   what loadLocal does — whether something of the reader's own came back —
-   or null for an id the list does not have. */
+   what loadLocal does — whether a saved copy was there to read — or null for
+   an id the list does not have. */
 function openBooklet(id){flushSave();hookFlush();LIB=readLib();const e=entryById(id);if(!e) return null;
   resetBookletState();bookletGen++;
-  currentId=e.id;currentKey=keyOfEntry(e);currentEntry={...e};
+  currentId=e.id;currentKey=keyOfEntry(e);currentEntry={...e};viewReset(currentId,"open");
   const restored=loadLocal();
   /* a store booklet's kept copy comes back with its base, if it has one */
   if(hostName()) BASE=readBase(e.id);
@@ -3237,13 +3286,14 @@ function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}},noId=NO
     else if(kv) out.set[kv[1].toLowerCase()]=kv[2];
     else out.flags.add(w.toLowerCase());});
   return out;}
-/* What a line's settings get wrong by KIND_SETTINGS: the messages, and the settings are taken off the line so
-   that they are ignored. A kind outside the table is an unknown kind, said separately (unknownKind). */
-function checkSettings(it,where,P){const allowed=KIND_SETTINGS[it.kind],out=[];if(!allowed) return out;
+/* What a line's settings get wrong by KIND_SETTINGS: the problems, and the settings are taken off the line so
+   that they are ignored; `icons` is the set of names an `icon:` may give. A kind outside the table is an unknown
+   kind, said separately (unknownKind). */
+function checkSettings(it,where,P,icons){const allowed=KIND_SETTINGS[it.kind],out=[];if(!allowed) return out;
   /* a module's end line closes it and names nothing: its picture is written on the opening line */
   if(it.kind==="module"&&it.flags.has("end")&&it.set.icon!==undefined){out.push(P.iconOnEnd(where));delete it.set.icon;}
   for(const [key,val] of Object.entries(it.set)){
-    if(key==="icon"&&allowed.includes("icon:")&&!iconKnown(val)){out.push(P.iconUnknown(where,val));delete it.set[key];continue;}
+    if(key==="icon"&&allowed.includes("icon:")&&!icons.has(val)){out.push(P.iconUnknown(where,val));delete it.set[key];continue;}
     if(!allowed.includes(key+":")){out.push(P.settingUnknown(where,it.kind,key+":"));delete it.set[key];continue;}
     if(NUMBER_SETTINGS.includes(key)&&!(String(val).trim()!==""&&Number.isFinite(Number(val)))){out.push(P.numberBad(where,key,val));delete it.set[key];}}
   for(const f of [...it.flags]) if(!allowed.includes(f)){out.push(P.settingUnknown(where,it.kind,f));it.flags.delete(f);}
@@ -3320,7 +3370,7 @@ function readQuery(code){const o={};
    `rows` (and optionally `fields`, each key's label and the default order), or
    the list of rows itself. A value is a string, a number, true, false, null, or
    a list of those; nothing nests deeper. Returns {rows,fields} or `bad`. */
-function readData(o){const P=strings("problem");
+function readData(o){const P=PROBLEM;
   const rows=Array.isArray(o)?o:(o&&typeof o==="object"?o.rows:null);
   if(!Array.isArray(rows)) return {bad:P.dataNoRows};
   const flat=v=>v===null||["string","number","boolean"].includes(typeof v);
@@ -3337,22 +3387,23 @@ function readData(o){const P=strings("problem");
    readBlocks walks those building modules, activities, pages and blocks, and
    notes the shared menus and the queries it meets; resolveMenus and linkQueries
    settle those two; shapeBooklet writes the result. Every problem goes into one
-   list, in the order the parts find them. */
-function parseBooklet(text){const {lines,head,next}=frontMatter(text,true);
-  /* `problems` is every message, in the order the parts find them; `refused` is the ones among them that
-     stop the file opening (SPEC.md section 12), the rest being reported when it has opened */
-  const fm={},problems=[];problems.refused=[];problems.dupIds=[];
+   list, in the order the parts find them. The parse is pure (no page, no interface language), so a second reader or
+   a build step can call it; `icons` is the names an `icon:` may give (the page's ICON_NAMES). */
+function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),icons=(opts&&opts.icons)||new Set();
+  /* `problems` is every problem, in the order found; those that stop the file opening (SPEC.md section 12) say so
+     (`refuses`), and the rest are reported when it has opened */
+  const fm={},problems=[];problems.dupIds=[];
   for(const l of head||[]){const kv=kvLine(l);if(kv) fm[kv[0]]=kv[1];}
   const L=tableTag(fm.lang)||"en";
   /* a file marked with another 0.x version opens by these rules, and the first thing it says is so */
-  const other=otherMarker(text),markerNote=other?strings("problem").otherMarker(other):"";
+  const other=otherMarker(text),markerNote=other?PROBLEM.otherMarker(other):null;
   if(markerNote){problems.push(markerNote);problems.markerNote=markerNote;}
   /* `start: home` is the one value; anything else is said and left out */
-  if(fm.start!==undefined&&fm.start!=="home") problems.push(strings("problem").startBad(String(fm.start).slice(0,40)));
-  if(!fm.lang) problems.push(strings("problem").langMissing);
+  if(fm.start!==undefined&&fm.start!=="home") problems.push(PROBLEM.startBad(String(fm.start).slice(0,40)));
+  if(!fm.lang) problems.push(PROBLEM.langMissing);
   const {items,source,moved}=splitItems(lines,next);
-  if(moved) problems.push(strings("problem").designMoved);
-  const doc=readBlocks(items,fm,problems);
+  if(moved) problems.push(PROBLEM.designMoved);
+  const doc=readBlocks(items,fm,problems,icons);
   resolveMenus(doc,problems);
   linkQueries(doc,problems);
   return shapeBooklet(doc,fm,L,source,problems);}
@@ -3474,14 +3525,14 @@ const stripBlock=(list,blk)=>{const i=list.indexOf(blk);if(i>=0) list.splice(i,1
 const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 /* a question's hint: the text of its body, less the lines that only embed a figure */
 const hintOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
-function readBlocks(items,fm,problems){const P=strings("problem");
+function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
   let mod=null,act=null,section="content",lastQ=null,seq=0,oseq=0,row=null,theme=null,recScope="",recForeign=null,dataMod=null;
   /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
      as a module's opening is, and drawn on the home screen. `started` is set when that first line is met. */
   const opening=[];let started=false;
-  const refuse=m=>{problems.push(m);problems.refused.push(m);};
+  const refuse=m=>{m.refuses=true;problems.push(m);};
   /* an id used twice: refused, and its id kept so Add a module can name it */
   const dup=(where,id)=>{const m=P.idTwice(where,id);refuse(m);problems.dupIds.push({id,m});};
   /* An id is unique within its module (SPEC.md section 4): activities, questions and menus are claimed
@@ -3585,7 +3636,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     if(it.id&&!named&&!modules.some(m=>m.id===it.id&&m.__bare)){recForeign={id:it.id,head:it.head};problems.push(P.recordsLineUnknown(where,it.id));}}
   const onRec=it=>{const L=P.line(it.line);
     if(it.t==="fence") return onRecordFence(it,it.info.split(/\s+/));
-    if(it.kind==="records"){checkSettings(it,L,P).forEach(m=>problems.push(m));return onRecords(it,L);}
+    if(it.kind==="records"){checkSettings(it,L,P,icons).forEach(m=>problems.push(m));return onRecords(it,L);}
     problems.push(it.t==="bad"?P.calloutUnreadable(L):P.recordsOther(L));keepRec(it.raw||it.text);};
   const onBreak=()=>{if(row) closeRow(P.rowRunsPage);
     if(section==="content"&&act){act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});lastQ=null;}};
@@ -3599,7 +3650,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
     if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;};
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
-    checkSettings(it,where,P).forEach(m=>problems.push(m));
+    checkSettings(it,where,P,icons).forEach(m=>problems.push(m));
     if(k==="notice"){
       /* a module's notice: one callout, inside the fence, before the module's first activity */
       if(section!=="content"||!mod||act){problems.push(P.noticeMisplaced(where));return;}
@@ -3681,7 +3732,7 @@ function readBlocks(items,fm,problems){const P=strings("problem");
   dataBlocks.forEach(d=>{const set=ids.get(d.mod?d.mod.id:"");if(set&&set.has(d.id)) dup(P.line(d.line),d.id);});
   if(mod) refuse(P.moduleNeverClosed(P.line(mod.__line),mod.id));
   return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme,sharedNotes,recordsKept,opening};}
-function resolveMenus({menus,menuUses,modules},problems){const P=strings("problem");
+function resolveMenus({menus,menuUses,modules},problems){const P=PROBLEM;
   /* a question that names a shared menu takes its options from it: from its own module's menus first,
      then from the data section's (a menu outside every fence), never from another module's */
   for(const u of menuUses){
@@ -3690,7 +3741,7 @@ function resolveMenus({menus,menuUses,modules},problems){const P=strings("proble
       modules.forEach(m=>m.activities.forEach(a=>a.pages.forEach(pg=>stripBlock(pg.blocks,u.block))));continue;}
     u.block.options=hit.items.slice();}
 }
-function linkQueries({modules,queries,dataBlocks},problems){const P=strings("problem");
+function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
   /* A query reads within its own module, so a `from` that names nothing, or something only in another
      module, is refused here and never reaches drawing. It is looked for in the query's own module first
      and then in the data section (a data block outside every fence). The activities outside every module
@@ -3717,10 +3768,11 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=strings("pro
 }
 /* a line's words as inline Markdown reads them: `snake_case` and `$x$` stay as written, emphasis marks, link
    addresses, footnote marks and image addresses go, and an image is its alt text (the section preview reads a
-   paragraph the same way, and draws it) */
+   paragraph the same way, and draws it). Read as text with no page: the reader makes text (TEXT_EL), not elements. */
 const PLAIN_OPTS={image:alt=>alt||"",mark:()=>"",embed:()=>"",link:(t,lb)=>lb!==undefined?lb:t.replace(/^#/,"")};
+const TEXT_EL=(tag,attrs,...kids)=>textOf(kids);
 const plainText=s=>{const one=String(s==null?"":s).replace(/\s*\n\s*/g," ").trim();if(!one) return "";
-  try{return textOf(renderInline(one,{opts:PLAIN_OPTS,refs:{}})).replace(/\s+/g," ").trim();}catch(e){return one;}};
+  try{return textOf(renderInline(one,{opts:PLAIN_OPTS,refs:{},el:TEXT_EL})).replace(/\s+/g," ").trim();}catch(e){return one;}};
 /* the first paragraph of some text that is plain prose (not a heading, a quote, a list or a fence), as plain words */
 const firstPara=s=>plainText(String(s||"").replace(/<!--[\s\S]*?-->/g,"").split(/\n{2,}/).find(p=>p.trim()&&!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p))||"");
 /* a page's name: the words of its first heading */
@@ -3776,41 +3828,60 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
      t.order.forEach((k,n)=>{const m=mods[k],a=m.mode;if(t.parent[k]) a.parent=t.parent[k];else delete a.parent;if(t.depth[k]) a.depth=t.depth[k];out[at[n]]=m;});}}
   const st=emptyState();st.entries=entries;Object.keys(answers).forEach(k=>{st.answers[k]=nullMap(answers[k]);});
   const shared=notesOut(sharedNotes||[],"d");
-  const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",customized:false,...(fm.start==="home"?{start:"home"}:{}),
-    title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,...(opening.length?{opening}:{}),languages:[L],modules:out,widgets,
+  const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",...(fm.start==="home"?{start:"home"}:{}),
+    title:fm.title||undefined,head:fm.title?{title:fm.title}:undefined,...(opening.length?{opening}:{}),modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),
     ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L,...(recordsKept.length?{records:recordsKept}:{})}};
   /* a file with its front matter and no module and no activity at all is an empty booklet with that name (what a
      booklet started here and not yet given a module downloads as); a module that holds no activity is still refused */
   const empty=!modules.length;
-  return {ok:(out.length>0||empty)&&!problems.refused.length,empty:empty||undefined,unread:problems,refused:problems.refused,dupIds:problems.dupIds,markerNote:problems.markerNote,drafts:{activities:drafts},template:book,lang:L,S:st};}
-/* The file as written: the design as read (what sat after the region included), then the records region, each scope's kept blocks first so the reader's values win */
-function toMarkdown(){const V=BOOK.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
+  const refused=problems.filter(p=>p.refuses);
+  return {ok:(out.length>0||empty)&&!refused.length,empty:empty||undefined,unread:problems,refused,dupIds:problems.dupIds,markerNote:problems.markerNote,drafts:{activities:drafts},template:book,lang:L,S:st};}
+/* A file as written: `book`'s design as read (what sat after the region included), then the records region of state `S`
+   and drafts `D`, each scope's kept blocks first so the reader's values win. toMarkdown is the booklet in force's;
+   bookText a design's text with nothing of a reader's, which this browser keeps. */
+function fileText(book,S,D){const V=book.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
   const fence=(info,body)=>["```"+info,body,"```",""];
-  const recs=[],mods=allModules();
+  const recs=[],mods=book.modules||[],fenced=id=>fencedModule(id,mods);
   const kept=[].concat(V.records||[]).filter(r=>r&&typeof r.text==="string"&&(!r.foreign||typeof r.foreign==="string"));
   const scopes=["",...mods.map(scopeOfModule).filter(s=>s)];
-  scopes.forEach(sc=>{const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(activitiesOf),own=[],gd=peekAnswers(sc);
+  scopes.forEach(sc=>{const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(activitiesOf),own=[],gd=hasOwn(S.answers,sc)?S.answers[sc]:nullMap();
     /* kept blocks first in their scope (or under the module's one line once a module has that id) */
-    kept.filter(r=>(!r.foreign||fencedModule(r.scope))&&r.scope===sc).forEach(r=>own.push(r.text,""));
+    kept.filter(r=>(!r.foreign||fenced(r.scope))&&r.scope===sc).forEach(r=>own.push(r.text,""));
     const keys=new Set(),entryIds=new Set(acts.filter(a=>a.kind==="entry").map(a=>a.id));
     acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
     const ans=nullMap();Object.keys(gd).forEach(k=>{if(!keys.has(k)||holdsSomething(gd[k])) ans[k]=gd[k];});
     if(Object.keys(ans).length) own.push(...fence("booklet answers",JSON.stringify(ans,null,1)));
-    const held=Object.keys(STATE.entries||{}).concat(Object.keys((DRAFTS||{}).custom||{})).filter(k=>scopeOfAddr(k)===sc&&!entryIds.has(k));
+    const held=Object.keys(S.entries||{}).concat(Object.keys((D||{}).custom||{})).filter(k=>scopeOfAddr(k)===sc&&!entryIds.has(k));
     [...acts.filter(a=>a.kind==="entry").map(a=>a.id),...[...new Set(held)].sort()].forEach(id=>{
-      const fid=shortId(id),items=((STATE.entries||{})[id]||[]).filter(e=>e&&e.ts).slice().sort((x,y)=>String(x.ts).localeCompare(String(y.ts)));
+      const fid=shortId(id),items=((S.entries||{})[id]||[]).filter(e=>e&&e.ts).slice().sort((x,y)=>String(x.ts).localeCompare(String(y.ts)));
       if(items.length) own.push(...fence("booklet entries "+fid,"{\"items\": [\n"+items.map(e=>JSON.stringify(e)).join(",\n")+"\n]}"));
-      const d=DRAFTS.custom&&DRAFTS.custom[id];
+      const d=D.custom&&D.custom[id];
       /* only what holds something: the empty lists an engine starts with are not work */
       const work=d&&Object.fromEntries(Object.entries(d).filter(([,v])=>holdsSomething(v)));
       if(work&&Object.keys(work).length) own.push(...fence("booklet draft "+fid,JSON.stringify(work)));});
     if(!own.length) return;
-    const m=sc&&fencedModule(sc);
+    const m=sc&&fenced(sc);
     recs.push(...(m?["> [!records|"+m.id+"] "+tx(m.title,m.id),""]:[]),...own);});
-  let head;kept.filter(r=>r.foreign&&!fencedModule(r.scope)).forEach(r=>{if(r.foreign!==head) recs.push(head=r.foreign,"");recs.push(r.text,"");});
+  let head;kept.filter(r=>r.foreign&&!fenced(r.scope)).forEach(r=>{if(r.foreign!==head) recs.push(head=r.foreign,"");recs.push(r.text,"");});
   if(recs.length) out.push("%%","> [!records] App record — do not edit below this line","",...recs,"%%","");
   return out.join("\n");}
+const toMarkdown=()=>fileText(BOOK,STATE,DRAFTS);
+const bookText=book=>fileText(book,emptyState(),emptyDrafts());
+/* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` */
+const textWith=(source,drop)=>{const raw=BOOK.raw||{};
+  return bookText({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}});};
+/* The design is always its text's parse: a booklet's text (kept here, or made by Add, Remove or Rename) is parsed as a
+   file is and adopted whole. Returns the parse, or null (the design unchanged) for no booklet. */
+function adoptText(text){const R=parseFile(text);if(!R.template) return null;
+  adoptParse(R);return R;}
+const adoptParse=R=>{BOOK=R.template;OLD_DESIGN=false;joinRecords(R);};
+/* the records a text's parse read (only one kept as written for a module the booklet has since gained), joined to the
+   reader's work as a file read back joins them: the reader's values win, kept entries come first */
+function joinRecords(R){const st=R.S||emptyState(),dr=(R.drafts||{}).activities||{};
+  Object.keys(st.answers||{}).forEach(sc=>{STATE.answers[sc]=Object.assign(nullMap(st.answers[sc]),peekAnswers(sc));});
+  Object.keys(st.entries||{}).forEach(a=>{STATE.entries[a]=[...st.entries[a],...((STATE.entries||{})[a]||[])];});
+  Object.keys(dr).forEach(a=>{if(isObj(dr[a])) DRAFTS.custom[a]=Object.assign(nullMap(dr[a]),DRAFTS.custom[a]||{});});}
 
 /* ======================= A BOOKLET'S OWN LOOK =======================
    A `booklet theme` block asks for a look: a base theme, up to six colours, a font
@@ -3943,18 +4014,12 @@ function setTitleIn(source,name,langTag){
       else{const b=L.findIndex((l,k)=>k>0&&k<j&&/^booklet:/.test(l));L.splice((b>=0?b:0)+1,0,"title: "+q+cr);}
       return L.join("\n");}}
   return '---\nbooklet: "'+FORMAT_VERSION+'"\ntitle: '+q+"\nlang: "+(langTag||lang)+"\n---\n"+(String(source||"").trim()?"\n"+String(source).replace(/^\n+/,""):"");}
-/* the design `tpl` (a booklet in memory or one read from the browser's store), named: its source text, and the title
-   and head the screens read */
-function nameBooklet(tpl,name){const raw=tpl.raw||{};
-  tpl.raw={...raw,source:setTitleIn(raw.source,name,raw.lang),lang:raw.lang||lang};
-  tpl.title=name;tpl.head={...(tpl.head||{}),title:name};
-  return tpl;}
-/* a booklet just started here: no module, no answers, its front matter already written */
-function blankBook(){const name=strings("library").untitled;
-  return nameBooklet({booklet:FORMAT_VERSION,id:"local/booklet",version:"1",customized:false,modules:[],widgets:[],raw:{source:"",lang}},name);}
-/* Rename the booklet in memory. An empty name keeps the old one. Returns whether it changed. */
+/* a booklet just started here: its front matter and nothing else (its id is its title's slug, as any file's) */
+const blankText=()=>setTitleIn("",strings("library").untitled,lang);
+/* Rename the booklet in memory: its text with the new `title:` line, read again. An empty name keeps the old one. */
 function renameBooklet(name){const n=cleanName(name);if(!n||n===tx((BOOK.head||{}).title,BOOK.title)) return false;
-  editBook(t=>nameBooklet(t,n));flushSave();return true;}
+  if(OLD_DESIGN) BOOK=namedDesign(BOOK,n);else adoptText(setTitleIn(bookText(BOOK),n,(BOOK.raw||{}).lang));
+  CUSTOMIZED=true;markDirty();flushSave();return true;}
 
 /* ================ ADD A MODULE ================
    Splicing, not editing: a module's own fenced text is appended to the end
@@ -3979,14 +4044,14 @@ function fencedSpans(lines,from,to){
     if(/^booklet\b/i.test(f[2].trim())||idm){out.push({start:i,end:idm?n:k});i=idm?n:k;}
     else i=k;}
   return out;}
-/* What is wrong with a module file, in words a person uploading their own
+/* What is wrong with a module file, as problems a person uploading their own
    can act on — never a stack trace. Empty means it is safe to add. */
 function moduleTextProblems(text){
-  if(!isBooklet(text)) return [strings("problem").notReadable];
+  if(!isBooklet(text)) return [PROBLEM.notReadable];
   const R=parseFile(text);
   /* another 0.x marker is no reason to refuse: it is said when the module is added */
   if(R.unread.filter(m=>m!==R.markerNote).length) return R.unread.filter(m=>m!==R.markerNote);
-  if(!(R.template.modules||[]).length) return [strings("problem").noModule];
+  if(!(R.template.modules||[]).length) return [PROBLEM.noModule];
   return [];}
 /* ---- RENAME ON A CLASH (SPEC.md section 10) ----
    Booklet reads a block id or a footnote id in its own module. Obsidian reads `![[#^id]]` as the first block
@@ -4106,11 +4171,11 @@ function spliceApart(lines,at,ins){
 function addModuleText(text){
   const problems=moduleTextProblems(text);
   if(problems.length) return {ok:false,problems};
-  if(!BOOK) return {ok:false,problems:[strings("problem").noBooklet]};
+  if(!BOOK) return {ok:false,problems:[PROBLEM.noBooklet]};
   const R=parseFile(text);
   const lines=String((R.template.raw||{}).source||"").split("\n");
   const spans=moduleSpans(lines);
-  if(!spans.length) return {ok:false,problems:[strings("problem").noFence]};
+  if(!spans.length) return {ok:false,problems:[PROBLEM.noFence]};
   /* sort what the file holds outside every module fence: each block (and, under a data line, each footnote)
      goes to the module whose data it is, or is shared */
   const inside=new Array(lines.length).fill(false);
@@ -4186,35 +4251,22 @@ function addModuleText(text){
       cur=cur.filter((_,i)=>!d[i]);sh=dataSections(cur).find(x=>x.id===null);
       cur=spliceApart(cur,sh.end,extraChunks.join("\n\n").split("\n"));}
     else cur=spliceApart(cur,cur.length,["> [!data] Data","",...extraChunks.join("\n\n").split("\n")]);}
-  /* a booklet put together here has no front matter yet; without it the file would not be one */
+  /* a booklet with no text (its saved copy gone) has no front matter yet; without it the file would not be one */
   const head=blank?"---\nbooklet: \""+FORMAT_VERSION+"\"\ntitle: "+JSON.stringify(strings("library").untitled)+"\nlang: "+((BOOK.raw||{}).lang||lang)+"\n---\n\n":"";
   const newSource=head+cur.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
 
-  /* read the booklet this would make before changing anything: if the renderer would refuse that
-     file, nothing is added and the reader is told why. An id another module uses is no clash (an id is
-     unique within its module). */
-  const made=parseFile(newSource),refused=(made&&made.refused)||[];
-  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notReadable]};
-  if(refused.length){const P=strings("problem"),dups=made.dupIds||[];
+  /* read the booklet this would make (with its kept records) before changing anything: if the renderer would refuse
+     that file, nothing is added and the reader is told why. An id another module uses is no clash (an id is unique
+     within its module). */
+  const made=parseFile(textWith(newSource)),refused=(made&&made.refused)||[];
+  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[PROBLEM.notReadable]};
+  if(refused.length){const dups=made.dupIds||[];
     const dids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
-    return {ok:false,problems:[...dids.map(P.moduleIdClash),...refused.filter(m=>!said.has(m))]};}
-
-  /* the design is read back from that file: each added module as it stands there, its own widgets and
-     figures replacing the ones it had (an update drops what the new text no longer has), and the shared
-     blocks it brought */
-  const T=made.template,mine=new Set(incoming.filter(Boolean));
-  editBook(t=>{t.raw={...(t.raw||{}),source:newSource};
-    /* a booklet put together before it had a name takes the one its file now says */
-    if(!t.title&&T.title){t.title=T.title;t.head=T.head;}
-    t.widgets=(t.widgets||[]).filter(w=>!(w.module&&mine.has(w.module))&&!(!w.module&&extraIds.has(w.id)));
-    const keep=Object.fromEntries(Object.entries(t.figures||{}).filter(([k])=>!(k.includes(ADDR_SEP)&&mine.has(k.slice(0,k.indexOf(ADDR_SEP))))&&!(!k.includes(ADDR_SEP)&&extraIds.has(k))));
-    const own=Object.fromEntries(Object.entries(T.figures||{}).filter(([k])=>k.includes(ADDR_SEP)?mine.has(k.slice(0,k.indexOf(ADDR_SEP))):extraIds.has(k)));
-    const all={...keep,...own};if(Object.keys(all).length) t.figures=all;else delete t.figures;});
-  (T.widgets||[]).filter(w=>w.module?mine.has(w.module):extraIds.has(w.id)).forEach(addWidget);
-  const added=[];
-  /* the module as the composed file reads it: its notice, from its fence's callout, rides on it */
-  (T.modules||[]).filter(m=>mine.has(m.id)&&scopeOfModule(m)!=="").forEach(mod=>{if(addModule(mod)) added.push(mod.id);});
-  return {ok:true,added,renamed:renamedIds};}
+    return {ok:false,problems:[...dids.map(id=>PROBLEM.moduleIdClash(id)),...refused.filter(m=>!said.has(m))]};}
+  /* the design is that file's parse, whole (an added module's notice, from its fence's callout, rides on it) */
+  adoptParse(made);CUSTOMIZED=true;markDirty();
+  const mine=new Set(incoming.filter(Boolean));
+  return {ok:true,added:BOOK.modules.filter(m=>mine.has(m.id)&&scopeOfModule(m)!=="").map(m=>m.id),renamed:renamedIds};}
 /* What the reader has kept in a module, as counts: entries and drafts at every address in its scope (orphans included) and every answer. Read-only. */
 function moduleWork(mod){
   const scope=scopeOfModule(mod),gd=peekAnswers(scope),keys=new Set(),mine=m=>Object.keys(m||{}).filter(k=>scopeOfAddr(k)===scope);
@@ -4224,17 +4276,16 @@ function moduleWork(mod){
     drafts:mine(DRAFTS.custom).filter(k=>Object.values(DRAFTS.custom[k]).some(holdsSomething)).length};}
 /* Remove a module takes out exactly what the module is in the file: its fence (open line to end line) and its own
    `> [!data|module-id]` section, found the way Add a module finds them (moduleSpanOf, dataSections). The shared
-   `> [!data]` section, the other modules, the front matter and the order of what remains are not touched. In
-   memory it takes the module, the widgets and figures that were its own, and the reader's work in it: its
-   answers, its kept entries and drafts, and what is keyed by its activities (page on show, reading-mode state,
-   query view state, the open chip). Nothing is changed unless the file this makes is one the renderer reads with
-   nothing refused. Returns {ok} or {ok:false,problems}. */
+   `> [!data]` section, the other modules, the front matter and the order of what remains are not touched. The
+   design is the parse of what remains; the reader's work in the module goes with it (its answers, kept entries,
+   drafts and kept records, and its activities' view). Nothing is changed unless the file this makes is one the
+   renderer reads with nothing refused. Returns {ok} or {ok:false,problems}. */
 function removeModule(id){
   const mod=id?fencedModule(id):null;
-  if(!mod||!BOOK) return {ok:false,problems:[strings("problem").noFence]};
+  if(!mod||!BOOK) return {ok:false,problems:[PROBLEM.noFence]};
   const cur=String((BOOK.raw||{}).source||"").split("\n");
   const old=moduleSpanOf(cur,id);
-  if(!old) return {ok:false,problems:[strings("problem").noFence]};
+  if(!old) return {ok:false,problems:[PROBLEM.noFence]};
   const drop=new Array(cur.length).fill(false);
   for(let i=old.openAt;i<=old.closeAt;i++) drop[i]=true;
   dataSections(cur).filter(x=>x.id===id).forEach(x=>{for(let i=x.at;i<x.end;i++) drop[i]=true;});
@@ -4247,80 +4298,30 @@ function removeModule(id){
       after=false;}
     out.push(ln);});
   const newSource=out.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
-  const made=parseFile(newSource),refused=(made&&made.refused)||[];
-  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[strings("problem").notReadable]};
+  const made=parseFile(textWith(newSource,id)),refused=(made&&made.refused)||[];
+  if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[PROBLEM.notReadable]};
   if(refused.length) return {ok:false,problems:refused};
   /* the reader's work in the module goes with it */
   const addrs=activitiesOf(mod).map(a=>a.id),scope=scopeOfModule(mod);
   [STATE.entries,DRAFTS.custom].forEach(m=>{if(m) Object.keys(m).forEach(k=>{if(scopeOfAddr(k)===scope) delete m[k];});});
-  addrs.forEach(a=>{
-    delete openChip[a];
-    Object.keys(PAGE_NOW).forEach(k=>{if(k.slice(k.indexOf("\n")+1)===a) delete PAGE_NOW[k];});
-    Object.keys(RM_STATE).forEach(k=>{if(k.split("\n")[1]===a) delete RM_STATE[k];});
-    [...VIEWSTATE.keys()].forEach(k=>{if(k.startsWith(a+":")) VIEWSTATE.delete(k);});});
+  viewReset(currentId,addrs);
   if(STATE.answers) delete STATE.answers[scope];
   const left=Object.values(STATE.entries||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);
   if(unsavedEntries>left) unsavedEntries=left;
-  editBook(t=>{t.raw={...(t.raw||{}),source:newSource};
-    if((t.raw.records||[]).some(r=>r.scope===id)){const left=t.raw.records.filter(r=>r.scope!==id);if(left.length) t.raw.records=left;else delete t.raw.records;}
-    t.modules=(t.modules||[]).filter(m=>!(m.id===id&&scopeOfModule(m)!==""));
-    t.widgets=(t.widgets||[]).filter(w=>w.module!==id);
-    const keep=Object.fromEntries(Object.entries(t.figures||{}).filter(([k])=>scopeOfAddr(k)!==id));
-    if(Object.keys(keep).length) t.figures=keep;else delete t.figures;});
+  adoptParse(made);CUSTOMIZED=true;markDirty();
   return {ok:true};}
+/* the page's way into the parser, with its sprite's icon names */
 function parseFile(text){
-  if(isBooklet(text)) return parseBooklet(text);
-  return {ok:false,unread:[strings("problem").notBooklet],drafts:{activities:{}},template:null,S:emptyState()};}
-/* A booklet design arriving in a file is not trusted to be well-formed. It has to
-   name activities of a kind the renderer draws. */
-function bookOk(t){
-  if(!t||typeof t!=="object") return false;
-  const activities=(t.modules||[]).flatMap(activitiesOf);
-  /* a booklet that was started here and holds no module yet is still a booklet when it has its own front matter */
-  if(!activities.length) return !(t.modules||[]).length&&!!frontMatter((t.raw||{}).source).head;
-  if((t.modules||[]).some(m=>!m||typeof m.id!=="string")) return false;
-  return activities.every(m=>m&&typeof m.id==="string"&&kindOk(m.kind));}
-/* The renderer ships no booklet, so it has no opinion to defend: any valid
-   booklet in a file is the booklet. */
-function adoptBook(t){if(!bookOk(t)) return false;
-  BOOK={...t,widgets:[...(t.widgets||[])]};
-  return true;}
-/* The empty booklet is shared and must never be edited in place, so the first
-   change takes a private copy and marks it as the person's own. */
-function editBook(fn){if(BOOK===EMPTY_BOOKLET) BOOK=clone(EMPTY_BOOKLET);
-  /* a booklet put together here names itself, so its file is identifiable and
-     so a later load can tell it apart from one made somewhere else */
-  if(!BOOK.id){BOOK.id="local/booklet";BOOK.version="1";}
-  BOOK.customized=true;fn(BOOK);markDirty();}
-function addWidget(w){if(!w||typeof w!=="object"||typeof w.id!=="string"||!w.engine) return false;
-  editBook(t=>{t.widgets=t.widgets||[];
-    const i=t.widgets.findIndex(x=>x.id===w.id&&x.module===w.module);
-    if(i>=0) t.widgets[i]=w; else t.widgets.push(w);});
-  return true;}
-function addModule(mod){if(!moduleOk(mod)) return false;
-  editBook(t=>{t.modules=t.modules||[];
-    const i=t.modules.findIndex(m=>m.id===mod.id&&scopeOfModule(m)!=="");
-    if(i>=0) t.modules[i]=mod; else t.modules.push(mod);});
-  return true;}
-/* the two kinds of activity a file can declare: one that repeats (`entry`) and one answered once */
-const kindOk=k=>k==="entry"||k==="board";
-/* A module is well-formed when it holds at least one activity, in `mode` or in
-   `activities` but never both, each with a string id and a kind the renderer draws,
-   and no two of them sharing an id. */
-function moduleOk(mod){if(!(mod&&typeof mod==="object"&&typeof mod.id==="string")) return false;
-  if(mod.mode!=null&&mod.activities!=null) return false;
-  if(mod.activities!=null&&!(Array.isArray(mod.activities)&&mod.activities.every(a=>a&&typeof a==="object"))) return false;
-  const acts=activitiesOf(mod),ids=acts.map(a=>a.id);
-  return acts.length>0&&acts.every(a=>typeof a.id==="string"&&kindOk(a.kind))&&new Set(ids).size===ids.length;}
+  if(isBooklet(text)) return parseBooklet(text,{icons:ICON_NAMES});
+  return {ok:false,unread:[PROBLEM.notBooklet],drafts:{activities:{}},template:null,S:emptyState()};}
 /* A file opened from "Your booklets" becomes a booklet of its own: its design
    is the booklet, and its entries, answers and drafts are what that booklet
    holds. */
-function applyParsed(R){const st=R.S;VIEWSTATE.clear();
-  if(bookOk(R.template)) adoptBook(R.template);
+function applyParsed(R,view){const st=R.S;viewReset(currentId,view==="open"?"open":"all");
+  BOOK=R.template;OLD_DESIGN=false;CUSTOMIZED=false;
   /* every activity's draft, keyed by activity id (see draftsIn) */
   STATE=st;DRAFTS={custom:draftsIn((R.drafts||{}).activities)};
-  if(R.lang&&tableTag(R.lang)) lang=tableTag(R.lang);
-  dirty=false;unsavedEntries=0;openChip={};}
+  dirty=false;unsavedEntries=0;}
 
 /* ======================= 6. MARKDOWN TO NODES =======================
    the Markdown reader, mdNodes: text in, DOM nodes out. */
@@ -4328,7 +4329,8 @@ function applyParsed(R){const st=R.S;VIEWSTATE.clear();
 /* mdNodes(text, opts): turns a chunk of Markdown into an array of DOM nodes,
    for the Booklet renderer. Builds every element through the page's own
    `el(tag,attrs,...kids)` helper (defined in the helpers above this
-   engine) and never through innerHTML or any HTML string. Security rule:
+   engine, or `ctx.el` for text) and never through innerHTML or any HTML
+   string. Security rule:
    the text comes from files strangers hand people, so raw HTML in it is
    never parsed as markup — it is just characters that fall through to a
    plain text node, which is safe by construction because `el` never sets
@@ -4356,13 +4358,14 @@ const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderIn
   if(isModuleLink(url)) return typeof ctx.opts.moduleLink==="function"?ctx.opts.moduleLink(url,kids):textOf(kids);
   if(!urlOk(url,true)) return textOf(kids);
   {const sc=cleanScheme(url).scheme;if((sc==="http"||sc==="https")&&!WEB_ADDRESS.test(String(url).trim())) return textOf(kids);}
+  const E=ctx.el||el;
   /* a link to a heading in the same document: the page decides where that leads */
   if(typeof url==="string"&&url.startsWith("#")&&typeof ctx.opts.anchor==="function"){
     let n=null;try{n=ctx.opts.anchor(url.slice(1),kids);}catch(e){n=null;}
     if(n!=null) return n;}
   const {scheme}=cleanScheme(url);const attrs={href:String(url).replace(CTRL,""),title};
   if(scheme==="http"||scheme==="https"){attrs.target="_blank";attrs.rel="noopener noreferrer";}
-  return el("a",attrs,...kids);};
+  return E("a",attrs,...kids);};
 /* An image is never fetched (SPEC.md section 6): this renderer builds no img element from a file's Markdown. It draws the
    alt text in a quiet framed box that says the image is not shown, with the address as plain text beneath, so a
    reader can see what was meant. Nothing is requested for any address, and a typed or file-written address of
@@ -4371,11 +4374,11 @@ const mkImg=(alt,src,ctx)=>{
   /* a caller that wants only text (a card's blurb) says what stands for an image */
   if(ctx&&ctx.opts&&typeof ctx.opts.image==="function"){const n=ctx.opts.image(alt,src);if(n!=null) return n;}
   const a=String(src==null?"":src).replace(CTRL,""),shown=a.length>160?a.slice(0,160)+"\u2026":a;
-  const note=typeof imgNoteText==="function"?imgNoteText():"Image not shown";
-  return el("span",{class:"imgbox"},
-    ...(alt?[el("span",{class:"imgalt"},alt)]:[]),
-    el("span",{class:"imgnote"},note),
-    ...(shown?[el("code",{class:"imgsrc"},shown)]:[]));};
+  const note=typeof imgNoteText==="function"?imgNoteText():"Image not shown",E=(ctx&&ctx.el)||el;
+  return E("span",{class:"imgbox"},
+    ...(alt?[E("span",{class:"imgalt"},alt)]:[]),
+    E("span",{class:"imgnote"},note),
+    ...(shown?[E("code",{class:"imgsrc"},shown)]:[]));};
 const resolveRef=(ctx,label)=>ctx.refs[String(label||"").trim().toLowerCase()]||null;
 /* INLINE: one alternation, longer/more-specific delimiters (**, embed ![[)
    before the shorter/generic ones that share a leading char (*, [), so the
@@ -4410,16 +4413,16 @@ function renderInline(src,ctx){
   // a link's label), and sharing one stateful `g` RegExp's lastIndex across
   // an outer and inner call would let the inner call's exhaustion reset it
   // to 0 under the outer loop's feet, matching the same span forever.
-  const re=new RegExp(INLINE_RE.source,"g");
+  const re=new RegExp(INLINE_RE.source,"g"),E=ctx.el||el;
   const out=[];let last=0;let m;
   while((m=re.exec(src))){
     if(m.index>last) out.push(src.slice(last,m.index));
     const g=m.groups;
     if(g.esc!==undefined) out.push(g.esc);
-    else if(g.code!==undefined) out.push(el("code",{},g.code));
+    else if(g.code!==undefined) out.push(E("code",{},g.code));
     else if(g.mathb!==undefined||g.mathi!==undefined){const disp=g.mathb!==undefined,tex=disp?g.mathb:g.mathi;let n=null;
       if(typeof ctx.opts.math==="function") n=ctx.opts.math(tex,disp);
-      out.push(n!=null?n:el(disp?"div":"span",{class:"math"},tex));}
+      out.push(n!=null?n:E(disp?"div":"span",{class:"math"},tex));}
     else if(g.embed!==undefined){const t=g.embed.trim();let n=null;
       if(typeof ctx.opts.embed==="function") n=ctx.opts.embed(t);
       out.push(n!=null?n:("![["+t+"]]"));}
@@ -4444,12 +4447,12 @@ function renderInline(src,ctx){
     else if(g.bareurl!==undefined){const raw=g.bareurl;const trimmed=raw.replace(/[.,;:!?]+$/,"");
       if(trimmed.length<raw.length) re.lastIndex=m.index+trimmed.length;
       out.push(mkLink([trimmed],trimmed,undefined,ctx));}
-    else if(g.strongstar!==undefined) out.push(el("strong",{},...renderInline(g.strongstar,ctx)));
-    else if(g.strongunder!==undefined) out.push(el("strong",{},...renderInline(g.strongunder,ctx)));
-    else if(g.emstar!==undefined) out.push(el("em",{},...renderInline(g.emstar,ctx)));
-    else if(g.emunder!==undefined) out.push(el("em",{},...renderInline(g.emunder,ctx)));
-    else if(g.strike!==undefined) out.push(el("del",{},...renderInline(g.strike,ctx)));
-    else if(g.mark!==undefined) out.push(el("mark",{},...renderInline(g.mark,ctx)));
+    else if(g.strongstar!==undefined) out.push(E("strong",{},...renderInline(g.strongstar,ctx)));
+    else if(g.strongunder!==undefined) out.push(E("strong",{},...renderInline(g.strongunder,ctx)));
+    else if(g.emstar!==undefined) out.push(E("em",{},...renderInline(g.emstar,ctx)));
+    else if(g.emunder!==undefined) out.push(E("em",{},...renderInline(g.emunder,ctx)));
+    else if(g.strike!==undefined) out.push(E("del",{},...renderInline(g.strike,ctx)));
+    else if(g.mark!==undefined) out.push(E("mark",{},...renderInline(g.mark,ctx)));
     last=re.lastIndex;
   }
   if(last<src.length) out.push(src.slice(last));
@@ -5020,7 +5023,8 @@ function svgRegions(e,W,keys){const key=keys[0];
   const figFor=id=>figs.find(f=>(f.regions||[]).includes(id));
   const wrap=el("div",{});
   let active=null, side=(figs[0]||{}).id||null;
-  const rows=()=>e[key]||(e[key]=[]);
+  /* drawing reads the answer; only an answer writes it */
+  const rows=()=>e[key]||[];
   const rowFor=id=>rows().find(r=>r.id===id);
   const sides=el("div",{class:"sideswitch",role:"group","aria-label":C.sideLbl||""});
   const fig=el("div",{class:"svgfig"});
@@ -5104,7 +5108,8 @@ const gridLabel=(W,id)=>{if(String(id).startsWith("x|")) return id.split("|").sl
 function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const u=STRINGS[lang].ui;
   const cells=W.cells||[];const ax=W.axes||{};
-  const chosen=()=>e[key]||(e[key]=[]);
+  /* drawing reads the answer; only a press or a typed word writes it */
+  const chosen=()=>e[key]||[];
   const extra=id=>id.startsWith("x|");
   const itemLabel=id=>gridLabel(W,id);
   const box=el("div",{});
@@ -5176,9 +5181,9 @@ function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});
   if(nonEmpty(ta.value)) requestAnimationFrame(grow);
   return ta;}
 /* render a list of blocks, in reading order */
-function renderBlocks(list,draft,activityId){const host=el("div",{});
-  const draw=()=>{host.innerHTML="";citeKeep(activityId);
-    list().forEach(b=>host.append(renderBlock(b,draft,activityId)));};
+function renderBlocks(list,draft,activityId,dc){const host=el("div",{});
+  const draw=()=>{host.innerHTML="";citeScope(activityId,dc);
+    list().forEach(b=>host.append(renderBlock(b,draft,activityId,dc)));};
   draw();return host;}
 function entryCard(e,type,onDelete){const u=STRINGS[lang].ui;
   const tag=tx((moduleOf(type)||{}).title,shortId(activityOf(type).id));
@@ -5194,9 +5199,9 @@ function chipStrip(id){const t=STRINGS[lang];const list=[...keptFor(id)].sort((a
   if(!list.length){wrap.append(el("p",{class:"chips-empty"},t.ui.noEarlier));return wrap;}
   const strip=el("div",{class:"chips",role:"group","aria-label":t.ui.earlier});const panel=el("div",{});
   const draw=()=>{strip.innerHTML="";panel.innerHTML="";
-    list.forEach(e=>{const on=openChip[id]===e.ts;const c=el("button",{type:"button",class:"chip","aria-pressed":String(on)},fmtWhen(e.ts));
-      c.addEventListener("click",()=>{openChip[id]=on?null:e.ts;draw();});strip.append(c);
-      if(on) panel.append(entryCard(e,id,()=>{removeEntry(id,e.ts);openChip[id]=null;render();}));});};
+    list.forEach(e=>{const on=viewAt(id).chip===e.ts;const c=el("button",{type:"button",class:"chip","aria-pressed":String(on)},fmtWhen(e.ts));
+      c.addEventListener("click",()=>{viewAt(id).chip=on?null:e.ts;draw();});strip.append(c);
+      if(on) panel.append(entryCard(e,id,()=>{removeEntry(id,e.ts);viewAt(id).chip=null;render();}));});};
   draw();wrap.append(strip,panel);return wrap;}
 function removeEntry(id,ts){const arr=keptFor(id);const i=arr.findIndex(x=>x.ts===ts);if(i>=0){arr.splice(i,1);markDirty();}}
 function finalizeRow(onFinalize){const t=STRINGS[lang];return el("div",{class:"finrow"},el("button",{type:"button",class:"finalize",onclick:onFinalize},t.ui.finalize),el("span",{class:"hint"},t.ui.finalizeHint),unsavedNote());}
@@ -5223,28 +5228,28 @@ function questionHead(box,b,forId){
   if(nonEmpty(head)) box.append(forId?el("label",{class:"lbl",for:forId},...words(head,true)):el("h3",{},...words(head)));
   const hint=tx(b.hint,"");if(nonEmpty(hint)) box.append(el("p",{class:"aside"},...words(hint)));
   return plainText(head);}
-/* The drawing of each kind of block (below, DRAW_BLOCK), each called as (block, draft, activityId).
+/* The drawing of each kind of block (below, DRAW_BLOCK), each called as (block, draft, activityId, the draw).
    A booklet's prose, drawn from its Markdown: see mdNodes. A citation mark,
    [^id], becomes a numbered superscript: see READING MATERIAL. */
-function drawMarkdown(b,draft,activityId){const box=el("div",{class:"pblock md"});
-  box.append(...mdBlockNodes(b,activityId));
+function drawMarkdown(b,draft,activityId,dc){const box=el("div",{class:"pblock md"});
+  box.append(...mdBlockNodes(b,activityId,undefined,dc));
   return box;}
-function drawCallout(b,draft,activityId){return calloutNode(b,draft,activityId);}
+function drawCallout(b,draft,activityId,dc){return calloutNode(b,draft,activityId,dc);}
 /* a row: its cells side by side when there is room, one under another when there is not */
-function drawRow(b,draft,activityId){const box=el("div",{class:"pblock row"});
+function drawRow(b,draft,activityId,dc){const box=el("div",{class:"pblock row"});
   blocksIn(b).forEach(c=>{const cell=el("div",{class:"rowcell"});
-    blocksIn(c).forEach(x=>{if(x&&typeof x==="object") cell.append(renderBlock(x,draft,activityId));});
+    blocksIn(c).forEach(x=>{if(x&&typeof x==="object") cell.append(renderBlock(x,draft,activityId,dc));});
     box.append(cell);});
   return box;}
 /* read-only: what was kept elsewhere in this module; owns no answer key */
 function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"});
-  const v={...(b.view||{}),fields:b.fields},key=activityId+":"+b.id;
+  const v={...(b.view||{}),fields:b.fields},state=queryView(activityId,b);
   const scope=scopeOfAddr(activityId);
-  if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,key,scope}));return box;}
+  if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,state,scope}));return box;}
   const same=holderOf(b.from)&&scopeOfAddr(b.from)===scopeOfAddr(activityId);
   const q=b.field?blocksOf(b.from).find(x=>x.id===b.field):null;
   const none={kind:"entries",rows:[],keys:new Set(),own:[],first:"date",lab:k=>k,qs:[]};
-  box.append(...viewNodes(same&&(!b.field||q)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,key,scope}));
+  box.append(...viewNodes(same&&(!b.field||q)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}));
   return box;}
 /* A widget block names a widget; the widget names an engine. The renderer
    knows engines and nothing else, so an activity can carry a body map it
@@ -5269,11 +5274,12 @@ function drawText(b,draft,activityId){const box=el("div",{});const id=newId("f_"
 function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[0];
   const head=questionHead(box,b);
   const tl=el("div",{});
-  if(!Array.isArray(draft[K])||!draft[K].length) draft[K]=[""];
-  const draw=()=>{tl.innerHTML="";draft[K].forEach((v,i)=>{
+  /* the lines typed so far, else one to type in (the draft holds them from the first keystroke, not the draw) */
+  const lines=()=>Array.isArray(draft[K])&&draft[K].length?draft[K]:[""];
+  const draw=()=>{tl.innerHTML="";lines().forEach((v,i)=>{
       const inp=el("input",{type:"text","aria-label":head});inp.value=v;
-      inp.addEventListener("input",()=>{draft[K][i]=inp.value;markDirty();
-        if(i===draft[K].length-1&&nonEmpty(inp.value)){draft[K].push("");draw();tl.querySelectorAll("input")[i].focus();}});
+      inp.addEventListener("input",()=>{const l=lines();l[i]=inp.value;draft[K]=l;markDirty();
+        if(i===l.length-1&&nonEmpty(inp.value)){l.push("");draw();tl.querySelectorAll("input")[i].focus();}});
       inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const nx=tl.querySelectorAll("input")[i+1];if(nx) nx.focus();}});
       tl.append(el("div",{class:"oneline"},inp));});};
   draw();box.append(tl);return box;}
@@ -5295,7 +5301,7 @@ function ownEarlier(activityId,K,listed,now){const out=[];
 /* Options short enough (at most four, each at most 24 characters) sit as pills beside their question when there is room,
    under it when there is not; any longer list stands under the question as before. */
 const shortOptions=l=>Array.isArray(l)&&l.length>0&&l.length<=4&&l.every(o=>typeof o==="string"&&o.length<=24);
-function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("question");
+function drawChoice(b,draft,activityId,dc){const listed=b.options||[],Q=strings("question");
   const box=el("div",{class:shortOptions(listed)&&!b.open?"q-inline":null});
   questionHead(box,b);
   const K=b.keys[0],multi=b.type==="multi";
@@ -5320,7 +5326,7 @@ function drawChoice(b,draft,activityId){const listed=b.options||[],Q=strings("qu
     return on?(isRight?"right":"wrong"):(isRight?"answer":null);};
   const MARK={right:["✓ ",Q.right],wrong:["✗ ",Q.notQuite],answer:["✓ ",Q.theAnswer]};
   const pills=el("div",{class:"pills"}),live=el("p",{class:"q-live hint","aria-live":"polite"}),acts=el("div",{class:"q-acts"});
-  const QC=qControls(b,draft,activityId),SP=QC&&QC.sol;
+  const QC=qControls(b,draft,activityId,dc),SP=QC&&QC.sol;
   if(SP) live.classList.add("q-live-sr");
   const draw=()=>{const ae=document.activeElement,at=ae&&ae.parentNode===pills?Array.from(pills.children).indexOf(ae):-1,
       onCheck=!!ae&&ae.parentNode===acts;
@@ -5402,15 +5408,15 @@ const DRAW_BLOCK={
   matrix:drawMatrix,
   number:drawNumber,
   date:drawNumber};
-function renderBlock(b,draft,activityId){
+function renderBlock(b,draft,activityId,dc){
   /* a solution drawn inside its question leaves nothing in the list */
   const S=solutionsOf(activityId);
   if(S.s.has(b)) return el("span",{class:"sol-moved",hidden:true});
-  const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId)
+  const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc)
     :el("p",{class:"hint"},STRINGS[lang].ui.unknownBlock(b.type||"?",b.id||"?"));
-  if(S.q.has(b)&&b.type!=="choice"&&b.type!=="multi") node.append(qControls(b,draft,activityId).node);
+  if(S.q.has(b)&&b.type!=="choice"&&b.type!=="multi") node.append(qControls(b,draft,activityId,dc).node);
   if(placeOf(b)!=="folded") return node;
-  return b.type==="callout"?foldedCallout(b,draft,activityId):
+  return b.type==="callout"?foldedCallout(b,draft,activityId,dc):
     cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),marked:true,open:blockFilled(b,draft),body:[node]});}
 /* Is this callout a hint or a solution ("hint", "solution", or ""): the one place that decides, for both ways the parser
    makes one: folded under its question (kind "", id ending -hint or -solution) or on its own (kind hint or solution,
@@ -5421,8 +5427,8 @@ function hintKind(b){
   return k===""?(/-(hint|solution)$/.exec(String(b&&b.id||""))||[])[1]||"":"";}
 /* A callout folded with a minus sign, or a hint or solution folded under its question, as a fold card: its kind's
    picture, its title (a hint or a solution is called that, in the reader's language, not by the raw kind), and the
-   first words of its text as the teaser. A hint or a solution has no teaser: a closed one gives nothing away. */
-function foldedCallout(b,draft,activityId,x){
+   first words of its text as the teaser. A hint or a solution has no teaser: a closed one gives nothing away (`x`: one in its question). */
+function foldedCallout(b,draft,activityId,dc,x){
   const Rt=strings("reading"),C=strings("cards"),hs=hintKind(b);x=x||{};
   /* a kind that means something keeps its colour and picture; any other (a group, no kind) is drawn on plain paper */
   const look=b.kind===""||hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
@@ -5432,7 +5438,7 @@ function foldedCallout(b,draft,activityId,x){
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
   const picture=emo?{emoji:emo}:look?{icon:icon(look.icon)}:hs?{icon:icon(hs==="hint"?"lightbulb":"circle-check")}:null;
-  const parts=blocksIn(b).filter(x=>x&&typeof x==="object").map(x=>({x,n:renderBlock(x,draft,activityId)}));
+  const parts=blocksIn(b).filter(x=>x&&typeof x==="object").map(x=>({x,n:renderBlock(x,draft,activityId,dc)}));
   let teaser="";
   if(!hs){const L=sectionLede(parts.filter(p=>p.x.type==="markdown").flatMap(p=>Array.from(p.n.children||[])));
     teaser=L.para?clip(textOf(L.para),220):L.text;}
@@ -5442,8 +5448,8 @@ function foldedCallout(b,draft,activityId,x){
   return cardNode({mode:"fold",cls:"card-sub"+(look?" rd-k-"+look.label:hs?"":" card-plain")+(!hs&&!look&&!picture?" card-notile":"")+(x.tone?" sol-"+x.tone:"")+(x.inQ?" q-in":"")+(x.sol?" sol-in":""),hue:look?look.hue:"slate",
     title:emo?lead.title:title,marked:nonEmpty(named)||!(hs||word),picture,teaser,status:x.status,size:hs?"compact":null,open:!!x.open||blockFilled(b,draft),body});}
 /* Which folded hint and solution belong to which question of an activity: the callouts the parser made right after the question,
-   whose ids are the question's id and "-hint" or "-solution". Found from the blocks themselves (so it holds for a booklet kept by an
-   earlier visit), once per stored list of blocks: the list is replaced, never changed in place, when a booklet or module is loaded. */
+   whose ids are the question's id and "-hint" or "-solution". Found from the blocks themselves, once per list of blocks: a list is
+   replaced, never changed in place. */
 const SOLS=new WeakMap();
 function solutionsOf(addr){const a=activityOf(addr);
   const key=a.pages||a.blocks;let r=key&&SOLS.get(key);if(r) return r;
@@ -5455,25 +5461,23 @@ function solutionsOf(addr){const a=activityOf(addr);
       const e={hint:hint&&!r.s.has(hint)?hint:null,sol:sol&&!r.s.has(sol)?sol:null};
       r.q.set(q,e);if(e.hint) r.s.add(e.hint);if(e.sol) r.s.add(e.sol);}});
   if(key) SOLS.set(key,r);return r;}
-/* the solutions a reader has shut after an answer opened them, for this visit only (never saved, like RM_STATE) */
-const SOL_SHUT=new Set();
 /* A solution inside its question: the compact fold, shut, giving nothing away. `set(tone)` is how the question tells it what the
    reader has done: "good" (right), "warn" (not right, "Look again") or "neutral" (a choice with no right answer, once picked) opens
    it in that tone, and only when the tone changes, so a reader who shut it is not argued with; null (the answer no longer carries
-   a verdict) takes the tone and label off and leaves it open or shut as the reader left it. */
-function solutionPart(sol,draft,activityId){const Q=strings("question"),key=(currentId||"")+"\n"+activityId+"\n"+sol.id;let last=null,open=false;
-  const make=t=>foldedCallout(sol,draft,activityId,{inQ:true,sol:true,tone:t,open,status:t==="warn"?Q.lookAgain:t==="good"?Q.right:""});
+   a verdict) takes the tone and label off and leaves it open or shut as the reader left it (the view's `shut`). */
+function solutionPart(sol,draft,activityId,dc){const Q=strings("question"),shut=viewAt(activityId).shut;let last=null,open=false;
+  const make=t=>foldedCallout(sol,draft,activityId,dc,{inQ:true,sol:true,tone:t,open,status:t==="warn"?Q.lookAgain:t==="good"?Q.right:""});
   let cur=make(null);
-  const keep=n=>n.addEventListener("toggle",()=>{if(n!==cur) return;open=n.open;if(open) SOL_SHUT.delete(key);else if(last) SOL_SHUT.add(key);});keep(cur);
+  const keep=n=>n.addEventListener("toggle",()=>{if(n!==cur) return;open=n.open;if(open) shut.delete(sol.id);else if(last) shut.add(sol.id);});keep(cur);
   return {get node(){return cur;},
     set(t,byReader){if(t===last||(!t&&!last)) return;last=t;
       /* a verdict the reader's own pick or Check produced opens it; a redraw never reopens one the reader shut */
-      if(t){if(byReader||!SOL_SHUT.has(key)){open=true;SOL_SHUT.delete(key);}}
+      if(t){if(byReader||!shut.has(sol.id)){open=true;shut.delete(sol.id);}}
       const next=make(t),old=cur;cur=next;keep(next);if(old.parentNode) old.replaceWith(next);}};}
 /* The hint and the solution of a question, as small controls in its own block (a hint first, as the author wrote them). */
-function qControls(q,draft,activityId){const e=solutionsOf(activityId).q.get(q);if(!e) return null;
-  const sol=e.sol?solutionPart(e.sol,draft,activityId):null;
-  return {node:el("div",{class:"q-ctls"},e.hint?foldedCallout(e.hint,draft,activityId,{inQ:true}):null,sol&&sol.node),sol};}
+function qControls(q,draft,activityId,dc){const e=solutionsOf(activityId).q.get(q);if(!e) return null;
+  const sol=e.sol?solutionPart(e.sol,draft,activityId,dc):null;
+  return {node:el("div",{class:"q-ctls"},e.hint?foldedCallout(e.hint,draft,activityId,dc,{inQ:true}):null,sol&&sol.node),sol};}
 /* An activity marked `upsert:"day"` (the file's `repeat daily`) keeps one entry per
    calendar day rather than one per Finalize: finalizing again on the same day
    replaces that day's entry instead of adding a second one. */
@@ -5489,7 +5493,8 @@ function finalizeEntry(id){const u=STRINGS[lang].ui;
     if(idx>=0) kept[idx]=e; else kept.push(e);
   } else kept.push(e);
   DRAFTS.custom[id]=nullMap();
-  unsavedEntries++;dirty=true;openChip[id]=e.ts;markAttention();render();saveLocal();toast(u.kept);}
+  unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;markAttention();render();saveLocal();toast(u.kept);}
+/* a daily activity's empty draft shows today's entry, to be finished again (settle) */
 function seedUpsertDraft(id,m,draft){
   if(m.upsert!=="day"||anyFilled(draft)) return;
   const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());
@@ -5812,11 +5817,14 @@ const VIEW_FNS={cards:viewCards,table:viewTable,list:viewList,tiles:viewTiles,ba
    default view, the empty text, `limit`, the reader's filter and sort, and the
    grouping are all here, once; a view is handed rows already filtered and sorted,
    and the roles already resolved. The reader's sort and filter are one control,
-   viewControls, the same on every view; its state is kept in VIEWSTATE for as long
-   as this booklet is open and is never written anywhere. ---- */
+   viewControls, the same on every view; its state (`opts.state`, see queryView) is
+   kept for as long as this booklet is open and never written anywhere. ---- */
 const CONTROLS_MIN=9;
 const newViewState=()=>({open:false,q:"",fk:"",fv:"",sk:"",dir:0,opens:new Set()});
-const viewState=key=>{if(!key) return newViewState();if(!VIEWSTATE.has(key)) VIEWSTATE.set(key,newViewState());return VIEWSTATE.get(key);};
+/* a query's sort and filter in its activity's view, by its place among the activity's queries (which holds when another
+   module's text changes the numbers the parser gives blocks) */
+function queryView(activityId,b){const q=viewAt(activityId).queries,n=allBlocksOf(activityOf(activityId)).filter(x=>x.type==="query").indexOf(b);
+  if(!q.has(n)) q.set(n,newViewState());return q.get(n);}
 /* A list whose rows carry a parent is nested. The tree is built in one pass over a
    Map keyed by the rows' ids (the first row with an id wins). A row whose parent is
    empty or not among the rows is a top row; a cycle is cut at the first row met, which
@@ -5910,7 +5918,7 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   const gk=drawn.includes("group")&&v.group&&!tree?v.group:null,canSort=as!=="line";
   const shown=uniq([...(as==="cards"&&set.kind==="entries"?["date"]:[]),roles.badge,roles.label,roles.value,roles.note,roles.tone,...cols.map(c=>c.key)]);
   const sortKeys=canSort?uniq([...(set.kind==="entries"?["date"]:[]),roles.label,roles.value,...cols.map(c=>c.key)]):[];
-  const state=viewState(opts.key);
+  const state=opts.state||newViewState();
   if(!state.opens) state.opens=new Set();
   if(state.sk&&!sortKeys.includes(state.sk)){state.sk="";state.dir=0;}
   const body=el("div",{class:"dv-body"+(as==="cards"?" dv-cards":"")});
@@ -5988,12 +5996,10 @@ function pagesOf(a){
 const activityBlocks=a=>pagesOf(a).flatMap(blocksIn);
 /* a page's name: its own title, else its place in the menu */
 const pageName=(p,i)=>tx(p&&p.title,null)||strings("pages").nth(i+1);
-/* ---- which page is showing: this visit only ---- */
-const PAGE_NOW={};
-const pageNowKey=id=>(currentId||"")+"\n"+id;
-const showPage=(id,pid)=>{PAGE_NOW[pageNowKey(id)]=pid;};
-function currentPage(id){const ps=pagesOf(activityOf(id));
-  return ps.find(p=>p.id===PAGE_NOW[pageNowKey(id)])||ps[0];}
+/* ---- which page is showing: this visit only (the view's) ---- */
+const showPage=(id,pid)=>{viewAt(id).page=pid;};
+function currentPage(id){const ps=pagesOf(activityOf(id)),at=viewAt(id).page;
+  return ps.find(p=>p.id===at)||ps[0];}
 const pageBlocksShown=id=>blocksIn(currentPage(id));
 /* ---- the menu's preference: the browser's, never the booklet's ---- */
 const pagesMenuPref=()=>lsGet(PAGES_MENU_KEY);
@@ -6011,7 +6017,7 @@ function togglePagesMenu(){if(narrowPages()) pagesOverlay=!pagesOverlay;
 function refocus(sel){const n=document.querySelector(sel);if(n&&!n.disabled) n.focus();}
 /* ---- drawing ---- */
 /* The page on show: its name and its blocks. The list is read afresh on every redraw. */
-function pageBody(id,draft){const ps=pagesOf(activityOf(id));const cur=currentPage(id);
+function pageBody(id,draft,dc){const ps=pagesOf(activityOf(id));const cur=currentPage(id);
   const box=el("div",{class:"ap-body"});
   /* a page with a heading of its own is named by it, where it stands in the page (the menu uses it too); only a page with none is named above */
   if(ps.length>1&&!cur.title){const i=ps.indexOf(cur);
@@ -6020,16 +6026,15 @@ function pageBody(id,draft){const ps=pagesOf(activityOf(id));const cur=currentPa
      the blocks, and only when there is something for them */
   /* (the citation scope began in renderActivity, before the head was drawn) */
   /* a page that only reads is drawn by READING MODE, folded where it has sections */
-  RM_CUR=null;ANSWER_TICKS.length=0;
   /* three or more questions: the reader may take them one at a time (kept per booklet, like the fold choice) */
   const units=stepUnits(blocksIn(currentPage(id))),one=units.length>=2&&oatPref()==="one";
   if(units.length>=2) box.append(stepControl(one));
-  const rd=one?null:readingPage(id,draft);
-  if(one) box.append(stepPage(id,draft,units));
-  else if(rd){RM_CUR=rd.info;box.append(rd.node);RM_REVEAL=null;}
-  else box.append(renderBlocks(()=>blocksIn(currentPage(id)),draft,id));
-  const notes=endnotesFor(id);if(notes) box.append(notes);
-  citeReopen(id);
+  const rd=one?null:readingPage(id,draft,dc);
+  if(one) box.append(stepPage(id,draft,units,dc));
+  else if(rd){dc.reading=rd.info;box.append(rd.node);}
+  else box.append(renderBlocks(()=>blocksIn(currentPage(id)),draft,id,dc));
+  const notes=endnotesFor(id,false,dc);if(notes) box.append(notes);
+  citeReopen(id,dc);
   return box;}
 function choosePage(id,pid){showPage(id,pid);pagesOverlay=false;render();
   window.scrollTo({top:0});
@@ -6041,10 +6046,10 @@ function pageMenuKeys(e){const k=e.key;if(!["ArrowDown","ArrowUp","Home","End"].
   const j=k==="Home"?0:k==="End"?items.length-1:Math.min(items.length-1,Math.max(0,i+(k==="ArrowDown"?1:-1)));
   e.preventDefault();items[j].focus();}
 /* Wrap an activity's view in its pages: the menu on the left when it has
-   several, or nothing at all. */
-function withPages(id,content){const P=strings("pages");const ps=pagesOf(activityOf(id));
+   several, or nothing at all (the page's sections from the draw's reading plan). */
+function withPages(id,content,dc){const P=strings("pages");const ps=pagesOf(activityOf(id));
   const inner=el("div",{class:"ap-content"},content);
-  const rd=RM_CUR;
+  const rd=dc.reading;
   if(ps.length<2&&!rd) return content;
   const open=pagesMenuOpen(),cur=currentPage(id);
   const tog=el("button",{type:"button",class:"ap-toggle","aria-expanded":String(open),"aria-controls":"ap-pages",
@@ -6075,13 +6080,18 @@ function withPages(id,content){const P=strings("pages");const ps=pagesOf(activit
 
 /* ---- ONE AT A TIME ----
    A page of three or more questions can be taken one question at a time: a progress line and dots, the question, Back
-   and Next. The reader's choice is the browser's (booklet.ui.steps.<booklet>), never the file's. Every question is drawn
-   and the others are only hidden, so an answer is never lost on a step, and print shows them all. A question's own
-   hint and solution go with it; prose goes with the question that follows it (the last prose with the last question). */
+   and Next. The reader's choice is the browser's (booklet.ui.steps.<booklet>, see bookletPref), never the file's. Every
+   question is drawn and the others are only hidden, so an answer is never lost on a step, and print shows them all. A
+   question's own hint and solution go with it; prose goes with the question that follows it (the last prose with the
+   last question). */
 const OAT_KEY="booklet.ui.steps.";
-const oatPref=()=>lsGet(OAT_KEY+(BOOK.id||""));
-const setOatPref=v=>{lsSet(OAT_KEY+(BOOK.id||""),v);};
-const OAT_AT={};
+/* A browser's preference for one booklet (one at a time, folding), under its library entry: its link (`from`), the
+   same each time a link opens it, else its id. One an older release kept under the booklet's id is read until set. */
+const prefOwner=()=>(currentEntry&&currentEntry.from)||currentId||"";
+const bookletPref=key=>{const v=lsGet(key+prefOwner());return v!==null?v:lsGet(key+(BOOK.id||""));};
+const setBookletPref=(key,v)=>{lsSet(key+prefOwner(),v);};
+const oatPref=()=>bookletPref(OAT_KEY);
+const setOatPref=v=>setBookletPref(OAT_KEY,v);
 const isQuestion=q=>QUESTION_KINDS.has(q.type);
 function stepUnits(list){const units=[];let pre=[];
   (Array.isArray(list)?list:[]).forEach(b=>{if(!b||typeof b!=="object") return;
@@ -6096,28 +6106,29 @@ function stepControl(one){const S=strings("steps");
     return el("button",{type:"button","aria-pressed":String(on),onclick:()=>{if(on) return;
       setOatPref(val);render();refocus('.oat-ctl button[aria-pressed="true"]');}},text);};
   return el("div",{class:"oat-ctl",role:"group","aria-label":S.label},btn("one",S.one),btn("all",S.all));}
-function stepPage(id,draft,units){const S=strings("steps"),page=currentPage(id),key=(currentId||"")+"\n"+id+"\n"+page.id;
-  citeKeep(id);
+function stepPage(id,draft,units,dc){const S=strings("steps"),page=currentPage(id),steps=viewAt(id).steps,key=page.id;
+  citeScope(id,dc);
   const done=u=>blocksAll(u.blocks).filter(isQuestion).every(q=>keysOf(q).some(k=>holdsSomething(draft[k])));
-  if(!(key in OAT_AT)){const f=units.findIndex(u=>!done(u));OAT_AT[key]=f<0?0:f;}
+  /* arriving, the first step with a question still to answer is shown */
+  if(!(key in steps)){const f=units.findIndex(u=>!done(u));steps[key]=f<0?0:f;}
   const n=units.length,host=el("div",{class:"oat"});
   const prog=el("span",{class:"oat-prog",role:"status"}),dots=units.map(()=>el("span",{class:"oat-dot"}));
   host.append(el("div",{class:"oat-head"},prog,el("span",{class:"oat-dots","aria-hidden":"true"},...dots)));
-  const nodes=units.map(u=>el("div",{class:"oat-unit",tabindex:"-1"},...u.blocks.map(b=>renderBlock(b,draft,id))));
+  const nodes=units.map(u=>el("div",{class:"oat-unit",tabindex:"-1"},...u.blocks.map(b=>renderBlock(b,draft,id,dc))));
   host.append(...nodes);
   const back=el("button",{type:"button",class:"cd-btn oat-back"},icon("arrow-left"),S.back),
     next=el("button",{type:"button",class:"cd-btn oat-next primary"},S.next,icon("arrow-right"));
   host.append(el("div",{class:"oat-nav"},back,next));
-  const draw=()=>{const at=OAT_AT[key];
+  const draw=()=>{const at=steps[key];
     nodes.forEach((x,i)=>{if(i===at) x.removeAttribute("hidden");else x.setAttribute("hidden","");});
     prog.textContent=S.progress(at+1,n);
     dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i])?" on":"")+(i===at?" cur":"");});
     [[back,at<=0],[next,at>=n-1]].forEach(([b,off])=>{if(off) b.setAttribute("disabled","");else b.removeAttribute("disabled");});};
   /* Back and Next move the keyboard to the step now shown (its box takes the focus, so a screen reader reads it) */
-  const go=d=>{OAT_AT[key]=Math.max(0,Math.min(n-1,OAT_AT[key]+d));draw();
-    const u=nodes[OAT_AT[key]];if(u&&u.focus) u.focus();};
+  const go=d=>{steps[key]=Math.max(0,Math.min(n-1,steps[key]+d));draw();
+    const u=nodes[steps[key]];if(u&&u.focus) u.focus();};
   back.addEventListener("click",()=>go(-1));next.addEventListener("click",()=>go(1));
-  draw();ANSWER_TICKS.push(draw);
+  draw();dc.ticks.push(draw);
   return host;}
 
 /* ======================= READING MODE =======================
@@ -6129,15 +6140,13 @@ function stepPage(id,draft,units){const S=strings("steps"),page=currentPage(id),
    heading of that level. Prose before the first section stays as it is.
 
    The reader's choice (folded, or everything open) is the browser's, kept per
-   booklet beside the pages-menu preference, and never enters the file. Which
-   sections are open, and which have been opened, are view state for this
-   visit. Any page with sections folds, questions and data views
+   booklet (bookletPref), and never enters the file. Which sections are open,
+   and which have been opened, are view state for this visit. Any page with sections folds, questions and data views
    included; the first section with a question not yet answered opens on arrival, and the pages of one activity
    decide one by one. */
-const rmPref=()=>lsGet(RM_KEY+(BOOK.id||""));
-const setRmPref=v=>{lsSet(RM_KEY+(BOOK.id||""),v);};
-const RM_STATE={};
-let RM_CUR=null,RM_REVEAL=null,RM_REVEALED=false,RM_QUIET=false;
+const rmPref=()=>bookletPref(RM_KEY);
+const setRmPref=v=>setBookletPref(RM_KEY,v);
+let RM_QUIET=false;
 const tagOf=n=>n&&typeof n==="object"?String(n.tagName||n.tag||"").toLowerCase():"";
 const headLevel=n=>{const m=/^h([1-6])$/.exec(tagOf(n));return m?+m[1]:0;};
 /* A page that can fold: two or more headings at the same level (not counting a title heading that stands alone above
@@ -6184,8 +6193,8 @@ function sectionLede(body){
   return {para:null,rest:body,text:clip(text,220)};}
 /* put a table in its own scrolling wrapper, so a wide one scrolls beside the page, not under it */
 const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
-const mdBlockNodes=(b,activityId,prefix)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",
-  mark:id=>{if(activityId==="") return "";const c=citeText("[^"+id+"]",activityId);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
+const mdBlockNodes=(b,activityId,prefix,dc)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",
+  mark:id=>{if(activityId==="") return "";const c=citeText("[^"+id+"]",activityId,dc);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
 /* keep the menu's dots and the count current, without redrawing the page */
 function rmRefresh(info){
   if(info.countEl) info.countEl.textContent=strings("fold").count(info.st.open.size,info.sections.length);
@@ -6205,7 +6214,8 @@ function rmGo(info,k){
   const d=document.querySelector('.rm-sec[data-k="'+k+'"]');
   if(d){d.open=true;d.scrollIntoView({block:"start"});
     const s=d.querySelector("summary");if(s&&s.focus) s.focus({preventScroll:true});}
-  const cur=RM_CUR;if(cur) rmRefresh(cur);}
+  /* (the screen on show's plan: it may have been drawn again) */
+  const cur=DRAWN.reading;if(cur) rmRefresh(cur);}
 /* What a data view or a kept-entry view holds, as a line for its section's card: "2 kept" or "N rows", or the view's own
    `empty:` text (else "None yet") when it holds nothing. Nothing when the view cannot be drawn. */
 function queryStatus(b,activityId){const C=strings("cards");
@@ -6220,15 +6230,15 @@ function queryStatus(b,activityId){const C=strings("cards");
 /* Draw a page that only reads. Returns null for any other page
    (drawn as any other page is); otherwise {node, info}, where info is null when the page
    has no sections to fold. */
-function readingPage(id,draft){
+function readingPage(id,draft,dc){
   const page=currentPage(id);
   if(!foldable(activityOf(id),page)) return null;
   const list=blocksIn(page);
-  citeKeep(id);
+  citeScope(id,dc);
   const items=[],groups=[];
   list.forEach(b=>{
-    if(b.type==="markdown"){const ns=mdBlockNodes(b,id);ns.forEach(n=>items.push({n,md:true}));groups.push({ns});}
-    else{const n=renderBlock(b,draft,id);items.push({n,md:false,b});groups.push({n});}});
+    if(b.type==="markdown"){const ns=mdBlockNodes(b,id,undefined,dc);ns.forEach(n=>items.push({n,md:true}));groups.push({ns});}
+    else{const n=renderBlock(b,draft,id,dc);items.push({n,md:false,b});groups.push({n});}});
   const plan=readingPlan(items.map(x=>x.n));
   if(!plan){const host=el("div",{});
     groups.forEach(g=>host.append(g.ns?el("div",{class:"pblock md"},...g.ns):g.n));
@@ -6237,7 +6247,7 @@ function readingPage(id,draft){
   const emit=ns=>{const out=[];let run=null;
     ns.forEach(n=>{if(of.get(n).md){if(!run){run=el("div",{class:"pblock md"});out.push(run);}run.append(n);}
       else{run=null;out.push(n);}});return out;};
-  const total=plan.sections.length,key=(currentId||"")+"\n"+id+"\n"+page.id;
+  const total=plan.sections.length,folds=viewAt(id).folds,key=page.id;
   /* a section's questions: how many, and how many hold an answer now */
   const qStat=nodes=>{let n=0,done=0;
     nodes.forEach(x=>{const it=of.get(x);if(!it||!it.b) return;
@@ -6250,16 +6260,16 @@ function readingPage(id,draft){
       blocksAll([it.b]).filter(z=>z.type==="query").forEach(z=>{const t=queryStatus(z,id);if(t) out.push(t);});});
     return out.join(" · ");};
   const holds=nodes=>nodes.some(x=>{const it=of.get(x);return !!it&&!!it.b&&blocksAll([it.b]).some(z=>z.type==="query"||isQuestion(z));});
-  if(!RM_STATE[key]){const all=rmPref()==="open",ks=plan.sections.map((_,k)=>k);
-    RM_STATE[key]={open:new Set(all?ks:[]),seen:new Set(all?ks:[])};
+  if(!folds[key]){const all=rmPref()==="open",ks=plan.sections.map((_,k)=>k);
+    folds[key]={open:new Set(all?ks:[]),seen:new Set(all?ks:[])};
     /* arriving, the first section with a question still to answer is open */
     const first=plan.sections.findIndex(s=>{const q=qStat(s.body);return q.n>q.done;});
-    if(first>=0){RM_STATE[key].open.add(first);RM_STATE[key].seen.add(first);}}
-  const st=RM_STATE[key];
-  /* a link to a heading inside a section opens that section */
-  if(RM_REVEAL) plan.sections.forEach((s,k)=>{
+    if(first>=0){folds[key].open.add(first);folds[key].seen.add(first);}}
+  const st=folds[key];
+  /* a link to a heading inside a section opens that section (dc.reveal) */
+  if(dc.reveal) plan.sections.forEach((s,k)=>{
     const hs=[s.head,...s.body.filter(n=>headLevel(n))].map(n=>linkNorm(textOf(n)));
-    if(hs.includes(RM_REVEAL)){st.open.add(k);st.seen.add(k);RM_REVEALED=true;}});
+    if(hs.includes(dc.reveal)){st.open.add(k);st.seen.add(k);dc.revealed=true;}});
   const info={st,dets:[],sections:[],countEl:null,stats:[]};
   const host=el("div",{class:"rm"});
   host.append(...emit(plan.lead));
@@ -6284,7 +6294,7 @@ function readingPage(id,draft){
     info.dets.push(d);info.sections.push({k,title:name});
     host.append(d);});
   /* answering redraws each section's status line where it stands */
-  if(info.stats.length) ANSWER_TICKS.push(()=>info.stats.forEach(x=>{const c=x.d.querySelector(".c");if(c) c.textContent=x.line();}));
+  if(info.stats.length) dc.ticks.push(()=>info.stats.forEach(x=>{const c=x.d.querySelector(".c");if(c) c.textContent=x.line();}));
   return {node:host,info};}
 /* Printing prints everything: the sections open for the print and fold back after */
 let RM_PRINTED=[];
@@ -6331,14 +6341,13 @@ function scrollToHeading(text){const want=linkNorm(text);
   /* a heading inside a folded section: open the section first */
   for(let p=n;p&&p!==document.body;p=p.parentNode) if(p.classList&&p.classList.contains("card-fold")&&!p.open) p.open=true;
   if(n&&n.scrollIntoView) n.scrollIntoView({block:"start"});else window.scrollTo({top:0});}
-function openHeading(hit){
-  RM_REVEAL=linkNorm(hit.heading);RM_REVEALED=false;
+/* follow a link to a heading: its page's draw opens the folded section holding it (`reveal`) */
+function openHeading(hit){const reveal=linkNorm(hit.heading);
   if(screen===hit.act){const same=currentPage(hit.act).id===hit.page;
-    if(!same){showPage(hit.act,hit.page);pagesOverlay=false;render();}
-    scrollToHeading(hit.heading);RM_REVEAL=null;return;}
-  showPage(hit.act,hit.page);go(hit.act);
-  if(RM_REVEALED) scrollToHeading(hit.heading);
-  RM_REVEAL=null;}
+    if(!same){showPage(hit.act,hit.page);pagesOverlay=false;render({reveal});}
+    scrollToHeading(hit.heading);return;}
+  showPage(hit.act,hit.page);
+  if(go(hit.act,{reveal}).revealed) scrollToHeading(hit.heading);}
 function headingLink(hit,kids){
   return el("a",{href:"#",class:"alink",onclick:e=>{if(e&&e.preventDefault) e.preventDefault();openHeading(hit);}},...kids);}
 /* what a prose block hands mdNodes so these links lead somewhere. A link is looked for in its own module
@@ -6372,12 +6381,15 @@ const isWhole=v=>typeof v==="number"?Number.isInteger(v)&&v>0:/^\d+$/.test(Strin
 const hasVal=v=>v!=null&&String(v).trim()!=="";
 const clip=(s,n)=>{s=String(s==null?"":s).replace(/\s+/g," ").trim();return s.length>n?s.slice(0,n-1).trimEnd()+"…":s;};
 /* a module's sources and citations, by key and by id, read out of its footnotes
-   (the first of a repeated one wins; the linter reports the repeat) */
+   (the first of a repeated one wins; the linter reports the repeat). The activities outside every fence are one module
+   (SPEC.md section 4): a footnote one defines is found from all. Source keys are kept apart by their list's place. */
 function registries(mod){const sources=new Map(),cites=new Map();
+  const own=scopeOfModule(mod)===""?allModules().filter(m=>scopeOfModule(m)===""):[mod];
   /* a module's own footnotes first, then the data section's (the booklet's own list) for any id it does not define */
-  for(const o of [mod,BOOK]){
-    for(const s of regList(o&&o.sources)) if(typeof s.key==="string"&&s.key&&!sources.has(s.key)) sources.set(s.key,s);
-    for(const c of regList(o&&o.citations)) if(typeof c.id==="string"&&c.id&&!cites.has(c.id)) cites.set(c.id,c);}
+  [...own,BOOK].forEach((o,i)=>{const key=k=>i+":"+k,srcs=regList(o&&o.sources);
+    for(const s of srcs) if(typeof s.key==="string"&&s.key&&!sources.has(key(s.key))) sources.set(key(s.key),s);
+    for(const c of regList(o&&o.citations)) if(typeof c.id==="string"&&c.id&&!cites.has(c.id))
+      cites.set(c.id,srcs.some(s=>s.key===c.source)?{...c,source:key(c.source)}:c);});
   return {sources,cites};}
 /* The texts of a block that may carry marks, in the order it draws them. */
 function markedTexts(b){if(!b||typeof b!=="object") return [];
@@ -6386,25 +6398,23 @@ function markedTexts(b){if(!b||typeof b!=="object") return [];
     case "markdown": return [String(b.text||"")];
     default: return [];}}
 /* ---- the scope: one activity's numbering, and what was drawn for it ---- */
-const SCOPES={};
 /* Number an activity's marks: every page in order, every block the reader can
    see, in order. No module holding the activity means no scope, and text
    drawn as it is. */
 /* A module's opening is drawn with its activity when the module is one activity (so its marks and the activity's number on together, 1, 2, ...), and on the
-   module's own screen otherwise, where it is numbered in a scope of its own (the first activity's id and a mark, \u0001); CITE_OPENING says which is being drawn. */
-let CITE_OPENING=false;
+   module's own screen otherwise, where it is numbered in a scope of its own (the first activity's id and a mark, \u0001; dc.opening). */
 const openingWithActivity=mod=>!!mod&&!isMulti(mod)&&Array.isArray(mod.opening)&&mod.opening.length>0;
-/* A scope is begun once for each draw of the screen (render): by readingBegin for a page, before its head is drawn, and for a module's
-   opening on the module's screen. What draws the page's blocks afterwards takes that scope as it is, so the marks the head drew
-   (a module that is one activity draws its opening there) and the marks of the page are one numbering, and no anchor is used twice. */
-let CITE_GEN=0;
-function citeKeep(raw){
-  const open=CITE_OPENING||String(raw).endsWith("\u0001"),key=String(raw).replace(/\u0001$/,"")+(open?"\u0001":""),R=SCOPES[key];
-  return R&&R.gen===CITE_GEN&&R.lang===lang&&R.tpl===BOOK?R:citeBegin(raw);}
-function citeBegin(raw){
-  const open=CITE_OPENING||String(raw).endsWith("\u0001"),activityId=String(raw).replace(/\u0001$/,""),key=activityId+(open?"\u0001":"");
-  const mod=typeof activityId==="string"?holderOf(activityId):null;
-  if(!mod){delete SCOPES[key];return null;}
+/* A scope is begun once in each draw (render): by readingBegin for a page, before its head is drawn, and for a module's
+   opening on the module's screen; the draw keeps it (dc.cites). What draws the page's blocks afterwards takes that scope as it is, so the marks the head drew
+   (a module that is one activity draws its opening there) and the marks of the page are one numbering, and no anchor is used twice. A mark
+   holds its scope for its panel and preview. */
+const citeKey=(id,dc)=>String(id)+(dc.opening?"\u0001":"");
+/* activity `id`'s scope in the draw `dc`, begun if it has none */
+const citeScope=(id,dc)=>{const key=citeKey(id,dc);return dc.cites.has(key)?dc.cites.get(key):citeBegin(id,dc);};
+function citeBegin(id,dc){
+  const open=dc.opening,activityId=String(id),key=citeKey(id,dc);
+  const mod=holderOf(activityId);
+  if(!mod){dc.cites.set(key,null);return null;}
   const {sources,cites}=registries(mod);
   /* places: every place each citation is marked, in reading order, as its
      page and how many marks of it come before on that page */
@@ -6418,16 +6428,15 @@ function citeBegin(raw){
         if(!nums.has(id)){nums.set(id,nums.size+1);firstPage.set(id,p.id);}
         const n=onPage.get(id)||0;onPage.set(id,n+1);
         if(!places.has(id)) places.set(id,[]);places.get(id).push({page:p.id,n});}}
-  return SCOPES[key]={modeId:key,mod,sources,cites,nums,firstPage,places,broken,lang,tpl:BOOK,
-    marks:new Map(),drawn:new Map(),gen:CITE_GEN};}
-const citeScope=raw=>{const key=CITE_OPENING&&!String(raw).endsWith("\u0001")?raw+"\u0001":raw,R=SCOPES[key];
-  return R&&R.lang===lang&&R.tpl===BOOK?R:citeBegin(key);};/* A text with its marks drawn: the same single string when it has none. A
+  const R={modeId:key,mod,sources,cites,nums,firstPage,places,broken,marks:new Map(),drawn:new Map()};
+  dc.cites.set(key,R);return R;}
+/* A text with its marks drawn: the same single string when it has none. A
    mark is held to the word before it (and to a mark right before it), because
    a browser may otherwise break the line just before a button and leave the
    number alone at the start of the next line. */
-function citeText(s,activityId){s=s==null?"":String(s);
+function citeText(s,activityId,dc){s=s==null?"":String(s);
   if(!s.includes("[^")) return [s];
-  const R=citeScope(activityId);if(!R) return [s];
+  const R=citeScope(activityId,dc);if(!R) return [s];
   const out=[];let at=0,glue=null;
   for(const m of s.matchAll(CITE_RX)){
     const pre=s.slice(at,m.index),mk=markNode(R,m[1]);
@@ -6448,11 +6457,10 @@ function markNode(R,id){const Rt=strings("reading"),n=R.nums.get(id);
      kept, in order, for the sources list's ways back and a language switch */
   if(!R.marks.has(id)){b.setAttribute("id","rd-m-"+n);R.marks.set(id,b);}
   if(!R.drawn.has(id)) R.drawn.set(id,[]);R.drawn.get(id).push(b);
-  const activityId=R.modeId;
-  b.addEventListener("click",()=>{hideTip();openCite(activityId,id,b);});
+  b.addEventListener("click",()=>{hideTip();openCite(R,id,b);});
   /* a mouse, not a finger or a pen: the pointer says which it is, where a
      media query only says what the device's main pointer is */
-  b.addEventListener("pointerenter",e=>{if(!e||e.pointerType==="mouse") showTip(activityId,id,b);});
+  b.addEventListener("pointerenter",e=>{if(!e||e.pointerType==="mouse") showTip(R,id,b);});
   b.addEventListener("pointerleave",hideTip);
   b.addEventListener("blur",hideTip);
   return el("sup",{class:"rd-sup"},b);}
@@ -6489,10 +6497,10 @@ function citeDetail(c,src,Rt){const out=[];
     el("span",{},Rt.verified(longDate(String(c.verifiedOn).trim()))),
     hasVal(c.verifiedBy)?el("span",{class:"rd-how"},Rt.how+": "+String(c.verifiedBy).trim()):null));
   return out;}
-function openCite(activityId,id,from,opts){const R=citeScope(activityId),c=R&&R.cites.get(id);if(!c) return false;
+function openCite(R,id,from,opts){const c=R&&R.cites.get(id);if(!c) return false;
   const Rt=strings("reading"),p=citePanel(),src=R.sources.get(c.source)||null;
   const at=from?(R.drawn.get(id)||[]).indexOf(from):-1;
-  citeAt={modeId:activityId,id,occ:at<0?0:at,lang};
+  citeAt={modeId:R.modeId,id,occ:at<0?0:at,lang};
   /* the page moves over to make room beside it (from 900px wide; see the CSS) */
   document.documentElement.setAttribute("data-cite-open","");
   if(citeFrom&&citeFrom!==from) citeFrom.setAttribute("aria-expanded","false");
@@ -6513,10 +6521,10 @@ function closeCite(refocus){if(!citeOpen()) return;citePanelEl.setAttribute("hid
   const f=citeFrom;citeFrom=null;
   if(f){f.setAttribute("aria-expanded","false");if(refocus!==false) f.focus();}}
 /* after a redraw for a language switch: the same citation, from the same mark */
-function citeReopen(id){const a=citeAgain;citeAgain=null;if(!a||a.modeId!==id) return;
-  const R=citeScope(id);if(!R||!R.cites.has(a.id)) return;
+function citeReopen(id,dc){const a=citeAgain;citeAgain=null;if(!a||a.modeId!==citeKey(id,dc)) return;
+  const R=citeScope(id,dc);if(!R||!R.cites.has(a.id)) return;
   const drawn=R.drawn.get(a.id)||[];
-  openCite(id,a.id,drawn[a.occ]||drawn[0]||null,{focus:false});}
+  openCite(R,a.id,drawn[a.occ]||drawn[0]||null,{focus:false});}
 /* leaving the activity closes its panel, and gives the page its room back */
 function citeLeave(v){if(!citeOpen()) return;
   const at=citeAt&&citeAt.modeId;
@@ -6526,8 +6534,8 @@ function citeLeave(v){if(!citeOpen()) return;
 /* ---- the hover preview: a mouse's glance at the quote, and nothing else ---- */
 function citeTip(){if(citeTipEl) return citeTipEl;
   const t=el("div",{class:"rd-tip","aria-hidden":"true",hidden:true});document.body.append(t);return citeTipEl=t;}
-function showTip(activityId,id,at){if(citeOpen()&&citeFrom===at) return;
-  const R=citeScope(activityId),c=R&&R.cites.get(id);if(!c) return;
+function showTip(R,id,at){if(citeOpen()&&citeFrom===at) return;
+  const c=R&&R.cites.get(id);if(!c) return;
   const Rt=strings("reading"),t=citeTip(),q=tx(c.quote,""),src=R.sources.get(c.source);
   t.innerHTML="";
   t.append(el("span",{},nonEmpty(q)?(plainRef(c,src)?clip(q,220):Rt.quoted(clip(q,220))):Rt.cite(R.nums.get(id))),
@@ -6540,7 +6548,7 @@ function showTip(activityId,id,at){if(citeOpen()&&citeFrom===at) return;
 function hideTip(){if(citeTipEl) citeTipEl.setAttribute("hidden","");}
 /* ---- callouts ---- */
 let rdSeq=0;
-function calloutNode(b,draft,activityId){const Rt=strings("reading"),plain=b.kind==="",look=plain?null:calloutLook(b.kind),k=look?look.label:"";
+function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),plain=b.kind==="",look=plain?null:calloutLook(b.kind),k=look?look.label:"";
   const u="rd-c"+(++rdSeq),title=tx(b.title,"");
   const box=el("div",{class:"rd-callout"+(look?" rd-hued hue-"+look.hue+" rd-k-"+look.label:""),role:"note","data-kind":k||null});
   const head=el("div",{class:"rd-chead"}),named=[];
@@ -6552,27 +6560,26 @@ function calloutNode(b,draft,activityId){const Rt=strings("reading"),plain=b.kin
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title,false,true)));named.push(u+"-t");}
   if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
-  blocksIn(b).forEach(x=>{if(x&&typeof x==="object") body.append(renderBlock(x,draft,activityId));});
+  blocksIn(b).forEach(x=>{if(x&&typeof x==="object") body.append(renderBlock(x,draft,activityId,dc));});
   box.append(body);
   return box;}
 /* Before an activity's blocks are drawn: the numbering taken afresh and the
    panel closed (the mark it came from is being redrawn). */
-function readingBegin(id){
+function readingBegin(id,dc){
   /* A switch of the interface language redraws the page: the panel is opened
      again once its mark is drawn (citeReopen), in the new language, and the
      focus stays where the reader put it. Any other redraw closes it. */
-  citeAgain=citeOpen()&&citeAt&&citeAt.modeId===id&&citeAt.lang!==lang?citeAt:null;
+  citeAgain=citeOpen()&&citeAt&&citeAt.modeId===citeKey(id,dc)&&citeAt.lang!==lang?citeAt:null;
   closeCite(false);hideTip();
-  citeBegin(id);}
+  citeBegin(id,dc);}
 /* ---- print: the citations as endnotes at the end of the page on show ---- */
 function citeRefText(c,src,Rt){const bits=[];
   if(src){const ed=tx(src.edition,"");bits.push(tx(src.title,src.key)+(nonEmpty(ed)?", "+ed:""));}
   const pl=pageLine(c,Rt);if(pl) bits.push(pl);
   const q=tx(c.quote,"");
   return bits.join(". ")+(bits.length&&nonEmpty(q)?". ":"")+(nonEmpty(q)?(plainRef(c,src)?q:Rt.quoted(q)):"");}
-function endnotesFor(id,openingOnly){const wasO=CITE_OPENING;CITE_OPENING=!!openingOnly;
-  try{return endnotesIn(id,openingOnly);}finally{CITE_OPENING=wasO;}}
-function endnotesIn(id,openingOnly){const R=citeScope(id);if(!R) return null;
+/* the endnotes of the page on show (or, `openingOnly`, of a module's opening on its own screen) */
+function endnotesFor(id,openingOnly,dc){const R=citeScope(id,dc);if(!R) return null;
   const here=[],mod=holderOf(id),shown=openingOnly?(mod&&mod.opening||[]):[...(openingWithActivity(mod)?mod.opening:[]),...pageBlocksShown(id)];
   for(const b of shown) for(const s of markedTexts(b)) for(const cid of citeIds(s))
     if(R.nums.has(cid)&&!here.includes(cid)) here.push(cid);
@@ -6585,29 +6592,17 @@ function endnotesIn(id,openingOnly){const R=citeScope(id);if(!R) return null;
 
 /* ======================= 12. THE SHELL =======================
    the bar, the theme menu, the library, home, the module and activity screens, dialogs, export, add a module. */
-function pickLang(l){lang=l;const p=langPref();
-  if(offeredLangs().filter(x=>primaryOf(x)===primaryOf(l)).length>1) setLangPref(l);
-  else if(!p||primaryOf(p)!==primaryOf(l)) setLangPref(primaryOf(l));
-  render();}
-/* The header toggle, as the booklet in force allows it. Called once, at the end of
-   renderBar. One language offered means no toggle and no switching at all; more
-   than one shows exactly those. The reader's choice comes first (prefLang). If the
-   language in force is still not one the booklet offers (a saved choice from
-   another booklet), it moves to the first that is. */
-function applyLangToggle(){const off=offeredLangs();
-  const want=prefLang();if(want&&want!==lang){lang=want;return renderBar();}
-  const fits=off.includes(lang)||(!declaredLangs().length&&off.some(x=>primaryOf(x)===primaryOf(lang)));
-  if(!fits){lang=off.find(x=>primaryOf(x)===primaryOf(lang))||off[0];return renderBar();}
-  const bases=new Set(off.map(primaryOf));
-  document.querySelectorAll(".lang").forEach(g=>{g.style.display=off.length>1?"":"none";});
-  document.querySelectorAll(".lang button").forEach(b=>{
-    b.style.display=bases.has(b.dataset.lang)?"":"none";
-    b.setAttribute("aria-pressed",String(b.dataset.lang===primaryOf(lang)));
+/* a pick on the toggle is the reader's choice, in every booklet */
+function pickLang(l){setLangPref(l);render();}
+/* The header toggle, always all three buttons; the language in force's is pressed (ES for es-AR). Called at the end of renderBar. */
+function applyLangToggle(){
+  document.querySelectorAll(".lang button").forEach(b=>{const to=b.dataset.lang;
+    b.setAttribute("aria-pressed",String(to===primaryOf(lang)));
     /* named for the language it gives, in that language (EN is "English" to
        everyone), so a screen reader says a name rather than two letters */
-    const to=chooseLang(b.dataset.lang);
     b.setAttribute("lang",to);b.setAttribute("aria-label",LANG_NAMES[to]||to);b.setAttribute("title",LANG_NAMES[to]||to);});}
-function go(v){screen=v;render();window.scrollTo({top:0});}
+/* go to screen `v`, its draw told `o` (render); returns the draw */
+function go(v,o){screen=v;const dc=render(o);window.scrollTo({top:0});return dc;}
 function tabName(){const d=describeBooklet(BOOK);const t=tx(d.title,"");
   if(typeof t==="string"&&nonEmpty(t)) return t.trim();
   const p=d.parts.map(x=>tx(x,"")).filter(x=>typeof x==="string"&&nonEmpty(x));
@@ -6621,7 +6616,6 @@ function renderBar(){const t=STRINGS[lang].ui;const atList=screen===LIB_SCREEN,L
   const toList=screen===HOME_SCREEN&&!!currentId;
   document.getElementById("btnHome").textContent=atList?t.app:toList?"← "+Lb.back:(screen===HOME_SCREEN?"":"← ")+t.app;
   const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());
-  document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));
   document.getElementById("dropZone").textContent=t.dropZone;document.getElementById("dropVeil").textContent=t.dropVeil;
   for(const [id,key] of [["loadTitle","loadTitle"],["loadHelp","loadHelp"],["loadOr","loadOr"],["loadCancel","loadCancel"],["loadGo","loadGo"],
     ["clearTitle","clearTitle"],["clearHelp","clearHelp"],["clearCancel","clearCancel"],["clearGo","clearGo"]]) document.getElementById(id).textContent=t[key];
@@ -6661,13 +6655,21 @@ const hostCovers=()=>hostActive()&&hookBook()&&HOST.status!=="failed"&&HOOK_LIST
 const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
 const SCREENS={[HOME_SCREEN]:renderHome,[LIB_SCREEN]:renderBooklets};
 let RENDERING=false;
-function render(){RENDERING=true;CITE_GEN++;try{citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
-  if(hasOwn(SCREENS,screen)) SCREENS[screen](main);
-  else if(isModuleScreen(screen)) renderModulePage(main,screen);
-  else renderActivity(main,screen);
+/* decided before a draw, which writes none of it: the language, the screen (a module screen whose module is gone or
+   holds one activity leads where its card would), a daily activity's draft */
+function settle(){lang=uiLang();
+  if(isModuleScreen(screen)){const mod=moduleForScreen(screen);if(!mod||!isMulti(mod)) screen=mod?entryScreenOf(mod):HOME_SCREEN;}
+  if(!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)){const m=activityOf(screen);if(m.kind==="entry") seedUpsertDraft(screen,m,answersFor(screen));}}
+/* draw the screen in force afresh, in a draw of its own (one draw, region 4) told `o`, and return it */
+function render(o){RENDERING=true;const dc=newDraw(o);DRAWN=dc;
+  try{settle();citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
+  if(hasOwn(SCREENS,screen)) SCREENS[screen](main,dc);
+  else if(isModuleScreen(screen)) renderModulePage(main,screen,dc);
+  else renderActivity(main,screen,dc);
   hostNoticeShow(main);
   /* a link is being read while a booklet is on screen: its notice goes at the top (the list says it in its own place) */
-  if(LINK_LOADING!==null&&screen!==LIB_SCREEN) main.prepend(loadingNotice());}finally{RENDERING=false;}}
+  if(LINK_LOADING!==null&&screen!==LIB_SCREEN) main.prepend(loadingNotice());}finally{RENDERING=false;}
+  return dc;}
 /* "Opening <name>…": a file is being read for a link, or for a store booklet opened from the list */
 const loadingNotice=()=>el("div",{class:"notice col",role:"status"},STRINGS[lang].booklet.linkLoading(LINK_LOADING.label));
 /* the notices at the top of an opened file's first screen. A file marked with another 0.x version says so in a
@@ -6679,9 +6681,9 @@ function fileNotesNode(){const u=STRINGS[lang].ui;
   /* on the home screen, and on the screen the file opened into when that is not the home screen */
   if(screen!==HOME_SCREEN&&FILE_NOTES.at!==screen) return null;
   const box=el("div",{class:"notice col filenotes",role:"status"});
-  if(FILE_NOTES.marker) box.append(el("p",{style:"margin:0 0 .4rem"},FILE_NOTES.marker));
+  if(FILE_NOTES.marker) box.append(el("p",{style:"margin:0 0 .4rem"},problemWords([FILE_NOTES.marker])));
   if(FILE_NOTES.list.length) box.append(el("p",{style:"margin:0 0 .4rem"},u.fileNotes(FILE_NOTES.list.length)),
-    el("details",{},el("summary",{},u.fileNotesShow),el("ul",{class:"plain"},...FILE_NOTES.list.map(x=>el("li",{},x)))));
+    el("details",{},el("summary",{},u.fileNotesShow),el("ul",{class:"plain"},...FILE_NOTES.list.map(x=>el("li",{},problemWords([x]))))));
   box.append(el("button",{type:"button",class:"small",onclick:()=>{FILE_NOTES.dismissed=true;render();}},u.fileNotesDismiss));
   return box;}
 /* the quiet line for a booklet opened by a link: where it came from. Its own line, smaller than the problems notice. */
@@ -6717,7 +6719,7 @@ function removeModuleControl(mod){if(!mod||!mod.id||fencedModule(mod.id)!==mod) 
     const keep=el("button",{type:"button",class:"small"},T.removeKeep),go=el("button",{type:"button",class:"small danger"},T.removeGo);
     keep.addEventListener("click",()=>draw(false));
     go.addEventListener("click",()=>{const r=removeModule(mod.id);
-      if(!r.ok){toast((r.problems||[])[0]||"");draw(false);return;}
+      if(!r.ok){toast(problemText((r.problems||[])[0]||""));draw(false);return;}
       screen=HOME_SCREEN;render();window.scrollTo({top:0});toast(T.removed(title));});
     const alert=el("div",{role:"alert",style:"font-family:var(--sans)"},
       el("p",{style:"margin:.3rem 0 .6rem;font-weight:700"},T.removeAsk(title,parts)),
@@ -6747,12 +6749,12 @@ function nameRow(){const L=strings("library"),cur=tx((BOOK.head||{}).title,tx(BO
   draw(false);return row;}
 /* centre what a screen has drawn so far in one column (the cards' width) */
 const centreScreen=main=>{Array.from(main.children||[]).forEach(n=>{if(n&&n.classList) n.classList.add("cd-col");});};
-function renderHome(main){const t=STRINGS[lang];const u=t.ui;
+function renderHome(main,dc){const t=STRINGS[lang];const u=t.ui;
   main.append(...openNotices());
   const hero=el("div",{class:"hero col"});
   hero.append(nameRow());
   /* the booklet's own opening, under its name, drawn as a module's opening is (no tagline of the renderer's) */
-  {const o=openingNodes(BOOK,"",tx((BOOK.head||{}).title,""));
+  {const o=openingNodes(BOOK,"",tx((BOOK.head||{}).title,""),dc);
    if(o.lede) hero.append(o.lede);if(o.more.length) hero.append(el("div",{class:"mhead-more"},...o.more));}
   main.append(hero);
   /* One card per module. A module with one activity is its activity's card; a
@@ -6787,17 +6789,16 @@ function homeButton(){
   if(screen===HOME_SCREEN&&currentId){closeBooklet();render();window.scrollTo({top:0});return;}
   if(screen===LIB_SCREEN){render();return;}
   go(HOME_SCREEN);}
-function bootLibrary(){LIB=readLib();lang=langPref()||lang;
+function bootLibrary(){LIB=readLib();
   screen=LIB_SCREEN;}
 /* Where an opened booklet starts. A booklet that holds exactly one activity opens in it, and one that holds
    exactly one module (with several activities) opens on that module's screen; any other, an empty one and a
    new one open on the home screen, and so does one whose front matter says `start: home`. The back control
    still leads to the home screen. Called when a booklet is opened (a file, a paste, a drop, "Your booklets"),
    never when a module is added. */
-function startScreen(){
-  /* a link that names a page of the booklet it opens (`#/open/<name>/<activity>`, `#/module/<id>/<activity>`): that page, if the booklet has it */
-  if(LINK_AT&&BOOK){const at=LINK_AT;LINK_AT=null;
-    const hit=bookActivities().find(a=>shortId(a.id)===at);
+function startScreen(page){
+  /* `page`: a link that names a page of the booklet it opens (`#/open/<name>/<activity>`, `#/module/<id>/<activity>`): that page, if the booklet has it */
+  if(page&&BOOK){const hit=bookActivities().find(a=>shortId(a.id)===page);
     if(hit) return hit.id;}
   if(!BOOK||BOOK.start==="home") return HOME_SCREEN;
   const mods=allModules(),acts=bookActivities();
@@ -6821,7 +6822,7 @@ function openFromList(id){LIB=readLib();const e=entryById(id);const name=storeNa
   screen=startScreen();render();window.scrollTo({top:0});}
 /* A new booklet starts empty: no modules, no answers, nothing seeded. */
 function createBooklet(){const e=addEntry();
-  openBooklet(e.id);BOOK=blankBook();saveLocal();go(HOME_SCREEN);return e;}
+  openBooklet(e.id);adoptText(blankText());saveLocal();go(HOME_SCREEN);return e;}
 const bookletName=e=>{const own=tx(e.named,"");if(nonEmpty(own)) return own.trim();
   const t=tx(e.title,"");if(nonEmpty(t)) return t.trim();
   const p=(e.parts||[]).map(x=>tx(x,"")).filter(nonEmpty);
@@ -6882,19 +6883,19 @@ function bookletCard(e){const L=strings("library");const u=STRINGS[lang].ui;cons
    their blocks. One that repeats (the file's `repeat`) also shows the entries
    kept so far and a Finalize that keeps the next one; any other keeps its
    answers in the booklet's own `answers`, exactly as the file's record does. */
-function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id);const mod=moduleOf(id)||{};
+function renderActivity(main,id,dc){const u=STRINGS[lang].ui;const m=activityOf(id);const mod=moduleOf(id)||{};
   const W=wikiOf(holderOf(id));
   /* the citation scope of this page begins first: a module that is one activity draws its opening in the page's own scope,
      and the opening's marks must be numbered with the page's, not left to the scope of the draw before */
-  readingBegin(id);
+  readingBegin(id,dc);
   {main.append(...openNotices());}
   const repeats=m.kind==="entry";
-  const draft=answersFor(id);if(repeats) seedUpsertDraft(id,m,draft);
+  const draft=answersFor(id);
   const col=el("div",{class:"col"});
   if(W) col.append(wikiCrumbs(W,id));
   const titleText=tx(mod.title,tx(m.title,shortId(id)));
   /* a module that is one activity has no screen of its own: its activity's screen draws its head (title, opening, picture) */
-  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)) col.append(moduleHead({...mod,title:titleText},id,null,false));
+  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)) col.append(moduleHead({...mod,title:titleText},id,null,false,dc));
   else{col.append(pageHead(id,m,titleText,W));
     const lead=tx(mod.blurb,tx(m.blurb,""));
     if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
@@ -6903,7 +6904,7 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
   if(repeats) col.append(el("h3",{},u.earlier),chipStrip(id));
   /* the page on show and its blocks, and the pages menu beside them: see
      AN ACTIVITY'S PAGES. One draft serves every page. */
-  const body=pageBody(id,draft);
+  const body=pageBody(id,draft,dc);
   /* a report's own first heading often repeats its title (a plain file is named
      by its front matter title): draw the title once */
   const same=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
@@ -6918,7 +6919,7 @@ function renderActivity(main,id){const u=STRINGS[lang].ui;const m=activityOf(id)
     if(about) col.append(about);
     const rm=single?removeModuleControl(holder):null;if(rm) col.append(rm);}
   /* a wiki page's pages and sections are listed in the wiki's own menu, under the page's entry: no second rail beside it */
-  main.append(W?wikiFrame(W,id,[col]):withPages(id,col));}
+  main.append(W?wikiFrame(W,id,[col],dc):withPages(id,col,dc));}
 /* The head of an activity's page: its title, and, when its line names an `icon:`, the picture its card shows (cardPicture decides: the spot of
    that name in teaching, the line icon in briefing) in the card's own tile and colour, to the left of the title. No `icon:`: the title alone. */
 function pageHead(id,m,titleText,W){
@@ -7033,24 +7034,24 @@ function moduleCard(mod,acts,i){
 /* The head of a module's own screen, and of the screen of a module that is one activity (which stands in for it): its title, its opening
    (the first paragraph at lede size, the rest under it, reading callouts in the file's order), `meta` (one line of counts) and its
    `icon:` large beside the title. A module with no opening falls back to its blurb. `activityId` is the activity the opening is drawn with. */
-function openingNodes(mod,activityId,title){
+function openingNodes(mod,activityId,title,dc){
   const bs=Array.isArray(mod.opening)?mod.opening:[];if(!bs.length||activityId==null||activityId===undefined) return {lede:null,more:[]};
   const draft=activityId===""?nullMap():answersFor(activityId),more=[];let lede=null;
   /* the opening's headings carry their own id prefix, so a heading of the same words in the activity is still found by its links */
   bs.forEach((b,i)=>{
     if(b.type==="markdown"){
-      const nodes=mdBlockNodes(b,activityId,"mo-");
+      const nodes=mdBlockNodes(b,activityId,"mo-",dc);
       /* a leading heading that repeats the title above it is drawn once (the title is) */
       {const h=/^ {0,3}#{1,6}[ \t]+(.+?)[ \t#]*$/m.exec(String(b.text).replace(/^\s+/,""));
        if(i===0&&title&&nodes.length&&headLevel(nodes[0])&&h&&sameWords(plainText(h[1]),title)) nodes.shift();}
       if(i===0&&nodes.length&&tagOf(nodes[0])==="p"){lede=el("div",{class:"mhead-lede"},nodes[0]);nodes.shift();}
       if(nodes.length) more.push(el("div",{class:"pblock md"},...nodes));
       return;}
-    more.push(renderBlock(b,draft,activityId));});
+    more.push(renderBlock(b,draft,activityId,dc));});
   return {lede,more};}
-function moduleHead(mod,activityId,meta,showMeta){
+function moduleHead(mod,activityId,meta,showMeta,dc){
   const text=el("div",{class:"mhead-text"},el("h2",{},...words(tx(mod.title,mod.id))));
-  const o=openingNodes(mod,activityId,plainText(tx(mod.title,mod.id))),lead=tx(mod.blurb,"");
+  const o=openingNodes(mod,activityId,plainText(tx(mod.title,mod.id)),dc),lead=tx(mod.blurb,"");
   if(o.lede||o.more.length){if(o.lede) text.append(o.lede);if(o.more.length) text.append(el("div",{class:"mhead-more"},...o.more));}
   else if(nonEmpty(lead)) text.append(el("p",{class:"aside"},lead));
   if(showMeta&&meta) text.append(meta);
@@ -7068,7 +7069,7 @@ function moduleHead(mod,activityId,meta,showMeta){
    What is drawn is only what is looked at: the page on show, the first cards of a long row of them (the rest on a press) and
    the branches of the menu that are open. What the whole module needs (the tree, the pages that mention each page, the words
    of each page for the search) is worked out once, the first time it is wanted, and kept for as long as the booklet is open.
-   Nothing here is written anywhere: the open branches, the search and the phone's menu are this visit's, in memory. */
+   Nothing here is written anywhere: the open branches, the search and the phone's menu are this visit's, in the view (VIEW). */
 const WK_CACHE=new WeakMap();
 const WK_BATCH=24,WK_FOUND=40;
 function wikiOf(mod){
@@ -7130,8 +7131,8 @@ function wikiBatched(list,draw,cls){
   more();return [box,foot];}
 /* A choice in a wiki. The phone's menu closes (whatever was chosen, and wherever), and the focus goes where the reader will look:
    to the entry for the page just chosen when the choice was made in the menu beside the page, else to the page's heading. */
-function wikiGo(id,fromMenu){const side=fromMenu&&!narrowPages();WK.menu=false;go(id);
-  const own=side?document.querySelector(WK.q.trim()?".wk-results [aria-current=\"page\"]":".wk-tree [aria-current=\"page\"]"):null;
+function wikiGo(id,fromMenu){const side=fromMenu&&!narrowPages();VIEW.wiki.menu=false;go(id);
+  const own=side?document.querySelector(VIEW.wiki.q.trim()?".wk-results [aria-current=\"page\"]":".wk-tree [aria-current=\"page\"]"):null;
   if(own&&own.focus){own.focus({preventScroll:true});return;}
   const h=document.querySelector("#main .wk-content h2");
   if(h){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}}
@@ -7139,7 +7140,7 @@ const wikiCard=(a,i)=>activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")
 /* ---- the menu: a search box over the whole tree ---- */
 /* the page on show, inside its entry: its pages (when it has several) and the sections the page holds, as the rail listed them.
    `own` is the list drawn in the page itself (a phone, or a hidden page with no entry in the menu): its pages only. */
-function wkPagePick(id,pid,fromList){showPage(id,pid);WK.menu=false;pagesOverlay=false;render();window.scrollTo({top:0});
+function wkPagePick(id,pid,fromList){showPage(id,pid);VIEW.wiki.menu=false;pagesOverlay=false;render();window.scrollTo({top:0});
   /* the focus goes to the entry for the page chosen, in the list it was chosen from if that is still on screen */
   const vis=n=>n&&n.offsetParent!==null,a=document.querySelector((fromList?".wk-pagelist":".wk-menu")+" [aria-current=\"step\"]"),
     b=document.querySelector((fromList?".wk-menu":".wk-pagelist")+" [aria-current=\"step\"]"),n=vis(a)?a:vis(b)?b:null;
@@ -7163,32 +7164,34 @@ function wkInside(id,rd,own){const F=strings("fold"),ps=pagesOf(activityOf(id)),
 function wkNode(W,a,cur,rd){const k=wikiKids(W,a.id),here=a.id===cur,inside=here?wkInside(a.id,rd):null;
   const b=el("button",{type:"button",class:"wk-link","aria-current":here?"page":null,"data-id":a.id,onclick:()=>wikiGo(a.id,true)},...words(activityName(a),true));
   if(!k.length) return el("li",{class:"dv-row"},b,inside);
-  const d=el("details",{"data-id":a.id,open:WK.open.has(a.id)},el("summary",{class:"dv-row"},b));
+  const v=viewAt(a.id),d=el("details",{"data-id":a.id,open:v.branch},el("summary",{class:"dv-row"},b));
   if(inside) d.append(inside);
   let built=false;const build=()=>{if(built) return;built=true;d.append(wkList(W,k,cur,rd,false));};
-  if(WK.open.has(a.id)) build();
-  d.addEventListener("toggle",()=>{if(d.open){WK.open.add(a.id);build();}else WK.open.delete(a.id);});
+  if(v.branch) build();
+  d.addEventListener("toggle",()=>{v.branch=d.open;if(d.open) build();});
   return el("li",{class:"dv-node"},d);}
 const wkList=(W,list,cur,rd,top)=>el("ul",{class:"dv-list"+(top?" dv-tree wk-tree":"")},...list.map(a=>wkNode(W,a,cur,rd)));
-function wikiMenu(W,cur,rd){const K=strings("wiki");
-  if(WK.mod!==W.mod){WK.mod=W.mod;WK.q="";}
-  if(cur){wikiPath(W,cur).forEach(a=>WK.open.add(a.id));if(wikiKids(W,cur).length) WK.open.add(cur);}
+/* a wiki's menu: its search (VIEW.wiki) starts empty in another module; the branches to the page on show open */
+function wikiMenu(W,cur,rd){const K=strings("wiki"),V=VIEW.wiki;
+  if(V.mod!==W.mod){V.mod=W.mod;V.q="";}
+  if(cur){wikiPath(W,cur).forEach(a=>{viewAt(a.id).branch=true;});if(wikiKids(W,cur).length) viewAt(cur).branch=true;}
   const inp=el("input",{type:"search",class:"wk-q",placeholder:K.search,"aria-label":K.search,autocomplete:"off",spellcheck:"false"});
-  inp.value=WK.q;
+  inp.value=V.q;
   const tree=wkList(W,W.top,cur,rd,true),res=el("ul",{class:"dv-list wk-results"}),none=el("p",{class:"hint wk-none"},K.noMatch);
-  const draw=()=>{const q=WK.q.trim(),hits=q?wikiFind(W,q):[];
+  const draw=()=>{const q=V.q.trim(),hits=q?wikiFind(W,q):[];
     setHidden(tree,!!q);setHidden(res,!q||!hits.length);setHidden(none,!q||hits.length>0);
     res.innerHTML="";
     hits.forEach(a=>{const path=wikiPath(W,a.id).map(x=>plainText(activityName(x))).join(" › ");
       res.append(el("li",{class:"dv-row wk-hit"},
         el("button",{type:"button",class:"wk-link","aria-current":a.id===cur?"page":null,onclick:()=>wikiGo(a.id,true)},...words(activityName(a),true)),
         path?el("span",{class:"wk-path"},path):null,a.id===cur?wkInside(cur,rd):null));});};
-  inp.addEventListener("input",()=>{WK.q=inp.value;draw();});
+  inp.addEventListener("input",()=>{V.q=inp.value;draw();});
   draw();
-  const fold=el("details",{class:"wk-fold",open:!narrowPages()||WK.menu},el("summary",{},K.menu),inp,tree,res,none);
-  fold.addEventListener("toggle",()=>{if(narrowPages()) WK.menu=fold.open;});
+  const fold=el("details",{class:"wk-fold",open:!narrowPages()||V.menu},el("summary",{},K.menu),inp,tree,res,none);
+  fold.addEventListener("toggle",()=>{if(narrowPages()) V.menu=fold.open;});
   return el("nav",{class:"wk-menu","aria-label":K.menu},fold);}
-const wikiFrame=(W,cur,nodes)=>el("div",{class:"wk-frame"},wikiMenu(W,cur,cur?RM_CUR:null),el("div",{class:"wk-content"},...nodes));
+/* the wiki's menu beside a page or its module's screen */
+const wikiFrame=(W,cur,nodes,dc)=>el("div",{class:"wk-frame"},wikiMenu(W,cur,cur?dc.reading:null),el("div",{class:"wk-content"},...nodes));
 function wikiCrumbs(W,id){const K=strings("wiki"),mod=W.mod;
   const crumb=(name,to)=>el("li",{},to?el("button",{type:"button",class:"wk-crumb",onclick:()=>wikiGo(to,false)},...words(name,true)):el("span",{"aria-current":"page"},...words(name,true)));
   return el("nav",{class:"wk-crumbs","aria-label":K.crumbs},el("ol",{},
@@ -7230,24 +7233,20 @@ function moduleChip(id,label){const K=strings("wiki");
       if(!(await addFromRegistry(entry.id,m=>toast(m)))&&gen===bookletGen) add.disabled=false;});
     ask.textContent="";ask.append(add);});
   return box;}
-function renderModulePage(main,v){const mod=moduleForScreen(v);
-  /* a module that has gone, or now holds one activity, leads where its card would */
-  if(!mod||!isMulti(mod)){screen=mod?entryScreenOf(mod):HOME_SCREEN;return render();}
+function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
   const W=wikiOf(mod),W2=strings("moduleView");
   {main.append(...openNotices());}
   const col=el("div",{class:"col"});
   const acts=activitiesShown(mod);
   const first=activitiesOf(mod)[0]&&activitiesOf(mod)[0].id;
-  /* the opening's sources are numbered in a scope of their own, begun here, afresh on every draw, so that a panel opened from the
-     opening survives a language switch (it is opened again below, once its mark is drawn) */
-  const okey=first?first+"\u0001":"";
-  CITE_OPENING=true;
-  try{if(first&&Array.isArray(mod.opening)&&mod.opening.length) readingBegin(okey);
-    col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0));
-    /* the opening's own sources, numbered from 1 in a scope of its own, close it at the foot of the screen */
-    var openNotes=first&&Array.isArray(mod.opening)&&mod.opening.length?endnotesFor(first,true):null;
-    if(openNotes) citeReopen(okey);}
-  finally{CITE_OPENING=false;}
+  /* the opening's sources are numbered in a scope of their own (`opening`), begun here, afresh on every draw, so that a
+     panel opened from the opening survives a language switch (it is opened again below, once its mark is drawn) */
+  const opened=!!first&&Array.isArray(mod.opening)&&mod.opening.length>0,odc={...dc,opening:true};
+  if(opened) readingBegin(first,odc);
+  col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0,odc));
+  /* the opening's own sources, numbered from 1 in a scope of its own, close it at the foot of the screen */
+  const openNotes=opened?endnotesFor(first,true,odc):null;
+  if(openNotes) citeReopen(first,odc);
   const parts=[col];
   const grid=el("div",{class:"modes"});
   if(!acts.length) grid.append(el("p",{class:"hint"},W2.noneShown));
@@ -7258,7 +7257,7 @@ function renderModulePage(main,v){const mod=moduleForScreen(v);
   if(openNotes) parts.push(el("div",{class:"col"},openNotes));
   const about=noticeNode(mod);if(about) parts.push(el("div",{class:"col"},about));
   const rm=removeModuleControl(mod);if(rm) parts.push(rm);
-  if(W){main.append(wikiFrame(W,null,parts));return;}
+  if(W){main.append(wikiFrame(W,null,parts,dc));return;}
   main.append(...parts);
   centreScreen(main);
 }
@@ -7331,12 +7330,12 @@ async function loadRegistry(url){REGISTRY_CACHE={};
 const addDialogSay=m=>{const msg=document.getElementById("addModMsg");msg.className="msg err";msg.textContent=m;};
 function addModuleFromText(text,say){say=say||addDialogSay;
   const problems=moduleTextProblems(text);
-  if(problems.length){say(humanMsg(problems.join(" ")));return false;}
+  if(problems.length){say(problemWords(problems));return false;}
   const R=parseFile(text);let renamed=[];
   /* a module is added to the booklet, whatever the booklet holds so far: an empty booklet does not become the module's
      file, because the booklet's name is its own and a module's title is the module's (SPEC.md section 2) */
   {const r=addModuleText(text);
-    if(!r.ok){say(humanMsg(r.problems.join(" ")));return false;}
+    if(!r.ok){say(problemWords(r.problems));return false;}
     renamed=r.renamed||[];}
   veilAddModule.removeAttribute("open");saveLocal();render();
   toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,"")))+(renamed.length?" "+STRINGS[lang].booklet.renamed(renamed):"")+(otherMarker(text)?" "+STRINGS[lang].booklet.addedOtherMarker(otherMarker(text)):""));
@@ -7380,21 +7379,27 @@ function openLoad(){const m=document.getElementById("loadMsg");m.textContent="";
 function readFileInto(file,cb){if(!file) return;const r=new FileReader();r.onload=()=>cb(String(r.result||""));r.readAsText(file);}
 function loadText(text){const t=STRINGS[lang].ui;const msg=document.getElementById("loadMsg");
   const R=parseFile(text||"");
-  if(!R.ok){const why=humanMsg(R.refused&&R.refused.length?t.loadRefused+" "+R.refused.join(" "):R.unread&&R.unread.length&&!R.template?R.unread.join(" "):t.loadErr);
+  if(!R.ok){const why=refusalList(R).join(" ");
     if(veilLoad.hasAttribute("open")){msg.className="msg err";msg.textContent=why;} else toast(why);return;}
   veilLoad.removeAttribute("open");
   /* a file is always a booklet of its own; it never merges into another one */
   const e=addEntry();openBooklet(e.id);finishLoad(R);}
-function finishLoad(R,via,keep){const mine=!!langPref();
-  applyParsed(mine?{...R,lang:null}:R);
-  /* `keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
+/* `page`: the page a link names (startScreen) */
+/* a parse's notices, for the screen `at` it opens into: the other-marker sentence stands apart; only problems are counted */
+function fileNotesOf(R,at){const marker=R.markerNote||null,list=(R.unread||[]).filter(m=>m!==R.markerNote);
+  return list.length||marker?{marker,list,dismissed:false,at}:null;}
+/* `o.via`: where a view came from (openAsView); `o.page`: the page a link names (startScreen); `o.view`: "open" for a
+   booklet that keeps the view it had in this visit (applyParsed) */
+function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
+  applyParsed(R,o.view);
+  /* `o.keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
   if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;
-    /* work for a scope the design has no module for, kept as written with the file's own such records (keepUnowned) */
-    if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET) BOOK.raw={...(BOOK.raw||{}),records:[...((BOOK.raw||{}).records||[]),...keep.records]};}
-  const at=startScreen();
-  /* the other-marker sentence stands apart from the problems: only real problems are counted */
-  const marker=R.markerNote?humanMsg(R.markerNote):"",list=(R.unread||[]).filter(m=>m!==R.markerNote).map(humanMsg);
-  FILE_NOTES=list.length||marker?{marker,list,dismissed:false,at}:null;
+    /* work for a scope the design has no module for, kept as written with the file's own such records (keepUnowned):
+       the design is then the parse of the text that holds them */
+    if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET){const raw=BOOK.raw||{};
+      adoptText(bookText({...BOOK,raw:{...raw,records:[...(raw.records||[]),...keep.records]}}));}}
+  const at=startScreen(o.page);
+  FILE_NOTES=fileNotesOf(R,at);
   /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */
   if(via){PROVENANCE={...via,dismissed:false,at};
     /* a store booklet joins the list at once, as a pointer, on a page that can read it from the store again */
@@ -7463,7 +7468,7 @@ function hostSet(status,message,silent,change){if(!hostActive()) return;
   if((was==="failed")!==(status==="failed")) render();}
 /* the refusal a file earns, as the sentences the reader would see */
 function refusalList(R){const t=STRINGS[lang].ui;
-  return (R.refused&&R.refused.length?[t.loadRefused+" "+R.refused.join(" ")]:R.unread&&R.unread.length&&!R.template?R.unread:[t.loadErr]).map(humanMsg);}
+  return (R.refused&&R.refused.length?[t.loadRefused+" "+R.refused.map(problemText).join(" ")]:R.unread&&R.unread.length&&!R.template?R.unread.map(problemText):[t.loadErr]).map(humanMsg);}
 /* a newer file is waiting: the host said so (fileChanged), or opening a link found the store's file changed since the
    kept booklet last read it (LINK_NEWER) */
 const newerWaiting=()=>hookOpen()&&(!!LINK_NEWER||(hostActive()&&HOST.pending!=null&&hookBook()));
@@ -7502,7 +7507,7 @@ function hostAccept(){if(!newerWaiting()) return;
   const R=parseFile(text);
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
   /* the same rule as a newer file a link found (acceptWork): what the reader typed since the host's last save stays */
-  const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records});}
+  const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});}
 /* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
    generator owns the body and the reader owns the records (the store contract).
    - A store booklet: the new file's body is taken, with the work acceptWork gives (the one rule for reading a newer
@@ -7515,9 +7520,9 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   const R=parseFile(N.text),id=currentId;
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
   if(N.via.store===false){const r=addModuleText(N.text);
-    if(!r.ok){toast(humanMsg(r.problems.join(" ")));render();return;}
+    if(!r.ok){toast(problemWords(r.problems));render();return;}
     saveLocal();render();toast(STRINGS[lang].booklet.added(plainText(tx((R.template.modules[0]||{}).title,""))));}
-  else{const W=acceptWork(R);finishLoad(R,null,{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records});}
+  else{const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});}
   if(currentId!==id) return;
   if(currentEntry) currentEntry.storeSeen=N.seen;
   changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=N.seen;});}
@@ -7589,7 +7594,7 @@ function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=
   if(!R.ok){const why=refusalList(R);toast(why.join(" "));return {ok:false,problems:why};}
   if(nm) openLinked(text,{store:true,host:true,label:nm,from:"store:"+nm});
   else{const e=addEntry();openBooklet(e.id);finishLoad(R);}
-  return {ok:true,problems:FILE_NOTES?[...(FILE_NOTES.marker?[FILE_NOTES.marker]:[]),...FILE_NOTES.list]:[]};}
+  return {ok:true,problems:FILE_NOTES?[...(FILE_NOTES.marker?[FILE_NOTES.marker]:[]),...FILE_NOTES.list].map(p=>problemWords([p])):[]};}
 
 /* ---- OPENING BY LINK ----
    A host may name a folder of booklets it serves, in a `booklet-store` meta tag of its own copy of this file (the shipped
@@ -7652,9 +7657,10 @@ async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.
   finally{clearTimeout(timer);}}
 /* Open text as a view: the same parser, the same refusals, the same notices and the same start screen as a file picked
    by hand; but nothing is saved until the reader changes something, and no entry is added to the list then except a
-   store booklet's pointer (finishLoad). `via` says where it came from: {store:true,label,from} or {store:false,label,from}. */
-function openAsView(text,via,reuse,parsed){const R=parsed||parseFile(text||"");
-  if(!R.ok){toast(humanMsg(R.refused&&R.refused.length?STRINGS[lang].ui.loadRefused+" "+R.refused.join(" "):R.unread&&R.unread.length&&!R.template?R.unread.join(" "):STRINGS[lang].ui.loadErr));return false;}
+   store booklet's pointer (finishLoad). `via` says where it came from: {store:true,label,from} or {store:false,label,from}.
+   `o.page`: the page the link names. */
+function openAsView(text,via,o){o=o||{};const R=o.parsed||parseFile(text||""),reuse=o.reuse||null;
+  if(!R.ok){toast(refusalList(R).join(" "));return false;}
   flushSave();hookFlush();resetBookletState();bookletGen++;
   const now=new Date().toISOString();
   /* `reuse`: the library entry this link is for, whose file storeHolds says may be drawn; it is drawn into that entry,
@@ -7662,12 +7668,14 @@ function openAsView(text,via,reuse,parsed){const R=parsed||parseFile(text||"");
   if(reuse){currentId=reuse.id;currentKey=keyOfEntry(reuse);lsDel(currentKey);lsDel(baseKey(reuse.id));}
   else{currentId=newId(Date.now().toString(36));currentKey=bookKey(currentId);}
   /* storeSeen: which copy of its file this booklet was last read from (see openLinked) */
-  currentEntry={...(reuse||{}),id:currentId,title:null,parts:[],createdAt:reuse?reuse.createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,lang,from:via.from,
+  currentEntry={...(reuse||{}),id:currentId,title:null,parts:[],createdAt:reuse?reuse.createdAt:now,updatedAt:now,openedAt:now,dirty:false,unsavedEntries:0,from:via.from,
     ...(via.from?{storeSeen:textPrint(text)}:{})};
   /* the file drawn is the base of whatever is kept of it from now on; an answer still due for an earlier change no longer
      moves it */
   BASE=recsOfParse(R);HOOK_SENT=HOOK_SENT.filter(x=>x.id!==currentId);
-  finishLoad(R,via);return true;}
+  /* a booklet drawn again from the same file as last time keeps the view it had in this visit, as a booklet kept here
+     does (openBooklet); a newer file starts it afresh (applyParsed) */
+  finishLoad(R,{via,page:o.page,view:reuse&&reuse.storeSeen===currentEntry.storeSeen?"open":"all"});return true;}
 /* One booklet per store name, and per module link, in a browser. When this browser keeps no booklet for the link it
    opens as a view, as above. When it keeps a store booklet whose file storeHolds says may be drawn (no kept copy, or no
    change here since its base, or the same work as the file), the file just read is drawn into that same entry. Otherwise the KEPT booklet opens (never a
@@ -7676,30 +7684,31 @@ function openAsView(text,via,reuse,parsed){const R=parsed||parseFile(text||"");
    put its work in the file), and nothing more happens; otherwise the offer to read the newer file is shown (see
    linkAccept), and nothing changes until the reader presses. */
 const sameText=(a,b)=>{const n=x=>String(x==null?"":x).replace(/\r\n?/g,"\n").replace(/\s+$/,"");return n(a)===n(b);};
-function openLinked(text,via,id){
+function openLinked(text,via,o){const page=(o&&o.page)||null;
   /* a change still waiting out its 400 ms is written first, so what is decided below is decided on what is really kept */
   flushSave();
-  /* `id`: the entry the list asked for, when it is still the one for this link; else the one this browser keeps for it */
-  const asked=id?(LIB=readLib(),entryById(id)):null,kept=asked&&asked.from===via.from?asked:entryFrom(via.from);
-  if(!kept) return openAsView(text,via);
+  /* `o.entry`: the entry the list asked for, when it is still the one for this link; else the one this browser keeps
+     for it. `o.page`: the page the link names. */
+  const id=o&&o.entry,asked=id?(LIB=readLib(),entryById(id)):null,kept=asked&&asked.from===via.from?asked:entryFrom(via.from);
+  if(!kept) return openAsView(text,via,{page});
   const R=parseFile(text||"");
   if(!R.ok){toast(refusalList(R).join(" "));return false;}
   /* A store booklet whose file holds what is kept here (storeHolds, and the account above it) is drawn from the file just
      read, into the same entry, and its kept copy is never drawn; any other opens as below. A page that declares no store
      (a host's Booklet.open) cannot read the file again from the list, so there the kept copy opens as before. */
-  if(via.store&&storeUrl()!==""&&storeHolds(kept,R)) return openAsView(text,via,kept,R);
+  if(via.store&&storeUrl()!==""&&storeHolds(kept,R)) return openAsView(text,via,{page,reuse:kept,parsed:R});
   openBooklet(kept.id);
   if(BOOK===EMPTY_BOOKLET){/* an entry whose saved copy is gone is not a booklet kept */
     changeLib(L=>{L.entries=L.entries.filter(x=>x.id!==kept.id);});lsDel(baseKey(kept.id));
-    return openAsView(text,via,null,R);}
+    return openAsView(text,via,{page,parsed:R});}
   const seen=textPrint(text);
-  screen=startScreen();PROVENANCE={...via,dismissed:false,at:screen};
+  screen=startScreen(page);PROVENANCE={...via,dismissed:false,at:screen};
   if(kept.storeSeen!==seen&&!sameText(text,toMarkdown())) LINK_NEWER={text,seen,via};
   else if(kept.storeSeen!==seen){const id=kept.id;
     if(currentEntry) currentEntry.storeSeen=seen;
     changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=seen;});}
   render();window.scrollTo({top:0});return true;}
-let LINK_GEN=0,LINK_AT=null,LINK_LOADING=null;   /* LINK_AT: the id of the page a link names, for the moment the booklet it opens picks its first screen; LINK_LOADING: the file being read for a link, while it is ({gen, label, from}) */
+let LINK_GEN=0,LINK_LOADING=null;   /* LINK_LOADING: the file being read for a link, while it is ({gen, label, from}) */
 /* A link may name a page of what it opens, after the name: `#/open/<name>/<activity-id>` and `#/module/<id>/<activity-id>`. A store's
    name may itself hold slashes, so the page is what follows the final `.md/`; a registry id may too, so the id is the longest one
    the registry lists. The page is read from the fragment and nothing is ever written to it. */
@@ -7735,9 +7744,7 @@ async function openLink(hash,o){const L=linkOf(hash);if(!L) return false;
   const got=await linkFetch(url);if(gen!==LINK_GEN) return false;
   LINK_LOADING=null;
   if(got.err){render();return said({missing:"linkMissing",big:"linkBig",slow:"linkSlow",notText:"linkNotText"}[got.err]||"linkFailed");}
-  LINK_AT=at||null;
-  let ok=false;
-  try{ok=openLinked(got.text,via,o&&o.entry);}finally{LINK_AT=null;}
+  const ok=openLinked(got.text,via,{entry:o&&o.entry,page:at||null});
   /* a file the page refuses opens nothing: the screen is drawn again, without the notice */
   if(!ok) render();
   return ok;}
@@ -7794,7 +7801,7 @@ window.addEventListener("booklet-style",()=>{if(RENDERING) return;
   if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}});
 /* A wiki's menu is a disclosure on a narrow window and a column beside the page on a wide one, and a multi-page activity lists its pages in the page
    itself on a narrow one: both are decided as the screen is drawn, so the screen is drawn again when the window crosses the width (one listener,
-   added once). The search words are WK's, so they come back; the caret stays in the box if it was there. */
+   added once). The search words are the view's (VIEW.wiki), so they come back; the caret stays in the box if it was there. */
 if(typeof window!=="undefined"&&typeof window.matchMedia==="function"){
   const mq=window.matchMedia(PAGES_NARROW),again=()=>{
     if(RENDERING||!currentId||BOOK===EMPTY_BOOKLET) return;
@@ -7821,14 +7828,14 @@ if(typeof window!=="undefined"&&window.addEventListener){
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&citeOpen()) closeCite();});
 window.addEventListener("scroll",hideTip,{passive:true});
 document.getElementById("btnHome").addEventListener("click",homeButton);
-document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>pickLang(chooseLang(b.dataset.lang))));
+document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>pickLang(b.dataset.lang)));
 document.getElementById("btnExport").addEventListener("click",openExport);
 document.getElementById("loadCancel").addEventListener("click",()=>veilLoad.removeAttribute("open"));
 document.getElementById("fileIn").addEventListener("change",e=>readFileInto(e.target.files[0],txt=>{document.getElementById("pasteIn").value=txt;}));
 document.getElementById("addModCancel").addEventListener("click",()=>veilAddModule.removeAttribute("open"));
 document.getElementById("loadGo").addEventListener("click",()=>loadText(document.getElementById("pasteIn").value));
 document.getElementById("clearCancel").addEventListener("click",()=>veilClear.removeAttribute("open"));
-document.getElementById("clearGo").addEventListener("click",()=>{STATE=emptyState();DRAFTS=emptyDrafts();dirty=false;unsavedEntries=0;openChip={};clearLocal();veilClear.removeAttribute("open");go(HOME_SCREEN);});
+document.getElementById("clearGo").addEventListener("click",()=>{STATE=emptyState();DRAFTS=emptyDrafts();dirty=false;unsavedEntries=0;viewReset(currentId,"all");clearLocal();veilClear.removeAttribute("open");go(HOME_SCREEN);});
 /* the dialogs that close on a click on their backdrop and on Escape */
 const dismissable=[veilLoad,veilClear,veilExport,veilAddModule];
 dismissable.forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));

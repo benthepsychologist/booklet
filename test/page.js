@@ -27,6 +27,8 @@ const mkNode=tag=>{const n={tagName:tag,children:[],attrs:{},style:{},dataset:{}
   get value(){return this._value||"";},set value(v){this._value=v;}};return n;};
 const body=html.slice(html.indexOf("<body>"),html.indexOf("<script>"));
 const realIds=new Set([...body.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
+/* the sprite's line icons, as the page reads its icon names when it loads */
+const SPRITE='symbol[id^="bi-"]',sprite=[...realIds].filter(i=>i.startsWith("bi-")).map(id=>({id}));
 let STORE={};
 global.document.createElement=mkNode;
 global.document.createElementNS=(ns,tag)=>mkNode(tag);
@@ -37,7 +39,7 @@ const byId=id=>global.document.getElementById(id);
 const main=()=>byId("main");
 function toggleStub(){
   const grp=mkNode("div"),btns=["en","es","fr"].map(l=>{const b=mkNode("button");b.dataset.lang=l;return b;});
-  global.document.querySelectorAll=sel=>sel===".lang"?[grp]:sel===".lang button"?btns:[];
+  global.document.querySelectorAll=sel=>sel===".lang"?[grp]:sel===".lang button"?btns:sel===SPRITE?sprite:[];
   return {grp,btns,press(l){const b=btns.find(x=>x.dataset.lang===l);b._on.click({target:b});}};}
 
 /* where the page thinks it is, for the next boot(): the host hook works only on the reader's own machine or network (and
@@ -59,13 +61,13 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   get lang(){return lang},set lang(v){lang=v}, get screen(){return screen},set screen(v){screen=v},
   get BOOK(){return BOOK}, get STATE(){return STATE}, get DRAFTS(){return DRAFTS},
   cardNode, cardPicture, cardHue, ENGINES, words, wordsNode, takeLeadEmoji, activityProgress, activityStatus, moduleStatus, moduleMeta, activityFooter, foldedCallout, hintKind, keptFor,
-  STRINGS, STRINGS_SRC, createBooklet, closeBooklet, openBooklet, saveLocal, addModule, addModuleText,
-  moduleTextProblems, editBook, render,
+  STRINGS, STRINGS_SRC, createBooklet, closeBooklet, openBooklet, saveLocal, addModuleText, adoptText, bookText, blankText,
+  moduleTextProblems, render,
   loadText, parseFile, applyParsed, toMarkdown, allModules, bookActivities, isMulti,
-  moduleScreen:id=>MODULE_SCREEN+id, answersFor, answersIn, peekAnswers, addrOf, scopeOfAddr, shortId, widgetOf, figureFor, holderOf, RM_STATE, pageNowKey, get openChip(){return openChip}, ownEarlier, readingPlan, sectionLede, foldable, stepUnits, ANSWER_TICKS, OAT_KEY, shortOptions, mdNodes, activityOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, VIEWSTATE, viewState, QUESTION_KINDS, QUESTION_BLOCK, SUMMARY, DRAW_BLOCK, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, CALLOUT_LOOK, calloutLook, CARD_HUES, HUES, colourOf, cellColor, cellStyle, themeBaseTable,
-  get currentId(){return currentId}, get FILE_NOTES(){return FILE_NOTES}, KIND_SETTINGS, NUMBER_SETTINGS, linkHooks, openingNodes, moduleHead, isModuleLink, activityTree, wikiOf, wikiPath, wikiMentions, wikiFind, wikiCrumbs, wikiAfter, moduleLinkNode, moduleLinkId, linkSplit, WK, citeScope, SCOPES, activityName, activityFooter, iconKnown, icon, TH_STYLES, ROLE_NAMES, QUERY_KEYS, fieldSummary, readQuery,
-  removeModule, moduleWork, removeModuleControl, PAGE_NOW, FORMAT_VERSION, versionOf, versionCmp, renameBooklet, renameStored, setTitleIn, nameBooklet, noticeNode, dataSections, bookletName, readLib, flushSave, exportName, fileBase, tabName, blankBook, nameRow, renderBooklets, diagramRisk, mermaidNode, markerOf, otherMarker, isBooklet, plainText, startScreen, homeButton, openFromList,
-  get PROVENANCE(){return PROVENANCE}, get REGISTRY_CACHE(){return REGISTRY_CACHE}, linkName, storeUrl, storeAddress, linkOf, linkFetch, openLink, openAsView, loadRegistry, registryUrl, fileNotesNode, provenanceNode, editBook, markDirty, registryRead, registryText,
+  moduleScreen:id=>MODULE_SCREEN+id, answersFor, answersIn, peekAnswers, addrOf, scopeOfAddr, shortId, widgetOf, figureFor, holderOf, get VIEW(){return VIEW}, VIEWS, viewAt, viewReset, removeBooklet, newDraw, queryView, ownEarlier, readingPlan, sectionLede, foldable, stepUnits, get DRAWN(){return DRAWN}, OAT_KEY, RM_KEY, shortOptions, mdNodes, activityOf, mdBlockNodes, draftFor, keptFor, queryEntries, finalizeEntry, showPage, niceScale, thinLabels, lineSeries, lineDomain, viewNodes, dataSet, entrySet, rolesOf, rowTone, pill, viewControls, newViewState, QUESTION_KINDS, QUESTION_BLOCK, SUMMARY, DRAW_BLOCK, QUERY_KEYS, QUERY_VIEWS, VIEW_DRAWS, CONTROLS_MIN, readTheme, themeDerive, TH_PAIRS, CALLOUT_LOOK, calloutLook, CARD_HUES, HUES, colourOf, cellColor, cellStyle, themeBaseTable,
+  get currentId(){return currentId}, get FILE_NOTES(){return FILE_NOTES}, KIND_SETTINGS, NUMBER_SETTINGS, linkHooks, openingNodes, moduleHead, isModuleLink, activityTree, wikiOf, wikiPath, wikiMentions, wikiFind, wikiCrumbs, wikiAfter, moduleLinkNode, moduleLinkId, linkSplit, citeScope, activityName, activityFooter, ICON_NAMES, PROBLEM, problemText, parseBooklet, icon, TH_STYLES, ROLE_NAMES, QUERY_KEYS, fieldSummary, readQuery,
+  removeModule, moduleWork, removeModuleControl, FORMAT_VERSION, versionOf, versionCmp, renameBooklet, renameStored, setTitleIn, noticeNode, dataSections, bookletName, readLib, flushSave, exportName, fileBase, tabName, nameRow, renderBooklets, diagramRisk, mermaidNode, markerOf, otherMarker, isBooklet, plainText, startScreen, homeButton, openFromList,
+  get PROVENANCE(){return PROVENANCE}, get REGISTRY_CACHE(){return REGISTRY_CACHE}, linkName, storeUrl, storeAddress, linkOf, linkFetch, openLink, openAsView, loadRegistry, registryUrl, fileNotesNode, provenanceNode, markDirty, get dirty(){return dirty}, registryRead, registryText,
   get BookletApi(){return window.Booklet}, get HOST(){return HOST}, get HOOK_LISTENERS(){return HOOK_LISTENERS}, hookFire, setAnswerMs:v=>{HOOK_ANSWER_MS=v}, hostAccept, hostLineText, hostNoticeShow, unsavedNote, saveLocal, ownPlace, hostAllowed, HOST_KEY, get HOST_OWN(){return HOST_OWN}
 }));`);
   API.toggle=toggle;return API;}

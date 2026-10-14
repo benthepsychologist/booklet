@@ -42,7 +42,7 @@ const work=()=>{P.wipe();const A=P.boot();A.loadText(SRC);
  const R=A.parseFile(out);
  chk("the written file parses with no problems",R.ok&&R.unread.length===0&&R.refused.length===0,JSON.stringify([R.unread,R.refused]));
  const L=lint(out);chk("and lints with no errors",L.status===0&&L.errors.length===0,L.out);
- chk("the booklet is marked as changed",A.BOOK.customized===true);
+ chk("the booklet is marked as changed",A.dirty===true);
  chk("only B's lines left the source: every other line is still there, in order",(()=>{const a=before.split("\n"),b=out.split("\n");let j=0;for(const ln of b){while(j<a.length&&a[j]!==ln) j++;if(j>=a.length) return false;j++;}return true;})());
  chk("no run of blank lines is left where B was",!/\n\n\n\n/.test(src));}
 

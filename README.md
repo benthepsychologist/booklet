@@ -292,14 +292,15 @@ header must also allow the store's origin, which is the page's own. Nothing a re
 
 ### Language and storage
 
-The language a reader picks, on "Your booklets" or in any booklet, is that
-browser's choice for every page of the origin: it is kept in `localStorage`
-under `booklet.ui.lang`, apart from every booklet's data, and a reload keeps
-it. Nothing is stored for the reader until they choose. A booklet opens in the
-reader's choice whenever it offers that language; Spanish takes a booklet's own
-`es-AR`. With no choice, a page opens in English, and a booklet in the language
-it was saved in. A booklet that does not offer the language in force opens in
-its own, and a booklet that declares one language always reads in it.
+The language a reader picks on the EN / ES / FR toggle, which shows on "Your
+booklets" and in every booklet, is that browser's choice for every page of the
+origin: it is kept in `localStorage` under `booklet.ui.lang`, apart from every
+booklet's data, and a reload keeps it. Nothing is stored for the reader until
+they choose. The renderer's own words follow that choice whatever a booklet
+says (SPEC.md §9); a choice of Spanish reads a booklet whose `lang` is `es-AR`
+in its own `es-AR`. With no choice, a booklet reads in its own `lang` where the
+renderer has strings for it (`es-AR` has its own; another variant reads its
+language's), and in English otherwise; "Your booklets" reads in English.
 
 The page opens on "Your booklets", the list of every booklet kept in that
 browser. The address is read for one thing only: a link a host's own page declares support for (see "Opening a booklet by link"), never written. Each booklet keeps its own
@@ -316,7 +317,9 @@ reader can do: download a copy, or add the page to the home screen.
 
 The renderer only ever calls `localStorage.getItem`, `setItem` and
 `removeItem`, on a few known keys (`booklet.library.v1` for the list,
-`booklet.b.<id>` for each booklet), and never lists the store. So a page that
+`booklet.b.<id>` for each booklet, and `booklet.base.<id>` for a store
+booklet's base: the records last read from or saved to its file, which tell
+what changed on each side), and never lists the store. So a page that
 namespaces those calls per booklet, by prefixing every key, can run several
 independent booklet instances on one origin without their data colliding.
 

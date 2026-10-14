@@ -1,6 +1,18 @@
 # Changes to the booklet format
 
-What changed in each version of the format, newest first. `SPEC.md` states the rules as they are now and carries no history; this file keeps it. Section numbers are those of `SPEC.md`. A version marked "wording only" or "drawing only" changed no file: the marker stayed as it was.
+What changed in each version of the format, newest first. `SPEC.md` states the rules as they are now and carries no history; this file keeps it. Section numbers are those of `SPEC.md`. A version marked "wording only", "drawing only" or "the reference renderer only" changed no file: the marker stayed as it was.
+
+## Changes in v0.13.1: the reference renderer only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.13"`, and no file needs touching. The reference renderer reads a booklet the way a second reader would, and what a reader of it can notice is this.
+
+- **The interface language follows section 9.** The reader's own choice holds in every booklet; with none, the booklet's `lang` where the renderer has its words; otherwise English. The EN / ES / FR toggle shows in every booklet (before, a booklet's own language held the page and the toggle was hidden), and "Your booklets" is in English for a reader who never chose (before, it took the last booklet's language). A reader who chose Spanish reads a booklet whose `lang` is `es-AR` in `es-AR`, and other booklets in neutral Spanish.
+- **A footnote one bare activity defines is found from another** (section 4: the activities outside every module are one module with no name). Before, the other activity drew "No citation called …".
+- **What a booklet shows is kept per booklet, for the visit.** A booklet opened again keeps its pages, steps and sections. Reading a newer file over it, Clear everything, or a store booklet drawn from a file that changed since it was last read, starts them afresh (before, they were kept by place across every booklet, a newer file included). Two booklets started here no longer share their one-at-a-time and folding choice.
+- **A kept entry records only what was answered**: no empty list for a lines question or a widget left untouched.
+- **A booklet an earlier release kept is read by this release's rules when it opens.** If they accept it, it shows the notices a file opened afresh would show, once. If they refuse it, it opens from the design that release kept, and its notice shows on every open until the file is fixed. Before, it opened silently as kept.
+- **A record kept as written for a module the booklet lacked joins the reader's work as soon as that module is added** (section 8), so the file written changes then, not at the next download and reopen.
+- **Not carried over:** the design of a booklet kept before v0.3 (it opens without it, and it is lost at its first save), and the one-at-a-time and folding choices 0.13.0 kept for booklets started here, which all shared one key.
 
 ## Changes from v0.12
 

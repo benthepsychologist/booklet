@@ -65,7 +65,7 @@ for(const [name,what,kind,line,rx,rline,rrx] of ONE){
   if(rrx){const u=renderer(name),all=u.unread.concat(u.refused||[]);
     const hit=all.find(x=>rrx.test(x));
     chk(`${what}: the renderer reports it too`,!!hit,JSON.stringify(all));
-    if(rline) chk(`${what}: and at the same line`,!!hit&&(hit.match(/^line (\d+):/)||[])[1]==String(rline),hit);}}
+    if(rline) chk(`${what}: and at the same line`,!!hit&&(String(hit).match(/^line (\d+):/)||[])[1]==String(rline),String(hit));}}
 {const r=lint(fx("lint13-icon-none-close"));
  chk("an unknown icon with no close spelling offers none",r.errors.length===1&&/`icon:flower` is not a name in Booklet's icon set/.test(r.errors[0])&&!/did you mean/.test(r.errors[0]),r.out);
  const two=lint(fx("lint13-icon-close")).errors[0]||"";

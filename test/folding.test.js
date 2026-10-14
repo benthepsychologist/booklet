@@ -29,11 +29,11 @@ draw("a");
  chk("three sections",s.length===3);
  chk("a section with two questions says so; one with none says nothing",status(s[0])==="2 questions"&&status(s[1])===""&&status(s[2])==="1 question",JSON.stringify(s.map(status)));
  chk("the first section with an unanswered question is open, the others folded",s.map(d=>d.hasAttribute("open")).join()==="true,false,false",JSON.stringify(s.map(d=>d.hasAttribute("open"))));}
-A.draftFor("a");A.answersFor("a").q1=1;A.answersFor("a").q2=2;A.RM_STATE&&Object.keys(A.RM_STATE).forEach(k=>delete A.RM_STATE[k]);
+A.draftFor("a");A.answersFor("a").q1=1;A.answersFor("a").q2=2;A.viewReset(A.currentId,"all");
 draw("a");
 {const s=secs();
  chk("all answered: Done, and the first section with a question still to answer (the third) is the open one",status(s[0])==="Done"&&s.map(d=>d.hasAttribute("open")).join()==="false,false,true",JSON.stringify([s.map(status),s.map(d=>d.hasAttribute("open"))]));}
-A.answersFor("a").q1=null;Object.keys(A.RM_STATE).forEach(k=>delete A.RM_STATE[k]);draw("a");
+A.answersFor("a").q1=null;A.viewReset(A.currentId,"all");draw("a");
 chk("one of two answered: the count and the answered count",status(secs()[0])==="2 questions · 1 answered",status(secs()[0]));
 
 /* 3. a hint or solution is a compact fold, and never a teaser */

@@ -59,7 +59,7 @@ const section=(md,id)=>{const i=md.indexOf("> [!records|"+id+"]");if(i<0) return
  chk("the file writes `booklet entries log` under each module, with the file's own id",/booklet entries log\n/.test(section(md,"ma"))&&/booklet entries log\n/.test(section(md,"mb"))&&!/booklet entries ma/.test(md)&&/seen in A/.test(section(md,"ma"))&&!/seen in B/.test(section(md,"ma"))&&/and again in B/.test(section(md,"mb")),md.slice(md.indexOf("%%")));
  P.wipe();const B=P.boot();B.loadText(md);
  chk("read back, each module keeps its own entries",B.keptFor("ma/log").length===1&&B.keptFor("mb/log").length===2&&B.keptFor("ma/log")[0].what==="seen in A");
- B.openChip["ma/log"]=B.keptFor("ma/log")[0].ts;B.screen="ma/log";B.render();
+ B.viewAt("ma/log").chip=B.keptFor("ma/log")[0].ts;B.screen="ma/log";B.render();
  chk("and the page draws them for the module on show",/seen in A/.test(shown())&&!/seen in B/.test(shown()),shown().slice(0,300));}
 
 /* ---- drafts apart ---- */
@@ -158,12 +158,12 @@ const rich=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!menu|opts]\n- ${t}-one\
  chk("the page shown is kept per module: A is on its second page",/Two A/.test(shown())&&!/One A/.test(shown()));
  A.screen="mb/act";A.render();
  chk("and B, with the same activity id, is still on its first",/One B/.test(shown())&&!/Two B/.test(shown()),shown().slice(0,200));
- const keys=Object.keys(A.RM_STATE);
- chk("reading mode keeps its folds per module",new Set(keys).size===keys.length&&keys.some(k=>/ma\/act/.test(k))&&keys.some(k=>/mb\/act/.test(k)),keys.join("|"));
+ const keys=[...A.VIEW.at.entries()].filter(([,v])=>Object.keys(v.folds).length).map(([a])=>a);
+ chk("reading mode keeps its folds per module: in the view of each activity address",keys.includes("ma/act")&&keys.includes("mb/act"),keys.join("|"));
  A.keptFor("ma/log").push({ts:"2026-10-01T09:00:00Z",pick:["Own words A"]});A.keptFor("mb/log").push({ts:"2026-10-01T09:00:00Z",pick:["Own words B"]});
  chk("a reader's own options are offered again from the module's own kept entries",A.ownEarlier("ma/log","pick",["Red","Blue"],[]).join()==="Own words A"&&A.ownEarlier("mb/log","pick",["Red","Blue"],[]).join()==="Own words B");
  A.screen="ma/look";A.render();const a=shown();A.screen="mb/look";A.render();const b=shown();
  chk("a query shows its own module's entries",/Own words A/.test(a)&&!/Own words B/.test(a)&&/Own words B/.test(b)&&!/Own words A/.test(b));
- chk("the per-view state is kept per module",new Set([...A.VIEWSTATE.keys()]).size===A.VIEWSTATE.size);}
+ chk("the per-view state is kept per module",A.VIEW.at.has("ma/look")&&A.VIEW.at.has("mb/look")&&A.VIEW.at.get("ma/look").queries!==A.VIEW.at.get("mb/look").queries);}
 
 console.log(fails?"\n"+fails+" FAILURES":"\nmodule-scope checks passed");process.exit(fails?1:0);

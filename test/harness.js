@@ -18,7 +18,9 @@ const _body=_markup.slice(_markup.indexOf("<body>"), _markup.indexOf("<script>")
 const _realIds=new Set([..._body.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
 global.document={createElement:mk,createElementNS:(ns,t)=>mk(t),
   getElementById:id=>_realIds.has(id)?(store[id]||(store[id]=mk("div"))):null,
-  querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:mk("body"),documentElement:mk("html"),get title(){return ""},set title(v){}};
+  querySelector:()=>null,addEventListener(){},body:mk("body"),
+  /* the sprite's line icons, as the page reads its icon names when it loads */
+  querySelectorAll:sel=>sel==='symbol[id^="bi-"]'?[..._realIds].filter(i=>i.startsWith("bi-")).map(id=>({id})):[],documentElement:mk("html"),get title(){return ""},set title(v){}};
 global.document.body.dataset={};
 global.window={addEventListener(){},scrollTo(){}};
 global.Blob=class{constructor(){}};global.URL={createObjectURL:()=>"blob:x",revokeObjectURL(){}};

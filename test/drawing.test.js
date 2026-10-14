@@ -95,7 +95,7 @@ Some prose.
   chk("an activity's page head draws a link as a link",!!h&&byTag(h,"a").length===1&&text(h)==="A link in a title",h&&text(h));}
  /* a repeat activity keeps entries; the kept-entry card names each answer by the question's words */
  {const id="m/second";A.keptFor(id).push({ts:"2026-10-01T09:00:00.000Z",what:"it went well"});
-  A.openChip[id]="2026-10-01T09:00:00.000Z";A.screen=id;A.render();main=P.main();
+  A.viewAt(id).chip="2026-10-01T09:00:00.000Z";A.screen=id;A.render();main=P.main();
   const dts=byTag(main,"dt");
   chk("a kept entry names its answer by the question's words, with their emphasis",dts.length===1&&byTag(dts[0],"em").length===1&&text(dts[0])==="What happened?",dts.map(text).join("|"));}
  /* where bare words are needed */
@@ -311,7 +311,7 @@ group: when
   B.loadText(ex);const id=B.bookActivities().find(a=>a.kind==="entry").id;
   const w=B.BOOK.widgets.find(x=>x.engine==="grid-select"),it=(w.items||[])[0],cell=(w.cells||[])[0];
   B.keptFor(id).push({ts:"2026-10-03T09:00:00.000Z",emotions:[it.id,"x|"+cell.id+"|restless"]});
-  B.openChip[id]="2026-10-03T09:00:00.000Z";B.screen=id;B.render();
+  B.viewAt(id).chip="2026-10-03T09:00:00.000Z";B.screen=id;B.render();
   const t=text(P.main());
   chk("a kept entry shows the word typed into the grid as the word, not as x|cell|word",/restless/.test(t)&&!/x\|/.test(t),(t.match(/.{30}restless.{20}/)||[t.slice(0,80)])[0]);
   chk("and the item listed by the widget shows its label",new RegExp(String(it.label).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).test(t));

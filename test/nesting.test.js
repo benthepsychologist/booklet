@@ -13,7 +13,9 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
 const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
 (async()=>{
  const A=P.boot();
- const nest=(rows,view={},key=null)=>A.viewNodes(A.dataSet({rows}),{as:"list",...view},{empty:"EMPTY",key})[0];
+ /* a query's state is handed to viewNodes by whatever draws it (the page keeps it in the view, queryView); here, one per key */
+ const ST=new Map(),st=k=>{if(k==null) return undefined;if(!ST.has(k)) ST.set(k,A.newViewState());return ST.get(k);};
+ const nest=(rows,view={},key=null)=>A.viewNodes(A.dataSet({rows}),{as:"list",...view},{empty:"EMPTY",state:st(key)})[0];
  /* the labels of the rows directly under a ul, in order */
  const under=ul=>kids(ul).map(li=>cls(li).includes("dv-node")?kids(li)[0]:li);
  const labelOf=r=>text(byClass(r,"dv-t")[0]);
@@ -68,24 +70,24 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
   chk("a parent field with only empty values is a flat list",byClass(g,"dv-tree").length===0);}
 
  /* ---- what the reader opens is kept in the query's state, never written ---- */
- {A.VIEWSTATE.clear();
+ {ST.clear();
   const b=nest(R,{},"K-open");
   const d=tag(b,"details")[0];
   chk("the query's box listens for toggles once (a toggle does not bubble)",typeof b._on.toggle==="function");
   d.open=true;b._on.toggle({target:d});
-  chk("opening a row records its id in the query's state",A.viewState("K-open").opens.has("a")&&A.viewState("K-open").opens.size===1);
+  chk("opening a row records its id in the query's state",st("K-open").opens.has("a")&&st("K-open").opens.size===1);
   const again=nest(R,{},"K-open");
   chk("a re-draw of the view keeps it open, and leaves the others closed",tag(again,"details").map(x=>x.attrs.open!==undefined).join()==="true,false");
   d.open=false;b._on.toggle({target:d});
-  chk("closing a row forgets it",A.viewState("K-open").opens.size===0);
+  chk("closing a row forgets it",st("K-open").opens.size===0);
   b._on.toggle({target:{tagName:"ul",getAttribute(){return null;}}});
-  chk("a toggle that is not a row's is ignored",A.viewState("K-open").opens.size===0);}
+  chk("a toggle that is not a row's is ignored",st("K-open").opens.size===0);}
 
  /* ---- sort and filter on a nested list ---- */
  const WORDS=["Ash","Birch","Cedar","Dogwood","Elm","Fir","Gum","Hazel","Iroko","Juniper"];
  const BIG=[{id:"r1",label:"Root one",value:2},{id:"r2",label:"Root two",value:1},
    ...WORDS.map((w,i)=>({id:"w"+i,parent:i<5?"r1":i<8?"r2":"w0",label:w,value:[7,3,9,1,5,8,2,10,4,6][i],kind:["x","y"][i%2]}))];
- {A.VIEWSTATE.clear();
+ {ST.clear();
   const b=nest(BIG,{},"K-f");
   chk("the control counts all the rows, the nested ones too (12 here)",byClass(b,"dv-ctl").length===1);
   const input=byClass(b,"dv-q")[0];input.value="juniper";press(input,"input");
@@ -93,19 +95,19 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
   chk("a filter keeps a match with its ancestors and drops everything else",lab().join()==="Root one,Ash,Juniper",lab().join());
   chk("while the filter is on the ancestors of a match are open",tag(b,"details").every(d=>d.attrs.open!==undefined)&&tag(b,"details").length===2,tag(b,"details").map(d=>d.attrs["data-id"]+":"+d.attrs.open).join());
   chk("N of M counts the matching rows",byClass(b,"dv-live").map(text).join()==="1 of 12 shown",byClass(b,"dv-live").map(text).join());
-  chk("the remembered open set is unchanged by the filter's own opening",A.viewState("K-f").opens.size===0);
+  chk("the remembered open set is unchanged by the filter's own opening",st("K-f").opens.size===0);
   const d=tag(b,"details")[0];d.open=false;b._on.toggle({target:d});
-  chk("a toggle while the filter is on is not remembered",A.viewState("K-f").opens.size===0);
+  chk("a toggle while the filter is on is not remembered",st("K-f").opens.size===0);
   input.value="";press(input,"input");
   chk("clearing the filter draws the tree closed again",tag(b,"details").every(d=>d.attrs.open===undefined)&&lab().length===12);}
- {A.VIEWSTATE.clear();
+ {ST.clear();
   const b=nest(BIG,{},"K-s");
   const sel=byClass(b,"dv-sel").find(s=>s.attrs["aria-label"]==="Sort by");sel.value="value";press(sel,"change");
   const roots=()=>kids(byClass(b,"dv-tree")[0]).map(li=>labelOf(cls(li).includes("dv-node")?kids(kids(li)[0])[0]:li));
   chk("sorting orders the siblings at the top",roots().join()==="Root two,Root one",roots().join());
   const d0=tag(b,"details").find(d=>d.attrs["data-id"]==="r1"),kidsOf=under(kids(d0)[1]).map(labelOf);
   chk("and the siblings at every level (Root one's children, smallest value first)",kidsOf.join()==="Dogwood,Birch,Elm,Ash,Cedar",kidsOf.join());}
- {A.VIEWSTATE.clear();
+ {ST.clear();
   const b=nest(BIG,{limit:1},"K-l");
   chk("`limit` with a control: one top row, its descendants with it",byClass(b,"dv-t").length===1+5+2&&top(b).join()==="Root one",byClass(b,"dv-t").length+"");}
 
