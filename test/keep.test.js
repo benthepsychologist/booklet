@@ -17,7 +17,7 @@ const section=t=>console.log("\n"+t);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const LS=global.__ls;
 const SEED=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"seeds","ls-"+n+".json"),"utf8"));
-/* the renderer's keys in local storage, but its list count (booklet.tick: a number, checked on its own below) */
+/* the renderer's keys in local storage, but its list count (booklet.tick: a page's id and a count, checked on its own below) */
 const lsKeys=()=>Object.keys(LS).filter(k=>k.startsWith("booklet.")&&k!=="booklet.tick").sort();
 let IDB=null;
 /* a fresh browser: no local storage, an empty IndexedDB */
@@ -53,7 +53,7 @@ section("IndexedDB is the store: read once at start, nothing drawn before");
  await idle(A);
  chk("the kept copy is written to IndexedDB",/typed into the store/.test(keptText(id)));
  chk("the list is kept as one record per entry under its head",IDB.kv("booklet.library.v1")&&JSON.parse(IDB.kv("booklet.library.v1")).order.join()===id&&!!IDB.kv("booklet.library.v1#"+id));
- chk("local storage holds nothing of the renderer's but its list count, a number",lsKeys().length===0&&/^\d+$/.test(LS["booklet.tick"]||""),lsKeys().join());
+ chk("local storage holds nothing of the renderer's but its list count (a page's id and a count)",lsKeys().length===0&&/^[0-9a-z]+\.\d+$/.test(LS["booklet.tick"]||""),lsKeys().join()+" "+LS["booklet.tick"]);
  const B=reload();await started(B);
  chk("after a reload the list holds the booklet",listIds(B).join()===id);
  await B.openFromList(id);
@@ -346,13 +346,55 @@ section("a failed write the page-hide hand-over carries is not written twice");
 
 section("the list's change count in local storage (booklet.tick)");
 {fresh();const A=P.boot();await started(A);A.loadText(BARE("Counted"));const id=A.currentId;await idle(A);A.closeBooklet();await idle(A);
- const t1=Number(LS["booklet.tick"]);
+ const t1=LS["booklet.tick"];
  A.lsSet("booklet.ui.pagesMenu","open");await idle(A);
- chk("a landed write that touches the list raises the count; one that does not leaves it",t1>0&&Number(LS["booklet.tick"])===t1,LS["booklet.tick"]);
+ chk("a landed write that touches the list raises the count; one that does not leaves it",/^[0-9a-z]+\.\d+$/.test(t1||"")&&LS["booklet.tick"]===t1,t1+" / "+LS["booklet.tick"]);
  A.renameStored(id,"Counted, renamed");await idle(A);
- chk("a rename (a list write) raises it by one, and it holds a number and nothing else",LS["booklet.tick"]===String(t1+1));
- const B=reload();await started(B);await idle(B);
- chk("the move never takes it, and the store never holds it",LS["booklet.tick"]===String(t1+1)&&IDB.kv("booklet.tick")===undefined);}
+ const t2=LS["booklet.tick"];
+ chk("a rename (a list write) raises it, to a new value: this page's id and a count of its own",t2!==t1&&t2.split(".")[0]===t1.split(".")[0]&&Number(t2.split(".")[1])===Number(t1.split(".")[1])+1,t1+" / "+t2);
+ const B=P.boot();await started(B);B.loadText(BARE("From another tab"));await idle(B);
+ chk("two tabs raising it never write the same value (a write of the value already there tells no one)",LS["booklet.tick"]!==t2&&LS["booklet.tick"].split(".")[0]!==t2.split(".")[0],t2+" / "+LS["booklet.tick"]);
+ const C=reload();await started(C);await idle(C);
+ chk("the move never takes it, and the store never holds it",!!LS["booklet.tick"]&&IDB.kv("booklet.tick")===undefined);}
+
+section("a booklet removed here, which an older tab still lists, is not listed again empty");
+for(const removedFirst of [false,true]){
+  const said=removedFirst?"removed here, then changed in the older tab":"changed in the older tab, then removed here";
+  fresh();const seed=SEED("0.13.0");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
+  const A=P.boot();await started(A);await idle(A);
+  const g=A.readLib().entries.find(e=>e.title==="A garden week").id;
+  if(removedFirst){A.removeBooklet(g);await idle(A);await sleep(5);oldTabSaves(seed,g,"the older tab's, after the removal");}
+  else{oldTabSaves(seed,g,"the older tab's, before the removal");await sleep(5);A.removeBooklet(g);await idle(A);}
+  chk(said+": local storage holds "+(removedFirst?"the older tab's copy and entry":"only the older tab's entry (the removal took the copy)"),!!LS["booklet.library.v1"]&&(removedFirst?!!LS["booklet.b."+g]:!LS["booklet.b."+g]));
+  const B=reload();await started(B);await idle(B);
+  const e=B.readLib().entries.filter(x=>x.id===g);
+  if(removedFirst){await B.openFromList(g);
+    chk(said+": it comes back with that later change, not empty",e.length===1&&B.answersIn("").note==="the older tab's, after the removal",B.answersIn("").note);}
+  else chk(said+": it is not listed again (it would open empty), and local storage is emptied of it",e.length===0&&listIds(B).length===2&&!LS["booklet.library.v1"],listIds(B).join()+" | "+lsKeys().join());}
+
+section("a kept copy and its base never come from different sides");
+{fresh();const seed=SEED("0.13.0");Object.keys(seed).filter(k=>k!=="_about").forEach(k=>{LS[k]=seed[k];});
+ const A=P.boot();await started(A);await idle(A);
+ const g=A.readLib().entries.find(e=>e.title==="A garden week").id,copy=IDB.kv("booklet.b."+g);
+ /* an older tab's host confirmed a save: it writes the base alone (0.13.0's hostAnswered), with no copy */
+ LS["booklet.base."+g]="the older tab's base";
+ let B=reload();await started(B);await idle(B);
+ chk("local storage wins with a base and no copy: its base is not put beside the store's copy, which stays, with no base",IDB.kv("booklet.b."+g)===copy&&IDB.kv("booklet.base."+g)===undefined&&!LS["booklet.base."+g],String(IDB.kv("booklet.base."+g)));
+ B.lsSet("booklet.base."+g,"the store's base");await idle(B);
+ LS["booklet.base."+g]="another older tab's base";
+ B=reload();await started(B);await idle(B);
+ chk("both sides changed and the store wins: its copy and its own base stay together",IDB.kv("booklet.b."+g)===copy&&IDB.kv("booklet.base."+g)==="the store's base"&&!LS["booklet.base."+g],String(IDB.kv("booklet.base."+g)));}
+
+section("a first read that ends after the visit fell back is not loaded");
+{fresh();const A=P.boot();await started(A);A.loadText(BARE("Kept, read late"));await idle(A);
+ P.closePages();IDB.ctl.kill();
+ const realST=global.setTimeout;global.setTimeout=(f,ms,...x)=>realST(f,ms>=5000?ms/100:ms,...x);
+ IDB.ctl.slowRead=400;
+ const B=P.boot();await started(B);
+ chk("the read took too long: local storage, with the timeout's reason",B.KEEP.mode==="ls"&&B.KEEP.idbWhy==="TimeoutError");
+ await sleep(600);
+ chk("and when the read ends, nothing of it is loaded into the page",B.KEEP.cache.size===0,B.KEEP.cache.size);
+ global.setTimeout=realST;IDB.ctl.slowRead=0;}
 
 section("a host before the store is read; the mirrors");
 {fresh();P.place("http:","fleet");LS["booklet.host.allowed"]="fleet: store";

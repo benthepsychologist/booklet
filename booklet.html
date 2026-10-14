@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-HrYuwRGgqoSQWh6sJZDbsvzeXJ6/mvEI8QEyCFhk44k=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-8YVhGjpO1xME9wWFzXF/zOZj0dpBhXfEh6QRM5vEUkk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2732,10 +2732,12 @@ const MEM={};
 const KEEP_DB="booklet",KEEP_KV="kv",KEEP_STAMP="stamp",THEME_KEY="booklet.ui.theme",LIB_REC="#";
 /* A count in local storage, raised after a write that touched the list has landed, so that another tab showing "Your
    booklets" hears of it through the storage event and reads the store again at once (local storage tells other tabs of
-   a change; IndexedDB tells no one). It holds a number and nothing else, and is not one of the keys the move takes
-   (KEPT_KEY). */
+   a change; IndexedDB tells no one). It holds a page's id and a count, nothing else, and is not one of the keys the move
+   takes (KEPT_KEY). A tab that hears it reads again only the list (keepRefresh(true)), never another tab's kept copies. */
 const TICK_KEY="booklet.tick";
-const keepTick=()=>{try{localStorage.setItem(TICK_KEY,String((Number(lsRaw(TICK_KEY))||0)+1));}catch(e){/* local storage refused: other tabs hear at focus */}};
+/* each value is this page's id and a count of its own, so two tabs raising it at once still write two different values
+   (a write of the value already there tells no one) */
+const keepTick=()=>{try{localStorage.setItem(TICK_KEY,KEEP.tab+"."+(++KEEP.ticks));}catch(e){/* local storage refused: other tabs hear at focus */}};
 /* in the store only: what was copied from local storage, key to fingerprint (keepAdopt) */
 const KEEP_MOVED="booklet.moved.v1";
 /* how long opening the store may take before the page gives up on it and uses local storage */
@@ -2753,7 +2755,7 @@ const KEEP_READ_MS=15000;
    the list as text, joined from its records (libJoined). refreshing: a re-read in progress (keepRefresh). */
 const KEEP={mode:"ls",ready:true,db:null,idb:null,reopening:false,reopenAt:0,reopenTimer:null,problem:lsOk?"":lsFull?"full":"off",why:"",idbWhy:"",cache:new Map(),stamps:new Map(),pending:new Map(),
   inflight:[],failed:new Set(),seq:0,last:new Map(),left:new Map(),leftAt:0,leftBusy:false,later:[],tab:"",n:0,queued:false,lib:null,
-  refreshing:null,started:null};
+  refreshing:null,listing:null,ticks:0,started:null};
 /* this page's own id in the stamps: drawn from the browser's random source, so the random ids a drawing makes
    (Math.random) are the same with or without the store */
 KEEP.tab=(()=>{try{const a=new Uint32Array(2);crypto.getRandomValues(a);return a[0].toString(36)+a[1].toString(36);}catch(e){return newId("");}})();
@@ -2945,7 +2947,10 @@ function keepStart(then){
 /* the whole store, into memory (a key changed before it was read keeps its change) */
 function keepReadAll(db){return new Promise((ok,no)=>{let tx;try{tx=db.transaction([KEEP_KV,KEEP_STAMP],"readonly");}catch(e){no(e);return;}
   const kv=tx.objectStore(KEEP_KV),st=tx.objectStore(KEEP_STAMP),r=[kv.getAllKeys(),kv.getAll(),st.getAllKeys(),st.getAll()];
-  tx.oncomplete=()=>{const [ks,vs,sk,sv]=r.map(x=>x.result||[]);
+  tx.oncomplete=()=>{
+    /* a read that ends after the visit fell back to local storage (keepToLs) is not loaded: the store is closed unread */
+    if(KEEP.mode==="ls"){ok();return;}
+    const [ks,vs,sk,sv]=r.map(x=>x.result||[]);
     ks.forEach((k,i)=>{if(typeof k==="string"&&typeof vs[i]==="string"&&!KEEP.pending.has(k)) KEEP.cache.set(k,vs[i]);});
     sk.forEach((k,i)=>KEEP.stamps.set(k,sv[i]));KEEP.lib=null;ok();};
   tx.onabort=()=>no(tx.error||{name:"AbortError"});});}
@@ -3016,9 +3021,15 @@ function keepAdopt(){
     const storeChanged=storeNew(rec(id),lt)||(lc!==null||was(ck)!==undefined?storeNew(ck,lc):false)||(lb!==null||was(bk)!==undefined?storeNew(bk,lb):false);
     const lsWins=!storeChanged||(!!le&&String(le.updatedAt||"")>String(se&&se.updatedAt||""));
     if(!lsWins){if(lc!==null) leave(ck,lc);if(lb!==null) leave(bk,lb);return;}
+    /* an entry alone, with no kept copy on either side and no store behind it (not a store booklet's pointer), is a
+       booklet removed here whose entry an older tab still listed: it is not listed again, as an empty booklet */
+    if(le&&lc===null&&here(ck)===null&&!storeNameOf(le)){if(lb!==null) leave(bk,lb);return;}
     if(le){const i=out.findIndex(e=>isObj(e)&&e.id===id);if(i>=0) out[i]=le;else out.push(le);listChanged=true;}
-    if(lc!==null) take(ck,lc);
-    if(lb!==null) take(bk,lb);else if(lc!==null&&here(bk)!==null) keepPut(bk,null);});
+    /* a kept copy and its base always come from the same side: with local storage's copy, its base (or none); with no
+       copy there, the store's copy stays (a kept copy is never removed for want of one) and loses its base, rather than
+       sit beside local storage's; and with no copy on either side, no base is kept either */
+    if(lc!==null){take(ck,lc);if(lb!==null) take(bk,lb);else if(here(bk)!==null) keepPut(bk,null);}
+    else{if(lb!==null) leave(bk,lb);if(here(bk)!==null) keepPut(bk,null);}});
   if(listChanged) libWrite(JSON.stringify({...(storeList||{v:1}),entries:out}));
   if(lsList) KEEP.left.set(LIB_KEY,{v:lsListRaw,copied:!listChanged});
   /* the rest: preferences, and anything else of the renderer's */
@@ -3044,9 +3055,12 @@ function keepAdopt(){
    this page knows is read again, unless this page has a change of its own for it waiting or on its way (that is newer,
    and is written next). A key another tab removed goes. "Your booklets" is drawn again if anything changed. Resolves to
    whether anything did; what must not run on an older copy (openFromList) waits for it. */
-function keepRefresh(){if(KEEP.mode!=="idb"||!KEEP.db||!KEEP.ready) return Promise.resolve(false);
-  if(KEEP.refreshing) return KEEP.refreshing;
-  return KEEP.refreshing=new Promise(res=>{const end=v=>{KEEP.refreshing=null;res(v);
+function keepRefresh(list){if(KEEP.mode!=="idb"||!KEEP.db||!KEEP.ready) return Promise.resolve(false);
+  /* `list`: only the list's head and entries are read again (another tab's count, TICK_KEY, says the list changed); the
+     rest waits for the page to come back into view or focus. Its re-read is its own: an open never waits on it. */
+  const slot=list?"listing":"refreshing",only=k=>!list||k===LIB_KEY||isLibRec(k);
+  if(KEEP[slot]) return KEEP[slot];
+  return KEEP[slot]=new Promise(res=>{const end=v=>{KEEP[slot]=null;res(v);
       if(v&&screen===LIB_SCREEN&&!RENDERING) render();};
     /* a change of this page's own waiting (newer) or on its way; not one waiting only because it failed, which loses to a
        write another tab landed since (as a failed write of local storage's stopped) */
@@ -3056,8 +3070,8 @@ function keepRefresh(){if(KEEP.mode!=="idb"||!KEEP.db||!KEEP.ready) return Promi
     const ks=tx.objectStore(KEEP_STAMP).getAllKeys(),vs=tx.objectStore(KEEP_STAMP).getAll();
     tx.onabort=()=>end(false);
     tx.oncomplete=()=>{const now=new Map((ks.result||[]).map((k,i)=>[k,vs.result[i]]));
-      const gone=[...KEEP.stamps.keys()].filter(k=>!now.has(k)&&!mine(k));
-      const want=[...now].filter(([k,s])=>KEEP.stamps.get(k)!==s&&!String(s).startsWith(KEEP.tab+".")&&!mine(k)).map(([k])=>k);
+      const gone=[...KEEP.stamps.keys()].filter(k=>only(k)&&!now.has(k)&&!mine(k));
+      const want=[...now].filter(([k,s])=>only(k)&&KEEP.stamps.get(k)!==s&&!String(s).startsWith(KEEP.tab+".")&&!mine(k)).map(([k])=>k);
       gone.forEach(k=>{theirs(k);KEEP.stamps.delete(k);KEEP.cache.delete(k);});
       if(gone.length) KEEP.lib=null;
       if(!want.length){end(gone.length>0);return;}
@@ -8364,7 +8378,7 @@ keepStart(bootPage);
    does, TICK_KEY, and a page that is in view showing "Your booklets" reads the store again at once; any other waits until
    it comes back into view or focus: keepRefresh) */
 window.addEventListener("storage",e=>{
-  if(e&&e.key===TICK_KEY){if(KEEP.mode==="idb"&&screen===LIB_SCREEN&&!(typeof document!=="undefined"&&document.visibilityState==="hidden")) keepRefresh();return;}
+  if(e&&e.key===TICK_KEY){if(KEEP.mode==="idb"&&screen===LIB_SCREEN&&!(typeof document!=="undefined"&&document.visibilityState==="hidden")) keepRefresh(true);return;}
   if(screen===LIB_SCREEN&&(!e||!e.key||String(e.key).endsWith(LIB_KEY))) render();});
 window.addEventListener("focus",()=>{keepRefresh();});
 window.addEventListener("pageshow",e=>{if(e&&e.persisted) keepRefresh();});

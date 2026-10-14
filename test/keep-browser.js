@@ -21,6 +21,7 @@
 //    an empty "Your booklets";
 // 12 two windows on "Your booklets": a booklet added in one shows in the other at once, with no focus change (the count
 //    in local storage, booklet.tick, and the storage event);
+// 13 while one window types in a large booklet, another showing "Your booklets" re-reads only the list: no kept copy;
 // and every request is a GET for the page itself or its store, with zero CSP violations and page errors.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/keep-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
@@ -264,6 +265,20 @@ const SEED=n=>JSON.parse(fs.readFileSync(path.join(__dirname,'seeds','ls-'+n+'.j
    const st=await bb.evaluate(()=>({vis:document.visibilityState,focus:window.__focus}));
    ok(/Seen at once/.test(await main(bb))&&st.focus===0,'two windows: a booklet added in one shows in the other\'s visible list at once, with no focus change: '+JSON.stringify(st));
    for(const x of [a,bb]) await done(x);await ctx.close();}
+
+  // 13 the other window hears of each save, and re-reads only the list
+  {const ctx=await context(),w=await page(ctx,PAGE+'/app/'),watch=await ctx.newPage();
+   watch.on('pageerror',e=>errs.push(e.message));
+   await watch.addInitScript(()=>{window.__copyReads=0;const get=IDBObjectStore.prototype.get;
+     IDBObjectStore.prototype.get=function(k){if(/^booklet\.(b|base)\./.test(String(k))) window.__copyReads++;return get.apply(this,arguments);};});
+   await watch.goto(PAGE+'/app/');await watch.waitForTimeout(600);
+   await loadFile(w,big(4*1024*1024),'large.booklet.md');
+   for(let i=0;i<5;i++){await w.locator('#main textarea').first().fill('a save '+i);await w.waitForTimeout(700);}
+   const reads=await watch.evaluate(()=>window.__copyReads);
+   ok(reads===0&&/Ten megabytes/.test(await main(watch)),'five saves of a 4 MB booklet in one window: the other window\'s list shows it, and it read none of its kept copy ('+reads+' reads)');
+   await list(w);await loadFile(w,FM('test/after','Added while watched')+'> [!activity|a] A\n\n> [!text|q] Q\n');await watch.waitForTimeout(800);
+   ok(/Added while watched/.test(await main(watch))&&await watch.evaluate(()=>window.__copyReads)===0,'and a booklet added then shows in its list too, still with no kept copy read');
+   for(const x of [w,watch]) await done(x);await ctx.close();}
 
   const net=reqs.filter(r=>/^https?:/i.test(r.url));
   ok(net.length>0&&net.every(r=>r.method==='GET'&&!r.body&&new URL(r.url).origin===PAGE),'every request is a GET for the page itself or its store: '+[...new Set(net.map(r=>r.method+' '+new URL(r.url).pathname))].join(', '));
