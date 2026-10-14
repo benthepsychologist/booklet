@@ -65,7 +65,7 @@ function write(html){
 module.exports={write,scripts,held,policyFor,tagFor,BLOCK,problems,POLICY,CHARSET,DNS};
 if(require.main===module){
   const mode=process.argv[2],file=process.argv[3];
-  if(!/^--(write|check)$/.test(mode||"")||!file){console.error("usage: node test/csp-hash.js --write|--check booklet.html");process.exit(2);}
+  if(!/^--(write|check)$/.test(mode||"")||!file){console.error("usage: node test/csp-hash.js --write|--check <file>   (the file name is required, as in: node test/csp-hash.js --write booklet.html)");process.exit(2);}
   let html=fs.readFileSync(file,"utf8");
   if(mode==="--check"){
     const p=problems(html);
