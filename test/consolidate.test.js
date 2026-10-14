@@ -8,7 +8,8 @@
 //       the numbers, keeping its own marks.
 //   R9. One copy of each small job. Two copies had drifted: Remove and Update a module now find a module's fence as Add does,
 //       outside code fences; and a page is named by its first heading outside code fences, as its links find it.
-//       Leaving the page warns unless the host says the work is saved, one rule (hostCovers) with the Download button's mark.
+//       Leaving the page warns unless the host says the work is saved; the Download button's mark and the note show only when
+//       nothing covers the work: one rule (hostCovers), read at two thresholds.
 //   R14. The parser dispatches on two tables (fence kinds, line kinds); the view pipeline calls VIEW_FNS[as] and nothing else,
 //       each view drawing its own groups and a nested list's tree.
 // Run: node test/consolidate.test.js   (node only; nothing to install)
@@ -125,22 +126,25 @@ const LS=global.__ls;
  const ps=R.template.modules[0].activities[0].pages;
  chk("a heading-like line in a code block does not name the page; its first heading does, as its links find it",ps.map(p=>p.title).join("|")==="The first page|The second page",ps.map(p=>p.title).join("|"));}
 
-/* ---- R9: leaving the page warns unless the host says the work is saved ---- */
-{P.wipe();P.place("http:","fleet");LS["booklet.host.allowed"]="h";const A=P.boot(),B=A.BookletApi,h=B.host({label:"h"});
+/* ---- R9: leaving the page warns unless the host says the work is saved; the mark and the note only when nothing covers it ---- */
+{const T=FM("Hosted")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n";
+ const rig=A=>{const r={mark:null,leave:()=>{let warned=false;A.dispatch("beforeunload",{preventDefault(){warned=true;},returnValue:""});return warned;}};
+   P.byId("btnExport").classList.toggle=(c,on)=>{if(c==="attention") r.mark=!!on;};
+   r.type=w=>{A.screen="m/a";A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea")[0];ta.value=w;ta._on.input();};return r;};
+ P.wipe();P.place("http:","fleet");LS["booklet.host.allowed"]="h";const A=P.boot(),B=A.BookletApi,h=B.host({label:"h"});
  const calls=[];const stop=B.onChange(x=>calls.push(x));
- B.open(FM("Hosted")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n",{name:"hosted.booklet.md"});
- const leave=()=>{let warned=false;A.dispatch("beforeunload",{preventDefault(){warned=true;},returnValue:""});return warned;};
- let mark=null;P.byId("btnExport").classList.toggle=(c,on)=>{if(c==="attention") mark=!!on;};
- A.screen="m/a";A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea")[0];ta.value="an answer";ta._on.input();
+ B.open(T,{name:"hosted.booklet.md"});const r=rig(A);r.type("an answer");
  chk("set up: a host that listens, and a change it has not answered (Saving…)",A.HOST.status==="saving"&&A.dirty,A.HOST&&A.HOST.status);
- chk("leaving now warns: a save on its way is not the host's yet; the Download button is marked, by the same rule",leave()&&mark===true,String(mark));
+ chk("a save on its way: leaving warns, and neither the Download mark nor the note shows",r.leave()&&r.mark===false&&A.unsavedNote()===null,String(r.mark));
  h.saved();
- chk("once the host says it is saved, leaving does not warn and the mark goes",A.HOST.status==="saved"&&!leave()&&mark===false,A.HOST.status+" "+mark);
- stop();
- chk("a host that no longer listens has nothing: leaving warns again",leave());
+ chk("once the host says it is saved: no warning, no mark, no note",A.HOST.status==="saved"&&!r.leave()&&r.mark===false&&A.unsavedNote()===null,A.HOST.status+" "+r.mark);
  h.failed("disk full");
- chk("and a failed save warns",leave());
- P.closePages();delete global.location;}
+ chk("after a failed save: leaving warns, and the mark and the note come back",r.leave()&&r.mark===true&&A.unsavedNote()!==null,String(r.mark));
+ h.saved();stop();
+ chk("a host that no longer listens covers nothing: leaving warns, and the mark comes back",r.leave()&&r.mark===true,String(r.mark));
+ P.closePages();delete global.location;
+ P.wipe();const N=P.boot();N.loadText(T);const n=rig(N);n.type("an answer");
+ chk("with no host, as before: leaving warns, and the mark and the note show",n.leave()&&n.mark===true&&N.unsavedNote()!==null,String(n.mark));}
 
 /* ---- R14: every view through VIEW_FNS, grouped and nested alike ---- */
 {P.wipe();const A=P.boot();

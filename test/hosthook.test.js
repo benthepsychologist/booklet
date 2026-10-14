@@ -213,7 +213,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  const L=listen(A);h.saved();
  chk("once something listens, a succeeding host rests the note",A.unsavedNote()===null);
  typeIn(A,"ma/act","b");await sleep(250);
- chk("after a change the bar says Saving…, and the note shows until the host says it is saved (a save on its way is not the host's yet)",/Saving…$/.test(barText())&&A.unsavedNote()!==null,barText());
+ chk("after a change the bar says Saving… and the note rests while the host has time",/Saving…$/.test(barText())&&A.unsavedNote()===null,barText());
  await sleep(700);
  chk("a host that has not answered within the time is treated as a failed save: Not saved: the host did not answer",/ · Not saved: the host did not answer$/.test(barText())&&A.HOST.status==="failed",barText());
  chk("and the note comes back",!!A.unsavedNote());

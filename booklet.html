@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-PnyJyg6fdhAT4XUi9j0AU2TIr7ShwUlH+ciAu80/cK4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-R0bORckPuA5cxuRSuQpmwgVgMzQ/xxGxOm+vt3nLvVg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -6715,10 +6715,12 @@ function drawThemeSelect(t){const s=document.getElementById("themeSel"),B=window
 function unsavedSpan(entries,changed){const t=strings("ui");
   if(entries>0) return el("span",{class:"unsaved"},t.unsavedEntries(entries));
   if(changed) return el("span",{class:"unsaved"},t.unsavedChanges);return null;}
-/* The host has the work only when it says so: a registered host, listening, whose answer to the open booklet's latest change
-   is "saved". The one rule for the Download button's mark, the "not yet downloaded" note and leaving the page (which warns
-   otherwise); a save on its way, or one the host has not answered yet, is not the host's. */
-const hostCovers=()=>hostActive()&&hookBook()&&HOST.status==="saved"&&HOOK_LISTENERS.length>0;
+/* What the host has of the open booklet's work, one rule with three answers: "saved", a registered host, listening, whose
+   answer to the latest change is saved; "sending", such a host while that change is on its way (sent, or about to be, and not
+   yet answered: "Saving…", or before its first answer); "" when nothing covers it (no host, nobody listening, or the last
+   answer failed). Read at two thresholds: leaving the page warns unless the answer is "saved"; the Download button's mark and
+   the "not yet downloaded" note show only when it is "", so a save on its way neither marks the button nor leaves a note. */
+const hostCovers=()=>!(hostActive()&&hookBook()&&HOOK_LISTENERS.length>0)||HOST.status==="failed"?"":HOST.status==="saved"?"saved":"sending";
 const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
 const SCREENS={[HOME_SCREEN]:renderHome,[LIB_SCREEN]:renderBooklets};
 let RENDERING=false;
@@ -7910,7 +7912,7 @@ window.addEventListener("dragenter",e=>{if([...(e.dataTransfer?.types||[])].incl
 window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault();});
 window.addEventListener("dragleave",e=>{if(dragDepth>0) dragDepth--;if(dragDepth===0) dropVeil.classList.remove("show");});
 window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.classList.remove("show");const f=e.dataTransfer?.files?.[0];if(f) readFileInto(f,loadText);});
-window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&!hostCovers()){e.preventDefault();e.returnValue=strings("ui").leaving;}});
+window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&hostCovers()!=="saved"){e.preventDefault();e.returnValue=strings("ui").leaving;}});
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
 /* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers */
