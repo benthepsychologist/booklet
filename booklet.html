@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-R0bORckPuA5cxuRSuQpmwgVgMzQ/xxGxOm+vt3nLvVg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-3eTme8L43SHO7BEO9+9qGwdt+JYTyhF9TMLGT+xBdGY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3208,7 +3208,7 @@ function storedText(o){if(typeof o.text==="string") return o.text;
   return R&&R.template?bookText({...R.template,raw:{...R.template.raw,records:raw.records}}):null;}
 /* the Download button's mark, kept in step with every change (not only with a redraw) */
 function markAttention(){const dl=document.getElementById("btnExport");
-  if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&!hostCovers());}
+  if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&hostCovers()==="unsaved");}
 /* A save is scheduled for the booklet that asked for it. Leaving a booklet
    writes any save still pending to that booklet's own key first (flushSave),
    and a timer that somehow outlives its booklet finds bookletGen moved on and
@@ -6715,13 +6715,14 @@ function drawThemeSelect(t){const s=document.getElementById("themeSel"),B=window
 function unsavedSpan(entries,changed){const t=strings("ui");
   if(entries>0) return el("span",{class:"unsaved"},t.unsavedEntries(entries));
   if(changed) return el("span",{class:"unsaved"},t.unsavedChanges);return null;}
-/* What the host has of the open booklet's work, one rule with three answers: "saved", a registered host, listening, whose
-   answer to the latest change is saved; "sending", such a host while that change is on its way (sent, or about to be, and not
-   yet answered: "Saving…", or before its first answer); "" when nothing covers it (no host, nobody listening, or the last
-   answer failed). Read at two thresholds: leaving the page warns unless the answer is "saved"; the Download button's mark and
-   the "not yet downloaded" note show only when it is "", so a save on its way neither marks the button nor leaves a note. */
-const hostCovers=()=>!(hostActive()&&hookBook()&&HOOK_LISTENERS.length>0)||HOST.status==="failed"?"":HOST.status==="saved"?"saved":"sending";
-const unsavedNote=()=>hostCovers()?null:unsavedSpan(unsavedEntries,dirty);
+/* What the host has of the open booklet's work: one rule, three answers, in this order. "saved": a registered host,
+   listening, whose answer to the latest change is saved. "saving": such a host, and that change not yet answered (on its
+   way, "Saving…", or the host has not answered at all yet). "unsaved": nothing covers it (no host, nobody listening, or the
+   last answer failed). Read at two thresholds: leaving the page warns unless the answer is "saved"; the Download button's
+   mark and the "not yet downloaded" note show only on "unsaved", so a save on its way neither marks the button nor leaves
+   a note. */
+const hostCovers=()=>!(hostActive()&&hookBook()&&HOOK_LISTENERS.length>0)||HOST.status==="failed"?"unsaved":HOST.status==="saved"?"saved":"saving";
+const unsavedNote=()=>hostCovers()==="unsaved"?unsavedSpan(unsavedEntries,dirty):null;
 const SCREENS={[HOME_SCREEN]:renderHome,[LIB_SCREEN]:renderBooklets};
 let RENDERING=false;
 /* decided before a draw, which writes none of it: the language, the screen (a module screen whose module is gone or

@@ -8,8 +8,8 @@
 //       the numbers, keeping its own marks.
 //   R9. One copy of each small job. Two copies had drifted: Remove and Update a module now find a module's fence as Add does,
 //       outside code fences; and a page is named by its first heading outside code fences, as its links find it.
-//       Leaving the page warns unless the host says the work is saved; the Download button's mark and the note show only when
-//       nothing covers the work: one rule (hostCovers), read at two thresholds.
+//       One rule (hostCovers) with three answers, saved, saving and unsaved: leaving the page warns unless saved; the Download
+//       button's mark and the note show only on unsaved.
 //   R14. The parser dispatches on two tables (fence kinds, line kinds); the view pipeline calls VIEW_FNS[as] and nothing else,
 //       each view drawing its own groups and a nested list's tree.
 // Run: node test/consolidate.test.js   (node only; nothing to install)
@@ -126,7 +126,7 @@ const LS=global.__ls;
  const ps=R.template.modules[0].activities[0].pages;
  chk("a heading-like line in a code block does not name the page; its first heading does, as its links find it",ps.map(p=>p.title).join("|")==="The first page|The second page",ps.map(p=>p.title).join("|"));}
 
-/* ---- R9: leaving the page warns unless the host says the work is saved; the mark and the note only when nothing covers it ---- */
+/* ---- R9: hostCovers is saved, saving or unsaved; leaving warns unless saved, the mark and the note show only on unsaved ---- */
 {const T=FM("Hosted")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n";
  const rig=A=>{const r={mark:null,leave:()=>{let warned=false;A.dispatch("beforeunload",{preventDefault(){warned=true;},returnValue:""});return warned;}};
    P.byId("btnExport").classList.toggle=(c,on)=>{if(c==="attention") r.mark=!!on;};
@@ -135,16 +135,16 @@ const LS=global.__ls;
  const calls=[];const stop=B.onChange(x=>calls.push(x));
  B.open(T,{name:"hosted.booklet.md"});const r=rig(A);r.type("an answer");
  chk("set up: a host that listens, and a change it has not answered (Saving…)",A.HOST.status==="saving"&&A.dirty,A.HOST&&A.HOST.status);
- chk("a save on its way: leaving warns, and neither the Download mark nor the note shows",r.leave()&&r.mark===false&&A.unsavedNote()===null,String(r.mark));
+ chk("a save on its way is saving: leaving warns, and neither the Download mark nor the note shows",A.hostCovers()==="saving"&&r.leave()&&r.mark===false&&A.unsavedNote()===null,A.hostCovers()+" "+r.mark);
  h.saved();
- chk("once the host says it is saved: no warning, no mark, no note",A.HOST.status==="saved"&&!r.leave()&&r.mark===false&&A.unsavedNote()===null,A.HOST.status+" "+r.mark);
+ chk("once the host says it is saved, saved: no warning, no mark, no note",A.hostCovers()==="saved"&&!r.leave()&&r.mark===false&&A.unsavedNote()===null,A.hostCovers()+" "+r.mark);
  h.failed("disk full");
- chk("after a failed save: leaving warns, and the mark and the note come back",r.leave()&&r.mark===true&&A.unsavedNote()!==null,String(r.mark));
+ chk("after a failed save, unsaved: leaving warns, and the mark and the note come back",A.hostCovers()==="unsaved"&&r.leave()&&r.mark===true&&A.unsavedNote()!==null,A.hostCovers()+" "+r.mark);
  h.saved();stop();
- chk("a host that no longer listens covers nothing: leaving warns, and the mark comes back",r.leave()&&r.mark===true,String(r.mark));
+ chk("a host that no longer listens covers nothing, unsaved: leaving warns, and the mark comes back",A.hostCovers()==="unsaved"&&r.leave()&&r.mark===true,A.hostCovers()+" "+r.mark);
  P.closePages();delete global.location;
  P.wipe();const N=P.boot();N.loadText(T);const n=rig(N);n.type("an answer");
- chk("with no host, as before: leaving warns, and the mark and the note show",n.leave()&&n.mark===true&&N.unsavedNote()!==null,String(n.mark));}
+ chk("with no host, unsaved, as before: leaving warns, and the mark and the note show",N.hostCovers()==="unsaved"&&n.leave()&&n.mark===true&&N.unsavedNote()!==null,N.hostCovers()+" "+n.mark);}
 
 /* ---- R14: every view through VIEW_FNS, grouped and nested alike ---- */
 {P.wipe();const A=P.boot();
