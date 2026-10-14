@@ -823,11 +823,11 @@ A conforming reader should open a file marked with another `0.x` version, earlie
 A reader may also offer conveniences that this document does not define and that conformance does not test. The reference renderer has all six, and a conforming reader needs none:
 
 - a library of the reader's booklets, with rename, remove, and a request that the browser keep its storage;
-- a host hook, `window.Booklet`, through which a page that serves the reader supplies a store, a line and offers; and opening a booklet by link (`#/open/<name>`) from a store that the host's copy names in a `booklet-store` meta tag;
+- a host hook, `window.Booklet`, through which a page that serves the reader supplies a store, a line and offers, and opens a booklet by link (`#/open/<name>`) from a store that the host's copy names in a `booklet-store` meta tag;
 - one at a time, which takes a page of three or more questions one by one;
 - reading mode, which folds a page into sections at its shallowest heading level;
 - a theme menu with Auto, which follows the booklet's own look if it asks for one and the device otherwise;
-- "draw the title once", which leaves out the first heading of an activity's page when that heading repeats the activity's title.
+- "draw the title once", which leaves out the first heading of an activity's page when that heading repeats the name the page is shown under.
 
 A conforming writer must: emit front matter with the current marker, `booklet: "0.13"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read, unchanged (in value, not in spacing), unless the reader changed it (section 8); write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 

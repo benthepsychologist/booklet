@@ -112,8 +112,7 @@ A tool that writes booklets should ask the linter for the marker (`python3 lint-
 
 A plain Markdown file with booklet front matter (`booklet: "0.13"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
-status or a run's acceptance report, can be read in the renderer. A page that only reads (no question, no
-widget, no query) and has at least two sections opens **folded**: each section shows its heading and its first
+status or a run's acceptance report, can be read in the renderer. A page with at least two sections opens **folded**: each section shows its heading and its first
 paragraph and opens on a click, with "Open everything" and "Fold everything" above them and a dot in the left
 menu for each section opened. Which pages fold is under "What the renderer draws that a file does not say", below. The choice is kept in the browser only. HTML comments (`<!-- … -->`) are not
 drawn, and tables are styled.
@@ -190,7 +189,7 @@ own questions.
 - **A hint or a solution** that is folded with `-` and sits right after a question is drawn inside that question's own block, as a small control each, the hint first, as the author wrote them. Shut, they give nothing away. One that is not folded stays a row of its own.
 - **A hint never opens by itself.** A solution opens by itself under the reader's answer: for a `choice`, as soon as an option is picked; for a `multi`, when Check is pressed (only a question with a right answer, an `[x]` option, has Check). With a right answer it takes the good tone when the answer is right, and the warn tone with "Look again" when it is not. A `choice` with no right answer opens in a neutral tone on a pick. A `multi` with no right answer has no Check, so its solution opens only on request, as it does for every other question kind.
 - **A callout folded with `-`** shows the first words of its text under its title. A hint or a solution shows only its name while it is shut, so a closed one gives nothing away.
-- **A folded callout of a kind the renderer does not draw** (a `group`, or a kind with no colour of its own) is drawn on plain paper with no tint and no picture of its own. An untitled one is called "Note". Kinds the renderer draws keep their colour and picture.
+- **A folded callout of a kind with no colour of its own** (a `group`, or a kind with no colour of its own) is drawn on plain paper with no tint and no picture of its own. An untitled one is called "Note". Kinds the renderer draws keep their colour and picture.
 - **An activity's card** shows the activity's first paragraph under its title, read as inline Markdown as a module card's blurb is. An activity with no paragraph shows its title alone. The card counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started").
 - **An unfolded `group`**, or a kind with no colour of its own, is drawn as a `note` is.
 - **A page's name** is drawn above the page only when the page has no heading of its own. A heading that follows a sentence is shown once, in place.
