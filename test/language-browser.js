@@ -48,7 +48,7 @@ const NOTED='---\nbooklet: 0.9\ntitle: Harbour notes\nlang: en\n---\n\n> [!activ
   await toList();await press('fr');
   await load(TIDES);
   const exp=(await p.locator('#btnExport').innerText()).trim();
-  ok(await p.evaluate(()=>document.documentElement.lang)==='fr'&&exp==='Envoyer ou sauvegarder une copie'&&await pressed()==='fr',"a reader who chose French opens how-tides-work (lang: en) with French controls",exp);
+  ok(await p.evaluate(()=>document.documentElement.lang)==='fr'&&exp==='Télécharger une copie'&&await pressed()==='fr',"a reader who chose French opens how-tides-work (lang: en) with French controls",exp);
   ok(/tide/i.test(await p.locator('#main').innerText()),"and its own words stay as written");
   await p.screenshot({path:path.join(OUT,'language-tides-fr.png')});
   await p.reload();await wait(600);

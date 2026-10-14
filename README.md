@@ -158,12 +158,12 @@ behind the page's Content-Security-Policy, and a gap in the list is a gap in wha
 gap shows there. **Whenever the vendored mermaid changes, probe it again** (run that test, and read what
 the new version can fetch before trusting the list).
 
-**Browsers.** The renderer needs a browser from 2023 or later: Safari 16.4 and later, and the Chrome, Edge and Firefox of the same years. Its Markdown and diagram patterns use regex lookbehind, which Safari had from 16.4, so an older browser cannot run the script at all; it carries no fallbacks for older ones.
+**Browsers.** The renderer needs a browser from 2023 or later: Safari 16.4 (the first on which its script even parses, because the Markdown and diagram patterns use regex lookbehind), Chrome and Edge 111, and Firefox 121. The newer floor for Chrome, Edge and Firefox is the stylesheet and script's use of `color-mix()` and `:has()`. The renderer carries no fallbacks for older browsers.
 
 The renderer opens **empty**, because it holds no booklet of its own. That is
 the property everything else here rests on.
 
-**Send or save a copy** downloads the booklet as its `.md` file at once, in one
+**Download a copy** (the bar's button) downloads the booklet as its `.md` file at once, in one
 click, with no dialog. The renderer adds no storage service and never contacts Mail,
 Drive, Dropbox or another destination itself.
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-uCUhJ3PMQ/bkOGMMix4aKE6AbVGA7nk2mHswSMFZ0Ag=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-Xen7olBghSryyDyw4VRftg0Z2o5ZVqMBh77jdYhUd6k=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1505,7 +1505,7 @@ const STRINGS_SRC={
   en: {
     ui: {
       app: "Booklet",
-      export: "Send or save a copy",
+      export: "Download a copy",
       loadTitle: "Load notes you saved earlier",
       loadHelp: "Choose the markdown file you downloaded from this page, or paste its contents below.",
       loadOr: "Or paste the file's contents:",
@@ -1568,7 +1568,6 @@ const STRINGS_SRC={
       dropZone: "…or drop the file here",
       dropVeil: "Drop to load your notes",
       entriesN: n=>`${n} kept`,
-      cancel: "Cancel",
       pLang: "Language",
       pTheme: "Colour theme", themeAuto: "Auto", themeAutoTip: "The booklet's own look if it has one, otherwise your device's", themePaper: "Paper", themeDaylight: "Daylight", themeNight: "Night", themeContrast: "Contrast",
       storageOff: "This browser is not keeping your entries between visits (private mode, or site data is blocked). Download before you close the tab.",
@@ -1831,7 +1830,7 @@ const STRINGS_SRC={
   fr: {
     ui: {
       app: "Booklet",
-      export: "Envoyer ou sauvegarder une copie",
+      export: "Télécharger une copie",
       loadTitle: "Charger des notes sauvegardées",
       loadHelp: "Choisissez le fichier markdown téléchargé depuis cette page, ou collez son contenu ci-dessous.",
       loadOr: "Ou collez le contenu du fichier :",
@@ -1894,7 +1893,6 @@ const STRINGS_SRC={
       dropZone: "…ou déposez le fichier ici",
       dropVeil: "Déposez pour charger vos notes",
       entriesN: n=>`${n} gardée${n===1?"":"s"}`,
-      cancel: "Annuler",
       pLang: "Langue",
       pTheme: "Thème de couleurs", themeAuto: "Auto", themeAutoTip: "L'apparence propre au carnet s'il en a une, sinon celle de votre appareil", themePaper: "Papier", themeDaylight: "Plein jour", themeNight: "Nuit", themeContrast: "Contraste",
       storageOff: "Ce navigateur ne conserve pas vos entrées d’une visite à l’autre (navigation privée, ou données de site bloquées). Téléchargez avant de fermer l’onglet.",
@@ -2153,7 +2151,7 @@ const STRINGS_SRC={
   es: {
     ui: {
       app: "Booklet",
-      export: "Enviar o guardar una copia",
+      export: "Descargar una copia",
       loadTitle: "Cargar notas que guardaste antes",
       loadHelp: "Elige el archivo markdown que descargaste desde esta página, o pega su contenido abajo.",
       loadOr: "O pega el contenido del archivo:",
@@ -2216,7 +2214,6 @@ const STRINGS_SRC={
       dropZone: "…o suelta el archivo aquí",
       dropVeil: "Suelta para cargar tus notas",
       entriesN: n=>`${n} guardada${n===1?"":"s"}`,
-      cancel: "Cancelar",
       pLang: "Idioma",
       pTheme: "Tema de color", themeAuto: "Auto", themeAutoTip: "El aspecto propio del cuadernillo si lo tiene; si no, el de tu dispositivo", themePaper: "Papel", themeDaylight: "Luz de día", themeNight: "Noche", themeContrast: "Contraste",
       storageOff: "Este navegador no está conservando tus entradas entre visitas (modo privado, o los datos del sitio están bloqueados). Descarga antes de cerrar la pestaña.",
@@ -3065,6 +3062,11 @@ let BOOK = EMPTY_BOOKLET;
    a module's id, or "" for the module with no name (the activities outside any module fence);
    `entries` are kept entries, keyed by activity address */
 /* maps keyed by a file's ids have no prototype, so no id (`constructor`, `__proto__`) is already a key */
+/* SPEC section 8: entries are identified by their `ts`, and for a key both hold the later wins; an entry only one holds is kept. The list
+   keeps a Map from ts to entry beside it (IX), so a file of tens of thousands of entries is read in one pass, not one search per entry. */
+const ENTRY_IX=new WeakMap();
+function mergeEntries(list,items){let ix=ENTRY_IX.get(list);if(!ix){ix=new Map();list.forEach(x=>ix.set(x.ts,x));ENTRY_IX.set(list,ix);}
+  items.forEach(e=>{const n=nullMap(e),same=ix.get(n.ts);if(same) Object.assign(same,n);else{list.push(n);ix.set(n.ts,n);}});}
 const nullMap=(o,deep)=>{const r=Object.create(null),one=v=>isObj(v)?nullMap(v):v;if(isObj(o)) Object.keys(o).forEach(k=>{r[k]=deep?(Array.isArray(o[k])?o[k].map(one):one(o[k])):o[k];});return r;};
 const emptyState=()=>({answers:nullMap(),entries:nullMap()});
 const emptyDrafts=()=>({custom:nullMap()});
@@ -4061,9 +4063,7 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     if(what==="draft") return void(drafts[at]=Object.assign(drafts[at]||nullMap(),o));
     if(!Array.isArray(o.items)) return no(P.recordNoItems(L,info[2]));
     if(!o.items.every(e=>e&&typeof e==="object"&&e.ts)) return no(P.recordsOther(L));
-    /* SPEC section 8: two blocks for one activity are one list, an entry is identified by its `ts`, and for a key both hold the later wins */
-    const list=entries[at]||(entries[at]=[]);
-    o.items.forEach(e=>{const n=nullMap(e),same=list.find(x=>x.ts===n.ts);if(same) Object.assign(same,n);else list.push(n);});}
+    mergeEntries(entries[at]||(entries[at]=[]),o.items);}
   function onRecords(it,where){recForeign=null;const named=it.id&&modules.some(m=>m.id===it.id&&!m.__bare);recScope=named?it.id:"";
     if(it.id&&!named&&!modules.some(m=>m.id===it.id&&m.__bare)){recForeign={id:it.id,head:it.head};problems.push(P.recordsLineUnknown(where,it.id));}}
   const onRec=it=>{const L=P.line(it.line);
@@ -4318,10 +4318,10 @@ function adoptText(text){const R=parseFile(text);if(!R.template) return null;
   adoptParse(R);return R;}
 const adoptParse=R=>{BOOK=R.template;OLD_DESIGN=false;joinRecords(R);};
 /* the records a text's parse read (only one kept as written for a module the booklet has since gained), joined to the
-   reader's work as a file read back joins them: the reader's values win, kept entries come first */
+   reader's work as a file read back joins them (mergeEntries, by `ts`): the reader's values win, kept entries come first */
 function joinRecords(R){const st=R.S||emptyState(),dr=(R.drafts||{}).activities||{};
   Object.keys(st.answers||{}).forEach(sc=>{STATE.answers[sc]=Object.assign(nullMap(st.answers[sc]),peekAnswers(sc));});
-  Object.keys(st.entries||{}).forEach(a=>{STATE.entries[a]=[...st.entries[a],...((STATE.entries||{})[a]||[])];});
+  Object.keys(st.entries||{}).forEach(a=>{const list=[];mergeEntries(list,st.entries[a]);mergeEntries(list,(STATE.entries||{})[a]||[]);STATE.entries[a]=list;});
   Object.keys(dr).forEach(a=>{if(isObj(dr[a])) DRAFTS.custom[a]=Object.assign(nullMap(dr[a]),DRAFTS.custom[a]||{});});}
 
 /* ======================= A BOOKLET'S OWN LOOK =======================

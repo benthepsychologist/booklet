@@ -211,6 +211,15 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const out=A.toMarkdown();
   chk("B1b: a save writes the merged entry once, and nothing of the overwritten value",cnt(out,/"ts":"2026-01-01T10:00:00Z"/g)===1&&cnt(out,/"t":"old"/g)===0,out.slice(-500));
   chk("B1b: load, save, load, save changes nothing",load(out).toMarkdown()===out);}
+ /* B1c: the merge is one pass (a Map from ts beside the list), not a search per entry: 60,000 entries in two blocks (about 5 MB of
+    file would hold that many) read in well under the seconds a search per entry takes (70 s at this size) */
+ {P.wipe();const A0=P.boot();const N=60000,mk=(tag)=>items(...Array.from({length:N},(_,i)=>entry("2026-01-01T00:00:00."+String(i).padStart(6,"0")+"Z",{t:tag+i})));
+  const file=FM+MODE+REC+rec("m",fence("booklet entries e",mk("a")),fence("booklet entries e",mk("b")))+"%%\n";
+  const t0=Date.now(),R=A0.parseFile(file),ms=Date.now()-t0,got=(R.S.entries||{})["m/e"]||[];
+  chk("B1c: 60,000 entries in each of two blocks are read as 60,000, the later block's values winning, in under 5 s ("+ms+" ms)",R.ok&&got.length===N&&got[N-1].t==="b"+(N-1)&&ms<5000,String(ms)+" "+got.length);
+  /* joinRecords merges through the same function */
+  const L=[];A0.mergeEntries(L,[{ts:"1",t:"kept",u:"x"}]);A0.mergeEntries(L,[{ts:"1",t:"mine"},{ts:"2",t:"new"}]);
+  chk("B1c: mergeEntries (the parser's and joinRecords' one rule) matches by ts, the later winning per key",JSON.stringify(L)==='[{"ts":"1","t":"mine","u":"x"},{"ts":"2","t":"new"}]',JSON.stringify(L));}
  {/* the flow that lost data: a broken block is kept, a new entry is added beside it, the reader fixes the comma by hand, the next load and save keep both */
   const broken=items(entry("2026-01-01T10:00:00Z",{t:"old entry 1"}),entry("2026-01-02T10:00:00Z",{t:"old entry 2"})).replace(/\n\]\}$/,",\n]}");
   const A=load(FM+MODE+REC+rec("m",fence("booklet entries e",broken))+"%%\n");
