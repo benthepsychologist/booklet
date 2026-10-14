@@ -338,7 +338,8 @@ for each booklet, `booklet.base.<id>` for a store booklet's base (the records
 last read from or saved to its file, which tell what changed on each side), and
 `booklet.ui.*` for the reader's preferences. Two of them, the theme and the
 reader's yes to a host (`booklet.host.allowed`), are mirrored in local storage
-for the read made before the store is read. The keys live in one IndexedDB
+for the read made before the store is read, and a count there, `booklet.tick`,
+tells another tab showing "Your booklets" that the list changed. The keys live in one IndexedDB
 database whose name is fixed, `booklet` (no setting names it), and when the page
 starts it lists local storage once, through `key()` and `length`, to move the
 keys an earlier release left there.

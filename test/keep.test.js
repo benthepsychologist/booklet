@@ -17,7 +17,8 @@ const section=t=>console.log("\n"+t);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const LS=global.__ls;
 const SEED=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"seeds","ls-"+n+".json"),"utf8"));
-const lsKeys=()=>Object.keys(LS).filter(k=>k.startsWith("booklet.")).sort();
+/* the renderer's keys in local storage, but its list count (booklet.tick: a number, checked on its own below) */
+const lsKeys=()=>Object.keys(LS).filter(k=>k.startsWith("booklet.")&&k!=="booklet.tick").sort();
 let IDB=null;
 /* a fresh browser: no local storage, an empty IndexedDB */
 function fresh(){if(IDB) IDB.ctl.kill();P.wipe();IDB=makeIDB();global.indexedDB=IDB.indexedDB;}
@@ -52,7 +53,7 @@ section("IndexedDB is the store: read once at start, nothing drawn before");
  await idle(A);
  chk("the kept copy is written to IndexedDB",/typed into the store/.test(keptText(id)));
  chk("the list is kept as one record per entry under its head",IDB.kv("booklet.library.v1")&&JSON.parse(IDB.kv("booklet.library.v1")).order.join()===id&&!!IDB.kv("booklet.library.v1#"+id));
- chk("local storage holds nothing of the renderer's",lsKeys().length===0,lsKeys().join());
+ chk("local storage holds nothing of the renderer's but its list count, a number",lsKeys().length===0&&/^\d+$/.test(LS["booklet.tick"]||""),lsKeys().join());
  const B=reload();await started(B);
  chk("after a reload the list holds the booklet",listIds(B).join()===id);
  await B.openFromList(id);
@@ -342,6 +343,16 @@ section("a failed write the page-hide hand-over carries is not written twice");
  const puts=IDB.log.slice(mark).filter(e=>e.put==="booklet.b."+x&&e.store==="kv").length;
  chk("the copy is in the store, from the hand-over",/"q":"carried"/.test(keptText(x)));
  chk("and it was written twice in all (the failed transaction, the hand-over), not a third time after",puts===2,puts+" writes");}
+
+section("the list's change count in local storage (booklet.tick)");
+{fresh();const A=P.boot();await started(A);A.loadText(BARE("Counted"));const id=A.currentId;await idle(A);A.closeBooklet();await idle(A);
+ const t1=Number(LS["booklet.tick"]);
+ A.lsSet("booklet.ui.pagesMenu","open");await idle(A);
+ chk("a landed write that touches the list raises the count; one that does not leaves it",t1>0&&Number(LS["booklet.tick"])===t1,LS["booklet.tick"]);
+ A.renameStored(id,"Counted, renamed");await idle(A);
+ chk("a rename (a list write) raises it by one, and it holds a number and nothing else",LS["booklet.tick"]===String(t1+1));
+ const B=reload();await started(B);await idle(B);
+ chk("the move never takes it, and the store never holds it",LS["booklet.tick"]===String(t1+1)&&IDB.kv("booklet.tick")===undefined);}
 
 section("a host before the store is read; the mirrors");
 {fresh();P.place("http:","fleet");LS["booklet.host.allowed"]="fleet: store";

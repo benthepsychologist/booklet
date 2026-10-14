@@ -19,6 +19,8 @@
 //    entry for the booklet;
 // 11 after the move, a visit with IndexedDB refused, or not answering (Safari's first-open hang), shows the reason on
 //    an empty "Your booklets";
+// 12 two windows on "Your booklets": a booklet added in one shows in the other at once, with no focus change (the count
+//    in local storage, booklet.tick, and the storage event);
 // and every request is a GET for the page itself or its store, with zero CSP violations and page errors.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/keep-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
@@ -87,7 +89,8 @@ const SEED=n=>JSON.parse(fs.readFileSync(path.join(__dirname,'seeds','ls-'+n+'.j
     await p.waitForFunction(n=>document.getElementById('pasteIn').value.length>=n,text.length-10,{timeout:20000});
     await p.locator('#loadGo').click();await p.waitForTimeout(1500);};
   const copies=K=>Object.keys(K).filter(k=>/^booklet\.b\./.test(k));
-  const lsKeys=p=>p.evaluate(()=>Object.keys(localStorage).filter(k=>/^booklet\./.test(k)).sort());
+  /* the renderer's keys in local storage, but its list count (booklet.tick, a number: section 12) */
+  const lsKeys=p=>p.evaluate(()=>Object.keys(localStorage).filter(k=>/^booklet\./.test(k)&&k!=='booklet.tick').sort());
 
   // 1 a 10 MB booklet with an answer, kept and found whole after a reload
   {const ctx=await context(),p=await page(ctx,PAGE+'/app/');
@@ -253,6 +256,14 @@ const SEED=n=>JSON.parse(fs.readFileSync(path.join(__dirname,'seeds','ls-'+n+'.j
     ok(!/Kept before/.test(w)&&(how==='refused'?/would not open its larger store/.test(w)&&/not shown/.test(w):/could not be read this time/.test(w)&&/Reload the page/.test(w)),
       'after the move, IndexedDB '+how+': the empty list says why'+(how==='refused'?'':', and that a reload brings them back'));
     await ctx.close();}
+
+  // 12 two windows: the other's list shows a new booklet at once
+  {const ctx=await context(),a=await page(ctx,PAGE+'/app/'),bb=await page(ctx,PAGE+'/app/');
+   await bb.evaluate(()=>{window.__focus=0;window.addEventListener('focus',()=>{window.__focus++;});});
+   await loadFile(a,FM('test/seen','Seen at once')+'> [!activity|a] A\n\n> [!text|q] Q\n');await bb.waitForTimeout(800);
+   const st=await bb.evaluate(()=>({vis:document.visibilityState,focus:window.__focus}));
+   ok(/Seen at once/.test(await main(bb))&&st.focus===0,'two windows: a booklet added in one shows in the other\'s visible list at once, with no focus change: '+JSON.stringify(st));
+   for(const x of [a,bb]) await done(x);await ctx.close();}
 
   const net=reqs.filter(r=>/^https?:/i.test(r.url));
   ok(net.length>0&&net.every(r=>r.method==='GET'&&!r.body&&new URL(r.url).origin===PAGE),'every request is a GET for the page itself or its store: '+[...new Set(net.map(r=>r.method+' '+new URL(r.url).pathname))].join(', '));

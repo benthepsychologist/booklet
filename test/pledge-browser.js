@@ -229,7 +229,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   const ck=await ctx.cookies();const dc=await p.evaluate(()=>document.cookie);
   ok(ck.length===0&&dc==='','nothing was written to cookies ('+ck.length+' cookies; document.cookie "'+dc+'")');
   const keys=await p.evaluate(()=>Object.keys(localStorage));
-  ok(keys.every(k=>/^booklet\./.test(k)),'localStorage holds only the renderer\'s own keys (since 0.13.1 at most its two mirrors): '+keys.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));
+  ok(keys.every(k=>/^booklet\./.test(k)),'localStorage holds only the renderer\'s own keys (since 0.13.1 at most its two mirrors and its count, booklet.tick): '+keys.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));
   {const dbs=await p.evaluate(async()=>indexedDB.databases?(await indexedDB.databases()).map(d=>d.name):['(no databases() to list them)']);
    const K=Object.keys(await kept(p));
    ok(dbs.join()==='booklet'&&K.length>0&&K.every(k=>/^booklet\./.test(k)),'IndexedDB holds only the renderer\'s own database, `booklet`, with only its own keys: '+dbs.join()+' / '+K.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-IRr6EODiX0xsYEXlA6s5vwPDASar1X2y0VjBMhRdpCQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-2UoA+dRN6K/JnOtKhhDFEpUpkG4uhqZ2UxR9kZKbkHs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2730,6 +2730,12 @@ try{void localStorage.length;localStorage.getItem(LIB_KEY);}catch(e){lsRead=fals
 /* what local storage would not take, in mode "ls", kept for the visit */
 const MEM={};
 const KEEP_DB="booklet",KEEP_KV="kv",KEEP_STAMP="stamp",THEME_KEY="booklet.ui.theme",LIB_REC="#";
+/* A count in local storage, raised after a write that touched the list has landed, so that another tab showing "Your
+   booklets" hears of it through the storage event and reads the store again at once (local storage tells other tabs of
+   a change; IndexedDB tells no one). It holds a number and nothing else, and is not one of the keys the move takes
+   (KEPT_KEY). */
+const TICK_KEY="booklet.tick";
+const keepTick=()=>{try{localStorage.setItem(TICK_KEY,String((Number(lsRaw(TICK_KEY))||0)+1));}catch(e){/* local storage refused: other tabs hear at focus */}};
 /* in the store only: what was copied from local storage, key to fingerprint (keepAdopt) */
 const KEEP_MOVED="booklet.moved.v1";
 /* how long opening the store may take before the page gives up on it and uses local storage */
@@ -2866,6 +2872,7 @@ function keepDone(t,err){if(t.done) return;t.done=true;KEEP.inflight=KEEP.inflig
       if(!KEEP.inflight.length&&[...KEEP.pending.values()].some(o=>o.seq>top)) keepFlush();}
     return;}
   t.ops.forEach(([k,o])=>{KEEP.failed.delete(k);if(o.v===null) KEEP.stamps.delete(k);else KEEP.stamps.set(k,t.stamp);});
+  if(t.ops.some(([k])=>k===LIB_KEY||isLibRec(k))) keepTick();
   if(!KEEP.failed.size&&(KEEP.problem==="full"||KEEP.problem==="failed")) KEEP.problem="";
   keepLeft();
   if(KEEP.pending.size&&!KEEP.inflight.length) keepFlush();}
@@ -8353,9 +8360,12 @@ function bootPage(){bootLibrary();render();
   window.addEventListener("hashchange",()=>{openLink(location.hash);});
   const t=keepNotice();if(t) setTimeout(()=>toast(t),400);}
 keepStart(bootPage);
-/* another tab added or removed a booklet: the list redraws (local storage tells this page; with IndexedDB, the page
-   reads the store again when it comes back into view or focus: keepRefresh) */
-window.addEventListener("storage",e=>{if(screen===LIB_SCREEN&&(!e||!e.key||String(e.key).endsWith(LIB_KEY))) render();});
+/* another tab added or removed a booklet: the list redraws (local storage tells this page; with IndexedDB, its count
+   does, TICK_KEY, and a page that is in view showing "Your booklets" reads the store again at once; any other waits until
+   it comes back into view or focus: keepRefresh) */
+window.addEventListener("storage",e=>{
+  if(e&&e.key===TICK_KEY){if(KEEP.mode==="idb"&&screen===LIB_SCREEN&&!(typeof document!=="undefined"&&document.visibilityState==="hidden")) keepRefresh();return;}
+  if(screen===LIB_SCREEN&&(!e||!e.key||String(e.key).endsWith(LIB_KEY))) render();});
 window.addEventListener("focus",()=>{keepRefresh();});
 window.addEventListener("pageshow",e=>{if(e&&e.persisted) keepRefresh();});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible") keepRefresh();});
