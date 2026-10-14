@@ -22,9 +22,9 @@ What a booklet line says is drawn the way the prose around it is, a booklet's ow
 - Tests: `test/drawing.test.js` (the recording DOM), `test/drawing-browser.js` (MathML, the stepper, the wiki, the opening, a card's link), `test/libwake-browser.js` (serves the page in slow chunks and opens a booklet with a formula and a diagram by link; it fails on 0.13.0 before this change); `pagename`, `dataviews`, `lint`, `guard` and `svg-sanitize` follow the new rules.
 - Size: `booklet.html` 3,714,908 bytes (main is 3,706,356): the hand-written part grew by 8,552 bytes, the libraries are untouched.
 
-## Store booklets open from the store (renderer, 2026-10-13/14; on branch `fix/store-links-open-the-store-file`, not merged)
+## Store booklets open from the store (renderer, 2026-10-13/14; branch `fix/store-links-open-the-store-file`, in a pull request to main)
 
-For a store booklet (`from: store:<name>`) the store's file is the truth, and what the browser keeps of it is only a buffer for work the store may not have yet.
+For a store booklet (`from: store:<name>`) the store's file is the truth, and what the browser keeps of it is only a buffer for work the store may not have yet. `CHANGES.md` lists what a host or a reader will notice (under "Changes from v0.12").
 
 - **Listed at once, as a pointer.** It joins "Your booklets" as soon as it is read, with no kept copy of its content (`notePointer`), on a page that declares a store. A kept copy (`booklet.b.<id>`) appears only once the reader changes something.
 - **A base for each kept copy** (fourth round): beside `booklet.b.<id>`, `booklet.base.<id>` holds the records (answers, entries, drafts; never the body) of the file text the copy is based on: the file it last drew or read, or the text the host last confirmed with `saved(change)` for the latest change sent for that booklet (`hostAnswered`, which works for a booklet no longer open). For the 3.4 MB dashboard it is the size of the reader's records: 92 characters for one answer of a sentence, against 6.8 million for the kept copy.
