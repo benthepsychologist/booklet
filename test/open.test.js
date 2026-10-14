@@ -30,7 +30,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
 /* ---- the file and its parts ---- */
 {const A=P.boot(),R=A.parseFile(OPEN);
  chk("the open-question fixture parses with nothing reported",R.ok&&R.unread.length===0&&R.refused.length===0,JSON.stringify(R.unread));
- const bs=R.template.modules[0].activities.flatMap(a=>a.blocks).filter(b=>b.options);
+ const bs=R.template.modules[0].activities.flatMap(a=>a.pages.flatMap(p=>p.blocks)).filter(b=>b.options);
  chk("`open` is kept on the two questions that say it, and only on those",
    bs.filter(b=>b.open).map(b=>b.id).join()==="noticed,weather",bs.map(b=>b.id+":"+b.open).join());
  chk("a choice with a [x] has its answer as a position; a multi with two has two",
@@ -60,7 +60,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("the remove control takes the own option out",JSON.stringify(answer(A,"noticed"))==='[3,"Spiders"]',JSON.stringify(answer(A,"noticed")));
  click(byWords(b,"Bees"));b=box(A,"What did you notice");
  chk("a listed option still unpresses as before",JSON.stringify(answer(A,"noticed"))==='["Spiders"]');
- chk("nothing is written into the file's option list",A.BOOK.modules[0].activities[0].blocks.find(x=>x.id==="noticed").options.join()==="Birds,Fresh soil,Bees");
+ chk("nothing is written into the file's option list",A.BOOK.modules[0].activities[0].pages[0].blocks.find(x=>x.id==="noticed").options.join()==="Birds,Fresh soil,Bees");
  /* a choice: one answer, a position or the reader's own string */
  let w=box(A,"How was the weather");
  click(byWords(w,"Windy"));addOwn(box(A,"How was the weather"),"Misty");w=box(A,"How was the weather");
@@ -83,7 +83,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("an offered one carries no remove control",byClass(b,"pill-own").length===0);
  click(byWords(b,"Frogs"));b=box(A,"What did you notice");
  chk("pressing an offered one stores its string, and it becomes the pressed own pill",JSON.stringify(answer(A,"noticed"))==='["Frogs"]'&&byClass(b,"pill-own").length===1&&!byWords(b,"Frogs"),JSON.stringify(answer(A,"noticed")));
- const blk=A.BOOK.modules[0].activities[0].blocks.find(x=>x.id==="noticed");
+ const blk=A.BOOK.modules[0].activities[0].pages[0].blocks.find(x=>x.id==="noticed");
  const sum=A.fieldSummary(blk,kept);
  chk("an entry's summary shows the own options as their text",sum&&sum[1]==="Birds, Moths, Frogs",JSON.stringify(sum));
  A.screen="garden-notes/walk";A.render();
@@ -209,7 +209,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
 /* ---- A4: an unknown kind ---- */
 {const A=P.boot();
  const R=A.parseFile(read("problems-reported.booklet.md"));
- const blocks=R.template.modules[0].activities.flatMap(a=>a.blocks||[]);
+ const blocks=R.template.modules[0].activities.flatMap(a=>a.pages.flatMap(p=>p.blocks));
  const c=blocks.find(b=>b.type==="callout"&&b.kind==="sticker");
  chk("a line with an id whose kind is not defined is drawn as a callout, marked unknown, and reported",!!c&&c.unknown===true&&R.unread.some(x=>/does not know the kind “sticker”/.test(x)));
  const plain=blocks.find(b=>b.type==="callout"&&b.kind==="note");
@@ -228,7 +228,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  chk("KIND_SETTINGS is the table of SPEC.md section 4",JSON.stringify(A.KIND_SETTINGS)===JSON.stringify({module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:"],row:["end"],text:["long"],
    lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]}));
  const mk=body=>A.parseFile("---\nbooklet: \"0.13\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n"+body+"\n");
- const q=(R,id)=>R.template.modules[0].mode.blocks.find(b=>b.id===id);
+ const q=(R,id)=>R.template.modules[0].activities[0].pages[0].blocks.find(b=>b.id===id);
  let R=mk("> [!number|n mx:5 min:1] N");
  chk("an unknown setting is reported and ignored (`mx:5` for `max:5`)",R.unread.length===1&&/a number line takes no “mx:”/.test(R.unread[0])&&q(R,"n").max===undefined&&q(R,"n").min===1,JSON.stringify(R.unread));
  R=mk("> [!text|t lng] T");chk("an unknown flag is reported and ignored",R.unread.length===1&&/a text line takes no “lng”/.test(R.unread[0])&&q(R,"t").rows===undefined);
@@ -238,14 +238,14 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  R=mk("> [!number|n MIN:2 Max:9 STEP:0.5] N\n\n> [!TEXT|t LONG] T");
  chk("kinds, settings and flags are read without regard to case",R.unread.length===0&&q(R,"n").min===2&&q(R,"n").max===9&&q(R,"n").step===0.5&&q(R,"t").rows===6,JSON.stringify(R.unread));
  R=A.parseFile("---\nbooklet: \"0.13\"\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n\n> [!activity|b Repeat DAILY] B\n");
- const acts=R.template.modules.map(m=>m.mode);
+ const acts=R.template.modules.map(m=>m.activities[0]);
  chk("`daily` without `repeat` is reported and ignored; `repeat daily` is fine",R.unread.length===1&&acts[0].kind==="board"&&acts[0].upsert===undefined&&acts[1].kind==="entry"&&acts[1].upsert==="day",JSON.stringify(R.unread));
- chk("an id keeps its case",A.parseFile("---\nbooklet: \"0.13\"\ntitle: T\nlang: en\n---\n\n> [!activity|MixedCase] A\n").template.modules[0].mode.id==="MixedCase");}
+ chk("an id keeps its case",A.parseFile("---\nbooklet: \"0.13\"\ntitle: T\nlang: en\n---\n\n> [!activity|MixedCase] A\n").template.modules[0].activities[0].id==="MixedCase");}
 
 /* ---- A6: the small fixes ---- */
 {const A=P.boot();
  const mk=q=>A.parseFile("---\nbooklet: \"0.13\"\ntitle: T\nlang: en\n---\n\n> [!activity|a repeat] A\n\n> [!text|t] T\n\n> [!activity|b] B\n\n```booklet query\n"+q+"\n```\n");
- const view=R=>R.template.modules.flatMap(m=>m.activities||[m.mode]).flatMap(a=>a.blocks).find(b=>b.type==="query");
+ const view=R=>R.template.modules.flatMap(m=>m.activities).flatMap(a=>a.pages.flatMap(p=>p.blocks)).find(b=>b.type==="query");
  let R=mk("from: a\nlimit: 0");chk("`limit: 0` is reported and means no limit is set",R.unread.length===1&&/not a positive whole number/.test(R.unread[0])&&view(R).view.limit===undefined,JSON.stringify(R.unread));
  R=mk("from: a\nlimit: 2.5");chk("`limit: 2.5` too",R.unread.length===1&&view(R).view.limit===undefined);
  R=mk("from: a\nlimit: 3");chk("a positive whole number is applied",R.unread.length===0&&view(R).view.limit===3);

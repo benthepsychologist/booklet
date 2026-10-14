@@ -16,7 +16,7 @@ const texts=P.texts,find=P.find,hasClass=P.hasClass;
  {const R=A.parseFile(WITH),m=R.template.modules[0];
   chk("a notice callout inside the fence is read into the module: four values, as written",R.ok&&R.unread.length===0&&JSON.stringify(m.notice)===JSON.stringify({license:"Free to copy and share, unmodified and with this notice intact.",copyright:"Example Press, 2026",source:"https://example.org/check-in",version:"1.2"}),JSON.stringify([R.unread,m.notice]));
   chk("the callout is part of the source text, byte for byte",R.template.raw.source.includes(NOTE));
-  chk("it is not drawn as reading in the activity",!JSON.stringify(m.mode).includes("license"));}
+  chk("it is not drawn as reading in the activity",!JSON.stringify(m.activities).includes("license"));}
  {const R=A.parseFile(FM()+mod1("m",`> [!notice]\n> license: Free to copy.\n> copyright:\n> source: https://example.org\n`)),n=R.template.modules[0].notice;
   chk("a key may be left out, or left empty",JSON.stringify(n)===JSON.stringify({license:"Free to copy.",source:"https://example.org"}),JSON.stringify(n));}
  {const R=A.parseFile(FM()+mod1("m","> [!notice]\n> LICENSE: Case is not read\n> author: Someone\n> free words\n"));

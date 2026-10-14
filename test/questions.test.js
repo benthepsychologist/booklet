@@ -30,8 +30,8 @@ const BOOK=FM+`> [!module|qm] Menus and matrix
 
 > [!module|qm end] End
 `;
-const acts=R=>R.template.modules[0].mode||R.template.modules[0].activities[0];
-const blocks=R=>acts(R).blocks;
+const acts=R=>R.template.modules[0].activities[0];
+const blocks=R=>acts(R).pages[0].blocks;
 
 /* ---- one list of question kinds: the parser, the answer summary and the drawing each have an entry per kind ---- */
 {const A=P.boot(),kinds=[...A.QUESTION_KINDS].sort(),keys=o=>Object.keys(o).sort();
@@ -59,23 +59,23 @@ const blocks=R=>acts(R).blocks;
  /* lookup: a menu is found anywhere in the file; its id is unique */
  const two=FM+`> [!module|m1] One\n\n> [!menu|opts]\n- A1\n- A2\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!menu|opts]\n- B1\n- B2\n- B3\n\n> [!activity|a2] A\n\n> [!choice|q2 menu:opts] Q\n\n> [!module|m2 end] End\n`;
  const R2=A.parseFile(two);
- const opt=id=>R2.template.modules.flatMap(m=>m.mode?[m.mode]:m.activities).flatMap(a=>a.blocks).find(b=>b.id===id).options.join();
+ const opt=id=>R2.template.modules.flatMap(m=>m.activities).flatMap(a=>a.pages.flatMap(p=>p.blocks)).find(b=>b.id===id).options.join();
  chk("two modules may each have a menu with the same id: nothing is refused and each question takes its own module's",R2.ok&&R2.refused.length===0&&opt("q1")==="A1,A2"&&opt("q2")==="B1,B2,B3",JSON.stringify([R2.refused,opt("q1"),opt("q2")]));
  const twin=A.parseFile(FM+`> [!module|m1] One\n\n> [!menu|opts]\n- A1\n\n> [!menu|opts]\n- A2\n\n> [!activity|a1] A\n\n> [!module|m1 end] End\n`);
  chk("two menus with the same id in one module are refused, like any id used twice",twin.ok===false&&twin.refused.length===1&&/“opts” is used twice/.test(twin.refused[0]),JSON.stringify(twin.refused));
  const mine=A.parseFile(FM+`> [!module|m1] One\n\n> [!menu|opts]\n- M1\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|a2] A\n\n> [!choice|q2 menu:opts] Q\n\n> [!module|m2 end] End\n`);
- chk("a module never reads another module's menu: the menu is reported missing there",mine.unread.some(x=>/menu “opts” is not in this file/.test(x))&&!mine.template.modules.some(m=>m.id==="m2"&&(m.mode.blocks||[]).some(b=>b.id==="q2")),JSON.stringify(mine.unread));
+ chk("a module never reads another module's menu: the menu is reported missing there",mine.unread.some(x=>/menu “opts” is not in this file/.test(x))&&!mine.template.modules.some(m=>m.id==="m2"&&(m.activities[0].pages[0].blocks||[]).some(b=>b.id==="q2")),JSON.stringify(mine.unread));
  const first=A.parseFile(FM+`> [!module|m1] One\n\n> [!menu|opts]\n- M1\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!data] Data\n\n> [!menu|opts]\n- D1\n`);
- chk("a module's own menu wins over the data section's of the same id",first.template.modules[0].mode.blocks[0].options.join()==="M1",JSON.stringify(first.unread));
+ chk("a module's own menu wins over the data section's of the same id",first.template.modules[0].activities[0].pages[0].blocks[0].options.join()==="M1",JSON.stringify(first.unread));
  const out=FM+`> [!module|m1] One\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n\n> [!module|m1 end] End\n\n> [!data] Data\n\n> [!menu|opts]\n- D1\n- D2\n`;
  const R3=A.parseFile(out);
- chk("a menu outside the module fence (the data section) is found",R3.unread.length===0&&R3.template.modules[0].mode.blocks[0].options.join()==="D1,D2",JSON.stringify(R3.unread));
+ chk("a menu outside the module fence (the data section) is found",R3.unread.length===0&&R3.template.modules[0].activities[0].pages[0].blocks[0].options.join()==="D1,D2",JSON.stringify(R3.unread));
  const none=A.parseFile(FM+`> [!module|m1] One\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:nowhere] Q\n\n> [!text|t] T\n\n> [!module|m1 end] End\n`);
- chk("a menu question naming no menu is reported and not drawn; the rest still opens",none.ok&&none.unread.some(x=>/menu “nowhere” is not in this file/.test(x))&&none.template.modules[0].mode.blocks.map(b=>b.id).join()==="t",JSON.stringify(none.unread));
+ chk("a menu question naming no menu is reported and not drawn; the rest still opens",none.ok&&none.unread.some(x=>/menu “nowhere” is not in this file/.test(x))&&none.template.modules[0].activities[0].pages[0].blocks.map(b=>b.id).join()==="t",JSON.stringify(none.unread));
  const own=A.parseFile(FM+`> [!module|m1] One\n\n> [!menu|opts]\n- M1\n\n> [!activity|a1] A\n\n> [!choice|q1 menu:opts] Q\n- [ ] Own1\n- [ ] Own2\n\n> [!module|m1 end] End\n`);
- chk("a question with its own list keeps it",own.template.modules[0].mode.blocks[0].options.join()==="Own1,Own2");
+ chk("a question with its own list keeps it",own.template.modules[0].activities[0].pages[0].blocks[0].options.join()==="Own1,Own2");
  const bare=A.parseFile(FM+`> [!menu|f]\n- Calm\n- Tired\n\n> [!multi|m menu:f] How?\n`);
- chk("a file with no module fence uses menus too",bare.ok&&bare.unread.length===0&&bare.template.modules[0].mode.blocks[0].options.join()==="Calm,Tired",JSON.stringify(bare.unread));
+ chk("a file with no module fence uses menus too",bare.ok&&bare.unread.length===0&&bare.template.modules[0].activities[0].pages[0].blocks[0].options.join()==="Calm,Tired",JSON.stringify(bare.unread));
  const nomx=A.parseFile(FM+`> [!matrix|x] X\n\n- a\n- b\n`);
  chk("a matrix with no anchors is reported",nomx.unread.some(x=>/no anchors/.test(x)),JSON.stringify(nomx.unread));
  const noit=A.parseFile(FM+`> [!matrix|x] X\n\n0. a\n1. b\n`);

@@ -15,17 +15,17 @@ chk("two activities: the reading and the check",acts.map(x=>x.id).join()==="tide
 const rd=acts.find(x=>x.id==="tides/rd-tides"),chk_=acts.find(x=>x.id==="tides/rd-check");
 chk("the reading activity has two pages, split by the thematic break",rd.pages&&rd.pages.length===2,JSON.stringify(rd.pages&&rd.pages.map(p=>p.id)));
 chk("the second page's title comes from its own heading",rd.pages[1].title==="Spring and neap",rd.pages[1].title);
-chk("the check activity is its own, single-page activity, written as blocks",Array.isArray(chk_.blocks),JSON.stringify(chk_));
+chk("the check activity is its own, single-page activity: one page",chk_.pages.length===1,JSON.stringify(chk_));
 const p1=rd.pages[0].blocks;
 chk("the reading paragraph carries the citation mark",/\[\^atlas-12\]/.test(p1[0].text));
 chk("math is left as written, for the drawer to typeset",/\$R = h_\{high\}/.test(p1[0].text));
 chk("the diff callout is its own block",p1[1].type==="callout"&&p1[1].kind==="diff",JSON.stringify(p1[1]));
-const p2=chk_.blocks;
+const p2=chk_.pages[0].blocks;
 const choice=p2.find(b=>b.id==="biggest");
 chk("the choice question has its two options",JSON.stringify(choice.options)===JSON.stringify(["At the quarter moons","Near the new and the full moon"]));
 chk("the correct option is the second, from its [x]",choice.answer===2,choice.answer);
-const hint=p2.find(b=>b.id==="biggest-hint");
-chk("its hint is folded under it",hint&&hint.placement==="folded",JSON.stringify(hint));
+const hint=choice.hint;
+chk("its hint is folded under it: the question's own",!!hint&&hint.placement==="folded"&&hint.kind==="hint"&&!p2.some(b=>b.type==="callout"&&b.kind==="hint"),JSON.stringify(hint));
 const scale=p2.find(b=>b.id==="confidence");
 chk("the scale question has its three anchors, numbered from the file",JSON.stringify(scale.anchors)===JSON.stringify([{n:1,text:"Guessing"},{n:2,text:"Fairly sure"},{n:3,text:"Certain"}]));
 

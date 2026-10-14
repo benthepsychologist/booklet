@@ -155,7 +155,7 @@ const FM='---\nbooklet: "0.13"\nid: t/theme\ntitle: Theme\nlang: en\n---\n\n';
 const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\n';
 {const r=A.parseFile(FM+THEME+"\n> [!activity|a] A\n\nBody.\n");
  chk("a theme block is read into the template and drawn nowhere",r.ok&&r.template.theme&&r.template.theme.base==="night"&&r.template.theme.accent==="#8fd0d4"
-   &&r.template.modules[0].mode.blocks.every(b=>b.type==="markdown"&&!/theme/.test(b.text)),JSON.stringify(r.template.theme)+JSON.stringify(r.unread));
+   &&r.template.modules[0].activities[0].pages[0].blocks.every(b=>b.type==="markdown"&&!/theme/.test(b.text)),JSON.stringify(r.template.theme)+JSON.stringify(r.unread));
  const two=A.parseFile(FM+THEME+"\n"+THEME.replace("night","paper")+"\n> [!activity|a] A\n\nBody.\n");
  chk("a second theme block is ignored and reported",two.template.theme.base==="night"&&two.unread.some(x=>/one theme block/.test(x)),JSON.stringify(two.unread));
  const inMod=A.parseFile(FM+"> [!module|m] M\n\n"+THEME+"\n> [!activity|a] A\n\nBody.\n\n> [!module|m end] End\n");
@@ -217,18 +217,21 @@ const THEME='```booklet theme\nbase: night\naccent: "#8fd0d4"\nfont: serif\n```\
 
 /* ---------------- 4. rows ---------------- */
 const ROWFM=FM+"> [!activity|a] A\n\n";
-const shape=a=>a.blocks.map(b=>b.type==="row"?"row["+b.blocks.map(c=>c.blocks.map(x=>x.type==="markdown"?"md":x.type).join("+")).join("|")+"]":b.type).join(",");
-const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mode};};
+const shape=a=>a.pages[0].blocks.map(b=>b.type==="row"?"row["+b.blocks.map(c=>c.blocks.map(x=>x.type==="markdown"?"md":x.type).join("+")).join("|")+"]":b.type).join(",");
+const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].activities[0]};};
 {let x=mode("> [!row]\n\n### One\n\nText one.\n\n### Two\n\nText two.\n\n> [!row|end]\n");
  chk("each heading at the shallowest level starts a cell",x.r.ok&&shape(x.a)==="row[md|md]"&&x.r.unread.length===0,shape(x.a)+JSON.stringify(x.r.unread));
  x=mode("> [!row]\n\nLead words.\n\n## One\n\nA\n\n#### Deeper\n\nstays in One\n\n## Two\n\nB\n\n> [!row|end]\n");
- chk("what comes before the first heading is a cell of its own, and a deeper heading stays inside its cell",shape(x.a)==="row[md|md|md]"&&/Deeper/.test(x.a.blocks[0].blocks[1].blocks[0].text),shape(x.a));
+ chk("what comes before the first heading is a cell of its own, and a deeper heading stays inside its cell",shape(x.a)==="row[md|md|md]"&&/Deeper/.test(x.a.pages[0].blocks[0].blocks[1].blocks[0].text),shape(x.a));
  x=mode("> [!row]\n\nFirst paragraph.\n\nSecond paragraph.\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n> [!row|end]\n");
  chk("with no headings each block is a cell",shape(x.a)==="row[md|md|md]",shape(x.a));
  x=mode("> [!row]\n\n### Ask\n\n> [!text|q1] Q?\n\n> [!hint]- Hint\n> a hint\n\n### Other\n\nx\n\n> [!row|end]\n");
- chk("a question and its hint stay in one cell",shape(x.a)==="row[md+text+callout|md]",shape(x.a));
+ const cellQ=a=>a.pages[0].blocks[0].blocks.flatMap(c=>c.blocks).find(b=>b.type==="text");
+ chk("a question and its hint stay in one cell: the hint is the question's own",shape(x.a)==="row[md+text|md]"&&!!cellQ(x.a).hint,shape(x.a));
  x=mode("> [!row]\n\n> [!text|q1] Q?\n\n> [!hint]- Hint\n> a hint\n\n> [!text|q2] R?\n\n> [!row|end]\n");
- chk("and with no headings a hint stays with its question",shape(x.a)==="row[text+callout|text]",shape(x.a));
+ chk("and with no headings a hint stays with its question",shape(x.a)==="row[text|text]"&&!!cellQ(x.a).hint,shape(x.a));
+ x=mode("> [!row]\n\n> [!text|q1] Q?\n\n> [!hint] Hint\n> a hint\n\n> [!text|q2] R?\n\n> [!row|end]\n");
+ chk("and one not folded, drawn where it stands, stays in its question's cell",shape(x.a)==="row[text+callout|text]"&&!cellQ(x.a).hint,shape(x.a));
  x=mode("> [!row]\n\n### A\n\n```python\n# not a heading\nprint(1)\n```\n\n### B\n\nx\n\n> [!row|end]\n");
  chk("a # line inside a code fence is not a heading",shape(x.a)==="row[md|md]",shape(x.a));
  x=mode("Before.\n\n> [!row]\n\n### A\n\nx\n\n### B\n\ny\n\n> [!row|end]\n\nAfter.\n");
@@ -256,7 +259,7 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  chk("the answers are written under the booklet's record, not inside the row",/booklet answers\n\{[^}]*"mood": 2[^}]*"note": "Cut the kale back"/.test(out)&&out.indexOf("booklet answers")>out.indexOf("[!row|end]"),out.slice(-500));
  A.loadText(out);
  chk("they are there again after a reload, and the rows are as they were",A.STATE.answers[""].mood===2&&A.STATE.answers[""].note==="Cut the kale back"&&shape(A.activityOf("week"))==="markdown,row[md|md],markdown,row[md|md+scale|md+text],widget",shape(A.activityOf("week")));
- chk("the question inside a cell keeps its own key",(()=>{const r=A.activityOf("week").blocks.find((b,i)=>b.type==="row"&&i>2);const q=r.blocks[1].blocks.find(x=>x.type==="scale");return q&&q.keys[0]==="mood";})());
+ chk("the question inside a cell keeps its own key",(()=>{const r=A.activityOf("week").pages[0].blocks.find((b,i)=>b.type==="row"&&i>2);const q=r.blocks[1].blocks.find(x=>x.type==="scale");return q&&q.keys[0]==="mood";})());
  chk("saved a second time, the file is identical (rows and theme write back as found)",A.toMarkdown()===out);
  /* reading mode: sections are the headings OUTSIDE rows */
  const reads=FM+"> [!activity|a] A\n\n## First\n\nOne.\n\n> [!row]\n\n### Left\n\nl\n\n### Right\n\nr\n\n> [!row|end]\n\n## Second\n\nTwo.\n";
@@ -270,12 +273,12 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].mo
  /* a link to a heading inside a row still finds its page */
  A.loadText(FM+"> [!activity|a] A\n\nGo to [[#Right side]].\n\n> [!activity|b] B\n\n> [!row]\n\n### Left side\n\nl\n\n### Right side\n\nr\n\n> [!row|end]\n");
  const mods=A.allModules();
- const hit=(()=>{for(const m of mods)for(const ac of (m.activities||[m.mode])) if(ac.blocks&&ac.blocks.some(b=>b.type==="row")) return ac.id;})();
+ const hit=(()=>{for(const m of mods)for(const ac of m.activities) if(ac.pages.length===1&&ac.pages[0].blocks.some(b=>b.type==="row")) return ac.id;})();
  chk("activity links find a heading inside a row",hit==="b");
 }
 /* a query in a row reads within its module like any other, and one whose source is a question in another cell works */
 {const x=A.parseFile(ROWFM.replace("> [!activity|a] A\n\n","> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n")+"> [!row]\n\n### Shown\n\n```booklet query\nfrom: log\n```\n\n### Missing\n\n```booklet query\nfrom: nothing\n```\n\n> [!row|end]\n");
- const row=x.template.modules.map(m=>m.mode).find(a=>a.id==="look").blocks.find(b=>b.type==="row");
+ const row=x.template.modules.map(m=>m.activities[0]).find(a=>a.id==="look").pages[0].blocks.find(b=>b.type==="row");
  chk("a query naming nothing is refused inside a row too, and the other draws",x.unread.some(r=>/nothing/.test(r))&&row.blocks[0].blocks.some(b=>b.type==="query")&&!row.blocks[1].blocks.some(b=>b.type==="query"),JSON.stringify(x.unread));
 }
 

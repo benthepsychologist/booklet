@@ -106,9 +106,10 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
 
 /* 8. a hint or solution has no teaser and is called by its name in the reader's language */
 {A.loadText(FM+"> [!activity|a] A\n\n> [!text|q] Q?\n\n> [!hint]- \n> Try the second one first.\n\n> [!solution]- The way\n> The answer is forty-two.\n\n> [!group]- Extra\n> A line of words that tells you what is inside.\n");
- const blocks=A.activityOf("a").blocks.filter(b=>b.type==="callout"&&b.placement==="folded");
+ const list=A.activityOf("a").pages[0].blocks,q=list.find(b=>b.id==="q");
+ const blocks=[q.hint,q.solution,...list.filter(b=>b.type==="callout"&&b.placement==="folded")].filter(Boolean);
  const mk=b=>A.foldedCallout(b,{},"a");
- chk("the fixture parsed to three folded callouts",blocks.length===3,blocks.map(b=>b.kind+"/"+b.id).join());
+ chk("the fixture parsed to a hint and a solution on their question, and a folded group",blocks.length===3&&blocks.every(b=>b.placement==="folded")&&blocks.map(b=>b.kind).join()==="hint,solution,group",blocks.map(b=>b.kind+"/"+b.id).join());
  const h=mk(blocks[0]),s=mk(blocks[1]),g=mk(blocks[2]);
  chk("a hint says Hint, shows no teaser, and holds its text closed",/Hint/.test(texts(find(h,n=>n.tagName==="summary")[0]))&&find(h,hasClass("cd-teaser")).length===0&&find(h,hasClass("d")).length===0&&!h.attrs.open);
  chk("a solution with its own title keeps the title and shows no teaser",/The way/.test(texts(find(s,n=>n.tagName==="summary")[0]))&&find(s,hasClass("d")).length===0&&!/forty-two/.test(texts(find(s,n=>n.tagName==="summary")[0])));
@@ -126,7 +127,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
   ["an upper-case kind","> [!activity|a] A\n\n> [!SOLUTION]-\n> SECRET-FOUR words here.\n","solution","SECRET-FOUR"]];
  for(const [name,src,kind,secret] of cases){
    A.loadText(FM+src);
-   const b=A.activityOf("a").blocks.find(x=>x.type==="callout"&&x.placement==="folded"&&/SECRET/.test(JSON.stringify(x)));
+   const b=A.activityOf("a").pages[0].blocks.find(x=>x.type==="callout"&&x.placement==="folded"&&/SECRET/.test(JSON.stringify(x)));
    chk("orphan ("+name+"): the parser kept a folded callout",!!b);
    if(!b) continue;
    chk("orphan ("+name+"): it is told to be a "+kind,A.hintKind(b)===kind,String(A.hintKind(b)));
@@ -134,7 +135,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
      const word=A.STRINGS[lang].cards[kind];
      chk("orphan ("+name+") in "+lang+": the label is the localised "+kind+" and no answer is in the closed summary",sum.trim()===word&&!sum.includes(secret)&&find(c,hasClass("d")).length===0&&!c.attrs.open,JSON.stringify(sum));}
    A.lang="en";}
- chk("an ordinary callout is not a hint",A.hintKind({kind:"note",id:"c1"})===""&&A.hintKind({kind:"",id:"q-hint"})==="hint"&&A.hintKind({kind:"",id:"q-solution"})==="solution"&&A.hintKind({kind:"",id:"c7"})==="");}
+ chk("an ordinary callout is not a hint, and only its kind says: an id is never read for it",A.hintKind({kind:"note",id:"c1"})===""&&A.hintKind({kind:"hint",id:"c2"})==="hint"&&A.hintKind({kind:"Solution",id:"c3"})==="solution"&&A.hintKind({kind:"",id:"q-hint"})===""&&A.hintKind({kind:"note",id:"q-solution"})==="");}
 
 /* 9. every new word exists in en, fr, es and es-AR */
 {const want=["hint","solution","readsN","notStarted","done","answeredOf","startedOf","activitiesN","startedN","back","next"];

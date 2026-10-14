@@ -48,7 +48,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  const FX=fs.readFileSync(P.R+"/test/fixtures/charts.booklet.md","utf8");
  const R=A.parseFile(FX);
  chk("the charts fixture parses with nothing reported wrong",R.ok&&R.unread.length===0,JSON.stringify(R.unread));
- const mod=R.template.modules[0],blocks=(mod.mode&&mod.mode.blocks)||mod.activities[0].blocks;
+ const mod=R.template.modules[0],blocks=mod.activities[0].pages[0].blocks;
  const qs=blocks.filter(b=>b.type==="query");
  chk("five queries outside the row, as bars and line",qs.map(q=>q.view.as).join()==="bars,line,line,bars,bars",qs.map(q=>q.view.as).join());
  const draw=q=>A.viewNodes(A.dataSet(q.data),{...q.view,fields:q.fields},{empty:"EMPTY"});
@@ -76,7 +76,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  /* ---- kept entries as points ---- */
  const KEEP=`---\nbooklet: "0.13"\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\nas: line\nlabel: date\nfields: hours, mood\n\`\`\`\n\n> [!module|m end] End\n`;
  {const r=A.parseFile(KEEP);chk("a line over kept entries parses clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
-  const q=r.template.modules[0].activities.find(a=>a.id==="m/look").blocks.find(b=>b.type==="query");
+  const q=r.template.modules[0].activities.find(a=>a.id==="m/look").pages[0].blocks.find(b=>b.type==="query");
   chk("it keeps `as: line`, `label: date` and the fields",q&&q.view.as==="line"&&q.view.label==="date"&&q.fields.join()==="hours,mood");}
  /* the entry rows carry `date`, and a number question's answer is a number once the set is built */
  {P.wipe();const B=P.boot();B.loadText(KEEP);

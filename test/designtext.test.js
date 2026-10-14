@@ -40,7 +40,7 @@ function agrees(A,label){A.flushSave();
  const gone=ids[1],r=A.removeModule(gone);
  chk("removed "+gone,r.ok&&!A.allModules().some(m=>m.id===gone),json(r));
  A=agrees(A,"after removing one");
- chk("renamed",A.renameBooklet("A new name")&&A.BOOK.title==="A new name"&&A.BOOK.head.title==="A new name");
+ chk("renamed",A.renameBooklet("A new name")&&A.BOOK.title==="A new name"&&!("head" in A.BOOK));
  chk("the rename gives the booklet its new title's slug as its id",A.BOOK.id==="a-new-name",A.BOOK.id);
  A=agrees(A,"after renaming");
  chk("the reader's answer outlived every step",A.answersIn("").note==="kept across every step");

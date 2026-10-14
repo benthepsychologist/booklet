@@ -100,7 +100,7 @@ const tones=n=>walk(n,x=>cls(x).some(c=>/^tone-/.test(c)));
  const KEEP=`---\nbooklet: "0.13"\ntitle: Sleep\nlang: en\n---\n\n> [!module|m] Sleep\n\n> [!activity|log repeat] Log\n\n> [!number|hours min:0 max:24] Hours slept\n\n> [!scale|mood] Mood\n1. Low\n2. Mid\n3. High\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: hours\nas: line\n\`\`\`\n\n\`\`\`booklet query\nfrom: hours\nas: bars\n\`\`\`\n\n\`\`\`booklet query\nfrom: log\nas: list\n\`\`\`\n\n> [!module|m end] End\n`;
  {const r=A.parseFile(KEEP);
   chk("a question as the source parses clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
-  const qs=r.template.modules[0].activities.find(a=>a.id==="m/look").blocks.filter(b=>b.type==="query");
+  const qs=r.template.modules[0].activities.find(a=>a.id==="m/look").pages[0].blocks.filter(b=>b.type==="query");
   chk("the parser sets the value of a query over one question to that question",qs[0].view.value==="hours"&&qs[1].view.value==="hours"&&qs[2].view.value===undefined,JSON.stringify(qs.map(q=>q.view)));}
  P.wipe();
  {const B=P.boot();await B.createBooklet();B.loadText(KEEP);

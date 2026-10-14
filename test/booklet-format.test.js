@@ -29,19 +29,19 @@ chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0]
 const m=(t.modules||[])[0]||{};
 chk("the module's blurb is its opening paragraph",m.blurb==="Body, feelings, thoughts — noticed, named, kept.",m.blurb);
 chk("the module carries its notice from the front matter of a one-module file",m.notice&&/Armstrong/.test(m.notice.copyright)&&!m.rights);
-const a=m.mode||{};
+const a=m.activities[0];
 chk("one activity, repeating, so it keeps entries",a.id==="mensio-check-in/check-in"&&a.kind==="entry",JSON.stringify({id:a.id,kind:a.kind}));
-const types=(a.blocks||[]).map(b=>b.type+":"+b.id);
+const types=a.pages.flatMap(p=>p.blocks).map(b=>b.type+":"+b.id);
 chk("its blocks, in order",JSON.stringify(types)===JSON.stringify(["markdown:md1","widget:body","widget:emotions","text:other","lines:thoughts"]),JSON.stringify(types));
-const other=(a.blocks||[]).find(b=>b.id==="other")||{};
-chk("the text question is worded by the file",other.label==="Something else"&&other.hint==="In your own words.",JSON.stringify(other));
+const other=a.pages.flatMap(p=>p.blocks).find(b=>b.id==="other")||{};
+chk("the text question is worded by the file",other.label==="Something else"&&other.help==="In your own words.",JSON.stringify(other));
 chk("a module carries no copy tables of its own",m.copy===undefined,JSON.stringify(m.copy));
 
 /* 2. widgets */
 const W=t.widgets||[];
 chk("both widgets arrive, named by their block ids",W.map(w=>w.id).join()==="body-map,quadrants",W.map(w=>w.id).join());
 chk("a widget's words are the file's own, one object, with no language key",W.every(w=>w.copy&&w.copy.h&&!w.copy.en),JSON.stringify(W.map(w=>w.copy)));
-chk("the body map block points at its data",a.blocks[1].widget==="body-map"&&a.blocks[1].skippable===undefined);
+chk("the body map block points at its data",a.pages[0].blocks[1].widget==="body-map"&&a.pages[0].blocks[1].skippable===undefined);
 
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
@@ -110,13 +110,13 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
 /* 7. settings on a callout line are written key:value */
 {const SET=`---\nbooklet: "0.13"\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
  const RS=P.boot().parseFile(SET);
- const bl=((RS.template.modules||[])[0]||{}).mode||{};
- const num=(bl.blocks||[]).find(b=>b.id==="sleep")||{};
+ const bl=RS.template.modules[0].activities[0];
+ const num=bl.pages.flatMap(p=>p.blocks).find(b=>b.id==="sleep")||{};
  chk("a number question reads min:0 max:24 step:0.5 as its bounds",num.min===0&&num.max===24&&num.step===0.5,JSON.stringify(num));
- const mu=(bl.blocks||[]).find(b=>b.id==="morning")||{};
+ const mu=bl.pages.flatMap(p=>p.blocks).find(b=>b.id==="morning")||{};
  chk("a multi with menu:feelings keeps its id and its options (a setting is not read as the id)",mu.type==="multi"&&mu.options&&mu.options.join()==="calm,tense",JSON.stringify(mu));
  const old=P.boot().parseFile(SET.replace("min:0 max:24 step:0.5","min=0 max=24"));
- const on=(((old.template.modules||[])[0]||{}).mode||{}).blocks;
+ const on=old.template.modules[0].activities[0].pages.flatMap(p=>p.blocks);
  chk("the old key=value form sets no bounds",!(on||[]).some(b=>b.min!==undefined||b.max!==undefined),JSON.stringify(on));}
 
 P.closePages();

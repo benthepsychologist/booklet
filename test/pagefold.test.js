@@ -10,7 +10,7 @@ const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!
 const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
 const A=P.boot();
 const END="\n> [!module|m end] End\n";
-const pgs=a=>a.pages||[{id:"",blocks:a.blocks}];
+const pgs=a=>a.pages;
 const isOpen=d=>d.attrs.open!=null&&d.attrs.open!=="false";
 const secs=()=>P.find(P.main(),P.hasClass("rm-sec"));
 const bars=()=>P.find(P.main(),P.hasClass("rm-bar"));

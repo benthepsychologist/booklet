@@ -31,7 +31,7 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     const sep=await p.evaluate(()=>[...document.querySelectorAll('#main details.card-compact')].filter(d=>!d.classList.contains('q-in')).map(d=>d.querySelector('summary').innerText.trim()));
     ok(sep.join()==='',`${W}px: no separate Why or Hint row: a question's hint and solution are in the question (${sep.join()})`);
     ok(await p.evaluate(()=>{const c=document.querySelector('#main .q-ctls');const k=[...c.children].map(x=>x.querySelector('summary').innerText.trim());return k.join()==='Nudge,Why'&&!c.children[0].classList.contains('sol-in');}),`${W}px: the hint control comes first, then the solution (the author's order)`);
-    ok(await p.locator('#main .sol-moved').count()===11,`${W}px: the solution blocks leave only a hidden placeholder`);
+    ok(await p.locator('#main .sol-moved').count()===0,`${W}px: the solutions and the hint are their questions' own: nothing is left where they were written`);
     ok(!/SECRET/.test(await p.locator('#main').innerText()),`${W}px: shut, no solution gives anything away`);
     const sum=sols().first().locator('summary');
     const h=await sum.evaluate(s=>s.getBoundingClientRect().height);

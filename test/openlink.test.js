@@ -70,7 +70,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
  A.loadText(booklet("Kept already"));A.flushSave();A.closeBooklet();
  const before=JSON.stringify(lib()),keys=Object.keys(global.__ls).sort().join();
  const ok=await A.openLink("#/open/reports/week.booklet.md");
- chk("a name in the store opens the booklet",ok===true&&A.currentId!==null&&A.BOOK&&/Week report/.test(JSON.stringify(A.BOOK.head||A.BOOK.title||"")));
+ chk("a name in the store opens the booklet",ok===true&&A.currentId!==null&&A.BOOK&&/Week report/.test(JSON.stringify(A.BOOK.title||"")));
  chk("exactly one request, a GET with no body, no credentials, no redirect, to the store's address",CALLS.length===1&&CALLS[0].url===STORE+"reports/week.booklet.md"&&!CALLS[0].opts.method&&!CALLS[0].opts.body&&CALLS[0].opts.credentials==="omit"&&CALLS[0].opts.redirect==="error"&&!!CALLS[0].opts.signal,JSON.stringify(CALLS));
  chk("it opens into its one activity (the v0.11 rule), like a file from disk",A.screen==="m/a",A.screen);
  chk("it is listed under Your booklets as a pointer: its name, and no copy of its content kept",lib().length===2&&lib().some(e=>e.from==="store:reports/week.booklet.md"&&/Week report/.test(JSON.stringify(e.title)))&&Object.keys(global.__ls).sort().join()===keys,JSON.stringify(lib()));
