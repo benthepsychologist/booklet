@@ -108,14 +108,14 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
   must("the kinds that take no id are found in the renderer, the linter and SPEC.md section 4",!!(nr&&np&&ns));
   must("and are the same in all three, each a kind in KIND_SETTINGS",nr&&np&&ns&&quoted(nr[1])===quoted(np[1])&&quoted(nr[1])===[...ns[1].matchAll(/`(\w+)`/g)].map(x=>x[1]).sort().join()&&quoted(nr[1]).split(",").every(k=>k in fromRenderer),
     nr&&np&&ns&&[quoted(nr[1]),quoted(np[1]),ns[1]].join(" / "));}
- // the unused card engine is gone, and no word of it is left but in the change list of SPEC.md section 14
+ // the unused card engine is gone, and no word of it is left but in the change list of CHANGES.md
  const needle="card"+"-board",gone=[];
  const walk=d=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){if(/^(\.git|node_modules|__pycache__)$/.test(e.name)) continue;
    const f=path.join(d,e.name);if(e.isDirectory()) walk(f);else if(/\.(md|html|js|py|sh|json|yml|yaml|txt)$/.test(e.name)){
-     const t=fs.readFileSync(f,"utf8");if(f.endsWith("SPEC.md")){const i=t.indexOf("### Changes from v0.7"),j=t.indexOf("### Changes from v0.6");
+     const t=fs.readFileSync(f,"utf8");if(f.endsWith("CHANGES.md")){const i=t.indexOf("## Changes from v0.7"),j=t.indexOf("## Changes from v0.6");
        if((t.slice(0,i)+t.slice(j)).includes(needle)) gone.push(f);}else if(t.includes(needle)) gone.push(f);}}};
  walk(path.join(__dirname,".."));
- must("the "+needle+" engine is mentioned nowhere in the repository outside SPEC.md's change list for v0.8",gone.length===0,gone.join(", "));
+ must("the "+needle+" engine is mentioned nowhere in the repository outside CHANGES.md's change list for v0.8",gone.length===0,gone.join(", "));
  must("and the renderer has the two engines that remain",/const ENGINES=\{"svg-regions":\{draw:svgRegions,summary:regionNames\},"grid-select":\{draw:gridSelect,summary:gridNames\}\};/.test(html));
  must("showTags is read nowhere",!/showTags/.test(html));}
 // A browser ends the main <script> at the first `</script` it meets outside "double escaped" script data. A `<!--` in the

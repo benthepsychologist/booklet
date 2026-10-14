@@ -26,8 +26,7 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
  chk("the three booklets built blind from SKILL.md have no errors",blind.length===3&&b.errors.length===0,b.errors.join(" | "));
  const reg=lint(...["module-daily-journal","module-the-day","module-check-in"].map(n=>path.join(FX,n+".md")));
  chk("the module fixtures (copies of real registry modules) lint clean as v0.5",reg.status===0&&/0 errors/.test(reg.out),reg.out);
- const flag=lint("--registry",path.join(FX,"lint-ok.md"));
- chk("--registry is accepted and a clean file stays clean",flag.status===0&&/0 errors · 0 warnings/.test(flag.out),flag.out);}
+}
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
@@ -46,7 +45,7 @@ const CASES=[
  ["lint-module-stray-end","a module closed that was never opened",/line 21: a module is closed that was never opened/],
  ["lint-question-no-id","a question with no id",/line 13: this text question has no id/],
  ["lint-list-from-zero","a numbered list from 0 right under a question",/line 14: a numbered list that does not start at 1/],
- ["lint-setting-equals","a setting written key=value instead of key:value",/line 13: settings are written key:value \(found min=0\)/],
+ ["lint-setting-equals","a setting written key=value instead of key:value",/line 13: a number line takes no `min=0` setting \(it takes `min:`, `max:`, `step:`\)/],
  ["lint-query-no-from","a query with no `from:`",/line 23: a query needs `from:`/],
  ["lint-query-from-nothing","a query whose `from:` names nothing",/line 23: the query's `from: nowhere` names no activity, question or data block/],
  ["lint-query-other-module","a query whose `from:` is in another module",/line 23: the query's `from: elsewhere` is in another module/],
@@ -215,7 +214,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
    for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/m,"booklet: \"0.13\""));
-   const r=lint("--registry",...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
+   const r=lint(...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
    chk("the registry's modules, copied and re-marked to 0.10, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 
 {// v0.9: an id belongs to its module (SPEC.md section 4)

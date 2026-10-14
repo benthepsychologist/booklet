@@ -5,42 +5,32 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.13.0** — matches the project's current version (SPEC.md's
-"v0.13") now that this skill teaches v0.13, the current format. Write
-the marker in quotes, `booklet: "0.13"`: unquoted, a YAML tool reads `0.10` as
-the number 0.1. A tool that writes booklets should ask the linter for the marker
-(`python3 lint-booklet.py --marker` prints the whole line) and
-not hard-code it. A file marked with another `0.x` version still opens, with a notice and no
-promise, so a generator one version behind is not stranded, but write the current marker. A booklet
-that is one activity or one module opens straight into it; add `start: home` to the front matter to
-keep the home screen. An image is linked, and a renderer fetches one only from a place its own host
-declares, never from an address the file names: the reference renderer shows the alt text and the
-address as text, and the linter warns on a remote address.
+**Skill version: 0.13.0**. It matches SPEC.md's v0.13, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
-person's work *and* the design of the activities they do in it. Above a long
-horizontal rule, it is ordinary Markdown a person reads and edits in any text
-editor; below it, in a records section a renderer wrote and a person leaves
-alone, the same file keeps what was answered. A renderer (the Booklet page,
-`booklet.html`) draws the activities from the file, and the person's answers
-are saved back into the same file. This skill turns a plain request into such
-a file with nothing else to hand. `SPEC.md` in the Booklet repository is the
-full format; you should not need it, but section 12 below points at it for
-anything this skill does not cover.
+person's work *and* the design of the activities they do in it. The design is
+ordinary Markdown that a person reads and edits in any text editor. What the
+person answered is kept in a records section at the end of the same file, which
+a renderer writes and a person leaves alone. A renderer (the Booklet page,
+`booklet.html`) draws the activities from the file, and saves the person's
+answers back into it. This skill turns a plain request into such a file with
+nothing else to hand. `SPEC.md` in the Booklet repository is the full format.
+You should not need it, but section 13 points at it for anything this skill does
+not cover.
 
 **Hard rules.** Break one and the file is invalid, or it looks valid and
 misbehaves:
 
-1. Everything is addressed by **id, never by position**. Ids are permanent,
-   and hold only letters, digits and dashes.
-2. A booklet's design is **callout lines and prose, never JSON** — a booklet
-   with nothing answered yet contains no JSON at all. JSON exists only for a
-   widget's own data and for the app's own record of what was answered, both
-   fenced and both explained below.
-3. A module is fenced (`> [!module|id] Title` … `> [!module|id end] Title`),
+1. Activities, modules, questions and menus are addressed by **id**. Ids are
+   permanent, and hold only letters, digits and dashes. A question's options and
+   anchors are addressed by position (section 6).
+2. A booklet's design is **callout lines and prose**. A booklet with nothing
+   answered yet holds JSON only in a widget's data and in a data block, both
+   fenced and both explained below. The app's own record of what was answered is
+   JSON too, and only a renderer writes it.
+3. A module is fenced (`> [!module|id] Title` … `> [!module|id end]`),
    and holds **one activity, or several**, each opened by its own
-   `> [!activity|id …] Title` line. There is no separate `mode`/`activities`
-   choice to make — every activity is written the same way.
+   `> [!activity|id …] Title` line. Every activity is written the same way.
 4. **Pages are a horizontal rule** (`***`), never a separate key. A short
    activity needs no rule at all.
 5. **One language per file.** Nothing here is written per-language; a
@@ -57,15 +47,15 @@ misbehaves:
 Booklet > modules > activities > (pages, by a rule) > booklet lines and prose.
 
 - A **module** is what a person adds or removes as a unit — the whole fence,
-  `> [!module|id] Title` to `> [!module|id end] Title`.
+  `> [!module|id] Title` to `> [!module|id end]`.
 - An **activity** is one thing a person does and keeps. `repeat` after its id
   keeps each completion as a dated entry; `repeat daily` keeps one entry per
   day, replacing today's on a second finalize; with neither, the activity is
   answered once and edited in place, with one current answer and no history.
-- **Pages** split one long activity into steps. Any thematic break
-  (`***`, on its own line) inside an activity is a page break; a page with no
-  break is one page. ⚠️ Use `***`, not `---`: a bare `---` right under a line
-  of text is read by Markdown as that line's heading instead.
+- **Pages** split one long activity into steps. Any thematic break inside an
+  activity is a page break; a page with no break is one page. ⚠️ Write `***` on
+  its own line, not `---`: a bare `---` right under a line of text is read by
+  Markdown as that line's heading instead.
 - **Booklet lines** (`> [!kind|id …] Title`) are everything Booklet needs to
   know about: an activity, a question, a widget. Everything else — headings,
   paragraphs, lists, a citation mark — is ordinary Markdown, read as prose.
@@ -75,13 +65,13 @@ The file has three parts, in order:
 | Part | Holds | Who writes it |
 | --- | --- | --- |
 | **Front matter** (`---` on line 1) | `booklet: "0.13"`, `id`, `title`, `lang`, `version` | you |
-| **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; unchanged once you save it — the renderer never rewrites your design |
+| **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
-**Never invent or edit:** kept entries or answers, a `sync` record, `rights`
-terms nobody gave you, a kind or engine not listed here. When changing an
-existing booklet, edit only the design above the rule, keep every id exactly
-as it was, and never touch anything inside `%% … %%`.
+**Never invent or edit:** kept entries or answers, a `sync` record, a module's
+`notice` terms nobody gave you, a kind or engine not listed here. When changing
+an existing booklet, edit only the design above the records section, keep every
+id exactly as it was, and never touch anything inside `%% … %%`.
 
 ---
 
@@ -140,7 +130,7 @@ pages, then booklet lines.**
 | How many **modules**? | One, unless the parts are independent and a person might want one without the other (a journal and a separate tracker). |
 | How many **activities**? | One per thing done in one sitting and kept as one entry. Parts done at different times (a daily log and a weekly review) are separate activities. |
 | Which **flag**? | `repeat` for anything with a dated history. `repeat daily` for once a day, replacing today's entry on a second finalize. No flag for reading, or for a question with one current answer and no history. |
-| `blocks` or a page break? | No break: one scrolling page, enough for up to about seven lines. A break (`***`): one sitting with distinct steps (read, then answer, then review), 2 to 4 pages. |
+| One page or several? | No break: one scrolling page, enough for up to about seven lines. A break (`***`): one sitting with distinct steps (read, then answer, then review), 2 to 4 pages. |
 | Which **lines**? | Open with a line or two of plain prose: what to do, roughly how long, and that anything can be skipped. On a page that asks questions, 3 to 6 of them, mostly `text` (section 6). |
 
 A **quiz** has no scoring, but a `choice` or `multi` may mark its correct
@@ -148,8 +138,9 @@ option or options with `[x]` (section 6): once the reader has answered, they see
 whether they were right (a `multi` has a Check button), and nothing is scored or
 stored. The correct option is visible to anyone who opens the file as text, so
 use `[x]` for study material, never for anything that has to stay hidden.
-Further explanation goes in a folded `> [!hint]-` callout after the question,
-or in ordinary prose on the next page. A **matching** quiz lists the
+Put the explanation of the right answer in a folded `> [!solution]-` callout
+directly under the question (section 6), or in ordinary prose on the next page.
+A **matching** quiz lists the
 options in prose (a word bank, in a different order from the questions), then
 asks one `text` question per item. A **review** asks the person to recall or
 explain in their own words, and what they would look at again. A **tracker**
@@ -161,7 +152,7 @@ in the help text under the question.
 `<slug>.booklet.md` (slug: the title in lowercase ASCII words joined by
 hyphens, accents dropped: `registro-de-agua`).
 
-**Step 4. Validate** (section 10) and fix until clean.
+**Step 4. Validate** (section 11) and fix until clean.
 
 **Step 5. Reply** with: the file path; the structure in a line (modules,
 activities, pages); the assumptions you made; the lint result; and how to
@@ -171,35 +162,47 @@ open it (load the file in the Booklet renderer, `booklet.html`).
 
 ## 4. The file skeleton
 
-Copy this exactly and fill in the `<…>` parts.
+Copy this and change the words. It lints clean as it stands, so the ids and the
+language are real ones; give them your own.
 
 ````markdown
 ---
 booklet: "0.13"
-id: "local/<booklet-slug>"
-title: "<Booklet title>"
-lang: <en|es|es-AR|fr>
+id: "local/my-booklet"
+title: "My booklet"
+lang: en
 version: "0.1"
 status: draft
 ---
 
-# <Booklet title>
+# My booklet
 
-<One or two plain sentences: what this booklet is for.>
+One or two plain sentences: what this booklet is for.
 
-> [!module|<module-slug>] <Booklet title>
+> [!module|my-module] My booklet
 
-<One line inside the module fence: this becomes its blurb if the module is ever offered from a registry.>
+One or two sentences about this module. The first paragraph is also the blurb on the module's card.
 
-> [!activity|<act-id>] <Activity title>
+> [!activity|my-activity] My first activity
 
-<One or two sentences of plain prose: what to do, and that skipping is fine.>
+One or two sentences of plain prose: what to do, and that skipping is fine.
 
-<one booklet line per question — section 6>
+> [!text|my-question] Your first question
 
-> [!module|<module-slug> end] End of <Booklet title>
+> [!module|my-module end]
 ````
 
+Write one booklet line for each question (section 6) where `my-question` stands.
+
+- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.13"`:
+  unquoted, a YAML tool reads `0.10` as the number 0.1. A tool that writes
+  booklets should ask the linter for the marker (`python3 lint-booklet.py
+  --marker` prints the whole line) and not hard-code it. A file marked with
+  another `0.x` version still opens, with a notice and no promise, but write the
+  current marker.
+- **`start: home`** (optional, in the front matter). A booklet that is one
+  activity or one module opens straight into it. Add `start: home` to keep the
+  home screen.
 - **`status: draft`** is right for anything an AI wrote. The linter does not
   check this field for an ordinary booklet — it is a convention, not an
   enforced rule — but the `booklet-registry` repository, where modules are
@@ -207,75 +210,94 @@ status: draft
   person changes it to `approved` after reviewing.
 - **`id`** is `local/<booklet-slug>` (or `<namespace>/<slug>` if the
   requester has one). It names the booklet across any future translation or
-  version; it is not the module's own callout id (below).
-- **`lang`** is the one language the file you are writing is in. There is no
-  `languages` list: a module is written in one language. (In a booklet that
-  holds several modules, `lang` only sets the language of the renderer's own
-  menus and defaults; it says nothing about the modules.)
-- The readable half above the module fence holds only `# Title` and plain
-  paragraphs. It is the **booklet's opening**: the home screen draws it under
-  the booklet's title, the way a module's opening is drawn on the module's
-  screen (a `# Title` line that repeats the title is drawn once, as the
-  title). A booklet of one module opens straight into the module, so the
-  home screen, and this opening with it, shows when the reader presses Back.
-  Write the one or two sentences for a reader who has not opened the module
-  yet. Notes for whoever edits the file go in an HTML comment
-  (`<!-- … -->`), which is never drawn: anything else above the first
-  module line is shown to the reader. Do not add a `##` heading there that looks like part of the
-  design — a heading is fine as ordinary reading, it just carries no
-  structure of its own (headings never mean anything to the renderer).
+  version; it is not the module's own callout id (section 5).
+- **`lang`** is the one language the file you are writing is in: `en`, `es`,
+  `es-AR` or `fr`. There is no `languages` list: a module is written in one
+  language. (In a booklet that holds several modules, `lang` only sets the
+  language of the renderer's own menus and defaults; it says nothing about the
+  modules.)
+- **Module end line.** Write `> [!module|my-module end]` with no title. Any words
+  after `end]` are for whoever edits the file and are never shown.
+- **Notes for whoever edits the file** go in an HTML comment (`<!-- … -->`),
+  which is never drawn.
+- **Images.** An image is linked, never embedded. A renderer fetches one only
+  from a place its own host declares, never from an address the file names. The
+  reference renderer shows the alt text and the address as text, and the linter
+  warns on a remote address (section 7).
+
+### Where each title and opening shows
+
+| You write | It shows |
+| --- | --- |
+| the front matter's `title` | as the booklet's name: its home screen, its row in a list of booklets, the saved file's name |
+| `# Title` and the prose above the first module or activity line | as the booklet's opening, on the home screen under the title (a `# Title` that repeats the title is drawn once) |
+| the module's title, the words after `]` on its opening line | on the module's card, and as the heading of its own screen |
+| prose inside the module before its first activity | as the module's opening, on the module's own screen above its activities; its first paragraph is also the card's blurb |
+| the activity's title | on the activity's card on its module's screen |
+| the activity's first paragraph | on its card, under the title |
+
+A module that holds one activity is named by the module's title, and the
+activity's own title is not drawn. If the module will hold only that activity,
+give both the same words. A booklet of one
+module opens straight into the module, so the home screen, and the booklet's
+opening with it, shows when the reader presses Back. Write the booklet's opening
+for a reader who has not opened the module yet.
+
+**Headings.** Headings never decide modules, activities, pages or answers. A
+heading is ordinary reading, and a `##` there does not turn the text into a
+module. The renderer reads a heading in four ways: it names a page, it folds a
+page into sections at the shallowest heading level the page uses (when the page
+has two or more), it starts a cell in a row, and a heading link can open it.
 
 ---
 
 ## 5. Modules and activities
 
 ```markdown
-> [!module|<module-slug>] Shown nowhere but this file's own manifest
+> [!module|my-module] The module's title
 
 Optional: prose here, before the first activity, is the module's opening.
 It is drawn on the module's own screen above its activities (its first
 paragraph large) and nowhere else, and its first paragraph is the module's blurb.
 
-> [!activity|<act-id>] Shown on the home card
+> [!activity|my-activity] The activity's title
 ```
 
 - The **module's id** (after `|`) is letters, digits and dashes only —
   `daily-journal`, not `daily_journal` or `Daily Journal`. It is unique
   within the file and across a person's whole collection: adding a module
   whose id already exists replaces the old one.
-- **A module may carry its notice**, the terms it is shared under, as the first
-  thing inside its fence: a `> [!notice]` callout whose lines are `key: value`
-  for `license`, `copyright`, `source` and `version` (any may be left out;
-  nothing else goes in it, and it takes no id). A file that holds one module and
-  no callout is covered by its front matter's `license`, `copyright` and
-  `source` (never `version`: the file's version is the file's), so a module
-  file needs no change. Never invent terms nobody
-  gave you; copy a module's own notice, do not write one.
-- The **module's title** (after the id) is the words after the `]` on the
-  same line — this is what shows on the home card, exactly as written, no
-  further wording needed anywhere.
+- **A module may carry its notice**, the terms it is shared under, inside its
+  fence before its first activity: a `> [!notice]` callout whose lines are
+  `key: value` for `license`, `copyright`, `source` and `version` (any may be
+  left out; nothing else goes in it, and it takes no id). A file that holds one
+  module and no callout is covered by its front matter's `license`, `copyright`
+  and `source` (never `version`: the file's version is the file's), so a module
+  file needs no change. Never invent terms nobody gave you; copy a module's own
+  notice, do not write one.
+- The **module's title** is the words after the id, on the same line. Where it
+  shows is in section 4.
 - **A bare activity needs no module fence at all.** A file with no
   `> [!module|…]` line is bare activities only — fine for a one-off
   worksheet with a single activity.
 - **Several activities that belong together** (a study week) share one
   module fence; each still opens with its own `> [!activity|…]` line.
-- **An activity's id** is a short prefix plus a name (`aw-notes`, `tw-learn`):
-  lowercase letters, digits, dashes; unique **within its module** (two
-  modules may each have an `intro`, and neither sees the other's; the same
-  holds for question, menu and block ids). The id is the **first word** after
-  the bar, so any word will do, and no id is reserved (not even `home`).
+- **An activity's id** is a short name (`walk-notes`, `learn`): lowercase
+  letters, digits, dashes; unique **within its module** (two modules may each
+  have an `intro`, and neither sees the other's; the same holds for question,
+  menu and block ids). The id is the **first word** after the bar, so any word
+  will do, and no id is reserved (not even `home`).
 - **Flags** (after the id, space-separated): `repeat` (kept as a dated
   entry), `repeat daily` (one entry per day), `hidden` (kept in the file, not
   offered). With none of these, the activity is answered once and edited in
-  place.
+  place. `daily` needs `repeat`.
 - **A picture for a card: `icon:`** on a module or activity line names a
-  picture from Booklet's icon set (the Lucide names in the repository's
-  `art/icons/`): `> [!activity|log repeat icon:notebook-pen] Log a moment`.
-  Without it a leading emoji in the title is the picture, and without that the
-  card's number. A name outside the set is an error in the linter, so copy it
-  from `art/icons/` and never invent one. A module's own `icon:` goes on its
-  opening line, never on its end line, and is drawn large beside its title:
-  `> [!module|loop icon:refresh-cw] Mapping the loop`.
+  picture from Booklet's icon set: `> [!activity|log repeat icon:notebook-pen]
+  Log a moment`. Without it a leading emoji in the title is the picture, and
+  without that the card's number. A name outside the set is an error in the
+  linter, so choose one from the list below and never invent one. A module's own
+  `icon:` goes on its opening line, never on its end line, and is drawn large
+  beside its title: `> [!module|loop icon:refresh-cw] Mapping the loop`.
 - **An activity under another: `parent:`** names the activity it belongs under,
   in the same module, for a module that is a tree of pages (a wiki, a
   portfolio). Write the parent first:
@@ -284,8 +306,33 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   activity at the top and the linter warns.
 - **A link to a whole module**, one that may not be in this booklet, is
   `[[week-2.booklet]]` or `[Week 2](week-2.booklet.md)`: the module's id is the
-  file's name before `.booklet`. A renderer opens it if the booklet holds it and
-  shows it as not here otherwise. Use `[[#Heading]]` to move within a file.
+  file's name before `.booklet`. Add a label after a bar,
+  `[[week-2.booklet|Week 2]]`; without one the link shows the bare id. A renderer
+  opens it if the booklet holds it and shows it as not here otherwise. Use
+  `[[#Heading]]` to move within a file.
+
+The icon names, all of them:
+
+<!-- icons:start -->
+`activity` `anchor` `archive` `arrow-left` `arrow-right` `award` `badge-check` `bed` `book`
+`book-open` `bookmark` `box` `brain` `briefcase` `bug` `calendar` `calendar-clock` `camera`
+`chart-column` `chart-line` `chart-pie` `check` `chevron-down` `chevron-left` `chevron-right`
+`chevron-up` `circle` `circle-alert` `circle-check` `circle-dashed` `circle-dot` `circle-help`
+`clipboard-list` `clock` `cloud` `code` `coffee` `cog` `coins` `compass` `contrast` `database`
+`download` `droplet` `ear` `ellipsis` `external-link` `eye` `feather` `fence` `file-text` `flag`
+`flame` `flask-conical` `folder` `folder-open` `footprints` `gauge` `gavel` `gift` `git-compare`
+`glasses` `globe` `graduation-cap` `hammer` `hand` `hand-heart` `handshake` `hash` `heart`
+`hourglass` `house` `image` `inbox` `info` `key` `landmark` `layers` `layout-grid` `leaf`
+`life-buoy` `lightbulb` `link` `list` `list-checks` `list-ordered` `list-tree` `lock` `mail` `map`
+`map-pin` `menu` `message-circle` `messages-square` `mic` `microscope` `milestone` `minus` `moon`
+`mountain` `music` `notebook` `notebook-pen` `octagon-alert` `package` `package-plus` `palette`
+`pause` `pen-line` `pencil` `phone` `piggy-bank` `play` `plus` `puzzle` `quote` `refresh-cw`
+`repeat` `rocket` `rotate-ccw` `route` `ruler` `scale` `scissors` `search` `send` `settings`
+`shapes` `shield` `ship-wheel` `shuffle` `signpost` `sliders-horizontal` `smile` `sparkles` `sprout`
+`square-check` `star` `stethoscope` `sticky-note` `sun` `sunrise` `table` `target` `telescope`
+`tent` `thumbs-up` `timer` `traffic-cone` `trees` `triangle-alert` `trophy` `umbrella` `user`
+`users` `wallet` `waves` `wind` `wrench` `x` `zap`
+<!-- icons:end -->
 
 A small wiki, three pages in a tree and a link to a module the booklet may not
 hold. The renderer draws the top page as a card, the tree in a menu beside the
@@ -295,8 +342,10 @@ and a "Mentioned on" list of the pages that link to it:
 ```markdown
 ---
 booklet: "0.13"
+id: "local/harbour-notes"
 title: Harbour notes
 lang: en
+version: "0.1"
 ---
 
 > [!module|harbour icon:anchor] Harbour notes
@@ -314,7 +363,7 @@ The widest range, twice a month. Back to [[#Tides]].
 
 The narrowest range. Compare [[#Spring tides]].
 
-> [!module|harbour end] End of Harbour notes
+> [!module|harbour end]
 ```
 
 An activity with pages (a page is a step; the answers of all its pages are
@@ -343,11 +392,9 @@ otherwise it is just "Page 2".
 ## 6. Booklet lines: the questions
 
 A booklet line is `> [!kind|id …] Title`. The **title is the question
-itself** — there is no separate wording lookup, unlike in an older version of
-this format. **Help text**, if you want some, is a continuation line right under
+itself**. **Help text**, if you want some, is a continuation line right under
 the question line, each starting with `>`, no blank line between; a renderer
-shows it under the prompt. (A **hint** is a different thing: a `> [!hint]-`
-callout after the question, which the reader opens.)
+shows it under the prompt.
 
 ```markdown
 > [!text|noticed] What did you notice?
@@ -361,10 +408,10 @@ callout after the question, which the reader opens.)
 | `choice` | pick one | a task list, `- [ ] Option`; `[x]` marks the correct one, and `open` after the id lets the reader add their own |
 | `multi` | pick any number | a task list; `[x]` marks each correct one, and `open` after the id lets the reader add their own |
 | `scale` | a numbered scale | a numbered list of anchors, starting at whatever number you want the scale to start at (usually `0.`) |
-| `matrix` | several items on one shared scale (a symptom questionnaire) | a bulleted list of items, then a numbered list of anchors |
+| `matrix` | several items on one shared scale | a bulleted list of items, then a numbered list of anchors |
 | `number` | a number | nothing; `min:`, `max:`, `step:` after the id |
 | `date` | a date | nothing |
-| `widget` | a drawing engine (body map, grid, cards) | an embed of the widget's data — section 9, and never invent one |
+| `widget` | a drawing engine (a body map or a grid) | an embed of the widget's data — section 9, and never invent one |
 
 ```markdown
 > [!choice|biggest] When are the biggest tides?
@@ -372,31 +419,54 @@ callout after the question, which the reader opens.)
 - [ ] Near the new and the full moon
 ```
 ```markdown
-> [!multi|felt open] What did you feel? Add your own.
-- [ ] Calm
-- [ ] Tired
+> [!multi|outside open] What did you do outside today? Add your own.
+- [ ] Walked
+- [ ] Gardened
 ```
 ```markdown
-> [!scale|mood] How was today?
+> [!scale|clarity] How clear was the reading?
 
-0. Awful
-1. Rough
-2. Fine
-3. Good
+0. Not clear
+1. A little clear
+2. Fairly clear
+3. Clear
 ```
 ```markdown
-> [!matrix|phq] Over the last two weeks, how often have you been bothered by…
+> [!matrix|topics] How sure are you of each topic?
 
-- Little interest or pleasure in doing things
-- Feeling down, depressed, or hopeless
+- Spring tides
+- Neap tides
+- Tidal range
 
-0. Not at all
-1. Several days
-2. More than half the days
-3. Nearly every day
+0. Not yet
+1. Getting there
+2. Sure
 ```
 ```markdown
 > [!number|sleep min:0 max:24] Hours slept
+```
+
+**A hint and a solution** are callouts that belong to the question straight
+above them. Fold both with `-`, and put them directly under their question, with
+no prose in between.
+
+- `> [!hint]- Hint` helps *before* the reader answers. It opens only when the
+  reader asks.
+- `> [!solution]- Solution` explains *after* the reader has answered. Under a
+  `choice` or `multi` with an `[x]` it opens by itself once the reader answers
+  (for a `multi`, when the reader presses Check). Under any other question it
+  opens when the reader asks.
+
+```markdown
+> [!choice|biggest] When are the biggest tides?
+- [ ] At the quarter moons
+- [x] Near the new and the full moon
+
+> [!hint]- Hint
+> Think about when the sun and the moon pull in the same direction.
+
+> [!solution]- Solution
+> At the new and the full moon the sun and the moon line up, so their pulls add together.
 ```
 
 **A list used by several questions is written once, as a menu.** Put a
@@ -406,44 +476,43 @@ best, so the module travels whole), and name it on each question with
 itself is never shown.
 
 ```markdown
-> [!menu|feelings]
-- Calm
-- Tired
-- Curious
+> [!menu|places]
+- Park
+- Garden
+- Library
 
-> [!multi|morning menu:feelings open] This morning I felt…
+> [!multi|morning menu:places open] This morning I went to…
 
-> [!choice|evening menu:feelings] This evening I feel…
+> [!choice|evening menu:places] This evening I went to…
 ```
 
-- **A `choice`, `scale` or `matrix` question's options or anchors need a blank line
-  above them**, unless the list starts at `1.` — Markdown only lets a list
-  starting at `1.` interrupt a paragraph directly; anything else (including
-  `0.`, which most scales want) is swallowed into the question's title
-  without that blank line.
+- **A numbered list that does not start at `1.` needs a blank line above it**,
+  as a `scale` that starts at `0.` does. Markdown only lets a list starting at
+  `1.` interrupt a paragraph directly; any other number is swallowed into the
+  question's title without the blank line. A task list or a bulleted list never
+  needs one.
 - **A `choice`'s options are identified by position, not text.** The second
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **A question is never hidden by a file, but a page's sections fold.** v0.13
-  has no way to write "optional questions, folded shut until opened" as a
+- **A question is never hidden by a file, but a page's sections fold.** There
+  is no way to write "optional questions, folded shut until opened" as a
   question's own setting. If a request calls for that ("a couple more if you
-  want them"), put the extra questions under their own `##` heading: on any
-  page with two or more sections the renderer folds each section to a card
-  that shows its heading, first line and how many questions are answered, and
-  opens the first section with an unanswered question. Or put the extra
-  material as ordinary prose right after the question it answers, or on its
-  own page after a `***`.
-- **Nothing reads another activity's answers yet.** v0.13 has no kind that
-  draws a list of options pulled live from a different activity's own
-  answers, or a tick-list of what was actually done from it (`SPEC.md`
-  §13). If a request needs this, say so plainly and offer a plain `text` or
-  `lines` question instead, in the same activity.
+  want them"), put the extra questions under their own heading: on any page with
+  two or more sections the renderer folds each section to a card that shows its
+  heading, first line and how many questions are answered, and opens the first
+  section with an unanswered question. Or put the extra material as ordinary
+  prose right after the question it answers, or on its own page after a `***`.
+- **No question takes its options from another activity's answers.** There is
+  no kind that draws a list of options pulled live from a different activity's
+  answers, or a tick-list of what was done. (A `booklet query` can show another
+  activity's kept entries: section 7.) If a request needs such a list, say so
+  plainly and offer a plain `text` or `lines` question instead, in the same
+  activity.
 - **A `matrix`'s answer is one anchor number per item, by position.** Items
   are identified by position like a `choice`'s options, and a matrix's
   anchor numbers must not repeat. Give it a title that reads as the stem
-  ("Over the last two weeks, how often have you been bothered by…") and one
-  short phrase per item.
+  ("How sure are you of each topic?") and one short phrase per item.
 
 ---
 
@@ -451,14 +520,15 @@ itself is never shown.
 
 Everything that is not a booklet line is ordinary Markdown, read exactly as
 written: `# `/`## ` headings, paragraphs, **bold**, lists, and a blank line
-between paragraphs (`\n\n`) for a new one.
+between paragraphs for a new one. Section 4 says what a heading does.
 
 - **A pull-quote or a note set apart** is an Obsidian-style callout:
   `> [!note] …`, `> [!tip] …`, `> [!warning] …`, or Booklet's own `diff`
   (where a guide differs from this reading), `law` (a rule as it stands) or
-  `opinion` (an author's view), and `group`, the plain fold: `> [!group]- Title` folds reading content
-  shut until opened — fine for background material nobody has to read, never
-  for a question (section 6).
+  `opinion` (an author's view), and `group`, the plain fold: `> [!group]- Title`
+  folds reading content shut until opened — fine for background material nobody
+  has to read, never for a question (section 6). Any callout kind written with
+  `-` folds the same way.
 - **A citation is an ordinary footnote** — `[^id]` in the text, and its
   definition anywhere in the file:
 
@@ -471,8 +541,8 @@ between paragraphs (`\n\n`) for a new one.
   Write the note as *Title* (italic), then optionally an edition or detail,
   then the page, then the quote **in quotation marks, copied word for word**,
   then optionally `Verified YYYY-MM-DD.` if a person actually checked it.
-  The renderer reads that shape into the same numbered mark and side panel
-  an older version's citation panel drew — no separate registry to write.
+  The renderer reads that shape into a numbered mark and a side panel — there is
+  no separate registry to write.
   **Never invent a citation.** Cite only a document the requester gave you,
   quoted exactly; leave off `Verified` unless someone actually checked it.
   With no document to hand, write plain reading with no citations at all.
@@ -504,7 +574,8 @@ between paragraphs (`\n\n`) for a new one.
   (counts, due dates, a status per item) go in a `booklet data` block: JSON,
   an object with `rows` (flat objects: a string, number, `true`, `false`, or a
   list of those) and optionally `fields` (each key's label, which is also the
-  column order), with a `^id` on the line after the fence. Put it inside the
+  column order), or just the list of rows, with a `^id` on the line after the
+  fence. Put it inside the
   module, in the module's own data section at the end (`> [!data|<module-slug>]`,
   the way records are tagged by module), or in the shared data section
   (`> [!data]`). A `booklet query` then draws it
@@ -517,7 +588,7 @@ between paragraphs (`\n\n`) for a new one.
   has seven roles: `label` (its name), `value` (its main figure), `note` (a
   quieter second line), `badge` (a short word, drawn as a pill; a list is
   several pills), `tone` (`good`, `warn` or `bad`), `link` (where the row
-  leads: `#Heading` or a web address, as a link in prose; a module link is plain text) and `icon` (the row's picture, a name from the
+  leads: `#Heading`, a module file such as `week-2.booklet.md`, or a web address, as a link in prose) and `icon` (the row's picture, a name from the
   icon set). `table`, `list`, `tiles` and `cards` draw the last two; `bars` and `line` do not. A tile strip that leads to pages is
   rows of `label`, `link` and `icon` (`link` `#Home visits`, `icon` `house`). Each is read from the
   field of the same name, and the label falls back to the first field, so rows
@@ -587,8 +658,10 @@ between paragraphs (`\n\n`) for a new one.
   ````
 - **An image** is reference style, with its address at the end of the file:
   `![The harbour at low water][harbour]` and, near the other data,
-  `[harbour]: images/harbour.jpg`. Only a real, requester-supplied `https`
-  address — never embedded data, never a placeholder URL.
+  `[harbour]: images/harbour.jpg`. Use a relative path the requester gave you.
+  Never embed the data, never invent an address, and avoid an `https` address:
+  the linter warns on one, and a renderer fetches an image only from a place its
+  host declares (section 4).
 
 - **A report** (something written to be read, with numbers and perhaps a few
   questions at the end) has its own section, 8.
@@ -602,10 +675,11 @@ guide, with numbers, charts, diagrams and formulas and perhaps a few questions
 at the end. It is still a learning format, not a clinical tool (section 2). It
 needs only front matter and Markdown: with no activity line, the whole file is
 one activity named by its title. Notes to yourself go in `<!-- … -->`; they are
-not drawn. Section 11 ends with a whole report.
+not drawn. Section 12 ends with a whole report.
 
-**Choose the shape.** A reading page *folds*: each `##` section shows its
-heading and first paragraph and opens on a click. Each page decides for itself.
+**Choose the shape.** A reading page *folds*: each section (at the page's
+shallowest heading level) shows its heading and first paragraph and opens on a
+click. Each page decides for itself.
 A page folds when it has two or more sections, whatever else it holds:
 questions, data views (`booklet query`) and an activity that repeats (`repeat`)
 fold the same way. The first section with a question still to answer is open on
@@ -616,13 +690,13 @@ more questions one at a time.
   report. The booklet opens straight into it, nothing is blank, its prose pages
   fold, and so does the page with the questions or the data views, when it has
   sections. Put the questions and the data views together on the last page (or
-  the pages that need them); a page with no `##` sections is drawn open as it
+  the pages that need them); a page with fewer than two sections is drawn open as it
   stands.
 - **Two activities** only when the reader really needs two separate things (a
   report to read and a log to keep with `repeat`, say), never just to get
   folding. The booklet then opens on the module's screen with a card for each
   activity. A card shows its activity's title and, under it, the activity's
-  first paragraph (the line right under its title, read as plain text), so
+  first paragraph (the line right under its title, read as inline Markdown), so
   open each activity with one sentence that says what it is for, and title
   each for what the reader does ("Read the briefing", "Give your view"). An
   activity with no paragraph first shows its title alone.
@@ -630,7 +704,7 @@ more questions one at a time.
 **Lead with the answer.** The first page says the verdict in one sentence,
 then the headline numbers as tiles, then the detail. A page of an activity with
 pages is named by its first heading, wherever it stands: a page that opens with
-a sentence and then a heading is still named by that heading, and the heading
+a sentence and then a heading is named by that heading, and the heading
 is shown once, in place. A page with no heading is named "Page 2", above it.
 In a folded report each section's first paragraph is what shows, so make it
 one sentence that stands alone.
@@ -658,7 +732,7 @@ the page adds nothing up (the queries and roles are in section 7).
 A module's data goes in its own data section, after the module's end line:
 
 ````markdown
-> [!module|reminders end] End of Reminders
+> [!module|reminders end]
 
 > [!data|reminders] Data
 
@@ -741,9 +815,10 @@ build the activity from `text`/`choice`/etc. instead.
 | `fr` | French | use `vous`; a space before `? ! : ;` |
 
 - **A translation is a sibling file**, `<slug>.<lang>.booklet.md`, with the
-  same `id`, the same module and activity ids, and — for a `choice`,
-  `multi` or `scale` — the same number of options or anchors, **in the same
-  order**, so answers carry across the sibling files unchanged. Write each
+  same `id`, the same module and activity ids, and the same number of entries
+  in every list (a `choice`'s or `multi`'s options, a `scale`'s anchors, a
+  `matrix`'s items and anchors, a menu's entries), **in the same order**, so
+  answers carry across the sibling files unchanged. Write each
   language as a native speaker would, not word for word: natural phrasing,
   local examples, the language's own punctuation (`¿…?`, `¡…!`).
 - **Flag your non-native writing.** In your reply, if you wrote in a
@@ -752,22 +827,23 @@ build the activity from `text`/`choice`/etc. instead.
 - Region spellings are `es-AR`, `fr-CA` (lowercase language, uppercase
   region). Another well-formed language (`de`, `pt-BR`, …) is allowed, with a
   warning that the renderer's own buttons will be in English around it.
-- **A module for the `booklet-registry` repository is one language too**
-  — the same rule as any other booklet now, not the three-language
-  requirement an older version of this document described.
+- **A module for the `booklet-registry` repository is one language too**,
+  like any other booklet.
 
 **File name.** `<slug>.booklet.md`, from the booklet's title, dropped-accent
 lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 ---
 
-### Layout and look (optional, format 0.5)
+## 10. Layout and look (optional)
 
-- **Rows.** `> [!row]` … `> [!row|end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`---`), an activity line or a module fence.
+- **Rows.** `> [!row]` … `> [!row|end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`***`), an activity line or a module fence.
 - **Widget colours** are colour names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, never hex colours (they are no colour), so a widget reads in every theme.
 - **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`, `style`) is only for a booklet that has a reason to look different. `style: teaching` (soft tiles with pictures, the default) or `style: briefing` (solid tiles with icons, for reading at a glance) is the booklet's look, and holds whatever colours the reader picks. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
 
-## 10. Validation
+---
+
+## 11. Validation
 
 **With the linter:** `python3 lint-booklet.py <slug>.booklet.md`. It prints
 `ERROR` and `warn` lines (in line order, so you can fix a file from the top down) and a summary, and exits 1 on any error. Done means
@@ -786,11 +862,11 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a module opened twice | `'x' opens before 'y' (line N) is closed` | close the first module before opening another |
 | a module never closed | `the module 'x' is opened and never closed` | add its `> [!module|x end]` line |
 | closing the wrong module | `this closes 'y', but 'x' is open` | close the one that is actually open |
-| an id reused | `the id 'x' is also used on line N` | rename one — module, activity and question ids all share one namespace-per-file check |
+| an id reused | `the id 'x' is also used on line N` | rename one: activity, question, menu and block ids are unique within their module, and module ids within the file |
 | an id with bad characters | `the id 'my id!' may hold only letters, digits and dashes` | rename it |
 | a question with no id | `this text question has no id, so its answer would have nowhere to go` | add one, `[!text|id] …` |
 | an activity or module line with no id | `an activity line needs an id; write `> [!activity|my-id] Title`` / `a module line needs an id` | add the id; a kept entry is stored under the activity's id, so one made up from the title is lost when the title changes |
-| a `choice`/`multi` with no options | `this choice question 'x' has no options under it, so it is not drawn` (it adds "the bullets under it are plain bullets" if you wrote `- Red`) | add a task list, `- [ ] Option` (plain bullets are a menu's form), with a blank line above unless it starts at `1.` |
+| a `choice`/`multi` with no options | `this choice question 'x' has no options under it, so it is not drawn` (it adds "the bullets under it are plain bullets" if you wrote `- Red`) | add a task list, `- [ ] Option` (plain bullets are a menu's form) |
 | a `scale` with no numbered list, or a repeated number | `this scale question 'x' has no anchors under it` / `repeats anchor number 1` | write `1. Low`, `2. High`; the number is the stored answer, so use each once |
 | a widget with no data | `the widget 'x' names no data block (write ![[#^its-id]] under the line)` | add the embed line and the fenced `booklet widget` block |
 | a widget block that is not valid JSON | `the `booklet widget` block is not valid JSON (…, its line N)` | fix the comma or quote at that position |
@@ -800,7 +876,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | an embed pointing at the wrong fence | `^x is not a widget block` | point the embed at the actual `booklet widget` fence |
 | a data block with no `^id`, a nested value, or no rows | `a data block needs a ^id` / `has a nested value in 'x'` / `holds no list of rows` | add the id; flatten the value; write `rows` |
 | a query with a bad `as:` or `limit:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number` | use one of the six views; a whole number from 1 |
-| a query with a setting it does not take | `a query has no setting 'x' (it takes from, as, fields, …)` (`title:` is now `label:`, `newest:` is now `limit:`) | use the listed keys; a warning `does not draw` means the view ignores that key |
+| a query with a setting it does not take | `a query has no setting 'x' (it takes from, as, fields, …)` | use the listed keys; a warning `does not draw` means the view ignores that key |
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
 | a `menu:` naming no menu | `` `menu:x` names no menu in this file`` | write the `> [!menu|x]` line and its bulleted list, or fix the id |
 | a `menu:` and a list of its own | `the question 'x' has both `menu:y` and a list of its own` | keep one |
@@ -825,16 +901,16 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 - [ ] Front matter opens on line 1 with `booklet: "0.13"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
-- [ ] Every question has an id; every `choice`/`multi` has options under it with a blank line above unless the list starts at `1.`.
+- [ ] Every question has an id; every `choice`/`multi` has a task list under it; a numbered list that does not start at `1.` has a blank line above it.
 - [ ] No answers, kept entries, names or `sync` values written anywhere; nothing inside `%% … %%` touched.
 - [ ] The tone is kind, skipping is mentioned, and nothing here is a clinical exercise (section 2).
 
 ---
 
-## 11. Worked examples
+## 12. Worked examples
 
-Each of these passes the linter with only the `draft` warning, and loads in
-the renderer. Imitate their shape.
+Each of these lints with 0 errors and 0 warnings, and loads in the renderer.
+Imitate their shape.
 
 ### A one-activity journal, in English
 
@@ -850,11 +926,11 @@ status: draft
 
 # After a walk
 
-A few minutes of notes after a walk: what you noticed, and anything worth keeping.
+A journal for the minutes after a walk.
 
 > [!module|after-a-walk] After a walk
 
-A few minutes after a walk: what you noticed, and anything worth keeping.
+Write down what you noticed, and anything worth keeping.
 
 > [!activity|aw-notes repeat] Walk notes
 
@@ -869,7 +945,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 > [!text|where] Where did you go?
 > A street, a park, a loop.
 
-> [!module|after-a-walk end] End of After a walk
+> [!module|after-a-walk end]
 ````
 
 ### A module with two activities, one of them in pages
@@ -930,7 +1006,7 @@ Two questions, once the week is done.
 > [!text|unclear] What would you like to look at again?
 > Leave it blank if nothing.
 
-> [!module|tides-week end] End of Tides
+> [!module|tides-week end]
 ````
 
 ### A Spanish-only booklet, once a day
@@ -966,7 +1042,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 > [!text|pienso] ¿Qué te quedó dando vueltas?
 > Una idea, una pregunta, un personaje.
 
-> [!module|rato-de-lectura end] End of Mi rato de lectura
+> [!module|rato-de-lectura end]
 ````
 
 ### A report with a chart, a formula and a diagram, questions last
@@ -1030,7 +1106,7 @@ flowchart LR
 - [ ] SMS only
 - [ ] Add email
 
-> [!module|reminders end] End of Reminders: SMS or email?
+> [!module|reminders end]
 
 > [!data|reminders] Data
 
@@ -1052,7 +1128,7 @@ flowchart LR
 
 ---
 
-## 12. If you have the booklet-registry repository
+## 13. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
 same way as any other booklet above — one v0.13 file, one language, its
@@ -1063,7 +1139,7 @@ whether to publish it. Lint it the same way:
 python3 lint-booklet.py my-module.booklet.md
 ```
 
-For anything this document does not cover — matrix questions once they are
-drawn, a Booklet plugin for Obsidian — `SPEC.md` is the authority. If someone
+For anything this document does not cover, such as a Booklet plugin for
+Obsidian, `SPEC.md` is the authority. If someone
 hands you a file this renderer and validator refuse to open, say so plainly
 rather than guessing at what it might have once been.

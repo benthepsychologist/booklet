@@ -1,7 +1,8 @@
 // The renderer's pictures: one hidden SVG sprite, generated from the art/ folder (renderer 0.11.8).
 //   node test/art-sprite.js --write booklet.html    rewrite the sprite block between <!-- art:start --> and <!-- art:end -->
 //   node test/art-sprite.js --check booklet.html    exit 1 if the block is missing, outside the body markup, or not what art/ makes
-// The same two commands keep lint-booklet.py's list of icon names (ICON_NAMES, between `# icons:start` and `# icons:end`) in step with art/icons/.
+// The same two commands keep lint-booklet.py's list of icon names (ICON_NAMES, between `# icons:start` and `# icons:end`) in step with art/icons/,
+// and SKILL.md's list of the same names (between `<!-- icons:start -->` and `<!-- icons:end -->`).
 // art/icons/<name>.svg are Lucide's files, unmodified (lucide-static 1.48.0): each becomes <symbol id="bi-<name>">.
 // art/spots/<name>.svg are Booklet's own spot drawings, each named by a Lucide name that is also in art/icons/: each
 // becomes <symbol id="bs-<name>">. A drawing carries no colour value: its shapes take one of six classes (a accent fill, w card
@@ -43,6 +44,17 @@ function lintProblems(py){const r=lintRange(py);
   if(!r) return ["lint-booklet.py has no `# icons:start` ... `# icons:end` block for the icon names"];
   return py.slice(r[0],r[1])===iconList()?[]:["lint-booklet.py's icon names are not what art/icons/ holds: run node test/art-sprite.js --write booklet.html"];}
 function lintWrite(py){const r=lintRange(py);if(!r) throw new Error("lint-booklet.py has no icon list block");return py.slice(0,r[0])+iconList()+py.slice(r[1]);}
+/* SKILL.md's list of icon names: the names in art/icons/, between two marker lines, so an author with only SKILL.md can see them */
+const SKILL=path.join(__dirname,"..","SKILL.md"),S_START="<!-- icons:start -->\n",S_END="<!-- icons:end -->";
+function skillList(){
+  const out=[];let line="";
+  for(const n of names("icons")){const w="`"+n+"`";if(line&&(line+" "+w).length>100){out.push(line);line="";}line+=(line?" ":"")+w;}
+  out.push(line);return out.join("\n")+"\n";}
+function skillRange(md){const a=md.indexOf(S_START),b=md.indexOf(S_END);if(a<0||b<a) return null;return [a+S_START.length,b];}
+function skillProblems(md){const r=skillRange(md);
+  if(!r) return ["SKILL.md has no `<!-- icons:start -->` ... `<!-- icons:end -->` block for the icon names"];
+  return md.slice(r[0],r[1])===skillList()?[]:["SKILL.md's icon names are not what art/icons/ holds: run node test/art-sprite.js --write booklet.html"];}
+function skillWrite(md){const r=skillRange(md);if(!r) throw new Error("SKILL.md has no icon list block");return md.slice(0,r[0])+skillList()+md.slice(r[1]);}
 const BODY="<body>\n";
 function block(html){
   const a=html.indexOf(START),b=html.indexOf(END);
@@ -60,14 +72,15 @@ function write(html){
   if(r) return html.slice(0,r[0])+sprite()+html.slice(r[1]);
   const i=html.indexOf(BODY);if(i<0) throw new Error("no <body>");
   return html.slice(0,i+BODY.length)+"\n"+sprite()+"\n"+html.slice(i+BODY.length);}
-module.exports={sprite,problems,write,names,START,END,ART,iconList,lintProblems,LINT};
+module.exports={sprite,problems,write,names,START,END,ART,iconList,lintProblems,LINT,skillList,skillProblems,SKILL};
 if(require.main===module){
   const [mode,file]=process.argv.slice(2);
   if(!file||!["--write","--check"].includes(mode)){console.error("usage: node test/art-sprite.js --write|--check booklet.html");process.exit(2);}
   const html=fs.readFileSync(file,"utf8");
-  if(mode==="--check"){const p=problems(html).concat(lintProblems(fs.readFileSync(LINT,"utf8")));
+  if(mode==="--check"){const p=problems(html).concat(lintProblems(fs.readFileSync(LINT,"utf8")),skillProblems(fs.readFileSync(SKILL,"utf8")));
     if(p.length){console.error(p.join("\n"));process.exit(1);}
     console.log("art sprite is current ("+(sprite().length)+" bytes, "+names("icons").length+" icons, "+names("spots").length+" spots)");}
   else{const next=write(html);if(next!==html) fs.writeFileSync(file,next);
     const py=fs.readFileSync(LINT,"utf8"),py2=lintWrite(py);if(py2!==py) fs.writeFileSync(LINT,py2);
-    console.log("art sprite written ("+sprite().length+" bytes); "+names("icons").length+" icon names written to lint-booklet.py");}}
+    const md=fs.readFileSync(SKILL,"utf8"),md2=skillWrite(md);if(md2!==md) fs.writeFileSync(SKILL,md2);
+    console.log("art sprite written ("+sprite().length+" bytes); "+names("icons").length+" icon names written to lint-booklet.py and SKILL.md");}}

@@ -78,6 +78,7 @@ and it draws those too, as long as they use engines it has.
 | [`SPEC.md`](SPEC.md) | the current format (v0.13), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
+| [`CHANGES.md`](CHANGES.md) | what changed in each version of the format, newest first; `SPEC.md` states the rules as they are and keeps no history |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
 | [`examples/`](examples/) | complete booklets you can open: `how-tides-work` (reading, a citation, a quiz that says right or not), `mindful-check-in` (widgets, a module's notice and its own data section), `garden-week` (a theme and rows), `status-page` (tiles, a grouped list, tables and charts from data), `project-board` (row roles, a nested list, a question a reader can add to) |
@@ -180,6 +181,19 @@ against them found two more couplings the old suite never could: an empty state
 pre-seeded with four particular cell ids, and question wording hard-coded to
 three scope names, which had quietly meant a *new* activity could never word its
 own questions.
+
+---
+
+## What the renderer draws that a file does not say
+
+`SPEC.md` says what a file may say. These are the reference renderer's own drawing choices, and another renderer may draw them differently.
+
+- **A hint or a solution** that is folded with `-` and sits right after a question is drawn inside that question's own block, as a small control each, the hint first, as the author wrote them. Shut, they give nothing away. One that is not folded stays a row of its own.
+- **A hint never opens by itself.** A solution opens by itself under the reader's answer: for a `choice`, as soon as an option is picked; for a `multi`, when Check is pressed (only a question with a right answer, an `[x]` option, has Check). With a right answer it takes the good tone when the answer is right, and the warn tone with "Look again" when it is not. A `choice` with no right answer opens in a neutral tone on a pick. A `multi` with none opens only on request. For every other question kind it opens on request only.
+- **A callout folded with `-`** shows the first words of its text under its title. A hint or a solution shows only its name while it is shut, so a closed one gives nothing away.
+- **A folded callout of a kind the renderer does not draw** (a `group`, or a kind it does not know) is drawn on plain paper with no tint and no picture of its own. An untitled one is called "Note". Kinds the renderer draws keep their colour and picture.
+- **An activity's card** shows the activity's first paragraph under its title, read as inline Markdown as a module card's blurb is. An activity with no paragraph shows its title alone. The card counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started").
+- **Reading mode** folds a page into sections when the page has two or more, page by page, whatever else the page holds: questions, data views, kept entries.
 
 ---
 
