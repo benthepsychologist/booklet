@@ -22,9 +22,25 @@ What a booklet line says is drawn the way the prose around it is, a booklet's ow
 - Tests: `test/drawing.test.js` (the recording DOM), `test/drawing-browser.js` (MathML, the stepper, the wiki, the opening, a card's link), `test/libwake-browser.js` (serves the page in slow chunks and opens a booklet with a formula and a diagram by link; it fails on 0.13.0 before this change); `pagename`, `dataviews`, `lint`, `guard` and `svg-sanitize` follow the new rules.
 - Size: `booklet.html` 3,714,908 bytes (main is 3,706,356): the hand-written part grew by 8,552 bytes, the libraries are untouched.
 
-## Store booklets open from the store (renderer, 2026-10-13; on branch `fix/store-links-open-the-store-file`, not merged)
+## Store booklets open from the store (renderer, 2026-10-13/14; on branch `fix/store-links-open-the-store-file`, not merged)
 
-For a booklet the host saves (`from: store:<name>`): it joins "Your booklets" as soon as it is read, as a pointer with no kept copy of its content (`hosted: true` on its entry, set when the host says it saved, cleared by any change made here); opening it from the list, or by its link, reads the store's file and draws that, never the kept copy first; a change the host has not yet saved keeps the old behaviour (the kept copy opens and the newer file is offered); "Your booklets" says "Opening <name>…" while the file is read (`LINK_LOADING`). Tests: `test/openlink.test.js` (new block, and the three checks that said a link's booklet is not listed). The box's store server compresses and revalidates its responses (booklet-hub, `tools/booklet-serve`).
+For a store booklet (`from: store:<name>`) the store's file is the truth, and what the browser keeps of it is only a buffer for work the store may not have yet.
+
+- **Listed at once, as a pointer.** It joins "Your booklets" as soon as it is read, with no kept copy of its content (`notePointer`), on a page that declares a store. A kept copy (`booklet.b.<id>`) appears only once the reader changes something.
+- **Drawn from the store when the store holds it all.** Opening it again, by its link or from the list, reads the file and draws it, into the same entry, and drops the kept copy, when the file holds every answer, entry and draft the kept copy holds and the kept copy has no change to the booklet itself (`customized`: a rename inside it, a module added or removed, which the store does not take). `storeHolds` and `workWithin` decide this on content when the booklet opens. Nothing is set when a host answers, so the decision is the same with a host that registers after the file arrives (every fresh page load on the box), one that answers before the local save, one that answers for another booklet, or another tab's. A kept copy with no module in it (a blank one) is judged on its answers alone. Otherwise the kept copy opens, and the newer file is offered if it changed, as before.
+- **The first version (36d7126) was refused at its cold review.** It used a `hosted` flag set by the host's `saved()`. That flag is gone, and so is its clause letting older entries through on their flags.
+- **Rename in the list** gives a store booklet a name of its own there (`named`) and writes nothing into what is kept (the first version wrote a blank booklet into a pointer, which a late host then saved over the file's records).
+- **Never sent blank.** A booklet with no module is never sent to the host (`hookFire`), and a change still waiting its half second is told to the host as its booklet is left (`hookFlush`), not in the next booklet's place.
+- **The host's answer may name its change.** `onChange` gives `change`, a number; `saved(change)` / `failed(message, change)` about an earlier change or another booklet leave the bar as it is. Without it, as before (docs/hosting.md).
+- **"Opening <name>…"** shows on whatever screen is up while a file is read, and goes when the read ends however it ends, or a newer link takes over (`LINK_LOADING` is `{gen, label, from}`). Open from the list falls back to the kept copy only when its own read failed, not when a newer one superseded it. Removing an entry while its file is read drops that read. `openLinked` writes a pending save before it decides. Download makes no kept copy for a pointer.
+- **Strings:** `linkLoading` (new) and `linkFromStore` are marked `l10n: draft` in fr and es; fr uses the colon form (`Ouverture : <name>…`).
+- **Tests:**
+  - `test/storeheld.test.js` (new) has one block per finding of the review (B1-B4, S1-S4, N2-N5), and 52 of its checks fail on 36d7126.
+  - `test/storeheld-browser.js` (new) runs in real Chromium with a late host script and a merging store. Fresh page loads draw the new file 5 of 5 and the old question never appears; a renamed pointer keeps the store's record. It fails on 36d7126.
+  - `test/openlink.test.js`: its pointer check reads the real key (`booklet.b.<id>`); its no-host flow now expects a file that holds the kept work to be drawn.
+  - `hosthook` and `hostlock` count `change` in what `onChange` gives.
+- **Size:** `booklet.html` 3,726,925 bytes (main is 3,714,908; 36d7126 was 3,718,092): +12,017 over main, most of it comments.
+- **Hub side** (booklet-hub, `tools/booklet-serve`): the box's server refuses (409) a save with no records over a file that has some; `booklet-host.js` names the change in each answer. The box's store server also compresses and revalidates its responses.
 
 ## Current state — v0.13.0, format rules (item `v013-format-rules`; merged as #46, not yet released)
 

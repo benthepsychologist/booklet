@@ -250,13 +250,19 @@ declare a store: not a booklet's front matter, not a link, nothing kept in the b
 
 What opens is read once, as text (a plain read: no method, no body, no credentials, no redirect, at most 5 MB, 15 seconds),
 and then goes through the same parser as a file picked by hand, with the same refusals and notices. It opens with its records,
-if the file has them. A store booklet joins "Your booklets" as soon as it has been read, as a pointer (its name and title, no copy of
-its content) while the store holds everything this browser has of it, and opening it from the list reads the store's file
-afresh; a module link opened by hand is a view that joins the list only when the reader changes something in it. While a file is
-being read, "Your booklets" says "Opening <name>…". In one browser a store name is one booklet, and so is a module link: opening
-one the browser already keeps opens that booklet, never a second. The page remembers a short fingerprint of the file the kept booklet was
-last read from; if the file now is different, it offers "Read the newer file", and nothing changes until the reader presses.
-Reading it never loses the reader's work: with a host registered the store file is the truth (when the host has saved every change made here, the file is drawn and the kept copy is not; a change it has not yet saved keeps the kept copy and offers), otherwise the new file's body
+if the file has them. For a store booklet the store's file is the truth, and what the browser keeps of it is only a buffer for
+work the store may not have yet. It joins "Your booklets" as soon as it has been read, as a pointer (its name and title, no copy
+of its content); a copy is kept only once the reader changes something. Opening it again, by its link or from the list, reads
+the store's file afresh and draws it, and drops the kept copy, whenever the file holds every answer, entry and draft the kept
+copy holds and the kept copy changes nothing of the booklet itself (a rename inside it, a module added or removed, which the
+store does not take). That is decided on content when the booklet opens, so it holds whether or not the host has registered
+yet. Rename in the list gives a store booklet a name of its own there and changes nothing else. A module link opened by hand
+is a view that joins the list only when the reader changes something in it. While a file is being read, the page says
+"Opening <name>…". In one browser a store name is one booklet, and so is a module link: opening one the browser already keeps
+opens that booklet, never a second. When the kept booklet holds work the file lacks, it is what opens. The page remembers a
+short fingerprint of the file the kept booklet was last read from; if the file now is different, it offers "Read the newer
+file", and nothing changes until the reader presses. Reading it never loses the reader's work: with a host registered the
+store file is the truth and is read whole, otherwise the new file's body
 is taken and the reader's own answers, entries and drafts stay (a module link updates the module in place, as Add a module
 does). A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
 and can be dismissed. The page reads the link when it starts and whenever the fragment changes, and the link stays in the

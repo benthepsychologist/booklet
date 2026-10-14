@@ -56,7 +56,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
 {const A=boot("h"),B=A.BookletApi;B.host({label:"h"});const L=listen(A);
  B.open(BOOK,{name:NAME});await sleep(700);
  chk("onChange fires once when a booklet is opened, with its text, its name and its title",L.calls.length===1&&L.calls[0].text===A.toMarkdown()&&L.calls[0].name===NAME&&L.calls[0].title==="Hook booklet",JSON.stringify(L.calls.map(c=>[c.name,c.title,c.text.length])));
- chk("what it is given is exactly three things: text, name, title",Object.keys(L.calls[0]).sort().join()==="name,text,title");
+ chk("what it is given is exactly four things: text, name, title, and change (a number naming the call)",Object.keys(L.calls[0]).sort().join()==="change,name,text,title"&&Number.isInteger(L.calls[0].change)&&L.calls[0].change>0);
  const n0=L.calls.length;
  typeIn(A,"ma/act","first answer");await sleep(700);
  chk("an answer leads to one call, with the answer in the text, equal to toMarkdown()",L.calls.length===n0+1&&/first answer/.test(L.calls[n0].text)&&L.calls[n0].text===A.toMarkdown(),L.calls.length-n0);

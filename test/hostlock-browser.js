@@ -98,7 +98,7 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   ok(/^Saves go to: fleet: booklets\/reports/.test(await bar(p)),'the bar says where saves go: '+await bar(p));
   ok(await calls(p)===1,'the host hears the open booklet once, at once: '+await calls(p));
   const first=await p.evaluate(()=>window.__calls[0]);
-  ok(first&&first.name==='week.md'&&/QZXbefore/.test(first.text)&&Object.keys(first).sort().join()==='name,text,title','and it is given the current text, the name and the title');
+  ok(first&&first.name==='week.md'&&/QZXbefore/.test(first.text)&&Object.keys(first).sort().join()==='change,name,text,title'&&Number.isInteger(first.change),'and it is given the current text, the name, the title and the change number');
   await wait(p,800);
   ok(await calls(p)===1,'and only once');
   await p.locator('#main textarea').first().fill('QZXafter');await wait(p,1000);

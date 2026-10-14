@@ -73,7 +73,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
  chk("a name in the store opens the booklet",ok===true&&A.currentId!==null&&A.BOOK&&/Week report/.test(JSON.stringify(A.BOOK.head||A.BOOK.title||"")));
  chk("exactly one request, a GET with no body, no credentials, no redirect, to the store's address",CALLS.length===1&&CALLS[0].url===STORE+"reports/week.booklet.md"&&!CALLS[0].opts.method&&!CALLS[0].opts.body&&CALLS[0].opts.credentials==="omit"&&CALLS[0].opts.redirect==="error"&&!!CALLS[0].opts.signal,JSON.stringify(CALLS));
  chk("it opens into its one activity (the v0.11 rule), like a file from disk",A.screen==="m/a",A.screen);
- chk("it is listed under Your booklets as a pointer: its name, and no copy of its content kept",lib().length===2&&lib().some(e=>e.from==="store:reports/week.booklet.md"&&e.hosted===true&&/Week report/.test(JSON.stringify(e.title)))&&Object.keys(global.__ls).sort().join()===keys,JSON.stringify(lib()));
+ chk("it is listed under Your booklets as a pointer: its name, and no copy of its content kept",lib().length===2&&lib().some(e=>e.from==="store:reports/week.booklet.md"&&/Week report/.test(JSON.stringify(e.title)))&&Object.keys(global.__ls).sort().join()===keys,JSON.stringify(lib()));
  chk("the booklet kept before is untouched",lib().some(e=>/Kept already/.test(JSON.stringify(e.title))&&e.openedAt===JSON.parse(before)[0].openedAt));
  const pv=P.find(P.main(),P.hasClass("openedby"))[0];
  chk("a quiet line says where it came from, in these words",!!pv&&text(pv).startsWith("Opened by a link, from this page's own store: reports/week.booklet.md"),pv?text(pv):"none");
@@ -104,28 +104,31 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;const U=STORE+"week.md";RO
    answer(A,"m/a","answer "+round);A.flushSave();A.closeBooklet();}
  chk("three opens with an answer each time leave one entry and one stored copy",lib().length===1&&stored().length===1&&lib()[0].from==="store:week.md",lib().length+" "+stored().length);
  chk("the entry remembers a fingerprint of what it read, not the text",typeof lib()[0].storeSeen==="string"&&lib()[0].storeSeen.length<30&&!/Week report/.test(JSON.stringify(lib()[0].storeSeen)));
- // the store file is exactly what the kept booklet would write: nothing to offer
+ // the store file is exactly what the kept booklet would write (as if a host had saved it): it holds all the kept copy
+ // holds, so it is drawn, with nothing to offer, and the kept copy goes (the store's file is the truth for a store booklet)
  await A.openLink("#/open/week.md");const mine=A.toMarkdown();A.closeBooklet();
  ROUTES[U]=mine;await A.openLink("#/open/week.md");
- chk("a store file identical to the kept text makes no offer, and updates what was seen",!offer()&&lib().length===1&&lib()[0].storeSeen!==undefined);A.closeBooklet();
+ chk("a store file identical to the kept text makes no offer, is drawn, and the kept copy goes",!offer()&&lib().length===1&&lib()[0].storeSeen!==undefined&&ans(A)==="answer 3"&&stored().length===0);
+ // work the store's file lacks: a fourth answer, kept here only (no host)
+ answer(A,"m/a","answer 4");A.flushSave();A.closeBooklet();
  // a changed store file: the offer; dismissing changes nothing
  const NEWER=WEEK.replace("A question","A newer question").replace("> [!text|q] A newer question","> [!text|q] A newer question\n\n> [!text|q2] A second question");
  ROUTES[U]=NEWER;await A.openLink("#/open/week.md");
  chk("a changed store file shows the offer, with Read the newer file and Dismiss",!!offer()&&/The file has changed where it is kept/.test(text(offer()))&&P.find(offer(),n=>n.tagName==="button"&&/Dismiss/.test(text(n))).length===1);
  const before=JSON.stringify([A.toMarkdown(),lib()]);
  press(/Dismiss/);
- chk("dismissing changes nothing",!offer()&&JSON.stringify([A.toMarkdown(),lib()])===before&&ans(A)==="answer 3"&&!/newer question/.test(JSON.stringify(A.BOOK)));A.closeBooklet();
+ chk("dismissing changes nothing",!offer()&&JSON.stringify([A.toMarkdown(),lib()])===before&&ans(A)==="answer 4"&&!/newer question/.test(JSON.stringify(A.BOOK)));A.closeBooklet();
  // reading it, with no host: the new body, the reader's own answers
  await A.openLink("#/open/week.md");A.screen="m/a";
  press(/Read the newer file/);
- chk("reading it with no host takes the new body and keeps the reader's answer",/A second question/.test(JSON.stringify(A.BOOK))&&ans(A)==="answer 3"&&/answer 3/.test(A.toMarkdown())&&!offer(),JSON.stringify(A.STATE.answers));
- chk("...into the same entry: still one, and what it saved holds both",lib().length===1&&stored().length===1&&/answer 3/.test(JSON.stringify(stored()[0].S))&&/second question/.test(JSON.stringify(stored()[0].TPL)));
+ chk("reading it with no host takes the new body and keeps the reader's answer",/A second question/.test(JSON.stringify(A.BOOK))&&ans(A)==="answer 4"&&/answer 4/.test(A.toMarkdown())&&!offer(),JSON.stringify(A.STATE.answers));
+ chk("...into the same entry: still one, and what it saved holds both",lib().length===1&&stored().length===1&&/answer 4/.test(JSON.stringify(stored()[0].S))&&/second question/.test(JSON.stringify(stored()[0].TPL)));
  A.closeBooklet();await A.openLink("#/open/week.md");
  chk("having read it, opening again offers nothing",!offer()&&lib().length===1);A.closeBooklet();
  // entries and drafts are kept too, and an answer to a question the new body dropped stays unused
  ROUTES[U]=WEEK.replace("> [!text|q] A question","> [!text|z] Something else");
  await A.openLink("#/open/week.md");press(/Read the newer file/);
- chk("an answer to a question the new body no longer has stays kept, unused",ans(A)==="answer 3"&&/Something else/.test(JSON.stringify(A.BOOK)),JSON.stringify(A.STATE.answers));
+ chk("an answer to a question the new body no longer has stays kept, unused",ans(A)==="answer 4"&&/Something else/.test(JSON.stringify(A.BOOK)),JSON.stringify(A.STATE.answers));
  A.closeBooklet();
  ROUTES[U]="not a booklet";const r=await A.openLink("#/open/week.md");
  chk("a store file the page refuses opens nothing and says why",r===false&&A.currentId===null&&/\S/.test(text(P.byId("toast"))));}
@@ -199,7 +202,7 @@ reset();{const A=P.boot();META["booklet-registry"]="https://reg.test/registry.js
  let A=HOSTED();ROUTES[URLW]=WEEK;
  await A.openLink("#/open/reports/week.booklet.md");
  const e0=lib().find(e=>e.from);
- chk("a link opened with a host that saves is listed as a pointer (hosted, no content key)",!!e0&&e0.hosted===true&&!global.__ls["booklet.v1.b."+e0.id]&&lib().length===1,JSON.stringify(lib()));
+ chk("a link opened with a host that saves is listed as a pointer (no content key)",!!e0&&!(("booklet.b."+e0.id) in global.__ls)&&lib().length===1,JSON.stringify(lib()));
  A.closeBooklet();
  // the store's file changes (regenerated); the entry is opened from "Your booklets"
  ROUTES[URLW]=WEEK.replace("A question","A newer question");CALLS.length=0;
@@ -217,9 +220,9 @@ reset();{const A=P.boot();META["booklet-registry"]="https://reg.test/registry.js
  chk("while the file is read, \"Your booklets\" says \"Opening <name>…\"",A.screen==="@booklets"&&/Opening reports\/week\.booklet\.md…/.test(text(P.main())),text(P.main()).slice(0,200));
  release();await pending;
  chk("...and the notice is gone when the booklet is open",A.currentId===e0.id&&!/Opening reports/.test(text(P.main())));
- // a change made here that the host has not saved: the kept copy opens, with the offer
+ // a change to the booklet itself (which the store cannot hold: it keeps its own body): the kept copy opens, with the offer
  A.editBook(t=>{});A.flushSave();
- chk("a change made here marks the entry as not held whole by the store",lib().find(e=>e.id===e0.id).hosted===false);
+ chk("a change made here is kept here, marked as a change to the booklet itself",("booklet.b."+e0.id) in global.__ls&&JSON.parse(global.__ls["booklet.b."+e0.id]).TPL.customized===true);
  A.closeBooklet();ROUTES[URLW]=WEEK.replace("A question","A fourth question");
  await A.openLink("#/open/reports/week.booklet.md");
  chk("then the kept copy opens, not the file, and the newer file is offered",A.currentId===e0.id&&!/fourth question/.test(JSON.stringify(A.BOOK))&&P.find(P.main(),P.hasClass("hostnote")).length===1);
