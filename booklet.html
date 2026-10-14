@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-8YVhGjpO1xME9wWFzXF/zOZj0dpBhXfEh6QRM5vEUkk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-qK/F2QFAb+Dnq3co2vpbjs8QI0eQvKVDX5owD/fVHMY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2788,7 +2788,7 @@ function lsDel(k){delete MEM[k];
 function keepTrouble(kind,e){if(e) KEEP.why=errName(e);if(KEEP.problem===kind) return;KEEP.problem=kind;
   setTimeout(()=>{const t=keepNotice();if(t) toast(t);},0);}
 /* the words for what is wrong, or "": the cause, never a guess (a full store is not private mode) */
-function keepNotice(){const u=STRINGS[lang].ui;
+function keepNotice(){const u=strings("ui");
   return KEEP.problem==="off"?u.storageOff:KEEP.problem==="full"?u.storageFull(KEEP.mode==="ls"):KEEP.problem==="failed"?u.storageFailed:"";}
 /* one change, in memory now and queued for the store */
 function keepPut(k,v){if(k===LIB_KEY||isLibRec(k)) KEEP.lib=null;
