@@ -6,6 +6,7 @@
 // motion stops the dots' fade. An axe pass runs on the ERP-style booklet when AXE (the path to axe.min.js) is given.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/folding-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
@@ -103,7 +104,7 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     ok(await p.getByRole('button',{name:'Next question'}).isDisabled()&&/Closing words/.test(await p.locator('#main .oat-unit').nth(3).innerText()),`${W}px: Next is off on the last, which carries the closing words`);
     await p.getByRole('button',{name:'Back',exact:true}).click();await p.getByRole('button',{name:'Back',exact:true}).click();await wait(100);
     ok(/Question 2 of 4/.test(await p.locator('.oat-prog').innerText())&&await p.locator('#main .oat-unit').first().locator('.pill-btn[aria-pressed="true"]').count()===1,`${W}px: Back returns, and the first answer is still there`);
-    const key=await p.evaluate(()=>Object.keys(localStorage).filter(k=>/^booklet\.ui\.steps\./.test(k)).map(k=>k+'='+localStorage.getItem(k)));
+    const K=await kept(p),key=Object.keys(K).filter(k=>/^booklet\.ui\.steps\./.test(k)).map(k=>k+'='+K[k]);
     ok(key.length===1&&/=one$/.test(key[0]),`${W}px: the choice is kept in booklet.ui.steps.* (${key})`);
     /* print shows every question */
     await p.emulateMedia({media:'print'});await wait(100);

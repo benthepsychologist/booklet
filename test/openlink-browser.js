@@ -8,6 +8,7 @@
 // violations and page errors. Screenshots (the provenance line at 1280px and 400px) are written to <outdir>.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/openlink-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
@@ -68,14 +69,15 @@ const REGJ={modules:[{id:'t/journal',title:'Daily journal',file:'journal.md'}]};
   await p.screenshot({path:path.join(OUT,'openlink-1280.png'),fullPage:true});
   ok(await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)<=0,'no sideways overflow at 1280px');
   // not kept yet
-  const keptKeys=()=>p.evaluate(()=>{try{const l=JSON.parse(localStorage.getItem('booklet.library.v1')||'{"entries":[]}');return l.entries.length;}catch(e){return -1;}});
-  ok(await keptKeys()===1&&await p.evaluate(()=>Object.keys(localStorage).filter(k=>/^booklet\.b\./.test(k)).length)===0,'it is listed in "Your booklets" as a pointer, with no copy of its content kept');
+  const keptKeys=async()=>{try{const l=JSON.parse((await kept(p))['booklet.library.v1']||'{"entries":[]}');return l.entries.length;}catch(e){return -1;}};
+  const copies=async()=>Object.keys(await kept(p)).filter(k=>/^booklet\.b\./.test(k)).length;
+  ok(await keptKeys()===1&&await copies()===0,'it is listed in "Your booklets" as a pointer, with no copy of its content kept');
   // dismiss
   await line(p).locator('button').click();await wait(p,200);
   ok(await line(p).count()===0,'the line can be dismissed for the session');
   // 2 answering a question: it joins the list
   await p.locator('#main textarea').first().fill('QZXansweredhere');await wait(p,900);
-  ok(await keptKeys()===1&&await p.evaluate(()=>Object.keys(localStorage).filter(k=>/^booklet\.b\./.test(k)).length)===1,'answering a question keeps its content: still the one entry');
+  ok(await keptKeys()===1&&await copies()===1,'answering a question keeps its content: still the one entry');
   // 3 changing the fragment opens another, and a bad name requests nothing
   const n0=storeReqs().length;
   await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,900);

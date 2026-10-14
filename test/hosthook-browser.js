@@ -107,7 +107,12 @@ const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS
   ok(await p.locator('#main textarea').first().inputValue()==='QZXanswerone','a press reads the newer file and keeps the answer typed here over the file\'s: '+await p.locator('#main textarea').first().inputValue());
   ok(await p.locator('#main .hostnote').count()===0,'and the offer is gone');
   // 400px with a host: long label, failure
-  await p.evaluate(()=>{localStorage.setItem('booklet.host.allowed','fleet: booklets/reports/with/a/rather/long/folder/name');window.__h.leave();window.__h=window.Booklet.host({label:'fleet: booklets/reports/with/a/rather/long/folder/name'});window.__h.failed('disk full, and a rather long explanation follows');});
+  /* a host under a new label asks again, and the reader allows it (since 0.13.1 the yes lives in the renderer's own store,
+     IndexedDB, so the test presses Allow rather than writing local storage) */
+  await p.evaluate(()=>{window.__h.leave();window.__h=window.Booklet.host({label:'fleet: booklets/reports/with/a/rather/long/folder/name'});});await wait(p,200);
+  await p.locator('#main .hostask button.primary').click();await wait(p,200);
+  ok(await p.evaluate(()=>window.__h.state())==='active','a new label is allowed by the reader\'s press');
+  await p.evaluate(()=>{window.__h.failed('disk full, and a rather long explanation follows');});
   await p.setViewportSize({width:400,height:800});await wait(p,300);
   await p.screenshot({path:path.join(OUT,'bar-host-failed-400.png')});
   ok(await noScroll(p)<=0,'no sideways overflow at 400px with a host and a failure');

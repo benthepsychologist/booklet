@@ -6,7 +6,9 @@ const mk=(tag)=>{const n={tagName:tag,children:[],attrs:{},style:{},value:"",_te
   Object.defineProperty(n,"dataset",{value:{}}); return n;};
 const store={};
 const _ls={};
-global.localStorage={getItem:k=>(k in _ls?_ls[k]:null),setItem:(k,v)=>{_ls[k]=String(v)},removeItem:k=>{delete _ls[k]},clear:()=>{for(const k in _ls) delete _ls[k]}};
+/* a browser's local storage: getItem, setItem, removeItem, clear, and length and key(i), which the move to IndexedDB reads */
+global.localStorage={getItem:k=>(k in _ls?_ls[k]:null),setItem:(k,v)=>{_ls[k]=String(v)},removeItem:k=>{delete _ls[k]},clear:()=>{for(const k in _ls) delete _ls[k]},
+  get length(){return Object.keys(_ls).length;},key:i=>{const k=Object.keys(_ls)[i];return k===undefined?null:k;}};
 global.__ls=_ls;
 /* getElementById returns null for anything that is not actually in the page,
    exactly as a browser does. The old stub handed back a fresh element for ANY
