@@ -1,9 +1,9 @@
 # STATUS — Booklet
 
-*As of 2026-10-13*
+*As of 2026-10-14*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.13, not yet released** (the format rules of the 0.13 update merged as pull request #46, 0107a6d; the drawing half is in the pull request of item `v013-format-drawing`; the last release is v0.12.0): format v0.13 (files say `booklet: "0.13"`, in quotes) and renderer 0.13.0 (0.13.1 with item `v013-renderer-structure`, which merges after the v0.13.0 tag). The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
+**project v0.13, v0.13.0 released** (tagged `v0.13.0` at `c808ad7`, live on the box and on bookletmd.org): format v0.13 (files say `booklet: "0.13"`, in quotes) and renderer 0.13.0. Renderer 0.13.1 is in progress: item `v013-renderer-structure` (pull request #51) and the items after it. The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, one static file), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
@@ -53,7 +53,7 @@ For a store booklet (`from: store:<name>`) the store's file is the truth, and wh
 - **Never sent blank.** A booklet with no module is never sent to the host (`hookFire`), and a change still waiting its half second is told to the host as its booklet is left (`hookFlush`), not in the next booklet's place.
 - **The host's answer may name its change.** `onChange` gives `change`, a number; `saved(change)` / `failed(message, change)` about an earlier change or another booklet leave the bar as it is. Without it, as before (docs/hosting.md).
 - **"Opening <name>…"** shows on whatever screen is up while a file is read, and goes when the read ends however it ends, or a newer link takes over (`LINK_LOADING` is `{gen, label, from}`). Open from the list falls back to the kept copy only when its own read failed, not when a newer one superseded it. Removing an entry while its file is read drops that read. `openLinked` writes a pending save before it decides. Download makes no kept copy for a pointer.
-- **Strings:** `linkLoading` (new) and `linkFromStore` are marked `l10n: draft` in fr and es; fr uses the colon form (`Ouverture : <name>…`).
+- **Strings:** `linkLoading` (new) and `linkFromStore`, their fr and es checked by the localization of 0.13.0's strings (#53); fr uses the colon form (`Ouverture : <name>…`).
 - **Tests:**
   - `test/storeheld.test.js` (new) has one block per finding of the first review (B1-B4, S1-S4, N2-N5), 52 of whose checks fail on 36d7126, and blocks for the second review (removals with the box down: an answer, an entry, a draft; the open after a 409; Read the newer file with work the file lacks; a records-scope move; the save at pagehide), 9 of whose checks fail on 45a4396. Third round: two devices (B only looked, A answered: reading the file on B keeps A's work; B's own answer still wins), a host-pushed file keeping what was typed after the host's last save, and the accepted cost pinned; 5 of those checks fail on a6fc464.
   - `test/storeheld-browser.js` (new; part 4, an answer cleared and refused by the store staying cleared, fails on 45a4396) runs in real Chromium with a late host script and a merging store. Fresh page loads draw the new file 5 of 5 and the old question never appears; a renamed pointer keeps the store's record. It fails on 36d7126.

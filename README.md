@@ -317,7 +317,9 @@ reader can do: download a copy, or add the page to the home screen.
 
 The renderer only ever calls `localStorage.getItem`, `setItem` and
 `removeItem`, on a few known keys (`booklet.library.v1` for the list,
-`booklet.b.<id>` for each booklet), and never lists the store. So a page that
+`booklet.b.<id>` for each booklet, and `booklet.base.<id>` for a store
+booklet's base: the records last read from or saved to its file, which tell
+what changed on each side), and never lists the store. So a page that
 namespaces those calls per booklet, by prefixing every key, can run several
 independent booklet instances on one origin without their data colliding.
 
