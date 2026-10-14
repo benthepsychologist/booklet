@@ -1,9 +1,13 @@
 // Mermaid diagrams and math: the vendored libraries and when they wake.
 //
-// booklet.html carries mermaid (diagrams) and Temml (TeX into MathML) as inert
-// <script type="text/plain"> blocks and wakes one only when a booklet actually has a
-// diagram or a formula. Node cannot run either library, so this file checks what it can:
-// the blocks are there, their text round-trips and matches the sha256 their comment gives,
+// booklet.html is a core and its parts (0.13.1, item 11). Mermaid (diagrams) and Temml (TeX
+// into MathML) are parts: the core holds Temml as an inert <script type="text/plain"> block
+// and mermaid is the file parts/mermaid.js beside it; the one-file build (test/one-file.js)
+// holds both as blocks. This runs on the core, and with the build as its argument on the
+// build (`node test/figures.test.js build/booklet.html`). A part is woken or loaded only when
+// a booklet actually has a diagram or a formula. Node cannot run either library, so this file
+// checks what it can: each part is there, in the file or beside it, its text round-trips and
+// matches the sha256 its notice gives,
 // the page never reaches for a library unless there is something to draw, the dollar-sign
 // guard holds, and a figure fence is parsed out of the prose. test/figures-browser.js (run by
 // hand under the /app/ CSP, it needs Playwright) is the authority on the drawing itself.
@@ -11,31 +15,43 @@
 require("./harness.js");
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
 const R=path.join(__dirname,"..");
-const html=fs.readFileSync(path.join(R,"booklet.html"),"utf8");
+const FILE=path.resolve(process.argv[2]||path.join(R,"booklet.html"));
+const html=fs.readFileSync(FILE,"utf8");
 const src=html.split("<script>\n")[1].split("\n</script>")[0];
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 
 /* ---------------- the stored libraries ---------------- */
 const LIBS=[["mermaid","@mermaid-js/tiny","12.1.0","https://unpkg.com/@mermaid-js/tiny@12.1.0/dist/mermaid.tiny.js"],
             ["temml","temml","0.13.5","https://unpkg.com/temml@0.13.5/dist/temml.min.js"]];
+const unstore=t=>t.replace(/<\\\/script/g,"</script").replace(/<\\!--/g,"<!--");
 for(const [name,pkg,ver,url] of LIBS){
-  const re=new RegExp("<!-- LIBRARY: ([^\\n]*)\\n((?:(?!-->)[\\s\\S])*)-->\\n<script type=\"text/plain\" id=\"lib-"+name+"\">([\\s\\S]*?)</script>");
-  const m=re.exec(html);
-  chk(name+": an inert text/plain block with a comment above it",!!m);
-  if(!m) continue;
-  const head=m[1]+"\n"+m[2];
-  chk(name+": the comment names the package, version and source URL",head.includes(pkg+" "+ver)&&head.includes(url),head);
-  chk(name+": the comment carries the MIT licence notice",/MIT/.test(head)&&/Copyright/.test(head));
+  /* the part's notice: `<!-- LIBRARY: …-->` over a block (Temml, in the core), `<!-- PART: …-->` (mermaid, a part beside the core) */
+  const re=new RegExp("<!-- (?:LIBRARY|PART): ((?:(?!-->)[\\s\\S])*)-->\\n(?:<script type=\"text/plain\" id=\"lib-"+name+"\">([\\s\\S]*?)</script>)?");
+  const notices=[...html.matchAll(new RegExp(re.source.replace("((?:","((?:"),"g"))].filter(x=>x[1].includes(pkg+" "+ver));
+  chk(name+": a notice names the package and version",notices.length===1,String(notices.length));
+  if(notices.length!==1) continue;
+  const m=notices[0],head=m[1],blockText=m[2];
+  const partFile=path.join(R,"parts",name+".js"),isPart=fs.existsSync(partFile);
+  chk(name+": it is either a block in the file or the file parts/"+name+".js, and in the core exactly one of those",
+    process.argv[2]?(blockText!==undefined):((blockText!==undefined)!==isPart),"block "+(blockText!==undefined)+", part file "+isPart);
+  chk(name+": the notice names the package, version and source URL",head.includes(pkg+" "+ver)&&head.includes(url),head);
+  chk(name+": the notice carries the MIT licence notice",/MIT/.test(head)&&/Copyright/.test(head));
   const sha=(/sha256 of the downloaded file: ([0-9a-f]{64})/.exec(head)||[])[1];
-  chk(name+": the comment gives a sha256",!!sha);
-  chk(name+": the stored text holds no raw </script or <!--",!/<\/script/i.test(m[3])&&!/<!--/.test(m[3]));
-  const back=m[3].replace(/<\\\/script/g,"</script").replace(/<\\!--/g,"<!--");
-  chk(name+": un-escaped, the stored text hashes to the sha256 in the comment",
+  chk(name+": the notice gives a sha256",!!sha);
+  let back;
+  if(blockText!==undefined){
+    chk(name+": the stored text holds no raw </script or <!--",!/<\/script/i.test(blockText)&&!/<!--/.test(blockText));
+    back=unstore(blockText);
+    if(isPart) chk(name+": the block is parts/"+name+".js, byte for byte",back===fs.readFileSync(partFile,"utf8"));}
+  else{
+    back=fs.readFileSync(partFile,"utf8");
+    chk(name+": parts/"+name+".js is read as bytes, not changed: no carriage return, no NUL",!/[\r\u0000]/.test(back));}
+  chk(name+": the library text hashes to the sha256 in the notice (the downloaded file, byte for byte)",
     crypto.createHash("sha256").update(Buffer.from(back,"utf8")).digest("hex")===sha);
   chk(name+": the library text is substantial",back.length>100000);
 }
-chk("the libraries sit after the renderer script, so the renderer's own source is unchanged in shape",
-  html.indexOf('id="lib-mermaid"')>html.indexOf("\n</script>"));
+chk("any library block sits after the renderer script, so the renderer's own source is unchanged in shape",
+  html.indexOf('id="lib-temml"')>html.indexOf("\n</script>")&&(html.indexOf('id="lib-mermaid"')<0||html.indexOf('id="lib-mermaid"')>html.indexOf("\n</script>")));
 chk("the renderer never evals: no eval( and no new Function",!/\beval\s*\(|new\s+Function\b/.test(src));
 const notice=fs.readFileSync(path.join(R,"NOTICE"),"utf8");
 chk("NOTICE lists both libraries as MIT",/mermaid/i.test(notice)&&/temml/i.test(notice)&&/MIT/.test(notice));

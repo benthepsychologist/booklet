@@ -3,10 +3,15 @@
 // from the removed built-ins, wrapper, shelf or locking code comes back.
 // Run: node test/guard.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path");
-/* the vendored libraries (mermaid, Temml) sit asleep in <script type="text/plain" id="lib-…"> blocks; this guard
-   reads the renderer, not them, so those blocks are left out (test/figures.test.js checks them) */
-const html=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8")
-  .replace(/<script type="text\/plain" id="lib-[a-z]+">[\s\S]*?<\/script>/g,"");
+/* The renderer is a core and its parts (0.13.1, item 11). This runs on the core (booklet.html) and, with the file as its
+   argument, on the one-file build (test/one-file.js writes it): `node test/guard.test.js build/booklet.html`. The vendored
+   libraries (mermaid, Temml) are parts. A part the file holds sits asleep in a <script type="text/plain" id="lib-…"> block;
+   a part it does not hold is the file parts/NAME.js in this repository. This guard reads the renderer, not them, so any
+   such block is left out of `html`, and the parts are read for what they hold below (test/figures.test.js checks the blocks
+   and the parts' hashes). */
+const FILE=path.resolve(process.argv[2]||path.join(__dirname,"..","booklet.html"));
+const html=fs.readFileSync(FILE,"utf8")
+  .replace(/<script type="text\/plain" id="lib-[a-z][a-z0-9-]*">[\s\S]*?<\/script>/g,"");
 const BANNED=["ENTRY_STORE","emptyCheckin","emptyToday","goodday","checkins","BODY_KEYS","TODAY_KEYS","skipBody",
   "LIBRARY(","acquisitions","KEYS_BY_TYPE","LEGACY_KEYS","wrapperConfig","addModFile","veilSafety","veilRemind",
   "veilLock",'"checkin"','"today"',
@@ -122,7 +127,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
 // code (the Markdown reader looks for HTML comments) opens the escaped state until the next `-->`, and a `<script` written
 // while it is open (even in a comment) opens the double-escaped state, which swallows the real `</script>` and breaks the
 // page with "Unexpected token '<'". Node's evaluation of the script text cannot see that, so this walks the same states.
-{const full=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8"),a=full.indexOf("<script>\n")+9,want=full.indexOf("\n</script>",a)+1;
+{const full=fs.readFileSync(FILE,"utf8"),a=full.indexOf("<script>\n")+9,want=full.indexOf("\n</script>",a)+1;
  const delim=c=>/[ \t\n\f\r\/>]/.test(c||"");let st="data",i=a,end=-1;
  while(i<full.length){const low=full.substr(i,9).toLowerCase();
    if((st==="data"||st==="escaped")&&low.startsWith("</script")&&delim(full[i+8])){end=i;break;}
@@ -139,14 +144,29 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
 // A change that makes any of these fail is a change to the promise itself, and needs Ben's say-so before this test is edited.
 {const PLEDGE=" This is Booklet's pledge: nothing a reader writes leaves their browser except in a file they save themselves. Changing this check changes the pledge, and needs Ben's say-so.";
  const must=(label,ok,d)=>{if(ok) console.log("  ok    "+label);else{fails++;console.log("  FAIL  "+label+(d?"   → "+d:"")+PLEDGE);}};
- const full=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
- const libs=[...full.matchAll(/<script type="text\/plain" id="lib-([a-z]+)">([\s\S]*?)<\/script>/g)].map(m=>({id:m[1],text:m[2]}));
+ const full=fs.readFileSync(FILE,"utf8");
+ /* the libraries, whichever way the file carries them: a block it holds, or the part file beside it (the repository's parts/) */
+ const blocks=[...full.matchAll(/<script type="text\/plain" id="lib-([a-z][a-z0-9-]*)">([\s\S]*?)<\/script>/g)].map(m=>({id:m[1],text:m[2]}));
+ const PARTS=path.join(__dirname,"..","parts");
+ const partFiles=fs.existsSync(PARTS)?fs.readdirSync(PARTS).filter(f=>/\.js$/.test(f)).map(f=>f.slice(0,-3)).sort():[];
+ const libs=blocks.concat(partFiles.filter(n=>!blocks.some(b=>b.id===n)).map(n=>({id:n,text:fs.readFileSync(path.join(PARTS,n+".js"),"utf8")})))
+   .sort((a,b)=>a.id<b.id?-1:1);
  const hand=html; /* the hand-written part: every script above the libraries, and the static markup */
  const NAMES=["XMLHttpRequest","sendBeacon","WebSocket","EventSource","RTCPeerConnection",".postMessage(","BroadcastChannel",
    "navigator.share","serviceWorker","importScripts","formAction",".submit(","document.cookie"];
  /* a name counts where it is not the tail of a longer identifier (performAction is not formAction) */
  const count=(text,n)=>(text.match(new RegExp("(?<![A-Za-z0-9_$])"+n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"g"))||[]).length;
  must("the libraries are found (mermaid and temml)",libs.map(l=>l.id).join()==="mermaid,temml"&&libs.every(l=>l.text.length>100000));
+ /* 0.13.1 (item 11, Ben's pick of way C): where each part lives. Temml rides inside the core; mermaid is parts/mermaid.js, and only
+    the one-file build holds it as a block. A part that sits in the file must be the same text as its part file. */
+ const unstore=t=>t.replace(/<\\\/script/g,"</script").replace(/<\\!--/g,"<!--");
+ for(const b of blocks) if(partFiles.includes(b.id)) must("the block lib-"+b.id+" in the file is parts/"+b.id+".js, byte for byte (the one-file build)",unstore(b.text)===fs.readFileSync(path.join(PARTS,b.id+".js"),"utf8"));
+ must(process.argv[2]?"the file given holds every part as a block (the one-file build)":"the core holds Temml as a block and nothing else: mermaid is parts/mermaid.js",
+   blocks.map(b=>b.id).sort().join()===(process.argv[2]?partFiles.concat(["temml"]).sort().join():"temml"),blocks.map(b=>b.id).join());
+ must("the file has no <script> with a src: nothing is fetched by markup, so the only way the page loads a part is useLib()",!/<script\b[^>]*\bsrc\s*=/i.test(full));
+ must("the renderer makes a script with a src in exactly one place (loadPart), and the address it gets is made in exactly one place (partAddress): parts/NAME.js, under the page's own address, for a name it carries",
+   count(hand,"s.src=url")===1&&count(hand,'new URL("parts/"+name+".js",location.href)')===1&&count(hand,'createElement("script")')===2&&/const LIB_GLOBAL=\{mermaid:"__esbuild_esm_mermaid_nm",temml:"temml"\}/.test(hand)&&/hasOwnProperty\.call\(LIB_GLOBAL,name\)/.test(hand));
+ must("a part's script gets no integrity attribute (a page opened from disk cannot check one) and no crossorigin attribute",!/\bintegrity\b/.test(hand.replace(/\/\*[\s\S]*?\*\//g,""))&&!/crossOrigin|crossorigin/.test(hand.replace(/\/\*[\s\S]*?\*\//g,"")));
  for(const n of NAMES) must("the hand-written renderer has no "+n,count(hand,n)===0,count(hand,n)+" found");
  must("it has no <form with an action",!/<form\b[^>]*\baction\b/i.test(hand)&&!/<form\b/i.test(hand),"a <form> is present");
  must("it never writes document.cookie",count(hand,"document.cookie")===0);
@@ -193,12 +213,13 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
      if(a) must(l.id+" holds "+n+" exactly "+a[0]+" time(s), allowed because: "+a[1],c===a[0],c+" found");
      else must(l.id+" holds no "+n,c===0,c+" found: if a library can now open a connection, say so plainly and ask Ben");}}
  must("mermaid is started with securityLevel strict, so its click links and sandbox iframe never run",/securityLevel:"strict"/.test(hand)&&!/securityLevel:"(loose|sandbox|antiscript)"/.test(hand));
- must("a diagram's source is read by diagramRisk() before mermaid is started, and one that is refused returns before the library is used",
-   (()=>{const m=hand.match(/function mermaidNode\(code\)\{[\s\S]*?\n  try\{/);return !!m&&/diagramRisk\(code\)/.test(m[0])&&/return box;\}\n  try\{$/.test(m[0])&&!/useLib\("mermaid"\)/.test(m[0]);})());
+ must("a diagram's source is read by diagramRisk() before mermaid is started, and one that is refused returns before the library is used or its part is asked for",
+   (()=>{const m=hand.match(/function mermaidNode\(code\)\{[\s\S]*?useLib\("mermaid"\)/);return !!m&&/diagramRisk\(code\)\)\{[^\n]*\n[^\n]*return box;\}/.test(m[0])&&m[0].indexOf("diagramRisk(code)")<m[0].lastIndexOf('useLib("mermaid")')&&!/whenLib|loadPart/.test(m[0]);})());
  must("mermaid is never started anywhere but mermaidNode (so every diagram passes that check)",count(hand,'useLib("mermaid")')===1&&count(hand,"M.initialize(")===2&&count(hand,"M.render(")===1,count(hand,'useLib("mermaid")')+" / "+count(hand,"M.initialize(")+" / "+count(hand,"M.render("));
  must("the renderer builds no <img> from a file's Markdown (mkImg draws text), and creates no img element anywhere",count(hand,'el("img"')===0&&count(hand,"createElement(\"img\")")===0&&count(hand,"new Image")===0&&!/<img\b/i.test(hand.slice(hand.indexOf("<body>"))),"img found");
  must("temml is started with trust:false, so \\includegraphics and \\href are not drawn",/trust:false/.test(hand)&&!/trust:true/.test(hand));
  must("the libraries are stored as inert text (type text/plain), never as script that runs on load",!/<script(?![^>]*type="text\/plain")[^>]*id="lib-/.test(full));
+ must("a part is woken or loaded only through useLib(), and only mermaidNode and mathNode ask for one by name",count(hand,'useLib("mermaid")')===1&&count(hand,'useLib("temml")')===1&&count(hand,"loadPart(")===2&&count(hand,"whenLib(")===2);
 
  /* 0.11.5: a file's SVG reaches the page only through sanitizeSvg, and the page's own el() html path has no caller */
  {const strip=hand.split("<!-- LIBRARY:")[0];
@@ -222,7 +243,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
 // THE RENDERER CARRIES ITS OWN CONTENT-SECURITY-POLICY (0.11.6): a meta tag directly after the charset tag, so the block on
 // fetch and the rest is in the file itself and a copy opened from disk or served by any host has it. A host's header can only
 // add a second policy, never loosen this one. The script hashes are computed by test/csp-hash.js, never typed.
-{const full=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8"),csp=require("./csp-hash.js");
+{const full=fs.readFileSync(FILE,"utf8"),csp=require("./csp-hash.js");
  const FIX=" Run: node test/csp-hash.js --write booklet.html (and if the policy itself was changed on purpose, that needs Ben's say-so).";
  const must=(label,ok,d)=>{if(ok) console.log("  ok    "+label);else{fails++;console.log("  FAIL  "+label+(d?"   → "+d:"")+FIX);}};
  const head=full.slice(0,full.indexOf("<body>"));
@@ -233,11 +254,11 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("it comes before every script, style and link (a meta policy governs only what follows it)",at>0&&at<script&&at<style&&at<link);
  const have=tags[0]?tags[0][1]:"";
  /* the fixed part, written out here so that weakening the template in csp-hash.js cannot pass by changing both together */
- const FIXED="default-src 'none'; script-src 'self' H H H H; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'";
+ const FIXED="default-src 'none'; script-src 'self' "+csp.scripts(full).map(()=>"H").join(" ")+"; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'";
  must("the policy is exactly the one this renderer carries (the four script hashes aside)",have.replace(/'sha256-[A-Za-z0-9+\/]+={0,2}'/g,"H")===FIXED,have);
  const sc=(/script-src ([^;]*)/.exec(have)||["",""])[1];
  must("scripts: no unsafe-inline, no unsafe-eval, no strict-dynamic, no wildcard, no host but 'self'",!/unsafe-inline|unsafe-eval|strict-dynamic|\*|https?:/.test(sc),sc);
- must("the policy names exactly four script hashes",(sc.match(/'sha256-/g)||[]).length===4);
+ must("the policy names exactly one hash for the theme-boot script, the main script and each part the file holds as a block ("+(2+csp.held(full).length)+")",(sc.match(/'sha256-/g)||[]).length===2+csp.held(full).length);
  must("the hashes are of the scripts as they stand now (theme-boot, main, mermaid and temml as useLib() starts them)",csp.problems(full).length===0,csp.problems(full).join(" | "));
  must("the DNS-prefetch tag follows it: x-dns-prefetch-control is off",full.includes(csp.CHARSET+"\n"+csp.tagFor(full)+"\n"+csp.DNS+"\n")&&/<meta http-equiv="x-dns-prefetch-control" content="off">/.test(head));
  /* what the policy leaves out is as much of the promise as what it names: no frame, worker, media, manifest or font source is opened */

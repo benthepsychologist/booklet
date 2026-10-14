@@ -6,8 +6,8 @@
 // prose keeps a readable measure while a table uses the width; zero CSP violations and page errors.
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
-const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.dirname(HTML);
-const CSP=require('./csp.js');
+const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.join(__dirname,'..');
+const CSP=require('./csp.js'),PARTS=require('./parts.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -18,6 +18,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
     p.on('pageerror',e=>errs.push(e.message));
     await p.route('https://bookletmd.test/**',async r=>{const u=new URL(r.request().url()).pathname;
       if(u==='/app/')return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}});
+      {const s=PARTS.serve(HTML,u,'/app/');if(s)return r.fulfill(s);}   /* the diagram library is a part beside the renderer (0.13.1) */
       r.fulfill({status:404,body:'nf'});});
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
     return {p,ctx,csp,errs};}

@@ -4,7 +4,15 @@
 # node_modules/playwright, else the activity-kit copy on the dev box. With none of
 # them this prints "browser  SKIPPED (no Playwright)" and exits 0, so a machine
 # without a browser still gets a green run.sh. Exits 1 if any script fails.
+#   bash test/run-browser.sh                      every check, on booklet.html (the core)
+#   bash test/run-browser.sh build/booklet.html pledge figures ...
+#                                                 only the named checks, on that file (run.sh does this
+#                                                 for the one-file build, test/one-file.js; names are the
+#                                                 script names without -browser.js)
 cd "$(dirname "$0")/.." || exit 1
+html=${1:-booklet.html}; shift
+only=" $* "
+tag=""; [ "$html" != booklet.html ] && tag=" [$html]"
 
 pw=${PLAYWRIGHT:-}
 if [ -z "$pw" ]; then
@@ -24,11 +32,12 @@ fails=0
 for f in test/*-browser.js; do
   [ -e "$f" ] || continue
   name=$(basename "$f" .js)
-  log=$(node "$f" booklet.html "$out" 2>&1); rc=$?
-  printf '%-8s %s\n' "${name%-browser}" "$(printf '%s\n' "$log" | tail -1)"
+  if [ "$only" != "  " ] && [ "${only#* ${name%-browser} }" = "$only" ]; then continue; fi
+  log=$(node "$f" "$html" "$out" 2>&1); rc=$?
+  printf '%-8s %s\n' "${name%-browser}" "$(printf '%s\n' "$log" | tail -1)$tag"
   if [ "$rc" -ne 0 ]; then
     printf '%s\n' "$log" | sed 's/^/         /'
-    printf '%-8s FAILED (exit %s)\n' "${name%-browser}" "$rc"
+    printf '%-8s FAILED (exit %s)%s\n' "${name%-browser}" "$rc" "$tag"
     fails=$((fails + 1))
   fi
 done

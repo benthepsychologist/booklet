@@ -4,7 +4,7 @@
 // Run: node test/themes.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path");
 const html=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8")
-  .replace(/<script type="text\/plain" id="lib-[a-z]+">[\s\S]*?<\/script>/g,"");
+  .replace(/<script type="text\/plain" id="lib-[a-z][a-z0-9-]*">[\s\S]*?<\/script>/g,"");
 let fails=0;const ok=(c,m)=>{console.log((c?"  ok    ":"  FAIL  ")+m);if(!c)fails++;};
 const style=html.slice(html.indexOf("<style>")+7,html.indexOf("</style>"));
 // token tables: a rule whose selector is :root (alone or with [data-theme=…]) and whose body sets custom properties

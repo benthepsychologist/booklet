@@ -44,7 +44,7 @@ This is the distinction the whole design rests on, and it is easy to get backwar
 
 | | what it is | where it lives |
 | --- | --- | --- |
-| **The renderer** | one static HTML file. It holds **engines** — the ability to make an SVG's regions clickable, to lay out a grid of selectable words, to open cards one at a time — and its own interface strings. **It holds no activities and no content.** | this repo |
+| **The renderer** | a core, `booklet.html`, plus `parts/` beside it (or the one-file build, which holds both in one static HTML file). It holds **engines** — the ability to make an SVG's regions clickable, to lay out a grid of selectable words, to open cards one at a time — and its own interface strings. **It holds no activities and no content.** | this repo |
 | **The booklet** | the file above. Every activity, every question, every word a reader sees, and everything they wrote. **All state lives here.** | the reader's device |
 | **The registry** | the one place the renderer fetches modules from: [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry), a separate repo. The renderer stores no module and starts with none. | a separate repo |
 
@@ -74,7 +74,7 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** One static file, no build step, nothing to install or fetch to open it. Draws mermaid diagrams and typesets math with two MIT-licensed libraries stored inside it (see below). Reads v0.3 only — no earlier format opens |
+| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and it asks the network for nothing but its own parts. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads v0.3 only — no earlier format opens |
 | [`SPEC.md`](SPEC.md) | the current format (v0.13), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
@@ -91,10 +91,13 @@ If you serve the renderer yourself and want a reader's work saved somewhere othe
 
 ## Try it
 
-Download `booklet.html` and `examples/how-tides-work.booklet.md`, open the HTML file in a browser —
+Download `booklet.html` with its `parts/` folder beside it and `examples/how-tides-work.booklet.md`, open the HTML file in a browser —
 **straight off your disk, `file://` is fine** — and press *Add a booklet from a file*
-on "Your booklets" to open the markdown file. No server, no install, no network: verified with `fetch` and
-`XMLHttpRequest` stubbed to fail.
+on "Your booklets" to open the markdown file. No server, no install, no network beyond the renderer's own `parts/mermaid.js`, and only for a booklet with a diagram; without `parts/` a diagram shows its source.
+
+To have the renderer as one file instead, with every part inside it, make the one-file build: in a clone of this
+repository, `node test/one-file.js` writes it to `build/booklet.html` (it needs only node). No release publishes that
+file yet, so for now this is how to get it.
 
 **Themes and width.** The renderer has four built-in themes the reader picks from a menu in the top bar:
 Paper (the default look), Daylight (white), Night (dark) and Contrast (high contrast, light). *Auto* is the booklet's own
@@ -122,11 +125,18 @@ renderer has no way to load a file into a booklet that is already open.
 
 **Diagrams and math.** The renderer draws a ```` ```mermaid ```` fence as SVG and
 typesets `$…$` and `$$…$$` as MathML. It does this with mermaid (tiny build)
-and Temml, both MIT, kept inside `booklet.html` as inert text and woken the
-first time a booklet has a diagram or a formula. A booklet with neither never
-runs them, and nothing is fetched, so the file still works straight off disk
-and under a strict Content-Security-Policy. Their versions, source addresses
-and checksums are in the comments above them in the file, and in `NOTICE`.
+and Temml, both MIT. The renderer is a core and its parts: Temml is kept inside
+`booklet.html` as inert text and woken the first time a booklet has a formula, and
+mermaid is the file `parts/mermaid.js`, which sits beside `booklet.html` and is
+loaded the first time a booklet has a diagram. A booklet with neither never runs
+them and makes no request: the renderer asks the network for nothing except its own
+parts, from where it came, and only when a booklet needs one. A build can always make
+the renderer one file again (`node test/one-file.js` writes `build/booklet.html` with
+every part inside it). Straight off disk, keep `parts/` beside the file or use the
+one-file build; a diagram whose part is not there shows its source under a short note.
+Under a strict Content-Security-Policy that allows the page's own scripts (`script-src 'self'`) it works the
+same. The versions, source addresses and checksums are in the comments above them in the
+file, and in `NOTICE`.
 
 **What the renderer refuses in a diagram.** Mermaid can ask the network for an address its own
 source names, even in its strictest mode, and the renderer fetches nothing a file names (`SPEC.md`
@@ -200,7 +210,7 @@ own questions.
 
 ## Putting the renderer on a site
 
-`booklet.html` needs nothing from a host: copy it anywhere and it works. It has
+`booklet.html` needs nothing from a host except that `parts/` is served beside it (or serve the one-file build): copy the core plus `parts/` anywhere and it works. It has
 one setting, and it is not part of the format: where "Add a module" looks for
 modules. That is one line in the page's `<head>`:
 

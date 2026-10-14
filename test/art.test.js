@@ -3,7 +3,7 @@
 require("./harness.js");
 const fs=require("fs"),path=require("path");
 const R=path.join(__dirname,".."),A=require("./art-sprite.js");
-const html=fs.readFileSync(path.join(R,"booklet.html"),"utf8").replace(/<script type="text\/plain" id="lib-[a-z]+">[\s\S]*?<\/script>/g,"");
+const html=fs.readFileSync(path.join(R,"booklet.html"),"utf8").replace(/<script type="text\/plain" id="lib-[a-z][a-z0-9-]*">[\s\S]*?<\/script>/g,"");
 const src=fs.readFileSync(path.join(R,"booklet.html"),"utf8").split("<script>\n")[1].split("\n</script>")[0];
 let fails=0;const ok=(c,m,d)=>{console.log((c?"  ok    ":"  FAIL  ")+m+(!c&&d!==undefined?"   -> "+d:""));if(!c)fails++;};
 

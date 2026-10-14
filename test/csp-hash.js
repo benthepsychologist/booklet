@@ -1,14 +1,19 @@
 // The renderer's own Content-Security-Policy, as a <meta http-equiv> tag directly after the charset tag (renderer 0.11.6).
 // The policy names the renderer's own scripts by their sha256, and those change whenever the renderer's code changes, so
 // they are computed here, never typed.
+// The renderer is a core and its parts (0.13.1, item 11). A part the file holds is an inert <script type="text/plain" id="lib-NAME">
+// block, and its hash is in the policy; a part the file does not hold is loaded from parts/NAME.js beside the page, and is allowed
+// by script-src 'self', so it has no hash here. The core holds Temml (three hashes); the one-file build (test/one-file.js) holds
+// every part (four). Both are checked by this one script, and the policy is the same text but for the number of hashes: which
+// blocks are in the file decides the list, not a branch per library.
 //   node test/csp-hash.js --write booklet.html    rewrite the policy line in the meta tag from the file's own scripts
 //   node test/csp-hash.js --check booklet.html    exit 1 if the tag is missing, misplaced, not this policy, or stale
 // What is hashed is the text the browser actually executes: the theme-boot script and the main script as they stand in the
-// file, and each of the two vendored libraries as useLib() starts them (the stored text with `<\/script` put back to
+// file, and each library block the file holds as useLib() starts it (the stored text with `<\/script` put back to
 // `</script` and `<\!--` to `<!--`, exactly useLib()'s two replace() calls).
 const fs=require("fs"),crypto=require("crypto");
 const sha=t=>"'sha256-"+crypto.createHash("sha256").update(t,"utf8").digest("base64")+"'";
-/* the four scripts, in the order the policy lists them */
+/* the scripts, in the order the policy lists them: theme-boot, main, then each library block in file order */
 /* the HTML parser rewrites a NUL in script text (to U+FFFD) and a carriage return (to a newline) before anything runs,
    so a script holding either is hashed by the browser as text that is not in the file. The file holds neither: a NUL is
    written as the escape \0, and lines end in a newline alone. Refused here rather than guessed at, since a wrong hash
@@ -20,12 +25,12 @@ function scripts(html){
   const main=/<script>([\s\S]*?)<\/script>/.exec(html);
   if(!boot||!main) throw new Error("the theme-boot script or the main script was not found");
   out.push(["theme-boot",boot[1]],["main",main[1]]);
-  for(const name of ["mermaid","temml"]){
-    const m=new RegExp('<script type="text/plain" id="lib-'+name+'">([\\s\\S]*?)</script>').exec(html);
-    if(!m) throw new Error("the stored library "+name+" was not found");
-    out.push(["lib-"+name,m[1].replace(/<\\\/script/g,"</script").replace(/<\\!--/g,"<!--")]);}
+  for(const m of html.matchAll(/<script type="text\/plain" id="lib-([a-z][a-z0-9-]*)">([\s\S]*?)<\/script>/g))
+    out.push(["lib-"+m[1],m[2].replace(/<\\\/script/g,"</script").replace(/<\\!--/g,"<!--")]);
   return out;}
-/* the policy; %H% is the four hashes. Nothing here is loosened by a host: a host's header can only add a second policy. */
+/* the names of the parts the file holds as blocks, in file order (the core: temml; the one-file build: mermaid, temml) */
+const held=html=>scripts(html).filter(s=>/^lib-/.test(s[0])).map(s=>s[0].slice(4));
+/* the policy; %H% is the hashes (one per script above). Nothing here is loosened by a host: a host's header can only add a second policy. */
 const POLICY=["default-src 'none'",
   "script-src 'self' %H%",
   "style-src 'self' 'unsafe-inline'",
@@ -47,7 +52,7 @@ function problems(html){
     return ["the Content-Security-Policy meta tag is missing or is not directly after the charset tag"];
   if(!tail.startsWith(BLOCK(html))){
     const have=/content="([^"]*)"/.exec(tail)[1];
-    return [have.replace(/'sha256-[^']*'/g,"H")===POLICY.replace("%H%","H H H H")?"the policy's script hashes are stale (the renderer's scripts changed)":
+    return [have.replace(/'sha256-[^']*'/g,"H")===POLICY.replace("%H%",scripts(html).map(()=>"H").join(" "))?"the policy's script hashes are stale (the renderer's scripts changed)":
       "the policy is not the one this renderer carries","  in the file: "+have,"  expected:    "+policyFor(html)];}
   return [];}
 /* the page with a current policy block directly after the charset tag: replaces one that is there, or inserts one. The hashes
@@ -57,7 +62,7 @@ function write(html){
   const i=html.indexOf(CHARSET);if(i<0) throw new Error("no charset tag");
   const rest=html.slice(i+CHARSET.length).replace(/^\n<meta http-equiv="Content-Security-Policy" content="[^"]*">/,"").replace(/^\n<meta http-equiv="x-dns-prefetch-control" content="[^"]*">/,"");
   return html.slice(0,i)+BLOCK(html).replace(/\n$/,"")+rest;}
-module.exports={write,scripts,policyFor,tagFor,BLOCK,problems,POLICY,CHARSET,DNS};
+module.exports={write,scripts,held,policyFor,tagFor,BLOCK,problems,POLICY,CHARSET,DNS};
 if(require.main===module){
   const mode=process.argv[2],file=process.argv[3];
   if(!/^--(write|check)$/.test(mode||"")||!file){console.error("usage: node test/csp-hash.js --write|--check booklet.html");process.exit(2);}

@@ -4,6 +4,15 @@
 // nowhere else; no URL, header or body holds any word the test typed as an answer; nothing is written to cookies and nothing but
 // the renderer's own "booklet." keys is in localStorage; zero CSP violations and page errors.
 // A change that makes this fail is a change to the pledge and needs Ben's say-so before the test is edited.
+// CHANGED WITH BEN'S SAY-SO, 0.13.1 (item 11, v013-diagram-carrier; Ben chose "way C" on 2026-10-13: "The renderer and booklets
+// are both allowed to come as more than one file. It's nothing but the renderer not 'nothing but this one file'"). The renderer is
+// a core and its parts. This test now allows exactly ONE more request than before: a plain GET of the renderer's own part,
+// parts/mermaid.js, at the renderer's own address (the page's folder), made only when a booklet has a diagram, and only if the
+// part is not inside the file being tested (the one-file build holds it and asks for nothing). It still fails any other request:
+// any other address, any other part name, a second request for the part, a request before a diagram is drawn, a request in a
+// run for a booklet that has none (the widget run), a method other than GET, a body, a query string, any word the reader typed.
+// It also runs the diagram under the box server's own policy (test/csp-box.js), besides bookletmd.org's (test/csp.js) and the
+// renderer's own meta policy alone (the no-header runs).
 // What the reader does here: starts a new booklet, adds two modules from an invented registry (served by page.route), answers
 // questions of every kind, adds an own option, keeps entries, renames the booklet, removes a module, opens and closes "Send or
 // save a copy", downloads, loads a file from disk and one by paste, switches language and theme, opens a booklet with a diagram
@@ -13,8 +22,9 @@
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pledge-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
-const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.dirname(HTML);
-const CSP=require('./csp.js');
+const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.join(__dirname,'..');
+const CSP=require('./csp.js'),BOXCSP=require('./csp-box.js'),PARTS=require('./parts.js');
+const HAS_PART=PARTS.has(HTML,'mermaid'),PART_PATH='/app/parts/mermaid.js';
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const PAGE_ORIGIN='https://bookletmd.test';
 /* every distinctive string the test types or names as the reader's work */
@@ -72,6 +82,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   const harvest=async()=>{const v=await p.evaluate(()=>window.__viol||[]).catch(()=>[]);viol.push(...v);};
   await p.route(PAGE_ORIGIN+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(u==='/app/')return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}});
+    {const s=PARTS.serve(HTML,u,'/app/');if(s)return r.fulfill(s);}
     r.fulfill({status:404,body:'nf'});});
   await p.route('https://raw.githubusercontent.com/**',r=>{const u=new URL(r.request().url()).pathname;
     if(/registry\.json$/.test(u))return r.fulfill({status:200,body:JSON.stringify(REG),headers:{'content-type':'application/json','access-control-allow-origin':'*'}});
@@ -156,6 +167,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
     if(await bt.isVisible()) await bt.click();else await bt.evaluate(e=>e.click());await wait(250);}
   for(const t of ['night','contrast','daylight','paper','auto']){await p.selectOption('#themeSel',t);await wait(150);}
   // 8 a booklet with a diagram and a formula: the libraries start
+  ok(!reqs.some(r=>/\/parts\//.test(r.url)),'until now, with no diagram opened, the renderer has asked for no part at all');
   await toList();
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(300);
   await p.locator('#fileIn').setInputFiles(path.join(R,'test/fixtures/figures.booklet.md'));await wait(500);
@@ -165,6 +177,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   const figs=await p.evaluate(()=>({svg:document.querySelectorAll('.mfig svg').length,math:document.querySelectorAll('math').length,
     libs:{mermaid:typeof __esbuild_esm_mermaid_nm,temml:typeof temml}}));
   ok(figs.svg>=1&&figs.math>=1,'a diagram and a formula are drawn, so the libraries ran: '+JSON.stringify(figs));
+  ok(reqs.filter(r=>/\/parts\//.test(r.url)).map(r=>r.method+' '+r.url).join()===(HAS_PART?'GET '+PAGE_ORIGIN+PART_PATH:''),'and the diagram library came from the renderer\'s own part, once, when it was needed, if the file does not hold it: '+reqs.filter(r=>/\/parts\//.test(r.url)).map(r=>r.url).join());
   await harvest();
   // 8b a booklet that links to modules it does not hold (renderer 0.12.0, item E): the links draw as chips, and drawing them asks for
   // nothing; the registry is read only when a reader presses a chip (the wiki browser test does that), so none of that is here
@@ -194,6 +207,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   console.log('INFO '+reqs.length+' requests: '+net.length+' network ('+[...new Set(net.map(r=>r.method+' '+new URL(r.url).origin))].join(', ')+'), '+local.length+' local ('+[...new Set(local.map(r=>r.url.split(':')[0]))].join(', ')+')');
   ok(net.length>0,'requests were recorded');
   ok(net.every(r=>r.method==='GET'),'every request is a GET: '+[...new Set(net.map(r=>r.method))].join(','));
+  ok(net.filter(r=>new URL(r.url).origin===PAGE_ORIGIN).every(r=>{const u=new URL(r.url).pathname;return u==='/app/'||u==='/linked/'||u==='/favicon.ico'||u===PART_PATH||u.startsWith('/pub/');}),'on the page\'s own origin it asked for the page itself, a favicon, the declared store and the one part: '+[...new Set(net.filter(r=>new URL(r.url).origin===PAGE_ORIGIN).map(r=>new URL(r.url).pathname))].join(', '));
   ok(net.every(r=>origins.has(new URL(r.url).origin)),'every request goes to the page\'s own origin, the registry\'s origin or the declared store\'s origin: '+[...new Set(net.map(r=>new URL(r.url).origin))].join(', '));
   ok(local.every(r=>/^(data|blob|about):/.test(r.url)),'anything not over the network is data:, blob: or about: (local to the browser): '+[...new Set(local.map(r=>r.url.split(':')[0]))].join(','));
   ok(net.filter(r=>new URL(r.url).origin===registryOrigin).every(r=>/registry\.json$|\/(kitchen|garden)\.md$/.test(new URL(r.url).pathname)),'the registry origin was asked only for the registry list and the two module files');
@@ -230,6 +244,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
    p2.on('pageerror',e=>errs2.push(e.message));
    await p2.route('**/*',r=>{const u=r.request().url();
      if(u===PLAIN+'/app/')return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8'}});
+     {const s=u.startsWith(PLAIN)&&PARTS.serve(HTML,new URL(u).pathname,'/app/');if(s)return r.fulfill(s);}
      if(/^(data|blob|about):/.test(u))return r.continue();
      r.abort();});
    const F='`'.repeat(3);
@@ -242,6 +257,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
      '> [!text|q] A question','','> [!module|named end] End',''].join('\n');
    await p2.goto(PLAIN+'/app/');await p2.waitForTimeout(500);
    ok(await p2.evaluate(()=>{const m=document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');return m.length===1&&/^default-src 'none'; script-src 'self' 'sha256-/.test(m[0].content)&&/connect-src 'self' https:\/\/raw\.githubusercontent\.com;/.test(m[0].content);}),'the second run: no header is sent, and the page carries its own Content-Security-Policy meta tag (0.11.6), the only policy there is');
+   ok(seen.filter(r=>/^https?:/i.test(r.url)).every(r=>r.url===PLAIN+'/app/'||r.url===PLAIN+'/favicon.ico'),'second run: before any booklet is opened the renderer has asked for nothing but itself (no part)');
    await p2.getByRole('button',{name:'Add a booklet from a file'}).click();await p2.waitForTimeout(300);
    await p2.locator('#pasteIn').fill(FILE2);
    await p2.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p2.waitForTimeout(1500);
@@ -259,7 +275,8 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
    const net2=seen.filter(r=>/^(https?|wss?|ftp):/i.test(r.url));
    console.log('INFO second run, no CSP: '+seen.length+' requests: '+net2.map(r=>r.method+' '+r.url).join(', '));
    ok(net2.every(r=>r.method==='GET'),'second run: every request is a GET');
-   ok(net2.every(r=>r.url===PLAIN+'/app/'||r.url===PLAIN+'/favicon.ico'),'second run: the only requests are for the page itself (and a favicon the browser asks for): '+net2.map(r=>r.url).join(', '));
+   ok(net2.every(r=>r.url===PLAIN+'/app/'||r.url===PLAIN+'/favicon.ico'||r.url===PLAIN+PART_PATH),'second run: the only requests are for the page itself, a favicon the browser asks for, and the renderer\'s own part: '+net2.map(r=>r.url).join(', '));
+   ok(net2.filter(r=>r.url===PLAIN+PART_PATH).length===(HAS_PART?1:0),'second run: the booklet has diagrams, so the one part was asked for, once, if the file does not hold it ('+net2.filter(r=>r.url===PLAIN+PART_PATH).length+')');
    ok(!seen.some(r=>names.some(n=>r.url.includes(n))),'second run: not one request for any address the file named');
    ok(seen.every(r=>!/^https?:/.test(r.url)||new URL(r.url).origin===PLAIN),'second run: nothing left for another origin');
    ok(errs2.length===0,'second run: zero page errors '+errs2.join('|'));
@@ -333,12 +350,48 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
     ok(drawn.ids.length>=3&&drawn.ids.every(i=>/^bf\d+-/.test(i)),'the widget run: every id in the figure is scoped with the figure prefix: '+drawn.ids.join());
     ok(drawn.text.includes('tap')&&drawn.text.includes('One'),'the widget run: the text of an unwrapped link and of a grid cell is still shown');
     const net3=seen3.filter(u=>/^(https?|wss?|ftp):/i.test(u));
-    ok(net3.every(u=>u===PLAIN+'/app/'||u===PLAIN+'/favicon.ico'),'the widget run: the only requests are for the page itself: '+net3.join(', '));
+    ok(net3.every(u=>u===PLAIN+'/app/'||u===PLAIN+'/favicon.ico'),'the widget run (a booklet with no diagram): the only requests are for the page itself, and none for any part: '+net3.join(', '));
     ok(!seen3.some(u=>/tracker\.example|svg-|grid-/.test(u)),'the widget run: not one request for any address the widget named');
     ok(errs3.length===0,'the widget run: zero page errors '+errs3.join('|'));
     await p3.evaluate(()=>{fetch('/control-c3').catch(()=>{});});await p3.waitForTimeout(400);
     ok(seen3.some(u=>u===PLAIN+'/control-c3'),'the widget run, control: a request the test makes on purpose (to the page\'s own origin, which the policy allows) is recorded');}
    await q.close();}
+
+  /* ---- the third run: the box server's own header (APP_CSP in booklet-serve) with the renderer's meta policy ----
+     A page served as the hub's box serves it: its header, the page's own folder holding the part. A booklet with a diagram and a
+     formula is opened; the diagram must draw, and the requests must be the page and the part. A booklet with no diagram first
+     (the control for "no diagram, no request"). */
+  {const BOX='https://box.test',bq=await b.newContext({viewport:{width:1280,height:1000}}),bp=await bq.newPage();
+   const bseen=[],berr=[],bcons=[],bviol=[];
+   bp.on('request',r=>bseen.push({url:r.url(),method:r.method(),body:r.postData()||''}));bp.on('pageerror',e=>berr.push(e.message));
+   bp.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))bcons.push(m.text());});
+   await bp.addInitScript(()=>{document.addEventListener('securitypolicyviolation',e=>{(window.__viol=window.__viol||[]).push(e.violatedDirective+' '+e.blockedURI);});});
+   await bp.route(BOX+'/**',r=>{const u=new URL(r.request().url()).pathname;
+     if(u==='/app/')return r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':BOXCSP}});
+     {const s=PARTS.serve(HTML,u,'/app/');if(s)return r.fulfill({...s,headers:{...s.headers,'content-security-policy':BOXCSP}});}
+     r.fulfill({status:404,body:'nf'});});
+   await bp.goto(BOX+'/app/');await bp.waitForTimeout(600);
+   const bwait=ms=>bp.waitForTimeout(ms);
+   const loadPaste=async text=>{await bp.getByRole('button',{name:'Add a booklet from a file'}).click();await bwait(300);
+     await bp.locator('#pasteIn').fill(text);await bp.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await bwait(1200);};
+   await loadPaste(GARDEN);
+   ok(!bseen.some(r=>/\/parts\//.test(r.url)),'box run: a booklet with no diagram: no request for any part');
+   for(let i=0;i<3;i++){if(await bp.getByRole('button',{name:'Add a booklet from a file'}).count()) break;await bp.locator('#btnHome').click();await bwait(400);}
+   await bp.getByRole('button',{name:'Add a booklet from a file'}).click();await bwait(300);
+   await bp.locator('#fileIn').setInputFiles(path.join(R,'test/fixtures/figures.booklet.md'));await bwait(500);
+   await bp.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await bwait(1000);
+   if(await bp.evaluate(()=>document.body.dataset.view)!=='@home'){await bp.locator('#btnHome').click();await bwait(400);}
+   await bp.locator('button.mode').first().click();await bwait(1000);
+   await bp.getByText('Diagrams and formulas').first().click({timeout:3000}).catch(()=>{});await bwait(2500);
+   const bf=await bp.evaluate(()=>({svg:document.querySelectorAll('.mfig svg').length,math:document.querySelectorAll('math').length,viol:window.__viol||[]}));
+   ok(bf.svg===2&&bf.math>=1,'box run: under the box\'s header the diagrams draw and the formula too ('+JSON.stringify({svg:bf.svg,math:bf.math})+')');
+   const bnet=bseen.filter(r=>/^https?:/i.test(r.url));
+   ok(bnet.every(r=>r.method==='GET'&&!r.body),'box run: every request is a GET with no body');
+   ok(bnet.every(r=>r.url===BOX+'/app/'||r.url===BOX+'/favicon.ico'||r.url===BOX+PART_PATH),'box run: the only requests are the page, a favicon and the renderer\'s own part: '+bnet.map(r=>r.url).join(', '));
+   ok(bnet.filter(r=>r.url===BOX+PART_PATH).length===(HAS_PART?1:0),'box run: the part, once, if the file does not hold it ('+bnet.filter(r=>r.url===BOX+PART_PATH).length+')');
+   ok(bf.viol.length===0&&bcons.length===0,'box run: zero policy violations: '+bf.viol.concat(bcons).join('|'));
+   ok(berr.length===0,'box run: zero page errors '+berr.join('|'));
+   await bq.close();}
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
 })();

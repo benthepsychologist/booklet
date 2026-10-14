@@ -4,10 +4,15 @@
 // libraries start under the policy's hashes) and takes a screenshot of each at 1280px. It also tries "Add a module" from the
 // registry from a file: page and RECORDS what happens (the registry is another origin; the policy names it; the page's origin is
 // `null` and the reply is read with CORS), without loosening anything. Zero policy violations and page errors.
+// 0.13.1 (item 11): the renderer is a core and its parts. With parts/ beside the file (the repository as it stands) the diagram draws
+// from disk, the file asking for nothing but parts/mermaid.js from its own folder; with the file alone (a copy saved on its own,
+// made here in a folder with no parts/) the diagram shows its source with the part note and the formula still draws, and putting
+// parts/ beside it makes the diagram draw. The one-file build holds every part, so it is drawn without any.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/filepage-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
-const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.dirname(HTML);
+const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.join(__dirname,'..');
+const PARTS=require('./parts.js'),HAS_PART=PARTS.has(HTML,'mermaid');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const MOD=`---\nbooklet: "0.13"\ntitle: Shore walk\nlang: en\n---\n\n> [!module|shore] Shore module\n\n> [!activity|walk] Shore walk\n\n> [!text|what long] What did you notice?\n\n> [!choice|tide] The tide was\n- [ ] In\n- [ ] Out\n\n> [!module|shore end] End\n`;
 const REG={modules:[{id:'t/regmod',title:'Registry module',file:'regmod.md'}]};
@@ -76,10 +81,45 @@ const REGMOD=`---\nbooklet: "0.13"\ntitle: Registry module\nlang: en\n---\n\n> [
     else ok(g.svg>=1&&g.math>=1&&g.mermaid!=='undefined','the diagram and the formula in the figures booklet are drawn (mermaid and Temml ran under their hashes): '+JSON.stringify(g));
     await p.screenshot({path:path.join(OUT,'filepage-'+shot+'-1280.png'),fullPage:true});
     await harvest();}
+  /* the file's requests for a file: its own page, and, when the part is beside it, the part from its own folder and nothing else */
+  const filesAsked=[...new Set(seen.filter(u=>/^file:/i.test(u)))];
+  ok(filesAsked.every(u=>u==='file://'+HTML||u==='file://'+path.join(path.dirname(HTML),'parts','mermaid.js')),'from disk, the only files the page asks for are itself and, beside it, parts/mermaid.js: '+filesAsked.join(', '));
+  ok(HAS_PART===filesAsked.includes('file://'+path.join(path.dirname(HTML),'parts','mermaid.js')),'and it asked for the part exactly when the file does not hold it ('+HAS_PART+')');
   const net=seen.filter(u=>/^https?:/i.test(u));
   ok(net.every(u=>/^https:\/\/raw\.githubusercontent\.com\//.test(u)),'the only network requests from the file: page go to the registry host: '+[...new Set(net)].join(', '));
   ok(viol.length===0&&cons.length===0,'zero policy violations: '+viol.concat(cons).join('|'));
   ok(errs.length===0,'zero page errors '+errs.join('|'));
+  // 7 the file on its own, with no parts/ beside it (a copy saved alone): the diagram shows its source, and the part is found once it is beside the file
+  if(HAS_PART){
+    const alone=path.join(OUT,'filepage-alone');fs.rmSync(alone,{recursive:true,force:true});fs.mkdirSync(alone,{recursive:true});
+    fs.copyFileSync(HTML,path.join(alone,'booklet.html'));
+    const q=await (await b.newContext({viewport:{width:1280,height:1000}})).newPage();
+    const v2=[],e2=[],f2=[];q.on('pageerror',e=>e2.push(e.message));q.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))v2.push(m.text());});
+    q.on('request',r=>f2.push(r.url()));
+    await q.goto('file://'+path.join(alone,'booklet.html'));await q.waitForTimeout(800);
+    const load2=async()=>{await q.getByRole('button',{name:'Add a booklet from a file'}).click();await q.waitForTimeout(300);
+      await q.locator('#fileIn').setInputFiles(path.join(R,'test/fixtures/figures.booklet.md'));await q.waitForTimeout(500);
+      await q.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await q.waitForTimeout(1000);
+      if(await q.evaluate(()=>document.body.dataset.view)!=='@home'){await q.locator('#btnHome').click();await q.waitForTimeout(400);}
+      await q.locator('button.mode').first().click();await q.waitForTimeout(1000);
+      await q.getByText('Diagrams and formulas').first().click({timeout:3000}).catch(()=>{});await q.waitForTimeout(2500);
+      return q.evaluate(()=>({svg:document.querySelectorAll('.mfig svg').length,bad:[...document.querySelectorAll('.mfig.bad')].map(x=>x.innerText),math:document.querySelectorAll('math').length}));};
+    const g=await load2();
+    ok(g.svg===0&&g.bad.length===3&&g.bad.filter(x=>/part that draws diagrams could not be loaded/.test(x)).length===3&&g.bad.some(x=>/Sun --> Moon/.test(x))&&g.bad.some(x=>/New --> Spring/.test(x)),'the file alone, no parts/ beside it: every diagram shows its source with the note that its part could not be loaded ('+g.bad.length+' shown, '+g.svg+' drawn)');
+    ok(g.math>=1,'and the formula, which the file holds, still draws ('+g.math+')');
+    await q.screenshot({path:path.join(OUT,'filepage-alone-1280.png'),fullPage:true});
+    ok(v2.length===0&&e2.length===0,'no policy violation and no page error without the part ('+v2.concat(e2).join('|')+')');
+    ok(f2.filter(u=>/parts\/mermaid\.js$/.test(u)).length===1,'and during that open the missing part was asked for exactly once ('+f2.filter(u=>/parts\/mermaid\.js$/.test(u)).length+')');
+    /* parts/ is put beside the file, and the same page opens the booklet again: the earlier failure held for that open only */
+    fs.mkdirSync(path.join(alone,'parts'));fs.copyFileSync(PARTS.file(HTML,'mermaid'),path.join(alone,'parts','mermaid.js'));
+    /* closed to "Your booklets" and opened again: a real next open */
+    for(let i=0;i<4&&!await q.getByRole('button',{name:'Add a booklet from a file'}).count();i++){await q.locator('#btnHome').click();await q.waitForTimeout(400);}
+    await q.locator('button.k').first().click();await q.waitForTimeout(700);
+    /* a booklet of one activity opens straight into it */
+    await q.waitForTimeout(2500);
+    const g2=await q.evaluate(()=>document.querySelectorAll('.mfig svg').length);
+    ok(g2===2,'parts/ put beside the file and the booklet opened again: the diagrams draw ('+g2+'), so the failure held for the earlier open only');
+    ok(f2.filter(u=>/^https?:/.test(u)).length===0,'and nothing was asked of a network from the file ('+f2.filter(u=>/^https?:/.test(u)).join(',')+')');}
   await b.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
 })();
