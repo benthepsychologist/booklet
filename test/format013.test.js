@@ -413,6 +413,17 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("N3: the kept block becomes the added module's: one records line for it, the kept block first and the new answer after",r.ok&&cnt(o,/\[!records\|ghost\]/g)===1&&o.indexOf("old ghost answer")<o.indexOf("NEW answer typed"),o.slice(-400));
   chk("N3: and on reopening the newer answer wins and the older key stays, with nothing reported",B.peekAnswers("ghost").g==="NEW answer typed after adding"&&B.peekAnswers("ghost").h==="only old"&&B.parseFile(o).unread.length===0&&B.peekAnswers("").q==="bare",JSON.stringify(B.peekAnswers("ghost")));}
 
+ /* B1e (SPEC section 8 is about two blocks): entries of ONE block are kept as written, even with a shared ts; across blocks they match by ts.
+    Chosen behaviour: a later block's entry merges into the FIRST earlier entry with its ts, and never drops any entry of an earlier block. */
+ {const T1="2026-01-01T10:00:00Z",T2="2026-01-02T10:00:00Z";
+  const one=load(FM+MODE+REC+rec("m",fence("booklet entries e",items(entry(T1,{t:"x1"}),entry(T1,{t:"x2"}),entry(T2,{t:"y"}))))+"%%\n"),got1=one.STATE.entries["m/e"]||[];
+  chk("B1e: two different entries with one ts in one block are both kept, as main reads them",got1.map(x=>x.t).join()==="x1,x2,y",JSON.stringify(got1));
+  chk("B1e: and a save and reopen keeps both",load(one.toMarkdown()).keptFor("m/e").map(x=>x.t).join()==="x1,x2,y");
+  const two=load(FM+MODE+REC+rec("m",fence("booklet entries e",items(entry(T1,{t:"x1"}),entry(T1,{t:"x2"}),entry(T2,{t:"y"}))),fence("booklet entries e",items(entry(T1,{t:"late",v:"2nd block"}))))+"%%\n"),got2=two.STATE.entries["m/e"]||[];
+  chk("B1e: a later block's ts merges into the first earlier entry with it; neither of the first block's entries is dropped",got2.length===3&&got2[0].t==="late"&&got2[0].v==="2nd block"&&got2[1].t==="x2"&&got2[2].t==="y",JSON.stringify(got2));
+  const L=[],ix=new Map();one.mergeEntries(L,[{ts:"1",t:"a"},{ts:"1",t:"b"}],ix);one.mergeEntries(L,[{ts:"1",t:"c"},{ts:"2",t:"d"},{ts:"2",t:"e"}],ix);
+  chk("B1e: with the caller's index (a parse, a join) the same holds: the second call's own duplicates stay apart, the earlier block's are matched",JSON.stringify(L)==='[{"ts":"1","t":"c"},{"ts":"1","t":"b"},{"ts":"2","t":"d"},{"ts":"2","t":"e"}]',JSON.stringify(L));}
+
  /* B1d: two entries kept in the same millisecond keep apart (an entry is identified by its ts, SPEC section 8) */
  {P.wipe();const A=P.boot();A.loadText(FM+MODE);const RD=Date;
   global.Date=class extends RD{constructor(...a){if(a.length) super(...a); else super(1760000000000);}static now(){return 1760000000000;}};

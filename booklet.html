@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-L4rYR7LkhQXojTr6fffnLZinXZsZGujbMSyEYCOMFdE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-X5jasZvFe2klEGq6pOZg4a+ZLE4xLmEW3kNlQq0d20E=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3062,13 +3062,18 @@ let BOOK = EMPTY_BOOKLET;
    a module's id, or "" for the module with no name (the activities outside any module fence);
    `entries` are kept entries, keyed by activity address */
 /* maps keyed by a file's ids have no prototype, so no id (`constructor`, `__proto__`) is already a key */
-/* SPEC section 8: entries are identified by their `ts`, and for a key both hold the later wins; an entry only one holds is kept.
-   `ix` is a Map from ts to entry for this list, so a file of tens of thousands of entries is read in one pass, not one search per
-   entry. The caller that merges several times into one list passes the same `ix` each time and drops it when done (a parse, a
-   join); with none, one is made for this call. It is never kept with the list, because the page changes its lists (a kept entry,
-   a delete) without it. */
-function mergeEntries(list,items,ix){if(!ix){ix=new Map();list.forEach(x=>ix.set(x.ts,x));}
-  items.forEach(e=>{const n=nullMap(e),same=ix.get(n.ts);if(same) Object.assign(same,n);else{list.push(n);ix.set(n.ts,n);}});}
+/* SPEC section 8: when two entries blocks for one activity are read, entries are identified by their `ts`, and for a key both hold the
+   later block wins; an entry only one holds is kept. The rule is across blocks only: entries of one block are kept as written, so
+   two different entries that share a `ts` inside one block (a file kept by an older release, a script, a host) both stay. `ix` is a
+   Map from ts to the entry of an EARLIER block (the first, if a block held several), made so a file of tens of thousands of entries is
+   read in one pass, not one search per entry. This block's entries join it only after the whole block is merged, so they never match
+   each other. A block that matches an earlier ts merges into that one entry. The caller that merges several times into one list
+   passes the same `ix` each time and drops it when done (a parse, a join); with none, one is made from the list for this call. It is
+   never kept with the list, because the page changes its lists (a kept entry, a delete) without it. */
+function mergeEntries(list,items,ix){if(!ix){ix=new Map();list.forEach(x=>{if(!ix.has(x.ts)) ix.set(x.ts,x);});}
+  const added=[];
+  items.forEach(e=>{const n=nullMap(e),same=ix.get(n.ts);if(same) Object.assign(same,n);else{list.push(n);added.push(n);}});
+  added.forEach(n=>{if(!ix.has(n.ts)) ix.set(n.ts,n);});}
 const nullMap=(o,deep)=>{const r=Object.create(null),one=v=>isObj(v)?nullMap(v):v;if(isObj(o)) Object.keys(o).forEach(k=>{r[k]=deep?(Array.isArray(o[k])?o[k].map(one):one(o[k])):o[k];});return r;};
 const emptyState=()=>({answers:nullMap(),entries:nullMap()});
 const emptyDrafts=()=>({custom:nullMap()});
