@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-Xen7olBghSryyDyw4VRftg0Z2o5ZVqMBh77jdYhUd6k=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-gTf510y0SUeklRRX7o8z9RQ+w7kZe5Xm+YB/8V5jOg0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3062,10 +3062,12 @@ let BOOK = EMPTY_BOOKLET;
    a module's id, or "" for the module with no name (the activities outside any module fence);
    `entries` are kept entries, keyed by activity address */
 /* maps keyed by a file's ids have no prototype, so no id (`constructor`, `__proto__`) is already a key */
-/* SPEC section 8: entries are identified by their `ts`, and for a key both hold the later wins; an entry only one holds is kept. The list
-   keeps a Map from ts to entry beside it (IX), so a file of tens of thousands of entries is read in one pass, not one search per entry. */
-const ENTRY_IX=new WeakMap();
-function mergeEntries(list,items){let ix=ENTRY_IX.get(list);if(!ix){ix=new Map();list.forEach(x=>ix.set(x.ts,x));ENTRY_IX.set(list,ix);}
+/* SPEC section 8: entries are identified by their `ts`, and for a key both hold the later wins; an entry only one holds is kept.
+   `ix` is a Map from ts to entry for this list, so a file of tens of thousands of entries is read in one pass, not one search per
+   entry. The caller that merges several times into one list passes the same `ix` each time and drops it when done (a parse, a
+   join); with none, one is made for this call. It is never kept with the list, because the page changes its lists (a kept entry,
+   a delete) without it. */
+function mergeEntries(list,items,ix){if(!ix){ix=new Map();list.forEach(x=>ix.set(x.ts,x));}
   items.forEach(e=>{const n=nullMap(e),same=ix.get(n.ts);if(same) Object.assign(same,n);else{list.push(n);ix.set(n.ts,n);}});}
 const nullMap=(o,deep)=>{const r=Object.create(null),one=v=>isObj(v)?nullMap(v):v;if(isObj(o)) Object.keys(o).forEach(k=>{r[k]=deep?(Array.isArray(o[k])?o[k].map(one):one(o[k])):o[k];});return r;};
 const emptyState=()=>({answers:nullMap(),entries:nullMap()});
@@ -3953,7 +3955,7 @@ const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 /* a question's help text: the text of its body, less the lines that only embed a figure */
 const helpOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems,icons){const P=PROBLEM;
-  const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
+  const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),entryIx=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
   let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,theme=null,recScope="",recForeign=null,dataMod=null;
   /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
@@ -4063,7 +4065,7 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     if(what==="draft") return void(drafts[at]=Object.assign(drafts[at]||nullMap(),o));
     if(!Array.isArray(o.items)) return no(P.recordNoItems(L,info[2]));
     if(!o.items.every(e=>e&&typeof e==="object"&&e.ts)) return no(P.recordsOther(L));
-    mergeEntries(entries[at]||(entries[at]=[]),o.items);}
+    mergeEntries(entries[at]||(entries[at]=[]),o.items,entryIx[at]||(entryIx[at]=new Map()));}
   function onRecords(it,where){recForeign=null;const named=it.id&&modules.some(m=>m.id===it.id&&!m.__bare);recScope=named?it.id:"";
     if(it.id&&!named&&!modules.some(m=>m.id===it.id&&m.__bare)){recForeign={id:it.id,head:it.head};problems.push(P.recordsLineUnknown(where,it.id));}}
   const onRec=it=>{const L=P.line(it.line);
@@ -4321,7 +4323,7 @@ const adoptParse=R=>{BOOK=R.template;OLD_DESIGN=false;joinRecords(R);};
    reader's work as a file read back joins them (mergeEntries, by `ts`): the reader's values win, kept entries come first */
 function joinRecords(R){const st=R.S||emptyState(),dr=(R.drafts||{}).activities||{};
   Object.keys(st.answers||{}).forEach(sc=>{STATE.answers[sc]=Object.assign(nullMap(st.answers[sc]),peekAnswers(sc));});
-  Object.keys(st.entries||{}).forEach(a=>{const list=[];mergeEntries(list,st.entries[a]);mergeEntries(list,(STATE.entries||{})[a]||[]);STATE.entries[a]=list;});
+  Object.keys(st.entries||{}).forEach(a=>{const list=[],ix=new Map();mergeEntries(list,st.entries[a],ix);mergeEntries(list,(STATE.entries||{})[a]||[],ix);STATE.entries[a]=list;});
   Object.keys(dr).forEach(a=>{if(isObj(dr[a])) DRAFTS.custom[a]=Object.assign(nullMap(dr[a]),DRAFTS.custom[a]||{});});}
 
 /* ======================= A BOOKLET'S OWN LOOK =======================

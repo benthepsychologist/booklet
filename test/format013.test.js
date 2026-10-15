@@ -217,6 +217,13 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const file=FM+MODE+REC+rec("m",fence("booklet entries e",mk("a")),fence("booklet entries e",mk("b")))+"%%\n";
   const t0=Date.now(),R=A0.parseFile(file),ms=Date.now()-t0,got=(R.S.entries||{})["m/e"]||[];
   chk("B1c: 60,000 entries in each of two blocks are read as 60,000, the later block's values winning, in under 5 s ("+ms+" ms)",R.ok&&got.length===N&&got[N-1].t==="b"+(N-1)&&ms<5000,String(ms)+" "+got.length);
+  /* the index is the caller's, never kept with the list: a list the page changes in place is merged right (it went stale in a first version) */
+  {const live=[];A0.mergeEntries(live,[{ts:"1",t:"a"},{ts:"2",t:"b"}]);live.splice(0,1);   // delete T1 ...
+   A0.mergeEntries(live,[{ts:"1",t:"again"}]);                                              // ... and merge it back
+   chk("B1c: delete T1, then merge T1 back: T1 is there once",live.filter(x=>x.ts==="1").length===1&&live.length===2,JSON.stringify(live));
+   const kept=[{ts:"1",t:"a"}];A0.mergeEntries(kept,[{ts:"2",t:"x"}]);kept.push({ts:"3",t:"new"});   // an entry kept after a merge ...
+   A0.mergeEntries(kept,[{ts:"3",t:"later"}]);                                                 // ... then one with its ts
+   chk("B1c: keep a new entry, then merge one with its ts: one entry, the later value",kept.filter(x=>x.ts==="3").length===1&&kept.find(x=>x.ts==="3").t==="later",JSON.stringify(kept));}
   /* joinRecords merges through the same function */
   const L=[];A0.mergeEntries(L,[{ts:"1",t:"kept",u:"x"}]);A0.mergeEntries(L,[{ts:"1",t:"mine"},{ts:"2",t:"new"}]);
   chk("B1c: mergeEntries (the parser's and joinRecords' one rule) matches by ts, the later winning per key",JSON.stringify(L)==='[{"ts":"1","t":"mine","u":"x"},{"ts":"2","t":"new"}]',JSON.stringify(L));}
@@ -405,6 +412,16 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const o=A.toMarkdown(),B=load(o);
   chk("N3: the kept block becomes the added module's: one records line for it, the kept block first and the new answer after",r.ok&&cnt(o,/\[!records\|ghost\]/g)===1&&o.indexOf("old ghost answer")<o.indexOf("NEW answer typed"),o.slice(-400));
   chk("N3: and on reopening the newer answer wins and the older key stays, with nothing reported",B.peekAnswers("ghost").g==="NEW answer typed after adding"&&B.peekAnswers("ghost").h==="only old"&&B.parseFile(o).unread.length===0&&B.peekAnswers("").q==="bare",JSON.stringify(B.peekAnswers("ghost")));}
+
+ /* N4 (joinRecords): an entries block kept as written for a module the booklet lacks joins the reader's work by ts when the module is added */
+ {const T1="2026-01-01T10:00:00Z",T2="2026-01-02T10:00:00Z",T3="2026-01-03T10:00:00Z";
+  const f=FM+"> [!activity|b] B\n\n> [!text|q] Q\n"+REC+"> [!records|m] M\n\n"+fence("booklet entries e",items(entry(T1,{t:"file",u:"file only"}),entry(T2,{t:"two"})))+"%%\n";
+  const A=load(f);
+  A.STATE.entries["m/e"]=[{ts:T1,t:"mine"},{ts:T3,t:"three"}];
+  const r=A.addModuleText(FM.replace("title: T","title: M")+"> [!module|m] M\n\n> [!activity|e repeat] E\n\n> [!text|t] T\n\n> [!module|m end] End\n");
+  const got=A.STATE.entries["m/e"]||[],o=A.toMarkdown(),B=load(o),again=B.STATE.entries["m/e"]||[];
+  chk("N4: after Add a module the entries are T1 (the reader's value over the file's, the file-only key kept), T2 and T3",r.ok&&got.map(x=>x.ts).join()===[T1,T2,T3].join()&&got[0].t==="mine"&&got[0].u==="file only",JSON.stringify(got));
+  chk("N4: T1 is written once, and the same after a reopen",cnt(o,/"ts":"2026-01-01T10:00:00Z"/g)===1&&again.map(x=>x.ts).join()===[T1,T2,T3].join()&&again[0].t==="mine"&&again[0].u==="file only",JSON.stringify(again));}
 
  /* the records region: from the `%%` before the first records line to its closing `%%`; design before and after it */
  {const f=FM+"> [!activity|a] A\n\n%%\nan author's note\n%%\n\n> [!text|q] Q\n\nProse after the comment.\n"+REC+fence("booklet answers",'{"q":"x"}')+"%%\n";

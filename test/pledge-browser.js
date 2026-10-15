@@ -143,10 +143,10 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   await p.locator('.removemod button',{hasText:'Remove this module'}).click();await wait(200);
   await p.locator('.removemod [role=alert] button',{hasText:/^Remove$/}).click();await wait(500);
   ok(await cards().count()===1,'a module is removed');
-  // 5 Send or save a copy downloads at once: no dialog opens
+  // 5 Download a copy downloads at once: no dialog opens
   const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#btnExport').click()]);
   await wait(300);
-  ok(await p.locator('.veil[open]').count()===0,'"Send or save a copy" downloads at once and opens no dialog');
+  ok(await p.locator('.veil[open]').count()===0,'"Download a copy" downloads at once and opens no dialog');
   const saved=fs.readFileSync(await d.path(),'utf8');
   ok(saved.includes(S.keep+'0')&&saved.includes(S.name),'the downloaded file holds the reader\'s work (it goes to the reader\'s own disk)');
   const savedPath=path.join(OUT,'pledge-saved.booklet.md');fs.writeFileSync(savedPath,saved);
