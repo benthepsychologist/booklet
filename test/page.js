@@ -68,9 +68,14 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   get currentId(){return currentId}, get FILE_NOTES(){return FILE_NOTES}, KIND_SETTINGS, NUMBER_SETTINGS, linkHooks, openingNodes, moduleHead, isModuleLink, activityTree, wikiOf, wikiPath, wikiMentions, wikiFind, wikiCrumbs, wikiAfter, moduleLinkNode, moduleLinkId, linkSplit, citeScope, activityName, activityFooter, ICON_NAMES, PROBLEM, problemText, parseBooklet, icon, TH_STYLES, ROLE_NAMES, QUERY_KEYS, fieldSummary, readQuery,
   removeModule, moduleWork, removeModuleControl, FORMAT_VERSION, versionOf, mergeEntries, renameBooklet, renameStored, setTitleIn, noticeNode, dataSections, bookletName, readLib, flushSave, exportName, fileBase, tabName, nameRow, renderBooklets, diagramRisk, mermaidNode, markerOf, otherMarker, isBooklet, plainText, startScreen, homeButton, openFromList,
   get PROVENANCE(){return PROVENANCE}, get REGISTRY_CACHE(){return REGISTRY_CACHE}, linkName, storeUrl, storeAddress, linkOf, linkFetch, openLink, openAsView, loadRegistry, registryUrl, fileNotesNode, provenanceNode, markDirty, get dirty(){return dirty}, registryRead,
-  get BookletApi(){return window.Booklet}, get HOST(){return HOST}, get HOOK_LISTENERS(){return HOOK_LISTENERS}, hookFire, setAnswerMs:v=>{HOOK_ANSWER_MS=v}, hostAccept, hostLineText, hostNoticeShow, hostCovers, unsavedNote, saveLocal, ownPlace, hostAllowed, HOST_KEY, get HOST_OWN(){return HOST_OWN},
+  get BookletApi(){return window.Booklet}, get HOST(){return HOST}, get HOOK_LISTENERS(){return HOOK_LISTENERS}, hookFire, hookFlush, setAnswerMs:v=>{HOOK_ANSWER_MS=v}, setCadence:(i,m)=>{HOOK_IDLE_MS=i;HOOK_MAX_MS=m}, get CADENCE(){return {idle:HOOK_IDLE_MS,max:HOOK_MAX_MS}}, hostAccept, hostLineText, hostNoticeShow, hostCovers, saveState, drawSaveState, download, homeButton, saveLocal, ownPlace, hostAllowed, HOST_KEY, get HOST_OWN(){return HOST_OWN},
   get KEEP(){return KEEP}, keepRefresh, keepFlush, lsGet, lsSet, lsDel, THEME_KEY, LIB_KEY, get storageOk(){return storageOk}
 }));`);
+  /* The test page saves to a host on a shorter cadence than the renderer's 2 s pause and 5 s bound (HOOK_IDLE_MS,
+     HOOK_MAX_MS): 100 ms and 500 ms, about the half second earlier releases waited, so a suite that waits for a host's
+     onChange need not wait seconds for each. A test of the cadence itself sets it back with A.setCadence (A.CADENCE is
+     what the page holds now; test/autosave.test.js reads the shipped values from booklet.html). */
+  API.setCadence(100,500);
   /* the page's own window listeners (pagehide, beforeunload, …), run as the browser would: dispatch(type, event) */
   API.toggle=toggle;API.dispatch=(k,e)=>{(on[k]||[]).forEach(f=>f(e));return e;};return API;}
 const wipe=()=>{closePages();for(const k of Object.keys(LS)) delete LS[k];STORE={};docTitle="";delete global.fetch;};

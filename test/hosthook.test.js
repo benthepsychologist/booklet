@@ -15,6 +15,11 @@ const MODB=FM("Second")+mod("mb","B");
 const tag=t=>P.find(P.main(),x=>x.tagName===t);
 const typeIn=(A,addr,words)=>{A.screen=addr;A.render();const ta=tag("textarea")[0];ta.value=words;ta._on.input();};
 const barText=()=>P.texts(P.byId("hostLine"));
+/* the bar's save status (item 13): saved, saving or unsaved, as drawn */
+const state=()=>P.byId("saveBtn").attrs["data-state"];
+/* the line of a booklet no host covers: "Kept in this browser only", or, once it is saved (nothing changed since its file was
+   read or downloaded), that; never the host's */
+const noHostLine=()=>barText()==="Kept in this browser only"||barText()==="No changes since the file was opened or downloaded";
 const click=n=>n._on.click({target:n});
 const shown=()=>P.texts(P.main());
 /* the page is served at a private name (the host hook works only on the reader's own machine or network) and the reader has
@@ -105,30 +110,31 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  const t=barText();
  chk("a label is shown as text (markup stays as characters) and capped at 80 characters",t.startsWith("Saves go to: <img src=x onerror=alert(1)> ")&&t.length<="Saves go to: ".length+80,t.length);
  chk("it is set as text, never as markup",P.byId("hostLine")._html===""&&P.byId("hostLine").children.length===0);
- B.open(BOOK,{name:NAME});
+ B.onChange(()=>{});   /* something listens, so the open is sent: a saved() naming no change is about that send */
+ B.open(BOOK,{name:NAME});await sleep(50);
  h.failed("<script>boom</script>"+"m".repeat(400));
  const f=barText();
  chk("a failure message is shown as text and capped at 200",/Not saved: <script>boom<\/script>/.test(f)&&f.length<=("Saves go to: ".length+80+" · Not saved: ".length+200),f.length);
- chk("the bar marks a failure",P.byId("hostLine").attrs.class.includes("bad"));
+ chk("the bar's status says Unsaved on a failure",state()==="unsaved"&&/Not saved/.test(barText()),state());
  h.failed();chk("a failure with no message still says Not saved",/ · Not saved$/.test(barText()),barText());
  h.saved();chk("saved() shows Saved with the time",/ · Saved \d\d:\d\d$/.test(barText()),barText());
- chk("and the failed marking goes",!P.byId("hostLine").attrs.class.includes("bad"));
+ chk("and the line no longer says Not saved",!/Not saved/.test(barText()));
  global.__ls["booklet.host.allowed"]="second";             // the reader had allowed this one
  const B2=B.host({label:"second"});
  chk("a second host replaces the first: the first's handle no longer does anything",/^Saves go to: second/.test(barText())&&(h.saved(),/^Saves go to: second(?! · Saved)/.test(barText())));
  B2.leave();h.leave();}
 
-/* ---- the not-downloaded note rests while a host keeps saves, and returns on a failure ---- */
+/* ---- the save status (item 13; it replaced the not-downloaded note): Saved while a host keeps saves, Unsaved on a failure ---- */
 {const A=boot("box"),B=A.BookletApi;B.open(BOOK,{name:NAME});
  typeIn(A,"ma/act","x");
- chk("with no host the not-downloaded note shows for a change",!!A.unsavedNote());
- const h=B.host({label:"box"});B.onChange(()=>{});h.saved();
- chk("with a host whose saves succeed, it does not",A.unsavedNote()===null);
+ chk("with no host a change is Unsaved",state()==="unsaved",state());
+ const h=B.host({label:"box"});const got=[];B.onChange(c=>got.push(c));await sleep(50);h.saved(got[got.length-1]);
+ chk("with a host whose saves succeed, it is Saved",state()==="saved",state());
  h.failed("disk full");
- chk("after a failure the note is back",!!A.unsavedNote());
- h.saved();chk("and it rests again once a save succeeds",A.unsavedNote()===null);
- chk("Saving… shows between a change and the host's saved()",(()=>{typeIn(A,"ma/act","y");return /Saving…$/.test(barText());})(),barText());
- await sleep(700);h.leave();chk("with the host gone, the note is back",!!A.unsavedNote());}
+ chk("after a failure it is Unsaved",state()==="unsaved",state());
+ h.saved();chk("and Saved again once a save succeeds",state()==="saved",state());
+ chk("Saving… shows between a change and the host's saved()",(()=>{typeIn(A,"ma/act","y");return /Saving…$/.test(barText())&&state()==="saving";})(),barText());
+ await sleep(700);h.leave();chk("with the host gone, it is Unsaved",state()==="unsaved",state());}
 
 /* ---- fileChanged: an offer, and nothing changes until the reader presses ---- */
 {const A=boot("box"),B=A.BookletApi;B.open(BOOK,{name:NAME});typeIn(A,"ma/act","mine");
@@ -165,23 +171,23 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  h.fileChanged(MODB+"\nx");chk("...fileChanged does nothing: no offer and nothing pending",A.HOST.pending===null&&!/The file has changed/.test(shown()));
  await sleep(500);
  chk("...no failure after the answer wait",A.HOST.status!=="failed"&&barText()==="Kept in this browser only",barText());
- chk("...the not-downloaded note is shown, as on a page with no host",!!A.unsavedNote()&&P.byId("hostLine").attrs.class.indexOf("bad")<0);
+ chk("...the status is Unsaved, as on a page with no host, with no failure in its line",state()==="unsaved"&&!/Not saved/.test(barText()),state()+" "+barText());
  // pasted, new, a module link and open() with no name are the reader's too
  A.createBooklet();A.addModuleText(BOOK);await sleep(700);
  chk("a booklet started here is the reader's alone: no call",L.calls.length===0&&B.text()==="");
  B.open(BOOK);await sleep(700);
- chk("open() without a name is the reader's alone: no call",L.calls.length===0&&barText()==="Kept in this browser only");
+ chk("open() without a name is the reader's alone: no call",L.calls.length===0&&noHostLine(),barText());
  // a host's booklet next to them behaves as before
  B.open(BOOK,{name:NAME});await sleep(700);
  chk("a booklet handed over with a name is the host's: one call, with its name",L.calls.length===1&&L.calls[0].name===NAME&&/^Saves go to: box: store/.test(barText()),barText()+" "+L.calls.length);
  h.saved();
- chk("...saved() is shown, and the note rests",/Saved \d\d:\d\d$/.test(barText())&&A.unsavedNote()===null,barText());
+ chk("...saved() is shown, and the status is Saved",/Saved \d\d:\d\d$/.test(barText())&&state()==="saved",barText());
  // it stays the host's when opened again from the list (its entry's `from` says store:<name>)
  typeIn(A,"ma/act","kept");await sleep(700);A.flushSave();
  const id=A.currentId;A.closeBooklet();A.openFromList(id);
  chk("opened again from \"Your booklets\", it is still the host's",B.text().length>0&&/^Saves go to:/.test(barText()),barText());
  A.openBooklet(A.currentId);A.loadText(MODB);
- chk("and a file opened after it is not",B.text()===""&&barText()==="Kept in this browser only",barText());
+ chk("and a file opened after it is not",B.text()===""&&noHostLine(),barText());
  L.stop();h.leave();}
 
 /* ---- French and Spanish ---- */
@@ -204,24 +210,24 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  chk("no script element exists on the page",P.find(P.main(),n=>n.tagName==="script").length===0);
  await sleep(700);
  chk("a booklet opened without a name is the reader's alone: onChange got no call at all",L.calls.length===0,L.calls.length);
- chk("the bar still says no host",barText()==="Kept in this browser only");}
+ chk("the bar still says no host",noHostLine(),barText());}
 
 /* ---- a host that never answers, and a host with nobody listening ---- */
 {const A=boot("box"),B=A.BookletApi;A.setAnswerMs(300);
  B.open(BOOK,{name:NAME});const h=B.host({label:"box"});
- chk("a host with nothing listening through onChange does not rest the note or the mark",(typeIn(A,"ma/act","a"),!!A.unsavedNote()));
+ chk("a host with nothing listening through onChange covers nothing: Unsaved",(typeIn(A,"ma/act","a"),state()==="unsaved"),state());
  const L=listen(A);h.saved();
- chk("once something listens, a succeeding host rests the note",A.unsavedNote()===null);
+ chk("once something listens, a change waiting to be sent is Saving, whatever a saved() said before it went",state()==="saving",state());
  typeIn(A,"ma/act","b");await sleep(250);
- chk("after a change the bar says Saving… and the note rests while the host has time",/Saving…$/.test(barText())&&A.unsavedNote()===null,barText());
+ chk("after a change the bar says Saving… while the host has time",/Saving…$/.test(barText())&&state()==="saving",barText());
  await sleep(700);
  chk("a host that has not answered within the time is treated as a failed save: Not saved: the host did not answer",/ · Not saved: the host did not answer$/.test(barText())&&A.HOST.status==="failed",barText());
- chk("and the note comes back",!!A.unsavedNote());
- h.saved();chk("a later saved() clears it",/ · Saved \d\d:\d\d$/.test(barText())&&A.unsavedNote()===null,barText());
+ chk("and the status is Unsaved",state()==="unsaved",state());
+ h.saved();chk("a later saved() clears it",/ · Saved \d\d:\d\d$/.test(barText())&&state()==="saved",barText());
  typeIn(A,"ma/act","c");await sleep(250);h.saved();await sleep(500);
  chk("an answer in time cancels the wait",/Saved/.test(barText()),barText());
  L.stop();
- chk("with the listener gone the note is back",!!A.unsavedNote());
+ chk("with the listener gone the status is Unsaved",state()==="unsaved",state());
  for(const l of ["fr","es","es-AR"]) chk(l+" has the no-answer string",A.STRINGS[l].ui.hostNoAnswer.length>3);}
 
 console.log(fails?"\n"+fails+" FAILURES":"\nhosthook checks passed");

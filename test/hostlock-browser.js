@@ -61,6 +61,10 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   await serve(PRIVATE);await serve(PUBLIC);
   const wait=(p,ms)=>p.waitForTimeout(ms||800);
   const bar=p=>p.locator('#hostLine').innerText();
+  /* the line of a booklet no host covers (the save status's line, v0.13 item 13): "Kept in this browser only", or, while
+     nothing has changed since its file was read, that */
+  const keptLine=async p=>['Kept in this browser only','No changes since the file was opened or downloaded'].includes(await bar(p));
+  const saveState=p=>p.locator('#saveBtn').getAttribute('data-state');
   const ask=p=>p.locator('#main .hostask');
   const calls=p=>p.evaluate(()=>window.__calls.length);
   const state=p=>p.evaluate(()=>window.__h.state());
@@ -76,11 +80,11 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   ok(/^This page wants to save the booklets it opens for you to: fleet: booklets\/reports\. Your booklets stay in this browser too\./.test(t),'the notice says what the page wants: '+JSON.stringify(t));
   ok(await ask(p).getByRole('button',{name:'Allow',exact:true}).count()===1&&await ask(p).getByRole('button',{name:'Not now',exact:true}).count()===1,'with two buttons, Allow and Not now');
   ok(await state(p)==='waiting','state() is "waiting"');
-  ok(await bar(p)==='Kept in this browser only','the bar says Kept in this browser only: '+await bar(p));
+  ok(await keptLine(p),'the bar says Kept in this browser only (or that nothing changed since the file): '+await bar(p));
   await p.locator('#main textarea').first().fill('QZXbefore');await wait(p,1000);
   ok(await calls(p)===0,'nothing is handed over before Allow (the host heard nothing)');
   ok(await p.evaluate(()=>window.Booklet.text())==='','text() is empty while waiting');
-  ok(await p.locator('#btnExport.attention').count()===1,'and the Download button is marked after typing (nothing covers the work)');
+  ok(await saveState(p)==='unsaved'&&await bar(p)==='Kept in this browser only','and the save status says Unsaved after typing, kept in this browser only (nothing covers the work): '+await saveState(p));
   await p.screenshot({path:path.join(OUT,'allow-notice-1280.png')});
   // a script's click is not the reader's
   await p.evaluate(()=>{const b=[...document.querySelectorAll('.hostask button')].find(x=>x.textContent==='Allow');b.click();b.dispatchEvent(new MouseEvent('click',{bubbles:true}));b.dispatchEvent(new Event('click',{bubbles:true}));});
@@ -103,7 +107,8 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   ok(first&&first.name==='week.md'&&/QZXbefore/.test(first.text)&&Object.keys(first).sort().join()==='change,name,text,title'&&Number.isInteger(first.change),'and it is given the current text, the name, the title and the change number');
   await wait(p,800);
   ok(await calls(p)===1,'and only once');
-  await p.locator('#main textarea').first().fill('QZXafter');await wait(p,1000);
+  /* a change goes once typing has paused for 2 s (v0.13 item 13) */
+  await p.locator('#main textarea').first().fill('QZXafter');await wait(p,2600);
   ok(await calls(p)===2&&/QZXafter/.test(await p.evaluate(()=>window.__calls[1].text)),'a later change is heard');
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   // 2 reload: remembered, active at once (the store holds what the host saved, so nothing newer is offered)
@@ -154,8 +159,8 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   await p.goto(PUBLIC+'/app/#/open/week.md');await wait(p,1200);
   ok(await state(p)==='refused','on a public address state() is "refused" (even with a remembered yes)');
   ok(await ask(p).count()===0,'no notice is shown');
-  ok(await bar(p)==='Kept in this browser only','the bar says Kept in this browser only: '+await bar(p));
-  await p.locator('#main textarea').first().fill('QZXpublic');await wait(p,1000);
+  ok(await keptLine(p),'the bar says Kept in this browser only (or that nothing changed since the file): '+await bar(p));
+  await p.locator('#main textarea').first().fill('QZXpublic');await wait(p,2600);
   ok(await calls(p)===0&&await p.evaluate(()=>window.Booklet.text())==='','nothing is handed over: no call, and text() is empty');
   ok(await p.evaluate(()=>typeof window.Booklet==='object'&&Object.keys(window.Booklet).sort().join()==='host,onChange,open,text,version'),'window.Booklet is still defined with the same members');
   for(let i=0;i<3;i++){await p.locator('#btnHome').click();await wait(p,300);}
@@ -163,16 +168,16 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   await p.close();
 
-  // 7 a plain page: the Download button is marked without any redraw
+  // 7 a plain page: the save status follows typing without any redraw (it replaced the Download button's mark)
   p=await open();
   await p.goto(PRIVATE+'/plain/');await wait(p,600);
   fs.writeFileSync(path.join(OUT,'mine.booklet.md'),WEEK);
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(p,300);
   await p.locator('#fileIn').setInputFiles(path.join(OUT,'mine.booklet.md'));await wait(p,400);
   await p.locator('.veil[open] button').filter({hasText:/^Load$/}).first().click();await wait(p,800);
-  ok(await p.locator('#btnExport.attention').count()===0,'a plain page: the Download button is not marked before a change');
+  ok(await saveState(p)==='saved','a plain page: Saved before a change (nothing changed since the file was read)');
   await p.locator('#main textarea').first().fill('QZXplain');await wait(p,100);
-  ok(await p.locator('#btnExport.attention').count()===1,'typing into a question marks the Download button without any other action');
+  ok(await saveState(p)==='unsaved'&&await p.locator('#main textarea').first().inputValue()==='QZXplain','typing into a question turns it to Unsaved without any other action');
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   await p.close();
 
