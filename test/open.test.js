@@ -221,7 +221,7 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
  {P.wipe();const D=P.boot();D.loadText("---\nbooklet: \"0.13\"\ntitle: T\nlang: en\n---\n\n> [!activity|a daily] A\n");
   /* what the notice draws: its list, worded as the reader reads it */
   const notes=P.find(P.find(P.main(),P.hasClass("filenotes"))[0]||{},n=>n.tagName==="li").map(P.texts);
-  chk("a problem shown to the reader carries no Markdown backticks: what was between them is in quotation marks",notes.length>0&&notes.every(x=>!/`/.test(x))&&notes.some(x=>/“daily” only follows “repeat”/.test(x)),JSON.stringify(notes));}
+  chk("a problem shown to the reader carries no Markdown backticks: what was between them is in quotation marks",notes.length>0&&notes.every(x=>!/`/.test(x))&&notes.some(x=>/“daily” needs “repeat”/.test(x)),JSON.stringify(notes));}
 
 /* ---- A5: the settings table ---- */
 {const A=P.boot();

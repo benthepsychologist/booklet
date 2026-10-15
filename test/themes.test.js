@@ -47,7 +47,8 @@ for(const n of names){
   for(const [f,b,min] of pairs){const r=ratio(tables[n]["--"+f],tables[n]["--"+b]);ok(r>=(min||4.5),n+": "+f+" on "+b+" "+r.toFixed(2)+":1"+(min?" (picture, "+min+" needed)":""));}
   if(n==="contrast"){const r=ratio(tables[n]["--ink"],tables[n]["--paper"]);ok(r>=7,"contrast: ink on paper "+r.toFixed(2)+":1 (7 needed)");}}
 // no colour literal outside the tables, in the CSS and the page's own scripts (the head icons and meta are assets, not CSS)
-let rest=stripped.replace(/:root[^{]*\{[^}]*\}/g,m=>/--paper:/.test(m)?"":m);
+/* the shared defaults (:root) hold the tint, cell and --on-deep colours that are the same in every theme: only those declarations are exempt, the rest of that rule is checked */
+let rest=stripped.replace(/:root[^{]*\{[^}]*\}/g,m=>/--paper:/.test(m)?"":m.replace(/--(tint-ink|tint-chip|tint-chip-bd|on-deep|cell-\d):[^;]*;/g,""));
 const scripts=[...html.matchAll(/<script(?![^>]*type="text\/plain")[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join("\n");
 const lit=/#[0-9A-Fa-f]{3,8}\b|\brgba?\(|\bhsla?\(/g;
 const cssLeft=(rest.match(lit)||[]);
@@ -66,7 +67,7 @@ ok(spriteLit.length===0,"no colour literal, style attribute or painted colour in
  const STY=m?new Function("return "+m[1])():null;
  ok(!!STY&&Object.keys(STY).join()==="teaching,briefing","STYLES holds teaching and briefing");
  if(STY){ok(Object.keys(STY.teaching).sort().join()===Object.keys(STY.briefing).sort().join(),"both styles carry the same keys ("+Object.keys(STY.teaching).join(" ")+")");
-   ok(Object.entries(STY).every(([n,t])=>Object.entries(t).every(([k,v])=>k==="picture"?(v==="spot"||v==="icon"):(/^--(r-lg|r-md|r-sm|num-w|tile-solid)$/.test(k)&&!/#|rgb|hsl/.test(v)))),"a style sets only radii, --num-w, --tile-solid and picture, and no colour");
+   ok(Object.entries(STY).every(([n,t])=>Object.entries(t).every(([k,v])=>k==="picture"?(v==="spot"||v==="icon"):(/^--(r-lg|r-md|r-sm|tile-solid)$/.test(k)&&!/#|rgb|hsl/.test(v)))),"a style sets only radii, --tile-solid and picture, and no colour");
    ok(STY.teaching["--tile-solid"]==="0"&&STY.briefing["--tile-solid"]==="1"&&STY.teaching.picture==="spot"&&STY.briefing.picture==="icon","teaching: soft tile (--tile-solid 0), spots; briefing: solid tile (--tile-solid 1), icons");}
  const sel=[...stripped.matchAll(/(?:^|\})\s*([^{}@]+)\{/g)].map(x=>x[1]).filter(x=>!/^\s*:root/.test(x));
  const named=sel.filter(x=>/data-style|data-theme|\.(teaching|briefing)\b/.test(x));

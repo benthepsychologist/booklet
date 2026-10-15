@@ -73,7 +73,7 @@ Some prose.
   chk("a link in a question's title is a link (it sits in a heading, not in a button)",!!scaleHead&&byTag(scaleHead,"a").length===1&&scaleHead.children.length>0,scaleHead&&text(scaleHead));
   chk("a scale's anchors are drawn the same way",byTag(main,"button").some(b=>cls(b).includes("pill-btn")&&byTag(b,"strong").length===1&&/Not at all/.test(text(b))));
   const mx=byClass(main,"mxitem");
-  chk("a matrix item and its anchors are drawn the same way",mx.length===2&&byTag(mx[0],"em").length===1&&byClass(main,"mxhead").some(h=>byTag(h,"strong").length===1),mx.map(text).join("|"));
+  chk("a matrix item and its anchors are drawn the same way",mx.length===2&&byTag(mx[0],"em").length===1&&byClass(main,"mxopt").some(h=>byTag(h,"strong").length===1),mx.map(text).join("|"));
   chk("a matrix item's name for a screen reader is its words without marks",byClass(main,"mxrow").map(r=>r.attrs["aria-label"]).join("|")==="An item|Plain item",byClass(main,"mxrow").map(r=>r.attrs["aria-label"]).join("|"));
   chk("a text question's label draws its code",byTag(walk(main,x=>x.tagName==="label"&&/Say it/.test(text(x)))[0]||{},"code").length===1);}
  /* a reader's own option is compared with the listed ones by their words, not by their marks */

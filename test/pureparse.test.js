@@ -56,7 +56,7 @@ chk("the ones that refuse the file are its refusals, and none else",files.every(
 /* ---- worded only when shown, in the language in force then ---- */
 {const r=A.parseFile('---\nbooklet: "0.13"\ntitle: T\n---\n\n> [!activity|a daily] A\n\n> [!text|q] Q\n');
  const [miss,daily]=r.unread;
- chk("a problem is worded in English",A.problemText(miss)==="The front matter has no `lang:`, so this page took the file to be in English"&&/^line 6: `daily` only follows `repeat`/.test(A.problemText(daily)),A.problemText(daily));
+ chk("a problem is worded in English",A.problemText(miss)==="The front matter has no `lang:`, so this page took the file to be in English"&&/^line 6: `daily` needs `repeat`/.test(A.problemText(daily)),A.problemText(daily));
  A.lang="fr";const fr=[A.problemText(miss),A.problemText(daily)];A.lang="en";
  chk("and the same problem, shown while the interface speaks French, in French, line and all",/lang:/.test(fr[0])&&fr[0]!==A.problemText(miss)&&/^ligne 6 /.test(fr[1]),fr.join(" | "));
  chk("a problem's string is its words, so a sentence of several words each one",String(daily)===A.problemText(daily)&&[miss,daily].join(" ")===A.problemText(miss)+" "+A.problemText(daily));}
@@ -65,8 +65,8 @@ chk("the ones that refuse the file are its refusals, and none else",files.every(
 {P.wipe();const B=P.boot();B.loadText('---\nbooklet: "0.13"\ntitle: T\n---\n\n> [!activity|a daily] A\n\n> [!text|q] Q\n');
  const items=()=>P.find(B.fileNotesNode()||{},n=>n.tagName==="li").map(P.texts);
  const en=items();B.lang="fr";const fr=items();B.lang="en";
- chk("the file's notices are drawn in English",en.length===2&&/only follows/.test(en.join()),en.join(" | "));
- chk("and drawn again while the interface speaks French, in French: the notice keeps problems, not words",fr.length===2&&fr.every((x,i)=>x!==en[i])&&!/only follows/.test(fr.join()),fr.join(" | "));}
+ chk("the file's notices are drawn in English",en.length===2&&/needs/.test(en.join()),en.join(" | "));
+ chk("and drawn again while the interface speaks French, in French: the notice keeps problems, not words",fr.length===2&&fr.every((x,i)=>x!==en[i])&&!/needs/.test(fr.join()),fr.join(" | "));}
 
 P.wipe();
 console.log(fails?"\n"+fails+" FAILURES":"\npure-parse checks passed");process.exit(fails?1:0);

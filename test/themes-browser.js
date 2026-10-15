@@ -53,8 +53,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    if(m.pw!=null)ok(m.pw<=75,'a paragraph is at most ~75ch wide ('+m.pw.toFixed(1)+'ch)');
    if(m.tw!=null)ok(m.tw>m.pp,'a table is wider than a paragraph ('+Math.round(m.tw)+'px v '+Math.round(m.pp)+'px)');
    // download identical
-   async function dl(){const [d]=await Promise.all([p.waitForEvent('download'),(async()=>{await p.locator('#btnExport').click();await p.waitForTimeout(300);
-     await p.locator('#exportPanel button').first().click();})()]);const f=await d.path();return fs.readFileSync(f);}
+   async function dl(){const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#btnExport').click()]);const f=await d.path();return fs.readFileSync(f);}
    const a=await dl();await p.keyboard.press('Escape').catch(()=>{});await p.evaluate(()=>document.querySelectorAll('.veil[open]').forEach(v=>v.removeAttribute('open')));
    await p.selectOption('#themeSel','night');
    const c=await dl();

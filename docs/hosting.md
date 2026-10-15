@@ -106,7 +106,7 @@ Every other booklet is **the reader's alone**: one picked from the reader's own 
 
 `fn({ text, name, title, change })` is called a short moment after the open booklet's file text changes (an answer, a kept entry, a rename, a module added or removed), and once when a booklet is opened. It is not called again for a change that leaves the text as it was.
 
-- `text` is exactly what "Send or save a copy" would download.
+- `text` is exactly what "Download a copy" would download.
 - `name` is the store name the booklet was opened from (by a `#/open/<name>` link, or by `Booklet.open` with a name). It is never empty: a booklet that is not the host's is not reported at all.
 - `title` is the booklet's name.
 - `change` is a number naming this call, counted up from 1 in the page. Pass the object (or the number) back to `saved()` or `failed()`, so the renderer knows which change an answer is about.
@@ -122,7 +122,7 @@ The renderer opens `text` as a booklet, by the same path as a file picked by han
 - With an active host, the top bar carries a small line: "Saves go to: *label*", then "Saved 10:42", "Saving…" (between a change and the host's `saved()`) or "Not saved: *message*". What the renderer counts as the host's is one rule with three answers: `saved` (a listening host answered the latest change with `saved()`), `saving` (the latest change is not yet answered: on its way, or before the host's first answer) and `unsaved` (no host, nothing listening through `onChange`, or the last answer was `failed()`). The "changes not yet downloaded" note and the Download button's mark show only on `unsaved`, so they rest while saves succeed and while one is on its way, and come back when a save fails or nothing listens. Leaving the page (closing the tab, reloading) with work not yet downloaded asks the reader first unless the answer is `saved`. Pass the change you are answering to `saved(change)`: a `saved()` with none is taken as the answer to the latest change, so one that arrives while a newer change still waits its half second says `saved` for that moment.
 - A host that is waiting for the reader's Allow, or refused, shows the same line as no host: "Kept in this browser only".
 - With no host, the same place says "Kept in this browser only". This is true of bookletmd.org and of any plain copy.
-- "Send or save a copy" and everything else work the same either way.
+- "Download a copy" and everything else work the same either way.
 
 ### What a host's script looks like
 

@@ -88,8 +88,7 @@ Second words.
   await p.locator('#main button.mode').first().click();await p.waitForTimeout(500);
   ok(await p.locator('#main textarea').first().inputValue()==='the kettle','the answer to the question of the activity called home is still there');
   /* a save keeps the record block the page does not read */
-  await p.locator('#btnExport').click();await p.waitForTimeout(300);
-  const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#exportPanel .exportchoice').first().click()]);
+  const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#btnExport').click()]);
   const text=fs.readFileSync(await d.path(),'utf8');
   ok(/```booklet sync\n\{"path":"~\/notes\/home-test\.md"\}\n```/.test(text),'the file the page saves still holds the sync record it did not read');
   ok(/```booklet answers\n[\s\S]*the kettle/.test(text)&&!/\[!records\|/.test(text),'and the answer, under the plain records line');

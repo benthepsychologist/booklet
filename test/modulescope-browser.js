@@ -50,8 +50,7 @@ const FILE=`---\nbooklet: "0.13"\ntitle: Scope\nlang: en\n---\n\n${mod('ma','A')
   await goHome();await enter(p,'B','Log');
   ok(await p.locator('.chips .chip').count()===0,'module B\'s log, with the same activity id, holds none');
   // a downloaded copy
-  const dl=async()=>{const [d]=await Promise.all([p.waitForEvent('download'),(async()=>{await p.locator('#btnExport').click();await p.waitForTimeout(300);
-    await p.locator('#exportPanel .exportchoice').first().click();})()]);return fs.readFileSync(await d.path(),'utf8');};
+  const dl=async()=>{const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#btnExport').click()]);return fs.readFileSync(await d.path(),'utf8');};
   const md=await dl();
   const rec=id=>{const i=md.indexOf('> [!records|'+id+']');if(i<0) return '';const j=md.indexOf('> [!records|',i+5);return md.slice(i,j<0?md.length:j);};
   ok(/typed in A/.test(rec('ma'))&&!/typed in B/.test(rec('ma'))&&/typed in B/.test(rec('mb'))&&!/typed in A/.test(rec('mb')),'the downloaded file holds each note under its own module\'s records line');

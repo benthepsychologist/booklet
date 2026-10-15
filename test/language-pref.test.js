@@ -132,7 +132,7 @@ section("a reader who chose French opens how-tides-work with French controls");
 wipe();A=boot();A.render();A.toggle.press("fr");
 A.loadText(tidesText);
 chk("how-tides-work says lang: en, and opens in French: its controls are the renderer's French ones",A.currentId!==null&&A.lang==="fr"&&
-  global.document.getElementById("btnExport").textContent==="Envoyer ou sauvegarder une copie"&&A.toggle.pressed().join()==="fr",A.lang+" / "+global.document.getElementById("btnExport").textContent);
+  global.document.getElementById("btnExport").textContent==="Télécharger une copie"&&A.toggle.pressed().join()==="fr",A.lang+" / "+global.document.getElementById("btnExport").textContent);
 chk("its own words stay its own (English)",/tide/i.test(texts(main())));
 chk("the toggle is there to change it",A.toggle.shown().join()==="en,es,fr");
 A.toggle.press("en");

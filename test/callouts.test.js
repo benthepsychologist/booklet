@@ -32,5 +32,6 @@ chk("the card hues are the six, in the work item's order",A.CARD_HUES.join()==="
    ["fr","es"].every(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).length<=5),
    ["fr","es"].map(l=>keys.filter(k=>A.STRINGS[l].reading.kind[k]===A.STRINGS.en.reading.kind[k]).join()).join(" | "));
  const src=fs.readFileSync(path.join(__dirname,"..","booklet.html"),"utf8");
- chk("no l10n: draft mark remains in STRINGS_SRC: every interface string is checked (0.13.0's were checked by /localize, 2026-10-14)",src.split("\n").filter(l=>/l10n: draft/.test(l)).length===0);}
+ chk("no l10n: draft mark remains in STRINGS_SRC: every interface string is checked (0.13.0's were checked by /localize, 2026-10-14)",src.split("\n").filter(l=>/l10n: draft/.test(l)).length===0);
+ chk("en says `daily` needs `repeat`, and es-AR (which inherits es) has no dailyAlone of its own",A.STRINGS_SRC.en.problem.dailyAlone("w")==="w: `daily` needs `repeat`, so it was ignored"&&!(((A.STRINGS_SRC["es-AR"]||{}).problem||{}).dailyAlone),A.STRINGS_SRC.en.problem.dailyAlone("w"));}
 console.log(fails?"\n"+fails+" FAILURES":"\ncallout checks passed");process.exit(fails?1:0);
