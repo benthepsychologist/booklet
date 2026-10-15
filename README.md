@@ -96,8 +96,7 @@ Download `booklet.html` with its `parts/` folder beside it and `examples/how-tid
 on "Your booklets" to open the markdown file. No server, no install, no network beyond the renderer's own `parts/mermaid.js`, and only for a booklet with a diagram; without `parts/` a diagram shows its source.
 
 To have the renderer as one file instead, with every part inside it, make the one-file build: in a clone of this
-repository, `node test/one-file.js` writes it to `build/booklet.html` (it needs only node). No release publishes that
-file yet, so for now this is how to get it.
+repository, `node test/one-file.js` writes it to `build/booklet.html` (it needs only node). From v0.13.1 each [GitHub release](https://github.com/benthepsychologist/booklet/releases) attaches the one-file build as an asset, and `node test/one-file.js` still makes it from a clone.
 
 **Themes and width.** The renderer has four built-in themes the reader picks from a menu in the top bar:
 Paper (the default look), Daylight (white), Night (dark) and Contrast (high contrast, light). *Auto* is the booklet's own
