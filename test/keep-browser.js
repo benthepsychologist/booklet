@@ -149,7 +149,10 @@ const SEED=n=>JSON.parse(fs.readFileSync(path.join(__dirname,'seeds','ls-'+n+'.j
     ok(await p.locator('#main textarea').first().inputValue()==='Seed '+name+': a draft not yet kept','the board\'s log opens with its draft');
     {const snap=Object.keys(seed).filter(k=>/^booklet\.b\./.test(k)).map(k=>JSON.parse(seed[k])).find(o=>o.S&&o.S.entries&&o.S.entries['board/log']);
      const want=snap.S.entries['board/log'].length,have=await p.locator('#main .chips .chip').count();
-     ok(want>0&&have===want&&/1 entrée pas encore téléchargée/.test(await main(p)),'and its kept entries, the one kept here still marked not yet downloaded: '+have+' of '+want);}
+     /* not yet downloaded: the bar's save status says so in the booklet (v0.13 item 13), and its card on "Your booklets" counts the entry */
+     ok(want>0&&have===want&&await p.locator('#saveBtn').getAttribute('data-state')==='unsaved','and its kept entries, with the bar\'s status at Unsaved (not yet downloaded): '+have+' of '+want);
+     await list(p);
+     ok(/1 entrée pas encore téléchargée/.test(await main(p)),'and on "Your booklets" its card still counts the one kept here as not yet downloaded');}
     await done(p);await ctx.close();}
 
   // 4 IndexedDB refused (open throws, or fails), or missing

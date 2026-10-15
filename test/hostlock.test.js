@@ -87,7 +87,7 @@ const listen=A=>{const calls=[];A.BookletApi.onChange(x=>calls.push(x));return c
  chk("while waiting: fileChanged does nothing",A.HOST.pending===null&&!/The file has changed/.test(shown()));
  h.saved();h.failed("boom");
  chk("while waiting: saved() and failed() do nothing",barText()==="Kept in this browser only"&&A.HOST.status==="idle");
- chk("while waiting the not-downloaded note still shows (nothing covers the work)",!!A.unsavedNote());
+ chk("while waiting the bar's status is Unsaved (nothing covers the work)",P.byId("saveBtn").attrs["data-state"]==="unsaved",P.byId("saveBtn").attrs["data-state"]);
  script(btn(/^Allow$/));
  chk("an untrusted Allow does nothing",h.state()==="waiting"&&global.__ls[KEY]===undefined&&btn(/^Allow$/));
  script(btn(/^Not now$/));
@@ -150,15 +150,14 @@ const listen=A=>{const calls=[];A.BookletApi.onChange(x=>calls.push(x));return c
  B.open(BOOK,{name:NAME});typeIn(A,"ma/act","no host call");await sleep(900);
  chk("a script that only calls onChange (never host()) is never called, even where a yes is remembered",calls.length===0&&B.text()==="");}
 
-/* ---- the Download button's mark follows every change ---- */
+/* ---- the bar's save status follows every change (it replaced the Download button's mark, v0.13 item 13) ---- */
 for(const withHost of [false,true]){
  const A=boot("http:","fleet",withHost?"h":undefined),B=A.BookletApi;
- let marks=[];const dl=P.byId("btnExport");dl.classList.toggle=(c,on)=>{marks.push([c,!!on]);};
  if(withHost) B.host({label:"h"});
- A.createBooklet();A.addModuleText(BOOK);A.render();marks=[];
- A.screen="ma/act";A.render();const ta=tag("textarea")[0];
- marks=[];ta.value="typing";ta._on.input();
- chk("typing into a question marks the Download button at once, without a redraw ("+(withHost?"a host that is active but not listening":"no host")+")",marks.some(m=>m[0]==="attention"&&m[1]===true),JSON.stringify(marks));
+ A.loadText(BOOK);A.screen="ma/act";A.render();const ta=tag("textarea")[0];
+ const st=()=>P.byId("saveBtn").attrs["data-state"],before=st();
+ ta.value="typing";ta._on.input();
+ chk("typing into a question turns the status from Saved to Unsaved at once, without a redraw ("+(withHost?"a host that is active but not listening":"no host")+")",before==="saved"&&st()==="unsaved"&&tag("textarea")[0]===ta,before+" "+st());
 }
 
 /* ---- the strings ---- */

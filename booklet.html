@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-X5jasZvFe2klEGq6pOZg4a+ZLE4xLmEW3kNlQq0d20E=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-qnx9L5of364VCWoLKsfL6OdGDzSfB7ePK/4t4I0tPKs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -290,7 +290,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .bar .home:hover{color:var(--accent)}
   .bar .navb{border:var(--bw) solid var(--rule);background:var(--field);border-radius:999px;padding:.3rem .8rem;font-size:.85rem;font-weight:600;white-space:nowrap;color:var(--ink)}
   .bar .navb:hover{border-color:var(--accent);color:var(--accent)}
-  .bar .navb.attention{border-color:var(--warn);color:var(--warn)}
   .lang{display:inline-flex;border:var(--bw) solid var(--rule);border-radius:999px;overflow:hidden}
   .lang button{border:0;background:transparent;padding:.2rem .6rem;font-size:.8rem;font-weight:700;color:var(--muted)}
   .lang button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
@@ -300,7 +299,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .tools{display:flex;gap:.4rem;flex-wrap:wrap}
   .bar .ver{flex:0 0 auto;font-size:.7rem;color:var(--muted);white-space:nowrap;padding:.25rem .3rem}
   .bar .hostline{flex:0 1 auto;min-width:0;max-width:22rem;font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:.25rem .3rem}
-  .bar .hostline.bad{color:var(--warn);font-weight:700}
+  /* the save status (drawSaveState): a word and a shape on the tone of its state, good, warn or bad (the pairs are TH_PAIRS's
+     deep-on-wash ones). Its transparent border is drawn in forced colours, where the washes are not. */
+  .bar .savestate{display:inline-flex;align-items:center;gap:.3rem;border:1px solid transparent;border-radius:999px;padding:.25rem .65rem;font-size:.8rem;font-weight:700;white-space:nowrap;line-height:1.2}
+  .bar .savestate[hidden]{display:none}
+  .bar .savestate .ic{width:1.05em;height:1.05em}
+  .bar .savestate[data-state="saved"]{background:var(--tone-green);color:var(--tone-green-deep)}
+  .bar .savestate[data-state="saving"]{background:var(--tone-amber);color:var(--tone-amber-deep)}
+  .bar .savestate[data-state="unsaved"]{background:var(--tone-warm);color:var(--tone-warm-deep)}
+  .bar .savestate:hover{border-color:currentColor}
   .notice.hostnote{font-size:.85rem;padding:.6rem .9rem;margin-bottom:1rem}
   @media (max-width:520px){ .bar{padding:.45rem .6rem} .bar .home{flex-basis:100%;order:-1} .bar .hostline{flex-basis:100%;max-width:none;order:9;white-space:normal;padding:0 .3rem;line-height:1.3} }
 
@@ -680,7 +687,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* Hidden, but kept for screen readers (one rule for all of them): the minimized menu's words; a citation's and a view's words
      beside their marks; and a solution inside the question says the verdict in its own label, so the question's line stays
      for screen readers only. */
-  .ap-min .ap-head,.ap-min .ap-t,.rd-sr,.dv-sr,.q-live.q-live-sr{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  .ap-min .ap-head,.ap-min .ap-t,.rd-sr,.dv-sr,.q-live.q-live-sr,.bar .save-sr{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
   .ap-min .ap-item{justify-content:center;padding:.4rem 0}
   .ap-min .ap-n{min-width:0}
 
@@ -1319,6 +1326,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   <button type="button" class="home" id="btnHome"></button>
   <div class="tools">
     <button type="button" class="navb" id="btnExport"></button>
+    <button type="button" class="savestate" id="saveBtn" aria-expanded="false" aria-controls="hostLine" aria-describedby="hostLine" hidden></button>
   </div>
   <div class="lang" id="langGroup" role="group" aria-label="Language">
     <button type="button" data-lang="en" aria-pressed="true">EN</button>
@@ -1326,7 +1334,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     <button type="button" data-lang="fr" aria-pressed="false">FR</button>
   </div>
   <select class="themesel" id="themeSel"></select>
-  <span class="hostline" id="hostLine"></span>
+  <span class="hostline" id="hostLine" hidden></span>
+  <span class="save-sr" id="saveSay" role="status"></span>
   <span class="ver" id="rendererVer" aria-hidden="true"></span>
 </div>
 
@@ -1545,6 +1554,10 @@ const STRINGS_SRC={
       hostSavesTo: n=>`Saves go to: ${n}`,
       hostSaved: t=>`Saved ${t}`,
       hostSaving: "Saving…",
+      saveSaved: "Saved",
+      saveUnsaved: "Unsaved",
+      saveSince: "No changes since the file was opened or downloaded",
+      saveAgain: "trying again",
       hostFailed: m=>m?`Not saved: ${m}`:"Not saved",
       hostChanged: "The file has changed where it is kept.",
       hostRead: "Read the newer file",
@@ -1870,6 +1883,10 @@ const STRINGS_SRC={
       hostSavesTo: n=>`Les enregistrements vont vers : ${n}`,
       hostSaved: t=>`Enregistré à ${t}`,
       hostSaving: "Enregistrement…",
+      saveSaved: "Enregistré",
+      saveUnsaved: "Non enregistré",
+      saveSince: "Aucune modification depuis l’ouverture ou le téléchargement du fichier",
+      saveAgain: "nouvelle tentative en cours",
       hostFailed: m=>m?`Non enregistré : ${m}`:"Non enregistré",
       hostChanged: "Le fichier a changé là où il est conservé.",
       hostRead: "Lire le fichier plus récent",
@@ -2191,6 +2208,10 @@ const STRINGS_SRC={
       hostSavesTo: n=>`Los cambios se guardan en: ${n}`,
       hostSaved: t=>`Guardado a las ${t}`,
       hostSaving: "Guardando…",
+      saveSaved: "Guardado",
+      saveUnsaved: "Sin guardar",
+      saveSince: "Sin cambios desde que se abrió o se descargó el archivo",
+      saveAgain: "intentando de nuevo",
       hostFailed: m=>m?`No se guardó: ${m}`:"No se guardó",
       hostChanged: "El archivo cambió donde se conserva.",
       hostRead: "Leer el archivo más reciente",
@@ -3179,12 +3200,21 @@ const HOST_KEY="booklet.host.allowed";
 const hostAllowed=()=>HOST_OWN?hookText(lsGet(HOST_KEY),80):"";
 /* a host's hook works only while HOST is on a page in the reader's own place and the reader has said yes (state "active") */
 const hostActive=()=>!!HOST&&HOST.state==="active";
-let HOOK_TIMER=null,HOOK_LAST=0,HOOK_SEEN="";
+/* HOOK_TIMER: the send that is waiting (hookChanged); HOOK_DUE: when the first change not yet sent was made, 0 when none waits;
+   HOOK_SEEN: the booklet and text last sent; HOOK_UNSENT: the open booklet has a change the host has not been sent. Every
+   hookChanged sets it, before it does anything else, and only hookFire clears it, when it sends or finds the text is what
+   it last sent (or a booklet with no module that nothing has changed since its file was read). While it is set nothing is
+   Saved (hostCovers, saveState, hostSet), whatever an answer about an earlier send says: a change held back (by the offer
+   to read a newer file, by nobody listening, by a booklet with no module) or never told (Clear everything) is not saved. */
+let HOOK_TIMER=null,HOOK_DUE=0,HOOK_SEEN="",HOOK_UNSENT=false;
 /* the last change told to the host: its number (`change`, counted from 1 in this page) and the booklet it was for */
 let HOOK_SEQ=0,HOOK_OUT=null;
 /* the changes told to the host and not yet answered, with the records each one sent: {change, id, recs} (the last 20) */
 let HOOK_SENT=[];
-const HOOK_EVERY_MS=500;
+/* The cadence of saving, as cloud editors save: a change goes to the host once typing pauses for HOOK_IDLE_MS, and at most
+   HOOK_MAX_MS after the first change not yet sent while typing goes on, so a host hears every few seconds, never on every
+   key, and only the latest text. (`let`, so a test's copy can shorten them, as it shortens HOOK_ANSWER_MS.) */
+let HOOK_IDLE_MS=2000,HOOK_MAX_MS=5000;
 /* how long a host has to answer an onChange call with saved() or failed() before the reader is told it did not */
 let HOOK_ANSWER_MS=20000,HOOK_ANSWER_TIMER=null;
 function hookStopWait(){clearTimeout(HOOK_ANSWER_TIMER);HOOK_ANSWER_TIMER=null;}
@@ -3488,8 +3518,7 @@ function saveLocal(){const key=slotKey();if(!key) return;
   /* a store booklet's kept copy is written with its base (see "a store booklet's base") */
   if(BASE&&hostName()) lsSet(baseKey(currentId),JSON.stringify(BASE));
   if(currentId) noteSaved();
-  askPersist();
-  hookChanged();}
+  askPersist();}
 /* ---- asking the browser to keep this site's storage ----
    Booklets kept in the browser live in its storage for this site (IndexedDB, or local storage without it), which a browser may clear (Safari clears what a page's script
    wrote for a site not visited in seven days, unless the site was added to the home screen; Chrome and Firefox may when
@@ -3586,27 +3615,26 @@ const namedDesign=(t,n)=>({...t,title:n,raw:{...(t.raw||{}),source:setTitleIn((t
 function storedText(o){if(typeof o.text==="string") return o.text;
   const raw=isObj(o.TPL)&&isObj(o.TPL.raw)?o.TPL.raw:null,R=raw?parseFile(String(raw.source||"")):null;
   return R&&R.template?bookText({...R.template,raw:{...R.template.raw,records:raw.records}}):null;}
-/* the Download button's mark, kept in step with every change (not only with a redraw) */
-function markAttention(){const dl=document.getElementById("btnExport");
-  if(dl) dl.classList.toggle("attention",(dirty||unsavedEntries>0)&&hostCovers()==="unsaved");}
 /* A save is scheduled for the booklet that asked for it. Leaving a booklet
    writes any save still pending to that booklet's own key first (flushSave),
    and a timer that somehow outlives its booklet finds bookletGen moved on and
    does nothing — it can never write one booklet's globals under another's. */
-/* a change to the reader's work (the screen on show redraws its answers' marks in place: its draw's ticks) */
-function markDirty(){dirty=true;markAttention();hookChanged();DRAWN.ticks.forEach(f=>{try{f();}catch(e){}});clearTimeout(saveTimer);const gen=bookletGen;
+/* a change to the reader's work (the screen on show redraws its answers' marks in place: its draw's ticks), and the save
+   status kept in step with it (not only with a redraw) */
+function markDirty(){dirty=true;hookChanged("typed");drawSaveState();DRAWN.ticks.forEach(f=>{try{f();}catch(e){}});clearTimeout(saveTimer);const gen=bookletGen;
   saveTimer=setTimeout(()=>{saveTimer=null;if(gen===bookletGen) saveLocal();},400);}
 function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=null;saveLocal();}
-/* A change the host has not yet been told of (its half-second wait is still running) is told now, while the booklet it was
-   made in is still the one in memory: leaving a booklet, or opening another, would otherwise send the next booklet's text
-   in its place, and the change would reach the store only when this booklet is next opened. */
+/* A change the host has not yet been told of (its wait for a pause in typing is still running) is told now, while the
+   booklet it was made in is still the one in memory: leaving a booklet, or opening another, would otherwise send the next
+   booklet's text in its place, and the change would reach the store only when this booklet is next opened. The page being
+   hidden, a download, the way home and "Read the newer file" tell it now too. */
 function hookFlush(){if(!HOOK_TIMER) return;clearTimeout(HOOK_TIMER);HOOK_TIMER=null;hookFire();}
 function resetBookletState(){
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;BASE=null;
   screen=HOME_SCREEN;dirty=false;unsavedEntries=0;
   viewReset(null);FILE_NOTES=null;OLD_DESIGN=false;CUSTOMIZED=false;PROVENANCE=null;LINK_NEWER=null;
-  hookStopWait();
-  if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;}
+  hookStopWait();HOOK_UNSENT=false;
+  if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;HOST.savedKey="";}
   clearTimeout(saveTimer);saveTimer=null;
   VEIL_IDS.forEach(id=>{const v=document.getElementById(id);if(v) v.removeAttribute("open");});}
 /* Open one entry: whatever the last booklet had pending is written to it,
@@ -3620,7 +3648,7 @@ function openBooklet(id){flushSave();hookFlush();LIB=readLib();const e=entryById
   if(hostName()) BASE=readBase(e.id);
   screen=HOME_SCREEN;
   changeLib(L=>{const x=L.entries.find(y=>y.id===e.id);if(x) x.openedAt=new Date().toISOString();});
-  hookChanged();
+  hookChanged("open");
   return true;}
 function closeBooklet(){flushSave();hookFlush();resetBookletState();bookletGen++;
   currentId=currentKey=currentEntry=null;screen=LIB_SCREEN;}
@@ -4373,6 +4401,8 @@ const thTint=(P,tgt,t0,fgs,gfx)=>{for(const k of [1,.7,.4,0]){const c=thMix(P,tg
 const TH_PAIRS=[["ink","paper"],["ink","paper-deep"],["muted","paper"],["accent","paper"],["on-accent","accent"],["ink","field"],
   ["reader","field"],["ink","surface"],["accent","surface"],["muted","surface"],["warn","paper"],["on-ink","ink"],["on-ink","muted"],
   ["ink","accent-soft"],["ink","mark"],["warn","warn-soft"]];
+/* each tone's deep colour on its wash, and ink on the wash (the bar's save status is drawn on the first: Saved on green, Saving…
+   on amber, Unsaved on warm, the good, warn and bad tones) */
 COLOUR_NAMES.forEach(t=>{TH_PAIRS.push(["tone-"+t+"-deep","tone-"+t]);TH_PAIRS.push(["ink","tone-"+t]);});
 /* the views: a plain pill, a toned value on a card (and a badge pill on a toned card: its deep colour on the surface), a quiet note and a label on a toned tile */
 TH_PAIRS.push(["reader","paper-deep"],["muted","paper-deep"]);
@@ -5696,7 +5726,7 @@ function chipStrip(id){const u=strings("ui");const list=[...keptFor(id)].sort((a
       if(on) panel.append(entryCard(e,id,()=>{removeEntry(id,e.ts);viewAt(id).chip=null;render();}));});};
   draw();wrap.append(strip,panel);return wrap;}
 function removeEntry(id,ts){const arr=keptFor(id);const i=arr.findIndex(x=>x.ts===ts);if(i>=0){arr.splice(i,1);markDirty();}}
-function finalizeRow(onFinalize){const u=strings("ui");return el("div",{class:"finrow"},el("button",{type:"button",class:"finalize",onclick:onFinalize},u.finalize),el("span",{class:"hint"},u.finalizeHint),unsavedNote());}
+function finalizeRow(onFinalize){const u=strings("ui");return el("div",{class:"finrow"},el("button",{type:"button",class:"finalize",onclick:onFinalize},u.finalize),el("span",{class:"hint"},u.finalizeHint));}
 /* every activity keeps its drafts and its kept entries under its own id */
 const anyFilled=e=>Object.keys(e||{}).some(k=>holdsSomething(e[k]));
 const draftFor=id=>{DRAFTS.custom=DRAFTS.custom||nullMap();return hasOwn(DRAFTS.custom,id)?DRAFTS.custom[id]:(DRAFTS.custom[id]=nullMap());};
@@ -5964,7 +5994,7 @@ function finalizeEntry(id){const u=strings("ui");
     if(idx>=0) kept[idx]=e; else kept.push(e);
   } else kept.push(e);
   DRAFTS.custom[id]=nullMap();
-  unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;markAttention();render();saveLocal();toast(u.kept);}
+  unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;hookChanged("typed");render();saveLocal();toast(u.kept);}
 /* a daily activity's empty draft shows today's entry, to be finished again (settle) */
 function seedUpsertDraft(id,m,draft){
   if(m.upsert!=="day"||anyFilled(draft)) return;
@@ -7058,7 +7088,7 @@ function renderBar(){const t=strings("ui");const atList=screen===LIB_SCREEN,Lb=s
      and a booklet's home leads to "Your booklets". */
   const toList=screen===HOME_SCREEN&&!!currentId;
   document.getElementById("btnHome").textContent=atList?t.app:toList?"← "+Lb.back:(screen===HOME_SCREEN?"":"← ")+t.app;
-  const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;markAttention();
+  const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;
   document.getElementById("dropZone").textContent=t.dropZone;document.getElementById("dropVeil").textContent=t.dropVeil;
   for(const [id,key] of [["loadTitle","loadTitle"],["loadHelp","loadHelp"],["loadOr","loadOr"],["loadCancel","loadCancel"],["loadGo","loadGo"],
     ["clearTitle","clearTitle"],["clearHelp","clearHelp"],["clearCancel","clearCancel"],["clearGo","clearGo"]]) document.getElementById(id).textContent=t[key];
@@ -7067,7 +7097,7 @@ function renderBar(){const t=strings("ui");const atList=screen===LIB_SCREEN,Lb=s
   drawThemeSelect(t);
   document.getElementById("rendererVer").textContent="v"+RENDERER_VERSION;
   if(storageOk) document.getElementById("clearHelp").textContent=t.clearHelp+" "+t.clearHelpStored;
-  drawHostLine();
+  drawSaveState();
   applyLangToggle();
 }
 /* the booklet that is open asks for its look; the list of booklets never does */
@@ -7089,19 +7119,37 @@ function drawThemeSelect(t){const s=document.getElementById("themeSel"),B=window
   names.forEach((n,i)=>{s.options[i].textContent=t["theme"+n[0].toUpperCase()+n.slice(1)];});
   s.options[0].title=t.themeAutoTip||"";
   s.setAttribute("aria-label",t.pTheme);s.setAttribute("title",t.pTheme);s.value=B.get();}
-/* The "not yet downloaded" note for a count of unsaved entries and a flag for
-   unsaved changes; null when there is nothing to say. */
+/* A booklet's card on "Your booklets" says what it holds that is not yet downloaded, for a count of unsaved entries and a
+   flag for unsaved changes; null when there is nothing to say. (Inside a booklet, the bar's save status says it.) */
 function unsavedSpan(entries,changed){const t=strings("ui");
   if(entries>0) return el("span",{class:"unsaved"},t.unsavedEntries(entries));
   if(changed) return el("span",{class:"unsaved"},t.unsavedChanges);return null;}
 /* What the host has of the open booklet's work: one rule, three answers, in this order. "saved": a registered host,
-   listening, whose answer to the latest change is saved. "saving": such a host, and that change not yet answered (on its
-   way, "Saving…", or the host has not answered at all yet). "unsaved": nothing covers it (no host, nobody listening, or the
-   last answer failed). Read at two thresholds: leaving the page warns unless the answer is "saved"; the Download button's
-   mark and the "not yet downloaded" note show only on "unsaved", so a save on its way neither marks the button nor leaves
-   a note. */
-const hostCovers=()=>!(hostActive()&&hookBook()&&HOOK_LISTENERS.length>0)||HOST.status==="failed"?"unsaved":HOST.status==="saved"?"saved":"saving";
-const unsavedNote=()=>hostCovers()==="unsaved"?unsavedSpan(unsavedEntries,dirty):null;
+   listening, whose answer to the latest change is saved. "saving": such a host, and that change not yet answered (waiting
+   for a pause in typing, on its way, or the host has not answered at all yet). "unsaved": nothing covers it (no host,
+   nobody listening, or the last answer failed). Leaving the page warns unless the answer is "saved"; the bar's save status
+   (saveState) is read from it. */
+const hostCovers=()=>!(hostActive()&&hookBook()&&HOOK_LISTENERS.length>0)||HOST.status==="failed"?"unsaved":HOST.status==="saved"&&!HOOK_UNSENT?"saved":"saving";
+/* The save status in the bar of a booklet, one of three (null on "Your booklets", which is no booklet).
+   The host's booklet, with a host the reader allowed, is read from hostCovers:
+     "saved"    the host said saved() for the latest change;
+     "saving"   the latest change is not yet answered: waiting for a pause in typing (the status turns at the change, not
+                at the send) or on its way;
+     "unsaved"  the last answer failed (or none came in time), or nothing listens through onChange.
+   (hostCovers's "saving" also holds a change the host is not being sent, with no send waiting and none on its way: one held
+   back while the offer to read a newer file waits, the last module removed, Clear everything. That is "unsaved" (HOOK_UNSENT);
+   with no such change, nothing sent and nothing waiting (a booklet with no module, just opened), it is read as below.)
+   Any other booklet, and that case, from the reader's own downloads, and never "saving":
+     "saved"    the latest change is in a file the reader downloaded, or nothing changed since the file was read: `dirty`
+                and `unsavedEntries` are cleared only by a download and by reading a file;
+     "unsaved"  a change since then.
+   So Saved is never shown unless the host said so for the latest change or the latest change was downloaded. */
+const saveState=()=>{if(screen===LIB_SCREEN||!currentId) return null;
+  if(hostActive()&&hookBook()){const c=hostCovers();
+    if(c!=="saving") return c;
+    if(HOST.status==="saving"&&(HOOK_TIMER!==null||HOOK_ANSWER_TIMER!==null)) return "saving";
+    if(HOOK_UNSENT) return "unsaved";}
+  return dirty||unsavedEntries>0?"unsaved":"saved";};
 const SCREENS={[HOME_SCREEN]:renderHome,[LIB_SCREEN]:renderBooklets};
 let RENDERING=false;
 /* decided before a draw, which writes none of it: the language, the screen (a module screen whose module is gone or
@@ -7232,12 +7280,13 @@ function renderHome(main,dc){const u=strings("ui");
     add.append(addMod);
     activities.append(add);}
   main.append(activities);
-  const note=unsavedNote();if(note) main.append(el("p",{class:"col"},note));
   main.append(el("p",{class:"col",style:"margin-top:2rem"},
     el("button",{type:"button",class:"quietlink",onclick:()=>document.getElementById("veilClear").setAttribute("open","")},u.clearLink)));
   centreScreen(main);
 }
 function homeButton(){
+  /* the way home tells the host of a change still waiting for a pause in typing, now (closeBooklet does, too) */
+  hookFlush();
   if(screen===HOME_SCREEN&&currentId){closeBooklet();render();window.scrollTo({top:0});return;}
   if(screen===LIB_SCREEN){render();return;}
   go(HOME_SCREEN);}
@@ -7729,7 +7778,10 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
    whose title has no letters or digits in it) is saved as booklet.booklet.md. */
 const fileBase=()=>slugify(BOOK.title)||"booklet";
 const exportName=()=>fileBase()+".booklet.md";
-async function download(){const t=strings("ui");const md=toMarkdown();const name=exportName();
+async function download(){const t=strings("ui");
+  /* a change still waiting for a pause in typing goes to the host now, as the reader takes a copy (and the status may speak) */
+  SAVE_QUIET=false;hookFlush();
+  const md=toMarkdown();const name=exportName();
   /* a store booklet of which nothing is kept here and in which nothing has changed (a pointer) has no copy to mark as
      downloaded, and none is made for it: a copy made only to say so would be a 3 MB write for a large file */
   const keep=!(hostName()&&!dirty&&!(unsavedEntries>0)&&!saveTimer&&lsGet(currentKey)===null);
@@ -7850,10 +7902,10 @@ function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
   if(via){PROVENANCE={...via,dismissed:false,at};
     /* a store booklet joins the list at once, as a pointer, on a page that can read it from the store again */
     if(via.store&&via.from&&currentEntry&&storeUrl()!=="") notePointer();
-    hookChanged();go(at);return;}
+    hookChanged("open");go(at);return;}
   /* the file just read is what the store holds: the base of what is kept from now on (a newer file read on the offer) */
   BASE=recsOfParse(R);
-  saveLocal();go(at);toast(strings("ui").loadOk);}
+  saveLocal();hookChanged();go(at);toast(strings("ui").loadOk);}
 
 /* ---- THE HOST'S LINE AND NOTICE ----
    What the top bar says about where saves go, and the offer to read a newer file. The host's words (a label, a failure
@@ -7869,49 +7921,112 @@ const hookOpen=()=>!!currentId&&BOOK!==EMPTY_BOOKLET;
 const hostName=()=>{const f=currentEntry&&currentEntry.from;return typeof f==="string"&&f.startsWith("store:")?f.slice(6):"";};
 const hookBook=()=>hookOpen()&&hostName()!=="";
 function hostTime(d){const p=n=>String(n).padStart(2,"0");return p(d.getHours())+":"+p(d.getMinutes());}
-function hostLineText(u){if(!hostActive()||(hookOpen()&&!hookBook())) return u.hostKept;
+/* The line behind the save status: where the work is kept and why the status says what it does. With no host (or a
+   booklet that is not the host's) "Kept in this browser only", or, when it is saved because nothing changed since its file
+   was read or downloaded, that; with a host, where saves go, then its last answer ("Saved 10:42", "Saving…", "Not saved:
+   message", with "trying again" after it while a change waits to be sent or is on its way), or the file when that is what
+   saved it. */
+function hostLineText(u){const st=saveState(),mine=hostActive()&&!(hookOpen()&&!hookBook());
+  const byFile=st==="saved"&&!(mine&&HOST.status==="saved");
+  if(!mine) return byFile?u.saveSince:u.hostKept;
   const head=HOST.label?u.hostSavesTo(HOST.label):"";
-  const st=HOST.status==="saving"?u.hostSaving:HOST.status==="saved"?u.hostSaved(hostTime(HOST.at)):HOST.status==="failed"?u.hostFailed(HOST.silent?u.hostNoAnswer:HOST.message):"";
-  return [head,st].filter(Boolean).join(" · ");}
-function drawHostLine(){const n=document.getElementById("hostLine");if(!n) return;
-  const txt=hostLineText(strings("ui"));n.textContent=txt;n.setAttribute("title",txt);
-  n.setAttribute("class","hostline"+(HOST&&HOST.status==="failed"?" bad":""));
-  markAttention();}
-/* a change was made to the open booklet: a host that is registered shows "Saving…" at once, and the listeners hear of it
-   a moment later (at most one call about every half second, and always one after the last change) */
-function hookChanged(){if(!hookBook()||!hostActive()) return;
-  if(HOST.status!=="saving"){HOST.prev=HOST.status;HOST.status="saving";drawHostLine();}
-  if(HOOK_TIMER) return;
-  HOOK_TIMER=setTimeout(hookFire,Math.max(100,HOOK_EVERY_MS-(Date.now()-HOOK_LAST)));}
-function hookFire(){HOOK_TIMER=null;HOOK_LAST=Date.now();
-  const calm=()=>{if(HOST&&HOST.status==="saving"&&HOOK_ANSWER_TIMER===null){HOST.status=HOST.prev||"idle";drawHostLine();}};
+  /* (a "saved" for an earlier text is not shown beside a change the host was never sent: Clear everything, a change held back) */
+  const said=byFile?u.saveSince:HOST.status==="saving"?u.hostSaving:HOST.status==="saved"?(st==="saved"?u.hostSaved(hostTime(HOST.at)):""):HOST.status==="failed"?u.hostFailed(HOST.silent?u.hostNoAnswer:HOST.message):"";
+  const again=!byFile&&HOST.status==="failed"&&HOOK_LISTENERS.length>0&&(HOOK_TIMER!==null||HOOK_ANSWER_TIMER!==null)?u.saveAgain:"";
+  return [head,said,again].filter(Boolean).join(" · ");}
+/* ---- THE SAVE STATUS ----
+   One place in the bar of a booklet says whether the reader's work is safe: Saved, Saving… or Unsaved (saveState), in a
+   word and a shape as well as a colour (the good, warn and bad tones), so it reads without colour too. Pressed, it opens
+   the line behind it (hostLineText), which is also its description and its title. A screen reader hears it, politely, when
+   it becomes Saved or Unsaved in the booklet on screen, never on Saving. It stays quiet (SAVE_QUIET) from the moment a
+   booklet opens until the reader does something in it (a change, a kept entry, a download, Clear everything): the state an
+   open lands in, and the host's answer to the open's own send, are not news; the region is emptied when another booklet
+   opens, or none is. Drawn on every change to the work and every answer, without a redraw of the page; nothing in it is
+   kept. */
+const SAVE_LOOK={saved:"circle-check",saving:"circle-dashed",unsaved:"triangle-alert"};
+let SAVE_OPEN=false,SAVE_SAID=null,SAVE_QUIET=true;
+function drawSaveState(){const b=document.getElementById("saveBtn"),n=document.getElementById("hostLine"),say=document.getElementById("saveSay");
+  const u=strings("ui"),st=saveState(),why=hostLineText(u);
+  if(n&&n.textContent!==why){n.textContent=why;n.setAttribute("title",why);}
+  if(!b) return;
+  if(!st){b.setAttribute("hidden","");if(n) n.setAttribute("hidden","");SAVE_SAID=null;if(say) say.textContent="";return;}
+  const word=st==="saved"?u.saveSaved:st==="saving"?u.hostSaving:u.saveUnsaved,key=st+"\u0000"+word;
+  if(b.dataset.key!==key){b.dataset.key=key;b.setAttribute("data-state",st);b.textContent="";
+    const ic=icon(SAVE_LOOK[st]);if(ic) b.append(ic);b.append(el("span",{},word));}
+  b.removeAttribute("hidden");b.setAttribute("title",why);b.setAttribute("aria-expanded",String(SAVE_OPEN));
+  if(n){if(SAVE_OPEN) n.removeAttribute("hidden");else n.setAttribute("hidden","");}
+  /* the live region speaks a change of state in the same booklet once the reader has acted in it: emptied on Saving
+     (unspoken), so the next Saved is new; a booklet just opened starts quiet, with the region empty */
+  const was=SAVE_SAID;SAVE_SAID={id:currentId,st};
+  if(!was||was.id!==currentId){SAVE_QUIET=true;if(say) say.textContent="";return;}
+  if(say&&!SAVE_QUIET&&was.st!==st) say.textContent=st==="saving"?"":word;}
+/* A change was made to the open booklet, `how`:
+     "typed"  the reader's own (markDirty, a kept entry): the pause starts again, and the change goes when typing has paused
+              for HOOK_IDLE_MS, or HOOK_MAX_MS after the first change not yet sent, whichever is sooner;
+     "open"   a booklet opened, a host registered or allowed: the host hears of the booklet at once, a moment later (after
+              the script that registered it has called onChange);
+     (none)   a change made without typing (a file read into it): it goes with a change already waiting, else after the
+              pause.
+   A host that is registered shows "Saving…" at once, from the change, not from the send; the host hears only the latest
+   text. After a failed save it stays "failed" (Unsaved, the line adding "trying again" while a change waits or is on its
+   way) until a save succeeds, however many changes are sent meanwhile: a host that keeps failing is shown as failing, not
+   as saving. While the offer to read a newer file waits (LINK_NEWER) nothing is sent, so the status does not say Saving. */
+function hookChanged(how){HOOK_UNSENT=true;if(how==="typed") SAVE_QUIET=false;
+  if(!hookBook()||!hostActive()) return;
+  if(LINK_NEWER){drawSaveState();return;}
+  if(HOST.status!=="saving"&&HOST.status!=="failed"){HOST.prev=HOST.status;HOST.status="saving";drawSaveState();}
+  const now=Date.now();
+  if(how==="open"){clearTimeout(HOOK_TIMER);HOOK_DUE=HOOK_DUE||now;HOOK_TIMER=setTimeout(hookFire,0);return;}
+  if(HOOK_TIMER&&how!=="typed") return;
+  if(!HOOK_DUE) HOOK_DUE=now;
+  clearTimeout(HOOK_TIMER);
+  HOOK_TIMER=setTimeout(hookFire,Math.max(0,Math.min(HOOK_IDLE_MS,HOOK_DUE+HOOK_MAX_MS-now)));}
+function hookFire(){HOOK_TIMER=null;HOOK_DUE=0;
+  /* nothing sent: the status goes back to what it was before the change, but never to "saved" while a change is unsent */
+  const calm=()=>{if(HOST&&HOST.status==="saving"&&HOOK_ANSWER_TIMER===null) HOST.status=HOOK_UNSENT&&HOST.prev==="saved"?"idle":(HOST.prev||"idle");drawSaveState();};
   /* a booklet with no module holds nothing a reader could have written, so it is never sent: a blank copy can never be
-     saved over a file and its records */
-  if(!hookBook()||!hostActive()||!HOOK_LISTENERS.length||LINK_NEWER||!allModules().length) return calm();
+     saved over a file and its records. One that nothing has changed since its file was read is that file (nothing unsent);
+     one whose last module was removed here holds a change the host never gets (HOOK_UNSENT stays) */
+  if(hookBook()&&!allModules().length&&!(dirty||unsavedEntries>0)) HOOK_UNSENT=false;
+  if(!hookBook()||!hostActive()||LINK_NEWER||!allModules().length) return calm();
   const text=toMarkdown(),key=currentId+"\u0000"+text;
-  if(key===HOOK_SEEN) return calm();
-  HOOK_SEEN=key;
+  /* the text is what was last sent: nothing is unsent, and if the host said saved for that text, it is saved */
+  if(key===HOOK_SEEN){HOOK_UNSENT=false;if(HOST.savedKey===key&&HOOK_ANSWER_TIMER===null) HOST.status="saved";return calm();}
+  /* a change with nobody listening through onChange cannot be sent: a failed save, Unsaved until one succeeds (so a
+     listener that comes back never finds this change counted as saved); it goes with the next change once one listens */
+  if(!HOOK_LISTENERS.length){HOST.status="failed";HOST.message="";HOST.silent=false;HOOK_SEEN="";return drawSaveState();}
+  HOOK_SEEN=key;HOOK_UNSENT=false;
   /* `change` names this call, so an answer can say which change it answers (hostSet) */
   HOOK_OUT={change:++HOOK_SEQ,id:currentId};
   HOOK_SENT.push({...HOOK_OUT,recs:recsHere()});if(HOOK_SENT.length>20) HOOK_SENT.shift();
   const info={text,name:hostName(),title:hookText(tx(describeBooklet(BOOK).title,""),200),change:HOOK_OUT.change};
   hookStopWait();
-  if(HOST) HOOK_ANSWER_TIMER=setTimeout(()=>{HOOK_ANSWER_TIMER=null;if(HOST&&HOST.status==="saving")hostSet("failed","",true);},HOOK_ANSWER_MS);
-  HOOK_LISTENERS.slice().forEach(fn=>{try{fn({...info});}catch(e){HOOK_SEEN="";hostSet("failed",hookText(e&&e.message,200));}});}
-/* A host reports: status "saved", or "failed" with a message. It changes the top bar and nothing else (whether the store
-   holds a booklet is read from its file: see storeHolds). An answer may name the change it answers (`change`, the object
-   onChange gave or its `change` number; docs/hosting.md): one for a change sent before the latest, or for a booklet no
-   longer open, leaves the bar as it is, so "Saved" never stands for a change still on its way. An answer that names
-   none is about the open booklet's latest change, as it always was. */
+  /* no answer in time is a failed save, also for a change sent again after one (its line then says the host did not answer) */
+  if(HOST) HOOK_ANSWER_TIMER=setTimeout(()=>{HOOK_ANSWER_TIMER=null;if(HOST&&HOST.status!=="saved")hostSet("failed","",true);},HOOK_ANSWER_MS);
+  HOOK_LISTENERS.slice().forEach(fn=>{try{fn({...info});}catch(e){HOOK_SEEN="";hostSet("failed",hookText(e&&e.message,200));}});
+  drawSaveState();}
+/* A host reports: status "saved", or "failed" with a message. It changes the bar's status and nothing else (whether the
+   store holds a booklet is read from its file: see storeHolds). An answer may name the change it answers (`change`, the
+   object onChange gave or its `change` number; docs/hosting.md): one for a change sent before the latest, or for a
+   booklet no longer open, leaves the status as it is, so "Saved" never stands for a change still on its way. A "saved" that
+   names none counts only when the latest change sent was the open booklet's (it is about that change); a "failed" that
+   names none is about the open booklet. Either way, "saved" while a change the host has not been sent exists (HOOK_UNSENT:
+   waiting for the pause, or held back) is not about the latest change: it leaves the status at Saving, with Saved kept for
+   when that change turns out to be no change (calm, HOST.savedKey), and a failure in place. "failed" is shown at once, and
+   stays until a "saved" for the latest change (see hookChanged). After a failure the text it was about counts as not sent,
+   so the next change goes again even if it leaves the text as it was. */
 function hostSet(status,message,silent,change){if(!hostActive()) return;
   const n=typeof change==="number"?change:isObj(change)&&typeof change.change==="number"?change.change:null;
+  const waiting=HOOK_TIMER!==null||HOOK_UNSENT;
   if(n!==null) hostAnswered(status,n);
   if(n!==null&&!(HOOK_OUT!==null&&n===HOOK_OUT.change&&HOOK_OUT.id===currentId)) return;
-  const was=HOST.status;
-  hookStopWait();HOST.silent=!!silent;
-  HOST.status=status;HOST.message=status==="failed"?message||"":"";if(status==="saved") HOST.at=new Date();
-  drawHostLine();
-  if((was==="failed")!==(status==="failed")) render();}
+  if(n===null&&status==="saved"&&!(HOOK_OUT!==null&&HOOK_OUT.id===currentId)) return;
+  hookStopWait();
+  if(status==="saved"){HOST.at=new Date();HOST.savedKey=HOOK_SEEN;}
+  if(status==="saved"&&waiting){if(HOST.status!=="failed"){HOST.prev="saved";HOST.status="saving";}}
+  else{HOST.silent=!!silent;HOST.message=status==="failed"?message||"":"";HOST.status=status;}
+  if(status==="failed"){HOOK_SEEN="";HOST.savedKey="";}
+  drawSaveState();}
 /* the refusal a file earns, as the sentences the reader would see */
 function refusalList(R){const t=strings("ui");
   return (R.refused&&R.refused.length?[t.loadRefused+" "+R.refused.map(problemText).join(" ")]:R.unread&&R.unread.length&&!R.template?R.unread.map(problemText):[t.loadErr]).map(humanMsg);}
@@ -7929,10 +8044,10 @@ function hostAsk(main){const u=strings("ui");
     el("button",{type:"button",class:"small",onclick:e=>{if(!e||e.isTrusted!==true) return;HOST.dismissed=true;render();}},u.hostNotNow)));}
 function hostAllowNow(){if(!HOST||HOST.state!=="waiting") return;
   HOST.state="active";HOST.status="idle";lsSet(HOST_KEY,HOST.label);
-  HOOK_SEEN="";hookChanged();render();}
+  HOOK_SEEN="";hookChanged("open");render();}
 function hostStopNow(){lsDel(HOST_KEY);
   if(HOST){HOST.state="waiting";HOST.dismissed=true;HOST.pending=null;HOST.status="idle";HOST.message="";hookStopWait();
-    if(HOOK_TIMER){clearTimeout(HOOK_TIMER);HOOK_TIMER=null;}}
+    if(HOOK_TIMER){clearTimeout(HOOK_TIMER);HOOK_TIMER=null;HOOK_DUE=0;}}
   render();}
 /* on "Your booklets": a site the reader has allowed says so, and offers to take it back */
 function hostStopLine(main){const lab=hostAllowed();if(!lab) return;const u=strings("ui");
@@ -7948,12 +8063,16 @@ function hostNoticeShow(main){
 /* the reader pressed: the newer file replaces what is on screen, through the same parser and refusals as any file. A
    refused text changes nothing but says why. */
 function hostAccept(){if(!newerWaiting()) return;
-  if(LINK_NEWER) return linkAccept();
+  /* The merged booklet goes to the host at once, after the read (hookFlush: finishLoad asked for a send), with any change
+     that was waiting for a pause in typing in it. Not before the read: the old body sent then would be kept by a store that
+     keeps its own (the box's), which would offer the newer file straight back. */
+  if(LINK_NEWER){linkAccept();hookFlush();return;}
   const text=HOST.pending;HOST.pending=null;
   const R=parseFile(text);
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
   /* the same rule as a newer file a link found (acceptWork): what the reader typed since the host's last save stays */
-  const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});}
+  const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});
+  hookFlush();}
 /* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
    generator owns the body and the reader owns the records (the store contract).
    - A store booklet: the new file's body is taken, with the work acceptWork gives (the one rule for reading a newer
@@ -8224,20 +8343,21 @@ if(typeof window!=="undefined"){
     const mine={label:hookText(o&&o.label,80),status:"idle",message:"",at:null,prev:"idle",pending:null,state:"waiting",dismissed:false,early:!KEEP.ready};
     /* active at once only for the label the reader already allowed on this site; any other label asks again */
     if(mine.label!==""&&hostAllowed()===mine.label) mine.state="active";
-    HOST=mine;drawHostLine();
+    HOST=mine;drawSaveState();
     /* a host the reader allowed on an earlier visit hears of a booklet that is already open (after the script that called
        host() has had the moment it needs to register onChange); a waiting one asks */
-    if(mine.state==="waiting") render();else hookChanged();
+    if(mine.state==="waiting") render();else hookChanged("open");
     const live=f=>(...a)=>{if(HOST===mine) f(...a);};
     return Object.freeze({
       saved:live(c=>hostSet("saved","",false,c)),
       failed:live((m,c)=>hostSet("failed",hookText(m,200),false,c)),
       fileChanged:live(t=>{if(typeof t!=="string"||!hookBook()||mine.state!=="active") return;mine.pending=t;render();}),
       state:()=>HOST===mine?mine.state:"refused",
-      leave:live(()=>{hookStopWait();const was=mine.status==="failed"||mine.pending!=null||mine.state==="waiting";HOST=null;drawHostLine();if(was) render();})});};
+      leave:live(()=>{hookStopWait();const was=mine.pending!=null||mine.state==="waiting";HOST=null;drawSaveState();if(was) render();})});};
   const onChangeFn=function onChange(fn){if(typeof fn!=="function") return noop;
-    HOOK_LISTENERS.push(fn);
-    return ()=>{const i=HOOK_LISTENERS.indexOf(fn);if(i>=0){HOOK_LISTENERS.splice(i,1);drawHostLine();}};};
+    /* a listener added or taken away changes what the host covers: the status is drawn again either way */
+    HOOK_LISTENERS.push(fn);drawSaveState();
+    return ()=>{const i=HOOK_LISTENERS.indexOf(fn);if(i>=0){HOOK_LISTENERS.splice(i,1);drawSaveState();}};};
   const openFn=function open(text,o){return hostOpen(text,o);};
   const textFn=function text(){return hookBook()&&hostActive()?toMarkdown():"";};
   /* set once and never replaceable; a second copy of this script in the same window (a test harness) leaves the first */
@@ -8284,12 +8404,16 @@ window.addEventListener("scroll",hideTip,{passive:true});
 document.getElementById("btnHome").addEventListener("click",homeButton);
 document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>pickLang(b.dataset.lang)));
 document.getElementById("btnExport").addEventListener("click",download);
+/* the save status opens and closes the line behind it (in memory, for the visit) */
+document.getElementById("saveBtn").addEventListener("click",()=>{SAVE_OPEN=!SAVE_OPEN;drawSaveState();});
 document.getElementById("loadCancel").addEventListener("click",()=>veilLoad.removeAttribute("open"));
 document.getElementById("fileIn").addEventListener("change",e=>readFileInto(e.target.files[0],txt=>{document.getElementById("pasteIn").value=txt;}));
 document.getElementById("addModCancel").addEventListener("click",()=>veilAddModule.removeAttribute("open"));
 document.getElementById("loadGo").addEventListener("click",()=>loadText(document.getElementById("pasteIn").value));
 document.getElementById("clearCancel").addEventListener("click",()=>veilClear.removeAttribute("open"));
-document.getElementById("clearGo").addEventListener("click",()=>{STATE=emptyState();DRAFTS=emptyDrafts();dirty=false;unsavedEntries=0;viewReset(currentId,"all");clearLocal();veilClear.removeAttribute("open");go(HOME_SCREEN);});
+/* Clear everything empties this browser's copy and tells no host: a host's booklet then holds a change the host never gets
+   (HOOK_UNSENT), so its status says Unsaved, never Saved; its store keeps its file, and the work comes back at the next open */
+document.getElementById("clearGo").addEventListener("click",()=>{STATE=emptyState();DRAFTS=emptyDrafts();dirty=false;unsavedEntries=0;viewReset(currentId,"all");clearLocal();HOOK_UNSENT=true;SAVE_QUIET=false;veilClear.removeAttribute("open");go(HOME_SCREEN);});
 /* the dialogs that close on a click on their backdrop and on Escape */
 const dismissable=[veilLoad,veilClear,veilAddModule];
 dismissable.forEach(v=>v.addEventListener("click",e=>{if(e.target===v) v.removeAttribute("open");}));
@@ -8306,6 +8430,10 @@ window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&hostCov
    the store has not been handed yet is handed to the browser at once (keepFlush(true)), even while an earlier write is
    still on its way, which would otherwise hand it on only when it ends, after the page has gone */
 window.addEventListener("pagehide",()=>{flushSave();hookFlush();keepFlush(true);});
+/* back from the browser's page cache (bfcache): a change the host has not confirmed (the one sent as the page went may never
+   have arrived) is sent again at once, so it does not stay Unsaved until the next edit */
+window.addEventListener("pageshow",e=>{if(!e||!e.persisted||!hookBook()||!hostActive()) return;
+  if(HOOK_UNSENT||HOST.status!=="saved"){HOOK_SEEN="";hookChanged("open");}});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();keepFlush(true);}});
 /* a booklet drawn while the page was still arriving had no formula or diagram (useLib waits): it is drawn again now */
 document.addEventListener("DOMContentLoaded",()=>{if(LIB_WAITED){LIB_WAITED=false;render();}});

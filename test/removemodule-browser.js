@@ -104,7 +104,7 @@ const FILE=`---\nbooklet: "0.13"\ntitle: Two modules\nlang: en\n---\n
   await p.keyboard.press('Enter');await p.waitForTimeout(500);
   ok(await cards().count()===1&&await cards().first().textContent().then(t=>/Study notes/.test(t)&&!/Daily journal/.test(t)),'confirming removes the module and shows the home screen with the other module');
   ok(/Removed “Daily journal”\./.test(await p.locator('#toast').textContent()),'a toast names it: '+await p.locator('#toast').textContent());
-  ok(/not yet downloaded|changes/i.test(await p.locator('#main').textContent()),'the home screen says the booklet has changes not yet downloaded');
+  ok(await p.locator('#saveBtn').getAttribute('data-state')==='unsaved','the bar\'s save status says the booklet has changes not yet downloaded (Unsaved)');
   // the file
   const md=await dl();
   ok(!/\[!module\|dj|\[!data\|dj\]|\[!records\|dj\]|walked by the river|Daily journal/.test(md)&&/\[!module\|sn\] Study notes/.test(md)&&/algebra/.test(md),'the downloaded file has no trace of the module and keeps the other');

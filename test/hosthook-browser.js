@@ -2,7 +2,7 @@
 // cases the TEST injects a small script of its own into the page it serves (standing in for a host's script: the renderer file
 // on disk and the published renderer hold none of it). It registers a label through window.Booklet.host and records what
 // onChange gives it. Checks: the label shows in the top bar; opening a booklet gives one onChange; an answer gives one with
-// the answer in `text`; saved() shows "Saved"; failed("disk full") shows it and brings back the not-downloaded mark;
+// the answer in `text`; saved() shows "Saved"; failed("disk full") shows it and turns the save status to Unsaved;
 // fileChanged(text) shows the offer and a press reads the new text, keeping the answer typed here (it holds something); with no host the bar says "Kept in this browser only";
 // a hostile booklet registers nothing and calls nothing; and the renderer itself made no request for any of it: every
 // recorded request is the page, a GET. Zero CSP violations and page errors. Screenshots of the bar (host and no host, 1280px
@@ -33,6 +33,9 @@ const HOSTSCRIPT_WATCH=`<script>(function(){window.__calls=[];window.__hits=0;
    renderer, which edits one constant, gets its policy rewritten by test/csp-hash.js, as a host that edits the renderer must. */
 const JS={};
 const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS=20000','HOOK_ANSWER_MS=1500');/* the test's own copy waits 1.5 s, not 20 */
+  /* and saves on the half-second cadence of earlier releases, not after the 2 s pause (test/autosave-browser.js has the real one) */
+  if(!h.includes('HOOK_IDLE_MS=2000,HOOK_MAX_MS=5000')) throw new Error('booklet.html no longer has the cadence this test shortens');
+  h=h.replace('HOOK_IDLE_MS=2000,HOOK_MAX_MS=5000','HOOK_IDLE_MS=100,HOOK_MAX_MS=500');
   h=require('./csp-hash.js').write(h);
   const i=h.lastIndexOf('</body>');
   if(i<0) throw new Error('no </body>');
@@ -60,6 +63,9 @@ const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS
     r.fulfill({status:404,body:'nf'});});
   const wait=(p,ms)=>p.waitForTimeout(ms||800);
   const bar=p=>p.locator('#hostLine').innerText();
+  /* the bar's save status (v0.13 item 13, in place of the Download button's mark), and the line of a booklet no host covers */
+  const saveState=p=>p.locator('#saveBtn').getAttribute('data-state');
+  const keptLine=async p=>['Kept in this browser only','No changes since the file was opened or downloaded'].includes(await bar(p));
   const barBox=p=>p.locator('.bar').boundingBox();
   const noScroll=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
 
@@ -89,14 +95,14 @@ const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS
   calls=await p.evaluate(()=>window.__calls);
   ok(calls.length===2&&/QZXanswerone/.test(calls[1].text),'an answer leads to one more onChange with the answer in text: '+calls.length);
   await wait(p,1200);
-  ok(/Not saved: the host did not answer$/.test(await bar(p))&&await p.locator('#btnExport.attention').count()===1,'a host that does not answer in time is shown as not saved, and the mark returns: '+await bar(p)+' attention='+await p.locator('#btnExport.attention').count()+' '+JSON.stringify(await p.evaluate(()=>({s:HOST.status,silent:HOST.silent,l:HOOK_LISTENERS.length,ms:HOOK_ANSWER_MS}))));
+  ok(/Not saved: the host did not answer$/.test(await bar(p))&&await saveState(p)==='unsaved','a host that does not answer in time is shown as not saved, and the status is Unsaved: '+await bar(p)+' state='+await saveState(p)+' '+JSON.stringify(await p.evaluate(()=>({s:HOST.status,silent:HOST.silent,l:HOOK_LISTENERS.length,ms:HOOK_ANSWER_MS}))));
   await p.evaluate(()=>window.__h.saved());
   ok(/Saved \d\d:\d\d$/.test(await bar(p)),'saved() shows Saved with the time: '+await bar(p));
-  ok(await p.locator('#btnExport.attention').count()===0,'while saves succeed the Download button is not marked as needing attention');
+  ok(await saveState(p)==='saved','while saves succeed the status is Saved');
   await p.screenshot({path:path.join(OUT,'bar-host-saved-1280.png')});
   await p.evaluate(()=>window.__h.failed('disk full'));
   ok(/Not saved: disk full$/.test(await bar(p)),'failed() shows the message: '+await bar(p));
-  ok(await p.locator('#btnExport.attention').count()===1&&(await p.locator('#main .unsaved').count())>=0,'and the not-downloaded mark returns on Download');
+  ok(await saveState(p)==='unsaved'&&await p.locator('#btnExport.attention').count()===0&&await p.locator('#main .unsaved').count()===0,'and the status is Unsaved: the one signal (no mark on Download, no note on the page)');
   await p.screenshot({path:path.join(OUT,'bar-host-failed-1280.png')});
   await p.evaluate(()=>window.__h.saved());
   await p.evaluate(t=>window.__h.fileChanged(t),NEWER);await wait(p,300);
@@ -131,14 +137,14 @@ const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS
   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(p,300);
   await p.locator('#fileIn').setInputFiles(path.join(OUT,'mine.booklet.md'));await wait(p,400);
   await p.locator('dialog[open] button,[role=dialog][open] button,.veil[open] button').filter({hasText:/^Load$/}).first().click();await wait(p,800);
-  ok(await bar(p)==='Kept in this browser only','a booklet opened from a file, host registered: the bar says Kept in this browser only: '+await bar(p));
+  ok(await keptLine(p),'a booklet opened from a file, host registered: the bar\'s line is not the host\'s: '+await bar(p));
   await p.locator('#main textarea').first().fill('QZXprivate');await wait(p,900);
   ok(await p.evaluate(()=>window.__calls.length)===0,'the host\'s listener is never called for it (no call after opening and a change)');
   await wait(p,1800);
   ok(await bar(p)==='Kept in this browser only','no "Not saved: the host did not answer" after the answer wait: '+await bar(p));
   ok(await p.evaluate(()=>window.Booklet.text())==='','Booklet.text() is empty for it');
-  await p.evaluate(()=>drawHostLine());
-  ok(await p.locator('#btnExport.attention').count()===1,'the Download mark behaves as with no host: the change is not yet downloaded, and the host covers nothing');
+  await p.evaluate(()=>drawSaveState());
+  ok(await saveState(p)==='unsaved','the status behaves as with no host: the change is not yet downloaded, and the host covers nothing');
   await p.screenshot({path:path.join(OUT,'bar-host-ownfile-1280.png')});
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   await p.close();
@@ -149,7 +155,7 @@ const page=(inject)=>{let h=fs.readFileSync(HTML,'utf8').replace('HOOK_ANSWER_MS
   await p.evaluate(t=>window.Booklet.open(t),HOSTILE);await wait(p,900);
   await p.locator('#main a, #main div, #main svg').evaluateAll(els=>els.forEach(e=>{try{e.click();e.dispatchEvent(new Event('mouseover'));}catch(x){}}));await wait(p,300);
   ok(await p.evaluate(()=>window.__pwn===undefined),'nothing a booklet held ran');
-  ok(await bar(p)==='Kept in this browser only','and registered no host: '+await bar(p));
+  ok(await keptLine(p),'and registered no host: '+await bar(p));
   ok(await p.evaluate(()=>window.__calls.length)===0,'a booklet handed over without a name is the reader\'s alone: onChange heard nothing');
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   await p.close();

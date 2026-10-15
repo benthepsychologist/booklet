@@ -207,7 +207,9 @@ for(const delay of [0,20,150,600]) for(const bare of [false,true]){
 {const A=boot();host(A,{delay:()=>700});
  ROUTES[STORE+"x.md"]=booklet("Xray");ROUTES[STORE+"y.md"]=booklet("Yankee");
  await A.openLink("#/open/x.md");const idX=A.currentId;typeIn(A,A.screen,"XWORK");await sleep(1500);A.closeBooklet();
- await A.openLink("#/open/y.md");const idY=A.currentId;await sleep(700);A.closeBooklet();
+ /* the stand-in host answers Y's open (sent at once) 700 ms later and writes its file then: wait for that, so it does not
+    replace the gated file below */
+ await A.openLink("#/open/y.md");const idY=A.currentId;await sleep(1000);A.closeBooklet();
  const XT=ROUTES[STORE+"x.md"],YT=ROUTES[STORE+"y.md"];let relX,relY;const gX=new Promise(r=>{relX=r;}),gY=new Promise(r=>{relY=r;});
  ROUTES[STORE+"x.md"]=async()=>{await gX;return reply(XT);};ROUTES[STORE+"y.md"]=async()=>{await gY;return reply(YT);};
  A.openFromList(idX);await sleep(5);A.openFromList(idY);await sleep(5);relX();await sleep(30);
