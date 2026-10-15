@@ -413,6 +413,13 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("N3: the kept block becomes the added module's: one records line for it, the kept block first and the new answer after",r.ok&&cnt(o,/\[!records\|ghost\]/g)===1&&o.indexOf("old ghost answer")<o.indexOf("NEW answer typed"),o.slice(-400));
   chk("N3: and on reopening the newer answer wins and the older key stays, with nothing reported",B.peekAnswers("ghost").g==="NEW answer typed after adding"&&B.peekAnswers("ghost").h==="only old"&&B.parseFile(o).unread.length===0&&B.peekAnswers("").q==="bare",JSON.stringify(B.peekAnswers("ghost")));}
 
+ /* B1d: two entries kept in the same millisecond keep apart (an entry is identified by its ts, SPEC section 8) */
+ {P.wipe();const A=P.boot();A.loadText(FM+MODE);const RD=Date;
+  global.Date=class extends RD{constructor(...a){if(a.length) super(...a); else super(1760000000000);}static now(){return 1760000000000;}};
+  try{A.draftFor("m/e").t="one";A.finalizeEntry("m/e");A.draftFor("m/e").t="two";A.finalizeEntry("m/e");}finally{global.Date=RD;}
+  const got=A.keptFor("m/e");
+  chk("B1d: two entries kept in the same millisecond are two entries with two timestamps, and a reopen keeps both",got.length===2&&got[0].ts!==got[1].ts&&load(A.toMarkdown()).keptFor("m/e").length===2,JSON.stringify(got));}
+
  /* N4 (joinRecords): an entries block kept as written for a module the booklet lacks joins the reader's work by ts when the module is added */
  {const T1="2026-01-01T10:00:00Z",T2="2026-01-02T10:00:00Z",T3="2026-01-03T10:00:00Z";
   const f=FM+"> [!activity|b] B\n\n> [!text|q] Q\n"+REC+"> [!records|m] M\n\n"+fence("booklet entries e",items(entry(T1,{t:"file",u:"file only"}),entry(T2,{t:"two"})))+"%%\n";

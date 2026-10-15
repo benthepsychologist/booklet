@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-gTf510y0SUeklRRX7o8z9RQ+w7kZe5Xm+YB/8V5jOg0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-L4rYR7LkhQXojTr6fffnLZinXZsZGujbMSyEYCOMFdE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -5948,10 +5948,12 @@ function qControls(q,draft,activityId,dc){const sol=ownPart(q,"solution")?soluti
 function finalizeEntry(id){const u=strings("ui");
   const draft=draftFor(id);
   if(!anyFilled(draft)){toast(u.nothingYet);return;}
-  const e=nullMap(clone(draft));e.ts=new Date().toISOString();
+  const kept=keptFor(id);
+  /* an entry is identified by its ts (SPEC section 8), so two kept in the same millisecond must not share one: the later takes the next free millisecond */
+  const e=nullMap(clone(draft)),taken=new Set(kept.map(x=>x.ts));let at=Date.now();while(taken.has(new Date(at).toISOString())) at++;
+  e.ts=new Date(at).toISOString();
   /* lines typed and left blank are not kept, whichever block owns them */
   for(const k of Object.keys(e)) if(Array.isArray(e[k])&&e[k].every(x=>typeof x==="string")) e[k]=e[k].filter(nonEmpty);
-  const kept=keptFor(id);
   if(activityOf(id).upsert==="day"){
     const idx=kept.findIndex(x=>dayKey(x.ts)===dayKey(e.ts));
     if(idx>=0) kept[idx]=e; else kept.push(e);
