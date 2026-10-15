@@ -12,6 +12,7 @@
 // 1280px and 400px, the Stop line on "Your booklets") are written to <outdir>.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/hostlock-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
@@ -63,7 +64,8 @@ const page=(inject,origin)=>{let h=fs.readFileSync(HTML,'utf8');
   const ask=p=>p.locator('#main .hostask');
   const calls=p=>p.evaluate(()=>window.__calls.length);
   const state=p=>p.evaluate(()=>window.__h.state());
-  const stored=p=>p.evaluate(k=>localStorage.getItem(k),KEY);
+  /* the reader's yes as the renderer keeps it: its store (IndexedDB since 0.13.1) and its mirror in local storage agree */
+  const stored=async p=>{const K=await kept(p),m=await p.evaluate(k=>localStorage.getItem(k),KEY);const v=K[KEY]===undefined?null:K[KEY];return v===m?v:'(store '+v+', mirror '+m+')';};
   const noScroll=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
 
   // 1 private address, no yes yet: the ask

@@ -12,6 +12,7 @@
 //  - on a phone the menu is a disclosure above the page.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/wiki-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
@@ -363,7 +364,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   await p.locator('#btnHome').click();await p.waitForTimeout(300);
   await p.getByRole('button',{name:'Start a new booklet'}).click();await p.waitForTimeout(500);
   await p.waitForTimeout(3200);
-  ok(!/Week 2/.test(await p.locator('#main').innerText())&&!(await p.evaluate(()=>Object.values(localStorage).join('\n').includes('Week two reading'))),'a module still coming when the reader starts another booklet is not added to it, and nothing is saved for it');
+  ok(!/Week 2/.test(await p.locator('#main').innerText())&&!Object.values(await kept(p)).join('\n').includes('Week two reading'),'a module still coming when the reader starts another booklet is not added to it, and nothing is saved for it');
   await p.context().close();
 
   ok(cons.length===0,'no Content Security Policy violation'+(cons.length?': '+cons[0]:''));

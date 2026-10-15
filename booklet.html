@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-Vra/VlFvm4jHIqV3rTMhTy9f+qNpYhQ2LAT/oiUTYtY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-HMyndSg7xie5MlAVmkx4Vd2b9P6y2ap3II1h/e3Gxvg=' 'sha256-VIoU49uPDmQDQHnxsoV60hlnZBgVLucdcapFCLkecdk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1062,7 +1062,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
      follows the device: more contrast (or forced colours) asked for is Contrast, else a dark scheme
      is Night, else Paper; it follows the device live. data-theme on <html> is
      the theme in force; window.bookletTheme is how the page's own script
-     reads and changes it. -->
+     reads and changes it. The choice is read from local storage here because
+     this script runs before the page has read its store (IndexedDB): local
+     storage holds a mirror of it, which the main script keeps, and writes
+     again from its store when the two differ (THEME_KEY). -->
 <script id="theme-boot">
 (function(){
   /* the main script keeps the same names as TH_BASES; this script runs before it and cannot read it */
@@ -1596,6 +1599,8 @@ const STRINGS_SRC={
       pLang: "Language",
       pTheme: "Colour theme", themeAuto: "Auto", themeAutoTip: "The booklet's own look if it has one, otherwise your device's", themePaper: "Paper", themeDaylight: "Daylight", themeNight: "Night", themeContrast: "Contrast",
       storageOff: "This browser is not keeping your entries between visits (private mode, or site data is blocked). Download before you close the tab.",
+      storageFull: small=>small?"This browser has run out of room for this page. It keeps booklets here in its small store (about 5 MB), because it would not open its larger one. Your latest changes last until you close the tab, so download a copy.":"This browser has run out of room for this page, so your latest changes last only until you close the tab. Download a copy, or remove booklets you no longer need from Your booklets.",
+      storageFailed: "This browser could not save your latest changes (its storage reported an error). They last until you close the tab, so download a copy.",
       clearHelpStored: "This also erases what this browser has kept. If you have not downloaded your entries, they will be gone for good."
     },
     booklet: {
@@ -1653,7 +1658,9 @@ const STRINGS_SRC={
       keep: "Keep it",
       removed: "Removed.",
       storageOff: "This browser is not keeping anything between visits (private mode, or site data is blocked). Booklets here last until you close the tab, so download a copy of any you want to keep.",
-      mayClear: "This browser may clear booklets kept here. Download a copy of any you want to keep, or add this page to your home screen."
+      mayClear: "This browser may clear booklets kept here. Download a copy of any you want to keep, or add this page to your home screen.",
+      storageSmall: "This browser would not open its larger store for this page, so booklets kept in it before are not shown, and booklets are kept in its small one (about 5 MB), as before. A large booklet may not fit there: download a copy of any you want to keep.",
+      storageLate: "This browser did not open its store for this page in time, so booklets kept here before could not be read this time. Reload the page to bring them back. Until then, anything you start here is kept in its small store (about 5 MB)."
     },
     question: {
       addOwn: "Add your own",
@@ -1924,6 +1931,8 @@ const STRINGS_SRC={
       pLang: "Langue",
       pTheme: "Thème de couleurs", themeAuto: "Auto", themeAutoTip: "L'apparence propre au carnet s'il en a une, sinon celle de votre appareil", themePaper: "Papier", themeDaylight: "Plein jour", themeNight: "Nuit", themeContrast: "Contraste",
       storageOff: "Ce navigateur ne conserve pas vos entrées d’une visite à l’autre (navigation privée, ou données de site bloquées). Téléchargez avant de fermer l’onglet.",
+      storageFull: small=>small?"Ce navigateur n’a plus de place pour cette page. Il garde les carnets d’ici dans son petit espace (environ 5 Mo), car il n’a pas voulu ouvrir le plus grand. Vos dernières modifications durent jusqu’à la fermeture de l’onglet : téléchargez une copie.":"Ce navigateur n’a plus de place pour cette page : vos dernières modifications ne durent que jusqu’à la fermeture de l’onglet. Téléchargez une copie, ou retirez de « Vos carnets » ceux dont vous n’avez plus besoin.",
+      storageFailed: "Ce navigateur n’a pas pu enregistrer vos dernières modifications (son stockage a signalé une erreur). Elles durent jusqu’à la fermeture de l’onglet : téléchargez une copie.",
       clearHelpStored: "Cela efface aussi ce que ce navigateur a conservé. Si vous n’avez pas téléchargé vos entrées, elles seront perdues définitivement."
     },
     booklet: {
@@ -1981,7 +1990,9 @@ const STRINGS_SRC={
       keep: "Le garder",
       removed: "Retiré.",
       storageOff: "Ce navigateur ne garde rien d’une visite à l’autre (navigation privée, ou données du site bloquées). Les carnets d’ici durent jusqu’à la fermeture de l’onglet : téléchargez une copie de ceux que vous voulez garder.",
-      mayClear: "Ce navigateur peut effacer les carnets gardés ici. Téléchargez une copie de ceux que vous voulez conserver, ou ajoutez cette page à votre écran d’accueil."
+      mayClear: "Ce navigateur peut effacer les carnets gardés ici. Téléchargez une copie de ceux que vous voulez conserver, ou ajoutez cette page à votre écran d’accueil.",
+      storageSmall: "Ce navigateur n’a pas voulu ouvrir son grand espace pour cette page : les carnets qui y étaient gardés ne sont donc pas affichés, et les carnets sont gardés dans le petit espace (environ 5 Mo), comme avant. Un grand carnet peut ne pas y tenir : téléchargez une copie de ceux que vous voulez conserver.",
+      storageLate: "Ce navigateur n’a pas ouvert à temps son espace pour cette page : les carnets gardés ici n’ont donc pas pu être lus cette fois. Rechargez la page pour les retrouver. D’ici là, ce que vous commencez ici est gardé dans son petit espace (environ 5 Mo)."
     },
     question: {
       addOwn: "Ajoutez votre propre option",
@@ -2248,6 +2259,8 @@ const STRINGS_SRC={
       pLang: "Idioma",
       pTheme: "Tema de color", themeAuto: "Auto", themeAutoTip: "El aspecto propio del cuadernillo si lo tiene; si no, el de tu dispositivo", themePaper: "Papel", themeDaylight: "Luz de día", themeNight: "Noche", themeContrast: "Contraste",
       storageOff: "Este navegador no está conservando tus entradas entre visitas (modo privado, o los datos del sitio están bloqueados). Descarga antes de cerrar la pestaña.",
+      storageFull: small=>small?"Este navegador se quedó sin espacio para esta página: los cuadernillos de aquí se guardan en su espacio pequeño (unos 5 MB), porque no quiso abrir el más grande. Tus últimos cambios duran hasta que cierres la pestaña, así que descarga una copia.":"Este navegador se quedó sin espacio para esta página, así que tus últimos cambios duran solo hasta que cierres la pestaña. Descarga una copia, o quita de «Tus cuadernillos» los que ya no necesites.",
+      storageFailed: "Este navegador no pudo guardar tus últimos cambios (su almacenamiento informó un error). Duran hasta que cierres la pestaña, así que descarga una copia.",
       clearHelpStored: "Esto también borra lo que este navegador ha guardado. Si no descargaste tus entradas, se perderán para siempre."
     },
     booklet: {
@@ -2305,7 +2318,9 @@ const STRINGS_SRC={
       keep: "Conservarlo",
       removed: "Quitado.",
       storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descarga una copia de los que quieras conservar.",
-      mayClear: "Este navegador puede borrar los cuadernillos guardados aquí. Descarga una copia de los que quieras conservar, o agrega esta página a tu pantalla de inicio."
+      mayClear: "Este navegador puede borrar los cuadernillos guardados aquí. Descarga una copia de los que quieras conservar, o agrega esta página a tu pantalla de inicio.",
+      storageSmall: "Este navegador no quiso abrir su espacio grande para esta página, así que no se muestran los cuadernillos que ya estaban guardados en él, y los cuadernillos se guardan en el espacio pequeño (unos 5 MB), como antes. Es posible que un cuadernillo grande no quepa ahí: descarga una copia de los que quieras conservar.",
+      storageLate: "Este navegador no abrió a tiempo su espacio para esta página, así que esta vez no se pudieron leer los cuadernillos guardados aquí. Recarga la página para recuperarlos. Mientras tanto, lo que empieces aquí se guarda en su espacio pequeño (unos 5 MB)."
     },
     question: {
       addOwn: "Agrega tu propia opción",
@@ -2512,6 +2527,8 @@ const STRINGS_SRC={
       dropZone: "…o soltá el archivo aquí",
       dropVeil: "Soltá para cargar tus notas",
       storageOff: "Este navegador no está conservando tus entradas entre visitas (modo privado, o los datos del sitio están bloqueados). Descargá antes de cerrar la pestaña.",
+      storageFull: small=>small?"Este navegador se quedó sin espacio para esta página: los cuadernillos de acá se guardan en su espacio chico (unos 5 MB), porque no quiso abrir el más grande. Tus últimos cambios duran hasta que cierres la pestaña, así que descargá una copia.":"Este navegador se quedó sin espacio para esta página, así que tus últimos cambios duran solo hasta que cierres la pestaña. Descargá una copia, o quitá de «Tus cuadernillos» los que ya no necesites.",
+      storageFailed: "Este navegador no pudo guardar tus últimos cambios (su almacenamiento informó un error). Duran hasta que cierres la pestaña, así que descargá una copia.",
       leaving: "Tus entradas se guardan en este navegador, pero todavía no descargaste una copia en este dispositivo.",
       addModHelp: "Agregá uno de la lista de abajo. Se revisa antes de que cambie nada."
     },
@@ -2543,7 +2560,9 @@ const STRINGS_SRC={
       empty: "Aún no hay cuadernillos aquí. Agregá uno desde un archivo que guardaste, o empezá uno nuevo.",
       removeUnsaved: x=>`Tiene cambios que todavía no descargaste. Para conservarlos, abrilo y usá “${x}” primero.`,
       storageOff: "Este navegador no guarda nada entre visitas (modo privado, o los datos del sitio están bloqueados). Los cuadernillos de aquí duran hasta que cierres la pestaña, así que descargá una copia de los que quieras conservar.",
-      mayClear: "Este navegador puede borrar los cuadernillos guardados acá. Descargá una copia de los que quieras conservar, o agregá esta página a tu pantalla de inicio."
+      mayClear: "Este navegador puede borrar los cuadernillos guardados acá. Descargá una copia de los que quieras conservar, o agregá esta página a tu pantalla de inicio.",
+      storageSmall: "Este navegador no quiso abrir su espacio grande para esta página, así que no se muestran los cuadernillos que ya estaban guardados en él, y los cuadernillos se guardan en el espacio chico (unos 5 MB), como antes. Es posible que un cuadernillo grande no entre ahí: descargá una copia de los que quieras conservar.",
+      storageLate: "Este navegador no abrió a tiempo su espacio para esta página, así que esta vez no se pudieron leer los cuadernillos guardados acá. Recargá la página para recuperarlos. Mientras tanto, lo que empieces acá se guarda en su espacio chico (unos 5 MB)."
     }
   }
 };
@@ -2664,17 +2683,406 @@ const splitList=s=>String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),3400);}
 const slugify=s=>String(s==null?"":s).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").normalize("NFC")
   .toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"").slice(0,60).replace(/-+$/,"");
+/* ---- where the page keeps things: one IndexedDB database, read once at start ----
+   Everything this page keeps in the browser (the list of booklets, each booklet's kept copy and base, the reader's
+   preferences; the keys are listed at "where booklets are kept", region 4) lives in one IndexedDB database of this
+   site's, `booklet`. IndexedDB holds what the browser allows a site, which on a computer is hundreds of megabytes.
+   Local storage, which this page used until 0.13.1, holds about 5 MB, and one large booklet's kept copy does not fit
+   in it (a 3.4 MB booklet makes a kept copy of about 6.8 million characters).
+   - Read once. The page reads the whole store into memory when it starts (keepStart, at the end of this script) and
+     draws nothing until it has, so every read after that (lsGet) is from memory and drawing stays synchronous.
+   - Written behind. lsSet and lsDel change memory at once and queue the change. The queue is written in order, as
+     one transaction holding every key changed since the last one, with the newest value of each key (a change made
+     over and over is written once), as soon as the page's current task is done, and at once when the page is hidden
+     or left. A transaction is all or nothing, so the store always holds a state the page was in: a booklet's kept
+     copy and its base, written in the same moment, land together or not at all. A transaction that fails is tried
+     again with the next change, and what it held stays in memory for the visit.
+   - Two object stores: `kv`, each key's text, and `stamp`, which page wrote each key last (a page's own id and a
+     count). A page reads the stamps again when it comes back into view, and before it opens a booklet, and then only the
+     keys another tab wrote since (keepRefresh), so it does not open a copy older than the one another tab kept. A
+     booklet open in two tabs at once is still saved by whichever tab changes it next, as with local storage.
+   - The list of booklets is kept as one record per entry (`booklet.library.v1#<id>`) under a head that holds the
+     rest of the list and the order of its entries (libJoin, libWrite), so a tab writes only the entries it changed
+     and two tabs adding or changing different booklets never drop each other's. lsGet(LIB_KEY) gives the whole list
+     as text, as local storage did.
+   - Two small keys are also mirrored in local storage, for a read made before the store is read: the theme
+     (THEME_KEY, which the head script paints before the first frame) and the reader's yes to a host (HOST_KEY, which
+     Booklet.host reads when a host's script calls it, right after this script has run). The store holds the truth:
+     a mirror that differs from it is written again from it.
+   - Moving from local storage. On every start, any `booklet.` key still in local storage is copied into the store
+     (keepAdopt): every one the first time, and afterwards only what an older release's tab, or a visit without
+     IndexedDB, wrote since. A list is merged entry by entry with the stored one. The local storage keys are removed
+     only after the browser has confirmed the copy (keepLeft), so no kept work is lost by the move.
+   - Without IndexedDB (a browser or a mode that refuses it) the page keeps everything in local storage as it did
+     before (mode "ls"), and "Your booklets" says so, naming that cause (storageSmall).
+   - With storage refused altogether, or a store that is full or fails, the page still works for the visit: what it
+     cannot write it keeps in memory, so leaving a booklet and coming back within the visit loses nothing. The notice
+     names the cause (keepNotice): storage refused (private mode, blocked site data), no room left, or an error.
+   A browser with no IndexedDB at all (and Node, where the tests run) uses local storage at once and says nothing. */
 let storageOk=true, saveTimer=null;
-try{localStorage.setItem(LIB_KEY+".probe","1");localStorage.removeItem(LIB_KEY+".probe");}catch(e){storageOk=false;}
-/* With storage off (private mode, blocked site data, a full quota) the page
-   still works for the visit: whatever it cannot write, it keeps in memory, so
-   leaving a booklet and coming back within the visit loses nothing. */
+/* whether local storage takes a write (the whole store without IndexedDB, and the two mirrors with it), and whether it
+   can be read (what an earlier release left is moved from it even when it is too full to take a write: that is the
+   reader the move is for). A write refused because it is full is "full", not "off" (the cause the notice names). */
+let lsOk=true,lsRead=true,lsFull=false;
+try{localStorage.setItem(LIB_KEY+".probe","1");localStorage.removeItem(LIB_KEY+".probe");}
+catch(e){lsOk=false;storageOk=false;lsFull=!!e&&(e.name==="QuotaExceededError"||e.name==="NS_ERROR_DOM_QUOTA_REACHED"||e.code===22||e.code===1014);}
+try{void localStorage.length;localStorage.getItem(LIB_KEY);}catch(e){lsRead=false;}
+/* what local storage would not take, in mode "ls", kept for the visit */
 const MEM={};
-function lsGet(k){if(k in MEM) return MEM[k];try{return localStorage.getItem(k);}catch(e){return null;}}
-function lsSet(k,v){if(storageOk){try{localStorage.setItem(k,v);delete MEM[k];return true;}
-    catch(e){storageOk=false;setTimeout(()=>toast(STRINGS[lang].ui.storageOff),0);}}
+const KEEP_DB="booklet",KEEP_KV="kv",KEEP_STAMP="stamp",THEME_KEY="booklet.ui.theme",LIB_REC="#";
+/* A count in local storage, raised after a write that touched the list has landed, so that another tab showing "Your
+   booklets" hears of it through the storage event and reads the store again at once (local storage tells other tabs of
+   a change; IndexedDB tells no one). It holds a page's id and a count, nothing else, and is not one of the keys the move
+   takes (KEPT_KEY). A tab that hears it reads again only the list (keepRefresh(true)), never another tab's kept copies. */
+const TICK_KEY="booklet.tick";
+/* each value is this page's id and a count of its own, so two tabs raising it at once still write two different values
+   (a write of the value already there tells no one) */
+const keepTick=()=>{try{localStorage.setItem(TICK_KEY,KEEP.tab+"."+(++KEEP.ticks));}catch(e){/* local storage refused: other tabs hear at focus */}};
+/* in the store only: what was copied from local storage, key to fingerprint (keepAdopt) */
+const KEEP_MOVED="booklet.moved.v1";
+/* how long opening the store may take before the page gives up on it and uses local storage */
+const KEEP_OPEN_MS=5000;
+/* and how long its first whole read may take, once it is open */
+const KEEP_READ_MS=15000;
+/* The store's state. mode: "ls" (local storage, as before 0.13.1), "wait" (IndexedDB being opened and read: nothing
+   is drawn yet) or "idb". problem: "" or what is wrong ("off": storage refused; "full": no room left; "failed":
+   another error), and `why` the browser's own name for it; idbWhy: why IndexedDB was not used, when it was refused.
+   cache: every key of the store as text (the list as its records). stamps: who wrote each key last, as this page last
+   knew. pending: the changes not yet handed to the browser, key to {v, seq} (v null for a removal). inflight: the
+   transactions handed over and not yet done; failed: the keys a failed one held, until one that holds them lands.
+   seq: a count of every change; last: each key's latest seq. left and leftAt: the local storage keys copied into the
+   store, waiting to be removed (keepLeft), key to {v, copied} (copied: by an earlier start). later: what waits for the store to be read (a host's Booklet.open). lib:
+   the list as text, joined from its records (libJoined). refreshing: a re-read in progress (keepRefresh). */
+const KEEP={mode:"ls",ready:true,db:null,idb:null,reopening:false,reopenAt:0,reopenTimer:null,problem:lsOk?"":lsFull?"full":"off",why:"",idbWhy:"",cache:new Map(),stamps:new Map(),pending:new Map(),
+  inflight:[],failed:new Set(),seq:0,last:new Map(),left:new Map(),leftAt:0,leftBusy:false,later:[],tab:"",n:0,queued:false,lib:null,
+  refreshing:null,listing:null,ticks:0,started:null};
+/* this page's own id in the stamps: drawn from the browser's random source, so the random ids a drawing makes
+   (Math.random) are the same with or without the store */
+KEEP.tab=(()=>{try{const a=new Uint32Array(2);crypto.getRandomValues(a);return a[0].toString(36)+a[1].toString(36);}catch(e){return newId("");}})();
+const mirrored=k=>k===THEME_KEY||k===HOST_KEY;
+const isLibRec=k=>k.startsWith(LIB_KEY+LIB_REC);
+const errName=e=>String((e&&e.name)||"Error").slice(0,60);
+const isQuota=e=>!!e&&(e.name==="QuotaExceededError"||e.name==="NS_ERROR_DOM_QUOTA_REACHED"||e.code===22||e.code===1014);
+const lsRaw=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const mirror=(k,v)=>{try{if(v===null) localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){/* local storage refused: the store still holds it */}};
+function lsGet(k){
+  if(KEEP.mode!=="ls"){
+    if(k===LIB_KEY) return libJoined();
+    if(KEEP.cache.has(k)) return KEEP.cache.get(k);
+    /* before the store is read, only a mirrored key has a value to give */
+    return KEEP.mode==="wait"&&mirrored(k)?lsRaw(k):null;}
+  if(k in MEM) return MEM[k];return lsRaw(k);}
+function lsSet(k,v){v=String(v);
+  if(KEEP.mode!=="ls"){if(mirrored(k)) mirror(k,v);
+    if(k===LIB_KEY) libWrite(v);else keepPut(k,v);
+    return true;}
+  if(storageOk){try{localStorage.setItem(k,v);delete MEM[k];return true;}
+    catch(e){storageOk=false;keepTrouble(isQuota(e)?"full":"off",e);}}
   MEM[k]=v;return false;}
-function lsDel(k){delete MEM[k];try{localStorage.removeItem(k);}catch(e){/* storage may be blocked */}}
+/* a removal also takes the key out of local storage: a copy waiting to be moved, or a mirror */
+function lsDel(k){delete MEM[k];
+  if(KEEP.mode!=="ls"){if(k===LIB_KEY) [...KEEP.cache.keys()].filter(isLibRec).forEach(x=>keepPut(x,null));
+    keepPut(k,null);KEEP.left.delete(k);}
+  try{localStorage.removeItem(k);}catch(e){/* storage may be blocked */}}
+/* what went wrong, told once (a toast now; the notice on "Your booklets" while it lasts) */
+function keepTrouble(kind,e){if(e) KEEP.why=errName(e);if(KEEP.problem===kind) return;KEEP.problem=kind;
+  setTimeout(()=>{const t=keepNotice();if(t) toast(t);},0);}
+/* the words for what is wrong, or "": the cause, never a guess (a full store is not private mode) */
+function keepNotice(){const u=strings("ui");
+  return KEEP.problem==="off"?u.storageOff:KEEP.problem==="full"?u.storageFull(KEEP.mode==="ls"):KEEP.problem==="failed"?u.storageFailed:"";}
+/* one change, in memory now and queued for the store */
+function keepPut(k,v){if(k===LIB_KEY||isLibRec(k)) KEEP.lib=null;
+  if(v===null) KEEP.cache.delete(k);else KEEP.cache.set(k,v);
+  const seq=++KEEP.seq;KEEP.last.set(k,seq);KEEP.pending.set(k,{v,seq});
+  if(KEEP.mode==="idb"&&!KEEP.queued){KEEP.queued=true;Promise.resolve().then(()=>{KEEP.queued=false;keepFlush();});}}
+/* ---- the list, kept as its entries ---- */
+function libJoined(){if(KEEP.lib!==null) return KEEP.lib;
+  const recs=new Map();KEEP.cache.forEach((v,k)=>{if(isLibRec(k)) recs.set(k.slice(LIB_KEY.length+LIB_REC.length),v);});
+  const head=KEEP.cache.has(LIB_KEY)?KEEP.cache.get(LIB_KEY):null;
+  if(head===null&&!recs.size) return null;
+  return KEEP.lib=libJoin(head,recs);}
+/* the list as text from its head and its records (id to text): the head's order first, then any entry it does not
+   name (another tab's, added since the head was written), by id */
+function libJoin(head,recs){let h=null;try{h=JSON.parse(head);}catch(e){h=null;}
+  if(!isObj(h)||!Array.isArray(h.order)) h={v:1,order:[]};
+  const entries=[],seen=new Set(),take=id=>{if(seen.has(id)||!recs.has(id)) return;seen.add(id);
+    try{const e=JSON.parse(recs.get(id));if(isObj(e)&&e.id===id) entries.push(e);}catch(x){/* an entry that will not parse is left out */}};
+  h.order.forEach(take);[...recs.keys()].sort().forEach(take);
+  const {order,...rest}=h;return JSON.stringify({...rest,entries});}
+/* the list written: only the entries that changed, the head when the order or the rest changed, a removal for an entry
+   this page had and the list no longer holds. Text that is not a list (an older release's broken one, being moved) is
+   set aside as readLib sets one aside, and the list stays as it is. */
+function libWrite(v){let o=null;try{o=JSON.parse(v);}catch(e){o=null;}
+  if(!isObj(o)||!Array.isArray(o.entries)||!o.entries.every(e=>isObj(e)&&typeof e.id==="string")){
+    if(lsGet(LIB_KEY+".unreadable")===null) keepPut(LIB_KEY+".unreadable",v);return;}
+  const {entries,...rest}=o,want=new Map(entries.map(e=>[LIB_KEY+LIB_REC+e.id,JSON.stringify(e)]));
+  const head=JSON.stringify({...rest,order:entries.map(e=>e.id)});
+  if(KEEP.cache.get(LIB_KEY)!==head) keepPut(LIB_KEY,head);
+  want.forEach((t,k)=>{if(KEEP.cache.get(k)!==t) keepPut(k,t);});
+  [...KEEP.cache.keys()].forEach(k=>{if(isLibRec(k)&&!want.has(k)) keepPut(k,null);});}
+/* two lists as one: every entry of the stored one, each replaced by local storage's entry with the same id (written
+   later: by an older release's tab, or a visit without IndexedDB), and local storage's others after them. null when
+   local storage's text is not a list. */
+function libMerge(stored,older){let a=null,b=null;try{a=JSON.parse(stored);}catch(e){a=null;}try{b=JSON.parse(older);}catch(e){b=null;}
+  if(!isObj(b)||!Array.isArray(b.entries)) return null;
+  const ok=e=>isObj(e)&&typeof e.id==="string",theirs=b.entries.filter(ok);
+  if(!isObj(a)||!Array.isArray(a.entries)) return JSON.stringify({...b,entries:theirs});
+  const by=new Map(theirs.map(e=>[e.id,e])),out=a.entries.filter(ok).map(e=>by.has(e.id)?by.get(e.id):e),have=new Set(out.map(e=>e.id));
+  theirs.forEach(e=>{if(!have.has(e.id)){out.push(e);have.add(e.id);}});
+  return JSON.stringify({...a,entries:out});}
+/* ---- writing ----
+   Everything pending, handed to the browser as one transaction (two after the store said it was full: removals first,
+   so that a removal can make room). A transaction already running hands on to the next when it ends; `now` (the page
+   is being hidden or left) starts one at once instead, so it is in the browser's hands before the page goes, and asks
+   it to commit without waiting (commit()). Returns whether anything is still to be written. */
+function keepFlush(now){
+  if(KEEP.mode!=="idb"||!KEEP.pending.size) return KEEP.pending.size>0||KEEP.inflight.length>0;
+  if(KEEP.inflight.length&&!now) return true;
+  const ops=[...KEEP.pending];KEEP.pending.clear();
+  /* hidden or left with a transaction still on its way: its changes go again in this one (unless newer ones are here), so
+     this one alone holds a state the page was in whether or not that one lands (a base never lands without its copy) */
+  if(KEEP.inflight.length){const have=new Set(ops.map(([k])=>k));
+    KEEP.inflight.forEach(t=>t.ops.forEach(([k,o])=>{if(!have.has(k)&&KEEP.last.get(k)===o.seq){ops.push([k,o]);have.add(k);}}));}
+  const dels=KEEP.problem==="full"?ops.filter(([,o])=>o.v===null):[];
+  if(dels.length&&dels.length<ops.length){keepTx(dels);keepTx(ops.filter(([,o])=>o.v!==null));}
+  else keepTx(ops);
+  return true;}
+function keepTx(ops){const t={ops,stamp:KEEP.tab+"."+(++KEEP.n),done:false};let tx=null;
+  try{tx=KEEP.db.transaction([KEEP_KV,KEEP_STAMP],"readwrite",KEEP.left.size?{durability:"strict"}:undefined);
+    const kv=tx.objectStore(KEEP_KV),st=tx.objectStore(KEEP_STAMP);
+    ops.forEach(([k,o])=>{if(o.v===null){kv.delete(k);st.delete(k);}else{kv.put(o.v,k);st.put(t.stamp,k);}});}
+  catch(e){try{if(tx) tx.abort();}catch(x){/* nothing was handed over */}KEEP.inflight.push(t);keepDone(t,e);return;}
+  KEEP.inflight.push(t);
+  tx.oncomplete=()=>keepDone(t,null);
+  tx.onabort=()=>keepDone(t,tx.error||{name:"AbortError"});
+  try{if(typeof tx.commit==="function") tx.commit();}catch(e){/* a browser without commit() commits when the requests are done */}}
+/* A transaction ended. Landed: its stamps are this page's, its keys are no longer failed, and a problem with nothing
+   left failed is over. Failed: nothing of it landed, so each change goes back in the queue unless a newer one for its
+   key is there or on its way, and it is written with the next change; the reader is told once (keepTrouble). */
+function keepDone(t,err){if(t.done) return;t.done=true;KEEP.inflight=KEEP.inflight.filter(x=>x!==t);
+  /* (a change another transaction on its way also carries, the page-hide hand-over, is not queued again: it would be
+     written twice) */
+  if(err){t.ops.forEach(([k,o])=>{KEEP.failed.add(k);
+      if(KEEP.last.get(k)===o.seq&&!KEEP.pending.has(k)&&!KEEP.inflight.some(x=>x.ops.some(([y,p])=>y===k&&p.seq>=o.seq))) KEEP.pending.set(k,o);});
+    keepTrouble(isQuota(err)?"full":"failed",err);
+    /* the connection itself is gone (closed for a newer version, or lost: Safari's "connection to Indexed Database server
+       lost"): it is opened again, and what failed is written then */
+    if(/^(InvalidStateError|UnknownError|TransactionInactiveError)$/.test(errName(err))) keepReopen();
+    /* changes made while it was on its way go now (with a full store, its removals first, which may make room); the
+       failed ones wait for the next change, so a store that keeps failing is not tried over and over */
+    else{const top=Math.max(0,...t.ops.map(([,o])=>o.seq));
+      if(!KEEP.inflight.length&&[...KEEP.pending.values()].some(o=>o.seq>top)) keepFlush();}
+    return;}
+  t.ops.forEach(([k,o])=>{KEEP.failed.delete(k);if(o.v===null) KEEP.stamps.delete(k);else KEEP.stamps.set(k,t.stamp);});
+  if(t.ops.some(([k])=>k===LIB_KEY||isLibRec(k))) keepTick();
+  if(!KEEP.failed.size&&(KEEP.problem==="full"||KEEP.problem==="failed")) KEEP.problem="";
+  keepLeft();
+  if(KEEP.pending.size&&!KEEP.inflight.length) keepFlush();}
+/* the store opened again after its connection was lost, at most once every five seconds; a database without the two
+   object stores (cleared under the page) is not used, and the work stays for the visit */
+function keepReopen(){if(KEEP.reopening||!KEEP.idb) return;
+  /* within five seconds of the last try: tried again when they are up, by itself, so a change made meanwhile is not left
+     waiting for the next one */
+  const wait=5000-(Date.now()-KEEP.reopenAt);
+  if(wait>0){if(!KEEP.reopenTimer) KEEP.reopenTimer=setTimeout(()=>{KEEP.reopenTimer=null;keepReopen();},wait);return;}
+  KEEP.reopening=true;KEEP.reopenAt=Date.now();
+  const again=()=>{KEEP.reopening=false;if(KEEP.pending.size) keepReopen();};
+  let req;try{req=KEEP.idb.open(KEEP_DB);}catch(e){again();return;}
+  req.onerror=ev=>{if(ev&&ev.preventDefault) ev.preventDefault();again();};
+  req.onsuccess=()=>{KEEP.reopening=false;const db=req.result;
+    if(![KEEP_KV,KEEP_STAMP].every(n=>db.objectStoreNames.contains(n))){try{db.close();}catch(e){}return;}
+    try{if(KEEP.db&&KEEP.db!==db) KEEP.db.close();}catch(e){/* already closed */}
+    KEEP.db=db;db.onversionchange=()=>{try{db.close();}catch(e){}};
+    if(KEEP.pending.size&&!KEEP.inflight.length) keepFlush();};}
+/* The local storage keys copied into the store are removed once every change made up to the copy has landed, the
+   browser has said so with its strictest durability, and a read of the store finds each of them there; and only where
+   local storage still holds what was copied (an older release's tab may have written since: that is copied next time). */
+function keepLeft(){if(!KEEP.left.size||KEEP.leftBusy) return;
+  const open=[...KEEP.pending.values(),...KEEP.inflight.flatMap(t=>t.ops.map(([,o])=>o))].some(o=>o.seq<=KEEP.leftAt);
+  if(open) return;
+  KEEP.leftBusy=true;
+  const end=keys=>{KEEP.leftBusy=false;if(!keys) return;const have=new Set(keys);
+    KEEP.left.forEach((x,k)=>{const there=x.copied||(k===LIB_KEY?have.has(LIB_KEY)||keys.some(isLibRec)||have.has(LIB_KEY+".unreadable"):have.has(k));
+      if(!there) return;
+      try{if(localStorage.getItem(k)===x.v) localStorage.removeItem(k);}catch(e){/* local storage refused: it stays, and is only removed next time */}
+      KEEP.left.delete(k);});};
+  let tx;try{tx=KEEP.db.transaction([KEEP_KV],"readonly");}catch(e){end(null);return;}
+  const r=tx.objectStore(KEEP_KV).getAllKeys();
+  tx.oncomplete=()=>end(r.result||[]);tx.onabort=()=>end(null);}
+/* ---- starting ----
+   Opens and reads the store, moves what local storage holds into it, and then calls `then` (the first draw), followed
+   by what waited for it (KEEP.later). Without IndexedDB, or when the browser refuses it, it is local storage, as before;
+   with no IndexedDB at all `then` runs at once, so Node and a browser without it start exactly as before. */
+function keepStart(then){
+  let idb=null;try{idb=typeof indexedDB!=="undefined"&&indexedDB&&typeof indexedDB.open==="function"?indexedDB:null;}catch(e){KEEP.idbWhy=errName(e);}
+  const go=()=>{KEEP.ready=true;
+    /* a host that registered before the store was read was decided by its mirror: decided again by the store */
+    if(HOST&&HOST.early){HOST.early=false;const yes=HOST.label!==""&&hostAllowed()===HOST.label;
+      if(HOST.state==="waiting"&&yes) HOST.state="active";else if(HOST.state==="active"&&!yes) HOST.state="waiting";}
+    then();KEEP.later.splice(0).forEach(f=>{try{f();}catch(e){/* one late call failing does not stop the others */}});
+    /* the copies are written now; a leftover an earlier start already copied is removed now too, with nothing to write */
+    keepFlush();keepLeft();};
+  if(!idb){go();return KEEP.started=Promise.resolve();}
+  KEEP.mode="wait";KEEP.ready=false;
+  return KEEP.started=new Promise(done=>{let over=false,timer=null;
+    const fall=e=>{if(over) return;over=true;clearTimeout(timer);KEEP.idbWhy=errName(e);keepToLs();go();done();};
+    /* `v`: the database's version; a database of that name without both object stores (made by something else on this
+       site) is opened once more, one version up, to add them */
+    const openAt=v=>{let req;try{req=v?idb.open(KEEP_DB,v):idb.open(KEEP_DB);}catch(e){fall(e);return;}
+      req.onupgradeneeded=()=>{try{const db=req.result;[KEEP_KV,KEEP_STAMP].forEach(n=>{if(!db.objectStoreNames.contains(n)) db.createObjectStore(n);});}
+        catch(e){/* the open then fails, and that is caught below */}};
+      req.onerror=ev=>{if(ev&&ev.preventDefault) ev.preventDefault();fall(req.error);};
+      req.onsuccess=()=>{const db=req.result;
+        if(over){try{db.close();}catch(e){}return;}
+        if(![KEEP_KV,KEEP_STAMP].every(n=>db.objectStoreNames.contains(n))){const up=(Number(db.version)||1)+1;try{db.close();}catch(e){}
+          if(v&&v>1) fall({name:"NotFoundError"});else openAt(up);return;}
+        /* the read has a time of its own: a store that does not answer is a page that never draws */
+        clearTimeout(timer);timer=setTimeout(()=>fall({name:"TimeoutError"}),KEEP_READ_MS);
+        keepReadAll(db).then(()=>{if(over){try{db.close();}catch(e){}return;}over=true;
+          KEEP.db=db;KEEP.idb=idb;db.onversionchange=()=>{try{db.close();}catch(e){}};
+          KEEP.mode="idb";storageOk=true;if(KEEP.problem==="off"||KEEP.problem==="full") KEEP.problem="";
+          clearTimeout(timer);keepAdopt();go();done();},e=>{try{db.close();}catch(x){}fall(e);});};};
+    timer=setTimeout(()=>fall({name:"TimeoutError"}),KEEP_OPEN_MS);
+    openAt(0);});}
+/* the whole store, into memory (a key changed before it was read keeps its change) */
+function keepReadAll(db){return new Promise((ok,no)=>{let tx;try{tx=db.transaction([KEEP_KV,KEEP_STAMP],"readonly");}catch(e){no(e);return;}
+  const kv=tx.objectStore(KEEP_KV),st=tx.objectStore(KEEP_STAMP),r=[kv.getAllKeys(),kv.getAll(),st.getAllKeys(),st.getAll()];
+  tx.oncomplete=()=>{
+    /* a read that ends after the visit fell back to local storage (keepToLs) is not loaded: the store is closed unread */
+    if(KEEP.mode==="ls"){ok();return;}
+    const [ks,vs,sk,sv]=r.map(x=>x.result||[]);
+    ks.forEach((k,i)=>{if(typeof k==="string"&&typeof vs[i]==="string"&&!KEEP.pending.has(k)) KEEP.cache.set(k,vs[i]);});
+    sk.forEach((k,i)=>KEEP.stamps.set(k,sv[i]));KEEP.lib=null;ok();};
+  tx.onabort=()=>no(tx.error||{name:"AbortError"});});}
+/* IndexedDB was refused: local storage from now on, holding whatever changed while the page waited for it */
+function keepToLs(){const list=libJoined(),p=[...KEEP.pending].filter(([k])=>k!==LIB_KEY&&!isLibRec(k)),hadList=[...KEEP.pending.keys()].some(k=>k===LIB_KEY||isLibRec(k));
+  KEEP.mode="ls";KEEP.pending.clear();KEEP.cache.clear();KEEP.lib=null;
+  p.forEach(([k,o])=>{if(o.v===null) lsDel(k);else lsSet(k,o.v);});
+  /* a list changed while the page waited never held the whole list: it is laid over local storage's, entry by entry */
+  if(hadList&&list!==null){const m=libMerge(lsRaw(LIB_KEY),list);lsSet(LIB_KEY,m===null?list:m);}}
+/* the keys this renderer keeps (the list and its set-aside copy, kept copies, bases, preferences, the reader's yes), so
+   that a key of the same prefix something else on this site keeps is left where it is (KEPT_KEY, below) */
+const KEPT_KEY=/^booklet\.(library\.v1(\.unreadable)?|b\..+|base\..+|ui\..+|host\.allowed)$/;
+/* Moving from local storage (see above): every key of the renderer's there, and any key an older list names for an entry
+   (`key`), into the store. Local storage that will not be read moves nothing and decides nothing.
+   What has been moved is kept in the store (KEEP_MOVED), and never dropped: for every key ever copied, the fingerprint
+   (textPrint) of the text copied, and for the list one per entry (`booklet.library.v1#<id>`, the entry's text). So each
+   start can tell, for each key, whether local storage changed since the copy (an older release's tab, or a visit that
+   fell back to local storage, wrote it) and whether the store did (this release wrote it). Newer wins, a booklet at a
+   time: its list entry, its kept copy and its base go together.
+   - Local storage unchanged since the copy (a leftover whose removal never ran): it is only removed.
+   - Changed there and not in the store (or never copied: an earlier release's first visit, a booklet an older tab
+     started): copied.
+   - Changed on both sides: the side whose list entry has the later `updatedAt` (every release sets it on each save,
+     noteSaved) wins the whole booklet; on a tie, or with nothing to compare, the store. A booklet the store no longer
+     has loses to a later change there (it comes back rather than lose that work).
+   - When local storage wins, its entry replaces the store's; its kept copy and base replace the store's, and a base
+     the store has with no base beside local storage's copy goes (it belonged to the copy that was replaced). A kept
+     copy is never removed because local storage has none (a pointer entry).
+   Never both: one booklet is one entry, so a store booklet's kept copy is never hidden behind a second one.
+   A preference (booklet.ui.*) changed on both sides keeps the store's. Then the mirrors (below). */
+function keepAdopt(){
+  const keys=[];let read=lsRead;
+  if(read) try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(typeof k==="string"&&KEPT_KEY.test(k)) keys.push(k);}
+    const o=JSON.parse(localStorage.getItem(LIB_KEY)||"null");
+    if(isObj(o)&&Array.isArray(o.entries)) o.entries.forEach(e=>{if(isObj(e)&&typeof e.key==="string"&&!keys.includes(e.key)&&localStorage.getItem(e.key)!==null) keys.push(e.key);});}
+  catch(e){read=false;keys.length=0;/* local storage would not be read */}
+  let moved={};try{const o=JSON.parse(lsGet(KEEP_MOVED)||"{}");if(isObj(o)) moved=o;}catch(e){moved={};}
+  const was=k=>hasOwn(moved,k)?moved[k]:undefined,fp=v=>v==null?null:textPrint(v),seen={};
+  const here=k=>KEEP.cache.has(k)?KEEP.cache.get(k):null,rec=id=>LIB_KEY+LIB_REC+id;
+  /* changed in local storage since the copy, or never copied (a value that is there; one that is not never counts: the
+     move itself removes them) */
+  const lsNew=(k,v)=>v!==null&&was(k)!==fp(v);
+  /* changed in the store since the copy, or never copied and different there */
+  const storeNew=(k,v)=>KEEP.pending.has(k)||(was(k)===undefined?here(k)!==null&&here(k)!==v:fp(here(k))!==was(k));
+  const take=(k,v)=>{if(here(k)!==v) keepPut(k,v);KEEP.left.set(k,{v,copied:false});};
+  const leave=(k,v)=>KEEP.left.set(k,{v,copied:true});
+  const ls=k=>keys.includes(k)?lsRaw(k):null;
+  /* the list: local storage's, and the store's */
+  let lsList=null,lsListRaw=ls(LIB_KEY);
+  if(lsListRaw!==null){try{const o=JSON.parse(lsListRaw);if(isObj(o)&&Array.isArray(o.entries)) lsList=o;}catch(e){lsList=null;}
+    /* a list that will not parse is set aside in the store as readLib sets one aside; a second one, unlike the first,
+       stays in local storage, where it is still findable by hand */
+    if(!lsList){const u=LIB_KEY+".unreadable",had=lsGet(u);if(had===null||had===lsListRaw){if(had===null) keepPut(u,lsListRaw);KEEP.left.set(LIB_KEY,{v:lsListRaw,copied:false});}}
+    else seen[LIB_KEY]=fp(lsListRaw);}
+  let storeList=null;try{const o=JSON.parse(lsGet(LIB_KEY)||"null");if(isObj(o)&&Array.isArray(o.entries)) storeList=o;}catch(e){storeList=null;}
+  const lsE=new Map((lsList?lsList.entries:[]).filter(e=>isObj(e)&&typeof e.id==="string").map(e=>[e.id,e]));
+  const stE=new Map((storeList?storeList.entries:[]).filter(e=>isObj(e)&&typeof e.id==="string").map(e=>[e.id,e]));
+  const out=storeList?storeList.entries.slice():[];let listChanged=false;
+  /* each booklet local storage holds something of: its entry, its kept copy, its base */
+  const ids=new Set(lsE.keys());
+  keys.forEach(k=>{const m=/^booklet\.(?:b|base)\.(.+)$/.exec(k);if(m) ids.add(m[1]);});
+  const handled=new Set([LIB_KEY]);
+  ids.forEach(id=>{const le=lsE.get(id)||null,se=stE.get(id)||null,ck=keyOfEntry(le||se||{id}),bk=baseKey(id);
+    const lt=le?JSON.stringify(le):null,lc=ls(ck),lb=ls(bk);handled.add(ck);handled.add(bk);
+    [[rec(id),lt],[ck,lc],[bk,lb]].forEach(([k,v])=>{if(v!==null) seen[k]=fp(v);});
+    const lsChanged=lsNew(rec(id),lt)||lsNew(ck,lc)||lsNew(bk,lb);
+    if(!lsChanged){if(lc!==null) leave(ck,lc);if(lb!==null) leave(bk,lb);return;}
+    const storeChanged=storeNew(rec(id),lt)||(lc!==null||was(ck)!==undefined?storeNew(ck,lc):false)||(lb!==null||was(bk)!==undefined?storeNew(bk,lb):false);
+    const lsWins=!storeChanged||(!!le&&String(le.updatedAt||"")>String(se&&se.updatedAt||""));
+    if(!lsWins){if(lc!==null) leave(ck,lc);if(lb!==null) leave(bk,lb);return;}
+    /* an entry alone, with no kept copy on either side and no store behind it (not a store booklet's pointer), is a
+       booklet removed here whose entry an older tab still listed: it is not listed again, as an empty booklet */
+    if(le&&lc===null&&here(ck)===null&&!storeNameOf(le)){if(lb!==null) leave(bk,lb);return;}
+    if(le){const i=out.findIndex(e=>isObj(e)&&e.id===id);if(i>=0) out[i]=le;else out.push(le);listChanged=true;}
+    /* a kept copy and its base are one side's pair: with local storage's copy, its base (or none) replaces the store's;
+       with no copy there, the store's copy stays (a kept copy is never removed for want of one) with the store's own
+       base, and local storage's base is never put beside it; with no copy on either side, the store keeps no base */
+    if(lc!==null){take(ck,lc);if(lb!==null) take(bk,lb);else if(here(bk)!==null) keepPut(bk,null);}
+    else{if(lb!==null) leave(bk,lb);if(here(ck)===null&&here(bk)!==null) keepPut(bk,null);}});
+  if(listChanged) libWrite(JSON.stringify({...(storeList||{v:1}),entries:out}));
+  if(lsList) KEEP.left.set(LIB_KEY,{v:lsListRaw,copied:!listChanged});
+  /* the rest: preferences, and anything else of the renderer's */
+  keys.forEach(k=>{if(handled.has(k)||mirrored(k)) return;const v=lsRaw(k);if(v===null) return;seen[k]=fp(v);
+    if(lsNew(k,v)&&!storeNew(k,v)) take(k,v);else leave(k,v);});
+  const after={...moved,...seen};
+  if(read&&JSON.stringify(after)!==JSON.stringify(moved)) keepPut(KEEP_MOVED,JSON.stringify(after));
+  KEEP.leftAt=KEEP.seq;
+  /* The mirrors. One the store lacks is moved into it (the first visit with this release). The theme: every renderer
+     writes its mirror, so a mirror that differs from the store holds the latest pick, made where the store could not be
+     written; it is taken into the store (unless local storage takes no write, when its mirror is stale: then the store's
+     is painted). The reader's yes is kept only where the two agree: a mirror that lacks it, or holds another label, was
+     changed by a visit that could not write the store (a Stop, an older release's tab), so it is forgotten and the host
+     asks again. */
+  const theme=here(THEME_KEY),tm=read?lsRaw(THEME_KEY):null;
+  if(tm!==null&&tm!==theme&&(lsOk||theme===null)) keepPut(THEME_KEY,tm);
+  else if(theme!==null&&tm!==theme){mirror(THEME_KEY,theme);if(typeof window!=="undefined"&&window.bookletTheme) window.bookletTheme.set(theme);}
+  if(read){const yes=here(HOST_KEY),ym=lsRaw(HOST_KEY);
+    if(yes===null&&ym!==null) keepPut(HOST_KEY,ym);
+    else if(yes!==null&&ym!==yes){keepPut(HOST_KEY,null);mirror(HOST_KEY,null);}}}
+/* ---- another tab's changes ----
+   When the page comes back into view (or into focus), the stamps are read, and every key whose stamp is not the one
+   this page knows is read again, unless this page has a change of its own for it waiting or on its way (that is newer,
+   and is written next). A key another tab removed goes. "Your booklets" is drawn again if anything changed. Resolves to
+   whether anything did; what must not run on an older copy (openFromList) waits for it. */
+function keepRefresh(list){if(KEEP.mode!=="idb"||!KEEP.db||!KEEP.ready) return Promise.resolve(false);
+  /* `list`: only the list's head and entries are read again (another tab's count, TICK_KEY, says the list changed); the
+     rest waits for the page to come back into view or focus. Its re-read is its own: an open never waits on it. */
+  const slot=list?"listing":"refreshing",only=k=>!list||k===LIB_KEY||isLibRec(k);
+  if(KEEP[slot]) return KEEP[slot];
+  return KEEP[slot]=new Promise(res=>{const end=v=>{KEEP[slot]=null;res(v);
+      if(v&&screen===LIB_SCREEN&&!RENDERING) render();};
+    /* a change of this page's own waiting (newer) or on its way; not one waiting only because it failed, which loses to a
+       write another tab landed since (as a failed write of local storage's stopped) */
+    const mine=k=>(KEEP.pending.has(k)&&!KEEP.failed.has(k))||KEEP.inflight.some(t=>t.ops.some(([x])=>x===k));
+    const theirs=k=>{if(KEEP.failed.delete(k)) KEEP.pending.delete(k);};
+    let tx;try{tx=KEEP.db.transaction([KEEP_STAMP],"readonly");}catch(e){end(false);return;}
+    const ks=tx.objectStore(KEEP_STAMP).getAllKeys(),vs=tx.objectStore(KEEP_STAMP).getAll();
+    tx.onabort=()=>end(false);
+    tx.oncomplete=()=>{const now=new Map((ks.result||[]).map((k,i)=>[k,vs.result[i]]));
+      const gone=[...KEEP.stamps.keys()].filter(k=>only(k)&&!now.has(k)&&!mine(k));
+      const want=[...now].filter(([k,s])=>only(k)&&KEEP.stamps.get(k)!==s&&!String(s).startsWith(KEEP.tab+".")&&!mine(k)).map(([k])=>k);
+      gone.forEach(k=>{theirs(k);KEEP.stamps.delete(k);KEEP.cache.delete(k);});
+      if(gone.length) KEEP.lib=null;
+      if(!want.length){end(gone.length>0);return;}
+      let rx;try{rx=KEEP.db.transaction([KEEP_KV],"readonly");}catch(e){end(gone.length>0);return;}
+      const got=want.map(k=>rx.objectStore(KEEP_KV).get(k));
+      rx.onabort=()=>end(gone.length>0);
+      rx.oncomplete=()=>{want.forEach((k,i)=>{if(mine(k)) return;const v=got[i].result;theirs(k);
+          if(typeof v==="string") KEEP.cache.set(k,v);else KEEP.cache.delete(k);KEEP.stamps.set(k,now.get(k));});
+        KEEP.lib=null;if(!KEEP.failed.size&&(KEEP.problem==="full"||KEEP.problem==="failed")) KEEP.problem="";end(true);};};});}
+/* `f` run on what the store holds now: after a re-read (another tab may have written), or at once without IndexedDB */
+const keepFresh=f=>KEEP.mode==="idb"?keepRefresh().then(()=>f()):f();
 /* A booklet's own words: a plain string, since a file is written in one language (SPEC.md section 9);
    anything else takes the fallback. */
 const tx=(v,fallback)=>typeof v==="string"?v:fallback;
@@ -2801,7 +3209,9 @@ function ownPlace(protocol,hostname){
   return [".localhost",".local",".internal",".lan",".home.arpa",".ts.net"].some(x=>h.endsWith(x));}
 /* decided once, at start: a page's script cannot change what the browser reports for its own address */
 const HOST_OWN=typeof location!=="undefined"&&!!location&&ownPlace(location.protocol,location.hostname);
-/* the reader's yes: the label of the host they allowed, for this site in this browser (local storage, the renderer's own key) */
+/* the reader's yes: the label of the host they allowed, for this site in this browser (the renderer's own key, in its store, and
+   mirrored in local storage so that a host's script that calls Booklet.host before the store is read is decided on it: see
+   "where the page keeps things", region 3) */
 const HOST_KEY="booklet.host.allowed";
 const hostAllowed=()=>HOST_OWN?hookText(lsGet(HOST_KEY),80):"";
 /* a host's hook works only while HOST is on a page in the reader's own place and the reader has said yes (state "active") */
@@ -2892,8 +3302,9 @@ const blocksOf=id=>activityBlocks(activityOf(id));
                           the reader's in it (bookText), parsed again on open. An older
                           snapshot holds the parsed design (TPL) instead (storedText).
 
-   Plain localStorage, and only ever getItem/setItem/removeItem on known keys;
-   nothing enumerates it. */
+   They live in the page's store (IndexedDB, or local storage without it: see "where the page keeps things", region 3),
+   read and written through lsGet, lsSet and lsDel on known keys only. Nothing lists the store, except local storage once
+   at start, for the `booklet.` keys an earlier release left there (keepAdopt). */
 /* ---- the list ----
    Every change re-reads the list first, so two tabs each adding a booklet do
    not drop each other's. LIB is only the copy the page draws from. */
@@ -3117,7 +3528,7 @@ function saveLocal(){const key=slotKey();if(!key) return;
   askPersist();
   hookChanged();}
 /* ---- asking the browser to keep this site's storage ----
-   Booklets kept in the browser live in its local storage, which a browser may clear (Safari clears what a page's script
+   Booklets kept in the browser live in its storage for this site (IndexedDB, or local storage without it), which a browser may clear (Safari clears what a page's script
    wrote for a site not visited in seven days, unless the site was added to the home screen; Chrome and Firefox may when
    the disk is short). The first time in a session that the page saves a booklet (so after something the reader did,
    never at page load) it asks the browser to keep this site's storage, once: navigator.storage.persist(). That is not a
@@ -3128,7 +3539,10 @@ let PERSISTED=null,PERSIST_ASKED=false;
 const storageApi=()=>{try{const s=typeof navigator!=="undefined"&&navigator?navigator.storage:null;return s&&typeof s.persisted==="function"?s:null;}catch(e){return null;}};
 /* what the browser says now; redraws "Your booklets" when that is news */
 function checkPersisted(){const s=storageApi();
-  if(!s){if(PERSISTED!==false){PERSISTED=false;if(screen===LIB_SCREEN) render();}return;}
+  /* (with no navigator.storage, as on an http: page that is not localhost, this is known at once, inside the draw that
+     asked: that draw reads PERSISTED next, so it is drawn again only from outside a draw. Drawing again inside one
+     drew "Your booklets" twice into the same page: its cards, and a host's notice, twice over) */
+  if(!s){if(PERSISTED!==false){PERSISTED=false;if(screen===LIB_SCREEN&&!RENDERING) render();}return;}
   try{Promise.resolve(s.persisted()).then(v=>{v=!!v;if(v!==PERSISTED){PERSISTED=v;if(screen===LIB_SCREEN) render();}},()=>{});}catch(e){}}
 function askPersist(){if(PERSIST_ASKED) return;PERSIST_ASKED=true;
   const s=storageApi();if(!s||typeof s.persist!=="function") return;
@@ -6712,7 +7126,8 @@ function syncBookletTheme(){const B=window.bookletTheme;if(!B||!B.custom) return
 function drawThemeSelect(t){const s=document.getElementById("themeSel"),B=window.bookletTheme;if(!s||!B) return;
   const names=B.names;
   if(s.options.length!==names.length){s.innerHTML="";names.forEach(n=>s.append(el("option",{value:n})));
-    s.addEventListener("change",()=>B.set(s.value));}
+    /* the head script paints the choice and keeps it in its mirror; the store keeps it too (THEME_KEY) */
+    s.addEventListener("change",()=>{B.set(s.value);lsSet(THEME_KEY,B.get());});}
   names.forEach((n,i)=>{s.options[i].textContent=t["theme"+n[0].toUpperCase()+n.slice(1)];});
   s.options[0].title=t.themeAutoTip||"";
   s.setAttribute("aria-label",t.pTheme);s.setAttribute("title",t.pTheme);s.value=B.get();}
@@ -6737,7 +7152,10 @@ function settle(){lang=uiLang();
   if(isModuleScreen(screen)){const mod=moduleForScreen(screen);if(!mod||!isMulti(mod)) screen=mod?entryScreenOf(mod):HOME_SCREEN;}
   if(!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)){const m=activityOf(screen);if(m.kind==="entry") seedUpsertDraft(screen,m,answersFor(screen));}}
 /* draw the screen in force afresh, in a draw of its own (one draw, region 4) told `o`, and return it */
-function render(o){RENDERING=true;const dc=newDraw(o);DRAWN=dc;
+function render(o){
+  /* nothing is drawn before the page has read its store: the first draw is keepStart's (bootPage) */
+  if(!KEEP.ready) return DRAWN;
+  RENDERING=true;const dc=newDraw(o);DRAWN=dc;
   try{settle();dc.cite=citeDraw(screen);citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(hasOwn(SCREENS,screen)) SCREENS[screen](main,dc);
   else if(isModuleScreen(screen)) renderModulePage(main,screen,dc);
@@ -6881,7 +7299,11 @@ function startScreen(page){
   if(acts.length===1) return acts[0].id;
   if(mods.length===1&&acts.length>1) return moduleScreen(mods[0].id);
   return HOME_SCREEN;}
-function openFromList(id){LIB=readLib();const e=entryById(id);const name=storeNameOf(e);
+function openFromList(id,fresh){
+  /* another tab may have written since this page last read the store: it is read again first (keepRefresh), and this
+     opens on what it finds (the promise is returned then) */
+  if(KEEP.mode==="idb"&&!fresh) return keepRefresh().then(()=>openFromList(id,true));
+  LIB=readLib();const e=entryById(id);const name=storeNameOf(e);
   /* A store booklet opens from the store: its file is read afresh, and it is drawn unless this browser keeps work the
      file lacks, which then opens with the offer to read the file (openLinked decides, on content). */
   if(name&&storeUrl()!==""){
@@ -6907,7 +7329,14 @@ function renderBooklets(main){const L=strings("library");
   /* the language is the reader's choice, kept by pickLang, not the list's */
   LIB=readLib();
   main.append(el("div",{class:"hero col"},el("h1",{},L.title),el("p",{class:"sub"},L.sub)));
-  if(!storageOk) main.append(el("div",{class:"notice col"},L.storageOff));
+  /* what is wrong with keeping booklets here, in words that name the cause (keepNotice) */
+  {const why=KEEP.problem==="off"?L.storageOff:keepNotice();if(why) main.append(el("div",{class:"notice col"},why));}
+  /* IndexedDB was not used this time, and local storage keeps the booklets: said before anything else, since what is
+     kept in IndexedDB is not on this list, which may then be empty. A store that did not open in time (TimeoutError:
+     Safari can hang on its first open) is said as a notice, with what to do; one the browser refused, as a quiet line. */
+  if(KEEP.mode==="ls"&&KEEP.idbWhy&&storageOk){
+    if(KEEP.idbWhy==="TimeoutError") main.append(el("div",{class:"notice col"},L.storageLate));
+    else main.append(el("p",{class:"col hint"},L.storageSmall));}
   /* a link or a kept store booklet is being read: say so, so a slow read is not an empty list */
   if(LINK_LOADING!==null) main.append(loadingNotice());
   const create=el("button",{type:"button",class:"small primary"},L.create);
@@ -6931,7 +7360,7 @@ function bookletCard(e){const L=strings("library");const u=strings("ui");const n
   const fill=c=>{card.innerHTML="";card.append(...(c.childNodes?Array.from(c.childNodes):c.children));};
   const draw=asking=>{
     if(asking==="rename"){
-      fill(cardNode({mode:"go",as:"div",noChevron:true,titleNode:nameEditor(name,v=>{renameStored(e.id,v);render();},()=>draw(false)),teaser:L.renameHint}));return;}
+      fill(cardNode({mode:"go",as:"div",noChevron:true,titleNode:nameEditor(name,v=>{keepFresh(()=>{renameStored(e.id,v);render();});},()=>draw(false)),teaser:L.renameHint}));return;}
     const sub=[];
     if(nonEmpty(tx(e.title,""))){const p=(e.parts||[]).map(x=>tx(x,"")).filter(nonEmpty);if(p.length) sub.push(p.join(", "));}
     const pills=[el("span",{class:"pill"},e.openedAt?L.lastOpened(listDate(e.openedAt)):L.added(listDate(e.createdAt)))];
@@ -7451,7 +7880,10 @@ const veilAddModule=document.getElementById("veilAddModule");
 const veilLoad=document.getElementById("veilLoad"),veilClear=document.getElementById("veilClear"),dropVeil=document.getElementById("dropVeil");
 function openLoad(){const m=document.getElementById("loadMsg");m.textContent="";m.className="msg";document.getElementById("pasteIn").value="";document.getElementById("fileIn").value="";veilLoad.setAttribute("open","");}
 function readFileInto(file,cb){if(!file) return;const r=new FileReader();r.onload=()=>cb(String(r.result||""));r.readAsText(file);}
-function loadText(text){const t=strings("ui");const msg=document.getElementById("loadMsg");
+function loadText(text){
+  /* a file dropped before the page has read its store opens as soon as it has (it would otherwise make a list of one) */
+  if(!KEEP.ready){KEEP.later.push(()=>loadText(text));return;}
+  const t=strings("ui");const msg=document.getElementById("loadMsg");
   const R=parseFile(text||"");
   if(!R.ok){const why=refusalList(R).join(" ");
     if(veilLoad.hasAttribute("open")){msg.className="msg err";msg.textContent=why;} else toast(why);return;}
@@ -7666,6 +8098,10 @@ function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=
   if(raw!==null&&nm===null) return {ok:false,problems:[strings("booklet").linkBadName]};
   const R=parseFile(typeof text==="string"?text:"");
   if(!R.ok){const why=refusalList(R);toast(why.join(" "));return {ok:false,problems:why};}
+  /* handed over before the page has read its store (a host's script runs right after this one): it opens as soon as the
+     store is read, and the answer is the text's own notices */
+  if(!KEEP.ready){KEEP.later.push(()=>hostOpen(text,o));const N=fileNotesOf(R,null);
+    return {ok:true,problems:N?[...(N.marker?[N.marker]:[]),...N.list].map(p=>problemWords([p])):[]};}
   if(nm) openLinked(text,{store:true,host:true,label:nm,from:"store:"+nm});
   else{const e=addEntry();openBooklet(e.id);finishLoad(R);}
   return {ok:true,problems:FILE_NOTES?[...(FILE_NOTES.marker?[FILE_NOTES.marker]:[]),...FILE_NOTES.list].map(p=>problemWords([p])):[]};}
@@ -7818,6 +8254,8 @@ async function openLink(hash,o){const L=linkOf(hash);if(!L) return false;
   const got=await linkFetch(url);if(gen!==LINK_GEN) return false;
   LINK_LOADING=null;
   if(got.err){render();return said({missing:"linkMissing",big:"linkBig",slow:"linkSlow",notText:"linkNotText"}[got.err]||"linkFailed");}
+  /* what this browser keeps for the link is decided on the store as it is now (another tab may have written) */
+  if(KEEP.mode==="idb"){await keepRefresh();if(gen!==LINK_GEN) return false;}
   const ok=openLinked(got.text,via,{entry:o&&o.entry,page:at||null});
   /* a file the page refuses opens nothing: the screen is drawn again, without the notice */
   if(!ok) render();
@@ -7841,7 +8279,9 @@ if(typeof window!=="undefined"){
   const hostFn=function host(o){
     /* on a public address nothing is handed over, nothing is shown, and nothing is said: the handle does nothing */
     if(!HOST_OWN) return Object.freeze({saved:noop,failed:noop,fileChanged:noop,leave:noop,state:()=>"refused"});
-    const mine={label:hookText(o&&o.label,80),status:"idle",message:"",at:null,prev:"idle",pending:null,state:"waiting",dismissed:false};
+    /* `early`: registered before the page had read its store (keepStart), so the reader's yes was read from its mirror and
+       is read again from the store once the store is read */
+    const mine={label:hookText(o&&o.label,80),status:"idle",message:"",at:null,prev:"idle",pending:null,state:"waiting",dismissed:false,early:!KEEP.ready};
     /* active at once only for the label the reader already allowed on this site; any other label asks again */
     if(mine.label!==""&&hostAllowed()===mine.label) mine.state="active";
     HOST=mine;drawHostLine();
@@ -7922,20 +8362,30 @@ window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.class
 window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&hostCovers()!=="saved"){e.preventDefault();e.returnValue=strings("ui").leaving;}});
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
-/* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers */
-window.addEventListener("pagehide",()=>{flushSave();hookFlush();});
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();}});
-/* The page opens on "Your booklets". */
-bootLibrary();
-render();
+/* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers; and what
+   the store has not been handed yet is handed to the browser at once (keepFlush(true)), even while an earlier write is
+   still on its way, which would otherwise hand it on only when it ends, after the page has gone */
+window.addEventListener("pagehide",()=>{flushSave();hookFlush();keepFlush(true);});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();keepFlush(true);}});
 /* a booklet drawn while the page was still arriving had no formula or diagram (useLib waits): it is drawn again now */
 document.addEventListener("DOMContentLoaded",()=>{if(LIB_WAITED){LIB_WAITED=false;render();}});
-/* a link in the address (see OPENING BY LINK): read when the page starts and whenever the fragment changes */
-openLink(typeof location!=="undefined"?location.hash:"");
-window.addEventListener("hashchange",()=>{openLink(location.hash);});
-if(!storageOk) setTimeout(()=>toast(STRINGS[lang].ui.storageOff),400);
-/* another tab added or removed a booklet: the list redraws */
-window.addEventListener("storage",e=>{if(screen===LIB_SCREEN&&(!e||!e.key||String(e.key).endsWith(LIB_KEY))) render();});
+/* The page opens on "Your booklets", once it has read what this browser keeps (keepStart: from local storage at once,
+   from IndexedDB a moment later). A link in the address (see OPENING BY LINK) is read then, and whenever the fragment
+   changes after that. */
+function bootPage(){bootLibrary();render();
+  openLink(typeof location!=="undefined"?location.hash:"");
+  window.addEventListener("hashchange",()=>{openLink(location.hash);});
+  const t=keepNotice();if(t) setTimeout(()=>toast(t),400);}
+keepStart(bootPage);
+/* another tab added or removed a booklet: the list redraws (local storage tells this page; with IndexedDB, its count
+   does, TICK_KEY, and a page that is in view showing "Your booklets" reads the store again at once; any other waits until
+   it comes back into view or focus: keepRefresh) */
+window.addEventListener("storage",e=>{
+  if(e&&e.key===TICK_KEY){if(KEEP.mode==="idb"&&screen===LIB_SCREEN&&!(typeof document!=="undefined"&&document.visibilityState==="hidden")) keepRefresh(true);return;}
+  if(screen===LIB_SCREEN&&(!e||!e.key||String(e.key).endsWith(LIB_KEY))) render();});
+window.addEventListener("focus",()=>{keepRefresh();});
+window.addEventListener("pageshow",e=>{if(e&&e.persisted) keepRefresh();});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible") keepRefresh();});
 </script>
 
 <!-- PART: @mermaid-js/tiny 12.1.0 (diagrams). A part of the renderer: in this core it is the file parts/mermaid.js, beside

@@ -10,6 +10,7 @@
 // parts/ beside it makes the diagram draw. The one-file build holds every part, so it is drawn without any.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/filepage-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.join(__dirname,'..');
 const PARTS=require('./parts.js'),HAS_PART=PARTS.has(HTML,'mermaid');
@@ -43,7 +44,7 @@ const REGMOD=`---\nbooklet: "0.13"\ntitle: Registry module\nlang: en\n---\n\n> [
   ok(await p.getByRole('button',{name:'Start a new booklet'}).count()===1,'the page started (its own script ran under its own policy)');
   // 1 start a new booklet
   await p.getByRole('button',{name:'Start a new booklet'}).click();await wait(600);
-  ok(await p.evaluate(()=>/^booklet\./.test(Object.keys(localStorage)[0]||'booklet.')),'a new booklet starts');
+  {const K=await kept(p);ok(Object.keys(K).some(k=>/^booklet\.b\./.test(k))&&JSON.parse(K['booklet.library.v1']||'{"entries":[]}').entries.length===1,'a new booklet starts, and is kept in this browser (from a file: page too)');}
   // 1b the registry from a file: page: recorded, not asserted to work
   await p.getByRole('button',{name:'Add a module'}).first().click().catch(()=>{});await wait(1500);
   const rows=await p.locator('#addModList .bkrow').count();

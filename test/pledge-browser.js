@@ -1,8 +1,10 @@
 // Browser check of Booklet's pledge: nothing a reader writes is uploaded. It uses the page the way a reader does, in headless
 // Chromium under the hosted /app/ Content-Security-Policy (test/csp.js), and records every request the page makes and every one
 // the policy blocks. Then it asserts: every request is a GET; every one goes to the page's own origin or the registry's origin and
-// nowhere else; no URL, header or body holds any word the test typed as an answer; nothing is written to cookies and nothing but
-// the renderer's own "booklet." keys is in localStorage; zero CSP violations and page errors.
+// nowhere else; no URL, header or body holds any word the test typed as an answer; nothing is written to cookies; nothing but
+// the renderer's own "booklet." keys is in localStorage, and nothing but the renderer's own database, `booklet`, holding only
+// its own "booklet." keys, is in IndexedDB (where 0.13.1 keeps a reader's work: test/kept.js reads it); zero CSP violations
+// and page errors.
 // A change that makes this fail is a change to the pledge and needs Ben's say-so before the test is edited.
 // CHANGED WITH BEN'S SAY-SO, 0.13.1 (item 11, v013-diagram-carrier; Ben chose "way C" on 2026-10-13: "The renderer and booklets
 // are both allowed to come as more than one file. It's nothing but the renderer not 'nothing but this one file'"). The renderer is
@@ -21,6 +23,7 @@
 // asked for the one checked name and nothing else).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pledge-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.',R=path.join(__dirname,'..');
 const CSP=require('./csp.js'),BOXCSP=require('./csp-box.js'),PARTS=require('./parts.js');
@@ -197,7 +200,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   ok(await p.evaluate(()=>document.body.dataset.view)==='linked/l-act','a booklet opened by link opens into its content');
   ok((await p.locator('#main .openedby').innerText()).includes('pledge/linked.booklet.md'),'with the line saying where it came from');
   await p.locator('#main textarea').first().fill(S.link);await wait(900);
-  ok(await p.evaluate(()=>Object.keys(localStorage).some(k=>/^booklet\.b\./.test(k)&&localStorage[k].includes('QZXlinkanswer'))),'the answer is kept in this browser');
+  {const K=await kept(p);ok(Object.keys(K).some(k=>/^booklet\.b\./.test(k)&&K[k].includes('QZXlinkanswer')),'the answer is kept in this browser');}
   await harvest();
 
   // the assertions
@@ -226,7 +229,19 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   const ck=await ctx.cookies();const dc=await p.evaluate(()=>document.cookie);
   ok(ck.length===0&&dc==='','nothing was written to cookies ('+ck.length+' cookies; document.cookie "'+dc+'")');
   const keys=await p.evaluate(()=>Object.keys(localStorage));
-  ok(keys.length>0&&keys.every(k=>/^booklet\./.test(k)),'localStorage holds only the renderer\'s own keys: '+keys.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));
+  ok(keys.every(k=>/^booklet\./.test(k)),'localStorage holds only the renderer\'s own keys (since 0.13.1 at most its two mirrors and its count, booklet.tick): '+keys.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));
+  {const dbs=await p.evaluate(async()=>indexedDB.databases?(await indexedDB.databases()).map(d=>d.name):['(no databases() to list them)']);
+   const K=Object.keys(await kept(p));
+   ok(dbs.join()==='booklet'&&K.length>0&&K.every(k=>/^booklet\./.test(k)),'IndexedDB holds only the renderer\'s own database, `booklet`, with only its own keys: '+dbs.join()+' / '+K.map(k=>k.replace(/[a-z0-9]{6,}$/i,'…')).join(', '));
+   /* and that database holds only its two stores, and the stamps only the renderer's keys and which tab wrote them (a tab
+      id and a count): nothing a reader wrote */
+   const shape=await p.evaluate(()=>new Promise(res=>{const r=indexedDB.open('booklet');r.onerror=()=>res(null);r.onsuccess=()=>{const db=r.result,stores=[...db.objectStoreNames];
+     if(!stores.includes('stamp')){db.close();res({stores,keys:[],vals:[]});return;}
+     const tx=db.transaction(['stamp'],'readonly'),s=tx.objectStore('stamp'),ks=s.getAllKeys(),vs=s.getAll();
+     tx.oncomplete=()=>{db.close();res({stores,keys:ks.result,vals:vs.result});};};}));
+   ok(!!shape&&shape.stores.slice().sort().join()==='kv,stamp','the database holds only its two object stores, kv and stamp: '+(shape&&shape.stores.join()));
+   ok(!!shape&&shape.keys.length>0&&shape.keys.every(k=>/^booklet\./.test(k))&&shape.vals.every(v=>typeof v==='string'&&/^[0-9a-z]+\.\d+$/.test(v))&&!shape.vals.concat(shape.keys).some(x=>Object.values(S).some(w=>String(x).includes(w))),
+     'the stamps hold only the renderer\'s keys and tab ids with a count, no content: '+(shape?shape.keys.length+' stamps, e.g. '+shape.vals.slice(0,2).join(', '):'none'));}
   const ss=await p.evaluate(()=>Object.keys(sessionStorage));
   ok(ss.length===0,'sessionStorage is empty: '+ss.join(','));
   ok(viol.length===0&&cons.length===0,'zero CSP violations: '+viol.concat(cons).join('|'));

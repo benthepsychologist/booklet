@@ -304,7 +304,7 @@ header must also allow the store's origin, which is the page's own. Nothing a re
 
 The language a reader picks on the EN / ES / FR toggle, which shows on "Your
 booklets" and in every booklet, is that browser's choice for every page of the
-origin: it is kept in `localStorage` under `booklet.ui.lang`, apart from every
+origin: it is kept in the browser under `booklet.ui.lang`, apart from every
 booklet's data, and a reload keeps it. Nothing is stored for the reader until
 they choose. The renderer's own words follow that choice whatever a booklet
 says (SPEC.md §9); a choice of Spanish reads a booklet whose `lang` is `es-AR`
@@ -316,7 +316,13 @@ The page opens on "Your booklets", the list of every booklet kept in that
 browser. The address is read for one thing only: a link a host's own page declares support for (see "Opening a booklet by link"), never written. Each booklet keeps its own
 answers, and a first visit shows the empty list.
 
-Booklets kept in the browser live in its local storage, which a browser may clear (Safari clears what a
+Booklets kept in the browser live in its storage for the site: one IndexedDB database, `booklet`, which holds what
+the browser allows a site (on a computer, hundreds of megabytes), or local storage (about 5 MB) where the browser
+refuses IndexedDB, and "Your booklets" then says so. The page reads it once when it opens, before its first screen,
+and writes each change behind; what an earlier release kept in local storage is moved into IndexedDB on the first
+visit, and removed from local storage only once the browser has confirmed the copy; a booklet an earlier
+release's tab, still open, changes after that keeps whichever change is later. A store that is full, or fails,
+is named as such, and the work stays for the visit. A browser may clear this storage (Safari clears what a
 page's script wrote for a site not used for seven days, unless the site is added to the home screen; Chrome and
 Firefox may when the disk is short). So the first time in a session that the page saves a booklet (after something
 the reader did, never at page load) it asks the browser to keep the site's storage, once, with
@@ -325,13 +331,25 @@ sends nothing anywhere, so it is not a request in the pledge's sense. When at le
 browser has not promised to keep the storage, "Your booklets" says so in one quiet line, with the two things a
 reader can do: download a copy, or add the page to the home screen.
 
-The renderer only ever calls `localStorage.getItem`, `setItem` and
-`removeItem`, on a few known keys (`booklet.library.v1` for the list,
-`booklet.b.<id>` for each booklet, and `booklet.base.<id>` for a store
-booklet's base: the records last read from or saved to its file, which tell
-what changed on each side), and never lists the store. So a page that
-namespaces those calls per booklet, by prefixing every key, can run several
-independent booklet instances on one origin without their data colliding.
+The renderer reaches what it keeps only through three functions of its own
+(`lsGet`, `lsSet`, `lsDel`), on a few known keys: `booklet.library.v1` for the
+list (kept in IndexedDB as one record per booklet under a head), `booklet.b.<id>`
+for each booklet, `booklet.base.<id>` for a store booklet's base (the records
+last read from or saved to its file, which tell what changed on each side), and
+`booklet.ui.*` for the reader's preferences. Two of them, the theme and the
+reader's yes to a host (`booklet.host.allowed`), are mirrored in local storage
+for the read made before the store is read, and a count there, `booklet.tick`,
+tells another tab showing "Your booklets" that the list changed. The keys live in one IndexedDB
+database whose name is fixed, `booklet` (no setting names it), and when the page
+starts it lists local storage once, through `key()` and `length`, to move the
+keys an earlier release left there.
+
+Up to 0.13.0, a page that wrapped the renderer's `localStorage.getItem`,
+`setItem` and `removeItem` calls to prefix every key could run several
+independent booklet instances on one origin. From 0.13.1 such a page must also
+wrap the name given to `indexedDB.open` (so each instance opens a database of
+its own) and local storage's `key()` and `length` (so each instance moves only
+its own keys), or give each instance an origin of its own.
 
 ---
 
