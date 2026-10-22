@@ -7,12 +7,15 @@
 // command line; the test only hashes it, before and after, to show it ran nothing against it.
 // Checks, in the order a reader meets them: the page loads clean and BookletSubmit is frozen; Submit is hidden on "Your
 // booklets" and on a booklet without a host name, shown on one with a name; the questionnaire fixture is answered through the
-// screens, as a reader does; nothing has gone anywhere up to the press of Send; the confirm screen shows the exact JSON and
-// Cancel/Escape close it; an untrusted click opens nothing and sends nothing; Send sends one POST whose body is the shown text,
-// with no cookie and no referrer; after the 201 the booklet and this browser's copy are gone, also after a reload; across the
-// run no other request has a body and nothing but the POSTs carries the typed address; a refusal (400) and an unreachable
-// address keep every answer and let the reader retry; two modules answering one id stop the send; and at 400px nothing
-// overflows. Screenshots (confirm, Sent, refusal; 1280px and 400px) are written to <outdir>.
+// screens, as a reader does; nothing has gone anywhere up to the press of Send; the confirm screen lists the answers as the
+// reader gave them, by module, with the exact JSON folded under them, and Cancel/Escape close it; an untrusted click opens
+// nothing and sends nothing; Send sends one POST whose body is the folded text, with no cookie and no referrer; after the 201
+// the booklet stays open with every answer, kept in this browser (also after a reload) and downloadable, and Submit reads Sent
+// until an answer changes; across the run no other request has a body and nothing but the POSTs carries the typed address; a
+// refusal (400) and an unreachable address keep every answer and let the reader retry; two modules answering one id stop the
+// send; the screen speaks French with the French interface, es-AR reads es, and an answer no question names is listed by
+// its id; and at 400px nothing overflows. Screenshots (confirm, its exact text, Sent, refusal, French; 1280px and 400px) are
+// written to <outdir>.
 // Live mode: with SUBMIT_ENDPOINT set (a real recepture started with CORS_ORIGIN=http://forms.example.com), the page is served
 // at http://forms.example.com (or SUBMIT_PAGE_ORIGIN) and the success path's request is NOT routed: it goes to the real server,
 // and the response_id it returns is printed on a line of its own. The refusal and unreachable cases are still answered by routes.
@@ -27,6 +30,8 @@ const PAGE=LIVE?(process.env.SUBMIT_PAGE_ORIGIN||'http://forms.example.com'):'ht
 const API=new URL(ENDPOINT).origin;
 const RECIPE='recipes/test-battery.yaml';
 const NAME='test/submit-questionnaire.md',CLASH_NAME='test/submit-clash.md';
+/* a name per run below, so each starts blank: a booklet sent is kept, and the same name opens the kept copy again */
+const NAME_B='test/submit-questionnaire-b.md',NAME_C='test/submit-questionnaire-c.md',NAME_D='test/submit-questionnaire-d.md';
 const EMAIL='client@example.test';
 const FIX=f=>fs.readFileSync(path.join(__dirname,'fixtures',f),'utf8');
 const QUESTIONNAIRE=FIX('submit-questionnaire.booklet.md'),CLASH=FIX('submit-clash.booklet.md');
@@ -35,6 +40,12 @@ const sha=f=>crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex'
 /* the answers the test gives: made up. The options are positions in the fixture's menu (1 = Not at all ... 4 = Nearly every day) */
 const PHQ=[1,2,3,4,1,2,3,4,1],GAD=[2,3];
 const EXPECT={email:EMAIL};PHQ.forEach((v,i)=>EXPECT['phq9-item'+(i+1)]=v);GAD.forEach((v,i)=>EXPECT['gad7-item'+(i+1)]=v);
+/* what the confirm screen lists for those answers: the fixture's module titles, its question words, and the menu's words */
+const FREQ=['Not at all','Several days','More than half the days','Nearly every day'];
+const item=i=>'Test item '+i+' (placeholder wording)';
+const LISTED=[{title:'Your details',rows:[['Your email address',EMAIL]]},
+  {title:'Part one',rows:PHQ.map((v,i)=>[item(i+1),FREQ[v-1]])},
+  {title:'Part two',rows:GAD.map((v,i)=>[item(i+1),FREQ[v-1]])}];
 /* recepture's payload rules (its payload contract): an object; recipe a non-empty string or an object; answers an object */
 function receptureRules(text){let j;try{j=JSON.parse(text);}catch(e){return 'not JSON';}
   if(!j||typeof j!=='object'||Array.isArray(j)) return 'top level is not an object';
@@ -130,6 +141,10 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   const waitMsg=(p,re)=>p.waitForFunction(r=>new RegExp(r,'i').test(document.getElementById('submitMsg').textContent),re.source,{timeout:8000}).catch(()=>{});
   const waitSent=p=>p.waitForFunction(()=>document.getElementById('submitTitle').textContent==='Sent',null,{timeout:8000}).catch(()=>{});
   const hasEntry=(p,id)=>p.evaluate(i=>readLib().entries.some(e=>e.id===i),id);
+  /* the confirm screen's list, as the reader sees it: each module's card, its title and its question/answer pairs */
+  const listed=p=>p.evaluate(()=>Array.from(document.querySelectorAll('#submitList .entry')).map(c=>({title:c.querySelector('h4').textContent,
+    rows:Array.from(c.querySelectorAll('dt')).map(dt=>[dt.textContent,dt.nextElementSibling?dt.nextElementSibling.textContent:null])})));
+  const button=p=>p.evaluate(()=>{const b=document.getElementById('btnSubmit');return {hidden:b.hidden,label:b.textContent.trim(),aria:b.getAttribute('aria-disabled'),disabled:b.disabled};});
 
   // 2 the page loads; BookletSubmit
   let p=await newPage();
@@ -166,13 +181,21 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   // 8 the confirm screen
   await pressSubmit(p);
   ok(await dialogOpen(p),'pressing Submit opens the confirm screen');
+  const list=await listed(p);
+  ok(sameJSON(list,LISTED),'the screen lists the answers as the reader gave them: a card per module, titled as the booklet titles it, each question\'s words above the answer\'s (the menu\'s words, the typed address): '+JSON.stringify(list).slice(0,300));
+  ok(list.reduce((n,g)=>n+g.rows.length,0)===Object.keys(EXPECT).length,'and it lists as many answers as are sent ('+Object.keys(EXPECT).length+')');
+  ok(await p.evaluate(()=>document.getElementById('submitExact').open)===false&&await p.locator('#submitBody').isHidden()&&await text(p,'#submitExact summary')==='Show exactly what is sent','the exact text is folded shut under the list, behind "Show exactly what is sent"');
   const shown=await text(p,'#submitBody');
   let parsed=null;try{parsed=JSON.parse(shown);}catch(e){}
-  ok(!!parsed&&sameJSON(Object.keys(parsed).sort(),['answers','recipe'])&&parsed.recipe===RECIPE&&sameJSON(sortKeys(parsed.answers),sortKeys(EXPECT)),'the shown text is exactly {"recipe","answers"} with the host\'s recipe and the answers given (choices as 1-based positions, the email as text): '+shown.replace(/\s+/g,' ').slice(0,240));
+  ok(!!parsed&&sameJSON(Object.keys(parsed).sort(),['answers','recipe'])&&parsed.recipe===RECIPE&&sameJSON(sortKeys(parsed.answers),sortKeys(EXPECT)),'the folded text is exactly {"recipe","answers"} with the host\'s recipe and the answers given (choices as 1-based positions, the email as text): '+shown.replace(/\s+/g,' ').slice(0,240));
   const helpT=await text(p,'#submitHelp');
   ok(/Send your answers\?/.test(await text(p,'#submitTitle'))&&helpT.includes(new URL(ENDPOINT).host)&&helpT.includes('Nothing has been sent yet'),'the screen says who it sends to and that nothing has been sent: '+helpT);
   ok(toApiOrigin().length===0,'with the confirm screen open, still nothing sent');
   await shot(p,'submit-confirm-1280.png');
+  await p.locator('#submitExact summary').click();await wait(p,150);
+  ok(await p.locator('#submitBody').isVisible(),'one tap on it shows the exact text');
+  await shot(p,'submit-exact-1280.png');
+  await p.locator('#submitExact summary').click();await wait(p,150);
   await p.locator('#submitCancel').click();await wait(p,200);
   ok(!await dialogOpen(p)&&toApiOrigin().length===0,'Cancel closes the confirm screen; nothing sent');
   await pressSubmit(p);await p.keyboard.press('Escape');await wait(p,200);
@@ -192,7 +215,7 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   const posts=toEndpoint(),responses=await Promise.all(answered);
   ok(posts.length===1&&toApiOrigin().filter(q=>q.method==='POST').length===1,'pressing Send sent exactly one POST, to the endpoint ('+posts.length+')');
   const po=posts[0]||{body:'',headers:{},all:null};const all=po.all||po.headers;
-  ok(po.body===shownNow,'its body is byte for byte the text shown on the confirm screen ('+po.body.length+' bytes)');
+  ok(po.body===shownNow,'its body is byte for byte the folded text of the confirm screen ('+po.body.length+' bytes)');
   ok(/^application\/json/i.test(all['content-type']||''),'content-type is application/json: '+all['content-type']);
   ok(!('cookie' in all)&&!('referer' in all),'no cookie header and no referer header: '+Object.keys(all).sort().join(','));
   ok(receptureRules(po.body)==='','the body passes recepture\'s payload rules: '+(receptureRules(po.body)||'ok'));
@@ -204,24 +227,44 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 
   // 11 after the 201
   const sentHelp=await text(p,'#submitHelp');
-  ok(await text(p,'#submitTitle')==='Sent'&&/Your answers were received/.test(sentHelp)&&(!rid||sentHelp.includes(rid.slice(0,8))),'after the 201 the screen says Sent, with the reference: '+sentHelp);
-  ok(await submitHidden(p),'and the Submit button is hidden again');
-  ok(await dialogOpen(p)&&await p.locator('#submitSend').isHidden(),'the Sent screen is up, with no Send button');
+  ok(await text(p,'#submitTitle')==='Sent'&&/Your answers were received/.test(sentHelp)&&/still here in your booklet/.test(sentHelp)&&(!rid||sentHelp.includes(rid.slice(0,8))),'after the 201 the screen says Sent, with the reference, and that the answers are still in the booklet: '+sentHelp);
+  ok(await dialogOpen(p)&&await p.locator('#submitSend').isHidden()&&await p.locator('#submitList').isHidden()&&await p.locator('#submitExact').isHidden(),'the Sent screen is up, with no Send button, list or exact text');
   await shot(p,'submit-sent-1280.png');
-  const kept=await p.evaluate(id=>({entry:readLib().entries.some(e=>e.id===id),viaName:readLib().entries.some(e=>e.from==='store:'+'test/submit-questionnaire.md'),copy:lsGet(bookKey(id)),open:hookOpen()}),bookId);
-  ok(!kept.entry&&!kept.viaName&&kept.copy==null&&!kept.open,'this browser keeps no copy: no entry for the booklet in the list, no kept-copy key, nothing open: '+JSON.stringify({entry:kept.entry,viaName:kept.viaName,copy:kept.copy==null?null:'present',open:kept.open}));
+  let bt=await button(p);
+  ok(!bt.hidden&&bt.label==='Sent'&&bt.aria==='true','the Submit button stays in the bar and reads Sent, marked unavailable: '+JSON.stringify(bt));
+  const kept=await p.evaluate(id=>{const c=lsGet(bookKey(id));return {open:hookOpen(),same:currentId===id,entry:readLib().entries.some(e=>e.id===id),copy:typeof c==='string'&&c.includes('phq9-item9')&&c.includes('client@example.test')};},bookId);
+  ok(kept.open&&kept.same&&kept.entry&&kept.copy&&sameJSON(sortKeys(await answers(p)),sortKeys(EXPECT)),'nothing the reader wrote is removed: the same booklet is open with every answer, it has its row in "Your booklets", and its kept copy holds the answers: '+JSON.stringify(kept));
   await p.locator('#submitCancel').click();await wait(p,200);
   ok(!await dialogOpen(p),'Close closes the Sent screen');
+  await p.locator('#btnSubmit').click({force:true});await wait(p,400);
+  ok(!await dialogOpen(p)&&toEndpoint().length===1,'pressing Sent opens nothing and sends nothing');
+  const [dl]=await Promise.all([p.waitForEvent('download',{timeout:5000}),p.locator('#btnExport').click()]);
+  const dlText=fs.readFileSync(await dl.path(),'utf8');
+  ok(/\.booklet\.md$/.test(dl.suggestedFilename())&&dlText.includes('"phq9-item1"')&&dlText.includes(EMAIL),'the booklet downloads as any booklet does, with its answers: '+dl.suggestedFilename());
+  await toOverview(p);await wait(p,300);
+  /* an answer changes: Submit is back; changed back, the body is the one sent, and it reads Sent again */
+  await card(p,1);await p.locator('#main .q-inline').nth(0).locator('.pill-btn').nth(1).click();await wait(p,300);
+  bt=await button(p);
+  ok(!bt.hidden&&bt.label==='Submit'&&bt.aria==='false','after an answer changes, the button reads Submit again: '+JSON.stringify(bt));
+  await pressSubmit(p);
+  ok((await listed(p))[1].rows[0][1]==='Several days'&&toEndpoint().length===1,'and the confirm screen lists the changed answer; nothing sent');
+  await p.locator('#submitCancel').click();await wait(p,200);
+  await p.locator('#main .q-inline').nth(0).locator('.pill-btn').nth(PHQ[0]-1).click();await wait(p,300);
+  bt=await button(p);
+  ok(bt.label==='Sent'&&bt.aria==='true','changed back to what was sent, it reads Sent again: '+JSON.stringify(bt));
   await grabViol(p);
   await p.reload();await p.waitForFunction(()=>KEEP.ready);await wait(p,800);
-  /* step 4's booklet (opened without a name) is the reader's own and stays in the list; only the named one must be gone */
-  const after=await p.evaluate(id=>({entry:readLib().entries.some(e=>e.id===id),viaName:readLib().entries.filter(e=>typeof e.from==='string'&&e.from.startsWith('store:')).length,copy:lsGet(bookKey(id)),listed:(document.body.innerText.match(/Submit test questionnaire/g)||[]).length}),bookId);
-  ok(!after.entry&&after.viaName===0&&after.copy==null&&after.listed===1,'after a reload (same browser) the library holds nothing of it: no entry, no store entry, no kept copy; only the reader\'s own unnamed copy from step 4 is listed: '+JSON.stringify({entry:after.entry,viaName:after.viaName,copy:after.copy==null?null:'present',listed:after.listed}));
+  const after=await p.evaluate(id=>{const c=lsGet(bookKey(id));return {entry:readLib().entries.some(e=>e.id===id),copy:typeof c==='string'&&c.includes('phq9-item9'),listed:document.body.innerText.includes('Submit test questionnaire')};},bookId);
+  ok(after.entry&&after.copy&&after.listed,'after a reload (same browser) the booklet is still in "Your booklets" with its answers: '+JSON.stringify(after));
+  await p.waitForFunction(()=>typeof window.__open==='function');
+  ok((await openBook(p,QUESTIONNAIRE,NAME)).ok===true&&sameJSON(sortKeys(await answers(p)),sortKeys(EXPECT)),'the host opening the same name again opens the kept copy, with the answers sent');
+  bt=await button(p);
+  ok(!bt.hidden&&bt.label==='Submit','and Submit is available again: what was sent is remembered in the page only, not across a reload: '+JSON.stringify(bt));
   await grabViol(p);await p.close();
 
   // 13 a refusal
   p=await newPage();
-  ok((await openBook(p,QUESTIONNAIRE,NAME)).ok===true,'refusal run: the questionnaire opened again');
+  ok((await openBook(p,QUESTIONNAIRE,NAME_B)).ok===true,'refusal run: the questionnaire opened (a name of its own)');
   const id2=await p.evaluate(()=>currentId);
   await typeEmail(p);await card(p,1);await pick(p,[3]);await toOverview(p);
   await routeOn(p);mode='refuse';
@@ -246,7 +289,8 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   const postsBefore=toEndpoint().length;
   await pressSend(p);await waitSent(p);
   ok(await text(p,'#submitTitle')==='Sent'&&toEndpoint().length===postsBefore+1,'with the address answering again, Send succeeds (a retry works): '+await text(p,'#submitTitle'));
-  ok(!await hasEntry(p,id2)&&await p.evaluate(id=>lsGet(bookKey(id)),id2)==null,'and then this browser\'s copy is gone');
+  const a4=await answers(p);
+  ok(await hasEntry(p,id2)&&a4.email===EMAIL&&a4['phq9-item1']===3,'and the booklet and its answers are still kept');
   await grabViol(p);await p.close();
 
   // 15 two modules answering one id
@@ -267,7 +311,7 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 
   // 16 at 400px: confirm, refusal, Sent
   p=await newPage(400);
-  ok((await openBook(p,QUESTIONNAIRE,NAME)).ok===true,'400px run: the questionnaire opened');
+  ok((await openBook(p,QUESTIONNAIRE,NAME_C)).ok===true,'400px run: the questionnaire opened');
   await answerAll(p);
   await pressSubmit(p);
   await shot(p,'submit-confirm-400.png');
@@ -282,6 +326,28 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   await pressSend(p);await waitSent(p);
   await shot(p,'submit-sent-400.png');
   ok(await text(p,'#submitTitle')==='Sent'&&await noScroll(p)<=0,'at 400px the Sent screen shows with no sideways overflow: '+await noScroll(p));
+  await grabViol(p);await p.close();
+
+  // 17 the interface in French; es-AR; an answer no question names
+  p=await newPage();
+  const nFr=toEndpoint().length;
+  ok((await openBook(p,QUESTIONNAIRE,NAME_D)).ok===true,'French run: the questionnaire opened');
+  await p.locator('#langGroup [data-lang="fr"]').click();await wait(p,300);
+  await typeEmail(p);await toOverview(p);
+  ok((await button(p)).label==='Envoyer','with the French interface the button reads Envoyer');
+  /* an answer the booklet has no question for, as a file from an older version of it can hold */
+  await p.evaluate(()=>{STATE.answers[""]["loose-note"]="kept from an older version";markDirty();});await wait(p,200);
+  await pressSubmit(p);
+  const fr=await listed(p),frBody=JSON.parse(await text(p,'#submitBody'));
+  ok(await text(p,'#submitTitle')==='Envoyer vos réponses ?'&&await text(p,'#submitExact summary')==='Afficher exactement ce qui est envoyé'&&/Rien n’a encore été envoyé/.test(await text(p,'#submitHelp')),'the screen speaks French: '+await text(p,'#submitTitle'));
+  const other=fr[fr.length-1]||{rows:[]};
+  ok(other.title==='Autres réponses de ce carnet'&&sameJSON(other.rows,[['loose-note','kept from an older version']])&&frBody.answers['loose-note']==='kept from an older version','an answer no question names is listed by its id under "other answers", as it is sent: '+JSON.stringify(other));
+  await shot(p,'submit-confirm-fr-1280.png');
+  await p.locator('#submitCancel').click();await wait(p,200);
+  const esAR=await p.evaluate(()=>{lang="es-AR";renderBar();const l=document.getElementById('btnSubmit').textContent.trim();render();return l;});
+  ok(esAR==='Enviar','with the renderer\'s language es-AR, the button reads es (Enviar): '+esAR);
+  await p.locator('#langGroup [data-lang="en"]').click();await wait(p,300);
+  ok(toEndpoint().length===nFr,'the French run sent nothing');
   await grabViol(p);await p.close();
 
   // 12 across the whole run
