@@ -9,7 +9,7 @@ This repository holds the format spec (`SPEC.md`), the reference renderer
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
-## The submit build (merged as #59, `106b1c7`, 2026-10-22; the readable confirm screen and the kept copy on branch `feat/submit-confirm`; booklet-hub items `submit-first-post` and `submit-confirm-and-keep`, deliverable `portal-submit-build`)
+## The submit build (0.2.0; merged as #59, `106b1c7`, and #60, `b380e54`, 2026-10-22; booklet-hub items `submit-first-post` and `submit-confirm-and-keep`, deliverable `portal-submit-build`)
 
 A separate file for a host that needs a reader's answers sent to one address, such as the client portal's recepture service. **Never the published file**: `booklet.html` is unchanged (sha256 `71e4b934…`), and so are `test/guard.test.js` and `test/pledge-browser.js`.
 
