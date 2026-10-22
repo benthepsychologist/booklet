@@ -9,6 +9,16 @@ This repository holds the format spec (`SPEC.md`), the reference renderer
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
+## The submit build (branch `feat/submit-build`, 2026-10-22; booklet-hub item `submit-first-post`, deliverable `portal-submit-build`)
+
+A separate file for a host that needs a reader's answers sent to one address, such as the client portal's recepture service. **Never the published file**: `booklet.html` is unchanged (sha256 `71e4b934…`), and so are `test/guard.test.js` and `test/pledge-browser.js`.
+
+- **`node submit/build.js --endpoint <url> [--script </host.js>] [--out <file>]`** makes `booklet-submit.html`: the one-file build, with `submit/submit.js` directly after the main script, the address in `<meta name="booklet-submit">`, and the policy gaining that script's sha256 (`script-src`) and the address's origin (`connect-src`), nothing else. It prints the file's sha256. The address must be https with no query or fragment (http only for loopback, for testing).
+- **`submit/submit.js`** (version 0.1.0) reads the renderer's own top-level state by name (no hook was added to `booklet.html`) and wraps `renderBar` to keep its button in step. A Submit button shows only while a booklet the host gave is open; it opens a screen with the exact JSON text and Send; Send makes one POST (`{"recipe","answers"}`, no cookies, no referrer, no redirect). Answers are every module's once-answered questions in one map, ids as written; two modules answering one id stop the send. After a 201 the booklet is closed and its kept copy, base and list row are removed. Strings in en, es, fr (not yet checked by /localize).
+- **Tests:** `test/submit-build.test.js` (26 checks: the build adds only what it says, `strip()` gives back the one-file build exactly, the address and host-script checks, the script's one send). `test/submit-browser.js` (Chromium; a stand-in for recepture by default; with `SUBMIT_ENDPOINT` set, a real recepture, the page served by a real local server so the browser's CORS preflight reaches it). Fixtures `test/fixtures/submit-questionnaire.booklet.md` (an email, nine choices with the PHQ-9's ids and answer options and placeholder wording, two more in a second module) and `submit-clash.booklet.md`.
+- **Docs:** `docs/hosting.md`, "The submit build"; the pledge paragraph in `AGENTS.md` names `submit/` as the one sending code the repository holds; `README.md` lists `submit/`.
+- **Not in it yet** (each by Ben's call): feature switches and a focused questionnaire (no library, no download), the email filled from the link, a notice when a link fails, a `submit` label line in the format. After Sent the reader is on "Your booklets".
+
 ## Current state — renderer 0.13.1, the save status and auto-save (item `v013-save-status`; merged as #57, released in v0.13.1 on 2026-10-15)
 
 Ben, 2026-10-14: "it's saved, saving, unsaved. green, yellow and red. with the every few seconds behavior like every other cloud editor w auto save rather than on every keystroke." Before this, a hosted booklet's `onChange` came about every half second while the reader typed (the box's host then PUT the whole 3.4 MB dashboard each time), and the reader's save signals were the Download button's mark, a "not yet downloaded" note and the host's line.
