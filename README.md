@@ -77,6 +77,7 @@ and it draws those too, as long as they use engines it has.
 | [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads v0.3 only — no earlier format opens |
 | [`SPEC.md`](SPEC.md) | the current format (v0.13), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
+| [`submit/`](submit/) | the submit build, never the published file: `node submit/build.js --endpoint <url>` makes `booklet-submit.html`, the one-file renderer with a Submit button that sends a reader's answers to the one address it was built with, on the reader's press (`docs/hosting.md`, "The submit build") |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
 | [`CHANGES.md`](CHANGES.md) | what changed in each version of the format, newest first; `SPEC.md` states the rules as they are and keeps no history |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
@@ -87,7 +88,7 @@ and it draws those too, as long as they use engines it has.
 | [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry) | a separate repo: the modules on offer and the `registry.json` that lists them |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
 
-If you serve the renderer yourself and want a reader's work saved somewhere other than their browser, read [`docs/hosting.md`](docs/hosting.md). The published `booklet.html` never sends anything; a host adds one script of its own and talks to the renderer through `window.Booklet`, and the renderer hands a booklet to a host only when the page is on the reader's own machine or private network and only after the reader presses Allow.
+If you serve the renderer yourself and want a reader's work saved somewhere other than their browser, read [`docs/hosting.md`](docs/hosting.md). The published `booklet.html` never sends anything (a host that needs a reader's answers sent to one address builds a separate file for it, the submit build in `submit/`); a host adds one script of its own and talks to the renderer through `window.Booklet`, and the renderer hands a booklet to a host only when the page is on the reader's own machine or private network and only after the reader presses Allow.
 
 ## Try it
 

@@ -184,6 +184,23 @@ A host that keeps booklets in a store follows these rules, so a link, a save and
 - **The host's server and script are the host's own.** They are not in this repository, and the store is never inside a published repository.
 - **A host should say, on its own page, what it keeps and where.** The renderer's bar says where saves go (the line behind its save status); the host's page is the place for the rest (who can read the store, how long it is kept).
 
+## The submit build: sending a reader's answers to one address
+
+Everything above is about the published `booklet.html`, which never sends anything. A host that needs a reader's answers sent to an address, such as a questionnaire service, cannot do it with that file: its own policy allows connections only to the page's origin and `raw.githubusercontent.com`, and a host's header can only tighten that. So it serves a different file, the **submit build**, made from this repository with one command:
+
+```
+node submit/build.js --endpoint https://forms-api.example.org/submit --script /host.js
+```
+
+- **What it is.** The one-file build (`node test/one-file.js`) with one more script, `submit/submit.js`, placed directly after the renderer's main script. The address is written into the file (`<meta name="booklet-submit">`), and the file's policy gains exactly two things: that script's sha256 in `script-src`, and the address's origin in `connect-src`. `--script` writes the host's own script into the file too, so the file built is the file served. The command prints the file's `sha256`; a host publishes that line, as for `booklet.html`. `booklet.html` is read, never written: the published file is the same before and after.
+- **The address.** `https`, with no query and no fragment (plain `http` only for this machine, for testing). Only the host names it, by building the file: nothing in a booklet, a link or the browser's storage can.
+- **What the reader sees.** A **Submit** button in the bar, only while a booklet the host gave is open (handed over with `Booklet.open(text, { name })`, or opened by a `#/open/<name>` link). Pressing it shows exactly the text that would be sent and the address's name, with **Send** and **Cancel**. Nothing goes before Send.
+- **What is sent.** One `POST`, `Content-Type: application/json`, no cookies, no referrer, no redirect, of `{"recipe": ..., "answers": {...}}`. `recipe` is what the host's script named with `BookletSubmit.recipe(r)` (a non-empty string, or an object), else the booklet's own `id`. `answers` holds every module's once-answered questions in one map, keyed by question id exactly as the file writes it, each value as the records section stores it (a choice is the option's position from 1, a scale the anchor's number, text the words). Kept entries and drafts are not sent. If two modules answer the same question id, the screen says so and nothing can be sent. This is the shape the recepture service takes (its `docs/payload-contract.md`).
+- **After it is sent.** When the address answers `201`, the booklet is closed and everything this browser kept of it is removed: its kept copy, its base and its row in "Your booklets". The screen says Sent, with the start of the response id the address gave. Any other answer, or none within 20 seconds, says so, and every answer stays, so the reader can press Send again.
+- **The host's script** may call `window.BookletSubmit.recipe(r)` (frozen; also `version` and `endpoint`). It talks to the renderer through `window.Booklet` as above. On a public address `Booklet.host()` is still refused: the submit build hands nothing to a host's script, and its one send is the reader's own press.
+- **The address's own rules.** recepture accepts a browser's post from exactly one origin, its `CORS_ORIGIN`, which must be the page's origin. A host that sets its own Content-Security-Policy header must allow the address in `connect-src`, or the send is blocked.
+- **Checks.** `test/submit-build.test.js` (the build adds only what it says, and `strip()` gives back the one-file build exactly) and `test/submit-browser.js` (a real browser, against a stand-in for the address, or a running recepture with `SUBMIT_ENDPOINT` set). Neither touches `test/guard.test.js` or `test/pledge-browser.js`, which still guard `booklet.html` and its one-file build.
+
 ## Checking that a host serves the real renderer
 
 A host that modifies the file it serves can do anything, with or without this interface, so the check is on the file. Each release's notes carry the `sha256` of `booklet.html`. To print it for a copy:
