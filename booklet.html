@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-w4Yi+trsAfIU0BSDSTg1eG1h3L8b11wkWmALkCpQrBw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-deOXkWgBvQgSMDGdqStigNapR6OkG0CX4VEqwH1+zsE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -413,7 +413,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .modes .cd-tile{width:2.25rem;height:2.25rem;font-size:1.15rem;border-radius:var(--r-sm)}
   .modes .cd-tile.cd-n{font-size:1.05rem}
   .modes .card-go .k{font-size:1.1rem;color:var(--accent);overflow-wrap:anywhere}
-  .modes .cd-num{font-size:1.1rem;color:var(--muted)}
+  .modes .cd-num{font-size:1.1rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:1.5em}
+  .modes .cd-tile.cd-blank{background:none}
+  .modes .cd-st{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;min-width:0}
   .modes .card-go .d{font-size:.93rem}
   .modes .card-go .c{font-size:.8rem;font-weight:400;color:var(--muted)}
   .modes button.card-go:hover .k,.modes button.card-go:focus-visible .k,.modes .card-go button.k:hover,.modes .card-go button.k:focus-visible{text-decoration:underline;text-decoration-thickness:.1em;text-underline-offset:.15em}
@@ -7283,7 +7285,7 @@ function renderHome(main,dc){const u=strings("ui");
   /* One card per module. A module with one activity is its activity's card; a
      module with several gets one card that names them and opens the module's
      own page. */
-  const activities=el("ol",{class:"modes"});
+  const activities=el("ol",{class:"modes",role:"list"});
   const shown=[],grouped=new Set();
   for(const x of bookActivities()){const holder=holderOf(x.id);
     if(holder&&isMulti(holder)){if(grouped.has(holder.id)) continue;grouped.add(holder.id);
@@ -7376,7 +7378,7 @@ function renderBooklets(main){const L=strings("library");
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
   const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
   if(!list.length){if(LINK_LOADING===null) main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
-  const cards=el("ol",{class:"modes"});
+  const cards=el("ol",{class:"modes",role:"list"});
   list.forEach(e=>cards.append(el("li",{},bookletCard(e))));
   main.append(cards);
   /* one quiet line when the browser has not promised to keep this site's storage (see asking the browser to keep it) */
@@ -7502,17 +7504,24 @@ const cardHue=i=>CARD_HUES[((Math.trunc(Number(i))||0)%CARD_HUES.length+CARD_HUE
 function cardTile(pic){
   const art=pic?(pic.icon||pic.emoji||(pic.number!=null?String(pic.number):null)):null;
   return art==null?null:el("span",{class:"cd-tile"+(pic.number!=null&&!pic.emoji&&!pic.icon?" cd-n":""),"aria-hidden":"true"},art);}
+let CARD_IDS=0;
 function cardNode(o){
   const mode=o.mode==="fold"||o.mode==="item"?o.mode:"go",pic=o.picture||null;
   const cls=["card","card-"+mode].concat(mode==="go"?["mode"]:[],o.hue?["hue-"+o.hue]:[],o.size==="compact"?["card-compact"]:[],o.cls?[o.cls]:[]).join(" ");
-  const tile=cardTile(pic);
+  /* A row of a contents list (`row`): its number is always before its title, and its tile holds only a picture (an icon or an emoji),
+     an empty tile of the same size when it has none, so that every title in the list starts at one left edge. */
+  const art=o.row&&pic&&pic.number!=null&&!pic.icon&&!pic.emoji?null:pic;
+  const tile=o.row&&!art?el("span",{class:"cd-tile cd-blank","aria-hidden":"true"}):cardTile(art);
   const t=mode==="go"?"span":"div";
-  const num=o.number!=null&&!(pic&&pic.number!=null)?el("span",{class:"cd-num","aria-hidden":"true"},String(o.number)):null;
-  const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k"},...(o.marked?words(o.title,true):[o.title])):null);
+  const num=o.number!=null&&(o.row||!(pic&&pic.number!=null))?el("span",{class:"cd-num","aria-hidden":"true"},String(o.number)):null;
+  /* a button that holds the whole card is named by its title; its first line and its status line describe it (a screen reader
+     would otherwise read the whole card as the name) */
+  const uid=mode==="go"&&o.as!=="div"&&!o.titleNode&&nonEmpty(o.title)?"cd"+(++CARD_IDS):null;
+  const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k",id:uid?uid+"t":null},...(o.marked?words(o.title,true):[o.title])):null);
   const main=(title||o.teaser||o.status||(o.pills||[]).length||(o.foot||[]).length)?el(t,{class:"cd-main"},
     title?el(t,{class:"top"},num,title):null,
-    nonEmpty(o.teaser)?el(t,{class:"d"+(mode==="fold"?" cd-dup":"")+(o.teaserCls?" "+o.teaserCls:"")},o.teaser):null,
-    nonEmpty(o.status)||(o.pills||[]).length?el(t,{class:"c"},nonEmpty(o.status)?o.status:null,...(o.pills||[])):null,
+    nonEmpty(o.teaser)?el(t,{class:"d"+(mode==="fold"?" cd-dup":"")+(o.teaserCls?" "+o.teaserCls:""),id:uid?uid+"d":null},o.teaser):null,
+    nonEmpty(o.status)||(o.pills||[]).length?el(t,{class:"c",id:uid?uid+"s":null},nonEmpty(o.status)?el("span",{class:"cd-st"},o.status):null,...(o.pills||[])):null,
     ...(o.foot||[])):null;
   const chev=o.noChevron?null:el("span",{class:"cd-chev","aria-hidden":"true"},icon(mode==="go"?"chevron-right":"chevron-down"));
   if(mode==="fold"){
@@ -7520,7 +7529,8 @@ function cardNode(o){
     d.append(el("div",{class:"inner cd-body"+(o.bodyCls?" "+o.bodyCls:"")},...(o.body||[])));
     return d;}
   if(mode==="item") return el(o.tag||"div",{class:cls},tile,main,...(o.kids||[]));
-  const root=o.as==="div"?el("div",{class:cls}):el("button",{type:"button",class:cls,onclick:o.onclick});
+  const desc=uid?[nonEmpty(o.teaser)?uid+"d":"",nonEmpty(o.status)||(o.pills||[]).length?uid+"s":""].filter(Boolean).join(" "):"";
+  const root=o.as==="div"?el("div",{class:cls}):el("button",{type:"button",class:cls,onclick:o.onclick,"aria-labelledby":uid?uid+"t":null,"aria-describedby":desc||null});
   root.append(...[tile,main,chev,...(o.kids||[])].filter(x=>x!=null));return root;}
 /* a heading's leading emoji becomes the card's picture; it stays in the heading, hidden, so a link to the heading still finds its words */
 function takeLeadEmoji(root){
@@ -7563,7 +7573,7 @@ function moduleMeta(acts){const C=strings("cards"),ps=acts.map(activityProgress)
    place in the list it is in. The list is an `ol.modes` (the rows are drawn as links, see ".modes" in the stylesheet). */
 function activityCard(to,name,blurb,status,i,iconName,onclick){
   const {title,picture}=cardPicture(name,i+1,iconName);
-  return el("li",{},cardNode({mode:"go",title,marked:true,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,noChevron:true,onclick:onclick||(()=>go(to))}));}
+  return el("li",{},cardNode({mode:"go",title,marked:true,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,noChevron:true,row:true,onclick:onclick||(()=>go(to))}));}
 function moduleCard(mod,acts,i){
   return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),moduleStatus(acts),i,mod.icon);}
 /* The head of a module's own screen, and of the screen of a module that is one activity (which stands in for it): its title, its opening
@@ -7659,10 +7669,10 @@ function wikiFind(W,q){
   return hit.concat(rest).slice(0,WK_FOUND);}
 /* a long row of cards or chips: the first WK_BATCH, then a button for the next WK_BATCH, labelled with what it will draw */
 function wikiBatched(list,draw,cls){
-  const box=el(/(^| )modes( |$)/.test(cls)?"ol":"div",{class:cls}),foot=el("div",{class:"wk-morerow"});let at=0;
-  const more=()=>{const from=at;list.slice(at,at+WK_BATCH).forEach((x,i)=>box.append(draw(x,at+i)));at=Math.min(list.length,at+WK_BATCH);
+  const box=/(^| )modes( |$)/.test(cls)?el("ol",{class:cls,role:"list"}):el("div",{class:cls}),foot=el("div",{class:"wk-morerow"});let at=0;
+  const more=()=>{list.slice(at,at+WK_BATCH).forEach((x,i)=>box.append(draw(x,at+i)));at=Math.min(list.length,at+WK_BATCH);
     foot.innerHTML="";
-    if(at<list.length) foot.append(el("button",{type:"button",class:"cd-btn",onclick:()=>{more();const c=box.children[from],n=c&&c.querySelector&&c.querySelector("button")||c;if(n&&n.focus) n.focus();}},strings("wiki").more(Math.min(WK_BATCH,list.length-at))));};
+    if(at<list.length) foot.append(el("button",{type:"button",class:"cd-btn",onclick:()=>{const first=box.children.length;more();const c=box.children[first],n=c&&c.querySelector&&c.querySelector("button")||c;if(n&&n.focus) n.focus();}},strings("wiki").more(Math.min(WK_BATCH,list.length-at))));};
   more();return [box,foot];}
 /* A choice in a wiki. The phone's menu closes (whatever was chosen, and wherever), and the focus goes where the reader will look:
    to the entry for the page just chosen when the choice was made in the menu beside the page, else to the page's heading. */
@@ -7783,10 +7793,10 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
   const openNotes=opened?endnotesFor(first,true,dc):null;
   if(openNotes) citeReopen(dc);
   const parts=[col];
-  const grid=el("ol",{class:"modes"});
-  if(!acts.length) grid.append(el("li",{},el("p",{class:"hint"},W2.noneShown)));
+  const grid=el("ol",{class:"modes",role:"list"});
   /* a wiki shows the pages at its top, and every other page is under one of them */
   if(W) parts.push(...wikiBatched(W.top,wikiCard,"modes wk-cards"));
+  else if(!acts.length) parts.push(el("p",{class:"hint col"},W2.noneShown));
   else{acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon)));
     parts.push(grid);}
   if(openNotes) parts.push(el("div",{class:"col"},openNotes));

@@ -1191,6 +1191,15 @@ def check_format(f, text, fm):
                                f"id, so an id the renderer makes up from the title is lost the day the title changes, orphaning the entries")
                     if w["set"].get("status") == "off" and any(re.sub(r'^>[ \t]?', '', x).strip() for x in lines[i + 1:body_end(lines, i)]):
                         warn(f, f"{where}: `status:off` hides the card's status line, so the `>` lines under this activity line (its status text) are not drawn")
+                    status_lines = [re.sub(r'^>[ \t]?', '', x) for x in lines[i + 1:body_end(lines, i)]]
+                    if any(x.strip() for x in status_lines):
+                        if any(re.match(r'^\s*(>|#{1,6}([ \t]|$)|[-*+][ \t]|\d+[.)][ \t]|`{3,}|~{3,})', x) for x in status_lines):
+                            warn(f, f"{where}: a `>` line under this activity line is block syntax (a quote or nested callout, a heading, a list item or a code fence); "
+                                    f"the lines under an activity line are its card's status text, one line of inline Markdown, so it would show as literal characters")
+                        end = body_end(lines, i)
+                        if end < len(lines) and lines[end].strip() and not lines[end].startswith(">"):
+                            warn(f, f"line {end + 1}: text straight under the activity line's `>` lines, with no blank line between, is read by Markdown and Obsidian as part "
+                                    f"of the callout, but a renderer takes it as the activity's own paragraph (its blurb); leave a blank line after the `>` lines")
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         if w["set"].get("parent") is not None:

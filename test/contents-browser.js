@@ -34,6 +34,7 @@ Plants need light.
 > [!text|qb] Another?
 
 > [!activity|c] Long one
+> ${LONG} ${LONG}
 
 ${LONG}
 
@@ -67,7 +68,7 @@ The top page.
 
 Another top page.
 
-> [!activity|kid1 parent:top] First child
+> [!activity|kid1 parent:top icon:waves] First child
 
 Child one.
 
@@ -77,6 +78,8 @@ Child two.
 
 > [!module|w end] End
 `;
+const WIKI30=head('Big')+`> [!module|w30] Big wiki\n\n> [!activity|top] Top\n\nTop.\n\n`+Array.from({length:30},(_,i)=>`> [!activity|k${i} parent:top] Child ${i+1}\n\nChild words.\n\n`).join('')+`> [!module|w30 end] End\n`;
+const EMPTY=head('Empty')+`> [!module|m] M\n\n> [!activity|a hidden] A\n\nx\n\n> [!activity|b hidden] B\n\ny\n\n> [!module|m end] End\n`;
 const THEMES=['paper','daylight','night','contrast'];
 const lum=c=>{const [r,g,bl]=c.map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*r+.7152*g+.0722*bl;};
 const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
@@ -128,6 +131,8 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
      ok(/Module of four/.test(first)&&/The module's own blurb\./.test(first),`${W}px home: the module of four is one row, with its blurb (${JSON.stringify(first)})`);
      ok(await over()<=0,`${W}px home: no sideways scroll`);
      await p.screenshot({path:path.join(OUT,`home-${W}.png`)});
+     {const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:(n.name||{}).value||'',desc:(n.description||{}).value||''}));})();
+      const m=ax.find(x=>x.name==='Module of four');ok(!!m&&/The module's own blurb\./.test(m.desc),`${W}px home: a row is named by its title, described by its blurb and status (${JSON.stringify(m)})`);}
      await p.locator('#main ol.modes button.mode').first().focus();await p.keyboard.press('Enter');await wait(500);
      ok(await view()==='module:m',`${W}px home: Enter on the first row opens the module ('${await view()}')`);}
 
@@ -140,7 +145,18 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
      ok(R&&R.font.filter(Boolean).every(f=>f<=14),`${W}px module screen: the status line is small (${R&&R.font})`);
      ok(await over()<=0,`${W}px module screen: no sideways scroll`);
      const pics=await p.evaluate(()=>[...document.querySelectorAll('#main ol.modes .cd-tile')].map(t=>({svg:!!t.querySelector('svg'),txt:t.textContent.trim()})));
-     ok(pics[0].svg&&pics[1].txt==='🌱'&&pics[2].txt==='3',`${W}px module screen: the picture is the icon, the emoji, or the number (${JSON.stringify(pics)})`);
+     ok(pics[0].svg&&pics[1].txt==='🌱'&&pics[2].txt===''&&pics[3].txt==='',`${W}px module screen: the picture is the icon, the emoji, or nothing, never a number (${JSON.stringify(pics)})`);
+     const nums=await p.evaluate(()=>[...document.querySelectorAll('#main ol.modes button.mode')].map(c=>{const n=c.querySelector('.top > .cd-num'),k=c.querySelector('.top > .k'),t=c.querySelector('.cd-tile');return {num:n&&n.textContent,before:!!n&&!!k&&!!(n.compareDocumentPosition(k)&4),kLeft:Math.round(k.getBoundingClientRect().left),tLeft:Math.round(t.getBoundingClientRect().left),tW:Math.round(t.getBoundingClientRect().width)};}));
+     ok(nums.map(n=>n.num).join()==='1,2,3,4'&&nums.every(n=>n.before),`${W}px module screen: every row, with a picture or without, has its number before its title (${JSON.stringify(nums.map(n=>n.num))})`);
+     ok(new Set(nums.map(n=>n.kLeft)).size===1&&new Set(nums.map(n=>n.tLeft)).size===1&&new Set(nums.map(n=>n.tW)).size===1,`${W}px module screen: every title starts at one left edge, every tile is the same size at one left edge (${JSON.stringify(nums)})`);
+     ok(await p.locator('#main ol.modes').getAttribute('role')==='list',`${W}px module screen: the list keeps its list role for Safari`);
+     {const st=await p.evaluate(()=>{const e=document.querySelectorAll('#main ol.modes .c')[2],cs=getComputedStyle(e.querySelector('.cd-st'));return {h:e.querySelector('.cd-st').getBoundingClientRect().height,lh:parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.4,full:e.querySelector('.cd-st').scrollHeight};});
+      ok(st.full>st.h+2&&st.h<=st.lh*2+2,`${W}px module screen: a long status text stops at two lines (${JSON.stringify(st)})`);}
+     /* what a screen reader is told: the button's name is its title, its description the first line and the status line */
+     {const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:(n.name||{}).value||'',desc:(n.description||{}).value||''}));})();
+      const long=ax.find(x=>/^Long one/.test(x.name));
+      ok(!!long&&long.name==='Long one'&&/A long first paragraph/.test(long.desc)&&/cut it short\. A long first/.test(long.desc),`${W}px module screen: the row's accessible name is its title alone, its description the blurb and the status (${JSON.stringify(long)})`);
+      ok(ax.filter(x=>/A long first paragraph|Not started/.test(x.name)).length===0,`${W}px module screen: no button is named by a blurb or a status line`);}
      const title=await p.locator('#main ol.modes button.mode .k').nth(1).innerText();
      ok(title.trim()==='Grow',`${W}px module screen: the emoji leaves the title (${title})`);
      /* the link's underline: at rest none, on hover and on focus yes */
@@ -185,6 +201,11 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
      const R3=await rows('#main ol.modes.wk-cards');isList(R3,'wiki child pages',2);
      ok(await over()<=0,`${W}px wiki child pages: no sideways scroll`);
      await p.screenshot({path:path.join(OUT,`wiki-${W}.png`)});
+     {const nums=await p.evaluate(()=>[...document.querySelectorAll('#main .wk-cards button.mode')].map(c=>{const n=c.querySelector('.top > .cd-num'),k=c.querySelector('.top > .k'),t=c.querySelector('.cd-tile');return {num:n&&n.textContent,k:Math.round(k.getBoundingClientRect().left),t:Math.round(t.getBoundingClientRect().left),svg:!!t.querySelector('svg'),txt:t.textContent.trim()};}));
+      ok(nums.map(n=>n.num).join()==='1,2'&&nums[0].svg&&nums[1].txt===''&&new Set(nums.map(n=>n.k)).size===1&&new Set(nums.map(n=>n.t)).size===1,`${W}px wiki child pages: a row with a picture and one without both have the number before the title and one left edge (${JSON.stringify(nums)})`);
+      ok(await p.locator('#main ol.wk-cards').getAttribute('role')==='list',`${W}px wiki child pages: the list keeps its list role`);
+      const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:(n.name||{}).value||'',desc:(n.description||{}).value||''}));})();
+      const k1=ax.find(x=>x.name==='First child');ok(!!k1&&/Child one\./.test(k1.desc),`${W}px wiki child pages: a row is named by its title and described by its blurb (${JSON.stringify(k1)})`);}
      const title=(await p.locator('#main .wk-content h2').first().innerText()).trim();
      await p.locator('#main .wk-cards button.mode').first().focus();await p.keyboard.press('Enter');await wait(500);
      const after=(await p.locator('#main .wk-content h2').first().innerText()).trim();
@@ -197,7 +218,24 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
      ok(await p.locator('#main ol.modes li .bkacts button').count()===6,`${W}px Your booklets: Open, Rename and Remove are still on each row`);
      await p.screenshot({path:path.join(OUT,`library-${W}.png`)});
      await p.locator('#main ol.modes li').first().locator('button.k').click();await wait(600);
-     ok(await view()!=='@booklets'&&(await view()).length>0,`${W}px Your booklets: the title opens the booklet ('${await view()}')`);}
+     ok(await view()!=='@booklets'&&(await view()).length>0,`${W}px Your booklets: the title opens the booklet ('${await view()}')`);
+     await toList();await wait(300);
+     const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:(n.name||{}).value||''}));})();
+     ok(ax.some(x=>x.name==='Notes')&&ax.some(x=>x.name==='Harbour')&&await p.locator('#main ol.modes').getAttribute('role')==='list',`${W}px Your booklets: each title is a button named by the booklet's name, and the list keeps its list role`);}
+
+    /* 5. "Show N more" in a wiki sends the focus to the first row it added, not to the first row */
+    await load(WIKI30);
+    {if(await p.locator('#main .wk-cards').count()===0||await view()!=='module:w30'){await p.locator('#main button.mode').first().click();await wait(400);}
+     await p.locator('#main .wk-cards button.mode').first().click();await wait(500);
+     ok(await p.locator('#main .wk-cards button.mode').count()===24,`${W}px wiki: 30 children show 24 rows and a button for the rest (${await p.locator('#main .wk-cards button.mode').count()})`);
+     await p.locator('#main .wk-morerow button').click();await wait(300);
+     const at=await p.evaluate(()=>{const rs=[...document.querySelectorAll('#main .wk-cards button.mode')];return {n:rs.length,idx:rs.indexOf(document.activeElement)};});
+     ok(at.n===30&&at.idx===24,`${W}px wiki: after Show more the focus is on the first new row, the 25th (${JSON.stringify(at)})`);}
+
+    /* 6. a module with nothing to show says so outside the list */
+    await load(EMPTY);
+    {if(await view()!=='module:m'){await p.locator('#main button.mode').first().click().catch(()=>{});await wait(400);}
+     ok(await view()==='module:m'&&await p.locator('#main .hint').count()===1&&await p.locator('#main ol').count()===0&&await p.locator('#main ol .hint, #main ul .hint').count()===0,`${W}px a module with nothing to show: its message is drawn, outside any list, with no empty list ('${await view()}')`);}
 
     ok(errs.length===0,`${W}px: no page errors ${errs.join(' | ')}`);
     ok(cons.length===0,`${W}px: no Content-Security-Policy violation ${cons.join(' | ')}`);

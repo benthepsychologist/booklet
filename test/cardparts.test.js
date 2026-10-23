@@ -12,6 +12,7 @@ const FM='---\nbooklet: "0.13"\ntitle: "Parts"\nlang: en\n---\n\n';
 const BODY=`> [!module|m] Module M
 
 > [!activity|plain] Plain
+
 First paragraph of Plain.
 
 > [!text|q1] A question?
@@ -105,7 +106,7 @@ for(const l of ["en","fr","es"]){const f=A.STRINGS_SRC[l].problem.statusBad;
  const upd=FILE.replace("> Half an hour a day,\n> for a week","> Ten minutes");
  chk("an update of the module brings its new status text",A.addModuleText(upd).ok&&A.toMarkdown().includes("> Ten minutes")&&!A.toMarkdown().includes("for a week"));
  /* a rename of the booklet, and a copy kept and opened again */
- A.renameBooklet?A.renameBooklet(A.currentId,"Renamed"):0;
+ chk("a rename of the booklet is made",A.renameBooklet("Renamed")===true);
  const id=A.currentId;A.saveLocal();P.closePages();const B=P.boot();B.openBooklet(id);
  chk("a copy kept in the browser and opened again keeps the lines",B.toMarkdown().includes("> [!activity|quiet status:off] Quiet")&&B.toMarkdown().includes("> Ten minutes"),B.toMarkdown().slice(0,500));}
 
@@ -120,6 +121,112 @@ for(const l of ["en","fr","es"]){const f=A.STRINGS_SRC[l].problem.statusBad;
  chk("the linter warns when status:off hides text under it",/0 errors/.test(both)&&/1 warning/.test(both)&&/status:off/.test(both),both);
  const q=run("> [!activity|a] A\n\n> [!text|q status:off] Q?\n");
  chk("the linter reports status: on a kind that does not take it",/1 error/.test(q)&&/takes no `status:`/.test(q),q);}
+
+/* 8. the linter: block syntax under the activity line, and a line with no blank line after the `>` lines */
+{const run=body=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),"cardparts-")),f=path.join(dir,"t.booklet.md");fs.writeFileSync(f,FM+body);
+   const r=cp.spawnSync("python3",[path.join(P.R,"lint-booklet.py"),f],{encoding:"utf8"});fs.rmSync(dir,{recursive:true});return (r.stdout||"")+(r.stderr||"");};
+ for(const [name,line] of [["a nested callout","> > [!note] Inner"],["a heading","> # Heading"],["a bullet","> - item"],["a numbered item","> 1. item"],["a code fence","> ```"]]){
+   const out=run("> [!activity|a] A\n"+line+"\n\nWords.\n");
+   chk("the linter warns when the status text is "+name,/0 errors/.test(out)&&/1 warning/.test(out)&&/block syntax/.test(out),out);}
+ const lazy=run("> [!activity|a] A\n> Status text\nWords straight under.\n");
+ chk("the linter warns when text follows the `>` lines with no blank line (a lazy continuation)",/0 errors/.test(lazy)&&/1 warning/.test(lazy)&&/blank line/.test(lazy)&&/line 9/.test(lazy),lazy);
+ const fine=run("> [!activity|a] A\n> Status text, with **marks** and a [link](https://x.example)\n\nWords.\n\n> [!activity|b] B\n> Status\n> > not a quote? \n\nMore.\n");
+ chk("plain status text, then a blank line, draws no warning (a `>` that is not at the start of a line's text is block syntax, so the last one warns)",/0 errors/.test(fine)&&/1 warning/.test(fine)&&/block syntax/.test(fine),fine);
+ const callout=run("> [!activity|a] A\n> Status\n> [!text|q] Q?\n");
+ chk("a `>` line that starts the next booklet line is not a lazy continuation",/0 errors/.test(callout)&&/0 warnings/.test(callout),callout);}
+
+/* 9. a one-activity module's or a bare activity's row on the home screen, and a wiki's rows, show the activity's status line, and status:off hides it */
+{const HOME=FM+`> [!module|solo] Solo module
+
+> [!activity|s1] Solo activity
+> Solo status text
+
+Blurb of solo.
+
+> [!text|q] Q?
+
+> [!module|solo end] End
+
+> [!module|off] Off module
+
+> [!activity|s2 status:off] Off activity
+
+Blurb of off.
+
+> [!text|q2] Q?
+
+> [!module|off end] End
+
+> [!activity|bare] Bare
+> Bare status text
+
+Bare blurb.
+
+> [!text|q3] Q?
+
+> [!activity|bare2 status:off] Bare two
+
+Bare two blurb.
+
+> [!text|q4] Q?
+`;
+ A.loadText(HOME);A.screen="@home";A.render();
+ const rowsOf=()=>find(P.main(),hasClass("mode")),row=n=>rowsOf().find(c=>texts(find(c,hasClass("k"))[0])===n);
+ chk("home: a module of one activity shows the activity's status text",texts(find(row("Solo module"),hasClass("c"))[0])==="Solo status text",rowsOf().map(c=>texts(c)).join(" // "));
+ chk("home: a module of one activity with status:off has no status line",row("Off module")&&find(row("Off module"),hasClass("c")).length===0);
+ chk("home: a bare activity shows its status text",texts(find(row("Bare"),hasClass("c"))[0])==="Bare status text");
+ chk("home: a bare activity with status:off has no status line",row("Bare two")&&find(row("Bare two"),hasClass("c")).length===0);
+ const WK=FM+`> [!module|w] Wiki
+
+> [!activity|top] Top
+> Top status text
+
+Top blurb.
+
+> [!activity|quiet status:off] Quiet
+
+Quiet blurb.
+
+> [!activity|kid parent:top] Kid
+> Kid status text
+
+Kid blurb.
+
+> [!activity|kid2 parent:top status:off] Kid two
+
+Kid two blurb.
+
+> [!module|w end] End
+`;
+ A.loadText(WK);A.screen="module:w";A.render();
+ const wr=n=>find(P.main(),hasClass("mode")).find(c=>texts(find(c,hasClass("k"))[0])===n);
+ chk("wiki: a top page's row shows its status text, and status:off hides it",wr("Top")&&texts(find(wr("Top"),hasClass("c"))[0])==="Top status text"&&wr("Quiet")&&find(wr("Quiet"),hasClass("c")).length===0);
+ A.screen="w/top";A.render();
+ chk("wiki: a child page's row shows its status text, and status:off hides it",wr("Kid")&&texts(find(wr("Kid"),hasClass("c"))[0])==="Kid status text"&&wr("Kid two")&&find(wr("Kid two"),hasClass("c")).length===0);
+ chk("wiki: the rows are an ordered list with list semantics",find(P.main(),n=>n.tagName==="ol"&&hasClass("wk-cards")(n)&&n.attrs.role==="list").length===1);}
+
+/* 10. a module with nothing to show: the message is outside the list */
+{A.loadText(FM+"> [!module|m] M\n\n> [!activity|a hidden] A\n\nx\n\n> [!activity|b hidden] B\n\ny\n\n> [!module|m end] End\n");
+ A.screen="module:m";A.render();
+ const hint=find(P.main(),n=>hasClass("hint")(n)&&/\S/.test(texts(n)));
+ chk("a module whose activities are all hidden says so, in a paragraph",hint.length===1&&hint[0].tagName==="p",String(hint.length));
+ chk("and the paragraph is not inside a list, and no empty list is drawn",find(P.main(),n=>n.tagName==="ol"||n.tagName==="ul").length===0);}
+
+/* 11. one way to number: the number before every row's title, a tile only for a picture, and a button named by its title */
+{A.loadText(FM+"> [!module|m] M\n\n> [!activity|a icon:waves] With an icon\n\nFirst blurb.\n\n> [!text|q1] Q?\n\n> [!activity|b] 🌱 With an emoji\n\nSecond blurb.\n\n> [!text|q2] Q?\n\n> [!activity|c] With nothing\n\nThird blurb.\n\n> [!text|q3] Q?\n\n> [!module|m end] End\n");
+ A.screen="module:m";A.render();
+ const cards=find(P.main(),hasClass("mode"));
+ chk("three rows",cards.length===3);
+ chk("every row has its number before its title, 1 2 3",cards.every((c,i)=>{const top=find(c,hasClass("top"))[0];return hasClass("cd-num")(top.children[0])&&texts(top.children[0])===String(i+1)&&hasClass("k")(top.children[1]);}));
+ chk("every row has one tile, and a tile never holds a number: the icon, the emoji, or nothing",cards.every(c=>find(c,hasClass("cd-tile")).length===1)&&cards.every(c=>!/^\d+$/.test(texts(find(c,hasClass("cd-tile"))[0])))&&texts(find(cards[1],hasClass("cd-tile"))[0])==="🌱"&&hasClass("cd-blank")(find(cards[2],hasClass("cd-tile"))[0]));
+ const byId=id=>find(P.main(),n=>n.attrs&&n.attrs.id===id)[0];
+ chk("a row's button is named by its title and described by its first line and status line",cards.every(c=>{const l=byId(c.attrs["aria-labelledby"]),d=(c.attrs["aria-describedby"]||"").split(" ").map(byId);
+   return l&&hasClass("k")(l)&&d.length===2&&hasClass("d")(d[0])&&hasClass("c")(d[1])&&find(l,n=>false).length===0;}),JSON.stringify(cards.map(c=>[c.attrs["aria-labelledby"],c.attrs["aria-describedby"]])));
+ chk("the ids are unique",new Set(cards.map(c=>c.attrs["aria-labelledby"])).size===3);
+ A.screen="@booklets";A.render();
+ {const ols=find(P.main(),n=>n.tagName==="ol"&&hasClass("modes")(n));chk("Your booklets has list semantics",ols.length===1&&ols.every(n=>n.attrs.role==="list"));}
+ A.screen="@home";A.render();
+ {const ols=find(P.main(),n=>n.tagName==="ol"&&hasClass("modes")(n));chk("a booklet's home list has list semantics",ols.length===1&&ols.every(n=>n.attrs.role==="list"));}}
 
 console.log(fails?"\n"+fails+" FAILURES":"\ncard parts checks passed");P.closePages();process.exit(fails?1:0);
 })();
