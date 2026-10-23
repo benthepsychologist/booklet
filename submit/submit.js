@@ -8,9 +8,11 @@
    - on the reader's press, a screen listing their answers as they gave them (each answered question's words and the
      answer's, by module, in the booklet's own words), the exact text that would be sent one tap away, and a Send button;
    - on the reader's press of Send, one request: a POST of that text, as JSON, to the declared address, with no cookies, no
-     referrer and no redirect. The body is {"recipe", "answers"} (recepture's payload contract): the recipe the host named
-     with BookletSubmit.recipe(), else the booklet's own id; the answers are every module's once-answered questions in one
-     map, keyed by question id exactly as the file writes it. Kept entries and drafts are not sent. Two modules that answer
+     referrer and no redirect. The body is {"recipe", "answers", "booklet", "seen"} (recepture's payload contract; it keeps
+     extra top-level keys): the recipe the host named with BookletSubmit.recipe(), else the booklet's own id; the answers are
+     every module's once-answered questions in one map, keyed by question id exactly as the file writes it; "booklet" is the
+     file's id, version and language; "seen" says, for each answered question, what the reader was shown (its words, the options
+     in the order shown, the words picked). Kept entries and drafts are not sent. Two modules that answer
      the same id stop the send rather than lose one of them;
    - after the address answers 201, nothing the reader wrote is removed: the booklet stays open, kept in this browser as it
      was before, and can be downloaded as any booklet. Submit then reads Sent and sends nothing more until an answer

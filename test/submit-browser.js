@@ -367,15 +367,21 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
    ok(rr&&rr.ok===true,'the seen fixture opens as a host booklet: '+JSON.stringify(rr));
    await pressSubmit(q);
    let body=null;try{body=JSON.parse(await text(q,'#submitBody'));}catch(e){}
-   ok(!!body&&sameJSON(body.answers,{note:'plain words',pick:2,several:[1,'my own'],mood:2,grid:[2,1],count:3}),'answers carry the stored shape unchanged: a position, positions with the reader\'s own words, an anchor number, a number per matrix item: '+JSON.stringify(body&&body.answers));
+   ok(!!body&&sameJSON(body.answers,{note:'plain words',pick:2,several:[1,'my own'],mood:2,grid:[2,1,null],count:3,far:9,spot:['item-a']}),'answers carry the stored shape unchanged: a position, positions with the reader\'s own words, an anchor number, a number per matrix item: '+JSON.stringify(body&&body.answers));
    ok(!!body&&sameJSON(body.booklet,{id:'test/submit-seen',version:'0.7',lang:'en'}),'booklet: id, version and language as the file says them: '+JSON.stringify(body&&body.booklet));
    const s=(body&&body.seen)||{};
    ok(sameJSON(s.note,{question:'A note in your words'}),'a text question: its words, with the Markdown taken out (the answer is already words): '+JSON.stringify(s.note));
    ok(sameJSON(s.pick,{question:'Pick one',options:['Alpha','Beta','Gamma'],picked:['Beta']}),'a choice: the options in the order shown, the words picked, the Markdown taken out: '+JSON.stringify(s.pick));
    ok(sameJSON(s.several,{question:'Pick any, or add your own',options:['One','Two','Three'],picked:['One','my own']}),'a multi: the options, and the picked words with the reader\'s own option as they wrote it: '+JSON.stringify(s.several));
    ok(sameJSON(s.mood,{question:'How was it?',anchors:[{n:0,text:'Poor'},{n:1,text:'Fine'},{n:2,text:'Great'}],picked:'Great'}),'a scale: its anchors with their numbers, and the anchor\'s words picked: '+JSON.stringify(s.mood));
-   ok(sameJSON(s.grid,{question:'Rate each',items:['Tea','Coffee'],anchors:[{n:1,text:'Dislike'},{n:2,text:'Like'}],picked:['Like','Dislike']}),'a matrix: its items, its anchors, and the words picked for each item: '+JSON.stringify(s.grid));
+   ok(sameJSON(s.grid,{question:'Rate each',items:['Tea','Coffee','Juice'],anchors:[{n:1,text:'Dislike'},{n:2,text:'Like'}],picked:['Like','Dislike',null]}),'a matrix: its items, its anchors, and the words picked for each item, null for an item left alone: '+JSON.stringify(s.grid));
    ok(sameJSON(s.count,{question:'How many?'}),'a number: its question only: '+JSON.stringify(s.count));
+   ok(sameJSON(s.far,{question:'Out of range',options:['Only option'],picked:['#9']}),'a position the list does not have reads #n, as the confirm screen does: '+JSON.stringify(s.far));
+   const rows=await listed(q);const spotRow=rows.flatMap(g=>g.rows).find(r=>r[0]==='Pick what fits');
+   ok(!!s.spot&&s.spot.question==='Pick what fits'&&typeof s.spot.picked==='string'&&s.spot.picked!==''&&!!spotRow&&s.spot.picked===spotRow[1],'a widget: its question and what its engine says was picked, the same words the confirm screen shows: '+JSON.stringify(s.spot)+' / '+JSON.stringify(spotRow));
+   const raw=await text(q,'#submitBody');
+   ok(!('logq' in s)&&!('logq' in body.answers)&&!/entry words kept|draft words typed/.test(raw),'a repeating activity\'s kept entries and draft are in neither answers nor seen');
+   ok(Object.keys(s).sort().join()===Object.keys(body.answers).sort().join(),'seen has an entry for exactly the questions answers has (every one of these is a question the booklet names)');
    ok(Buffer.byteLength(JSON.stringify(body))<20000,'the body stays small (the seen fixture: '+Buffer.byteLength(JSON.stringify(body))+' bytes)');
    ok(toApiOrigin().length===sent0,'nothing has been sent by showing it');
    await q.close();}
