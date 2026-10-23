@@ -1,5 +1,5 @@
 // Links between activities: the resolver that turns `[[#Heading]]` and
-// `[label](#slug)` into the activity (and page) holding that heading.
+// `[label](#slug)` into the activity (and its tab and page) holding that heading.
 // Run alone with `node test/links.test.js`; test/run.sh finds it by itself.
 require("./harness.js");
 const fs=require("fs");
@@ -14,13 +14,17 @@ const mods=[
      {id:"p1",blocks:[md("Intro.\n\n## First part\n\nText")]},
      {id:"p2",title:"Second page",blocks:[md("### 🗂️ Sort it **now**\n\n```\n## Not a heading\n```\n")]}]},
    {id:"log",kind:"entry",title:"Log a moment",pages:[{id:"p1",blocks:[
-     md("Words"),{id:"q1",type:"text",label:"What happened?",keys:["q1"]}]}]}]}];
+     md("Words"),{id:"q1",type:"text",label:"What happened?",keys:["q1"]}]}]},
+   {id:"budget",kind:"board",title:"Budget",tabs:[{id:"spending",title:"Spending"},{id:"plan",title:"What *to* change"}],pages:[
+     {id:"p1",blocks:[md("What this is for.")]},{id:"p2",tab:"spending",blocks:[md("Sums.")]},{id:"p3",tab:"plan",blocks:[md("Plans.")]}]}]}];
 const f=(t,s)=>A.findHeading(mods,t,s);
 chk("finds an activity by its title",f("Log a moment",false)&&f("Log a moment",false).act==="log");
 chk("case and spacing do not matter",f("  log   A MOMENT ",false)&&f("  log   A MOMENT ",false).act==="log");
-chk("finds a heading in the prose, on the page that holds it",JSON.stringify(f("First part",false))===JSON.stringify({act:"loop",page:"p1",heading:"First part"}),JSON.stringify(f("First part",false)));
+chk("finds a heading in the prose, on the page that holds it",JSON.stringify(f("First part",false))===JSON.stringify({act:"loop",page:"p1",heading:"First part",title:false,tab:false}),JSON.stringify(f("First part",false)));
 chk("picks the later page when the heading is there",f("🗂️ Sort it now",false)&&f("🗂️ Sort it now",false).page==="p2",JSON.stringify(f("🗂️ Sort it now",false)));
-chk("a page's own title counts",f("Second page",false)&&f("Second page",false).page==="p2");
+chk("a page has no name a link finds (a `title` on a page is not read)",f("Second page",false)===null,JSON.stringify(f("Second page",false)));
+chk("a tab's name counts, by its words and by its slug: the tab's first page, marked a tab",(h=>h&&h.act==="budget"&&h.page==="p3"&&h.tab&&!h.title)(f("What to change",false))&&(h=>h&&h.page==="p3"&&h.tab)(f("what-to-change",true)),JSON.stringify([f("What to change",false),f("what-to-change",true)]));
+chk("an activity's title is marked as its title",f("Budget",false)&&f("Budget",false).title===true&&f("Budget",false).tab===false);
 chk("a question's title counts",f("What happened?",false)&&f("What happened?",false).act==="log");
 chk("a title opens its activity on the first page",f("How the loop works",false).page==="p1");
 chk("finds by GitHub-style slug",f("log-a-moment",true)&&f("log-a-moment",true).act==="log");

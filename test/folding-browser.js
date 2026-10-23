@@ -1,9 +1,10 @@
-// Browser check for folding and reading aids (renderer 0.11.10, C2), in a real page at 1280 and 390 px: a page with questions and a
-// page with a data view fold into sections, the first section with an unanswered question opens and its status line follows the
-// answers; a repeating activity folds; short options are pills beside their question (under it on a phone); matrix answers are pills;
-// a hint or solution is a compact fold that gives nothing away; "One at a time" shows one question with Back, Next and dots, is kept
-// in booklet.ui.steps.* across a reload, and print shows every question; targets are 44 px; the focus ring shows on Night; reduced
-// motion stops the dots' fade. An axe pass runs on the ERP-style booklet when AXE (the path to axe.min.js) is given.
+// Browser check for folding and reading aids (renderer 0.11.10, C2; 0.15), in a real page at 1280 and 390 px: the renderer folds
+// nothing on its own, so a page of sections with questions, a repeating activity and a page with a data view are drawn open, their
+// headings as headings; short options are pills beside their question (under it on a phone); matrix answers are pills; a hint or
+// solution is a compact fold that gives nothing away; "One at a time" shows one question, with the foot's one Back and Next row and
+// dots, is kept in booklet.ui.steps.* across a reload, and print shows every question; targets are 44 px; the focus ring shows on
+// Night; reduced motion stops the dots' fade. An axe pass runs on the ERP-style booklet when AXE (the path to axe.min.js) is given.
+// The fold switch, tabs and the pager are test/tabs-browser.js.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/folding-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const {kept}=require('./kept.js');
@@ -31,21 +32,14 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     const openAct=async name=>{if(await p.locator('#main button.mode').count()) await p.locator('#main button.mode').filter({hasText:name}).first().click();await wait(500);};
     await p.goto('https://bookletmd.test/app/');await wait(500);
 
-    /* 1. a page of questions folds; the first section with a question to answer is open; the status line follows */
+    /* 1. a page of sections with questions is drawn open: its headings are headings, and only the hint and the solution fold */
     await load(qpage);
     await openAct('Questions');
-    const secs=()=>p.locator('#main details.rm-sec');
-    ok(await secs().count()===3,`${W}px: a page with questions folds into its three sections`);
-    const opened=await secs().evaluateAll(l=>l.map(d=>d.open));
-    ok(opened.join()==='true,false,false',`${W}px: the first section with an unanswered question is open on arrival (${opened})`);
-    const status=i=>secs().nth(i).locator(':scope > summary .c').innerText();
-    ok(await status(0)==='1 question'&&await status(1)==='2 questions',`${W}px: a section that holds questions says how many (${await status(0)} / ${await status(1)})`);
-    ok(await secs().nth(2).locator(':scope > summary .c').count()===1,`${W}px: the matrix section has a status line too`);
-    await secs().nth(0).locator('.pills .pill-btn').first().click();await wait(150);
-    ok(await status(0)==='Done',`${W}px: answering its only question makes the section say Done (${await status(0)})`);
-    await secs().nth(1).locator(':scope > summary').click();await wait(150);
-    await secs().nth(1).locator('.pills .pill-btn').first().click();await wait(150);
-    ok(await status(1)==='2 questions · 1 answered',`${W}px: one of two answered (${await status(1)})`);
+    const heads=await p.locator('#main .ap-body h3').evaluateAll(l=>l.map(h=>h.textContent.trim()).filter(t=>/part$/.test(t)));
+    ok(heads.join()==='First part,Second part,Third part',`${W}px: the three section headings are drawn as headings (${heads})`);
+    ok(await p.locator('#main details:not(.card-compact)').count()===0&&await p.locator('#main .fold-sw').count()===0,`${W}px: nothing is folded but the hint and the solution, and there is no fold switch`);
+    await p.locator('#main .pills').nth(0).locator('.pill-btn').first().click();await wait(150);
+    await p.locator('#main .pills').nth(1).locator('.pill-btn').first().click();await wait(150);
 
     /* 2. the compact hint and solution */
     const hint=p.locator('#main details.card-compact').first();
@@ -58,7 +52,6 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     ok((await hint.innerText()).includes('HINT-SECRET-WORDS'),`${W}px: opening a hint shows it`);
 
     /* 3. short options are pills beside the question wide, under it narrow; long ones are not inline */
-    await secs().nth(1).evaluate(d=>d.open=true);
     const g=await p.evaluate(()=>{const boxes=[...document.querySelectorAll('#main .q-inline')];
       return boxes.map(bx=>{const h=bx.querySelector('h3,label.lbl').getBoundingClientRect(),pl=bx.querySelector('.pills').getBoundingClientRect();
         return {hb:h.bottom,ht:h.top,hr:h.right,pt:pl.top,pl:pl.left,pb:pl.bottom};});});
@@ -71,7 +64,7 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
 
     /* 4. matrix answers are pills: in every row when each item's readable words and the anchors fit side by side, else under each item as
        its own single-choice question (the same list of answers either way) */
-    await secs().nth(2).evaluate(d=>d.open=true);await wait(250);   // a matrix measures its room once it is shown
+    await wait(250);   // a matrix measures its room once it is shown (nothing folds it: it is shown)
     const asRows=W>=1000;
     const sel=asRows?'#main .mxrow .mxopt span':'#main .mxq .pill-btn';
     const mx=await p.evaluate(s=>[...document.querySelectorAll(s)].map(s=>{const q=s.getBoundingClientRect(),c=getComputedStyle(s);return {h:Math.round(q.height),w:Math.round(q.width),r:c.borderTopLeftRadius};}),sel);
@@ -81,39 +74,37 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     await wait(100);
     ok(await p.evaluate(()=>JSON.stringify(STATE.answers.m.mx))==='[2,null]',`${W}px: a matrix pill answers its item, the same way in both drawings`);
 
-    /* 5. a repeating activity and a data-view page fold */
+    /* 5. a repeating activity and a data-view page are drawn open */
     await load(dpage);
     await openAct('Log');
-    ok(await secs().count()===2,`${W}px: an activity that repeats folds into its sections`);
+    ok(await p.locator('#main details').count()===0&&/A note section/.test(await p.locator('#main .ap-body').innerText()),`${W}px: an activity that repeats is drawn open`);
     await p.locator('.cd-back').first().click();await wait(300);await openAct('Look');
-    const pg=p.locator('.ap-item');if(await pg.count()) {}
-    ok(await secs().count()===2,`${W}px: a page with a data view folds into its sections`);
-    ok(await status(0)==='1 row',`${W}px: a section holding a data block says how many rows (${await status(0)})`);
+    ok(await p.locator('#main details').count()===0&&await p.locator('#main .dv-panel, #main table').count()>0,`${W}px: a page with a data view is drawn open, the view in place`);
 
     /* 6. one at a time */
     await load(six);
     await openAct('Steps');
-    ok(await p.locator('.oat-ctl').count()===1&&await secs().count()===0,`${W}px: the control is on a page of four questions`);
+    ok(await p.locator('.oat-ctl').count()===1,`${W}px: the control is on a page of four questions`);
     await p.getByRole('button',{name:'One at a time'}).click();await wait(300);
     const vis=()=>p.locator('#main .oat-unit').evaluateAll(l=>l.map(u=>u.offsetHeight>0));
     ok((await vis()).join()==='true,false,false,false'&&/Question 1 of 4/.test(await p.locator('.oat-prog').innerText()),`${W}px: one question shows, "Question 1 of 4"`);
     ok(await p.locator('.oat-dot').count()===4&&await p.locator('.oat-dots').getAttribute('aria-hidden')==='true',`${W}px: four dots, hidden from a screen reader (the progress line says it)`);
-    ok(await p.getByRole('button',{name:'Back',exact:true}).isDisabled(),`${W}px: Back is off on the first question`);
-    const btn=await p.evaluate(()=>[...document.querySelectorAll('.oat-nav button,.oat-ctl button')].map(x=>Math.round(x.getBoundingClientRect().height)));
+    ok(await p.getByRole('button',{name:'Back',exact:true}).count()===0&&await p.locator('#main .cd-foot').count()===1&&await p.locator('#main .cd-foot .cd-back').count()===1,`${W}px: on the first question the foot's one row has no step back, only the way back to the overview`);
+    const btn=await p.evaluate(()=>[...document.querySelectorAll('#main .cd-foot button,.oat-ctl button')].map(x=>Math.round(x.getBoundingClientRect().height)));
     ok(btn.every(h=>h>=44),`${W}px: the stepper's buttons are 44 px (${btn})`);
     await p.locator('#main .oat-unit').first().locator('.pill-btn').first().click();await wait(100);
     ok(await p.locator('.oat-dot.on').count()===1,`${W}px: answering fills the dot`);
     await p.getByRole('button',{name:'Next question'}).click();await wait(200);
     ok((await vis()).join()==='false,true,false,false'&&/Question 2 of 4/.test(await p.locator('.oat-prog').innerText()),`${W}px: Next shows the second`);
     await p.getByRole('button',{name:'Next question'}).click();await p.getByRole('button',{name:'Next question'}).click();await wait(200);
-    ok(await p.getByRole('button',{name:'Next question'}).isDisabled()&&/Closing words/.test(await p.locator('#main .oat-unit').nth(3).innerText()),`${W}px: Next is off on the last, which carries the closing words`);
+    ok(await p.getByRole('button',{name:'Next question'}).count()===0&&/Closing words/.test(await p.locator('#main .oat-unit').nth(3).innerText()),`${W}px: there is no Next question on the last, which carries the closing words`);
     await p.getByRole('button',{name:'Back',exact:true}).click();await p.getByRole('button',{name:'Back',exact:true}).click();await wait(100);
     ok(/Question 2 of 4/.test(await p.locator('.oat-prog').innerText())&&await p.locator('#main .oat-unit').first().locator('.pill-btn[aria-pressed="true"]').count()===1,`${W}px: Back returns, and the first answer is still there`);
     const K=await kept(p),key=Object.keys(K).filter(k=>/^booklet\.ui\.steps\./.test(k)).map(k=>k+'='+K[k]);
     ok(key.length===1&&/=one$/.test(key[0]),`${W}px: the choice is kept in booklet.ui.steps.* (${key})`);
     /* print shows every question */
     await p.emulateMedia({media:'print'});await wait(100);
-    ok((await vis()).every(Boolean)&&await p.locator('.oat-nav').isHidden()&&await p.locator('.oat-ctl').isHidden(),`${W}px: print shows every question and none of the controls`);
+    ok((await vis()).every(Boolean)&&await p.locator('#main .cd-foot').isHidden()&&await p.locator('.oat-ctl').isHidden(),`${W}px: print shows every question and none of the controls`);
     await p.emulateMedia({media:'screen'});
     /* reload keeps it */
     await p.reload();await wait(700);
@@ -143,19 +134,15 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     ok(await p.locator('.oat-dot').first().evaluate(d=>parseFloat(getComputedStyle(d).transitionDuration)===0),`${W}px: reduced motion stops the dots' fade`);
     await p.evaluate(()=>window.bookletTheme.set('paper'));
 
-    /* 6c. a section holding a line chart, closed on arrival, draws at its section's width once opened */
+    /* 6c. a page of sections holding a line chart: drawn open, the chart at the column's width */
     await load(chart);
     await openAct('Chart');
-    {const trend=secs().nth(1);
-     ok(await trend.evaluate(d=>!d.open),`${W}px: the chart's section is closed on arrival`);
-     await trend.locator(':scope > summary').click();await wait(500);
-     const w=await trend.evaluate(d=>{const h=d.querySelector('.ch-linechart .ch-svg'),body=d.querySelector('.cd-body'),cs=getComputedStyle(body),
-       inner=body.getBoundingClientRect().width-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),
-       pl=d.querySelector('.dv-panel'),pw=pl?pl.getBoundingClientRect().width:inner;
-       return {svg:Math.round(h.getBoundingClientRect().width),vb:Math.round(parseFloat(h.getAttribute('viewBox').split(' ')[2])),plot:Math.round(d.querySelector('.ch-plot').getBoundingClientRect().width),panel:Math.round(pw),inner:Math.round(inner)};});
-     ok(w.svg>0&&Math.abs(w.svg-w.plot)<=2&&(Math.abs(w.vb-w.svg)<=2||(w.vb===240&&w.svg<240))&&w.svg>=w.panel-48&&w.svg<=w.inner,`${W}px: the opened section's line chart is drawn at its section's width, not 0 or a stale 640 (${JSON.stringify(w)})`);
-     const full=await p.evaluate(()=>{const c=document.querySelector('#main .rm-sec').getBoundingClientRect(),m=document.querySelector('#main .ap-body,#main .col').getBoundingClientRect();return {card:Math.round(c.width),col:Math.round(m.width)};});
-     ok(Math.abs(full.card-full.col)<=2,`${W}px: a section card is as wide as the content column (${JSON.stringify(full)})`);}
+    {await wait(300);
+     const w=await p.evaluate(()=>{const h=document.querySelector('#main .ch-linechart .ch-svg'),body=document.querySelector('#main .ap-body'),
+       inner=body.getBoundingClientRect().width,pl=document.querySelector('#main .dv-panel'),pw=pl?pl.getBoundingClientRect().width:inner;
+       return {svg:Math.round(h.getBoundingClientRect().width),vb:Math.round(parseFloat(h.getAttribute('viewBox').split(' ')[2])),plot:Math.round(document.querySelector('#main .ch-plot').getBoundingClientRect().width),panel:Math.round(pw),inner:Math.round(inner)};});
+     ok(await p.locator('#main details:not(.ch-nums)').count()===0,`${W}px: the chart's page is drawn open (only the chart's own numbers fold)`);
+     ok(w.svg>0&&Math.abs(w.svg-w.plot)<=2&&(Math.abs(w.vb-w.svg)<=2||(w.vb===240&&w.svg<240))&&w.svg>=w.panel-48&&w.svg<=w.inner,`${W}px: the line chart is drawn at the column's width, not 0 or a stale 640 (${JSON.stringify(w)})`);}
 
     /* 8. axe, when a copy is given */
     if(process.env.AXE&&fs.existsSync(process.env.AXE)&&W===1280){
@@ -169,7 +156,7 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
       await q.addScriptTag({content:fs.readFileSync(process.env.AXE,'utf8')});
       const res=await q.evaluate(()=>axe.run(document.querySelector('#main'),{runOnly:['wcag2a','wcag2aa']}));
       const bad=res.violations.filter(v=>v.impact==='critical'||v.impact==='serious');
-      ok(bad.length===0,`axe ${res.testEngine.version} on the folded question page: ${bad.map(v=>v.id+' x'+v.nodes.length).join(', ')||'no serious or critical violation'}`);
+      ok(bad.length===0,`axe ${res.testEngine.version} on the question page: ${bad.map(v=>v.id+' x'+v.nodes.length).join(', ')||'no serious or critical violation'}`);
       await c2.close();}
     ok(errs.length===0,`${W}px: no page errors ${errs.join('|')}`);
     await ctx.close();}

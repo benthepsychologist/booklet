@@ -184,11 +184,11 @@ lang: en
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
     await p.locator('#fileIn').setInputFiles(fname||file);await p.waitForTimeout(500);
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
-    if(!(await p.locator('.ap-frame').count())){if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
+    if(!(await p.locator('#main .ap-body').count())){if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
       await p.locator('button.mode').first().click();await p.waitForTimeout(700);}
     return p;};
   const size=async(p,W)=>{await p.setViewportSize({width:W,height:900});await p.waitForTimeout(500);};
-  const page2=async p=>{await p.evaluate(()=>document.querySelectorAll('.ap-item')[1].click());await p.waitForTimeout(500);};
+  const page2=async p=>{await p.evaluate(()=>document.querySelector('#main .cd-foot .pg-next').click());await p.waitForTimeout(500);};
   const sideways=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   const box=(p,sel)=>p.evaluate(s=>{const e=document.querySelector(s);if(!e) return null;const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,b:r.bottom,r:r.right};},sel);
   const geo=(p,words)=>p.evaluate(w=>{const h=[...document.querySelectorAll('#main h3')].find(x=>x.textContent.includes(w));
@@ -212,9 +212,10 @@ lang: en
   await p.screenshot({path:path.join(OUT,'questions-1280.png'),fullPage:true});
 
   /* ---- a matrix answered in one drawing keeps its answers in the other, and back ---- */
-  await size(p,1000);
+  /* 860: no page menu beside the content any more (the pages are a pager under it), so the column is the window less its margins */
+  await size(p,860);
   n=await shape();
-  ok(n.rows===2&&n.qs===2,`1000: the matrix whose four anchors need more than the column is drawn as questions, the other as rows ${JSON.stringify(n)}`);
+  ok(n.rows===2&&n.qs===2,`860: the matrix whose four anchors need more than the column is drawn as questions, the other as rows ${JSON.stringify(n)}`);
   await size(p,1280);
   /* the narrow matrix is rows 2 and 3 at 1280. Answer item 1 High, item 2 Low through the radios. */
   await p.locator('#main .mxrow').nth(2).locator('.mxopt').nth(1).click();   // narrow matrix, item 1: High (2)

@@ -14,7 +14,7 @@ const acts=(R.template.modules[0]||{}).activities||[];
 chk("two activities: the reading and the check",acts.map(x=>x.id).join()==="tides/rd-tides,tides/rd-check",acts.map(x=>x.id).join());
 const rd=acts.find(x=>x.id==="tides/rd-tides"),chk_=acts.find(x=>x.id==="tides/rd-check");
 chk("the reading activity has two pages, split by the thematic break",rd.pages&&rd.pages.length===2,JSON.stringify(rd.pages&&rd.pages.map(p=>p.id)));
-chk("the second page's title comes from its own heading",rd.pages[1].title==="Spring and neap",rd.pages[1].title);
+chk("a page has no name (pages are pagination): the second page's heading is a heading in it",!("title" in rd.pages[1])&&/^## Spring and neap/.test(rd.pages[1].blocks[0].text),JSON.stringify(rd.pages[1]).slice(0,120));
 chk("the check activity is its own, single-page activity: one page",chk_.pages.length===1,JSON.stringify(chk_));
 const p1=rd.pages[0].blocks;
 chk("the reading paragraph carries the citation mark",/\[\^atlas-12\]/.test(p1[0].text));

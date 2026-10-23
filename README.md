@@ -115,9 +115,10 @@ A tool that writes booklets should ask the linter for the marker (`python3 lint-
 
 A plain Markdown file with booklet front matter (`booklet: "0.13"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
-status or a run's acceptance report, can be read in the renderer. A page with at least two sections opens **folded**: each section shows its heading and its first
-paragraph and opens on a click, with "Open everything" and "Fold everything" above them and a dot in the left
-menu for each section opened. Which pages fold is under "What the renderer draws that a file does not say", below. The choice is kept in the browser only. HTML comments (`<!-- … -->`) are not
+status or a run's acceptance report, can be read in the renderer. Its headings are drawn as headings, and **nothing is
+folded** that the file does not fold: a long report is split into pages with `***` (Back, "Page 2 of 3" and Next at the
+foot), or into tabs for parts that differ in kind, and a callout written folded (`> [!note]-`) stays folded, with one
+Open all switch on a screen that has any (see "What the renderer draws that a file does not say", below). HTML comments (`<!-- … -->`) are not
 drawn, and tables are styled.
 
 A file added from "Your booklets" is always a booklet of its own, in the list. The
@@ -205,9 +206,11 @@ own questions.
 - **A list of cards is a contents list**: the modules of a booklet, the activities of a module and the pages under a wiki page are one column, an ordered list with a row to each card, drawn as links (its number, a small picture if it has one, the title, a first line, a status line), never a grid of cards.
 - **An activity's row** shows the activity's first paragraph under its title, read as inline Markdown as a module's blurb is. An activity with no paragraph shows its title alone. Its status line counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started"). The author may write that line instead, on `>` lines directly under the activity line, or hide it with `status:off` on the line (`SPEC.md` section 3, "A card's parts").
 - **An unfolded `group`**, or a kind with no colour of its own, is drawn as a `note` is.
-- **A page's name** is drawn above the page only when the page has no heading of its own. A heading that follows a sentence is shown once, in place.
+- **Tabs** are a tab bar at the top of the activity's column, under its title and opening, drawn for two or more tabs; on a narrow screen it scrolls sideways inside itself. A module's tabs are a bar above its list of activities.
+- **Pages** are turned at the foot: Back, "Page N of M" and Next, in the one row that one at a time's Back and Next also use. That row and the tab bar start at the column's left edge and keep the prose's measure.
+- **The frame** (the prose before the first question) stays whole above the step when the questions are taken one at a time, whatever its length. When they are all shown, it is held under the top bar while they scroll if it fits whole in the pin's height (`--pin-h`: the lesser of 7.5em of its text and 22% of the window's height); taller, it is reading: it scrolls with its page, nothing cut. A box the keyboard moves to is scrolled clear of the bar and the frame.
 - **Fonts.** Headings are set in Lexend and body text in Atkinson Hyperlegible, unless the theme's `font` says otherwise.
-- **Reading mode** folds a page into sections when the page has two or more, page by page, whatever else the page holds: questions, data views, kept entries.
+- **Nothing is folded but what the author folded.** A screen holding callouts folded with `-` (other than a hint or a solution) has one switch, Open all, that opens or folds exactly those; the reader's choice is kept per booklet in the browser.
 
 ---
 

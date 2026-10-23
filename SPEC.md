@@ -89,7 +89,7 @@ license: CC-BY-4.0
 
 ## 3. Structure: activities and pages, with every heading left free
 
-**Headings never decide modules, activities, pages or answers.** Every heading level is free for prose. Structure comes from lines Booklet adds, never from heading depth. A reader does read a heading in three ways: it names a page, it starts a cell in a row, and a heading link can open it.
+**Headings never decide modules, activities, tabs, pages or answers.** Every heading level is free for prose. Structure comes from lines Booklet adds, never from heading depth. A reader does read a heading in two ways: it starts a cell in a row, and a heading link can open it.
 
 **A booklet is a collection of modules, and it is natively one file.** A module is the unit that travels whole, and the unit inside which activities may refer to each other: a weekly report that reads the week's entries, or a dashboard that draws itself, only works if the activities it reads are guaranteed to arrive together, and the module is that guarantee. A renderer handed a folder assembles one file from it (below).
 
@@ -109,7 +109,7 @@ license: CC-BY-4.0
 - Within a module, an activity may read another's answers and entries by id. Across modules it may not: the linter reports a reference that crosses a module boundary (a query's `from:`, a `menu:`, an embed) as an error, and a renderer draws nothing for it and lists it with the file's other problems. The file still opens.
 - **Bare activities and modules may share a file.** A bare activity sits outside any module fence, by convention before the first one. Bare activities together are one module with no name (section 4): they may read one another's answers and entries, `parent:` places them as it does inside a module, and their records sit under the plain `> [!records]` line. A bare activity may have the id of a module. A file with no module fence is bare activities only: a worksheet needs no more.
 - A module id is used once in a file, and stays unique across a person's collection; adding a module whose id is already present replaces it. Any other id a module uses is its own (section 4).
-- **A module's opening.** Prose inside a module's fence before its first activity, other than its notice, is the module's opening: a renderer shows it on the module's own screen, above the module's activities, and nowhere else. A module with none opens on its title and its activities.
+- **A module's opening.** Prose inside a module's fence before its first activity, other than its notice and its tab lines (below), is the module's opening: a renderer shows it on the module's own screen, above the module's activities, and nowhere else. A module with none opens on its title and its activities.
 - **The booklet's opening.** Prose, and reading callouts, before the file's first module or activity line are the booklet's opening: a renderer shows them on the booklet's own home screen, under its title, the way a module's opening is shown on the module's screen (the first paragraph larger, the rest under it), and nowhere else. A booklet with none opens on its title and its cards. A leading heading that repeats the title above it (a `# Title` line, compared by its words without their marks) is drawn once, as the title. A file with no module and no activity line is one activity, and its prose is that activity's, so it has no opening. The same holds for a module: its opening does not repeat the module's title. Notes for whoever edits the file go in an HTML comment (`<!-- … -->`), which is never drawn. A question line before the file's first module or activity line belongs to no activity: a renderer reports it and draws it nowhere, and the linter reports an error. **The reference renderer does not do this yet:** a footnote mark (`[^id]`) in the booklet's opening has no sources to number it, so it is left out.
 
 **Where data goes.** The blocks a module's activities refer to (widgets, figures, menus, image definitions, data blocks) sit in one of three places:
@@ -185,7 +185,7 @@ The words after the id are the activity's **settings**:
 
 It means what `parent` means on a list row (section 6): an activity whose parent is not in its module (or, for a bare activity, not among the bare activities) sits at the top, and the linter warns; one that is its own ancestor is drawn once, at the top; when two activities share an id, the first is used. Activities under the same parent keep the file's order, and moving on from an activity goes to its first child, then its next sibling, then back up: the order of a file written parent first. A module whose activities carry no `parent` is a flat list. `parent` places an activity; it does not let one read another's answers.
 
-**A card's parts.** A renderer that draws modules, activities and sections as cards gives each up to four parts: a title, a picture, a blurb and a status line. Each part comes from the file, and one the file leaves out gets a default, the same everywhere. A renderer lays a list of cards out as it likes (the reference renderer draws it as a contents list, one row to a card); the parts are the file's, the layout is its look.
+**A card's parts.** A renderer that draws modules, activities and folded callouts as cards gives each up to four parts: a title, a picture, a blurb and a status line. Each part comes from the file, and one the file leaves out gets a default, the same everywhere. A renderer lays a list of cards out as it likes (the reference renderer draws it as a contents list, one row to a card); the parts are the file's, the layout is its look.
 
 | part | where it comes from | default |
 | --- | --- | --- |
@@ -204,16 +204,61 @@ The sea rises and falls twice a day. This paragraph is the blurb.
 ```
 
 - **The blurb is always the first paragraph.** Lines directly under an activity line that start with `>` are not the blurb and not its prose: they are its status line, and are not drawn anywhere else. A paragraph after the line, with a blank line first, is the activity's own prose, and its first paragraph is the blurb. Leave that blank line: a line with no `>` straight under the `>` lines is, to Markdown and Obsidian, part of the callout (a lazy continuation, above), though a renderer takes it as the paragraph, so the linter warns. The status text is one line of inline Markdown: block syntax in it (a nested callout, a heading, a list item, a code fence) would show as written, and the linter warns. The reference renderer shows at most two lines of it.
-- **A module's card** takes its title, blurb and picture from the module's own line, in the same way. A module of one activity is drawn as one card: the module's title (a module line with no title takes the booklet's title, else its id), and the module's blurb and `icon:` first, else the activity's; its status line is the activity's, which `status:off` and the lines under the activity line set. A module of several activities has a status line of its own, which the file does not set: "Not started", or "N of M started" counting the activities that hold a question or keep entries (none when none does). Sections and callouts take no settings: a section's card takes its title, picture and first line from its heading and its first paragraph, and its status line is the renderer's.
-- **The picture.** The line's `icon:` if it has one. Otherwise an emoji at the start of the title, which is then not repeated in the title. Otherwise the card's number in its list. `icon:` takes a name from Booklet's icon set, the Lucide 1.48 icons listed in the booklet repository's `art/icons/` (lucide.dev): `icon:compass`, `icon:notebook-pen`. The set may grow in a later version. A name outside it is reported and ignored, like a mistyped setting. Sections and callouts take no settings, so a leading emoji is how they choose a picture. A renderer may draw the picture as that icon or as an illustration of the same name; that is its look, not the file's. (The reference renderer's contents list writes a row's number before its title in every row, and keeps the small picture for an icon or an emoji, empty when a row has neither, so that every title starts at one left edge.)
+- **A module's card** takes its title, blurb and picture from the module's own line, in the same way. A module of one activity is drawn as one card: the module's title (a module line with no title takes the booklet's title, else its id), and the module's blurb and `icon:` first, else the activity's; its status line is the activity's, which `status:off` and the lines under the activity line set. A module of several activities has a status line of its own, which the file does not set: "Not started", or "N of M started" counting the activities that hold a question or keep entries (none when none does). Callouts take no settings: a folded callout's card takes its title and picture from its title line.
+- **The picture.** The line's `icon:` if it has one. Otherwise an emoji at the start of the title, which is then not repeated in the title. Otherwise the card's number in its list. `icon:` takes a name from Booklet's icon set, the Lucide 1.48 icons listed in the booklet repository's `art/icons/` (lucide.dev): `icon:compass`, `icon:notebook-pen`. The set may grow in a later version. A name outside it is reported and ignored, like a mistyped setting. Callouts take no settings, so a leading emoji is how a callout chooses a picture. A renderer may draw the picture as that icon or as an illustration of the same name; that is its look, not the file's. (The reference renderer's contents list writes a row's number before its title in every row, and keeps the small picture for an icon or an emoji, empty when a row has neither, so that every title starts at one left edge.)
 - **`status:` takes one value, `off`.** Any other value is reported and ignored, as a number setting's wrong value is. `status:off` with status text under the line hides the status line, and the linter warns that the text is not drawn.
 - **A tool that writes a booklet back keeps both**, the `status:off` on the activity line and the `>` lines under it, exactly as written, like every other word of the line.
 
-**Pages are separated by a horizontal rule.** Any thematic break inside an activity (`---`, `***`, `___`) is a page break, the way Marp splits slides. A page's name in the left menu is its first heading, at whatever level; a page with no heading is "Page 2". An activity with no rule is one page.
+**Tabs: areas of an activity meant to be very different.** A tab line, `> [!tab] Name` or `> [!tab|id] Name`, inside an activity starts a tab that runs to the next tab line or to the end of the activity: a dashboard, a form and a reading can be three tabs of one activity. What comes before the first tab line is the activity's opening, which a renderer shows above the tabs, on every tab. An activity with no tab line has no tabs.
+
+````markdown
+> [!activity|budget] This month's budget
+
+What this is for, shown on every tab.
+
+> [!tab] Spending
+
+```booklet query
+from: spent
+```
+
+> [!tab|plan] What to change
+
+> [!text|change long] One thing to change next month
+````
+
+- **A tab's id** is the one written after the bar, else its name as an id: accents dropped, lowercase, each run of characters other than the letters a to z and the digits written as one dash, with no dash at either end, and at most 60 characters (`What to change` is `what-to-change`, `Écrire ça` is `ecrire-ca`). So a letter outside a to z that is not an accented one (Greek, Cyrillic, Chinese) goes as punctuation does: `Ωmega` is `mega`. A name that leaves nothing (`日本語`, an emoji) gives `tab-` and the tab's place among the activity's (or the module's) tabs: `tab-2` for the second. To keep such a name, write the id: `> [!tab|nihongo] 日本語`. Tab ids are unique among one activity's tabs. Two tabs with one id, written or made from their names, are an error in the linter; a renderer keeps both, gives the second a number (`plan-2`) and reports it. A tab's id is its own: it is not among the module's ids (section 4).
+- Lines under the tab line (`> ` lines, as under any booklet line) are the tab's first prose.
+- **A tab is presentation.** The activity keeps one id, one set of answers and one set of kept entries whichever tab a question is on, and which tab is showing is never stored. A renderer shows a tab bar for an activity of two or more tabs, opening on the first; one that has no tab bar shows the tabs one after another, each under its name.
+- A tab line outside every activity and every module's opening (before the file's first module or activity line, say) is not read: the linter reports an error, and a renderer ignores it and reports it. A tab line in a data section ("Where data goes", above) is not read either, and the linter warns. A file with no activity line is one activity, and its tab lines are that activity's.
+
+**A module's tabs.** Tab lines in a module's opening (inside its fence, before its first activity) declare the module's tabs, in order, and their ids follow the rule above. An activity joins one with `tab:<id>` on its line; an activity with no `tab:` is in the first tab. A `tab:` that names no tab of its module is an error in the linter, and a renderer puts the activity in the first tab and reports it. A renderer lists the module's activities tab by tab on the module's screen, with what follows a tab line in the opening (its prose and reading callouts, up to the next tab line) above that tab's activities; the module's opening is what comes before its first tab line. In a module whose activities sit under one another (`parent:`), a tab lists the activities at the top that are in it; the ones under them stay under them. A module of one activity has no screen of its own (its activity's screen is its screen), so tab lines in its opening have nothing to show on: a renderer draws neither them nor the prose after them, and the linter warns.
+
+```markdown
+> [!module|money] Money
+
+> [!tab] This month
+
+> [!tab|learn] Learn
+
+> [!activity|spending tab:this-month] Spending
+
+…
+
+> [!activity|why-budget tab:learn] Why a budget helps
+
+…
+
+> [!module|money end] End of Money
+```
+
+**Pages are pagination.** Any thematic break inside an activity or a tab (`---`, `***`, `___`) is a page break, for a long form or a long reading. A page has no name, no id and no menu: a renderer moves through the pages of an activity, or of a tab, with Back, "Page 2 of 3" and Next at the foot of the screen, and Next on the last page goes on to the next activity. An activity or a tab with no rule is one page. Like a tab, a page is presentation, and which page is showing is never stored.
 
 ⚠️ `---` needs a blank line above it, or Markdown turns the line before it into a heading and the page break vanishes. `***` has no such trap. Both are accepted.
 
-**Links between activities** are ordinary heading links, which Obsidian resolves natively: `[[#Check yourself]]` or `[Check yourself](#check-yourself)`. A link opens the first place in the link's own module whose heading or title reads those words: a heading, an activity's title, a page's name, a question's prompt or a callout's title. It is **looked for in the link's own module** (the bare activities together are one module), never in another module's fence; a link whose words only another module has is shown as plain text, like a link to words that are nowhere, and the linter warns. Reading another activity's *answers* is a module matter, above.
+**The frame stays in view.** Plain prose before an activity's first question (a tab's first question, when it has tabs), on the same page as that question, is the activity's frame: its instructions, what the questions are answered against. **Instructions are short**: a line of what to do, or a short key to a scale. Plain means paragraphs, lists and tables only; prose before the first question that holds a heading (a `#` line, or a line of `=` or `-` under a line of text), a callout, HTML or a code fence is reading, not a frame. A renderer keeps the frame in view while the questions are answered, on every page of the activity or the tab. When the questions are taken one at a time, it is drawn whole above the question on show, **whatever its length**: it is not held over anything, so nothing measures it, and what the questions are answered against (a problem statement, a reference table) is there at every step. When they are all shown, it is held at the top of the screen while they scroll, and **only when it fits whole in the height it is held in**, measured as drawn (the reference renderer's is the lesser of 7.5em of the frame's own text and 22% of the window's height). Prose taller than that is reading there: it scrolls with its page, on that page only, and nothing of it is cut, faded or folded. So, all shown, a long reading that ends in a question is reading, and so is the same prose on a screen too small to hold it. `pin:off` on the activity line lets its frame scroll away like any other prose; `off` is the setting's one value. Prose between two questions is not the frame: it goes with the question after it.
+
+**Links between activities** are ordinary heading links, which Obsidian resolves natively: `[[#Check yourself]]` or `[Check yourself](#check-yourself)`. A link opens the first place in the link's own module whose heading or title reads those words: a heading, an activity's title, a tab's name, a question's prompt or a callout's title. A link to a tab's name opens that tab, and one to a module's tab (section 3, a module's tabs) opens the module's screen on that tab; a link to a heading in the opening of an activity with tabs, which is drawn above every tab, leaves the tab on show as it is. It is **looked for in the link's own module** (the bare activities together are one module), never in another module's fence; a link whose words only another module has is shown as plain text, like a link to words that are nowhere, and the linter warns. Reading another activity's *answers* is a module matter, above.
 
 ### Rows: things side by side
 
@@ -241,7 +286,7 @@ from: due-soon
 - **Each heading at the shallowest level inside the row starts a cell.** Anything before the first heading is a cell of its own. With no headings at all, each block is a cell.
 - A renderer decides how many cells fit across, and puts them one under another, in file order, on a narrow screen. A file never states widths, columns or breakpoints.
 - Anything may go in a cell: prose, questions, widgets, queries, figures.
-- Rows do not nest, and a row does not cross a page break, an activity line or a module fence.
+- Rows do not nest, and a row does not cross a page break, a tab line, an activity line or a module fence.
 - In an editor, on GitHub and in Obsidian a row reads top to bottom, with its two marker lines showing as small callouts.
 
 ---
@@ -257,7 +302,7 @@ from: due-soon
 - **`id`** is required for anything that stores an answer or is referenced (activities, questions, widgets, menus). Letters, digits and dashes only, so every id is also valid wherever Obsidian wants one. Unique within its module (below). Reading callouts need none, and neither does a row (`> [!row]` … `> [!row|end]`, section 3), which is structure like a page break. An activity or module line with none is an error in the linter, and a renderer reports it and names the activity from its title (a module by its place in the file), which a later rename of the title would change.
 - **The first word after the bar is the id, for every kind that takes one, and every later word is a setting.** No id is reserved: an activity may be called `repeat`, `long`, `end` or `home`. **Kinds that take no id** are `row`, `notice`, `manifest`, `hint`, `solution` and Booklet's own reading kinds `group`, `diff`, `law` and `opinion`; all their words are settings, so `> [!row|end]` closes a row, and a word after the bar on a `hint` is a setting it does not take.
 - **Settings** follow the id, separated by spaces: `menu:places`, `min:0`, `open`, `repeat`. A setting written before the id is read as the id, and the id after it is reported as a setting the kind does not take.
-- **The title** is the words a reader sees: the question, the activity name, the caption. **Every word on or under a booklet line that a reader sees is inline Markdown**, as the prose around it is: a title, a question's help text, an option, an option's reply, a scale's anchor, a matrix's item, a menu's entry. Emphasis, code, links and `$math$` are drawn wherever those words appear (the question, a card, a breadcrumb, a page's head, a menu, the stepper, a kept entry), so `> [!choice|bigger] Which is bigger, $\frac{2}{3}$ or $\frac{3}{5}$?` draws its formulas. A button, or a card that opens something, holds no link: there a link is drawn as its words. Elsewhere a heading link (`[[#Heading]]`, `[t](#heading)`) works as it does in prose, and is never drawn with its `#`. A display formula (`$$…$$`) in a title is drawn inline, and a footnote mark in one is left out. Where bare words are needed, the words are used without their marks: a page menu's text, a label a screen reader speaks, the document's title, and the check that a reader's own option equals a listed one (section 5). Data values (section 7) are plain text, never read this way. A dollar sign written for a price is written `\$5` (section 10), in a title as in prose.
+- **The title** is the words a reader sees: the question, the activity name, the caption. **Every word on or under a booklet line that a reader sees is inline Markdown**, as the prose around it is: a title, a question's help text, an option, an option's reply, a scale's anchor, a matrix's item, a menu's entry. Emphasis, code, links and `$math$` are drawn wherever those words appear (the question, a card, a breadcrumb, a page's head, a tab, a menu, the stepper, a kept entry), so `> [!choice|bigger] Which is bigger, $\frac{2}{3}$ or $\frac{3}{5}$?` draws its formulas. A button, or a card that opens something, holds no link: there a link is drawn as its words. Elsewhere a heading link (`[[#Heading]]`, `[t](#heading)`) works as it does in prose, and is never drawn with its `#`. A display formula (`$$…$$`) in a title is drawn inline, and a footnote mark in one is left out. Where bare words are needed, the words are used without their marks: a label a screen reader speaks, the document's title, and the check that a reader's own option equals a listed one (section 5). Data values (section 7) are plain text, never read this way. A dollar sign written for a price is written `\$5` (section 10), in a title as in prose.
 - **A fold marker** may follow the bracket, as in Obsidian: `> [!hint]- Hint` starts folded.
 
 **An id belongs to its module.**
@@ -279,15 +324,15 @@ from: due-soon
 | kind | settings it takes |
 | --- | --- |
 | `module` | `end`, `icon:` |
-| `activity` | `repeat`, `repeat daily`, `hidden`, `icon:`, `parent:`, `status:` (only `status:off`) |
+| `activity` | `repeat`, `repeat daily`, `hidden`, `icon:`, `parent:`, `status:` (only `status:off`), `tab:<id>`, `pin:` (as `pin:off`) |
 | `row` | `end` |
 | `text` | `long` |
-| `lines`, `scale`, `matrix`, `date`, `menu`, `hint`, `solution`, `data`, `records`, `manifest`, `notice`, `group`, `diff`, `law`, `opinion` | none |
+| `lines`, `scale`, `matrix`, `date`, `menu`, `hint`, `solution`, `data`, `records`, `manifest`, `notice`, `group`, `diff`, `law`, `opinion`, `tab` | none |
 | `choice`, `multi` | `open`, `menu:<id>` |
 | `number` | `min:`, `max:`, `step:` (numbers) |
 | `widget` | `readonly`, `describe` |
 
-`icon:` takes an icon name, `parent:` an activity id and `status:` the one value `off` (section 3). None is written on a module's end line.
+`icon:` takes an icon name, `parent:` an activity id, `status:` the one value `off`, `tab:` the id of one of its module's tabs, and `pin:` the one value `off` (section 3). None is written on a module's end line.
 
 **Unknown kinds.** A line with an id or settings whose kind is not in this table is an **unknown kind**. A renderer draws it as a callout, with a quiet line under its title saying that it does not know the kind, and reports it; the linter warns. A line with no id and no settings is a reading callout of whatever kind its author chose (`note`, `tip`, Booklet's `diff`, and so on, section 6), drawn with no notice. `group`, `diff`, `law` and `opinion`, Booklet's own reading kinds (section 6), are in the table above and take no settings. A line that starts `> [!` but cannot be read as a Booklet line is reported, and is read as text.
 
@@ -870,10 +915,10 @@ A reader may also offer conveniences that this document does not define and that
 
 - a library of the reader's booklets, with rename, remove, and a request that the browser keep its storage;
 - a host hook, `window.Booklet`, through which a page that serves the reader supplies a store, a line and offers, and opens a booklet by link (`#/open/<name>`) from a store that the host's copy names in a `booklet-store` meta tag;
-- one at a time, which takes a page of three or more questions one by one;
-- reading mode, which folds a page into sections at its shallowest heading level;
+- one at a time, which takes a page of three or more questions one by one, with the pager's own Back and Next;
+- the fold switch, Open all, shown only on a screen with callouts the author folded with `-`, which opens or folds exactly those and never a question's hint or solution (the renderer folds nothing the author did not);
 - a theme menu with Auto, which follows the booklet's own look if it asks for one and the device otherwise;
-- "draw the title once", which leaves out the first heading of an activity's page when that heading repeats the name the page is shown under.
+- "draw the title once", which leaves out an activity's first heading when it repeats the activity's title above it.
 
 A conforming writer must: emit front matter with the current marker, `booklet: "0.13"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read, unchanged (in value, not in spacing), unless the reader changed it (section 8); write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 

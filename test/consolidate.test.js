@@ -7,7 +7,8 @@
 //   R6. Citations are numbered once per booklet, a pure function of the design (citeScope, one per screen); a draw only reads
 //       the numbers, keeping its own marks.
 //   R9. One copy of each small job. Two copies had drifted: Remove and Update a module now find a module's fence as Add does,
-//       outside code fences; and a page is named by its first heading outside code fences, as its links find it.
+//       outside code fences; and an activity's headings are read outside code fences, as its links find them (a page has
+//       no name since 0.15: pages are pagination).
 //       One rule (hostCovers) with three answers, saved, saving and unsaved: leaving the page warns unless saved, and the
 //       bar's save status reads it (since v0.13 item 13, in place of the Download button's mark and the note).
 //   R14. The parser dispatches on two tables (fence kinds, line kinds); the view pipeline calls VIEW_FNS[as] and nothing else,
@@ -28,7 +29,7 @@ const LS=global.__ls;
  chk("every module holds `activities`, one or several, and none holds `mode`",mods.length===3&&mods.every(m=>Array.isArray(m.activities)&&m.activities.length>0&&!("mode" in m))&&mods.map(m=>m.activities.length).join()==="1,2,1",json(mods.map(m=>Object.keys(m))));
  const acts=mods.flatMap(m=>m.activities);
  chk("every activity holds `pages`, and none holds `blocks`",acts.every(a=>Array.isArray(a.pages)&&a.pages.length>0&&!("blocks" in a)),json(acts.map(a=>Object.keys(a))));
- chk("a page of several is named by its first heading; a page of one has no name",acts.find(a=>a.id==="two/b").pages.map(p=>p.title).join("|")==="|Second"&&!("title" in acts.find(a=>a.id==="one/a").pages[0]),json(acts.find(a=>a.id==="two/b").pages));
+ chk("a page has no name, of one page or of several (pages are pagination)",acts.find(a=>a.id==="two/b").pages.length===2&&acts.every(a=>a.pages.every(p=>!("title" in p))),json(acts.find(a=>a.id==="two/b").pages));
  chk("the booklet's name is `title`, and there is no `head`",T.title==="Shapes"&&!("head" in T),json(Object.keys(T)));}
 
 /* ---- R7: a design an older release kept, read into the one shape ---- */
@@ -135,11 +136,12 @@ const LS=global.__ls;
  const upd=A.addModuleText(tides.replace("Words.","New words."));
  chk("an Update replaces the module where it sits, and leaves the code block as it was",upd.ok&&A.BOOK.raw.source.includes(example)&&/New words\./.test(A.BOOK.raw.source)&&!/\nWords\./.test(A.BOOK.raw.source),json(upd));}
 
-/* ---- R9: a page's name is its first heading outside code fences ---- */
+/* ---- R9: an activity's headings are read outside code fences ---- */
 {P.wipe();const A=P.boot();const FENCE="```";
  const R=A.parseFile(FM("Pages")+"> [!activity|a] A\n\n"+FENCE+"sh\n# a comment in a script\n"+FENCE+"\n\n## The first page\n\nWords.\n\n---\n\n## The second page\n\nMore.\n");
  const ps=R.template.modules[0].activities[0].pages;
- chk("a heading-like line in a code block does not name the page; its first heading does, as its links find it",ps.map(p=>p.title).join("|")==="The first page|The second page",ps.map(p=>p.title).join("|"));}
+ const hs=A.activityHeadings(R.template.modules[0].activities[0]).map(h=>h.text+"@"+h.page).join("|");
+ chk("a heading-like line in a code block is no heading; the headings of each page are, on their pages, as its links find them",ps.length===2&&hs==="A@p1|The first page@p1|The second page@p2",hs);}
 
 /* ---- R9: hostCovers is saved, saving or unsaved; leaving warns unless saved, and the bar's save status says the same ----
    (item 13: the status replaced the Download button's mark and the "not yet downloaded" note; test/autosave.test.js has

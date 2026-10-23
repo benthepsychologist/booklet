@@ -16,7 +16,9 @@
 //   - an image that passes the byte check but cannot be drawn (an SVG with no xmlns, a truncated PNG) is the box with a reason, not a
 //     broken icon; an SVG with a DOCTYPE is drawn; an image redirect is refused; a path over 200 characters is refused;
 //   - "Read the newer file" reads images again (a changed one, and one that was missing before), and a module the newer file adds is the store's;
-//   - Booklet.open with a name on a page with no store asks for nothing.
+//   - Booklet.open with a name on a page with no store asks for nothing;
+//   - tabs and pages (0.15) are presentation: a module tab's prose, an activity's opening (drawn on every tab), a tab's own prose
+//     and a later page draw the store's images by the same rule.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/storeimages-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path'),zlib=require('zlib');
@@ -86,7 +88,11 @@ const dyn=u=>{
   if(u==='/pub/images/late.png')return VERSION<3?null:{type:'image/png',body:png(20,20)};
   if(u==='/pub/images/extra.svg')return {type:'image/svg+xml',body:SVG_NESTED};
   return undefined;};
-const BOOKS={'/pub/shared.booklet.md':SHARED,'/pub/data.booklet.md':DHEAD+DMOD(1),'/pub/mix.booklet.md':MIX,'/pub/pics.booklet.md':PICS,'/pub/sub/nested.booklet.md':NESTED,'/pub/other.md':OTHER};
+/* a module with tabs, an activity with an opening and two tabs, and one of two pages (0.15) */
+const TABPICS=bk('tp','Tabbed pictures',['> [!tab] Look','','![Module tab pic](images/a.svg)','','> [!tab|more] More','',
+  '> [!activity|tt] Tabbed','','![Opening pic](images/deco.png)','','> [!tab] First','','![First tab pic](images/b.png)','','> [!tab] Second','','Words only.','',
+  '> [!activity|pg tab:more] Paged','','Page one words.','','***','','![Page two pic](images/doctype.svg)',''].join('\n'));
+const BOOKS={'/pub/tabbed.booklet.md':TABPICS,'/pub/shared.booklet.md':SHARED,'/pub/data.booklet.md':DHEAD+DMOD(1),'/pub/mix.booklet.md':MIX,'/pub/pics.booklet.md':PICS,'/pub/sub/nested.booklet.md':NESTED,'/pub/other.md':OTHER};
 const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub/images/missing.png','/pub/images/fake.svg','/pub/images/big.png'];
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -409,6 +415,24 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   await p.evaluate(t=>window.Booklet.open(t,{name:'pics.booklet.md'}),PICS);await wait(p,1500);
   s=await state(p);
   ok(s.imgs.length===0&&since(n0).length===0,'Booklet.open(text, { name }) on a page that declares no store draws boxes and asks for nothing ('+s.imgs.length+' img, '+since(n0).length+' requests)');
+  await p.close();
+
+  // 12 tabs and pages are presentation: a module tab's prose, an activity's opening on each of its tabs, a tab's own prose and a
+  //    later page draw the store's images, by the same rule
+  p=await open();await p.goto(PAGE+'/app/#/open/tabbed.booklet.md');await wait(p,2500);
+  if(!(await p.locator('#main [role=tab]').count())) await goMod(p,/Tabbed pictures/);
+  const drawn=async()=>(await state(p)).imgs.filter(i=>i.ok&&/^blob:/.test(i.src||'')).map(i=>i.alt).sort().join('|');
+  const tabTo=async t=>{await p.locator('#main [role=tab]').filter({hasText:t}).first().click();await wait(p,900);};
+  ok(await drawn()==='Module tab pic','a module tab\'s prose draws its store image: '+await drawn());
+  await p.locator('#main button.card').filter({hasText:'Tabbed'}).first().click();await wait(p,1500);
+  ok(await drawn()==='First tab pic|Opening pic','an activity\'s opening and its first tab\'s prose draw their store images: '+await drawn());
+  await tabTo('Second');
+  ok(await drawn()==='Opening pic','on its second tab the opening still draws its image, and that tab has none of its own: '+await drawn());
+  await p.locator('#main .cd-foot .cd-back').first().click();await wait(p,900);
+  await tabTo('More');
+  await p.locator('#main button.card').filter({hasText:'Paged'}).first().click();await wait(p,1200);
+  await p.locator('#main .cd-foot .pg-next').click();await wait(p,1500);
+  ok(await drawn()==='Page two pic','a later page draws its store image: '+await drawn());
   await p.close();
 
   ok(net().every(r=>r.method==='GET'&&r.body===''&&!new URL(r.url).search),'over the whole run every request was a GET with no body and no query string');

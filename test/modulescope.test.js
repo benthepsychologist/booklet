@@ -158,8 +158,7 @@ const rich=(id,t)=>`> [!module|${id}] Module ${t}\n\n> [!menu|opts]\n- ${t}-one\
  chk("the page shown is kept per module: A is on its second page",/Two A/.test(shown())&&!/One A/.test(shown()));
  A.screen="mb/act";A.render();
  chk("and B, with the same activity id, is still on its first",/One B/.test(shown())&&!/Two B/.test(shown()),shown().slice(0,200));
- const keys=[...A.VIEW.at.entries()].filter(([,v])=>Object.keys(v.folds).length).map(([a])=>a);
- chk("reading mode keeps its folds per module: in the view of each activity address",keys.includes("ma/act")&&keys.includes("mb/act"),keys.join("|"));
+ chk("the page on show is kept in the view of each activity address",A.VIEW.at.get("ma/act").page==="p2"&&A.VIEW.at.get("mb/act").page!=="p2",String(A.VIEW.at.get("mb/act").page));
  A.keptFor("ma/log").push({ts:"2026-10-01T09:00:00Z",pick:["Own words A"]});A.keptFor("mb/log").push({ts:"2026-10-01T09:00:00Z",pick:["Own words B"]});
  chk("a reader's own options are offered again from the module's own kept entries",A.ownEarlier("ma/log","pick",["Red","Blue"],[]).join()==="Own words A"&&A.ownEarlier("mb/log","pick",["Red","Blue"],[]).join()==="Own words B");
  A.screen="ma/look";A.render();const a=shown();A.screen="mb/look";A.render();const b=shown();

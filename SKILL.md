@@ -31,8 +31,10 @@ misbehaves:
 3. A module is fenced (`> [!module|id] Title` … `> [!module|id end]`),
    and holds **one activity, or several**, each opened by its own
    `> [!activity|id …] Title` line. Every activity is written the same way.
-4. **Pages are a horizontal rule** (`***`), never a separate key. A short
-   activity needs no rule at all.
+4. **Tabs are a tab line, pages a horizontal rule** (`***`). A tab
+   (`> [!tab] Name`) is an area of an activity or a module meant to be very
+   different from the rest; a page is only pagination, for a long form or a
+   long reading. A short activity needs neither.
 5. **One language per file.** Nothing here is written per-language; a
    translation, if one is wanted, is a sibling file (section 9).
 6. You write the design only. **Never write answers, kept entries, names or
@@ -44,7 +46,7 @@ misbehaves:
 
 ## 1. What is in the file
 
-Booklet > modules > activities > (pages, by a rule) > booklet lines and prose.
+Booklet > modules > activities > (tabs, by a tab line) > (pages, by a rule) > booklet lines and prose.
 
 - A **module** is what a person adds or removes as a unit — the whole fence,
   `> [!module|id] Title` to `> [!module|id end]`.
@@ -52,10 +54,16 @@ Booklet > modules > activities > (pages, by a rule) > booklet lines and prose.
   keeps each completion as a dated entry; `repeat daily` keeps one entry per
   day, replacing today's on a second finalize; with neither, the activity is
   answered once and edited in place, with one current answer and no history.
-- **Pages** split one long activity into steps. Any thematic break inside an
-  activity is a page break; an activity with no break is one page. ⚠️ Write `***` on
-  its own line, not `---`: a bare `---` right under a line of text is read by
-  Markdown as that line's heading instead.
+- **Tabs** split an activity into areas meant to be very different: a
+  dashboard, a form, a reading. `> [!tab] Name` starts a tab that runs to the next
+  tab line or the end of the activity; what comes before the first tab line is the
+  activity's opening, shown above the tabs. A module's opening can declare tabs
+  too, and its activities join them with `tab:` (section 5).
+- **Pages** paginate a long form or a long reading. Any thematic break inside an
+  activity or a tab is a page break; an activity with no break is one page. A page
+  has no name and no menu: the reader moves through pages with Back and Next.
+  ⚠️ Write `***` on its own line, not `---`: a bare `---` right under a line of
+  text is read by Markdown as that line's heading instead.
 - **Booklet lines** (`> [!kind|id …] Title`) are everything Booklet needs to
   know about: an activity, a question, a widget. Everything else — headings,
   paragraphs, lists, a citation mark — is ordinary Markdown, read as prose.
@@ -130,7 +138,7 @@ pages, then booklet lines.**
 | How many **modules**? | One, unless the parts are independent and a person might want one without the other (a journal and a separate tracker). |
 | How many **activities**? | One per thing done in one sitting and kept as one entry. Parts done at different times (a daily log and a weekly review) are separate activities. |
 | Which **flag**? | `repeat` for anything with a dated history. `repeat daily` for once a day, replacing today's entry on a second finalize. No flag for reading, or for a question with one current answer and no history. |
-| One page or several? | No break: one scrolling page, enough for up to about seven lines. A break (`***`): one sitting with distinct steps (read, then answer, then review), 2 to 4 pages. |
+| Tabs, pages, or neither? | Neither, for most: one scrolling page, enough for up to about seven lines. Tabs only for areas meant to be very different (a dashboard, a form, a reading). A break (`***`) only to paginate a long form or a long reading, 2 to 4 pages. |
 | Which **lines**? | Open with a line or two of plain prose: what to do, roughly how long, and that anything can be skipped. On a page that asks questions, 3 to 6 of them, mostly `text` (section 6). |
 
 A **quiz** has no scoring, but a `choice` or `multi` may mark its correct
@@ -248,9 +256,9 @@ for a reader who has not opened the module yet.
 
 **Headings.** Headings never decide modules, activities, pages or answers. A
 heading is ordinary reading, and a `##` there does not turn the text into a
-module. The renderer reads a heading in four ways: it names a page, it folds a
-page into sections at the shallowest heading level the page uses (when the page
-has two or more), it starts a cell in a row, and a heading link can open it.
+module. A heading is drawn as a heading, and the renderer reads it in two more
+ways: it starts a cell in a row, and a heading link can open it. Nothing is folded
+by a heading: only a callout the author folds with `-` is folded.
 
 ---
 
@@ -378,7 +386,7 @@ The narrowest range. Compare [[#Spring tides]].
 > [!module|harbour end]
 ```
 
-An activity with pages (a page is a step; the answers of all its pages are
+An activity with pages (pages paginate; the answers of all its pages are
 kept together as one entry):
 
 ```markdown
@@ -393,11 +401,70 @@ kept together as one entry):
 - [ ] Near the new and the full moon
 ```
 
-Everything from the activity line up to the next `***`, activity line, or
-module-close line is page one; everything after the `***` is page two, and so
-on. A page's own name in the reader's page menu is its first heading, if it
-has one — write one (`## Check yourself`) if you want the page named;
-otherwise it is just "Page 2".
+Everything from the activity line up to the next `***`, tab line, activity line
+or module-close line is page one; everything after the `***` is page two, and so
+on. A page has no name, no id and no menu: the reader moves through the pages
+with Back, "Page 2 of 3" and Next at the foot, and Next on the last page goes on
+to the next activity. A heading on a page is just a heading.
+
+An activity with tabs, for areas meant to be very different (a tab is
+presentation too: the answers of every tab are kept together as one entry):
+
+```markdown
+> [!activity|budget] My budget
+
+Everything here stays on this device.
+
+> [!tab] This month
+
+> [!number|spent] Spent so far
+
+> [!tab|learn] Why a budget helps
+
+A budget is a plan, not a judgement.
+```
+
+- **A tab's id** is the one after the bar, else its name as an id (`This month`
+  is `this-month`; accents go, and letters outside a to z go as punctuation does,
+  so for a name in Greek or Chinese write the id: `> [!tab|nihongo] 日本語`). Two
+  tabs of one activity with one id are an error in the linter; give each its own
+  name, or an id.
+- **What comes before the first tab line** (here, "Everything here stays…") is the
+  activity's opening, shown above the tab bar on every tab.
+- **Use tabs only for areas that differ in kind.** Steps of one task are not
+  tabs; a long form is pages, a short one neither.
+- **A module's tabs**: tab lines in the module's opening (before its first
+  activity) declare them, and an activity joins one with `tab:<id>` on its line;
+  with no `tab:` it is in the first. Prose after a tab line in the opening is
+  shown above that tab's activities. A `tab:` naming no tab of its module is an
+  error in the linter. A module of one activity has no screen of its own, so it
+  has no tabs to show: put tabs inside the activity instead (the linter warns).
+
+```markdown
+> [!module|money] Money
+
+> [!tab] This month
+
+> [!tab|learn] Learn
+
+> [!activity|spending tab:this-month] Spending
+
+> [!activity|why-budget tab:learn] Why a budget helps
+```
+
+**The frame.** Plain prose before an activity's first question (a tab's, when it
+has tabs: paragraphs, lists and tables, with no heading, callout, HTML or code
+fence) is its frame: the renderer keeps it in view while the questions are
+answered. One at a time, it is drawn whole above the question on show, however
+long. All at once, it is held at the top while they scroll, but only when it
+fits whole in that space: four lines of text at the renderer's usual size
+(fewer on a window under about 580 pixels high), or a key of a header row and
+two rows to a scale; a third row is too tall. **Instructions are short**: a
+sentence or two of what to do, or that two-row key. Longer prose is reading when
+the questions are all shown, and scrolls with its page whole, nothing cut. So is
+prose between two questions (it goes with the question after it), and reading
+with a heading or a callout before the first question. `pin:off` on the activity
+line lets the frame scroll away like any prose: `> [!activity|walk pin:off] Walk notes`.
 
 ---
 
@@ -530,14 +597,13 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **A question is never hidden by a file, but a page's sections fold.** There
-  is no way to write "optional questions, folded shut until opened" as a
-  question's own setting. If a request calls for that ("a couple more if you
-  want them"), put the extra questions under their own heading: on any page with
-  two or more sections the renderer folds each section to a card that shows its
-  heading, first line and how many questions are answered, and opens the first
-  section with an unanswered question. Or put the extra material as ordinary
-  prose right after the question it answers, or on its own page after a `***`.
+- **A question is never hidden by a file, and the renderer folds nothing on
+  its own.** There is no way to write "optional questions, folded shut until
+  opened". If a request calls for that ("a couple more if you want them"), put
+  the extra questions after the ones that matter, under their own heading, or on
+  their own page after a `***`. Extra reading can be folded by the author: a
+  `> [!group]- More on this` callout. A reader who would rather not click has
+  one switch that opens every such fold on the page.
 - **No question takes its options from another activity's answers.** There is
   no kind that draws a list of options pulled live from a different activity's
   answers, or a tick-list of what was done. (A `booklet query` can show another
@@ -584,7 +650,7 @@ between paragraphs for a new one. Section 4 says what a heading does.
   If they gave a reference and no quote, write the note as that reference, as
   given, with no quote and no `Verified`, and never make a quote up: the
   panel shows it as a plain reference, its words as written, with no check. Put nothing else in a note (`*` stays as typed).
-- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a page's name, a question's prompt or a callout's title), on the right page; the linter warns when nothing in the link's own module reads those words.
+- **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a tab's name, a question's prompt or a callout's title), on the right tab and page (a module's tab name opens the module's screen on that tab); the linter warns when nothing in the link's own module reads those words.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
   module**. It is read-only and takes no answer. The kind goes on the fence
@@ -664,8 +730,7 @@ between paragraphs for a new one. Section 4 says what a heading does.
   fields, the value at the right, the note beneath. `group:` gathers rows under
   a field's value, in the order they first appear. `parent:` names the field
   holding the `id` of the row this one sits under. All text is plain: no
-  Markdown or HTML in a value. A page that draws data folds into sections like any
-  other page with two or more sections.
+  Markdown or HTML in a value.
 - **A chart from data** — the same data block can be drawn as a chart. `as: bars`
   draws one bar per row (`label:` names the field that names the bar, `value:`
   the field that gives its length, optional `tone`); `as: line` draws the rows,
@@ -716,24 +781,19 @@ needs only front matter and Markdown: with no activity line, the whole file is
 one activity named by its title. Notes to yourself go in `<!-- … -->`; they are
 not drawn. Section 12 ends with a whole report.
 
-**Choose the shape.** A reading page *folds*: each section (at the page's
-shallowest heading level) shows its heading and first paragraph and opens on a
-click. Each page decides for itself.
-A page folds when it has two or more sections, whatever else it holds:
-questions, data views (`booklet query`) and an activity that repeats (`repeat`)
-fold the same way. The first section with a question still to answer is open on
-arrival; a reader may open or fold the rest, and may take a page of three or
-more questions one at a time.
+**Choose the shape.** A report reads top to bottom, open: the renderer folds
+nothing on its own, and its headings are drawn as headings. Fold only what a
+reader may skip, with a `-` callout (`> [!group]- The detail`); a reader who
+would rather not click has one switch that opens every such fold on the page. A
+reader may take a page of three or more questions one at a time.
 
-- **One activity, pages, the questions on the last page.** The answer for every
-  report. The booklet opens straight into it, nothing is blank, its prose pages
-  fold, and so does the page with the questions or the data views, when it has
-  sections. Put the questions and the data views together on the last page (or
-  the pages that need them); a page with fewer than two sections is drawn open as it
-  stands.
+- **One activity, the questions last.** The answer for every report. The
+  booklet opens straight into it and nothing is blank. Split a long one into
+  pages (`***`), which the reader turns with Back and Next; put the questions and
+  the data views together at the end (or on the pages that need them).
 - **Two activities** only when the reader really needs two separate things (a
-  report to read and a log to keep with `repeat`, say), never just to get
-  folding. The booklet then opens on the module's screen with a card for each
+  report to read and a log to keep with `repeat`, say), never just to split the
+  reading. The booklet then opens on the module's screen with a card for each
   activity. A card shows its activity's title and, under it, the activity's
   first paragraph (the line right under its title, read as inline Markdown), so
   open each activity with one sentence that says what it is for, and title
@@ -741,12 +801,8 @@ more questions one at a time.
   activity with no paragraph first shows its title alone.
 
 **Lead with the answer.** The first page says the verdict in one sentence,
-then the headline numbers as tiles, then the detail. A page of an activity with
-pages is named by its first heading, wherever it stands: a page that opens with
-a sentence and then a heading is named by that heading, and the heading
-is shown once, in place. A page with no heading is named "Page 2", above it.
-In a folded report each section's first paragraph is what shows, so make it
-one sentence that stands alone.
+then the headline numbers as tiles, then the detail. A folded callout shows only
+its title until it is opened, so title it for what is inside.
 
 **Data: which view for what.** Rows are written already ordered and counted;
 the page adds nothing up (the queries and roles are in section 7).
@@ -931,6 +987,12 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | something in the records region that is not a record: prose, a callout, a data line or other block, an entry with no `ts`, an `entries` block with no `items` | `warn … inside the records region is not a record, so it is kept as written and not read` / `has no `ts`` | keep only record blocks there; give each entry a `ts` |
 | an `answers`, `entries` or `draft` block outside the records | `warn … outside the records region is not read` | move it under the `> [!records]` line, inside `%%` |
 | a `> [!` line the pattern cannot read | `warn this `> [!` line cannot be read … it ends the callout above it` | write `> [!kind|id words] Title` (the kind is letters, digits and dashes) |
+| two tabs with one id, in one activity or one module's opening | `this tab's id is 'x', the same as the tab on line N …` | give each tab its own name, or an id (`> [!tab|other-id] Name`) |
+| a tab line outside every activity and module opening | `a tab line belongs inside an activity, or in a module's opening …` | move it under an activity line, or into the module's opening |
+| a `tab:` naming no tab of the module | `` `tab:x` names no tab of the module 'm' `` | name a tab the module's opening declares, or declare it |
+| a `pin:` other than `off` | `` `pin:x` is not a setting; the one value is `pin:off` `` | write `pin:off`, or leave it out |
+| tab lines in the opening of a module of one activity | `warn the module 'm' has one activity, so it has no screen of its own to show tabs on …` | put that prose in the module's opening with no tab line, or the tabs inside the activity |
+| a tab line in a data section | `warn a tab line in a data section is not read …` | put the tab in an activity, or in a module's opening |
 | `---` straight under a line of text | `warn `---` straight under text makes that line a heading, not a page break` | write `***`, or leave a blank line above |
 | a hint or solution not folded, or not directly under its question | `warn a hint that is not folded is drawn open …` / `is not directly under a question` | write `> [!hint]-`, straight under the question, with nothing between |
 | `[x]` in a menu | `warn a menu cannot mark a right answer` | give the question its own task list (`- [x] Mars`) in place of `menu:`, or drop the `[x]` |

@@ -1,6 +1,6 @@
-// Reading mode and plain Markdown: a file with no activity line is one activity,
-// HTML comments are not drawn but are kept, tables are wrapped for scrolling, and
-// a page that only reads folds into sections. Run: node test/reading.test.js
+// Plain Markdown: a file with no activity line is one activity, HTML comments are not drawn but are kept, tables are
+// wrapped for scrolling, and a fold card's summary is its first paragraph. That the renderer folds nothing on its own
+// (0.15) is test/folding.test.js. Run: node test/reading.test.js
 const P=require("./page.js");
 const fs=require("fs");
 let fails=0;
@@ -60,30 +60,12 @@ const A=P.boot();
  chk("a purely numeric cell, and its column's heading, are marked for the right",rows.filter(n=>n.attrs.class==="num").length===3,JSON.stringify(rows.map(n=>n.attrs.class||"")));
 }
 
-/* 4. sections */
-{const H=l=>({tagName:"h"+l}),Pp=()=>({tagName:"p"}),O=()=>({tagName:"ul"});
- const t=H(2),a=H(3),b=H(3),pa=Pp(),pb=Pp(),sub=H(4);
- const plan=A.readingPlan([t,Pp(),a,pa,sub,O(),b,pb]);
- chk("a lone title above the sections is not a section",plan&&plan.sections.length===2&&plan.sections[0].head===a&&plan.lead.length===2);
- chk("a section runs to the next heading of its level, deeper headings included",plan.sections[0].body.length===3&&plan.sections[1].body.length===1);
- chk("two headings of the shallowest level are the sections",A.readingPlan([H(2),Pp(),H(2)]).sections.length===2);
- chk("one section does not fold",A.readingPlan([Pp(),H(2),Pp()])===null);
- chk("a title and one section does not fold",A.readingPlan([H(2),H(3),Pp()])===null);
- chk("no headings does not fold",A.readingPlan([Pp(),Pp()])===null);
+/* 4. what a fold card shows under its title */
+{const Pp=()=>({tagName:"p"}),O=()=>({tagName:"ul"}),pa=Pp();
  const lede=A.sectionLede([O(),pa,Pp()]);
  chk("a section's first paragraph is its summary and leaves the body",lede.para===pa&&lede.rest.length===2&&!lede.rest.includes(pa));
  const none=A.sectionLede([{tagName:"hr"}]);
  chk("a section with nothing to show falls back to the heading alone",none.para===null&&none.text==="");
-}
-
-/* 5. which activities fold */
-{A.loadText(FM+"## One\n\nA.\n\n## Two\n\nB.\n");
- chk("an activity of sections can fold",A.foldable(A.activityOf("week-view")));
- A.loadText(FM+"## One\n\nA.\n\n> [!text|q] Ask?\n\n## Two\n\nB.\n");
- chk("an activity with a question folds too (0.11.10)",A.foldable(A.activityOf("week-view")));
- A.loadText(FM+"## One\n\nA.\n\n> [!activity|r repeat] Log\n\n## Two\n\nB.\n\n## Three\n\nC.\n");
- chk("a repeating activity folds too (0.11.10)",A.foldable(A.activityOf("r")));
- chk("the interface strings exist in en, fr and es",["en","fr","es"].every(l=>{const f=A.STRINGS[l].fold;return f&&f.openAll&&f.foldAll&&/\d/.test(f.count(2,5))&&f.sections&&f.seen;}));
 }
 console.log(fails?fails+" reading checks failed":"all reading checks passed");
 process.exit(fails?1:0);

@@ -1,7 +1,7 @@
 // One drawing context (0.13.1, review R3): the view in one object, a draw context handed down, and drawing that writes
 // nothing of the booklet's, the reader's, the screen's or the language's.
 //
-// - The one-at-a-time and folding preferences are kept under the booklet's library entry, so two booklets started here
+// - The one-at-a-time and fold-switch preferences are kept under the booklet's library entry, so two booklets started here
 //   (which once both had the id local/booklet) keep their own; a booklet opened by a link keeps its own across opens.
 // - The view (VIEW) holds one record per activity address and is cleared in one place.
 // - Drawing every screen leaves the reader's work, `dirty`, the language and the screen as they were. So does a booklet whose
@@ -16,12 +16,15 @@ const LS=global.__ls;
 const byClass=(n,c)=>P.find(n,P.hasClass(c));
 const click=n=>n._on.click({target:n,currentTarget:n,preventDefault(){}});
 const FM=t=>'---\nbooklet: "0.13"\ntitle: '+t+'\nlang: en\n---\n\n';
-/* a module with a page of three questions (one at a time is offered) and a page in two sections (it folds) */
+/* a module with a page of three questions (one at a time is offered) and a page of two callouts the author folded (the fold
+   switch is offered) */
 const MOD=FM("Steps")+"> [!module|steps] Steps\n\n> [!activity|ask] Ask\n\n> [!text|q1] One?\n\n> [!text|q2] Two?\n\n> [!text|q3] Three?\n\n"+
-  "> [!activity|read] Read\n\n## First\n\nOne paragraph.\n\n## Second\n\nAnother.\n\n> [!module|steps end] End\n";
+  "> [!activity|read] Read\n\n> [!note]- First\n> One paragraph.\n\n> [!tip]- Second\n> Another.\n\n> [!module|steps end] End\n";
 const oneAtATime=A=>{const on=byClass(P.main(),"oat-ctl")[0];return !!on&&P.find(on,n=>n.tagName==="button"&&n.attrs["aria-pressed"]==="true").map(P.texts).join()==="One at a time";};
 const pressStep=(label)=>{const b=P.find(byClass(P.main(),"oat-ctl")[0],n=>n.tagName==="button"&&P.texts(n)===label)[0];click(b);};
-const allOpen=()=>byClass(P.main(),"rm-sec").every(d=>d.attrs.open!==undefined);
+const folds=()=>byClass(P.main(),"au-fold");
+const allOpen=()=>folds().length===2&&folds().every(d=>d.attrs.open!==undefined);
+const allShut=()=>folds().length===2&&folds().every(d=>d.attrs.open===undefined);
 
 (async()=>{
  /* ---- preferences are the booklet's entry's ---- */
@@ -34,16 +37,16 @@ const allOpen=()=>byClass(P.main(),"rm-sec").every(d=>d.attrs.open!==undefined);
  pressStep("One at a time");
  chk("its reader takes them one at a time",oneAtATime(A));
  A.screen="steps/read";A.render();
- click(P.find(P.main(),n=>n.tagName==="button"&&P.texts(n)==="Open everything")[0]);
+ click(P.find(P.main(),n=>n.tagName==="button"&&n.attrs.role==="switch"&&P.texts(n)==="Open all")[0]);
  A.render();
- chk("and opens every section of its reading page",allOpen());
+ chk("and opens every callout the author folded on its reading page, with the switch",allOpen());
  A.openBooklet(b.id);A.screen="steps/ask";A.render();
  chk("the second booklet keeps its own choice: every question shown",!oneAtATime(A));
  A.screen="steps/read";A.render();
- chk("and its own folding: sections folded",!allOpen());
+ chk("and its own folding: the callouts as the author folded them",allShut());
  A.openBooklet(a.id);A.screen="steps/ask";A.render();
  chk("back in the first, its choice holds",oneAtATime(A));
- chk("each is kept under the booklet's library entry",LS["booklet.ui.steps."+a.id]==="one"&&!("booklet.ui.steps."+b.id in LS)&&LS["booklet.ui.reading."+a.id]==="open");
+ chk("each is kept under the booklet's library entry",LS["booklet.ui.steps."+a.id]==="one"&&!("booklet.ui.steps."+b.id in LS)&&LS["booklet.ui.folds."+a.id]==="open");
  {const B=P.boot();B.openBooklet(a.id);B.screen="steps/ask";B.render();
   chk("and outlives a reload",oneAtATime(B));}
  /* a preference an earlier release kept under the booklet's own id still reads, until the booklet's own is set */
@@ -60,16 +63,16 @@ const allOpen=()=>byClass(P.main(),"rm-sec").every(d=>d.attrs.open!==undefined);
 
  /* ---- the view: one object, cleared in one place ---- */
  P.wipe();{const E=P.boot();E.loadText(MOD);E.screen="steps/read";E.render();
-  chk("the view holds a record for each activity drawn, by its address, its sections by page",E.VIEW.at.has("steps/read")&&Object.keys(E.VIEW.at.get("steps/read").folds).length===1);
+  chk("the view holds a record for each activity drawn, by its address",E.VIEW.at.has("steps/read"));
   E.showPage("steps/ask","p1");
   chk("the page on show is that record's",E.viewAt("steps/ask").page==="p1");
   const r=E.removeModule("steps");
   chk("removing a module takes its activities' records with it",r.ok&&!E.VIEW.at.has("steps/read")&&!E.VIEW.at.has("steps/ask"));
-  E.loadText(MOD);E.screen="steps/read";E.render();const id=E.currentId;
+  E.loadText(MOD);E.screen="steps/read";E.render();E.viewAt("steps/read").pin=true;const id=E.currentId;
   E.closeBooklet();
   chk("closing the booklet leaves the list a view of its own, empty",E.VIEW.at.size===0&&E.VIEW.wiki.q==="");
   E.openBooklet(id);
-  chk("opening it again in the visit brings back its view: its sections as they were",!!E.VIEW.at.get("steps/read")&&Object.keys(E.VIEW.at.get("steps/read").folds).length===1);}
+  chk("opening it again in the visit brings back its view: its frame shown whole, as it was",!!E.VIEW.at.get("steps/read")&&E.VIEW.at.get("steps/read").pin===true);}
 
  /* ---- a booklet opened again in the visit shows what it showed; Clear everything and a newer file start it afresh ---- */
  P.wipe();{const F=P.boot();
@@ -77,7 +80,8 @@ const allOpen=()=>byClass(P.main(),"rm-sec").every(d=>d.attrs.open!==undefined);
     "> [!activity|log repeat] Log\n\n> [!text|t] Today?\n\n> [!module|pg end] End\n";
   await F.createBooklet();F.addModuleText(PAGED);F.keptFor("pg/log").push({ts:"2026-10-01T09:00:00Z",t:"kept"});F.flushSave();const id=F.currentId;
   const step=()=>byClass(P.main(),"oat-unit").findIndex(n=>n.attrs.hidden===undefined);
-  const page=()=>F.screen==="pg/ask"&&byClass(P.main(),"ap-item").findIndex(n=>n.attrs["aria-current"]==="page");
+  /* the page on show, from the pager's "Page N of M" (0 for the first) */
+  const page=()=>{const at=F.screen==="pg/ask"&&byClass(P.main(),"pg-at")[0],m=at&&/Page (\d+) of/.exec(P.texts(at));return m?Number(m[1])-1:-1;};
   const at=(pid)=>{F.screen="pg/ask";if(pid) F.showPage("pg/ask",pid);F.render();};
   at("p1");pressStep("One at a time");click(byClass(P.main(),"oat-next")[0]);
   chk("the reader is on the second question of page one",step()===1,String(step()));

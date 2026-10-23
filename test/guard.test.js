@@ -290,7 +290,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
 /* One builder for every card (0.11.10): the card class is given to an element in cardNode and nowhere else. The detector
    is itself tested: it must see the violation in a seeded line and must see cardNode's own, or a pass would mean nothing. */
 {const CARD_MAKER=/(?:\bclass|\bclassName)\s*[:=]\s*(["'`])[^"'`]*\bcard(?:-(?:go|fold|item|sub))?\b[^"'`]*\1|classList\.add\(\s*["'`]card\b|["'`]card["']\s*,\s*["'`]card-/;
- const a=html.indexOf("function cardNode(o){"),b=html.indexOf("/* a heading's leading emoji becomes the card's picture");
+ const a=html.indexOf("function cardNode(o){"),b=html.indexOf("/* what a reader has done in an activity");
  const must=(n,ok,d)=>{if(ok)console.log("  ok    "+n);else{fails++;console.log("  FAIL  "+n+(d?"   → "+d:""));}};
  must("cardNode is found in the renderer",a>0&&b>a);
  const body=html.slice(a,b),rest=html.slice(0,a)+html.slice(b);
