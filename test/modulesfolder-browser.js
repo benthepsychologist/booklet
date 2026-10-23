@@ -12,6 +12,9 @@
 //     reader types and the host's cadence has passed; the bar says "Kept in this browser only"), while a booklet the host
 //     itself hands over on the same page is (the control);
 //   - "Your booklets" lists it, and Open from the list reads the folder's file again;
+//   - two renderers on one site (/app/ and /other/), each with its own modules/a.md with the same ids and different text: on
+//     /other/ the link reads /other/modules/a.md as a booklet of its own, with no offer to "Read the newer file" and none of the
+//     answer typed on /app/, and /app/'s pointer is not listed there;
 //   - every request is a GET with no body to the page's own origin, nothing typed is in any request, zero policy violations and
 //     page errors.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/modulesfolder-browser.js <booklet.html> <outdir>
@@ -26,7 +29,9 @@ const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const bk=(id,title,q)=>`---\nbooklet: "0.13"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n> [!activity|${id}-a] ${title}\n\n> [!text|${id}-q long] ${q||'What stood out?'}\n\n> [!module|${id} end] End\n`;
 /* what each origin serves under /app/modules/, /pub/ (a declared store) and /store/modules/ (which must never be read) */
 const FILES={'/app/modules/sub/week.booklet.md':bk('week','Week report'),'/app/modules/x.md':bk('ex','Folder booklet'),
-  '/pub/x.md':bk('st','Store booklet'),'/store/modules/x.md':bk('no','Never read')};
+  '/pub/x.md':bk('st','Store booklet'),'/store/modules/x.md':bk('no','Never read'),
+  '/app/modules/a.md':bk('same','App file','The app question'),'/app/modules/p.md':bk('ptr','App pointer'),
+  '/other/modules/a.md':bk('same','Other file','The other question')};
 const withStore=RAW.toString('utf8').replace('<meta name="theme-color"','<meta name="booklet-store" content="/pub/">\n<meta name="theme-color"');
 if(withStore===RAW.toString('utf8')) throw new Error('booklet.html no longer has <meta name="theme-color": update this test');
 (async()=>{
@@ -38,6 +43,7 @@ if(withStore===RAW.toString('utf8')) throw new Error('booklet.html no longer has
     await ctx.route(origin+'/**',r=>{const u=new URL(r.request().url()).pathname;
       const h={'content-type':'text/html; charset=utf-8',...(csp?{'content-security-policy':csp}:{})};
       if(u==='/app/'||u==='/app/booklet.html'){served.push(sha(RAW));return r.fulfill({status:200,body:RAW,headers:h});}
+      if(u==='/other/')return r.fulfill({status:200,body:RAW,headers:h});
       if(u==='/store/')return r.fulfill({status:200,body:withStore,headers:h});
       {const s=PARTS.serve(HTML,u,'/app/');if(s)return r.fulfill(s);}
       const f=FILES[u];
@@ -126,6 +132,24 @@ if(withStore===RAW.toString('utf8')) throw new Error('booklet.html no longer has
   const heard=await p.evaluate(()=>window.__calls);
   ok(heard.length>0&&heard.every(c=>c.name==='y.md')&&/QZXhostanswer/.test(heard[heard.length-1].text),'control: a booklet the host hands over on the same page is handed to it ('+heard.length+' calls, names '+[...new Set(heard.map(c=>c.name))].join()+')');
   ok(!heard.some(c=>/QZXfolderanswer|Folder booklet/.test(c.text)),'no word of the folder booklet reached the host');
+  await done(p);
+  // 9 two renderers on one site, /app/ and /other/, each with its own modules/a.md: the same ids, different text
+  p=await open();
+  await p.goto(PUBLIC+'/app/#/open/a.md');await wait(p,1200);
+  ok(await view(p)==='same/same-a'&&/The app question/.test(await p.locator('#main').innerText()),'on /app/ the link opens /app/modules/a.md');
+  await p.locator('#main textarea').first().click();await p.keyboard.type('QZXappanswer');await wait(p,1500);
+  await p.evaluate(()=>{location.hash='#/open/p.md';});await wait(p,1200);
+  ok(await view(p)==='ptr/ptr-a','and /app/modules/p.md opens, and is left unanswered (a pointer)');
+  await done(p);
+  p=await open();n1=reqs.length;
+  await p.goto(PUBLIC+'/other/#/open/a.md');await wait(p,1200);
+  ok(folderReqs(n1).map(r=>r.url).join()===PUBLIC+'/other/modules/a.md'&&/The other question/.test(await p.locator('#main').innerText()),'on /other/ the same link reads /other/modules/a.md and draws its text: '+folderReqs(n1).map(r=>r.url).join(', '));
+  ok(await p.getByRole('button',{name:'Read the newer file'}).count()===0,'no offer to "Read the newer file": /app/\'s booklet is not this one');
+  ok(await p.locator('#main textarea').first().inputValue()===''&&!/QZXappanswer/.test(await p.locator('#main').innerText()),'the answer typed on /app/ is not in it');
+  for(let i=0;i<3&&!/Your booklets/.test(await p.locator('#main h1').first().innerText().catch(()=>''));i++){await p.locator('#btnHome').click();await wait(p,400);}
+  {const t=await p.locator('#main ol.modes').innerText().catch(()=>'');
+   ok(/Your booklets/.test(await p.locator('#main h1').first().innerText().catch(()=>''))&&!/App pointer/.test(t),'the list on /other/ leaves out /app/\'s pointer: '+t.replace(/\n+/g,' | '));
+   ok(/Other file/.test(t)&&/App file/.test(t),'and lists /other/\'s own booklet and /app/\'s booklet that holds the reader\'s work');}
   await done(p);
 
   // across every page

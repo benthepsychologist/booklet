@@ -5,7 +5,9 @@
 // a declared store always wins, even one the page cannot use; that a page opened from disk is unchanged; that nothing is asked
 // for until a link is followed; that a missing file says what a declared store's missing file says; and that the folder is
 // only read: what opens from it is never the host's (a registered, allowed host hears nothing of it, and the bar says it is
-// kept in this browser only), while it is listed, renamed and read again from the list as a store booklet is.
+// kept in this browser only), while it is listed, renamed and read again from the list as a store booklet is; and that two
+// renderers on one site (/app/ and /other/), each with its own modules/a.md, never share the reader's work for that name, and
+// a pointer from one is neither listed nor read on the other.
 // The network is a stub: nothing here reaches one.
 // Run: node test/modulesfolder.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
@@ -57,7 +59,7 @@ for(const [href,want,why] of [
  chk("the booklet opens into its one activity",ok===true&&A.screen==="m/a"&&/Week report/.test(JSON.stringify(A.BOOK.title)),A.screen);
  const pv=P.find(P.main(),P.hasClass("openedby"))[0];
  chk("the quiet line says it came from this page's own store, by its name (no new words)",!!pv&&text(pv).startsWith("Opened by a link, from this page's own store: week.booklet.md"),pv?text(pv):"none");
- chk("it is listed in \"Your booklets\" at once, as a pointer from the default folder, with no copy of its content kept",lib().length===1&&lib()[0].from==="modules:week.booklet.md"&&/Week report/.test(JSON.stringify(lib()[0].title))&&!Object.keys(global.__ls).some(k=>/^booklet\.b\./.test(k)),JSON.stringify(lib()));
+ chk("it is listed in \"Your booklets\" at once, as a pointer from the default folder, with no copy of its content kept",lib().length===1&&lib()[0].from==="modules:/app/modules/#week.booklet.md"&&/Week report/.test(JSON.stringify(lib()[0].title))&&!Object.keys(global.__ls).some(k=>/^booklet\.b\./.test(k)),JSON.stringify(lib()));
  chk("...and nothing else was written but the list",Object.keys(global.__ls).filter(k=>!before.split(",").includes(k)).every(k=>k==="booklet.library.v1"||/^booklet\.(tick|ui\.)/.test(k)),Object.keys(global.__ls).join());}
 {const A=boot(APP);
  for(const h of ["#/open/../x.md","#/open/https://x.test/y.md","#/open/x.txt","#/open/a%5Cb.md","#/open/","#/open/%2e%2e/x.md","#/open//etc/x.md"]) await A.openLink(h);
@@ -127,8 +129,37 @@ for(const [href,want,why] of [
  A.closeBooklet();const r=A.BookletApi.open(booklet("Host booklet"),{name:"x.md"});await sleep(50);
  typeIn(A,"m/a","QZXhostanswer");await sleep(700);A.flushSave();
  chk("control: a booklet the host hands over with a name is the host's, and the host hears of it",r.ok===true&&log.length>0&&log.every(c=>c.name==="x.md")&&/QZXhostanswer/.test(log[log.length-1].text),log.length);
- chk("...as a booklet of its own: the folder's x.md and the host's x.md are two entries",lib().map(e=>e.from).sort().join()==="modules:x.md,store:x.md",JSON.stringify(lib().map(e=>e.from)));
+ chk("...as a booklet of its own: the folder's x.md and the host's x.md are two entries",lib().map(e=>e.from).sort().join()==="modules:/app/modules/#x.md,store:x.md",JSON.stringify(lib().map(e=>e.from)));
  chk("no word of the folder booklet ever reached the host",!log.some(c=>/QZXfolderanswer|Folder booklet/.test(c.text)));}
+
+/* ---- two renderers on one site, /app/ and /other/, each with its own modules/a.md: the same module and question ids,
+   different text. The reader's work on one is never the other's, and a pointer from one is not listed on the other. ---- */
+{const OTHER="http://fleet/other/",OM=OTHER+"modules/";
+ const A=boot(APP);ROUTES[MODS+"a.md"]=booklet("App file","The app's question");ROUTES[MODS+"p.md"]=booklet("App pointer");
+ await A.openLink("#/open/a.md");typeIn(A,"m/a","QZXappanswer");await sleep(700);A.flushSave();const aid=A.currentId;A.closeBooklet();
+ await A.openLink("#/open/p.md");const pid=A.currentId;A.closeBooklet();
+ chk("each entry names the folder it came from, /app/modules/",lib().map(e=>e.from).sort().join()==="modules:/app/modules/#a.md,modules:/app/modules/#p.md",JSON.stringify(lib().map(e=>e.from)));
+ const B=boot(OTHER,{keep:true});ROUTES[OM+"a.md"]=booklet("Other file","The other's question");CALLS=[];
+ await B.openLink("#/open/a.md");
+ const offer=P.find(P.main(),P.hasClass("hostnote")).filter(n=>/changed where it is kept/.test(text(n)))[0];
+ chk("on /other/, its own a.md opens as a booklet of its own: read from /other/modules/, a new entry, no offer of a newer file",urls().join()===OM+"a.md"&&B.currentId!==aid&&!offer&&/The other's question/.test(JSON.stringify(B.BOOK)),JSON.stringify(urls())+" same entry: "+(B.currentId===aid)+" offer: "+!!offer);
+ chk("...and the answer typed on /app/ is nowhere in it",ans(B)===undefined&&!/QZXappanswer/.test(JSON.stringify(B.STATE)),JSON.stringify(B.STATE.answers));
+ const oid=B.currentId;B.closeBooklet();B.screen="@booklets";B.render();
+ const rows=P.find(P.main(),n=>n.tagName==="li").map(n=>text(n));
+ chk("the list on /other/ leaves out /app/'s pointer: there is no folder here to open it from",!rows.some(r=>/App pointer/.test(r)),JSON.stringify(rows));
+ chk("...and shows /other/'s own booklet and /app/'s booklet that holds the reader's work",rows.some(r=>/Other file/.test(r))&&rows.some(r=>/App file/.test(r)),JSON.stringify(rows));
+ chk("...while the library itself still holds all three (nothing is removed)",lib().length===3&&lib().some(e=>e.id===pid),JSON.stringify(lib().map(e=>e.from)));
+ CALLS=[];B.openFromList(pid);await sleep(30);
+ chk("/app/'s pointer opened on /other/ reads nothing from /other/modules/, and the page says it has no store for it",CALLS.length===0&&/no store/.test(toast()),JSON.stringify(urls())+" "+toast());
+ CALLS=[];B.openFromList(aid);await sleep(30);
+ chk("/app/'s booklet with the reader's work opens on /other/ as that kept copy, with its own text and answer, reading nothing",CALLS.length===0&&B.currentId===aid&&/The app's question/.test(JSON.stringify(B.BOOK))&&ans(B)==="QZXappanswer",JSON.stringify(urls()));
+ B.closeBooklet();
+ const C=boot(APP,{keep:true});CALLS=[];
+ await C.openLink("#/open/a.md");
+ chk("back on /app/, the link opens /app/'s booklet, read from /app/modules/, with the reader's answer",urls().join()===MODS+"a.md"&&C.currentId===aid&&ans(C)==="QZXappanswer",JSON.stringify(urls()));
+ C.closeBooklet();C.screen="@booklets";C.render();
+ const rowsC=P.find(P.main(),n=>n.tagName==="li").map(n=>text(n));
+ chk("and the list on /app/ shows its pointer again (and /other/'s booklet only while it holds work)",rowsC.some(r=>/App pointer/.test(r))&&!rowsC.some(r=>/Other file/.test(r))&&lib().some(e=>e.id===oid),JSON.stringify(rowsC));}
 
 /* ---- "Your booklets": a pointer, read again from the folder; rename and download keep no copy ---- */
 {const A=boot(APP);const U=MODS+"w.md";ROUTES[U]=booklet("Weekly");

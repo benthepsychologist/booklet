@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-R5c5GMDcI48sHJLbwTtXp4fWl+7WDHcMOFrV8F3s/m0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-o7pylxpvh8jFCh1EKqtfKNwzhkOFzziEM1TkwR3hRv4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3347,17 +3347,29 @@ const entryById=id=>LIB.entries.find(e=>e.id===id)||null;
 function textPrint(t){t=String(t==null?"":t);let h=0x811c9dc5;
   for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193);}
   return (h>>>0).toString(36)+"."+t.length;}
-/* The booklet this browser keeps for a link: the entry whose `from` is "store:<name>", "modules:<name>" or "registry:<id>"
-   (a store name, a name in the default folder, and a registry module, is one booklet in one browser). If an older release
-   left several, the one opened last. */
+/* The booklet this browser keeps for a link: the entry whose `from` is "store:<name>", "modules:<folder>#<name>" or
+   "registry:<id>" (a store name, a name in one default folder, and a registry module, is one booklet in one browser). If an
+   older release left several, the one opened last. */
 function entryFrom(from){if(!from) return null;let best=null;const at=e=>String(e.openedAt||e.updatedAt||"");
   readLib().entries.forEach(e=>{if(e.from===from&&(!best||at(e)>at(best))) best=e;});
   return best;}
 const keyOfEntry=e=>(e&&e.key)||bookKey(e.id);
-/* the store name a library entry is for ("" when it is not a store booklet): "store:<name>" came from the store the page
-   declares, "modules:<name>" from the default folder (defaultStore). Both are store booklets here: read afresh from their
-   folder each time they open, and listed as pointers. Only the first is the host's (hostName). */
-const storeNameOf=e=>{const f=e&&e.from;return typeof f!=="string"?"":f.startsWith("store:")?f.slice(6):f.startsWith("modules:")?f.slice(8):"";};
+/* Where a store booklet came from, read from its `from` and from nothing else; every reader of `from` uses this.
+   "store:<name>" came from the store the page declares: {kind:"store",name}. "modules:<folder>#<name>" came from the
+   default folder at that path on this site (defaultStore), "/app/modules/" for a page at /app/: {kind:"modules",folder,
+   name}. The folder is part of it because one site can serve the renderer at several paths, each with its own modules/
+   holding its own a.md: the reader's work on one is never another's. A name never holds "#" (linkName) and a URL's path
+   never does either, so the split is exact. null for any other `from` (a registry module, a file, none). */
+function fromParts(f){if(typeof f!=="string") return null;
+  if(f.startsWith("store:")){const name=f.slice("store:".length);return name?{kind:"store",name}:null;}
+  if(f.startsWith("modules:")){const r=f.slice("modules:".length),i=r.indexOf("#");
+    return i>0&&i<r.length-1?{kind:"modules",folder:r.slice(0,i),name:r.slice(i+1)}:null;}
+  return null;}
+const storeFrom=name=>"store:"+name;
+const folderFrom=(folder,name)=>{try{return "modules:"+new URL(folder).pathname+"#"+name;}catch(e){return "";}};
+/* the store name a library entry is for ("" when it is not a store booklet). Both kinds are store booklets here: read
+   afresh from their folder each time they open, and listed as pointers. Only "store:" is the host's (hostName). */
+const storeNameOf=e=>{const p=fromParts(e&&e.from);return p?p.name:"";};
 /* ---- a store booklet: the store's file is the truth, the kept copy only a buffer ----
    A store booklet (`from` is "store:<name>") is listed under "Your booklets" as soon as it is read, as a pointer: its
    entry, with no kept copy of its content (notePointer). A kept copy (booklet.b.<id>) appears only once the reader
@@ -7389,7 +7401,11 @@ function renderBooklets(main){const L=strings("library");
   main.append(el("div",{class:"col addrow"},create,el("button",{type:"button",class:"small",onclick:openLoad},L.load)));
   hostStopLine(main);
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
-  const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
+  /* A pointer from a default folder this page does not have (one made on /app/, seen on /other/ of the same site) is not
+     listed here: there is nothing here to open and no folder to read it from. An entry that holds the reader's work is
+     listed wherever it is seen, and opens as that kept copy, never read from this page's folder (openFromList). */
+  const elsewhere=e=>{const p=fromParts(e.from);return !!p&&p.kind==="modules"&&folderOf(e.from)===""&&lsGet(keyOfEntry(e))===null;};
+  const list=LIB.entries.filter(e=>!elsewhere(e)).sort((a,b)=>last(b).localeCompare(last(a)));
   if(!list.length){if(LINK_LOADING===null) main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
   const cards=el("ol",{class:"modes",role:"list"});
   list.forEach(e=>cards.append(el("li",{},bookletCard(e))));
@@ -7965,9 +7981,9 @@ const hookOpen=()=>!!currentId&&BOOK!==EMPTY_BOOKLET;
    Booklet.open(text,{name}) with a name. That is what a library entry's `from` ("store:<name>") records, and it follows
    the booklet whenever it is opened again. Every other booklet (picked from disk, pasted, dropped, started here, opened
    by #/module/<id> or from the default folder, handed over without a name) is the reader's alone: the host is not told
-   of it, cannot read it, and the bar says it is kept in this browser only. The default folder ("modules:<name>") is only
-   read: it is where the page was served from, not a store a host declared and agreed to save to. */
-const hostName=()=>{const f=currentEntry&&currentEntry.from;return typeof f==="string"&&f.startsWith("store:")?f.slice(6):"";};
+   of it, cannot read it, and the bar says it is kept in this browser only. The default folder ("modules:<folder>#<name>")
+   is only read: it is where the page was served from, not a store a host declared and agreed to save to. */
+const hostName=()=>{const p=fromParts(currentEntry&&currentEntry.from);return p&&p.kind==="store"?p.name:"";};
 const hookBook=()=>hookOpen()&&hostName()!=="";
 function hostTime(d){const p=n=>String(n).padStart(2,"0");return p(d.getHours())+":"+p(d.getMinutes());}
 /* The line behind the save status: where the work is kept and why the status says what it does. With no host (or a
@@ -8210,7 +8226,7 @@ function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=
      store is read, and the answer is the text's own notices */
   if(!KEEP.ready){KEEP.later.push(()=>hostOpen(text,o));const N=fileNotesOf(R,null);
     return {ok:true,problems:N?[...(N.marker?[N.marker]:[]),...N.list].map(p=>problemWords([p])):[]};}
-  if(nm) openLinked(text,{store:true,host:true,label:nm,from:"store:"+nm});
+  if(nm) openLinked(text,{store:true,host:true,label:nm,from:storeFrom(nm)});
   else{const e=addEntry();openBooklet(e.id);finishLoad(R);}
   return {ok:true,problems:FILE_NOTES?[...(FILE_NOTES.marker?[FILE_NOTES.marker]:[]),...FILE_NOTES.list].map(p=>problemWords([p])):[]};}
 
@@ -8254,15 +8270,17 @@ function storeUrl(){const m=typeof document!=="undefined"&&document.querySelecto
 /* The default folder: `modules/` beside the renderer (a page at /app/ or /app/booklet.html reads /app/modules/), on a page
    served over http or https that has no `booklet-store` tag at all. It comes from the page's own address and from nothing a
    link, a booklet or the browser's storage holds. A page with a tag, even one it cannot use, has none (a declared store
-   always wins), and so has a page opened from disk. It is only read: what opens from it is "modules:<name>", never the
-   host's (hostName). "" when there is none. */
+   always wins), and so has a page opened from disk. It is only read: what opens from it is "modules:<folder>#<name>"
+   (folderFrom), never the host's (hostName). "" when there is none. */
 function defaultStore(){
   if(typeof document==="undefined"||!document.querySelector||document.querySelector('meta[name="booklet-store"]')) return "";
   if(typeof location==="undefined"||(location.protocol!=="https:"&&location.protocol!=="http:")) return "";
   try{const u=new URL("modules/",location.href);u.search="";u.hash="";return u.href;}catch(e){return "";}}
-/* the folder a store booklet's `from` is read from on this page: the declared store for "store:", the default folder for
-   "modules:"; "" for any other, or when this page has no such folder */
-const folderOf=f=>typeof f!=="string"?"":f.startsWith("store:")?storeUrl():f.startsWith("modules:")?defaultStore():"";
+/* the folder a store booklet's `from` is read from on this page: the declared store for "store:", and for "modules:" this
+   page's default folder only when it is the very folder the booklet came from (a page at /other/ never reads, lists or
+   offers what came from /app/modules/); "" for any other, or when this page has no such folder */
+const folderOf=f=>{const p=fromParts(f);if(!p) return "";if(p.kind==="store") return storeUrl();
+  const d=defaultStore();try{return d&&new URL(d).pathname===p.folder?d:"";}catch(e){return "";}};
 /* the one address a name stands for: a folder's address (the declared store unless `base` is given) plus the name, and
    never anything outside that folder */
 function storeAddress(name,base){base=base===undefined?storeUrl():base;const n=linkName(name);if(!base||n===null) return null;
@@ -8363,7 +8381,7 @@ async function openLink(hash,o){const L=linkOf(hash);if(!L) return false;
     at=sp.act;
     if(!base) return said("linkNoStore");
     if(name===null||!(url=storeAddress(name,base))) return said("linkBadName");
-    via={store:true,label:name,from:(own?"store:":"modules:")+name};}
+    via={store:true,label:name,from:own?storeFrom(name):folderFrom(base,name)};}
   else{
     let id=L.raw.length<=LINK_NAME_MAX?(()=>{try{return decodeURIComponent(L.raw);}catch(e){return "";}})():"";
     if(!id||!registryUrl()) return said(id?"linkNoModule":"linkBadName");

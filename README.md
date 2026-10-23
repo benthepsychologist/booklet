@@ -315,7 +315,8 @@ address bar, so a reload opens the same thing.
 a store booklet is (all of the above), and its quiet line says the same, but it is never the host's: a host script on the
 page is not told of it and cannot read it, so it is never saved back to the folder, and the reader's answers stay in the
 browser and in any copy they download (`docs/hosting.md`, "Which booklets are the host's"). It is a separate booklet from one
-of the same name opened from a declared store.
+of the same name opened from a declared store, and from one of the same name in another default folder of the same site: a
+renderer at `/app/` and one at `/other/` each keep their own `a.md`, and a pointer from one is not listed on the other.
 
 The store must be on the page's own origin: the renderer's own Content-Security-Policy lets it read only that origin and
 `raw.githubusercontent.com` (see "Putting the renderer on a site"), and a host's header can only tighten that, so a host's
@@ -335,7 +336,10 @@ python3 tools/verify-renderer.py https://example.org/app/ --sums SHA256SUMS     
 python3 tools/verify-renderer.py booklet.html --expect 71e4b9343020c0df3b0416021b4a31c7dfdd308cb7ead6df9e95aa61451b8fd8
 ```
 
-It exits 0 when the copy matches, 1 when it does not and 2 when it cannot read what it was given. A copy made before the
+It exits 0 when the copy matches, 1 when it does not, 2 when it cannot read what it was given, and 3 when it was given nothing
+to compare with (it prints the `sha256` and says so, so a script that left out `--sums` or `--expect` does not read a pass).
+An address is read with one GET: only an answer of 200 counts, a redirect is followed only to another http(s) address (and
+the address read is then said), and the whole read has one deadline (`--timeout`, 30 seconds). A copy made before the
 default folder, with one `booklet-store` line added (as hosts did before renderer 0.15), is checked with
 `--strip-store-meta`: the one line that is exactly that tag is removed before comparing, so the copy matches the release it
 was made from if, and only if, nothing else was changed.

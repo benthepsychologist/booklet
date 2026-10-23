@@ -24,16 +24,25 @@ anything else changed, or with that tag on a line beside something else,
 still does not match. A copy with two such lines is refused.
 
 Usage:  python3 tools/verify-renderer.py COPY [--sums SHA256SUMS | --expect HASH] [--strip-store-meta]
+                                         [--timeout SECONDS]
         python3 tools/verify-renderer.py --help      prints this text
-COPY is a path or an http(s) address (read with one plain GET, at most
-64 MB, 30 seconds). SHA256SUMS may be a path or an address too.
+COPY is a path or an http(s) address. An address is read with one plain GET:
+at most 64 MB, all of it within --timeout seconds (30 unless given), and only
+an answer of 200 is a file (a 204 or a 206 is refused, as is any other). A
+redirect is followed only to another http(s) address, and the address the
+copy was read from is then said on stderr. SHA256SUMS may be a path or an
+address too, read the same way.
 Prints `<sha256>  COPY` (and, with --strip-store-meta, the sha256 with the
-line removed), then `match: ...` or `NO MATCH: ...` when there is something to
-compare with. Exit 0 when it matches, or when there is nothing to compare
-with; 1 when it does not match; 2 when the copy or the sums cannot be read or
-the arguments are wrong.
+line removed, or a line saying no line of exactly that form was there), then
+`match: ...` or `NO MATCH: ...` when there is something to compare with.
+Exit codes:
+  0  the copy matches
+  1  the copy does not match
+  2  the copy or the sums cannot be read, or the arguments are wrong
+  3  the sha256 was printed but nothing was compared (no --sums or --expect);
+     stderr says so, so a script that forgot its argument does not read a pass
 """
-import hashlib, re, sys, urllib.error, urllib.request
+import hashlib, http.client, re, sys, threading, urllib.error, urllib.request
 
 MAX_BYTES = 64 * 1024 * 1024
 TIMEOUT = 30
@@ -41,6 +50,8 @@ TIMEOUT = 30
 # One line that is exactly one store tag, as a host adds it (README.md, "Opening a booklet by link"): the line's own break
 # goes with it. The address may hold no quote and no angle bracket, so nothing else can hide inside the tag.
 STORE_LINE = re.compile(rb'^[ \t]*<meta name="booklet-store" content="[^"<>\r\n]*"[ \t]*/?>[ \t]*(?:\r?\n|\Z)', re.M)
+# any booklet-store tag at all, in any spelling (quotes, order, case): only to say that one is there but was not removed
+ANY_STORE_TAG = re.compile(rb'<meta\b[^>]*booklet-store', re.I)
 # a line of a SHA256SUMS file: 64 hex digits, two spaces (or a space and `*`, binary mode), the file's name
 SUMS_LINE = re.compile(r"^([0-9a-fA-F]{64}) [ *](.+)$")
 
@@ -49,18 +60,62 @@ class Refused(Exception):
     """A copy or a sums file that cannot be read, or arguments that cannot be used; the message says which, in words."""
 
 
-def read(source):
-    """The bytes of a path or of an http(s) address."""
+class _HttpOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """Follows a redirect only to another http(s) address. (urllib itself would follow one to ftp:.)"""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not re.match(r"^https?://", newurl, re.I):
+            raise Refused(f"{req.full_url}: redirected to {newurl}, which is not an http(s) address")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fetch(source, timeout):
+    """One plain GET of an http(s) address, the whole of it within `timeout` seconds: (the bytes, the address they came
+    from). The deadline is for the whole read, not for each wait on the socket, so a server that sends a byte now and
+    then cannot hold it open."""
+    opener = urllib.request.build_opener(_HttpOnlyRedirects)
+
+    def get():
+        with opener.open(urllib.request.Request(source, method="GET"), timeout=timeout) as r:
+            if r.status != 200:
+                raise Refused(f"{source}: answered {r.status} {r.reason}; only 200 is a whole file")
+            return r.read(MAX_BYTES + 1), r.geturl()
+
+    box = {}
+
+    def run():
+        try:
+            box["ok"] = get()
+        except BaseException as e:  # carried back to the caller's thread below
+            box["err"] = e
+
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    worker.join(timeout)
+    if worker.is_alive():
+        raise Refused(f"{source}: not read within {timeout:g} seconds")
+    e = box.get("err")
+    if isinstance(e, Refused):
+        raise e
+    if isinstance(e, (urllib.error.URLError, OSError, ValueError, http.client.HTTPException)):
+        raise Refused(f"{source}: could not be read ({getattr(e, 'reason', e)})")
+    if e is not None:
+        raise e
+    body, final = box["ok"]
+    if len(body) > MAX_BYTES:
+        raise Refused(f"{source}: more than {MAX_BYTES // (1024 * 1024)} MB, not a renderer")
+    return body, final
+
+
+def read(source, timeout=TIMEOUT):
+    """The bytes of a path or of an http(s) address, and where they were read from (an address after its redirects, or
+    the path)."""
     if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", source):
         if not re.match(r"^https?://", source, re.I):
             raise Refused(f"{source}: only a path or an http(s) address can be read")
-        try:
-            with urllib.request.urlopen(urllib.request.Request(source, method="GET"), timeout=TIMEOUT) as r:
-                body = r.read(MAX_BYTES + 1)
-        except (urllib.error.URLError, OSError, ValueError) as e:
-            raise Refused(f"{source}: could not be read ({getattr(e, 'reason', e)})")
-        if len(body) > MAX_BYTES:
-            raise Refused(f"{source}: more than {MAX_BYTES // (1024 * 1024)} MB, not a renderer")
+        body, final = fetch(source, timeout)
+        if final != source:
+            print(f"note: {source} redirected; read from {final}", file=sys.stderr)
         return body
     try:
         with open(source, "rb") as f:
@@ -99,7 +154,7 @@ def main(argv=None):
     opts, rest = {}, []
     while args:
         a = args.pop(0)
-        if a in ("--sums", "--expect"):
+        if a in ("--sums", "--expect", "--timeout"):
             if not args:
                 print(f"error: {a} needs a value", file=sys.stderr)
                 return 2
@@ -114,6 +169,14 @@ def main(argv=None):
         return 2
     copy = rest[0]
     try:
+        timeout = TIMEOUT
+        if "--timeout" in opts:
+            try:
+                timeout = float(opts["--timeout"])
+            except ValueError:
+                timeout = 0
+            if not 0 < timeout <= 3600:
+                raise Refused(f"--timeout {opts['--timeout']}: a number of seconds, more than 0 and at most 3600")
         expected = None
         if "--expect" in opts:
             h = opts["--expect"].strip().lower()
@@ -121,24 +184,32 @@ def main(argv=None):
                 raise Refused(f"--expect {opts['--expect']}: a sha256 is 64 hex digits")
             expected = [(h, "the hash given")]
         elif "--sums" in opts:
-            raw = read(opts["--sums"])
+            raw = read(opts["--sums"], timeout)
             try:
                 expected = sums(raw.decode("utf-8"), opts["--sums"])
             except UnicodeDecodeError:
                 raise Refused(f"{opts['--sums']}: is not text")
-        body = read(copy)
+        body = read(copy, timeout)
         print(f"{hashlib.sha256(body).hexdigest()}  {copy}")
+        n = 0
         if strip:
             body, n = strip_store_meta(body)
-            print(f"{hashlib.sha256(body).hexdigest()}  {copy}, "
-                  + ("without its booklet-store line" if n else "which has no booklet-store line (nothing removed)"))
+            if n:
+                said = "without its booklet-store line"
+            elif ANY_STORE_TAG.search(body):
+                said = ("nothing removed: it has a booklet-store tag, but on no line of exactly the form "
+                        '<meta name="booklet-store" content="...">, so the tag is still in it')
+            else:
+                said = 'nothing removed: no line of exactly the form <meta name="booklet-store" content="..."> is in it'
+            print(f"{hashlib.sha256(body).hexdigest()}  {copy}, {said}")
     except Refused as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
     if expected is None:
-        return 0
+        print("no comparison requested: give --sums or --expect to check this copy (exit 3)", file=sys.stderr)
+        return 3
     got = hashlib.sha256(body).hexdigest()
-    what = "the copy without its booklet-store line" if strip else "the copy"
+    what = "the copy without its booklet-store line" if n else "the copy"
     names = [name for h, name in expected if h == got]
     if names:
         print(f"match: {what} is {', '.join(names)}" + (f" in {opts['--sums']}" if "--sums" in opts else ""))
