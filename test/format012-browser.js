@@ -94,7 +94,7 @@ Text.
   await p.locator('#main button.mode').first().click();await p.waitForTimeout(700);
   let m=await p.evaluate(()=>({h2:(document.querySelector('#main h2')||{}).textContent,lede:(document.querySelector('.mhead-lede')||{}).textContent||'',more:(document.querySelector('.mhead-more')||{}).textContent||'',
     pic:[...document.querySelectorAll('.mhead-pic use')].map(u=>u.getAttribute('href')),meta:(document.querySelector('.cd-meta')||{}).textContent,
-    cards:[...document.querySelectorAll('#main button.mode')].map(c=>({t:c.querySelector('.k').textContent,tile:c.querySelector('.cd-tile').textContent.trim(),use:[...c.querySelectorAll('.cd-tile use')].map(u=>u.getAttribute('href'))})),
+    cards:[...document.querySelectorAll('#main button.mode')].map(c=>({t:c.querySelector('.k').textContent,tile:c.querySelector('.cd-tile').textContent.trim(),num:(c.querySelector('.cd-num')||{}).textContent,use:[...c.querySelectorAll('.cd-tile use')].map(u=>u.getAttribute('href'))})),
     outside:/First paragraph of the opening/.test((document.getElementById('main').querySelector('.modes')||{textContent:''}).textContent)}));
   ok(m.h2==='The first module','the module screen is headed by its title');
   ok(m.lede==='First paragraph of the opening, drawn large.','the opening\'s first paragraph is drawn at lede size on the module screen');
@@ -104,7 +104,7 @@ Text.
   ok(/^3 activities$/.test(m.meta),'the summary line counts the activities: '+m.meta);
   ok(m.cards[0].use[0]==='#bs-target','an activity\'s icon: is its card\'s picture (the target has a spot)');
   ok(m.cards[1].tile==='🌱'&&m.cards[1].t==='Two','no icon: a leading emoji is the picture and leaves the title');
-  ok(m.cards[2].tile==='3'&&m.cards[2].use.length===0,'neither: the number '+JSON.stringify(m.cards[2]));
+  ok(m.cards[2].tile===''&&m.cards[2].num==='3'&&m.cards[2].use.length===0,'neither: the number, before the title, in an empty tile '+JSON.stringify(m.cards[2]));
   await p.screenshot({path:path.join(OUT,'f012-module-teaching.png')});
   /* the first activity does not hold the opening */
   await p.locator('#main button.mode').first().click();await p.waitForTimeout(700);
