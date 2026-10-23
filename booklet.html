@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-2o+s6PNPZ61B5zanjCHkrewqHjMiz5bDPk/LNtOwdPA=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-YvhYoGMpENR+xQFCa5IgHG4mdWhChi9IH+AoRFoPYXk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -234,8 +234,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --fam-read:'Atkinson Hyperlegible', Verdana, Tahoma, sans-serif;
     --serif:'Lexend', 'Atkinson Hyperlegible', var(--fam-sans);
     --sans:'Atkinson Hyperlegible', var(--fam-sans);
-    /* layout: the content area's widest, and the readable measure of prose */
-    --content-w:76rem; --measure:70ch;
+    /* layout: the content area's widest, the one centred column of the home, module and activity screens (and their
+       lists of cards), and the readable measure of prose */
+    --content-w:76rem; --col-w:48rem; --measure:70ch;
     --rd-w:clamp(17rem,calc(100vw - 42rem),24rem);
     /* the same in every theme (the tint is, so the ink and chips drawn on it are, and a grid's cell colours are the widget's own data); print has no copy of them */
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
@@ -314,7 +315,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* page */
   /* wide: the content area runs to --content-w (76rem), and a wider screen than
      that centres the page as a whole. A module's screen and its activities' are
-     one centred column (.cd-col, below); a wiki keeps its menu beside the page.
+     one centred column of --col-w (.cd-col, below); a wiki keeps its menu beside the page.
      Prose keeps its own readable measure below; data and figures use the width. */
   .page{max-width:calc(var(--content-w) + 4rem);margin:0 auto;padding:1.5rem 1rem 6rem}
   @media (min-width:900px){.page{padding:2.5rem 2rem 6rem}}
@@ -330,9 +331,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* cards: every card is drawn by cardNode (go = a button that opens something, fold = a details, item = a kept entry or
      a tile). A picture tile, the number in the card's colour, the title, one line, a status line, a round chevron.
      The hue comes from the card's place in its list (hue-*); the tile's fill from the style (--tile-solid: the soft wash and the vivid line, or the solid shade and white art). */
-  .modes{display:grid;grid-template-columns:1fr;gap:.8rem;margin:1.5rem 0 0;max-width:48rem}
+  .modes{display:grid;grid-template-columns:1fr;gap:.8rem;margin:1.5rem 0 0;max-width:var(--col-w)}
   /* the home, module and booklet-list screens keep one centred column, as the canvas does */
-  .cd-col.cd-col{max-width:48rem;margin-left:auto;margin-right:auto}
+  .cd-col.cd-col{max-width:var(--col-w);margin-left:auto;margin-right:auto}
   .card-go,.card-fold{--cd-pad:1rem;font-family:var(--sans);text-align:left;color:var(--ink);background:var(--surface);border:var(--bw) solid var(--rule);border-radius:var(--r-lg);line-height:1.4;min-width:0}
   .card-go,.card-fold>summary{display:flex;align-items:center;gap:.9rem;padding:var(--cd-pad);min-height:44px}
   .card-go{width:100%;box-shadow:0 1px 2px color-mix(in srgb,var(--shadow) 6%,transparent),0 10px 24px -18px color-mix(in srgb,var(--shadow) 40%,transparent);transition:transform .12s,box-shadow .12s}
@@ -656,7 +657,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .tab:hover{color:var(--ink);background:var(--accent-soft)}
   .tab[aria-selected="true"]{border-bottom-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:800}
   .tab:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:-2px}
-  .ap-body{scroll-margin-top:var(--ap-top,4.4rem)}
+  /* a control the keyboard reaches is scrolled clear of the bar and a pinned frame (--ap-pad, holdTop) */
+  html{scroll-padding-top:var(--ap-pad,4.4rem)}
   .ap-body:focus{outline:none}
   .ap-tools{display:flex;align-items:center;flex-wrap:wrap;gap:.25rem 1rem;margin:.6rem 0 1rem}
   .ap-tools .oat-ctl{margin:0}
@@ -669,13 +671,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   @media (prefers-reduced-motion:reduce){.fold-knob,.fold-knob::after{transition:none}}
   .pin{margin:0 0 1rem;background:var(--paper)}
   .pin-stick{position:sticky;top:var(--ap-top,4.4rem);z-index:3;padding:.4rem 0 .2rem;border-bottom:var(--bw) solid var(--rule)}
-  .pin-body{max-height:min(7.5em,22vh);overflow:hidden}
   .pin-body>div>:first-child,.pin-body .md>:first-child{margin-top:0}
-  .pin-long .pin-body{-webkit-mask-image:linear-gradient(var(--ink) 60%,transparent);mask-image:linear-gradient(var(--ink) 60%,transparent)}
-  .pin-open .pin-body{max-height:none;overflow:visible;-webkit-mask-image:none;mask-image:none}
-  .pin-stick.pin-open{position:static}
-  .pin-more{min-height:44px;padding:.2rem 0;border:0;background:transparent;color:var(--accent);font-family:var(--sans);font-weight:700;font-size:.9rem;text-decoration:underline}
-  .pin-more[hidden]{display:none}
   .pg-at{color:var(--muted);font-size:.92rem;font-weight:600;text-align:center}
   /* Hidden, but kept for screen readers (one rule for all of them): a citation's and a view's words beside their marks; and a
      solution inside the question says the verdict in its own label, so the question's line stays for screen readers only. */
@@ -959,9 +955,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .mfig,.md div.math{break-inside:avoid;overflow:visible}
     .mfig svg{max-width:100%;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .bar,.rd-panel,.rd-tip,.toast{display:none!important}
-    .cd-dup,.cd-chev,.cd-foot,.ap-tools,.oat-head,.tabbar,.pin-more{display:none!important}
+    .cd-dup,.cd-chev,.cd-foot,.ap-tools,.oat-head,.tabbar{display:none!important}
     .pin-stick{position:static;border:0}
-    .pin-body{max-height:none;overflow:visible;-webkit-mask-image:none;mask-image:none}
     .oat-unit[hidden]{display:block!important}
     .oat-unit{border:0;padding:0}
     .card-compact{background:none}
@@ -1777,10 +1772,6 @@ const STRINGS_SRC={
       next: "Next",
       of: (n,m)=>`Page ${n} of ${m}`
     },
-    frame: {
-      more: "Show all",
-      less: "Show less"
-    },
     reading: {
       kind: {
         note: "Note", abstract: "Summary", info: "Info", todo: "To do", tip: "Tip", important: "Important",
@@ -2101,10 +2092,6 @@ const STRINGS_SRC={
       next: "Suivant",
       of: (n,m)=>`Page ${n} sur ${m}`
     },
-    frame: {
-      more: "Tout afficher",
-      less: "Afficher moins"
-    },
     reading: {
       kind: {
         note: "Note", abstract: "Résumé", info: "Information", todo: "À faire", tip: "Astuce", important: "Important",
@@ -2424,10 +2411,6 @@ const STRINGS_SRC={
       back: "Anterior",
       next: "Siguiente",
       of: (n,m)=>`Página ${n} de ${m}`
-    },
-    frame: {
-      more: "Mostrar todo",
-      less: "Mostrar menos"
     },
     reading: {
       kind: {
@@ -3083,7 +3066,7 @@ function viewReset(id,what){let v=id?VIEWS.get(id):null;
   VIEW=v;}
 viewReset(null);
 const viewAt=addr=>{let v=VIEW.at.get(addr);
-  if(!v) VIEW.at.set(addr,v={chip:null,page:null,tab:null,tabs:Object.create(null),steps:Object.create(null),pin:false,shut:new Set(),queries:new Map(),branch:false});
+  if(!v) VIEW.at.set(addr,v={chip:null,page:null,tab:null,tabs:Object.create(null),steps:Object.create(null),shut:new Set(),queries:new Map(),branch:false});
   return v;};
 /* ---- one draw ----
    render() hands a draw context, `dc`, to every part of the screen: `ticks`, what redraws in place when an answer
@@ -3091,7 +3074,7 @@ const viewAt=addr=>{let v=VIEW.at.get(addr);
    citation panel to open again once its mark is drawn (a language switch); on an activity's screen, `folds`, the callouts
    the author folded that it draws, for the fold switch, `oat`, the steps one at a time, and `foot`, what draws the foot's
    Back and Next again as a step moves. DRAWN is the screen on show's (an answer runs its ticks). */
-const newDraw=()=>({ticks:[],cite:null,again:null,folds:null,oat:null,foot:null});
+const newDraw=()=>({ticks:[],cite:null,again:null,folds:null,oat:null,foot:null,frames:[]});
 let DRAWN=newDraw();
 /* ---- which booklet is in memory ----
    currentId is the open entry, or null on "Your booklets". bookletGen moves on
@@ -6504,8 +6487,11 @@ function chooseTab(id,t){const a=activityOf(id),v=viewAt(id),cur=currentPage(id)
 function turnPage(id,p,last){const steps=viewAt(id).steps;
   if(last&&oatPref()==="one") steps[p.id]=Infinity;else delete steps[p.id];
   showPage(id,p.id);render();
+  /* the page's top just under the bar (its frame, at the top, not yet held), and the focus on it: a screen reader says
+     which page this is (pageBody names it) */
   const n=document.querySelector("#main .ap-body");
-  if(n){if(n.scrollIntoView) n.scrollIntoView({block:"start"});if(n.focus) n.focus({preventScroll:true});}}
+  if(n){if(n.getBoundingClientRect) window.scrollTo({top:Math.max(0,window.scrollY+n.getBoundingClientRect().top-(parseFloat(document.documentElement.style.getPropertyValue("--ap-top"))||0))});
+    if(n.focus) n.focus({preventScroll:true});}}
 /* after a redraw, put the focus back where the reader was working */
 function refocus(sel){const n=document.querySelector(sel);if(n&&!n.disabled) n.focus();}
 /* A tab bar, the ARIA tabs pattern: a button for each tab, the one on show selected and the only one in the Tab order, all
@@ -6519,8 +6505,8 @@ function tabBar(tabs,cur,label,pick){const bar=el("div",{class:"tabbar",role:"ta
       if(j<0) return;e.preventDefault();if(tabs[j].id!==cur) pick(tabs[j].id);});
     bar.append(b);});
   return bar;}
-/* the panel under a tab bar: what the tab on show draws */
-const tabPanel=(cur,...kids)=>el("div",{class:"tabpanel",role:"tabpanel",id:"tbpanel","aria-labelledby":"tb-"+cur},...kids);
+/* the panel under a tab bar: what the tab on show draws; in the Tab order, so a tab of prose alone can be reached and read */
+const tabPanel=(cur,...kids)=>el("div",{class:"tabpanel",role:"tabpanel",id:"tbpanel",tabindex:"0","aria-labelledby":"tb-"+cur},...kids);
 /* ---- a module's tabs ----
    The tab lines of a module's opening declare its tabs; an activity is in the one its `tab:` names, else in the first. The
    module's screen lists the activities of the tab on show under its tab bar (the view's, for this visit), and opening an
@@ -6531,31 +6517,37 @@ const moduleTabNow=mod=>{const ts=tabsIn(mod),v=viewAt(moduleScreen(mod.id)).tab
 /* ---- THE FRAME ----
    The plain prose before the first question of an activity (of a tab, when it has tabs), on that first page, stays in view
    while the questions are answered (SPEC.md section 3): on every page of its tab, above the steps one at a time, and held
-   under the bar while the questions scroll all at once. Plain: paragraphs, lists and tables, with no heading and no callout;
-   prose with either is reading, and scrolls as reading does. A long frame shows its first lines and Show all; shown whole,
-   it scrolls away with the page, so it never covers a phone's screen (shown whole or not is the view's, for this visit).
-   `pin:off` on the activity's line lets it scroll away as any prose does. Prose between questions, and a question's own
-   hint, are not the frame: they go with the question that follows (stepUnits). */
-const plainProse=b=>!!b&&b.type==="markdown"&&!/^ {0,3}#{1,6}(\s|$)/m.test(String(b.text||"").replace(/^ {0,3}(`{3,}|~{3,})[\s\S]*?^ {0,3}\1/gm,""));
+   under the bar while the questions scroll all at once. Plain: paragraphs, lists and tables, with no heading (`#`, or a line
+   of `=` or `-` under text), no callout, no HTML and no code fence; prose with any of those is reading. A frame is short:
+   it is pinned only when it fits whole in the pin's height, min(7.5em, 22vh) of its own text as drawn (frameTall). One
+   taller is reading too, and the screen is drawn again with it as reading (render): it scrolls with its page, on that page
+   only, nothing cut and nothing folded. `pin:off` on the activity's line lets it scroll away as any prose does. Prose
+   between questions, and a question's own hint, are not the frame: they go with the question that follows (stepUnits). */
+const plainProse=b=>!!b&&b.type==="markdown"&&!/^ {0,3}(#{1,6}(\s|$)|<(\/?[A-Za-z][A-Za-z0-9-]*(\s|\/?>|$)|[!?])|`{3,}|~{3,})|^[ \t]*\S.*\n {0,3}(=+|-+)[ \t]*$/m.test(String(b.text||""));
 function frameOf(a,t){if(!a||a.pin===false) return null;
   const first=tabPages(a,t)[0],list=blocksIn(first);
   const n=list.findIndex(b=>!plainProse(b));
   return n>0&&blocksAll([list[n]]).some(isQuestion)?{page:first.id,blocks:list.slice(0,n)}:null;}
+/* the frames measured too tall to pin on the screen on show (frameKey), which render draws as reading */
+let TALL=new Set();
+const frameKey=(id,t)=>id+"\n"+(t||"");
+/* the frame of activity `id`'s tab `t` as this screen draws it: none when it was measured too tall */
+const frameNow=(id,t)=>TALL.has(frameKey(id,t))?null:frameOf(activityOf(id),t);
 /* what the page on show draws, in order: the tab's opening, the frame, the page's own blocks */
-function pageBlocksShown(id){const a=activityOf(id),cur=currentPage(id),f=frameOf(a,cur.tab||null);
+function pageBlocksShown(id){const a=activityOf(id),cur=currentPage(id),f=frameNow(id,cur.tab||null);
   return [...tabOpening(a),...(f?f.blocks:[]),...pageOwn(cur,f)];}
 /* a page's blocks less the frame it begins with */
 const pageOwn=(p,f)=>f&&f.page===p.id?blocksIn(p).slice(f.blocks.length):blocksIn(p);
-function frameNode(id,blocks,draft,dc,one){const F=strings("frame"),v=viewAt(id);
+/* the pin's height, min(7.5em, 22vh), against the frame as drawn: taller is reading (nothing to measure, as in a test, is not) */
+function frameTall(f){const b=f.body;if(!b||!b.isConnected||typeof b.getBoundingClientRect!=="function"||typeof getComputedStyle!=="function") return false;
+  const em=parseFloat(getComputedStyle(b).fontSize)||16;
+  return b.getBoundingClientRect().height>Math.min(7.5*em,.22*window.innerHeight)+1;}
+function frameNode(id,t,blocks,draft,dc,one){
   const body=el("div",{class:"pin-body"},renderBlocks(blocks,draft,id,dc));
-  const more=el("button",{type:"button",class:"pin-more","aria-expanded":String(!!v.pin),hidden:!v.pin},v.pin?F.less:F.more);
-  const box=el("div",{class:"pin"+(one?"":" pin-stick")+(v.pin?" pin-open":"")},body,more);
-  more.addEventListener("click",()=>{v.pin=!v.pin;box.classList.toggle("pin-open",v.pin);
-    more.setAttribute("aria-expanded",String(v.pin));more.textContent=v.pin?F.less:F.more;});
-  /* Show all only when there is more than the first lines show */
-  const fit=()=>{if(v.pin) return;const long=body.scrollHeight>body.clientHeight+2;box.classList.toggle("pin-long",long);setHidden(more,!long);};
-  if(typeof requestAnimationFrame==="function") requestAnimationFrame(fit);
-  if(typeof ResizeObserver==="function") new ResizeObserver(fit).observe(body);
+  const box=el("div",{class:"pin"+(one?"":" pin-stick")},body),f={key:frameKey(id,t),body};
+  dc.frames.push(f);
+  /* measured again when its text reflows (a narrower window, a font arriving): grown too tall, the screen is drawn as reading */
+  if(typeof ResizeObserver==="function") new ResizeObserver(()=>{if(!RENDERING&&DRAWN===dc){if(frameTall(f)) drawKeepingFocus();else holdTop();}}).observe(body);
   return box;}
 
 /* ---- THE FOLD SWITCH ----
@@ -6574,14 +6566,16 @@ function foldSwitch(){const on=foldsOpen();
 /* ---- drawing ---- */
 /* The tab on show (or the activity, with no tabs): its frame, the step control and the fold switch, the page on show (all
    at once, or one question at a time) and its endnotes. The lists are read afresh on every redraw. */
-function pageBody(id,draft,dc){const a=activityOf(id),cur=currentPage(id),f=frameOf(a,cur.tab||null),own=pageOwn(cur,f);
-  const box=el("div",{class:"ap-body",tabindex:"-1"});
+function pageBody(id,draft,dc){const cur=currentPage(id),f=frameNow(id,cur.tab||null),own=pageOwn(cur,f);
+  /* of two or more pages, the body is named for its page ("Page 2 of 3"), which is said when a page turn puts the focus on it */
+  const ps=tabPages(activityOf(id),cur.tab||null),of=ps.length>1?strings("pages").of(ps.indexOf(cur)+1,ps.length):null;
+  const box=el("div",{class:"ap-body",tabindex:"-1",role:of?"group":null,"aria-label":of});
   /* reading material (see READING MATERIAL): the endnotes print shows go below
      the blocks, and only when there is something for them */
   /* (the citation scope began in renderActivity, before the head was drawn) */
   /* three or more questions: the reader may take them one at a time (kept per booklet, like the fold switch) */
   const units=stepUnits(own),one=units.length>=2&&oatPref()==="one";
-  const frame=f?frameNode(id,f.blocks,draft,dc,one):null;
+  const frame=f?frameNode(id,cur.tab||null,f.blocks,draft,dc,one):null;
   const content=one?stepPage(id,draft,units,dc):renderBlocks(own,draft,id,dc);
   const tools=[units.length>=2?stepControl(one):null,dc.folds&&dc.folds.n?foldSwitch():null].filter(Boolean);
   box.append(...[frame,tools.length?el("div",{class:"ap-tools"},...tools):null,content].filter(Boolean));
@@ -6690,12 +6684,16 @@ function activityHeadings(a){const ps=a.pages,out=[];
       return QUESTION_KINDS.has(b.type);});});
   return out;}
 /* The first activity (page) in the booklet holding a heading with this text, or,
-   with bySlug, whose heading has this GitHub-style slug. Nothing when none does. */
+   with bySlug, whose heading has this GitHub-style slug; a module's tab (one of a module with a screen of its own) comes
+   before its activities, as its line does. Nothing when none does. */
 function findHeading(mods,target,bySlug){
   let want;try{want=bySlug?linkSlug(decodeURIComponent(target)):linkNorm(target);}catch(e){want=bySlug?linkSlug(target):linkNorm(target);}
   if(!want) return null;
-  for(const m of mods) for(const a of m.activities) for(const h of activityHeadings(a))
-    if((bySlug?linkSlug(h.text):linkNorm(h.text))===want) return {act:a.id,page:h.page,heading:h.text,title:!!h.title,tab:!!h.tab};
+  const is=text=>(bySlug?linkSlug(text):linkNorm(text))===want;
+  for(const m of mods){
+    for(const t of isMulti(m)&&tabsIn(m)||[]){const n=plainText(tx(t.title,null));if(n&&is(n)) return {mod:m.id,mtab:t.id,heading:n};}
+    for(const a of m.activities) for(const h of activityHeadings(a))
+      if(is(h.text)) return {act:a.id,page:h.page,heading:h.text,title:!!h.title,tab:!!h.tab};}
   return null;}
 function scrollToHeading(text){const want=linkNorm(text);
   const n=[...document.querySelectorAll("#main h2,#main h3,#main h4,#main h5,#main h6")].find(h=>linkNorm(h.textContent)===want&&!(h.closest&&h.closest(".mhead-lede,.mhead-more")))||null;
@@ -6703,10 +6701,14 @@ function scrollToHeading(text){const want=linkNorm(text);
   for(let p=n;p&&p!==document.body;p=p.parentNode) if(p.classList&&p.classList.contains("card-fold")&&!p.open) p.open=true;
   if(n&&n.scrollIntoView) n.scrollIntoView({block:"start"});else window.scrollTo({top:0});}
 /* Follow a link to a heading: its activity on the tab and page holding it, scrolled to the heading. A link to an activity's
-   title shows the activity from its top (go), and one to a tab's name shows the tab with the focus on it. */
-function openHeading(hit){const away=screen!==hit.act;
-  if(away){showPage(hit.act,hit.page);go(hit.act);}
-  else if(currentPage(hit.act).id!==hit.page){showPage(hit.act,hit.page);render();}
+   title shows the activity from its top (go), and one to a tab's name shows the tab with the focus on it; one to a module's
+   tab, the module's screen on that tab. A heading in the opening of an activity with tabs is above every tab: the tab on
+   show stays. */
+function openHeading(hit){
+  if(hit.mtab){const v=moduleScreen(hit.mod);viewAt(v).tab=hit.mtab;if(screen!==v) go(v);else render();refocus("#tb-"+hit.mtab);return;}
+  const away=screen!==hit.act,a=activityOf(hit.act),pg=a.pages.find(p=>p.id===hit.page),stay=!!(tabsIn(a)&&pg&&!pg.tab);
+  if(away){if(!stay) showPage(hit.act,hit.page);go(hit.act);}
+  else if(!stay&&currentPage(hit.act).id!==hit.page){showPage(hit.act,hit.page);render();}
   if(hit.tab){const t=document.querySelector('#main [role="tab"][aria-selected="true"]');
     if(t){if(t.scrollIntoView) t.scrollIntoView({block:"nearest"});t.focus({preventScroll:true});}return;}
   if(!(away&&hit.title)) scrollToHeading(hit.heading);}
@@ -7036,6 +7038,14 @@ function settle(){lang=uiLang();
 function render(){
   /* nothing is drawn before the page has read its store: the first draw is keepStart's (bootPage) */
   if(!KEEP.ready) return DRAWN;
+  TALL=new Set();let dc=drawScreen();
+  /* a frame drawn taller than the pin's height is reading: the screen is drawn again with it so (THE FRAME) */
+  const tall=dc.frames.filter(frameTall);
+  if(tall.length){tall.forEach(f=>TALL.add(f.key));dc=drawScreen();}
+  holdTop();
+  return dc;}
+/* the drawing itself */
+function drawScreen(){
   RENDERING=true;const dc=newDraw();DRAWN=dc;
   try{settle();dc.cite=citeDraw(screen);citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(hasOwn(SCREENS,screen)) SCREENS[screen](main,dc);
@@ -8228,15 +8238,16 @@ if(typeof window!=="undefined"){
   try{Object.defineProperty(window,"Booklet",{value:Object.freeze({version:RENDERER_VERSION,host:hostFn,onChange:onChangeFn,open:openFn,text:textFn}),
     writable:false,configurable:false,enumerable:true});}catch(e){}}
 /* a host that sets the style while a page is showing: draw it again (not while the page is drawing itself, which is when a booklet's own style arrives) */
-window.addEventListener("booklet-style",()=>{if(RENDERING) return;
-  /* drawing again drops the focused control: find it again by its id, or by its place among the page's controls, and give back its caret */
+window.addEventListener("booklet-style",()=>{if(RENDERING) return;drawKeepingFocus();});
+/* drawing again drops the focused control: find it again by its id, or by its place among the page's controls, and give back its caret */
+function drawKeepingFocus(){
   const CTL="#main input,#main textarea,#main select,#main button,#main summary,#main a[href]",a=document.activeElement,
     all=a&&a!==document.body&&document.querySelectorAll?Array.from(document.querySelectorAll(CTL)):[],at=all.indexOf(a),
     ss=a&&typeof a.selectionStart==="number"?a.selectionStart:null,se=a&&typeof a.selectionEnd==="number"?a.selectionEnd:null;
   render();
   if(at<0) return;
   const n=(a.id&&document.getElementById(a.id))||Array.from(document.querySelectorAll(CTL))[at];
-  if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}});
+  if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}}
 /* A wiki's menu is a disclosure on a narrow window and a column beside the page on a wide one: that is decided as the screen is
    drawn, so the screen is drawn again when the window crosses the width (one listener, added once). The search words are the
    view's (VIEW.wiki), so they come back; the caret stays in the box if it was there. */
@@ -8257,11 +8268,19 @@ if(typeof window!=="undefined"&&typeof window.matchMedia==="function"){
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
 /* What stays in view (a wiki's menu, an activity's frame) stays below the page's own sticky bar, whose height changes
-   with the screen; the stylesheet reads it as --ap-top. */
+   with the screen; the stylesheet reads it as --ap-top. What the keyboard moves to is scrolled clear of the bar and of a
+   frame pinned under it (--ap-pad, the page's scroll-padding-top), so a focused control is never hidden behind them. */
+function holdTop(){const bar=document.querySelector(".bar"),root=document.documentElement;if(!bar||!root.style) return;
+  const h=bar.getBoundingClientRect().height,pin=document.querySelector("#main .pin-stick");
+  root.style.setProperty("--ap-top",Math.ceil(h+12)+"px");
+  /* clear of the frame's foot when one is pinned (it is held 12px under the bar), else of the bar's, with room for a field's
+     focus ring and the inset of its first line (a browser brings a text box's caret into view, not its top edge) */
+  root.style.setProperty("--ap-pad",Math.ceil((pin?h+12+pin.getBoundingClientRect().height:h)+24)+"px");}
 (function trackBar(){const bar=document.querySelector(".bar");
   if(!bar||typeof ResizeObserver!=="function") return;
-  const set=()=>document.documentElement.style.setProperty("--ap-top",Math.ceil(bar.getBoundingClientRect().height+12)+"px");
-  new ResizeObserver(set).observe(bar);set();})();
+  new ResizeObserver(holdTop).observe(bar);holdTop();
+  /* a window grown shorter lowers the pin's height (22vh): a pinned frame now taller than it is drawn again as reading */
+  window.addEventListener("resize",()=>{if(!RENDERING&&DRAWN&&DRAWN.frames&&DRAWN.frames.some(frameTall)) drawKeepingFocus();});})();
 /* Printing prints everything: the folded callouts open for the print and fold back after */
 if(typeof window!=="undefined"&&window.addEventListener){let printed=[];
   window.addEventListener("beforeprint",()=>{printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});

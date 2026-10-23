@@ -2,7 +2,7 @@
 // name, no id and no menu. The foot has one row: Back, "Page N of M" and Next; on the last page Next is the next activity's,
 // on the first Back is the overview's. One at a time steps through a page's questions with the same Back and Next, and the
 // last step's Next turns the page. Also: an activity's card on its module's screen shows the activity's first paragraph.
-// The scroll, focus and geometry are test/tabs-browser.js. Run: node test/pages.test.js      (Needs node; nothing to install.)
+// The page's name for a screen reader is here; the scroll, focus and geometry are test/tabs-browser.js. Run: node test/pages.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
@@ -27,6 +27,7 @@ const btn=c=>find(foot(),hasClass(c))[0];
  chk("the page's own heading is drawn once, as a heading",texts(P.main()).split("First page").length===2&&find(P.main(),n=>n.tagName==="h3").map(texts).join()==="First page");
  click(btn("pg-next"));
  chk("Next turns to page two: Back, Page 2 of 3, Next",row()==="pg-back:Back | pg-at:Page 2 of 3 | pg-next:Next"&&/Words with no heading/.test(texts(P.main()))&&!/One\./.test(texts(P.main())),row());
+ chk("the page is named for a screen reader, which says it as the turn puts the focus there: a group, Page 2 of 3",(()=>{const b=find(P.main(),hasClass("ap-body"))[0];return b.attrs.role==="group"&&b.attrs["aria-label"]==="Page 2 of 3"&&b.attrs.tabindex==="-1";})(),JSON.stringify(find(P.main(),hasClass("ap-body"))[0].attrs));
  chk("a page with no heading is not named: no Page 2 line above it",!/Page 2(?! of)/.test(texts(find(P.main(),hasClass("ap-body"))[0])));
  click(btn("pg-next"));
  chk("on the last page Next is the next activity's",row()==="pg-back:Back | pg-at:Page 3 of 3 | cd-next:Next: 2. After",row());
@@ -35,6 +36,7 @@ const btn=c=>find(foot(),hasClass(c))[0];
  chk("Back turns back a page",row()==="pg-back:Back | pg-at:Page 2 of 3 | pg-next:Next",row());
  draw("m/b");
  chk("an activity of one page has no Page N of M, and the last activity no Next",row()==="cd-back:Back to the overview",row());
+ chk("and its body no page name: nothing to say",(()=>{const b=find(P.main(),hasClass("ap-body"))[0];return b.attrs.role===undefined&&b.attrs["aria-label"]===undefined;})());
  A.loadText(FM+"> [!activity|a] A\n\nOne.\n\n---\n\nTwo.\n");draw("a");click(btn("pg-next"));
  chk("the last page of the last activity keeps the page's place in the middle",row()==="pg-back:Back | pg-at:Page 2 of 2 | pg-gap:",row());
  chk("which page is on show is not stored in the file",!/p2/.test(A.toMarkdown()));}

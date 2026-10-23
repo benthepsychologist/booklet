@@ -68,6 +68,7 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  const bar=role("tablist"),tabs=role("tab"),panel=role("tabpanel");
  chk("an activity of tabs draws one tab bar, a tab for each, the first selected",bar.length===1&&tabs.map(texts).join("|")==="Learn the Ideas!|Do it|Look back"&&tabs.map(t=>t.attrs["aria-selected"]).join()==="true,false,false");
  chk("only the selected tab is in the Tab order, and every tab controls the one panel, which names it",tabs.map(t=>t.attrs.tabindex).join()==="0,-1,-1"&&tabs.every(t=>t.attrs["aria-controls"]==="tbpanel")&&panel.length===1&&panel[0].attrs.id==="tbpanel"&&panel[0].attrs["aria-labelledby"]===tabs[0].attrs.id);
+ chk("the panel is in the Tab order, so a tab of prose alone can be reached and read",panel[0].attrs.tabindex==="0");
  const col=find(P.main(),hasClass("col"))[0],kids=col.children.filter(x=>x&&typeof x==="object");
  const at=f=>kids.findIndex(f);
  chk("the opening is drawn above the bar",/The opening/.test(texts(kids[at(k=>/The opening/.test(texts(k)))]))&&at(k=>/The opening/.test(texts(k)))<at(k=>k.attrs.role==="tablist"));
@@ -135,14 +136,17 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  {const fr=t=>{const B=P.boot();B.loadText(FM+"> [!activity|r] R\n\n"+t+"\n\n> [!text|q] Q?\n");return B.frameOf(B.activityOf("r"),null);};
   chk("prose with a heading before the first question is reading, not a frame",fr("Intro.\n\n## Why\n\nWords.")===null);
   chk("so is prose with a callout",fr("Intro.\n\n> [!note]- More\n> Folded.")===null);
-  chk("a list and a table are plain prose, and a # line inside a code fence is no heading",fr("- one\n- two\n\n| a | b |\n| --- | --- |\n| 1 | 2 |")!==null&&fr("Run:\n\n```sh\n# a comment\n```")!==null);}
+  chk("a list and a table are plain prose",fr("- one\n- two\n\n| a | b |\n| --- | --- |\n| 1 | 2 |")!==null);
+  chk("a heading underlined with = or - is a heading: reading",fr("Before you start\n================\n\nAnswer.")===null&&fr("Before you start\n-\n\nAnswer.")===null);
+  chk("so is prose with HTML in it, and prose with a code fence",fr("<h3>Before you start</h3>\n\nAnswer.")===null&&fr("<!-- a note -->\n\nAnswer.")===null&&fr("Run:\n\n```sh\nls\n```")===null&&fr("Run:\n\n~~~\nls\n~~~")===null);
+  chk("a link in angle brackets, a tag inside a line, and a # with no space are plain",fr("See <https://example.org>.")!==null&&fr("Answer the <b>two</b> questions.")!==null&&fr("#1 is the first.")!==null);}
  chk("with tabs, each tab's own: the prose before its first question, none for a tab of prose",(()=>{const d=A.activityOf("d"),f1=A.frameOf(d,"one");return f1&&/Tab one's frame/.test(f1.blocks[0].text)&&A.frameOf(d,"two")===null;})());
  chk("the question's hint stays with it, and the prose between questions goes with the question after: the steps of the page",(()=>{const a=A.activityOf("a"),b=a.pages[0].blocks;
    return A.stepUnits(b.slice(f.blocks.length)).map(u=>u.blocks.map(x=>x.type).join("+")).join(" | ")==="text | markdown+text | text"&&b[1].hint&&/A hint/.test(JSON.stringify(b[1].hint));})());
  const pin=()=>find(P.main(),hasClass("pin"));
  global.__ls[A.OAT_KEY+A.currentId]="all";draw("a");
  chk("drawn all at once, the frame is held under the bar (pin-stick), and drawn once",pin().length===1&&/pin-stick/.test(pin()[0].attrs.class)&&texts(P.main()).split("Read this first").length===2);
- chk("Show all is there, hidden until the frame is measured long",(()=>{const m=find(pin()[0],hasClass("pin-more"))[0];return m&&m.attrs.hidden!==undefined&&texts(m)==="Show all";})());
+ chk("it is drawn whole: nothing in it shows or hides it, and nothing cuts it short",find(pin()[0],n=>String(n.tagName).toLowerCase()==="button").length===0&&!/pin-(long|more|open)/.test(JSON.stringify(pin()[0].attrs)));
  global.__ls[A.OAT_KEY+A.currentId]="one";draw("a");
  chk("one at a time, it stays above the steps and is not held (it is above every step)",pin().length===1&&!/pin-stick/.test(pin()[0].attrs.class)&&find(P.main(),hasClass("oat-unit")).length===3);
  chk("it is not one of the steps",find(P.main(),hasClass("oat-unit")).every(u=>!/Read this first/.test(texts(u))));
@@ -154,6 +158,54 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  chk("a tab's frame is drawn on that tab",pin().length===1&&/Tab one's frame/.test(texts(pin()[0])));
  A.chooseTab("d","two");
  chk("and not on a tab that has none",pin().length===0);}
+
+/* 6b. a frame is short: it is pinned only when it fits whole in the pin's height, min(7.5em, 22vh) of its own text as
+   drawn; one taller is reading, drawn where it stands on its own page, nothing cut. node has no layout: the drawing is
+   measured here with a stand-in (a node's height is a quarter of its text's length, in px); the real one is tabs-browser.js */
+{const gcs=global.getComputedStyle,ih=global.window.innerHeight;
+ const tall=h=>A.frameTall({body:{isConnected:true,getBoundingClientRect:()=>({height:h})}});
+ global.getComputedStyle=()=>({fontSize:"16px"});global.window.innerHeight=844;
+ const at844=[tall(118),tall(125)];global.window.innerHeight=400;const at400=[tall(86),tall(92)];
+ chk("the pin's height is 7.5em of the frame's text, or 22vh when that is less",at844.join()==="false,true"&&at400.join()==="false,true",JSON.stringify([at844,at400]));
+ chk("a frame with nothing to measure (not drawn, as in this test's own drawing) is not tall",A.frameTall({body:{isConnected:false}})===false);
+ global.window.innerHeight=844;
+ const mk=global.document.createElement;
+ global.document.createElement=t=>{const n=mk(t);n.isConnected=true;n.getBoundingClientRect=()=>({height:n.textContent.length/4,top:0});return n;};
+ const LONG=("Kettles were once heated on open fires, and the shape of the spout followed from how the steam had to leave the body. "+
+   "Over the years the handle moved, the lid grew a knob, and the base widened so the kettle would not tip on a hearth. ").repeat(3)+"The shape still answers the same old questions.";
+ A.loadText(FM+"> [!activity|r] R\n\n"+LONG+"\n\n> [!text|r1] One?\n\n> [!text|r2] Two?\n\n> [!text|r3] Three?\n\n***\n\n> [!text|r4] Four?\n\n"+
+   "> [!activity|s] S\n\nAnswer the questions. Skip any you like.\n\n> [!text|s1] One?\n\n> [!text|s2] Two?\n\n> [!text|s3] Three?\n");
+ const pin=()=>find(P.main(),hasClass("pin"));
+ global.__ls[A.OAT_KEY+A.currentId]="all";draw("r");
+ chk("(the reading is "+LONG.length+" characters, ending in questions)",LONG.length>=700);
+ chk("a long plain reading before the first question is not pinned: drawn as reading, whole, once",pin().length===0&&texts(P.main()).includes(LONG.slice(-60))&&texts(P.main()).split("Kettles were once").length===4);
+ global.__ls[A.OAT_KEY+A.currentId]="one";draw("r");
+ const units=()=>find(P.main(),hasClass("oat-unit"));
+ chk("one at a time, it is the first step's, as prose before a question is, not above every step",pin().length===0&&units().length===3&&/Kettles/.test(texts(units()[0]))&&!/Kettles/.test(texts(units()[1])));
+ A.turnPage("r",A.activityOf("r").pages[1],false);
+ chk("and not on the next page: reading is its page's",!/Kettles/.test(texts(P.main()))&&/Four/.test(texts(P.main())));
+ global.__ls[A.OAT_KEY+A.currentId]="all";draw("s");
+ chk("a short line of instructions is pinned, whole",pin().length===1&&/pin-stick/.test(pin()[0].attrs.class)&&/Skip any you like/.test(texts(pin()[0])));
+ global.document.createElement=mk;global.getComputedStyle=gcs;global.window.innerHeight=ih;}
+
+/* 6c. links: to a module's tab, and to a heading in the opening of an activity with tabs */
+{const L=FM+"> [!module|m] M\n\n> [!tab] This month\n\n> [!tab|learn] Learn more\n\nWhy budgets help.\n\n"+
+   "> [!activity|spend] Spending\n\nSee [[#Learn more]].\n\n> [!text|q] Q?\n\n> [!activity|why tab:learn] Why\n\nWords.\n\n> [!module|m end] End\n";
+ A.loadText(L);
+ const hit=A.findHeading(A.allModules(),"Learn more",false),bySlug=A.findHeading(A.allModules(),"learn-more",true);
+ chk("a link to a module's tab name finds the tab, by its words and by its slug",hit&&hit.mod==="m"&&hit.mtab==="learn"&&bySlug&&bySlug.mtab==="learn",JSON.stringify([hit,bySlug]));
+ draw("m/spend");
+ const ln=find(P.main(),n=>n.tagName==="a"&&/Learn more/.test(texts(n)))[0];
+ chk("it is drawn as a link",!!ln);
+ if(ln) click(ln);
+ chk("followed, it opens the module's screen on that tab",A.screen===A.moduleScreen("m")&&role("tab").map(t=>t.attrs["aria-selected"]).join()==="false,true"&&/Why budgets help/.test(texts(role("tabpanel")[0]||{children:[]})),A.screen);
+ chk("a module of one activity has no screen: its tab names lead nowhere",A.findHeading(A.parseFile(FM+"> [!module|o] O\n\n> [!tab] Only\n\n> [!activity|a] A\n\nx\n\n> [!module|o end] E\n").template.modules,"Only",false)===null);
+ A.loadText(FM+"> [!activity|t] T\n\n## Before you start\n\nRead this.\n\n> [!tab] One\n\nSee [[#Before you start]].\n\n> [!tab] Two\n\nAlso [[#Before you start]].\n");
+ draw("t");click(role("tab")[1]);
+ const back=find(P.main(),n=>n.tagName==="a"&&/Before you start/.test(texts(n)))[0];
+ chk("(on the second tab, a link to a heading in the opening)",!!back&&role("tab")[1].attrs["aria-selected"]==="true");
+ if(back) click(back);
+ chk("followed, the tab on show stays: the opening is above every tab",role("tab")[1].attrs["aria-selected"]==="true"&&/Also/.test(texts(role("tabpanel")[0]||{children:[]})));}
 
 /* 7. the linter */
 {const LINT=path.join(__dirname,"..","lint-booklet.py");
@@ -176,6 +228,12 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  chk("a tab line outside an activity and a module's opening: an error",stray.errors.length===1&&/tab/.test(stray.errors[0]),stray.out);
  const plain=lint("plain.booklet.md",FM+"Words first.\n\n> [!tab] One\n\nx\n\n> [!tab] Two\n\ny\n");
  chk("a file with no activity line may have tabs",plain.errors.length===0,plain.out);
+ const warns=r=>r.out.split("\n").filter(l=>l.startsWith("warn"));
+ const solo=lint("solo.booklet.md",FM+"> [!module|solo] Solo\n\nOpening.\n\n> [!tab] Read\n\nNever drawn.\n\n> [!tab] More\n\n> [!activity|only] Only\n\nx\n\n> [!module|solo end] E\n");
+ chk("tab lines in a module of one activity: a warning, once, at the first (no screen to show them on)",solo.errors.length===0&&warns(solo).length===1&&/line 12: .*one activity.*never drawn/.test(warns(solo)[0]),solo.out);
+ chk("a module of two activities may have tabs, with no warning",warns(okm).length===0,okm.out);
+ const indata=lint("indata.booklet.md",FM+"> [!activity|a] A\n\nx\n\n> [!data] Data\n\n> [!tab] In data\n\ny\n");
+ chk("a tab line in a data section: a warning that it is not read",indata.errors.length===0&&warns(indata).length===1&&/line 14: a tab line in a data section is not read/.test(warns(indata)[0]),indata.out);
  fs.rmSync(dir,{recursive:true,force:true});}
 
 console.log(fails?"\n"+fails+" FAILURES":"\ntabs checks passed");P.closePages();process.exit(fails?1:0);

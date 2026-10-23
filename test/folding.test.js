@@ -70,9 +70,9 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
  chk("two questions offer no stepper",A.stepUnits([mk("choice","q1"),mk("choice","q2")]).length===0);
  chk("a row of three questions is one step, and one step offers no stepper (the page needs two)",A.stepUnits([{type:"row",id:"r",blocks:[{type:"cell",id:"c",blocks:[mk("text","a"),mk("text","b"),mk("text","c")]}]}]).length===1);}
 
-/* 6. every word of the steps, the pager, the frame and the fold switch exists in en, fr, es (the tables themselves: a missing
+/* 6. every word of the steps, the pager and the fold switch exists in en, fr, es (the tables themselves: a missing
    key must not hide behind the English that fr and es inherit) and es-AR (which inherits es) */
-{const want={cards:["questionsN"],steps:["label","one","all","progress","back","next"],fold:["openAll"],pages:["back","next","of"],frame:["more","less"]};
+{const want={cards:["questionsN"],steps:["label","one","all","progress","back","next"],fold:["openAll"],pages:["back","next","of"]};
  const has=(o,k)=>o&&o[k]!=null&&!(typeof o[k]==="string"&&!o[k].trim());
  const missIn=t=>Object.entries(want).flatMap(([g,ks])=>ks.filter(k=>!has(t&&t[g],k)).map(k=>g+"."+k));
  for(const lang of ["en","fr","es"]){const miss=missIn(A.STRINGS_SRC[lang]);chk("the words are written in the "+lang+" table itself",miss.length===0,miss.join());}
@@ -80,7 +80,7 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
    chk("the words resolve in "+lang,miss.length===0,miss.join());
    chk("the counting words in "+lang+" take numbers",/2/.test(S.cards.questionsN(2))&&/2/.test(S.steps.progress(2,5))&&/5/.test(S.steps.progress(2,5))&&/2/.test(S.pages.of(2,3))&&/3/.test(S.pages.of(2,3)));}
  chk("es-AR holds none of these words itself and gets es's",!A.STRINGS_SRC["es-AR"].steps&&!A.STRINGS_SRC["es-AR"].pages&&A.STRINGS["es-AR"].steps.one===A.STRINGS.es.steps.one&&A.STRINGS["es-AR"].pages.of(1,2)===A.STRINGS.es.pages.of(1,2));
- chk("fr and es are not the English words",["fr","es"].every(l=>A.STRINGS[l].steps.one!==A.STRINGS.en.steps.one&&A.STRINGS[l].fold.openAll!==A.STRINGS.en.fold.openAll&&A.STRINGS[l].pages.of(1,2)!==A.STRINGS.en.pages.of(1,2)&&A.STRINGS[l].frame.more!==A.STRINGS.en.frame.more));
+ chk("fr and es are not the English words",["fr","es"].every(l=>A.STRINGS[l].steps.one!==A.STRINGS.en.steps.one&&A.STRINGS[l].fold.openAll!==A.STRINGS.en.fold.openAll&&A.STRINGS[l].pages.of(1,2)!==A.STRINGS.en.pages.of(1,2)));
  chk("no l10n: draft mark is left on the stepper words",!/steps: \{ \/\* l10n: draft/.test(P.html));}
 
 /* 7. the preferences live in booklet.ui.* only */

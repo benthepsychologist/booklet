@@ -893,8 +893,9 @@ def check_format(f, text, fm):
     rec_lines = []           # (line, id) of every records line that names a module, checked once the file is read
     data_scope = None        # the module a `> [!data|module-id]` section belongs to, until the next data, records, module or activity line
     notice_seen, mod_has_activity = set(), False
-    # tabs (SPEC.md section 3): a module's, declared in its opening (module id -> {tab id: line}), and the open activity's
-    mod_tabs, act_tabs, in_act = {}, {}, False
+    # tabs (SPEC.md section 3): a module's, declared in its opening (module id -> {tab id: line}), and the open activity's;
+    # how many activities each module has (a module of one has no screen of its own to show its tabs on)
+    mod_tabs, act_tabs, in_act, mod_acts = {}, {}, False, {}
     implicit, fence = True, None          # a file with no activity or module line is one activity (its tab lines are its tabs)
     for l in lines:
         fence, skip = fence_skip(l, fence)
@@ -1153,6 +1154,9 @@ def check_format(f, text, fm):
             if section == "data" and kind in ("module", "activity"):
                 # a module or an activity line ends a data section: what follows is the booklet's own text again
                 section, data_scope = "content", None
+            if section == "data" and kind == "tab":
+                warn(f, f"{where}: a tab line in a data section is not read (a data section holds blocks, menus and footnotes, "
+                        f"not an activity's text); put the tab in an activity, or in a module's opening")
             if kind in ("module", "data"):
                 in_act = False
             if kind == "data":
@@ -1222,6 +1226,7 @@ def check_format(f, text, fm):
                     seen_activity = True
                     mod_has_activity = True
                     in_act, act_tabs = True, {}
+                    mod_acts[open_mod] = mod_acts.get(open_mod, 0) + 1
                     tab_set = w["set"].get("tab")
                     if tab_set is not None and tab_set not in mod_tabs.get(open_mod, {}):
                         err(f, f"{where}: `tab:{tab_set}` names no tab of " + (f"the module {open_mod!r}" if open_mod else "a module (this activity is outside every module)")
@@ -1357,6 +1362,13 @@ def check_format(f, text, fm):
         err(f, f"line {noid_line}: the module opened here has no id, so it is never closed (an end line repeats the module's id)")
     if open_mod:
         err(f, f"line {open_line}: the module {open_mod!r} is opened and never closed")
+    # a module of fewer than two activities has no screen of its own (its activity's screen is its screen), so the tabs its
+    # opening declares, and the prose after them, are never drawn: said once, at its first tab line
+    for mid, table in mod_tabs.items():
+        if mid and table and mod_acts.get(mid, 0) < 2:
+            warn(f, f"line {min(table.values())}: the module {mid!r} has " + ("one activity" if mod_acts.get(mid) else "no activity")
+                    + ", so it has no screen of its own to show tabs on: its tab lines, and the prose after them, are never drawn. "
+                      "Put that prose in the module's opening with no tab line, or tabs inside the activity")
     for n, mid, mod in menu_uses:
         # a menu is read in its own module first, then in the data section (a menu outside every fence), never in another module
         if mid not in menus:
