@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-sdmZHeMd1cQl6sDo+6fvT7pdNLsYXxTJWeTDCHxehZs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-S7JAEv75v8IlLVC6qGIppVQ4pOe2HxmBsLJ8kwDUvTI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -235,7 +235,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --serif:'Lexend', 'Atkinson Hyperlegible', var(--fam-sans);
     --sans:'Atkinson Hyperlegible', var(--fam-sans);
     /* layout: the content area's widest, and the readable measure of prose */
-    --content-w:76rem; --measure:70ch;
+    --content-w:76rem; --measure:70ch; --q-text-min:20rem;
     --rd-w:clamp(17rem,calc(100vw - 42rem),24rem);
     /* the same in every theme (the tint is, so the ink and chips drawn on it are, and a grid's cell colours are the widget's own data); print has no copy of them */
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
@@ -467,14 +467,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .q-acts{display:flex;gap:.45rem;margin:-.4rem 0 .6rem} .q-acts:empty{display:none}
   .q-live{margin:0 0 1rem;min-height:1.2em} .q-live:empty{display:none}
   .pills .pill-btn,.pill-x{min-height:44px;min-width:44px}
-  /* short options sit beside their question when there is room */
-  .q-inline{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1rem;align-items:center}
-  .q-inline>:is(h3,label.lbl,.aside){grid-column:1}
-  .q-inline>:is(h3,label.lbl){margin-top:.25rem;margin-bottom:.25rem}
-  .q-inline>.pills{max-width:none;grid-column:2;grid-row:1/span 2;justify-self:end;margin:.25rem 0 .5rem}
-  .q-inline>:is(.q-acts,.q-live,.q-ownrow){grid-column:1/-1}
-  @media (max-width:640px){.q-inline{display:block}.q-inline>.pills{margin:.25rem 0 1rem}}
+  /* A question's words keep a readable width, --q-text-min. Short options sit beside them (besideWhenFit adds q-beside) only when both fit;
+     when they do not the options are under the words. A matrix's rows are drawn by the same rule (drawMatrix). */
+  .q-inline{display:block}
+  .q-beside{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:1rem;align-items:center}
+  .q-beside>:is(h3,label.lbl,.aside){grid-column:1}
+  .q-beside>:is(h3,label.lbl){margin-top:.25rem;margin-bottom:.25rem}
+  .q-beside>.pills{max-width:none;grid-column:2;grid-row:1/span 2;justify-self:end;margin:.25rem 0 .5rem}
+  .q-beside>:is(.q-acts,.q-live,.q-ownrow,.q-replies){grid-column:1/-1}
   .rowcell .q-inline{display:block}
+  /* an option's reply, under the options */
+  .q-replies{margin:-.4rem 0 1rem} .q-replies:empty{display:none}
+  .q-reply{margin:0 0 .4rem;padding:.45rem .8rem;border-left:var(--focus-w) solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;font-family:var(--sans);font-size:.95rem;color:var(--ink)}
   /* one at a time */
   .oat-ctl{display:inline-flex;gap:.25rem;padding:.2rem;margin:.6rem 0 1rem;border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);font-family:var(--sans)}
   .oat-ctl button{min-height:44px;padding:.3rem 1rem;border:0;border-radius:999px;background:transparent;color:var(--muted);font-weight:600;font-size:.92rem}
@@ -491,9 +495,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .oat-nav{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:.9rem 0 0;font-family:var(--sans)}
   .oat-nav .cd-btn[disabled]{opacity:.45;cursor:default}
   @media (prefers-reduced-motion:reduce){.oat-dot{transition:none}}
-  /* matrix: each row is its item and its answers as pills (one set of radios, the pill is the label's text): beside the item
-     when the column is wide, under it when it is narrow */
-  .mxwrap{container-type:inline-size;margin:.25rem 0 1rem}
+  /* matrix: each row is its item and its answers as pills (one set of radios, the pill is the label's text), the item beside the pills
+     when the column has room for its readable width and the pills, else drawMatrix draws each item as a single-choice question (.mx-q) */
+  .mxwrap{container-type:inline-size;position:relative;margin:.25rem 0 1rem}
+  .mxprobe{position:absolute;left:0;top:0;width:max-content;height:0;overflow:hidden;visibility:hidden;pointer-events:none;display:flex;gap:.45rem;white-space:nowrap;
+    padding-left:calc(var(--q-text-min) + .9rem);font-family:var(--sans)}
+  .mxprobe span{box-sizing:border-box;min-width:44px;padding:.4rem .95rem;border:var(--bw) solid transparent;font-size:.95rem;font-weight:700;line-height:1.2}
   .mx{display:block;font-family:var(--sans)}
   .mxrow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.4rem .9rem;border-top:1px solid var(--rule);padding:.45rem 0}
   .mxitem{color:var(--reader);min-width:0}
@@ -504,11 +511,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mxopt:hover span{background:var(--accent-soft)}
   .mxopt input:checked+span{background:var(--accent);color:var(--on-accent)}
   .mxopt input:focus-visible+span{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
-  @container (max-width:560px){
-    .mxrow{display:block;padding:.6rem 0}
-    .mxitem{display:block;margin:0 0 .4rem;font-weight:600}
-    .mxrow .mxopts{justify-content:flex-start}
-  }
+  .mx-q .mxq .pills{max-width:none}
 
   /* entry read view */
   .entry{background:var(--surface);border:var(--bw) solid var(--rule);border-radius:14px;padding:.9rem 1.1rem;margin:0 0 1rem}
@@ -533,14 +536,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .finalize:hover{filter:brightness(1.08);transform:translateY(-1px)}
 
   /* quadrant */
-  .quadwrap{display:grid;grid-template-columns:1.5rem 1fr 1.5rem;grid-template-rows:auto 1fr auto;gap:.3rem;margin:1rem 0}
+  .quadwrap{display:grid;grid-template-columns:1.5rem minmax(0,1fr) 1.5rem;grid-template-rows:auto 1fr auto;gap:.3rem;margin:1rem 0}
   .ax{color:var(--muted);font-size:.8rem;text-align:center;align-self:center;justify-self:center;font-family:var(--sans);font-weight:700}
   .ax.v{writing-mode:vertical-rl;transform:rotate(180deg)} .ax.v.r{transform:none}
-  .quad{grid-column:2;grid-row:2;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:.45rem}
-  .q{color:var(--tint-ink);border-radius:14px;padding:.75rem .8rem .8rem;min-height:9rem;display:flex;flex-direction:column;gap:.5rem}
+  .quad{grid-column:2;grid-row:2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:1fr 1fr;gap:.45rem}
+  .q{color:var(--tint-ink);border-radius:14px;padding:.75rem .8rem .8rem;min-height:9rem;display:flex;flex-direction:column;gap:.5rem;min-width:0}
   .q .qn{font-family:var(--sans);font-size:.95rem;font-weight:800;color:var(--qd)}
   .q .qb{display:flex;flex-wrap:wrap;gap:.4rem}
-  .emb{border:var(--bw) solid var(--tint-chip-bd);background:var(--tint-chip);color:var(--tint-ink);border-radius:999px;padding:.45rem .85rem;font-size:.92rem;font-weight:600;line-height:1.2;min-height:2.4rem}
+  .emb{max-width:100%;overflow-wrap:anywhere;border:var(--bw) solid var(--tint-chip-bd);background:var(--tint-chip);color:var(--tint-ink);border-radius:999px;padding:.45rem .85rem;font-size:.92rem;font-weight:600;line-height:1.2;min-height:2.4rem}
   .emb:hover{border-color:var(--qd)}
   .emb[aria-pressed="true"]{background:var(--qd);color:var(--on-deep);border-color:var(--qd)}
   @media (max-width:480px){.q{min-height:8rem;padding:.55rem .55rem .6rem} .emb{padding:.4rem .7rem;font-size:.88rem}}
@@ -562,6 +565,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .qdesc{display:grid;grid-template-columns:1fr;gap:.6rem;margin:1rem 0 1.25rem}
   @media (min-width:600px){.qdesc{grid-template-columns:1fr 1fr}}
   .qd{color:var(--tint-ink);border-radius:12px;padding:.8rem .95rem;font-size:.95rem;line-height:1.45}
+  .qd-plain{background:var(--paper-deep);color:var(--ink)}
   .qd strong{display:block;font-weight:800;margin-bottom:.2rem;font-family:var(--sans)}
 
   /* dialogs, drop overlay, toast */
@@ -594,6 +598,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .svgfig .rg{fill:var(--paper-deep);stroke:var(--rule);stroke-width:2;cursor:pointer;transition:fill .12s,stroke .12s}
   .svgfig .rg:hover{fill:var(--rg-on);stroke:var(--accent)}
   .svgfig .rg.on{fill:var(--rg-on);stroke:var(--accent);stroke-width:3}
+  .svgfig.ro .rg{cursor:default}
+  .svgfig.ro .rg:hover{fill:var(--paper-deep);stroke:var(--rule)}
   .svgfig .rg:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
   .svgfig svg :is(ellipse,circle,path,rect,polygon,polyline,line):not(.rg){fill:none;stroke:var(--rule);stroke-width:2;pointer-events:none}
   .sideswitch{display:flex;gap:.35rem;justify-content:center;margin:0 0 .5rem}
@@ -3806,7 +3812,21 @@ const LISTS={
   anchors:[/^[ \t]*(\d+)[.)][ \t]+(.*)$/,m=>({n:Number(m[1]),text:m[2].trim()})],
   /* a bulleted list: a matrix's items or a shared menu's entries (`- text`; a `[ ]` box is dropped) */
   bullets:[/^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$/,m=>m[1].trim()]};
-const listOf=(what,lines,i)=>listUnder(lines,i,...LISTS[what]);
+const listOf=(what,lines,i)=>what==="options"?optionsUnder(lines,i):listUnder(lines,i,...LISTS[what]);
+/* The task list under a choice or multi, with each option's reply (SPEC.md section 5): a bullet nested under an option, written
+   deeper than it, is that option's reply, and so is a line indented deeper still straight under a reply (they join with a space). An
+   option's own text is its one line and never takes a reply in; a nested line that is no bullet and follows no reply ends the list, as
+   any indented line does. Each option is {text, correct, reply}; `reply` is "" when it has none. */
+const indentOf=ln=>ln.match(/^[ \t]*/)[0].replace(/\t/g,"    ").length;
+function optionsUnder(lines,i){let j=i,blanks=0;
+  while(j<lines.length&&!lines[j].trim()){j++;blanks++;if(blanks>1) return null;}
+  const items=[];let at=0;
+  for(;j<lines.length;j++){const ln=lines[j],m=ln.match(LISTS.options[0]);
+    if(m){items.push({...LISTS.options[1](m),reply:""});at=indentOf(ln);continue;}
+    const bullet=ln.match(/^[ \t]*[-*+][ \t]+(.*)$/),cur=items[items.length-1];
+    if(!cur||!ln.trim()||indentOf(ln)<=at||(!bullet&&!cur.reply)) break;
+    const t=(bullet?bullet[1]:ln).trim();cur.reply=cur.reply?cur.reply+" "+t:t;}
+  return items.length?{items,next:j}:null;}
 /* A query block's body: `key: value` lines (YAML's plainest form). Returns
    its settings, or `bad` with the first line that is not one; `unknown` names the keys a query does not
    have, and `limitBad` a `limit` that is not a positive whole number (both are ignored). */
@@ -3918,7 +3938,7 @@ const choiceBlock=kind=>(it,help,where,P)=>{
   if(!it.opts) return {menu:true,block:{id:it.id,type:kind,label:it.title,help:help||undefined,keys:[it.id],
     open:it.flags.has("open")||undefined,options:[],answer:kind==="choice"?undefined:[]}};
   return {block:{id:it.id,type:kind,label:it.title,help:help||undefined,keys:[it.id],
-    open:it.flags.has("open")||undefined,options:it.opts.map(o=>o.text),
+    open:it.flags.has("open")||undefined,options:it.opts.map(o=>o.text),replies:it.opts.some(o=>o.reply)?it.opts.map(o=>o.reply):undefined,
     answer:kind==="choice"?(it.opts.findIndex(o=>o.correct)+1)||undefined:it.opts.map((o,n)=>o.correct?n+1:null).filter(Boolean)}};};
 const numberBlock=kind=>(it,help)=>({block:{id:it.id,type:kind,label:it.title,help:help||undefined,keys:[it.id],
   min:it.set.min!==undefined?Number(it.set.min):undefined,max:it.set.max!==undefined?Number(it.set.max):undefined,
@@ -5535,7 +5555,7 @@ const cellStyle=(c,i)=>{const k=cellColor(c,i);return `background:${k.tint};--qd
    Given a widget carrying one or more figures — each an SVG whose shapes have
    a `data-r` region id — let a person point at a region and say what it is
    like there. The renderer knows the interaction; the widget knows the body. */
-function svgRegions(e,W,keys){const key=keys[0];
+function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const u=strings("ui");
   const C=wordsOf(W.copy);
   const figs=W.figures||[];
@@ -5550,7 +5570,9 @@ function svgRegions(e,W,keys){const key=keys[0];
   const rows=()=>e[key]||[];
   const rowFor=id=>rows().find(r=>r.id===id);
   const sides=el("div",{class:"sideswitch",role:"group","aria-label":C.sideLbl||""});
+  /* `readonly` (SPEC.md section 7): the figure is shown and its regions named, and nothing can be pointed at or answered */
   const fig=el("div",{class:"svgfig"});
+  if(opts.readonly) fig.classList.add("ro");
   const chips=el("div",{class:"bodychips"});
   const panel=el("div",{class:"sensepanel"});
   const summary=el("div",{class:"bodysummary"});
@@ -5565,12 +5587,15 @@ function svgRegions(e,W,keys){const key=keys[0];
     fig.innerHTML="";fig.append(...sanitizeSvg(f&&f.svg));
     fig.querySelectorAll(".rg").forEach(node=>{
       const id=node.getAttribute("data-r");
+      if(opts.readonly){node.setAttribute("role","img");node.setAttribute("aria-label",labelOf(id));return;}
       node.classList.toggle("on",!!rowFor(id)||active===id);
       node.setAttribute("tabindex","0");node.setAttribute("role","button");
       node.setAttribute("aria-label",labelOf(id));
       node.onclick=()=>setActive(id);
       node.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();setActive(id);}};});};
-  const drawChips=()=>{chips.innerHTML="";(W.chips||[]).forEach(id=>{
+  const drawChips=()=>{chips.innerHTML="";
+    if(opts.readonly){const f=figs.find(x=>x.id===side)||figs[0];(f&&f.regions||[]).forEach(id=>chips.append(el("span",{class:"emw"},labelOf(id))));return;}
+    (W.chips||[]).forEach(id=>{
       chips.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(!!rowFor(id)||active===id),
         onclick:()=>setActive(id)},labelOf(id)));});};
   /* The label for a sense code, and back again. A typed/dictated word that
@@ -5614,9 +5639,14 @@ function svgRegions(e,W,keys){const key=keys[0];
         onclick:()=>{e[key]=rows().filter(x=>x!==r);markDirty();drawAll();}},"×"),
       el("button",{type:"button",class:"r rlink",onclick:()=>setActive(r.id)},labelOf(r.id)),
       el("span",{},"— "+r.s.map(senseWord).join(", ")))));};
-  const drawAll=()=>{drawSides();drawFig();drawChips();drawPanel();drawSummary();};
+  const drawAll=()=>{drawSides();drawFig();drawChips();if(!opts.readonly){drawPanel();drawSummary();}};
   drawAll();
-  wrap.append(el("div",{class:"bodywrap"},el("div",{},sides,fig,chips),panel),summary);
+  wrap.append(el("div",{class:"bodywrap"},el("div",{},sides,fig,chips),opts.readonly?null:panel));
+  if(!opts.readonly) wrap.append(summary);
+  /* `describe`: what each region says about itself, its `note`, under the figure (as a grid-select's cells do) */
+  if(opts.describe&&(W.regions||[]).some(r=>r.note))
+    wrap.append(el("div",{class:"qdesc"},...(W.regions||[]).filter(r=>r.note).map(r=>
+      el("div",{class:"qd qd-plain"},el("strong",{},tx(r.label,r.id)),tx(r.note,"")))));
   return wrap;}
 /* ======================= ENGINE: grid-select =======================
    A two-axis grid of cells, each holding the widget's items as buttons to press
@@ -5820,8 +5850,21 @@ function ownEarlier(activityId,K,listed,now){const out=[];
 /* Options short enough (at most four, each at most 24 characters) sit as pills beside their question when there is room,
    under it when there is not; any longer list stands under the question as before. */
 const shortOptions=l=>Array.isArray(l)&&l.length>0&&l.length<=4&&l.every(o=>typeof o==="string"&&o.length<=24);
+/* A question's words keep a readable width, --q-text-min, and short options sit beside them (the class q-beside) only when the words at that
+   width and the options in one row fit the box's width; else the options are under the words. Measured when the box is shown and
+   whenever its width changes. The options' own widths are read as they stand, so it holds for any words they say. */
+function besideWhenFit(box,pills){if(typeof ResizeObserver!=="function") return;
+  const root=()=>parseFloat(getComputedStyle(document.documentElement).fontSize)||16;
+  const len=(v,em)=>{const x=parseFloat(v)||0;return /rem\s*$/.test(v)?x*root():/em\s*$/.test(v)?x*em:x;};
+  const fit=()=>{const w=box.clientWidth;if(!w) return;
+    const css=getComputedStyle(box),pc=getComputedStyle(pills),gap=parseFloat(pc.columnGap)||0,em=parseFloat(css.fontSize)||root(),
+      need=len(css.getPropertyValue("--q-text-min").trim(),em)+len("1rem",em)+gap*Math.max(0,pills.children.length-1)
+        +Array.from(pills.children).reduce((a,c)=>a+c.offsetWidth,0);
+    box.classList.toggle("q-beside",w>=need);};
+  new ResizeObserver(fit).observe(box);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fit);}
 function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strings("question");
-  const box=el("div",{class:shortOptions(listed)&&!b.open?"q-inline":null});
+  const inline=shortOptions(listed)&&!b.open,box=el("div",{class:inline?"q-inline":null});
   questionHead(box,b);
   const K=b.keys[0],multi=b.type==="multi";
   const right=Array.isArray(b.answer)?b.answer:(b.answer?[b.answer]:[]);
@@ -5845,15 +5888,20 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
     return on?(isRight?"right":"wrong"):(isRight?"answer":null);};
   const MARK={right:["✓ ",Q.right],wrong:["✗ ",Q.notQuite],answer:["✓ ",Q.theAnswer]};
   const pills=el("div",{class:"pills"}),live=el("p",{class:"q-live hint","aria-live":"polite"}),acts=el("div",{class:"q-acts"});
+  /* an option's reply (SPEC.md section 5) is shown under the options when it is picked: a choice's picked option, a multi's every
+     picked option in option order. A reply is content: never stored, never counted as an option. */
+  const replies=el("div",{class:"q-replies","aria-live":"polite"});
   const SP=qc&&qc.sol;
   if(SP) live.classList.add("q-live-sr");
   const draw=()=>{const ae=document.activeElement,at=ae&&ae.parentNode===pills?Array.from(pills.children).indexOf(ae):-1,
       onCheck=!!ae&&ae.parentNode===acts;
-    pills.innerHTML="";acts.innerHTML="";live.textContent="";
+    pills.innerHTML="";acts.innerHTML="";live.textContent="";replies.innerHTML="";
     listed.forEach((o,idx)=>{const n=idx+1,mark=markOf(n);
       pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),
         onclick:()=>toggle(n)},...words(o,true),mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
     const now=chosen();
+    if(b.replies){const got=now.filter(x=>typeof x==="number").sort((a,x)=>a-x);
+      (multi?got:got.slice(0,1)).forEach(n=>{if(b.replies[n-1]) replies.append(el("p",{class:"q-reply"},...words(b.replies[n-1])));});}
     now.filter(x=>typeof x==="string").forEach(t=>pills.append(el("span",{class:"pill-own"},
       el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
       el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"))));
@@ -5871,7 +5919,8 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
     /* the options were rebuilt: the keyboard focus goes back to the one it was on */
     if(at>=0&&pills.children[at]&&pills.children[at].focus) pills.children[at].focus({preventScroll:true});
     else if(onCheck&&acts.children[0]&&acts.children[0].focus) acts.children[0].focus({preventScroll:true});};
-  draw();box.append(pills);
+  draw();box.append(pills,replies);
+  if(inline) besideWhenFit(box,pills);
   if(b.open){const inp=el("input",{type:"text",class:"field q-own","aria-label":Q.addOwn,placeholder:Q.addOwn,autocomplete:"off"});
     const go=()=>{const t=inp.value;inp.value="";addOwn(t);inp.focus();};
     inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go();}});
@@ -5885,23 +5934,50 @@ function drawScale(b,draft,activityId){const box=el("div",{});const anchors=b.an
     pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(on),onclick:()=>{
       draft[K]=on?null:a.n;markDirty();draw();}},...words(a.text,true)));});};
   draw();box.append(pills);return box;}
+/* A matrix: items answered on one shared scale of anchors. Wide enough for each item's words, at their readable width, to sit beside
+   a row of the anchors, each item is a row (grid). When it is not, each item is drawn as a single-choice question of its own, the
+   anchors its options, as other questionnaire systems do on a phone (stack). Either way the answer is the same list, one anchor
+   number per item, by position, under the same key, so a width that changes back and forth loses nothing (SPEC.md section 5). A probe,
+   hidden, is as wide as the words' readable width plus the anchors in one row: that is what the room is measured against. */
 function drawMatrix(b,draft,activityId){const box=el("div",{});const items=b.items||[],anchors=b.anchors||[];
   questionHead(box,b);
   const K=b.keys[0];const uid=newId("m_");
-  const grid=el("div",{class:"mx"});
-  items.forEach((it,i)=>{
-    const row=el("div",{class:"mxrow",role:"radiogroup","aria-label":plainText(it)});
-    row.append(el("span",{class:"mxitem"},...words(it)));
-    const opts=el("div",{class:"mxopts"});
-    anchors.forEach(a=>{const cur=Array.isArray(draft[K])?draft[K][i]:null;
-      const inp=el("input",{type:"radio",name:uid+"_"+i,value:String(a.n),"aria-label":plainText(it)+": "+plainText(a.text)});
-      if(cur===a.n) inp.checked=true;
-      inp.addEventListener("change",()=>{const arr=Array.isArray(draft[K])?draft[K].slice():[];
-        while(arr.length<items.length) arr.push(null);
-        arr[i]=a.n;draft[K]=arr;markDirty();});
-      opts.append(el("label",{class:"mxopt"},inp,el("span",{},...words(a.text,true))));});
-    row.append(opts);grid.append(row);});
-  box.append(el("div",{class:"mxwrap"},grid));return box;}
+  const cur=i=>Array.isArray(draft[K])?draft[K][i]:null;
+  const set=(i,n)=>{const arr=Array.isArray(draft[K])?draft[K].slice():[];
+    while(arr.length<items.length) arr.push(null);
+    arr[i]=n;draft[K]=arr;markDirty();};
+  const grid=()=>{const g=el("div",{class:"mx"});
+    items.forEach((it,i)=>{
+      const row=el("div",{class:"mxrow",role:"radiogroup","aria-label":plainText(it)});
+      row.append(el("span",{class:"mxitem"},...words(it)));
+      const opts=el("div",{class:"mxopts"});
+      anchors.forEach(a=>{
+        const inp=el("input",{type:"radio",name:uid+"_"+i,value:String(a.n),"data-i":String(i),"data-n":String(a.n),"aria-label":plainText(it)+": "+plainText(a.text)});
+        if(cur(i)===a.n) inp.checked=true;
+        inp.addEventListener("change",()=>set(i,a.n));
+        opts.append(el("label",{class:"mxopt"},inp,el("span",{},...words(a.text,true))));});
+      row.append(opts);g.append(row);});
+    return g;};
+  const stack=()=>{const g=el("div",{class:"mx mx-q"});
+    items.forEach((it,i)=>{
+      const q=el("div",{class:"mxq",role:"group","aria-label":plainText(it)}),pills=el("div",{class:"pills"});
+      const paint=()=>Array.from(pills.children).forEach((x,k)=>x.setAttribute("aria-pressed",String(cur(i)===anchors[k].n)));
+      anchors.forEach(a=>pills.append(el("button",{type:"button",class:"pill-btn","data-i":String(i),"data-n":String(a.n),"aria-pressed":String(cur(i)===a.n),
+        onclick:()=>{set(i,cur(i)===a.n?null:a.n);paint();}},...words(a.text,true))));
+      q.append(el("h3",{},...words(it)),pills);g.append(q);});
+    return g;};
+  const probe=el("div",{class:"mxprobe","aria-hidden":"true"},...anchors.map(a=>el("span",{},...words(a.text,true))));
+  const view=el("div",{});let mode=null;
+  /* the view is rebuilt from the draft, which holds every answer; the keyboard focus goes back to the same item and anchor */
+  const place=m=>{if(m===mode) return;
+    const ae=document.activeElement,was=ae&&view.contains&&view.contains(ae)?[ae.getAttribute("data-i"),ae.getAttribute("data-n")]:null;
+    mode=m;view.innerHTML="";view.append(m==="stack"?stack():grid());
+    if(was&&was[0]!==null){const x=view.querySelector(`[data-i="${was[0]}"][data-n="${was[1]}"]`);if(x&&x.focus) x.focus({preventScroll:true});}};
+  place("grid");
+  box.append(el("div",{class:"mxwrap"},probe,view));
+  if(typeof ResizeObserver==="function"){const wrap=box.lastChild;
+    new ResizeObserver(()=>{const w=wrap.clientWidth;if(w) place(w>=probe.offsetWidth?"grid":"stack");}).observe(wrap);}
+  return box;}
 function drawNumber(b,draft,activityId){const box=el("div",{});const K=b.keys[0];
   const id=newId("f_");
   questionHead(box,b,id);

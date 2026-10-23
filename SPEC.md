@@ -235,7 +235,7 @@ from: due-soon
 - **`id`** is required for anything that stores an answer or is referenced (activities, questions, widgets, menus). Letters, digits and dashes only, so every id is also valid wherever Obsidian wants one. Unique within its module (below). Reading callouts need none, and neither does a row (`> [!row]` … `> [!row|end]`, section 3), which is structure like a page break. An activity or module line with none is an error in the linter, and a renderer reports it and names the activity from its title (a module by its place in the file), which a later rename of the title would change.
 - **The first word after the bar is the id, for every kind that takes one, and every later word is a setting.** No id is reserved: an activity may be called `repeat`, `long`, `end` or `home`. **Kinds that take no id** are `row`, `notice`, `manifest`, `hint`, `solution` and Booklet's own reading kinds `group`, `diff`, `law` and `opinion`; all their words are settings, so `> [!row|end]` closes a row, and a word after the bar on a `hint` is a setting it does not take.
 - **Settings** follow the id, separated by spaces: `menu:places`, `min:0`, `open`, `repeat`. A setting written before the id is read as the id, and the id after it is reported as a setting the kind does not take.
-- **The title** is the words a reader sees: the question, the activity name, the caption. **Every word on or under a booklet line that a reader sees is inline Markdown**, as the prose around it is: a title, a question's help text, an option, a scale's anchor, a matrix's item, a menu's entry. Emphasis, code, links and `$math$` are drawn wherever those words appear (the question, a card, a breadcrumb, a page's head, a menu, the stepper, a kept entry), so `> [!choice|bigger] Which is bigger, $\frac{2}{3}$ or $\frac{3}{5}$?` draws its formulas. A button, or a card that opens something, holds no link: there a link is drawn as its words. Elsewhere a heading link (`[[#Heading]]`, `[t](#heading)`) works as it does in prose, and is never drawn with its `#`. A display formula (`$$…$$`) in a title is drawn inline, and a footnote mark in one is left out. Where bare words are needed, the words are used without their marks: a page menu's text, a label a screen reader speaks, the document's title, and the check that a reader's own option equals a listed one (section 5). Data values (section 7) are plain text, never read this way. A dollar sign written for a price is written `\$5` (section 10), in a title as in prose.
+- **The title** is the words a reader sees: the question, the activity name, the caption. **Every word on or under a booklet line that a reader sees is inline Markdown**, as the prose around it is: a title, a question's help text, an option, an option's reply, a scale's anchor, a matrix's item, a menu's entry. Emphasis, code, links and `$math$` are drawn wherever those words appear (the question, a card, a breadcrumb, a page's head, a menu, the stepper, a kept entry), so `> [!choice|bigger] Which is bigger, $\frac{2}{3}$ or $\frac{3}{5}$?` draws its formulas. A button, or a card that opens something, holds no link: there a link is drawn as its words. Elsewhere a heading link (`[[#Heading]]`, `[t](#heading)`) works as it does in prose, and is never drawn with its `#`. A display formula (`$$…$$`) in a title is drawn inline, and a footnote mark in one is left out. Where bare words are needed, the words are used without their marks: a page menu's text, a label a screen reader speaks, the document's title, and the check that a reader's own option equals a listed one (section 5). Data values (section 7) are plain text, never read this way. A dollar sign written for a price is written `\$5` (section 10), in a title as in prose.
 - **A fold marker** may follow the bracket, as in Obsidian: `> [!hint]- Hint` starts folded.
 
 **An id belongs to its module.**
@@ -307,6 +307,17 @@ In Obsidian, an unknown kind renders as a note-style callout with the title, so 
 - `choice` takes one answer, `multi` any number. `open` lets the reader add options of their own.
 - **The reader's own option.** With `open`, a field and an Add button sit under the options. An option the reader adds is stored in the answer as the words they wrote, a string, in the place a position would be: a `choice` holds the position or the string, a `multi` a list of positions and strings. Text equal to a listed option (ignoring case and spaces) presses that option instead; an own option is never added twice, and nothing is ever written into the file's list of options. A renderer should offer again, in an activity that keeps entries, the own options the reader added to that question in earlier kept entries, as ordinary unpressed options after the listed ones. A shared menu (`menu:id`) with `open` behaves the same.
 - **`[x]` marks a correct option**, for study booklets. A worksheet with no right answer leaves every box `[ ]`. A renderer shows the reader whether they were right once they have answered: for a `choice`, as soon as they pick, the picked option is marked right or not, and the correct one is marked as the answer; for a `multi`, a Check button marks each option picked and right, picked and not right, or right and missed. Nothing is scored and nothing is stored: the answer is recorded as usual and the file never says whether it was right. An own option (`open`) is neither right nor wrong. A `choice` with more than one `[x]` has the first as its answer. **The correct option is visible to anyone who opens the file as text.** In Obsidian's Reading view, a click on a checkbox rewrites `[ ]` to `[x]` in the file — a real behavior, and the accepted trade-off: a booklet's own reader answers it in Booklet, never by clicking a checkbox in an Obsidian note, so the answer key is never at risk from ordinary use.
+- **A reply for each option.** A bullet nested under an option, written deeper than it, is that option's **reply**:
+
+  ```markdown
+  > [!choice|where] Where are you right now?
+  - [ ] Calm
+    - That is the settling system at work.
+  - [ ] Wound up
+    - That is the activating, unpleasant family.
+  ```
+
+  When the reader picks an option, its reply is shown under the options: for a `choice`, the picked option's; for a `multi`, each picked option's, in the options' order. Pick another and the reply changes; clear the pick and it goes. A reply is inline Markdown, like an option. It is **content, not an answer**: it is never stored, never sent, and never counted or shown as an option, so adding replies changes no answer and no position. An option with none shows none. An option's own text is its one line: a reply never joins it. A line indented deeper still, straight under a reply, goes on with that reply (they join with a space). Only the options of a `choice` or `multi` take replies; a nested bullet anywhere else is not a reply (the linter warns), and an option the reader adds with `open`, or one that comes from a shared menu, has none. `[x]` marks and a following `[!solution]-` work as before. In Obsidian and on GitHub a reply is a sub-bullet under its option, which is intended.
 - **Options are identified by position, not by id.** The third option is the third option in every language file too, so a whole list carries one id. This is what removes per-item tags. A file that reorders options after people have answered breaks its own answers.
 
 ### Scale, number, date
@@ -345,6 +356,8 @@ A matrix question is several items answered on one shared scale of anchors. It i
 
 A blank line may separate the two lists (section 4), and the numbered list needs one above it when it starts at `0.`. The reader chooses one anchor per item. **The answer is stored as a list with one anchor number per item, by position** (`[1, 3]`; `null` for an item not yet answered), under the question's id. Like a `scale`'s, the number is the stored answer, so the anchors' own numbers are what is kept.
 
+**How a question is drawn is the renderer's business, and one rule covers every question.** A question's words keep a readable width, and its options sit beside them only when both fit, else under them. A matrix is the same rule for a whole set of items: where each item's words, at a readable width, and the row of anchors fit side by side, the matrix is drawn as a grid of rows; where they do not (a phone), each item is drawn as a single-choice question of its own, with the anchors as its options. This changes the drawing and nothing else. The stored answer is the same list under the same key either way, so a window that is made narrower and wider again loses no answer. A reader who sees the items as separate questions may clear one by pressing its answer again, which stores `null` for that item, as an item not yet answered.
+
 ### Shared menus
 
 A list used by several questions is written once, in the module whose questions use it (or in the data section, for every module to use), and named on the question line:
@@ -370,8 +383,8 @@ A widget the reader operates (the body map, a grid of cells) is a `widget` line 
 | --- | --- | --- |
 | `text` | a string | nothing (`long` for a big box) |
 | `lines` | a list of strings | nothing |
-| `choice` | the option's position, from 1; with `open`, or the reader's own string | a task list; `[x]` = correct |
-| `multi` | a list of positions, plus the reader's own strings with `open` | a task list; `[x]` = correct |
+| `choice` | the option's position, from 1; with `open`, or the reader's own string | a task list; `[x]` = correct; a nested bullet = that option's reply |
+| `multi` | a list of positions, plus the reader's own strings with `open` | a task list; `[x]` = correct; a nested bullet = that option's reply |
 | `scale` | the anchor's number | a numbered list |
 | `number` | a number | nothing; `min:` `max:` `step:` |
 | `date` | `YYYY-MM-DD` | nothing |
@@ -596,7 +609,7 @@ A query that names a data block in another module, or an `as:` that is not one o
 
 - The fence holds JSON, as a data block's does. The widget's title is the title on the widget line, not a key in the data.
 - `engine` names what draws it: `svg-regions` or `grid-select`. An engine a renderer does not have is shown as a notice, and the linter reports an error for one that does not exist. Labels are plain strings, because the file has one language.
-- Settings on the widget line: `readonly` (shown, not operated) and `describe` (followed by what each part says about itself). `grid-select` honours both. `svg-regions` should too. **The reference renderer does not do this yet:** it ignores both on an `svg-regions` widget (section 13).
+- Settings on the widget line: `readonly` (shown, not operated) and `describe` (followed by what each part says about itself). Both engines honour both. A `grid-select` shows its items as plain words and `describe` adds each cell's `note`; an `svg-regions` shows its figure, with its regions named beneath it and nothing to point at or answer, and `describe` adds each region's `note`. Neither setting stores anything.
 - **An `svg-regions` figure** marks each region the reader can tap as a shape with `class="rg"` and a `data-r` attribute naming the region id. Every other shape in the figure is drawn as a plain outline, and the renderer styles both; a figure needs no styling of its own.
 - **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
 - Every `svg` string is sanitized before drawing.
@@ -609,7 +622,7 @@ A query that names a data block in another module, or an `as:` that is not one o
 | key | what it holds |
 | --- | --- |
 | `figures` | the drawings: each `{ "id", "label", "svg", "regions": [region ids] }`; with more than one, a switch between them |
-| `regions` | each tappable region: `{ "id", "label" }` |
+| `regions` | each tappable region: `{ "id", "label", "note" }`; `note` is shown with `describe` |
 | `senses` | groups of words to say what it is like: `{ "id", "label", "words": [ { "id", "label" } ] }` |
 | `chips` | region ids offered as buttons beside the figure |
 | `copy` | the words the widget says: `h`, `p`, `stance`, `invite`, `pick`, `clear`, `none`, `sideLbl` |
@@ -848,7 +861,6 @@ This is a young format, and the reference renderer does not yet do everything th
 - **Roles on kept-entry cards** (section 6): `label`, `value`, `note`, `badge` and `tone` are not drawn on cards over kept entries.
 - **Heading links in the booklet's opening** (section 3). The opening belongs to no module, so a `[[#Heading]]` link there leads only to a heading among the activities outside every module fence, and is otherwise drawn as plain words.
 - **Footnotes in the booklet's opening and in a title** (sections 3 and 4). The reference renderer leaves a mark there out and draws no note.
-- **`readonly` and `describe` on a widget line** (section 7). `grid-select` honours them; `svg-regions` does not yet.
 
 None of this affects what already works: loading, reading, answering, and saving a v0.13 booklet with every question kind above, its widgets, and its citations.
 
