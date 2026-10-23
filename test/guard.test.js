@@ -222,7 +222,17 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("a diagram's source is read by diagramRisk() before mermaid is started, and one that is refused returns before the library is used or its part is asked for",
    (()=>{const m=hand.match(/function mermaidNode\(code\)\{[\s\S]*?useLib\("mermaid"\)/);return !!m&&/diagramRisk\(code\)\)\{[^\n]*\n[^\n]*return box;\}/.test(m[0])&&m[0].indexOf("diagramRisk(code)")<m[0].lastIndexOf('useLib("mermaid")')&&!/whenLib|loadPart/.test(m[0]);})());
  must("mermaid is never started anywhere but mermaidNode (so every diagram passes that check)",count(hand,'useLib("mermaid")')===1&&count(hand,"M.initialize(")===2&&count(hand,"M.render(")===1,count(hand,'useLib("mermaid")')+" / "+count(hand,"M.initialize(")+" / "+count(hand,"M.render("));
- must("the renderer builds no <img> from a file's Markdown (mkImg draws text), and creates no img element anywhere",count(hand,'el("img"')===0&&count(hand,"createElement(\"img\")")===0&&count(hand,"new Image")===0&&!/<img\b/i.test(hand.slice(hand.indexOf("<body>"))),"img found");
+ /* CHANGED WITH BEN'S SAY-SO (2026-10-23, chat; v0.15 item v015-store-images): the renderer draws an image from the host's declared
+    store, for a booklet opened from it and for no other. So the old rule "no img element anywhere" becomes this exact one: no
+    other way to make an image exists, and the one img element has its address only from a blob: URL made from bytes the one
+    shared reader (linkFetch, pinned above) returned, checked against the file's extension, for a booklet whose entry came from
+    "store:". A booklet from a file, the registry or a page with no store still draws the box (mkImg's text path). */
+ must("the renderer builds no <img> from a file's Markdown except the one for the declared store: no el(\"img\"), createElement(\"img\"), new Image or <img markup, and exactly one E(\"img\" in mkImg",count(hand,'el("img"')===0&&count(hand,"createElement(\"img\")")===0&&count(hand,"new Image")===0&&!/<img\b/i.test(hand.slice(hand.indexOf("<body>")))&&count(hand,'E("img"')===1,"img found");
+ must("that one img takes its address from r.url only, and r.url is only ever a blob: URL made from the bytes linkFetch read (the other createObjectURL is the download of a copy)",
+   /E\("img",\{class:"mdimg",src:r\.url,alt:alt\|\|""\}\)/.test(hand)&&count(hand,"src:r.url")===1&&count(hand,"createObjectURL(")===2&&count(hand,"{url:URL.createObjectURL(new Blob([got.bytes],{type:IMG_EXT[ext]}))}")===1&&count(hand,"linkFetch(at,{raw:true})")===1);
+ must("a booklet gets images only when its entry came from the declared store (imageFolder is empty unless from starts with store: and the page declares a store), and only for a checked path inside that booklet's folder",
+   /function imageFolder\(\)\{const f=currentEntry&&currentEntry\.from,n=typeof f==="string"&&f\.startsWith\("store:"\)\?linkName\(f\.slice\(6\)\):null,at=n===null\?null:storeAddress\(n\);/.test(hand)
+   &&/function storeImage\(src,done\)\{const folder=imageFolder\(\);if\(folder===""\) return null;/.test(hand)&&/u\.href\.startsWith\(folder\)&&u\.origin===new URL\(folder\)\.origin/.test(hand));
  must("temml is started with trust:false, so \\includegraphics and \\href are not drawn",/trust:false/.test(hand)&&!/trust:true/.test(hand));
  must("the libraries are stored as inert text (type text/plain), never as script that runs on load",!/<script(?![^>]*type="text\/plain")[^>]*id="lib-/.test(full));
  must("a part is woken or loaded only through useLib(), and only mermaidNode and mathNode ask for one by name",count(hand,'useLib("mermaid")')===1&&count(hand,'useLib("temml")')===1&&count(hand,"loadPart(")===2&&count(hand,"whenLib(")===2);

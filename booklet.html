@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-sdmZHeMd1cQl6sDo+6fvT7pdNLsYXxTJWeTDCHxehZs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-c5DrieW965a9fNZSdp79NurLuflNAnsLdDKENdb1iCg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -822,6 +822,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mfig.bad{text-align:left}
   /* an image the renderer does not fetch: its alt text and address, as text, in a quiet frame */
   .md .imgbox{display:inline-flex;flex-direction:column;gap:.15rem;max-width:100%;margin:.2rem 0;padding:.45rem .65rem;border:1px dashed var(--rule);border-radius:var(--r-sm,6px);color:var(--muted);font-size:.9rem;text-align:left;vertical-align:top}
+  /* an image read from the host's declared store: its natural size, no wider than the column */
+  .md img.mdimg{max-width:100%;height:auto;vertical-align:middle}
   .md .imgbox .imgalt{color:var(--ink)}
   .md .imgbox .imgnote{font-size:.78rem;font-style:italic}
   .md .imgbox .imgsrc{font-size:.78rem;overflow-wrap:anywhere;word-break:break-all;background:none;padding:0}
@@ -990,7 +992,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .dv-cards{display:block}
     .dv-ctl-top,.dv-bar,.dv-none .dv-clear{display:none!important}
     .dv-panel{border:0;padding:0;background:none}
-    .mfig,.md div.math{break-inside:avoid;overflow:visible}
+    .mfig,.md div.math,.md img.mdimg{break-inside:avoid;overflow:visible}
     .mfig svg{max-width:100%;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .bar,.ap-menu,.rd-panel,.rd-tip,.toast{display:none!important}
     .rm-bar,.cd-dup,.cd-chev,.cd-foot,.oat-ctl,.oat-head,.oat-nav{display:none!important}
@@ -1539,6 +1541,12 @@ const STRINGS_SRC={
       figureWait: "Drawing this diagram…",
       figurePart: "The part that draws diagrams could not be loaded, so this diagram is shown as its source.",
       imgNotShown: "Image not shown",
+      imgLoading: "Loading image…",
+      imgRefused: "Image not shown: this page does not read that address.",
+      imgMissing: "Image not shown: the file was not found.",
+      imgBig: "Image not shown: the file is too big (the limit is 5 MB).",
+      imgWrong: "Image not shown: the file is not the kind of image its name says.",
+      imgFailed: "Image not shown: it could not be fetched.",
       figureRisk: "This diagram has a part (an image, a link, a style or a setting) that could make the page ask for an address, so it is not drawn. Its source is shown instead.",
       clearTitle: "Clear everything on this page?",
       clearHelp: "Your entries exist only in this browser tab. If you have not downloaded them, they will be gone.",
@@ -1868,6 +1876,12 @@ const STRINGS_SRC={
       figureWait: "Dessin du diagramme en cours…",
       figurePart: "L’élément qui dessine les diagrammes n’a pas pu être chargé ; le texte source de ce diagramme est affiché à la place.",
       imgNotShown: "Image non affichée",
+      imgLoading: "Chargement de l’image…",
+      imgRefused: "Image non affichée : cette page ne lit pas cette adresse.",
+      imgMissing: "Image non affichée : fichier introuvable.",
+      imgBig: "Image non affichée : fichier trop volumineux (limite : 5 Mo).",
+      imgWrong: "Image non affichée : le fichier n’est pas du type d’image que son nom indique.",
+      imgFailed: "Image non affichée : elle n’a pas pu être récupérée.",
       figureRisk: "Ce diagramme contient un élément (une image, un lien, un style ou un réglage) qui pourrait pousser la page à demander une adresse ; il n’est donc pas dessiné. Son texte source est affiché à la place.",
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
       clearHelp: "Vos réponses n’existent que dans cet onglet. Si vous ne les avez pas téléchargées, elles seront perdues.",
@@ -2193,6 +2207,12 @@ const STRINGS_SRC={
       figureWait: "Dibujando el diagrama…",
       figurePart: "No se pudo cargar la parte que dibuja los diagramas; se muestra el texto fuente de este diagrama.",
       imgNotShown: "Imagen no mostrada",
+      imgLoading: "Cargando la imagen…",
+      imgRefused: "Imagen no mostrada: esta página no lee esa dirección.",
+      imgMissing: "Imagen no mostrada: no se encontró el archivo.",
+      imgBig: "Imagen no mostrada: el archivo es demasiado grande (el límite es 5 MB).",
+      imgWrong: "Imagen no mostrada: el archivo no es del tipo de imagen que indica su nombre.",
+      imgFailed: "Imagen no mostrada: no se pudo obtener.",
       figureRisk: "Este diagrama tiene una parte (una imagen, un enlace, un estilo o un ajuste) que podría hacer que la página pida una dirección, así que no se dibuja. Se muestra su texto fuente.",
       clearTitle: "¿Borrar todo lo que hay en esta página?",
       clearHelp: "Tus entradas solo existen en esta pestaña del navegador. Si no las descargaste, se perderán.",
@@ -3633,7 +3653,7 @@ function resetBookletState(){
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;BASE=null;
   screen=HOME_SCREEN;dirty=false;unsavedEntries=0;
   viewReset(null);FILE_NOTES=null;OLD_DESIGN=false;CUSTOMIZED=false;PROVENANCE=null;LINK_NEWER=null;
-  hookStopWait();HOOK_UNSENT=false;
+  hookStopWait();HOOK_UNSENT=false;imagesRelease();
   if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;HOST.savedKey="";}
   clearTimeout(saveTimer);saveTimer=null;
   VEIL_IDS.forEach(id=>{const v=document.getElementById(id);if(v) v.removeAttribute("open");});}
@@ -4823,19 +4843,25 @@ const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderIn
   const {scheme}=cleanScheme(url);const attrs={href:String(url).replace(CTRL,""),title};
   if(scheme==="http"||scheme==="https"){attrs.target="_blank";attrs.rel="noopener noreferrer";}
   return E("a",attrs,...kids);};
-/* An image is never fetched (SPEC.md section 6): this renderer builds no img element from a file's Markdown. It draws the
-   alt text in a quiet framed box that says the image is not shown, with the address as plain text beneath, so a
-   reader can see what was meant. Nothing is requested for any address, and a typed or file-written address of
-   any kind (remote, relative, //host, data:) is treated alike. The address is shown, never used. */
+/* An image is fetched only from the host's declared store, and only for a booklet opened from it (SPEC.md section 6;
+   storeImage, region 12). Every other image, and one that cannot be drawn, is drawn as the alt text in a quiet framed
+   box that says the image is not shown, with the address as plain text beneath, so a reader can see what was meant.
+   Nothing is requested for any other address, and a typed or file-written address of any kind (remote, //host, data:,
+   or a relative path in a booklet not opened from the store) is treated alike. The address is shown, never used. */
 const mkImg=(alt,src,ctx)=>{
   /* a caller that wants only text (a card's blurb) says what stands for an image */
   if(ctx&&ctx.opts&&typeof ctx.opts.image==="function"){const n=ctx.opts.image(alt,src);if(n!=null) return n;}
   const a=String(src==null?"":src).replace(CTRL,""),shown=a.length>160?a.slice(0,160)+"\u2026":a;
   const note=typeof imgNoteText==="function"?imgNoteText():"Image not shown",E=(ctx&&ctx.el)||el;
-  return E("span",{class:"imgbox"},
+  /* A booklet opened from the host's declared store draws its images (storeImage, region 12); an empty alt text marks a
+     decorative one. Any other booklet, and any image that cannot be drawn, gets the box. */
+  const draw=r=>r&&r.url?E("img",{class:"mdimg",src:r.url,alt:alt||""}):E("span",{class:"imgbox"},
     ...(alt?[E("span",{class:"imgalt"},alt)]:[]),
-    E("span",{class:"imgnote"},note),
-    ...(shown?[E("code",{class:"imgsrc"},shown)]:[]));};
+    E("span",{class:"imgnote"},r&&r.note?r.note:note),
+    ...(shown?[E("code",{class:"imgsrc"},shown)]:[]));
+  const first=typeof storeImage==="function"?storeImage(src,r=>{if(node.parentNode&&typeof node.replaceWith==="function") node.replaceWith(draw(r));}):null,
+    node=draw(first);
+  return node;};
 const resolveRef=(ctx,label)=>ctx.refs[String(label||"").trim().toLowerCase()]||null;
 /* INLINE: one alternation, longer/more-specific delimiters (**, embed ![[)
    before the shorter/generic ones that share a leading char (*, [), so the
@@ -8208,22 +8234,83 @@ function linkOf(hash){const m=/^#\/(open|module)\/([\s\S]*)$/.exec(String(hash||
 /* THE ONE READER. Every request this page makes goes through here: one read of one address, as text. Never a method, a
    body or credentials; a redirect is an error; at most `bytes` (LINK_BYTES unless a caller gives less or more) and
    LINK_MS. A booklet or module is text, so a JSON answer is refused unless the caller (the registry's list) says it
-   expects one. Resolves to {text} or {err}, where err is one of missing, big, slow, notText, failed. */
-async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.json);
+   expects one. Resolves to {text} or {err}, where err is one of missing, big, slow, notText, failed. `raw` (an image, see
+   IMAGES FROM THE DECLARED STORE) asks for the bytes as they are, {bytes}, and refuses only a web page; the caller checks them. */
+async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.json),raw=!!(o&&o.raw);
   const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),LINK_MS);
   try{
     const r=await fetch(url,{cache:"no-cache",credentials:"omit",redirect:"error",signal:ac.signal});
     if(!r.ok) return {err:"missing"};
-    if((json?/^(text\/html|image\/|audio\/|video\/|application\/(pdf|zip|xml))/:/^(text\/html|image\/|audio\/|video\/|application\/(json|pdf|zip|xml))/).test((r.headers.get("content-type")||"").toLowerCase())) return {err:"notText"};
+    if((raw?/^text\/html/:json?/^(text\/html|image\/|audio\/|video\/|application\/(pdf|zip|xml))/:/^(text\/html|image\/|audio\/|video\/|application\/(json|pdf|zip|xml))/).test((r.headers.get("content-type")||"").toLowerCase())) return {err:"notText"};
     if(Number(r.headers.get("content-length"))>cap) return {err:"big"};
     const rd=r.body&&r.body.getReader?r.body.getReader():null,parts=[];let total=0;
-    if(!rd){const t=await r.text();return t.length>cap?{err:"big"}:{text:t};}
+    if(!rd){if(raw){const b=new Uint8Array(await r.arrayBuffer());return b.length>cap?{err:"big"}:{bytes:b};}
+      const t=await r.text();return t.length>cap?{err:"big"}:{text:t};}
     for(;;){const {done,value}=await rd.read();if(done) break;
       total+=value.length;if(total>cap){ac.abort();return {err:"big"};}parts.push(value);}
     const buf=new Uint8Array(total);let at=0;parts.forEach(x=>{buf.set(x,at);at+=x.length;});
+    if(raw) return {bytes:buf};
     try{return {text:new TextDecoder("utf-8",{fatal:true}).decode(buf)};}catch(e){return {err:"notText"};}
   }catch(e){return {err:ac.signal.aborted?"slow":"failed"};}
   finally{clearTimeout(timer);}}
+/* ---- IMAGES FROM THE DECLARED STORE (SPEC.md sections 6 and 13) ----
+   A booklet opened from the host's declared store (by link, by the host's open(), or from the "Your booklets" entry that
+   came from it: currentEntry.from is "store:<name>") draws its images; any other booklet (a file, the registry, a page
+   that declares no store) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the
+   booklet's own name in the store: <store>/sub/x.booklet.md with images/a.png reads <store>/sub/images/a.png.
+   The path is checked before anything is asked for (imagePath): only [A-Za-z0-9_./-], at most 200 characters, no part
+   that begins with a dot (so no .. and no . ), no leading / and no empty part (so no //host), no % ? # \ or : (so no
+   scheme), and an extension of svg, png, jpg, jpeg, webp or gif. A path that fails is never requested; the box says so.
+   The read is linkFetch (no method, no body, no credentials, no redirect, LINK_BYTES, LINK_MS), asked for as raw bytes.
+   The bytes must be what the extension says (imageIs: SVG text, or the PNG, JPEG, GIF or WebP signature), and are then
+   drawn as an img element from a blob: URL of that type. An SVG is therefore only ever an image: it runs no script and loads
+   nothing. One answer, bytes or failure, is kept per address for the visit (IMG_SEEN), so a redraw asks for nothing again;
+   the blobs are released when the booklet closes or another opens (imagesRelease, from resetBookletState). */
+const IMG_EXT={svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif"};
+const IMG_PATH_MAX=200;
+const IMG_SEEN=Object.create(null);   /* address → {wait:[fn]} while it is read, then {url} or {err: the name of the words} */
+/* the checked path an image names, with its extension, or null */
+function imagePath(raw){const p=String(raw==null?"":raw);
+  if(!p||p.length>IMG_PATH_MAX||p.charAt(0)==="/"||!/^[A-Za-z0-9_.\/-]+$/.test(p)) return null;
+  if(p.split("/").some(x=>x===""||x.charAt(0)===".")) return null;
+  const m=/\.([A-Za-z0-9]+)$/.exec(p),ext=m?m[1].toLowerCase():"";
+  return hasOwn(IMG_EXT,ext)?{rel:p,ext}:null;}
+/* the folder a booklet's images are read from: the folder of its own name in the declared store; "" when the booklet was
+   not opened from the store, or the page declares none */
+function imageFolder(){const f=currentEntry&&currentEntry.from,n=typeof f==="string"&&f.startsWith("store:")?linkName(f.slice(6)):null,at=n===null?null:storeAddress(n);
+  return at?at.slice(0,at.lastIndexOf("/")+1):"";}
+/* the one address a checked path stands for, never outside the booklet's folder in the store */
+function imageAddress(rel,folder){try{const u=new URL(rel,folder);return u.href.startsWith(folder)&&u.origin===new URL(folder).origin?u.href:null;}catch(e){return null;}}
+/* whether the bytes are the kind of file the extension says */
+function imageIs(ext,b){const at=(i,...v)=>v.every((x,k)=>b[i+k]===x);
+  if(ext==="svg") return /^\uFEFF?\s*(?:<\?xml[^>]*\?>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg[\s>\/]/.test(new TextDecoder("utf-8").decode(b.subarray(0,8192)));
+  if(ext==="png") return at(0,0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A);
+  if(ext==="gif") return at(0,0x47,0x49,0x46,0x38)&&(b[4]===0x37||b[4]===0x39)&&b[5]===0x61;
+  if(ext==="webp") return at(0,0x52,0x49,0x46,0x46)&&at(8,0x57,0x45,0x42,0x50);
+  return at(0,0xFF,0xD8,0xFF);}
+/* the words for a record kept in IMG_SEEN */
+const imageRecord=r=>r.url?{url:r.url}:{note:strings("ui")[r.err]};
+/* one read of one address; waiting boxes are told when it ends. A booklet closed meanwhile has released the slot, and the
+   late answer is dropped without a blob being made. */
+function imageLoad(at,ext){const slot=IMG_SEEN[at]={wait:[]};
+  linkFetch(at,{raw:true}).then(got=>{
+    if(IMG_SEEN[at]!==slot) return;
+    let rec;
+    if(got.err) rec={err:got.err==="missing"?"imgMissing":got.err==="big"?"imgBig":got.err==="notText"?"imgWrong":"imgFailed"};
+    else{let ok=false;try{ok=imageIs(ext,got.bytes);}catch(e){}
+      rec=ok?{url:URL.createObjectURL(new Blob([got.bytes],{type:IMG_EXT[ext]}))}:{err:"imgWrong"};}
+    IMG_SEEN[at]=rec;slot.wait.forEach(f=>{try{f(imageRecord(rec));}catch(e){}});});
+  return slot;}
+function imagesRelease(){Object.keys(IMG_SEEN).forEach(k=>{if(IMG_SEEN[k].url) URL.revokeObjectURL(IMG_SEEN[k].url);delete IMG_SEEN[k];});}
+/* What mkImg draws for the image a booklet writes at `src`: null when this booklet gets no images (the quiet box as ever);
+   else {url} (draw it), or {note} (the quiet box, with these words in place of "Image not shown"). While the read is
+   still going the note is "Loading image…" and `done` is called later with the final {url} or {note}. */
+function storeImage(src,done){const folder=imageFolder();if(folder==="") return null;
+  const p=imagePath(src),at=p===null?null:imageAddress(p.rel,folder);
+  if(at===null) return {note:strings("ui").imgRefused};
+  const rec=IMG_SEEN[at]||imageLoad(at,p.ext);
+  if(rec.wait){rec.wait.push(done);return {note:strings("ui").imgLoading};}
+  return imageRecord(rec);}
 /* Open text as a view: the same parser, the same refusals, the same notices and the same start screen as a file picked
    by hand; but nothing is saved until the reader changes something, and no entry is added to the list then except a
    store booklet's pointer (finishLoad). `via` says where it came from: {store:true,label,from} or {store:false,label,from}.
