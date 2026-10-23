@@ -443,11 +443,13 @@ A budget is a plan, not a judgement.
 **The frame.** Plain prose before an activity's first question (a tab's, when it
 has tabs: paragraphs, lists and tables, with no heading, callout, HTML or code
 fence) is its frame: the renderer keeps it in view while the questions are
-answered, above the question on show one at a time, and held at the top while
-they scroll. It does so only when the frame fits whole in that space (about
-four lines of text, less on a short screen): **instructions are short**, a
-sentence or two of what to do, or a key of two or three rows to a scale. Prose
-longer than that is reading, and scrolls with its page whole, nothing cut. So is
+answered. One at a time, it is drawn whole above the question on show, however
+long. All at once, it is held at the top while they scroll, but only when it
+fits whole in that space: four lines of text at the renderer's usual size
+(fewer on a window under about 580 pixels high), or a key of a header row and
+two rows to a scale; a third row is too tall. **Instructions are short**: a
+sentence or two of what to do, or that two-row key. Longer prose is reading when
+the questions are all shown, and scrolls with its page whole, nothing cut. So is
 prose between two questions (it goes with the question after it), and reading
 with a heading or a callout before the first question. `pin:off` on the activity
 line lets the frame scroll away like any prose: `> [!activity|walk pin:off] Walk notes`.

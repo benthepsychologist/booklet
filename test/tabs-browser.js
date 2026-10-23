@@ -3,9 +3,12 @@
 // tab bar follows the ARIA tabs pattern by keyboard; a page turn brings the content's top into view and puts the focus
 // there, and a screen reader hears which page it is; a typed answer survives tab and page changes; the fold switch shows
 // only with callouts the author folded and never opens a hint; the frame is held under the bar while the questions scroll,
-// and stays above the step one at a time; a frame is pinned only when it fits whole in the pin's height (a short line of
-// instructions, a short key table), and a long plain reading is not pinned and nothing of it is cut; a control the keyboard
-// reaches is never under the bar and the frame; a link to a module's tab opens it.
+// and stays above the step one at a time; a frame is held only when it fits whole in the pin's height (a short line of
+// instructions, a short key table), and a long plain reading is not held and nothing of it is cut; one at a time a frame of
+// any length (a problem statement, a reference table) stays above every step; a held frame that stops fitting when the
+// window gets shorter is drawn again as reading, keeping the box being typed in, and a citation open in a long opening stays
+// open when the language changes; a control the keyboard reaches is never under the bar and the frame; a link to a module's
+// tab opens it.
 // Replaces the page menu's check (pagesmenu-browser.js), which 0.15 removed with the menu. Invented content, but for the
 // check-in's instruction line and items, which follow the PHQ-9's wording as an example of a short frame.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/tabs-browser.js <booklet.html> <outdir>
@@ -47,6 +50,14 @@ Answer these against your last month. Anything can be skipped.
 ***
 
 > [!text|q4] One thing to change?
+
+> [!text|q6] What would make it easier?
+
+> [!text|q7] What would get in the way?
+
+> [!text|q8] Who could help?
+
+> [!text|q9] When will you look again?
 
 > [!tab] Read more
 
@@ -126,6 +137,46 @@ Over the last 2 weeks, how often have you been bothered by any of the following 
 0. Not at all
 3. Nearly every day
 
+> [!activity|long] A longer problem statement
+
+The kettle in the shared kitchen has been switching itself off before the water boils, and three people have asked whether it should be replaced or repaired. The repair shop quotes a week and a modest fee; a new kettle costs a little more and arrives tomorrow. The office has no other way to boil water in the meantime, and the tea club meets on Thursday.
+
+> [!text|l1] What would you do first?
+
+> [!text|l2] Who should decide?
+
+> [!text|l3] What would change your mind?
+
+> [!activity|ref] A reference table
+
+| Option | Cost | Wait |
+| --- | --- | --- |
+| Repair | Low | A week |
+| Replace | Medium | A day |
+| Borrow | None | Today |
+
+> [!text|r1] Which option?
+
+> [!text|r2] Why?
+
+> [!text|r3] Anything else?
+
+> [!activity|five] Five lines
+
+Answer these about the kettle you use most at home, taking as long as you need for each one, and skip any question you like, then come back to it later on.
+
+> [!text|f1] A short answer?
+
+> [!text|f2] A longer answer?
+
+> [!activity|cite] With a citation
+
+Answer against the source.[^src] Keep the answers short; a phrase is enough for each. Skip anything you like, and come back later in the week when you have had time to look again at the kettle and the stove and the cups on the shelf and think it over.
+
+> [!text|c1] Your answer?
+
+[^src]: Made-up source, page 3. "A quoted line." Verified
+
 > [!activity|essay] A short history
 
 Kettles were once heated on open fires, and the shape of the spout followed from how the steam had to leave the body without scalding the hand that poured. Over the years the handle moved, the lid grew a little knob, and the base widened so the kettle would not tip on an uneven hearth.
@@ -182,11 +233,12 @@ See [[#Check-ins]] for the two-week questions.
   const click=async(p,sel,text)=>{await p.locator(sel).filter(text?{hasText:text}:{}).first().click();await p.waitForTimeout(350);};
   /* the frame on show, if any: held or not, its words */
   const frameNow=p=>p.evaluate(()=>{const n=document.querySelector('#main .pin');return n?{pinned:true,stick:n.classList.contains('pin-stick')&&getComputedStyle(n).position==='sticky',text:n.textContent.trim().slice(0,60),h:Math.round(n.getBoundingClientRect().height)}:{pinned:false};});
-  /* the frame is drawn whole: nothing in it overflows a clipped box or is faded, and it has no button (no Show all) */
+  /* the frame is drawn whole: nothing in it overflows a clipped box or runs past a height limit, nothing is faded, and it has
+     no button (no Show all) */
   const whole=p=>p.evaluate(()=>{const n=document.querySelector('#main .pin');if(!n) return false;
     const boxes=[n,...n.querySelectorAll('*')].filter(x=>!x.closest('.md-table')||x.classList.contains('md-table'));
     return !n.querySelector('button')&&boxes.every(x=>{const c=getComputedStyle(x);return !(c.overflowY==='hidden'||c.overflowY==='clip')||x.scrollHeight<=x.clientHeight+1;})
-      &&boxes.every(x=>{const c=getComputedStyle(x);return (c.maskImage||'none')==='none'&&(c.webkitMaskImage||'none')==='none'&&c.maxHeight==='none';});});
+      &&boxes.every(x=>{const c=getComputedStyle(x);return (c.maskImage||'none')==='none'&&(c.webkitMaskImage||'none')==='none'&&(c.maxHeight==='none'||x.scrollHeight<=x.clientHeight+1);});});
   /* what has the keyboard's focus, as the accessibility tree has it: its role and name (what a screen reader says) */
   const focusedAx=async p=>{const s=await p.context().newCDPSession(p);await s.send('Accessibility.enable');
     const {nodes}=await s.send('Accessibility.getFullAXTree');await s.detach();
@@ -255,7 +307,7 @@ See [[#Check-ins]] for the two-week questions.
     ok(turned.text&&turned.focus,W+': Next turns the page and puts the focus on its content '+JSON.stringify(turned));
     const heard=await focusedAx(p);
     ok(heard&&heard.role==='group'&&heard.name==='Page 2 of 2',W+': the accessibility tree: what has the focus is a group named Page 2 of 2, which is what a screen reader says '+JSON.stringify(heard));
-    ok(turned.top>=turned.margin-24&&turned.top<turned.vh/2,W+': the content\'s top is in view, under the bar, in the upper half of the screen (a short page cannot scroll it higher) '+JSON.stringify(turned));
+    ok(!turned.end&&turned.top>=turned.margin-2&&turned.top<=turned.margin+24,W+': the content\'s top is just under the bar, not behind it (page two is long enough to scroll it anywhere) '+JSON.stringify(turned));
     ok(/^Back \| Page 2 of 2 \| /.test(await foot(p)),W+': page two: Back, Page 2 of 2: '+await foot(p));
     ok(await p.locator('#main .pin').count()===1,W+': the frame is drawn on the tab\'s second page too');
     await click(p,'#main [role=tab]','Read more');await click(p,'#main [role=tab]','Do it');
@@ -309,7 +361,7 @@ See [[#Check-ins]] for the two-week questions.
     const toFrames=async name=>{await p.locator('#btnHome').click();await p.waitForTimeout(500);
       if(!(await p.locator('#main button.card').count())) await click(p,'#main button.small.primary','Open');
       await click(p,'#main button.card','Frames');
-      if(name==='Calm'||name==='Where next') await click(p,'#main [role=tab]','Keys');
+      await click(p,'#main [role=tab]',name==='Calm'||name==='Where next'?'Keys':'Check-ins');
       await click(p,'#main button.card',name);};
     await toFrames('Two weeks');
     let fr=await frameNow(p);
@@ -332,6 +384,55 @@ See [[#Check-ins]] for the two-week questions.
       return {rows:tr.length,inside:tr.every(r=>r.getBoundingClientRect().bottom<=b.bottom+1)};});
     ok(fr.pinned&&rows&&rows.rows===3&&rows.inside,W+': a short key table before a scale is pinned, every row of it in view '+JSON.stringify({fr,rows}));
     ok(await whole(p),W+': whole');
+    /* one at a time the frame is not held, so whatever its length it stays, whole, above every step: a four-sentence problem
+       statement and a three-row reference table, at steps two and three (the reader answers against it) */
+    for(const [name,last,qs] of [['A longer problem statement','the tea club meets on Thursday',['Who should decide','What would change your mind']],
+                                 ['A reference table','Borrow',['Why?','Anything else?']]]){
+      await toFrames(name);await click(p,'#main .oat-ctl button','One at a time');
+      for(const [i,q] of qs.entries()){
+        await click(p,'#main .cd-foot .oat-next');
+        const st=await p.evaluate(()=>{const n=document.querySelector('#main .pin'),u=[...document.querySelectorAll('#main .oat-unit')].find(x=>!x.hidden);
+          if(!n||!u) return {pin:!!n,step:!!u};const r=n.getBoundingClientRect(),tr=[...n.querySelectorAll('tr')];
+          return {shown:r.height>0&&!n.closest('[hidden]'),text:n.textContent,rows:tr.length,rowsIn:tr.every(x=>x.getBoundingClientRect().height>0&&x.getBoundingClientRect().bottom<=r.bottom+1),
+            above:r.bottom<=u.getBoundingClientRect().top+1,stick:n.classList.contains('pin-stick'),q:u.textContent.trim().slice(0,40)};});
+        ok(st.shown&&st.text.includes(last)&&st.above&&!st.stick&&st.q.includes(q)&&(name!=='A reference table'||st.rows===4&&st.rowsIn),
+          W+': one at a time, at step '+(i+2)+' of "'+name+'", the frame is still drawn, whole, above the step '+JSON.stringify({...st,text:undefined}));
+        ok(await whole(p),W+': whole');}
+      await click(p,'#main .oat-ctl button','All at once');}
+    if(W===390){
+      /* a citation opened in a frame too tall to hold (drawn as reading, after a second draw) stays open when the language
+         changes (the second draw opens it again, as the first did) */
+      await p.setViewportSize({width:390,height:844});await p.waitForTimeout(300);
+      await toFrames('With a citation');
+      const cf=await frameNow(p);
+      await p.locator('#main .rd-mark').first().click();await p.waitForTimeout(300);
+      const was=await p.evaluate(()=>!document.getElementById('rd-panel').hasAttribute('hidden'));
+      await p.locator('.lang button[data-lang="fr"]').click();await p.waitForTimeout(500);
+      const cp=await p.evaluate(()=>{const e=document.getElementById('rd-panel');return {open:!e.hasAttribute('hidden'),text:e.textContent.slice(0,80),lang:document.documentElement.lang};});
+      ok(!cf.pinned&&was&&cp.open&&/Made-up source/.test(cp.text),'390x844: a citation open in a long opening stays open when the language changes to French '+JSON.stringify({cf,was,cp}));
+      await p.locator('.lang button[data-lang="en"]').click();await p.waitForTimeout(400);
+      if(await p.evaluate(()=>!document.getElementById('rd-panel').hasAttribute('hidden'))){await p.keyboard.press('Escape');await p.waitForTimeout(200);}
+      /* a held frame that stops fitting when the window gets shorter (a phone's keyboard): drawn again as reading, and the box
+         being typed in keeps the focus, its text and its selection */
+      await toFrames('Five lines');
+      const before=await frameNow(p);
+      await p.locator('#main textarea').nth(1).focus();await p.keyboard.type('line one');await p.keyboard.press('Enter');await p.keyboard.type('line two');
+      await p.evaluate(()=>document.activeElement.setSelectionRange(3,7));
+      /* the box, by what is said for it (its label) and its place among the boxes: its element is a new one after a redraw */
+      const box=()=>p.evaluate(()=>{const a=document.activeElement,t=a&&a.tagName==='TEXTAREA';
+        const said=t?[...(a.labels||[])].map(l=>l.textContent).concat((a.getAttribute('aria-labelledby')||'').split(/\s+/).map(i=>(document.getElementById(i)||{}).textContent||'')).join(' ').trim():'';
+        return {box:t?[...document.querySelectorAll('#main textarea')].indexOf(a)+': '+said:a&&a.tagName,value:a&&a.value,sel:a&&[a.selectionStart,a.selectionEnd]};});
+      const typed=await box();
+      await p.setViewportSize({width:390,height:450});await p.waitForTimeout(500);
+      const after=await frameNow(p);
+      const kept=await box();
+      ok(before.pinned&&before.stick&&!after.pinned,'390: a frame held at 844 high is drawn as reading when the window is 450 high '+JSON.stringify({before,after}));
+      ok(/^1: .*A longer answer/.test(typed.box)&&kept.box===typed.box&&kept.value==='line one\nline two'&&kept.sel.join()==='3,7',
+        '390: the redraw keeps the box being typed in: its focus, its text and its selection '+JSON.stringify({typed,kept}));
+      await p.keyboard.type('Q');
+      const went=await p.evaluate(()=>document.activeElement.value);
+      ok(went==='linQe\nline two','390: and typing goes on over that selection '+JSON.stringify(went));
+      await p.setViewportSize({width:390,height:800});await p.waitForTimeout(300);}
     /* a link to a module's tab opens the module's screen on it */
     await toFrames('Where next');
     await click(p,'#main a.alink','Check-ins');

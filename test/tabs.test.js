@@ -159,34 +159,37 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  A.chooseTab("d","two");
  chk("and not on a tab that has none",pin().length===0);}
 
-/* 6b. a frame is short: it is pinned only when it fits whole in the pin's height, min(7.5em, 22vh) of its own text as
-   drawn; one taller is reading, drawn where it stands on its own page, nothing cut. node has no layout: the drawing is
-   measured here with a stand-in (a node's height is a quarter of its text's length, in px); the real one is tabs-browser.js */
-{const gcs=global.getComputedStyle,ih=global.window.innerHeight;
- const tall=h=>A.frameTall({body:{isConnected:true,getBoundingClientRect:()=>({height:h})}});
- global.getComputedStyle=()=>({fontSize:"16px"});global.window.innerHeight=844;
- const at844=[tall(118),tall(125)];global.window.innerHeight=400;const at400=[tall(86),tall(92)];
- chk("the pin's height is 7.5em of the frame's text, or 22vh when that is less",at844.join()==="false,true"&&at400.join()==="false,true",JSON.stringify([at844,at400]));
- chk("a frame with nothing to measure (not drawn, as in this test's own drawing) is not tall",A.frameTall({body:{isConnected:false}})===false);
- global.window.innerHeight=844;
+/* 6b. a frame is short: held under the bar, it is held only when it fits whole in the pin's height (--pin-h, min(7.5em,
+   22vh) of its own text: a max-height on the pin's body that hides nothing); one taller is reading there, drawn where it
+   stands on its own page, nothing cut. One at a time it is not held, so nothing measures it: it is drawn whole above every
+   step, whatever its length. node has no layout: the drawing is measured here with a stand-in (a node's height is a quarter
+   of its text's length, in px, and the pin's body stops at 120px); the real one is tabs-browser.js */
+{chk("the pin's height is one value, 7.5em of the frame's own text or 22vh when that is less: a measure on the held pin's body, not a clamp",
+   /--pin-h:min\(7\.5em,22vh\)/.test(P.html)&&/\.pin-stick \.pin-body\{max-height:var\(--pin-h\);overflow:visible\}/.test(P.html));
+ const box=h=>({isConnected:true,getBoundingClientRect:()=>({height:h})});
+ chk("a held frame's text running past the pin's body is tall; text that fits is not",
+   A.frameTall({body:box(120),text:box(160)})===true&&A.frameTall({body:box(120),text:box(120.5)})===false&&A.frameTall({body:box(90),text:box(90)})===false);
+ chk("a frame with nothing to measure (not drawn, as in this test's own drawing) is not tall",A.frameTall({body:box(0),text:{isConnected:false}})===false);
  const mk=global.document.createElement;
- global.document.createElement=t=>{const n=mk(t);n.isConnected=true;n.getBoundingClientRect=()=>({height:n.textContent.length/4,top:0});return n;};
+ global.document.createElement=t=>{const n=mk(t);n.isConnected=true;
+   n.getBoundingClientRect=()=>{const h=n.textContent.length/4;return {height:/pin-body/.test(n.attrs&&n.attrs.class)?Math.min(h,120):h,top:0};};return n;};
  const LONG=("Kettles were once heated on open fires, and the shape of the spout followed from how the steam had to leave the body. "+
    "Over the years the handle moved, the lid grew a knob, and the base widened so the kettle would not tip on a hearth. ").repeat(3)+"The shape still answers the same old questions.";
- A.loadText(FM+"> [!activity|r] R\n\n"+LONG+"\n\n> [!text|r1] One?\n\n> [!text|r2] Two?\n\n> [!text|r3] Three?\n\n***\n\n> [!text|r4] Four?\n\n"+
+ A.loadText(FM+"> [!activity|r] R\n\n"+LONG+"\n\n> [!text|r1] One?\n\n> [!text|r2] Two?\n\n> [!text|r3] Three?\n\n***\n\n> [!text|r4] Four?\n\n> [!text|r5] Five?\n\n> [!text|r6] Six?\n\n"+
    "> [!activity|s] S\n\nAnswer the questions. Skip any you like.\n\n> [!text|s1] One?\n\n> [!text|s2] Two?\n\n> [!text|s3] Three?\n");
  const pin=()=>find(P.main(),hasClass("pin"));
  global.__ls[A.OAT_KEY+A.currentId]="all";draw("r");
  chk("(the reading is "+LONG.length+" characters, ending in questions)",LONG.length>=700);
- chk("a long plain reading before the first question is not pinned: drawn as reading, whole, once",pin().length===0&&texts(P.main()).includes(LONG.slice(-60))&&texts(P.main()).split("Kettles were once").length===4);
+ chk("all at once, a long plain reading before the first question is not held: drawn as reading, whole, once",pin().length===0&&texts(P.main()).includes(LONG.slice(-60))&&texts(P.main()).split("Kettles were once").length===4);
  global.__ls[A.OAT_KEY+A.currentId]="one";draw("r");
  const units=()=>find(P.main(),hasClass("oat-unit"));
- chk("one at a time, it is the first step's, as prose before a question is, not above every step",pin().length===0&&units().length===3&&/Kettles/.test(texts(units()[0]))&&!/Kettles/.test(texts(units()[1])));
+ chk("one at a time, it is the frame, drawn whole above the steps and in none of them, however long",
+   pin().length===1&&!/pin-stick/.test(pin()[0].attrs.class)&&texts(pin()[0]).includes(LONG.slice(-60))&&units().length===3&&units().every(u=>!/Kettles/.test(texts(u))));
  A.turnPage("r",A.activityOf("r").pages[1],false);
- chk("and not on the next page: reading is its page's",!/Kettles/.test(texts(P.main()))&&/Four/.test(texts(P.main())));
+ chk("and on the activity's next page (three questions, so one at a time there too) it is drawn again",pin().length===1&&/Kettles/.test(texts(pin()[0]))&&/Four/.test(texts(P.main())),JSON.stringify([pin().length,texts(P.main()).slice(0,300)]));
  global.__ls[A.OAT_KEY+A.currentId]="all";draw("s");
- chk("a short line of instructions is pinned, whole",pin().length===1&&/pin-stick/.test(pin()[0].attrs.class)&&/Skip any you like/.test(texts(pin()[0])));
- global.document.createElement=mk;global.getComputedStyle=gcs;global.window.innerHeight=ih;}
+ chk("a short line of instructions is held, whole",pin().length===1&&/pin-stick/.test(pin()[0].attrs.class)&&/Skip any you like/.test(texts(pin()[0])));
+ global.document.createElement=mk;}
 
 /* 6c. links: to a module's tab, and to a heading in the opening of an activity with tabs */
 {const L=FM+"> [!module|m] M\n\n> [!tab] This month\n\n> [!tab|learn] Learn more\n\nWhy budgets help.\n\n"+
@@ -234,6 +237,15 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  chk("a module of two activities may have tabs, with no warning",warns(okm).length===0,okm.out);
  const indata=lint("indata.booklet.md",FM+"> [!activity|a] A\n\nx\n\n> [!data] Data\n\n> [!tab] In data\n\ny\n");
  chk("a tab line in a data section: a warning that it is not read",indata.errors.length===0&&warns(indata).length===1&&/line 14: a tab line in a data section is not read/.test(warns(indata)[0]),indata.out);
+ const nameless=FM+"> [!activity|a] A\n\n> [!tab] One\n\nx\n\n> [!tab] 日本語\n\ny\n\n> [!tab|tab-2] Two\n\nz\n";
+ const nl=lint("nameless.booklet.md",nameless);
+ chk("a name that leaves no id is `tab-` and its place, as a renderer makes it: a later tab of that id clashes with it, an error naming both lines",
+   nl.errors.length===1&&/'tab-2'/.test(nl.errors[0])&&/line 18/.test(nl.errors[0])&&/line 14/.test(nl.errors[0]),nl.out);
+ const R=A.parseFile(nameless);
+ chk("(the renderer: the second tab is tab-2, the third numbered tab-2-2, and it is said)",JSON.stringify(R.template.modules[0].activities[0].tabs.map(t=>t.id))==='["one","tab-2","tab-2-2"]'&&R.unread.length+R.refused.length>=1,
+   JSON.stringify([R.template.modules[0].activities[0].tabs,R.unread,R.refused]));
+ const nlm=lint("namelessm.booklet.md",FM+"> [!module|m] M\n\n> [!tab] 日本語\n\n> [!tab|tab-1] Two\n\n> [!activity|a] A\n\nx\n\n> [!activity|b tab:tab-1] B\n\ny\n\n> [!module|m end] E\n");
+ chk("in a module's opening too",nlm.errors.length===1&&/'tab-1'/.test(nlm.errors[0])&&/line 12/.test(nlm.errors[0])&&/line 10/.test(nlm.errors[0]),nlm.out);
  fs.rmSync(dir,{recursive:true,force:true});}
 
 console.log(fails?"\n"+fails+" FAILURES":"\ntabs checks passed");P.closePages();process.exit(fails?1:0);

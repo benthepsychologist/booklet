@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-YvhYoGMpENR+xQFCa5IgHG4mdWhChi9IH+AoRFoPYXk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-zO6TKyYK5aXshKZL/DoCiMr2tzDUlxXVhaCLlMfxz48=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -235,8 +235,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --serif:'Lexend', 'Atkinson Hyperlegible', var(--fam-sans);
     --sans:'Atkinson Hyperlegible', var(--fam-sans);
     /* layout: the content area's widest, the one centred column of the home, module and activity screens (and their
-       lists of cards), and the readable measure of prose */
-    --content-w:76rem; --col-w:48rem; --measure:70ch;
+       lists of cards), the readable measure of prose, and the height a frame held under the bar may take (in its own
+       text's em, so it is measured as drawn: THE FRAME) */
+    --content-w:76rem; --col-w:48rem; --measure:70ch; --pin-h:min(7.5em,22vh);
     --rd-w:clamp(17rem,calc(100vw - 42rem),24rem);
     /* the same in every theme (the tint is, so the ink and chips drawn on it are, and a grid's cell colours are the widget's own data); print has no copy of them */
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
@@ -650,15 +651,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
      The tab bar is a row of tabs that scrolls sideways inside itself when they do
      not fit, so the page never does; the tab on show is marked by a bar, weight
      and tint, never by colour alone. The frame (an activity's opening prose) is
-     held under the page's own sticky bar while the questions scroll, and shows
-     its first lines only until it is asked for whole. */
+     held under the page's own sticky bar while the questions scroll, whole, when
+     it fits in the pin's height (--pin-h); one at a time it stays above the step. */
   .tabbar{display:flex;gap:.25rem;margin:1rem 0 1.25rem;overflow-x:auto;overscroll-behavior-x:contain;border-bottom:var(--bw) solid var(--rule);font-family:var(--sans);scrollbar-width:thin}
   .tab{flex:none;min-height:44px;padding:.45rem 1rem;border:0;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;background:transparent;color:var(--muted);font-weight:600;font-size:.95rem;line-height:1.25;white-space:nowrap}
   .tab:hover{color:var(--ink);background:var(--accent-soft)}
   .tab[aria-selected="true"]{border-bottom-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:800}
   .tab:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:-2px}
-  /* a control the keyboard reaches is scrolled clear of the bar and a pinned frame (--ap-pad, holdTop) */
-  html{scroll-padding-top:var(--ap-pad,4.4rem)}
+  /* a control the keyboard reaches is scrolled clear of the bar and a pinned frame: holdTop sets this rule's value (in the
+     stylesheet, so the root's own style keeps the theme's properties and --ap-top only) */
+  html{scroll-padding-top:4.4rem}
   .ap-body:focus{outline:none}
   .ap-tools{display:flex;align-items:center;flex-wrap:wrap;gap:.25rem 1rem;margin:.6rem 0 1rem}
   .ap-tools .oat-ctl{margin:0}
@@ -671,7 +673,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   @media (prefers-reduced-motion:reduce){.fold-knob,.fold-knob::after{transition:none}}
   .pin{margin:0 0 1rem;background:var(--paper)}
   .pin-stick{position:sticky;top:var(--ap-top,4.4rem);z-index:3;padding:.4rem 0 .2rem;border-bottom:var(--bw) solid var(--rule)}
-  .pin-body>div>:first-child,.pin-body .md>:first-child{margin-top:0}
+  /* the pin's height as a measure, not a clamp: nothing is hidden (overflow stays visible), and a held frame whose text runs
+     past it is drawn as reading instead (frameTall) */
+  .pin-stick .pin-body{max-height:var(--pin-h);overflow:visible}
+  .pin-text>div>:first-child,.pin-body .md>:first-child{margin-top:0}
   .pg-at{color:var(--muted);font-size:.92rem;font-weight:600;text-align:center}
   /* Hidden, but kept for screen readers (one rule for all of them): a citation's and a view's words beside their marks; and a
      solution inside the question says the verdict in its own label, so the question's line stays for screen readers only. */
@@ -957,6 +962,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .bar,.rd-panel,.rd-tip,.toast{display:none!important}
     .cd-dup,.cd-chev,.cd-foot,.ap-tools,.oat-head,.tabbar{display:none!important}
     .pin-stick{position:static;border:0}
+    .pin-stick .pin-body{max-height:none}
     .oat-unit[hidden]{display:block!important}
     .oat-unit{border:0;padding:0}
     .card-compact{background:none}
@@ -3048,7 +3054,7 @@ let lang="en", screen=HOME_SCREEN, dirty=false, unsavedEntries=0;
 /* ---- the view: what this visit shows of a booklet, never saved ----
    A view has a record per activity address (viewAt): the entry open under its chips (`chip`), the page on show
    (`page`, and so its tab), by tab the page it was left on (`tabs`), by page the step one at a time shows (`steps`),
-   its frame shown whole (`pin`), the solutions shut (`shut`), each query's sort and filter (`queries`, see queryView),
+   the solutions shut (`shut`), each query's sort and filter (`queries`, see queryView),
    its wiki branch (`branch`); a module's screen has one too, for the tab on show (`tab`). `wiki` is a wiki menu's
    search, its module, the phone's menu. VIEWS keeps one per library entry for the visit; VIEW is the open booklet's.
    A draw may note there what it first shows (an arrival's step, the branches to a page, a module's tab), nothing else. */
@@ -3074,7 +3080,7 @@ const viewAt=addr=>{let v=VIEW.at.get(addr);
    citation panel to open again once its mark is drawn (a language switch); on an activity's screen, `folds`, the callouts
    the author folded that it draws, for the fold switch, `oat`, the steps one at a time, and `foot`, what draws the foot's
    Back and Next again as a step moves. DRAWN is the screen on show's (an answer runs its ticks). */
-const newDraw=()=>({ticks:[],cite:null,again:null,folds:null,oat:null,foot:null,frames:[]});
+const newDraw=()=>({ticks:[],cite:null,again:null,reopen:null,folds:null,oat:null,foot:null,frames:[]});
 let DRAWN=newDraw();
 /* ---- which booklet is in memory ----
    currentId is the open entry, or null on "Your booklets". bookletGen moves on
@@ -6519,16 +6525,18 @@ const moduleTabNow=mod=>{const ts=tabsIn(mod),v=viewAt(moduleScreen(mod.id)).tab
    while the questions are answered (SPEC.md section 3): on every page of its tab, above the steps one at a time, and held
    under the bar while the questions scroll all at once. Plain: paragraphs, lists and tables, with no heading (`#`, or a line
    of `=` or `-` under text), no callout, no HTML and no code fence; prose with any of those is reading. A frame is short:
-   it is pinned only when it fits whole in the pin's height, min(7.5em, 22vh) of its own text as drawn (frameTall). One
-   taller is reading too, and the screen is drawn again with it as reading (render): it scrolls with its page, on that page
-   only, nothing cut and nothing folded. `pin:off` on the activity's line lets it scroll away as any prose does. Prose
-   between questions, and a question's own hint, are not the frame: they go with the question that follows (stepUnits). */
+   held under the bar, it is held only when it fits whole in the pin's height (--pin-h, min(7.5em, 22vh) of its own text as
+   drawn: frameTall). One taller is reading there, and the screen is drawn again with it as reading (render): it scrolls
+   with its page, on that page only, nothing cut and nothing folded. One at a time it is not held, so it covers nothing: it
+   is drawn whole above every step, whatever its length, and nothing measures it. `pin:off` on the activity's line lets it
+   scroll away as any prose does. Prose between questions, and a question's own hint, are not the frame: they go with the
+   question that follows (stepUnits). */
 const plainProse=b=>!!b&&b.type==="markdown"&&!/^ {0,3}(#{1,6}(\s|$)|<(\/?[A-Za-z][A-Za-z0-9-]*(\s|\/?>|$)|[!?])|`{3,}|~{3,})|^[ \t]*\S.*\n {0,3}(=+|-+)[ \t]*$/m.test(String(b.text||""));
 function frameOf(a,t){if(!a||a.pin===false) return null;
   const first=tabPages(a,t)[0],list=blocksIn(first);
   const n=list.findIndex(b=>!plainProse(b));
   return n>0&&blocksAll([list[n]]).some(isQuestion)?{page:first.id,blocks:list.slice(0,n)}:null;}
-/* the frames measured too tall to pin on the screen on show (frameKey), which render draws as reading */
+/* the frames measured too tall to hold on the screen on show (frameKey), which render draws as reading */
 let TALL=new Set();
 const frameKey=(id,t)=>id+"\n"+(t||"");
 /* the frame of activity `id`'s tab `t` as this screen draws it: none when it was measured too tall */
@@ -6538,16 +6546,18 @@ function pageBlocksShown(id){const a=activityOf(id),cur=currentPage(id),f=frameN
   return [...tabOpening(a),...(f?f.blocks:[]),...pageOwn(cur,f)];}
 /* a page's blocks less the frame it begins with */
 const pageOwn=(p,f)=>f&&f.page===p.id?blocksIn(p).slice(f.blocks.length):blocksIn(p);
-/* the pin's height, min(7.5em, 22vh), against the frame as drawn: taller is reading (nothing to measure, as in a test, is not) */
-function frameTall(f){const b=f.body;if(!b||!b.isConnected||typeof b.getBoundingClientRect!=="function"||typeof getComputedStyle!=="function") return false;
-  const em=parseFloat(getComputedStyle(b).fontSize)||16;
-  return b.getBoundingClientRect().height>Math.min(7.5*em,.22*window.innerHeight)+1;}
+/* a held frame's text against the pin's height (its body's max-height, --pin-h): running past it is reading (nothing to
+   measure, as in a test, is not) */
+function frameTall(f){const b=f.body,t=f.text;if(!b||!t||!t.isConnected||typeof t.getBoundingClientRect!=="function") return false;
+  return t.getBoundingClientRect().height>b.getBoundingClientRect().height+1;}
 function frameNode(id,t,blocks,draft,dc,one){
-  const body=el("div",{class:"pin-body"},renderBlocks(blocks,draft,id,dc));
-  const box=el("div",{class:"pin"+(one?"":" pin-stick")},body),f={key:frameKey(id,t),body};
-  dc.frames.push(f);
-  /* measured again when its text reflows (a narrower window, a font arriving): grown too tall, the screen is drawn as reading */
-  if(typeof ResizeObserver==="function") new ResizeObserver(()=>{if(!RENDERING&&DRAWN===dc){if(frameTall(f)) drawKeepingFocus();else holdTop();}}).observe(body);
+  const text=el("div",{class:"pin-text"},renderBlocks(blocks,draft,id,dc)),body=el("div",{class:"pin-body"},text);
+  const box=el("div",{class:"pin"+(one?"":" pin-stick")},body);
+  if(one) return box;
+  /* held under the bar: measured (render), and again when its text reflows (a narrower window, a font arriving); grown too
+     tall, the screen is drawn as reading */
+  const f={key:frameKey(id,t),body,text};dc.frames.push(f);
+  if(typeof ResizeObserver==="function") new ResizeObserver(()=>{if(!RENDERING&&DRAWN===dc){if(frameTall(f)) drawKeepingFocus();else holdTop();}}).observe(text);
   return box;}
 
 /* ---- THE FOLD SWITCH ----
@@ -6920,7 +6930,9 @@ function readingBegin(dc){
   /* A switch of the interface language redraws the page: the panel is opened
      again once its mark is drawn (citeReopen, dc.again), in the new language, and the
      focus stays where the reader put it. Any other redraw closes it. */
-  dc.again=citeOpen()&&citeAt&&dc.cite&&citeAt.screen===dc.cite.screen&&citeAt.lang!==lang?citeAt:null;
+  dc.again=dc.reopen||(citeOpen()&&citeAt&&dc.cite&&citeAt.screen===dc.cite.screen&&citeAt.lang!==lang?citeAt:null);
+  /* kept as the draw's own, for a second draw of the same screen (render), which finds the panel already in the new language */
+  dc.reopen=dc.again;
   closeCite(false);hideTip();}
 /* ---- print: the citations as endnotes at the end of the page on show ---- */
 function citeRefText(c,src,Rt){const bits=[];
@@ -7038,15 +7050,16 @@ function settle(){lang=uiLang();
 function render(){
   /* nothing is drawn before the page has read its store: the first draw is keepStart's (bootPage) */
   if(!KEEP.ready) return DRAWN;
-  TALL=new Set();let dc=drawScreen();
-  /* a frame drawn taller than the pin's height is reading: the screen is drawn again with it so (THE FRAME) */
+  TALL=new Set();let dc=drawScreen(null);
+  /* a frame drawn taller than the pin's height is reading: the screen is drawn again with it so (THE FRAME), and a citation
+     the first draw opened again for a language switch is opened again by the second (readingBegin) */
   const tall=dc.frames.filter(frameTall);
-  if(tall.length){tall.forEach(f=>TALL.add(f.key));dc=drawScreen();}
+  if(tall.length){tall.forEach(f=>TALL.add(f.key));dc=drawScreen(dc.reopen);}
   holdTop();
   return dc;}
-/* the drawing itself */
-function drawScreen(){
-  RENDERING=true;const dc=newDraw();DRAWN=dc;
+/* the drawing itself (`reopen`: the citation a first draw of this screen opened again) */
+function drawScreen(reopen){
+  RENDERING=true;const dc=newDraw();dc.reopen=reopen;DRAWN=dc;
   try{settle();dc.cite=citeDraw(screen);citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(hasOwn(SCREENS,screen)) SCREENS[screen](main,dc);
   else if(isModuleScreen(screen)) renderModulePage(main,screen,dc);
@@ -8269,17 +8282,24 @@ window.addEventListener("booklet-theme",()=>{const s=document.getElementById("th
   redrawDiagrams();});
 /* What stays in view (a wiki's menu, an activity's frame) stays below the page's own sticky bar, whose height changes
    with the screen; the stylesheet reads it as --ap-top. What the keyboard moves to is scrolled clear of the bar and of a
-   frame pinned under it (--ap-pad, the page's scroll-padding-top), so a focused control is never hidden behind them. */
+   frame pinned under it (the page's scroll-padding-top, set on its own rule: padRule), so a focused control is never hidden
+   behind them. */
+let PAD_RULE;
+const padRule=()=>{if(PAD_RULE!==undefined) return PAD_RULE;PAD_RULE=null;
+  for(const sh of Array.from(document.styleSheets||[])){let rs;try{rs=sh.cssRules;}catch(e){continue;/* another origin's sheet */}
+    for(const r of Array.from(rs||[])) if(r.selectorText==="html"&&r.style&&r.style.scrollPaddingTop){PAD_RULE=r;return r;}}
+  return null;};
 function holdTop(){const bar=document.querySelector(".bar"),root=document.documentElement;if(!bar||!root.style) return;
-  const h=bar.getBoundingClientRect().height,pin=document.querySelector("#main .pin-stick");
+  const h=bar.getBoundingClientRect().height,pin=document.querySelector("#main .pin-stick"),pad=padRule();
   root.style.setProperty("--ap-top",Math.ceil(h+12)+"px");
   /* clear of the frame's foot when one is pinned (it is held 12px under the bar), else of the bar's, with room for a field's
      focus ring and the inset of its first line (a browser brings a text box's caret into view, not its top edge) */
-  root.style.setProperty("--ap-pad",Math.ceil((pin?h+12+pin.getBoundingClientRect().height:h)+24)+"px");}
+  if(pad) pad.style.scrollPaddingTop=Math.ceil((pin?h+12+pin.getBoundingClientRect().height:h)+24)+"px";}
 (function trackBar(){const bar=document.querySelector(".bar");
   if(!bar||typeof ResizeObserver!=="function") return;
   new ResizeObserver(holdTop).observe(bar);holdTop();
-  /* a window grown shorter lowers the pin's height (22vh): a pinned frame now taller than it is drawn again as reading */
+  /* a window grown shorter lowers the pin's height (the 22vh of --pin-h): a held frame now taller than it is drawn again as
+     reading */
   window.addEventListener("resize",()=>{if(!RENDERING&&DRAWN&&DRAWN.frames&&DRAWN.frames.some(frameTall)) drawKeepingFocus();});})();
 /* Printing prints everything: the folded callouts open for the print and fold back after */
 if(typeof window!=="undefined"&&window.addEventListener){let printed=[];

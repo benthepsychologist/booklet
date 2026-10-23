@@ -896,6 +896,7 @@ def check_format(f, text, fm):
     # tabs (SPEC.md section 3): a module's, declared in its opening (module id -> {tab id: line}), and the open activity's;
     # how many activities each module has (a module of one has no screen of its own to show its tabs on)
     mod_tabs, act_tabs, in_act, mod_acts = {}, {}, False, {}
+    tab_places = {}  # the tab lines so far among one activity's tabs ("act") or one module's (("module", its id)), for `tab-N`
     implicit, fence = True, None          # a file with no activity or module line is one activity (its tab lines are its tabs)
     for l in lines:
         fence, skip = fence_skip(l, fence)
@@ -1206,8 +1207,11 @@ def check_format(f, text, fm):
                                 err(f, f"{where}: the module id {w['id']!r} is also used on line {mod_ids[w['id']]}")
                             mod_ids.setdefault(w["id"], n)
                 elif kind == "tab":
-                    # an activity's tab, or one of a module's declared in its opening; its id is the one written, else its name's
-                    tid = w["id"] if w["id"] and ID_PATTERN.match(w["id"]) else id_word(mm.group(4).strip())
+                    # an activity's tab, or one of a module's declared in its opening; its id is the one written, else its name's,
+                    # else (a name that leaves nothing, `日本語`) `tab-` and its place among the tabs there, as a renderer makes it
+                    place_key = "act" if in_act or implicit else ("module", open_mod)
+                    place = tab_places[place_key] = tab_places.get(place_key, 0) + 1
+                    tid = (w["id"] if w["id"] and ID_PATTERN.match(w["id"]) else id_word(mm.group(4).strip())) or f"tab-{place}"
                     if w["id"] and not ID_PATTERN.match(w["id"]):
                         err(f, f"{where}: the tab id {w['id']!r} may hold only letters, digits and dashes")
                     table = act_tabs if in_act or implicit else mod_tabs.setdefault(open_mod, {}) if open_mod else None
@@ -1226,6 +1230,7 @@ def check_format(f, text, fm):
                     seen_activity = True
                     mod_has_activity = True
                     in_act, act_tabs = True, {}
+                    tab_places["act"] = 0
                     mod_acts[open_mod] = mod_acts.get(open_mod, 0) + 1
                     tab_set = w["set"].get("tab")
                     if tab_set is not None and tab_set not in mod_tabs.get(open_mod, {}):

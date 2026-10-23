@@ -207,7 +207,7 @@ own questions.
 - **An unfolded `group`**, or a kind with no colour of its own, is drawn as a `note` is.
 - **Tabs** are a tab bar at the top of the activity's column, under its title and opening, drawn for two or more tabs; on a narrow screen it scrolls sideways inside itself. A module's tabs are a bar above its list of activities.
 - **Pages** are turned at the foot: Back, "Page N of M" and Next, in the one row that one at a time's Back and Next also use.
-- **The frame** (the prose before the first question) is held under the top bar while the questions scroll, and stays above the step one at a time, when it fits whole in the lesser of 7.5em of its text and 22% of the window's height. Prose taller than that is reading: it scrolls with its page, nothing cut. A box the keyboard moves to is scrolled clear of the bar and the frame.
+- **The frame** (the prose before the first question) stays whole above the step when the questions are taken one at a time, whatever its length. When they are all shown, it is held under the top bar while they scroll if it fits whole in the pin's height (`--pin-h`: the lesser of 7.5em of its text and 22% of the window's height); taller, it is reading: it scrolls with its page, nothing cut. A box the keyboard moves to is scrolled clear of the bar and the frame.
 - **Fonts.** Headings are set in Lexend and body text in Atkinson Hyperlegible, unless the theme's `font` says otherwise.
 - **Nothing is folded but what the author folded.** A screen holding callouts folded with `-` (other than a hint or a solution) has one switch, Open all, that opens or folds exactly those; the reader's choice is kept per booklet in the browser.
 
