@@ -60,7 +60,13 @@ const LONG='images/'+'a'.repeat(200)+'.png';
 const MIX=bk('mix','Mixed',['> [!activity|m] Mixed','','![Doctype svg](images/doctype.svg)','','![No xmlns](images/noxmlns.svg)','','![Truncated png](images/trunc.png)','',
   '![Redirected](images/redir.png)','','![Long path]('+LONG+')',''].join('\n'));
 const REGPIC=bk('regpic','Registry pictures',['> [!activity|r] Registry','','![Reg svg](images/a.svg)','','![Reg only](images/reg-only.png)',''].join('\n'));
-const REGJ={modules:[{id:'t/regpic',title:'Registry pictures',file:'regpic.md'}]};
+const SHARED='---\nbooklet: "0.13"\ntitle: Shared\nlang: en\n---\n\n'+
+  ['> [!module|journal] Journal','','> [!activity|j] Journal','','![Store pic](images/a.svg)','','> [!module|journal end] End','',
+   '> [!module|other] Other','','> [!activity|o] Other','','Nothing to see.','','> [!text|oq] Say ![Prompt pic](images/prompt.png) here',"",'> [!module|other end] End',''].join('\n');
+/* a module file under the id the store's booklet already uses: adding it updates that module in place */
+const JNEW=(title,img)=>bk('journal',title,['> [!activity|j] Journal','','!['+title+' pic](images/'+img+')',''].join('\n'));
+const JFILES={'/jupda.md':JNEW('Journal update A','reader-wrote-this.png'),'/jupdb.md':JNEW('Journal update B','from-registry.png'),'/jreadd.md':JNEW('Journal readded','readded.png')};
+const REGJ={modules:[{id:'t/regpic',title:'Registry pictures',file:'regpic.md'},{id:'t/ja',title:'Journal update A',file:'jupda.md'},{id:'t/jb',title:'Journal update B',file:'jupdb.md'},{id:'t/jc',title:'Journal readded',file:'jreadd.md'}]};
 const newsBook=v=>bk('news','News',['> [!activity|n] News','','> [!text|nq] A note','','![Changed](images/chg.png)','','![Late](images/late.png)',''].join('\n'))+
   (v>=2?'\n'+bk('extra','Extra',['> [!activity|x] Extra','','![Extra svg](images/extra.svg)',''].join('\n')).replace(/^---[\s\S]*?---\n\n/,''):'');
 const dyn=u=>{
@@ -69,7 +75,7 @@ const dyn=u=>{
   if(u==='/pub/images/late.png')return VERSION<3?null:{type:'image/png',body:png(20,20)};
   if(u==='/pub/images/extra.svg')return {type:'image/svg+xml',body:SVG_NESTED};
   return undefined;};
-const BOOKS={'/pub/mix.booklet.md':MIX,'/pub/pics.booklet.md':PICS,'/pub/sub/nested.booklet.md':NESTED,'/pub/other.md':OTHER};
+const BOOKS={'/pub/shared.booklet.md':SHARED,'/pub/mix.booklet.md':MIX,'/pub/pics.booklet.md':PICS,'/pub/sub/nested.booklet.md':NESTED,'/pub/other.md':OTHER};
 const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub/images/missing.png','/pub/images/fake.svg','/pub/images/big.png'];
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -88,6 +94,7 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
     r.fulfill({status:404,body:'nf',headers:cors});});
   await ctx.route(REG+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(/registry\.json$/.test(u))return r.fulfill({status:200,body:JSON.stringify(REGJ),headers:{'content-type':'application/json',...cors}});
+    if(JFILES['/'+u.split('/').pop()])return r.fulfill({status:200,body:JFILES['/'+u.split('/').pop()],headers:{'content-type':'text/plain',...cors}});
     if(/regpic\.md$/.test(u))return r.fulfill({status:200,body:REGPIC,headers:{'content-type':'text/plain',...cors}});
     r.fulfill({status:404,body:'nf',headers:cors});});
   /* anything else on the network is a failure of the page, answered with an abort so the test sees it asked */
@@ -233,6 +240,45 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   s=await state(p);
   ok(s.boxes.some(x=>x.includes('Reg only'))&&s.imgs.length===0&&true,'on a later visit the added module still draws boxes: '+s.imgs.length+' img');
   ok(!net().some(r=>/reg-only/.test(r.url)),'nothing was ever asked of the store for the registry module\'s own image path');
+  await p.close();
+
+  // 7b a module that updates a store module in place, a module removed and added again, and a later visit: the id is the store's, the text is not
+  p=await open();await p.goto(PAGE+'/app/#/open/shared.booklet.md');await wait(p,2500);
+  n0=mark();
+  await goMod(p,/^\s*\d*\s*Journal/);
+  s=await state(p);
+  ok(s.imgs.length===1&&s.imgs[0].alt==='Store pic'&&since(n0).filter(r=>/images\/a\.svg/.test(r.url)).length===1,'control: the store\'s own Journal module draws its image, read once from the store: '+JSON.stringify(s.imgs.map(i=>i.alt)));
+  await goMod(p,/^\s*\d*\s*Other/);
+  s=await state(p);
+  ok(s.imgs.length===0&&s.boxes.length===0&&(await p.locator('#main').innerText()).includes('Prompt pic')&&!net().some(r=>/prompt\.png/.test(r.url)),'an image in a question\'s wording shows only its alt text as plain words (no box, no img), and nothing is asked for it');
+  const addMod=async title=>{
+    for(let i=0;i<3&&!(await p.getByRole('button',{name:'Add a module'}).count());i++){await p.locator('#btnHome').click();await wait(p,400);}
+    await p.getByRole('button',{name:'Add a module'}).first().click();await wait(p,800);
+    await p.locator('#addModList .bkrow').filter({hasText:title}).locator('button').click();await wait(p,1200);};
+  const noReq=(re,what)=>ok(!net().some(r=>re.test(r.url)),what+': nothing was asked of the store for it ('+net().filter(r=>re.test(r.url)).map(r=>r.url).join()+')');
+  const boxOf=(re)=>state(p).then(x=>x.imgs.length===0&&x.boxes.some(b=>re.test(b)));
+  await addMod('Journal update A');await goMod(p,/Journal update A/);
+  ok(await boxOf(/Journal update A pic.*images\/reader-wrote-this\.png/),'a module file under the store\'s module id updates it in place; its image is the box with its address');
+  noReq(/reader-wrote-this/,'the file\'s path');
+  await addMod('Journal update B');await goMod(p,/Journal update B/);
+  ok(await boxOf(/Journal update B pic.*images\/from-registry\.png/),'a registry module under the same id, with no removal, is the box too');
+  noReq(/from-registry/,'the registry module\'s path');
+  await goMod(p,/Journal update B/);
+  await p.locator('.removemod button',{hasText:'Remove this module'}).click();await wait(p,300);
+  await p.locator('.removemod [role=alert] button',{hasText:/^Remove$/}).click();await wait(p,800);
+  ok(await p.evaluate(()=>[...document.querySelectorAll('#main button.mode')].every(b=>!/Journal/.test(b.innerText))),'the module was removed');
+  await addMod('Journal readded');await goMod(p,/Journal readded/);
+  ok(await boxOf(/Journal readded pic.*images\/readded\.png/),'removed and then added again under the same id: the box');
+  noReq(/readded\.png/,'the re-added module\'s path');
+  // a later visit, from the kept copy that holds the changed module
+  await p.locator('#btnHome').click();await wait(p,300);
+  if(await p.evaluate(()=>!!document.body.dataset.view&&document.body.dataset.view!=='')) {await p.locator('#btnHome').click();await wait(p,300);}
+  n0=mark();
+  await p.getByText('Shared').first().click();await wait(p,2500);
+  await goMod(p,/Journal readded/);
+  ok(await boxOf(/Journal readded pic/),'on a later visit the kept copy still draws the box for it');
+  ok(since(n0).filter(r=>/\/images\//.test(r.url)).length===0,'...and asks the store for no image ('+since(n0).filter(r=>/\/images\//.test(r.url)).map(r=>r.url).join()+')');
+  noReq(/reader-wrote-this|from-registry|readded\.png/,'over the visit, none of the three paths');
   await p.close();
 
   // 8 a registry booklet opened by link, on a page that declares a store, asks for no image
