@@ -24,7 +24,7 @@
    file's policy allows no other origin. */
 (function(){
 "use strict";
-const SUBMIT_VERSION="0.2.0";
+const SUBMIT_VERSION="0.3.0";
 const tag=document.querySelector('meta[name="booklet-submit"]');
 const ENDPOINT=tag?String(tag.getAttribute("content")||"").trim():"";
 let where="";
@@ -73,7 +73,42 @@ function payload(){
       answers[id]=v;}}
   if(!Object.keys(answers).length) return {ok:false,why:S().nothing};
   const recipe=RECIPE!==null?RECIPE:(BOOK&&BOOK.id)||"";
-  return {ok:true,text:JSON.stringify({recipe,answers:{...answers}},null,2)};}
+  const body={recipe,answers:{...answers}},bk=bookletOf(),sn=seenAnswers();
+  if(bk) body.booklet=bk;
+  if(Object.keys(sn).length) body.seen=sn;
+  return {ok:true,text:JSON.stringify(body,null,2)};}
+/* What the reader was shown, sent beside `answers` and never instead of it. A stored position (a choice's, a scale's) cannot be
+   read later without the file the reader had, and the body names a recipe, not the file's text. So for each answered question,
+   by its id as in `answers`: `question` (its words), and for a question with options the words of the options in the order
+   shown (`options`, or `anchors` with their numbers, and `items` for a matrix) and the words picked (`picked`). Words are
+   plain text, in the booklet's own language. `booklet` says which file: its id, its version and its language. */
+const plain=s=>plainText(s==null?"":s);
+function bookletOf(){if(!BOOK) return null;
+  const o={id:BOOK.id},v=BOOK.version,l=BOOK.raw&&BOOK.raw.lang;
+  if(typeof v==="string"&&v!=="") o.version=v;
+  if(typeof l==="string"&&l!=="") o.lang=l;
+  return o;}
+function seenOf(b,v,text){
+  const o={question:plain(fieldLabel(b))||keysOf(b)[0]};
+  const anchors=()=>(b.anchors||[]).map(a=>({n:a.n,text:plain(a.text)}));
+  const wordsOfAnchor=n=>{const a=(b.anchors||[]).find(x=>x.n===n);return a?plain(a.text):String(n);};
+  if(b.type==="choice"||b.type==="multi"){const listed=b.options||[];
+    o.options=listed.map(plain);
+    o.picked=picksOf(v).filter(x=>typeof x==="string"?x.trim()!=="":x!==null&&x!==undefined)
+      .map(n=>typeof n==="string"?n:(listed[n-1]!==undefined?plain(listed[n-1]):"#"+n));}
+  else if(b.type==="scale"){o.anchors=anchors();o.picked=wordsOfAnchor(v);}
+  else if(b.type==="matrix"){o.items=(b.items||[]).map(plain);o.anchors=anchors();
+    o.picked=(b.items||[]).map((_,i)=>typeof v[i]==="number"?wordsOfAnchor(v[i]):null);}
+  else if(b.type==="widget"){o.picked=text;}
+  return o;}
+/* the same walk as readable(): every module's questions that hold an answer, repeating activities skipped */
+function seenAnswers(){const out=Object.create(null);
+  for(const m of (BOOK&&BOOK.modules)||[]){const ans=peekAnswers(scopeOfModule(m));
+    for(const a of m.activities||[]){if(a.kind==="entry") continue;
+      for(const b of allBlocksOf(a)){if(!QUESTION_KINDS.has(b.type)) continue;
+        const k=keysOf(b)[0];if(k===undefined||!holdsSomething(ans[k])||hasOwn(out,k)) continue;
+        out[k]=seenOf(b,ans[k],b.type==="widget"?answerText(b,ans,k):"");}}}
+  return {...out};}
 /* the same answers as the reader gave them, for the confirm screen: one group per module, each answered question's words and
    the answer's, read by the renderer's own fieldSummary (as its kept-entry cards read them). An answer no question names is
    listed by its id under "other", so the list holds everything payload() sends. Repeating activities keep entries, not
