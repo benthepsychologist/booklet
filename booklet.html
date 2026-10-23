@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-qnx9L5of364VCWoLKsfL6OdGDzSfB7ePK/4t4I0tPKs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-yfqI/Q3Yq2NfAXq12N9dUV28uPKA+gLoEh5E+NOtT00=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -8380,7 +8380,10 @@ if(typeof window!=="undefined"&&typeof window.matchMedia==="function"){
   const mq=window.matchMedia(PAGES_NARROW),again=()=>{
     if(RENDERING||!currentId||BOOK===EMPTY_BOOKLET) return;
     const mod=isModuleScreen(screen)?moduleForScreen(screen):holderOf(screen);
-    if(!wikiOf(mod)) return;
+    /* an activity of several pages (or a reading page with sections) draws its menu by the width as well: a rail on a narrow screen, as the reader left it on a wide one */
+    const paged=!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)&&(activityOf(screen).pages.length>1||!!(DRAWN&&DRAWN.reading));
+    if(!wikiOf(mod)&&!paged) return;
+    pagesOverlay=false;
     const a=document.activeElement,inBox=!!(a&&a.classList&&a.classList.contains("wk-q")),
       ss=inBox&&typeof a.selectionStart==="number"?a.selectionStart:null,se=inBox&&typeof a.selectionEnd==="number"?a.selectionEnd:null;
     render();
