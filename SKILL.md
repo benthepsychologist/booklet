@@ -222,8 +222,11 @@ Write one booklet line for each question (section 6) where `my-question` stands.
   which is never drawn.
 - **Images.** An image is linked, never embedded. A renderer fetches one only
   from a place its own host declares, never from an address the file names. The
-  reference renderer shows the alt text and the address as text, and the linter
-  warns on a remote address (section 7).
+  reference renderer draws an image for a booklet opened from the store its host
+  declares (the path is read relative to the booklet's own name there), and shows
+  any other booklet's images as the alt text and the address as text. The linter
+  warns on a remote address, and on a relative path the renderer would refuse
+  (section 7).
 
 ### Where each title and opening shows
 
@@ -671,7 +674,11 @@ between paragraphs for a new one. Section 4 says what a heading does.
   `[harbour]: images/harbour.jpg`. Use a relative path the requester gave you.
   Never embed the data, never invent an address, and avoid an `https` address:
   the linter warns on one, and a renderer fetches an image only from a place its
-  host declares (section 4).
+  host declares (section 4). Write the path with only letters, digits, `_`, `.`,
+  `/` and `-` (at most 200 characters), no empty part and no part that begins
+  with a dot (so no `..` and no `./`), no leading `/`, and an extension of
+  `.svg`, `.png`, `.jpg`, `.jpeg`, `.webp` or `.gif`; other paths are never read. An empty alt
+  text (`![](images/rule.svg)`) marks a decorative image.
 
 - **A report** (something written to be read, with numbers and perhaps a few
   questions at the end) has its own section, 8.
