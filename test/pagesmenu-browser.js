@@ -30,20 +30,43 @@ Some words on the first page.
 
 > [!text|two] A question on page two
 `;
+const READ=`---
+booklet: "0.13"
+title: One reading page
+lang: en
+---
+
+# One reading page
+
+> [!activity|reading] One reading page
+
+## The first part
+
+Some words in the first part.
+
+## The second part
+
+Some words in the second part.
+
+## The third part
+
+Some words in the third part.
+`;
 const menu=p=>p.evaluate(()=>{const f=document.querySelector('.ap-frame'),m=f&&f.querySelector('.ap-menu'),t=f&&f.querySelector('.ap-toggle');
   return {frame:!!f,min:!!f&&f.classList.contains('ap-min'),expanded:t&&t.getAttribute('aria-expanded'),position:m&&getComputedStyle(m).position,
     sideways:document.documentElement.scrollWidth-document.documentElement.clientWidth};});
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const file=path.join(OUT,'pagesmenu.booklet.md');fs.writeFileSync(file,FILE);
+  const readFile=path.join(OUT,'pagesmenu-reading.booklet.md');fs.writeFileSync(readFile,READ);
   const b=await chromium.launch();
-  const open=async W=>{
+  const open=async(W,fname)=>{
     const p=await (await b.newContext({viewport:{width:W,height:900}})).newPage();
     p.__bad=[];p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))p.__bad.push(m.text());});p.on('pageerror',e=>p.__bad.push(e.message));
     await p.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
-    await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
+    await p.locator('#fileIn').setInputFiles(fname||file);await p.waitForTimeout(500);
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
     if(!(await p.locator('.ap-frame').count())){if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
       await p.locator('button.mode').first().click();await p.waitForTimeout(700);}
@@ -74,6 +97,24 @@ const menu=p=>p.evaluate(()=>{const f=document.querySelector('.ap-frame'),m=f&&f
   await size(p,400);s=await menu(p);
   ok(s.min&&s.expanded==='false','narrowed again: the rail, the overlay was not kept '+JSON.stringify(s));
   ok(p.__bad.length===0,'no policy violation or page error: '+p.__bad.join(' | '));
+
+  /* the reader is typing when the window crosses: the typed words, and the focus and the caret, come back */
+  p=await open(1280);
+  await p.locator('textarea').first().click();await p.keyboard.type('hello typed');await p.waitForTimeout(200);
+  await size(p,400);
+  s=await p.evaluate(()=>{const a=document.activeElement;return {tag:a&&a.tagName,value:a&&a.value,caret:a&&a.selectionStart};});
+  ok(s.tag==='TEXTAREA'&&s.value==='hello typed'&&s.caret===11,'1280 narrowed to 400 while typing: the same box keeps its words, its focus and its caret '+JSON.stringify(s));
+  ok(p.__bad.length===0,'typing across the breakpoint: no policy violation or page error');
+
+  /* a single page that reads, in sections: its menu lists the sections, and follows the width as well */
+  p=await open(1280,readFile);s=await menu(p);
+  const secs=await p.locator('.ap-sec').count();
+  ok(s.frame&&!s.min&&secs===3,'reading page at 1280: the menu is a column listing its three sections '+JSON.stringify({secs,min:s.min}));
+  await size(p,400);s=await menu(p);
+  ok(s.min&&s.expanded==='false'&&s.position!=='fixed','reading page, 1280 narrowed to 400: a closed rail, not lying over the page '+JSON.stringify(s));
+  await size(p,1280);s=await menu(p);
+  ok(!s.min&&s.expanded==='true','reading page, widened again: a column');
+  ok(p.__bad.length===0,'reading page: no policy violation or page error: '+p.__bad.join(' | '));
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'ALL PASSED');process.exit(fails.length?1:0);
 })();
