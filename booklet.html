@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-tqTFlXQBbWq8R6WTAyMBo0SBXuSyuAEAWIDTPGDyap4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-pQP41OIDK8Vde9cMStNWLDbcJZOZKEmTwDdTr/mzNxs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -8260,14 +8260,15 @@ async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.
   finally{clearTimeout(timer);}}
 /* ---- IMAGES FROM THE DECLARED STORE (SPEC.md sections 6 and 13) ----
    A booklet opened from the host's declared store (by link, by the host's open(), or from the "Your booklets" entry that
-   came from it: currentEntry.from is "store:<name>") draws its images, and only inside the modules the store's own file
-   is the same text as the store's own file has for that module id in this visit (the file just read: STORE_SRC, set by
-   noteStoreFile when the file is read at open, on "Read the newer file" and on the host's fileChanged), and in the
-   booklet's opening and bare activities, which nothing the reader does changes. So a module the reader added or updated
-   in place (from the registry or another file, under an id the store's file also uses, or removed and added again) draws
-   boxes unless its text is the store's own, and asks for nothing: its paths are not the store's. A copy kept before this
-   existed needs no record, since the comparison is made against the file read each visit. A visit that did not read the
-   file (the store did not answer) draws no image.
+   came from it: currentEntry.from is "store:<name>") draws its images, and only where the booklet still holds the store's
+   own text: each part of the booklet (a module, and the opening with the activities outside every module) must be the same
+   text as that part of the store's file just read for this visit (STORE_SRC, set by noteStoreFile when the file is read at
+   open, on "Read the newer file" and on the host's fileChanged; moduleTexts says what a part is). So a module the reader
+   added or updated in place (from the registry or another file, under an id the store's file also uses, or removed and
+   added again), a kept copy of an older file the store has since changed, and a copy kept from another store on the same
+   origin all draw boxes and ask for nothing: their paths are not this store's. A copy kept before this existed needs no
+   record, since the comparison is made against the file read each visit. A visit that did not read the file (the store
+   did not answer) draws no image.
    Any other booklet (a file, the registry, a page that declares no store) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the
    booklet's own name in the store: <store>/sub/x.booklet.md with images/a.png reads <store>/sub/images/a.png.
    The path is checked before anything is asked for (imagePath): only [A-Za-z0-9_./-], at most 200 characters, no part
@@ -8293,14 +8294,21 @@ function imagePath(raw){const p=String(raw==null?"":raw);
    not opened from the store, the page declares none, this visit has not read the store's file, or `scope` (the module the
    image is drawn in, "" for the opening and bare activities) is a module whose text is not the store's own */
 let STORE_SRC="";   /* the design text of the store's file as read for this visit, "" before it is */
-const moduleTexts=src=>{const lines=String(src||"").split("\n"),m=Object.create(null);
-  moduleSpans(lines).forEach(sp=>{if(sp.id&&!hasOwn(m,sp.id)) m[sp.id]=lines.slice(sp.openAt,sp.closeAt+1).join("\n");});
+/* A source's parts, each a text to compare: for a module id, its fence (open line to end line) and its data section; for "",
+   the opening and the activities outside every module, which is every line outside the front matter, the module fences and
+   the data sections, with the blank lines left out (adding a module changes the spacing between them and nothing else). */
+const moduleTexts=src=>{const lines=String(src||"").split("\n"),m=Object.create(null),spans=moduleSpans(lines),secs=dataSections(lines),outside=new Array(lines.length).fill(true);
+  for(let i=0;i<frontMatter(src).next&&i<lines.length;i++) outside[i]=false;
+  spans.forEach(sp=>{for(let i=sp.openAt;i<=sp.closeAt;i++) outside[i]=false;});
+  secs.forEach(x=>{for(let i=x.at;i<x.end;i++) outside[i]=false;});
+  m[""]=lines.filter((l,i)=>outside[i]&&l.trim()!=="").join("\n");
+  spans.forEach(sp=>{if(sp.id&&!hasOwn(m,sp.id)) m[sp.id]=lines.slice(sp.openAt,sp.closeAt+1).concat(...secs.filter(x=>x.id===sp.id).map(x=>lines.slice(x.at,x.end))).join("\n");});
   return m;};
-/* each module's text (its fence, open line to end line), for the store's file and for the booklet now open; a source is read once */
+/* those texts, for the store's file and for the booklet now open; a source is read once */
 const MOD_MEMO={store:{src:null,map:null},book:{src:null,map:null}};
 const moduleMemo=(k,src)=>{const c=MOD_MEMO[k];if(c.map===null||c.src!==src){c.map=moduleTexts(src);c.src=src;}return c.map;};
 const storeModule=id=>{const a=moduleMemo("store",STORE_SRC)[id];return a!==undefined&&a===moduleMemo("book",String(((typeof BOOK!=="undefined"&&BOOK&&BOOK.raw)||{}).source||""))[id];};
-function imageFolder(scope){const e=currentEntry,f=e&&e.from,n=typeof f==="string"&&f.startsWith("store:")&&STORE_SRC!==""&&typeof scope==="string"&&(scope===""||storeModule(scope))?linkName(f.slice(6)):null,at=n===null?null:storeAddress(n);
+function imageFolder(scope){const e=currentEntry,f=e&&e.from,n=typeof f==="string"&&f.startsWith("store:")&&STORE_SRC!==""&&typeof scope==="string"&&storeModule(scope)?linkName(f.slice(6)):null,at=n===null?null:storeAddress(n);
   return at?at.slice(0,at.lastIndexOf("/")+1):"";}
 /* The store's file was just read (opening it, and "Read the newer file" and the host's fileChanged, which make it what the
    booklet holds): keep its design text for this visit, so only a module with the store's own text draws the store's images,

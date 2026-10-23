@@ -66,16 +66,27 @@ const SHARED='---\nbooklet: "0.13"\ntitle: Shared\nlang: en\n---\n\n'+
 /* a module file under the id the store's booklet already uses: adding it updates that module in place */
 const JNEW=(title,img)=>bk('journal',title,['> [!activity|j] Journal','','!['+title+' pic](images/'+img+')',''].join('\n'));
 const JFILES={'/jupda.md':JNEW('Journal update A','reader-wrote-this.png'),'/jupdb.md':JNEW('Journal update B','from-registry.png'),'/jreadd.md':JNEW('Journal readded','readded.png')};
-const REGJ={modules:[{id:'t/regpic',title:'Registry pictures',file:'regpic.md'},{id:'t/ja',title:'Journal update A',file:'jupda.md'},{id:'t/jb',title:'Journal update B',file:'jupdb.md'},{id:'t/jc',title:'Journal readded',file:'jreadd.md'}]};
+/* a booklet with prose before its first module (its opening), a module with a question (so a reader can keep work in it), and a store file that can change */
+const topBook=img=>'---\nbooklet: "0.13"\ntitle: Top\nlang: en\n---\n\nWelcome ![Opening pic](images/'+img+')\n\n'+
+  ['> [!module|tm] Top module','','> [!activity|ta] Top','','> [!text|tq] A note','','> [!module|tm end] End',''].join('\n');
+let TOPV=1;
+/* a module with a data section: the fence is the same everywhere, so only the data section tells the store's text from a replacement's */
+const DMOD=n=>'> [!module|dm] D module\n\n> [!activity|d] D\n\n![D pic](images/a.svg)\n\n> [!module|dm end] End\n\n> [!data|dm] Data for D module\n\n```booklet data\n[{"x": '+n+'}]\n```\n^rows\n';
+const DHEAD='---\nbooklet: "0.13"\ntitle: Data booklet\nlang: en\n---\n\n';
+const JFILES_D={'/dsame.md':DHEAD+DMOD(1),'/ddiff.md':DHEAD+DMOD(2)};
+const REGJ={modules:[{id:'t/dsame',title:'D module',file:'dsame.md'},{id:'t/ddiff',title:'D module',file:'ddiff.md'},{id:'t/regpic',title:'Registry pictures',file:'regpic.md'},{id:'t/ja',title:'Journal update A',file:'jupda.md'},{id:'t/jb',title:'Journal update B',file:'jupdb.md'},{id:'t/jc',title:'Journal readded',file:'jreadd.md'}]};
 const newsBook=v=>bk('news','News',['> [!activity|n] News','','> [!text|nq] A note','','![Changed](images/chg.png)','','![Late](images/late.png)',''].join('\n'))+
   (v>=2?'\n'+bk('extra','Extra',['> [!activity|x] Extra','','![Extra svg](images/extra.svg)',''].join('\n')).replace(/^---[\s\S]*?---\n\n/,''):'');
 const dyn=u=>{
+  if(u==='/pub/top.booklet.md')return {type:'text/markdown; charset=utf-8',body:topBook('top'+TOPV+'.svg')};
+  if(u==='/pub2/top.booklet.md')return {type:'text/markdown; charset=utf-8',body:topBook('two.svg')};
+  if(/^\/pub2?\/images\/(top[12]|two)\.svg$/.test(u))return {type:'image/svg+xml',body:SVG_NESTED};
   if(u==='/pub/news.booklet.md')return {type:'text/markdown; charset=utf-8',body:newsBook(VERSION)};
   if(u==='/pub/images/chg.png')return {type:'image/png',body:png(40*VERSION,10)};
   if(u==='/pub/images/late.png')return VERSION<3?null:{type:'image/png',body:png(20,20)};
   if(u==='/pub/images/extra.svg')return {type:'image/svg+xml',body:SVG_NESTED};
   return undefined;};
-const BOOKS={'/pub/shared.booklet.md':SHARED,'/pub/mix.booklet.md':MIX,'/pub/pics.booklet.md':PICS,'/pub/sub/nested.booklet.md':NESTED,'/pub/other.md':OTHER};
+const BOOKS={'/pub/shared.booklet.md':SHARED,'/pub/data.booklet.md':DHEAD+DMOD(1),'/pub/mix.booklet.md':MIX,'/pub/pics.booklet.md':PICS,'/pub/sub/nested.booklet.md':NESTED,'/pub/other.md':OTHER};
 const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub/images/missing.png','/pub/images/fake.svg','/pub/images/big.png'];
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -85,6 +96,7 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   const setup=async ctx=>{
   await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(u==='/app/')return r.fulfill({status:200,body:page(true),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
+    if(u==='/app2/')return r.fulfill({status:200,body:page(true).replace(STORE+'/pub/',STORE+'/pub2/'),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
     if(u==='/plain/')return r.fulfill({status:200,body:page(false),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
     {const d=dyn(u);if(d===null)return r.fulfill({status:404,body:'nf',headers:cors});if(d)return r.fulfill({status:200,body:d.body,headers:{'content-type':d.type,...cors}});}
     if(u==='/pub/images/redir.png')return r.fulfill({status:302,headers:{location:STORE+'/pub/images/redir-target.png',...cors}});
@@ -94,6 +106,7 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
     r.fulfill({status:404,body:'nf',headers:cors});});
   await ctx.route(REG+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(/registry\.json$/.test(u))return r.fulfill({status:200,body:JSON.stringify(REGJ),headers:{'content-type':'application/json',...cors}});
+    if(JFILES_D['/'+u.split('/').pop()])return r.fulfill({status:200,body:JFILES_D['/'+u.split('/').pop()],headers:{'content-type':'text/plain',...cors}});
     if(JFILES['/'+u.split('/').pop()])return r.fulfill({status:200,body:JFILES['/'+u.split('/').pop()],headers:{'content-type':'text/plain',...cors}});
     if(/regpic\.md$/.test(u))return r.fulfill({status:200,body:REGPIC,headers:{'content-type':'text/plain',...cors}});
     r.fulfill({status:404,body:'nf',headers:cors});});
@@ -279,6 +292,63 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   ok(await boxOf(/Journal readded pic/),'on a later visit the kept copy still draws the box for it');
   ok(since(n0).filter(r=>/\/images\//.test(r.url)).length===0,'...and asks the store for no image ('+since(n0).filter(r=>/\/images\//.test(r.url)).map(r=>r.url).join()+')');
   noReq(/reader-wrote-this|from-registry|readded\.png/,'over the visit, none of the three paths');
+  await p.close();
+
+  // 7c the booklet's opening: drawn while it is the store's text; not once the store's file has changed and the kept copy has not read it, and not from another store
+  p=await open();n0=mark();
+  await p.goto(PAGE+'/app/#/open/top.booklet.md');await wait(p,2500);
+  await p.locator('#btnHome').click();await wait(p,500);
+  s=await state(p);
+  ok(s.imgs.length===1&&s.imgs[0].alt==='Opening pic'&&s.imgs[0].ok&&since(n0).filter(r=>/images\/top1\.svg/.test(r.url)).length===1,'control: the booklet\'s opening draws its image while it is the store\'s text: '+JSON.stringify(s.imgs.map(i=>i.alt))+' '+s.view);
+  await goMod(p,/Top module/);
+  await p.locator('#main textarea').first().fill('QZXtop');await wait(p,900);
+  await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,900);
+  TOPV=2;n0=mark();
+  await p.evaluate(()=>{location.hash='#/open/top.booklet.md';});await wait(p,2500);
+  ok(await p.locator('.hostnote button.primary').filter({hasText:'Read the newer file'}).count()===1,'the store\'s file changed since the kept copy read it: the newer file is offered');
+  await p.locator('#btnHome').click();await wait(p,500);
+  if(!(await p.locator('#main').innerText()).includes('Welcome')){await p.locator('#btnHome').click();await wait(p,500);}
+  s=await state(p);
+  ok(s.imgs.length===0&&s.boxes.some(x=>x.includes('Opening pic')&&x.includes('images/top1.svg')),'until it is read, the kept opening (the old text) draws the box: '+JSON.stringify(s.boxes));
+  ok(since(n0).filter(r=>/images\/top[12]\.svg/.test(r.url)).length===0,'...and asks the store for neither the old path nor the new one ('+since(n0).filter(r=>/images\/top/.test(r.url)).map(r=>r.url).join()+')');
+  await p.locator('.hostnote button.primary').filter({hasText:'Read the newer file'}).click();await wait(p,1500);
+  await p.locator('#btnHome').click();await wait(p,500);
+  if(!(await p.locator('#main').innerText()).includes('Welcome')){await p.locator('#btnHome').click();await wait(p,500);}
+  s=await state(p);
+  ok(s.imgs.length===1&&s.imgs[0].alt==='Opening pic'&&since(n0).filter(r=>/images\/top2\.svg/.test(r.url)).length===1,'after "Read the newer file" the opening is the store\'s text again and draws its new image: '+JSON.stringify(s.imgs.map(i=>i.alt)));
+  await p.close();
+  // the same kept copy (made from the store at /pub/) opened on a page whose store is /pub2/ on the same origin
+  p=await open();n0=mark();
+  await p.goto(PAGE+'/app2/#/open/top.booklet.md');await wait(p,2500);
+  await p.locator('#btnHome').click();await wait(p,500);
+  if(!(await p.locator('#main').innerText()).includes('Welcome')){await p.locator('#btnHome').click();await wait(p,500);}
+  s=await state(p);
+  ok(since(n0).filter(r=>/\/pub2\/top\.booklet\.md/.test(r.url)).length===1,'the other store was asked for the booklet\'s name');
+  ok(s.imgs.length===0&&s.boxes.some(x=>x.includes('Opening pic')),'a copy kept from the first store, opened on the page whose store is /pub2/, draws the box for its opening: '+JSON.stringify(s.boxes));
+  ok(since(n0).filter(r=>/\/images\//.test(r.url)).length===0,'...and nothing is asked of /pub2/ for a path taken from the first store\'s text ('+since(n0).filter(r=>/\/images\//.test(r.url)).map(r=>r.url).join()+')');
+  await p.close();
+  const other=await b.newContext({viewport:{width:1280,height:900}});await setup(other);
+  p=await open(other);n0=mark();
+  await p.goto(PAGE+'/app2/#/open/top.booklet.md');await wait(p,2500);
+  await p.locator('#btnHome').click();await wait(p,500);
+  if(!(await p.locator('#main').innerText()).includes('Welcome')){await p.locator('#btnHome').click();await wait(p,500);}
+  s=await state(p);
+  ok(s.imgs.length===1&&since(n0).filter(r=>/\/pub2\/images\/two\.svg/.test(r.url)).length===1,'control: a browser with no kept copy opens the same name from /pub2/ and draws that store\'s own image');
+  await p.close();
+
+  // 7d a module's data section is part of its text: the same fence with different data is not the store's module
+  p=await open();n0=mark();await p.goto(PAGE+'/app/#/open/data.booklet.md');await wait(p,2500);
+  await goMod(p,/D module/);
+  s=await state(p);
+  ok(s.imgs.length===1&&s.imgs[0].alt==='D pic'&&since(n0).filter(r=>/images\/a\.svg/.test(r.url)).length===1,'control: the store\'s module with a data section draws its image');
+  const addD=async which=>{for(let i=0;i<3&&!(await p.getByRole('button',{name:'Add a module'}).count());i++){await p.locator('#btnHome').click();await wait(p,400);}
+    await p.getByRole('button',{name:'Add a module'}).first().click();await wait(p,800);
+    await p.locator('#addModList .bkrow').nth(which).locator('button').click();await wait(p,1200);};
+  await addD(1);await goMod(p,/D module/);
+  n0=mark();
+  await p.locator('#btnHome').click();await wait(p,300);await goMod(p,/D module/);
+  s=await state(p);
+  ok(s.imgs.length===0&&s.boxes.some(x=>x.includes('D pic'))&&since(n0).filter(r=>/images\/a\.svg/.test(r.url)).length===0,'the same fence with a different data section, added under the same id: the box, nothing asked ('+s.imgs.length+' img)');
   await p.close();
 
   // 8 a registry booklet opened by link, on a page that declares a store, asks for no image

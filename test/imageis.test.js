@@ -39,7 +39,7 @@ timings.push(time("2000 comments of text, then x",'<!-- c -->'.repeat(2000)+'x')
 timings.push(time("2000 DOCTYPEs, then x",'<!DOCTYPE a>'.repeat(2000)+'x'));
 timings.push(time("2000 DOCTYPEs with a subset, then x",'<!DOCTYPE a [ ]>'.repeat(2000)+'x'));
 timings.push(time("2000 unclosed DOCTYPE starts",'<!DOCTYPE a ['.repeat(2000)));
-timings.push(time("a megabyte of blank space, then x",' '.repeat(1<<20)+'x'));
+timings.push(time("a megabyte of blank space, then x (it reads only the first 8 KB, and refuses)",' '.repeat(1<<20)+'x'));
 timings.push(time("2000 comments each holding --",'<!-- -- -->'.repeat(2000)+'x'));
 console.log("  info  slowest: "+Math.max(...timings).toFixed(2)+" ms");
 console.log(fails?"\n"+fails+" FAILURES":"\nimage byte checks passed");process.exit(fails?1:0);
