@@ -792,6 +792,21 @@ def icon_hint(name):
     return f"; did you mean {', '.join('`' + c + '`' for c in near)}?" if near else ""
 
 
+HTML_BLOCK_START = re.compile(r'^ {0,3}<[A-Za-z/!?]')
+THEMATIC_BREAK = re.compile(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$')
+
+
+def continues_paragraph(line):
+    """Would this line, straight under a callout's lines, continue their paragraph (Markdown's "lazy continuation")? Not when it is blank,
+    starts a quote (`>`), or starts a block of its own: a fence, a heading, a thematic break, a list item or an HTML block."""
+    if not line.strip() or line.startswith(">"):
+        return False
+    if (FENCE_LINE.match(line) or re.match(r'^ {0,3}#{1,6}([ \t]|$)', line) or THEMATIC_BREAK.match(line)
+            or re.match(r'^ {0,3}[-*+][ \t]+\S', line) or re.match(r'^ {0,3}1[.)][ \t]+\S', line) or HTML_BLOCK_START.match(line)):
+        return False
+    return True
+
+
 def check_settings(f, n, kind, w):
     """A line's settings against KIND_SETTINGS, and an unknown kind (SPEC.md section 4)."""
     allowed = KIND_SETTINGS.get(kind)
@@ -1196,10 +1211,10 @@ def check_format(f, text, fm):
                         if any(re.match(r'^\s*(>|#{1,6}([ \t]|$)|[-*+][ \t]|\d+[.)][ \t]|`{3,}|~{3,})', x) for x in status_lines):
                             warn(f, f"{where}: a `>` line under this activity line is block syntax (a quote or nested callout, a heading, a list item or a code fence); "
                                     f"the lines under an activity line are its card's status text, one line of inline Markdown, so it would show as literal characters")
-                        end = body_end(lines, i)
-                        if end < len(lines) and lines[end].strip() and not lines[end].startswith(">"):
-                            warn(f, f"line {end + 1}: text straight under the activity line's `>` lines, with no blank line between, is read by Markdown and Obsidian as part "
-                                    f"of the callout, but a renderer takes it as the activity's own paragraph (its blurb); leave a blank line after the `>` lines")
+                    end = body_end(lines, i)
+                    if end < len(lines) and continues_paragraph(lines[end]):
+                        warn(f, f"line {end + 1}: text straight under the activity line" + (" and its `>` lines" if end > i + 1 else "") + ", with no blank line between, is read by Markdown "
+                                f"and Obsidian as part of the callout, but a renderer takes it as the activity's own paragraph (its blurb); leave a blank line after the activity line" + (" and its `>` lines" if end > i + 1 else ""))
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         if w["set"].get("parent") is not None:

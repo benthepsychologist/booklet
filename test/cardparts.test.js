@@ -81,6 +81,12 @@ chk("the activity line takes status:, no other kind does",A.KIND_SETTINGS.activi
 for(const l of ["en","fr","es"]){const f=A.STRINGS_SRC[l].problem.statusBad;
  chk("statusBad exists in "+l+" and names the setting",typeof f==="function"&&/status:foo/.test(f("line 3","foo"))&&/status:off/.test(f("line 3","foo")),String(f&&f("line 3","foo")));}
 
+for(const l of ["en","fr","es"]){const L=A.STRINGS_SRC[l].library;
+ chk("the Open, Rename and Remove buttons of a booklet in the list name it, in "+l,["openFor","renameFor","removeFor"].every(k=>typeof L[k]==="function"&&L[k]("Notes").includes("Notes"))&&new Set(["openFor","renameFor","removeFor"].map(k=>L[k]("Notes"))).size===3);}
+{const B=P.boot();B.loadText(FILE);B.closeBooklet();B.screen="@booklets";B.render();
+ const btns=find(P.main(),n=>n.tagName==="button"&&hasClass("small")(n)&&n.attrs["aria-label"]);
+ chk("in Your booklets each of Open, Rename and Remove carries the booklet's name for a screen reader",btns.length>=3&&btns.length%3===0&&new Set(btns.map(b=>b.attrs["aria-label"].split(" ")[0])).size===3&&btns.every(b=>/Parts/.test(b.attrs["aria-label"])),JSON.stringify(btns.map(b=>b.attrs["aria-label"])));}
+
 /* 6. writing the booklet back keeps status:off and the status lines, as written */
 {const lines=["> [!activity|quiet status:off] Quiet","> [!activity|custom] Custom","> Half an hour a day,","> for a week","> [!activity|both status:off] Both","> Words that are not drawn"];
  A.loadText(FILE);
@@ -131,7 +137,14 @@ for(const l of ["en","fr","es"]){const f=A.STRINGS_SRC[l].problem.statusBad;
  const lazy=run("> [!activity|a] A\n> Status text\nWords straight under.\n");
  chk("the linter warns when text follows the `>` lines with no blank line (a lazy continuation)",/0 errors/.test(lazy)&&/1 warning/.test(lazy)&&/blank line/.test(lazy)&&/line 9/.test(lazy),lazy);
  const fine=run("> [!activity|a] A\n> Status text, with **marks** and a [link](https://x.example)\n\nWords.\n\n> [!activity|b] B\n> Status\n> > not a quote? \n\nMore.\n");
- chk("plain status text, then a blank line, draws no warning (a `>` that is not at the start of a line's text is block syntax, so the last one warns)",/0 errors/.test(fine)&&/1 warning/.test(fine)&&/block syntax/.test(fine),fine);
+ chk("plain status text with a blank line after it draws no warning of its own; the one warning is the `> >` line of the second activity (block syntax)",/0 errors/.test(fine)&&/1 warning/.test(fine)&&/block syntax/.test(fine),fine);
+ const lazy0=run("> [!activity|a] A\nLazy words.\n");
+ chk("the linter warns when text follows an activity line with no `>` line and no blank line (zero `>` lines)",/0 errors/.test(lazy0)&&/1 warning/.test(lazy0)&&/blank line/.test(lazy0)&&/line 8/.test(lazy0)&&!/its `>` lines/.test(lazy0),lazy0);
+ chk("and with `>` lines it says so",/its `>` lines/.test(lazy)&&/line 9/.test(lazy),lazy);
+ for(const [name,line,keep] of [["a code fence","```",true],["a `##` heading","## Heading"],["a thematic break","---"],["a list item","- item"],["a numbered list item","1. item"],["an HTML block","<div>x</div>"]]){
+   for(const zero of [true,false]){
+     const out=run("> [!activity|a] A\n"+(zero?"":"> Status\n")+line+"\n"+(keep?"```\n":"")+"\nWords.\n");
+     chk("the linter is silent when "+name+" follows the activity line"+(zero?"":" and its `>` lines")+" (Markdown ends the callout there)",/0 errors/.test(out)&&/0 warnings/.test(out),out);}}
  const callout=run("> [!activity|a] A\n> Status\n> [!text|q] Q?\n");
  chk("a `>` line that starts the next booklet line is not a lazy continuation",/0 errors/.test(callout)&&/0 warnings/.test(callout),callout);}
 

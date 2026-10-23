@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-deOXkWgBvQgSMDGdqStigNapR6OkG0CX4VEqwH1+zsE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-yKvLABavpU1Q9x8B1im4eFEOMj/t5opmy6kPBbZwIX4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -415,6 +415,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .modes .card-go .k{font-size:1.1rem;color:var(--accent);overflow-wrap:anywhere}
   .modes .cd-num{font-size:1.1rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:1.5em}
   .modes .cd-tile.cd-blank{background:none}
+  /* a list in which no row has a picture has no picture column; a mixed list keeps the empty square, so its titles stay in line */
+  .modes:not(:has(.cd-tile:not(.cd-blank))) .cd-tile.cd-blank{display:none}
   .modes .cd-st{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;min-width:0}
   .modes .card-go .d{font-size:.93rem}
   .modes .card-go .c{font-size:.8rem;font-weight:400;color:var(--muted)}
@@ -1650,6 +1652,8 @@ const STRINGS_SRC={
       renameName: "Booklet name",
       renameHint: "Enter saves, Escape cancels.",
       renameFor: t=>`Rename “${t}”`,
+      openFor: t=>`Open “${t}”`,
+      removeFor: t=>`Remove “${t}”`,
       back: "Your booklets",
       lastOpened: d=>`Last opened ${d}`,
       added: d=>`Added ${d}`,
@@ -1980,6 +1984,8 @@ const STRINGS_SRC={
       renameName: "Nom du carnet",
       renameHint: "Entrée enregistre, Échap annule.",
       renameFor: t=>`Renommer « ${t} »`,
+      openFor: t=>`Ouvrir « ${t} »`,
+      removeFor: t=>`Retirer « ${t} »`,
       back: "Vos carnets",
       lastOpened: d=>`Ouvert le ${d}`,
       added: d=>`Ajouté le ${d}`,
@@ -2306,6 +2312,8 @@ const STRINGS_SRC={
       renameName: "Nombre del cuadernillo",
       renameHint: "Enter guarda, Escape cancela.",
       renameFor: t=>`Renombrar «${t}»`,
+      openFor: t=>`Abrir «${t}»`,
+      removeFor: t=>`Quitar «${t}»`,
       back: "Tus cuadernillos",
       lastOpened: d=>`Abierto por última vez el ${d}`,
       added: d=>`Agregado el ${d}`,
@@ -7399,9 +7407,9 @@ function bookletCard(e){const L=strings("library");const u=strings("ui");const n
     if(unsaved) pills.push(unsavedSpan(Number(e.unsavedEntries),!!e.dirty));
     const foot=[];
     if(!asking){foot.push(el("span",{class:"bkacts"},
-        el("button",{type:"button",class:"small primary",onclick:()=>openFromList(e.id)},L.open),
+        el("button",{type:"button",class:"small primary","aria-label":L.openFor(name),onclick:()=>openFromList(e.id)},L.open),
         el("button",{type:"button",class:"small",title:L.renameFor(name),"aria-label":L.renameFor(name),onclick:()=>draw("rename")},L.rename),
-        el("button",{type:"button",class:"small danger",onclick:()=>draw(true)},L.remove)));}
+        el("button",{type:"button",class:"small danger","aria-label":L.removeFor(name),onclick:()=>draw(true)},L.remove)));}
     else{
     /* removing cannot be undone, so it asks, in place, and says what is lost */
     const keep=el("button",{type:"button",class:"small",onclick:()=>draw(false)},L.keep);

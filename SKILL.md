@@ -302,7 +302,8 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   A card shows a title, a picture, a blurb (the activity's first paragraph) and
   a status line. The renderer works the status line out ("2 questions · Not
   started"). To say your own words there, write them on `>` lines directly under
-  the activity line: `> [!activity|tides] Tides` then `> Half an hour a day`.
+  the activity line: `> [!activity|tides] Tides` then `> Half an hour a day`, and leave a blank line after them (the status text is the `>` lines and no others;
+  the blurb is the first paragraph after the blank line).
   To show none, write `status:off` on the line: `> [!activity|tides status:off]
   Tides`. `status:` takes only `off`, and the `>` lines are not the blurb (the
   blurb is the first paragraph, after a blank line).
@@ -906,6 +907,8 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | an unknown `icon:` name | `` `icon:compas` is not a name in Booklet's icon set … did you mean `compass`? `` | use a name from the set |
 | `status:` with a value other than `off` | `` `status:hidden` is not a setting a line takes (only `status:off`, which hides the card's status line) `` | write `status:off`, or delete it |
 | `status:off` with `>` lines under the line | `warn `status:off` hides the card's status line, so the `>` lines under this activity line are not drawn` | delete one of them |
+| a `>` line under an activity line that is block syntax (a nested callout, `> #`, `> - `, `> 1. `, a fence) | `warn a `>` line under this activity line is block syntax …` | write the status text as one plain line |
+| text straight under an activity line (and its `>` lines) with no blank line | `warn text straight under the activity line … is read by Markdown and Obsidian as part of the callout` | leave a blank line after the activity line and its `>` lines |
 
 **Without the linter**, also check by hand:
 

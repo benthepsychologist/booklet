@@ -130,6 +130,9 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
      const first=await p.locator('#main ol.modes li').first().innerText();
      ok(/Module of four/.test(first)&&/The module's own blurb\./.test(first),`${W}px home: the module of four is one row, with its blurb (${JSON.stringify(first)})`);
      ok(await over()<=0,`${W}px home: no sideways scroll`);
+     /* no row has a picture: there is no empty picture column; the number leads each title */
+     {const g=await p.evaluate(()=>[...document.querySelectorAll('#main ol.modes button.mode')].map(c=>{const t=c.querySelector('.cd-tile'),n=c.querySelector('.cd-num'),r=e=>Math.round(e.getBoundingClientRect().left);return {tile:getComputedStyle(t).display,tw:Math.round(t.getBoundingClientRect().width),num:r(n),row:r(c)};}));
+      ok(g.every(x=>x.tile==='none'&&x.tw===0)&&new Set(g.map(x=>x.num)).size===1,`${W}px home: with no picture on any row there is no picture column, and the numbers line up (${JSON.stringify(g)})`);}
      await p.screenshot({path:path.join(OUT,`home-${W}.png`)});
      {const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:(n.name||{}).value||'',desc:(n.description||{}).value||''}));})();
       const m=ax.find(x=>x.name==='Module of four');ok(!!m&&/The module's own blurb\./.test(m.desc),`${W}px home: a row is named by its title, described by its blurb and status (${JSON.stringify(m)})`);}
@@ -148,6 +151,7 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
      ok(pics[0].svg&&pics[1].txt==='🌱'&&pics[2].txt===''&&pics[3].txt==='',`${W}px module screen: the picture is the icon, the emoji, or nothing, never a number (${JSON.stringify(pics)})`);
      const nums=await p.evaluate(()=>[...document.querySelectorAll('#main ol.modes button.mode')].map(c=>{const n=c.querySelector('.top > .cd-num'),k=c.querySelector('.top > .k'),t=c.querySelector('.cd-tile');return {num:n&&n.textContent,before:!!n&&!!k&&!!(n.compareDocumentPosition(k)&4),kLeft:Math.round(k.getBoundingClientRect().left),tLeft:Math.round(t.getBoundingClientRect().left),tW:Math.round(t.getBoundingClientRect().width)};}));
      ok(nums.map(n=>n.num).join()==='1,2,3,4'&&nums.every(n=>n.before),`${W}px module screen: every row, with a picture or without, has its number before its title (${JSON.stringify(nums.map(n=>n.num))})`);
+     ok(nums.every(n=>n.tW>0),`${W}px module screen: a list with a picture on some rows keeps the square on every row (${JSON.stringify(nums.map(n=>n.tW))})`);
      ok(new Set(nums.map(n=>n.kLeft)).size===1&&new Set(nums.map(n=>n.tLeft)).size===1&&new Set(nums.map(n=>n.tW)).size===1,`${W}px module screen: every title starts at one left edge, every tile is the same size at one left edge (${JSON.stringify(nums)})`);
      ok(await p.locator('#main ol.modes').getAttribute('role')==='list',`${W}px module screen: the list keeps its list role for Safari`);
      {const st=await p.evaluate(()=>{const e=document.querySelectorAll('#main ol.modes .c')[2],cs=getComputedStyle(e.querySelector('.cd-st'));return {h:e.querySelector('.cd-st').getBoundingClientRect().height,lh:parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.4,full:e.querySelector('.cd-st').scrollHeight};});
@@ -221,7 +225,7 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
      ok(await view()!=='@booklets'&&(await view()).length>0,`${W}px Your booklets: the title opens the booklet ('${await view()}')`);
      await toList();await wait(300);
      const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:(n.name||{}).value||''}));})();
-     ok(ax.some(x=>x.name==='Notes')&&ax.some(x=>x.name==='Harbour')&&await p.locator('#main ol.modes').getAttribute('role')==='list',`${W}px Your booklets: each title is a button named by the booklet's name, and the list keeps its list role`);}
+     ok(ax.some(x=>x.name==='Notes')&&ax.some(x=>x.name==='Harbour')&&['Open','Rename','Remove'].every(v=>ax.some(x=>x.name===v+' “Notes”')&&ax.some(x=>x.name===v+' “Harbour”'))&&await p.locator('#main ol.modes').getAttribute('role')==='list',`${W}px Your booklets: each title is a button named by the booklet's name, and the list keeps its list role`);}
 
     /* 5. "Show N more" in a wiki sends the focus to the first row it added, not to the first row */
     await load(WIKI30);
