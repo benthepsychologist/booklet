@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-7lsA+LbSu+ZKb2tufem1q2u1LAUwgIC2Xw/r8ah4v24=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-EVhQZDYWdEck99qJgKVaiekiL/6CGgUySStS//kEyoo=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -332,7 +332,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* cards: every card is drawn by cardNode (go = a button that opens something, fold = a details, item = a kept entry or
      a tile). A picture tile, the number in the card's colour, the title, one line, a status line, a round chevron.
      The hue comes from the card's place in its list (hue-*); the tile's fill from the style (--tile-solid: the soft wash and the vivid line, or the solid shade and white art). */
-  .modes{display:grid;grid-template-columns:1fr;gap:.8rem;margin:1.5rem 0 0;max-width:48rem}
+  .modes{list-style:none;margin:1.5rem 0 0;padding:0;max-width:48rem}
   /* the home, module and booklet-list screens keep one centred column, as the canvas does */
   .cd-col.cd-col{max-width:48rem;margin-left:auto;margin-right:auto}
   .card-go,.card-fold{--cd-pad:1rem;font-family:var(--sans);text-align:left;color:var(--ink);background:var(--surface);border:var(--bw) solid var(--rule);border-radius:var(--r-lg);line-height:1.4;min-width:0}
@@ -403,6 +403,25 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .sol-in.sol-warn[open] .k,.sol-in.sol-warn[open]>summary{color:var(--tone-amber-deep)}
   @media (max-width:520px){.cd-tile{width:3.4rem;height:3.4rem;font-size:1.55rem}.card-go,.card-fold>summary{gap:.7rem}.card-sub>.cd-body{padding-left:1rem}}
   .card-go .bkacts{margin-top:.3rem}
+  /* A list of parts (a module's activities, a wiki page's pages, a booklet's modules, Your booklets) is a contents list: one column,
+     an ordered list, a row to each part. A row is its small picture, its title as a link, its first line and its status line, with a quiet
+     rule between rows; the whole row is the control, and the link's underline shows on hover and on focus. */
+  .modes>li{margin:0;padding:0;border-top:1px solid var(--rule)}
+  .modes>li:first-child{border-top:0}
+  .modes .card-go{--cd-pad:.75rem .5rem;gap:.8rem;align-items:flex-start;background:transparent;border:0;border-radius:var(--r-md);box-shadow:none;transition:none}
+  .modes button.card-go:hover{transform:none;box-shadow:none;background:var(--accent-soft)}
+  .modes .cd-tile{width:2.25rem;height:2.25rem;font-size:1.15rem;border-radius:var(--r-sm)}
+  .modes .cd-tile.cd-n{font-size:1.05rem}
+  .modes .card-go .k{font-size:1.1rem;color:var(--accent);overflow-wrap:anywhere}
+  .modes .cd-num{font-size:1.1rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:1.5em}
+  .modes .cd-tile.cd-blank{background:none}
+  /* a list in which no row has a picture has no picture column; a mixed list keeps the empty square, so its titles stay in line */
+  .modes:not(:has(.cd-tile:not(.cd-blank))) .cd-tile.cd-blank{display:none}
+  .modes .cd-st{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;min-width:0}
+  .modes .card-go .d{font-size:.93rem}
+  .modes .card-go .c{font-size:.8rem;font-weight:400;color:var(--muted)}
+  .modes button.card-go:hover .k,.modes button.card-go:focus-visible .k,.modes .card-go button.k:hover,.modes .card-go button.k:focus-visible{text-decoration:underline;text-decoration-thickness:.1em;text-underline-offset:.15em}
+  .modes+.addrow{margin-top:1rem}
   .cd-foot{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin:1.75rem 0 0;padding-top:1.25rem;border-top:var(--bw) dashed var(--rule);font-family:var(--sans)}
   .cd-btn{display:inline-flex;align-items:center;gap:.5rem;min-height:44px;padding:.45rem 1.1rem;border-radius:999px;border:var(--bw) solid var(--rule);background:var(--surface);color:var(--ink);font-weight:600;font-size:.95rem}
   .cd-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -718,7 +737,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .wk-frame{display:grid;grid-template-columns:minmax(13rem,17rem) minmax(0,1fr);gap:0 2rem;align-items:start;font-family:var(--sans)}
   .wk-frame>*{min-width:0}
   .wk-content{max-width:var(--content-w)}
-  .wk-content .modes{max-width:none;grid-template-columns:repeat(auto-fill,minmax(min(18rem,100%),1fr))}
+  .wk-content .modes{max-width:none}
   .wk-menu{position:sticky;top:var(--ap-top,4.4rem);max-height:calc(100vh - var(--ap-top,4.4rem) - .75rem);overflow-y:auto;padding:.9rem .8rem;border:var(--bw) solid var(--rule);border-radius:var(--r-lg);background:var(--surface);--v-pad:.3rem}
   .wk-menu details.wk-fold{margin:0;padding:0;border:0;border-radius:0;background:none}
   .wk-fold>summary{display:none;padding:0;min-height:44px;align-items:center;cursor:pointer;font-weight:700;list-style:none}
@@ -834,6 +853,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mfig.bad{text-align:left}
   /* an image the renderer does not fetch: its alt text and address, as text, in a quiet frame */
   .md .imgbox{display:inline-flex;flex-direction:column;gap:.15rem;max-width:100%;margin:.2rem 0;padding:.45rem .65rem;border:1px dashed var(--rule);border-radius:var(--r-sm,6px);color:var(--muted);font-size:.9rem;text-align:left;vertical-align:top}
+  /* an image read from the host's declared store: its natural size, no wider than the column */
+  .md img.mdimg{max-width:100%;height:auto;vertical-align:middle}
   .md .imgbox .imgalt{color:var(--ink)}
   .md .imgbox .imgnote{font-size:.78rem;font-style:italic}
   .md .imgbox .imgsrc{font-size:.78rem;overflow-wrap:anywhere;word-break:break-all;background:none;padding:0}
@@ -1002,7 +1023,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .dv-cards{display:block}
     .dv-ctl-top,.dv-bar,.dv-none .dv-clear{display:none!important}
     .dv-panel{border:0;padding:0;background:none}
-    .mfig,.md div.math{break-inside:avoid;overflow:visible}
+    .mfig,.md div.math,.md img.mdimg{break-inside:avoid;overflow:visible}
     .mfig svg{max-width:100%;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .bar,.ap-menu,.rd-panel,.rd-tip,.toast{display:none!important}
     .rm-bar,.cd-dup,.cd-chev,.cd-foot,.oat-ctl,.oat-head,.oat-nav{display:none!important}
@@ -1483,7 +1504,7 @@ const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
-const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:"],row:["end"],text:["long"],
+const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:"],row:["end"],text:["long"],
   lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],
   choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
 /* the settings above that must be numbers */
@@ -1551,6 +1572,13 @@ const STRINGS_SRC={
       figureWait: "Drawing this diagram…",
       figurePart: "The part that draws diagrams could not be loaded, so this diagram is shown as its source.",
       imgNotShown: "Image not shown",
+      imgLoading: "Loading image…",
+      imgRefused: "Image not shown: this page does not read that address.",
+      imgMissing: "Image not shown: the file was not found.",
+      imgBig: "Image not shown: the file is too big (the limit is 5 MB).",
+      imgWrong: "Image not shown: the file is not the kind of image its name says.",
+      imgFailed: "Image not shown: it could not be fetched.",
+      imgBroken: "Image not shown: the file could not be drawn as an image.",
       figureRisk: "This diagram has a part (an image, a link, a style or a setting) that could make the page ask for an address, so it is not drawn. Its source is shown instead.",
       clearTitle: "Clear everything on this page?",
       clearHelp: "Your entries exist only in this browser tab. If you have not downloaded them, they will be gone.",
@@ -1645,6 +1673,8 @@ const STRINGS_SRC={
       renameName: "Booklet name",
       renameHint: "Enter saves, Escape cancels.",
       renameFor: t=>`Rename “${t}”`,
+      openFor: t=>`Open “${t}”`,
+      removeFor: t=>`Remove “${t}”`,
       back: "Your booklets",
       lastOpened: d=>`Last opened ${d}`,
       added: d=>`Added ${d}`,
@@ -1742,6 +1772,7 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: this scale question has no anchors under it (a numbered list)`,
       settingUnknown: (w,kind,s)=>`${w}: a ${kind} line takes no “${s}”, so it was ignored`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
+      statusBad: (w,v)=>`${w}: \`status:${v}\` is not a setting a line takes (only \`status:off\`), so it was ignored`,
       dailyAlone: w=>`${w}: \`daily\` needs \`repeat\`, so it was ignored`,
       iconUnknown: (w,n)=>`${w}: “${n}” is not a name in Booklet's icon set, so it was ignored`,
       iconOnEnd: w=>`${w}: a module's end line takes no “icon:”, so it was ignored`,
@@ -1880,6 +1911,13 @@ const STRINGS_SRC={
       figureWait: "Dessin du diagramme en cours…",
       figurePart: "L’élément qui dessine les diagrammes n’a pas pu être chargé ; le texte source de ce diagramme est affiché à la place.",
       imgNotShown: "Image non affichée",
+      imgLoading: "Chargement de l’image…",
+      imgRefused: "Image non affichée : cette page ne lit pas cette adresse.",
+      imgMissing: "Image non affichée : fichier introuvable.",
+      imgBig: "Image non affichée : fichier trop volumineux (limite : 5 Mo).",
+      imgWrong: "Image non affichée : le fichier n’est pas du type d’image que son nom indique.",
+      imgFailed: "Image non affichée : elle n’a pas pu être récupérée.",
+      imgBroken: "Image non affichée : le fichier n’a pas pu être dessiné comme une image.",
       figureRisk: "Ce diagramme contient un élément (une image, un lien, un style ou un réglage) qui pourrait pousser la page à demander une adresse ; il n’est donc pas dessiné. Son texte source est affiché à la place.",
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
       clearHelp: "Vos réponses n’existent que dans cet onglet. Si vous ne les avez pas téléchargées, elles seront perdues.",
@@ -1974,6 +2012,8 @@ const STRINGS_SRC={
       renameName: "Nom du carnet",
       renameHint: "Entrée enregistre, Échap annule.",
       renameFor: t=>`Renommer « ${t} »`,
+      openFor: t=>`Ouvrir « ${t} »`,
+      removeFor: t=>`Retirer « ${t} »`,
       back: "Vos carnets",
       lastOpened: d=>`Ouvert le ${d}`,
       added: d=>`Ajouté le ${d}`,
@@ -2067,6 +2107,7 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w} : cette question scale n’a pas d’ancres en dessous (une liste numérotée)`,
       settingUnknown: (w,kind,s)=>`${w} : une ligne ${kind} n’accepte pas « ${s} » ; il a donc été ignoré`,
       numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
+      statusBad: (w,v)=>`${w} : \`status:${v}\` n’est pas un réglage que la ligne accepte (seulement \`status:off\`) ; il a donc été ignoré`,
       dailyAlone: w=>`${w} : \`daily\` nécessite \`repeat\` ; il a donc été ignoré`,
       iconUnknown: (w,n)=>`${w} : « ${n} » ne fait pas partie des icônes de Booklet ; il a donc été ignoré`,
       iconOnEnd: w=>`${w} : la ligne de fin d’un module n’accepte pas « icon: » ; il a donc été ignoré`,
@@ -2205,6 +2246,13 @@ const STRINGS_SRC={
       figureWait: "Dibujando el diagrama…",
       figurePart: "No se pudo cargar la parte que dibuja los diagramas; se muestra el texto fuente de este diagrama.",
       imgNotShown: "Imagen no mostrada",
+      imgLoading: "Cargando la imagen…",
+      imgRefused: "Imagen no mostrada: esta página no lee esa dirección.",
+      imgMissing: "Imagen no mostrada: no se encontró el archivo.",
+      imgBig: "Imagen no mostrada: el archivo es demasiado grande (el límite es 5 MB).",
+      imgWrong: "Imagen no mostrada: el archivo no es del tipo de imagen que indica su nombre.",
+      imgFailed: "Imagen no mostrada: no se pudo obtener.",
+      imgBroken: "Imagen no mostrada: el archivo no se pudo dibujar como imagen.",
       figureRisk: "Este diagrama tiene una parte (una imagen, un enlace, un estilo o un ajuste) que podría hacer que la página pida una dirección, así que no se dibuja. Se muestra su texto fuente.",
       clearTitle: "¿Borrar todo lo que hay en esta página?",
       clearHelp: "Tus entradas solo existen en esta pestaña del navegador. Si no las descargaste, se perderán.",
@@ -2299,6 +2347,8 @@ const STRINGS_SRC={
       renameName: "Nombre del cuadernillo",
       renameHint: "Enter guarda, Escape cancela.",
       renameFor: t=>`Renombrar «${t}»`,
+      openFor: t=>`Abrir «${t}»`,
+      removeFor: t=>`Quitar «${t}»`,
       back: "Tus cuadernillos",
       lastOpened: d=>`Abierto por última vez el ${d}`,
       added: d=>`Agregado el ${d}`,
@@ -2392,6 +2442,7 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: esta pregunta scale no tiene anclas debajo (una lista numerada)`,
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
+      statusBad: (w,v)=>`${w}: \`status:${v}\` no es un ajuste que admita la línea (solo \`status:off\`), así que se ignoró`,
       dailyAlone: w=>`${w}: \`daily\` requiere \`repeat\`, así que se ignoró`,
       iconUnknown: (w,n)=>`${w}: “${n}” no está entre los íconos de Booklet, así que se ignoró`,
       iconOnEnd: w=>`${w}: la línea de cierre de un módulo no admite “icon:”, así que se ignoró`,
@@ -3645,7 +3696,7 @@ function resetBookletState(){
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;BASE=null;
   screen=HOME_SCREEN;dirty=false;unsavedEntries=0;
   viewReset(null);FILE_NOTES=null;OLD_DESIGN=false;CUSTOMIZED=false;PROVENANCE=null;LINK_NEWER=null;
-  hookStopWait();HOOK_UNSENT=false;
+  hookStopWait();HOOK_UNSENT=false;imagesRelease();
   if(HOST){HOST.pending=null;HOST.status="idle";HOST.message="";HOST.silent=false;HOST.savedKey="";}
   clearTimeout(saveTimer);saveTimer=null;
   VEIL_IDS.forEach(id=>{const v=document.getElementById(id);if(v) v.removeAttribute("open");});}
@@ -3770,6 +3821,7 @@ function checkSettings(it,where,P,icons){const allowed=KIND_SETTINGS[it.kind],ou
   if(it.kind==="module"&&it.flags.has("end")&&it.set.icon!==undefined){out.push(P.iconOnEnd(where));delete it.set.icon;}
   for(const [key,val] of Object.entries(it.set)){
     if(key==="icon"&&allowed.includes("icon:")&&!icons.has(val)){out.push(P.iconUnknown(where,val));delete it.set[key];continue;}
+    if(key==="status"&&allowed.includes("status:")&&val!=="off"){out.push(P.statusBad(where,val));delete it.set[key];continue;}
     if(!allowed.includes(key+":")){out.push(P.settingUnknown(where,it.kind,key+":"));delete it.set[key];continue;}
     if(NUMBER_SETTINGS.includes(key)&&!(String(val).trim()!==""&&Number.isFinite(Number(val)))){out.push(P.numberBad(where,key,val));delete it.set[key];}}
   for(const f of [...it.flags]) if(!allowed.includes(f)){out.push(P.settingUnknown(where,it.kind,f));it.flags.delete(f);}
@@ -4058,6 +4110,10 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
        as the address it will have (activityTree places it) */
     if(w.set&&w.set.icon) a.icon=w.set.icon;
     if(w.set&&w.set.parent) a.parent=addrOf(mod?mod.id:"",w.set.parent);
+    /* a card's status line (SPEC.md section 3, "A card's parts"): `status:off` hides it; the lines of the callout under the line
+       (`> …`) are its words, read as inline Markdown as a blurb is, in place of the line the page works out */
+    if(w.set&&w.set.status==="off") a.statusOff=true;
+    {const st=plainText(((w&&w.body)||[]).join("\n"));if(st) a.status=st;}
     /* the activities outside every module fence are one module with no name (SPEC.md section 4): each is drawn as a card of its own
        (so each is held by a module of its own here), but its id, its records and its `parent:` are in the one scope, "" */
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
@@ -4855,19 +4911,27 @@ const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderIn
   const {scheme}=cleanScheme(url);const attrs={href:String(url).replace(CTRL,""),title};
   if(scheme==="http"||scheme==="https"){attrs.target="_blank";attrs.rel="noopener noreferrer";}
   return E("a",attrs,...kids);};
-/* An image is never fetched (SPEC.md section 6): this renderer builds no img element from a file's Markdown. It draws the
-   alt text in a quiet framed box that says the image is not shown, with the address as plain text beneath, so a
-   reader can see what was meant. Nothing is requested for any address, and a typed or file-written address of
-   any kind (remote, relative, //host, data:) is treated alike. The address is shown, never used. */
+/* An image is fetched only from the host's declared store, and only for a booklet opened from it (SPEC.md section 6;
+   storeImage, region 12). Every other image, and one that cannot be drawn, is drawn as the alt text in a quiet framed
+   box that says the image is not shown, with the address as plain text beneath, so a reader can see what was meant.
+   Nothing is requested for any other address, and a typed or file-written address of any kind (remote, //host, data:,
+   or a relative path in a booklet not opened from the store) is treated alike. The address is shown, never used. */
 const mkImg=(alt,src,ctx)=>{
   /* a caller that wants only text (a card's blurb) says what stands for an image */
   if(ctx&&ctx.opts&&typeof ctx.opts.image==="function"){const n=ctx.opts.image(alt,src);if(n!=null) return n;}
   const a=String(src==null?"":src).replace(CTRL,""),shown=a.length>160?a.slice(0,160)+"\u2026":a;
   const note=typeof imgNoteText==="function"?imgNoteText():"Image not shown",E=(ctx&&ctx.el)||el;
-  return E("span",{class:"imgbox"},
-    ...(alt?[E("span",{class:"imgalt"},alt)]:[]),
-    E("span",{class:"imgnote"},note),
-    ...(shown?[E("code",{class:"imgsrc"},shown)]:[]));};
+  /* A booklet opened from the host's declared store draws its images (storeImage, region 12); an empty alt text marks a
+     decorative one. Any other booklet, and any image that cannot be drawn, gets the box. */
+  const draw=r=>{
+    if(r&&r.url){const im=E("img",{class:"mdimg",src:r.url,alt:alt||"",onerror:()=>{imageBroken(r.at);if(im.parentNode&&typeof im.replaceWith==="function") im.replaceWith(draw({note:strings("ui").imgBroken}));}});return im;}
+    return E("span",{class:"imgbox"},
+      ...(alt?[E("span",{class:"imgalt"},alt)]:[]),
+      E("span",{class:"imgnote"},r&&r.note?r.note:note),
+      ...(shown?[E("code",{class:"imgsrc"},shown)]:[]));};
+  const first=typeof storeImage==="function"&&ctx&&ctx.opts&&typeof ctx.opts.imageScope==="string"?storeImage(src,r=>{if(node.parentNode&&typeof node.replaceWith==="function") node.replaceWith(draw(r));},ctx.opts.imageScope):null,
+    node=draw(first);
+  return node;};
 const resolveRef=(ctx,label)=>ctx.refs[String(label||"").trim().toLowerCase()]||null;
 /* INLINE: one alternation, longer/more-specific delimiters (**, embed ![[)
    before the shorter/generic ones that share a leading char (*, [), so the
@@ -6778,7 +6842,7 @@ function sectionLede(body){
   return {para:null,rest:body,text:clip(text,220)};}
 /* put a table in its own scrolling wrapper, so a wide one scrolls beside the page, not under it */
 const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
-const mdBlockNodes=(b,activityId,prefix,dc)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",
+const mdBlockNodes=(b,activityId,prefix,dc)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",imageScope:scopeOfAddr(activityId),
   mark:id=>{if(activityId==="") return "";const c=citeText("[^"+id+"]",dc);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
 /* keep the menu's dots and the count current, without redrawing the page */
 function rmRefresh(info){
@@ -7353,7 +7417,7 @@ function renderHome(main,dc){const u=strings("ui");
   /* One card per module. A module with one activity is its activity's card; a
      module with several gets one card that names them and opens the module's
      own page. */
-  const activities=el("div",{class:"modes"});
+  const activities=el("ol",{class:"modes",role:"list"});
   const shown=[],grouped=new Set();
   for(const x of bookActivities()){const holder=holderOf(x.id);
     if(holder&&isMulti(holder)){if(grouped.has(holder.id)) continue;grouped.add(holder.id);
@@ -7371,8 +7435,8 @@ function renderHome(main,dc){const u=strings("ui");
     const addMod=el("button",{type:"button",class:shown.length?"quietlink":"primary"},u.addModTitle);
     addMod.addEventListener("click",openAddModule);
     add.append(addMod);
-    activities.append(add);}
-  main.append(activities);
+    if(shown.length) main.append(activities);
+    main.append(add);}
   main.append(el("p",{class:"col",style:"margin-top:2rem"},
     el("button",{type:"button",class:"quietlink",onclick:()=>document.getElementById("veilClear").setAttribute("open","")},u.clearLink)));
   centreScreen(main);
@@ -7446,8 +7510,8 @@ function renderBooklets(main){const L=strings("library");
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
   const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
   if(!list.length){if(LINK_LOADING===null) main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
-  const cards=el("div",{class:"modes"});
-  list.forEach(e=>cards.append(bookletCard(e)));
+  const cards=el("ol",{class:"modes",role:"list"});
+  list.forEach(e=>cards.append(el("li",{},bookletCard(e))));
   main.append(cards);
   /* one quiet line when the browser has not promised to keep this site's storage (see asking the browser to keep it) */
   checkPersisted();
@@ -7467,9 +7531,9 @@ function bookletCard(e){const L=strings("library");const u=strings("ui");const n
     if(unsaved) pills.push(unsavedSpan(Number(e.unsavedEntries),!!e.dirty));
     const foot=[];
     if(!asking){foot.push(el("span",{class:"bkacts"},
-        el("button",{type:"button",class:"small primary",onclick:()=>openFromList(e.id)},L.open),
+        el("button",{type:"button",class:"small primary","aria-label":L.openFor(name),onclick:()=>openFromList(e.id)},L.open),
         el("button",{type:"button",class:"small",title:L.renameFor(name),"aria-label":L.renameFor(name),onclick:()=>draw("rename")},L.rename),
-        el("button",{type:"button",class:"small danger",onclick:()=>draw(true)},L.remove)));}
+        el("button",{type:"button",class:"small danger","aria-label":L.removeFor(name),onclick:()=>draw(true)},L.remove)));}
     else{
     /* removing cannot be undone, so it asks, in place, and says what is lost */
     const keep=el("button",{type:"button",class:"small",onclick:()=>draw(false)},L.keep);
@@ -7572,17 +7636,24 @@ const cardHue=i=>CARD_HUES[((Math.trunc(Number(i))||0)%CARD_HUES.length+CARD_HUE
 function cardTile(pic){
   const art=pic?(pic.icon||pic.emoji||(pic.number!=null?String(pic.number):null)):null;
   return art==null?null:el("span",{class:"cd-tile"+(pic.number!=null&&!pic.emoji&&!pic.icon?" cd-n":""),"aria-hidden":"true"},art);}
+let CARD_IDS=0;
 function cardNode(o){
   const mode=o.mode==="fold"||o.mode==="item"?o.mode:"go",pic=o.picture||null;
   const cls=["card","card-"+mode].concat(mode==="go"?["mode"]:[],o.hue?["hue-"+o.hue]:[],o.size==="compact"?["card-compact"]:[],o.cls?[o.cls]:[]).join(" ");
-  const tile=cardTile(pic);
+  /* A row of a contents list (`row`): its number is always before its title, and its tile holds only a picture (an icon or an emoji),
+     an empty tile of the same size when it has none, so that every title in the list starts at one left edge. */
+  const art=o.row&&pic&&pic.number!=null&&!pic.icon&&!pic.emoji?null:pic;
+  const tile=o.row&&!art?el("span",{class:"cd-tile cd-blank","aria-hidden":"true"}):cardTile(art);
   const t=mode==="go"?"span":"div";
-  const num=o.number!=null&&!(pic&&pic.number!=null)?el("span",{class:"cd-num","aria-hidden":"true"},String(o.number)):null;
-  const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k"},...(o.marked?words(o.title,true):[o.title])):null);
+  const num=o.number!=null&&(o.row||!(pic&&pic.number!=null))?el("span",{class:"cd-num","aria-hidden":"true"},String(o.number)):null;
+  /* a button that holds the whole card is named by its title; its first line and its status line describe it (a screen reader
+     would otherwise read the whole card as the name) */
+  const uid=mode==="go"&&o.as!=="div"&&!o.titleNode&&nonEmpty(o.title)?"cd"+(++CARD_IDS):null;
+  const title=o.titleNode||(nonEmpty(o.title)?el(t,{class:"k",id:uid?uid+"t":null},...(o.marked?words(o.title,true):[o.title])):null);
   const main=(title||o.teaser||o.status||(o.pills||[]).length||(o.foot||[]).length)?el(t,{class:"cd-main"},
     title?el(t,{class:"top"},num,title):null,
-    nonEmpty(o.teaser)?el(t,{class:"d"+(mode==="fold"?" cd-dup":"")+(o.teaserCls?" "+o.teaserCls:"")},o.teaser):null,
-    nonEmpty(o.status)||(o.pills||[]).length?el(t,{class:"c"},nonEmpty(o.status)?o.status:null,...(o.pills||[])):null,
+    nonEmpty(o.teaser)?el(t,{class:"d"+(mode==="fold"?" cd-dup":"")+(o.teaserCls?" "+o.teaserCls:""),id:uid?uid+"d":null},o.teaser):null,
+    nonEmpty(o.status)||(o.pills||[]).length?el(t,{class:"c",id:uid?uid+"s":null},nonEmpty(o.status)?el("span",{class:"cd-st"},o.status):null,...(o.pills||[])):null,
     ...(o.foot||[])):null;
   const chev=o.noChevron?null:el("span",{class:"cd-chev","aria-hidden":"true"},icon(mode==="go"?"chevron-right":"chevron-down"));
   if(mode==="fold"){
@@ -7590,7 +7661,8 @@ function cardNode(o){
     d.append(el("div",{class:"inner cd-body"+(o.bodyCls?" "+o.bodyCls:"")},...(o.body||[])));
     return d;}
   if(mode==="item") return el(o.tag||"div",{class:cls},tile,main,...(o.kids||[]));
-  const root=o.as==="div"?el("div",{class:cls}):el("button",{type:"button",class:cls,onclick:o.onclick});
+  const desc=uid?[nonEmpty(o.teaser)?uid+"d":"",nonEmpty(o.status)||(o.pills||[]).length?uid+"s":""].filter(Boolean).join(" "):"";
+  const root=o.as==="div"?el("div",{class:cls}):el("button",{type:"button",class:cls,onclick:o.onclick,"aria-labelledby":uid?uid+"t":null,"aria-describedby":desc||null});
   root.append(...[tile,main,chev,...(o.kids||[])].filter(x=>x!=null));return root;}
 /* a heading's leading emoji becomes the card's picture; it stays in the heading, hidden, so a link to the heading still finds its words */
 function takeLeadEmoji(root){
@@ -7618,7 +7690,8 @@ function readsIn(a){let n=0;
   return n;}
 /* the status line under an activity's card: its folded reads, then its questions, then how far the reader is, joined by " · ";
    a part with nothing in it is left out, so a plain activity keeps the old line */
-function activityStatus(a){const C=strings("cards"),p=activityProgress(a),reads=readsIn(a),qn=allBlocksOf(a).filter(isQuestion).length;
+function activityStatus(a){if(a.statusOff) return "";if(nonEmpty(tx(a.status,""))) return tx(a.status,"");
+  const C=strings("cards"),p=activityProgress(a),reads=readsIn(a),qn=allBlocksOf(a).filter(isQuestion).length;
   const state=p.repeats?(p.kept?strings("ui").entriesN(p.kept):C.notStarted):!p.total?"":p.answered===0?C.notStarted:p.answered>=p.total?C.done:C.answeredOf(p.answered,p.total);
   const partial=!p.repeats&&p.total&&p.answered>0&&p.answered<p.total;
   return [reads?C.readsN(reads):"",qn&&!partial?C.questionsN(qn):"",state].filter(nonEmpty).join(" · ");}
@@ -7628,10 +7701,11 @@ function moduleStatus(acts){const C=strings("cards"),ps=acts.map(activityProgres
 /* the line under a module's blurb: how many activities, and how many are started */
 function moduleMeta(acts){const C=strings("cards"),ps=acts.map(activityProgress).filter(p=>p.tracked),n=ps.filter(p=>p.started).length;
   return [C.activitiesN(acts.length),n?C.startedN(n):""].filter(nonEmpty).join(" · ");}
-/* A card on the home page or a module's page: a button that opens view `to`. `i` is its place in the list it is in. */
+/* A row of a contents list on the home page, a module's page or a wiki page: an item holding a button that opens view `to`. `i` is its
+   place in the list it is in. The list is an `ol.modes` (the rows are drawn as links, see ".modes" in the stylesheet). */
 function activityCard(to,name,blurb,status,i,iconName,onclick){
   const {title,picture}=cardPicture(name,i+1,iconName);
-  return cardNode({mode:"go",title,marked:true,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,onclick:onclick||(()=>go(to))});}
+  return el("li",{},cardNode({mode:"go",title,marked:true,picture,number:i+1,hue:cardHue(i),teaser:blurb,status,noChevron:true,row:true,onclick:onclick||(()=>go(to))}));}
 function moduleCard(mod,acts,i){
   return activityCard(moduleScreen(mod.id),tx(mod.title,mod.id),tx(mod.blurb,""),moduleStatus(acts),i,mod.icon);}
 /* The head of a module's own screen, and of the screen of a module that is one activity (which stands in for it): its title, its opening
@@ -7727,10 +7801,10 @@ function wikiFind(W,q){
   return hit.concat(rest).slice(0,WK_FOUND);}
 /* a long row of cards or chips: the first WK_BATCH, then a button for the next WK_BATCH, labelled with what it will draw */
 function wikiBatched(list,draw,cls){
-  const box=el("div",{class:cls}),foot=el("div",{class:"wk-morerow"});let at=0;
-  const more=()=>{const from=at;list.slice(at,at+WK_BATCH).forEach((x,i)=>box.append(draw(x,at+i)));at=Math.min(list.length,at+WK_BATCH);
+  const box=/(^| )modes( |$)/.test(cls)?el("ol",{class:cls,role:"list"}):el("div",{class:cls}),foot=el("div",{class:"wk-morerow"});let at=0;
+  const more=()=>{list.slice(at,at+WK_BATCH).forEach((x,i)=>box.append(draw(x,at+i)));at=Math.min(list.length,at+WK_BATCH);
     foot.innerHTML="";
-    if(at<list.length) foot.append(el("button",{type:"button",class:"cd-btn",onclick:()=>{more();const n=box.children[from];if(n&&n.focus) n.focus();}},strings("wiki").more(Math.min(WK_BATCH,list.length-at))));};
+    if(at<list.length) foot.append(el("button",{type:"button",class:"cd-btn",onclick:()=>{const first=box.children.length;more();const c=box.children[first],n=c&&c.querySelector&&c.querySelector("button")||c;if(n&&n.focus) n.focus();}},strings("wiki").more(Math.min(WK_BATCH,list.length-at))));};
   more();return [box,foot];}
 /* A choice in a wiki. The phone's menu closes (whatever was chosen, and wherever), and the focus goes where the reader will look:
    to the entry for the page just chosen when the choice was made in the menu beside the page, else to the page's heading. */
@@ -7851,10 +7925,10 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
   const openNotes=opened?endnotesFor(first,true,dc):null;
   if(openNotes) citeReopen(dc);
   const parts=[col];
-  const grid=el("div",{class:"modes"});
-  if(!acts.length) grid.append(el("p",{class:"hint"},W2.noneShown));
+  const grid=el("ol",{class:"modes",role:"list"});
   /* a wiki shows the pages at its top, and every other page is under one of them */
   if(W) parts.push(...wikiBatched(W.top,wikiCard,"modes wk-cards"));
+  else if(!acts.length) parts.push(el("p",{class:"hint col"},W2.noneShown));
   else{acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon)));
     parts.push(grid);}
   if(openNotes) parts.push(el("div",{class:"col"},openNotes));
@@ -8164,7 +8238,7 @@ function hostAccept(){if(!newerWaiting()) return;
   const R=parseFile(text);
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
   /* the same rule as a newer file a link found (acceptWork): what the reader typed since the host's last save stays */
-  const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});
+  const W=acceptWork(R);noteStoreFile(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});
   hookFlush();}
 /* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
    generator owns the body and the reader owns the records (the store contract).
@@ -8180,7 +8254,7 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   if(N.via.store===false){const r=addModuleText(N.text,R);
     if(!r.ok){toast(problemWords(r.problems));render();return;}
     saveLocal();render();toast(strings("booklet").added(plainText(tx((R.template.modules[0]||{}).title,""))));}
-  else{const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});}
+  else{const W=acceptWork(R);noteStoreFile(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});}
   if(currentId!==id) return;
   if(currentEntry) currentEntry.storeSeen=N.seen;
   changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=N.seen;});}
@@ -8301,22 +8375,130 @@ function linkOf(hash){const m=/^#\/(open|module)\/([\s\S]*)$/.exec(String(hash||
 /* THE ONE READER. Every request this page makes goes through here: one read of one address, as text. Never a method, a
    body or credentials; a redirect is an error; at most `bytes` (LINK_BYTES unless a caller gives less or more) and
    LINK_MS. A booklet or module is text, so a JSON answer is refused unless the caller (the registry's list) says it
-   expects one. Resolves to {text} or {err}, where err is one of missing, big, slow, notText, failed. */
-async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.json);
+   expects one. Resolves to {text} or {err}, where err is one of missing, big, slow, notText, failed. `raw` (an image, see
+   IMAGES FROM THE DECLARED STORE) asks for the bytes as they are, {bytes}, and refuses only a web page; the caller checks them. */
+async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.json),raw=!!(o&&o.raw);
   const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),LINK_MS);
   try{
     const r=await fetch(url,{cache:"no-cache",credentials:"omit",redirect:"error",signal:ac.signal});
     if(!r.ok) return {err:"missing"};
-    if((json?/^(text\/html|image\/|audio\/|video\/|application\/(pdf|zip|xml))/:/^(text\/html|image\/|audio\/|video\/|application\/(json|pdf|zip|xml))/).test((r.headers.get("content-type")||"").toLowerCase())) return {err:"notText"};
+    if((raw?/^text\/html/:json?/^(text\/html|image\/|audio\/|video\/|application\/(pdf|zip|xml))/:/^(text\/html|image\/|audio\/|video\/|application\/(json|pdf|zip|xml))/).test((r.headers.get("content-type")||"").toLowerCase())) return {err:"notText"};
     if(Number(r.headers.get("content-length"))>cap) return {err:"big"};
     const rd=r.body&&r.body.getReader?r.body.getReader():null,parts=[];let total=0;
-    if(!rd){const t=await r.text();return t.length>cap?{err:"big"}:{text:t};}
+    if(!rd){if(raw){const b=new Uint8Array(await r.arrayBuffer());return b.length>cap?{err:"big"}:{bytes:b};}
+      const t=await r.text();return t.length>cap?{err:"big"}:{text:t};}
     for(;;){const {done,value}=await rd.read();if(done) break;
       total+=value.length;if(total>cap){ac.abort();return {err:"big"};}parts.push(value);}
     const buf=new Uint8Array(total);let at=0;parts.forEach(x=>{buf.set(x,at);at+=x.length;});
+    if(raw) return {bytes:buf};
     try{return {text:new TextDecoder("utf-8",{fatal:true}).decode(buf)};}catch(e){return {err:"notText"};}
   }catch(e){return {err:ac.signal.aborted?"slow":"failed"};}
   finally{clearTimeout(timer);}}
+/* ---- IMAGES FROM THE DECLARED STORE (SPEC.md sections 6 and 13) ----
+   A booklet opened from the host's declared store (by link, by the host's open(), or from the "Your booklets" entry that
+   came from it: currentEntry.from is "store:<name>") draws its images, and only where the booklet still holds the store's
+   own text: each part of the booklet (a module, and the opening with the activities outside every module) must be the same
+   text as that part of the store's file just read for this visit (STORE_SRC, set by noteStoreFile when the file is read at
+   open, on "Read the newer file" and on the host's fileChanged; moduleTexts says what a part is). So a module the reader
+   added or updated in place (from the registry or another file, under an id the store's file also uses, or removed and
+   added again), a kept copy of an older file the store has since changed, and a copy kept from another store on the same
+   origin all draw boxes and ask for nothing: their paths are not this store's. A copy kept before this existed needs no
+   record, since the comparison is made against the file read each visit. A visit that did not read the file (the store
+   did not answer) draws no image.
+   Any other booklet (a file, the registry, a page that declares no store) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the
+   booklet's own name in the store: <store>/sub/x.booklet.md with images/a.png reads <store>/sub/images/a.png.
+   The path is checked before anything is asked for (imagePath): only [A-Za-z0-9_./-], at most 200 characters, no part
+   that begins with a dot (so no .. and no . ), no leading / and no empty part (so no //host), no % ? # \ or : (so no
+   scheme), and an extension of svg, png, jpg, jpeg, webp or gif. A path that fails is never requested; the box says so.
+   The read is linkFetch (no method, no body, no credentials, no redirect, LINK_BYTES, LINK_MS), asked for as raw bytes.
+   The bytes must be what the extension says (imageIs: SVG text, or the PNG, JPEG, GIF or WebP signature), and are then
+   drawn as an img element from a blob: URL of that type. An SVG is therefore only ever an image: it runs no script and loads
+   nothing. One answer, bytes or failure, is kept per address for the visit (IMG_SEEN), so a redraw asks for nothing again;
+   the blobs, and any failure, are released when the booklet closes or another opens (imagesRelease, from resetBookletState)
+   and when the store's file is read again (noteStoreFile), so a changed image at the same path is read again. Bytes that pass the check but
+   cannot be drawn (a file the browser will not decode) leave the img's error event, which draws the box with a reason. */
+const IMG_EXT={svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif"};
+const IMG_PATH_MAX=200;
+const IMG_SEEN=Object.create(null);   /* address → {wait:[fn]} while it is read, then {url} or {err: the name of the words} */
+/* the checked path an image names, with its extension, or null */
+function imagePath(raw){const p=String(raw==null?"":raw);
+  if(!p||p.length>IMG_PATH_MAX||p.charAt(0)==="/"||!/^[A-Za-z0-9_.\/-]+$/.test(p)) return null;
+  if(p.split("/").some(x=>x===""||x.charAt(0)===".")) return null;
+  const m=/\.([A-Za-z0-9]+)$/.exec(p),ext=m?m[1].toLowerCase():"";
+  return hasOwn(IMG_EXT,ext)?{rel:p,ext}:null;}
+/* the folder a booklet's images are read from: the folder of its own name in the declared store; "" when the booklet was
+   not opened from the store, the page declares none, this visit has not read the store's file, or `scope` (the module the
+   image is drawn in, "" for the opening and bare activities) is a module whose text is not the store's own */
+let STORE_SRC="";   /* the design text of the store's file as read for this visit, "" before it is */
+/* A source's parts, each a text to compare: for a module id, its fence (open line to end line) and its data section; for "",
+   the opening and the activities outside every module, which is every line outside the front matter, the module fences and
+   the data sections, with the blank lines left out (adding a module changes the spacing between them and nothing else). */
+const moduleTexts=src=>{const lines=String(src||"").split("\n"),m=Object.create(null),spans=moduleSpans(lines),secs=dataSections(lines),outside=new Array(lines.length).fill(true);
+  for(let i=0;i<frontMatter(src).next&&i<lines.length;i++) outside[i]=false;
+  spans.forEach(sp=>{for(let i=sp.openAt;i<=sp.closeAt;i++) outside[i]=false;});
+  secs.forEach(x=>{for(let i=x.at;i<x.end;i++) outside[i]=false;});
+  m[""]=lines.filter((l,i)=>outside[i]&&l.trim()!=="").join("\n");
+  spans.forEach(sp=>{if(sp.id&&!hasOwn(m,sp.id)) m[sp.id]=lines.slice(sp.openAt,sp.closeAt+1).concat(...secs.filter(x=>x.id===sp.id).map(x=>lines.slice(x.at,x.end))).join("\n");});
+  return m;};
+/* those texts, for the store's file and for the booklet now open; a source is read once */
+const MOD_MEMO={store:{src:null,map:null},book:{src:null,map:null}};
+const moduleMemo=(k,src)=>{const c=MOD_MEMO[k];if(c.map===null||c.src!==src){c.map=moduleTexts(src);c.src=src;}return c.map;};
+const storeModule=id=>{const a=moduleMemo("store",STORE_SRC)[id];return a!==undefined&&a===moduleMemo("book",String(((typeof BOOK!=="undefined"&&BOOK&&BOOK.raw)||{}).source||""))[id];};
+function imageFolder(scope){const e=currentEntry,f=e&&e.from,n=typeof f==="string"&&f.startsWith("store:")&&STORE_SRC!==""&&typeof scope==="string"&&storeModule(scope)?linkName(f.slice(6)):null,at=n===null?null:storeAddress(n);
+  return at?at.slice(0,at.lastIndexOf("/")+1):"";}
+/* The store's file was just read (opening it, and "Read the newer file" and the host's fileChanged, which make it what the
+   booklet holds): keep its design text for this visit, so only a module with the store's own text draws the store's images,
+   and forget what was learned of its images, so one that changed at the same path, or that was missing, is read again. */
+function noteStoreFile(R){imagesRelease();STORE_SRC=String((((R&&R.template)||{}).raw||{}).source||"");}
+/* the one address a checked path stands for, never outside the booklet's folder in the store */
+function imageAddress(rel,folder){try{const u=new URL(rel,folder);return u.href.startsWith(folder)&&u.origin===new URL(folder).origin?u.href:null;}catch(e){return null;}}
+/* whether the bytes are the kind of file the extension says. An SVG's start is skipped with indexOf, one step for each thing
+   it passes (a BOM, blank space, an xml line, a comment, a DOCTYPE), so the work is linear in the 8 KB it looks at: a
+   pattern with a lazy comment inside a repeat takes exponential time on a file of many comments (measured: 3 s for 28). */
+function svgStart(t){let i=0;const n=t.length,ws=()=>{while(i<n&&/\s/.test(t.charAt(i))) i++;};
+  if(t.charCodeAt(0)===0xFEFF) i=1;
+  ws();
+  if(t.startsWith("<?xml",i)){const j=t.indexOf("?>",i);if(j<0||t.indexOf(">",i)!==j+1) return false;i=j+2;ws();}
+  for(;;){
+    if(t.startsWith("<!--",i)){const j=t.indexOf("-->",i+4);if(j<0) return false;i=j+3;ws();}
+    else if(t.startsWith("<!DOCTYPE",i)&&/\s/.test(t.charAt(i+9))){
+      let j=i+9;while(j<n&&t.charAt(j)!=="["&&t.charAt(j)!==">") j++;
+      if(t.charAt(j)==="["){j=t.indexOf("]",j);if(j<0) return false;j++;while(j<n&&/\s/.test(t.charAt(j))) j++;}
+      if(t.charAt(j)!==">") return false;
+      i=j+1;ws();}
+    else break;}
+  return t.startsWith("<svg",i)&&/[\s>\/]/.test(t.charAt(i+4));}
+function imageIs(ext,b){const at=(i,...v)=>v.every((x,k)=>b[i+k]===x);
+  if(ext==="svg") return svgStart(new TextDecoder("utf-8").decode(b.subarray(0,8192)));
+  if(ext==="png") return at(0,0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A);
+  if(ext==="gif") return at(0,0x47,0x49,0x46,0x38)&&(b[4]===0x37||b[4]===0x39)&&b[5]===0x61;
+  if(ext==="webp") return at(0,0x52,0x49,0x46,0x46)&&at(8,0x57,0x45,0x42,0x50);
+  return at(0,0xFF,0xD8,0xFF);}
+/* the words for a record kept in IMG_SEEN */
+const imageRecord=(r,at)=>r.url?{url:r.url,at}:{note:strings("ui")[r.err]};
+/* one read of one address; waiting boxes are told when it ends. A booklet closed meanwhile has released the slot, and the
+   late answer is dropped without a blob being made. */
+function imageLoad(at,ext){const slot=IMG_SEEN[at]={wait:[]};
+  linkFetch(at,{raw:true}).then(got=>{
+    if(IMG_SEEN[at]!==slot) return;
+    let rec;
+    if(got.err) rec={err:got.err==="missing"?"imgMissing":got.err==="big"?"imgBig":got.err==="notText"?"imgWrong":"imgFailed"};
+    else{let ok=false;try{ok=imageIs(ext,got.bytes);}catch(e){}
+      rec=ok?{url:URL.createObjectURL(new Blob([got.bytes],{type:IMG_EXT[ext]}))}:{err:"imgWrong"};}
+    IMG_SEEN[at]=rec;slot.wait.forEach(f=>{try{f(imageRecord(rec,at));}catch(e){}});});
+  return slot;}
+/* the browser could not draw bytes that passed the check: the address is kept as a failure, and its blob goes */
+function imageBroken(at){const r=IMG_SEEN[at];if(r&&r.url){URL.revokeObjectURL(r.url);IMG_SEEN[at]={err:"imgBroken"};}}
+function imagesRelease(){STORE_SRC="";Object.keys(IMG_SEEN).forEach(k=>{if(IMG_SEEN[k].url) URL.revokeObjectURL(IMG_SEEN[k].url);delete IMG_SEEN[k];});}
+/* What mkImg draws for the image a booklet writes at `src`, in the module `scope`: null when this booklet gets no images there (the quiet box as ever);
+   else {url} (draw it), or {note} (the quiet box, with these words in place of "Image not shown"). While the read is
+   still going the note is "Loading image…" and `done` is called later with the final {url} or {note}. */
+function storeImage(src,done,scope){const folder=imageFolder(scope);if(folder==="") return null;
+  const p=imagePath(src),at=p===null?null:imageAddress(p.rel,folder);
+  if(at===null) return {note:strings("ui").imgRefused};
+  const rec=IMG_SEEN[at]||imageLoad(at,p.ext);
+  if(rec.wait){rec.wait.push(done);return {note:strings("ui").imgLoading};}
+  return imageRecord(rec,at);}
 /* Open text as a view: the same parser, the same refusals, the same notices and the same start screen as a file picked
    by hand; but nothing is saved until the reader changes something, and no entry is added to the list then except a
    store booklet's pointer (finishLoad). `via` says where it came from: {store:true,label,from} or {store:false,label,from}.
@@ -8334,6 +8516,7 @@ function openAsView(text,via,o){o=o||{};const R=o.parsed||parseFile(text||""),re
     ...(via.from?{storeSeen:textPrint(text)}:{})};
   /* the file drawn is the base of whatever is kept of it from now on; an answer still due for an earlier change no longer
      moves it */
+  if(via.store) noteStoreFile(R);
   BASE=recsOfParse(R);HOOK_SENT=HOOK_SENT.filter(x=>x.id!==currentId);
   /* a booklet drawn again from the same file as last time keeps the view it had in this visit, as a booklet kept here
      does (openBooklet); a newer file starts it afresh (applyParsed) */
@@ -8369,6 +8552,8 @@ function openLinked(text,via,o){const page=(o&&o.page)||null;
   else if(kept.storeSeen!==seen){const id=kept.id;
     if(currentEntry) currentEntry.storeSeen=seen;
     changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=seen;});}
+  /* the file just read is the store's text for this visit, whether or not the kept booklet is offered it (see noteStoreFile) */
+  if(via.store) noteStoreFile(R);
   render();window.scrollTo({top:0});return true;}
 let LINK_GEN=0,LINK_LOADING=null;   /* LINK_LOADING: the file being read for a link, while it is ({gen, label, from}) */
 /* A link may name a page of what it opens, after the name: `#/open/<name>/<activity-id>` and `#/module/<id>/<activity-id>`. A store's
