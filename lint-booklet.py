@@ -1541,7 +1541,7 @@ def check_images(f, lines):
         elif scheme:
             err(f, f"line {n}: the image {shown} has an address with the scheme `{scheme.group(1).lower()}:`; an image is linked by a relative path, never embedded or given another scheme")
         elif not IMAGE_PATH.match(a) or any(p == "" or p.startswith(".") for p in a.split("/")):
-            warn(f, f"line {n}: the image {shown} is not a path the renderer reads from a store (letters, digits, _ . / - only, no .. or leading /, at most 200 characters, ending .svg, .png, .jpg, .jpeg, .webp or .gif); it shows the alt text and the address as text")
+            warn(f, f"line {n}: the image {shown} is not a path the renderer reads from a store (letters, digits, _ . / - only, at most 200 characters, no empty part and no part that begins with a dot so no .. and no ./, no leading /, ending .svg, .png, .jpg, .jpeg, .webp or .gif); it shows the alt text and the address as text")
 
 
 def _plain_heading(s):

@@ -10,7 +10,13 @@
 //   - one blob per address however many times the page is drawn again; the blobs are released when the booklet closes;
 //   - an image is scaled to the column on a phone and prints;
 //   - the booklet opened again from its "Your booklets" entry draws its images; one opened by the host hook with a store name too;
-//   - a booklet loaded from a file, on a page that has a store, and any booklet on a page with no store, make no image request.
+//   - a booklet loaded from a file, on a page that has a store, and any booklet on a page with no store, make no image request;
+//   - a module added to a store booklet afterwards (from the registry) is not the store's: its images are boxes, and nothing is asked
+//     for them, on the visit and on later ones from the kept copy; a registry booklet opened by link makes no image request;
+//   - an image that passes the byte check but cannot be drawn (an SVG with no xmlns, a truncated PNG) is the box with a reason, not a
+//     broken icon; an SVG with a DOCTYPE is drawn; an image redirect is refused; a path over 200 characters is refused;
+//   - "Read the newer file" reads images again (a changed one, and one that was missing before), and a module the newer file adds is the store's;
+//   - Booklet.open with a name on a page with no store asks for nothing.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/storeimages-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path'),zlib=require('zlib');
@@ -30,13 +36,17 @@ const png=(w,h)=>{const ih=Buffer.alloc(13);ih.writeUInt32BE(w,0);ih.writeUInt32
   return Buffer.concat([Buffer.from([0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A]),chunk('IHDR',ih),chunk('IDAT',zlib.deflateSync(Buffer.concat(Array(h).fill(row)))),chunk('IEND',Buffer.alloc(0))]);};
 const SVG_A='<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100"><script>window.__svgran=1</script><image href="https://tracker.example/svg-ext.png" width="10" height="10"/><rect width="200" height="100" fill="#12996E"/></svg>';
 const SVG_NESTED='<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" viewBox="0 0 120 60"><rect width="120" height="60" fill="#A04E34"/></svg>';
+const svgDoctype='<?xml version="1.0"?>\n<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="30" height="30" fill="#103E46"/></svg>';
 const FILES={
   '/pub/images/a.svg':{type:'image/svg+xml',body:SVG_A},
   '/pub/images/b.png':{type:'image/png',body:png(1600,20)},
   '/pub/images/deco.png':{type:'image/png',body:png(16,16)},
   '/pub/images/fake.svg':{type:'image/svg+xml',body:'<html><body>not an svg</body></html>'},
   '/pub/images/big.png':{type:'image/png',body:Buffer.concat([png(2,2),Buffer.alloc(5*1024*1024+100)])},
-  '/pub/sub/images/a.svg':{type:'image/svg+xml',body:SVG_NESTED}};
+  '/pub/sub/images/a.svg':{type:'image/svg+xml',body:SVG_NESTED},
+  '/pub/images/doctype.svg':{type:'image/svg+xml',body:svgDoctype},
+  '/pub/images/noxmlns.svg':{type:'image/svg+xml',body:'<svg width="10" height="10"><rect width="10" height="10"/></svg>'},
+  '/pub/images/trunc.png':{type:'image/png',body:png(50,50).subarray(0,40)}};
 const REFUSED=[['dots','../secret.png'],['dots2','images/../a.png'],['abs','/images/a.png'],['proto','//tracker.example/p.png'],['remote','https://tracker.example/r.png'],
   ['data','data:image/png;base64,AAAA'],['pct','images/a%2Eb.png'],['query','images/q.png?x=1'],['hash','images/h.png#f'],['back','images\\a.png'],
   ['ext','images/note.txt'],['dot','./images/a.png'],['hidden','images/.hid/a.png'],['colon','images/a:b.png']];
@@ -45,24 +55,45 @@ const PICS=bk('pics','Pictures',['> [!activity|look] Look','','![Harbour svg](im
   '![Fake svg](images/fake.svg)','','![Big png](images/big.png)','',...REFUSED.flatMap(([a,u])=>['!['+a+' refused]('+u+')','']),'[chart]: images/b.png',''].join('\n'));
 const NESTED=bk('nest','Nested',['> [!activity|n] Nested','','![Nested svg](images/a.svg)',''].join('\n'));
 const OTHER=bk('other','Other','> [!activity|o] Other\n\nNo pictures here.\n');
-const BOOKS={'/pub/pics.booklet.md':PICS,'/pub/sub/nested.booklet.md':NESTED,'/pub/other.md':OTHER};
+let VERSION=1;   /* the store's news booklet, and its images, change when this does */
+const LONG='images/'+'a'.repeat(200)+'.png';
+const MIX=bk('mix','Mixed',['> [!activity|m] Mixed','','![Doctype svg](images/doctype.svg)','','![No xmlns](images/noxmlns.svg)','','![Truncated png](images/trunc.png)','',
+  '![Redirected](images/redir.png)','','![Long path]('+LONG+')',''].join('\n'));
+const REGPIC=bk('regpic','Registry pictures',['> [!activity|r] Registry','','![Reg svg](images/a.svg)','','![Reg only](images/reg-only.png)',''].join('\n'));
+const REGJ={modules:[{id:'t/regpic',title:'Registry pictures',file:'regpic.md'}]};
+const newsBook=v=>bk('news','News',['> [!activity|n] News','','> [!text|nq] A note','','![Changed](images/chg.png)','','![Late](images/late.png)',''].join('\n'))+
+  (v>=2?'\n'+bk('extra','Extra',['> [!activity|x] Extra','','![Extra svg](images/extra.svg)',''].join('\n')).replace(/^---[\s\S]*?---\n\n/,''):'');
+const dyn=u=>{
+  if(u==='/pub/news.booklet.md')return {type:'text/markdown; charset=utf-8',body:newsBook(VERSION)};
+  if(u==='/pub/images/chg.png')return {type:'image/png',body:png(40*VERSION,10)};
+  if(u==='/pub/images/late.png')return VERSION<3?null:{type:'image/png',body:png(20,20)};
+  if(u==='/pub/images/extra.svg')return {type:'image/svg+xml',body:SVG_NESTED};
+  return undefined;};
+const BOOKS={'/pub/mix.booklet.md':MIX,'/pub/pics.booklet.md':PICS,'/pub/sub/nested.booklet.md':NESTED,'/pub/other.md':OTHER};
 const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub/images/missing.png','/pub/images/fake.svg','/pub/images/big.png'];
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
   const reqs=[],errs=[],viol=[];
-  const ctx=await b.newContext({viewport:{width:1280,height:900}});
   const cors={'access-control-allow-origin':'*'};
+  const setup=async ctx=>{
   await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(u==='/app/')return r.fulfill({status:200,body:page(true),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
     if(u==='/plain/')return r.fulfill({status:200,body:page(false),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
+    {const d=dyn(u);if(d===null)return r.fulfill({status:404,body:'nf',headers:cors});if(d)return r.fulfill({status:200,body:d.body,headers:{'content-type':d.type,...cors}});}
+    if(u==='/pub/images/redir.png')return r.fulfill({status:302,headers:{location:STORE+'/pub/images/redir-target.png',...cors}});
+    if(u==='/pub/images/redir-target.png')return r.fulfill({status:200,body:png(5,5),headers:{'content-type':'image/png',...cors}});
     if(BOOKS[u])return r.fulfill({status:200,body:BOOKS[u],headers:{'content-type':'text/markdown; charset=utf-8',...cors}});
     const f=FILES[u];if(f)return r.fulfill({status:200,body:f.body,headers:{'content-type':f.type,...cors}});
     r.fulfill({status:404,body:'nf',headers:cors});});
-  await ctx.route(REG+'/**',r=>r.fulfill({status:404,body:'nf',headers:cors}));
+  await ctx.route(REG+'/**',r=>{const u=new URL(r.request().url()).pathname;
+    if(/registry\.json$/.test(u))return r.fulfill({status:200,body:JSON.stringify(REGJ),headers:{'content-type':'application/json',...cors}});
+    if(/regpic\.md$/.test(u))return r.fulfill({status:200,body:REGPIC,headers:{'content-type':'text/plain',...cors}});
+    r.fulfill({status:404,body:'nf',headers:cors});});
   /* anything else on the network is a failure of the page, answered with an abort so the test sees it asked */
-  await ctx.route(u=>!u.href.startsWith(PAGE)&&!u.href.startsWith(REG)&&/^https?:/.test(u.href),r=>r.abort());
-  const open=async()=>{const p=await ctx.newPage();
+  await ctx.route(u=>!u.href.startsWith(PAGE)&&!u.href.startsWith(REG)&&/^https?:/.test(u.href),r=>r.abort());};
+  const ctx=await b.newContext({viewport:{width:1280,height:900}});await setup(ctx);
+  const open=async(c)=>{const p=await (c||ctx).newPage();
     p.on('request',r=>reqs.push({url:r.url(),method:r.method(),body:r.postData()||''}));
     p.on('pageerror',e=>errs.push(e.message));
     p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))viol.push(m.text());});
@@ -74,6 +105,10 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   const imgReqs=()=>net().filter(r=>/\/images\/|secret|tracker|\.png|\.svg/.test(r.url)&&!r.url.endsWith('.md'));
   const mark=()=>net().length;
   const since=n=>net().slice(n);
+  /* up to the booklet's home, then into the module card whose title matches */
+  const goMod=async(p,re)=>{const c=()=>p.locator('#main button.mode').filter({hasText:re});
+    for(let i=0;i<3&&!(await c().count());i++){await p.locator('#btnHome').click();await wait(p,400);}
+    await c().first().click();await wait(p,1500);};
   const state=p=>p.evaluate(()=>({imgs:[...document.querySelectorAll('#main img')].map(i=>({alt:i.getAttribute('alt'),src:i.getAttribute('src'),cls:i.className,w:i.width,nw:i.naturalWidth,nh:i.naturalHeight,ok:i.complete&&i.naturalWidth>0})),
     boxes:[...document.querySelectorAll('#main .imgbox')].map(x=>x.innerText.replace(/\s+/g,' ')),col:document.getElementById('main').getBoundingClientRect().width,
     made:window.__made,revoked:window.__revoked,svgran:window.__svgran===1,view:document.body.dataset.view}));
@@ -175,6 +210,90 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
     ok(since(n0).length===0,what+': no request at all ('+since(n0).map(r=>r.url).join()+')');
     ok(s.boxes.some(x=>x.includes('Harbour svg')&&/Image not shown/.test(x)&&x.includes('images/a.svg')),what+': the box says the image is not shown, with the address');
     await p.close();}
+
+  // 7 a module added afterwards is not the store's: the registry's module in a store booklet draws boxes and asks for nothing
+  p=await open();await p.goto(PAGE+'/app/#/open/pics.booklet.md');await wait(p,2500);
+  await p.locator('#btnHome').click();await wait(p,500);n0=mark();
+  await p.getByRole('button',{name:'Add a module'}).first().click();await wait(p,800);
+  await p.locator('#addModList .bkrow').filter({hasText:'Registry pictures'}).locator('button').click();await wait(p,1200);
+  await goMod(p,/Registry pictures/);
+  s=await state(p);
+  ok(/^regpic\//.test(s.view||'')||await p.locator('#main').innerText().then(t=>/Reg svg/.test(t)),'the added module is on screen: '+s.view);
+  ok(s.imgs.length===0&&s.boxes.some(x=>x.includes('Reg svg')&&/Image not shown/.test(x)&&x.includes('images/a.svg'))&&s.boxes.some(x=>x.includes('Reg only')),'its images are the quiet box, with the address: '+JSON.stringify(s.boxes));
+  ok(since(n0).filter(r=>/\/images\//.test(r.url)).length===0,'a module added from the registry to a store booklet asks the store for no image ('+since(n0).filter(r=>/\/images\//.test(r.url)).map(r=>r.url).join()+')');
+  // and on a later visit, from the kept copy that now holds that module
+  await p.locator('#btnHome').click();await wait(p,300);
+  if(await p.evaluate(()=>!!document.body.dataset.view&&document.body.dataset.view!=='')) {await p.locator('#btnHome').click();await wait(p,300);}
+  n0=mark();
+  await p.getByText('Pictures').first().click();await wait(p,2500);
+  await goMod(p,/^\s*\d*\s*Pictures/);
+  s=await state(p);
+  ok(s.imgs.length===3,'the kept booklet opened again draws the store module\'s three images ('+s.imgs.length+')');
+  await goMod(p,/Registry pictures/);
+  s=await state(p);
+  ok(s.boxes.some(x=>x.includes('Reg only'))&&s.imgs.length===0&&true,'on a later visit the added module still draws boxes: '+s.imgs.length+' img');
+  ok(!net().some(r=>/reg-only/.test(r.url)),'nothing was ever asked of the store for the registry module\'s own image path');
+  await p.close();
+
+  // 8 a registry booklet opened by link, on a page that declares a store, asks for no image
+  p=await open();n0=mark();
+  await p.goto(PAGE+'/app/#/module/t/regpic');await wait(p,2500);
+  s=await state(p);
+  ok(s.boxes.some(x=>x.includes('Reg svg'))&&s.imgs.length===0,'a registry booklet draws its images as boxes ('+s.boxes.length+' boxes, '+s.imgs.length+' img)');
+  ok(since(n0).filter(r=>/\/images\//.test(r.url)).length===0,'...and makes no image request');
+  await p.close();
+
+  // 9 an image that cannot be drawn, a DOCTYPE svg, a redirect and a path over 200 characters
+  p=await open();n0=mark();
+  await p.goto(PAGE+'/app/#/open/mix.booklet.md');await wait(p,2500);
+  s=await state(p);
+  ok(s.imgs.length===1&&s.imgs[0].alt==='Doctype svg'&&s.imgs[0].ok&&s.imgs[0].nw===30,'an SVG with a DOCTYPE line is drawn: '+JSON.stringify(s.imgs.map(i=>[i.alt,i.ok])));
+  ok(s.boxes.length===4,'the other four are boxes, no broken icon is left ('+s.boxes.length+' boxes, '+s.imgs.length+' img)');
+  ok(s.boxes.some(x=>x.includes('No xmlns')&&/could not be drawn as an image/.test(x))&&s.boxes.some(x=>x.includes('Truncated png')&&/could not be drawn as an image/.test(x)),'an SVG with no xmlns and a truncated PNG are the box with the could-not-be-drawn reason');
+  ok(s.boxes.some(x=>x.includes('Redirected')&&/could not be fetched/.test(x)),'an image that redirects is refused: the box says it could not be fetched');
+  ok(!net().some(r=>/redir-target/.test(r.url)),'...and the redirect\'s target was never asked for');
+  ok(s.boxes.some(x=>x.includes('Long path')&&/does not read that address/.test(x)),'a path over 200 characters is the refused box');
+  ok(!net().some(r=>/aaaaaaaa/.test(r.url)),'...and was never requested');
+  ok(s.made.length===1||s.made.every(m=>s.revoked.includes(m.url)||m.type==='image/svg+xml'),'the blobs of the two images that could not be drawn were released ('+s.made.length+' made, '+s.revoked.length+' revoked)');
+  n0=mark();
+  await p.locator('button[data-lang=es]').click();await wait(p,1200);
+  s=await state(p);
+  ok(s.boxes.filter(x=>/no se pudo dibujar como imagen/.test(x)).length===2&&since(n0).length===0,'redrawn in Spanish: the reason is in Spanish, still two boxes, and nothing is asked again ('+since(n0).length+' requests)');
+  await p.locator('button[data-lang=fr]').click();await wait(p,800);
+  ok((await state(p)).boxes.filter(x=>/n’a pas pu être dessiné comme une image/.test(x)).length===2,'and in French');
+  await p.locator('button[data-lang=en]').click();await wait(p,500);
+  await p.close();
+
+  // 10 a newer file: its images are read again (a changed one; one that was missing), and a module it adds is the store's
+  VERSION=1;p=await open();await p.goto(PAGE+'/app/#/open/news.booklet.md');await wait(p,2500);
+  s=await state(p);
+  ok(s.imgs.length===1&&s.imgs[0].alt==='Changed'&&s.imgs[0].nw===40&&s.boxes.some(x=>x.includes('Late')&&/not found/.test(x)),'version 1: the changed image is 40 wide, the late one is missing: '+JSON.stringify(s.imgs.map(i=>i.nw)));
+  await p.locator('#main textarea').first().fill('QZXnews');await wait(p,900);
+  await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,900);
+  VERSION=2;n0=mark();
+  await p.evaluate(()=>{location.hash='#/open/news.booklet.md';});await wait(p,2500);
+  ok(await p.locator('.hostnote button.primary').filter({hasText:'Read the newer file'}).count()===1,'opened again after the file changed, the booklet offers the newer file');
+  s=await state(p);
+  ok(s.imgs.length===1&&s.imgs[0].nw===80&&s.boxes.some(x=>x.includes('Late')&&/not found/.test(x)),'a new visit reads the images as the store has them now (80 wide; the late one still missing): '+JSON.stringify(s.imgs.map(i=>i.nw)));
+  VERSION=3;n0=mark();   /* the store's images change again while the offer is waiting */
+  await p.locator('.hostnote button.primary').filter({hasText:'Read the newer file'}).click();await wait(p,1200);
+  await goMod(p,/^\s*\d*\s*News/);
+  s=await state(p);
+  ok(s.imgs.some(i=>i.alt==='Changed'&&i.nw===120)&&s.imgs.some(i=>i.alt==='Late'&&i.ok),'after "Read the newer file" the changed image is read again (120 wide), and the one that failed before is no longer a kept failure but draws: '+JSON.stringify(s.imgs.map(i=>[i.alt,i.nw])));
+  ok(since(n0).filter(r=>/chg\.png/.test(r.url)).length===1&&since(n0).filter(r=>/late\.png/.test(r.url)).length===1,'each was asked for once more, no more');
+  await goMod(p,/Extra/);
+  s=await state(p);
+  ok(s.imgs.length===1&&s.imgs[0].alt==='Extra svg'&&s.imgs[0].ok,'a module the newer file adds is the store\'s, and draws its image: '+JSON.stringify(s.imgs.map(i=>i.alt)));
+  await p.close();
+
+  // 11 Booklet.open with a name, on a page with no store, asks for nothing
+  /* a browser that has never kept a booklet from the store, so nothing earlier can stand in for the rule */
+  const fresh=await b.newContext({viewport:{width:1280,height:900}});await setup(fresh);
+  p=await open(fresh);await p.goto(PAGE+'/plain/');await wait(p,800);n0=mark();
+  await p.evaluate(t=>window.Booklet.open(t,{name:'pics.booklet.md'}),PICS);await wait(p,1500);
+  s=await state(p);
+  ok(s.imgs.length===0&&since(n0).length===0,'Booklet.open(text, { name }) on a page that declares no store draws boxes and asks for nothing ('+s.imgs.length+' img, '+since(n0).length+' requests)');
+  await p.close();
 
   ok(net().every(r=>r.method==='GET'&&r.body===''&&!new URL(r.url).search),'over the whole run every request was a GET with no body and no query string');
   ok(!net().some(r=>/tracker\.example|secret/.test(r.url)),'over the whole run nothing was asked of a remote address or outside the store');

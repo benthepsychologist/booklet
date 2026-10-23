@@ -666,8 +666,9 @@ between paragraphs for a new one. Section 4 says what a heading does.
   Never embed the data, never invent an address, and avoid an `https` address:
   the linter warns on one, and a renderer fetches an image only from a place its
   host declares (section 4). Write the path with only letters, digits, `_`, `.`,
-  `/` and `-`, no `..`, no leading `/`, and an extension of `.svg`, `.png`,
-  `.jpg`, `.jpeg`, `.webp` or `.gif`; other paths are never read. An empty alt
+  `/` and `-` (at most 200 characters), no empty part and no part that begins
+  with a dot (so no `..` and no `./`), no leading `/`, and an extension of
+  `.svg`, `.png`, `.jpg`, `.jpeg`, `.webp` or `.gif`; other paths are never read. An empty alt
   text (`![](images/rule.svg)`) marks a decorative image.
 
 - **A report** (something written to be read, with numbers and perhaps a few

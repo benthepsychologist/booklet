@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-c5DrieW965a9fNZSdp79NurLuflNAnsLdDKENdb1iCg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-7kUSsq1Y+f6/KNBOIdkr64DoKKOU8F6Glto4+7BEEsk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1547,6 +1547,7 @@ const STRINGS_SRC={
       imgBig: "Image not shown: the file is too big (the limit is 5 MB).",
       imgWrong: "Image not shown: the file is not the kind of image its name says.",
       imgFailed: "Image not shown: it could not be fetched.",
+      imgBroken: "Image not shown: the file could not be drawn as an image.",
       figureRisk: "This diagram has a part (an image, a link, a style or a setting) that could make the page ask for an address, so it is not drawn. Its source is shown instead.",
       clearTitle: "Clear everything on this page?",
       clearHelp: "Your entries exist only in this browser tab. If you have not downloaded them, they will be gone.",
@@ -1882,6 +1883,7 @@ const STRINGS_SRC={
       imgBig: "Image non affichée : fichier trop volumineux (limite : 5 Mo).",
       imgWrong: "Image non affichée : le fichier n’est pas du type d’image que son nom indique.",
       imgFailed: "Image non affichée : elle n’a pas pu être récupérée.",
+      imgBroken: "Image non affichée : le fichier n’a pas pu être dessiné comme une image.",
       figureRisk: "Ce diagramme contient un élément (une image, un lien, un style ou un réglage) qui pourrait pousser la page à demander une adresse ; il n’est donc pas dessiné. Son texte source est affiché à la place.",
       clearTitle: "Effacer tout ce qui se trouve sur cette page ?",
       clearHelp: "Vos réponses n’existent que dans cet onglet. Si vous ne les avez pas téléchargées, elles seront perdues.",
@@ -2213,6 +2215,7 @@ const STRINGS_SRC={
       imgBig: "Imagen no mostrada: el archivo es demasiado grande (el límite es 5 MB).",
       imgWrong: "Imagen no mostrada: el archivo no es del tipo de imagen que indica su nombre.",
       imgFailed: "Imagen no mostrada: no se pudo obtener.",
+      imgBroken: "Imagen no mostrada: el archivo no se pudo dibujar como imagen.",
       figureRisk: "Este diagrama tiene una parte (una imagen, un enlace, un estilo o un ajuste) que podría hacer que la página pida una dirección, así que no se dibuja. Se muestra su texto fuente.",
       clearTitle: "¿Borrar todo lo que hay en esta página?",
       clearHelp: "Tus entradas solo existen en esta pestaña del navegador. Si no las descargaste, se perderán.",
@@ -3570,7 +3573,7 @@ function noteSaved(){const id=currentId,now=new Date().toISOString();
    reader gave it in the list (`named`) stays. Called only on a page that declares a store, so the list can always read
    the file again. */
 function notePointer(){const id=currentId,now=new Date().toISOString();
-  const fresh={...describeBooklet(BOOK),openedAt:now,dirty:false,unsavedEntries:0,from:currentEntry.from,storeSeen:currentEntry.storeSeen};
+  const fresh={...describeBooklet(BOOK),openedAt:now,dirty:false,unsavedEntries:0,from:currentEntry.from,storeSeen:currentEntry.storeSeen,storeMods:currentEntry.storeMods};
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
     if(!e){e={...currentEntry};L.entries.push(e);}
     Object.assign(e,fresh);});}
@@ -4855,11 +4858,13 @@ const mkImg=(alt,src,ctx)=>{
   const note=typeof imgNoteText==="function"?imgNoteText():"Image not shown",E=(ctx&&ctx.el)||el;
   /* A booklet opened from the host's declared store draws its images (storeImage, region 12); an empty alt text marks a
      decorative one. Any other booklet, and any image that cannot be drawn, gets the box. */
-  const draw=r=>r&&r.url?E("img",{class:"mdimg",src:r.url,alt:alt||""}):E("span",{class:"imgbox"},
-    ...(alt?[E("span",{class:"imgalt"},alt)]:[]),
-    E("span",{class:"imgnote"},r&&r.note?r.note:note),
-    ...(shown?[E("code",{class:"imgsrc"},shown)]:[]));
-  const first=typeof storeImage==="function"?storeImage(src,r=>{if(node.parentNode&&typeof node.replaceWith==="function") node.replaceWith(draw(r));}):null,
+  const draw=r=>{
+    if(r&&r.url){const im=E("img",{class:"mdimg",src:r.url,alt:alt||"",onerror:()=>{imageBroken(r.at);if(im.parentNode&&typeof im.replaceWith==="function") im.replaceWith(draw({note:strings("ui").imgBroken}));}});return im;}
+    return E("span",{class:"imgbox"},
+      ...(alt?[E("span",{class:"imgalt"},alt)]:[]),
+      E("span",{class:"imgnote"},r&&r.note?r.note:note),
+      ...(shown?[E("code",{class:"imgsrc"},shown)]:[]));};
+  const first=typeof storeImage==="function"&&ctx&&ctx.opts&&typeof ctx.opts.imageScope==="string"?storeImage(src,r=>{if(node.parentNode&&typeof node.replaceWith==="function") node.replaceWith(draw(r));},ctx.opts.imageScope):null,
     node=draw(first);
   return node;};
 const resolveRef=(ctx,label)=>ctx.refs[String(label||"").trim().toLowerCase()]||null;
@@ -6711,7 +6716,7 @@ function sectionLede(body){
   return {para:null,rest:body,text:clip(text,220)};}
 /* put a table in its own scrolling wrapper, so a wide one scrolls beside the page, not under it */
 const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
-const mdBlockNodes=(b,activityId,prefix,dc)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",
+const mdBlockNodes=(b,activityId,prefix,dc)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",imageScope:scopeOfAddr(activityId),
   mark:id=>{if(activityId==="") return "";const c=citeText("[^"+id+"]",dc);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
 /* keep the menu's dots and the count current, without redrawing the page */
 function rmRefresh(info){
@@ -8097,7 +8102,7 @@ function hostAccept(){if(!newerWaiting()) return;
   const R=parseFile(text);
   if(!R.ok){toast(refusalList(R).join(" "));render();return;}
   /* the same rule as a newer file a link found (acceptWork): what the reader typed since the host's last save stays */
-  const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});
+  const W=acceptWork(R);noteStoreMods(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});
   hookFlush();}
 /* The reader pressed "Read the newer file" on a kept booklet that a link opened. Nothing the reader wrote is lost: the
    generator owns the body and the reader owns the records (the store contract).
@@ -8113,7 +8118,7 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
   if(N.via.store===false){const r=addModuleText(N.text,R);
     if(!r.ok){toast(problemWords(r.problems));render();return;}
     saveLocal();render();toast(strings("booklet").added(plainText(tx((R.template.modules[0]||{}).title,""))));}
-  else{const W=acceptWork(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});}
+  else{const W=acceptWork(R);noteStoreMods(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});}
   if(currentId!==id) return;
   if(currentEntry) currentEntry.storeSeen=N.seen;
   changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=N.seen;});}
@@ -8255,8 +8260,11 @@ async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.
   finally{clearTimeout(timer);}}
 /* ---- IMAGES FROM THE DECLARED STORE (SPEC.md sections 6 and 13) ----
    A booklet opened from the host's declared store (by link, by the host's open(), or from the "Your booklets" entry that
-   came from it: currentEntry.from is "store:<name>") draws its images; any other booklet (a file, the registry, a page
-   that declares no store) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the
+   came from it: currentEntry.from is "store:<name>") draws its images, and only inside the modules the store's own file
+   held when it was last read (currentEntry.storeMods: the module ids, and "" for the opening and bare activities, set by
+   noteStoreMods when the file is read at open, on "Read the newer file" and on the host's fileChanged). A module added
+   afterwards from the registry, or any other file, is not the store's: its images keep the quiet box and ask for nothing.
+   Any other booklet (a file, the registry, a page that declares no store) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the
    booklet's own name in the store: <store>/sub/x.booklet.md with images/a.png reads <store>/sub/images/a.png.
    The path is checked before anything is asked for (imagePath): only [A-Za-z0-9_./-], at most 200 characters, no part
    that begins with a dot (so no .. and no . ), no leading / and no empty part (so no //host), no % ? # \ or : (so no
@@ -8265,7 +8273,9 @@ async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.
    The bytes must be what the extension says (imageIs: SVG text, or the PNG, JPEG, GIF or WebP signature), and are then
    drawn as an img element from a blob: URL of that type. An SVG is therefore only ever an image: it runs no script and loads
    nothing. One answer, bytes or failure, is kept per address for the visit (IMG_SEEN), so a redraw asks for nothing again;
-   the blobs are released when the booklet closes or another opens (imagesRelease, from resetBookletState). */
+   the blobs, and any failure, are released when the booklet closes or another opens (imagesRelease, from resetBookletState)
+   and when the store's file is read again, so a changed image at the same path is read again. Bytes that pass the check but
+   cannot be drawn (a file the browser will not decode) leave the img's error event, which draws the box with a reason. */
 const IMG_EXT={svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif"};
 const IMG_PATH_MAX=200;
 const IMG_SEEN=Object.create(null);   /* address → {wait:[fn]} while it is read, then {url} or {err: the name of the words} */
@@ -8276,20 +8286,27 @@ function imagePath(raw){const p=String(raw==null?"":raw);
   const m=/\.([A-Za-z0-9]+)$/.exec(p),ext=m?m[1].toLowerCase():"";
   return hasOwn(IMG_EXT,ext)?{rel:p,ext}:null;}
 /* the folder a booklet's images are read from: the folder of its own name in the declared store; "" when the booklet was
-   not opened from the store, or the page declares none */
-function imageFolder(){const f=currentEntry&&currentEntry.from,n=typeof f==="string"&&f.startsWith("store:")?linkName(f.slice(6)):null,at=n===null?null:storeAddress(n);
+   not opened from the store, the page declares none, or `scope` (the module the image is drawn in, "" for the opening and
+   bare activities) is not one the store's file held */
+function imageFolder(scope){const e=currentEntry,f=e&&e.from,n=typeof f==="string"&&f.startsWith("store:")&&Array.isArray(e.storeMods)&&typeof scope==="string"&&e.storeMods.includes(scope)?linkName(f.slice(6)):null,at=n===null?null:storeAddress(n);
   return at?at.slice(0,at.lastIndexOf("/")+1):"";}
+/* The store's file was just read and is what the booklet now holds (opening it, "Read the newer file", the host's
+   fileChanged): remember which modules it held, so only they draw its images, and forget what was learned of its images,
+   so one that changed at the same path, or that was missing, is read again. */
+function noteStoreMods(R){imagesRelease();const id=currentId,ids=[""].concat(((R&&R.template&&R.template.modules)||[]).map(m=>m&&typeof m.id==="string"?m.id:null).filter(x=>x!==null));
+  if(currentEntry) currentEntry.storeMods=ids;
+  changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeMods=ids;});}
 /* the one address a checked path stands for, never outside the booklet's folder in the store */
 function imageAddress(rel,folder){try{const u=new URL(rel,folder);return u.href.startsWith(folder)&&u.origin===new URL(folder).origin?u.href:null;}catch(e){return null;}}
 /* whether the bytes are the kind of file the extension says */
 function imageIs(ext,b){const at=(i,...v)=>v.every((x,k)=>b[i+k]===x);
-  if(ext==="svg") return /^\uFEFF?\s*(?:<\?xml[^>]*\?>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg[\s>\/]/.test(new TextDecoder("utf-8").decode(b.subarray(0,8192)));
+  if(ext==="svg") return /^\uFEFF?\s*(?:<\?xml[^>]*\?>\s*)?(?:(?:<!--[\s\S]*?-->|<!DOCTYPE\s[^\[>]*(?:\[[\s\S]*?\]\s*)?>)\s*)*<svg[\s>\/]/.test(new TextDecoder("utf-8").decode(b.subarray(0,8192)));
   if(ext==="png") return at(0,0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A);
   if(ext==="gif") return at(0,0x47,0x49,0x46,0x38)&&(b[4]===0x37||b[4]===0x39)&&b[5]===0x61;
   if(ext==="webp") return at(0,0x52,0x49,0x46,0x46)&&at(8,0x57,0x45,0x42,0x50);
   return at(0,0xFF,0xD8,0xFF);}
 /* the words for a record kept in IMG_SEEN */
-const imageRecord=r=>r.url?{url:r.url}:{note:strings("ui")[r.err]};
+const imageRecord=(r,at)=>r.url?{url:r.url,at}:{note:strings("ui")[r.err]};
 /* one read of one address; waiting boxes are told when it ends. A booklet closed meanwhile has released the slot, and the
    late answer is dropped without a blob being made. */
 function imageLoad(at,ext){const slot=IMG_SEEN[at]={wait:[]};
@@ -8299,18 +8316,20 @@ function imageLoad(at,ext){const slot=IMG_SEEN[at]={wait:[]};
     if(got.err) rec={err:got.err==="missing"?"imgMissing":got.err==="big"?"imgBig":got.err==="notText"?"imgWrong":"imgFailed"};
     else{let ok=false;try{ok=imageIs(ext,got.bytes);}catch(e){}
       rec=ok?{url:URL.createObjectURL(new Blob([got.bytes],{type:IMG_EXT[ext]}))}:{err:"imgWrong"};}
-    IMG_SEEN[at]=rec;slot.wait.forEach(f=>{try{f(imageRecord(rec));}catch(e){}});});
+    IMG_SEEN[at]=rec;slot.wait.forEach(f=>{try{f(imageRecord(rec,at));}catch(e){}});});
   return slot;}
+/* the browser could not draw bytes that passed the check: the address is kept as a failure, and its blob goes */
+function imageBroken(at){const r=IMG_SEEN[at];if(r&&r.url){URL.revokeObjectURL(r.url);IMG_SEEN[at]={err:"imgBroken"};}}
 function imagesRelease(){Object.keys(IMG_SEEN).forEach(k=>{if(IMG_SEEN[k].url) URL.revokeObjectURL(IMG_SEEN[k].url);delete IMG_SEEN[k];});}
-/* What mkImg draws for the image a booklet writes at `src`: null when this booklet gets no images (the quiet box as ever);
+/* What mkImg draws for the image a booklet writes at `src`, in the module `scope`: null when this booklet gets no images there (the quiet box as ever);
    else {url} (draw it), or {note} (the quiet box, with these words in place of "Image not shown"). While the read is
    still going the note is "Loading image…" and `done` is called later with the final {url} or {note}. */
-function storeImage(src,done){const folder=imageFolder();if(folder==="") return null;
+function storeImage(src,done,scope){const folder=imageFolder(scope);if(folder==="") return null;
   const p=imagePath(src),at=p===null?null:imageAddress(p.rel,folder);
   if(at===null) return {note:strings("ui").imgRefused};
   const rec=IMG_SEEN[at]||imageLoad(at,p.ext);
   if(rec.wait){rec.wait.push(done);return {note:strings("ui").imgLoading};}
-  return imageRecord(rec);}
+  return imageRecord(rec,at);}
 /* Open text as a view: the same parser, the same refusals, the same notices and the same start screen as a file picked
    by hand; but nothing is saved until the reader changes something, and no entry is added to the list then except a
    store booklet's pointer (finishLoad). `via` says where it came from: {store:true,label,from} or {store:false,label,from}.
@@ -8328,6 +8347,7 @@ function openAsView(text,via,o){o=o||{};const R=o.parsed||parseFile(text||""),re
     ...(via.from?{storeSeen:textPrint(text)}:{})};
   /* the file drawn is the base of whatever is kept of it from now on; an answer still due for an earlier change no longer
      moves it */
+  if(via.store) noteStoreMods(R);
   BASE=recsOfParse(R);HOOK_SENT=HOOK_SENT.filter(x=>x.id!==currentId);
   /* a booklet drawn again from the same file as last time keeps the view it had in this visit, as a booklet kept here
      does (openBooklet); a newer file starts it afresh (applyParsed) */
@@ -8360,9 +8380,11 @@ function openLinked(text,via,o){const page=(o&&o.page)||null;
   const seen=textPrint(text);
   screen=startScreen(page);PROVENANCE={...via,dismissed:false,at:screen};
   if(kept.storeSeen!==seen&&!sameText(text,toMarkdown())) LINK_NEWER={text,seen,via};
-  else if(kept.storeSeen!==seen){const id=kept.id;
-    if(currentEntry) currentEntry.storeSeen=seen;
-    changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=seen;});}
+  else{if(kept.storeSeen!==seen){const id=kept.id;
+      if(currentEntry) currentEntry.storeSeen=seen;
+      changeLib(L=>{const x=L.entries.find(y=>y.id===id);if(x) x.storeSeen=seen;});}
+    /* the file read is what the kept booklet holds: its modules are the store's (a copy kept before this was recorded has none) */
+    if(via.store&&(kept.storeSeen!==seen||!Array.isArray(kept.storeMods))) noteStoreMods(R);}
   render();window.scrollTo({top:0});return true;}
 let LINK_GEN=0,LINK_LOADING=null;   /* LINK_LOADING: the file being read for a link, while it is ({gen, label, from}) */
 /* A link may name a page of what it opens, after the name: `#/open/<name>/<activity-id>` and `#/module/<id>/<activity-id>`. A store's
