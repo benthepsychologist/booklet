@@ -212,6 +212,14 @@ A paragraph after the list is fine.
 - [ ] Two
 `));
  chk("an indented line under an option that follows no reply still gets the old warning (the list ends there)",r.warns.length===1&&/the line after this list is indented, so the list ends there/.test(r.warns[0]),r.out);}
+{const r=lint(wrap(`> [!choice|same] Same depth?
+- [ ] One
+  - Reply
+  continues here.
+- [ ] Two
+`));
+ chk("a line at the reply's own depth that is no bullet ends the list, and the warning says a reply's next line must be a new bullet or sit deeper (not 'put each option on one line')",
+   r.warns.length===1&&/line 14: this line follows a reply but is neither a new bullet nor deeper than the reply's bullet/.test(r.warns[0])&&!/one line/.test(r.warns[0]),r.out);}
 {const r=lint(wrap(`> [!choice|where] Where?
 - [ ] Calm
   - A reply.

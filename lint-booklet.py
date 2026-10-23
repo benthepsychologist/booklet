@@ -1309,9 +1309,9 @@ def check_format(f, text, fm):
                     if kind in ("choice", "multi", "scale") and w["id"] and not bad_q:
                         if kind == "scale":
                             got, after_list = list_below(lines, after_body, NUMBERED)
-                            text_at = 0
+                            text_at, reply_at = 0, []
                         else:
-                            got, after_list, _, text_at = option_list_below(lines, after_body)
+                            got, after_list, reply_at, text_at = option_list_below(lines, after_body)
                         nxt_line = lines[after_list] if after_list < len(lines) else ""
                         if got and nxt_line and re.match(r"^[ \t]+\S", nxt_line) and not (TASK if kind != "scale" else NUMBERED).match(nxt_line):
                             if kind == "scale" and NESTED_BULLET.match(nxt_line):
@@ -1320,6 +1320,9 @@ def check_format(f, text, fm):
                             elif kind != "scale" and NESTED_BULLET.match(nxt_line) and indent_of(nxt_line) < text_at:
                                 warn(f, f"line {after_list + 1}: a bullet under an option is its reply only when it is indented at least to the option's text "
                                         f"(two spaces under `- [ ]`); this one is not, so the list ends there and it is read as text")
+                            elif kind != "scale" and after_list - 1 in reply_at:
+                                warn(f, f"line {after_list + 1}: this line follows a reply but is neither a new bullet nor deeper than the reply's bullet, so the list ends "
+                                        f"there and it is read as text: a reply's next line must be a new bullet, or sit deeper than the bullet")
                             else:
                                 warn(f, f"line {after_list + 1}: the line after this list is indented, so the list ends there: put each option on one line")
                         elif got and kind != "scale" and after_list + 1 < len(lines) and not nxt_line.strip():

@@ -307,7 +307,7 @@ lang: en
   ok((await replies()).length===0,'nothing is shown before a pick');
   await press('Where are you','Wound up');
   ok((await replies()).join('|')==='That is the activating, unpleasant family.','a pick shows that option\'s reply under the options '+(await replies()).join('|'));
-  const under=await p.evaluate(()=>{const r=document.querySelector('#main .q-reply').getBoundingClientRect(),h=[...document.querySelectorAll('#main h3')].find(x=>x.textContent.includes('Where are you')).closest('.q-inline').querySelector('.pills').getBoundingClientRect();return r.top>=h.bottom-1;});
+  const under=await p.evaluate(()=>{const q=document.querySelector('#main .q-reply');if(!q) return false;const r=q.getBoundingClientRect(),h=[...document.querySelectorAll('#main h3')].find(x=>x.textContent.includes('Where are you')).closest('.q-inline').querySelector('.pills').getBoundingClientRect();return r.top>=h.bottom-1;});
   ok(under,'the reply is under the options');
   await press('Where are you','Calm');
   ok((await replies()).join('|')==='That is the settling system at work.','picking another option changes the reply '+(await replies()).join('|'));
@@ -349,7 +349,8 @@ lang: en
   ok(own==='Green'&&(await repliesOf('Pick or add')).length===0,'an open choice: the reader\'s own option is picked in place of the listed one and has no reply, and the old reply goes '+own);
   await press('Pick or add','Blue');
   ok((await repliesOf('Pick or add')).length===0,'an open choice: an option with no reply shows none');
-  ok((await pillTexts('Pick or add')).join()==='Red,Blue,Green,×'||(await pillTexts('Pick or add')).join().startsWith('Red,Blue'),'an open choice: its replies are not options '+(await pillTexts('Pick or add')).join());
+  const allPills=await p.evaluate(`[...${boxOf('Pick or add')}.querySelectorAll('.pill-btn')].map(x=>x.textContent).join()`);
+  ok(allPills==='Red,Blue','an open choice: its two listed options are its only options; no reply is read as one (every button under the question: '+allPills+')');
 
   /* ---- two nested bullets are two lines of the reply ---- */
   await press('Two lines','One');
