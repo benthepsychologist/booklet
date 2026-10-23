@@ -6,7 +6,7 @@
 // and stays above the step one at a time; a frame is held only when it fits whole in the pin's height (a short line of
 // instructions, a short key table), and a long plain reading is not held and nothing of it is cut; one at a time a frame of
 // any length (a problem statement, a reference table) stays above every step; a held frame that stops fitting when the
-// window gets shorter is drawn again as reading, keeping the box being typed in, and a citation open in a long opening stays
+// window gets shorter or narrower is drawn again as reading, keeping the box being typed in, and a citation open in a long opening stays
 // open when the language changes; a control the keyboard reaches is never under the bar and the frame; a link to a module's
 // tab opens it.
 // Replaces the page menu's check (pagesmenu-browser.js), which 0.15 removed with the menu. Invented content, but for the
@@ -133,6 +133,16 @@ Over the last 2 weeks, how often have you been bothered by any of the following 
 3. Nearly every day
 
 > [!scale|p6] Trouble concentrating on things
+
+0. Not at all
+3. Nearly every day
+
+> [!scale|p7] Feeling bad about yourself, or that you are a failure or have let yourself or your family down
+
+0. Not at all
+3. Nearly every day
+
+> [!scale|p8] Moving or speaking so slowly that other people could have noticed, or being so fidgety or restless that you have been moving around a lot more than usual
 
 0. Not at all
 3. Nearly every day
@@ -440,6 +450,17 @@ See [[#Check-ins]] for the two-week questions.
       const went=await p.evaluate(()=>document.activeElement.value);
       ok(went==='linQe\nline two','390: and typing goes on over that selection '+JSON.stringify(went));
       await p.setViewportSize({width:390,height:800});await p.waitForTimeout(300);}
+    if(W===1280){
+      /* the same when the window gets narrower: a frame held at 1280 wide that wraps past the pin's height at 390 is drawn
+         again as reading when its text reflows (the frame's own ResizeObserver), and the box being typed in keeps the focus */
+      await toFrames('With a citation');
+      const wide=await frameNow(p);
+      await p.locator('#main textarea').first().focus();await p.keyboard.type('narrow');
+      await p.setViewportSize({width:390,height:800});await p.waitForTimeout(700);
+      const narrow=await frameNow(p),still=await p.evaluate(()=>{const a=document.activeElement;return {tag:a&&a.tagName,value:a&&a.value};});
+      ok(wide.pinned&&wide.stick&&!narrow.pinned&&still.tag==='TEXTAREA'&&still.value==='narrow',
+        '1280 to 390 wide: a held frame that no longer fits is drawn as reading, and the box being typed in keeps the focus and its text '+JSON.stringify({wide,narrow,still}));
+      await p.setViewportSize({width:1280,height:800});await p.waitForTimeout(300);}
     /* a link to a module's tab opens the module's screen on it */
     await toFrames('Where next');
     await click(p,'#main a.alink','Check-ins');

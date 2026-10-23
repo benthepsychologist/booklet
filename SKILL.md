@@ -230,8 +230,11 @@ Write one booklet line for each question (section 6) where `my-question` stands.
   which is never drawn.
 - **Images.** An image is linked, never embedded. A renderer fetches one only
   from a place its own host declares, never from an address the file names. The
-  reference renderer shows the alt text and the address as text, and the linter
-  warns on a remote address (section 7).
+  reference renderer draws an image for a booklet opened from the store its host
+  declares (the path is read relative to the booklet's own name there), and shows
+  any other booklet's images as the alt text and the address as text. The linter
+  warns on a remote address, and on a relative path the renderer would refuse
+  (section 7).
 
 ### Where each title and opening shows
 
@@ -306,6 +309,15 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   linter, so choose one from the list below and never invent one. A module's own
   `icon:` goes on its opening line, never on its end line, and is drawn large
   beside its title: `> [!module|loop icon:refresh-cw] Mapping the loop`.
+- **A card's status line: the lines under the activity line, or `status:off`.**
+  A card shows a title, a picture, a blurb (the activity's first paragraph) and
+  a status line. The renderer works the status line out ("2 questions · Not
+  started"). To say your own words there, write them on `>` lines directly under
+  the activity line: `> [!activity|tides] Tides` then `> Half an hour a day`, and leave a blank line after them (the status text is the `>` lines and no others;
+  the blurb is the first paragraph after the blank line).
+  To show none, write `status:off` on the line: `> [!activity|tides status:off]
+  Tides`. `status:` takes only `off`, and the `>` lines are not the blurb (the
+  blurb is the first paragraph, after a blank line).
 - **An activity under another: `parent:`** names the activity it belongs under,
   in the same module, for a module that is a tree of pages (a wiki, a
   portfolio). Write the parent first:
@@ -343,8 +355,8 @@ The icon names, all of them:
 <!-- icons:end -->
 
 A small wiki, three pages in a tree and a link to a module the booklet may not
-hold. The renderer draws the top page as a card, the tree in a menu beside the
-pages, a trail of ancestors above each page, the pages under it as cards below,
+hold. The renderer draws the top pages as a contents list, the tree in a menu beside the
+pages, a trail of ancestors above each page, the pages under it as a contents list below,
 and a "Mentioned on" list of the pages that link to it:
 
 ```markdown
@@ -472,8 +484,8 @@ shows it under the prompt.
 | --- | --- | --- |
 | `text` | a written answer | nothing; `long` after the id for a bigger box |
 | `lines` | repeated one-line notes | nothing; stores under its own id, like any other question — an activity may have more than one |
-| `choice` | pick one | a task list, `- [ ] Option`; `[x]` marks the correct one, and `open` after the id lets the reader add their own |
-| `multi` | pick any number | a task list; `[x]` marks each correct one, and `open` after the id lets the reader add their own |
+| `choice` | pick one | a task list, `- [ ] Option`; `[x]` marks the correct one, `open` after the id lets the reader add their own, and a nested bullet under an option is that option's reply |
+| `multi` | pick any number | a task list; `[x]` marks each correct one, `open` after the id lets the reader add their own, and a nested bullet under an option is that option's reply |
 | `scale` | a numbered scale | a numbered list of anchors, starting at whatever number you want the scale to start at (usually `0.`) |
 | `matrix` | several items on one shared scale | a bulleted list of items, then a numbered list of anchors |
 | `number` | a number | nothing; `min:`, `max:`, `step:` after the id |
@@ -490,6 +502,23 @@ shows it under the prompt.
 - [ ] Walked
 - [ ] Gardened
 ```
+```markdown
+> [!choice|where] Where are you right now?
+- [ ] Calm
+  - That is the settling system at work.
+- [ ] Wound up
+  - That is the activating, unpleasant family.
+```
+
+**A reply for an option** is a bullet nested under it, indented two spaces (one
+space is not enough). A second nested bullet is a second line of the reply, and
+a blank line between options or replies ends the list, so leave none. When
+the reader picks the option, its reply shows under the options (for a `multi`,
+each picked option's reply, in order; with `[x]` marks, once Check is pressed). It is inline Markdown, one or two
+sentences, and it is content: never stored, never counted as an option, and
+never part of the option's own text. Give an option no reply by writing none.
+Only a `choice` or `multi` takes replies, and `[x]` and a following
+`[!solution]-` work with them as before.
 ```markdown
 > [!scale|clarity] How clear was the reading?
 
@@ -559,6 +588,11 @@ itself is never shown.
   `1.` interrupt a paragraph directly; any other number is swallowed into the
   question's title without the blank line. A task list or a bulleted list never
   needs one.
+- **A reply is under its option, and only there.** A nested bullet under a
+  `scale`'s anchor, a `matrix`'s item or a menu's entry is not a reply (the
+  linter warns), and an option that comes from `menu:` has none. Keep an
+  option's reply to its own nested bullet; do not put the option's words on a
+  second line.
 - **A `choice`'s options are identified by position, not text.** The second
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
@@ -727,7 +761,11 @@ between paragraphs for a new one. Section 4 says what a heading does.
   `[harbour]: images/harbour.jpg`. Use a relative path the requester gave you.
   Never embed the data, never invent an address, and avoid an `https` address:
   the linter warns on one, and a renderer fetches an image only from a place its
-  host declares (section 4).
+  host declares (section 4). Write the path with only letters, digits, `_`, `.`,
+  `/` and `-` (at most 200 characters), no empty part and no part that begins
+  with a dot (so no `..` and no `./`), no leading `/`, and an extension of
+  `.svg`, `.png`, `.jpg`, `.jpeg`, `.webp` or `.gif`; other paths are never read. An empty alt
+  text (`![](images/rule.svg)`) marks a decorative image.
 
 - **A report** (something written to be read, with numbers and perhaps a few
   questions at the end) has its own section, 8.
@@ -840,7 +878,9 @@ behind a worked figure ("assumes one reminder per visit").
 
 **Widgets.** A `widget` line draws with data for one of the renderer's two
 engines — `svg-regions` (clickable figures) and `grid-select` (a grid of
-words) — embedded right in the file:
+words) — embedded right in the file. `readonly` after the id shows the widget
+without letting the reader operate it, and `describe` adds each cell's or
+region's `note` beneath it:
 
 ````markdown
 > [!widget|grid] Effort and impact
@@ -874,7 +914,7 @@ build the activity from `text`/`choice`/etc. instead.
 - **A translation is a sibling file**, `<slug>.<lang>.booklet.md`, with the
   same `id`, the same module and activity ids, and the same number of entries
   in every list (a `choice`'s or `multi`'s options, a `scale`'s anchors, a
-  `matrix`'s items and anchors, a menu's entries), **in the same order**, so
+  `matrix`'s items and anchors, a menu's entries, and an option's reply), **in the same order**, so
   answers carry across the sibling files unchanged. Write each
   language as a native speaker would, not word for word: natural phrasing,
   local examples, the language's own punctuation (`¿…?`, `¡…!`).
@@ -924,6 +964,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a question with no id | `this text question has no id, so its answer would have nowhere to go` | add one, `[!text|id] …` |
 | an activity or module line with no id | `an activity line needs an id; write `> [!activity|my-id] Title`` / `a module line needs an id` | add the id; a kept entry is stored under the activity's id, so one made up from the title is lost when the title changes |
 | a `choice`/`multi` with no options | `this choice question 'x' has no options under it, so it is not drawn` (it adds "the bullets under it are plain bullets" if you wrote `- Red`) | add a task list, `- [ ] Option` (plain bullets are a menu's form) |
+| a nested bullet under a `scale` anchor, a `matrix` item or a menu entry | `warn a scale takes no replies` / `a nested bullet under a matrix item is read as another item, not as a reply` / `...under a menu entry...` | a reply belongs under an option of a `choice` or `multi`; elsewhere, write it as prose or drop it |
 | a `scale` with no numbered list, or a repeated number | `this scale question 'x' has no anchors under it` / `repeats anchor number 1` | write `1. Low`, `2. High`; the number is the stored answer, so use each once |
 | a widget with no data | `the widget 'x' names no data block (write ![[#^its-id]] under the line)` | add the embed line and the fenced `booklet widget` block |
 | a widget block that is not valid JSON | `the `booklet widget` block is not valid JSON (…, its line N)` | fix the comma or quote at that position |
@@ -958,6 +999,10 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a price in prose that reads as a formula | `warn `$5 a month ($` reads as a formula` | write `\$5` |
 | tiles over a data block with no `value:` | `warn the query's `as: tiles` has no `value:` …` | add `value: count` (the field that holds the number) |
 | an unknown `icon:` name | `` `icon:compas` is not a name in Booklet's icon set … did you mean `compass`? `` | use a name from the set |
+| `status:` with a value other than `off` | `` `status:hidden` is not a setting a line takes (only `status:off`, which hides the card's status line) `` | write `status:off`, or delete it |
+| `status:off` with `>` lines under the line | `warn `status:off` hides the card's status line, so the `>` lines under this activity line are not drawn` | delete one of them |
+| a `>` line under an activity line that is block syntax (a nested callout, `> #`, `> - `, `> 1. `, a fence) | `warn a `>` line under this activity line is block syntax …` | write the status text as one plain line |
+| text straight under an activity line (and its `>` lines) with no blank line | `warn text straight under the activity line … is read by Markdown and Obsidian as part of the callout` | leave a blank line after the activity line and its `>` lines |
 
 **Without the linter**, also check by hand:
 

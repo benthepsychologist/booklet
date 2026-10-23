@@ -46,6 +46,13 @@ const item=i=>'Test item '+i+' (placeholder wording)';
 const LISTED=[{title:'Your details',rows:[['Your email address',EMAIL]]},
   {title:'Part one',rows:PHQ.map((v,i)=>[item(i+1),FREQ[v-1]])},
   {title:'Part two',rows:GAD.map((v,i)=>[item(i+1),FREQ[v-1]])}];
+/* what the body also says: the booklet, and for each answered question what the reader was shown (the question's words, and for a
+   choice the options in the order shown and the words picked) */
+const BOOKLET={id:'test/submit-questionnaire',lang:'en'};
+const SEEN={email:{question:'Your email address'}};
+PHQ.forEach((v,i)=>SEEN['phq9-item'+(i+1)]={question:item(i+1),options:FREQ,picked:[FREQ[v-1]]});
+GAD.forEach((v,i)=>SEEN['gad7-item'+(i+1)]={question:item(i+1),options:FREQ,picked:[FREQ[v-1]]});
+const SEEN_FIXTURE=FIX('submit-seen.booklet.md');
 /* recepture's payload rules (its payload contract): an object; recipe a non-empty string or an object; answers an object */
 function receptureRules(text){let j;try{j=JSON.parse(text);}catch(e){return 'not JSON';}
   if(!j||typeof j!=='object'||Array.isArray(j)) return 'top level is not an object';
@@ -54,6 +61,7 @@ function receptureRules(text){let j;try{j=JSON.parse(text);}catch(e){return 'not
   return '';}
 const sortKeys=o=>Object.fromEntries(Object.keys(o).sort().map(k=>[k,o[k]]));
 const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
 
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -187,7 +195,10 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   ok(await p.evaluate(()=>document.getElementById('submitExact').open)===false&&await p.locator('#submitBody').isHidden()&&await text(p,'#submitExact summary')==='Show exactly what is sent','the exact text is folded shut under the list, behind "Show exactly what is sent"');
   const shown=await text(p,'#submitBody');
   let parsed=null;try{parsed=JSON.parse(shown);}catch(e){}
-  ok(!!parsed&&sameJSON(Object.keys(parsed).sort(),['answers','recipe'])&&parsed.recipe===RECIPE&&sameJSON(sortKeys(parsed.answers),sortKeys(EXPECT)),'the folded text is exactly {"recipe","answers"} with the host\'s recipe and the answers given (choices as 1-based positions, the email as text): '+shown.replace(/\s+/g,' ').slice(0,240));
+  ok(!!parsed&&sameJSON(Object.keys(parsed).sort(),['answers','booklet','recipe','seen'])&&parsed.recipe===RECIPE&&sameJSON(sortKeys(parsed.answers),sortKeys(EXPECT)),'the folded text is {"recipe","answers","booklet","seen"} with the host\'s recipe and the answers given (choices as 1-based positions, the email as text): '+shown.slice(0,200));
+  ok(!!parsed&&sameJSON(parsed.booklet,BOOKLET),'it names the booklet it came from (its id and language; this fixture has no version): '+JSON.stringify(parsed&&parsed.booklet));
+  ok(!!parsed&&sameJSON(sortKeys(parsed.seen||{}),sortKeys(SEEN)),'and for each answered question it says what the reader was shown: the question\'s words, the options in the order shown and the words picked: '+JSON.stringify(parsed&&parsed.seen).slice(0,300));
+  ok(!!parsed&&Object.keys(parsed.seen||{}).every(k=>hasOwnKey(parsed.answers,k)),'every seen entry is for a question that is in answers, under the same id');
   const helpT=await text(p,'#submitHelp');
   ok(/Send your answers\?/.test(await text(p,'#submitTitle'))&&helpT.includes(new URL(ENDPOINT).host)&&helpT.includes('Nothing has been sent yet'),'the screen says who it sends to and that nothing has been sent: '+helpT);
   ok(toApiOrigin().length===0,'with the confirm screen open, still nothing sent');
@@ -349,6 +360,31 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   await p.locator('#langGroup [data-lang="en"]').click();await wait(p,300);
   ok(toEndpoint().length===nFr,'the French run sent nothing');
   await grabViol(p);await p.close();
+
+  // 11b what the reader saw, for every kind that has options: a booklet that already holds answers (made up)
+  {const sent0=toApiOrigin().length,q=await newPage();
+   const rr=await openBook(q,SEEN_FIXTURE,'test/submit-seen.md');
+   ok(rr&&rr.ok===true,'the seen fixture opens as a host booklet: '+JSON.stringify(rr));
+   await pressSubmit(q);
+   let body=null;try{body=JSON.parse(await text(q,'#submitBody'));}catch(e){}
+   ok(!!body&&sameJSON(body.answers,{note:'plain words',pick:2,several:[1,'my own'],mood:2,grid:[2,1,null],count:3,far:9,spot:['item-a']}),'answers carry the stored shape unchanged: a position, positions with the reader\'s own words, an anchor number, a number per matrix item: '+JSON.stringify(body&&body.answers));
+   ok(!!body&&sameJSON(body.booklet,{id:'test/submit-seen',version:'0.7',lang:'en'}),'booklet: id, version and language as the file says them: '+JSON.stringify(body&&body.booklet));
+   const s=(body&&body.seen)||{};
+   ok(sameJSON(s.note,{question:'A note in your words'}),'a text question: its words, with the Markdown taken out (the answer is already words): '+JSON.stringify(s.note));
+   ok(sameJSON(s.pick,{question:'Pick one',options:['Alpha','Beta','Gamma'],picked:['Beta']}),'a choice: the options in the order shown, the words picked, the Markdown taken out: '+JSON.stringify(s.pick));
+   ok(sameJSON(s.several,{question:'Pick any, or add your own',options:['One','Two','Three'],picked:['One','my own']}),'a multi: the options, and the picked words with the reader\'s own option as they wrote it: '+JSON.stringify(s.several));
+   ok(sameJSON(s.mood,{question:'How was it?',anchors:[{n:0,text:'Poor'},{n:1,text:'Fine'},{n:2,text:'Great'}],picked:'Great'}),'a scale: its anchors with their numbers, and the anchor\'s words picked: '+JSON.stringify(s.mood));
+   ok(sameJSON(s.grid,{question:'Rate each',items:['Tea','Coffee','Juice'],anchors:[{n:1,text:'Dislike'},{n:2,text:'Like'}],picked:['Like','Dislike',null]}),'a matrix: its items, its anchors, and the words picked for each item, null for an item left alone: '+JSON.stringify(s.grid));
+   ok(sameJSON(s.count,{question:'How many?'}),'a number: its question only: '+JSON.stringify(s.count));
+   ok(sameJSON(s.far,{question:'Out of range',options:['Only option'],picked:['#9']}),'a position the list does not have reads #n, as the confirm screen does: '+JSON.stringify(s.far));
+   const rows=await listed(q);const spotRow=rows.flatMap(g=>g.rows).find(r=>r[0]==='Pick what fits');
+   ok(!!s.spot&&s.spot.question==='Pick what fits'&&typeof s.spot.picked==='string'&&s.spot.picked!==''&&!!spotRow&&s.spot.picked===spotRow[1],'a widget: its question and what its engine says was picked, the same words the confirm screen shows: '+JSON.stringify(s.spot)+' / '+JSON.stringify(spotRow));
+   const raw=await text(q,'#submitBody');
+   ok(!('logq' in s)&&!('logq' in body.answers)&&!/entry words kept|draft words typed/.test(raw),'a repeating activity\'s kept entries and draft are in neither answers nor seen');
+   ok(Object.keys(s).sort().join()===Object.keys(body.answers).sort().join(),'seen has an entry for exactly the questions answers has (every one of these is a question the booklet names)');
+   ok(Buffer.byteLength(JSON.stringify(body))<20000,'the body stays small (the seen fixture: '+Buffer.byteLength(JSON.stringify(body))+' bytes)');
+   ok(toApiOrigin().length===sent0,'nothing has been sent by showing it');
+   await q.close();}
 
   // 12 across the whole run
   await Promise.all(pending);

@@ -62,11 +62,17 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     ok(tall.length>0&&tall.every(h=>h>=44),`${W}px: every pill is at least 44 px tall (${Math.min(...tall)})`);
     ok(await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)<=0,`${W}px: no sideways scroll`);
 
-    /* 4. matrix answers are pills in every row */
-    const mx=await p.evaluate(()=>[...document.querySelectorAll('#main .mxrow')].map(r=>[...r.querySelectorAll('.mxopt span')].map(s=>{const q=s.getBoundingClientRect(),c=getComputedStyle(s);return {h:Math.round(q.height),w:Math.round(q.width),r:c.borderTopLeftRadius};})));
-    ok(mx.length===2&&mx.every(r=>r.length===2&&r.every(s=>s.h>=44&&parseFloat(s.r)>=20)),`${W}px: each matrix row draws its answers as pills (${JSON.stringify(mx[0])})`);
-    await p.locator('#main .mxrow').first().locator('.mxopt').nth(1).click();await wait(100);
-    ok(await p.locator('#main .mxrow').first().locator('input:checked').count()===1,`${W}px: a matrix pill answers its row`);
+    /* 4. matrix answers are pills: in every row when each item's readable words and the anchors fit side by side, else under each item as
+       its own single-choice question (the same list of answers either way) */
+    await wait(250);   // a matrix measures its room once it is shown (nothing folds it: it is shown)
+    const asRows=W>=1000;
+    const sel=asRows?'#main .mxrow .mxopt span':'#main .mxq .pill-btn';
+    const mx=await p.evaluate(s=>[...document.querySelectorAll(s)].map(s=>{const q=s.getBoundingClientRect(),c=getComputedStyle(s);return {h:Math.round(q.height),w:Math.round(q.width),r:c.borderTopLeftRadius};}),sel);
+    ok(mx.length===4&&mx.every(s=>s.h>=44&&parseFloat(s.r)>=20),`${W}px: the matrix draws its answers as pills, ${asRows?'in rows':'one question per item'} (${JSON.stringify(mx[0])})`);
+    if(asRows) await p.locator('#main .mxrow').first().locator('.mxopt').nth(1).click();
+    else await p.locator('#main .mxq').first().locator('.pill-btn').nth(1).click();
+    await wait(100);
+    ok(await p.evaluate(()=>JSON.stringify(STATE.answers.m.mx))==='[2,null]',`${W}px: a matrix pill answers its item, the same way in both drawings`);
 
     /* 5. a repeating activity and a data-view page are drawn open */
     await load(dpage);

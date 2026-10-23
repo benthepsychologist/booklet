@@ -134,7 +134,7 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "tab:", "pin:"), "row": ("end",), "text": ("long",),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:", "pin:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (), "tab": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
@@ -673,6 +673,7 @@ def row_cells(rows):
 
 BULLET = re.compile(r'^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$')
 TASK = re.compile(r'^[ \t]*[-*+][ \t]+\[[ xX]\][ \t]+')
+OPTION = TASK
 NUMBERED = re.compile(r'^[ \t]*(\d+)[.)][ \t]+(.*)$')
 
 
@@ -693,6 +694,60 @@ def list_below(lines, i, pattern):
         out.append(m)
         j += 1
     return (out, j) if out else ([], i)
+
+
+NESTED_BULLET = re.compile(r'^[ \t]*[-*+][ \t]+(.*)$')
+
+
+def indent_of(line):
+    """A line's indent, a tab counted as four spaces (the renderer's `indentOf`)."""
+    return len(re.match(r'^[ \t]*', line).group(0).replace("\t", "    "))
+
+
+def nested_in(items):
+    """The positions, in a bulleted list's matches, of the bullets written deeper than the one before them."""
+    return [k for k in range(1, len(items)) if indent_of(items[k].string) > indent_of(items[k - 1].string)]
+
+
+def text_col_of(line):
+    """The column where an option's own text starts: the `[` of its box (two for `- [ ]`). A nested bullet is a reply only from here on."""
+    m = re.match(r'^([ \t]*[-*+][ \t]+)\[', line)
+    return len(m.group(1).replace("\t", "    ")) if m else indent_of(line) + 2
+
+
+def option_list_below(lines, i):
+    """The task list of a choice or multi straight under line i (zero or one blank line between), with each option's replies
+    (SPEC.md section 5), read as the renderer reads it: a bullet written at least as far in as its option's text is that option's reply
+    (each nested bullet one line of it), and a line that is no bullet, indented deeper than the bullet above it, goes on with it.
+    Returns (the option matches, the index after the list, the indexes of the reply lines, the column where the last option's text
+    starts)."""
+    j, blanks = i, 0
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+        blanks += 1
+        if blanks > 1:
+            return [], i, [], 0
+    out, replies, at, bullet = [], [], 0, -1
+    while j < len(lines):
+        m = OPTION.match(lines[j])
+        if m:
+            out.append(m)
+            at, bullet = text_col_of(lines[j]), -1
+            j += 1
+            continue
+        if not out or not lines[j].strip():
+            break
+        b = NESTED_BULLET.match(lines[j])
+        ind = indent_of(lines[j])
+        if b and ind >= at:
+            bullet = ind
+        elif not b and bullet >= 0 and ind > bullet:
+            pass
+        else:
+            break
+        replies.append(j)
+        j += 1
+    return (out, j, replies, at) if out else ([], i, [], 0)
 
 
 # any line that starts like a Booklet line, readable or not (the renderer's `calloutLine`)
@@ -725,7 +780,10 @@ def claim_end(kind, lines, i):
     """The index past everything the renderer reads as belonging to the Booklet line at i: its body, then the list straight under
     a choice, multi (a task list), scale (a numbered list), menu (bullets) or matrix (bullets, then numbered anchors)."""
     k = body_end(lines, i)
-    pat = {"choice": TASK, "multi": TASK, "scale": NUMBERED, "menu": BULLET, "matrix": BULLET}.get(kind)
+    if kind in ("choice", "multi"):
+        got, k2, _, _ = option_list_below(lines, k)
+        return k2 if got else k
+    pat = {"scale": NUMBERED, "menu": BULLET, "matrix": BULLET}.get(kind)
     if pat:
         got, k2 = list_below(lines, k, pat)
         if got:
@@ -792,6 +850,21 @@ def icon_hint(name):
     return f"; did you mean {', '.join('`' + c + '`' for c in near)}?" if near else ""
 
 
+HTML_BLOCK_START = re.compile(r'^ {0,3}<[A-Za-z/!?]')
+THEMATIC_BREAK = re.compile(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$')
+
+
+def continues_paragraph(line):
+    """Would this line, straight under a callout's lines, continue their paragraph (Markdown's "lazy continuation")? Not when it is blank,
+    starts a quote (`>`), or starts a block of its own: a fence, a heading, a thematic break, a list item or an HTML block."""
+    if not line.strip() or line.startswith(">"):
+        return False
+    if (FENCE_LINE.match(line) or re.match(r'^ {0,3}#{1,6}([ \t]|$)', line) or THEMATIC_BREAK.match(line)
+            or re.match(r'^ {0,3}[-*+][ \t]+\S', line) or re.match(r'^ {0,3}1[.)][ \t]+\S', line) or HTML_BLOCK_START.match(line)):
+        return False
+    return True
+
+
 def check_settings(f, n, kind, w):
     """A line's settings against KIND_SETTINGS, and an unknown kind (SPEC.md section 4)."""
     allowed = KIND_SETTINGS.get(kind)
@@ -813,6 +886,8 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
         elif key == "icon" and val not in ICON_NAMES:
             err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so a renderer ignores it" + icon_hint(val))
+        elif key == "status" and val != "off":
+            err(f, f"line {n}: `status:{val}` is not a setting a line takes (only `status:off`, which hides the card's status line); a renderer ignores it")
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
         elif key == "pin" and val.lower() != "off":
@@ -1240,6 +1315,17 @@ def check_format(f, text, fm):
                     if not w["id"]:
                         err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "
                                f"id, so an id the renderer makes up from the title is lost the day the title changes, orphaning the entries")
+                    if w["set"].get("status") == "off" and any(re.sub(r'^>[ \t]?', '', x).strip() for x in lines[i + 1:body_end(lines, i)]):
+                        warn(f, f"{where}: `status:off` hides the card's status line, so the `>` lines under this activity line (its status text) are not drawn")
+                    status_lines = [re.sub(r'^>[ \t]?', '', x) for x in lines[i + 1:body_end(lines, i)]]
+                    if any(x.strip() for x in status_lines):
+                        if any(re.match(r'^\s*(>|#{1,6}([ \t]|$)|[-*+][ \t]|\d+[.)][ \t]|`{3,}|~{3,})', x) for x in status_lines):
+                            warn(f, f"{where}: a `>` line under this activity line is block syntax (a quote or nested callout, a heading, a list item or a code fence); "
+                                    f"the lines under an activity line are its card's status text, one line of inline Markdown, so it would show as literal characters")
+                    end = body_end(lines, i)
+                    if end < len(lines) and continues_paragraph(lines[end]):
+                        warn(f, f"line {end + 1}: text straight under the activity line" + (" and its `>` lines" if end > i + 1 else "") + ", with no blank line between, is read by Markdown "
+                                f"and Obsidian as part of the callout, but a renderer takes it as the activity's own paragraph (its blurb); leave a blank line after the activity line" + (" and its `>` lines" if end > i + 1 else ""))
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         if w["set"].get("parent") is not None:
@@ -1270,12 +1356,15 @@ def check_format(f, text, fm):
                             err(f, f"{where}: the matrix {w['id']!r} has no items (a bulleted list under the line)")
                         if not anchors:
                             err(f, f"{where}: the matrix {w['id']!r} has no anchors (a numbered list under its items)")
+                        for off in nested_in(items):
+                            warn(f, f"line {after - len(items) + off + 1}: a nested bullet under a matrix item is read as another item, not as a reply: "
+                                    f"only the options of a choice or multi take replies")
                         nums = [a.group(1).lstrip("0") or "0" for a in anchors]
                         dup = sorted({x for x in nums if nums.count(x) > 1}, key=int)
                         if dup:
                             err(f, f"{where}: the matrix {w['id']!r} repeats anchor number {', '.join(dup)} (each anchor needs its own number)")
                     if kind in ("choice", "multi") and w["id"]:
-                        own, _ = list_below(lines, after_body, TASK)
+                        own, _, _, _ = option_list_below(lines, after_body)
                         if w["set"].get("menu"):
                             if own:
                                 err(f, f"{where}: the question {w['id']!r} has both `menu:{w['set']['menu']}` and a list of its own (use one)")
@@ -1299,9 +1388,29 @@ def check_format(f, text, fm):
                                 err(f, f"{where}: the scale {w['id']!r} repeats anchor number {', '.join(dup)}; the number is the stored answer, "
                                        f"so each anchor needs its own")
                     if kind in ("choice", "multi", "scale") and w["id"] and not bad_q:
-                        got, after_list = list_below(lines, after_body, TASK if kind != "scale" else NUMBERED)
-                        if got and after_list < len(lines) and re.match(r"^[ \t]+\S", lines[after_list]) and not (TASK if kind != "scale" else NUMBERED).match(lines[after_list]):
-                            warn(f, f"line {after_list + 1}: the line after this list is indented, so the list ends there: put each option on one line")
+                        if kind == "scale":
+                            got, after_list = list_below(lines, after_body, NUMBERED)
+                            text_at, reply_at = 0, []
+                        else:
+                            got, after_list, reply_at, text_at = option_list_below(lines, after_body)
+                        nxt_line = lines[after_list] if after_list < len(lines) else ""
+                        if got and nxt_line and re.match(r"^[ \t]+\S", nxt_line) and not (TASK if kind != "scale" else NUMBERED).match(nxt_line):
+                            if kind == "scale" and NESTED_BULLET.match(nxt_line):
+                                warn(f, f"line {after_list + 1}: a scale takes no replies (a nested bullet under an anchor): only the options of a choice or multi do, "
+                                        f"so the list ends there and this line is read as text")
+                            elif kind != "scale" and NESTED_BULLET.match(nxt_line) and indent_of(nxt_line) < text_at:
+                                warn(f, f"line {after_list + 1}: a bullet under an option is its reply only when it is indented at least to the option's text "
+                                        f"(two spaces under `- [ ]`); this one is not, so the list ends there and it is read as text")
+                            elif kind != "scale" and after_list - 1 in reply_at:
+                                warn(f, f"line {after_list + 1}: this line follows a reply but is neither a new bullet nor deeper than the reply's bullet, so the list ends "
+                                        f"there and it is read as text: a reply's next line must be a new bullet, or sit deeper than the bullet")
+                            else:
+                                warn(f, f"line {after_list + 1}: the line after this list is indented, so the list ends there: put each option on one line")
+                        elif got and kind != "scale" and after_list + 1 < len(lines) and not nxt_line.strip():
+                            after_blank = lines[after_list + 1]
+                            if OPTION.match(after_blank) or (NESTED_BULLET.match(after_blank) and indent_of(after_blank) > 0):
+                                warn(f, f"line {after_list + 1}: a blank line ends the option list, so the options and replies after it are read as text "
+                                        f"(with raw checkboxes), not as part of this question: remove the blank line")
                     if w["id"] and not bad_q:
                         last_q = True
                     # Markdown lets only a list starting at 1 interrupt a paragraph:
@@ -1320,6 +1429,9 @@ def check_format(f, text, fm):
                 items, after_menu = list_below(lines, body_end(lines, i), BULLET)
                 if not items:
                     err(f, f"{where}: the menu {w['id']!r} has no items (a bulleted list under the line)")
+                for off in nested_in(items):
+                    warn(f, f"line {after_menu - len(items) + off + 1}: a nested bullet under a menu entry is read as another entry, not as a reply: "
+                            f"only the options of a choice or multi take replies")
                 for off, im in enumerate(items):
                     if re.match(r'^[ \t]*[-*+][ \t]+\[[xX]\]', im.string):
                         warn(f, f"line {after_menu - len(items) + off + 1}: a menu cannot mark a right answer; to have one, give the question its "
@@ -1564,10 +1676,16 @@ def check_prices(f, lines, start, regions):
     flush()
 
 
+# a relative image path the renderer will read from the host's store (SPEC.md section 6); the part rules are checked beside it
+IMAGE_PATH = re.compile(r'^(?=.{1,200}$)[A-Za-z0-9_./-]+\.(?:svg|png|jpe?g|webp|gif)$', re.I)
+
+
 def check_images(f, lines):
-    """An image is linked, never embedded, and a renderer fetches no image (SPEC.md section 6). A remote address
-    (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does not fetch it. An address with any
-    other scheme (`data:`, `javascript:`, `file:` ...) is an error. A relative path is fine. Reference-style
+    """An image is linked, never embedded, and a renderer fetches an image only from a store its host declares
+    (SPEC.md section 6). A remote address (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does
+    not fetch it. An address with any other scheme (`data:`, `javascript:`, `file:` ...) is an error. A relative path
+    is fine, but a warning when it is one the renderer never reads (a `..`, a leading `/`, a character outside
+    letters, digits and `_ . / -`, or an extension it does not draw). Reference-style
     images are read through their `[id]: address` definitions; code fences and inline code are not images."""
     fence, defs, found = None, {}, []
     for k, ln in enumerate(lines):
@@ -1594,6 +1712,8 @@ def check_images(f, lines):
             warn(f, f"line {n}: the image {shown} has a remote address; a renderer does not fetch remote images, so it shows the alt text and the address as text")
         elif scheme:
             err(f, f"line {n}: the image {shown} has an address with the scheme `{scheme.group(1).lower()}:`; an image is linked by a relative path, never embedded or given another scheme")
+        elif not IMAGE_PATH.match(a) or any(p == "" or p.startswith(".") for p in a.split("/")):
+            warn(f, f"line {n}: the image {shown} is not a path the renderer reads from a store (letters, digits, _ . / - only, at most 200 characters, no empty part and no part that begins with a dot so no .. and no ./, no leading /, ending .svg, .png, .jpg, .jpeg, .webp or .gif); it shows the alt text and the address as text")
 
 
 def _plain_heading(s):
