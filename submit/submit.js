@@ -35,7 +35,7 @@ try{where=ENDPOINT?new URL(ENDPOINT).host:"";}catch(e){where="";}
 let RECIPE=null;
 const T={
   en:{submit:"Submit",title:"Send your answers?",
-    help:h=>"Pressing Send sends the answers below to "+h+", and nothing else. Nothing has been sent yet.",
+    help:h=>"Pressing Send sends the answers below to "+h+", with the questions and options as you saw them, and nothing else. Nothing has been sent yet.",
     exact:"Show exactly what is sent",other:"Other answers in this booklet",
     send:"Send",cancel:"Cancel",sending:"Sending…",close:"Close",sentTitle:"Sent",
     sent:r=>"Your answers were received"+(r?" (reference "+r+")":"")+". They are still here in your booklet.",
@@ -45,7 +45,7 @@ const T={
     nothing:"There are no answers to send yet."},
   /* es and fr checked by /localize (2026-10-22): "booklet" is cuadernillo and carnet, as in the renderer's own tables */
   es:{submit:"Enviar",title:"¿Enviar tus respuestas?",
-    help:h=>"Al presionar Enviar, las respuestas de abajo se envían a "+h+", y nada más. Todavía no se ha enviado nada.",
+    help:h=>"Al presionar Enviar, las respuestas de abajo se envían a "+h+", con las preguntas y las opciones tal como las viste, y nada más. Todavía no se ha enviado nada.",
     exact:"Mostrar exactamente lo que se envía",other:"Otras respuestas en este cuadernillo",
     send:"Enviar",cancel:"Cancelar",sending:"Enviando…",close:"Cerrar",sentTitle:"Enviado",
     sent:r=>"Tus respuestas se recibieron"+(r?" (referencia "+r+")":"")+". Siguen aquí, en tu cuadernillo.",
@@ -54,7 +54,7 @@ const T={
     clash:id=>"No se pueden enviar estas respuestas: dos partes de este cuadernillo usan el mismo identificador de pregunta, “"+id+"”.",
     nothing:"Todavía no hay respuestas para enviar."},
   fr:{submit:"Envoyer",title:"Envoyer vos réponses ?",
-    help:h=>"Si vous appuyez sur Envoyer, vos réponses ci-dessous, et rien d’autre, sont envoyées à "+h+". Rien n’a encore été envoyé.",
+    help:h=>"Si vous appuyez sur Envoyer, vos réponses ci-dessous, avec les questions et les options telles que vous les avez vues, et rien d’autre, sont envoyées à "+h+". Rien n’a encore été envoyé.",
     exact:"Afficher exactement ce qui est envoyé",other:"Autres réponses de ce carnet",
     send:"Envoyer",cancel:"Annuler",sending:"Envoi en cours…",close:"Fermer",sentTitle:"Envoyé",
     sent:r=>"Vos réponses ont été reçues"+(r?" (référence "+r+")":"")+". Elles sont toujours là, dans votre carnet.",
