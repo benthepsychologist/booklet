@@ -1,40 +1,48 @@
-// Folding and reading aids (renderer 0.11.10, C2): which pages fold, the section status line, the compact hint fold, which options are
-// short enough to sit beside their question, which pages offer one at a time, and every new interface word in four languages.
-// The drawn geometry, clicking, print and reload are test/folding-browser.js. Run: node test/folding.test.js
+// Folding and reading aids (renderer 0.11.10, C2; 0.15): the renderer folds nothing on its own; the fold switch shows only
+// on a screen with callouts the author folded, and opens or folds exactly those, never a question's hint or solution; the
+// compact hint fold; which options are short enough to sit beside their question; which pages offer one at a time; and the
+// words in four languages. The drawn geometry, clicking and print are test/tabs-browser.js. Run: node test/folding.test.js
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
 const FM='---\nbooklet: "0.13"\nid: local/fold\ntitle: "Fold"\nlang: en\n---\n\n';
 const A=P.boot();
+const LS=global.__ls;
 const Q=(id,n=2)=>`> [!choice|${id}] Question ${id}?\n- [ ] A\n- [ ] B\n\n`;
 const draw=id=>{A.screen=id;A.render();return P.main();};
-const secs=()=>find(P.main(),hasClass("rm-sec"));
-const status=d=>{const c=find(d,hasClass("c"))[0];return c?texts(c):"";};
+const switches=()=>find(P.main(),n=>n.tagName==="button"&&n.attrs.role==="switch");
+const auFolds=()=>find(P.main(),hasClass("au-fold"));
+const isOpen=d=>d.attrs.open!==undefined;
 
-/* 1. foldable: two or more same-level headings, whatever else the page holds */
-A.loadText(FM+"> [!activity|a] A\n\n## One\n\nx\n\n"+Q("q1")+"## Two\n\ny\n");
-chk("a page with questions and two headings is foldable",A.foldable(A.activityOf("a")));
-A.loadText(FM+"> [!activity|a] A\n\n## One\n\nx\n\n"+Q("q1"));
-chk("one heading is not enough",!A.foldable(A.activityOf("a")));
-A.loadText(FM+"> [!activity|a] A\n\n# Title\n\n## One\n\nx\n\n## Two\n\ny\n");
-chk("a title heading alone above the others does not count",A.foldable(A.activityOf("a")));
-A.loadText(FM+"> [!activity|a] A\n\n```\n## not\n## headings\n```\n\ntext\n");
-chk("headings inside a code fence do not count",!A.foldable(A.activityOf("a")));
+/* 1. the renderer folds nothing on its own: headings are headings, whatever the page holds */
+A.loadText(FM+"> [!activity|a] A\n\n## One\n\nx\n\n"+Q("q1")+"## Two\n\ny\n\n## Three\n\nz\n");
+draw("a");
+chk("a page with questions and three headings folds nothing, and has no fold switch",find(P.main(),n=>n.tagName==="details").length===0&&switches().length===0);
+{const h=find(P.main(),n=>n.tagName==="h3").map(texts).filter(t=>!/Question/.test(t));
+ chk("its headings are drawn as headings",h.join()==="One,Two,Three",h.join());}
 
-/* 2. the section status line and the first section to answer is open */
-A.loadText(FM+"> [!activity|a] A\n\n## One\n\nx\n\n"+Q("q1")+Q("q2")+"## Two\n\ny\n\n## Three\n\n"+Q("q3"));
-draw("a");
-{const s=secs();
- chk("three sections",s.length===3);
- chk("a section with two questions says so; one with none says nothing",status(s[0])==="2 questions"&&status(s[1])===""&&status(s[2])==="1 question",JSON.stringify(s.map(status)));
- chk("the first section with an unanswered question is open, the others folded",s.map(d=>d.hasAttribute("open")).join()==="true,false,false",JSON.stringify(s.map(d=>d.hasAttribute("open"))));}
-A.draftFor("a");A.answersFor("a").q1=1;A.answersFor("a").q2=2;A.viewReset(A.currentId,"all");
-draw("a");
-{const s=secs();
- chk("all answered: Done, and the first section with a question still to answer (the third) is the open one",status(s[0])==="Done"&&s.map(d=>d.hasAttribute("open")).join()==="false,false,true",JSON.stringify([s.map(status),s.map(d=>d.hasAttribute("open"))]));}
-A.answersFor("a").q1=null;A.viewReset(A.currentId,"all");draw("a");
-chk("one of two answered: the count and the answered count",status(secs()[0])==="2 questions · 1 answered",status(secs()[0]));
+/* 2. the fold switch: only where the author folded a callout; it opens or folds exactly those, never a hint or a solution */
+{const T=FM+"> [!activity|a] A\n\n"+Q("q1")+"> [!hint]-\n> The hint.\n\n> [!solution]-\n> The solution.\n\n> [!note]- Extra\n> Folded by the author.\n\n> [!tip] Open\n> Not folded.\n\n> [!hint]-\n> A hint on its own, under no question.\n\n"+
+   "> [!activity|b] B\n\n"+Q("q2")+"> [!hint]-\n> Only a hint.\n\n> [!tip] Open\n> Not folded.\n";
+ A.loadText(T);draw("a");
+ chk("a screen with a callout the author folded has one switch, Open all, off",switches().length===1&&texts(switches()[0])==="Open all"&&switches()[0].attrs["aria-checked"]==="false");
+ chk("it governs that callout and nothing else: not the hint, not the solution, not a hint under no question, not the open callout",auFolds().length===1&&/Extra/.test(texts(auFolds()[0]))&&!isOpen(auFolds()[0]),String(auFolds().length));
+ switches()[0]._on.click({target:switches()[0]});
+ chk("pressed, it is on, and kept as the booklet's preference (booklet.ui.folds.)",switches()[0].attrs["aria-checked"]==="true"&&LS[A.FOLD_KEY+A.currentId]==="open",JSON.stringify(LS[A.FOLD_KEY+A.currentId]));
+ draw("a");
+ const details=find(P.main(),n=>n.tagName==="details"),own=details.filter(hasClass("card-compact"));
+ chk("drawn again, the author's callout is open and every hint and solution is as it was, shut",auFolds().length===1&&isOpen(auFolds()[0])&&own.length===3&&own.every(d=>!isOpen(d)),JSON.stringify(details.map(d=>[d.attrs.class,isOpen(d)])));
+ draw("b");
+ chk("a screen whose only fold is a question's own hint has no switch",switches().length===0&&auFolds().length===0);
+ draw("a");switches()[0]._on.click({target:switches()[0]});draw("a");
+ chk("pressed again, the callout is folded as written",LS[A.FOLD_KEY+A.currentId]==="folded"&&!isOpen(auFolds()[0]));}
+{A.loadText(FM+"> [!module|m] M\n\n> [!note]- About this\n> Folded opening.\n\n> [!activity|a] A\n\nWords.\n\n> [!activity|b] B\n\nMore.\n\n> [!module|m end] End\n");
+ draw(A.moduleScreen("m"));
+ chk("a module's screen has no switch, though its opening holds a folded callout",switches().length===0);
+ A.loadText(FM+"> [!module|m] M\n\n> [!note]- About this\n> Folded opening.\n\n> [!activity|a] A\n\nWords.\n\n> [!module|m end] End\n");
+ draw("m/a");
+ chk("a module of one activity draws its opening with the activity: the switch governs the opening's folded callout",switches().length===1&&auFolds().length===1);}
 
 /* 3. a hint or solution is a compact fold, and never a teaser */
 {A.loadText(FM+"> [!activity|a] A\n\n"+Q("q1")+"> [!hint]-\n> SECRET-HINT words\n\n> [!solution]-\n> SECRET-SOL words\n\n> [!group]- Extra\n> Some group words.\n");
@@ -62,28 +70,20 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
  chk("two questions offer no stepper",A.stepUnits([mk("choice","q1"),mk("choice","q2")]).length===0);
  chk("a row of three questions is one step, and one step offers no stepper (the page needs two)",A.stepUnits([{type:"row",id:"r",blocks:[{type:"cell",id:"c",blocks:[mk("text","a"),mk("text","b"),mk("text","c")]}]}]).length===1);}
 
-/* 5b. a section that holds a data view says what it holds */
-{A.loadText(FM+"> [!activity|log repeat] Log\n\n> [!text|t] Note\n\n> [!activity|a] A\n\n## Kept\n\n```booklet query\nfrom: log\nas: table\n```\n\n## Rows\n\nWords.\n\n```booklet data\n[{\"a\":1},{\"a\":2}]\n```\n^d\n\n```booklet query\nfrom: d\nas: table\n```\n\n## Empty\n\n```booklet data\n[]\n```\n^e\n\n```booklet query\nfrom: e\nas: table\nempty: Nothing logged.\n```\n");
- draw("a");
- const s=secs();
- chk("a section holding kept entries says None yet, a data block says its rows, an empty block its own words",
-   status(s[0])==="None yet"&&status(s[1])==="2 rows"&&status(s[2])==="Nothing logged.",JSON.stringify(s.map(status)));}
-
-/* 6. every new word exists in en, fr, es (the tables themselves: a missing key must not hide behind the English that fr and es
-   inherit) and es-AR (which inherits es) */
-{const cards=["questionsN","questionsAnswered","rowsN","noneYet"],steps=["label","one","all","progress","back","next"];
+/* 6. every word of the steps, the pager, the frame and the fold switch exists in en, fr, es (the tables themselves: a missing
+   key must not hide behind the English that fr and es inherit) and es-AR (which inherits es) */
+{const want={cards:["questionsN"],steps:["label","one","all","progress","back","next"],fold:["openAll"],pages:["back","next","of"],frame:["more","less"]};
  const has=(o,k)=>o&&o[k]!=null&&!(typeof o[k]==="string"&&!o[k].trim());
- for(const lang of ["en","fr","es"]){const src=A.STRINGS_SRC[lang],miss=[...cards.filter(k=>!has(src.cards,k)).map(k=>"cards."+k),...steps.filter(k=>!has(src.steps,k)).map(k=>"steps."+k)];
-   chk("the new words are written in the "+lang+" table itself",miss.length===0,miss.join());}
- for(const lang of ["en","fr","es","es-AR"]){const c=A.STRINGS[lang].cards,s=A.STRINGS[lang].steps;
-   const miss=[...cards.filter(k=>!has(c,k)).map(k=>"cards."+k),...steps.filter(k=>!has(s,k)).map(k=>"steps."+k)];
-   chk("the new words resolve in "+lang,miss.length===0,miss.join());
-   chk("the counting words in "+lang+" take numbers",/2/.test(c.questionsN(2))&&/1/.test(c.questionsAnswered(1,2))&&/2/.test(c.questionsAnswered(1,2))&&/3/.test(c.rowsN(3))&&/2/.test(s.progress(2,5))&&/5/.test(s.progress(2,5)));}
- chk("es-AR holds none of these words itself and gets es's",!A.STRINGS_SRC["es-AR"].steps&&A.STRINGS["es-AR"].steps.one===A.STRINGS.es.steps.one&&A.STRINGS["es-AR"].cards.noneYet===A.STRINGS.es.cards.noneYet);
- chk("fr and es are not the English words",A.STRINGS.fr.steps.one!==A.STRINGS.en.steps.one&&A.STRINGS.es.steps.one!==A.STRINGS.en.steps.one&&A.STRINGS.fr.cards.noneYet!==A.STRINGS.en.cards.noneYet&&A.STRINGS.es.cards.noneYet!==A.STRINGS.en.cards.noneYet);
+ const missIn=t=>Object.entries(want).flatMap(([g,ks])=>ks.filter(k=>!has(t&&t[g],k)).map(k=>g+"."+k));
+ for(const lang of ["en","fr","es"]){const miss=missIn(A.STRINGS_SRC[lang]);chk("the words are written in the "+lang+" table itself",miss.length===0,miss.join());}
+ for(const lang of ["en","fr","es","es-AR"]){const S=A.STRINGS[lang],miss=missIn(S);
+   chk("the words resolve in "+lang,miss.length===0,miss.join());
+   chk("the counting words in "+lang+" take numbers",/2/.test(S.cards.questionsN(2))&&/2/.test(S.steps.progress(2,5))&&/5/.test(S.steps.progress(2,5))&&/2/.test(S.pages.of(2,3))&&/3/.test(S.pages.of(2,3)));}
+ chk("es-AR holds none of these words itself and gets es's",!A.STRINGS_SRC["es-AR"].steps&&!A.STRINGS_SRC["es-AR"].pages&&A.STRINGS["es-AR"].steps.one===A.STRINGS.es.steps.one&&A.STRINGS["es-AR"].pages.of(1,2)===A.STRINGS.es.pages.of(1,2));
+ chk("fr and es are not the English words",["fr","es"].every(l=>A.STRINGS[l].steps.one!==A.STRINGS.en.steps.one&&A.STRINGS[l].fold.openAll!==A.STRINGS.en.fold.openAll&&A.STRINGS[l].pages.of(1,2)!==A.STRINGS.en.pages.of(1,2)&&A.STRINGS[l].frame.more!==A.STRINGS.en.frame.more));
  chk("no l10n: draft mark is left on the stepper words",!/steps: \{ \/\* l10n: draft/.test(P.html));}
 
-/* 7. the preference lives in booklet.ui.* only */
-chk("the one-at-a-time choice is kept under booklet.ui.steps.",A.OAT_KEY==="booklet.ui.steps.");
+/* 7. the preferences live in booklet.ui.* only */
+chk("the one-at-a-time choice is kept under booklet.ui.steps., the fold switch's under booklet.ui.folds.",A.OAT_KEY==="booklet.ui.steps."&&A.FOLD_KEY==="booklet.ui.folds.");
 console.log(fails?fails+" folding checks failed":"all folding checks passed");
 P.closePages();process.exit(fails?1:0);

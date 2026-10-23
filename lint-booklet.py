@@ -134,9 +134,9 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:"), "row": ("end",), "text": ("long",),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "tab:", "pin:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
-    "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (),
+    "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (), "tab": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
     "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
 }
@@ -170,7 +170,7 @@ ICON_NAMES = frozenset((
 ENGINES = ("svg-regions", "grid-select")
 COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
-STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion"}
+STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab"}
 # what a module's notice (`> [!notice]`) may say about itself
 NOTICE_KEYS = ("license", "copyright", "source", "version")
 
@@ -815,11 +815,21 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so a renderer ignores it" + icon_hint(val))
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
+        elif key == "pin" and val.lower() != "off":
+            err(f, f"line {n}: `pin:{val}` is not a setting; the one value is `pin:off` (the frame scrolls away with the page)")
     for flag in sorted(w["flags"]):
         if flag not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
     if "daily" in w["flags"] and "repeat" not in w["flags"]:
         err(f, f"line {n}: `daily` needs `repeat` (write `repeat daily`)")
+
+
+def id_word(s):
+    """A name as an id, as the renderer makes one (idWord in booklet.html): accents dropped, lowercase, every run of anything
+    but letters and digits one dash, at most 60 characters, then only ASCII letters, digits and dashes."""
+    t = re.sub(r"[\u0300-\u036f]", "", unicodedata.normalize("NFKD", s or ""))
+    t = re.sub(r"[\W_]+", "-", unicodedata.normalize("NFC", t).lower()).strip("-")[:60].rstrip("-")
+    return re.sub(r"-{2,}", "-", re.sub(r"[^A-Za-z0-9-]+", "-", t).strip("-"))
 
 
 def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
@@ -883,6 +893,15 @@ def check_format(f, text, fm):
     rec_lines = []           # (line, id) of every records line that names a module, checked once the file is read
     data_scope = None        # the module a `> [!data|module-id]` section belongs to, until the next data, records, module or activity line
     notice_seen, mod_has_activity = set(), False
+    # tabs (SPEC.md section 3): a module's, declared in its opening (module id -> {tab id: line}), and the open activity's
+    mod_tabs, act_tabs, in_act = {}, {}, False
+    implicit, fence = True, None          # a file with no activity or module line is one activity (its tab lines are its tabs)
+    for l in lines:
+        fence, skip = fence_skip(l, fence)
+        c = None if skip else CALLOUT_LINE.match(l)
+        if c and c.group(1).lower() in ("activity", "module"):
+            implicit = False
+            break
     body_start = i
     menus, menu_uses, data_blocks = {}, [], {}
     theme_seen = False
@@ -1126,14 +1145,16 @@ def check_format(f, text, fm):
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
             check_settings(f, n, kind, w)
-            if rowst["open"] and kind in ("data", "records", "module", "activity"):
-                close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line"}.get(kind, f"the {kind} section"))
+            if rowst["open"] and kind in ("data", "records", "module", "activity", "tab"):
+                close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line", "tab": "a tab line"}.get(kind, f"the {kind} section"))
             if kind == "notice":
                 check_notice(f, n, w, lines, i, open_mod if section == "content" else None,
                              mod_has_activity, notice_seen, section == "content")
             if section == "data" and kind in ("module", "activity"):
                 # a module or an activity line ends a data section: what follows is the booklet's own text again
                 section, data_scope = "content", None
+            if kind in ("module", "data"):
+                in_act = False
             if kind == "data":
                 section = "data"
                 data_scope = None
@@ -1180,9 +1201,31 @@ def check_format(f, text, fm):
                             if w["id"] in mod_ids:
                                 err(f, f"{where}: the module id {w['id']!r} is also used on line {mod_ids[w['id']]}")
                             mod_ids.setdefault(w["id"], n)
+                elif kind == "tab":
+                    # an activity's tab, or one of a module's declared in its opening; its id is the one written, else its name's
+                    tid = w["id"] if w["id"] and ID_PATTERN.match(w["id"]) else id_word(mm.group(4).strip())
+                    if w["id"] and not ID_PATTERN.match(w["id"]):
+                        err(f, f"{where}: the tab id {w['id']!r} may hold only letters, digits and dashes")
+                    table = act_tabs if in_act or implicit else mod_tabs.setdefault(open_mod, {}) if open_mod else None
+                    if table is None:
+                        err(f, f"{where}: a tab line belongs inside an activity, or in a module's opening (before its first activity), "
+                               f"so a renderer ignores it")
+                    elif tid and tid in table:
+                        err(f, f"{where}: this tab's id is {tid!r}, the same as the tab on line {table[tid]} in this "
+                               + ("activity" if table is act_tabs else "module") + f"; give each tab its own name, or an id (`> [!tab|other-id] Name`). "
+                               f"A renderer keeps both and numbers this one")
+                    elif tid:
+                        table[tid] = n
+                    if not mm.group(4).strip():
+                        warn(f, f"{where}: this tab has no name, so its tab shows its id; write `> [!tab] Name`")
                 elif kind == "activity":
                     seen_activity = True
                     mod_has_activity = True
+                    in_act, act_tabs = True, {}
+                    tab_set = w["set"].get("tab")
+                    if tab_set is not None and tab_set not in mod_tabs.get(open_mod, {}):
+                        err(f, f"{where}: `tab:{tab_set}` names no tab of " + (f"the module {open_mod!r}" if open_mod else "a module (this activity is outside every module)")
+                               + "; a module's tabs are `> [!tab]` lines in its opening, before its first activity. A renderer puts the activity in the first tab")
                     cur_act = w["id"] or "(an activity with no id)"
                     if not w["id"]:
                         err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "

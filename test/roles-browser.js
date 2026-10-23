@@ -29,7 +29,6 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
     await p.locator('button.mode').first().click();await p.waitForTimeout(700);
     if(act!==false){await p.locator('button.mode').filter({hasText:act||'Overview'}).first().click();await p.waitForTimeout(900);}
-    await p.evaluate(()=>document.querySelectorAll('details.rm-sec').forEach(d=>d.open=true));await p.waitForTimeout(200);   /* 0.11.10: a page with sections folds, data views included; these checks look at the views, so open them */
     return {p,ctx,csp,errs};}
   const over=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   const theme=async(p,n)=>{await p.selectOption('#themeSel',n);await p.waitForTimeout(250);};
@@ -53,7 +52,8 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
      const pills=[...ul.querySelectorAll(':scope>li.pill')].map(e=>{const r=e.getBoundingClientRect();return {y:Math.round(r.y),x:Math.round(r.x),r:Math.round(r.right),h:Math.round(r.height)};});
      return {n:pills.length,ys:pills.map(x=>x.y),inside:pills.every(x=>x.r<=u.right+1),ul:Math.round(u.width)};});
    ok(strip.n===6&&strip.inside,'pills: six, in one strip, none outside it ('+JSON.stringify(strip)+')');
-   ok(new Set(strip.ys.slice(0,5)).size===1,'pills: the five short ones share one row at 1280px ('+strip.ys.join(',')+')');
+   /* 0.15: an activity's column is its module screen's (48rem), so the five short ones fill two rows there, not one */
+   ok(new Set(strip.ys.slice(0,5)).size<=2&&strip.ys.slice(0,4).every(y=>y===strip.ys[0]),'pills: the short ones share rows at 1280px, four to the first ('+strip.ys.join(',')+')');
    const val=await p.evaluate(()=>{const ul=document.querySelectorAll('ul.dv-list')[0];
      return [...ul.querySelectorAll('li.dv-row')].map(li=>{const v=li.querySelector('.dv-val');const l=li.getBoundingClientRect(),r=v.getBoundingClientRect();return {gap:Math.round(l.right-r.right),w:Math.round(l.width)};});});
    ok(val.length===4&&val.every(x=>x.gap<=12&&x.gap>=0),'list: the value sits at the right edge of its row at 1280px ('+JSON.stringify(val)+')');
@@ -253,13 +253,13 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    ok(xs<=2,'grouped list: at most two cards across at 1280px ('+xs+' columns)');
    await t.ctx.close();}
 
-  // 10 a page's name is drawn once
+  // 10 a page has no name (0.15): its heading shows once, in place, and a page with none has no name line
   {const t=await open(path.join(R,'test/fixtures/pagename.booklet.md'),1280,false);const p=t.p;
-   const c=async()=>({name:await p.locator('.ap-body :text-is("First page")').count(),title:await p.locator('.ap-body .ap-title').count()});
+   const c=async()=>({name:await p.locator('#main :text-is("First page")').count(),title:await p.locator('#main .ap-title').count()});
    const a=await c();
-   ok(a.name===1&&a.title===0,'a page named by its first heading shows that name once ('+JSON.stringify(a)+')');
-   await p.locator('.ap-item').nth(1).click();await p.waitForTimeout(300);
-   ok(await p.locator('.ap-body .ap-title').allInnerTexts().then(x=>x.join()==='Page 2'),'a page with no heading keeps its fallback name line');
+   ok(a.name===1&&a.title===0,'a page\'s first heading shows once, and names nothing else ('+JSON.stringify(a)+')');
+   await p.locator('#main .cd-foot .pg-next').click();await p.waitForTimeout(300);
+   ok(await p.locator('#main .ap-title').count()===0&&!/Page 2(?! of)/.test(await p.locator('#main .ap-body').innerText()),'a page with no heading has no name line');
    ok(t.csp.length===0&&t.errs.length===0,'pages: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));
    await t.ctx.close();}
 

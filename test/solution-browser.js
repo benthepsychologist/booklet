@@ -21,11 +21,9 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     await p.route('https://bookletmd.test/**',r=>{const u=new URL(r.request().url()).pathname;
       r.fulfill(u==='/app/'?{status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8'}}:{status:404,body:'nf'});});
     const wait=ms=>p.waitForTimeout(ms);
-    const openAll=async()=>{if(await p.locator('#main details.rm-sec').count()) await p.evaluate(()=>document.querySelectorAll('details.rm-sec').forEach(d=>d.open=true));await wait(100);};
     await p.goto('https://bookletmd.test/app/');await wait(500);
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(250);
     await p.locator('#pasteIn').fill(text);await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(900);
-    await openAll();
     const sols=()=>p.locator('#main details.sol-in');
     ok(await sols().count()===9,`${W}px: nine solutions sit inside their questions: six sort items, a multi, a choice with no right answer, a lines question (${await sols().count()})`);
     const sep=await p.evaluate(()=>[...document.querySelectorAll('#main details.card-compact')].filter(d=>!d.classList.contains('q-in')).map(d=>d.querySelector('summary').innerText.trim()));
@@ -125,7 +123,6 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     await p.reload();await wait(900);
     if(await p.evaluate(()=>document.body.dataset.view)==='@booklets'){await p.locator('#main button').filter({hasText:/Sorting/}).first().click();await wait(600);}
     if(await p.locator('#main .mode').count()){await p.locator('#main .mode').first().click();await wait(500);}
-    await openAll();
     const after=await p.evaluate(()=>[...document.querySelectorAll('#main details.sol-in')].slice(0,2).map(d=>d.open+':'+(d.className.match(/sol-(good|warn|neutral)/)||[''])[0]));
     ok(after.join()==='true:sol-good,true:sol-good',`${W}px: after a reload the saved answers show their solutions open in the right tone (${after.join(' ')})`);
     ok(errs.length===0,`${W}px: no page errors ${errs.join('|')}`);

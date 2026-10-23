@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-sdmZHeMd1cQl6sDo+6fvT7pdNLsYXxTJWeTDCHxehZs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-2o+s6PNPZ61B5zanjCHkrewqHjMiz5bDPk/LNtOwdPA=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -312,13 +312,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   @media (max-width:520px){ .bar{padding:.45rem .6rem} .bar .home{flex-basis:100%;order:-1} .bar .hostline{flex-basis:100%;max-width:none;order:9;white-space:normal;padding:0 .3rem;line-height:1.3} }
 
   /* page */
-  /* wide: the content area runs to --content-w (76rem), beside the pages menu or
-     without it, and a wider screen than that centres the page as a whole, with
-     the content kept against the menu. Prose keeps its own readable measure
-     below; data and figures use the width. */
+  /* wide: the content area runs to --content-w (76rem), and a wider screen than
+     that centres the page as a whole. A module's screen and its activities' are
+     one centred column (.cd-col, below); a wiki keeps its menu beside the page.
+     Prose keeps its own readable measure below; data and figures use the width. */
   .page{max-width:calc(var(--content-w) + 4rem);margin:0 auto;padding:1.5rem 1rem 6rem}
-  .page:has(.ap-frame){max-width:calc(var(--content-w) + 4rem + 15rem)}
-  .ap-content{max-width:var(--content-w);grid-column:2;grid-row:1}
   @media (min-width:900px){.page{padding:2.5rem 2rem 6rem}}
   .col{max-width:none}
   /* the readable measure for prose (data and figures keep the full width, above) */
@@ -348,7 +346,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .card-go .top,.card-fold .top{display:flex;align-items:baseline;gap:.4rem;min-width:0}
   .cd-num{font-family:var(--serif);font-weight:700;font-size:1.2rem;color:var(--c-deep)}
   .card-go .k,.card-fold .k,.card-fold .top :is(h2,h3,h4,h5,h6){margin:0;font-family:var(--serif);font-size:1.2rem;font-weight:600;line-height:1.3;letter-spacing:0;text-transform:none;color:var(--ink)}
-  .cd-emo{display:none}
   .card-go button.k{border:0;background:transparent;padding:0;text-align:left;cursor:pointer}
   .card-go .d,.card-fold .d{margin:0;color:var(--muted);font-size:.97rem;line-height:1.45;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
   .card-go .c,.card-fold .c{margin:.1rem 0 0;font-size:.82rem;font-weight:700;color:var(--c-deep);display:flex;gap:.2rem .6rem;flex-wrap:wrap}
@@ -488,8 +485,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .oat-unit{background:var(--surface);border:var(--bw) solid var(--rule);border-radius:var(--r-lg);padding:.9rem 1.1rem .4rem}
   .oat-unit[hidden]{display:none}
   .oat-unit:focus{outline:none} .oat-unit:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
-  .oat-nav{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:.9rem 0 0;font-family:var(--sans)}
-  .oat-nav .cd-btn[disabled]{opacity:.45;cursor:default}
   @media (prefers-reduced-motion:reduce){.oat-dot{transition:none}}
   /* matrix: each row is its item and its answers as pills (one set of radios, the pill is the label's text): beside the item
      when the column is wide, under it when it is narrow */
@@ -650,55 +645,42 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .tagchip .x{border:0;background:transparent;color:var(--muted);font-size:1rem;line-height:1;padding:0 .2rem;border-radius:50%}
   .tagchip .x:hover{color:var(--warn);background:var(--surface)}
 
-  /* ── an activity's pages ──────────────────────────────────────────────
-     A menu on the left lists the pages; minimized, it is a thin rail of page
-     numbers. Below 700px the menu starts as the rail and opens
-     OVER the page rather than beside it, so the page never scrolls sideways.
-     The page on show is marked by a bar, weight and tint, never by colour alone. */
-  .ap-frame{display:grid;grid-template-columns:13rem minmax(0,1fr);gap:0 2rem;align-items:start;position:relative}
-  .ap-frame>*{min-width:0}
-  .ap-frame.ap-min{grid-template-columns:2.75rem minmax(0,1fr);gap:0 1.25rem}
+  /* ── an activity's tabs, its pages and its frame ──────────────────────────
+     The tab bar is a row of tabs that scrolls sideways inside itself when they do
+     not fit, so the page never does; the tab on show is marked by a bar, weight
+     and tint, never by colour alone. The frame (an activity's opening prose) is
+     held under the page's own sticky bar while the questions scroll, and shows
+     its first lines only until it is asked for whole. */
+  .tabbar{display:flex;gap:.25rem;margin:1rem 0 1.25rem;overflow-x:auto;overscroll-behavior-x:contain;border-bottom:var(--bw) solid var(--rule);font-family:var(--sans);scrollbar-width:thin}
+  .tab{flex:none;min-height:44px;padding:.45rem 1rem;border:0;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;background:transparent;color:var(--muted);font-weight:600;font-size:.95rem;line-height:1.25;white-space:nowrap}
+  .tab:hover{color:var(--ink);background:var(--accent-soft)}
+  .tab[aria-selected="true"]{border-bottom-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:800}
+  .tab:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:-2px}
+  .ap-body{scroll-margin-top:var(--ap-top,4.4rem)}
+  .ap-body:focus{outline:none}
+  .ap-tools{display:flex;align-items:center;flex-wrap:wrap;gap:.25rem 1rem;margin:.6rem 0 1rem}
+  .ap-tools .oat-ctl{margin:0}
+  .fold-sw{display:inline-flex;align-items:center;gap:.55rem;min-height:44px;padding:.3rem .2rem;border:0;background:transparent;color:var(--muted);font-family:var(--sans);font-weight:600;font-size:.92rem}
+  .fold-knob{position:relative;flex:none;width:2.3rem;height:1.3rem;border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);transition:background .15s}
+  .fold-knob::after{content:"";position:absolute;top:.15rem;left:.15rem;width:.85rem;height:.85rem;border-radius:50%;background:var(--muted);transition:transform .15s}
+  .fold-sw[aria-checked="true"]{color:var(--ink)}
+  .fold-sw[aria-checked="true"] .fold-knob{background:var(--accent);border-color:var(--accent)}
+  .fold-sw[aria-checked="true"] .fold-knob::after{transform:translateX(1rem);background:var(--on-accent)}
+  @media (prefers-reduced-motion:reduce){.fold-knob,.fold-knob::after{transition:none}}
+  .pin{margin:0 0 1rem;background:var(--paper)}
+  .pin-stick{position:sticky;top:var(--ap-top,4.4rem);z-index:3;padding:.4rem 0 .2rem;border-bottom:var(--bw) solid var(--rule)}
+  .pin-body{max-height:min(7.5em,22vh);overflow:hidden}
+  .pin-body>div>:first-child,.pin-body .md>:first-child{margin-top:0}
+  .pin-long .pin-body{-webkit-mask-image:linear-gradient(var(--ink) 60%,transparent);mask-image:linear-gradient(var(--ink) 60%,transparent)}
+  .pin-open .pin-body{max-height:none;overflow:visible;-webkit-mask-image:none;mask-image:none}
+  .pin-stick.pin-open{position:static}
+  .pin-more{min-height:44px;padding:.2rem 0;border:0;background:transparent;color:var(--accent);font-family:var(--sans);font-weight:700;font-size:.9rem;text-decoration:underline}
+  .pin-more[hidden]{display:none}
+  .pg-at{color:var(--muted);font-size:.92rem;font-weight:600;text-align:center}
+  /* Hidden, but kept for screen readers (one rule for all of them): a citation's and a view's words beside their marks; and a
+     solution inside the question says the verdict in its own label, so the question's line stays for screen readers only. */
+  .rd-sr,.dv-sr,.q-live.q-live-sr,.bar .save-sr{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 
-  /* --ap-top is the page's own sticky bar's height, kept current by the script
-     (the bar wraps onto three rows on a phone), so the menu stops just below it */
-  .ap-menu{grid-column:1;grid-row:1;position:sticky;top:var(--ap-top,4.4rem);font-family:var(--sans);max-height:calc(100vh - var(--ap-top,4.4rem) - .75rem);overflow-y:auto;padding:.1rem .1rem .5rem}
-  .ap-top{display:flex;align-items:center;justify-content:space-between;gap:.4rem;margin:0 0 .4rem}
-  .ap-head{margin:0}
-  .ap-toggle{flex:none;width:2.25rem;height:2.25rem;padding:0;border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);color:var(--muted);font-weight:700;line-height:1}
-  .ap-toggle:hover{border-color:var(--accent);color:var(--accent)}
-  .ap-menu ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.15rem}
-  .ap-item{display:flex;align-items:baseline;gap:.5rem;width:100%;border:0;border-left:3px solid transparent;border-radius:0 8px 8px 0;background:transparent;color:var(--muted);text-align:left;padding:.4rem .55rem;font-size:.92rem;line-height:1.3}
-  .ap-item:hover{color:var(--ink);background:var(--accent-soft)}
-  .ap-item[aria-current="page"]{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:700}
-  .ap-n{flex:none;min-width:1.1rem;font-weight:700;color:var(--muted)}
-  .ap-item[aria-current="page"] .ap-n{color:var(--accent)}
-  .ap-t{min-width:0;overflow-wrap:anywhere}
-  /* reading mode: the page's sections under it, each with a dot that fills once it has been opened */
-  .ap-secs{list-style:none;margin:.1rem 0 .4rem .85rem;padding:0;display:flex;flex-direction:column;gap:.05rem}
-  .ap-sec{display:flex;align-items:baseline;gap:.5rem;width:100%;border:0;border-radius:8px;background:transparent;color:var(--muted);text-align:left;padding:.3rem .5rem;font-size:.88rem;line-height:1.3}
-  .ap-sec:hover{color:var(--ink);background:var(--accent-soft)}
-  .ap-dot{flex:none;width:.6rem;height:.6rem;border:var(--bw) solid var(--accent);border-radius:50%;background:transparent;transform:translateY(.05rem)}
-  .ap-dot.on{background:var(--accent)}
-  .ap-min .ap-secs{display:none}
-
-  .ap-title{font-family:var(--serif);font-weight:600;font-size:1.25rem;line-height:1.3;color:var(--ink);margin:.25rem 0 .9rem}
-  /* minimized: the numbers only */
-  .ap-min .ap-top{justify-content:center}
-  /* Hidden, but kept for screen readers (one rule for all of them): the minimized menu's words; a citation's and a view's words
-     beside their marks; and a solution inside the question says the verdict in its own label, so the question's line stays
-     for screen readers only. */
-  .ap-min .ap-head,.ap-min .ap-t,.rd-sr,.dv-sr,.q-live.q-live-sr,.bar .save-sr{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-  .ap-min .ap-item{justify-content:center;padding:.4rem 0}
-  .ap-min .ap-n{min-width:0}
-
-  @media (max-width:699px){
-    .ap-frame,.ap-frame.ap-min{grid-template-columns:2.5rem minmax(0,1fr);gap:0 .7rem}
-
-    /* open, it lies over the page just below the bar, wherever the page is scrolled to */
-    .ap-frame:not(.ap-min) .ap-menu{position:fixed;top:var(--ap-top,9rem);left:1rem;z-index:4;width:min(16rem,calc(100vw - 2rem));
-      max-height:calc(100vh - var(--ap-top,9rem) - 1rem);overflow-y:auto;
-      background:var(--paper);border:var(--bw) solid var(--rule);border-radius:0 14px 14px 0;padding:.5rem .5rem .6rem;box-shadow:0 12px 30px -14px color-mix(in srgb,var(--shadow) 50%,transparent)}
-  }
   /* ── a wiki: activities under activities (SPEC.md section 3, `parent:`) ──────────────
      A menu on the left holds a search box and the tree (the `.dv-tree` of a list view); the page is beside it. Below 700px the menu
      is a disclosure above the page. The page on show is marked by weight, tint and a bar, never by colour alone. */
@@ -724,20 +706,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .wk-link[aria-current="page"]{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:700}
   .wk-hit{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:0}
   .wk-hit .wk-link{flex:none;width:100%}
-  .wk-hit .wk-secs,.wk-hit .wk-pages{width:100%}
   .wk-path{padding:0 .5rem;color:var(--muted);font-size:.8rem;line-height:1.3}
   .wk-none{margin:.2rem 0 0}
   .phead{display:flex;align-items:center;gap:1rem;margin:0 0 .4rem}
   .phead h2{margin:0;min-width:0}
-  .wk-pages{list-style:none;margin:0 0 .3rem .5rem;padding:0}
   .wk-crumbs ol{list-style:none;margin:0 0 .9rem;padding:0;display:flex;flex-wrap:wrap;gap:.1rem .35rem;color:var(--muted);font-size:.9rem}
   .wk-crumbs li{display:flex;align-items:center;min-height:44px}
-  .wk-menu .ap-sec{min-height:44px;align-items:center}
-  .wk-pagelist{margin:0 0 1rem;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.3rem .5rem}
-  .wk-pagelist>li{display:block}
-  .wk-pagelist .wk-link{border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);padding:.2rem 1rem}
-  .wk-pagelist .wk-link[aria-current="step"]{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
-  .wk-pages .wk-link[aria-current="step"]{font-weight:700;color:var(--accent)}
   .wk-crumbs li+li::before{content:"›";margin-right:.35rem}
   .wk-crumb{display:inline-flex;align-items:center;min-height:44px;padding:.25rem 0;border:0;background:transparent;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
   .wk-h{margin:1.75rem 0 .6rem;font-family:var(--serif);font-size:1.2rem}
@@ -974,14 +948,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .rowcell>:first-child,.rowcell>.md>:first-child{margin-top:0}
   .rowcell :is(h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.mxwrap,.oneline,blockquote,ul.plain,.rd-callout),
   .rowcell .md>:is(ul,ol,h4,h5,h6,dl){max-width:none}
-  /* reading mode: sections folded to a headline and a sentence (the menu's dots for them, .ap-secs, are in the pages menu above) */
-  .rm-bar{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem .6rem;margin:1.25rem 0 .5rem;font-family:var(--sans)}
-  .rm-btn{border:var(--bw) solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:.35rem .9rem;font-size:.9rem;font-weight:700;line-height:1.2}
-  .rm-btn:hover{background:var(--accent-soft)}
-  .rm-count{margin:0 0 0 .25rem;font-size:.9rem;color:var(--muted)}
-  /* reading mode: a folded section is a fold card (cardNode) as wide as the content, like a callout; prose inside keeps the
-     readable measure (its own rule), while a data view, table, chart or pill row uses the card's full width */
-  .rm-sec>summary .top :is(h2,h3,h4,h5,h6){font-size:1.15rem}
   /* print: the layout for paper. The light tokens are the next block, declared last. */
   @media print{
     .dv-groups{display:block}
@@ -992,8 +958,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .dv-panel{border:0;padding:0;background:none}
     .mfig,.md div.math{break-inside:avoid;overflow:visible}
     .mfig svg{max-width:100%;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .bar,.ap-menu,.rd-panel,.rd-tip,.toast{display:none!important}
-    .rm-bar,.cd-dup,.cd-chev,.cd-foot,.oat-ctl,.oat-head,.oat-nav{display:none!important}
+    .bar,.rd-panel,.rd-tip,.toast{display:none!important}
+    .cd-dup,.cd-chev,.cd-foot,.ap-tools,.oat-head,.tabbar,.pin-more{display:none!important}
+    .pin-stick{position:static;border:0}
+    .pin-body{max-height:none;overflow:visible;-webkit-mask-image:none;mask-image:none}
     .oat-unit[hidden]{display:block!important}
     .oat-unit{border:0;padding:0}
     .card-compact{background:none}
@@ -1008,7 +976,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .md-table{overflow:visible}
     .md-table tr{break-inside:avoid}
     .md-table thead{display:table-header-group}
-    .ap-frame{display:block}
     .rd-notes{display:block;margin:2rem 0 0;border-top:var(--bw) solid var(--rule);padding-top:.5rem;font-size:.9rem}
     .rd-notes li{margin:0 0 .4rem}
     .rd-cb[hidden]{display:block!important}
@@ -1430,9 +1397,6 @@ const LIB_KEY="booklet.library.v1", bookKey=id=>"booklet.b."+id;
 const LIB_SCREEN="@booklets",HOME_SCREEN="@home";
 /* every dialog the page has, by id */
 const VEIL_IDS=["veilLoad","veilClear","veilAddModule"];
-/* the browser's own preference for the menu: "min" or "open" */
-const PAGES_MENU_KEY="booklet.ui.pagesMenu";
-const RM_KEY="booklet.ui.reading.";
 /* A colour in widget data is a colour name (warm, green, amber, slate, teal), drawn in the active
    theme's own tone tokens with the theme's ink on it, so a cell looks right in every theme. A name
    this list does not hold is no colour. (A "tone" is `good`, `warn` or `bad`, in a view.) */
@@ -1449,9 +1413,9 @@ const TH_STYLES=["teaching","briefing"];
 const TH_HEX=/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const READING_BLOCKS=new Set(["markdown","callout","query","row","cell"]);
 const ROLE_NAMES=["label","value","note","badge","tone","link","icon"];
-/* Below this width the menu starts as the rail and opens over the page rather
-   than beside it (the stylesheet uses the same breakpoint). */
-const PAGES_NARROW="(max-width: 699px)";
+/* Below this width a wiki's menu is a disclosure above the page rather than a
+   column beside it (the stylesheet uses the same breakpoint). */
+const WIKI_NARROW="(max-width: 699px)";
 /* How a callout is drawn, by kind: its hue (one of HUES, the hue-* rule it takes) and its Lucide icon (art/icons/). The kinds are
    Obsidian's, with the aliases it and GitHub write; each alias is drawn as its first name and says that name. A kind this does not
    know is drawn as `note` is, as Obsidian does. `hint` and `solution` (kind "") are the question kinds and have their own drawing. */
@@ -1471,8 +1435,8 @@ const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
-const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:"],row:["end"],text:["long"],
-  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],
+const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","tab:","pin:"],row:["end"],text:["long"],
+  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],tab:[],
   choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
 /* the settings above that must be numbers */
 const NUMBER_SETTINGS=["min","max","step"];
@@ -1692,6 +1656,11 @@ const STRINGS_SRC={
       rowRunsPage: "runs into a page break",
       rowRunsModule: "runs into a module fence",
       rowRunsActivity: "runs into an activity line",
+      rowRunsTab: "runs into a tab line",
+      tabTwice: (w,id,as)=>`${w}: the tab id “${id}” is used twice here, so this tab is called “${as}”; give each tab its own name or id`,
+      tabUnknown: (w,id)=>`${w}: \`tab:${id}\` names no tab of this module, so the activity is in the first tab`,
+      tabMisplaced: w=>`${w}: a tab line belongs inside an activity, or in a module's opening, so it was ignored`,
+      pinBad: (w,v)=>`${w}: \`pin:${v}\` is not a setting; the one value is \`pin:off\`, so it was ignored`,
       rowRunsSection: k=>`runs into the ${k} section`,
       rowNeverClosed: "is never closed",
       queryOutside: w=>`${w}: a query belongs in an activity's prose, so it was refused`,
@@ -1790,10 +1759,7 @@ const STRINGS_SRC={
       back: "Back to the overview",
       next: (n,t)=>`Next: ${n}. ${t}`,
       questionsN: n=>`${n} question${n===1?"":"s"}`,
-      readsN: n=>`${n} read${n===1?"":"s"}`,
-      questionsAnswered: (n,m)=>`${m} question${m===1?"":"s"} · ${n} answered`,
-      rowsN: n=>`${n} row${n===1?"":"s"}`,
-      noneYet: "None yet"
+      readsN: n=>`${n} read${n===1?"":"s"}`
     },
     steps: {
       label: "How to read the questions",
@@ -1804,19 +1770,16 @@ const STRINGS_SRC={
       next: "Next question"
     },
     fold: {
-      openAll: "Open everything",
-      foldAll: "Fold everything",
-      count: (n,m)=>`Opened ${n} of ${m} sections`,
-      sections: "Sections on this page",
-      seen: "opened"
+      openAll: "Open all"
     },
     pages: {
-      nav: "Pages of this activity",
-      heading: "Pages",
-      toggle: "Page menu",
-      minimize: "Minimize the page menu",
-      expand: "Expand the page menu",
-      nth: n=>`Page ${n}`
+      back: "Back",
+      next: "Next",
+      of: (n,m)=>`Page ${n} of ${m}`
+    },
+    frame: {
+      more: "Show all",
+      less: "Show less"
     },
     reading: {
       kind: {
@@ -2017,6 +1980,11 @@ const STRINGS_SRC={
       rowRunsPage: "rencontre un saut de page",
       rowRunsModule: "rencontre une clôture de module",
       rowRunsActivity: "rencontre une ligne d’activité",
+      rowRunsTab: "rencontre une ligne d’onglet",
+      tabTwice: (w,id,as)=>`${w} : l’identifiant d’onglet « ${id} » est utilisé deux fois ici ; cet onglet s’appelle donc « ${as} ». Donnez à chaque onglet son propre nom ou identifiant`,
+      tabUnknown: (w,id)=>`${w} : \`tab:${id}\` ne nomme aucun onglet de ce module ; l’activité est donc dans le premier onglet`,
+      tabMisplaced: w=>`${w} : une ligne d’onglet va dans une activité, ou dans l’ouverture d’un module ; elle a donc été ignorée`,
+      pinBad: (w,v)=>`${w} : \`pin:${v}\` n’est pas un réglage ; la seule valeur est \`pin:off\` ; il a donc été ignoré`,
       rowRunsSection: k=>`rencontre la section ${k}`,
       rowNeverClosed: "n’est jamais fermée",
       queryOutside: w=>`${w} : une requête doit se trouver dans le texte d’une activité ; elle a donc été refusée`,
@@ -2115,10 +2083,7 @@ const STRINGS_SRC={
       back: "Retour à l’aperçu",
       next: (n,t)=>`Suivante : ${n}. ${t}`,
       questionsN: n=>`${n} question${n>1?"s":""}`,
-      readsN: n=>`${n} texte${n>1?"s":""}`,
-      questionsAnswered: (n,m)=>`${m} question${m>1?"s":""} · ${n} réponse${n>1?"s":""}`,
-      rowsN: n=>`${n} ligne${n>1?"s":""}`,
-      noneYet: "Aucune pour l’instant"
+      readsN: n=>`${n} texte${n>1?"s":""}`
     },
     steps: {
       label: "Comment afficher les questions",
@@ -2129,19 +2094,16 @@ const STRINGS_SRC={
       next: "Question suivante"
     },
     fold: {
-      openAll: "Tout ouvrir",
-      foldAll: "Tout replier",
-      count: (n,m)=>`${n} sur ${m} sections ouvertes`,
-      sections: "Sections de cette page",
-      seen: "ouverte"
+      openAll: "Tout ouvrir"
     },
     pages: {
-      nav: "Pages de cette activité",
-      heading: "Pages",
-      toggle: "Menu des pages",
-      minimize: "Réduire le menu des pages",
-      expand: "Déployer le menu des pages",
-      nth: n=>`Page ${n}`
+      back: "Précédent",
+      next: "Suivant",
+      of: (n,m)=>`Page ${n} sur ${m}`
+    },
+    frame: {
+      more: "Tout afficher",
+      less: "Afficher moins"
     },
     reading: {
       kind: {
@@ -2342,6 +2304,11 @@ const STRINGS_SRC={
       rowRunsPage: "se topa con un salto de página",
       rowRunsModule: "se topa con una valla de módulo",
       rowRunsActivity: "se topa con una línea de actividad",
+      rowRunsTab: "se topa con una línea de pestaña",
+      tabTwice: (w,id,as)=>`${w}: el identificador de pestaña “${id}” se usa dos veces aquí, así que esta pestaña se llama “${as}”; dale a cada pestaña su propio nombre o identificador`,
+      tabUnknown: (w,id)=>`${w}: \`tab:${id}\` no nombra ninguna pestaña de este módulo, así que la actividad está en la primera pestaña`,
+      tabMisplaced: w=>`${w}: una línea de pestaña va dentro de una actividad, o en la apertura de un módulo, así que se ignoró`,
+      pinBad: (w,v)=>`${w}: \`pin:${v}\` no es un ajuste; el único valor es \`pin:off\`, así que se ignoró`,
       rowRunsSection: k=>`se topa con la sección ${k}`,
       rowNeverClosed: "nunca se cierra",
       queryOutside: w=>`${w}: una consulta va en el texto de una actividad, así que se rechazó`,
@@ -2440,10 +2407,7 @@ const STRINGS_SRC={
       back: "Volver a la vista general",
       next: (n,t)=>`Siguiente: ${n}. ${t}`,
       questionsN: n=>`${n} pregunta${n===1?"":"s"}`,
-      readsN: n=>`${n} lectura${n===1?"":"s"}`,
-      questionsAnswered: (n,m)=>`${m} pregunta${m===1?"":"s"} · ${n} ${n===1?"respondida":"respondidas"}`,
-      rowsN: n=>`${n} fila${n===1?"":"s"}`,
-      noneYet: "Ninguna todavía"
+      readsN: n=>`${n} lectura${n===1?"":"s"}`
     },
     steps: {
       label: "Cómo leer las preguntas",
@@ -2454,19 +2418,16 @@ const STRINGS_SRC={
       next: "Siguiente pregunta"
     },
     fold: {
-      openAll: "Abrir todo",
-      foldAll: "Plegar todo",
-      count: (n,m)=>`${n} de ${m} secciones abiertas`,
-      sections: "Secciones de esta página",
-      seen: "abierta"
+      openAll: "Abrir todo"
     },
     pages: {
-      nav: "Páginas de esta actividad",
-      heading: "Páginas",
-      toggle: "Menú de páginas",
-      minimize: "Minimizar el menú de páginas",
-      expand: "Expandir el menú de páginas",
-      nth: n=>`Página ${n}`
+      back: "Anterior",
+      next: "Siguiente",
+      of: (n,m)=>`Página ${n} de ${m}`
+    },
+    frame: {
+      more: "Mostrar todo",
+      less: "Mostrar menos"
     },
     reading: {
       kind: {
@@ -3103,10 +3064,11 @@ let DRAFTS=emptyDrafts();
 let lang="en", screen=HOME_SCREEN, dirty=false, unsavedEntries=0;
 /* ---- the view: what this visit shows of a booklet, never saved ----
    A view has a record per activity address (viewAt): the entry open under its chips (`chip`), the page on show
-   (`page`), by page the step one at a time shows (`steps`) and the sections opened and seen (`folds`), the solutions
-   shut (`shut`), each query's sort and filter (`queries`, see queryView), its wiki branch (`branch`); `wiki` is a wiki
-   menu's search, its module, the phone's menu. VIEWS keeps one per library entry for the visit; VIEW is the open
-   booklet's. A draw may note there what it first shows (an arrival's section, the branches to a page), nothing else. */
+   (`page`, and so its tab), by tab the page it was left on (`tabs`), by page the step one at a time shows (`steps`),
+   its frame shown whole (`pin`), the solutions shut (`shut`), each query's sort and filter (`queries`, see queryView),
+   its wiki branch (`branch`); a module's screen has one too, for the tab on show (`tab`). `wiki` is a wiki menu's
+   search, its module, the phone's menu. VIEWS keeps one per library entry for the visit; VIEW is the open booklet's.
+   A draw may note there what it first shows (an arrival's step, the branches to a page, a module's tab), nothing else. */
 const VIEWS=new Map();
 let VIEW=null;
 /* The one place a view is chosen or cleared, for entry `id` (null: none): "open" keeps the visit's but its chips, query
@@ -3121,15 +3083,15 @@ function viewReset(id,what){let v=id?VIEWS.get(id):null;
   VIEW=v;}
 viewReset(null);
 const viewAt=addr=>{let v=VIEW.at.get(addr);
-  if(!v) VIEW.at.set(addr,v={chip:null,page:null,steps:Object.create(null),folds:Object.create(null),shut:new Set(),queries:new Map(),branch:false});
+  if(!v) VIEW.at.set(addr,v={chip:null,page:null,tab:null,tabs:Object.create(null),steps:Object.create(null),pin:false,shut:new Set(),queries:new Map(),branch:false});
   return v;};
 /* ---- one draw ----
    render() hands a draw context, `dc`, to every part of the screen: `ticks`, what redraws in place when an answer
-   changes; `reading`, the page's reading plan, for the menus that list its sections; `reveal`, a heading a link asked
-   for, and `revealed`; `cite`, the citation marks it draws, its screen's numbering with the marks drawn (citeDraw); `again`,
-   the citation panel to open again once its mark is drawn (a language switch). DRAWN is the screen on show's (an answer runs
-   its ticks). */
-const newDraw=o=>({ticks:[],reading:null,reveal:(o&&o.reveal)||null,revealed:false,cite:null,again:null});
+   changes; `cite`, the citation marks it draws, its screen's numbering with the marks drawn (citeDraw); `again`, the
+   citation panel to open again once its mark is drawn (a language switch); on an activity's screen, `folds`, the callouts
+   the author folded that it draws, for the fold switch, `oat`, the steps one at a time, and `foot`, what draws the foot's
+   Back and Next again as a step moves. DRAWN is the screen on show's (an answer runs its ticks). */
+const newDraw=()=>({ticks:[],cite:null,again:null,folds:null,oat:null,foot:null});
 let DRAWN=newDraw();
 /* ---- which booklet is in memory ----
    currentId is the open entry, or null on "Your booklets". bookletGen moves on
@@ -4026,6 +3988,10 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
        as the address it will have (activityTree places it) */
     if(w.set&&w.set.icon) a.icon=w.set.icon;
     if(w.set&&w.set.parent) a.parent=addrOf(mod?mod.id:"",w.set.parent);
+    /* `tab:` puts it in one of its module's tabs (one the module's opening declared, else it is in the first); `pin:off` lets its
+       frame scroll away with the rest (SPEC.md section 3) */
+    if(w.set&&w.set.tab!==undefined){if(mod&&(mod.tabs||[]).some(t=>t.id===w.set.tab)) a.tab=w.set.tab;else problems.push(P.tabUnknown(P.line(line),w.set.tab));}
+    if(w.set&&w.set.pin!==undefined){if(String(w.set.pin).toLowerCase()==="off") a.pin=false;else problems.push(P.pinBad(P.line(line),w.set.pin));}
     /* the activities outside every module fence are one module with no name (SPEC.md section 4): each is drawn as a card of its own
        (so each is held by a module of its own here), but its id, its records and its `parent:` are in the one scope, "" */
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
@@ -4105,15 +4071,16 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     if(it.t==="fence") return onRecordFence(it,it.info.split(/\s+/));
     if(it.kind==="records"){checkSettings(it,L,P,icons).forEach(m=>problems.push(m));return onRecords(it,L);}
     problems.push(it.t==="bad"?P.calloutUnreadable(L):P.recordsOther(L));keepRec(it.raw||it.text);};
+  /* a page break starts a page of the same tab */
   const onBreak=()=>{if(row) closeRow(P.rowRunsPage);
-    if(section==="content"&&act){act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});lastQ=null;}};
+    if(section==="content"&&act){const t=act.pages[act.pages.length-1].tab;act.pages.push({id:"p"+(act.pages.length+1),...(t?{tab:t}:{}),blocks:[]});lastQ=null;}};
   const onText=it=>{if(section==="data"){const defs=stripFootnoteDefs(it.text).defs;(dataMod?dataMod.__footnotes:sharedNotes).push(...defs);return;}
     if(section!=="content") return;
     const strip=stripFootnoteDefs(it.text);
     if(!act&&!mod&&implicit&&(strip.text||strip.defs.length)) page();
     const owner=mod||(act&&moduleHolding(modules,act));if(owner) owner.__footnotes.push(...strip.defs);
-    if(!act){if(strip.text&&(mod||!started)){if(mod) mod.__intro.push(strip.text);
-      (mod?mod.__open:opening).push({id:"mo"+(++oseq),type:"markdown",text:strip.text});}return;}
+    if(!act){if(strip.text&&(mod||!started)){if(mod&&!tabsIn(mod)) mod.__intro.push(strip.text);
+      openList().push({id:"mo"+(++oseq),type:"markdown",text:strip.text});}return;}
     if(strip.text) put({id:"md"+(++seq),type:"markdown",text:strip.text});lastQ=null;};
   /* BOOKLET LINES. What each kind of booklet line does (SPEC.md section 4), by its kind (LINE_KIND); any other kind, a reading
      callout or one the format does not define, is reading set apart (onReading). Inside a data section only notice, row, data,
@@ -4157,6 +4124,26 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       if(!it.id) mod.noId=true;
       if(it.set.icon) mod.icon=it.set.icon;});
   const onActivity=endsData((it,where)=>{if(!it.id) problems.push(P.activityNoId(where));newActivity(it,it.title,it.line);lastQ=null;});
+  /* TABS (SPEC.md section 3). A tab line in an activity starts a tab that runs to the next tab line or the activity's end, on a page
+     of its own (the page that is open, when nothing is on it yet and it is no other tab's only page); in a module's opening, the tab
+     lines declare the module's tabs, in order. A tab's id is the one written, else its name as an id; of two with one id among one
+     activity's (or one module's) tabs, both are kept, the second numbered, and it is said. Tab ids are not claimed among the module's
+     ids: a tab is presentation, and nothing is kept by it. Text in the tab line's own body is the tab's first prose; in a module's
+     opening, the prose and reading callouts after a tab line are that tab's (`blocks`), drawn above its activities. */
+  const tabId=(list,it,where)=>{let id=it.id;if(id&&!ID_PATTERN.test(id)){problems.push(P.idChars(where,id));id=null;}
+    id=id||idWord(it.title)||"tab-"+(list.length+1);
+    if(list.some(t=>t.id===id)){let n=2;while(list.some(t=>t.id===id+"-"+n)) n++;problems.push(P.tabTwice(where,id,id+"-"+n));id+="-"+n;}
+    return id;};
+  /* where a module's opening (or the booklet's) puts what it reads: after a tab line of the module, in that tab */
+  const openList=()=>{const ts=mod&&tabsIn(mod),t=ts&&ts[ts.length-1];return t?(t.blocks||(t.blocks=[])):mod?mod.__open:opening;};
+  const onTab=inText((it,where)=>{const text=it.body.join("\n").trim();lastQ=null;
+    if(!act&&mod){const ts=mod.tabs||(mod.tabs=[]),id=tabId(ts,it,where);ts.push({id,title:it.title||id});
+      if(text) openList().push({id:"mo"+(++oseq),type:"markdown",text});return;}
+    if(!act&&!implicit){problems.push(P.tabMisplaced(where));return;}
+    const pg=page(),ts=act.tabs||(act.tabs=[]),id=tabId(ts,it,where);ts.push({id,title:it.title||id});
+    if(pg.blocks.length||(pg.tab&&!act.pages.some(q=>q!==pg&&q.tab===pg.tab))) act.pages.push({id:"p"+(act.pages.length+1),blocks:[]});
+    act.pages[act.pages.length-1].tab=id;
+    if(text) put({id:"md"+(++seq),type:"markdown",text});});
   const onQuestion=inText((it,where)=>{const k=it.kind;
       if(!it.id){problems.push(P.questionNoId(where,k));return;}
       if(!act&&!mod&&!started&&!implicit){problems.push(P.questionOutside(where,k));return;}
@@ -4178,22 +4165,22 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   /* any other callout is reading set apart */
   const onReading=(it,where)=>{const k=it.kind;
     const unk=unknownKind(it);if(unk) problems.push(P.kindUnknown(where,k));
-    if(!act&&(mod||(!started&&!implicit))){if(mod) mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
+    if(!act&&(mod||(!started&&!implicit))){if(mod&&!tabsIn(mod)) mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
       /* a reading callout before the module's first activity (or the file's first line) is part of its opening, in the file's order with the prose */
-      (mod?mod.__open:opening).push({id:"mo"+(++oseq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
+      openList().push({id:"mo"+(++oseq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
         ...(unk?{unknown:true}:{}),blocks:it.body.length?[{id:"mo"+oseq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});return;}
     put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       ...(unk?{unknown:true}:{}),
       blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;};
   const LINE_KIND={notice:onNotice,row:onRow,data:onData,records:(it,where)=>problems.push(P.recordsOther(where)),menu:onMenu,
     /* a manifest is scenery: never drawn */
-    manifest:()=>{},module:onModule,activity:onActivity,hint:onHelp,solution:onHelp};
+    manifest:()=>{},module:onModule,activity:onActivity,tab:onTab,hint:onHelp,solution:onHelp};
   QUESTION_KINDS.forEach(k=>{LINE_KIND[k]=onQuestion;});
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
     checkSettings(it,where,P,icons).forEach(m=>problems.push(m));
-    /* a data, records, module or activity line closes the row that is open, and says so */
-    if(row&&(k==="data"||k==="records"||k==="module"||k==="activity")) closeRow(k==="module"?P.rowRunsModule:k==="activity"?P.rowRunsActivity:P.rowRunsSection(k));
+    /* a data, records, module, activity or tab line closes the row that is open, and says so */
+    if(row&&(k==="data"||k==="records"||k==="module"||k==="activity"||k==="tab")) closeRow(k==="module"?P.rowRunsModule:k==="activity"?P.rowRunsActivity:k==="tab"?P.rowRunsTab:P.rowRunsSection(k));
     (hasOwn(LINE_KIND,k)?LINE_KIND[k]:inText(onReading))(it,where);};
   for(const it of items.filter(x=>!x.rec)){
     if(it.t==="fence") onFence(it);
@@ -4252,15 +4239,14 @@ const plainText=s=>{const one=String(s==null?"":s).replace(/\s*\n\s*/g," ").trim
   try{return textOf(renderInline(one,{opts:PLAIN_OPTS,refs:{},el:TEXT_EL})).replace(/\s+/g," ").trim();}catch(e){return one;}};
 /* the first paragraph of some text that is plain prose (not a heading, a quote, a list or a fence), as plain words */
 const firstPara=s=>plainText(String(s||"").replace(/<!--[\s\S]*?-->/g,"").split(/\n{2,}/).find(p=>p.trim()&&!/^\s*(#|>|[-*+] |\d+[.)] |`{3})/.test(p))||"");
-/* a page's name: the words of its first heading */
-const pageHeading=p=>{for(const b of p.blocks){if(b.type!=="markdown") continue;
-  const h=atxLines(b.text).map(x=>HEADING_WORDS.exec(x.ln)).find(Boolean);if(h) return plainText(h[1]);}return undefined;};
-/* an activity as the page keeps it: its pages, a page of several named by its first heading (`title`, the pages menu's name) */
-function activityOut(a){const {pages,...ra}=a;
+/* an activity as the page keeps it: its pages (a page with nothing on it is no page, unless it is its tab's only one), each with the
+   tab it is in */
+function activityOut(a){const {pages:all,...ra}=a;
+  const pages=all.filter(p=>p.blocks.length||!all.some(q=>q!==p&&q.tab===p.tab&&(q.blocks.length||all.indexOf(q)<all.indexOf(p))));
   /* `lede`: the first paragraph under the activity's title, read as a module's blurb is, for the activity's card on its module's screen.
      It is the card's alone (the paragraph is still drawn in the page), so it is not `blurb`, which the activity's own screen draws above the page. */
   {const f=pages[0]&&pages[0].blocks[0],l=f&&f.type==="markdown"?firstPara(f.text):"";if(l) ra.lede=l;}
-  return {...ra,pages:pages.map(p=>({id:p.id,...(pages.length>1?{title:pageHeading(p)}:{}),blocks:p.blocks}))};}
+  return {...ra,pages:pages.map(p=>({id:p.id,...(p.tab?{tab:p.tab}:{}),blocks:p.blocks}))};}
 /* a module as the page keeps it: its activities, its blurb, and the sources and citations its footnotes define */
 /* footnote definitions read into the source and citation registries the citation panel already knows how
    to draw; `tag` keeps one list's source keys apart from another's */
@@ -5932,6 +5918,10 @@ function renderBlock(b,draft,activityId,dc){
     :el("p",{class:"hint"},strings("ui").unknownBlock(b.type||"?",b.id||"?"));
   if(qc) node.append(qc.node);
   if(placeOf(b)!=="folded") return node;
+  /* a callout the author folded, not a hint or a solution, is the fold switch's (dc.folds, on an activity's screen): open while
+     the switch is on */
+  if(b.type==="callout"&&!hintKind(b)&&dc&&dc.folds){const n=foldedCallout(b,draft,activityId,dc,dc.folds.open?{open:true}:undefined);
+    dc.folds.n++;n.setAttribute("class",n.getAttribute("class")+" au-fold");return n;}
   return b.type==="callout"?foldedCallout(b,draft,activityId,dc):
     cardNode({mode:"fold",cls:"card-sub",hue:"slate",title:foldName(b),marked:true,open:blockFilled(b,draft),body:[node]});}
 /* Is this callout a hint or a solution ("hint", "solution", or ""): its kind says, whether it is a question's own (drawn in the
@@ -6475,115 +6465,138 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
     if(d.open) state.opens.add(id);else state.opens.delete(id);},true);
   return [box];}
 
-/* ======================= 11. PAGES, READING MODE, LINKS, READING MATERIAL =======================
-   an activity's pages, folding a report, links between activities, citations and callouts. */
+/* ======================= 11. TABS AND PAGES, LINKS, READING MATERIAL =======================
+   an activity's tabs and pages, its frame, the fold switch, links between activities, citations and callouts. */
 
-/* ======================= AN ACTIVITY'S PAGES =======================
-   An activity is a list of PAGES, each a list of blocks: `pages: [{id, title,
-   blocks}, …]`, one page when no thematic break splits it. Pages are layout and
-   nothing else. The activity keeps one id, one draft and one set of kept
-   entries whichever page a block is on.
+/* ======================= AN ACTIVITY'S TABS AND PAGES =======================
+   An activity is a list of PAGES, each a list of blocks: `pages: [{id, tab,
+   blocks}, …]`, one page when no thematic break splits it. A TAB is an area of
+   the activity meant to be very different from the rest (SPEC.md section 3):
+   `tabs: [{id, title}]`, and each page names the tab it is in. The pages in no
+   tab, before the first tab line, are the activity's opening, drawn above the
+   tab bar on every tab. A page is pagination and nothing else: it has no name
+   and no menu; the pager at the activity's foot (activityFooter) moves through
+   the pages of the activity, or of the tab on show.
 
-   The pages are listed in a menu on the LEFT of the activity. Which page is
-   showing is view state for this visit, per activity, and goes neither in the
-   file nor in the browser save. The menu can be minimized to a thin rail of
-   page numbers; that is the browser's preference (PAGES_MENU_KEY), not the
-   booklet's, and never enters the record. A one-page activity has no menu. */
+   Tabs and pages are presentation. The activity keeps one id, one draft and one
+   set of kept entries whichever tab or page a block is on. Which tab and which
+   page show are view state for this visit, per activity (each tab keeps the
+   page it was left on), and go neither in the file nor in the browser save. */
 const blocksIn=p=>p&&Array.isArray(p.blocks)?p.blocks:[];
 /* every block an activity holds, on whichever page, as stored */
 const activityBlocks=a=>a.pages.flatMap(blocksIn);
-/* a page's name: its own title, else its place in the menu */
-const pageName=(p,i)=>tx(p&&p.title,null)||strings("pages").nth(i+1);
-/* ---- which page is showing: this visit only (the view's) ---- */
+/* an activity's (or a module's) tabs, null for none; a bar is drawn for two or more (one tab is no choice to make) */
+const tabsIn=x=>x&&Array.isArray(x.tabs)&&x.tabs.length?x.tabs:null;
+/* the pages the pager runs through: tab `t`'s, or every page of an activity with no tabs */
+const tabPages=(a,t)=>tabsIn(a)?a.pages.filter(p=>p.tab===t):a.pages;
+/* an activity's opening, when it has tabs: the blocks of the pages in no tab */
+const tabOpening=a=>tabsIn(a)?a.pages.filter(p=>!p.tab).flatMap(blocksIn):[];
+/* ---- which tab and page are showing: this visit only (the view's) ---- */
 const showPage=(id,pid)=>{viewAt(id).page=pid;};
-function currentPage(id){const ps=activityOf(id).pages,at=viewAt(id).page;
-  return ps.find(p=>p.id===at)||ps[0];}
-const pageBlocksShown=id=>blocksIn(currentPage(id));
-/* ---- the menu's preference: the browser's, never the booklet's ---- */
-const pagesMenuPref=()=>lsGet(PAGES_MENU_KEY);
-const setPagesMenuPref=v=>{lsSet(PAGES_MENU_KEY,v);};
-const narrowPages=()=>typeof window!=="undefined"&&typeof window.matchMedia==="function"
-  &&window.matchMedia(PAGES_NARROW).matches;
-/* On a narrow screen the menu opens over the page only while it is wanted and
-   starts as the rail; elsewhere it stays as the reader last left it. */
-let pagesOverlay=false;
-const pagesMenuOpen=()=>narrowPages()?pagesOverlay:pagesMenuPref()!=="min";
-function togglePagesMenu(){if(narrowPages()) pagesOverlay=!pagesOverlay;
-  else setPagesMenuPref(pagesMenuPref()==="min"?"open":"min");
-  render();refocus(".ap-toggle");}
+function currentPage(id){const a=activityOf(id),at=viewAt(id).page,ps=tabsIn(a)?a.pages.filter(p=>p.tab):a.pages;
+  return ps.find(p=>p.id===at)||ps[0]||a.pages[0];}
+/* Show tab `t`, on the page it was left on this visit, else its first; the focus stays on the tab bar. */
+function chooseTab(id,t){const a=activityOf(id),v=viewAt(id),cur=currentPage(id),ps=tabPages(a,t);if(!ps.length) return;
+  if(cur.tab) v.tabs[cur.tab]=cur.id;
+  showPage(id,(ps.find(p=>p.id===v.tabs[t])||ps[0]).id);render();refocus("#tb-"+t);}
+/* Turn to page `p` of the tab on show: the content's top comes into view and takes the focus. One at a time arrives on the
+   page before at its last step, and on any other as it arrives anywhere (the first step with a question still to answer). */
+function turnPage(id,p,last){const steps=viewAt(id).steps;
+  if(last&&oatPref()==="one") steps[p.id]=Infinity;else delete steps[p.id];
+  showPage(id,p.id);render();
+  const n=document.querySelector("#main .ap-body");
+  if(n){if(n.scrollIntoView) n.scrollIntoView({block:"start"});if(n.focus) n.focus({preventScroll:true});}}
 /* after a redraw, put the focus back where the reader was working */
 function refocus(sel){const n=document.querySelector(sel);if(n&&!n.disabled) n.focus();}
+/* A tab bar, the ARIA tabs pattern: a button for each tab, the one on show selected and the only one in the Tab order, all
+   controlling the one panel drawn (tbpanel, an id no tab's can be); Left and Right (and Home, End) move to a tab and show it. It scrolls sideways
+   inside itself when the tabs do not fit, so the page never does. `pick(id)` shows a tab. */
+function tabBar(tabs,cur,label,pick){const bar=el("div",{class:"tabbar",role:"tablist","aria-label":label});
+  tabs.forEach((t,i)=>{const on=t.id===cur;
+    const b=el("button",{type:"button",class:"tab",role:"tab",id:"tb-"+t.id,"aria-selected":String(on),"aria-controls":"tbpanel",tabindex:on?"0":"-1"},...words(tx(t.title,t.id),true));
+    b.addEventListener("click",()=>{if(!on) pick(t.id);});
+    b.addEventListener("keydown",e=>{const k=e.key,n=tabs.length,j=k==="ArrowRight"?(i+1)%n:k==="ArrowLeft"?(i+n-1)%n:k==="Home"?0:k==="End"?n-1:-1;
+      if(j<0) return;e.preventDefault();if(tabs[j].id!==cur) pick(tabs[j].id);});
+    bar.append(b);});
+  return bar;}
+/* the panel under a tab bar: what the tab on show draws */
+const tabPanel=(cur,...kids)=>el("div",{class:"tabpanel",role:"tabpanel",id:"tbpanel","aria-labelledby":"tb-"+cur},...kids);
+/* ---- a module's tabs ----
+   The tab lines of a module's opening declare its tabs; an activity is in the one its `tab:` names, else in the first. The
+   module's screen lists the activities of the tab on show under its tab bar (the view's, for this visit), and opening an
+   activity puts it on that activity's tab, so the overview opens where the reader came from. */
+const moduleTabOf=(mod,a)=>{const ts=tabsIn(mod);return !ts?null:ts.some(t=>t.id===a.tab)?a.tab:ts[0].id;};
+const moduleTabNow=mod=>{const ts=tabsIn(mod),v=viewAt(moduleScreen(mod.id)).tab;return !ts?null:ts.some(t=>t.id===v)?v:ts[0].id;};
+
+/* ---- THE FRAME ----
+   The plain prose before the first question of an activity (of a tab, when it has tabs), on that first page, stays in view
+   while the questions are answered (SPEC.md section 3): on every page of its tab, above the steps one at a time, and held
+   under the bar while the questions scroll all at once. Plain: paragraphs, lists and tables, with no heading and no callout;
+   prose with either is reading, and scrolls as reading does. A long frame shows its first lines and Show all; shown whole,
+   it scrolls away with the page, so it never covers a phone's screen (shown whole or not is the view's, for this visit).
+   `pin:off` on the activity's line lets it scroll away as any prose does. Prose between questions, and a question's own
+   hint, are not the frame: they go with the question that follows (stepUnits). */
+const plainProse=b=>!!b&&b.type==="markdown"&&!/^ {0,3}#{1,6}(\s|$)/m.test(String(b.text||"").replace(/^ {0,3}(`{3,}|~{3,})[\s\S]*?^ {0,3}\1/gm,""));
+function frameOf(a,t){if(!a||a.pin===false) return null;
+  const first=tabPages(a,t)[0],list=blocksIn(first);
+  const n=list.findIndex(b=>!plainProse(b));
+  return n>0&&blocksAll([list[n]]).some(isQuestion)?{page:first.id,blocks:list.slice(0,n)}:null;}
+/* what the page on show draws, in order: the tab's opening, the frame, the page's own blocks */
+function pageBlocksShown(id){const a=activityOf(id),cur=currentPage(id),f=frameOf(a,cur.tab||null);
+  return [...tabOpening(a),...(f?f.blocks:[]),...pageOwn(cur,f)];}
+/* a page's blocks less the frame it begins with */
+const pageOwn=(p,f)=>f&&f.page===p.id?blocksIn(p).slice(f.blocks.length):blocksIn(p);
+function frameNode(id,blocks,draft,dc,one){const F=strings("frame"),v=viewAt(id);
+  const body=el("div",{class:"pin-body"},renderBlocks(blocks,draft,id,dc));
+  const more=el("button",{type:"button",class:"pin-more","aria-expanded":String(!!v.pin),hidden:!v.pin},v.pin?F.less:F.more);
+  const box=el("div",{class:"pin"+(one?"":" pin-stick")+(v.pin?" pin-open":"")},body,more);
+  more.addEventListener("click",()=>{v.pin=!v.pin;box.classList.toggle("pin-open",v.pin);
+    more.setAttribute("aria-expanded",String(v.pin));more.textContent=v.pin?F.less:F.more;});
+  /* Show all only when there is more than the first lines show */
+  const fit=()=>{if(v.pin) return;const long=body.scrollHeight>body.clientHeight+2;box.classList.toggle("pin-long",long);setHidden(more,!long);};
+  if(typeof requestAnimationFrame==="function") requestAnimationFrame(fit);
+  if(typeof ResizeObserver==="function") new ResizeObserver(fit).observe(body);
+  return box;}
+
+/* ---- THE FOLD SWITCH ----
+   The renderer folds nothing on its own: what is folded is what the author folded with `-`. A screen that shows a callout
+   the author folded (not a hint or a solution, which stay as their question has them) has one switch, Open all, that opens
+   or folds exactly those (renderBlock marks them, dc.folds); a screen with none has no switch. The reader's choice is the
+   browser's, kept per booklet (bookletPref), never the file's. */
+const FOLD_KEY="booklet.ui.folds.";
+const foldsOpen=()=>bookletPref(FOLD_KEY)==="open";
+function foldSwitch(){const on=foldsOpen();
+  const b=el("button",{type:"button",class:"fold-sw",role:"switch","aria-checked":String(on)},el("span",{class:"fold-knob","aria-hidden":"true"}),strings("fold").openAll);
+  b.addEventListener("click",()=>{const now=!foldsOpen();setBookletPref(FOLD_KEY,now?"open":"folded");b.setAttribute("aria-checked",String(now));
+    document.querySelectorAll("#main details.au-fold").forEach(d=>{d.open=now;});});
+  return b;}
+
 /* ---- drawing ---- */
-/* The page on show: its name and its blocks. The list is read afresh on every redraw. */
-function pageBody(id,draft,dc){const ps=activityOf(id).pages;const cur=currentPage(id);
-  const box=el("div",{class:"ap-body"});
-  /* a page with a heading of its own is named by it, where it stands in the page (the menu uses it too); only a page with none is named above */
-  if(ps.length>1&&!cur.title){const i=ps.indexOf(cur);
-    box.append(el("div",{class:"ap-name"},el("h3",{class:"ap-title"},pageName(cur,i))));}
+/* The tab on show (or the activity, with no tabs): its frame, the step control and the fold switch, the page on show (all
+   at once, or one question at a time) and its endnotes. The lists are read afresh on every redraw. */
+function pageBody(id,draft,dc){const a=activityOf(id),cur=currentPage(id),f=frameOf(a,cur.tab||null),own=pageOwn(cur,f);
+  const box=el("div",{class:"ap-body",tabindex:"-1"});
   /* reading material (see READING MATERIAL): the endnotes print shows go below
      the blocks, and only when there is something for them */
   /* (the citation scope began in renderActivity, before the head was drawn) */
-  /* a page that only reads is drawn by READING MODE, folded where it has sections */
-  /* three or more questions: the reader may take them one at a time (kept per booklet, like the fold choice) */
-  const units=stepUnits(blocksIn(currentPage(id))),one=units.length>=2&&oatPref()==="one";
-  if(units.length>=2) box.append(stepControl(one));
-  const rd=one?null:readingPage(id,draft,dc);
-  if(one) box.append(stepPage(id,draft,units,dc));
-  else if(rd){dc.reading=rd.info;box.append(rd.node);}
-  else box.append(renderBlocks(blocksIn(currentPage(id)),draft,id,dc));
+  /* three or more questions: the reader may take them one at a time (kept per booklet, like the fold switch) */
+  const units=stepUnits(own),one=units.length>=2&&oatPref()==="one";
+  const frame=f?frameNode(id,f.blocks,draft,dc,one):null;
+  const content=one?stepPage(id,draft,units,dc):renderBlocks(own,draft,id,dc);
+  const tools=[units.length>=2?stepControl(one):null,dc.folds&&dc.folds.n?foldSwitch():null].filter(Boolean);
+  box.append(...[frame,tools.length?el("div",{class:"ap-tools"},...tools):null,content].filter(Boolean));
   const notes=endnotesFor(id,false,dc);if(notes) box.append(notes);
   citeReopen(dc);
   return box;}
-function choosePage(id,pid){showPage(id,pid);pagesOverlay=false;render();
-  window.scrollTo({top:0});
-  refocus('.ap-item[aria-current="page"]');}
-/* Up and down (and Home, End) move between the menu's items. */
-function pageMenuKeys(e){const k=e.key;if(!["ArrowDown","ArrowUp","Home","End"].includes(k)) return;
-  const me=e.currentTarget,nav=me&&me.closest?me.closest(".ap-menu,.wk-plist"):null;if(!nav) return;
-  const items=[...nav.querySelectorAll(".ap-item,.ap-sec,.wk-pitem")],i=items.indexOf(me);if(i<0) return;
-  const j=k==="Home"?0:k==="End"?items.length-1:Math.min(items.length-1,Math.max(0,i+(k==="ArrowDown"?1:-1)));
-  e.preventDefault();items[j].focus();}
-/* Wrap an activity's view in its pages: the menu on the left when it has
-   several, or nothing at all (the page's sections from the draw's reading plan). */
-function withPages(id,content,dc){const P=strings("pages");const ps=activityOf(id).pages;
-  const inner=el("div",{class:"ap-content"},content);
-  const rd=dc.reading;
-  if(ps.length<2&&!rd) return content;
-  const open=pagesMenuOpen(),cur=currentPage(id);
-  const tog=el("button",{type:"button",class:"ap-toggle","aria-expanded":String(open),"aria-controls":"ap-pages",
-    "aria-label":P.toggle,title:open?P.minimize:P.expand},el("span",{"aria-hidden":"true"},open?"«":"»"));
-  tog.addEventListener("click",togglePagesMenu);
-  const ol=el("ol",{id:"ap-pages"});
-  ps.forEach((p,i)=>{const name=ps.length<2?plainText(tx((moduleOf(id)||{}).title,tx(activityOf(id).title,shortId(id)))):pageName(p,i);const t=el("span",{class:"ap-t"},name);
-    const b=el("button",{type:"button",class:"ap-item","aria-current":p.id===cur.id?"page":null,title:open?null:name},
-      el("span",{class:"ap-n","aria-hidden":"true"},String(i+1)),t);
-    b.addEventListener("click",()=>choosePage(id,p.id));b.addEventListener("keydown",pageMenuKeys);
-    const li=el("li",{"data-i":String(i)},b);
-    /* the sections of the page on show, each with a dot that fills once it has been opened */
-    if(rd&&p.id===cur.id){const sl=el("ol",{class:"ap-secs","aria-label":strings("fold").sections});
-      rd.sections.forEach(sec=>{const seen=rd.st.seen.has(sec.k);
-        const sb=el("button",{type:"button",class:"ap-sec","data-k":String(sec.k),title:sec.title},
-          el("span",{class:"ap-dot"+(seen?" on":""),"aria-hidden":"true"}),el("span",{class:"ap-t"},sec.title),
-          el("span",{class:"rd-sr ap-sr"},seen?strings("fold").seen:""));
-        sb.addEventListener("click",()=>rmGo(rd,sec.k));sb.addEventListener("keydown",pageMenuKeys);
-        sl.append(el("li",{},sb));});
-      li.append(sl);}
-    ol.append(li);});
-  const nav=el("nav",{class:"ap-menu","aria-label":P.nav},
-    el("div",{class:"ap-top"},el("span",{class:"ap-head lbl2","aria-hidden":"true"},P.heading),tog),ol);
-  /* the menu open over the page on a narrow screen closes with Escape */
-  nav.addEventListener("keydown",e=>{if(e.key==="Escape"&&narrowPages()&&pagesOverlay){
-    pagesOverlay=false;render();refocus(".ap-toggle");}});
-  return el("div",{class:"ap-frame"+(open?"":" ap-min")},nav,inner);}
 
 /* ---- ONE AT A TIME ----
-   A page of three or more questions can be taken one question at a time: a progress line and dots, the question, Back
-   and Next. The reader's choice is the browser's (booklet.ui.steps.<booklet>, see bookletPref), never the file's. Every
-   question is drawn and the others are only hidden, so an answer is never lost on a step, and print shows them all. A
-   question's own hint and solution go with it; prose goes with the question that follows it (the last prose with the
-   last question). */
+   A page of three or more questions can be taken one question at a time: a progress line and dots, and the question; the
+   foot's Back and Next (activityFooter) step through them, and Next on the last step turns the page. The reader's choice is
+   the browser's (booklet.ui.steps.<booklet>, see bookletPref), never the file's. Every question is drawn and the others are
+   only hidden, so an answer is never lost on a step, and print shows them all. A question's own hint and solution go with
+   it; prose goes with the question that follows it (the last prose with the last question). */
 const OAT_KEY="booklet.ui.steps.";
-/* A browser's preference for one booklet (one at a time, folding), under its library entry: its link (`from`), the
+/* A browser's preference for one booklet (one at a time, the fold switch), under its library entry: its link (`from`), the
    same each time a link opens it, else its id. One an older release kept under the booklet's id is read until set. */
 const prefOwner=()=>(currentEntry&&currentEntry.from)||currentId||"";
 const bookletPref=key=>{const v=lsGet(key+prefOwner());return v!==null?v:lsGet(key+(BOOK.id||""));};
@@ -6606,69 +6619,30 @@ function stepControl(one){const S=strings("steps");
   return el("div",{class:"oat-ctl",role:"group","aria-label":S.label},btn("one",S.one),btn("all",S.all));}
 function stepPage(id,draft,units,dc){const S=strings("steps"),page=currentPage(id),steps=viewAt(id).steps,key=page.id;
   const done=u=>blocksAll(u.blocks).filter(isQuestion).every(q=>keysOf(q).some(k=>holdsSomething(draft[k])));
-  /* arriving, the first step with a question still to answer is shown */
+  /* arriving, the first step with a question still to answer is shown (turned back to, the last: turnPage) */
   if(!(key in steps)){const f=units.findIndex(u=>!done(u));steps[key]=f<0?0:f;}
+  steps[key]=Math.max(0,Math.min(units.length-1,steps[key]));
   const n=units.length,host=el("div",{class:"oat"});
   const prog=el("span",{class:"oat-prog",role:"status"}),dots=units.map(()=>el("span",{class:"oat-dot"}));
   host.append(el("div",{class:"oat-head"},prog,el("span",{class:"oat-dots","aria-hidden":"true"},...dots)));
   const nodes=units.map(u=>el("div",{class:"oat-unit",tabindex:"-1"},...u.blocks.map(b=>renderBlock(b,draft,id,dc))));
   host.append(...nodes);
-  const back=el("button",{type:"button",class:"cd-btn oat-back"},icon("arrow-left"),S.back),
-    next=el("button",{type:"button",class:"cd-btn oat-next primary"},S.next,icon("arrow-right"));
-  host.append(el("div",{class:"oat-nav"},back,next));
   const draw=()=>{const at=steps[key];
     nodes.forEach((x,i)=>{if(i===at) x.removeAttribute("hidden");else x.setAttribute("hidden","");});
     prog.textContent=S.progress(at+1,n);
-    dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i])?" on":"")+(i===at?" cur":"");});
-    [[back,at<=0],[next,at>=n-1]].forEach(([b,off])=>{if(off) b.setAttribute("disabled","");else b.removeAttribute("disabled");});};
-  /* Back and Next move the keyboard to the step now shown (its box takes the focus, so a screen reader reads it) */
-  const go=d=>{steps[key]=Math.max(0,Math.min(n-1,steps[key]+d));draw();
+    dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i])?" on":"")+(i===at?" cur":"");});};
+  /* Back and Next are the foot's (dc.oat): a step redraws them, and moves the keyboard to the step now shown (its box takes
+     the focus, so a screen reader reads it) */
+  const go=d=>{steps[key]=Math.max(0,Math.min(n-1,steps[key]+d));draw();if(dc.foot) dc.foot();
     const u=nodes[steps[key]];if(u&&u.focus) u.focus();};
-  back.addEventListener("click",()=>go(-1));next.addEventListener("click",()=>go(1));
+  dc.oat={n,at:()=>steps[key],go};
   draw();dc.ticks.push(draw);
   return host;}
 
-/* ======================= READING MODE =======================
-   A page that asks nothing (no question, no widget, no query) and has at
-   least two sections is drawn folded: each section is a disclosure
-   that shows its heading and its first paragraph, and opens on a click to show
-   all of it. A section runs from a heading at the shallowest level the page
-   uses (not counting a title heading that stands alone above it) to the next
-   heading of that level. Prose before the first section stays as it is.
-
-   The reader's choice (folded, or everything open) is the browser's, kept per
-   booklet (bookletPref), and never enters the file. Which sections are open,
-   and which have been opened, are view state for this visit. Any page with sections folds, questions and data views
-   included; the first section with a question not yet answered opens on arrival, and the pages of one activity
-   decide one by one. */
-const rmPref=()=>bookletPref(RM_KEY);
-const setRmPref=v=>setBookletPref(RM_KEY,v);
-let RM_QUIET=false;
+/* ---- what prose is drawn as ---- */
 const tagOf=n=>n&&typeof n==="object"?String(n.tagName||n.tag||"").toLowerCase():"";
 const headLevel=n=>{const m=/^h([1-6])$/.exec(tagOf(n));return m?+m[1]:0;};
-/* A page that can fold: two or more headings at the same level (not counting a title heading that stands alone above
-   them), on any page, whatever else it holds: questions, data views, kept entries. Each page decides for itself. With no
-   page given, the question is whether any page of the activity can. */
-const mdHeadNodes=text=>atxLines(text).filter(h=>h.text).map(h=>({tagName:"h"+h.level}));
-const foldable=(a,page)=>!!a&&(page?[page]:a.pages).some(pg=>{const nodes=[];
-  blocksIn(pg).forEach(b=>{if(b&&b.type==="markdown"&&placeOf(b)!=="folded") nodes.push(...mdHeadNodes(b.text));else nodes.push({tagName:"div"});});
-  return !!readingPlan(nodes);});
-/* Where the sections of one page start. `nodes` are the page's top-level nodes
-   in order. Returns null when the page has fewer than two sections, else
-   {lead, sections:[{head, body}]}: `lead` is what comes before the first
-   section, `head` a section's heading node, `body` the nodes under it. */
-function readingPlan(nodes){
-  const heads=[];nodes.forEach((n,i)=>{const l=headLevel(n);if(l) heads.push({i,l});});
-  if(heads.length<2) return null;
-  const min=Math.min(...heads.map(h=>h.l));
-  let from=0,level=min;
-  /* a title heading that stands alone above every other heading is not a section */
-  if(heads[0].l===min&&heads.filter(h=>h.l===min).length===1){from=1;level=Math.min(...heads.slice(1).map(h=>h.l));}
-  const starts=heads.slice(from).filter(h=>h.l===level);
-  if(starts.length<2) return null;
-  return {lead:nodes.slice(0,starts[0].i),
-    sections:starts.map((h,k)=>({head:nodes[h.i],body:nodes.slice(h.i+1,k+1<starts.length?starts[k+1].i:nodes.length)}))};}
-/* What a folded section shows under its heading: its first paragraph (which is
+/* What a fold card shows under its title: its first paragraph (which is
    then drawn there and nowhere else), else the first list item, else the first
    table row, as a line of text. {para, rest, text}: `rest` is the body without
    the paragraph; `text` is set only when there was no paragraph. */
@@ -6687,112 +6661,11 @@ function sectionLede(body){
 const tableWrap=n=>tagOf(n)==="table"?el("div",{class:"md-table"},n):n;
 const mdBlockNodes=(b,activityId,prefix,dc)=>mdNodes(String(b.text||""),{...figureHooks(scopeOfAddr(activityId)),...linkHooks(scopeOfAddr(activityId)),idPrefix:prefix||"md-",
   mark:id=>{if(activityId==="") return "";const c=citeText("[^"+id+"]",dc);return c.length===1&&typeof c[0]==="string"?c[0]:el("span",{},...c);}}).map(tableWrap);
-/* keep the menu's dots and the count current, without redrawing the page */
-function rmRefresh(info){
-  if(info.countEl) info.countEl.textContent=strings("fold").count(info.st.open.size,info.sections.length);
-  document.querySelectorAll(".ap-sec").forEach(b=>{const k=Number(b.getAttribute("data-k")),on=info.st.seen.has(k);
-    const d=b.querySelector(".ap-dot"),s=b.querySelector(".ap-sr");
-    if(d) d.classList.toggle("on",on);if(s) s.textContent=on?strings("fold").seen:"";});}
-function rmSetAll(info,open){
-  const st=info.st,all=info.sections.map((_,k)=>k);
-  if(open){all.forEach(k=>{st.open.add(k);st.seen.add(k);});}else st.open.clear();
-  setRmPref(open?"open":"folded");
-  info.dets.forEach(d=>{d.open=open;});
-  rmRefresh(info);}
-/* open section k, scroll to it, and put the focus on its summary */
-function rmGo(info,k){
-  const st=info.st;st.open.add(k);st.seen.add(k);
-  if(narrowPages()&&pagesOverlay){pagesOverlay=false;render();}
-  const d=document.querySelector('.rm-sec[data-k="'+k+'"]');
-  if(d){d.open=true;d.scrollIntoView({block:"start"});
-    const s=d.querySelector("summary");if(s&&s.focus) s.focus({preventScroll:true});}
-  /* (the screen on show's plan: it may have been drawn again) */
-  const cur=DRAWN.reading;if(cur) rmRefresh(cur);}
-/* What a data view or a kept-entry view holds, as a line for its section's card: "2 kept" or "N rows", or the view's own
-   `empty:` text (else "None yet") when it holds nothing. Nothing when the view cannot be drawn. */
-function queryStatus(b,activityId){const C=strings("cards");
-  try{let n;
-    if(b.data) n=dataSet(b.data).rows.length;
-    else{if(!queryReads(b,activityId)) return "";
-      n=entrySet(b,activityId,"cards").rows.length;}
-    if(n) return b.data?C.rowsN(n):strings("ui").entriesN(n);
-    const e=tx(b.empty,"");return nonEmpty(e)?e:C.noneYet;
-  }catch(err){return "";}}
-/* Draw a page that only reads. Returns null for any other page
-   (drawn as any other page is); otherwise {node, info}, where info is null when the page
-   has no sections to fold. */
-function readingPage(id,draft,dc){
-  const page=currentPage(id);
-  if(!foldable(activityOf(id),page)) return null;
-  const list=blocksIn(page);
-  const items=[],groups=[];
-  list.forEach(b=>{
-    if(b.type==="markdown"){const ns=mdBlockNodes(b,id,undefined,dc);ns.forEach(n=>items.push({n,md:true}));groups.push({ns});}
-    else{const n=renderBlock(b,draft,id,dc);items.push({n,md:false,b});groups.push({n});}});
-  const plan=readingPlan(items.map(x=>x.n));
-  if(!plan){const host=el("div",{});
-    groups.forEach(g=>host.append(g.ns?el("div",{class:"pblock md"},...g.ns):g.n));
-    return {node:host,info:null};}
-  const of=new Map(items.map(x=>[x.n,x]));
-  const emit=ns=>{const out=[];let run=null;
-    ns.forEach(n=>{if(of.get(n).md){if(!run){run=el("div",{class:"pblock md"});out.push(run);}run.append(n);}
-      else{run=null;out.push(n);}});return out;};
-  const total=plan.sections.length,folds=viewAt(id).folds,key=page.id;
-  /* a section's questions: how many, and how many hold an answer now */
-  const qStat=nodes=>{let n=0,done=0;
-    nodes.forEach(x=>{const it=of.get(x);if(!it||!it.b) return;
-      blocksAll([it.b]).filter(q=>QUESTION_KINDS.has(q.type)).forEach(q=>{n++;if(keysOf(q).some(k=>holdsSomething(draft[k]))) done++;});});
-    return {n,done};};
-  /* what a section holds besides prose: its questions' progress, and what each data view or kept-entry view holds */
-  const statusOf=nodes=>{const C=strings("cards"),q=qStat(nodes),out=[];
-    if(q.n) out.push(q.done>=q.n?C.done:q.done?C.questionsAnswered(q.done,q.n):C.questionsN(q.n));
-    nodes.forEach(x=>{const it=of.get(x);if(!it||!it.b) return;
-      blocksAll([it.b]).filter(z=>z.type==="query").forEach(z=>{const t=queryStatus(z,id);if(t) out.push(t);});});
-    return out.join(" · ");};
-  const holds=nodes=>nodes.some(x=>{const it=of.get(x);return !!it&&!!it.b&&blocksAll([it.b]).some(z=>z.type==="query"||isQuestion(z));});
-  if(!folds[key]){const all=rmPref()==="open",ks=plan.sections.map((_,k)=>k);
-    folds[key]={open:new Set(all?ks:[]),seen:new Set(all?ks:[])};
-    /* arriving, the first section with a question still to answer is open */
-    const first=plan.sections.findIndex(s=>{const q=qStat(s.body);return q.n>q.done;});
-    if(first>=0){folds[key].open.add(first);folds[key].seen.add(first);}}
-  const st=folds[key];
-  /* a link to a heading inside a section opens that section (dc.reveal) */
-  if(dc.reveal) plan.sections.forEach((s,k)=>{
-    const hs=[s.head,...s.body.filter(n=>headLevel(n))].map(n=>linkNorm(textOf(n)));
-    if(hs.includes(dc.reveal)){st.open.add(k);st.seen.add(k);dc.revealed=true;}});
-  const info={st,dets:[],sections:[],countEl:null,stats:[]};
-  const host=el("div",{class:"rm"});
-  host.append(...emit(plan.lead));
-  const R=strings("fold");
-  const count=el("p",{class:"rm-count",role:"status"},R.count(st.open.size,total));
-  info.countEl=count;
-  host.append(el("div",{class:"rm-bar"},
-    el("button",{type:"button",class:"rm-btn",onclick:()=>rmSetAll(info,true)},R.openAll),
-    el("button",{type:"button",class:"rm-btn",onclick:()=>rmSetAll(info,false)},R.foldAll),count));
-  plan.sections.forEach((s,k)=>{
-    /* the teaser is the first paragraph's words (a list item or a table row when there is no paragraph); the section
-       keeps all its own text, so nothing is lost when it is opened */
-    const {para,text}=sectionLede(s.body);
-    const teaser=para?clip(textOf(para),220):text;
-    const name=textOf(s.head).trim(),emoji=takeLeadEmoji(s.head);
-    const d=cardNode({mode:"fold",cls:"rm-sec",titleNode:s.head,number:k+1,hue:cardHue(k),teaser,teaserCls:"rm-lede",status:statusOf(s.body),
-      picture:emoji?{emoji}:{number:k+1},open:st.open.has(k),bodyCls:"rm-body",body:emit(s.body)});
-    if(holds(s.body)) info.stats.push({d,line:()=>statusOf(s.body)});
-    d.setAttribute("data-k",String(k));
-    d.addEventListener("toggle",()=>{if(RM_QUIET) return;
-      if(d.open){st.open.add(k);st.seen.add(k);}else st.open.delete(k);rmRefresh(info);});
-    info.dets.push(d);info.sections.push({k,title:name});
-    host.append(d);});
-  /* answering redraws each section's status line where it stands */
-  if(info.stats.length) dc.ticks.push(()=>info.stats.forEach(x=>{const c=x.d.querySelector(".c");if(c) c.textContent=x.line();}));
-  return {node:host,info};}
-/* Printing prints everything: the sections open for the print and fold back after */
-let RM_PRINTED=[];
 /* ---- LINKS BETWEEN ACTIVITIES ----
    `[[#Check yourself]]` and `[Check yourself](#check-yourself)` are ordinary
-   heading links. A heading is an activity's title, a page's title, a heading in
+   heading links. A heading is an activity's title, a tab's name, a heading in
    its prose or the title of one of its questions. A link opens the activity
-   holding the heading, on the page holding it. Text and slugs are compared the
+   holding the heading, on the tab and page holding it. Text and slugs are compared the
    way Obsidian and GitHub do: case and spacing never matter. */
 const linkNorm=s=>String(s==null?"":s).replace(/\s+/g," ").trim().toLowerCase();
 /* a heading as a link target (GitHub and Obsidian style: Unicode letters kept, the rest dropped); slugify, below, is for file names and ids */
@@ -6804,10 +6677,11 @@ const plainHeading=s=>String(s).replace(/[ \t]+#+[ \t]*$/,"")
   .replace(/!?\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/[*_`]+/g,"").trim();
 /* the ATX headings of a chunk of Markdown, outside its code fences */
 const headingsOf=text=>atxLines(text).map(h=>h.text?plainHeading(h.text):"").filter(Boolean);
-/* every heading an activity holds, with the page it is on */
+/* every heading an activity holds, with the page it is on (its title and its tabs' names marked so) */
 function activityHeadings(a){const ps=a.pages,out=[];
-  const t=plainText(tx(a.title,null));if(t) out.push({text:t,page:ps[0].id});
-  ps.forEach(p=>{const pt=tx(p.title,null);if(typeof pt==="string"&&pt.trim()) out.push({text:pt,page:p.id});
+  const t=plainText(tx(a.title,null));if(t) out.push({text:t,page:ps[0].id,title:true});
+  (tabsIn(a)||[]).forEach(tb=>{const p=ps.find(x=>x.tab===tb.id),n=plainText(tx(tb.title,null));if(p&&n) out.push({text:n,page:p.id,tab:true});});
+  ps.forEach(p=>{
     /* prose gives its headings, a row and its cells are gone into, any other block gives its title (a question's, then its own
        hint's and solution's) */
     eachBlock(blocksIn(p),b=>{if(b.type==="markdown"){headingsOf(b.text).forEach(h=>out.push({text:h,page:p.id}));return false;}
@@ -6821,20 +6695,21 @@ function findHeading(mods,target,bySlug){
   let want;try{want=bySlug?linkSlug(decodeURIComponent(target)):linkNorm(target);}catch(e){want=bySlug?linkSlug(target):linkNorm(target);}
   if(!want) return null;
   for(const m of mods) for(const a of m.activities) for(const h of activityHeadings(a))
-    if((bySlug?linkSlug(h.text):linkNorm(h.text))===want) return {act:a.id,page:h.page,heading:h.text};
+    if((bySlug?linkSlug(h.text):linkNorm(h.text))===want) return {act:a.id,page:h.page,heading:h.text,title:!!h.title,tab:!!h.tab};
   return null;}
 function scrollToHeading(text){const want=linkNorm(text);
   const n=[...document.querySelectorAll("#main h2,#main h3,#main h4,#main h5,#main h6")].find(h=>linkNorm(h.textContent)===want&&!(h.closest&&h.closest(".mhead-lede,.mhead-more")))||null;
-  /* a heading inside a folded section: open the section first */
+  /* a heading inside a folded callout: open the callout first */
   for(let p=n;p&&p!==document.body;p=p.parentNode) if(p.classList&&p.classList.contains("card-fold")&&!p.open) p.open=true;
   if(n&&n.scrollIntoView) n.scrollIntoView({block:"start"});else window.scrollTo({top:0});}
-/* follow a link to a heading: its page's draw opens the folded section holding it (`reveal`) */
-function openHeading(hit){const reveal=linkNorm(hit.heading);
-  if(screen===hit.act){const same=currentPage(hit.act).id===hit.page;
-    if(!same){showPage(hit.act,hit.page);pagesOverlay=false;render({reveal});}
-    scrollToHeading(hit.heading);return;}
-  showPage(hit.act,hit.page);
-  if(go(hit.act,{reveal}).revealed) scrollToHeading(hit.heading);}
+/* Follow a link to a heading: its activity on the tab and page holding it, scrolled to the heading. A link to an activity's
+   title shows the activity from its top (go), and one to a tab's name shows the tab with the focus on it. */
+function openHeading(hit){const away=screen!==hit.act;
+  if(away){showPage(hit.act,hit.page);go(hit.act);}
+  else if(currentPage(hit.act).id!==hit.page){showPage(hit.act,hit.page);render();}
+  if(hit.tab){const t=document.querySelector('#main [role="tab"][aria-selected="true"]');
+    if(t){if(t.scrollIntoView) t.scrollIntoView({block:"nearest"});t.focus({preventScroll:true});}return;}
+  if(!(away&&hit.title)) scrollToHeading(hit.heading);}
 function headingLink(hit,kids){
   return el("a",{href:"#",class:"alink",onclick:e=>{if(e&&e.preventDefault) e.preventDefault();openHeading(hit);}},...kids);}
 /* what a prose block hands mdNodes so these links lead somewhere. A link is looked for in its own module
@@ -7074,8 +6949,8 @@ function applyLangToggle(){
     /* named for the language it gives, in that language (EN is "English" to
        everyone), so a screen reader says a name rather than two letters */
     b.setAttribute("lang",to);b.setAttribute("aria-label",LANG_NAMES[to]||to);b.setAttribute("title",LANG_NAMES[to]||to);});}
-/* go to screen `v`, its draw told `o` (render); returns the draw */
-function go(v,o){screen=v;const dc=render(o);window.scrollTo({top:0});return dc;}
+/* go to screen `v`; returns the draw */
+function go(v){screen=v;const dc=render();window.scrollTo({top:0});return dc;}
 function tabName(){const d=describeBooklet(BOOK);const t=tx(d.title,"");
   if(typeof t==="string"&&nonEmpty(t)) return t.trim();
   const p=d.parts.map(x=>tx(x,"")).filter(x=>typeof x==="string"&&nonEmpty(x));
@@ -7158,10 +7033,10 @@ function settle(){lang=uiLang();
   if(isModuleScreen(screen)){const mod=moduleForScreen(screen);if(!mod||!isMulti(mod)) screen=mod?entryScreenOf(mod):HOME_SCREEN;}
   if(!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)){const m=activityOf(screen);if(m.kind==="entry") seedUpsertDraft(screen,m,answersFor(screen));}}
 /* draw the screen in force afresh, in a draw of its own (one draw, region 4) told `o`, and return it */
-function render(o){
+function render(){
   /* nothing is drawn before the page has read its store: the first draw is keepStart's (bootPage) */
   if(!KEEP.ready) return DRAWN;
-  RENDERING=true;const dc=newDraw(o);DRAWN=dc;
+  RENDERING=true;const dc=newDraw();DRAWN=dc;
   try{settle();dc.cite=citeDraw(screen);citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(hasOwn(SCREENS,screen)) SCREENS[screen](main,dc);
   else if(isModuleScreen(screen)) renderModulePage(main,screen,dc);
@@ -7391,10 +7266,12 @@ function bookletCard(e){const L=strings("library");const u=strings("ui");const n
       titleNode:el("button",{type:"button",class:"k",onclick:()=>openFromList(e.id)},name),
       teaser:sub.join(" · "),pills,foot}));};
   draw(false);return card;}
-/* Every activity is drawn the same way: its name and description, its pages and
-   their blocks. One that repeats (the file's `repeat`) also shows the entries
-   kept so far and a Finalize that keeps the next one; any other keeps its
-   answers in the booklet's own `answers`, exactly as the file's record does. */
+/* Every activity is drawn the same way: its name and description, its opening and
+   tab bar when it has tabs, the page on show and its blocks, and the foot. One
+   that repeats (the file's `repeat`) also shows the entries kept so far and a
+   Finalize that keeps the next one; any other keeps its answers in the booklet's
+   own `answers`, exactly as the file's record does. Its column is the module
+   screen's (centreScreen), in a wiki the wiki's. */
 function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id);const mod=moduleOf(id)||{};
   const W=wikiOf(holderOf(id));
   /* the panel of the draw before is closed first (readingBegin): a module that is one activity draws its opening here, and
@@ -7403,6 +7280,8 @@ function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id)
   {main.append(...openNotices());}
   const repeats=m.kind==="entry";
   const draft=answersFor(id);
+  /* the callouts the author folded, as they are drawn, for the fold switch (see THE FOLD SWITCH) */
+  dc.folds={open:foldsOpen(),n:0};
   const col=el("div",{class:"col"});
   if(W) col.append(wikiCrumbs(W,id));
   const titleText=tx(mod.title,tx(m.title,shortId(id)));
@@ -7411,27 +7290,30 @@ function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id)
   else{col.append(pageHead(id,m,titleText,W));
     const lead=tx(mod.blurb,tx(m.blurb,""));
     if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
-  /* a wiki page's own pages are listed in the menu; where the menu is not on screen (a phone, or a hidden page that has no entry) they are listed here */
-  if(W&&m.pages.length>1&&(narrowPages()||!isShown(m))) col.append(wkInside(id,null,true));
   if(repeats) col.append(el("h3",{},u.earlier),chipStrip(id));
-  /* the page on show and its blocks, and the pages menu beside them: see
-     AN ACTIVITY'S PAGES. One draft serves every page. */
+  /* the opening of an activity with tabs, its tab bar, and the tab on show; the page on show and its blocks: see AN
+     ACTIVITY'S TABS AND PAGES. One draft serves every tab and page. */
+  const ts=tabsIn(m),cur=currentPage(id),opening=ts?tabOpening(m):[],openNode=opening.length?renderBlocks(opening,draft,id,dc):null;
+  /* the overview of a module with tabs opens on this activity's tab (in a wiki, its top page's) */
+  {const h=holderOf(id);if(h&&isMulti(h)&&tabsIn(h)) viewAt(moduleScreen(h.id)).tab=moduleTabOf(h,W?(wikiPath(W,id)[0]||m):m);}
   const body=pageBody(id,draft,dc);
   /* a report's own first heading often repeats its title (a plain file is named
      by its front matter title): draw the title once */
   const same=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
-  const firstH=body.querySelector("h1,h2,h3,h4,h5,h6");
+  const firstH=(openNode&&openNode.querySelector("h1,h2,h3,h4,h5,h6"))||body.querySelector("h1,h2,h3,h4,h5,h6");
   if(firstH&&same(textOf(words(titleText)))&&same(firstH.textContent)===same(textOf(words(titleText)))) firstH.remove();
-  col.append(body);
+  if(openNode) col.append(openNode);
+  if(ts&&ts.length>1) col.append(tabBar(ts,cur.tab,plainText(activityName(m)),t=>chooseTab(id,t)),tabPanel(cur.tab,body));
+  else col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
   if(W) col.append(...wikiAfter(W,id));
-  col.append(activityFooter(id));
+  col.append(activityFooter(id,dc));
   /* a module that is one activity shows its notice at the foot of that activity */
   {const holder=holderOf(id),single=holder&&!isMulti(holder),about=single?noticeNode(holder):null;
     if(about) col.append(about);
     const rm=single?removeModuleControl(holder):null;if(rm) col.append(rm);}
-  /* a wiki page's pages and sections are listed in the wiki's own menu, under the page's entry: no second rail beside it */
-  main.append(W?wikiFrame(W,id,[col],dc):withPages(id,col,dc));}
+  if(W) main.append(wikiFrame(W,id,[col]));
+  else{main.append(col);centreScreen(main);}}
 /* The head of an activity's page: its title, and, when its line names an `icon:`, the picture its card shows (cardPicture decides: the spot of
    that name in teaching, the line icon in briefing) in the card's own tile and colour, to the left of the title. No `icon:`: the title alone. */
 function pageHead(id,m,titleText,W){
@@ -7439,19 +7321,30 @@ function pageHead(id,m,titleText,W){
   if(!pic||!pic.icon) return el("h2",{},...words(titleText));
   const holder=holderOf(id),sib=W?wikiSiblings(W,id):holder?activitiesShown(holder):[],at=Math.max(0,sib.findIndex(a=>a.id===id));
   return el("div",{class:"phead hue-"+cardHue(at)},cardTile(pic),el("h2",{},...words(cp.title)));}
-/* The foot of an activity's page: back to the overview (the module's page, or the home screen), and on to the next
-   activity of its module in file order, named with its number. */
-function activityFooter(id){const C=strings("cards"),holder=holderOf(id),W=wikiOf(holder),shown=W?W.acts.filter(isShown):holder?activitiesShown(holder):[];
+/* The foot of an activity's page: one row of Back and Next. Back takes one step back (one at a time), else to the page
+   before, else back to the overview (the module's page, or the home screen; in a wiki, the page above); Next takes one step on,
+   else to the page after, else on to the next activity of its module in file order, named with its number. Between them, on an
+   activity or a tab of several pages, "Page N of M". One at a time draws it again as its step moves (dc.foot). */
+function activityFooter(id,dc){const C=strings("cards"),S=strings("steps"),G=strings("pages"),holder=holderOf(id),W=wikiOf(holder),shown=W?W.acts.filter(isShown):holder?activitiesShown(holder):[];
   /* in a wiki the page after this one is the next shown page in the tree's order, whether or not this one is shown */
   const here=W?W.acts.findIndex(a=>a.id===id):shown.findIndex(a=>a.id===id),
     next=W?(W.acts.slice(here+1).find(isShown)||null):here>=0?shown[here+1]:null;
   const backTo=holder&&isMulti(holder)?moduleScreen(holder.id):HOME_SCREEN,up=W?wikiPath(W,id).pop():null;
   const to=x=>W?()=>wikiGo(x,false):()=>go(x);
-  const foot=el("div",{class:"cd-foot"},
-    el("button",{type:"button",class:"cd-btn cd-back",onclick:to(up?up.id:backTo)},icon("arrow-left"),...(up?withName(strings("wiki").up,activityName(up)):[C.back])));
-  if(next&&W) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:to(next.id)},...withName(strings("wiki").next,activityName(next)),icon("arrow-right")));
-  else if(next) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:()=>go(next.id)},
-    ...withName(t=>C.next(here+2,t),cardPicture(activityName(next),here+2,next.icon).title),icon("arrow-right")));
+  const cur=currentPage(id),ps=tabPages(activityOf(id),cur.tab||null),at=ps.indexOf(cur),foot=el("div",{class:"cd-foot"});
+  const draw=()=>{const o=dc&&dc.oat,step=o?o.at():0;foot.innerHTML="";
+    foot.append(o&&step>0?el("button",{type:"button",class:"cd-btn oat-back",onclick:()=>o.go(-1)},icon("arrow-left"),S.back)
+      :at>0?el("button",{type:"button",class:"cd-btn pg-back",onclick:()=>turnPage(id,ps[at-1],true)},icon("arrow-left"),G.back)
+      :el("button",{type:"button",class:"cd-btn cd-back",onclick:to(up?up.id:backTo)},icon("arrow-left"),...(up?withName(strings("wiki").up,activityName(up)):[C.back])));
+    if(ps.length>1) foot.append(el("span",{class:"pg-at"},G.of(at+1,ps.length)));
+    if(o&&step<o.n-1) foot.append(el("button",{type:"button",class:"cd-btn oat-next primary",onclick:()=>o.go(1)},S.next,icon("arrow-right")));
+    else if(at>=0&&at<ps.length-1) foot.append(el("button",{type:"button",class:"cd-btn pg-next primary",onclick:()=>turnPage(id,ps[at+1],false)},G.next,icon("arrow-right")));
+    else if(next&&W) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:to(next.id)},...withName(strings("wiki").next,activityName(next)),icon("arrow-right")));
+    else if(next) foot.append(el("button",{type:"button",class:"cd-btn cd-next primary",onclick:()=>go(next.id)},
+      ...withName(t=>C.next(here+2,t),cardPicture(activityName(next),here+2,next.icon).title),icon("arrow-right")));
+    /* the page's place keeps the middle when nothing follows it */
+    else if(ps.length>1) foot.append(el("span",{class:"pg-gap"}));};
+  draw();if(dc) dc.foot=draw;
   return foot;}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
@@ -7499,20 +7392,6 @@ function cardNode(o){
   if(mode==="item") return el(o.tag||"div",{class:cls},tile,main,...(o.kids||[]));
   const root=o.as==="div"?el("div",{class:cls}):el("button",{type:"button",class:cls,onclick:o.onclick});
   root.append(...[tile,main,chev,...(o.kids||[])].filter(x=>x!=null));return root;}
-/* a heading's leading emoji becomes the card's picture; it stays in the heading, hidden, so a link to the heading still finds its words */
-function takeLeadEmoji(root){
-  const step=n=>{const kids=n.childNodes?Array.from(n.childNodes):(n.children||[]);
-    for(let i=0;i<kids.length;i++){const c=kids[i];
-      const str=typeof c==="string",txt=!str&&c&&c.nodeType===3;
-      if(str||txt){const v=(str?c:c.textContent).replace(/^\s+/,"");if(!v) continue;
-        const m=LEAD_EMOJI.exec(v);if(!m||!v.slice(m[0].length).trim()) return "";
-        const rest=v.slice(m[0].length),mark=el("span",{class:"cd-emo"},m[1]);
-        if(str){n.children.splice(i,1,mark,rest);}
-        else{c.textContent=rest;n.insertBefore(mark,c);}
-        return m[1];}
-      return c&&typeof c==="object"?step(c):"";}
-    return "";};
-  return step(root);}
 /* what a reader has done in an activity: how many of its questions hold an answer, or how many entries it has kept */
 function activityProgress(a){
   const repeats=a.kind==="entry",kept=repeats?keptCount(a.id):0;
@@ -7641,67 +7520,45 @@ function wikiBatched(list,draw,cls){
   more();return [box,foot];}
 /* A choice in a wiki. The phone's menu closes (whatever was chosen, and wherever), and the focus goes where the reader will look:
    to the entry for the page just chosen when the choice was made in the menu beside the page, else to the page's heading. */
-function wikiGo(id,fromMenu){const side=fromMenu&&!narrowPages();VIEW.wiki.menu=false;go(id);
+function wikiGo(id,fromMenu){const side=fromMenu&&!narrowWiki();VIEW.wiki.menu=false;go(id);
   const own=side?document.querySelector(VIEW.wiki.q.trim()?".wk-results [aria-current=\"page\"]":".wk-tree [aria-current=\"page\"]"):null;
   if(own&&own.focus){own.focus({preventScroll:true});return;}
   const h=document.querySelector("#main .wk-content h2");
   if(h){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}}
 const wikiCard=(a,i)=>activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon,()=>wikiGo(a.id,false));
 /* ---- the menu: a search box over the whole tree ---- */
-/* the page on show, inside its entry: its pages (when it has several) and the sections the page holds, as the rail listed them.
-   `own` is the list drawn in the page itself (a phone, or a hidden page with no entry in the menu): its pages only. */
-function wkPagePick(id,pid,fromList){showPage(id,pid);VIEW.wiki.menu=false;pagesOverlay=false;render();window.scrollTo({top:0});
-  /* the focus goes to the entry for the page chosen, in the list it was chosen from if that is still on screen */
-  const vis=n=>n&&n.offsetParent!==null,a=document.querySelector((fromList?".wk-pagelist":".wk-menu")+" [aria-current=\"step\"]"),
-    b=document.querySelector((fromList?".wk-menu":".wk-pagelist")+" [aria-current=\"step\"]"),n=vis(a)?a:vis(b)?b:null;
-  if(n&&n.focus) n.focus({preventScroll:true});}
-function wkInside(id,rd,own){const F=strings("fold"),ps=activityOf(id).pages,cur=currentPage(id);
-  const secs=top=>{if(!rd||own) return null;
-    const sl=el("ol",{class:"ap-secs wk-secs"+(top?" wk-plist":""),"aria-label":F.sections});
-    rd.sections.forEach(sec=>{const seen=rd.st.seen.has(sec.k);
-      const sb=el("button",{type:"button",class:"ap-sec","data-k":String(sec.k),title:sec.title},
-        el("span",{class:"ap-dot"+(seen?" on":""),"aria-hidden":"true"}),el("span",{class:"ap-t"},sec.title),
-        el("span",{class:"rd-sr ap-sr"},seen?F.seen:""));
-      sb.addEventListener("click",()=>rmGo(rd,sec.k));sb.addEventListener("keydown",pageMenuKeys);sl.append(el("li",{},sb));});
-    return sl;};
-  if(ps.length<2) return secs(true);
-  const ol=el("ol",{class:"wk-pages wk-plist"+(own?" wk-pagelist":""),"aria-label":strings("pages").heading});
-  ps.forEach((p,i)=>{const b=el("button",{type:"button",class:"wk-link wk-pitem","aria-current":p.id===cur.id?"step":null,
-      onclick:()=>wkPagePick(id,p.id,!!own)},pageName(p,i));
-    b.addEventListener("keydown",pageMenuKeys);
-    ol.append(el("li",{},b,p.id===cur.id?secs(false):null));});
-  return ol;}
-function wkNode(W,a,cur,rd){const k=wikiKids(W,a.id),here=a.id===cur,inside=here?wkInside(a.id,rd):null;
+function wkNode(W,a,cur){const k=wikiKids(W,a.id),here=a.id===cur;
   const b=el("button",{type:"button",class:"wk-link","aria-current":here?"page":null,"data-id":a.id,onclick:()=>wikiGo(a.id,true)},...words(activityName(a),true));
-  if(!k.length) return el("li",{class:"dv-row"},b,inside);
+  if(!k.length) return el("li",{class:"dv-row"},b);
   const v=viewAt(a.id),d=el("details",{"data-id":a.id,open:v.branch},el("summary",{class:"dv-row"},b));
-  if(inside) d.append(inside);
-  let built=false;const build=()=>{if(built) return;built=true;d.append(wkList(W,k,cur,rd,false));};
+  let built=false;const build=()=>{if(built) return;built=true;d.append(wkList(W,k,cur,false));};
   if(v.branch) build();
   d.addEventListener("toggle",()=>{v.branch=d.open;if(d.open) build();});
   return el("li",{class:"dv-node"},d);}
-const wkList=(W,list,cur,rd,top)=>el("ul",{class:"dv-list"+(top?" dv-tree wk-tree":"")},...list.map(a=>wkNode(W,a,cur,rd)));
+const wkList=(W,list,cur,top)=>el("ul",{class:"dv-list"+(top?" dv-tree wk-tree":"")},...list.map(a=>wkNode(W,a,cur)));
 /* a wiki's menu: its search (VIEW.wiki) starts empty in another module; the branches to the page on show open */
-function wikiMenu(W,cur,rd){const K=strings("wiki"),V=VIEW.wiki;
+function wikiMenu(W,cur){const K=strings("wiki"),V=VIEW.wiki;
   if(V.mod!==W.mod){V.mod=W.mod;V.q="";}
   if(cur){wikiPath(W,cur).forEach(a=>{viewAt(a.id).branch=true;});if(wikiKids(W,cur).length) viewAt(cur).branch=true;}
   const inp=el("input",{type:"search",class:"wk-q",placeholder:K.search,"aria-label":K.search,autocomplete:"off",spellcheck:"false"});
   inp.value=V.q;
-  const tree=wkList(W,W.top,cur,rd,true),res=el("ul",{class:"dv-list wk-results"}),none=el("p",{class:"hint wk-none"},K.noMatch);
+  const tree=wkList(W,W.top,cur,true),res=el("ul",{class:"dv-list wk-results"}),none=el("p",{class:"hint wk-none"},K.noMatch);
   const draw=()=>{const q=V.q.trim(),hits=q?wikiFind(W,q):[];
     setHidden(tree,!!q);setHidden(res,!q||!hits.length);setHidden(none,!q||hits.length>0);
     res.innerHTML="";
     hits.forEach(a=>{const path=wikiPath(W,a.id).map(x=>plainText(activityName(x))).join(" › ");
       res.append(el("li",{class:"dv-row wk-hit"},
         el("button",{type:"button",class:"wk-link","aria-current":a.id===cur?"page":null,onclick:()=>wikiGo(a.id,true)},...words(activityName(a),true)),
-        path?el("span",{class:"wk-path"},path):null,a.id===cur?wkInside(cur,rd):null));});};
+        path?el("span",{class:"wk-path"},path):null));});};
   inp.addEventListener("input",()=>{V.q=inp.value;draw();});
   draw();
-  const fold=el("details",{class:"wk-fold",open:!narrowPages()||V.menu},el("summary",{},K.menu),inp,tree,res,none);
-  fold.addEventListener("toggle",()=>{if(narrowPages()) V.menu=fold.open;});
+  const fold=el("details",{class:"wk-fold",open:!narrowWiki()||V.menu},el("summary",{},K.menu),inp,tree,res,none);
+  fold.addEventListener("toggle",()=>{if(narrowWiki()) V.menu=fold.open;});
   return el("nav",{class:"wk-menu","aria-label":K.menu},fold);}
 /* the wiki's menu beside a page or its module's screen */
-const wikiFrame=(W,cur,nodes,dc)=>el("div",{class:"wk-frame"},wikiMenu(W,cur,cur?dc.reading:null),el("div",{class:"wk-content"},...nodes));
+const wikiFrame=(W,cur,nodes)=>el("div",{class:"wk-frame"},wikiMenu(W,cur),el("div",{class:"wk-content"},...nodes));
+/* a window narrow enough that a wiki's menu is a disclosure above the page */
+const narrowWiki=()=>typeof window!=="undefined"&&typeof window.matchMedia==="function"&&window.matchMedia(WIKI_NARROW).matches;
 function wikiCrumbs(W,id){const K=strings("wiki"),mod=W.mod;
   const crumb=(name,to)=>el("li",{},to?el("button",{type:"button",class:"wk-crumb",onclick:()=>wikiGo(to,false)},...words(name,true)):el("span",{"aria-current":"page"},...words(name,true)));
   return el("nav",{class:"wk-crumbs","aria-label":K.crumbs},el("ol",{},
@@ -7758,16 +7615,23 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
   const openNotes=opened?endnotesFor(first,true,dc):null;
   if(openNotes) citeReopen(dc);
   const parts=[col];
-  const grid=el("div",{class:"modes"});
-  if(!acts.length) grid.append(el("p",{class:"hint"},W2.noneShown));
+  /* a module with tabs lists the activities of the tab on show under its tab bar (see AN ACTIVITY'S TABS AND PAGES), with what
+     the opening has after that tab's line above them; each keeps its number in the module */
+  const mts=tabsIn(mod),mt=moduleTabNow(mod),inTab=a=>!mts||moduleTabOf(mod,a)===mt,tt=mts&&mts.find(t=>t.id===mt);
+  const list=[];
+  if(tt&&Array.isArray(tt.blocks)&&tt.blocks.length) list.push(renderBlocks(tt.blocks,nullMap(),first||"",dc));
+  const grid=el("div",{class:"modes"}),top=W?W.top.filter(inTab):null;
+  if(W?!top.length:!acts.some(inTab)) grid.append(el("p",{class:"hint"},W2.noneShown));
   /* a wiki shows the pages at its top, and every other page is under one of them */
-  if(W) parts.push(...wikiBatched(W.top,wikiCard,"modes wk-cards"));
-  else{acts.forEach((a,i)=>grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon)));
-    parts.push(grid);}
+  if(W&&top.length) list.push(...wikiBatched(top,wikiCard,"modes wk-cards"));
+  else{if(!W) acts.forEach((a,i)=>{if(inTab(a)) grid.append(activityCard(a.id,activityName(a),tx(a.blurb,tx(a.lede,"")),activityStatus(a),i,a.icon));});
+    list.push(grid);}
+  if(mts&&mts.length>1) parts.push(tabBar(mts,mt,plainText(tx(mod.title,mod.id)),t=>{viewAt(v).tab=t;render();refocus("#tb-"+t);}),tabPanel(mt,...list));
+  else parts.push(...list);
   if(openNotes) parts.push(el("div",{class:"col"},openNotes));
   const about=noticeNode(mod);if(about) parts.push(el("div",{class:"col"},about));
   const rm=removeModuleControl(mod);if(rm) parts.push(rm);
-  if(W){main.append(wikiFrame(W,null,parts,dc));return;}
+  if(W){main.append(wikiFrame(W,null,parts));return;}
   main.append(...parts);
   centreScreen(main);
 }
@@ -8373,39 +8237,35 @@ window.addEventListener("booklet-style",()=>{if(RENDERING) return;
   if(at<0) return;
   const n=(a.id&&document.getElementById(a.id))||Array.from(document.querySelectorAll(CTL))[at];
   if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}});
-/* A wiki's menu is a disclosure on a narrow window and a column beside the page on a wide one, and a multi-page activity lists its pages in the page
-   itself on a narrow one: both are decided as the screen is drawn, so the screen is drawn again when the window crosses the width (one listener,
-   added once). The search words are the view's (VIEW.wiki), so they come back; the caret stays in the box if it was there. */
+/* A wiki's menu is a disclosure on a narrow window and a column beside the page on a wide one: that is decided as the screen is
+   drawn, so the screen is drawn again when the window crosses the width (one listener, added once). The search words are the
+   view's (VIEW.wiki), so they come back; the caret stays in the box if it was there. */
 if(typeof window!=="undefined"&&typeof window.matchMedia==="function"){
-  const mq=window.matchMedia(PAGES_NARROW),again=()=>{
+  const mq=window.matchMedia(WIKI_NARROW),again=()=>{
     if(RENDERING||!currentId||BOOK===EMPTY_BOOKLET) return;
     const mod=isModuleScreen(screen)?moduleForScreen(screen):holderOf(screen);
-    /* an activity of several pages (or a reading page with sections) draws its menu by the width as well: a rail on a narrow screen, as the reader left it on a wide one */
-    const paged=!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)&&(activityOf(screen).pages.length>1||!!(DRAWN&&DRAWN.reading));
-    if(!wikiOf(mod)&&!paged) return;
-    pagesOverlay=false;
+    if(!wikiOf(mod)) return;
     const a=document.activeElement,inBox=!!(a&&a.classList&&a.classList.contains("wk-q")),
       CTL="#main input,#main textarea,#main select,#main button,#main summary,#main a[href]",
       all=!inBox&&a&&a!==document.body&&document.querySelectorAll?Array.from(document.querySelectorAll(CTL)):[],at=all.indexOf(a),
       ss=(inBox||at>=0)&&typeof a.selectionStart==="number"?a.selectionStart:null,se=(inBox||at>=0)&&typeof a.selectionEnd==="number"?a.selectionEnd:null;
     render();
-    /* the search box is found again by its class; any other control the reader was in (a typed answer on a page of several pages) by its id, else its place among the page's controls */
+    /* the search box is found again by its class; any other control the reader was in (a typed answer) by its id, else its place among the page's controls */
     const n=inBox?document.querySelector(".wk-q"):at>=0?((a.id&&document.getElementById(a.id))||Array.from(document.querySelectorAll(CTL))[at]):null;
     if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}};
   mq.addEventListener("change",again);}
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
-/* The menu stays in view below the page's own sticky bar, whose height changes
+/* What stays in view (a wiki's menu, an activity's frame) stays below the page's own sticky bar, whose height changes
    with the screen; the stylesheet reads it as --ap-top. */
 (function trackBar(){const bar=document.querySelector(".bar");
   if(!bar||typeof ResizeObserver!=="function") return;
   const set=()=>document.documentElement.style.setProperty("--ap-top",Math.ceil(bar.getBoundingClientRect().height+12)+"px");
   new ResizeObserver(set).observe(bar);set();})();
-if(typeof window!=="undefined"&&window.addEventListener){
-  window.addEventListener("beforeprint",()=>{RM_QUIET=true;
-    RM_PRINTED=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);RM_PRINTED.forEach(d=>{d.open=true;});});
-  window.addEventListener("afterprint",()=>{RM_PRINTED.forEach(d=>{d.open=false;});RM_PRINTED=[];
-    setTimeout(()=>{RM_QUIET=false;},300);});}
+/* Printing prints everything: the folded callouts open for the print and fold back after */
+if(typeof window!=="undefined"&&window.addEventListener){let printed=[];
+  window.addEventListener("beforeprint",()=>{printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});
+  window.addEventListener("afterprint",()=>{printed.forEach(d=>{d.open=false;});printed=[];});}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&citeOpen()) closeCite();});
 window.addEventListener("scroll",hideTip,{passive:true});
 document.getElementById("btnHome").addEventListener("click",homeButton);

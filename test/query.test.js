@@ -48,8 +48,8 @@ const actOf=(R,mod,id)=>R.template.modules.find(m=>m.id===mod).activities.find(a
  chk("the module installs",A.addModuleText(FX).ok);
  A.screen="fixture-query/look";A.render();
  let seen=P.texts(P.main());
- /* 0.11.10: a section card names what its view holds, using the view's own `empty:` words when there are none, so the line shows twice (card status, then the view) */
- chk("with nothing kept, the empty line shows (the block's own, or the renderer's)",(seen.match(/Nothing kept here yet\./g)||[]).length===2&&(seen.match(/Nothing logged yet\./g)||[]).length===2,seen.slice(0,400));
+ /* each view says once that it holds nothing (0.15: no section card repeats it, as reading mode's did) */
+ chk("with nothing kept, the empty line shows (the block's own, or the renderer's)",(seen.match(/Nothing kept here yet\./g)||[]).length===2&&(seen.match(/Nothing logged yet\./g)||[]).length===1,seen.slice(0,400));
  chk("the prose heading above a query is drawn",seen.includes("Your moments so far"),seen.slice(0,300));
 
  const kept=A.keptFor("fixture-query/log");

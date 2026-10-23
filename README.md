@@ -204,9 +204,11 @@ own questions.
 - **A folded callout of a kind with no colour of its own** (a `group`, or a kind with no colour of its own) is drawn on plain paper with no tint and no picture of its own. An untitled one is called "Note". Kinds the renderer draws keep their colour and picture.
 - **An activity's card** shows the activity's first paragraph under its title, read as inline Markdown as a module card's blurb is. An activity with no paragraph shows its title alone. The card counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started").
 - **An unfolded `group`**, or a kind with no colour of its own, is drawn as a `note` is.
-- **A page's name** is drawn above the page only when the page has no heading of its own. A heading that follows a sentence is shown once, in place.
+- **Tabs** are a tab bar at the top of the activity's column, under its title and opening, drawn for two or more tabs; on a narrow screen it scrolls sideways inside itself. A module's tabs are a bar above its list of activities.
+- **Pages** are turned at the foot: Back, "Page N of M" and Next, in the one row that one at a time's Back and Next also use.
+- **The frame** (the prose before the first question) is held under the top bar while the questions scroll, and stays above the step one at a time. A long one shows its first lines and Show all.
 - **Fonts.** Headings are set in Lexend and body text in Atkinson Hyperlegible, unless the theme's `font` says otherwise.
-- **Reading mode** folds a page into sections when the page has two or more, page by page, whatever else the page holds: questions, data views, kept entries.
+- **Nothing is folded but what the author folded.** A screen holding callouts folded with `-` (other than a hint or a solution) has one switch, Open all, that opens or folds exactly those; the reader's choice is kept per booklet in the browser.
 
 ---
 
