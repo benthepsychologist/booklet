@@ -134,7 +134,7 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:"), "row": ("end",), "text": ("long",),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
@@ -792,6 +792,21 @@ def icon_hint(name):
     return f"; did you mean {', '.join('`' + c + '`' for c in near)}?" if near else ""
 
 
+HTML_BLOCK_START = re.compile(r'^ {0,3}<[A-Za-z/!?]')
+THEMATIC_BREAK = re.compile(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$')
+
+
+def continues_paragraph(line):
+    """Would this line, straight under a callout's lines, continue their paragraph (Markdown's "lazy continuation")? Not when it is blank,
+    starts a quote (`>`), or starts a block of its own: a fence, a heading, a thematic break, a list item or an HTML block."""
+    if not line.strip() or line.startswith(">"):
+        return False
+    if (FENCE_LINE.match(line) or re.match(r'^ {0,3}#{1,6}([ \t]|$)', line) or THEMATIC_BREAK.match(line)
+            or re.match(r'^ {0,3}[-*+][ \t]+\S', line) or re.match(r'^ {0,3}1[.)][ \t]+\S', line) or HTML_BLOCK_START.match(line)):
+        return False
+    return True
+
+
 def check_settings(f, n, kind, w):
     """A line's settings against KIND_SETTINGS, and an unknown kind (SPEC.md section 4)."""
     allowed = KIND_SETTINGS.get(kind)
@@ -813,6 +828,8 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
         elif key == "icon" and val not in ICON_NAMES:
             err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so a renderer ignores it" + icon_hint(val))
+        elif key == "status" and val != "off":
+            err(f, f"line {n}: `status:{val}` is not a setting a line takes (only `status:off`, which hides the card's status line); a renderer ignores it")
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
     for flag in sorted(w["flags"]):
@@ -1187,6 +1204,17 @@ def check_format(f, text, fm):
                     if not w["id"]:
                         err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "
                                f"id, so an id the renderer makes up from the title is lost the day the title changes, orphaning the entries")
+                    if w["set"].get("status") == "off" and any(re.sub(r'^>[ \t]?', '', x).strip() for x in lines[i + 1:body_end(lines, i)]):
+                        warn(f, f"{where}: `status:off` hides the card's status line, so the `>` lines under this activity line (its status text) are not drawn")
+                    status_lines = [re.sub(r'^>[ \t]?', '', x) for x in lines[i + 1:body_end(lines, i)]]
+                    if any(x.strip() for x in status_lines):
+                        if any(re.match(r'^\s*(>|#{1,6}([ \t]|$)|[-*+][ \t]|\d+[.)][ \t]|`{3,}|~{3,})', x) for x in status_lines):
+                            warn(f, f"{where}: a `>` line under this activity line is block syntax (a quote or nested callout, a heading, a list item or a code fence); "
+                                    f"the lines under an activity line are its card's status text, one line of inline Markdown, so it would show as literal characters")
+                    end = body_end(lines, i)
+                    if end < len(lines) and continues_paragraph(lines[end]):
+                        warn(f, f"line {end + 1}: text straight under the activity line" + (" and its `>` lines" if end > i + 1 else "") + ", with no blank line between, is read by Markdown "
+                                f"and Obsidian as part of the callout, but a renderer takes it as the activity's own paragraph (its blurb); leave a blank line after the activity line" + (" and its `>` lines" if end > i + 1 else ""))
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         if w["set"].get("parent") is not None:
