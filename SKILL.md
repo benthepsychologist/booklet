@@ -417,8 +417,8 @@ shows it under the prompt.
 | --- | --- | --- |
 | `text` | a written answer | nothing; `long` after the id for a bigger box |
 | `lines` | repeated one-line notes | nothing; stores under its own id, like any other question — an activity may have more than one |
-| `choice` | pick one | a task list, `- [ ] Option`; `[x]` marks the correct one, and `open` after the id lets the reader add their own |
-| `multi` | pick any number | a task list; `[x]` marks each correct one, and `open` after the id lets the reader add their own |
+| `choice` | pick one | a task list, `- [ ] Option`; `[x]` marks the correct one, `open` after the id lets the reader add their own, and a nested bullet under an option is that option's reply |
+| `multi` | pick any number | a task list; `[x]` marks each correct one, `open` after the id lets the reader add their own, and a nested bullet under an option is that option's reply |
 | `scale` | a numbered scale | a numbered list of anchors, starting at whatever number you want the scale to start at (usually `0.`) |
 | `matrix` | several items on one shared scale | a bulleted list of items, then a numbered list of anchors |
 | `number` | a number | nothing; `min:`, `max:`, `step:` after the id |
@@ -435,6 +435,23 @@ shows it under the prompt.
 - [ ] Walked
 - [ ] Gardened
 ```
+```markdown
+> [!choice|where] Where are you right now?
+- [ ] Calm
+  - That is the settling system at work.
+- [ ] Wound up
+  - That is the activating, unpleasant family.
+```
+
+**A reply for an option** is a bullet nested under it, indented two spaces (one
+space is not enough). A second nested bullet is a second line of the reply, and
+a blank line between options or replies ends the list, so leave none. When
+the reader picks the option, its reply shows under the options (for a `multi`,
+each picked option's reply, in order; with `[x]` marks, once Check is pressed). It is inline Markdown, one or two
+sentences, and it is content: never stored, never counted as an option, and
+never part of the option's own text. Give an option no reply by writing none.
+Only a `choice` or `multi` takes replies, and `[x]` and a following
+`[!solution]-` work with them as before.
 ```markdown
 > [!scale|clarity] How clear was the reading?
 
@@ -504,6 +521,11 @@ itself is never shown.
   `1.` interrupt a paragraph directly; any other number is swallowed into the
   question's title without the blank line. A task list or a bulleted list never
   needs one.
+- **A reply is under its option, and only there.** A nested bullet under a
+  `scale`'s anchor, a `matrix`'s item or a menu's entry is not a reply (the
+  linter warns), and an option that comes from `menu:` has none. Keep an
+  option's reply to its own nested bullet; do not put the option's words on a
+  second line.
 - **A `choice`'s options are identified by position, not text.** The second
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
@@ -800,7 +822,9 @@ behind a worked figure ("assumes one reminder per visit").
 
 **Widgets.** A `widget` line draws with data for one of the renderer's two
 engines — `svg-regions` (clickable figures) and `grid-select` (a grid of
-words) — embedded right in the file:
+words) — embedded right in the file. `readonly` after the id shows the widget
+without letting the reader operate it, and `describe` adds each cell's or
+region's `note` beneath it:
 
 ````markdown
 > [!widget|grid] Effort and impact
@@ -834,7 +858,7 @@ build the activity from `text`/`choice`/etc. instead.
 - **A translation is a sibling file**, `<slug>.<lang>.booklet.md`, with the
   same `id`, the same module and activity ids, and the same number of entries
   in every list (a `choice`'s or `multi`'s options, a `scale`'s anchors, a
-  `matrix`'s items and anchors, a menu's entries), **in the same order**, so
+  `matrix`'s items and anchors, a menu's entries, and an option's reply), **in the same order**, so
   answers carry across the sibling files unchanged. Write each
   language as a native speaker would, not word for word: natural phrasing,
   local examples, the language's own punctuation (`¿…?`, `¡…!`).
@@ -884,6 +908,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a question with no id | `this text question has no id, so its answer would have nowhere to go` | add one, `[!text|id] …` |
 | an activity or module line with no id | `an activity line needs an id; write `> [!activity|my-id] Title`` / `a module line needs an id` | add the id; a kept entry is stored under the activity's id, so one made up from the title is lost when the title changes |
 | a `choice`/`multi` with no options | `this choice question 'x' has no options under it, so it is not drawn` (it adds "the bullets under it are plain bullets" if you wrote `- Red`) | add a task list, `- [ ] Option` (plain bullets are a menu's form) |
+| a nested bullet under a `scale` anchor, a `matrix` item or a menu entry | `warn a scale takes no replies` / `a nested bullet under a matrix item is read as another item, not as a reply` / `...under a menu entry...` | a reply belongs under an option of a `choice` or `multi`; elsewhere, write it as prose or drop it |
 | a `scale` with no numbered list, or a repeated number | `this scale question 'x' has no anchors under it` / `repeats anchor number 1` | write `1. Low`, `2. High`; the number is the stored answer, so use each once |
 | a widget with no data | `the widget 'x' names no data block (write ![[#^its-id]] under the line)` | add the embed line and the fenced `booklet widget` block |
 | a widget block that is not valid JSON | `the `booklet widget` block is not valid JSON (…, its line N)` | fix the comma or quote at that position |
