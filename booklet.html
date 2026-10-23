@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-zO6TKyYK5aXshKZL/DoCiMr2tzDUlxXVhaCLlMfxz48=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-U8TivhqLV8SkqIWV4GLvWEUPCh86rrUlNDj36FBEICU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -234,9 +234,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --fam-read:'Atkinson Hyperlegible', Verdana, Tahoma, sans-serif;
     --serif:'Lexend', 'Atkinson Hyperlegible', var(--fam-sans);
     --sans:'Atkinson Hyperlegible', var(--fam-sans);
-    /* layout: the content area's widest, the one centred column of the home, module and activity screens (and their
-       lists of cards), the readable measure of prose, and the height a frame held under the bar may take (in its own
-       text's em, so it is measured as drawn: THE FRAME) */
+    /* layout: the content area's widest, the one centred column of the home and module screens (and their lists of
+       cards), the readable measure of prose, and the height a frame held under the bar may take (in its own text's em,
+       so it is measured as drawn: THE FRAME) */
     --content-w:76rem; --col-w:48rem; --measure:70ch; --pin-h:min(7.5em,22vh);
     --rd-w:clamp(17rem,calc(100vw - 42rem),24rem);
     /* the same in every theme (the tint is, so the ink and chips drawn on it are, and a grid's cell colours are the widget's own data); print has no copy of them */
@@ -315,9 +315,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
   /* page */
   /* wide: the content area runs to --content-w (76rem), and a wider screen than
-     that centres the page as a whole. A module's screen and its activities' are
-     one centred column of --col-w (.cd-col, below); a wiki keeps its menu beside the page.
-     Prose keeps its own readable measure below; data and figures use the width. */
+     that centres the page as a whole. A module's screen is one centred column of
+     --col-w (.cd-col, below); an activity uses the content area; a wiki keeps its
+     menu beside the page. Prose keeps its own readable measure below; data and
+     figures use the width. */
   .page{max-width:calc(var(--content-w) + 4rem);margin:0 auto;padding:1.5rem 1rem 6rem}
   @media (min-width:900px){.page{padding:2.5rem 2rem 6rem}}
   .col{max-width:none}
@@ -658,6 +659,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .tab:hover{color:var(--ink);background:var(--accent-soft)}
   .tab[aria-selected="true"]{border-bottom-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:800}
   .tab:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:-2px}
+  /* in an activity, the tab bar and the pager keep the prose's measure: they sit with the text, not across the width */
+  .col>.tabbar,.cd-foot{max-width:var(--measure)}
   /* a control the keyboard reaches is scrolled clear of the bar and a pinned frame: holdTop sets this rule's value (in the
      stylesheet, so the root's own style keeps the theme's properties and --ap-top only) */
   html{scroll-padding-top:4.4rem}
@@ -7293,8 +7296,8 @@ function bookletCard(e){const L=strings("library");const u=strings("ui");const n
    tab bar when it has tabs, the page on show and its blocks, and the foot. One
    that repeats (the file's `repeat`) also shows the entries kept so far and a
    Finalize that keeps the next one; any other keeps its answers in the booklet's
-   own `answers`, exactly as the file's record does. Its column is the module
-   screen's (centreScreen), in a wiki the wiki's. */
+   own `answers`, exactly as the file's record does. Its column is the content
+   area (prose keeps its measure in it), in a wiki the wiki's. */
 function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id);const mod=moduleOf(id)||{};
   const W=wikiOf(holderOf(id));
   /* the panel of the draw before is closed first (readingBegin): a module that is one activity draws its opening here, and
@@ -7336,7 +7339,7 @@ function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id)
     if(about) col.append(about);
     const rm=single?removeModuleControl(holder):null;if(rm) col.append(rm);}
   if(W) main.append(wikiFrame(W,id,[col]));
-  else{main.append(col);centreScreen(main);}}
+  else main.append(col);}
 /* The head of an activity's page: its title, and, when its line names an `icon:`, the picture its card shows (cardPicture decides: the spot of
    that name in teaching, the line icon in briefing) in the card's own tile and colour, to the left of the title. No `icon:`: the title alone. */
 function pageHead(id,m,titleText,W){

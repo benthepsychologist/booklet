@@ -1,6 +1,6 @@
 // Browser check of tabs, the pager, one at a time across pages, the fold switch and the frame (0.15), at 390 and 1280 px.
-// The page never scrolls sideways; at 1280 an activity's content column has its module screen's left edge and width; the
-// tab bar follows the ARIA tabs pattern by keyboard; a page turn brings the content's top into view and puts the focus
+// The page never scrolls sideways; an activity's column is the whole content area (wider than the module screen's centred
+// column at 1280), and its tab bar and pager start at its left edge and keep the prose's measure; the tab bar follows the ARIA tabs pattern by keyboard; a page turn brings the content's top into view and puts the focus
 // there, and a screen reader hears which page it is; a typed answer survives tab and page changes; the fold switch shows
 // only with callouts the author folded and never opens a hint; the frame is held under the bar while the questions scroll,
 // and stays above the step one at a time; a frame is held only when it fits whole in the pin's height (a short line of
@@ -262,7 +262,14 @@ See [[#Check-ins]] for the two-week questions.
     /* the activity: its opening, its tab bar, the same column */
     ok(await tabs(p)==='Do it*|Read more',W+': the activity has a tab bar of its two tabs: '+await tabs(p));
     const actCol=await col(p);
-    if(W===1280) ok(actCol.x===modCol.x&&actCol.w===modCol.w,'1280: the activity\'s content column has the module screen\'s left edge and width '+JSON.stringify({modCol,actCol}));
+    const area=await p.evaluate(()=>{const m=document.querySelector('#main .col').parentElement,r=m.getBoundingClientRect(),c=getComputedStyle(m);
+      return {x:Math.round(r.left+parseFloat(c.paddingLeft)),w:Math.round(r.width-parseFloat(c.paddingLeft)-parseFloat(c.paddingRight))};});
+    ok(actCol.x===area.x&&actCol.w===area.w,W+': the activity\'s column is the whole content area '+JSON.stringify({area,actCol}));
+    if(W===1280) ok(modCol.w<actCol.w,'1280: wider than the module screen\'s centred column '+JSON.stringify({modCol,actCol}));
+    const lined=await p.evaluate(()=>{const c=document.querySelector('#main .col').getBoundingClientRect(),m=parseFloat(getComputedStyle(document.querySelector('#main .col p')).maxWidth);
+      const box=s=>{const e=document.querySelector(s).getBoundingClientRect();return {x:Math.round(e.left),r:Math.round(e.right)};};
+      return {col:Math.round(c.left),measure:Math.round(m),bar:box('#main .col>.tabbar'),foot:box('#main .cd-foot')};});
+    ok([lined.bar,lined.foot].every(b=>b.x===lined.col&&b.r<=lined.col+lined.measure+1),W+': the tab bar and the pager start at the column\'s left edge and keep the prose\'s measure '+JSON.stringify(lined));
     const order=await p.evaluate(()=>{const o=[...document.querySelectorAll('#main .col > *')];const i=f=>o.findIndex(f);
       return i(n=>/stays on this device/.test(n.textContent)&&!n.matches('[role=tablist],[role=tabpanel]'))<i(n=>n.matches('[role=tablist]'));});
     ok(order,W+': the opening is above the tab bar');

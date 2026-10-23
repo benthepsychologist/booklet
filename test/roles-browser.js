@@ -52,8 +52,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
      const pills=[...ul.querySelectorAll(':scope>li.pill')].map(e=>{const r=e.getBoundingClientRect();return {y:Math.round(r.y),x:Math.round(r.x),r:Math.round(r.right),h:Math.round(r.height)};});
      return {n:pills.length,ys:pills.map(x=>x.y),inside:pills.every(x=>x.r<=u.right+1),ul:Math.round(u.width)};});
    ok(strip.n===6&&strip.inside,'pills: six, in one strip, none outside it ('+JSON.stringify(strip)+')');
-   /* 0.15: an activity's column is its module screen's (48rem), so the five short ones fill two rows there, not one */
-   ok(new Set(strip.ys.slice(0,5)).size<=2&&strip.ys.slice(0,4).every(y=>y===strip.ys[0]),'pills: the short ones share rows at 1280px, four to the first ('+strip.ys.join(',')+')');
+   ok(new Set(strip.ys.slice(0,5)).size===1,'pills: the five short ones share one row at 1280px ('+strip.ys.join(',')+')');
    const val=await p.evaluate(()=>{const ul=document.querySelectorAll('ul.dv-list')[0];
      return [...ul.querySelectorAll('li.dv-row')].map(li=>{const v=li.querySelector('.dv-val');const l=li.getBoundingClientRect(),r=v.getBoundingClientRect();return {gap:Math.round(l.right-r.right),w:Math.round(l.width)};});});
    ok(val.length===4&&val.every(x=>x.gap<=12&&x.gap>=0),'list: the value sits at the right edge of its row at 1280px ('+JSON.stringify(val)+')');

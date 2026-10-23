@@ -81,8 +81,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    const rows=await p.evaluate(()=>[...document.querySelectorAll('.pblock.row')].map(r=>[...r.querySelectorAll(':scope>.rowcell')].map(c=>{const b=c.getBoundingClientRect();return {x:Math.round(b.x),y:Math.round(b.y),w:Math.round(b.width)};})));
    ok(rows.length===2,'two rows are drawn ('+rows.length+')');
    ok(rows[0].length===2&&rows[0][0].y===rows[0][1].y&&rows[0][1].x>rows[0][0].x+200,'row 1 (two tables): side by side at 1280px ('+JSON.stringify(rows[0])+')');
-   /* 0.15: an activity's column is its module screen's (48rem), room for two cells of 20rem: the third goes under them */
-   ok(rows[1].length===3&&rows[1][0].y===rows[1][1].y&&rows[1][2].y>rows[1][0].y,'row 2 (three cells): side by side as room allows at 1280px, two then one ('+JSON.stringify(rows[1])+')');
+   ok(rows[1].length===3&&new Set(rows[1].map(c=>c.y)).size===1,'row 2 (three cells): side by side at 1280px ('+JSON.stringify(rows[1])+')');
    ok(rows[1].every(c=>c.w>=250),'each cell is wide enough to read ('+rows[1].map(c=>c.w).join(',')+'px)');
    ok(await over(p)<=0,'no sideways overflow at 1280px');
    const tbl=await p.evaluate(()=>[...document.querySelectorAll('.pblock.row .md-table')].map(t=>t.getBoundingClientRect().width<=t.parentElement.getBoundingClientRect().width+1));

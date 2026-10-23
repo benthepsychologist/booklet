@@ -102,9 +102,9 @@ repository, `node test/one-file.js` writes it to `build/booklet.html` (it needs 
 **Themes and width.** The renderer has four built-in themes the reader picks from a menu in the top bar:
 Paper (the default look), Daylight (white), Night (dark) and Contrast (high contrast, light). *Auto* is the booklet's own
 look if it asks for one (a `booklet theme` block: strict named values, never CSS), otherwise the device (more
-contrast, then dark, then Paper); any explicit pick wins, and the choice is remembered in the browser only. Printing is always light. The home screen, a module's screen and its activities are one centred column, about 48rem
-wide (a wiki's pages run wider, to about 76rem, beside the wiki's menu); prose stays at a readable measure (about 70 characters), and tables, tiles, charts (bars and a line, drawn from data or from a reader's own answers), grouped lists and
-figures use the column's width and fold to one column on a phone.
+contrast, then dark, then Paper); any explicit pick wins, and the choice is remembered in the browser only. Printing is always light. The page is wide: the content area runs
+to about 76rem, prose stays at a readable measure (about 70 characters), and tables, tiles, charts (bars and a line, drawn from data or from a reader's own answers), grouped lists and
+figures use the width and fold to one column on a phone.
 
 **Views.** A `booklet query` draws a data block's rows, or a reader's kept entries, as cards, a table, a list, tiles, bars or a line. Every view draws a row from the same seven **roles** (`label`, `value`, `note`, `badge`, `tone`, `link`, `icon`, each read from the field of that name unless the query names another), so rows written with those names need only `from:` and `as:`. `link` (where the row leads) and `icon` (its picture) are drawn by tables, lists, tiles and cards. Tiles with no value are a strip of pills. One **Sort and filter** control, the same on every view and drawn when there are more than eight rows, lets a reader search, show one value of a field and sort on screen; it is kept in memory only, never in the file. A booklet's `density` sizes the views as well as the prose.
 
@@ -206,7 +206,7 @@ own questions.
 - **An activity's card** shows the activity's first paragraph under its title, read as inline Markdown as a module card's blurb is. An activity with no paragraph shows its title alone. The card counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started").
 - **An unfolded `group`**, or a kind with no colour of its own, is drawn as a `note` is.
 - **Tabs** are a tab bar at the top of the activity's column, under its title and opening, drawn for two or more tabs; on a narrow screen it scrolls sideways inside itself. A module's tabs are a bar above its list of activities.
-- **Pages** are turned at the foot: Back, "Page N of M" and Next, in the one row that one at a time's Back and Next also use.
+- **Pages** are turned at the foot: Back, "Page N of M" and Next, in the one row that one at a time's Back and Next also use. That row and the tab bar start at the column's left edge and keep the prose's measure.
 - **The frame** (the prose before the first question) stays whole above the step when the questions are taken one at a time, whatever its length. When they are all shown, it is held under the top bar while they scroll if it fits whole in the pin's height (`--pin-h`: the lesser of 7.5em of its text and 22% of the window's height); taller, it is reading: it scrolls with its page, nothing cut. A box the keyboard moves to is scrolled clear of the bar and the frame.
 - **Fonts.** Headings are set in Lexend and body text in Atkinson Hyperlegible, unless the theme's `font` says otherwise.
 - **Nothing is folded but what the author folded.** A screen holding callouts folded with `-` (other than a hint or a solution) has one switch, Open all, that opens or folds exactly those; the reader's choice is kept per booklet in the browser.

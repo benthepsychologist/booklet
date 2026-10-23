@@ -1,7 +1,7 @@
 // Browser check of pages as pagination (0.15; was the per-page folding check of 0.11.7). One activity of three pages: prose,
 // prose, then a question. Nothing folds: every page is drawn open, its headings as headings. The foot is one row, Back, "Page N
-// of M" and Next, and Next on the last page is the next activity's. A table wider than the column scrolls inside its own box; at
-// 400px the page itself never scrolls sideways. The module's screen shows the activity's first paragraph on its card, and a
+// of M" and Next, and Next on the last page is the next activity's. A wide table has the column's full width, and scrolls inside
+// its own box when wider still (on a phone); at 400px the page itself never scrolls sideways. The module's screen shows the activity's first paragraph on its card, and a
 // footnote with no quote is a plain reference in the panel.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pages-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
@@ -93,8 +93,8 @@ One trial only.
     ok(s.foot==='Back to the overview | Page 1 of 3 | Next',W+': the foot is one row: '+s.foot);
     ok(s.pageScroll<=0,W+': the page does not scroll sideways ('+s.pageScroll+')');
     const tbl=await p.evaluate(()=>{const t=document.querySelector('#main .md-table'),c=document.querySelector('#main .ap-body').getBoundingClientRect(),r=t.getBoundingClientRect();
-      return {scrolls:t.scrollWidth>t.clientWidth,inside:r.right<=c.right+1&&r.left>=c.left-1,sw:t.scrollWidth,cw:t.clientWidth};});
-    ok(tbl.scrolls&&tbl.inside,W+': the wide table scrolls inside its own box, within the column '+JSON.stringify(tbl));
+      return {scrolls:t.scrollWidth>t.clientWidth,inside:r.right<=c.right+1&&r.left>=c.left-1,full:Math.abs(r.width-c.width)<=1,sw:t.scrollWidth,cw:t.clientWidth};});
+    ok(tbl.inside&&tbl.full&&(W>=1280||tbl.scrolls),W+': the wide table has the column\'s full width, within it'+(W>=1280?'':', and scrolls inside its own box')+' '+JSON.stringify(tbl));
     await p.screenshot({path:path.join(OUT,'page1-'+W+'.png'),fullPage:true});
     /* a citation with no quote: a plain reference */
     await p.locator('.rd-mark').first().click();await p.waitForTimeout(300);
