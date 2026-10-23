@@ -77,6 +77,45 @@ lang: en
 - [ ] Charlie
   - About charlie.
 
+> [!multi|graded] Which are fruits?
+- [x] Apple
+  - An apple is a fruit.
+- [ ] Brick
+  - A brick is not.
+- [x] Cherry
+  - A cherry is a fruit.
+
+> [!choice|gradedc] Which is a fruit?
+- [x] Pear
+  - A pear is a fruit.
+- [ ] Stone
+  - A stone is not.
+
+> [!choice|openq open] Pick or add one?
+- [ ] Red
+  - A red reply.
+- [ ] Blue
+
+> [!choice|two] Two lines?
+- [ ] One
+  - First line.
+  - Second line.
+- [ ] Other
+
+> [!scale|sc] How clear?
+
+1. Low
+2. Mid
+3. High
+
+> [!scale|sc-long] How much, on a long scale?
+
+1. Not at all, really
+2. A little, perhaps
+3. Some of the time
+4. Often enough to notice
+5. Most of the time
+
 ***
 
 ## Widgets
@@ -107,17 +146,43 @@ ${WIDGET({})}
 
 > [!module|qs end] End
 `;
+const FILE2=`---
+booklet: "0.13"
+title: Matrix column
+lang: en
+---
+
+# Matrix column
+
+> [!module|mc] Matrix column
+
+> [!activity|log repeat] Daily log
+
+> [!matrix|phq] Over the last 2 weeks, how often have you been bothered by:
+
+- Little interest or pleasure in doing things
+- Feeling down, depressed, or hopeless
+- Trouble falling or staying asleep, or sleeping too much
+
+0. Not at all
+1. Several days
+2. More than half the days
+3. Nearly every day
+
+> [!module|mc end] End
+`;
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const file=path.join(OUT,'questions.booklet.md');fs.writeFileSync(file,FILE);
+  const file2=path.join(OUT,'matrixcolumn.booklet.md');fs.writeFileSync(file2,FILE2);
   const b=await chromium.launch();
-  const open=async(W)=>{
+  const open=async(W,fname)=>{
     const p=await (await b.newContext({viewport:{width:W,height:900}})).newPage();
     p.__bad=[];p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))p.__bad.push(m.text());});p.on('pageerror',e=>p.__bad.push(e.message));
     await p.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
-    await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(500);
+    await p.locator('#fileIn').setInputFiles(fname||file);await p.waitForTimeout(500);
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);
     if(!(await p.locator('.ap-frame').count())){if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
       await p.locator('button.mode').first().click();await p.waitForTimeout(700);}
@@ -141,19 +206,28 @@ ${WIDGET({})}
   ok(g.textH<=g.line*7,`1280: the long question is not a tall narrow column (${Math.round(g.textH/g.line*10)/10} lines)`);
   g=await geo(p,'Do you want a reminder');
   ok(g.beside,`1280: three short options sit beside a short question when both fit (${JSON.stringify({top:Math.round(g.pillsTop),bottom:Math.round(g.textBottom)})})`);
-  let n=await p.evaluate(()=>({rows:document.querySelectorAll('#main .mxrow').length,qs:document.querySelectorAll('#main .mxq').length}));
-  ok(n.qs===2&&n.rows===2,`1280: of two matrices, the one whose four anchors cannot sit beside a readable item is drawn as questions, the other as rows ${JSON.stringify(n)}`);
+  const shape=()=>p.evaluate(()=>({rows:document.querySelectorAll('#main .mxrow').length,qs:document.querySelectorAll('#main .mxq').length}));
+  let n=await shape();
+  ok(n.qs===0&&n.rows===4,`1280: both matrices are grids of rows, the four-anchor one too, now that a matrix has the content column's width ${JSON.stringify(n)}`);
   await p.screenshot({path:path.join(OUT,'questions-1280.png'),fullPage:true});
 
-  /* ---- a matrix answered wide keeps its answers when it is drawn narrow, and back ---- */
-  /* the narrow matrix: rows at 1280. Answer item 1 High, item 2 Low through the radios. */
-  await p.locator('#main .mxrow').nth(0).locator('.mxopt').nth(1).click();   // narrow matrix, item 1: High (2)
-  await p.locator('#main .mxrow').nth(1).locator('.mxopt').nth(0).click();   // item 2: Low (1)
+  /* ---- a matrix answered in one drawing keeps its answers in the other, and back ---- */
+  await size(p,1000);
+  n=await shape();
+  ok(n.rows===2&&n.qs===2,`1000: the matrix whose four anchors need more than the column is drawn as questions, the other as rows ${JSON.stringify(n)}`);
+  await size(p,1280);
+  /* the narrow matrix is rows 2 and 3 at 1280. Answer item 1 High, item 2 Low through the radios. */
+  await p.locator('#main .mxrow').nth(2).locator('.mxopt').nth(1).click();   // narrow matrix, item 1: High (2)
+  await p.locator('#main .mxrow').nth(3).locator('.mxopt').nth(0).click();   // item 2: Low (1)
   const wide=await answers(p);
   ok(/"narrow":\[2,1\]/.test(wide),`1280: the rows store one anchor number per item, by position ${wide}`);
   await size(p,400);
-  n=await p.evaluate(()=>({rows:document.querySelectorAll('#main .mxrow').length,qs:document.querySelectorAll('#main .mxq').length}));
+  n=await shape();
   ok(n.rows===0&&n.qs===4,`400: both matrices are one single-choice question per item (${n.qs} questions, ${n.rows} rows)`);
+  const looks=await p.evaluate(()=>{const stem=document.querySelector('#main .mx-asq > h3:first-child'),item=document.querySelector('#main .mxq h3');
+    if(!stem||!item) return null;const a=getComputedStyle(stem),c=getComputedStyle(item);
+    return {stemBorder:parseFloat(a.borderLeftWidth),itemBorder:parseFloat(c.borderLeftWidth),stemColour:a.color,itemColour:c.color,stemWeight:a.fontWeight,itemWeight:c.fontWeight};});
+  ok(looks&&looks.stemBorder>=2&&looks.itemBorder===0&&looks.stemColour!==looks.itemColour,`400: the matrix's own words are drawn as a stem above its questions, styled apart from them ${JSON.stringify(looks)}`);
   const pressed=await p.evaluate(()=>[...document.querySelectorAll('#main .mxq')].slice(2).map(q=>[...q.querySelectorAll('button')].map(b=>b.getAttribute('aria-pressed')==='true'?b.textContent:'').join('')));
   ok(pressed.join('|')==='High|Low',`400: the same answers are pressed under the questions (${pressed.join('|')})`);
   ok(await answers(p)===wide,'400: redrawing as questions changes no stored answer');
@@ -165,11 +239,11 @@ ${WIDGET({})}
   ok(/"wide":\[null,null\]/.test(await answers(p)),'400: pressing the answer again clears that item (null, as an item not yet answered)');
   await p.locator('#main .mxq').nth(0).locator('button').nth(2).click();
   await size(p,1280);
-  n=await p.evaluate(()=>({rows:document.querySelectorAll('#main .mxrow').length,qs:document.querySelectorAll('#main .mxq').length}));
-  ok(n.rows===2&&n.qs===2,`1280 again: the narrow matrix is rows again (${JSON.stringify(n)})`);
+  n=await shape();
+  ok(n.rows===4&&n.qs===0,`1280 again: both matrices are rows again (${JSON.stringify(n)})`);
   ok(await answers(p)===mid,'1280 again: widening changes no stored answer');
   const checked=await p.evaluate(()=>[...document.querySelectorAll('#main .mxrow')].map(r=>[...r.querySelectorAll('input')].filter(i=>i.checked).map(i=>i.value).join()));
-  ok(checked.join('|')==='2|1',`1280 again: the rows show the answers given while narrow and wide (${checked.join('|')})`);
+  ok(checked.join('|')==='2||2|1',`1280 again: the rows show the answers given while narrow and wide (${checked.join('|')})`);
   ok(p.__bad.length===0,'1280: no policy violation or page error '+p.__bad.join(' | '));
 
   /* ---- 400: options under the text, a question drawn as questions, nothing sideways ---- */
@@ -188,6 +262,13 @@ ${WIDGET({})}
   const gridOver=await p.evaluate(()=>{const w=innerWidth;return [...document.querySelectorAll('#main .quadwrap, #main .quadwrap *')].filter(e=>e.getBoundingClientRect().right>w+0.5).map(e=>e.className).slice(0,5);});
   ok(gridOver.length===0,'390: nothing in the grid-select with four axis labels passes the right edge '+JSON.stringify(gridOver));
   ok(await sideways(p)<=0,`390: page 2 (grid-select with all four labels, two maps) does not scroll sideways (${await sideways(p)}px)`);
+  /* no ordinary word is broken in the middle: a word is split only when it is longer than its cell (here, the one long word) */
+  const split=await p.evaluate(()=>{const out=[];document.querySelectorAll('#main .emb').forEach(c=>{const t=c.firstChild;if(!t||t.nodeType!==3) return;
+    for(const m of t.textContent.matchAll(/\S+/g)){const r=document.createRange();r.setStart(t,m.index);r.setEnd(t,m.index+m[0].length);
+      const tops=new Set([...r.getClientRects()].map(x=>Math.round(x.top)));if(tops.size>1) out.push(m[0]);}});return out;});
+  ok(split.join()==='Overwhelmedandexhaustedbyeverything','390: ordinary words are not split mid-word in the grid-select\'s chips; only the word longer than its cell is '+JSON.stringify(split));
+  const hints=await p.evaluate(()=>[...document.querySelectorAll('#main .tagfield .hint')].map(h=>h.scrollWidth<=h.clientWidth+1&&h.getBoundingClientRect().height>h.parentElement.getBoundingClientRect().height*0.1));
+  ok(hints.length>0&&hints.every(Boolean),'390: the hint above each cell\'s field wraps and is not cut '+JSON.stringify(hints));
   const axes=await p.evaluate(()=>[...document.querySelectorAll('#main .ax')].map(a=>a.textContent).join('|'));
   ok(axes==='more activated|more unpleasant|more pleasant|less activated','390: all four axis labels are drawn '+axes);
   await p.screenshot({path:path.join(OUT,'questions-widgets-390.png'),fullPage:true});
@@ -220,7 +301,7 @@ ${WIDGET({})}
   const replies=()=>p.evaluate(()=>[...document.querySelectorAll('#main .q-reply')].map(x=>x.textContent));
   const pillTexts=text=>p.evaluate(t=>{const h=[...document.querySelectorAll('#main h3')].find(x=>x.textContent.includes(t));const r=h.closest('.q-inline')||h.parentElement;return [...r.querySelectorAll(':scope > .pills > button')].map(b=>b.textContent);},text);
   const press=async(group,name)=>{const hit=await p.evaluate(([t,n])=>{const h=[...document.querySelectorAll('#main h3')].find(x=>x.textContent.includes(t));
-      const r=h.closest('.q-inline')||h.parentElement,bt=[...r.querySelectorAll(':scope > .pills > button')].find(x=>x.textContent===n);if(bt) bt.click();return !!bt;},[group,name]);
+      const r=h.closest('.q-inline')||h.parentElement,bt=[...r.querySelectorAll(':scope > .pills > button')].find(x=>x.textContent.replace(/\s+[\u2713\u2717].*$/,'')===n);if(bt) bt.click();return !!bt;},[group,name]);
     if(!hit) throw new Error('no option '+name+' under '+group);await p.waitForTimeout(100);};
   ok((await pillTexts('Where are you')).join()==='Calm,Wound up,Neither','a choice with replies still has exactly its options as buttons: no reply is an option '+(await pillTexts('Where are you')).join());
   ok((await replies()).length===0,'nothing is shown before a pick');
@@ -242,6 +323,85 @@ ${WIDGET({})}
   const st=await answers(p);
   ok(/"many":\[3,2\]/.test(st)&&!/settling|charlie|alpha/i.test(st.replace(/"many"/,'')),'what is stored is positions, never a reply '+st);
   ok(p.__bad.length===0,'replies: no policy violation or page error '+p.__bad.join(' | '));
+
+  /* ---- a graded multi shows its replies with its marks (after Check); a graded choice with its mark; the rest on the pick ---- */
+  const boxOf=(group)=>`(()=>{const h=[...document.querySelectorAll('#main h3')].find(x=>x.textContent.includes(${JSON.stringify(group)}));return h.closest('.q-inline')||h.parentElement;})()`;
+  const repliesOf=group=>p.evaluate(`[...${boxOf(group)}.querySelectorAll('.q-reply')].map(x=>x.textContent)`);
+  const check=async group=>{await p.evaluate(`${boxOf(group)}.querySelector('.q-acts button').click()`);await p.waitForTimeout(100);};
+  await press('Which are fruits','Apple');
+  ok((await repliesOf('Which are fruits')).length===0,'a graded multi: a pick shows no reply before Check (it would give the answer away)');
+  await check('Which are fruits');
+  ok((await repliesOf('Which are fruits')).join('|')==='An apple is a fruit.','a graded multi: Check shows the picked option\'s reply, with the marks '+(await repliesOf('Which are fruits')).join('|'));
+  await press('Which are fruits','Cherry');
+  ok((await repliesOf('Which are fruits')).length===0,'a graded multi: changing the picks hides the replies again until Check');
+  await check('Which are fruits');
+  ok((await repliesOf('Which are fruits')).join('|')==='An apple is a fruit.|A cherry is a fruit.','a graded multi: after Check, each picked option\'s reply in option order '+(await repliesOf('Which are fruits')).join('|'));
+  await press('Which is a fruit','Stone');
+  ok((await repliesOf('Which is a fruit')).join('|')==='A stone is not.','a graded choice: the reply comes with the mark, on the pick '+(await repliesOf('Which is a fruit')).join('|'));
+  ok(await p.evaluate(`${boxOf('Which is a fruit')}.querySelectorAll('.q-wrong, .q-answer').length`)===2,'a graded choice: its marks are shown with the reply');
+
+  /* ---- an `open` choice with replies: a listed option's reply shows; the reader's own option has none ---- */
+  await press('Pick or add','Red');
+  ok((await repliesOf('Pick or add')).join('|')==='A red reply.','an open choice: a listed option\'s reply shows on the pick');
+  await p.evaluate(`(()=>{const b=${boxOf('Pick or add')},i=b.querySelector('.q-own');i.value='Green';i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()`);
+  await p.waitForTimeout(150);
+  const own=await p.evaluate(`[...${boxOf('Pick or add')}.querySelectorAll('.pill-own .pill-btn')].map(x=>x.textContent).join()`);
+  ok(own==='Green'&&(await repliesOf('Pick or add')).length===0,'an open choice: the reader\'s own option is picked in place of the listed one and has no reply, and the old reply goes '+own);
+  await press('Pick or add','Blue');
+  ok((await repliesOf('Pick or add')).length===0,'an open choice: an option with no reply shows none');
+  ok((await pillTexts('Pick or add')).join()==='Red,Blue,Green,×'||(await pillTexts('Pick or add')).join().startsWith('Red,Blue'),'an open choice: its replies are not options '+(await pillTexts('Pick or add')).join());
+
+  /* ---- two nested bullets are two lines of the reply ---- */
+  await press('Two lines','One');
+  const lines=await p.evaluate(`[...${boxOf('Two lines')}.querySelectorAll('.q-reply p')].map(x=>x.textContent)`);
+  ok(lines.join('|')==='First line.|Second line.','two nested bullets under an option are both its reply, drawn as two lines '+lines.join('|'));
+
+  /* ---- a scale follows the same rule as a choice: beside when short and it fits, else under ---- */
+  g=await geo(p,'How clear');
+  ok(g.beside,'1280: a short scale sits beside its question, like short options');
+  g=await geo(p,'How much, on a long scale');
+  ok(!g.beside&&g.pillsTop>=g.textBottom-1,'1280: a scale of more than four anchors is under its question');
+  await size(p,400);
+  g=await geo(p,'How clear');
+  ok(!g.beside,'400: the short scale drops under its question when it does not fit beside');
+  await size(p,1280);
+
+  /* ---- a matrix in a column about 890 px wide with no page menu is a grid (it is a questionnaire's usual width once the menu is gone) ---- */
+  p=await open(960,file2);
+  let col=await p.evaluate(()=>{const w=document.querySelector('.mxwrap'),pr=document.querySelector('.mxprobe');return {wrap:w.clientWidth,need:pr.offsetWidth,rows:document.querySelectorAll('.mxrow').length,qs:document.querySelectorAll('.mxq').length,menu:document.querySelectorAll('.ap-frame').length};});
+  ok(col.menu===0&&col.wrap>=880&&col.wrap<=900,`960: the matrix's column is about 890 px with no page menu (${col.wrap}px)`);
+  ok(col.rows===3&&col.qs===0,`960: a PHQ-style matrix (four anchors "Not at all" to "Nearly every day") is a grid of rows in that column: it needs ${col.need}px of ${col.wrap}px ${JSON.stringify(col)}`);
+  await p.screenshot({path:path.join(OUT,'matrix-column-960.png'),fullPage:true});
+  await size(p,1280);
+  col=await p.evaluate(()=>({wrap:document.querySelector('.mxwrap').clientWidth,rows:document.querySelectorAll('.mxrow').length}));
+  ok(col.rows===3&&col.wrap>900,`1280: and a grid at the full width the column has (${col.wrap}px)`);
+  await p.screenshot({path:path.join(OUT,'matrix-column-1280.png'),fullPage:true});
+
+  /* ---- the measuring box takes no room: a 1px-high one must not make the page scroll sideways, and it has no size ---- */
+  await size(p,400);
+  await p.addStyleTag({content:'.mxprobe{height:1px!important}'});await p.waitForTimeout(200);
+  ok(await sideways(p)<=0,`400: the measuring box, even 1px high, does not scroll the page sideways (${await sideways(p)}px)`);
+  const pbox=await p.evaluate(()=>{const r=document.querySelector('.mxprobebox').getBoundingClientRect();return {w:r.width,h:r.height,o:getComputedStyle(document.querySelector('.mxprobebox')).overflow};});
+  ok(pbox.w===0&&pbox.h===0&&pbox.o==='hidden',`400: the measuring box is a zero-size clipped box ${JSON.stringify(pbox)}`);
+  ok(await p.evaluate(()=>document.querySelectorAll('.mxq').length)===3,'400: and the matrix is one question per item on a phone');
+
+  /* ---- a matrix in a repeating activity across Finalize, drawn as questions and as rows ---- */
+  await p.evaluate(()=>{const a=document.querySelectorAll('.mxq')[0].querySelectorAll('button')[1];a.click();});await p.waitForTimeout(100);
+  const d1=await p.evaluate(()=>JSON.stringify(draftFor('mc/log')));
+  ok(/"phq":\[1,null,null\]/.test(d1),'400, repeating activity: a press as a question stores the matrix\'s list in the draft '+d1);
+  await p.locator('.finalize').click();await p.waitForTimeout(500);
+  const kept1=await p.evaluate(()=>JSON.stringify(keptFor('mc/log').map(e=>e.phq)));
+  ok(kept1==='[[1,null,null]]','400: Finalize keeps the matrix\'s list in the entry '+kept1);
+  const after=await p.evaluate(()=>({pressed:[...document.querySelectorAll('.mxq button')].filter(b=>b.getAttribute('aria-pressed')==='true').length,qs:document.querySelectorAll('.mxq').length,draft:JSON.stringify(draftFor('mc/log'))}));
+  ok(after.qs===3&&after.pressed===0,'400: after Finalize the matrix is drawn again, unanswered, as questions '+JSON.stringify(after));
+  await size(p,1280);
+  await p.locator('.mxrow').nth(2).locator('.mxopt').nth(3).click();await p.waitForTimeout(100);
+  const d2=await p.evaluate(()=>JSON.stringify(draftFor('mc/log')));
+  ok(/"phq":\[null,null,3\]/.test(d2),'1280, repeating activity: a radio answers the new draft, as rows '+d2);
+  await p.locator('.finalize').click();await p.waitForTimeout(500);
+  const kept2=await p.evaluate(()=>JSON.stringify(keptFor('mc/log').map(e=>e.phq)));
+  ok(kept2==='[[1,null,null],[null,null,3]]'||kept2==='[[null,null,3],[1,null,null]]','1280: a second Finalize keeps a second entry, the first one unchanged '+kept2);
+  ok(p.__bad.length===0,'matrix column: no policy violation or page error '+p.__bad.join(' | '));
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'ALL PASSED');process.exit(fails.length?1:0);
 })().catch(e=>{console.log('FAIL the check stopped: '+String((e&&e.message)||e).split('\n')[0]);process.exit(1);});

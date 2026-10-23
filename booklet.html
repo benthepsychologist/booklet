@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-S7JAEv75v8IlLVC6qGIppVQ4pOe2HxmBsLJ8kwDUvTI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-7lsA+LbSu+ZKb2tufem1q2u1LAUwgIC2Xw/r8ah4v24=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -235,7 +235,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --serif:'Lexend', 'Atkinson Hyperlegible', var(--fam-sans);
     --sans:'Atkinson Hyperlegible', var(--fam-sans);
     /* layout: the content area's widest, and the readable measure of prose */
-    --content-w:76rem; --measure:70ch; --q-text-min:20rem;
+    --content-w:76rem; --measure:70ch; --q-text-min:20rem; --mx-text-min:15rem;
     --rd-w:clamp(17rem,calc(100vw - 42rem),24rem);
     /* the same in every theme (the tint is, so the ink and chips drawn on it are, and a grid's cell colours are the widget's own data); print has no copy of them */
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
@@ -322,7 +322,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   @media (min-width:900px){.page{padding:2.5rem 2rem 6rem}}
   .col{max-width:none}
   /* the readable measure for prose (data and figures keep the full width, above) */
-  h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.mxwrap,.q-inline,.oneline,.notice,blockquote,ul.plain,.rd-callout,
+  h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.q-inline,.oneline,.notice,blockquote,ul.plain,.rd-callout,
   .md>:is(ul,ol,h4,h5,h6,dl){max-width:var(--measure)}
 
   /* home */
@@ -478,6 +478,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .rowcell .q-inline{display:block}
   /* an option's reply, under the options */
   .q-replies{margin:-.4rem 0 1rem} .q-replies:empty{display:none}
+  .q-reply p{margin:0} .q-reply p+p{margin-top:.25rem}
   .q-reply{margin:0 0 .4rem;padding:.45rem .8rem;border-left:var(--focus-w) solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;font-family:var(--sans);font-size:.95rem;color:var(--ink)}
   /* one at a time */
   .oat-ctl{display:inline-flex;gap:.25rem;padding:.2rem;margin:.6rem 0 1rem;border:var(--bw) solid var(--rule);border-radius:999px;background:var(--surface);font-family:var(--sans)}
@@ -498,20 +499,24 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* matrix: each row is its item and its answers as pills (one set of radios, the pill is the label's text), the item beside the pills
      when the column has room for its readable width and the pills, else drawMatrix draws each item as a single-choice question (.mx-q) */
   .mxwrap{container-type:inline-size;position:relative;margin:.25rem 0 1rem}
-  .mxprobe{position:absolute;left:0;top:0;width:max-content;height:0;overflow:hidden;visibility:hidden;pointer-events:none;display:flex;gap:.45rem;white-space:nowrap;
-    padding-left:calc(var(--q-text-min) + .9rem);font-family:var(--sans)}
-  .mxprobe span{box-sizing:border-box;min-width:44px;padding:.4rem .95rem;border:var(--bw) solid transparent;font-size:.95rem;font-weight:700;line-height:1.2}
+  /* the measuring box: no size at all, and what it holds is clipped, so it can never make the page wider or scroll it */
+  .mxprobebox{position:absolute;left:0;top:0;width:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none}
+  .mxprobe{position:absolute;left:0;top:0;width:max-content;display:flex;gap:.45rem;white-space:nowrap;
+    padding-left:calc(var(--mx-text-min) + .9rem);font-family:var(--sans)}
+  .mxprobe span{box-sizing:border-box;min-width:44px;padding:.4rem .7rem;border:var(--bw) solid transparent;font-size:.95rem;font-weight:700;line-height:1.2}
   .mx{display:block;font-family:var(--sans)}
   .mxrow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.4rem .9rem;border-top:1px solid var(--rule);padding:.45rem 0}
   .mxitem{color:var(--reader);min-width:0}
   .mxrow .mxopts{display:flex;flex-wrap:wrap;gap:.45rem;justify-content:flex-end}
   .mxopt{position:relative;display:inline-flex;cursor:pointer}
   .mxopt input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
-  .mxopt span{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;box-sizing:border-box;border:var(--bw) solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:.4rem .95rem;font-size:.95rem;font-weight:700;line-height:1.2}
+  .mxopt span{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;box-sizing:border-box;border:var(--bw) solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:.4rem .7rem;font-size:.95rem;font-weight:700;line-height:1.2}
   .mxopt:hover span{background:var(--accent-soft)}
   .mxopt input:checked+span{background:var(--accent);color:var(--on-accent)}
   .mxopt input:focus-visible+span{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
   .mx-q .mxq .pills{max-width:none}
+  /* drawn as questions, the matrix's own words are the stem above them: quieter than the questions it frames */
+  .mx-asq>h3:first-child{font-family:var(--sans);font-weight:600;font-size:1.02rem;color:var(--ink);margin:.4rem 0 .6rem;padding:.1rem 0 .1rem .8rem;border-left:var(--focus-w) solid var(--rule)}
 
   /* entry read view */
   .entry{background:var(--surface);border:var(--bw) solid var(--rule);border-radius:14px;padding:.9rem 1.1rem;margin:0 0 1rem}
@@ -543,10 +548,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .q{color:var(--tint-ink);border-radius:14px;padding:.75rem .8rem .8rem;min-height:9rem;display:flex;flex-direction:column;gap:.5rem;min-width:0}
   .q .qn{font-family:var(--sans);font-size:.95rem;font-weight:800;color:var(--qd)}
   .q .qb{display:flex;flex-wrap:wrap;gap:.4rem}
-  .emb{max-width:100%;overflow-wrap:anywhere;border:var(--bw) solid var(--tint-chip-bd);background:var(--tint-chip);color:var(--tint-ink);border-radius:999px;padding:.45rem .85rem;font-size:.92rem;font-weight:600;line-height:1.2;min-height:2.4rem}
+  .emb{max-width:100%;overflow-wrap:break-word;hyphens:auto;border:var(--bw) solid var(--tint-chip-bd);background:var(--tint-chip);color:var(--tint-ink);border-radius:999px;padding:.45rem .85rem;font-size:.92rem;font-weight:600;line-height:1.2;min-height:2.4rem}
   .emb:hover{border-color:var(--qd)}
   .emb[aria-pressed="true"]{background:var(--qd);color:var(--on-deep);border-color:var(--qd)}
-  @media (max-width:480px){.q{min-height:8rem;padding:.55rem .55rem .6rem} .emb{padding:.4rem .7rem;font-size:.88rem}}
+  /* narrow: the cells give their room to the words (a word is broken only if it is longer than the cell) */
+  @media (max-width:480px){.q{min-height:8rem;padding:.5rem .4rem .55rem} .q .qb{gap:.3rem} .emb{padding:.3rem .5rem;font-size:.82rem;min-height:2.2rem} .quadwrap{grid-template-columns:1.25rem minmax(0,1fr) 1.25rem;gap:.2rem} .tagfield .field{text-overflow:ellipsis;font-size:.85rem;padding:.3rem .4rem}}
 
   /* a grid shown without being operated */
   .gq .q{min-height:7rem}
@@ -3813,19 +3819,25 @@ const LISTS={
   /* a bulleted list: a matrix's items or a shared menu's entries (`- text`; a `[ ]` box is dropped) */
   bullets:[/^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$/,m=>m[1].trim()]};
 const listOf=(what,lines,i)=>what==="options"?optionsUnder(lines,i):listUnder(lines,i,...LISTS[what]);
-/* The task list under a choice or multi, with each option's reply (SPEC.md section 5): a bullet nested under an option, written
-   deeper than it, is that option's reply, and so is a line indented deeper still straight under a reply (they join with a space). An
-   option's own text is its one line and never takes a reply in; a nested line that is no bullet and follows no reply ends the list, as
-   any indented line does. Each option is {text, correct, reply}; `reply` is "" when it has none. */
-const indentOf=ln=>ln.match(/^[ \t]*/)[0].replace(/\t/g,"    ").length;
+/* The task list under a choice or multi, with each option's reply (SPEC.md section 5), read as Obsidian shows it: a bullet nested under
+   an option is that option's reply, and it is nested when it is written at least as far in as the option's own text starts, the
+   column of the `[` (two spaces for `- [ ]`; one space is no reply and ends the list). Each nested bullet is one line of the reply (a
+   bullet nested deeper is one more line), and a line that is no bullet, written deeper than the bullet above it, goes on with that
+   line (joined with a space). An option's own text is its one line and never takes a reply in; any other indented line ends the list. Each
+   option is {text, correct, reply}; `reply` is "" when it has none, else its lines joined with a newline. */
+const colOf=s=>s.replace(/\t/g,"    ").length;
+const indentOf=ln=>colOf(ln.match(/^[ \t]*/)[0]);
+const textColOf=ln=>{const m=ln.match(/^([ \t]*[-*+][ \t]+)\[/);return m?colOf(m[1]):indentOf(ln)+2;};
 function optionsUnder(lines,i){let j=i,blanks=0;
   while(j<lines.length&&!lines[j].trim()){j++;blanks++;if(blanks>1) return null;}
-  const items=[];let at=0;
+  const items=[];let at=0,bullet=-1;
   for(;j<lines.length;j++){const ln=lines[j],m=ln.match(LISTS.options[0]);
-    if(m){items.push({...LISTS.options[1](m),reply:""});at=indentOf(ln);continue;}
-    const bullet=ln.match(/^[ \t]*[-*+][ \t]+(.*)$/),cur=items[items.length-1];
-    if(!cur||!ln.trim()||indentOf(ln)<=at||(!bullet&&!cur.reply)) break;
-    const t=(bullet?bullet[1]:ln).trim();cur.reply=cur.reply?cur.reply+" "+t:t;}
+    if(m){items.push({...LISTS.options[1](m),reply:""});at=textColOf(ln);bullet=-1;continue;}
+    const b=ln.match(/^[ \t]*[-*+][ \t]+(.*)$/),cur=items[items.length-1],ind=indentOf(ln);
+    if(!cur||!ln.trim()) break;
+    if(b&&ind>=at){cur.reply=cur.reply?cur.reply+"\n"+b[1].trim():b[1].trim();bullet=ind;continue;}
+    if(!b&&bullet>=0&&ind>bullet){cur.reply+=" "+ln.trim();continue;}
+    break;}
   return items.length?{items,next:j}:null;}
 /* A query block's body: `key: value` lines (YAML's plainest form). Returns
    its settings, or `bad` with the first line that is not one; `unknown` names the keys a query does not
@@ -5900,8 +5912,10 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
       pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),
         onclick:()=>toggle(n)},...words(o,true),mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
     const now=chosen();
-    if(b.replies){const got=now.filter(x=>typeof x==="number").sort((a,x)=>a-x);
-      (multi?got:got.slice(0,1)).forEach(n=>{if(b.replies[n-1]) replies.append(el("p",{class:"q-reply"},...words(b.replies[n-1])));});}
+    /* a graded multi (it has Check) shows its replies with its marks, once Check is pressed; any other question on the pick */
+    if(b.replies&&(!(multi&&graded)||checked)){const got=now.filter(x=>typeof x==="number").sort((a,x)=>a-x);
+      (multi?got:got.slice(0,1)).forEach(n=>{if(b.replies[n-1]) replies.append(el("div",{class:"q-reply"},
+        ...b.replies[n-1].split("\n").map(l=>el("p",{},...words(l)))));});}
     now.filter(x=>typeof x==="string").forEach(t=>pills.append(el("span",{class:"pill-own"},
       el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
       el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"))));
@@ -5927,15 +5941,18 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
     box.append(el("div",{class:"q-ownrow"},inp,el("button",{type:"button",class:"small",onclick:go},Q.addBtn)));}
   if(graded) box.append(acts,live);
   return box;}
-function drawScale(b,draft,activityId){const box=el("div",{});const anchors=b.anchors||[];
+function drawScale(b,draft,activityId){const anchors=b.anchors||[];
+  const inline=shortOptions(anchors.map(a=>a.text)),box=el("div",{class:inline?"q-inline":null});
   questionHead(box,b);
   const K=b.keys[0];const pills=el("div",{class:"pills"});
   const draw=()=>{pills.innerHTML="";anchors.forEach(a=>{const on=draft[K]===a.n;
     pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(on),onclick:()=>{
       draft[K]=on?null:a.n;markDirty();draw();}},...words(a.text,true)));});};
-  draw();box.append(pills);return box;}
+  draw();box.append(pills);
+  if(inline) besideWhenFit(box,pills);
+  return box;}
 /* A matrix: items answered on one shared scale of anchors. Wide enough for each item's words, at their readable width, to sit beside
-   a row of the anchors, each item is a row (grid). When it is not, each item is drawn as a single-choice question of its own, the
+   a row of the anchors (--mx-text-min, less than a single question's, since the anchors are shared), each item is a row (grid). When it is not, each item is drawn as a single-choice question of its own, the
    anchors its options, as other questionnaire systems do on a phone (stack). Either way the answer is the same list, one anchor
    number per item, by position, under the same key, so a width that changes back and forth loses nothing (SPEC.md section 5). A probe,
    hidden, is as wide as the words' readable width plus the anchors in one row: that is what the room is measured against. */
@@ -5966,15 +5983,15 @@ function drawMatrix(b,draft,activityId){const box=el("div",{});const items=b.ite
         onclick:()=>{set(i,cur(i)===a.n?null:a.n);paint();}},...words(a.text,true))));
       q.append(el("h3",{},...words(it)),pills);g.append(q);});
     return g;};
-  const probe=el("div",{class:"mxprobe","aria-hidden":"true"},...anchors.map(a=>el("span",{},...words(a.text,true))));
+  const probe=el("div",{class:"mxprobe"},...anchors.map(a=>el("span",{},...words(a.text,true))));
   const view=el("div",{});let mode=null;
   /* the view is rebuilt from the draft, which holds every answer; the keyboard focus goes back to the same item and anchor */
   const place=m=>{if(m===mode) return;
     const ae=document.activeElement,was=ae&&view.contains&&view.contains(ae)?[ae.getAttribute("data-i"),ae.getAttribute("data-n")]:null;
-    mode=m;view.innerHTML="";view.append(m==="stack"?stack():grid());
+    mode=m;view.innerHTML="";view.append(m==="stack"?stack():grid());box.classList.toggle("mx-asq",m==="stack");
     if(was&&was[0]!==null){const x=view.querySelector(`[data-i="${was[0]}"][data-n="${was[1]}"]`);if(x&&x.focus) x.focus({preventScroll:true});}};
   place("grid");
-  box.append(el("div",{class:"mxwrap"},probe,view));
+  box.append(el("div",{class:"mxwrap"},el("div",{class:"mxprobebox","aria-hidden":"true"},probe),view));
   if(typeof ResizeObserver==="function"){const wrap=box.lastChild;
     new ResizeObserver(()=>{const w=wrap.clientWidth;if(w) place(w>=probe.offsetWidth?"grid":"stack");}).observe(wrap);}
   return box;}

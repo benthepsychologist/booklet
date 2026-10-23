@@ -431,9 +431,11 @@ shows it under the prompt.
   - That is the activating, unpleasant family.
 ```
 
-**A reply for an option** is a bullet nested under it, indented two spaces. When
+**A reply for an option** is a bullet nested under it, indented two spaces (one
+space is not enough). A second nested bullet is a second line of the reply, and
+a blank line between options or replies ends the list, so leave none. When
 the reader picks the option, its reply shows under the options (for a `multi`,
-each picked option's reply, in order). It is inline Markdown, one or two
+each picked option's reply, in order; with `[x]` marks, once Check is pressed). It is inline Markdown, one or two
 sentences, and it is content: never stored, never counted as an option, and
 never part of the option's own text. Give an option no reply by writing none.
 Only a `choice` or `multi` takes replies, and `[x]` and a following

@@ -53,10 +53,23 @@ const q=(body,id)=>{const R=P.boot().parseFile(wrap(body));return {R,b:blocksOf(
   - First words of the reply
     and the rest of it.
   - A second nested bullet.
+    - A bullet nested deeper is one more line.
 - [ ] Two
 `,"cont");
- chk("a line indented deeper under a reply goes on with it, and a second nested bullet joins it, with a space",
-   b.replies[0]==="First words of the reply and the rest of it. A second nested bullet."&&b.options.join()==="One,Two",JSON.stringify([b.options,b.replies]));}
+ chk("each nested bullet is one line of the reply (as Obsidian shows it), a deeper bullet one more, and a deeper-indented line goes on with the line above it, joined with a space",
+   b.replies[0]==="First words of the reply and the rest of it.\nA second nested bullet.\nA bullet nested deeper is one more line."&&b.options.join()==="One,Two",JSON.stringify([b.options,b.replies]));}
+{const {b}=q(`> [!choice|onespace] One space?
+- [ ] One
+ - Not a reply: one space is less than the option's text.
+- [ ] Two
+`,"onespace");
+ chk("a bullet indented one space is no reply: it ends the option list, as Obsidian does not nest it",b.options.join()==="One"&&b.replies===undefined,JSON.stringify([b.options,b.replies]));}
+{const {b}=q(`> [!choice|ind] Indented option?
+  - [ ] One
+    - A reply at four.
+   - Three spaces is less than the option's text at four.
+`,"ind");
+ chk("the reply column is the option's own text column: an indented option's reply must be indented that far too",b.options.join()==="One"&&b.replies[0]==="A reply at four.",JSON.stringify([b.options,b.replies]));}
 {const {b}=q(`> [!choice|wrap] Wrapped?
 - [ ] One
   and the rest of the option
@@ -136,6 +149,38 @@ const lint=text=>{const f=path.join(os.tmpdir(),"replies-lint-"+process.pid+".bo
 - [ ] B
 `));
  chk("replies under the options of a choice and a multi lint clean",r.status===0&&r.errors.length===0&&r.warns.length===0,r.out);}
+{const r=lint(wrap(`> [!choice|one] One space?
+- [ ] One
+ - Not a reply.
+- [ ] Two
+`));
+ chk("a bullet indented one space under an option is warned about, and the message says how far in a reply goes",
+   r.status===0&&r.warns.length===1&&/line 13: a bullet under an option is its reply only when it is indented at least to the option's text/.test(r.warns[0]),r.out);}
+{const r=lint(wrap(`> [!choice|gap] Gap?
+- [ ] One
+
+  - A reply after a blank line.
+- [ ] Two
+`));
+ chk("a blank line between an option and its reply is warned about (it ends the list: what follows is read as text)",
+   r.warns.length===1&&/line 13: a blank line ends the option list/.test(r.warns[0]),r.out);}
+{const r=lint(wrap(`> [!choice|gap2] Gap?
+- [ ] One
+
+- [ ] Two
+`));
+ chk("a blank line between two options is warned about too",r.warns.length===1&&/line 13: a blank line ends the option list/.test(r.warns[0]),r.out);}
+{const r=lint(wrap(`> [!choice|fine] Fine?
+
+- [ ] One
+  - A reply.
+- [ ] Two
+
+A paragraph after the list is fine.
+
+- [ ] A to-do in prose does not count: a blank line and a paragraph came first.
+`));
+ chk("one blank line above the options, and a paragraph after the list, give no warning",r.warns.length===0&&r.errors.length===0,r.out);}
 {const r=lint(wrap(`> [!scale|s] Scale?
 
 0. Low

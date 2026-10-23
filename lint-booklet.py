@@ -709,33 +709,45 @@ def nested_in(items):
     return [k for k in range(1, len(items)) if indent_of(items[k].string) > indent_of(items[k - 1].string)]
 
 
+def text_col_of(line):
+    """The column where an option's own text starts: the `[` of its box (two for `- [ ]`). A nested bullet is a reply only from here on."""
+    m = re.match(r'^([ \t]*[-*+][ \t]+)\[', line)
+    return len(m.group(1).replace("\t", "    ")) if m else indent_of(line) + 2
+
+
 def option_list_below(lines, i):
     """The task list of a choice or multi straight under line i (zero or one blank line between), with each option's replies
-    (SPEC.md section 5), read as the renderer reads it: a bullet written deeper than its option is that option's reply, and a line
-    indented deeper still straight under a reply goes on with it. Returns (the option matches, the index after the list, the
-    indexes of the reply lines)."""
+    (SPEC.md section 5), read as the renderer reads it: a bullet written at least as far in as its option's text is that option's reply
+    (each nested bullet one line of it), and a line that is no bullet, indented deeper than the bullet above it, goes on with it.
+    Returns (the option matches, the index after the list, the indexes of the reply lines, the column where the last option's text
+    starts)."""
     j, blanks = i, 0
     while j < len(lines) and not lines[j].strip():
         j += 1
         blanks += 1
         if blanks > 1:
-            return [], i, []
-    out, replies, at, has_reply = [], [], 0, False
+            return [], i, [], 0
+    out, replies, at, bullet = [], [], 0, -1
     while j < len(lines):
         m = OPTION.match(lines[j])
         if m:
             out.append(m)
-            at, has_reply = indent_of(lines[j]), False
+            at, bullet = text_col_of(lines[j]), -1
             j += 1
             continue
-        if not out or not lines[j].strip() or indent_of(lines[j]) <= at:
+        if not out or not lines[j].strip():
             break
-        if not NESTED_BULLET.match(lines[j]) and not has_reply:
+        b = NESTED_BULLET.match(lines[j])
+        ind = indent_of(lines[j])
+        if b and ind >= at:
+            bullet = ind
+        elif not b and bullet >= 0 and ind > bullet:
+            pass
+        else:
             break
         replies.append(j)
-        has_reply = True
         j += 1
-    return (out, j, replies) if out else ([], i, [])
+    return (out, j, replies, at) if out else ([], i, [], 0)
 
 
 # any line that starts like a Booklet line, readable or not (the renderer's `calloutLine`)
@@ -769,7 +781,7 @@ def claim_end(kind, lines, i):
     a choice, multi (a task list), scale (a numbered list), menu (bullets) or matrix (bullets, then numbered anchors)."""
     k = body_end(lines, i)
     if kind in ("choice", "multi"):
-        got, k2, _ = option_list_below(lines, k)
+        got, k2, _, _ = option_list_below(lines, k)
         return k2 if got else k
     pat = {"scale": NUMBERED, "menu": BULLET, "matrix": BULLET}.get(kind)
     if pat:
@@ -1271,7 +1283,7 @@ def check_format(f, text, fm):
                         if dup:
                             err(f, f"{where}: the matrix {w['id']!r} repeats anchor number {', '.join(dup)} (each anchor needs its own number)")
                     if kind in ("choice", "multi") and w["id"]:
-                        own, _, _ = option_list_below(lines, after_body)
+                        own, _, _, _ = option_list_below(lines, after_body)
                         if w["set"].get("menu"):
                             if own:
                                 err(f, f"{where}: the question {w['id']!r} has both `menu:{w['set']['menu']}` and a list of its own (use one)")
@@ -1297,14 +1309,24 @@ def check_format(f, text, fm):
                     if kind in ("choice", "multi", "scale") and w["id"] and not bad_q:
                         if kind == "scale":
                             got, after_list = list_below(lines, after_body, NUMBERED)
+                            text_at = 0
                         else:
-                            got, after_list, _ = option_list_below(lines, after_body)
-                        if got and after_list < len(lines) and re.match(r"^[ \t]+\S", lines[after_list]) and not (TASK if kind != "scale" else NUMBERED).match(lines[after_list]):
-                            if kind == "scale" and NESTED_BULLET.match(lines[after_list]):
+                            got, after_list, _, text_at = option_list_below(lines, after_body)
+                        nxt_line = lines[after_list] if after_list < len(lines) else ""
+                        if got and nxt_line and re.match(r"^[ \t]+\S", nxt_line) and not (TASK if kind != "scale" else NUMBERED).match(nxt_line):
+                            if kind == "scale" and NESTED_BULLET.match(nxt_line):
                                 warn(f, f"line {after_list + 1}: a scale takes no replies (a nested bullet under an anchor): only the options of a choice or multi do, "
                                         f"so the list ends there and this line is read as text")
+                            elif kind != "scale" and NESTED_BULLET.match(nxt_line) and indent_of(nxt_line) < text_at:
+                                warn(f, f"line {after_list + 1}: a bullet under an option is its reply only when it is indented at least to the option's text "
+                                        f"(two spaces under `- [ ]`); this one is not, so the list ends there and it is read as text")
                             else:
                                 warn(f, f"line {after_list + 1}: the line after this list is indented, so the list ends there: put each option on one line")
+                        elif got and kind != "scale" and after_list + 1 < len(lines) and not nxt_line.strip():
+                            after_blank = lines[after_list + 1]
+                            if OPTION.match(after_blank) or (NESTED_BULLET.match(after_blank) and indent_of(after_blank) > 0):
+                                warn(f, f"line {after_list + 1}: a blank line ends the option list, so the options and replies after it are read as text "
+                                        f"(with raw checkboxes), not as part of this question: remove the blank line")
                     if w["id"] and not bad_q:
                         last_q = True
                     # Markdown lets only a list starting at 1 interrupt a paragraph:
