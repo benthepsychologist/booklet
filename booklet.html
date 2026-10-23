@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-qnx9L5of364VCWoLKsfL6OdGDzSfB7ePK/4t4I0tPKs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-sdmZHeMd1cQl6sDo+6fvT7pdNLsYXxTJWeTDCHxehZs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -8380,11 +8380,18 @@ if(typeof window!=="undefined"&&typeof window.matchMedia==="function"){
   const mq=window.matchMedia(PAGES_NARROW),again=()=>{
     if(RENDERING||!currentId||BOOK===EMPTY_BOOKLET) return;
     const mod=isModuleScreen(screen)?moduleForScreen(screen):holderOf(screen);
-    if(!wikiOf(mod)) return;
+    /* an activity of several pages (or a reading page with sections) draws its menu by the width as well: a rail on a narrow screen, as the reader left it on a wide one */
+    const paged=!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)&&(activityOf(screen).pages.length>1||!!(DRAWN&&DRAWN.reading));
+    if(!wikiOf(mod)&&!paged) return;
+    pagesOverlay=false;
     const a=document.activeElement,inBox=!!(a&&a.classList&&a.classList.contains("wk-q")),
-      ss=inBox&&typeof a.selectionStart==="number"?a.selectionStart:null,se=inBox&&typeof a.selectionEnd==="number"?a.selectionEnd:null;
+      CTL="#main input,#main textarea,#main select,#main button,#main summary,#main a[href]",
+      all=!inBox&&a&&a!==document.body&&document.querySelectorAll?Array.from(document.querySelectorAll(CTL)):[],at=all.indexOf(a),
+      ss=(inBox||at>=0)&&typeof a.selectionStart==="number"?a.selectionStart:null,se=(inBox||at>=0)&&typeof a.selectionEnd==="number"?a.selectionEnd:null;
     render();
-    if(inBox){const n=document.querySelector(".wk-q");if(n){n.focus({preventScroll:true});try{if(ss!==null) n.setSelectionRange(ss,se);}catch(e){/* no caret */}}}};
+    /* the search box is found again by its class; any other control the reader was in (a typed answer on a page of several pages) by its id, else its place among the page's controls */
+    const n=inBox?document.querySelector(".wk-q"):at>=0?((a.id&&document.getElementById(a.id))||Array.from(document.querySelectorAll(CTL))[at]):null;
+    if(n&&n.focus){n.focus({preventScroll:true});try{if(ss!==null&&n.setSelectionRange) n.setSelectionRange(ss,se);}catch(e){/* a control with no caret */}}};
   mq.addEventListener("change",again);}
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});

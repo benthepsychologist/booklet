@@ -9,6 +9,10 @@ This repository holds the format spec (`SPEC.md`), the reference renderer
 authoring skill (`SKILL.md`) and two examples. Modules live in their own
 repo, `booklet-registry`.
 
+## In progress — format 0.15 (booklet-hub deliverable `booklet-v0-15-update`), first change: the page menu redraws across 700px (item `v1-phone-page-menu`)
+
+A multi-page activity (and a reading page with sections) is now drawn again when the window crosses 700px, as a wiki already was, so a menu drawn open for a wide window no longer lies over the page when the window narrows (a phone turned, a window dragged), and a menu opened over the page on a narrow window is a column again when the window widens. Opened fresh at 400px the menu was already a closed rail. The renderer only: nothing a file may say changes, and the marker stays `"0.13"` until the 0.15 release (no 0.14 was released). `test/pagesmenu-browser.js` (new) does the resize both ways and fails on the previous renderer.
+
 ## The submit build (0.2.0; merged as #59, `106b1c7`, and #60, `b380e54`, 2026-10-22; booklet-hub items `submit-first-post` and `submit-confirm-and-keep`, deliverable `portal-submit-build`)
 
 A separate file for a host that needs a reader's answers sent to one address, such as the client portal's recepture service. **Never the published file**: `booklet.html` is unchanged (sha256 `71e4b934…`), and so are `test/guard.test.js` and `test/pledge-browser.js`.
