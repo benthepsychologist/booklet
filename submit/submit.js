@@ -8,9 +8,11 @@
    - on the reader's press, a screen listing their answers as they gave them (each answered question's words and the
      answer's, by module, in the booklet's own words), the exact text that would be sent one tap away, and a Send button;
    - on the reader's press of Send, one request: a POST of that text, as JSON, to the declared address, with no cookies, no
-     referrer and no redirect. The body is {"recipe", "answers"} (recepture's payload contract): the recipe the host named
-     with BookletSubmit.recipe(), else the booklet's own id; the answers are every module's once-answered questions in one
-     map, keyed by question id exactly as the file writes it. Kept entries and drafts are not sent. Two modules that answer
+     referrer and no redirect. The body is {"recipe", "answers", "booklet", "seen"} (recepture's payload contract; it keeps
+     extra top-level keys): the recipe the host named with BookletSubmit.recipe(), else the booklet's own id; the answers are
+     every module's once-answered questions in one map, keyed by question id exactly as the file writes it; "booklet" is the
+     file's id, version and language; "seen" says, for each answered question, what the reader was shown (its words, the options
+     in the order shown, the words picked). Kept entries and drafts are not sent. Two modules that answer
      the same id stop the send rather than lose one of them;
    - after the address answers 201, nothing the reader wrote is removed: the booklet stays open, kept in this browser as it
      was before, and can be downloaded as any booklet. Submit then reads Sent and sends nothing more until an answer
@@ -24,7 +26,7 @@
    file's policy allows no other origin. */
 (function(){
 "use strict";
-const SUBMIT_VERSION="0.2.0";
+const SUBMIT_VERSION="0.3.0";
 const tag=document.querySelector('meta[name="booklet-submit"]');
 const ENDPOINT=tag?String(tag.getAttribute("content")||"").trim():"";
 let where="";
@@ -33,7 +35,7 @@ try{where=ENDPOINT?new URL(ENDPOINT).host:"";}catch(e){where="";}
 let RECIPE=null;
 const T={
   en:{submit:"Submit",title:"Send your answers?",
-    help:h=>"Pressing Send sends the answers below to "+h+", and nothing else. Nothing has been sent yet.",
+    help:h=>"Pressing Send sends the answers below to "+h+", with the questions and options as you saw them, and nothing else. Nothing has been sent yet.",
     exact:"Show exactly what is sent",other:"Other answers in this booklet",
     send:"Send",cancel:"Cancel",sending:"Sending…",close:"Close",sentTitle:"Sent",
     sent:r=>"Your answers were received"+(r?" (reference "+r+")":"")+". They are still here in your booklet.",
@@ -43,7 +45,7 @@ const T={
     nothing:"There are no answers to send yet."},
   /* es and fr checked by /localize (2026-10-22): "booklet" is cuadernillo and carnet, as in the renderer's own tables */
   es:{submit:"Enviar",title:"¿Enviar tus respuestas?",
-    help:h=>"Al presionar Enviar, las respuestas de abajo se envían a "+h+", y nada más. Todavía no se ha enviado nada.",
+    help:h=>"Al presionar Enviar, las respuestas de abajo se envían a "+h+", con las preguntas y las opciones tal como las viste, y nada más. Todavía no se ha enviado nada.",
     exact:"Mostrar exactamente lo que se envía",other:"Otras respuestas en este cuadernillo",
     send:"Enviar",cancel:"Cancelar",sending:"Enviando…",close:"Cerrar",sentTitle:"Enviado",
     sent:r=>"Tus respuestas se recibieron"+(r?" (referencia "+r+")":"")+". Siguen aquí, en tu cuadernillo.",
@@ -52,7 +54,7 @@ const T={
     clash:id=>"No se pueden enviar estas respuestas: dos partes de este cuadernillo usan el mismo identificador de pregunta, “"+id+"”.",
     nothing:"Todavía no hay respuestas para enviar."},
   fr:{submit:"Envoyer",title:"Envoyer vos réponses ?",
-    help:h=>"Si vous appuyez sur Envoyer, vos réponses ci-dessous, et rien d’autre, sont envoyées à "+h+". Rien n’a encore été envoyé.",
+    help:h=>"Si vous appuyez sur Envoyer, vos réponses ci-dessous, avec les questions et les options telles que vous les avez vues, et rien d’autre, sont envoyées à "+h+". Rien n’a encore été envoyé.",
     exact:"Afficher exactement ce qui est envoyé",other:"Autres réponses de ce carnet",
     send:"Envoyer",cancel:"Annuler",sending:"Envoi en cours…",close:"Fermer",sentTitle:"Envoyé",
     sent:r=>"Vos réponses ont été reçues"+(r?" (référence "+r+")":"")+". Elles sont toujours là, dans votre carnet.",
@@ -73,7 +75,42 @@ function payload(){
       answers[id]=v;}}
   if(!Object.keys(answers).length) return {ok:false,why:S().nothing};
   const recipe=RECIPE!==null?RECIPE:(BOOK&&BOOK.id)||"";
-  return {ok:true,text:JSON.stringify({recipe,answers:{...answers}},null,2)};}
+  const body={recipe,answers:{...answers}},bk=bookletOf(),sn=seenAnswers();
+  if(bk) body.booklet=bk;
+  if(Object.keys(sn).length) body.seen=sn;
+  return {ok:true,text:JSON.stringify(body,null,2)};}
+/* What the reader was shown, sent beside `answers` and never instead of it. A stored position (a choice's, a scale's) cannot be
+   read later without the file the reader had, and the body names a recipe, not the file's text. So for each answered question,
+   by its id as in `answers`: `question` (its words), and for a question with options the words of the options in the order
+   shown (`options`, or `anchors` with their numbers, and `items` for a matrix) and the words picked (`picked`). Words are
+   plain text, in the booklet's own language. `booklet` says which file: its id, its version and its language. */
+const plain=s=>plainText(s==null?"":s);
+function bookletOf(){if(!BOOK) return null;
+  const o={id:BOOK.id},v=BOOK.version,l=BOOK.raw&&BOOK.raw.lang;
+  if(typeof v==="string"&&v!=="") o.version=v;
+  if(typeof l==="string"&&l!=="") o.lang=l;
+  return o;}
+function seenOf(b,v,text){
+  const o={question:plain(fieldLabel(b))||keysOf(b)[0]};
+  const anchors=()=>(b.anchors||[]).map(a=>({n:a.n,text:plain(a.text)}));
+  const wordsOfAnchor=n=>{const a=(b.anchors||[]).find(x=>x.n===n);return a?plain(a.text):String(n);};
+  if(b.type==="choice"||b.type==="multi"){const listed=b.options||[];
+    o.options=listed.map(plain);
+    o.picked=picksOf(v).filter(x=>typeof x==="string"?x.trim()!=="":x!==null&&x!==undefined)
+      .map(n=>typeof n==="string"?n:(listed[n-1]!==undefined?plain(listed[n-1]):"#"+n));}
+  else if(b.type==="scale"){o.anchors=anchors();o.picked=wordsOfAnchor(v);}
+  else if(b.type==="matrix"){o.items=(b.items||[]).map(plain);o.anchors=anchors();
+    o.picked=(b.items||[]).map((_,i)=>typeof v[i]==="number"?wordsOfAnchor(v[i]):null);}
+  else if(b.type==="widget"){o.picked=text;}
+  return o;}
+/* the same walk as readable(): every module's questions that hold an answer, repeating activities skipped */
+function seenAnswers(){const out=Object.create(null);
+  for(const m of (BOOK&&BOOK.modules)||[]){const ans=peekAnswers(scopeOfModule(m));
+    for(const a of m.activities||[]){if(a.kind==="entry") continue;
+      for(const b of allBlocksOf(a)){if(!QUESTION_KINDS.has(b.type)) continue;
+        const k=keysOf(b)[0];if(k===undefined||!holdsSomething(ans[k])||hasOwn(out,k)) continue;
+        out[k]=seenOf(b,ans[k],b.type==="widget"?answerText(b,ans,k):"");}}}
+  return {...out};}
 /* the same answers as the reader gave them, for the confirm screen: one group per module, each answered question's words and
    the answer's, read by the renderer's own fieldSummary (as its kept-entry cards read them). An answer no question names is
    listed by its id under "other", so the list holds everything payload() sends. Repeating activities keep entries, not
