@@ -92,7 +92,7 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
  chk("the module screen has a card for each shown activity",cards.length===4,String(cards.length));
  chk("it leads with the title, the blurb and the meta line",find(m,n=>n.tagName==="h2").length>=1&&find(m,hasClass("mhead-lede")).length===1&&texts(find(m,hasClass("cd-meta"))[0])==="4 activities");
  chk("each card is numbered in file order and has its place's hue",cards.map(c=>texts(find(c,hasClass("cd-tile"))[0])).join()==="1,2,3,4"&&hasClass("hue-sky")(cards[0])&&hasClass("hue-petrol")(cards[0])===false&&hasClass("hue-rose")(cards[1]));
- chk("no second overview list: the only lists of links are the cards",find(m,n=>n.tagName==="ul"||n.tagName==="ol").length===0);
+ chk("no second overview list: the cards are the one list of links, an ordered list with a row to each",find(m,n=>n.tagName==="ul").length===0&&find(m,n=>n.tagName==="ol").length===1&&find(m,n=>n.tagName==="ol")[0].children.length===4&&find(m,n=>n.tagName==="ol")[0].children.every(li=>li.tagName==="li"&&li.children.length===1&&hasClass("mode")(li.children[0])));
  chk("a card's status line is the activity's status",texts(find(cards[0],hasClass("c"))[0])==="3 questions · Not started");
 
  /* 7. the foot of an activity */

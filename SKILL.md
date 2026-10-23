@@ -298,6 +298,14 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   linter, so choose one from the list below and never invent one. A module's own
   `icon:` goes on its opening line, never on its end line, and is drawn large
   beside its title: `> [!module|loop icon:refresh-cw] Mapping the loop`.
+- **A card's status line: the lines under the activity line, or `status:off`.**
+  A card shows a title, a picture, a blurb (the activity's first paragraph) and
+  a status line. The renderer works the status line out ("2 questions · Not
+  started"). To say your own words there, write them on `>` lines directly under
+  the activity line: `> [!activity|tides] Tides` then `> Half an hour a day`.
+  To show none, write `status:off` on the line: `> [!activity|tides status:off]
+  Tides`. `status:` takes only `off`, and the `>` lines are not the blurb (the
+  blurb is the first paragraph, after a blank line).
 - **An activity under another: `parent:`** names the activity it belongs under,
   in the same module, for a module that is a tree of pages (a wiki, a
   portfolio). Write the parent first:
@@ -335,8 +343,8 @@ The icon names, all of them:
 <!-- icons:end -->
 
 A small wiki, three pages in a tree and a link to a module the booklet may not
-hold. The renderer draws the top page as a card, the tree in a menu beside the
-pages, a trail of ancestors above each page, the pages under it as cards below,
+hold. The renderer draws the top pages as a contents list, the tree in a menu beside the
+pages, a trail of ancestors above each page, the pages under it as a contents list below,
 and a "Mentioned on" list of the pages that link to it:
 
 ```markdown
@@ -896,6 +904,8 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a price in prose that reads as a formula | `warn `$5 a month ($` reads as a formula` | write `\$5` |
 | tiles over a data block with no `value:` | `warn the query's `as: tiles` has no `value:` …` | add `value: count` (the field that holds the number) |
 | an unknown `icon:` name | `` `icon:compas` is not a name in Booklet's icon set … did you mean `compass`? `` | use a name from the set |
+| `status:` with a value other than `off` | `` `status:hidden` is not a setting a line takes (only `status:off`, which hides the card's status line) `` | write `status:off`, or delete it |
+| `status:off` with `>` lines under the line | `warn `status:off` hides the card's status line, so the `>` lines under this activity line are not drawn` | delete one of them |
 
 **Without the linter**, also check by hand:
 

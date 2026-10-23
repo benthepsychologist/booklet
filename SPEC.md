@@ -185,7 +185,29 @@ The words after the id are the activity's **settings**:
 
 It means what `parent` means on a list row (section 6): an activity whose parent is not in its module (or, for a bare activity, not among the bare activities) sits at the top, and the linter warns; one that is its own ancestor is drawn once, at the top; when two activities share an id, the first is used. Activities under the same parent keep the file's order, and moving on from an activity goes to its first child, then its next sibling, then back up: the order of a file written parent first. A module whose activities carry no `parent` is a flat list. `parent` places an activity; it does not let one read another's answers.
 
-**A card's picture.** A renderer that draws modules, activities and sections as cards gives each a picture, chosen the same way everywhere. It uses the line's `icon:` if it has one. Otherwise it uses an emoji at the start of the title, which is then not repeated in the title. Otherwise it uses the card's number in its list. `icon:` takes a name from Booklet's icon set, the Lucide 1.48 icons listed in the booklet repository's `art/icons/` (lucide.dev): `icon:compass`, `icon:notebook-pen`. The set may grow in a later version. A name outside it is reported and ignored, like a mistyped setting. Sections and callouts take no settings, so a leading emoji is how they choose a picture. A renderer may draw the picture as that icon or as an illustration of the same name; that is its look, not the file's.
+**A card's parts.** A renderer that draws modules, activities and sections as cards gives each up to four parts: a title, a picture, a blurb and a status line. Each part comes from the file, and one the file leaves out gets a default, the same everywhere. A renderer lays a list of cards out as it likes (the reference renderer draws it as a contents list, one row to a part); the parts are the file's, the layout is its look.
+
+| part | where it comes from | default |
+| --- | --- | --- |
+| title | the words of its line. A leading emoji is taken out of the title and becomes the picture | the id |
+| picture | the line's `icon:`, else a leading emoji in its title, else its number in its list (below) | its number |
+| blurb | its first paragraph: an activity's is the first paragraph under its line, a module's the first paragraph before its first activity | none |
+| status line | an activity's: the `>` lines directly under its activity line, joined into one line and read as inline Markdown. `status:off` on the line hides the status line, whatever is under it | a line the renderer works out from what the activity holds and how far the reader has got ("2 questions · Not started") |
+
+```markdown
+> [!activity|tides icon:waves] Tides
+> Half an hour a day, for a week
+
+The sea rises and falls twice a day. This paragraph is the blurb.
+
+> [!activity|quiet status:off] A page with no status line
+```
+
+- **The blurb is always the first paragraph.** Lines directly under an activity line that start with `>` are not the blurb and not its prose: they are its status line, and are not drawn anywhere else. A paragraph after the line, with a blank line first, is the activity's own prose, and its first paragraph is the blurb.
+- **A module's card** is drawn from its own line in the same way (title, `icon:`, blurb). A module of several activities has a status line of its own, counts of its activities and how many are started, which the file does not set; a module of one activity is drawn as its activity's card. Sections and callouts take no settings: a section's card takes its title, picture and first line from its heading and its first paragraph, and its status line is the renderer's.
+- **The picture.** The line's `icon:` if it has one. Otherwise an emoji at the start of the title, which is then not repeated in the title. Otherwise the card's number in its list. `icon:` takes a name from Booklet's icon set, the Lucide 1.48 icons listed in the booklet repository's `art/icons/` (lucide.dev): `icon:compass`, `icon:notebook-pen`. The set may grow in a later version. A name outside it is reported and ignored, like a mistyped setting. Sections and callouts take no settings, so a leading emoji is how they choose a picture. A renderer may draw the picture as that icon or as an illustration of the same name; that is its look, not the file's.
+- **`status:` takes one value, `off`.** Any other value is reported and ignored, as a number setting's wrong value is. `status:off` with status text under the line hides the status line, and the linter warns that the text is not drawn.
+- **A tool that writes a booklet back keeps both**, the `status:off` on the activity line and the `>` lines under it, exactly as written, like every other word of the line.
 
 **Pages are separated by a horizontal rule.** Any thematic break inside an activity (`---`, `***`, `___`) is a page break, the way Marp splits slides. A page's name in the left menu is its first heading, at whatever level; a page with no heading is "Page 2". An activity with no rule is one page.
 
@@ -248,7 +270,7 @@ from: due-soon
 
 **What comes after the line.**
 - A **list** belongs to the line (a question's options, a menu's entries). It may follow directly or after one blank line; two blank lines end the question. **One exception, from Markdown itself:** only a numbered list that starts at `1.` may interrupt a paragraph, so a list starting at `0.` (or any other number) directly under the line is swallowed into the title. Put the blank line in; the reference linter requires it there and allows it everywhere else.
-- **Lines starting with `>`** directly under a booklet line belong to it. Under a reading callout they are its prose. Under a **question** line they are its **help text**: a renderer shows them under the prompt. A question's prompt is its title. A `> [!hint]-` callout after a question is a different thing: a hint the reader opens (section 6).
+- **Lines starting with `>`** directly under a booklet line belong to it. Under a reading callout they are its prose. Under a **question** line they are its **help text**: a renderer shows them under the prompt. Under an **activity** line they are the text of its card's status line (section 3, "A card's parts"). A question's prompt is its title. A `> [!hint]-` callout after a question is a different thing: a hint the reader opens (section 6).
 - **A paragraph** after the line needs a blank line first, like any paragraph. Without one, Markdown folds it into the callout (a "lazy continuation").
 - A **hint** or **solution** callout right after a question belongs to that question (section 6).
 
@@ -257,7 +279,7 @@ from: due-soon
 | kind | settings it takes |
 | --- | --- |
 | `module` | `end`, `icon:` |
-| `activity` | `repeat`, `repeat daily`, `hidden`, `icon:`, `parent:` |
+| `activity` | `repeat`, `repeat daily`, `hidden`, `icon:`, `parent:`, `status:` (only `status:off`) |
 | `row` | `end` |
 | `text` | `long` |
 | `lines`, `scale`, `matrix`, `date`, `menu`, `hint`, `solution`, `data`, `records`, `manifest`, `notice`, `group`, `diff`, `law`, `opinion` | none |
@@ -265,7 +287,7 @@ from: due-soon
 | `number` | `min:`, `max:`, `step:` (numbers) |
 | `widget` | `readonly`, `describe` |
 
-`icon:` takes an icon name and `parent:` an activity id (section 3). Neither is written on a module's end line.
+`icon:` takes an icon name, `parent:` an activity id and `status:` the one value `off` (section 3). None is written on a module's end line.
 
 **Unknown kinds.** A line with an id or settings whose kind is not in this table is an **unknown kind**. A renderer draws it as a callout, with a quiet line under its title saying that it does not know the kind, and reports it; the linter warns. A line with no id and no settings is a reading callout of whatever kind its author chose (`note`, `tip`, Booklet's `diff`, and so on, section 6), drawn with no notice. `group`, `diff`, `law` and `opinion`, Booklet's own reading kinds (section 6), are in the table above and take no settings. A line that starts `> [!` but cannot be read as a Booklet line is reported, and is read as text.
 

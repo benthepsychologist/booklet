@@ -134,7 +134,7 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:"), "row": ("end",), "text": ("long",),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
@@ -813,6 +813,8 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
         elif key == "icon" and val not in ICON_NAMES:
             err(f, f"line {n}: `icon:{val}` is not a name in Booklet's icon set (art/icons/), so a renderer ignores it" + icon_hint(val))
+        elif key == "status" and val != "off":
+            err(f, f"line {n}: `status:{val}` is not a setting a line takes (only `status:off`, which hides the card's status line); a renderer ignores it")
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
     for flag in sorted(w["flags"]):
@@ -1187,6 +1189,8 @@ def check_format(f, text, fm):
                     if not w["id"]:
                         err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "
                                f"id, so an id the renderer makes up from the title is lost the day the title changes, orphaning the entries")
+                    if w["set"].get("status") == "off" and any(re.sub(r'^>[ \t]?', '', x).strip() for x in lines[i + 1:body_end(lines, i)]):
+                        warn(f, f"{where}: `status:off` hides the card's status line, so the `>` lines under this activity line (its status text) are not drawn")
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         if w["set"].get("parent") is not None:
