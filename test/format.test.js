@@ -31,7 +31,7 @@ fresh();titled("Daily journal");
 chk("the slug is of the title as the file wrote it, whatever language the interface shows",
   A.exportName()==="daily-journal.booklet.md"&&(A.setLang("fr"),A.exportName()==="daily-journal.booklet.md"),A.exportName());
 A.setLang("en");
-fresh();A.adoptText('---\nbooklet: "0.13"\nlang: en\ntitle: Weekly review\n---\n\nSome prose.\n');
+fresh();A.adoptText('---\nbooklet: "0.15"\nlang: en\ntitle: Weekly review\n---\n\nSome prose.\n');
 chk("a booklet whose title is written unquoted, after other lines, is named from it",A.exportName()==="weekly-review.booklet.md",A.exportName());
 
 // ---- the renderer's own names: "Booklet", in every language, nothing else

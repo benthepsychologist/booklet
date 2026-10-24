@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-VrxKNgSr9sqISFy6aXVqct6JwEXQ8Vxul+d+ATCWYjc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-yfVK8Rn+d43La/TH4vOWmhc3JR9/Pc6AUYi4qtz0Jv8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -41,7 +41,7 @@
     --rule:#E4E0D6; --field:#FEFDFB; --reader:#24323A; --warn:#A04E34; --warn-soft:#FFE4DE;
     --accent:#1E5E6B; --accent-soft:#E4EFEF; --rg-on:#E4EFEF;
     --surface:#FEFDFB; --on-accent:#FFFFFF; --on-ink:#FFFFFF; --on-ink-soft:#E9E3D8;
-    --bar-bg:rgba(248,246,241,.94); --shadow:#1F2430; --placeholder:#9AA0B4; --mark:#FFF3B0;
+    --bar-bg:#F8F6F1; --shadow:#1F2430; --placeholder:#9AA0B4; --mark:#FFF3B0;
     --tone-warm:#F9E3E8; --tone-warm-deep:#A3405B;
     --tone-green:#E1F1E7; --tone-green-deep:#2D7751;
     --tone-amber:#F8EBD0; --tone-amber-deep:#8B5F10;
@@ -63,7 +63,7 @@
     --rule:#D0D7DE; --field:#FFFFFF; --reader:#1F2328; --warn:#A04E34; --warn-soft:#FBE9E4;
     --accent:#103E46; --accent-soft:#E6F0F1; --rg-on:#E6F0F1;
     --surface:#FFFFFF; --on-accent:#FFFFFF; --on-ink:#FFFFFF; --on-ink-soft:#D0D7DE;
-    --bar-bg:rgba(255,255,255,.94); --shadow:#1F2328; --placeholder:#6E7781; --mark:#FFF3B0;
+    --bar-bg:#FFFFFF; --shadow:#1F2328; --placeholder:#6E7781; --mark:#FFF3B0;
     --tone-warm:#FAE8EC; --tone-warm-deep:#A3405B;
     --tone-green:#E1F1E7; --tone-green-deep:#2D7751;
     --tone-amber:#F8EBD0; --tone-amber-deep:#8B5F10;
@@ -85,7 +85,7 @@
     --rule:#2A3840; --field:#18232A; --reader:#E7EDEF; --warn:#E08A6B; --warn-soft:#3A2620;
     --accent:#7CC0CB; --accent-soft:#163139; --rg-on:#2F5A60;
     --surface:#18232A; --on-accent:#0E1A1E; --on-ink:#11181C; --on-ink-soft:#3F454C;
-    --bar-bg:rgba(17,24,28,.94); --shadow:#000000; --placeholder:#7F8790; --mark:#5C4E12;
+    --bar-bg:#11181C; --shadow:#000000; --placeholder:#7F8790; --mark:#5C4E12;
     --tone-warm:#381F28; --tone-warm-deep:#EC93AA;
     --tone-green:#172E24; --tone-green-deep:#8CC8A5;
     --tone-amber:#31281A; --tone-amber-deep:#F0BA55;
@@ -107,7 +107,7 @@
     --rule:#000000; --field:#FFFFFF; --reader:#000000; --warn:#8B0000; --warn-soft:#FDE7E7;
     --accent:#003B49; --accent-soft:#FFFFFF; --rg-on:#BFE3EC;
     --surface:#FFFFFF; --on-accent:#FFFFFF; --on-ink:#FFFFFF; --on-ink-soft:#E6E6E6;
-    --bar-bg:rgba(255,255,255,.97); --shadow:#000000; --placeholder:#4D4D4D; --mark:#FFE600;
+    --bar-bg:#FFFFFF; --shadow:#000000; --placeholder:#4D4D4D; --mark:#FFE600;
     --tone-warm:#FFE9EE; --tone-warm-deep:#7A0F2E;
     --tone-green:#E8F5E0; --tone-green-deep:#1B4D0E;
     --tone-amber:#FFF3C4; --tone-amber-deep:#5C4300;
@@ -236,9 +236,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --serif:'Lexend', 'Atkinson Hyperlegible', var(--fam-sans);
     --sans:'Atkinson Hyperlegible', var(--fam-sans);
     /* layout: the content area's widest, the one centred column of the home and module screens (and their lists of
-       cards), the readable measure of prose, and the height a frame held under the bar may take (in its own text's em,
-       so it is measured as drawn: THE FRAME) */
-    --content-w:76rem; --col-w:48rem; --measure:70ch; --pin-h:min(7.5em,22vh); --q-text-min:20rem; --mx-text-min:15rem;
+       cards), and the readable measure of prose */
+    --content-w:76rem; --col-w:48rem; --measure:70ch; --q-text-min:20rem; --mx-text-min:15rem;
     --rd-w:clamp(17rem,calc(100vw - 42rem),24rem);
     /* the same in every theme (the tint is, so the ink and chips drawn on it are, and a grid's cell colours are the widget's own data); print has no copy of them */
     --tint-ink:#292421; --tint-chip:rgba(255,255,255,.75); --tint-chip-bd:rgba(255,255,255,.9); --on-deep:#FFFFFF;
@@ -286,8 +285,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .aside{color:var(--muted);font-size:.95rem}
   .hint{color:var(--muted);font-size:.88rem;font-family:var(--sans)}
 
-  /* top bar */
-  .bar{position:sticky;top:0;z-index:5;background:var(--bar-bg);backdrop-filter:blur(6px);border-bottom:3px solid var(--accent);
+  /* top bar: opaque, and its 1px shadow of its own colour (the paper's) covers the part of a pixel that --ap-top, rounded up,
+     leaves above what is held under it */
+  .bar{position:sticky;top:0;z-index:5;background:var(--bar-bg);border-bottom:3px solid var(--accent);box-shadow:0 1px 0 var(--bar-bg);
        display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;flex-wrap:wrap;font-family:var(--sans)}
   .bar .home{border:0;background:transparent;padding:.25rem .4rem;font-family:var(--serif);font-size:1.05rem;color:var(--ink);text-align:left;flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bar .home:hover{color:var(--accent)}
@@ -533,8 +533,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mxopt input:checked+span{background:var(--accent);color:var(--on-accent)}
   .mxopt input:focus-visible+span{outline:var(--focus-w) solid var(--accent);outline-offset:2px}
   .mx-q .mxq .pills{max-width:none}
-  /* drawn as questions, the matrix's own words are the stem above them: quieter than the questions it frames */
-  .mx-asq>h3:first-child{font-family:var(--sans);font-weight:600;font-size:1.02rem;color:var(--ink);margin:.4rem 0 .6rem;padding:.1rem 0 .1rem .8rem;border-left:var(--focus-w) solid var(--rule)}
+  /* drawn as questions, the matrix's own words are the stem above them: quieter than the questions it frames, and held under
+     the bar while its items are answered, as far as the matrix's end (its block is the stem's own sticky box), whatever its
+     length (SPEC.md section 5), painted with what it sits on (a step's card, one at a time; a group's box or fold). As a grid it is not held: its
+     words are above the rows */
+  .mx-asq>h3:first-child{position:sticky;top:calc(var(--ap-top,4.4rem) - 12px);z-index:2;background:var(--paper);font-family:var(--sans);font-weight:600;font-size:1.02rem;color:var(--ink);margin:.1rem 0 .3rem;padding:.4rem 0 .4rem .8rem;border-left:var(--focus-w) solid var(--rule)}
+  .oat-unit .mx-asq>h3:first-child,.rd-callout .mx-asq>h3:first-child,.card-plain .mx-asq>h3:first-child{background:var(--surface)}
+  /* on a window too short to give the items room under the bar and a held stem (a phone on its side), the stem is not held:
+     it scrolls with its items */
+  @media (max-height:360px){.mx-asq>h3:first-child{position:static}}
 
   /* entry read view */
   .entry{background:var(--surface);border:var(--bw) solid var(--rule);border-radius:14px;padding:.9rem 1.1rem;margin:0 0 1rem}
@@ -680,25 +687,27 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .tagchip .x{border:0;background:transparent;color:var(--muted);font-size:1rem;line-height:1;padding:0 .2rem;border-radius:50%}
   .tagchip .x:hover{color:var(--warn);background:var(--surface)}
 
-  /* ── an activity's tabs, its pages and its frame ──────────────────────────
+  /* ── an activity's tabs and its pages ──────────────────────────
      The tab bar is a row of tabs that scrolls sideways inside itself when they do
      not fit, so the page never does; the tab on show is marked by a bar, weight
-     and tint, never by colour alone. The frame (an activity's opening prose) is
-     held under the page's own sticky bar while the questions scroll, whole, when
-     it fits in the pin's height (--pin-h); one at a time it stays above the step. */
+     and tint, never by colour alone. */
   .tabbar{display:flex;gap:.25rem;margin:1rem 0 1.25rem;overflow-x:auto;overscroll-behavior-x:contain;border-bottom:var(--bw) solid var(--rule);font-family:var(--sans);scrollbar-width:thin}
   .tab{flex:none;min-height:44px;padding:.45rem 1rem;border:0;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;background:transparent;color:var(--muted);font-weight:600;font-size:.95rem;line-height:1.25;white-space:nowrap}
   .tab:hover{color:var(--ink);background:var(--accent-soft)}
   .tab[aria-selected="true"]{border-bottom-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:800}
   .tab:focus-visible{outline:var(--focus-w) solid var(--accent);outline-offset:-2px}
+  /* a tab bar with more tabs than it shows fades at the edge they are past, so a phone shows there is more to scroll to; one
+     that fits has no fade (data-more, set by tabBar as it is laid out and scrolled) */
+  .tabbar[data-more]{mask-image:linear-gradient(90deg,var(--ms,var(--ink)),var(--ink) 2.5rem calc(100% - 2.5rem),var(--me,var(--ink)))}
+  .tabbar[data-more*=start]{--ms:transparent}.tabbar[data-more*=end]{--me:transparent}
   /* in an activity, the tab bar and the pager keep the prose's measure: they sit with the text, not across the width */
   .col>.tabbar,.cd-foot{max-width:var(--measure)}
   /* on a narrow screen the foot wraps: the page count takes the room its row has, and Next, on a row of its own, stays on the
      right, where going on is */
   .cd-foot>.primary{margin-left:auto}
-  /* a control the keyboard reaches is scrolled clear of the bar and a pinned frame: holdTop sets this rule's value (in the
-     stylesheet, so the root's own style keeps the theme's properties and --ap-top only) */
-  html{scroll-padding-top:4.4rem}
+  /* a control the keyboard reaches is scrolled clear of the bar (--ap-top is its height and 12px), with room for a field's
+     focus ring and the inset of its first line (a browser brings a text box's caret into view, not its top edge) */
+  html{scroll-padding-top:calc(var(--ap-top,4.4rem) + 12px)}
   .ap-body:focus{outline:none}
   .ap-tools{display:flex;align-items:center;flex-wrap:wrap;gap:.25rem 1rem;margin:.6rem 0 1rem}
   .ap-tools .oat-ctl{margin:0}
@@ -709,14 +718,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .fold-sw[aria-checked="true"] .fold-knob{background:var(--accent);border-color:var(--accent)}
   .fold-sw[aria-checked="true"] .fold-knob::after{transform:translateX(1rem);background:var(--on-accent)}
   @media (prefers-reduced-motion:reduce){.fold-knob,.fold-knob::after{transition:none}}
-  .pin{margin:0 0 1rem;background:var(--paper)}
-  /* held flush under the bar: --ap-top keeps a 12px gap that suits a side menu, but a frame spans the column, and what scrolls
-     under it would show through the gap */
-  .pin-stick{position:sticky;top:calc(var(--ap-top,4.4rem) - 12px);z-index:3;padding:.4rem 0 .2rem;border-bottom:var(--bw) solid var(--rule)}
-  /* the pin's height as a measure, not a clamp: nothing is hidden (overflow stays visible), and a held frame whose text runs
-     past it is drawn as reading instead (frameTall) */
-  .pin-stick .pin-body{max-height:var(--pin-h);overflow:visible}
-  .pin-text>div>:first-child,.pin-body .md>:first-child{margin-top:0}
   .pg-at{flex:1 1 auto;color:var(--muted);font-size:.92rem;font-weight:600;text-align:center}
   /* Hidden, but kept for screen readers (one rule for all of them): a citation's and a view's words beside their marks; and a
      solution inside the question says the verdict in its own label, so the question's line stays for screen readers only. */
@@ -1003,8 +1004,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .mfig svg{max-width:100%;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .bar,.rd-panel,.rd-tip,.toast{display:none!important}
     .cd-dup,.cd-chev,.cd-foot,.ap-tools,.oat-head,.tabbar{display:none!important}
-    .pin-stick{position:static;border:0}
-    .pin-stick .pin-body{max-height:none}
+    .mx-asq>h3:first-child{position:static}
     .oat-unit[hidden]{display:block!important}
     .oat-unit{border:0;padding:0}
     .card-compact{background:none}
@@ -1035,7 +1035,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       --rule:#D0D7DE !important; --field:#FFFFFF !important; --reader:#1F2328 !important; --warn:#A04E34 !important; --warn-soft:#FBE9E4 !important;
       --accent:#103E46 !important; --accent-soft:#E6F0F1 !important; --rg-on:#E6F0F1 !important;
       --surface:#FFFFFF !important; --on-accent:#FFFFFF !important; --on-ink:#FFFFFF !important; --on-ink-soft:#D0D7DE !important;
-      --bar-bg:rgba(255,255,255,.94) !important; --shadow:#1F2328 !important; --placeholder:#6E7781 !important; --mark:#FFF3B0 !important;
+      --bar-bg:#FFFFFF !important; --shadow:#1F2328 !important; --placeholder:#6E7781 !important; --mark:#FFF3B0 !important;
       --tone-warm:#FAE8EC !important; --tone-warm-deep:#A3405B !important;
       --tone-green:#E1F1E7 !important; --tone-green-deep:#2D7751 !important;
       --tone-amber:#F8EBD0 !important; --tone-amber-deep:#8B5F10 !important;
@@ -1424,11 +1424,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.13.1";
-/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.13"`, and a
+const RENDERER_VERSION="0.15.0";
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.15"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
-const FORMAT_VERSION="0.13";
+const FORMAT_VERSION="0.15";
 /* the toggle's languages, each named in itself (es-AR has strings but no button) */
 const LANG_NAMES={en:"English",es:"Español",fr:"Français"};
 const LANG_PREF_KEY="booklet.ui.lang";
@@ -1478,7 +1478,7 @@ const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
-const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:","tab:","pin:"],row:["end"],text:["long"],
+const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:","tab:"],row:["end"],text:["long"],
   lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],tab:[],
   choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
 /* the settings above that must be numbers */
@@ -1621,6 +1621,7 @@ const STRINGS_SRC={
       linkNotText: "That is not a text file this page can open.",
       linkFailed: "That booklet could not be fetched. It may have moved, or you may be offline.",
       linkFromStore: n=>`Opened by a link, from this page's own store: ${n}`,
+      linkFromFolder: n=>`Opened by a link, from the modules folder beside this page: ${n}`,
       linkFromRegistry: n=>`Opened by a link, from this page's registry: ${n}`,
       openedFromHost: n=>`Opened from this page's host: ${n}`
     },
@@ -1712,7 +1713,6 @@ const STRINGS_SRC={
       tabTwice: (w,id,as)=>`${w}: the tab id “${id}” is used twice here, so this tab is called “${as}”; give each tab its own name or id`,
       tabUnknown: (w,id)=>`${w}: \`tab:${id}\` names no tab of this module, so the activity is in the first tab`,
       tabMisplaced: w=>`${w}: a tab line belongs inside an activity, or in a module's opening, so it was ignored`,
-      pinBad: (w,v)=>`${w}: \`pin:${v}\` is not a setting; the one value is \`pin:off\`, so it was ignored`,
       rowRunsSection: k=>`runs into the ${k} section`,
       rowNeverClosed: "is never closed",
       queryOutside: w=>`${w}: a query belongs in an activity's prose, so it was refused`,
@@ -1739,6 +1739,7 @@ const STRINGS_SRC={
       blockUnknown: (w,what)=>`${w}: a “booklet ${what}” block is not one this page reads`,
       rowEndStray: w=>`${w}: a row is closed that was never opened`,
       rowNested: w=>`${w}: a row opens inside a row, so it was ignored (rows do not nest)`,
+      groupHolds: (w,k)=>`${w}: ${/^[aeiou]/.test(k)?"an":"a"} ${k} line cannot go inside a group, so it was ignored (a group holds text, questions and callouts)`,
       moduleEndStray: w=>`${w}: a module is closed that was never opened`,
       moduleEndMismatch: (w,id,open)=>`${w}: this closes “${id}”, but “${open}” is open`,
       moduleNested: (w,id,open)=>`${w}: “${id}” opens before “${open}” is closed`,
@@ -1749,7 +1750,7 @@ const STRINGS_SRC={
       matrixNoItems: w=>`${w}: this matrix question has no items under it (a bulleted list)`,
       matrixNoAnchors: w=>`${w}: this matrix question has no anchors under its items (a numbered list)`,
       scaleNoAnchors: w=>`${w}: this scale question has no anchors under it (a numbered list)`,
-      settingUnknown: (w,kind,s)=>`${w}: a ${kind} line takes no “${s}”, so it was ignored`,
+      settingUnknown: (w,kind,s)=>`${w}: ${/^[aeiou]/.test(kind)?"an":"a"} ${kind} line takes no “${s}”, so it was ignored`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` is not a setting a line takes (only \`status:off\`), so it was ignored`,
       dailyAlone: w=>`${w}: \`daily\` needs \`repeat\`, so it was ignored`,
@@ -1815,12 +1816,12 @@ const STRINGS_SRC={
       readsN: n=>`${n} read${n===1?"":"s"}`
     },
     steps: {
-      label: "How to read the questions",
+      label: "How to show the steps",
       one: "One at a time",
       all: "All at once",
-      progress: (n,m)=>`Question ${n} of ${m}`,
+      progress: (n,m)=>`Step ${n} of ${m}`,
       back: "Back",
-      next: "Next question"
+      next: "Next step"
     },
     fold: {
       openAll: "Open all"
@@ -1884,7 +1885,7 @@ const STRINGS_SRC={
       imgRefused: "Image non affichée : cette page ne lit pas cette adresse.",
       imgMissing: "Image non affichée : fichier introuvable.",
       imgBig: "Image non affichée : fichier trop volumineux (limite : 5 Mo).",
-      imgWrong: "Image non affichée : le fichier n’est pas du type d’image que son nom indique.",
+      imgWrong: "Image non affichée : le fichier ne correspond pas au type d’image indiqué par son nom.",
       imgFailed: "Image non affichée : elle n’a pas pu être récupérée.",
       imgBroken: "Image non affichée : le fichier n’a pas pu être dessiné comme une image.",
       figureRisk: "Ce diagramme contient un élément (une image, un lien, un style ou un réglage) qui pourrait pousser la page à demander une adresse ; il n’est donc pas dessiné. Son texte source est affiché à la place.",
@@ -1955,6 +1956,7 @@ const STRINGS_SRC={
       linkNotText: "Ce n’est pas un fichier texte que cette page peut ouvrir.",
       linkFailed: "Ce carnet n’a pas pu être récupéré. Il a peut-être changé d’adresse, ou vous êtes hors ligne.",
       linkFromStore: n=>`Ouvert par un lien, depuis le dépôt de cette page : ${n}`,
+      linkFromFolder: n=>`Ouvert par un lien, depuis le dossier des modules à côté de cette page : ${n}`,
       linkFromRegistry: n=>`Ouvert par un lien, depuis le registre de cette page : ${n}`,
       openedFromHost: n=>`Ouvert depuis l’hôte de cette page : ${n}`
     },
@@ -2039,10 +2041,9 @@ const STRINGS_SRC={
       rowRunsModule: "rencontre une clôture de module",
       rowRunsActivity: "rencontre une ligne d’activité",
       rowRunsTab: "rencontre une ligne d’onglet",
-      tabTwice: (w,id,as)=>`${w} : l’identifiant d’onglet « ${id} » est utilisé deux fois ici ; cet onglet s’appelle donc « ${as} ». Donnez à chaque onglet son propre nom ou identifiant`,
+      tabTwice: (w,id,as)=>`${w} : l’identifiant d’onglet « ${id} » est utilisé deux fois ici ; cet onglet s’appelle donc « ${as} » ; donnez à chaque onglet son propre nom ou identifiant`,
       tabUnknown: (w,id)=>`${w} : \`tab:${id}\` ne nomme aucun onglet de ce module ; l’activité est donc dans le premier onglet`,
       tabMisplaced: w=>`${w} : une ligne d’onglet va dans une activité, ou dans l’ouverture d’un module ; elle a donc été ignorée`,
-      pinBad: (w,v)=>`${w} : \`pin:${v}\` n’est pas un réglage ; la seule valeur est \`pin:off\` ; il a donc été ignoré`,
       rowRunsSection: k=>`rencontre la section ${k}`,
       rowNeverClosed: "n’est jamais fermée",
       queryOutside: w=>`${w} : une requête doit se trouver dans le texte d’une activité ; elle a donc été refusée`,
@@ -2069,6 +2070,7 @@ const STRINGS_SRC={
       blockUnknown: (w,what)=>`${w} : un bloc « booklet ${what} » n’est pas un bloc que cette page lit`,
       rowEndStray: w=>`${w} : une rangée est fermée sans avoir été ouverte`,
       rowNested: w=>`${w} : une rangée s’ouvre dans une rangée ; elle a été ignorée (les rangées ne s’imbriquent pas)`,
+      groupHolds: (w,k)=>`${w} : une ligne ${k} ne peut pas se trouver dans un groupe ; elle a donc été ignorée (un groupe contient du texte, des questions et des encadrés)`,
       moduleEndStray: w=>`${w} : un module est fermé sans avoir été ouvert`,
       moduleEndMismatch: (w,id,open)=>`${w} : ceci ferme « ${id} », mais « ${open} » est ouvert`,
       moduleNested: (w,id,open)=>`${w} : « ${id} » s’ouvre avant que « ${open} » soit fermé`,
@@ -2145,12 +2147,12 @@ const STRINGS_SRC={
       readsN: n=>`${n} texte${n>1?"s":""}`
     },
     steps: {
-      label: "Comment afficher les questions",
+      label: "Comment afficher les étapes",
       one: "Une à la fois",
       all: "Toutes en même temps",
-      progress: (n,m)=>`Question ${n} sur ${m}`,
-      back: "Question précédente",
-      next: "Question suivante"
+      progress: (n,m)=>`Étape ${n} sur ${m}`,
+      back: "Étape précédente",
+      next: "Étape suivante"
     },
     fold: {
       openAll: "Tout ouvrir"
@@ -2285,6 +2287,7 @@ const STRINGS_SRC={
       linkNotText: "Ese no es un archivo de texto que esta página pueda abrir.",
       linkFailed: "No se pudo obtener ese cuadernillo. Puede que se haya movido, o que no tengas conexión.",
       linkFromStore: n=>`Abierto por un enlace, desde la reserva de esta página: ${n}`,
+      linkFromFolder: n=>`Abierto por un enlace, desde la carpeta de módulos junto a esta página: ${n}`,
       linkFromRegistry: n=>`Abierto por un enlace, desde el registro de esta página: ${n}`,
       openedFromHost: n=>`Abierto desde el anfitrión de esta página: ${n}`
     },
@@ -2372,7 +2375,6 @@ const STRINGS_SRC={
       tabTwice: (w,id,as)=>`${w}: el identificador de pestaña “${id}” se usa dos veces aquí, así que esta pestaña se llama “${as}”; dale a cada pestaña su propio nombre o identificador`,
       tabUnknown: (w,id)=>`${w}: \`tab:${id}\` no nombra ninguna pestaña de este módulo, así que la actividad está en la primera pestaña`,
       tabMisplaced: w=>`${w}: una línea de pestaña va dentro de una actividad, o en la apertura de un módulo, así que se ignoró`,
-      pinBad: (w,v)=>`${w}: \`pin:${v}\` no es un ajuste; el único valor es \`pin:off\`, así que se ignoró`,
       rowRunsSection: k=>`se topa con la sección ${k}`,
       rowNeverClosed: "nunca se cierra",
       queryOutside: w=>`${w}: una consulta va en el texto de una actividad, así que se rechazó`,
@@ -2399,6 +2401,7 @@ const STRINGS_SRC={
       blockUnknown: (w,what)=>`${w}: un bloque “booklet ${what}” no es uno que esta página lea`,
       rowEndStray: w=>`${w}: se cierra una fila que nunca se abrió`,
       rowNested: w=>`${w}: una fila se abre dentro de otra fila, así que se ignoró (las filas no se anidan)`,
+      groupHolds: (w,k)=>`${w}: una línea de ${k} no puede ir dentro de un grupo, así que se ignoró (un grupo contiene texto, preguntas y recuadros)`,
       moduleEndStray: w=>`${w}: se cierra un módulo que nunca se abrió`,
       moduleEndMismatch: (w,id,open)=>`${w}: esto cierra “${id}”, pero “${open}” está abierto`,
       moduleNested: (w,id,open)=>`${w}: “${id}” se abre antes de que se cierre “${open}”`,
@@ -2475,12 +2478,12 @@ const STRINGS_SRC={
       readsN: n=>`${n} lectura${n===1?"":"s"}`
     },
     steps: {
-      label: "Cómo leer las preguntas",
-      one: "Una a la vez",
-      all: "Todas juntas",
-      progress: (n,m)=>`Pregunta ${n} de ${m}`,
+      label: "Cómo mostrar los pasos",
+      one: "Uno a la vez",
+      all: "Todos a la vez",
+      progress: (n,m)=>`Paso ${n} de ${m}`,
       back: "Atrás",
-      next: "Siguiente pregunta"
+      next: "Siguiente paso"
     },
     fold: {
       openAll: "Abrir todo"
@@ -3152,7 +3155,7 @@ const viewAt=addr=>{let v=VIEW.at.get(addr);
    citation panel to open again once its mark is drawn (a language switch); on an activity's screen, `folds`, the callouts
    the author folded that it draws, for the fold switch, `oat`, the steps one at a time, and `foot`, what draws the foot's
    Back and Next again as a step moves. DRAWN is the screen on show's (an answer runs its ticks). */
-const newDraw=()=>({ticks:[],cite:null,again:null,reopen:null,folds:null,oat:null,foot:null,frames:[]});
+const newDraw=()=>({ticks:[],cite:null,again:null,folds:null,oat:null,foot:null});
 let DRAWN=newDraw();
 /* ---- which booklet is in memory ----
    currentId is the open entry, or null on "Your booklets". bookletGen moves on
@@ -3304,7 +3307,8 @@ const keysOf=b=>READING_BLOCKS.has(b.type)?[]:(b.keys||[b.id]);
    wants the real one, shown but not operable */
 const engOpts=b=>({readonly:!!b.readonly,describe:!!b.describe});
 const placeOf=b=>b.placement||"open";
-const blocksOf=id=>activityBlocks(activityOf(id));
+/* every block of the activity `id` names, a group's and a row's too */
+const blocksOf=id=>allBlocksOf(activityOf(id));
 
 /* ======================= WHERE BOOKLETS ARE KEPT =======================
    A booklet is modules plus what was written in them, so two booklets with the
@@ -3704,7 +3708,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.13 booklet is Markdown that reads as a document anywhere: front
+   A v0.15 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -3752,7 +3756,7 @@ const NOTICE_KEYS=["license","copyright","source","version"];
 const FRONT_NOTICE_KEYS=["license","copyright","source"];
 /* the kinds that take no id: their words are settings only */
 const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","diff","law","opinion"]);
-/* A file is read when its front matter says `booklet: "0.13"` (quoted or not, as text); another 0.x marker opens with a notice. */
+/* A file is read when its front matter says `booklet: "0.15"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -3771,7 +3775,7 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
   if(/^".*"$/.test(v)){try{v=JSON.parse(v);}catch(e){v=v.slice(1,-1);}}
   else if(/^'.*'$/.test(v)) v=v.slice(1,-1).replace(/''/g,"'");
   return [m[1],v];}
-/* The marker a file's front matter carries, quotes off: "0.13", "1.0", "x", or "" with no `booklet:` line. A 0.x marker makes a booklet
+/* The marker a file's front matter carries, quotes off: "0.15", "1.0", "x", or "" with no `booklet:` line. A 0.x marker makes a booklet
    for this page; any other 0.x version opens by this page's rules with a notice and no promise (SPEC.md section 12). */
 function markerOf(text){const {head}=frontMatter(text);
   for(const l of head||[]){const m=l.match(/^booklet:[ \t]*(.*?)[ \t]*$/);
@@ -3922,11 +3926,12 @@ function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),
   resolveMenus(doc,problems);
   linkQueries(doc,problems);
   return shapeBooklet(doc,fm,L,source,problems);}
-function splitItems(lines,start){let i=start;
+function splitItems(lines,start,inner){let i=start;
   /* One pass over the lines, fences first: nothing inside a fence is ever a
      Booklet line, a page break or a comment marker. A choice/multi/scale
      question also claims the option or anchor list straight under it, so
-     that list is never re-read as ordinary prose. */
+     that list is never re-read as ordinary prose. `inner`: the body of a group (readBlocks), which holds no records region
+     and no page break (a thematic break there is a rule drawn in it) */
   const items=[];let buf=[],bufAt=0,rs=null;const regs=[];  /* the records regions: lines from rs to the closing `%%` */
   const rec=()=>rs!==null;
   const flush=()=>{const n=buf.findIndex(l=>l.trim());if(n>=0) items.push({t:"text",text:buf.join("\n").replace(/^\n+|\n+$/g,""),line:bufAt+n+1,rec:rec()});buf=[];};
@@ -3938,7 +3943,7 @@ function splitItems(lines,start){let i=start;
         items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,last+1).join("\n")+(k<lines.length?"":"\n"+F.mark),id:F.id,line:i+1,rec:rec()});i=last;}
       else{if(!buf.length) bufAt=i;buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
-    if(ln.trim()==="%%"){
+    if(!inner&&ln.trim()==="%%"){
       if(rec()){flush();regs.push([rs,i]);rs=null;}
       else{let j=i+1;while(j<lines.length&&!lines[j].trim()) j++;if(j<lines.length&&/^>[ \t]?\[!records\b/i.test(lines[j])){flush();rs=i;}}
       continue;}
@@ -3951,7 +3956,7 @@ function splitItems(lines,start){let i=start;
       else if(kind==="menu"){const r=listOf("bullets",lines,k);if(r){items2=r.items;k=r.next;}}
       else if(kind==="matrix"){const r=listOf("bullets",lines,k);
         if(r){items2=r.items;k=r.next;const a=listOf("anchors",lines,k);if(a){anchors=a.items;k=a.next;}}}
-      if(kind==="records"&&rs===null) rs=i;
+      if(kind==="records"&&rs===null&&!inner) rs=i;
       items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,items:items2,line:i+1,head:ln,raw:lines.slice(i,k).join("\n"),rec:rec()});i=k-1;continue;}
     /* any `> [!` line, readable or not: one CALLOUT_LINE cannot read is said, not left to read as prose in silence */
     if(calloutLine(ln)){
@@ -3959,7 +3964,7 @@ function splitItems(lines,start){let i=start;
       items.push({t:"bad",line:i+1});}
     /* a thematic break is a page break, except `---` straight under a line of
        text, which Markdown reads as that line's heading; inside the records it is text */
-    if(!rec()&&/^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$/.test(ln)&&!(/^ {0,3}-/.test(ln)&&buf.length&&buf[buf.length-1].trim())){flush();items.push({t:"break",line:i+1});continue;}
+    if(!rec()&&!inner&&/^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$/.test(ln)&&!(/^ {0,3}-/.test(ln)&&buf.length&&buf[buf.length-1].trim())){flush();items.push({t:"break",line:i+1});continue;}
     if(!buf.length) bufAt=i;
     buf.push(ln);}
   flush();
@@ -4049,7 +4054,7 @@ const helpOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),entryIx=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
-  let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,theme=null,recScope="",recForeign=null,dataMod=null;
+  let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,grp=null,theme=null,recScope="",recForeign=null,dataMod=null;
   /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
      as a module's opening is, and drawn on the home screen. `started` is set when that first line is met. */
   const opening=[];let started=false;
@@ -4085,10 +4090,8 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
        as the address it will have (activityTree places it) */
     if(w.set&&w.set.icon) a.icon=w.set.icon;
     if(w.set&&w.set.parent) a.parent=addrOf(mod?mod.id:"",w.set.parent);
-    /* `tab:` puts it in one of its module's tabs (one the module's opening declared, else it is in the first); `pin:off` lets its
-       frame scroll away with the rest (SPEC.md section 3) */
+    /* `tab:` puts it in one of its module's tabs (one the module's opening declared, else it is in the first) */
     if(w.set&&w.set.tab!==undefined){if(mod&&(mod.tabs||[]).some(t=>t.id===w.set.tab)) a.tab=w.set.tab;else problems.push(P.tabUnknown(P.line(line),w.set.tab));}
-    if(w.set&&w.set.pin!==undefined){if(String(w.set.pin).toLowerCase()==="off") a.pin=false;else problems.push(P.pinBad(P.line(line),w.set.pin));}
     /* a card's status line (SPEC.md section 3, "A card's parts"): `status:off` hides it; the lines of the callout under the line
        (`> …`) are its words, read as inline Markdown as a blurb is, in place of the line the page works out */
     if(w.set&&w.set.status==="off") a.statusOff=true;
@@ -4098,7 +4101,8 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
     act=a;return a;};
   const page=()=>{if(!act) newActivity({id:null,flags:new Set()},fm.title,0);return act.pages[act.pages.length-1];};
-  const put=b=>{if(row){row.blocks.push(b);return b;}page().blocks.push(b);return b;};
+  /* a block goes into the group being read, else the row that is open, else the page */
+  const put=b=>{if(grp){grp.blocks.push(b);return b;}if(row){row.blocks.push(b);return b;}page().blocks.push(b);return b;};
   const nextSeq=()=>++seq;
   const closeRow=why=>{const r=row;row=null;
     if(why) problems.push(P.rowClosed(P.line(r.line),why));
@@ -4263,16 +4267,19 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       const c={id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,
         blocks:[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}],placement:it.fold==="-"?"folded":undefined,label:it.title||k};
       if(c.placement==="folded"&&!q[k]&&act===lastQAct) q[k]=c;else put({...c,outside:true});});
-  /* any other callout is reading set apart */
+  /* any other callout is reading set apart; a group in an activity holds blocks: its body is read as the file is, with one `>`
+     less (SPEC.md section 6), into the group */
   const onReading=(it,where)=>{const k=it.kind;
     const unk=unknownKind(it);if(unk) problems.push(P.kindUnknown(where,k));
     if(!act&&(mod||(!started&&!implicit))){if(mod&&!tabsIn(mod)) mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
       /* a reading callout before the module's first activity (or the file's first line) is part of its opening, in the file's order with the prose */
       openList().push({id:"mo"+(++oseq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
         ...(unk?{unknown:true}:{}),blocks:it.body.length?[{id:"mo"+oseq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});return;}
-    put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
+    const c=put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       ...(unk?{unknown:true}:{}),
-      blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;};
+      blocks:it.body.length&&k!=="group"?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});
+    if(k==="group"){const was=grp;grp=c;lastQ=null;splitItems(it.body,0,true).items.forEach(x=>{x.line+=it.line;onItem(x);});grp=was;}
+    lastQ=null;};
   const LINE_KIND={notice:onNotice,row:onRow,data:onData,records:(it,where)=>problems.push(P.recordsOther(where)),menu:onMenu,
     /* a manifest is scenery: never drawn */
     manifest:()=>{},module:onModule,activity:onActivity,tab:onTab,hint:onHelp,solution:onHelp};
@@ -4280,15 +4287,18 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
     checkSettings(it,where,P,icons).forEach(m=>problems.push(m));
+    /* a group holds text, questions and callouts: a line that makes structure is said and left out */
+    if(grp&&/^(module|activity|tab|row|data|records)$/.test(k)) return void problems.push(P.groupHolds(where,k));
     /* a data, records, module, activity or tab line closes the row that is open, and says so */
     if(row&&(k==="data"||k==="records"||k==="module"||k==="activity"||k==="tab")) closeRow(k==="module"?P.rowRunsModule:k==="activity"?P.rowRunsActivity:k==="tab"?P.rowRunsTab:P.rowRunsSection(k));
     (hasOwn(LINE_KIND,k)?LINE_KIND[k]:inText(onReading))(it,where);};
-  for(const it of items.filter(x=>!x.rec)){
+  function onItem(it){
     if(it.t==="fence") onFence(it);
     else if(it.t==="break") onBreak();
     else if(it.t==="text") onText(it);
     else if(it.t==="bad") problems.push(P.calloutUnreadable(P.line(it.line)));
     else onLine(it);}
+  items.filter(x=>!x.rec).forEach(onItem);
   if(row) closeRow(P.rowNeverClosed);
   /* the regions are read last: a records line finds a module wherever the file has it */
   items.filter(x=>x.rec).forEach(onRec);
@@ -4621,13 +4631,19 @@ function moduleTextProblems(text,R){
    nothing is left exactly as the author wrote it, and question, activity, widget-line and menu ids are never
    renamed (nothing a host resolves depends on them). An update runs it again on the module's own text, so
    the result is the same. This whole block, and its one call in addModuleText, can be taken out alone. */
+/* some lines at each depth: [the lines, the lines one `>` in, two, …], a line "" where it is not that deep or is fenced
+   code one depth up. A group in an activity reads its body, one `>` less, as a file is (SPEC.md section 6), so the
+   ids, fences and Booklet lines below are looked for at every depth (a group in a group too) */
+function depthsOf(lines){const out=[lines];
+  for(let v=lines;;){const m=codeMask(v);v=v.map((x,i)=>!m[i]&&/^>/.test(x)?x.replace(/^>[ \t]?/,""):"");
+    if(!v.some(Boolean)) return out;out.push(v);}}
 /* the ids of the blocks (`^id` after a fence) in some lines, by the line the id is on */
 function blockIdLines(lines){const out=new Map();
-  codeFences(lines).forEach(F=>{if(F.id) out.set(F.idAt,F.id);});
+  depthsOf(lines).forEach(v=>codeFences(v).forEach(F=>{if(F.id) out.set(F.idAt,F.id);}));
   return out;}
 /* the ids of the footnotes defined in some lines (`[^id]: note`, outside fenced code), by line */
-function noteIdLines(lines){const mask=codeMask(lines),out=new Map();
-  lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CITE_DEF);if(m) out.set(i,m[1]);});
+function noteIdLines(lines){const out=new Map();
+  depthsOf(lines).forEach(v=>{const mask=codeMask(v);v.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CITE_DEF);if(m) out.set(i,m[1]);});});
   return out;}
 /* a line with `fn` applied to every stretch of it that is not inline code */
 function outsideInlineCode(ln,fn){let out="",i=0;
@@ -4643,23 +4659,23 @@ const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 /* The module's lines with each block id or footnote id that `takenBlocks` or `takenNotes` already holds renamed
    to `<modId>-<id>`. Returns {lines, renamed:[{what,from,to}]}. */
 function renameClashingIds(lines,takenBlocks,takenNotes,modId){
-  const mask=codeMask(lines),bl=blockIdLines(lines),nl=noteIdLines(lines);
+  const D=depthsOf(lines),M=D.map(codeMask),mask=lines.map((_,i)=>D.some((v,d)=>M[d][i]&&v[i]!=="")),bl=blockIdLines(lines),nl=noteIdLines(lines);
   const usedB=new Set(bl.values()),usedN=new Set(nl.values());
   /* the ids the module's own lines give to activities, questions and menus: a query's `from:` that names one of
      these names that, not a block */
-  const own=new Set();bookletLines(lines).forEach(x=>{
-    if(["activity","menu","module"].concat([...QUESTION_KINDS]).includes(x.kind)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}});
+  const own=new Set();D.forEach(v=>bookletLines(v).forEach(x=>{
+    if(["activity","menu","module"].concat([...QUESTION_KINDS]).includes(x.kind)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
   const fresh=(id,taken,used)=>{let n=modId+"-"+id,k=2;while(taken.has(n)||used.has(n)){n=modId+"-"+id+"-"+k;k++;}used.add(n);return n;};
   const mapB=new Map(),mapN=new Map(),renamed=[];
   for(const id of [...usedB]) if(takenBlocks.has(id)){const to=fresh(id,takenBlocks,usedB);mapB.set(id,to);renamed.push({what:"block",from:id,to});}
   for(const id of [...usedN]) if(takenNotes.has(id)){const to=fresh(id,takenNotes,usedN);mapN.set(id,to);renamed.push({what:"footnote",from:id,to});}
   if(!renamed.length) return {lines,renamed};
-  /* the `from:` lines of query fences */
+  /* the `from:` lines of query fences, a group's too */
   const fromLines=new Set();
-  codeFences(lines).forEach(F=>{if(/^booklet[ \t]+query\b/i.test(F.info)) for(let j=F.start+1;j<Math.min(F.end,lines.length-1);j++) fromLines.add(j);});
+  D.forEach(v=>codeFences(v).forEach(F=>{if(/^booklet[ \t]+query\b/i.test(F.info)) for(let j=F.start+1;j<Math.min(F.end,lines.length-1);j++) if(v[j]!=="") fromLines.add(j);}));
   const out=lines.map((ln,i)=>{
     if(bl.has(i)&&mapB.has(bl.get(i))) return ln.replace(/\^[A-Za-z0-9-]+/,"^"+mapB.get(bl.get(i)));
-    if(fromLines.has(i)){const m=ln.match(/^(\s*from:\s*)(["']?)([A-Za-z0-9-]+)\2(\s*)$/i);
+    if(fromLines.has(i)){const m=ln.match(/^((?:>[ \t]?)*\s*from:\s*)(["']?)([A-Za-z0-9-]+)\2(\s*)$/i);
       return m&&mapB.has(m[3])&&!own.has(m[3])?m[1]+m[2]+mapB.get(m[3])+m[2]+m[4]:ln;}
     if(mask[i]) return ln;
     return outsideInlineCode(ln,seg=>{
@@ -5844,8 +5860,8 @@ const answersFor=id=>activityOf(id).kind==="entry"?draftFor(id):answersIn(scopeO
 const allBlocksOf=a=>blocksAll(activityBlocks(a));
 const writesKeys=b=>{const k=keysOf(b);return Array.isArray(k)?k.filter(x=>typeof x==="string"):[];};
 const foldName=b=>tx(b.label,b.id);
-const blockFilled=(b,draft)=>(b.blocks||[b]).flatMap(keysOf)
-  .some(k=>Array.isArray(draft[k])?draft[k].length>0:nonEmpty(draft[k]));
+/* a fold holding an answer is drawn open: any question in it, a group's too, holding what the reader gave (a number, a pick) */
+const blockFilled=(b,draft)=>blocksAll(b.blocks||[b]).flatMap(keysOf).some(k=>holdsSomething(draft[k]));
 /* A question's heading and hint, drawn into `box`: the heading as an h3 (as a
    label for the field with id `forId`, when one is given) and the help text as an
    aside, each only when there is one. Returns the heading's text. (A text
@@ -6046,6 +6062,13 @@ function drawMatrix(b,draft,activityId){const box=el("div",{});const items=b.ite
       anchors.forEach(a=>pills.append(el("button",{type:"button",class:"pill-btn","data-i":String(i),"data-n":String(a.n),"aria-pressed":String(cur(i)===a.n),
         onclick:()=>{set(i,cur(i)===a.n?null:a.n);paint();}},...words(a.text,true))));
       q.append(el("h3",{},...words(it)),pills);g.append(q);});
+    /* held, the stem covers what scrolls under it: an item the keyboard moves into there is scrolled clear of it, its words
+       too, as far as keeping the answer in focus on screen allows. Only the keyboard's focus: a press is never moved. A matrix
+       with no words has no stem */
+    g.addEventListener("focusin",e=>{const h=box.firstElementChild,t=e.target,q=t.closest&&t.closest(".mxq");
+      if(!h||h.tagName!=="H3"||!q||!t.matches(":focus-visible")) return;
+      const s=h.getBoundingClientRect().bottom,r=t.getBoundingClientRect(),top=q.getBoundingClientRect().top;if(top>=s) return;
+      const d=Math.max(s+12-r.top,Math.min(s+12-top,innerHeight-12-r.bottom));if(d) window.scrollBy(0,-d);});
     return g;};
   const probe=el("div",{class:"mxprobe"},...anchors.map(a=>el("span",{},...words(a.text,true))));
   const view=el("div",{});let mode=null;
@@ -6637,7 +6660,7 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   return [box];}
 
 /* ======================= 11. TABS AND PAGES, LINKS, READING MATERIAL =======================
-   an activity's tabs and pages, its frame, the fold switch, links between activities, citations and callouts. */
+   an activity's tabs and pages, the fold switch, links between activities, citations and callouts. */
 
 /* ======================= AN ACTIVITY'S TABS AND PAGES =======================
    An activity is a list of PAGES, each a list of blocks: `pages: [{id, tab,
@@ -6675,11 +6698,12 @@ function chooseTab(id,t){const a=activityOf(id),v=viewAt(id),cur=currentPage(id)
 function turnPage(id,p,last){const steps=viewAt(id).steps;
   if(last&&oatPref()==="one") steps[p.id]=Infinity;else delete steps[p.id];
   showPage(id,p.id);render();
-  /* the page's top just under the bar (its frame, at the top, not yet held), and the focus on it: a screen reader says
-     which page this is (pageBody names it) */
-  const n=document.querySelector("#main .ap-body");
-  if(n){if(n.getBoundingClientRect) window.scrollTo({top:Math.max(0,window.scrollY+n.getBoundingClientRect().top-(parseFloat(document.documentElement.style.getPropertyValue("--ap-top"))||0))});
-    if(n.focus) n.focus({preventScroll:true});}}
+  /* what comes next just under the bar, so the new section is read from its start: the activity's top (its column: title, tab
+     bar), or, past an opening drawn above it (`ap-open`: the activity's above its tabs, the module's above a one-activity
+     module), what follows that opening; the focus on the section's body: a screen reader says which it is (pageBody names it) */
+  const n=document.querySelector("#main .ap-body"),c=n&&n.closest(".col"),o=c&&[...c.querySelectorAll(":scope>.ap-open")].pop(),t=o?o.nextElementSibling:c;
+  if(t&&t.getBoundingClientRect) window.scrollTo({top:Math.max(0,window.scrollY+t.getBoundingClientRect().top-(parseFloat(document.documentElement.style.getPropertyValue("--ap-top"))||0))});
+  if(n&&n.focus) n.focus({preventScroll:true});}
 /* after a redraw, put the focus back where the reader was working */
 function refocus(sel){const n=document.querySelector(sel);if(n&&!n.disabled) n.focus();}
 /* A tab bar, the ARIA tabs pattern: a button for each tab, the one on show selected and the only one in the Tab order, all
@@ -6692,6 +6716,15 @@ function tabBar(tabs,cur,label,pick){const bar=el("div",{class:"tabbar",role:"ta
     b.addEventListener("keydown",e=>{const k=e.key,n=tabs.length,j=k==="ArrowRight"?(i+1)%n:k==="ArrowLeft"?(i+n-1)%n:k==="Home"?0:k==="End"?n-1:-1;
       if(j<0) return;e.preventDefault();if(tabs[j].id!==cur) pick(tabs[j].id);});
     bar.append(b);});
+  /* the edges the tabs run past, if any: "start", "end" or both (see the stylesheet's fade); measured once laid out, and as
+     it scrolls or changes size */
+  const more=()=>{const m=bar.scrollWidth-bar.clientWidth,l=Math.abs(bar.scrollLeft),v=m>1?((l>1?"start ":"")+(l<m-1?"end":"")).trim():"";
+    if(v) bar.setAttribute("data-more",v);else bar.removeAttribute("data-more");};
+  /* the tab on show is centred in the bar as it is laid out, so all of it shows, clear of the fades (a bar that fits stays) */
+  const show=()=>{const b=bar.querySelector('[aria-selected="true"]');if(!b) return;
+    const r=b.getBoundingClientRect(),br=bar.getBoundingClientRect();bar.scrollLeft+=r.left-br.left-(br.width-r.width)/2;};
+  bar.addEventListener("scroll",more,{passive:true});
+  if(typeof ResizeObserver==="function") new ResizeObserver(()=>{show();more();}).observe(bar);
   return bar;}
 /* the panel under a tab bar: what the tab on show draws; in the Tab order, so a tab of prose alone can be reached and read */
 const tabPanel=(cur,...kids)=>el("div",{class:"tabpanel",role:"tabpanel",id:"tbpanel",tabindex:"0","aria-labelledby":"tb-"+cur},...kids);
@@ -6702,45 +6735,8 @@ const tabPanel=(cur,...kids)=>el("div",{class:"tabpanel",role:"tabpanel",id:"tbp
 const moduleTabOf=(mod,a)=>{const ts=tabsIn(mod);return !ts?null:ts.some(t=>t.id===a.tab)?a.tab:ts[0].id;};
 const moduleTabNow=mod=>{const ts=tabsIn(mod),v=viewAt(moduleScreen(mod.id)).tab;return !ts?null:ts.some(t=>t.id===v)?v:ts[0].id;};
 
-/* ---- THE FRAME ----
-   The plain prose before the first question of an activity (of a tab, when it has tabs), on that first page, stays in view
-   while the questions are answered (SPEC.md section 3): on every page of its tab, above the steps one at a time, and held
-   under the bar while the questions scroll all at once. Plain: paragraphs, lists and tables, with no heading (`#`, or a line
-   of `=` or `-` under text), no callout, no HTML and no code fence; prose with any of those is reading. A frame is short:
-   held under the bar, it is held only when it fits whole in the pin's height (--pin-h, min(7.5em, 22vh) of its own text as
-   drawn: frameTall). One taller is reading there, and the screen is drawn again with it as reading (render): it scrolls
-   with its page, on that page only, nothing cut and nothing folded. One at a time it is not held, so it covers nothing: it
-   is drawn whole above every step, whatever its length, and nothing measures it. `pin:off` on the activity's line lets it
-   scroll away as any prose does. Prose between questions, and a question's own hint, are not the frame: they go with the
-   question that follows (stepUnits). */
-const plainProse=b=>!!b&&b.type==="markdown"&&!/^ {0,3}(#{1,6}(\s|$)|<(\/?[A-Za-z][A-Za-z0-9-]*(\s|\/?>|$)|[!?])|`{3,}|~{3,})|^[ \t]*\S.*\n {0,3}(=+|-+)[ \t]*$/m.test(String(b.text||""));
-function frameOf(a,t){if(!a||a.pin===false) return null;
-  const first=tabPages(a,t)[0],list=blocksIn(first);
-  const n=list.findIndex(b=>!plainProse(b));
-  return n>0&&blocksAll([list[n]]).some(isQuestion)?{page:first.id,blocks:list.slice(0,n)}:null;}
-/* the frames measured too tall to hold on the screen on show (frameKey), which render draws as reading */
-let TALL=new Set();
-const frameKey=(id,t)=>id+"\n"+(t||"");
-/* the frame of activity `id`'s tab `t` as this screen draws it: none when it was measured too tall */
-const frameNow=(id,t)=>TALL.has(frameKey(id,t))?null:frameOf(activityOf(id),t);
-/* what the page on show draws, in order: the tab's opening, the frame, the page's own blocks */
-function pageBlocksShown(id){const a=activityOf(id),cur=currentPage(id),f=frameNow(id,cur.tab||null);
-  return [...tabOpening(a),...(f?f.blocks:[]),...pageOwn(cur,f)];}
-/* a page's blocks less the frame it begins with */
-const pageOwn=(p,f)=>f&&f.page===p.id?blocksIn(p).slice(f.blocks.length):blocksIn(p);
-/* a held frame's text against the pin's height (its body's max-height, --pin-h): running past it is reading (nothing to
-   measure, as in a test, is not) */
-function frameTall(f){const b=f.body,t=f.text;if(!b||!t||!t.isConnected||typeof t.getBoundingClientRect!=="function") return false;
-  return t.getBoundingClientRect().height>b.getBoundingClientRect().height+1;}
-function frameNode(id,t,blocks,draft,dc,one){
-  const text=el("div",{class:"pin-text"},renderBlocks(blocks,draft,id,dc)),body=el("div",{class:"pin-body"},text);
-  const box=el("div",{class:"pin"+(one?"":" pin-stick")},body);
-  if(one) return box;
-  /* held under the bar: measured (render), and again when its text reflows (a narrower window, a font arriving); grown too
-     tall, the screen is drawn as reading */
-  const f={key:frameKey(id,t),body,text};dc.frames.push(f);
-  if(typeof ResizeObserver==="function") new ResizeObserver(()=>{if(!RENDERING&&DRAWN===dc){if(frameTall(f)) drawKeepingFocus();else holdTop();}}).observe(text);
-  return box;}
+/* what the page on show draws, in order: the tab's opening, then the page */
+function pageBlocksShown(id){return [...tabOpening(activityOf(id)),...blocksIn(currentPage(id))];}
 
 /* ---- THE FOLD SWITCH ----
    The renderer folds nothing on its own: what is folded is what the author folded with `-`. A screen that shows a callout
@@ -6756,31 +6752,34 @@ function foldSwitch(){const on=foldsOpen();
   return b;}
 
 /* ---- drawing ---- */
-/* The tab on show (or the activity, with no tabs): its frame, the step control and the fold switch, the page on show (all
-   at once, or one question at a time) and its endnotes. The lists are read afresh on every redraw. */
-function pageBody(id,draft,dc){const cur=currentPage(id),f=frameNow(id,cur.tab||null),own=pageOwn(cur,f);
+/* The tab on show (or the activity, with no tabs): the step control and the fold switch, the part on show (all at once, or
+   one group at a time) and its endnotes. The lists are read afresh on every redraw. */
+function pageBody(id,draft,dc){const cur=currentPage(id),own=blocksIn(cur);
   /* of two or more pages, the body is named for its page ("Page 2 of 3"), which is said when a page turn puts the focus on it */
   const ps=tabPages(activityOf(id),cur.tab||null),of=ps.length>1?strings("pages").of(ps.indexOf(cur)+1,ps.length):null;
   const box=el("div",{class:"ap-body",tabindex:"-1",role:of?"group":null,"aria-label":of});
   /* reading material (see READING MATERIAL): the endnotes print shows go below
      the blocks, and only when there is something for them */
   /* (the citation scope began in renderActivity, before the head was drawn) */
-  /* three or more questions: the reader may take them one at a time (kept per booklet, like the fold switch) */
+  /* two or more groups: the reader may take them one at a time (kept per booklet, like the fold switch) */
   const units=stepUnits(own),one=units.length>=2&&oatPref()==="one";
-  const frame=f?frameNode(id,cur.tab||null,f.blocks,draft,dc,one):null;
-  const content=one?stepPage(id,draft,units,dc):renderBlocks(own,draft,id,dc);
+  /* one at a time, what comes before the first group of the part on show (any blocks, however long) is its opening, drawn
+     whole above the steps, so it is there at every step and in none of them; all at once, it is drawn as it stands */
+  const lead=one?own.slice(0,own.findIndex(isGroup)):[];
+  const content=one?[renderBlocks(lead,draft,id,dc),stepPage(id,draft,units,dc)]:[renderBlocks(own,draft,id,dc)];
   const tools=[units.length>=2?stepControl(one):null,dc.folds&&dc.folds.n?foldSwitch():null].filter(Boolean);
-  box.append(...[frame,tools.length?el("div",{class:"ap-tools"},...tools):null,content].filter(Boolean));
+  box.append(...[tools.length?el("div",{class:"ap-tools"},...tools):null,...content].filter(Boolean));
   const notes=endnotesFor(id,false,dc);if(notes) box.append(notes);
   citeReopen(dc);
   return box;}
 
 /* ---- ONE AT A TIME ----
-   A page of three or more questions can be taken one question at a time: a progress line and dots, and the question; the
-   foot's Back and Next (activityFooter) step through them, and Next on the last step turns the page. The reader's choice is
-   the browser's (booklet.ui.steps.<booklet>, see bookletPref), never the file's. Every question is drawn and the others are
-   only hidden, so an answer is never lost on a step, and print shows them all. A question's own hint and solution go with
-   it; prose goes with the question that follows it (the last prose with the last question). */
+   The part on show (an activity, a tab, or a `***` section of either) that holds two or more groups (`[!group]`) can be taken
+   one group at a time: a progress line and dots, and the group, drawn open; the foot's Back and Next (activityFooter) step
+   through them, and Next on the last step turns the section. The reader's choice is the browser's
+   (booklet.ui.steps.<booklet>, see bookletPref), never the file's. Every step is drawn and the others are only hidden, so an
+   answer is never lost on a step, and print shows them all. What comes between two groups goes with the group after it, and
+   what comes after the last, with the last; a question outside every group is never a step of its own. */
 const OAT_KEY="booklet.ui.steps.";
 /* A browser's preference for one booklet (one at a time, the fold switch), under its library entry: its link (`from`), the
    same each time a link opens it, else its id. One an older release kept under the booklet's id is read until set. */
@@ -6790,33 +6789,37 @@ const setBookletPref=(key,v)=>{lsSet(key+prefOwner(),v);};
 const oatPref=()=>bookletPref(OAT_KEY);
 const setOatPref=v=>setBookletPref(OAT_KEY,v);
 const isQuestion=q=>QUESTION_KINDS.has(q.type);
-function stepUnits(list){const units=[];let pre=[];
+const isGroup=b=>!!b&&b.type==="callout"&&String(b.kind).toLowerCase()==="group";
+/* the steps of a list of blocks: {blocks, group} for each group, with what comes between it and the group before it, and the
+   last with what follows it (what comes before the first group is the opening, not a step); none, unless there are two or more */
+function stepUnits(list){const units=[];let pre=null;
   (Array.isArray(list)?list:[]).forEach(b=>{if(!b||typeof b!=="object") return;
-    if(blocksAll([b]).some(isQuestion)){units.push({blocks:[...pre,b]});pre=[];}
-    else if(units.length&&b.type==="callout"&&hintKind(b)) units[units.length-1].blocks.push(b);
-    else pre.push(b);});
-  if(pre.length&&units.length) units[units.length-1].blocks.push(...pre);
-  const qs=units.reduce((n,u)=>n+blocksAll(u.blocks).filter(isQuestion).length,0);
-  return qs>=3?units:[];}
+    if(isGroup(b)){units.push({blocks:[...(pre||[]),b],group:b});pre=[];}
+    else if(pre) pre.push(b);});
+  if(pre&&pre.length) units[units.length-1].blocks.push(...pre);
+  return units.length>=2?units:[];}
 function stepControl(one){const S=strings("steps");
   const btn=(val,text)=>{const on=(val==="one")===one;
     return el("button",{type:"button","aria-pressed":String(on),onclick:()=>{if(on) return;
       setOatPref(val);render();refocus('.oat-ctl button[aria-pressed="true"]');}},text);};
   return el("div",{class:"oat-ctl",role:"group","aria-label":S.label},btn("one",S.one),btn("all",S.all));}
 function stepPage(id,draft,units,dc){const S=strings("steps"),page=currentPage(id),steps=viewAt(id).steps,key=page.id;
-  const done=u=>blocksAll(u.blocks).filter(isQuestion).every(q=>keysOf(q).some(k=>holdsSomething(draft[k])));
-  /* arriving, the first step with a question still to answer is shown (turned back to, the last: turnPage) */
-  if(!(key in steps)){const f=units.findIndex(u=>!done(u));steps[key]=f<0?0:f;}
+  const qs=u=>blocksAll(u.blocks).filter(isQuestion),said=q=>keysOf(q).some(k=>holdsSomething(draft[k]));
+  /* a step is done when each of its questions holds an answer; one with no question, once a step after it holds one */
+  const done=(u,i)=>{const q=qs(u);return q.length?q.every(said):units.slice(i+1).some(v=>qs(v).some(said));};
+  /* arriving, the first step not done is shown (turned back to, the last: turnPage) */
+  if(!(key in steps)){const f=units.findIndex((u,i)=>!done(u,i));steps[key]=f<0?0:f;}
   steps[key]=Math.max(0,Math.min(units.length-1,steps[key]));
   const n=units.length,host=el("div",{class:"oat"});
   const prog=el("span",{class:"oat-prog",role:"status"}),dots=units.map(()=>el("span",{class:"oat-dot"}));
   host.append(el("div",{class:"oat-head"},prog,el("span",{class:"oat-dots","aria-hidden":"true"},...dots)));
-  const nodes=units.map(u=>el("div",{class:"oat-unit",tabindex:"-1"},...u.blocks.map(b=>renderBlock(b,draft,id,dc))));
+  /* a step draws its group open, whether or not the author folded it; a group with no title is named by its place ("Step 2 of 3") */
+  const nodes=units.map((u,i)=>el("div",{class:"oat-unit",tabindex:"-1",...(nonEmpty(tx(u.group.title,""))?{}:{role:"group","aria-label":S.progress(i+1,n)})},...u.blocks.map(b=>renderBlock(b===u.group?{...b,placement:undefined}:b,draft,id,dc))));
   host.append(...nodes);
   const draw=()=>{const at=steps[key];
     nodes.forEach((x,i)=>{if(i===at) x.removeAttribute("hidden");else x.setAttribute("hidden","");});
     prog.textContent=S.progress(at+1,n);
-    dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i])?" on":"")+(i===at?" cur":"");});};
+    dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i],i)?" on":"")+(i===at?" cur":"");});};
   /* Back and Next are the foot's (dc.oat): a step redraws them, and moves the keyboard to the step now shown (its box takes
      the focus, so a screen reader reads it) */
   const go=d=>{steps[key]=Math.max(0,Math.min(n-1,steps[key]+d));draw();if(dc.foot) dc.foot();
@@ -6964,10 +6967,11 @@ const CITE_SCOPES=new WeakMap();
 function citeScope(v){let all=CITE_SCOPES.get(BOOK);if(!all) CITE_SCOPES.set(BOOK,all=new Map());
   if(all.has(v)) return all.get(v);
   const own=isModuleScreen(v)?moduleForScreen(v):null,mod=own||(hasOwn(SCREENS,v)?null:holderOf(v));
-  const lists=own?(own.activities.length&&Array.isArray(own.opening)&&own.opening.length?[own.opening]:null)
+  /* a module's screen draws its opening and the prose of each of its tabs (renderModulePage), numbered in that order */
+  const lists=own?(own.activities.length?[own.opening,...(tabsIn(own)||[]).map(t=>t.blocks)].filter(l=>Array.isArray(l)&&l.length):null)
     :mod?[...(openingWithActivity(mod)?[mod.opening]:[]),...activityOf(v).pages.map(blocksIn)]:null;
   let R=null;
-  if(lists){const {sources,cites}=registries(mod),nums=new Map();
+  if(lists&&lists.length){const {sources,cites}=registries(mod),nums=new Map();
     for(const list of lists) for(const b of list) for(const s of markedTexts(b)) for(const id of citeIds(s))
       if(cites.has(id)&&!nums.has(id)) nums.set(id,nums.size+1);
     R={screen:v,mod,sources,cites,nums};}
@@ -7091,15 +7095,17 @@ function hideTip(){if(citeTipEl) citeTipEl.setAttribute("hidden","");}
 /* ---- callouts ---- */
 let rdSeq=0;
 /* a hint or a solution straight after a question but drawn outside it (`outside`) is drawn plain: no kind's colour or label */
-function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),plain=!!b.outside,look=plain?null:calloutLook(b.kind),k=look?look.label:"";
+/* a group is a titled container, drawn plain as its fold is: its title, no kind's word or colour, a group to a screen reader */
+function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),grp=isGroup(b),plain=!!b.outside||grp,look=plain?null:calloutLook(b.kind),k=look?look.label:"";
   const u="rd-c"+(++rdSeq),title=tx(b.title,"");
-  const box=el("div",{class:"rd-callout"+(look?" rd-hued hue-"+look.hue+" rd-k-"+look.label:""),role:"note","data-kind":k||null});
+  const box=el("div",{class:"rd-callout"+(look?" rd-hued hue-"+look.hue+" rd-k-"+look.label:""),role:grp?"group":"note","data-kind":k||null});
   const head=el("div",{class:"rd-chead"}),named=[];
   if(look){const pic=icon(look.icon);
     if(pic) head.append(el("span",{class:"rd-ci","aria-hidden":"true"},pic));
     head.append(el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
-  box.append(head);
+  /* the kind's word heads the box; a plain one (a group) has none, and with no title of its own it has no head at all */
+  if(look) box.append(head);
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title,false,true)));named.push(u+"-t");}
   if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
@@ -7112,9 +7118,7 @@ function readingBegin(dc){
   /* A switch of the interface language redraws the page: the panel is opened
      again once its mark is drawn (citeReopen, dc.again), in the new language, and the
      focus stays where the reader put it. Any other redraw closes it. */
-  dc.again=dc.reopen||(citeOpen()&&citeAt&&dc.cite&&citeAt.screen===dc.cite.screen&&citeAt.lang!==lang?citeAt:null);
-  /* kept as the draw's own, for a second draw of the same screen (render), which finds the panel already in the new language */
-  dc.reopen=dc.again;
+  dc.again=citeOpen()&&citeAt&&dc.cite&&citeAt.screen===dc.cite.screen&&citeAt.lang!==lang?citeAt:null;
   closeCite(false);hideTip();}
 /* ---- print: the citations as endnotes at the end of the page on show ---- */
 function citeRefText(c,src,Rt){const bits=[];
@@ -7122,9 +7126,9 @@ function citeRefText(c,src,Rt){const bits=[];
   const pl=pageLine(c,Rt);if(pl) bits.push(pl);
   const q=tx(c.quote,"");
   return bits.join(". ")+(bits.length&&nonEmpty(q)?". ":"")+(nonEmpty(q)?(plainRef(c,src)?q:Rt.quoted(q)):"");}
-/* the endnotes of the page on show (or, `openingOnly`, of a module's opening on its own screen) */
-function endnotesFor(id,openingOnly,dc){const R=dc.cite;if(!R) return null;
-  const here=[],mod=R.mod,shown=openingOnly?(mod.opening||[]):[...(openingWithActivity(mod)?mod.opening:[]),...pageBlocksShown(id)];
+/* the endnotes of the page on show (or, given `shown`, of the blocks a module's own screen draws: its opening and its tab's prose) */
+function endnotesFor(id,shown,dc){const R=dc.cite;if(!R) return null;
+  const here=[],mod=R.mod;shown=shown||[...(openingWithActivity(mod)?mod.opening:[]),...pageBlocksShown(id)];
   for(const b of shown) for(const s of markedTexts(b)) for(const cid of citeIds(s))
     if(R.nums.has(cid)&&!here.includes(cid)) here.push(cid);
   if(!here.length) return null;
@@ -7228,20 +7232,11 @@ let RENDERING=false;
 function settle(){lang=uiLang();
   if(isModuleScreen(screen)){const mod=moduleForScreen(screen);if(!mod||!isMulti(mod)) screen=mod?entryScreenOf(mod):HOME_SCREEN;}
   if(!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)){const m=activityOf(screen);if(m.kind==="entry") seedUpsertDraft(screen,m,answersFor(screen));}}
-/* draw the screen in force afresh, in a draw of its own (one draw, region 4) told `o`, and return it */
+/* draw the screen in force afresh, in a draw of its own (one draw, region 4), and return it */
 function render(){
   /* nothing is drawn before the page has read its store: the first draw is keepStart's (bootPage) */
   if(!KEEP.ready) return DRAWN;
-  TALL=new Set();let dc=drawScreen(null);
-  /* a frame drawn taller than the pin's height is reading: the screen is drawn again with it so (THE FRAME), and a citation
-     the first draw opened again for a language switch is opened again by the second (readingBegin) */
-  const tall=dc.frames.filter(frameTall);
-  if(tall.length){tall.forEach(f=>TALL.add(f.key));dc=drawScreen(dc.reopen);}
-  holdTop();
-  return dc;}
-/* the drawing itself (`reopen`: the citation a first draw of this screen opened again) */
-function drawScreen(reopen){
-  RENDERING=true;const dc=newDraw();dc.reopen=reopen;DRAWN=dc;
+  RENDERING=true;const dc=newDraw();DRAWN=dc;
   try{settle();dc.cite=citeDraw(screen);citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(hasOwn(SCREENS,screen)) SCREENS[screen](main,dc);
   else if(isModuleScreen(screen)) renderModulePage(main,screen,dc);
@@ -7271,7 +7266,7 @@ function provenanceNode(){if(!PROVENANCE||PROVENANCE.dismissed) return null;
   if(screen!==HOME_SCREEN&&PROVENANCE.at!==screen) return null;
   const u=strings("ui"),B=strings("booklet");
   const box=el("div",{class:"notice col openedby",role:"status"});
-  const row=el("p",{style:"margin:0"},PROVENANCE.host?B.openedFromHost(PROVENANCE.label):PROVENANCE.store?B.linkFromStore(PROVENANCE.label):B.linkFromRegistry(PROVENANCE.label));
+  const row=el("p",{style:"margin:0"},PROVENANCE.host?B.openedFromHost(PROVENANCE.label):PROVENANCE.store?((fromParts(PROVENANCE.from)||{}).kind==="modules"?B.linkFromFolder:B.linkFromStore)(PROVENANCE.label):B.linkFromRegistry(PROVENANCE.label));
   box.append(row);
   box.append(el("button",{type:"button",class:"small",style:"margin-top:.4rem",onclick:()=>{PROVENANCE.dismissed=true;render();}},u.fileNotesDismiss));
   return box;}
@@ -7496,7 +7491,8 @@ function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id)
   if(W) col.append(wikiCrumbs(W,id));
   const titleText=tx(mod.title,tx(m.title,shortId(id)));
   /* a module that is one activity has no screen of its own: its activity's screen draws its head (title, opening, picture) */
-  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)) col.append(moduleHead({...mod,title:titleText},id,null,false,dc));
+  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)){const h=moduleHead({...mod,title:titleText},id,null,false,dc);
+    if(Array.isArray(mod.opening)&&mod.opening.length) h.classList.add("ap-open");col.append(h);}
   else{col.append(pageHead(id,m,titleText,W));
     const lead=tx(mod.blurb,tx(m.blurb,""));
     if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
@@ -7512,7 +7508,7 @@ function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id)
   const same=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
   const firstH=(openNode&&openNode.querySelector("h1,h2,h3,h4,h5,h6"))||body.querySelector("h1,h2,h3,h4,h5,h6");
   if(firstH&&same(textOf(words(titleText)))&&same(firstH.textContent)===same(textOf(words(titleText)))) firstH.remove();
-  if(openNode) col.append(openNode);
+  if(openNode){openNode.classList.add("ap-open");col.append(openNode);}
   if(ts&&ts.length>1) col.append(tabBar(ts,cur.tab,plainText(activityName(m)),t=>chooseTab(id,t)),tabPanel(cur.tab,body));
   else col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));
@@ -7826,20 +7822,22 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
   const col=el("div",{class:"col"});
   const acts=activitiesShown(mod);
   const first=(mod.activities[0]||{}).id;
-  /* the opening's sources are numbered on their own (the screen's scope, citeScope), so that a panel opened from the opening
-     survives a language switch (it is opened again below, once its mark is drawn) */
-  const opened=!!first&&Array.isArray(mod.opening)&&mod.opening.length>0;
-  if(opened) readingBegin(dc);
-  col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0,dc));
-  /* the opening's sources, numbered from 1 on their own, close it at the foot of the screen */
-  const openNotes=opened?endnotesFor(first,true,dc):null;
-  if(openNotes) citeReopen(dc);
-  const parts=[col];
   /* a module with tabs lists the activities of the tab on show under its tab bar (see AN ACTIVITY'S TABS AND PAGES), with what
      the opening has after that tab's line above them; each keeps its number in the module */
   const mts=tabsIn(mod),mt=moduleTabNow(mod),inTab=a=>!mts||moduleTabOf(mod,a)===mt,tt=mts&&mts.find(t=>t.id===mt);
+  const opening=Array.isArray(mod.opening)?mod.opening:[],tabProse=tt&&Array.isArray(tt.blocks)?tt.blocks:[];
+  /* the sources of the opening and the tabs' prose are numbered on their own (the screen's scope, citeScope), so that a panel
+     opened from them survives a language switch (it is opened again below, once its mark is drawn) */
+  const opened=!!first&&(opening.length>0||tabProse.length>0);
+  /* a screen with marks anywhere closes the panel of the draw before, also on a tab that draws none of them */
+  if(opened||dc.cite) readingBegin(dc);
+  col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0,dc));
+  const parts=[col];
   const list=[];
-  if(tt&&Array.isArray(tt.blocks)&&tt.blocks.length) list.push(renderBlocks(tt.blocks,nullMap(),first||"",dc));
+  if(tabProse.length) list.push(renderBlocks(tabProse,nullMap(),first||"",dc));
+  /* their sources, numbered from 1 on their own, close them at the foot of the screen */
+  const openNotes=opened?endnotesFor(first,[...opening,...tabProse],dc):null;
+  if(openNotes) citeReopen(dc);
   const grid=el("ol",{class:"modes",role:"list"}),top=W?W.top.filter(inTab):null;
   /* a wiki shows the pages at its top, and every other page is under one of them */
   if(W&&top.length) list.push(...wikiBatched(top,wikiCard,"modes wk-cards"));
@@ -8615,27 +8613,13 @@ if(typeof window!=="undefined"&&typeof window.matchMedia==="function"){
   mq.addEventListener("change",again);}
 window.addEventListener("booklet-theme",()=>{const s=document.getElementById("themeSel");if(s&&window.bookletTheme) s.value=window.bookletTheme.get();
   redrawDiagrams();});
-/* What stays in view (a wiki's menu, an activity's frame) stays below the page's own sticky bar, whose height changes
-   with the screen; the stylesheet reads it as --ap-top. What the keyboard moves to is scrolled clear of the bar and of a
-   frame pinned under it (the page's scroll-padding-top, set on its own rule: padRule), so a focused control is never hidden
-   behind them. */
-let PAD_RULE;
-const padRule=()=>{if(PAD_RULE!==undefined) return PAD_RULE;PAD_RULE=null;
-  for(const sh of Array.from(document.styleSheets||[])){let rs;try{rs=sh.cssRules;}catch(e){continue;/* another origin's sheet */}
-    for(const r of Array.from(rs||[])) if(r.selectorText==="html"&&r.style&&r.style.scrollPaddingTop){PAD_RULE=r;return r;}}
-  return null;};
-function holdTop(){const bar=document.querySelector(".bar"),root=document.documentElement;if(!bar||!root.style) return;
-  const h=bar.getBoundingClientRect().height,pin=document.querySelector("#main .pin-stick"),pad=padRule();
-  root.style.setProperty("--ap-top",Math.ceil(h+12)+"px");
-  /* clear of the frame's foot when one is pinned (it is held flush under the bar), else of the bar's, with room for a field's
-     focus ring and the inset of its first line (a browser brings a text box's caret into view, not its top edge) */
-  if(pad) pad.style.scrollPaddingTop=Math.ceil((pin?h+pin.getBoundingClientRect().height:h)+24)+"px";}
+/* What stays in view (a wiki's menu, the citation panel, a matrix's stem) stays below the page's own sticky bar, whose
+   height changes with the screen; the stylesheet reads it as --ap-top, and keeps what the keyboard moves to clear of it
+   (the page's scroll-padding-top). */
 (function trackBar(){const bar=document.querySelector(".bar");
   if(!bar||typeof ResizeObserver!=="function") return;
-  new ResizeObserver(holdTop).observe(bar);holdTop();
-  /* a window grown shorter lowers the pin's height (the 22vh of --pin-h): a held frame now taller than it is drawn again as
-     reading */
-  window.addEventListener("resize",()=>{if(!RENDERING&&DRAWN&&DRAWN.frames&&DRAWN.frames.some(frameTall)) drawKeepingFocus();});})();
+  const set=()=>document.documentElement.style.setProperty("--ap-top",Math.ceil(bar.getBoundingClientRect().height+12)+"px");
+  new ResizeObserver(set).observe(bar);set();})();
 /* Printing prints everything: the folded callouts open for the print and fold back after */
 if(typeof window!=="undefined"&&window.addEventListener){let printed=[];
   window.addEventListener("beforeprint",()=>{printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});

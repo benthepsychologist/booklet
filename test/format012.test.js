@@ -11,15 +11,15 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
-const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.15"\ntitle: T\nlang: en\n---\n\n';
 (async()=>{
  const A=P.boot();
  const mod=R=>R.template.modules[0];
  const acts=R=>mod(R).activities;
 
  /* ---- the settings table ---- */
- chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, icon:, parent:, status:, tab: and pin:",
-   JSON.stringify(A.KIND_SETTINGS.module)==='["end","icon:"]'&&JSON.stringify(A.KIND_SETTINGS.activity)==='["repeat","daily","hidden","icon:","parent:","status:","tab:","pin:"]');
+ chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, icon:, parent:, status: and tab:",
+   JSON.stringify(A.KIND_SETTINGS.module)==='["end","icon:"]'&&JSON.stringify(A.KIND_SETTINGS.activity)==='["repeat","daily","hidden","icon:","parent:","status:","tab:"]');
  {const R=A.parseFile(FM+"> [!module|m icon:compass] M\n\n> [!activity|a icon:notebook-pen] A\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
   chk("icon: on a module and on an activity is read, with nothing reported",R.ok&&R.unread.length===0&&mod(R).icon==="compass"&&acts(R)[0].icon==="notebook-pen"&&acts(R)[1].icon===undefined,JSON.stringify(R.unread));}
  {const R=A.parseFile(FM+"> [!module|m icon:no-such-picture] M\n\n> [!activity|a icon:Compass] A\n\n> [!activity|b] B\n\n> [!module|m end] End\n");

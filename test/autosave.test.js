@@ -31,7 +31,7 @@ global.location={href:"http://fleet/app/",protocol:"http:",hostname:"fleet",hash
 let META={};
 global.document.querySelector=sel=>{const m=/meta\[name="([^"]+)"\]/.exec(sel);const v=m&&META[m[1]];return v?{getAttribute:k=>k==="content"?v:null}:null;};
 const STORE="http://fleet/booklets/",LABEL="fleet: store";
-const FM=t=>`---\nbooklet: "0.13"\ntitle: ${t}\nlang: en\n---\n\n`;
+const FM=t=>`---\nbooklet: "0.15"\ntitle: ${t}\nlang: en\n---\n\n`;
 const booklet=(title,q)=>FM(title)+`> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] ${q||"A question"}\n\n> [!module|m end] End\n`;
 let ROUTES={};
 const reply=body=>({ok:true,status:200,headers:{get:k=>({"content-type":"text/markdown"}[k.toLowerCase()])},

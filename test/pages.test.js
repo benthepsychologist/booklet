@@ -1,13 +1,13 @@
 // Pages are pagination (0.15, SPEC.md section 3): a thematic break splits an activity, or a tab, into pages that have no
 // name, no id and no menu. The foot has one row: Back, "Page N of M" and Next; on the last page Next is the next activity's,
-// on the first Back is the overview's. One at a time steps through a page's questions with the same Back and Next, and the
-// last step's Next turns the page. Also: an activity's card on its module's screen shows the activity's first paragraph.
+// on the first Back is the overview's. One at a time steps through the groups of the `***` section on show with the same Back
+// and Next, and the last step's Next turns the section. Also: an activity's card on its module's screen shows the activity's first paragraph.
 // The page's name for a screen reader is here; the scroll, focus and geometry are test/tabs-browser.js. Run: node test/pages.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-const FM='---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.15"\ntitle: T\nlang: en\n---\n\n';
 const A=P.boot();
 const END="\n> [!module|m end] End\n";
 const draw=id=>{A.screen=id;A.render();return P.main();};
@@ -42,19 +42,19 @@ const btn=c=>find(foot(),hasClass(c))[0];
  chk("which page is on show is not stored in the file",!/p2/.test(A.toMarkdown()));}
 
 /* 2. one at a time across pages: one Back and Next */
-{const Q=(id)=>`> [!text|${id}] Question ${id}?\n\n`;
+{const Q=(id)=>`> [!group] Step ${id}\n> > [!text|${id}] Question ${id}?\n\n`;
  const T=FM+"> [!module|m] M\n\n> [!activity|a] A\n\n"+Q("q1")+Q("q2")+Q("q3")+"---\n\n"+Q("q4")+Q("q5")+Q("q6")+"> [!activity|b] B\n\nNext.\n"+END;
  P.wipe();const B=P.boot();
  B.loadText(T);global.__ls[B.OAT_KEY+B.currentId]="one";B.screen="m/a";B.render();
  const shown=()=>find(P.main(),hasClass("oat-unit")).filter(u=>u.attrs.hidden===undefined).map(texts).join();
- chk("one at a time on page one: the first step, the overview's Back, Page 1 of 2, the step's Next",/q1/.test(shown())&&row()==="cd-back:Back to the overview | pg-at:Page 1 of 2 | oat-next:Next question",row());
+ chk("one at a time on page one: the first step, the overview's Back, Page 1 of 2, the step's Next",/q1/.test(shown())&&row()==="cd-back:Back to the overview | pg-at:Page 1 of 2 | oat-next:Next step",row());
  chk("there is no second Back and Next row in the page",find(P.main(),hasClass("oat-nav")).length===0&&find(P.main(),hasClass("cd-foot")).length===1);
  click(btn("oat-next"));
- chk("Next steps: the second question, Back now steps back",/q2/.test(shown())&&row()==="oat-back:Back | pg-at:Page 1 of 2 | oat-next:Next question",row());
+ chk("Next steps: the second question, Back now steps back",/q2/.test(shown())&&row()==="oat-back:Back | pg-at:Page 1 of 2 | oat-next:Next step",row());
  click(btn("oat-next"));
  chk("on the last step Next turns the page",/q3/.test(shown())&&row()==="oat-back:Back | pg-at:Page 1 of 2 | pg-next:Next",row());
  click(btn("pg-next"));
- chk("page two opens on its first step, its Back the page before's",/q4/.test(shown())&&row()==="pg-back:Back | pg-at:Page 2 of 2 | oat-next:Next question",row());
+ chk("page two opens on its first step, its Back the page before's",/q4/.test(shown())&&row()==="pg-back:Back | pg-at:Page 2 of 2 | oat-next:Next step",row());
  click(btn("pg-back"));
  chk("turned back to, page one opens on its last step",/q3/.test(shown())&&row()==="oat-back:Back | pg-at:Page 1 of 2 | pg-next:Next",row());
  click(btn("pg-next"));click(btn("oat-next"));click(btn("oat-next"));

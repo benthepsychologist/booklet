@@ -57,7 +57,7 @@ const FILES={
 const REFUSED=[['dots','../secret.png'],['dots2','images/../a.png'],['abs','/images/a.png'],['proto','//tracker.example/p.png'],['remote','https://tracker.example/r.png'],
   ['data','data:image/png;base64,AAAA'],['pct','images/a%2Eb.png'],['query','images/q.png?x=1'],['hash','images/h.png#f'],['back','images\\a.png'],
   ['ext','images/note.txt'],['dot','./images/a.png'],['hidden','images/.hid/a.png'],['colon','images/a:b.png']];
-const bk=(id,title,body)=>`---\nbooklet: "0.13"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
+const bk=(id,title,body)=>`---\nbooklet: "0.15"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
 const PICS=bk('pics','Pictures',['> [!activity|look] Look','','![Harbour svg](images/a.svg)','','![Chart png][chart]','','![](images/deco.png)','','![Gone](images/missing.png)','',
   '![Fake svg](images/fake.svg)','','![Big png](images/big.png)','',...REFUSED.flatMap(([a,u])=>['!['+a+' refused]('+u+')','']),'[chart]: images/b.png',''].join('\n'));
 const NESTED=bk('nest','Nested',['> [!activity|n] Nested','','![Nested svg](images/a.svg)',''].join('\n'));
@@ -67,23 +67,23 @@ const LONG='images/'+'a'.repeat(200)+'.png';
 const MIX=bk('mix','Mixed',['> [!activity|m] Mixed','','![Doctype svg](images/doctype.svg)','','![No xmlns](images/noxmlns.svg)','','![Truncated png](images/trunc.png)','',
   '![Redirected](images/redir.png)','','![Long path]('+LONG+')',''].join('\n'));
 const REGPIC=bk('regpic','Registry pictures',['> [!activity|r] Registry','','![Reg svg](images/a.svg)','','![Reg only](images/reg-only.png)',''].join('\n'));
-const SHARED='---\nbooklet: "0.13"\ntitle: Shared\nlang: en\n---\n\n'+
+const SHARED='---\nbooklet: "0.15"\ntitle: Shared\nlang: en\n---\n\n'+
   ['> [!module|journal] Journal','','> [!activity|j] Journal','','![Store pic](images/a.svg)','','> [!module|journal end] End','',
    '> [!module|other] Other','','> [!activity|o] Other','','Nothing to see.','','> [!text|oq] Say ![Prompt pic](images/prompt.png) here',"",'> [!module|other end] End',''].join('\n');
 /* a module file under the id the store's booklet already uses: adding it updates that module in place */
 const JNEW=(title,img)=>bk('journal',title,['> [!activity|j] Journal','','!['+title+' pic](images/'+img+')',''].join('\n'));
 const JFILES={'/jupda.md':JNEW('Journal update A','reader-wrote-this.png'),'/jupdb.md':JNEW('Journal update B','from-registry.png'),'/jreadd.md':JNEW('Journal readded','readded.png')};
 /* a booklet with prose before its first module (its opening), a module with a question (so a reader can keep work in it), and a store file that can change */
-const topBook=img=>'---\nbooklet: "0.13"\ntitle: Top\nlang: en\n---\n\nWelcome ![Opening pic](images/'+img+')\n\n'+
+const topBook=img=>'---\nbooklet: "0.15"\ntitle: Top\nlang: en\n---\n\nWelcome ![Opening pic](images/'+img+')\n\n'+
   ['> [!module|tm] Top module','','> [!activity|ta] Top','','> [!text|tq] A note','','> [!module|tm end] End',''].join('\n');
 let TOPV=1;
 /* a module with a data section: the fence is the same everywhere, so only the data section tells the store's text from a replacement's */
 const DMOD=n=>'> [!module|dm] D module\n\n> [!activity|d] D\n\n![D pic](images/a.svg)\n\n> [!module|dm end] End\n\n> [!data|dm] Data for D module\n\n```booklet data\n[{"x": '+n+'}]\n```\n^rows\n';
-const DHEAD='---\nbooklet: "0.13"\ntitle: Data booklet\nlang: en\n---\n\n';
+const DHEAD='---\nbooklet: "0.15"\ntitle: Data booklet\nlang: en\n---\n\n';
 const JFILES_D={'/dsame.md':DHEAD+DMOD(1),'/ddiff.md':DHEAD+DMOD(2)};
 /* the default folder (0.15): a booklet in modules/sub/ beside a renderer at /fold/ (and the same file beside one at /fold2/),
    two modules, each with an image beside it; and a module file under the first module's id, whose image would draw if asked */
-const FOLDBOOK='---\nbooklet: "0.13"\ntitle: Folded\nlang: en\n---\n\n'+
+const FOLDBOOK='---\nbooklet: "0.15"\ntitle: Folded\nlang: en\n---\n\n'+
   ['> [!module|fm] Fold main','','> [!activity|fa] Fold main','','![Fold svg](images/a.svg)','','> [!module|fm end] End','',
    '> [!module|fk] Fold kept','','> [!activity|fka] Fold kept','','![Kept png](images/c.png)','','> [!module|fk end] End',''].join('\n');
 JFILES['/foldupd.md']=bk('fm','Fold update',['> [!activity|fa] Fold main','','![Fold update pic](images/b.svg)',''].join('\n'));
@@ -189,7 +189,7 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   ok(s.boxes.length===3+REFUSED.length&&s.boxes.some(x=>x.includes('Gone')&&/Imagen no mostrada: no se encontró el archivo/.test(x))&&s.boxes.some(x=>x.includes('Big png')&&/demasiado grande/.test(x))&&s.boxes.some(x=>/esta página no lee esa dirección/.test(x)),'drawn again in Spanish: the reasons are in Spanish');
   await p.locator('button[data-lang=fr]').click();await wait(p,1200);
   s=await state(p);
-  ok(s.boxes.some(x=>x.includes('Gone')&&/Image non affichée : fichier introuvable/.test(x))&&s.boxes.some(x=>/cette page ne lit pas cette adresse/.test(x))&&s.boxes.some(x=>/n’est pas du type d’image/.test(x)),'drawn again in French: the reasons are in French');
+  ok(s.boxes.some(x=>x.includes('Gone')&&/Image non affichée : fichier introuvable/.test(x))&&s.boxes.some(x=>/cette page ne lit pas cette adresse/.test(x))&&s.boxes.some(x=>/ne correspond pas au type d’image/.test(x)),'drawn again in French: the reasons are in French');
   await p.locator('button[data-lang=en]').click();await wait(p,1200);
   s=await state(p);
   ok(s.imgs.length===3&&s.imgs.every(i=>i.ok)&&s.boxes.some(x=>/the file was not found/.test(x)),'drawn again in English: the three images are still there');
