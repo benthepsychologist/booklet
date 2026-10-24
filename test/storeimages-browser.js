@@ -189,7 +189,7 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   ok(s.boxes.length===3+REFUSED.length&&s.boxes.some(x=>x.includes('Gone')&&/Imagen no mostrada: no se encontró el archivo/.test(x))&&s.boxes.some(x=>x.includes('Big png')&&/demasiado grande/.test(x))&&s.boxes.some(x=>/esta página no lee esa dirección/.test(x)),'drawn again in Spanish: the reasons are in Spanish');
   await p.locator('button[data-lang=fr]').click();await wait(p,1200);
   s=await state(p);
-  ok(s.boxes.some(x=>x.includes('Gone')&&/Image non affichée : fichier introuvable/.test(x))&&s.boxes.some(x=>/cette page ne lit pas cette adresse/.test(x))&&s.boxes.some(x=>/n’est pas du type d’image/.test(x)),'drawn again in French: the reasons are in French');
+  ok(s.boxes.some(x=>x.includes('Gone')&&/Image non affichée : fichier introuvable/.test(x))&&s.boxes.some(x=>/cette page ne lit pas cette adresse/.test(x))&&s.boxes.some(x=>/ne correspond pas au type d’image/.test(x)),'drawn again in French: the reasons are in French');
   await p.locator('button[data-lang=en]').click();await wait(p,1200);
   s=await state(p);
   ok(s.imgs.length===3&&s.imgs.every(i=>i.ok)&&s.boxes.some(x=>/the file was not found/.test(x)),'drawn again in English: the three images are still there');

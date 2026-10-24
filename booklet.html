@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-vpO4rvSKxQoFkQScy5SuG+BUNWjZ8RjxjcvG9rKNwWg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-vvZFOt+Lg37spLSw/AlHMKXHfL7dpV0yFhVTwyXjPXM=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1884,7 +1884,7 @@ const STRINGS_SRC={
       imgRefused: "Image non affichée : cette page ne lit pas cette adresse.",
       imgMissing: "Image non affichée : fichier introuvable.",
       imgBig: "Image non affichée : fichier trop volumineux (limite : 5 Mo).",
-      imgWrong: "Image non affichée : le fichier n’est pas du type d’image que son nom indique.",
+      imgWrong: "Image non affichée : le fichier ne correspond pas au type d’image indiqué par son nom.",
       imgFailed: "Image non affichée : elle n’a pas pu être récupérée.",
       imgBroken: "Image non affichée : le fichier n’a pas pu être dessiné comme une image.",
       figureRisk: "Ce diagramme contient un élément (une image, un lien, un style ou un réglage) qui pourrait pousser la page à demander une adresse ; il n’est donc pas dessiné. Son texte source est affiché à la place.",
@@ -2039,10 +2039,10 @@ const STRINGS_SRC={
       rowRunsModule: "rencontre une clôture de module",
       rowRunsActivity: "rencontre une ligne d’activité",
       rowRunsTab: "rencontre une ligne d’onglet",
-      tabTwice: (w,id,as)=>`${w} : l’identifiant d’onglet « ${id} » est utilisé deux fois ici ; cet onglet s’appelle donc « ${as} ». Donnez à chaque onglet son propre nom ou identifiant`,
+      tabTwice: (w,id,as)=>`${w} : l’identifiant d’onglet « ${id} » est utilisé deux fois ici ; cet onglet s’appelle donc « ${as} » ; donnez à chaque onglet son propre nom ou identifiant`,
       tabUnknown: (w,id)=>`${w} : \`tab:${id}\` ne nomme aucun onglet de ce module ; l’activité est donc dans le premier onglet`,
       tabMisplaced: w=>`${w} : une ligne d’onglet va dans une activité, ou dans l’ouverture d’un module ; elle a donc été ignorée`,
-      pinBad: (w,v)=>`${w} : \`pin:${v}\` n’est pas un réglage ; la seule valeur est \`pin:off\` ; il a donc été ignoré`,
+      pinBad: (w,v)=>`${w} : \`pin:${v}\` n’est pas un réglage ; la seule valeur possible est \`pin:off\` ; il a donc été ignoré`,
       rowRunsSection: k=>`rencontre la section ${k}`,
       rowNeverClosed: "n’est jamais fermée",
       queryOutside: w=>`${w} : une requête doit se trouver dans le texte d’une activité ; elle a donc été refusée`,
