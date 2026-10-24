@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-XP1NASiYR+pPrbqkOMc7HR5V/J8VF33ZmWHipIrI61Y=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-VrxKNgSr9sqISFy6aXVqct6JwEXQ8Vxul+d+ATCWYjc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4922,8 +4922,7 @@ const mkImg=(alt,src,ctx)=>{
   const a=String(src==null?"":src).replace(CTRL,""),shown=a.length>160?a.slice(0,160)+"\u2026":a;
   const note=typeof imgNoteText==="function"?imgNoteText():"Image not shown",E=(ctx&&ctx.el)||el;
   /* A booklet opened from the host's declared store or the default folder draws its images (storeImage, region 12); an
-     empty alt text marks a
-     decorative one. Any other booklet, and any image that cannot be drawn, gets the box. */
+     empty alt text marks a decorative one. Any other booklet, and any image that cannot be drawn, gets the box. */
   const draw=r=>{
     if(r&&r.url){const im=E("img",{class:"mdimg",src:r.url,alt:alt||"",onerror:()=>{imageBroken(r.at);if(im.parentNode&&typeof im.replaceWith==="function") im.replaceWith(draw({note:strings("ui").imgBroken}));}});return im;}
     return E("span",{class:"imgbox"},
@@ -8332,31 +8331,33 @@ async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.
   }catch(e){return {err:ac.signal.aborted?"slow":"failed"};}
   finally{clearTimeout(timer);}}
 /* ---- IMAGES FROM THE DECLARED STORE OR THE DEFAULT FOLDER (SPEC.md sections 6 and 13) ----
-   A booklet opened from the host's declared store (by link, by the host's open(), or from the "Your booklets" entry that
-   came from it: currentEntry.from is "store:<name>"), or from the default folder on a page that declares none (by link,
-   or from its entry, "modules:<folder>#<name>", on the page whose default folder that is: folderOf), draws its images,
-   and only where the booklet still holds that folder's own text (below, "the store" is whichever of the two it came from): each part of the booklet (a module, and the opening with the activities outside every module) must be the same
-   text as that part of the store's file just read for this visit (STORE_SRC, set by noteStoreFile when the file is read at
-   open, on "Read the newer file" and on the host's fileChanged; moduleTexts says what a part is). So a module the reader
-   added or updated in place (from the registry or another file, under an id the store's file also uses, or removed and
-   added again), a kept copy of an older file the store has since changed, and a copy kept from another store or another
-   default folder on the same origin all draw boxes and ask for nothing: their paths are not this store's. A copy kept before this existed needs no
-   record, since the comparison is made against the file read each visit. A visit that did not read the file (the store
-   did not answer) draws no image.
+   A booklet opened from the host's declared store (by link, by the host's open(), or from the "Your booklets" entry
+   that came from it: currentEntry.from is "store:<name>"), or from the default folder on a page that declares none (by
+   link, or from its entry, "modules:<folder>#<name>", on the page whose default folder that is: folderOf), draws its
+   images, and only where the booklet still holds that folder's own text (below, "the store" is whichever of the two it
+   came from): each part of the booklet (a module, and the opening with the activities outside every module) must be the
+   same text as that part of the store's file just read for this visit (STORE_SRC, set by noteStoreFile when the file is
+   read at open, on "Read the newer file" and on the host's fileChanged; moduleTexts says what a part is). So a module
+   the reader added or updated in place (from the registry or another file, under an id the store's file also uses, or
+   removed and added again), a kept copy of an older file the store has since changed, and a copy kept from another
+   store or another default folder on the same origin all draw boxes and ask for nothing: their paths are not this
+   store's. A copy kept before this existed needs no record, since the comparison is made against the file read each
+   visit. A visit that did not read the file (the store did not answer) draws no image.
    Any other booklet (a file, the registry, one handed over without a name, one from a store or default folder this page
-   does not have) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the booklet's own
-   name in the store: <store>/sub/x.booklet.md with images/a.png reads <store>/sub/images/a.png, and the same booklet in
-   the default folder at /app/modules/ reads /app/modules/sub/images/a.png.
+   does not have) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the booklet's
+   own name in the store: <store>/sub/x.booklet.md with images/a.png reads <store>/sub/images/a.png, and the same
+   booklet in the default folder at /app/modules/ reads /app/modules/sub/images/a.png.
    The path is checked before anything is asked for (imagePath): only [A-Za-z0-9_./-], at most 200 characters, no part
    that begins with a dot (so no .. and no . ), no leading / and no empty part (so no //host), no % ? # \ or : (so no
    scheme), and an extension of svg, png, jpg, jpeg, webp or gif. A path that fails is never requested; the box says so.
    The read is linkFetch (no method, no body, no credentials, no redirect, LINK_BYTES, LINK_MS), asked for as raw bytes.
    The bytes must be what the extension says (imageIs: SVG text, or the PNG, JPEG, GIF or WebP signature), and are then
-   drawn as an img element from a blob: URL of that type. An SVG is therefore only ever an image: it runs no script and loads
-   nothing. One answer, bytes or failure, is kept per address for the visit (IMG_SEEN), so a redraw asks for nothing again;
-   the blobs, and any failure, are released when the booklet closes or another opens (imagesRelease, from resetBookletState)
-   and when the store's file is read again (noteStoreFile), so a changed image at the same path is read again. Bytes that pass the check but
-   cannot be drawn (a file the browser will not decode) leave the img's error event, which draws the box with a reason. */
+   drawn as an img element from a blob: URL of that type. An SVG is therefore only ever an image: it runs no script and
+   loads nothing. One answer, bytes or failure, is kept per address for the visit (IMG_SEEN), so a redraw asks for
+   nothing again; the blobs, and any failure, are released when the booklet closes or another opens (imagesRelease, from
+   resetBookletState) and when the store's file is read again (noteStoreFile), so a changed image at the same path is
+   read again. Bytes that pass the check but cannot be drawn (a file the browser will not decode) leave the img's error
+   event, which draws the box with a reason. */
 const IMG_EXT={svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif"};
 const IMG_PATH_MAX=200;
 const IMG_SEEN=Object.create(null);   /* address → {wait:[fn]} while it is read, then {url} or {err: the name of the words} */
