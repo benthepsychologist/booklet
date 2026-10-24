@@ -1,8 +1,8 @@
 // Browser check for folding and reading aids (renderer 0.11.10, C2; 0.15), in a real page at 1280 and 390 px: the renderer folds
 // nothing on its own, so a page of sections with questions, a repeating activity and a page with a data view are drawn open, their
 // headings as headings; short options are pills beside their question (under it on a phone); matrix answers are pills; a hint or
-// solution is a compact fold that gives nothing away; "One at a time" shows one question, with the foot's one Back and Next row and
-// dots, is kept in booklet.ui.steps.* across a reload, and print shows every question; targets are 44 px; the focus ring shows on
+// solution is a compact fold that gives nothing away; "One at a time" shows one group (a step), with the foot's one Back and Next row
+// and dots, is kept in booklet.ui.steps.* across a reload, and print shows every question; questions in no group make no steps; targets are 44 px; the focus ring shows on
 // Night; reduced motion stops the dots' fade. An axe pass runs on the ERP-style booklet when AXE (the path to axe.min.js) is given.
 // The fold switch, tabs and the pager are test/tabs-browser.js.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/folding-browser.js <booklet.html> <outdir>
@@ -11,13 +11,14 @@ const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const head='---\nbooklet: "0.13"\ntitle: Folding\nlang: en\n---\n\n';
+const head='---\nbooklet: "0.15"\ntitle: Folding\nlang: en\n---\n\n';
 const opts=['Left','Right','Up'].map(o=>`- [ ] ${o}`).join('\n');
 const longOpts=['An option that is rather long indeed','Another long option here today','A third long option text'].map(o=>`- [ ] ${o}`).join('\n');
 const qpage=head+`> [!module|m] M\n\n> [!activity|q] Questions\n\n## First part\n\nWords about the first part.\n\n> [!choice|c1] Which way?\n${opts}\n\n> [!hint]-\n> HINT-SECRET-WORDS\n\n## Second part\n\nWords about the second.\n\n> [!choice|c2] Which other way?\n${opts}\n\n> [!solution]-\n> SOLUTION-SECRET-WORDS\n\n> [!choice|c3] A long one?\n${longOpts}\n\n## Third part\n\nOnly reading here.\n\n> [!matrix|mx] Rate each\n- Sleep\n- Food\n\n1. Low\n2. High\n\n> [!module|m end] End\n`;
 const dpage=head+`> [!module|m] M\n\n> [!activity|log repeat] Log\n\n## Notes\n\nA note section.\n\n> [!text|what] What?\n\n## More\n\nMore words.\n\n> [!activity|look] Look\n\n## Shown\n\nShown words.\n\n\`\`\`booklet data\n[{"a":1,"b":"x"}]\n\`\`\`\n^rows\n\n\`\`\`booklet query\nfrom: rows\nas: table\n\`\`\`\n\n## Again\n\nAgain words.\n\n> [!module|m end] End\n`;
 const chart=head+`> [!module|m] M\n\n> [!activity|c] Chart\n\n## One\n\nWords about the first.\n\n## Trend\n\nHours of sun.\n\n\`\`\`booklet query\nfrom: sun\nas: line\nlabel: day\nfields: hours\n\`\`\`\n\n\`\`\`booklet data\n{ "fields": { "day": "Day", "hours": "Hours" }, "rows": [ { "day": "Mon", "hours": 6 }, { "day": "Tue", "hours": 7 }, { "day": "Wed", "hours": 4 }, { "day": "Thu", "hours": 2 }, { "day": "Fri", "hours": 5 } ] }\n\`\`\`\n^sun\n\n## Last\n\nEnd.\n\n> [!module|m end] End\n`;
-const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,2,3,4].map(i=>`> [!choice|s${i}] Question number ${i}?\n${opts}\n\n`).join('')+'Closing words.\n\n> [!module|m end] End\n';
+const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,2,3,4].map(i=>`> [!group] Part ${i}\n> > [!choice|s${i}] Question number ${i}?\n${opts.replace(/^/gm,'> ')}\n\n`).join('')+'Closing words.\n\n> [!module|m end] End\n';
+const loose=head+`> [!module|n] N\n\n> [!activity|u] Loose\n\n`+[1,2,3,4].map(i=>`> [!choice|u${i}] Loose question ${i}?\n${opts}\n\n`).join('')+'> [!module|n end] End\n';
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
@@ -84,22 +85,22 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     /* 6. one at a time */
     await load(six);
     await openAct('Steps');
-    ok(await p.locator('.oat-ctl').count()===1,`${W}px: the control is on a page of four questions`);
+    ok(await p.locator('.oat-ctl').count()===1,`${W}px: the control is on a part of four groups`);
     await p.getByRole('button',{name:'One at a time'}).click();await wait(300);
     const vis=()=>p.locator('#main .oat-unit').evaluateAll(l=>l.map(u=>u.offsetHeight>0));
-    ok((await vis()).join()==='true,false,false,false'&&/Question 1 of 4/.test(await p.locator('.oat-prog').innerText()),`${W}px: one question shows, "Question 1 of 4"`);
+    ok((await vis()).join()==='true,false,false,false'&&/Step 1 of 4/.test(await p.locator('.oat-prog').innerText())&&/Part 1/.test(await p.locator('#main .oat-unit').first().innerText()),`${W}px: one group shows, its title and its question, "Step 1 of 4"`);
     ok(await p.locator('.oat-dot').count()===4&&await p.locator('.oat-dots').getAttribute('aria-hidden')==='true',`${W}px: four dots, hidden from a screen reader (the progress line says it)`);
-    ok(await p.getByRole('button',{name:'Back',exact:true}).count()===0&&await p.locator('#main .cd-foot').count()===1&&await p.locator('#main .cd-foot .cd-back').count()===1,`${W}px: on the first question the foot's one row has no step back, only the way back to the overview`);
+    ok(await p.getByRole('button',{name:'Back',exact:true}).count()===0&&await p.locator('#main .cd-foot').count()===1&&await p.locator('#main .cd-foot .cd-back').count()===1,`${W}px: on the first step the foot's one row has no step back, only the way back to the overview`);
     const btn=await p.evaluate(()=>[...document.querySelectorAll('#main .cd-foot button,.oat-ctl button')].map(x=>Math.round(x.getBoundingClientRect().height)));
     ok(btn.every(h=>h>=44),`${W}px: the stepper's buttons are 44 px (${btn})`);
     await p.locator('#main .oat-unit').first().locator('.pill-btn').first().click();await wait(100);
     ok(await p.locator('.oat-dot.on').count()===1,`${W}px: answering fills the dot`);
-    await p.getByRole('button',{name:'Next question'}).click();await wait(200);
-    ok((await vis()).join()==='false,true,false,false'&&/Question 2 of 4/.test(await p.locator('.oat-prog').innerText()),`${W}px: Next shows the second`);
-    await p.getByRole('button',{name:'Next question'}).click();await p.getByRole('button',{name:'Next question'}).click();await wait(200);
-    ok(await p.getByRole('button',{name:'Next question'}).count()===0&&/Closing words/.test(await p.locator('#main .oat-unit').nth(3).innerText()),`${W}px: there is no Next question on the last, which carries the closing words`);
+    await p.getByRole('button',{name:'Next step'}).click();await wait(200);
+    ok((await vis()).join()==='false,true,false,false'&&/Step 2 of 4/.test(await p.locator('.oat-prog').innerText()),`${W}px: Next shows the second`);
+    await p.getByRole('button',{name:'Next step'}).click();await p.getByRole('button',{name:'Next step'}).click();await wait(200);
+    ok(await p.getByRole('button',{name:'Next step'}).count()===0&&/Closing words/.test(await p.locator('#main .oat-unit').nth(3).innerText()),`${W}px: there is no Next step on the last, which carries the closing words`);
     await p.getByRole('button',{name:'Back',exact:true}).click();await p.getByRole('button',{name:'Back',exact:true}).click();await wait(100);
-    ok(/Question 2 of 4/.test(await p.locator('.oat-prog').innerText())&&await p.locator('#main .oat-unit').first().locator('.pill-btn[aria-pressed="true"]').count()===1,`${W}px: Back returns, and the first answer is still there`);
+    ok(/Step 2 of 4/.test(await p.locator('.oat-prog').innerText())&&await p.locator('#main .oat-unit').first().locator('.pill-btn[aria-pressed="true"]').count()===1,`${W}px: Back returns, and the first answer is still there`);
     const K=await kept(p),key=Object.keys(K).filter(k=>/^booklet\.ui\.steps\./.test(k)).map(k=>k+'='+K[k]);
     ok(key.length===1&&/=one$/.test(key[0]),`${W}px: the choice is kept in booklet.ui.steps.* (${key})`);
     /* print shows every question */
@@ -117,7 +118,7 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
 
     /* 6b. Back and Next move the keyboard to the step now shown */
     await p.getByRole('button',{name:'One at a time'}).click();await wait(300);
-    await p.getByRole('button',{name:'Next question'}).click();await wait(150);
+    await p.getByRole('button',{name:'Next step'}).click();await wait(150);
     const fo=await p.evaluate(()=>{const e=document.activeElement,u=[...document.querySelectorAll('.oat-unit')];return {idx:u.indexOf(e),shown:u.findIndex(x=>x.offsetHeight>0)};});
     ok(fo.idx>=0&&fo.idx===fo.shown,`${W}px: Next puts the focus on the step now shown (${JSON.stringify(fo)})`);
     await p.getByRole('button',{name:'Back',exact:true}).click();await wait(150);
@@ -133,6 +134,11 @@ const six=head+`> [!module|m] M\n\n> [!activity|s] Steps\n\nLead words.\n\n`+[1,
     await p.getByRole('button',{name:'One at a time'}).click();await wait(300);
     ok(await p.locator('.oat-dot').first().evaluate(d=>parseFloat(getComputedStyle(d).transitionDuration)===0),`${W}px: reduced motion stops the dots' fade`);
     await p.evaluate(()=>window.bookletTheme.set('paper'));
+
+    /* 6d. questions in no group are no steps, however many: no control, every question shown */
+    await load(loose);
+    await openAct('Loose');
+    ok(await p.locator('#main .oat-ctl').count()===0&&await p.locator('#main .oat-unit').count()===0&&/Loose question 4/.test(await p.locator('#main .ap-body').innerText()),`${W}px: a part of four questions in no group has no step control, and shows them all`);
 
     /* 6c. a page of sections holding a line chart: drawn open, the chart at the column's width */
     await load(chart);

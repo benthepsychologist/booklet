@@ -1,5 +1,5 @@
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: test/submit-seen
 title: Seen test
 lang: en
@@ -8,7 +8,7 @@ version: "0.7"
 
 # Seen test
 
-A test booklet for the submit build: one question of each kind that has options, with the answers already kept in it. Its wording is made up.
+A test booklet for the submit build: one question of each kind that has options, with the answers already kept in it; two of them sit in a folded group, which changes nothing in what is sent. Its wording is made up.
 
 > [!module|seen] Seen test
 
@@ -16,15 +16,16 @@ A test booklet for the submit build: one question of each kind that has options,
 
 > [!text|note] A **note** in your words
 
-> [!choice|pick] Pick one
-- [ ] Alpha
-- [ ] **Beta**
-- [ ] Gamma
-
-> [!multi|several open] Pick any, or add your own
-- [ ] One
-- [ ] Two
-- [ ] Three
+> [!group]- Two to pick from
+> > [!choice|pick] Pick one
+> - [ ] Alpha
+> - [ ] **Beta**
+> - [ ] Gamma
+>
+> > [!multi|several open] Pick any, or add your own
+> - [ ] One
+> - [ ] Two
+> - [ ] Three
 
 > [!scale|mood] How was it?
 

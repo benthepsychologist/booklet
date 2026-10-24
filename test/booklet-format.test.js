@@ -23,7 +23,7 @@ const R=A.parseFile(EX);
 chk("the example parses",R.ok,JSON.stringify(R.unread));
 chk("nothing in the example is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
 const t=R.template||{};
-chk("it is marked v0.13",t.booklet==="0.13");
+chk("it is marked v0.15",t.booklet==="0.15");
 chk("its one language is its own, from its front matter, and the design names no others",t.raw.lang==="en"&&!("languages" in t));
 chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0].id==="mensio-check-in",JSON.stringify((t.modules||[]).map(m=>m.id)));
 const m=(t.modules||[])[0]||{};
@@ -46,7 +46,7 @@ chk("the body map block points at its data",a.pages[0].blocks[1].widget==="body-
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
 A.loadText(EX);
-chk("the page adopts it as the booklet",A.BOOK.booklet==="0.13"&&A.allModules().length===1,JSON.stringify({b:A.BOOK.booklet,n:A.allModules().length}));
+chk("the page adopts it as the booklet",A.BOOK.booklet==="0.15"&&A.allModules().length===1,JSON.stringify({b:A.BOOK.booklet,n:A.allModules().length}));
 A.screen="mensio-check-in/check-in";A.render();
 const seen=P.texts(P.main());
 ["A mindful check-in","Body","Feelings","Something else","In your own words.","Mind is thinking about","Notice, name, keep."].forEach(w=>
@@ -89,13 +89,13 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
 /* a file marked with another 0.x version opens by the current rules, with a notice first in its problems; a
    condition that refuses a file still refuses it, whatever the marker */
 {const FILE=m=>'---\nbooklet: '+m+'\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n';
- for(const v of ["0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","0.12","0.14"]){
+ for(const v of ["0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","0.12","0.13","0.14","0.16"]){
   const r=A.parseFile(FILE(v));
-  chk(`a booklet: ${v} file opens, and its first problem says which marker it carries and what this page did`,r.ok===true&&r.refused.length===0&&String(r.unread[0])===`This file says booklet: ${v}. This page reads format 0.13 and has opened it as it is; some of it may not draw.`,JSON.stringify(r.unread));
-  chk(`  it is saved back with the marker it came with (${v})`,new RegExp("^booklet: "+v.replace(".","\\.")+"$","m").test(r.template.raw.source)&&r.template.booklet==="0.13");}
+  chk(`a booklet: ${v} file opens, and its first problem says which marker it carries and what this page did`,r.ok===true&&r.refused.length===0&&String(r.unread[0])===`This file says booklet: ${v}. This page reads format 0.15 and has opened it as it is; some of it may not draw.`,JSON.stringify(r.unread));
+  chk(`  it is saved back with the marker it came with (${v})`,new RegExp("^booklet: "+v.replace(".","\\.")+"$","m").test(r.template.raw.source)&&r.template.booklet==="0.15");}
  const bad=A.parseFile('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
  chk("a module opened and never closed still refuses a 0.3 file, whatever the marker",bad.ok===false&&bad.refused.length===1&&/never closed/.test(bad.refused[0])&&/booklet: 0\.3/.test(bad.unread[0]),JSON.stringify(bad.unread));
- chk("the notice is worded in every language, naming the marker and this page's format",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.STRINGS[l].problem.otherMarker("0.3"))&&/0\.13/.test(A.STRINGS[l].problem.otherMarker("0.3"))));
+ chk("the notice is worded in every language, naming the marker and this page's format",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.STRINGS[l].problem.otherMarker("0.3"))&&/0\.15/.test(A.STRINGS[l].problem.otherMarker("0.3"))));
  chk("a file with no marker, or a marker that is not a 0.x version, is not a booklet for this page",["",'booklet: "1.0"\n',"booklet: 2\n","booklet: latest\n","booklet: 0.9.1\n"].every(m=>{const r=A.parseFile('---\n'+m+'title: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n');return r.ok===false&&!r.template;}));
  chk("a 0.3 module can be added to a booklet",A.moduleTextProblems(FILE("0.3")).length===0);
  chk("a module with no marker cannot",A.moduleTextProblems(FILE("0.3").replace("booklet: 0.3\n","")).length===1);
@@ -108,7 +108,7 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
 }
 
 /* 7. settings on a callout line are written key:value */
-{const SET=`---\nbooklet: "0.13"\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
+{const SET=`---\nbooklet: "0.15"\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
  const RS=P.boot().parseFile(SET);
  const bl=RS.template.modules[0].activities[0];
  const num=bl.pages.flatMap(p=>p.blocks).find(b=>b.id==="sleep")||{};

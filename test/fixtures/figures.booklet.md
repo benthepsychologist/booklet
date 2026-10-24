@@ -1,5 +1,5 @@
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: test/figures
 title: Figures and math
 lang: en

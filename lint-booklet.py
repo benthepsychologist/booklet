@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.13 format in SPEC.md.
+Lint a booklet file against the v0.15 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: "0.13"`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.15"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.13"`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: "0.15"`, one `lang:`), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
@@ -19,12 +19,12 @@ module line with no id; a choice or multi with no options and a scale with no or
 records outside `%%`), what it keeps and reports (anything but a record inside the records region, an entry with no `ts`, a record
 block outside the region, a `> [!` line it cannot read), and six slips that draw wrong without a word (`---` straight under text, a hint
 or solution not folded or not under its question, `[x]` in a menu, a price that reads as a formula, tiles with no `value`). Any file whose
-front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.13 (nothing before v1.0 is stable). A block id or a footnote
+front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.15 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [path ...]
-        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.13") and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.15") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
@@ -38,7 +38,7 @@ import difflib, html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 BASE = pathlib.Path(__file__).resolve().parent
 
 # The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
-FORMAT_VERSION = "0.13"
+FORMAT_VERSION = "0.15"
 
 errors, warnings = [], []
 # Every finding, in the order found; main() prints each file's findings in line order. A finding's line is the one its message
@@ -122,7 +122,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.13 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.15 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -134,7 +134,7 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:", "pin:"), "row": ("end",), "text": ("long",),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (), "tab": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
@@ -776,6 +776,35 @@ def body_end(lines, i):
     return k
 
 
+# what a Booklet line makes that a callout's body does not (a question, a hint, structure): written in any callout but a
+# group in an activity, it is drawn as text
+BOOKLET_KINDS = QUESTION_KINDS | {"hint", "solution", "activity", "module", "tab", "row", "data", "records", "menu", "manifest", "notice"}
+
+
+def quoted_queries(lines, i):
+    """What the body of the callout at i holds, at any depth of `>` and not inside a fence there, that only a group in an
+    activity reads (SPEC.md section 6): the line numbers of its `booklet query` blocks, and (line number, kind) of its Booklet
+    lines. In any other callout a renderer shows them as text (a query as code)."""
+    out, lns, fence = [], [], None
+    for k in range(i + 1, body_end(lines, i)):
+        c = FENCE_LINE.match(re.sub(r'^(?:>[ \t]?)+', '', lines[k]))
+        if fence:
+            if c and c.group(1)[0] == fence[0] and len(c.group(1)) >= len(fence) and not c.group(2).strip():
+                fence = None
+        elif c:
+            fence, w = c.group(1), c.group(2).split()
+            if len(w) > 1 and w[0].lower() == "booklet" and w[1].lower() == "query":
+                out.append(k + 1)
+        else:
+            t = re.sub(r'^>[ \t]?', '', lines[k])
+            while t.startswith(">") and not CALLOUT_ANY.match(t):
+                t = re.sub(r'^>[ \t]?', '', t)
+            m = CALLOUT_LINE.match(t)
+            if m and m.group(1).lower() in BOOKLET_KINDS:
+                lns.append((k + 1, m.group(1).lower()))
+    return out, lns
+
+
 def claim_end(kind, lines, i):
     """The index past everything the renderer reads as belonging to the Booklet line at i: its body, then the list straight under
     a choice, multi (a task list), scale (a numbered list), menu (bullets) or matrix (bullets, then numbered anchors)."""
@@ -890,8 +919,6 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: `status:{val}` is not a setting a line takes (only `status:off`, which hides the card's status line); a renderer ignores it")
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
-        elif key == "pin" and val.lower() != "off":
-            err(f, f"line {n}: `pin:{val}` is not a setting; the one value is `pin:off` (the frame scrolls away with the page)")
     for flag in sorted(w["flags"]):
         if flag not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
@@ -929,11 +956,11 @@ def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
 
 
 def check_format(f, text, fm):
-    """Lint a v0.13 booklet. Every problem names its line."""
+    """Lint a v0.15 booklet. Every problem names its line."""
     fm_title, fm_id = fm.get("title", ""), fm.get("id", "")
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.13 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
+        err(f, "front matter has no `lang:` — a v0.15 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
     else:
         why = lang_problem(lang)
         if why:
@@ -989,6 +1016,7 @@ def check_format(f, text, fm):
     regions = records_regions(lines, i)
     reg_at = {r[0]: r for r in regions}
     in_region, saved_section = None, "content"
+    grp_ends = []            # where each group being read ends (a group in an activity holds Booklet lines: SPEC.md section 6)
 
     def scope_mod():
         """The module a block, menu or footnote belongs to: the one whose fence holds it or whose data section it is
@@ -1045,6 +1073,9 @@ def check_format(f, text, fm):
                 entry_refs.append((n, words[2], rec_id))
 
     while i < len(lines):
+        while grp_ends and i >= grp_ends[-1]:
+            grp_ends.pop()
+            last_q = False                      # a hint after a group is not its last question's
         ln, n = lines[i], i + 1
         was_prose, prev_prose = prev_prose, False
         if i in reg_at:
@@ -1210,7 +1241,7 @@ def check_format(f, text, fm):
                         + f" (first on line {seen_note[nd.group(1)]}); a reader uses the first")
             else:
                 seen_note[nd.group(1)] = n
-        if rowst["open"] and re.match(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$', ln):
+        if rowst["open"] and not grp_ends and re.match(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$', ln):
             prev = lines[i - 1] if i > 0 else ""
             under_text = prev.strip() and not prev.lstrip().startswith(">") and not re.match(r'^ {0,3}(`{3,}|~{3,})', prev)
             if not (ln.lstrip().startswith("-") and under_text):
@@ -1222,6 +1253,33 @@ def check_format(f, text, fm):
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
             check_settings(f, n, kind, w)
+            if grp_ends and kind in ("module", "activity", "tab", "row", "data", "records"):
+                err(f, f"{where}: a `[!{kind}]` line cannot go inside a group, so a renderer ignores it (a group holds text, questions and "
+                       f"callouts); move it out of the group")
+                i = claim_end(kind, lines, i)
+                continue
+            # a group in an activity holds blocks: its body is read as the file is, with one `>` less (the lines are unquoted here,
+            # in place, and read in turn); a group in an opening, or any other callout, holds text
+            reads = kind == "group" and section == "content" and (in_act or not (open_mod or (not (seen_activity or any_module) and not implicit)))
+            if reads:
+                end = body_end(lines, i)
+                for k in range(i + 1, end):
+                    lines[k] = re.sub(r'^>[ \t]?', '', lines[k])
+                grp_ends.append(end)
+            else:
+                qs, bl = quoted_queries(lines, i)
+                if section != "content":
+                    # a data section is not drawn: what is in its callouts is neither read nor shown as text or code
+                    for q in qs + [q for q, _ in bl]:
+                        warn(f, f"line {q}: this is inside a `[!{kind}]` in a data section, which is not drawn, so a renderer neither "
+                                f"reads nor shows it; put it in a group in an activity")
+                    qs, bl = [], []
+                for q in qs:
+                    warn(f, f"line {q}: a query view inside a callout (here a `[!{kind}]`) is not yet supported: a renderer draws the "
+                            f"`booklet query` block as code; put it in a group in an activity, or in the activity's own text")
+                for q, k2 in bl:
+                    warn(f, f"line {q}: a `[!{k2}]` line inside a `[!{kind}]` is drawn as text, not read: only a `[!group]` in an activity "
+                            f"holds Booklet lines; put it in one, or outside the callout")
             if rowst["open"] and kind in ("data", "records", "module", "activity", "tab"):
                 close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line", "tab": "a tab line"}.get(kind, f"the {kind} section"))
             if kind == "notice":
@@ -1451,7 +1509,7 @@ def check_format(f, text, fm):
                 if key in table:
                     err(f, f"line {n}: the id {key!r} is also used on line {table[key]}" + (f" in the module {scope!r}" if scope and scope != "\0shared" else ""))
                 table.setdefault(key, n)
-            i = claim_end(kind, lines, i)
+            i = i + 1 if reads else claim_end(kind, lines, i)
             continue
         # not a Booklet line: prose, a page break, or a line that starts like one and cannot be read
         if ln.strip() == "%%":
@@ -1465,7 +1523,11 @@ def check_format(f, text, fm):
                     f"dashes), so it is left as text" + (", and it ends the callout above it" if i > 0 and lines[i - 1].startswith(">") else ""))
         if ln.strip():
             brk = re.match(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$', ln)
-            if brk and re.match(r'^ {0,3}-', ln) and was_prose:
+            if brk and re.match(r'^ {0,3}-', ln) and was_prose and grp_ends:
+                # in a group a thematic break is a rule, never a page break (SPEC.md section 6): no page-break advice there
+                warn(f, f"line {n}: `{ln.strip()}` straight under text in a group makes that line a heading; for a rule, leave a blank "
+                        f"line above it; for a heading, write `## …`")
+            elif brk and re.match(r'^ {0,3}-', ln) and was_prose:
                 warn(f, f"line {n}: `{ln.strip()}` straight under text makes that line a heading and is not a page break; write `***`, "
                         f"or leave a blank line above it; for a heading, write `## …`")
             last_q = False

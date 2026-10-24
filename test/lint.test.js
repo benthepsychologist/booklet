@@ -32,7 +32,7 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.13 (an old `module:` file)",/front matter must say `booklet: "0\.13"` \(found None\); a marker is a 0\.x version/],
+ ["lint-not-v02","front matter without booklet: 0.15 (an old `module:` file)",/front matter must say `booklet: "0\.15"` \(found None\); a marker is a 0\.x version/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -215,9 +215,9 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
 {// the registry's modules, copied, re-marked and linted: the colour names stay valid
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
-   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/m,"booklet: \"0.13\""));
+   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/m,"booklet: \"0.15\""));
    const r=lint(...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
-   chk("the registry's modules, copied and re-marked to 0.10, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
+   chk("the registry's modules, copied and re-marked to 0.15, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 
 {// v0.9: an id belongs to its module (SPEC.md section 4)
  const ok=lint(path.join(FX,"lint-data-section-shared-ok.md"));
@@ -258,7 +258,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
  {const r=lint(path.join(FX,"lint-notice-with-id.md"));
   chk("a notice with a word after the bar: an error naming it as a setting it does not take",r.status===1&&r.errors.some(l=>/line 11: a notice line takes no `legal` setting \(it takes no settings at all\)/.test(l)),r.out);}
  {const r=lint(path.join(FX,"lint-marker-unquoted.md"));
-  chk("an unquoted `booklet: 0.10` says to write it in quotes (a YAML tool reads it as 0.1), besides the other-marker warning, and is no error",r.status===0&&r.errors.length===0&&r.warns.length===2&&r.warns.some(w=>/without quotes; write it in quotes.*YAML tool will read it as 0\.1$/.test(w))&&r.warns.some(w=>/booklet: 0\.10; the current format is 0\.13/.test(w)),r.out);}
+  chk("an unquoted `booklet: 0.10` says to write it in quotes (a YAML tool reads it as 0.1), besides the other-marker warning, and is no error",r.status===0&&r.errors.length===0&&r.warns.length===2&&r.warns.some(w=>/without quotes; write it in quotes.*YAML tool will read it as 0\.1$/.test(w))&&r.warns.some(w=>/booklet: 0\.10; the current format is 0\.15/.test(w)),r.out);}
  const dm=lint(path.join(FX,"lint-data-module-ok.md"));
  chk("a module's own data section: two modules each with their own ^picker, and a shared section, no error; one warning for the block id Obsidian reads across the file",
    dm.status===0&&dm.errors.length===0&&dm.warns.length===1&&/the block id \^picker is used in the module 'mod-1' and the module 'mod-2'/.test(dm.warns[0]||""),dm.out);
@@ -268,16 +268,68 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
  E("lint-data-module-settings",/line 15: a data line takes no `repeat` setting \(it takes no settings at all\)/,"a data line with a setting");}
 
 {// v0.11: another 0.x marker is a warning, and the file is then checked by the current rules
- for(const n of ["0-2","0-3","0-4","0-5","0-6","0-7","0-8","0-9","0-11","0-12"]){const v=n.replace("-","."),r=lint(path.join(FX,"lint-old-format-"+n+".md"));
-  chk(`a file still saying booklet: ${v} is one warning and no error, and is checked as 0.13`,r.status===0&&r.errors.length===0&&r.warns.length===1&&new RegExp(`this file says booklet: ${v.replace(".","\\.")}; the current format is 0\\.13, and it is checked as 0\\.13`).test(r.warns[0]||""),r.out);}
+ for(const n of ["0-2","0-3","0-4","0-5","0-6","0-7","0-8","0-9","0-11","0-12","0-13"]){const v=n.replace("-","."),r=lint(path.join(FX,"lint-old-format-"+n+".md"));
+  chk(`a file still saying booklet: ${v} is one warning and no error, and is checked as 0.15`,r.status===0&&r.errors.length===0&&r.warns.length===1&&new RegExp(`this file says booklet: ${v.replace(".","\\.")}; the current format is 0\\.15, and it is checked as 0\\.15`).test(r.warns[0]||""),r.out);}
  {const r=lint(path.join(FX,"lint-marker-later.md"));
-  chk("a later marker (0.14) is the same one warning",r.status===0&&r.errors.length===0&&r.warns.length===1&&/this file says booklet: 0\.14; the current format is 0\.13/.test(r.warns[0]||""),r.out);}
+  chk("a later marker (0.16) is the same one warning",r.status===0&&r.errors.length===0&&r.warns.length===1&&/this file says booklet: 0\.16; the current format is 0\.15/.test(r.warns[0]||""),r.out);}
  {const r=lint(path.join(FX,"lint-marker-old-and-broken.md"));
   chk("an old marker does not excuse a broken file: the warning, and the current rules' error",r.status===1&&r.errors.length===1&&/never closed/.test(r.errors[0]||"")&&r.warns.length===1,r.out);}
  for(const [n,what] of [["lint-marker-1-0","a marker that is not a 0.x version (1.0)"],["lint-marker-words","a marker that is words"]]){
   const r=lint(path.join(FX,n+".md"));
-  chk(`${what}: one error, as no marker`,r.status===1&&r.errors.length===1&&/front matter must say `booklet: "0\.13"`.*a marker is a 0\.x version/.test(r.errors[0]||"")&&r.warns.length===0,r.out);}
+  chk(`${what}: one error, as no marker`,r.status===1&&r.errors.length===1&&/front matter must say `booklet: "0\.15"`.*a marker is a 0\.x version/.test(r.errors[0]||"")&&r.warns.length===0,r.out);}
 }
+
+{// 0.15: a group in an activity holds blocks, read as the file is with one `>` less: a query view there is read as one, and
+ // linted. In any other callout's body (a note, a tip, a hint, a group in a module's opening) a query view is not yet
+ // supported: a renderer draws the block as code, so the linter warns, naming the block's line; one in the activity's own
+ // text, or one shown as an example in a fence inside a callout, is no warning
+ const Q="```booklet query\nfrom: log\nfields: hours\n```";
+ const file=fold=>`---\nbooklet: "0.15"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|log repeat] Log\n\n`+
+   `> [!number|hours min:0 max:24] Hours slept\n\n> [!activity|look] Look\n\n${Q}\n\n${fold}\n\n> [!module|m end] End\n`;
+ const quote=(head,body)=>head+"\n"+body.split("\n").map(l=>"> "+l).join("\n");
+ const run=t=>{const f=path.join(require("os").tmpdir(),"lint-qfold-"+process.pid+".md");fs.writeFileSync(f,t);const r=lint(f);fs.unlinkSync(f);
+   return Object.assign(r,{at:t.split("\n").findIndex(l=>/^>.*```booklet query/.test(l))+1});};
+ const g=run(file(quote("> [!group]- More","Words.\n\n"+Q)));
+ chk("a query view in a `[!group]` in an activity is read as one: no warning",g.status===0&&/0 errors · 0 warnings/.test(g.out),g.out);
+ const gb=run(file(quote("> [!group]- More","```booklet query\nfrom: nothing-here\n```")));
+ chk("...and linted as one: a `from:` that names nothing is an error at its line",gb.status===1&&gb.errors.length===1&&new RegExp(`line ${gb.at}: `).test(gb.errors[0]||""),gb.out);
+ const n=run(file(quote("> [!note] A note",Q)));
+ chk("a query view in any other callout's body (a note): one warning, at the block's line, that it is not yet supported and is drawn as code",
+   n.status===0&&n.errors.length===0&&n.warns.length===1&&new RegExp(`line ${n.at}: a query view inside a callout \\(here a \`\\[!note\\]\`\\) is not yet supported: a renderer draws the \`booklet query\` block as code`).test(n.warns[0]||""),n.out);
+ const deep=run(file(quote("> [!group] Outer","> [!tip] Inner\n"+Q.split("\n").map(l=>"> "+l).join("\n"))));
+ chk("...and in a callout inside a group",deep.errors.length===0&&deep.warns.length===1&&new RegExp(`line ${deep.at}: .*here a \`\\[!tip\\]\``).test(deep.warns[0]||""),deep.out);
+ const open=run(`---\nbooklet: "0.15"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n${quote("> [!group]- In the opening",Q)}\n\n> [!activity|log repeat] Log\n\n> [!number|hours] Hours\n\n> [!module|m end] End\n`);
+ chk("...and in a group in a module's opening, which holds text",open.errors.length===0&&open.warns.length===1&&new RegExp(`line ${open.at}: .*here a \`\\[!group\\]\``).test(open.warns[0]||""),open.out);
+ const shown=run(file(quote("> [!note]- How to write one","````markdown\n"+Q+"\n````")));
+ chk("a query shown as an example, in a markdown fence inside a callout, is no warning",shown.status===0&&/0 errors · 0 warnings/.test(shown.out),shown.out);
+ const top=run(file("Words."));
+ chk("a query view in the activity's own text is no warning",top.status===0&&/0 errors · 0 warnings/.test(top.out),top.out);}
+
+{// 0.15: a group in an activity holds Booklet lines, written with one more `>`; they are linted as any others. Structure
+ // (a module, activity, tab, row, data or records line) cannot go in a group. A Booklet line in any other callout is drawn
+ // as text, and warned of
+ const head=`---\nbooklet: "0.15"\ntitle: G\nlang: en\n---\n\n> [!activity|a] A\n\n`;
+ const run=t=>{const f=path.join(require("os").tmpdir(),"lint-group-"+process.pid+".md");fs.writeFileSync(f,head+t);const r=lint(f);fs.unlinkSync(f);return r;};
+ const ok=run("> [!group] Step one\n> Some words.\n>\n> > [!choice|q1] Pick?\n> - [ ] A\n> - [ ] B\n>\n> > [!hint]- A hint\n> > Think.\n\n> [!group]- Step two\n> > [!scale|q2] How much?\n>\n> 1. Little\n> 2. Lots\n");
+ chk("questions, their options and a hint inside groups: no error, no warning",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);
+ const dup=run("> [!text|q1] Outside?\n\n> [!group] G\n> > [!text|q1] Inside?\n");
+ chk("a question in a group shares the module's ids: one used twice is an error, at its line",dup.status===1&&dup.errors.length===1&&/line 12: the id 'q1' is also used on line 9/.test(dup.errors[0]||""),dup.out);
+ const noopt=run("> [!group] G\n> > [!choice|q1] Pick?\n> > - [ ] A\n");
+ chk("options written inside the question's own callout (two `>`) are its help text, as at the top level: the choice has no options",noopt.status===1&&noopt.errors.length===1&&/has no options under it/.test(noopt.errors[0]||""),noopt.out);
+ const st=run("> [!group] G\n> > [!tab] A tab\n>\n> > [!activity|b] B\n");
+ chk("a tab line and an activity line in a group: an error each, that they cannot go there",st.status===1&&st.errors.length===2&&st.errors.every(e=>/line \d+: a `\[!(tab|activity)\]` line cannot go inside a group/.test(e)),st.out);
+ const after=run("> [!group] G\n> > [!text|q1] One?\n\n> [!hint]- A hint\n> Words.\n");
+ chk("a hint after a group is not its last question's: warned as not directly under a question",after.status===0&&after.warns.length===1&&/this hint is not directly under a question/.test(after.warns[0]||""),after.out);
+ const note=run("> [!note] A note\n> > [!text|q1] One?\n");
+ chk("a question in a note: one warning, at its line, that it is drawn as text",note.status===0&&note.warns.length===1&&/line 10: a `\[!text\]` line inside a `\[!note\]` is drawn as text, not read/.test(note.warns[0]||""),note.out);
+ const rule=run("> [!row]\n\n## One\n\n> [!group] G\n> Words.\n>\n> ***\n>\n> More.\n\n## Two\n\nWords.\n\n> [!row|end]\n");
+ chk("a thematic break inside a group is a rule in it, not a page break: the row around it is not cut",rule.status===0&&rule.errors.length===0,rule.out);
+ const dat=run("Words.\n\n> [!data]\n\n> [!group] G\n> > [!text|x] X?\n>\n> ```booklet query\n> from: a\n> ```\n");
+ chk("a question and a query in a group in a data section: warned that a data section is not drawn, not that they are drawn as text or code",
+   dat.status===0&&dat.warns.length===2&&dat.warns.every(w=>/inside a `\[!group\]` in a data section, which is not drawn, so a renderer neither reads nor shows it/.test(w))&&/line 14:/.test(dat.warns.join())&&/line 16:/.test(dat.warns.join()),dat.out);
+ const dash=run("> [!group] G\n> Words.\n> ---\n>\n> More.\n\nText.\n---\n");
+ chk("`---` straight under text in a group: warned that it makes a heading, with no page-break advice (a group has no page break)",
+   dash.status===0&&dash.warns.length===2&&/line 11: `---` straight under text in a group makes that line a heading; for a rule, leave a blank line above it/.test(dash.warns[0]||"")&&!/page break|\*\*\*/.test(dash.warns[0]||"")&&/line 16: .*is not a page break; write `\*\*\*`/.test(dash.warns[1]||""),dash.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

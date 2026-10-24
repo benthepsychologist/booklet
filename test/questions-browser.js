@@ -1,7 +1,9 @@
 // Browser check of how a question is laid out and what it answers with (SPEC.md sections 5 and 7), at 1280 and 400 px.
 //  - a question's words keep a readable width; short options sit beside them only when both fit, else they drop under them;
 //  - a matrix is a grid of rows when each item's readable words and the anchors fit, and one single-choice question per item when they do not,
-//    with the same answers under the same key, kept across a window that is narrowed and widened again;
+//    with the same answers under the same key, kept across a window that is narrowed and widened again; drawn as separate
+//    questions it keeps its stem held under the bar while its items are answered, as far as its end (not on a window 360 px
+//    tall or less), and as a grid it does not;
 //  - nothing scrolls sideways at 390 px, a grid-select with all four axis labels included (on a page beside the page menu's rail too);
 //  - an option's reply shows on a pick, changes on a re-pick, and for a multi is in option order;
 //  - an svg-regions widget honours `readonly` and `describe`, as a grid-select does.
@@ -20,7 +22,7 @@ const GRID=JSON.stringify({engine:'grid-select',axes:{top:'more activated',botto
   cells:[{id:'a',label:'Agitating',color:'warm'},{id:'b',label:'Invigorating',color:'green'},{id:'c',label:'Draining',color:'slate'},{id:'d',label:'Soothing',color:'teal'}],
   items:[{id:'i1',cell:'a',label:'Overwhelmedandexhaustedbyeverything'},{id:'i2',cell:'b',label:'Curiosity / joy'},{id:'i3',cell:'c',label:'Grief / shame'},{id:'i4',cell:'d',label:'Warmth / comfort / connection'}]});
 const FILE=`---
-booklet: "0.13"
+booklet: "0.15"
 title: Questions
 lang: en
 ---
@@ -147,7 +149,7 @@ ${WIDGET({})}
 > [!module|qs end] End
 `;
 const FILE2=`---
-booklet: "0.13"
+booklet: "0.15"
 title: Matrix column
 lang: en
 ---
@@ -171,13 +173,64 @@ lang: en
 
 > [!module|mc end] End
 `;
+/* a nine-item matrix with a stem, then a question after it (invented items) */
+const FILE3=`---
+booklet: "0.15"
+title: Matrix stem
+lang: en
+---
+
+> [!module|ms] Matrix stem
+
+> [!activity|week] This week
+
+> [!matrix|wk] Over the last week, how often did each of these happen to you at home or at work?
+
+- You ran late for something you had planned
+- You forgot where you had put your keys
+- You skipped a meal because you were busy
+- You stayed up later than you meant to
+- You put off a call you needed to make
+- You lost track of what you came into a room for
+- You said yes to something you wanted to refuse
+- You left a cup of tea to go cold
+- You checked the weather more than twice in a day
+
+0. Not at all
+1. Several days
+2. More than half the days
+3. Nearly every day
+
+> [!text|after] Anything else about the week?
+
+> [!text|after2] And one more thing?
+
+Some words after the questions, so the page can be scrolled well past the matrix: the kettle, the stove and the cups on the
+shelf, and what the week was like for each of them.
+
+> [!text|after3] What went well?
+
+> [!text|after4] What would you change?
+
+> [!text|after5] Who helped?
+
+> [!text|after6] What is next?
+
+> [!module|ms end] End
+`;
+/* the same matrix in a group, its two questions after it in another: one at a time, the matrix is a step */
+const FILE5=(()=>{const a=FILE3.indexOf('> [!matrix|wk]'),b=FILE3.indexOf('> [!text|after]'),c=FILE3.indexOf('\nSome words after');
+  const q=t=>t.trim().split('\n').map(l=>l?'> '+l:'>').join('\n');
+  return FILE3.slice(0,a).replace('title: Matrix stem','title: Matrix steps')+'> [!group] The week\n'+q(FILE3.slice(a,b))+'\n\n> [!group] After\n'+q(FILE3.slice(b,c))+'\n'+FILE3.slice(c);})();
+/* the same matrix with no words of its own: no stem */
+const FILE4=FILE3.replace('title: Matrix stem','title: Bare matrix').replace('> [!matrix|wk] Over the last week, how often did each of these happen to you at home or at work?','> [!matrix|wk]');
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const file=path.join(OUT,'questions.booklet.md');fs.writeFileSync(file,FILE);
   const file2=path.join(OUT,'matrixcolumn.booklet.md');fs.writeFileSync(file2,FILE2);
   const b=await chromium.launch();
-  const open=async(W,fname)=>{
-    const p=await (await b.newContext({viewport:{width:W,height:900}})).newPage();
+  const open=async(W,fname,touch)=>{
+    const p=await (await b.newContext({viewport:{width:W,height:900},...(touch?{hasTouch:true,isMobile:true}:{})})).newPage();
     p.__bad=[];p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))p.__bad.push(m.text());});p.on('pageerror',e=>p.__bad.push(e.message));
     await p.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
@@ -404,6 +457,109 @@ lang: en
   const kept2=await p.evaluate(()=>JSON.stringify(keptFor('mc/log').map(e=>e.phq)));
   ok(kept2==='[[1,null,null],[null,null,3]]'||kept2==='[[null,null,3],[1,null,null]]','1280: a second Finalize keeps a second entry, the first one unchanged '+kept2);
   ok(p.__bad.length===0,'matrix column: no policy violation or page error '+p.__bad.join(' | '));
+
+  /* ---- a matrix drawn as separate questions keeps its stem in view while its items are answered, as far as its own end;
+     drawn as a grid it is not held (SPEC section 5) ---- */
+  const file3=path.join(OUT,'matrixstem.booklet.md');fs.writeFileSync(file3,FILE3);
+  p=await open(390,file3);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+  const stem=()=>p.evaluate(()=>{const box=document.querySelector('#main .mxwrap').parentElement,h=box.querySelector(':scope > h3:first-child'),r=h.getBoundingClientRect(),bar=document.querySelector('.bar'),
+      c=getComputedStyle(bar),sh=c.boxShadow,col=(sh.match(/rgba?\([^)]*\)/)||[''])[0],px=sh&&sh!=='none'?sh.replace(col,'').trim().split(/\s+/).map(parseFloat):[];
+    return {asq:box.classList.contains('mx-asq'),pos:getComputedStyle(h).position,top:r.top,bottom:r.bottom,h:r.height,bar:bar.getBoundingClientRect().bottom,
+      reach:col===c.backgroundColor&&px.length>=3&&px[2]===0?px[1]+(px[3]||0):0,boxBottom:box.getBoundingClientRect().bottom,qs:box.querySelectorAll('.mxq').length,y:scrollY};});
+  let sm=await stem();
+  ok(sm.asq&&sm.qs===9&&sm.pos==='sticky',`390: the nine-item matrix is drawn as separate questions, and its stem is held (sticky) ${JSON.stringify({asq:sm.asq,qs:sm.qs,pos:sm.pos})}`);
+  /* scrolled past item 5: item 6 just under the stem */
+  /* (where the held stem's foot will be: the bar's foot and the stem's height) */
+  for(let i=0;i<2;i++){await p.evaluate(()=>{const q=document.querySelectorAll('#main .mxq')[5],h=document.querySelector('#main .mx-asq > h3:first-child');
+    window.scrollTo(0,scrollY+q.getBoundingClientRect().top-(document.querySelector('.bar').getBoundingClientRect().bottom+h.getBoundingClientRect().height)-2);});await p.waitForTimeout(300);}
+  sm=await stem();
+  const five=await p.evaluate(()=>{const q=document.querySelectorAll('#main .mxq');return {fifthBottom:q[4].getBoundingClientRect().bottom,sixthTop:q[5].getBoundingClientRect().top};});
+  ok(sm.y>0&&five.fifthBottom<=sm.bottom+1&&five.sixthTop>=sm.bottom-1&&Math.abs(sm.top-sm.bar)<=1,`390: scrolled past the fifth item, the stem is held under the bar, its words in view ${JSON.stringify({stem:[sm.top,sm.bottom],bar:sm.bar,five})}`);
+  ok(sm.bar+sm.reach>=sm.top-0.01,`390: nothing scrolled shows between the bar and the held stem: the bar's paint reaches the stem's top ${JSON.stringify({bar:sm.bar,reach:sm.reach,stem:sm.top})}`);
+  await p.screenshot({path:path.join(OUT,'matrix-stem-390.png')});
+  /* the keyboard, walking back up through the items' answers: no item it lands in has its words or the answer under the held
+     stem, wholly or in part */
+  await p.evaluate(()=>{const bs=document.querySelectorAll('#main .mxq button');bs[bs.length-1].focus();});
+  const kw=[];
+  for(let i=0;i<36;i++){kw.push(await p.evaluate(()=>{const a=document.activeElement,r=a.getBoundingClientRect(),h=document.querySelector('#main .mx-asq > h3:first-child').getBoundingClientRect(),q=a.closest('.mxq');
+      return {item:!!q,top:Math.round(r.top),words:q?Math.round(q.querySelector('h3').getBoundingClientRect().top):null,bottom:Math.round(r.bottom),vh:innerHeight,stem:Math.round(h.bottom),
+        held:Math.abs(h.top-document.querySelector('.bar').getBoundingClientRect().bottom)<=1};}));
+    await p.keyboard.press('Shift+Tab');await p.waitForTimeout(120);}
+  const hid=kw.filter(w=>w.item&&(w.top<w.stem-1||w.words<w.stem-1||w.bottom>w.vh));
+  ok(kw.filter(w=>w.item&&w.held).length>=20&&hid.length===0,`390: Shift+Tab back up the items: no item it lands in has its words or the answer under the held stem, and the answer is on screen ${JSON.stringify({held:kw.filter(w=>w.item&&w.held).length,under:hid.slice(0,4)})}`);
+  /* a press of the mouse on an answer just under the stem's foot (the answer partly under it) answers it, and the page does not
+     move under it (the answer is where it was on the screen; the window's own scroll may follow the bar's height, which the
+     saved state changes) */
+  const pressUnder=async(P,how,item,dy)=>{await P.evaluate(()=>window.scrollTo(0,0));await P.waitForTimeout(80);
+    const t=await P.evaluate(([item,dy])=>{const btn=document.querySelectorAll('#main .mxq')[item].querySelectorAll('button')[1],h=document.querySelector('#main .mx-asq > h3:first-child');
+      for(let i=0;i<2;i++) window.scrollTo(0,scrollY+btn.getBoundingClientRect().top-(document.querySelector('.bar').getBoundingClientRect().bottom+h.getBoundingClientRect().height)+24);
+      const r=btn.getBoundingClientRect();return {x:r.left+r.width/2,y:h.getBoundingClientRect().bottom+dy,top:r.top,was:btn.getAttribute('aria-pressed')};},[item,dy]);
+    if(how==='tap') await P.touchscreen.tap(t.x,t.y);else await P.mouse.click(t.x,t.y);await P.waitForTimeout(250);
+    const r=await P.evaluate(item=>{const btn=document.querySelectorAll('#main .mxq')[item].querySelectorAll('button')[1];return {now:btn.getAttribute('aria-pressed'),top:btn.getBoundingClientRect().top};},item);
+    return {item,dy,moved:Math.round(r.top-t.top),was:t.was,now:r.now};};
+  const clicks=[];for(const [i,dy] of [[1,3],[2,10],[3,16]]) clicks.push(await pressUnder(p,'click',i,dy));
+  ok(clicks.every(c=>c.moved===0&&c.was==='false'&&c.now==='true'),`390: a mouse press on an answer just under the held stem answers it, and the page does not move ${JSON.stringify(clicks)}`);
+  /* past the matrix's end, the stem goes with its last item */
+  await p.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await p.waitForTimeout(300);
+  sm=await stem();
+  ok(sm.bottom<=sm.boxBottom+1&&sm.top<sm.bar,`390: scrolled past the matrix, the stem has gone up with its last item, not held over what follows ${JSON.stringify({stem:[sm.top,sm.bottom],box:sm.boxBottom,bar:sm.bar})}`);
+  /* as a grid it is not held; at every width, it is held exactly when the matrix is separate questions */
+  await size(p,1280);await p.evaluate(()=>window.scrollTo(0,0));await p.waitForTimeout(200);
+  sm=await stem();
+  ok(!sm.asq&&sm.pos!=='sticky',`1280: drawn as a grid, the stem is not held ${JSON.stringify({asq:sm.asq,pos:sm.pos})}`);
+  const both=[];for(const w of [320,390,600,760,860,960,1100]){await size(p,w);const x=await stem();both.push([w,x.asq,x.pos]);}
+  ok(both.every(([,a,pos])=>a===(pos==='sticky'))&&both.some(([,a])=>a)&&both.some(([,a])=>!a),`the stem is held at the widths the matrix is separate questions and at no other ${JSON.stringify(both)}`);
+  /* on a window too short for the items to have room under the bar and a held stem (a phone on its side, 360 px tall or less),
+     the stem is not held: it scrolls with its items; on any taller window it is held, wherever the matrix is separate questions */
+  const tall=[];for(const [w,h] of [[568,320],[640,360],[740,360],[667,375],[844,390],[390,844],[360,640]]){await p.setViewportSize({width:w,height:h});await p.waitForTimeout(400);
+    const x=await stem();tall.push([w,h,x.asq,x.pos]);}
+  ok(tall.filter(([,,a])=>a).every(([,h,,pos])=>(h<=360)===(pos!=='sticky'))&&tall.some(([,h,a])=>a&&h<=360)&&tall.some(([,h,a])=>a&&h>360),
+    `the held stem lets go on a window 360 px tall or less, and only there ${JSON.stringify(tall)}`);
+  ok(p.__bad.length===0,'matrix stem: no policy violation or page error '+p.__bad.join(' | '));
+  await p.context().close();
+  /* one at a time, the matrix in a group is a step on a card: its held stem is painted with the card's colour, not the page's */
+  {const file5=path.join(OUT,'matrixsteps.booklet.md');fs.writeFileSync(file5,FILE5);
+   p=await open(390,file5);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+   /* all at once, the matrix sits in its open group's box: the held stem takes the box's colour, as it does the card's below */
+   const under=()=>p.evaluate(()=>{const h=document.querySelector('#main .mx-asq > h3:first-child');let u=h&&h.parentElement;
+     while(u&&/^rgba\(0, 0, 0, 0\)$|^transparent$/.test(getComputedStyle(u).backgroundColor)) u=u.parentElement;
+     return h&&u&&{stem:getComputedStyle(h).backgroundColor,under:getComputedStyle(u).backgroundColor,in:u.className,pos:getComputedStyle(h).position};});
+   let inBox=await under();
+   ok(!!inBox&&inBox.stem===inBox.under&&/rd-callout/.test(inBox.in)&&inBox.pos==='sticky',`390, all at once: the held stem in an open group is painted with the group's box ${JSON.stringify(inBox)}`);
+   await p.locator('#main .oat-ctl button').filter({hasText:'One at a time'}).click();await p.waitForTimeout(400);
+   const paint=await p.evaluate(()=>{const h=document.querySelector('#main .mx-asq > h3:first-child'),u=h&&h.closest('.oat-unit');
+     return u&&{stem:getComputedStyle(h).backgroundColor,card:getComputedStyle(u).backgroundColor,pos:getComputedStyle(h).position};});
+   ok(!!paint&&paint.stem===paint.card&&paint.pos==='sticky',`390, one at a time: the held stem is painted with the step's card it sits on ${JSON.stringify(paint)}`);
+   ok(p.__bad.length===0,'matrix steps: no policy violation or page error '+p.__bad.join(' | '));
+   await p.context().close();
+   /* and in a group the author folded, opened: the stem takes the fold's colour */
+   const file6=path.join(OUT,'matrixfold.booklet.md');fs.writeFileSync(file6,FILE5.replace('> [!group] The week','> [!group]- The week'));
+   p=await open(390,file6);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+   await p.locator('#main details.au-fold > summary').first().click();await p.waitForTimeout(400);
+   inBox=await under();
+   ok(!!inBox&&inBox.stem===inBox.under&&inBox.pos==='sticky',`390, all at once: the held stem in a folded group, opened, is painted with the fold it sits in ${JSON.stringify(inBox)}`);
+   ok(p.__bad.length===0,'matrix in a fold: no policy violation or page error '+p.__bad.join(' | '));
+   await p.context().close();}
+  /* a touch on an answer just under the held stem answers it, and the page does not move */
+  p=await open(390,file3,true);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+  const taps=[];for(const [i,dy] of [[1,3],[2,6],[3,10],[4,14],[5,20]]) taps.push(await pressUnder(p,'tap',i,dy));
+  ok(taps.every(c=>c.moved===0&&c.was==='false'&&c.now==='true'),`390, touch: a tap on an answer just under the held stem answers it, and the page does not move ${JSON.stringify(taps)}`);
+  await p.context().close();
+  /* a matrix with no words of its own has no stem; the keyboard and the mouse move through it without the page jumping */
+  const file4=path.join(OUT,'matrixbare.booklet.md');fs.writeFileSync(file4,FILE4);
+  p=await open(390,file4);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+  const bare=await p.evaluate(()=>{const box=document.querySelector('#main .mxwrap').parentElement;return {asq:box.classList.contains('mx-asq'),h3:!!box.querySelector(':scope > h3'),qs:box.querySelectorAll('.mxq').length};});
+  ok(bare.asq&&!bare.h3&&bare.qs===9,`390: a matrix with no words is drawn as separate questions, with no stem ${JSON.stringify(bare)}`);
+  await p.evaluate(()=>{const q=document.querySelectorAll('#main .mxq')[4];window.scrollTo(0,scrollY+q.getBoundingClientRect().top-300);});await p.waitForTimeout(250);
+  const y0=await p.evaluate(()=>scrollY);
+  await p.evaluate(()=>{const bs=document.querySelectorAll('#main .mxq')[3].querySelectorAll('button');bs[bs.length-1].focus();});await p.keyboard.press('Tab');await p.waitForTimeout(250);
+  const kb=await p.evaluate(()=>({y:scrollY,on:document.activeElement.closest('.mxq')===document.querySelectorAll('#main .mxq')[4]}));
+  ok(y0>0&&kb.on&&Math.abs(kb.y-y0)<=1,`390: with no stem, Tab into the fifth item leaves the page where it was ${JSON.stringify({y0,kb})}`);
+  const c5=await p.evaluate(()=>{const r=document.querySelectorAll('#main .mxq')[4].querySelectorAll('button')[2].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,top:r.top};});
+  await p.mouse.click(c5.x,c5.y);await p.waitForTimeout(250);
+  const ck=await p.evaluate(()=>{const b=document.querySelectorAll('#main .mxq')[4].querySelectorAll('button')[2];return {top:b.getBoundingClientRect().top,now:b.getAttribute('aria-pressed'),a:JSON.stringify(STATE.answers)};});
+  ok(ck.now==='true'&&Math.abs(ck.top-c5.top)<=1&&/"wk":\[null,null,null,null,2/.test(ck.a),`390: with no stem, a press on the fifth item answers it, and the page does not move under it ${JSON.stringify({before:c5.top,ck})}`);
+  ok(p.__bad.length===0,'matrix with no words: no policy violation or page error '+p.__bad.join(' | '));
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'ALL PASSED');process.exit(fails.length?1:0);
 })().catch(e=>{console.log('FAIL the check stopped: '+String((e&&e.message)||e).split('\n')[0]);process.exit(1);});

@@ -26,7 +26,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 const PUBLIC='https://booklet.test',PRIVATE='http://fleet';
 const RAW=fs.readFileSync(HTML);
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
-const bk=(id,title,q)=>`---\nbooklet: "0.13"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n> [!activity|${id}-a] ${title}\n\n> [!text|${id}-q long] ${q||'What stood out?'}\n\n> [!module|${id} end] End\n`;
+const bk=(id,title,q)=>`---\nbooklet: "0.15"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n> [!activity|${id}-a] ${title}\n\n> [!text|${id}-q long] ${q||'What stood out?'}\n\n> [!module|${id} end] End\n`;
 /* what each origin serves under /app/modules/, /pub/ (a declared store) and /store/modules/ (which must never be read) */
 const FILES={'/app/modules/sub/week.booklet.md':bk('week','Week report'),'/app/modules/x.md':bk('ex','Folder booklet'),
   '/pub/x.md':bk('st','Store booklet'),'/store/modules/x.md':bk('no','Never read'),
@@ -72,7 +72,7 @@ if(withStore===RAW.toString('utf8')) throw new Error('booklet.html no longer has
   await p.evaluate(()=>{location.hash='#/open/sub/week.booklet.md';});await wait(p,1200);
   ok(since(n1).map(r=>r.method+' '+r.url).join()==='GET '+PUBLIC+'/app/modules/sub/week.booklet.md','following #/open/sub/week.booklet.md asks for /app/modules/sub/week.booklet.md, once, with a GET: '+since(n1).map(r=>r.method+' '+r.url).join(', '));
   ok(await view(p)==='week/week-a','the booklet opens into its one activity: '+await view(p));
-  ok((await line(p)).startsWith("Opened by a link, from this page's own store: sub/week.booklet.md"),'the quiet line says where it came from: '+(await line(p)).replace(/\n/g,' | '));
+  ok((await line(p)).startsWith("Opened by a link, from the modules folder beside this page: sub/week.booklet.md"),'the quiet line says it came from the modules folder beside this page, not a store: '+(await line(p)).replace(/\n/g,' | '));
   await p.screenshot({path:path.join(OUT,'modulesfolder-1280.png')});
   // 2 a missing file
   const before=await view(p);n1=reqs.length;

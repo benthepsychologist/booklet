@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.13.0**. It matches SPEC.md's v0.13, the current format.
+**Skill version: 0.15.0**. It matches SPEC.md's v0.15, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -72,7 +72,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.13"`, `id`, `title`, `lang`, `version` | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.15"`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
 
@@ -175,7 +175,7 @@ language are real ones; give them your own.
 
 ````markdown
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: "local/my-booklet"
 title: "My booklet"
 lang: en
@@ -202,7 +202,7 @@ One or two sentences of plain prose: what to do, and that skipping is fine.
 
 Write one booklet line for each question (section 6) where `my-question` stands.
 
-- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.13"`:
+- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.15"`:
   unquoted, a YAML tool reads `0.10` as the number 0.1. A tool that writes
   booklets should ask the linter for the marker (`python3 lint-booklet.py
   --marker` prints the whole line) and not hard-code it. A file marked with
@@ -363,7 +363,7 @@ and a "Mentioned on" list of the pages that link to it:
 
 ```markdown
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: "local/harbour-notes"
 title: Harbour notes
 lang: en
@@ -454,19 +454,16 @@ A budget is a plan, not a judgement.
 > [!activity|why-budget tab:learn] Why a budget helps
 ```
 
-**The frame.** Plain prose before an activity's first question (a tab's, when it
-has tabs: paragraphs, lists and tables, with no heading, callout, HTML or code
-fence) is its frame: the renderer keeps it in view while the questions are
-answered. One at a time, it is drawn whole above the question on show, however
-long. All at once, it is held at the top while they scroll, but only when it
-fits whole in that space: four lines of text at the renderer's usual size
-(fewer on a window under about 580 pixels high), or a key of a header row and
-two rows to a scale; a third row is too tall. **Instructions are short**: a
-sentence or two of what to do, or that two-row key. Longer prose is reading when
-the questions are all shown, and scrolls with its page whole, nothing cut. So is
-prose between two questions (it goes with the question after it), and reading
-with a heading or a callout before the first question. `pin:off` on the activity
-line lets the frame scroll away like any prose: `> [!activity|walk pin:off] Walk notes`.
+**One at a time: steps are groups.** A reader may take the part on show (an
+activity, a tab, or one `***` section of either) one step at a time when it
+holds two or more `> [!group] Title` callouts: each group is a step, drawn
+open. A question in no group is never a step, so to offer steps, put each
+question (or each set to take together) in a group; a group holds anything the
+activity's text can (section 7). What comes before the first group
+(instructions, a key to a scale, a heading, a callout, a picture) is drawn whole
+above every step, so it is there at each one, however long; what comes between
+two groups goes with the group after. All at once, it reads top to bottom as
+written, and nothing is held in view.
 
 ---
 
@@ -599,13 +596,13 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **A question is never hidden by a file, and the renderer folds nothing on
-  its own.** There is no way to write "optional questions, folded shut until
-  opened". If a request calls for that ("a couple more if you want them"), put
-  the extra questions after the ones that matter, under their own heading, or on
-  their own page after a `***`. Extra reading can be folded by the author: a
-  `> [!group]- More on this` callout. A reader who would rather not click has
-  one switch that opens every such fold on the page.
+- **The renderer folds nothing on its own, and a question is folded only
+  where its author folds the group it is in.** A folded group
+  (`> [!group]- A couple more, if you want them`) is how to write optional
+  questions, folded shut until opened; a reader who would rather not click has
+  one switch that opens every such fold on the page, and a fold that holds an
+  answer is drawn open. Keep the questions that matter open, and fold only what
+  a reader may skip. Extra reading folds the same way.
 - **No question takes its options from another activity's answers.** There is
   no kind that draws a list of options pulled live from a different activity's
   answers, or a tick-list of what was done. (A `booklet query` can show another
@@ -628,10 +625,33 @@ between paragraphs for a new one. Section 4 says what a heading does.
 - **A pull-quote or a note set apart** is an Obsidian-style callout:
   `> [!note] …`, `> [!tip] …`, `> [!warning] …`, or Booklet's own `diff`
   (where a guide differs from this reading), `law` (a rule as it stands) or
-  `opinion` (an author's view), and `group`, the plain fold: `> [!group]- Title`
-  folds reading content shut until opened — fine for background material nobody
-  has to read, never for a question (section 6). Any callout kind written with
-  `-` folds the same way.
+  `opinion` (an author's view). Any callout kind written with `-` folds shut
+  until opened, which is fine for background material nobody has to read. Only
+  Markdown goes in these: a question or a `booklet query` in a note or a tip is
+  drawn as text (the linter warns).
+- **A group is a titled container**, `> [!group] Title`, folded with
+  `> [!group]- Title`. In an activity it holds anything the activity's text can,
+  questions included, and two or more groups in a part are its steps when the
+  reader takes it one at a time (section 5). Its body is quoted once, so a question in it gets a
+  second `>`, and what goes under the question gets the group's one:
+
+  ```markdown
+  > [!group] Your week
+  > Think of the last seven days.
+  >
+  > > [!choice|busy] How busy was it?
+  > - [ ] Quiet
+  > - [ ] Busy
+  >
+  > > [!hint]-
+  > > Count the evenings you were out.
+  ```
+
+  A group cannot hold a `module`, `activity`, `tab`, `row`, `data` or `records`
+  line (the linter refuses it), and a `***` in it is a rule, not a page break.
+  Outside an activity (in an opening) a group holds Markdown only. A question
+  in a folded group is still answered and kept; the fold opens once it holds an
+  answer.
 - **A citation is an ordinary footnote** — `[^id]` in the text, and its
   definition anywhere in the file:
 
@@ -655,7 +675,10 @@ between paragraphs for a new one. Section 4 says what a heading does.
 - **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a tab's name, a question's prompt or a callout's title), on the right tab and page (a module's tab name opens the module's screen on that tab); the linter warns when nothing in the link's own module reads those words.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
-  module**. It is read-only and takes no answer. The kind goes on the fence
+  module**. Put it in the activity's own text, or in a group in the activity
+  (it is drawn there, folded or not). In any other callout (a note, a tip, a
+  group outside an activity) a query view is not yet supported (it is drawn as
+  code), and the linter warns. It is read-only and takes no answer. The kind goes on the fence
   line and every setting is a `key: value` line:
 
   ````markdown
@@ -787,7 +810,7 @@ not drawn. Section 12 ends with a whole report.
 nothing on its own, and its headings are drawn as headings. Fold only what a
 reader may skip, with a `-` callout (`> [!group]- The detail`); a reader who
 would rather not click has one switch that opens every such fold on the page. A
-reader may take a page of three or more questions one at a time.
+reader may take a `***` section of two or more groups one group at a time.
 
 - **One activity, the questions last.** The answer for every report. The
   booklet opens straight into it and nothing is blank. Split a long one into
@@ -952,7 +975,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.13 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
+| no `lang:` | `front matter has no `lang:` — a v0.15 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -978,6 +1001,10 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a query with a bad `as:` or `limit:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number` | use one of the six views; a whole number from 1 |
 | a query with a setting it does not take | `a query has no setting 'x' (it takes from, as, fields, …)` | use the listed keys; a warning `does not draw` means the view ignores that key |
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
+| a query view inside a callout that holds Markdown only (a note, any other kind but a group, or a group outside an activity) | `warn line N: a query view inside a callout (here a `[!note]`) is not yet supported: a renderer draws the `booklet query` block as code …` | put the query in a group in an activity, or in the activity's own text |
+| a question or another Booklet line inside a callout that holds Markdown only (the same callouts) | `warn line N: a `[!text]` line inside a `[!note]` is drawn as text, not read: only a `[!group]` in an activity holds Booklet lines …` | put it in a group in an activity, or outside the callout |
+| a question, a query or another Booklet line in a callout in a data section | `warn line N: this is inside a `[!group]` in a data section, which is not drawn …` | put it in a group in an activity |
+| a `module`, `activity`, `tab`, `row`, `data` or `records` line inside a group | `line N: a `[!tab]` line cannot go inside a group, so a renderer ignores it …` | move it out of the group |
 | a `menu:` naming no menu | `` `menu:x` names no menu in this file`` | write the `> [!menu|x]` line and its bulleted list, or fix the id |
 | a `menu:` and a list of its own | `the question 'x' has both `menu:y` and a list of its own` | keep one |
 | a notice with a key it does not have, two in one module, or one outside a fence or after the first activity | `a notice has license, copyright, source, version, not 'x'` / `has two notices` / `a notice belongs inside a module's fence, before the module's first activity` | write only those four keys, one callout, right under the module line |
@@ -992,10 +1019,10 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | two tabs with one id, in one activity or one module's opening | `this tab's id is 'x', the same as the tab on line N …` | give each tab its own name, or an id (`> [!tab|other-id] Name`) |
 | a tab line outside every activity and module opening | `a tab line belongs inside an activity, or in a module's opening …` | move it under an activity line, or into the module's opening |
 | a `tab:` naming no tab of the module | `` `tab:x` names no tab of the module 'm' `` | name a tab the module's opening declares, or declare it |
-| a `pin:` other than `off` | `` `pin:x` is not a setting; the one value is `pin:off` `` | write `pin:off`, or leave it out |
 | tab lines in the opening of a module of one activity | `warn the module 'm' has one activity, so it has no screen of its own to show tabs on …` | put that prose in the module's opening with no tab line, or the tabs inside the activity |
 | a tab line in a data section | `warn a tab line in a data section is not read …` | put the tab in an activity, or in a module's opening |
 | `---` straight under a line of text | `warn `---` straight under text makes that line a heading, not a page break` | write `***`, or leave a blank line above |
+| `---` straight under a line of text in a group | `warn `---` straight under text in a group makes that line a heading …` | for a rule, leave a blank line above (a group has no page break) |
 | a hint or solution not folded, or not directly under its question | `warn a hint that is not folded is drawn open …` / `is not directly under a question` | write `> [!hint]-`, straight under the question, with nothing between |
 | `[x]` in a menu | `warn a menu cannot mark a right answer` | give the question its own task list (`- [x] Mars`) in place of `menu:`, or drop the `[x]` |
 | a price in prose that reads as a formula | `warn `$5 a month ($` reads as a formula` | write `\$5` |
@@ -1008,7 +1035,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.13"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.15"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has a task list under it; a numbered list that does not start at `1.` has a blank line above it.
@@ -1026,7 +1053,7 @@ Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -1062,7 +1089,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -1123,7 +1150,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -1159,7 +1186,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ````markdown
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: "local/reminders-report"
 title: "Reminders: SMS or email?"
 lang: en
@@ -1241,7 +1268,7 @@ flowchart LR
 ## 13. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.13 file, one language, its
+same way as any other booklet above — one v0.15 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

@@ -398,7 +398,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
    ok(!!body&&sameJSON(body.booklet,{id:'test/submit-seen',version:'0.7',lang:'en'}),'booklet: id, version and language as the file says them: '+JSON.stringify(body&&body.booklet));
    const s=(body&&body.seen)||{};
    ok(sameJSON(s.note,{question:'A note in your words'}),'a text question: its words, with the Markdown taken out (the answer is already words): '+JSON.stringify(s.note));
-   ok(sameJSON(s.pick,{question:'Pick one',options:['Alpha','Beta','Gamma'],picked:['Beta']}),'a choice: the options in the order shown, the words picked, the Markdown taken out: '+JSON.stringify(s.pick));
+   ok(sameJSON(s.pick,{question:'Pick one',options:['Alpha','Beta','Gamma'],picked:['Beta']}),'a choice (in a folded group, as this one and the next are): the options in the order shown, the words picked, the Markdown taken out: '+JSON.stringify(s.pick));
    ok(sameJSON(s.several,{question:'Pick any, or add your own',options:['One','Two','Three'],picked:['One','my own']}),'a multi: the options, and the picked words with the reader\'s own option as they wrote it: '+JSON.stringify(s.several));
    ok(sameJSON(s.mood,{question:'How was it?',anchors:[{n:0,text:'Poor'},{n:1,text:'Fine'},{n:2,text:'Great'}],picked:'Great'}),'a scale: its anchors with their numbers, and the anchor\'s words picked: '+JSON.stringify(s.mood));
    ok(sameJSON(s.grid,{question:'Rate each',items:['Tea','Coffee','Juice'],anchors:[{n:1,text:'Dislike'},{n:2,text:'Like'}],picked:['Like','Dislike',null]}),'a matrix: its items, its anchors, and the words picked for each item, null for an item left alone: '+JSON.stringify(s.grid));

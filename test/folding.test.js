@@ -6,7 +6,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-const FM='---\nbooklet: "0.13"\nid: local/fold\ntitle: "Fold"\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.15"\nid: local/fold\ntitle: "Fold"\nlang: en\n---\n\n';
 const A=P.boot();
 const LS=global.__ls;
 const Q=(id,n=2)=>`> [!choice|${id}] Question ${id}?\n- [ ] A\n- [ ] B\n\n`;
@@ -58,17 +58,101 @@ chk("a page with questions and three headings folds nothing, and has no fold swi
 /* 4. short options */
 chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No"])&&A.shortOptions(["a","b","c","d"])&&!A.shortOptions(["a","b","c","d","e"])&&!A.shortOptions(["x".repeat(25)])&&A.shortOptions(["x".repeat(24)])&&!A.shortOptions([]));
 
-/* 5. one at a time: units */
+/* 5. one at a time: the steps are the groups (`[!group]` callouts) of the part on show */
 {const mk=(type,id,extra={})=>({type,id,keys:[id],...extra});
  const md=t=>({type:"markdown",id:"m"+t,text:t});
- /* a hint drawn where it stands (one not folded) goes with the question above it; a question's own hint is on it */
- const hint={type:"callout",kind:"hint",outside:true,id:"q1-hint",blocks:[md("h")]};
- const u=A.stepUnits([md("lead"),mk("choice","q1"),hint,md("between"),mk("choice","q2"),mk("text","q3"),md("tail")]);
- chk("three questions make three steps",u.length===3);
- chk("prose goes with the question after it; a hint goes with its question; the last prose with the last question",
-   u[0].blocks.length===3&&u[0].blocks[0].id==="mlead"&&u[1].blocks.length===2&&u[1].blocks[0].id==="mbetween"&&u[2].blocks.length===2&&u[2].blocks[1].id==="mtail",JSON.stringify(u.map(x=>x.blocks.map(b=>b.id))));
- chk("two questions offer no stepper",A.stepUnits([mk("choice","q1"),mk("choice","q2")]).length===0);
- chk("a row of three questions is one step, and one step offers no stepper (the page needs two)",A.stepUnits([{type:"row",id:"r",blocks:[{type:"cell",id:"c",blocks:[mk("text","a"),mk("text","b"),mk("text","c")]}]}]).length===1);}
+ const grp=(id,...blocks)=>({type:"callout",kind:"group",id,blocks});
+ const u=A.stepUnits([md("lead"),grp("g1",mk("choice","q1")),md("between"),mk("text","loose"),grp("g2",mk("choice","q2"),mk("text","q3")),grp("g3",md("read")),md("tail")]);
+ chk("three groups make three steps, each with its group",u.length===3&&u.map(x=>x.group.id).join()==="g1,g2,g3",JSON.stringify(u.map(x=>x.blocks.map(b=>b.id))));
+ chk("what comes before the first group is no step (it is the opening); what comes between two groups goes with the one after, a question outside a group too; the last with the last",
+   u.map(x=>x.blocks.map(b=>b.id).join("+")).join()==="g1,mbetween+loose+g2,g3+mtail",JSON.stringify(u.map(x=>x.blocks.map(b=>b.id))));
+ chk("questions outside every group make no steps, however many",A.stepUnits([mk("choice","q1"),mk("choice","q2"),mk("text","q3"),mk("text","q4")]).length===0);
+ chk("one group offers no stepper (the part needs two)",A.stepUnits([md("lead"),grp("g1",mk("text","a"),mk("text","b"),mk("text","c"))]).length===0);
+ chk("a group inside a row is no step of the part",A.stepUnits([{type:"row",id:"r",blocks:[{type:"cell",id:"c",blocks:[grp("a"),grp("b")]}]}]).length===0);
+ chk("any other callout is no step",A.stepUnits([{type:"callout",kind:"note",id:"n1",blocks:[]},{type:"callout",kind:"tip",id:"n2",blocks:[]}]).length===0);}
+
+/* 5b. a group in an activity holds blocks: its body, one `>` less, is read as the file is (SPEC.md section 6), so a
+   question in it is written with a second `>` and its options with one; its ids are the module's like any other; a line
+   that makes structure is said and left out; a `***` in it is a rule; the group in a module's opening stays words */
+{const T=FM+"> [!module|m] M\n\n> [!group] About\n> > [!text|x] Q in the opening?\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n"+
+   "> [!activity|a] A\n\n> [!text|out] Outside?\n\n"+
+   "> [!group]- Folded\n> Words with a note.[^n]\n>\n> [^n]: The note.\n>\n> > [!choice|g1] Pick?\n> - [ ] Alpha\n> - [ ] Beta\n>\n> > [!hint]-\n> > A hint.\n>\n> ***\n>\n> > [!tab] Nope\n>\n> > [!text|g2] Why?\n\n"+
+   "> [!group] Kept\n> ```booklet query\n> from: log\n> ```\n\n> [!module|m end] E\n";
+ const R=A.parseFile(T),said=R.unread.map(String);
+ chk("(the file opens; one thing said: the tab line in the group, at its own line)",R.ok&&R.refused.length===0&&said.length===1&&/^line 35: a tab line cannot go inside a group/.test(said[0]),JSON.stringify([said,R.refused.map(String)]));
+ const act=A.parseFile(T.replace("> > [!tab] Nope","> > [!activity|nope] Nope")).unread.map(String);
+ chk("...an activity line there is said in plain English too (an activity, not a activity)",act.length===1&&/^line 35: an activity line cannot go inside a group/.test(act[0]),JSON.stringify(act));
+ A.loadText(T);
+ const a=A.activityOf("m/a"),g=a.pages[0].blocks[1],ids=b=>b.blocks.map(x=>x.type+(x.id&&!/^(md|c)\d/.test(x.id)?":"+x.id:"")).join();
+ chk("the group holds its words, the choice with its two options and its hint, a rule, and the question after; no tab",
+   a.pages.length===1&&ids(g)==="markdown,choice:g1,markdown,text:g2"&&JSON.stringify(g.blocks[1].options)==='["Alpha","Beta"]'&&!!g.blocks[1].hint&&/A hint/.test(JSON.stringify(g.blocks[1].hint))&&g.blocks[2].text==="***"&&!(a.tabs&&a.tabs.length),
+   JSON.stringify(g.blocks).slice(0,600));
+ chk("the group in the module's opening keeps its body as words: no question is read there",A.allModules()[0].opening[0].blocks.length===1&&A.allModules()[0].opening[0].blocks[0].type==="markdown"&&!/"x"/.test(JSON.stringify(A.allModules()[0].activities.map(v=>v.pages))));
+ const dup=A.parseFile(T.replace("[!text|g2]","[!text|out]"));
+ chk("a question in a group with an id already used outside it is refused, as two of one id anywhere are",!dup.ok&&dup.refused.map(String).some(s=>/the id “out” is used twice/.test(s)),JSON.stringify(dup.refused.map(String)));
+ const dupm=A.parseFile(T.replace("[!text|g2]","[!text|what]"));
+ chk("...and the ids are the module's: one used in another activity of the module clashes too",!dupm.ok&&dupm.refused.map(String).some(s=>/the id “what” is used twice/.test(s)),JSON.stringify(dupm.refused.map(String)));
+ global.__ls[A.OAT_KEY+A.currentId]="all";draw("m/a");
+ let fold=auFolds()[0];
+ chk("all at once, the folded group is a fold, closed, its questions live in it",!!fold&&!isOpen(fold)&&find(fold,n=>n.tagName==="textarea").length===1&&/Pick\?/.test(texts(fold)));
+ A.answersFor("m/a").g1=1;draw("m/a");fold=auFolds()[0];
+ chk("...drawn open once a question in it holds an answer (a pick is a number), as any fold holding an answer is",!!fold&&isOpen(fold));
+ A.answersFor("m/a").g2="my words";
+ chk("its footnote is the activity's: drawn as a mark with its note, not as raw text",!!fold&&find(fold,hasClass("rd-mark")).length===1&&!/\[\^n\]/.test(texts(P.main())),texts(fold).slice(0,200));
+ A.keptFor("m/log").push({ts:"2026-10-01T09:00:00Z",what:"kept words"});draw("m/a");fold=auFolds()[0];
+ const qv=find(P.main(),hasClass("query"));
+ chk("the query view in the other group is drawn as a view, not as code: the kept entry's answer is in its rows",qv.length===1&&/What\? kept words/.test(texts(qv[0]))&&find(P.main(),n=>n.tagName==="pre").length===0,qv.map(texts).join("|"));
+ const open=find(P.main(),n=>hasClass("rd-callout")(n)&&/Kept/.test(texts(n)))[0];
+ chk("an open group is drawn plain under its title, a group to a screen reader: no kind's word or colour (not a note)",!!open&&open.attrs.role==="group"&&find(open,hasClass("rd-cl")).length===0&&!/rd-hued/.test(open.attrs.class||""),open&&JSON.stringify(open.attrs));
+ const p=A.activityProgress(a),md=A.toMarkdown();
+ chk("answers inside a folded group are kept and counted, and saved in the records like any",p.total===3&&p.answered===2&&/"g1": ?1/.test(md)&&/"g2": ?"my words"/.test(md),JSON.stringify(p)+" "+md.slice(-300));
+ delete global.__ls[A.OAT_KEY+A.currentId];}
+
+/* 5c. what a question in a group (or a row) was given is read back wherever answers are: each view of the kept entries
+   (cards, table, bars), the kept entry's own card, and a query naming the question itself */
+{const Qf=(f,x)=>"```booklet query\nfrom: "+f+(x?"\n"+x:"")+"\n```\n\n";
+ const T=FM+"> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!group] Today\n> > [!text|what] What?\n>\n> > [!number|hours] Hours?\n\n"+
+   "> [!activity|rlog repeat] Row log\n\n> [!row]\n\n## A\n\n> [!text|where] Where?\n\n## B\n\n> [!number|steps] Steps?\n\n> [!row|end]\n\n"+
+   "> [!activity|ask] Ask\n\n> [!group] G\n> > [!multi|picks] Picks?\n> - [ ] Tea\n> - [ ] Coffee\n\n"+
+   "> [!activity|look] Look\n\n"+Qf("log")+Qf("log","as: table")+Qf("log","as: bars\nlabel: what\nvalue: hours")+Qf("picks")+Qf("rlog")+"> [!module|m end] E\n";
+ const R=A.parseFile(T);
+ chk("(the file opens with nothing said)",R.ok&&R.unread.length===0&&R.refused.length===0,JSON.stringify([R.unread.map(String),R.refused.map(String)]));
+ A.loadText(T);
+ A.keptFor("m/log").push({ts:"2026-10-01T09:00:00Z",what:"kept words",hours:7},{ts:"2026-10-02T09:00:00Z",what:"more words",hours:5});
+ A.keptFor("m/rlog").push({ts:"2026-10-01T09:00:00Z",where:"the shore",steps:40});
+ A.answersFor("m/ask").picks=[1,2];
+ const qv=find(draw("m/look"),hasClass("query")),t=qv.map(texts);
+ chk("five query views are drawn",qv.length===5,t.join(" | "));
+ chk("cards of the kept entries show the answers given in a group",/What\? more words Hours\? 5 .*What\? kept words Hours\? 7/.test(t[0]||""),t[0]);
+ chk("the table of them has a row for each, with the group's questions as its columns",find(qv[1]||{},n=>n.tagName==="tr").length===3&&/Date What\? Hours\?/.test(t[1]||"")&&/kept words 7/.test(t[1]||""),t[1]);
+ chk("bars of them draw each entry's number from the group",/kept words 7 more words 5/.test(t[2]||""),t[2]);
+ chk("a query naming a question in a group draws what it holds",/Picks\? Tea, Coffee/.test(t[3]||""),t[3]);
+ chk("and a question in a row is read back the same way",/Where\? the shore Steps\? 40/.test(t[4]||""),t[4]);
+ draw("m/log");A.viewAt("m/log").chip="2026-10-01T09:00:00Z";A.render();
+ const e=find(P.main(),hasClass("entry"));
+ chk("an earlier entry, opened, shows what its group's questions were given",e.length===1&&/What\? kept words Hours\? 7/.test(texts(e[0])),e.map(texts).join("|"));}
+
+/* 5d. a fold holding an answer is drawn open however deep the question is in it: a question in a group inside the folded
+   group opens it, as one straight in it does */
+{const T=FM+"> [!activity|a] A\n\n> [!group]- Outer\n> Words.\n>\n> > [!group] Inner\n> > > [!text|deep] Deep?\n\n> [!group]- Other\n> > [!text|near] Near?\n";
+ A.loadText(T);global.__ls[A.OAT_KEY+A.currentId]="all";
+ const folds=()=>{draw("a");return auFolds().map(d=>[texts(d).slice(0,5),isOpen(d)]);};
+ chk("(both folds closed with nothing answered)",JSON.stringify(folds())==='[["Outer",false],["Other",false]]',JSON.stringify(folds()));
+ A.answersFor("a").deep="my words";
+ chk("an answer to a question in a group inside a folded group draws that fold open, and only it",JSON.stringify(folds())==='[["Outer",true],["Other",false]]',JSON.stringify(folds()));
+ delete global.__ls[A.OAT_KEY+A.currentId];}
+
+/* 5e. a group with no title has no head: no empty header above its body; one at a time, its step is named by its place */
+{const T=FM+"> [!activity|a] A\n\n> [!group]\n> > [!text|u1] One?\n\n> [!group]-\n> > [!text|u2] Two?\n\n> [!group] Named\n> > [!text|u3] Three?\n";
+ A.loadText(T);global.__ls[A.OAT_KEY+A.currentId]="all";draw("a");
+ const box=find(P.main(),hasClass("rd-callout"))[0];
+ chk("all at once, an untitled open group is drawn with no head: its body is its first child",!!box&&find(box,hasClass("rd-chead")).length===0&&hasClass("rd-cb")(box.children[0]),box&&JSON.stringify(box.children.map(c=>c.attrs.class)));
+ global.__ls[A.OAT_KEY+A.currentId]="one";draw("a");
+ const units=find(P.main(),hasClass("oat-unit"));
+ chk("one at a time, no step's group has an empty head",units.length===3&&find(P.main(),hasClass("rd-chead")).length===0);
+ chk("an untitled group's step is a group named by its place; a titled one is named by its title",units.length===3&&units[0].attrs.role==="group"&&units[0].attrs["aria-label"]==="Step 1 of 3"&&units[1].attrs["aria-label"]==="Step 2 of 3"&&units[2].attrs["aria-label"]===undefined&&
+   find(units[2],n=>n.attrs.role==="group"&&!!n.attrs["aria-labelledby"]).length===1,JSON.stringify(units.map(u=>[u.attrs.role,u.attrs["aria-label"]])));
+ delete global.__ls[A.OAT_KEY+A.currentId];}
 
 /* 6. every word of the steps, the pager and the fold switch exists in en, fr, es (the tables themselves: a missing
    key must not hide behind the English that fr and es inherit) and es-AR (which inherits es) */
