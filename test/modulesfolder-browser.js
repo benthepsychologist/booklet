@@ -26,7 +26,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 const PUBLIC='https://booklet.test',PRIVATE='http://fleet';
 const RAW=fs.readFileSync(HTML);
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
-const bk=(id,title,q)=>`---\nbooklet: "0.13"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n> [!activity|${id}-a] ${title}\n\n> [!text|${id}-q long] ${q||'What stood out?'}\n\n> [!module|${id} end] End\n`;
+const bk=(id,title,q)=>`---\nbooklet: "0.15"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n> [!activity|${id}-a] ${title}\n\n> [!text|${id}-q long] ${q||'What stood out?'}\n\n> [!module|${id} end] End\n`;
 /* what each origin serves under /app/modules/, /pub/ (a declared store) and /store/modules/ (which must never be read) */
 const FILES={'/app/modules/sub/week.booklet.md':bk('week','Week report'),'/app/modules/x.md':bk('ex','Folder booklet'),
   '/pub/x.md':bk('st','Store booklet'),'/store/modules/x.md':bk('no','Never read'),

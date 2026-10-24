@@ -1,5 +1,5 @@
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: "scrambled-wiki"
 title: "mivirut-hod"
 lang: en

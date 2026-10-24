@@ -1,5 +1,5 @@
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: fixture/data-views
 title: Allotment status
 lang: en

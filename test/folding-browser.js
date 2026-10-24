@@ -11,7 +11,7 @@ const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const head='---\nbooklet: "0.13"\ntitle: Folding\nlang: en\n---\n\n';
+const head='---\nbooklet: "0.15"\ntitle: Folding\nlang: en\n---\n\n';
 const opts=['Left','Right','Up'].map(o=>`- [ ] ${o}`).join('\n');
 const longOpts=['An option that is rather long indeed','Another long option here today','A third long option text'].map(o=>`- [ ] ${o}`).join('\n');
 const qpage=head+`> [!module|m] M\n\n> [!activity|q] Questions\n\n## First part\n\nWords about the first part.\n\n> [!choice|c1] Which way?\n${opts}\n\n> [!hint]-\n> HINT-SECRET-WORDS\n\n## Second part\n\nWords about the second.\n\n> [!choice|c2] Which other way?\n${opts}\n\n> [!solution]-\n> SOLUTION-SECRET-WORDS\n\n> [!choice|c3] A long one?\n${longOpts}\n\n## Third part\n\nOnly reading here.\n\n> [!matrix|mx] Rate each\n- Sleep\n- Food\n\n1. Low\n2. High\n\n> [!module|m end] End\n`;

@@ -35,7 +35,7 @@ const HOST_CSP=CSP.replace('connect-src https://raw.githubusercontent.com','conn
 if(HOST_CSP===CSP) throw new Error('csp.js no longer has the expected connect-src: update this test');
 const SRC=fs.readFileSync(HTML,'utf8');
 const withStore=SRC.replace('<meta name="theme-color"','<meta name="booklet-store" content="'+PAGE+'/pub/">\n<meta name="theme-color"');
-const FM=(id,t)=>`---\nbooklet: "0.13"\nid: ${id}\ntitle: "${t}"\nlang: en\nversion: "2026-10-14"\n---\n\n`;
+const FM=(id,t)=>`---\nbooklet: "0.15"\nid: ${id}\ntitle: "${t}"\nlang: en\nversion: "2026-10-14"\n---\n\n`;
 const PROSE=n=>`Invented words for a test, about nothing real: line ${n}, with **bold**, *slanted* and \`code\` words so there is Markdown to draw. `;
 /* one activity of many pages, its question on the first */
 function big(chars){let s=FM('test/ten-mb','Ten megabytes')+'> [!activity|big] Big pages\n\n> [!text|q long] A question on the first page\n\n';

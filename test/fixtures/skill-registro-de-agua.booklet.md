@@ -1,5 +1,5 @@
 ---
-booklet: "0.13"
+booklet: "0.15"
 id: "local/registro-de-agua"
 title: "Registro de agua"
 lang: es

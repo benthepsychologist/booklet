@@ -46,7 +46,7 @@ const FOLDER_FILE='/folder/modules/pledge/folder.booklet.md',FOLDER_IMG='/folder
 const FOLDER_SVG='<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><rect width="40" height="20" fill="#2a6"/></svg>';
 /* the renderer carries its own policy (0.11.6): it may read only the page's own origin and the registry's host, so the store is on the page's own origin, under /pub/ */
 const STORE_ORIGIN=PAGE_ORIGIN;
-const mod=(id,title,body)=>`---\nbooklet: "0.13"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
+const mod=(id,title,body)=>`---\nbooklet: "0.15"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
 const KITCHEN=mod('kitchen','Kitchen module',
 `> [!activity|k-act repeat] Kitchen log
 
@@ -297,7 +297,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
      if(/^(data|blob|about):/.test(u))return r.continue();
      r.abort();});
    const F='`'.repeat(3);
-   const FILE2=['---','booklet: "0.13"','title: Names an address','lang: en','---','','> [!module|named] Named addresses','','> [!activity|look] Look','',
+   const FILE2=['---','booklet: "0.15"','title: Names an address','lang: en','---','','> [!module|named] Named addresses','','> [!activity|look] Look','',
      'A remote ![remote alt](https://tracker.example/remote.gif), a relative ![relative alt](images/harbour.jpg), a protocol-relative ![proto alt](//tracker.example/proto.gif), a data one ![data alt](data:image/png;base64,iVBORw0KGgo=), and ![ref alt][r].','','[r]: https://tracker.example/ref.gif','',
      'A formula $\\includegraphics{https://tracker.example/latex.png}$ and $$\\includegraphics[width=1em]{images/latex-rel.png}$$ and a plain one $x_1+y^2$.','',
      'A diagram with an image node:','',F+'mermaid','flowchart LR','  A@{ img: "https://tracker.example/diagram.png", label: "pic", pos: "t", w: 60, h: 60 } --> B',F,'',
@@ -373,7 +373,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
       cells:[{id:'c1',label:'<image href="'+T+'grid-cell.png"> One <svg><image href="'+T+'grid-cell-svg.png"/></svg>',color:'url('+T+'grid-color.svg)'},
              {id:'c2',label:'Two',color:{tint:'url('+T+'grid-tint.svg)',deep:'#123456'}},{id:'c3',label:'Three'},{id:'c4',label:'Four'}],
       items:[{id:'i1',cell:'c1',label:'<img src="'+T+'grid-item.png"> item'}]});
-    const FILE3=['---','booklet: "0.13"','title: SVG addresses','lang: en','---','','> [!activity|a] Probe','','> [!widget|body] Where?','> ![[#^map]]','',
+    const FILE3=['---','booklet: "0.15"','title: SVG addresses','lang: en','---','','> [!activity|a] Probe','','> [!widget|body] Where?','> ![[#^map]]','',
       '> [!widget|grid] How?','> ![[#^grid]]','','> [!data] Data','',F+'booklet widget',W1,F,'^map','',F+'booklet widget',W2,F,'^grid',''].join('\n');
     const seen3=[],errs3=[];const p3=await q.newPage();
     p3.on('request',r=>seen3.push(r.url()));p3.on('pageerror',e=>errs3.push(e.message));

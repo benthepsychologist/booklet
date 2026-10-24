@@ -15,7 +15,7 @@ let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FA
 const LS=global.__ls;
 const byClass=(n,c)=>P.find(n,P.hasClass(c));
 const click=n=>n._on.click({target:n,currentTarget:n,preventDefault(){}});
-const FM=t=>'---\nbooklet: "0.13"\ntitle: '+t+'\nlang: en\n---\n\n';
+const FM=t=>'---\nbooklet: "0.15"\ntitle: '+t+'\nlang: en\n---\n\n';
 /* a module with a page of three questions (one at a time is offered) and a page of two callouts the author folded (the fold
    switch is offered) */
 const MOD=FM("Steps")+"> [!module|steps] Steps\n\n> [!activity|ask] Ask\n\n> [!text|q1] One?\n\n> [!text|q2] Two?\n\n> [!text|q3] Three?\n\n"+

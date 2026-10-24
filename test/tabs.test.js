@@ -8,7 +8,7 @@ const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-const FM='---\nbooklet: "0.13"\nid: local/tabs\ntitle: "Tabs"\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.15"\nid: local/tabs\ntitle: "Tabs"\nlang: en\n---\n\n';
 const A=P.boot();
 const role=r=>find(P.main(),n=>n.attrs&&n.attrs.role===r);
 const draw=id=>{A.screen=id;A.render();return P.main();};

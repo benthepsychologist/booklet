@@ -20,7 +20,7 @@ const GRID=JSON.stringify({engine:'grid-select',axes:{top:'more activated',botto
   cells:[{id:'a',label:'Agitating',color:'warm'},{id:'b',label:'Invigorating',color:'green'},{id:'c',label:'Draining',color:'slate'},{id:'d',label:'Soothing',color:'teal'}],
   items:[{id:'i1',cell:'a',label:'Overwhelmedandexhaustedbyeverything'},{id:'i2',cell:'b',label:'Curiosity / joy'},{id:'i3',cell:'c',label:'Grief / shame'},{id:'i4',cell:'d',label:'Warmth / comfort / connection'}]});
 const FILE=`---
-booklet: "0.13"
+booklet: "0.15"
 title: Questions
 lang: en
 ---
@@ -147,7 +147,7 @@ ${WIDGET({})}
 > [!module|qs end] End
 `;
 const FILE2=`---
-booklet: "0.13"
+booklet: "0.15"
 title: Matrix column
 lang: en
 ---
