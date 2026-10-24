@@ -776,11 +776,16 @@ def body_end(lines, i):
     return k
 
 
+# what a Booklet line makes that a callout's body does not (a question, a hint, structure): written in any callout but a
+# group in an activity, it is drawn as text
+BOOKLET_KINDS = QUESTION_KINDS | {"hint", "solution", "activity", "module", "tab", "row", "data", "records", "menu", "manifest", "notice"}
+
+
 def quoted_queries(lines, i):
-    """The line numbers of the `booklet query` blocks in the body of the Booklet line at i, at any depth of `>`, and not inside
-    another fence there: a query view in a callout (a `[!group]` fold, a hint, a note) is not yet drawn as a view (SPEC.md
-    section 6), so a renderer shows it as code."""
-    out, fence = [], None
+    """What the body of the callout at i holds, at any depth of `>` and not inside a fence there, that only a group in an
+    activity reads (SPEC.md section 6): the line numbers of its `booklet query` blocks, and (line number, kind) of its Booklet
+    lines. In any other callout a renderer shows them as text (a query as code)."""
+    out, lns, fence = [], [], None
     for k in range(i + 1, body_end(lines, i)):
         c = FENCE_LINE.match(re.sub(r'^(?:>[ \t]?)+', '', lines[k]))
         if fence:
@@ -790,7 +795,14 @@ def quoted_queries(lines, i):
             fence, w = c.group(1), c.group(2).split()
             if len(w) > 1 and w[0].lower() == "booklet" and w[1].lower() == "query":
                 out.append(k + 1)
-    return out
+        else:
+            t = re.sub(r'^>[ \t]?', '', lines[k])
+            while t.startswith(">") and not CALLOUT_ANY.match(t):
+                t = re.sub(r'^>[ \t]?', '', t)
+            m = CALLOUT_LINE.match(t)
+            if m and m.group(1).lower() in BOOKLET_KINDS:
+                lns.append((k + 1, m.group(1).lower()))
+    return out, lns
 
 
 def claim_end(kind, lines, i):
@@ -1004,6 +1016,7 @@ def check_format(f, text, fm):
     regions = records_regions(lines, i)
     reg_at = {r[0]: r for r in regions}
     in_region, saved_section = None, "content"
+    grp_ends = []            # where each group being read ends (a group in an activity holds Booklet lines: SPEC.md section 6)
 
     def scope_mod():
         """The module a block, menu or footnote belongs to: the one whose fence holds it or whose data section it is
@@ -1060,6 +1073,9 @@ def check_format(f, text, fm):
                 entry_refs.append((n, words[2], rec_id))
 
     while i < len(lines):
+        while grp_ends and i >= grp_ends[-1]:
+            grp_ends.pop()
+            last_q = False                      # a hint after a group is not its last question's
         ln, n = lines[i], i + 1
         was_prose, prev_prose = prev_prose, False
         if i in reg_at:
@@ -1225,7 +1241,7 @@ def check_format(f, text, fm):
                         + f" (first on line {seen_note[nd.group(1)]}); a reader uses the first")
             else:
                 seen_note[nd.group(1)] = n
-        if rowst["open"] and re.match(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$', ln):
+        if rowst["open"] and not grp_ends and re.match(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$', ln):
             prev = lines[i - 1] if i > 0 else ""
             under_text = prev.strip() and not prev.lstrip().startswith(">") and not re.match(r'^ {0,3}(`{3,}|~{3,})', prev)
             if not (ln.lstrip().startswith("-") and under_text):
@@ -1237,9 +1253,27 @@ def check_format(f, text, fm):
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
             check_settings(f, n, kind, w)
-            for q in quoted_queries(lines, i):
-                warn(f, f"line {q}: a query view inside a callout (here a `[!{kind}]`) is not yet supported: a renderer draws the "
-                        f"`booklet query` block as code; put it in the activity's own text, outside the callout")
+            if grp_ends and kind in ("module", "activity", "tab", "row", "data", "records"):
+                err(f, f"{where}: a `[!{kind}]` line cannot go inside a group, so a renderer ignores it (a group holds text, questions and "
+                       f"callouts); move it out of the group")
+                i = claim_end(kind, lines, i)
+                continue
+            # a group in an activity holds blocks: its body is read as the file is, with one `>` less (the lines are unquoted here,
+            # in place, and read in turn); a group in an opening, or any other callout, holds text
+            reads = kind == "group" and section == "content" and (in_act or not (open_mod or (not (seen_activity or any_module) and not implicit)))
+            if reads:
+                end = body_end(lines, i)
+                for k in range(i + 1, end):
+                    lines[k] = re.sub(r'^>[ \t]?', '', lines[k])
+                grp_ends.append(end)
+            else:
+                qs, bl = quoted_queries(lines, i)
+                for q in qs:
+                    warn(f, f"line {q}: a query view inside a callout (here a `[!{kind}]`) is not yet supported: a renderer draws the "
+                            f"`booklet query` block as code; put it in a group in an activity, or in the activity's own text")
+                for q, k2 in bl:
+                    warn(f, f"line {q}: a `[!{k2}]` line inside a `[!{kind}]` is drawn as text, not read: only a `[!group]` in an activity "
+                            f"holds Booklet lines; put it in one, or outside the callout")
             if rowst["open"] and kind in ("data", "records", "module", "activity", "tab"):
                 close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line", "tab": "a tab line"}.get(kind, f"the {kind} section"))
             if kind == "notice":
@@ -1469,7 +1503,7 @@ def check_format(f, text, fm):
                 if key in table:
                     err(f, f"line {n}: the id {key!r} is also used on line {table[key]}" + (f" in the module {scope!r}" if scope and scope != "\0shared" else ""))
                 table.setdefault(key, n)
-            i = claim_end(kind, lines, i)
+            i = i + 1 if reads else claim_end(kind, lines, i)
             continue
         # not a Booklet line: prose, a page break, or a line that starts like one and cannot be read
         if ln.strip() == "%%":

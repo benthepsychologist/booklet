@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-MZguReTSpX4k6ZntoQkYrJDEQ0nSQVRitmow53OAAOk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-TtwaAJsImdnL5NPVlsYkfGt/NUxkz0i5y6e8P0vEdj8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -539,6 +539,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
      words are above the rows */
   .mx-asq>h3:first-child{position:sticky;top:calc(var(--ap-top,4.4rem) - 12px);z-index:2;background:var(--paper);font-family:var(--sans);font-weight:600;font-size:1.02rem;color:var(--ink);margin:.1rem 0 .3rem;padding:.4rem 0 .4rem .8rem;border-left:var(--focus-w) solid var(--rule)}
   .oat-unit .mx-asq>h3:first-child{background:var(--surface)}
+  /* on a window too short to give the items room under the bar and a held stem (a phone on its side), the stem is not held:
+     it scrolls with its items */
+  @media (max-height:360px){.mx-asq>h3:first-child{position:static}}
 
   /* entry read view */
   .entry{background:var(--surface);border:var(--bw) solid var(--rule);border-radius:14px;padding:.9rem 1.1rem;margin:0 0 1rem}
@@ -1736,6 +1739,7 @@ const STRINGS_SRC={
       blockUnknown: (w,what)=>`${w}: a “booklet ${what}” block is not one this page reads`,
       rowEndStray: w=>`${w}: a row is closed that was never opened`,
       rowNested: w=>`${w}: a row opens inside a row, so it was ignored (rows do not nest)`,
+      groupHolds: (w,k)=>`${w}: a ${k} line cannot go inside a group, so it was ignored (a group holds text, questions and callouts)`,
       moduleEndStray: w=>`${w}: a module is closed that was never opened`,
       moduleEndMismatch: (w,id,open)=>`${w}: this closes “${id}”, but “${open}” is open`,
       moduleNested: (w,id,open)=>`${w}: “${id}” opens before “${open}” is closed`,
@@ -1812,12 +1816,12 @@ const STRINGS_SRC={
       readsN: n=>`${n} read${n===1?"":"s"}`
     },
     steps: {
-      label: "How to read the questions",
+      label: "How to show the steps",
       one: "One at a time",
       all: "All at once",
-      progress: (n,m)=>`Question ${n} of ${m}`,
+      progress: (n,m)=>`Step ${n} of ${m}`,
       back: "Back",
-      next: "Next question"
+      next: "Next step"
     },
     fold: {
       openAll: "Open all"
@@ -2066,6 +2070,7 @@ const STRINGS_SRC={
       blockUnknown: (w,what)=>`${w} : un bloc « booklet ${what} » n’est pas un bloc que cette page lit`,
       rowEndStray: w=>`${w} : une rangée est fermée sans avoir été ouverte`,
       rowNested: w=>`${w} : une rangée s’ouvre dans une rangée ; elle a été ignorée (les rangées ne s’imbriquent pas)`,
+      groupHolds: (w,k)=>`${w} : une ligne ${k} ne peut pas se trouver dans un groupe ; elle a donc été ignorée (un groupe contient du texte, des questions et des encadrés)`,
       moduleEndStray: w=>`${w} : un module est fermé sans avoir été ouvert`,
       moduleEndMismatch: (w,id,open)=>`${w} : ceci ferme « ${id} », mais « ${open} » est ouvert`,
       moduleNested: (w,id,open)=>`${w} : « ${id} » s’ouvre avant que « ${open} » soit fermé`,
@@ -2142,12 +2147,12 @@ const STRINGS_SRC={
       readsN: n=>`${n} texte${n>1?"s":""}`
     },
     steps: {
-      label: "Comment afficher les questions",
+      label: "Comment afficher les étapes",
       one: "Une à la fois",
       all: "Toutes en même temps",
-      progress: (n,m)=>`Question ${n} sur ${m}`,
-      back: "Question précédente",
-      next: "Question suivante"
+      progress: (n,m)=>`Étape ${n} sur ${m}`,
+      back: "Étape précédente",
+      next: "Étape suivante"
     },
     fold: {
       openAll: "Tout ouvrir"
@@ -2396,6 +2401,7 @@ const STRINGS_SRC={
       blockUnknown: (w,what)=>`${w}: un bloque “booklet ${what}” no es uno que esta página lea`,
       rowEndStray: w=>`${w}: se cierra una fila que nunca se abrió`,
       rowNested: w=>`${w}: una fila se abre dentro de otra fila, así que se ignoró (las filas no se anidan)`,
+      groupHolds: (w,k)=>`${w}: una línea de ${k} no puede ir dentro de un grupo, así que se ignoró (un grupo contiene texto, preguntas y recuadros)`,
       moduleEndStray: w=>`${w}: se cierra un módulo que nunca se abrió`,
       moduleEndMismatch: (w,id,open)=>`${w}: esto cierra “${id}”, pero “${open}” está abierto`,
       moduleNested: (w,id,open)=>`${w}: “${id}” se abre antes de que se cierre “${open}”`,
@@ -2472,12 +2478,12 @@ const STRINGS_SRC={
       readsN: n=>`${n} lectura${n===1?"":"s"}`
     },
     steps: {
-      label: "Cómo leer las preguntas",
-      one: "Una a la vez",
-      all: "Todas juntas",
-      progress: (n,m)=>`Pregunta ${n} de ${m}`,
+      label: "Cómo mostrar los pasos",
+      one: "Uno a la vez",
+      all: "Todos a la vez",
+      progress: (n,m)=>`Paso ${n} de ${m}`,
       back: "Atrás",
-      next: "Siguiente pregunta"
+      next: "Siguiente paso"
     },
     fold: {
       openAll: "Abrir todo"
@@ -3919,11 +3925,12 @@ function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),
   resolveMenus(doc,problems);
   linkQueries(doc,problems);
   return shapeBooklet(doc,fm,L,source,problems);}
-function splitItems(lines,start){let i=start;
+function splitItems(lines,start,inner){let i=start;
   /* One pass over the lines, fences first: nothing inside a fence is ever a
      Booklet line, a page break or a comment marker. A choice/multi/scale
      question also claims the option or anchor list straight under it, so
-     that list is never re-read as ordinary prose. */
+     that list is never re-read as ordinary prose. `inner`: the body of a group (readBlocks), which holds no records region
+     and no page break (a thematic break there is a rule drawn in it) */
   const items=[];let buf=[],bufAt=0,rs=null;const regs=[];  /* the records regions: lines from rs to the closing `%%` */
   const rec=()=>rs!==null;
   const flush=()=>{const n=buf.findIndex(l=>l.trim());if(n>=0) items.push({t:"text",text:buf.join("\n").replace(/^\n+|\n+$/g,""),line:bufAt+n+1,rec:rec()});buf=[];};
@@ -3935,7 +3942,7 @@ function splitItems(lines,start){let i=start;
         items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,last+1).join("\n")+(k<lines.length?"":"\n"+F.mark),id:F.id,line:i+1,rec:rec()});i=last;}
       else{if(!buf.length) bufAt=i;buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
-    if(ln.trim()==="%%"){
+    if(!inner&&ln.trim()==="%%"){
       if(rec()){flush();regs.push([rs,i]);rs=null;}
       else{let j=i+1;while(j<lines.length&&!lines[j].trim()) j++;if(j<lines.length&&/^>[ \t]?\[!records\b/i.test(lines[j])){flush();rs=i;}}
       continue;}
@@ -3948,7 +3955,7 @@ function splitItems(lines,start){let i=start;
       else if(kind==="menu"){const r=listOf("bullets",lines,k);if(r){items2=r.items;k=r.next;}}
       else if(kind==="matrix"){const r=listOf("bullets",lines,k);
         if(r){items2=r.items;k=r.next;const a=listOf("anchors",lines,k);if(a){anchors=a.items;k=a.next;}}}
-      if(kind==="records"&&rs===null) rs=i;
+      if(kind==="records"&&rs===null&&!inner) rs=i;
       items.push({t:"line",kind,...calloutWords(kind,m[2]),fold:m[3],title:m[4].trim(),body,opts,anchors,items:items2,line:i+1,head:ln,raw:lines.slice(i,k).join("\n"),rec:rec()});i=k-1;continue;}
     /* any `> [!` line, readable or not: one CALLOUT_LINE cannot read is said, not left to read as prose in silence */
     if(calloutLine(ln)){
@@ -3956,7 +3963,7 @@ function splitItems(lines,start){let i=start;
       items.push({t:"bad",line:i+1});}
     /* a thematic break is a page break, except `---` straight under a line of
        text, which Markdown reads as that line's heading; inside the records it is text */
-    if(!rec()&&/^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$/.test(ln)&&!(/^ {0,3}-/.test(ln)&&buf.length&&buf[buf.length-1].trim())){flush();items.push({t:"break",line:i+1});continue;}
+    if(!rec()&&!inner&&/^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$/.test(ln)&&!(/^ {0,3}-/.test(ln)&&buf.length&&buf[buf.length-1].trim())){flush();items.push({t:"break",line:i+1});continue;}
     if(!buf.length) bufAt=i;
     buf.push(ln);}
   flush();
@@ -4046,7 +4053,7 @@ const helpOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),entryIx=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
-  let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,theme=null,recScope="",recForeign=null,dataMod=null;
+  let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,grp=null,theme=null,recScope="",recForeign=null,dataMod=null;
   /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
      as a module's opening is, and drawn on the home screen. `started` is set when that first line is met. */
   const opening=[];let started=false;
@@ -4093,7 +4100,8 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
     act=a;return a;};
   const page=()=>{if(!act) newActivity({id:null,flags:new Set()},fm.title,0);return act.pages[act.pages.length-1];};
-  const put=b=>{if(row){row.blocks.push(b);return b;}page().blocks.push(b);return b;};
+  /* a block goes into the group being read, else the row that is open, else the page */
+  const put=b=>{if(grp){grp.blocks.push(b);return b;}if(row){row.blocks.push(b);return b;}page().blocks.push(b);return b;};
   const nextSeq=()=>++seq;
   const closeRow=why=>{const r=row;row=null;
     if(why) problems.push(P.rowClosed(P.line(r.line),why));
@@ -4258,16 +4266,19 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       const c={id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,
         blocks:[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}],placement:it.fold==="-"?"folded":undefined,label:it.title||k};
       if(c.placement==="folded"&&!q[k]&&act===lastQAct) q[k]=c;else put({...c,outside:true});});
-  /* any other callout is reading set apart */
+  /* any other callout is reading set apart; a group in an activity holds blocks: its body is read as the file is, with one `>`
+     less (SPEC.md section 6), into the group */
   const onReading=(it,where)=>{const k=it.kind;
     const unk=unknownKind(it);if(unk) problems.push(P.kindUnknown(where,k));
     if(!act&&(mod||(!started&&!implicit))){if(mod&&!tabsIn(mod)) mod.__intro.push(["> [!"+k+"]"+it.fold+" "+it.title,...it.body.map(l=>"> "+l)].join("\n"));
       /* a reading callout before the module's first activity (or the file's first line) is part of its opening, in the file's order with the prose */
       openList().push({id:"mo"+(++oseq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
         ...(unk?{unknown:true}:{}),blocks:it.body.length?[{id:"mo"+oseq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});return;}
-    put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
+    const c=put({id:"c"+(++seq),type:"callout",kind:k,title:it.title||undefined,placement:it.fold==="-"?"folded":undefined,label:it.title||k,
       ...(unk?{unknown:true}:{}),
-      blocks:it.body.length?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});lastQ=null;};
+      blocks:it.body.length&&k!=="group"?[{id:"c"+seq+"-md",type:"markdown",text:it.body.join("\n")}]:[]});
+    if(k==="group"){const was=grp;grp=c;lastQ=null;splitItems(it.body,0,true).items.forEach(x=>{x.line+=it.line;onItem(x);});grp=was;}
+    lastQ=null;};
   const LINE_KIND={notice:onNotice,row:onRow,data:onData,records:(it,where)=>problems.push(P.recordsOther(where)),menu:onMenu,
     /* a manifest is scenery: never drawn */
     manifest:()=>{},module:onModule,activity:onActivity,tab:onTab,hint:onHelp,solution:onHelp};
@@ -4275,15 +4286,18 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
     checkSettings(it,where,P,icons).forEach(m=>problems.push(m));
+    /* a group holds text, questions and callouts: a line that makes structure is said and left out */
+    if(grp&&/^(module|activity|tab|row|data|records)$/.test(k)) return void problems.push(P.groupHolds(where,k));
     /* a data, records, module, activity or tab line closes the row that is open, and says so */
     if(row&&(k==="data"||k==="records"||k==="module"||k==="activity"||k==="tab")) closeRow(k==="module"?P.rowRunsModule:k==="activity"?P.rowRunsActivity:k==="tab"?P.rowRunsTab:P.rowRunsSection(k));
     (hasOwn(LINE_KIND,k)?LINE_KIND[k]:inText(onReading))(it,where);};
-  for(const it of items.filter(x=>!x.rec)){
+  function onItem(it){
     if(it.t==="fence") onFence(it);
     else if(it.t==="break") onBreak();
     else if(it.t==="text") onText(it);
     else if(it.t==="bad") problems.push(P.calloutUnreadable(P.line(it.line)));
     else onLine(it);}
+  items.filter(x=>!x.rec).forEach(onItem);
   if(row) closeRow(P.rowNeverClosed);
   /* the regions are read last: a records line finds a module wherever the file has it */
   items.filter(x=>x.rec).forEach(onRec);
@@ -5839,8 +5853,8 @@ const answersFor=id=>activityOf(id).kind==="entry"?draftFor(id):answersIn(scopeO
 const allBlocksOf=a=>blocksAll(activityBlocks(a));
 const writesKeys=b=>{const k=keysOf(b);return Array.isArray(k)?k.filter(x=>typeof x==="string"):[];};
 const foldName=b=>tx(b.label,b.id);
-const blockFilled=(b,draft)=>(b.blocks||[b]).flatMap(keysOf)
-  .some(k=>Array.isArray(draft[k])?draft[k].length>0:nonEmpty(draft[k]));
+/* a fold holding an answer is drawn open: any question in it, a group's too, holding what the reader gave (a number, a pick) */
+const blockFilled=(b,draft)=>blocksAll(b.blocks||[b]).flatMap(keysOf).some(k=>holdsSomething(draft[k]));
 /* A question's heading and hint, drawn into `box`: the heading as an h3 (as a
    label for the field with id `forId`, when one is given) and the help text as an
    aside, each only when there is one. Returns the heading's text. (A text
@@ -6677,10 +6691,11 @@ function chooseTab(id,t){const a=activityOf(id),v=viewAt(id),cur=currentPage(id)
 function turnPage(id,p,last){const steps=viewAt(id).steps;
   if(last&&oatPref()==="one") steps[p.id]=Infinity;else delete steps[p.id];
   showPage(id,p.id);render();
-  /* the activity's top (its column: title, opening, tab bar) just under the bar, so the new page is read from its start;
-     the focus on the page's body: a screen reader says which page this is (pageBody names it) */
-  const n=document.querySelector("#main .ap-body"),c=n&&n.closest(".col");
-  if(c&&c.getBoundingClientRect) window.scrollTo({top:Math.max(0,window.scrollY+c.getBoundingClientRect().top-(parseFloat(document.documentElement.style.getPropertyValue("--ap-top"))||0))});
+  /* what comes next just under the bar, so the new section is read from its start: the activity's top (its column: title, tab
+     bar), or, past an opening drawn above it (`ap-open`: the activity's above its tabs, the module's above a one-activity
+     module), what follows that opening; the focus on the section's body: a screen reader says which it is (pageBody names it) */
+  const n=document.querySelector("#main .ap-body"),c=n&&n.closest(".col"),o=c&&[...c.querySelectorAll(":scope>.ap-open")].pop(),t=o?o.nextElementSibling:c;
+  if(t&&t.getBoundingClientRect) window.scrollTo({top:Math.max(0,window.scrollY+t.getBoundingClientRect().top-(parseFloat(document.documentElement.style.getPropertyValue("--ap-top"))||0))});
   if(n&&n.focus) n.focus({preventScroll:true});}
 /* after a redraw, put the focus back where the reader was working */
 function refocus(sel){const n=document.querySelector(sel);if(n&&!n.disabled) n.focus();}
@@ -6739,12 +6754,12 @@ function pageBody(id,draft,dc){const cur=currentPage(id),own=blocksIn(cur);
   /* reading material (see READING MATERIAL): the endnotes print shows go below
      the blocks, and only when there is something for them */
   /* (the citation scope began in renderActivity, before the head was drawn) */
-  /* three or more questions: the reader may take them one at a time (kept per booklet, like the fold switch) */
+  /* two or more groups: the reader may take them one at a time (kept per booklet, like the fold switch) */
   const units=stepUnits(own),one=units.length>=2&&oatPref()==="one";
-  /* one at a time, what comes before the first question of the part on show (any blocks, however long) is drawn whole
-     above the steps, so it is there at every step and in none of them; all at once, it is drawn as it stands */
-  const lead=one?own.slice(0,own.findIndex(b=>blocksAll([b]).some(isQuestion))):[];
-  const content=one?[renderBlocks(lead,draft,id,dc),stepPage(id,draft,stepUnits(own.slice(lead.length)),dc)]:[renderBlocks(own,draft,id,dc)];
+  /* one at a time, what comes before the first group of the part on show (any blocks, however long) is its opening, drawn
+     whole above the steps, so it is there at every step and in none of them; all at once, it is drawn as it stands */
+  const lead=one?own.slice(0,own.findIndex(isGroup)):[];
+  const content=one?[renderBlocks(lead,draft,id,dc),stepPage(id,draft,units,dc)]:[renderBlocks(own,draft,id,dc)];
   const tools=[units.length>=2?stepControl(one):null,dc.folds&&dc.folds.n?foldSwitch():null].filter(Boolean);
   box.append(...[tools.length?el("div",{class:"ap-tools"},...tools):null,...content].filter(Boolean));
   const notes=endnotesFor(id,false,dc);if(notes) box.append(notes);
@@ -6752,11 +6767,12 @@ function pageBody(id,draft,dc){const cur=currentPage(id),own=blocksIn(cur);
   return box;}
 
 /* ---- ONE AT A TIME ----
-   A page of three or more questions can be taken one question at a time: a progress line and dots, and the question; the
-   foot's Back and Next (activityFooter) step through them, and Next on the last step turns the page. The reader's choice is
-   the browser's (booklet.ui.steps.<booklet>, see bookletPref), never the file's. Every question is drawn and the others are
-   only hidden, so an answer is never lost on a step, and print shows them all. A question's own hint and solution go with
-   it; prose goes with the question that follows it (the last prose with the last question). */
+   The part on show (an activity, a tab, or a `***` section of either) that holds two or more groups (`[!group]`) can be taken
+   one group at a time: a progress line and dots, and the group, drawn open; the foot's Back and Next (activityFooter) step
+   through them, and Next on the last step turns the section. The reader's choice is the browser's
+   (booklet.ui.steps.<booklet>, see bookletPref), never the file's. Every step is drawn and the others are only hidden, so an
+   answer is never lost on a step, and print shows them all. What comes between two groups goes with the group after it, and
+   what comes after the last, with the last; a question outside every group is never a step of its own. */
 const OAT_KEY="booklet.ui.steps.";
 /* A browser's preference for one booklet (one at a time, the fold switch), under its library entry: its link (`from`), the
    same each time a link opens it, else its id. One an older release kept under the booklet's id is read until set. */
@@ -6766,33 +6782,37 @@ const setBookletPref=(key,v)=>{lsSet(key+prefOwner(),v);};
 const oatPref=()=>bookletPref(OAT_KEY);
 const setOatPref=v=>setBookletPref(OAT_KEY,v);
 const isQuestion=q=>QUESTION_KINDS.has(q.type);
-function stepUnits(list){const units=[];let pre=[];
+const isGroup=b=>!!b&&b.type==="callout"&&String(b.kind).toLowerCase()==="group";
+/* the steps of a list of blocks: {blocks, group} for each group, with what comes between it and the group before it, and the
+   last with what follows it (what comes before the first group is the opening, not a step); none, unless there are two or more */
+function stepUnits(list){const units=[];let pre=null;
   (Array.isArray(list)?list:[]).forEach(b=>{if(!b||typeof b!=="object") return;
-    if(blocksAll([b]).some(isQuestion)){units.push({blocks:[...pre,b]});pre=[];}
-    else if(units.length&&b.type==="callout"&&hintKind(b)) units[units.length-1].blocks.push(b);
-    else pre.push(b);});
-  if(pre.length&&units.length) units[units.length-1].blocks.push(...pre);
-  const qs=units.reduce((n,u)=>n+blocksAll(u.blocks).filter(isQuestion).length,0);
-  return qs>=3?units:[];}
+    if(isGroup(b)){units.push({blocks:[...(pre||[]),b],group:b});pre=[];}
+    else if(pre) pre.push(b);});
+  if(pre&&pre.length) units[units.length-1].blocks.push(...pre);
+  return units.length>=2?units:[];}
 function stepControl(one){const S=strings("steps");
   const btn=(val,text)=>{const on=(val==="one")===one;
     return el("button",{type:"button","aria-pressed":String(on),onclick:()=>{if(on) return;
       setOatPref(val);render();refocus('.oat-ctl button[aria-pressed="true"]');}},text);};
   return el("div",{class:"oat-ctl",role:"group","aria-label":S.label},btn("one",S.one),btn("all",S.all));}
 function stepPage(id,draft,units,dc){const S=strings("steps"),page=currentPage(id),steps=viewAt(id).steps,key=page.id;
-  const done=u=>blocksAll(u.blocks).filter(isQuestion).every(q=>keysOf(q).some(k=>holdsSomething(draft[k])));
-  /* arriving, the first step with a question still to answer is shown (turned back to, the last: turnPage) */
-  if(!(key in steps)){const f=units.findIndex(u=>!done(u));steps[key]=f<0?0:f;}
+  const qs=u=>blocksAll(u.blocks).filter(isQuestion),said=q=>keysOf(q).some(k=>holdsSomething(draft[k]));
+  /* a step is done when each of its questions holds an answer; one with no question, once a step after it holds one */
+  const done=(u,i)=>{const q=qs(u);return q.length?q.every(said):units.slice(i+1).some(v=>qs(v).some(said));};
+  /* arriving, the first step not done is shown (turned back to, the last: turnPage) */
+  if(!(key in steps)){const f=units.findIndex((u,i)=>!done(u,i));steps[key]=f<0?0:f;}
   steps[key]=Math.max(0,Math.min(units.length-1,steps[key]));
   const n=units.length,host=el("div",{class:"oat"});
   const prog=el("span",{class:"oat-prog",role:"status"}),dots=units.map(()=>el("span",{class:"oat-dot"}));
   host.append(el("div",{class:"oat-head"},prog,el("span",{class:"oat-dots","aria-hidden":"true"},...dots)));
-  const nodes=units.map(u=>el("div",{class:"oat-unit",tabindex:"-1"},...u.blocks.map(b=>renderBlock(b,draft,id,dc))));
+  /* a step draws its group open, whether or not the author folded it */
+  const nodes=units.map(u=>el("div",{class:"oat-unit",tabindex:"-1"},...u.blocks.map(b=>renderBlock(b===u.group?{...b,placement:undefined}:b,draft,id,dc))));
   host.append(...nodes);
   const draw=()=>{const at=steps[key];
     nodes.forEach((x,i)=>{if(i===at) x.removeAttribute("hidden");else x.setAttribute("hidden","");});
     prog.textContent=S.progress(at+1,n);
-    dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i])?" on":"")+(i===at?" cur":"");});};
+    dots.forEach((d,i)=>{d.className="oat-dot"+(done(units[i],i)?" on":"")+(i===at?" cur":"");});};
   /* Back and Next are the foot's (dc.oat): a step redraws them, and moves the keyboard to the step now shown (its box takes
      the focus, so a screen reader reads it) */
   const go=d=>{steps[key]=Math.max(0,Math.min(n-1,steps[key]+d));draw();if(dc.foot) dc.foot();
@@ -7068,9 +7088,10 @@ function hideTip(){if(citeTipEl) citeTipEl.setAttribute("hidden","");}
 /* ---- callouts ---- */
 let rdSeq=0;
 /* a hint or a solution straight after a question but drawn outside it (`outside`) is drawn plain: no kind's colour or label */
-function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),plain=!!b.outside,look=plain?null:calloutLook(b.kind),k=look?look.label:"";
+/* a group is a titled container, drawn plain as its fold is: its title, no kind's word or colour, a group to a screen reader */
+function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),grp=isGroup(b),plain=!!b.outside||grp,look=plain?null:calloutLook(b.kind),k=look?look.label:"";
   const u="rd-c"+(++rdSeq),title=tx(b.title,"");
-  const box=el("div",{class:"rd-callout"+(look?" rd-hued hue-"+look.hue+" rd-k-"+look.label:""),role:"note","data-kind":k||null});
+  const box=el("div",{class:"rd-callout"+(look?" rd-hued hue-"+look.hue+" rd-k-"+look.label:""),role:grp?"group":"note","data-kind":k||null});
   const head=el("div",{class:"rd-chead"}),named=[];
   if(look){const pic=icon(look.icon);
     if(pic) head.append(el("span",{class:"rd-ci","aria-hidden":"true"},pic));
@@ -7462,7 +7483,8 @@ function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id)
   if(W) col.append(wikiCrumbs(W,id));
   const titleText=tx(mod.title,tx(m.title,shortId(id)));
   /* a module that is one activity has no screen of its own: its activity's screen draws its head (title, opening, picture) */
-  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)) col.append(moduleHead({...mod,title:titleText},id,null,false,dc));
+  if(mod.id&&!isMulti(mod)&&((Array.isArray(mod.opening)&&mod.opening.length)||mod.icon)){const h=moduleHead({...mod,title:titleText},id,null,false,dc);
+    if(Array.isArray(mod.opening)&&mod.opening.length) h.classList.add("ap-open");col.append(h);}
   else{col.append(pageHead(id,m,titleText,W));
     const lead=tx(mod.blurb,tx(m.blurb,""));
     if(nonEmpty(lead)) col.append(el("p",{class:"aside"},lead));}
@@ -7478,7 +7500,7 @@ function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id)
   const same=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
   const firstH=(openNode&&openNode.querySelector("h1,h2,h3,h4,h5,h6"))||body.querySelector("h1,h2,h3,h4,h5,h6");
   if(firstH&&same(textOf(words(titleText)))&&same(firstH.textContent)===same(textOf(words(titleText)))) firstH.remove();
-  if(openNode) col.append(openNode);
+  if(openNode){openNode.classList.add("ap-open");col.append(openNode);}
   if(ts&&ts.length>1) col.append(tabBar(ts,cur.tab,plainText(activityName(m)),t=>chooseTab(id,t)),tabPanel(cur.tab,body));
   else col.append(body);
   if(repeats) col.append(finalizeRow(()=>finalizeEntry(id)));

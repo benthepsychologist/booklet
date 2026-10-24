@@ -155,33 +155,44 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  const wasOpen=citeIsOpen();click(role("tab")[0]);
  chk("a panel opened from the tab's mark closes on a switch to a tab with no prose",wasOpen&&!citeIsOpen(),"open before: "+wasOpen+", after: "+citeIsOpen());}
 
-/* 6. one at a time, what comes before the page's first question is drawn whole above every step: anything (a heading, prose,
-   a callout), however long, and in none of the steps; on the next page, that page's own. All at once the page is drawn as
-   it stands, and nothing on it is held in view */
+/* 6. one at a time, the steps are the groups of the part on show; what comes before its first group is its opening, drawn
+   whole above every step: anything (a heading, prose, a callout, a question outside a group), however long, and in none of
+   the steps; in the next `***` section, that section's own. A step draws its group open, though its author folded it; what
+   comes between two groups goes with the one after. All at once the part is drawn as it stands, a folded group a fold */
 {const LONG=("Kettles were once heated on open fires, and the shape of the spout followed from how the steam had to leave the body. ").repeat(6);
- const T=FM+"> [!activity|a] A\n\n## Before you start\n\nRead this first. "+LONG+"\n\n> [!note] Keep in mind\n> A callout.\n\n"+
-   "> [!text|q1] One?\n\n> [!hint]-\n> A hint.\n\nBetween.\n\n> [!text|q2] Two?\n\n> [!text|q3] Three?\n\n***\n\n"+
-   "Page two's words.\n\n> [!text|q4] Four?\n\n> [!text|q5] Five?\n\n> [!text|q6] Six?\n\n"+
-   "> [!activity|t] T\n\nThe opening.\n\n> [!tab] One\n\nThe tab's words.\n\n> [!text|t1] T1?\n\n> [!text|t2] T2?\n\n> [!text|t3] T3?\n\n> [!tab] Two\n\nJust prose.\n";
+ const G=(t,q,f="")=>"> [!group]"+f+" "+t+"\n> > [!text|"+q+"] "+t+"?\n\n";
+ const T=FM+"> [!activity|a] A\n\n## Before you start\n\nRead this first. "+LONG+"\n\n> [!note] Keep in mind\n> A callout.\n\n> [!text|q0] Before any group?\n\n"+
+   "> [!group] One\n> > [!text|q1] One?\n>\n> > [!hint]-\n> > A hint.\n\nBetween.\n\n> [!text|loose] Loose?\n\n"+G("Two","q2","-")+G("Three","q3")+"***\n\n"+
+   "Section two's words.\n\n"+G("Four","q4")+G("Five","q5")+G("Six","q6")+
+   "> [!activity|t] T\n\nThe opening.\n\n> [!tab] One\n\nThe tab's words.\n\n"+G("T one","t1")+G("T two","t2")+G("T three","t3")+"> [!tab] Two\n\nJust prose.\n\n"+
+   "> [!activity|u] U\n\n> [!text|u1] U1?\n\n> [!text|u2] U2?\n\n> [!text|u3] U3?\n\n> [!text|u4] U4?\n\n"+
+   "> [!activity|r] R\n\n> [!group] Read first\n> Words to read, no question.\n\n"+G("R one","r1")+G("R two","r2");
  const R=A.parseFile(T);
  chk("(the file opens clean)",R.ok&&R.unread.length===0&&R.refused.length===0,JSON.stringify([R.unread,R.refused].map(String)));
  A.loadText(T);
  const body=()=>find(P.main(),hasClass("ap-body"))[0],units=()=>find(P.main(),hasClass("oat-unit"));
  const at=(re)=>body().children.findIndex(k=>re.test(texts(k))),oatAt=()=>body().children.findIndex(hasClass("oat"));
  global.__ls[A.OAT_KEY+A.currentId]="one";draw("a");
- chk("one at a time: three steps, a question each, the hint with its question and the prose between them with the one after",
-   units().length===3&&/A hint/.test(texts(units()[0]))&&/Between/.test(texts(units()[1])),units().map(texts).join(" | "));
- chk("what comes before the first question (a heading, prose and a callout, "+LONG.length+" characters and more) is in none of the steps",units().every(u=>!/Before you start|Read this first|A callout/.test(texts(u))));
- chk("...and is drawn whole, once, above them",at(/Read this first/)>=0&&at(/Read this first/)<oatAt()&&texts(body()).split("Read this first").length===2&&texts(body()).includes(LONG.trim().slice(-60))&&/A callout/.test(texts(body().children[at(/Read this first/)])),
+ chk("one at a time: three steps, a group each; the hint with its question in the first; the prose and the question between two groups with the one after",
+   units().length===3&&/A hint/.test(texts(units()[0]))&&/Between/.test(texts(units()[1]))&&/Loose\?/.test(texts(units()[1]))&&/Two\?/.test(texts(units()[1])),units().map(texts).join(" | "));
+ chk("a step draws its group open, its title and its question, though the author folded it",find(units()[1],hasClass("au-fold")).length===0&&find(units()[1],hasClass("rd-callout")).length===1&&/Two/.test(texts(find(units()[1],hasClass("rd-callout"))[0])));
+ chk("what comes before the first group (a heading, prose, a callout and a question, "+LONG.length+" characters and more) is in none of the steps",units().every(u=>!/Before you start|Read this first|A callout|Before any group/.test(texts(u))));
+ chk("...and is drawn whole, once, above them",at(/Read this first/)>=0&&at(/Read this first/)<oatAt()&&texts(body()).split("Read this first").length===2&&texts(body()).includes(LONG.trim().slice(-60))&&/A callout/.test(texts(body().children[at(/Read this first/)]))&&/Before any group/.test(texts(body().children[at(/Read this first/)])),
    JSON.stringify([at(/Read this first/),oatAt()]));
  A.DRAWN.oat.go(1);
  chk("at the next step it is still there, above it",at(/Read this first/)>=0&&at(/Read this first/)<oatAt()&&units()[1].attrs.hidden===undefined&&units()[0].attrs.hidden!==undefined);
  A.turnPage("a",A.activityOf("a").pages[1],false);
- chk("on the next page, that page's own words are above its steps, and page one's are not drawn",at(/Page two's words/)>=0&&at(/Page two's words/)<oatAt()&&!/Read this first/.test(texts(P.main())),texts(body()).slice(0,200));
+ chk("in the next `***` section, that section's own words are above its steps, and the first section's are not drawn",at(/Section two's words/)>=0&&at(/Section two's words/)<oatAt()&&units().length===3&&!/Read this first/.test(texts(P.main())),texts(body()).slice(0,200));
  draw("t");
  chk("in a tab, the tab's words are above its steps, under the activity's opening",at(/The tab's words/)>=0&&at(/The tab's words/)<oatAt()&&units().length===3&&/The opening/.test(texts(P.main())));
+ draw("u");
+ chk("questions outside every group make no steps: no step control, every question shown",find(P.main(),hasClass("oat-ctl")).length===0&&oatAt()<0&&/U4\?/.test(texts(body())));
+ draw("r");
+ chk("arriving, a step with no question is shown first while nothing after it is answered",units().length===3&&units()[0].attrs.hidden===undefined,units().map(u=>u.attrs.hidden===undefined));
+ A.answersFor("r").r1="said";delete A.viewAt("r").steps[A.activityOf("r").pages[0].id];draw("r");
+ chk("...and passed over (done) once a step after it holds an answer: the first step with a question to answer is shown",units()[2].attrs.hidden===undefined&&units()[0].attrs.hidden!==undefined,units().map(u=>u.attrs.hidden===undefined));
  global.__ls[A.OAT_KEY+A.currentId]="all";A.showPage("a",A.activityOf("a").pages[0].id);draw("a");
- chk("all at once, the page is drawn as it stands: its words, then its questions, no steps",oatAt()<0&&texts(body()).indexOf("Read this first")<texts(body()).indexOf("One?"));
+ chk("all at once, the part is drawn as it stands: its words, then its groups with their questions live, the folded one a fold; no steps",oatAt()<0&&texts(body()).indexOf("Read this first")<texts(body()).indexOf("One?")&&find(body(),hasClass("au-fold")).length===1&&find(find(body(),hasClass("au-fold"))[0],n=>n.tagName==="textarea").length===1);
 }
 
 /* 6c. links: to a module's tab, and to a heading in the opening of an activity with tabs */

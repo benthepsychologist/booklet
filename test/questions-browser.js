@@ -2,7 +2,8 @@
 //  - a question's words keep a readable width; short options sit beside them only when both fit, else they drop under them;
 //  - a matrix is a grid of rows when each item's readable words and the anchors fit, and one single-choice question per item when they do not,
 //    with the same answers under the same key, kept across a window that is narrowed and widened again; drawn as separate
-//    questions it keeps its stem held under the bar while its items are answered, as far as its end, and as a grid it does not;
+//    questions it keeps its stem held under the bar while its items are answered, as far as its end (not on a window 360 px
+//    tall or less), and as a grid it does not;
 //  - nothing scrolls sideways at 390 px, a grid-select with all four axis labels included (on a page beside the page menu's rail too);
 //  - an option's reply shows on a pick, changes on a re-pick, and for a multi is in option order;
 //  - an svg-regions widget honours `readonly` and `describe`, as a grid-select does.
@@ -217,6 +218,10 @@ shelf, and what the week was like for each of them.
 
 > [!module|ms end] End
 `;
+/* the same matrix in a group, its two questions after it in another: one at a time, the matrix is a step */
+const FILE5=(()=>{const a=FILE3.indexOf('> [!matrix|wk]'),b=FILE3.indexOf('> [!text|after]'),c=FILE3.indexOf('\nSome words after');
+  const q=t=>t.trim().split('\n').map(l=>l?'> '+l:'>').join('\n');
+  return FILE3.slice(0,a).replace('title: Matrix stem','title: Matrix steps')+'> [!group] The week\n'+q(FILE3.slice(a,b))+'\n\n> [!group] After\n'+q(FILE3.slice(b,c))+'\n'+FILE3.slice(c);})();
 /* the same matrix with no words of its own: no stem */
 const FILE4=FILE3.replace('title: Matrix stem','title: Bare matrix').replace('> [!matrix|wk] Over the last week, how often did each of these happen to you at home or at work?','> [!matrix|wk]');
 (async()=>{
@@ -463,12 +468,6 @@ const FILE4=FILE3.replace('title: Matrix stem','title: Bare matrix').replace('> 
       reach:col===c.backgroundColor&&px.length>=3&&px[2]===0?px[1]+(px[3]||0):0,boxBottom:box.getBoundingClientRect().bottom,qs:box.querySelectorAll('.mxq').length,y:scrollY};});
   let sm=await stem();
   ok(sm.asq&&sm.qs===9&&sm.pos==='sticky',`390: the nine-item matrix is drawn as separate questions, and its stem is held (sticky) ${JSON.stringify({asq:sm.asq,qs:sm.qs,pos:sm.pos})}`);
-  /* one at a time, the matrix is a step on a card: its held stem is painted with the card's colour, not the page's */
-  await p.locator('#main .oat-ctl button').filter({hasText:'One at a time'}).click();await p.waitForTimeout(400);
-  const paint=await p.evaluate(()=>{const h=document.querySelector('#main .mx-asq > h3:first-child'),u=h&&h.closest('.oat-unit');
-    return u&&{stem:getComputedStyle(h).backgroundColor,card:getComputedStyle(u).backgroundColor,pos:getComputedStyle(h).position};});
-  ok(!!paint&&paint.stem===paint.card&&paint.pos==='sticky',`390, one at a time: the held stem is painted with the step's card it sits on ${JSON.stringify(paint)}`);
-  await p.locator('#main .oat-ctl button').filter({hasText:'All at once'}).click();await p.waitForTimeout(300);
   /* scrolled past item 5: item 6 just under the stem */
   /* (where the held stem's foot will be: the bar's foot and the stem's height) */
   for(let i=0;i<2;i++){await p.evaluate(()=>{const q=document.querySelectorAll('#main .mxq')[5],h=document.querySelector('#main .mx-asq > h3:first-child');
@@ -510,8 +509,23 @@ const FILE4=FILE3.replace('title: Matrix stem','title: Bare matrix').replace('> 
   ok(!sm.asq&&sm.pos!=='sticky',`1280: drawn as a grid, the stem is not held ${JSON.stringify({asq:sm.asq,pos:sm.pos})}`);
   const both=[];for(const w of [320,390,600,760,860,960,1100]){await size(p,w);const x=await stem();both.push([w,x.asq,x.pos]);}
   ok(both.every(([,a,pos])=>a===(pos==='sticky'))&&both.some(([,a])=>a)&&both.some(([,a])=>!a),`the stem is held at the widths the matrix is separate questions and at no other ${JSON.stringify(both)}`);
+  /* on a window too short for the items to have room under the bar and a held stem (a phone on its side, 360 px tall or less),
+     the stem is not held: it scrolls with its items; on any taller window it is held, wherever the matrix is separate questions */
+  const tall=[];for(const [w,h] of [[568,320],[640,360],[740,360],[667,375],[844,390],[390,844],[360,640]]){await p.setViewportSize({width:w,height:h});await p.waitForTimeout(400);
+    const x=await stem();tall.push([w,h,x.asq,x.pos]);}
+  ok(tall.filter(([,,a])=>a).every(([,h,,pos])=>(h<=360)===(pos!=='sticky'))&&tall.some(([,h,a])=>a&&h<=360)&&tall.some(([,h,a])=>a&&h>360),
+    `the held stem lets go on a window 360 px tall or less, and only there ${JSON.stringify(tall)}`);
   ok(p.__bad.length===0,'matrix stem: no policy violation or page error '+p.__bad.join(' | '));
   await p.context().close();
+  /* one at a time, the matrix in a group is a step on a card: its held stem is painted with the card's colour, not the page's */
+  {const file5=path.join(OUT,'matrixsteps.booklet.md');fs.writeFileSync(file5,FILE5);
+   p=await open(390,file5);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+   await p.locator('#main .oat-ctl button').filter({hasText:'One at a time'}).click();await p.waitForTimeout(400);
+   const paint=await p.evaluate(()=>{const h=document.querySelector('#main .mx-asq > h3:first-child'),u=h&&h.closest('.oat-unit');
+     return u&&{stem:getComputedStyle(h).backgroundColor,card:getComputedStyle(u).backgroundColor,pos:getComputedStyle(h).position};});
+   ok(!!paint&&paint.stem===paint.card&&paint.pos==='sticky',`390, one at a time: the held stem is painted with the step's card it sits on ${JSON.stringify(paint)}`);
+   ok(p.__bad.length===0,'matrix steps: no policy violation or page error '+p.__bad.join(' | '));
+   await p.context().close();}
   /* a touch on an answer just under the held stem answers it, and the page does not move */
   p=await open(390,file3,true);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
   const taps=[];for(const [i,dy] of [[1,3],[2,6],[3,10],[4,14],[5,20]]) taps.push(await pressUnder(p,'tap',i,dy));

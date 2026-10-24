@@ -1,12 +1,13 @@
 // Browser check of tabs, the pager, one at a time across pages, and the fold switch (0.15), at 390 and 1280 px.
 // The page never scrolls sideways; an activity's column is the whole content area (wider than the module screen's centred
 // column at 1280), and its tab bar and pager start at its left edge and keep the prose's measure; the tab bar follows the
-// ARIA tabs pattern by keyboard, and fades at an edge its tabs run past; a page turn brings the activity's top into view and
-// puts the focus there, and a screen reader hears which page it is; a typed answer survives tab and page changes; the fold
-// switch shows only with callouts the author folded and never opens a hint; nothing of an activity is held in view, and a
-// control the keyboard reaches is never under the bar; one at a time, what comes before the first question (a line of
-// instructions, a problem statement, a reference table) is drawn whole above every step; a citation open in an activity's
-// prose stays open when the language changes; a link to a module's tab opens it.
+// ARIA tabs pattern by keyboard, and fades at an edge its tabs run past; a page turn lands at the start of the part now on
+// show (past a long opening above the tabs) and puts the focus there, and a screen reader hears which page it is; a typed
+// answer survives tab and page changes; the fold switch shows only with callouts the author folded and never opens a hint;
+// nothing of an activity is held in view, and a control the keyboard reaches is never under the bar; one at a time steps
+// through the groups, and what comes before the first group (a line of instructions, a problem statement, a reference table)
+// is drawn whole above every step; a citation open in an activity's prose stays open when the language changes; a link to a
+// module's tab opens it.
 // Replaces the page menu's check (pagesmenu-browser.js), which 0.15 removed with the menu. Invented content, but for the
 // check-in's instruction line and items, which follow the PHQ-9's wording.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/tabs-browser.js <booklet.html> <outdir>
@@ -39,11 +40,14 @@ Everything here stays on this device.
 
 Answer these against your last month. Anything can be skipped.
 
-> [!text|q1] What came in?
+> [!group] In
+> > [!text|q1] What came in?
 
-> [!text|q2] What went out?
+> [!group] Out
+> > [!text|q2] What went out?
 
-> [!text|q3] What surprised you?
+> [!group] Surprises
+> > [!text|q3] What surprised you?
 
 ***
 
@@ -105,55 +109,66 @@ Four.
 
 Over the last 2 weeks, how often have you been bothered by any of the following problems?
 
-> [!scale|p1] Little interest or pleasure in doing things
+> [!group] Item 1
+> > [!scale|p1] Little interest or pleasure in doing things
+>
+> 0. Not at all
+> 3. Nearly every day
 
-0. Not at all
-3. Nearly every day
+> [!group] Item 2
+> > [!scale|p2] Feeling down, depressed, or hopeless
+>
+> 0. Not at all
+> 3. Nearly every day
 
-> [!scale|p2] Feeling down, depressed, or hopeless
+> [!group] Item 3
+> > [!scale|p3] Trouble falling or staying asleep
+>
+> 0. Not at all
+> 3. Nearly every day
 
-0. Not at all
-3. Nearly every day
+> [!group] Item 4
+> > [!scale|p4] Feeling tired or having little energy
+>
+> 0. Not at all
+> 3. Nearly every day
 
-> [!scale|p3] Trouble falling or staying asleep
+> [!group] Item 5
+> > [!scale|p5] Poor appetite or overeating
+>
+> 0. Not at all
+> 3. Nearly every day
 
-0. Not at all
-3. Nearly every day
+> [!group] Item 6
+> > [!scale|p6] Trouble concentrating on things
+>
+> 0. Not at all
+> 3. Nearly every day
 
-> [!scale|p4] Feeling tired or having little energy
+> [!group] Item 7
+> > [!scale|p7] Feeling bad about yourself, or that you are a failure or have let yourself or your family down
+>
+> 0. Not at all
+> 3. Nearly every day
 
-0. Not at all
-3. Nearly every day
-
-> [!scale|p5] Poor appetite or overeating
-
-0. Not at all
-3. Nearly every day
-
-> [!scale|p6] Trouble concentrating on things
-
-0. Not at all
-3. Nearly every day
-
-> [!scale|p7] Feeling bad about yourself, or that you are a failure or have let yourself or your family down
-
-0. Not at all
-3. Nearly every day
-
-> [!scale|p8] Moving or speaking so slowly that other people could have noticed, or being so fidgety or restless that you have been moving around a lot more than usual
-
-0. Not at all
-3. Nearly every day
+> [!group] Item 8
+> > [!scale|p8] Moving or speaking so slowly that other people could have noticed, or being so fidgety or restless that you have been moving around a lot more than usual
+>
+> 0. Not at all
+> 3. Nearly every day
 
 > [!activity|long] A longer problem statement
 
 The kettle in the shared kitchen has been switching itself off before the water boils, and three people have asked whether it should be replaced or repaired. The repair shop quotes a week and a modest fee; a new kettle costs a little more and arrives tomorrow. The office has no other way to boil water in the meantime, and the tea club meets on Thursday.
 
-> [!text|l1] What would you do first?
+> [!group] First
+> > [!text|l1] What would you do first?
 
-> [!text|l2] Who should decide?
+> [!group] Who
+> > [!text|l2] Who should decide?
 
-> [!text|l3] What would change your mind?
+> [!group] Mind
+> > [!text|l3] What would change your mind?
 
 > [!activity|ref] A reference table
 
@@ -163,11 +178,14 @@ The kettle in the shared kitchen has been switching itself off before the water 
 | Replace | Medium | A day |
 | Borrow | None | Today |
 
-> [!text|r1] Which option?
+> [!group] Pick
+> > [!text|r1] Which option?
 
-> [!text|r2] Why?
+> [!group] Reason
+> > [!text|r2] Why?
 
-> [!text|r3] Anything else?
+> [!group] More
+> > [!text|r3] Anything else?
 
 > [!activity|cite] With a citation
 
@@ -176,6 +194,36 @@ Answer against the source.[^src] Keep the answers short; a phrase is enough for 
 > [!text|c1] Your answer?
 
 [^src]: Made-up source, page 3. "A quoted line." Verified
+
+> [!activity|turn] A long opening
+
+Opening paragraph 1: some words the author set before the tabs, made up for this check, long enough to wrap over a few lines on a phone.
+
+Opening paragraph 2: some words the author set before the tabs, made up for this check, long enough to wrap over a few lines on a phone.
+
+Opening paragraph 3: some words the author set before the tabs, made up for this check, long enough to wrap over a few lines on a phone.
+
+Opening paragraph 4: some words the author set before the tabs, made up for this check, long enough to wrap over a few lines on a phone.
+
+Opening paragraph 5: some words the author set before the tabs, made up for this check, long enough to wrap over a few lines on a phone.
+
+Opening paragraph 6: some words the author set before the tabs, made up for this check, long enough to wrap over a few lines on a phone.
+
+> [!tab] First
+
+Section one starts here.
+
+> [!text|t1] One?
+
+***
+
+Section two starts here.
+
+> [!text|t2] Two?
+
+> [!tab] Second
+
+Other words.
 
 > [!activity|link tab:keys] Where next
 
@@ -204,12 +252,12 @@ See [[#Check-ins]] for the two-week questions.
   const listed=p=>p.evaluate(()=>['Plan','Why a budget helps','Many areas'].filter(t=>[...document.querySelectorAll('#main [role=tabpanel] .card')].some(c=>c.textContent.includes(t))).join('|'));
   const foot=p=>p.evaluate(()=>{const f=document.querySelectorAll('#main .cd-foot');return f.length!==1?'('+f.length+' foot rows)':[...f[0].children].map(c=>c.textContent.trim()).join(' | ');});
   const click=async(p,sel,text)=>{await p.locator(sel).filter(text?{hasText:text}:{}).first().click();await p.waitForTimeout(350);};
-  /* after a page turn: the activity (its column: title, opening, tab bar) starts just under the bar, its title not behind the
-     bar, unless the window is at the very top already (raw: the numbers) */
-  const atTop=(p,raw)=>p.evaluate(raw=>{const b=document.querySelector('#main .ap-body'),c=b&&b.closest('.col'),h=c&&c.querySelector('h2'),
+  /* after a page turn: the part now on show starts just under the bar, past the activity's opening above its tabs (so its tab
+     bar is the first thing under the bar), not behind the bar, unless the window is at the very top already (raw: the numbers) */
+  const atTop=(p,raw)=>p.evaluate(raw=>{const t=document.querySelector('#main [role=tablist]'),
       bar=document.querySelector('.bar').getBoundingClientRect(),top=parseFloat(document.documentElement.style.getPropertyValue('--ap-top'))||0;
-    const r={col:c&&Math.round(c.getBoundingClientRect().top),title:h&&Math.round(h.getBoundingClientRect().top),bar:Math.round(bar.bottom),apTop:Math.round(top),y:Math.round(scrollY)};
-    return raw?r:!!c&&!!h&&r.title>=r.bar-1&&(r.y===0||Math.abs(r.col-r.apTop)<=2);},!!raw);
+    const r={tabs:t&&Math.round(t.getBoundingClientRect().top),bar:Math.round(bar.bottom),apTop:Math.round(top),y:Math.round(scrollY)};
+    return raw?r:!!t&&r.tabs>=r.bar-1&&(r.y===0||Math.abs(r.tabs-r.apTop)<=2);},!!raw);
   /* what is held in view (position sticky) inside the activity's body, if anything */
   const held=p=>p.evaluate(()=>[...document.querySelectorAll('#main .ap-body *')].filter(x=>getComputedStyle(x).position==='sticky').map(x=>x.className||x.tagName));
   /* the block whose words include `words`, drawn above the step on show (one at a time) and not inside any step: shown, whole
@@ -219,7 +267,7 @@ See [[#Check-ins]] for the two-week questions.
     const r=n.getBoundingClientRect(),tr=[...n.querySelectorAll('tr')],cut=[n,...n.querySelectorAll('*')].some(x=>{const c=getComputedStyle(x);
       return ((c.overflowY==='hidden'||c.overflowY==='clip')&&x.scrollHeight>x.clientHeight+1&&!x.closest('.md-table'))||(c.maskImage&&c.maskImage!=='none');});
     return {shown:r.height>0&&!n.closest('[hidden]'),inStep:!!n.closest('.oat'),above:r.bottom<=u.getBoundingClientRect().top+1,cut,rows:tr.length,
-      rowsIn:tr.every(x=>x.getBoundingClientRect().height>0),q:u.textContent.trim().slice(0,40)};},words);
+      rowsIn:tr.every(x=>x.getBoundingClientRect().height>0),q:u.textContent.trim().slice(0,80)};},words);
   /* what has the keyboard's focus, as the accessibility tree has it: its role and name (what a screen reader says) */
   const focusedAx=async p=>{const s=await p.context().newCDPSession(p);await s.send('Accessibility.enable');
     const {nodes}=await s.send('Accessibility.getFullAXTree');await s.detach();
@@ -291,7 +339,7 @@ See [[#Check-ins]] for the two-week questions.
     const heard=await focusedAx(p);
     ok(heard&&heard.role==='group'&&heard.name==='Page 2 of 2',W+': the accessibility tree: what has the focus is a group named Page 2 of 2, which is what a screen reader says '+JSON.stringify(heard));
     ok(!turned.end&&turned.top>=turned.margin-2,W+': the content\'s top is under the bar, not behind it (page two is long enough to scroll it anywhere) '+JSON.stringify(turned));
-    ok(await atTop(p),W+': Next opens the page at the top of the activity: its title just under the bar, not behind it and not part-way down '+JSON.stringify(await atTop(p,true)));
+    ok(await atTop(p),W+': Next opens the page at the part now on show: past the opening, its tab bar just under the bar, not behind it and not part-way down '+JSON.stringify(await atTop(p,true)));
     ok(/^Back \| Page 2 of 2 \| /.test(await foot(p)),W+': page two: Back, Page 2 of 2: '+await foot(p));
     await click(p,'#main [role=tab]','Read more');await click(p,'#main [role=tab]','Do it');
     ok(/Page 2 of 2/.test(await foot(p)),W+': the tab keeps the page it was left on this visit');
@@ -304,9 +352,9 @@ See [[#Check-ins]] for the two-week questions.
     /* one at a time across pages: one Back and Next row */
     await click(p,'#main .oat-ctl button','One at a time');
     const s1=await foot(p);
-    ok(/^Back \| Page 1 of 2 \| Next question$/.test(s1)&&await p.locator('#main .oat-nav').count()===0,W+': one at a time, on the first question still to answer: the foot\'s one row steps: '+s1);
+    ok(/^Back \| Page 1 of 2 \| Next step$/.test(s1)&&await p.locator('#main .oat-nav').count()===0,W+': one at a time, on the first step still to answer: the foot\'s one row steps: '+s1);
     const oatLead=await lead(p,'against your last month');
-    ok(oatLead.shown&&!oatLead.inStep&&oatLead.above&&(await held(p)).length===0,W+': one at a time, the line before the first question is drawn above the steps, in none of them, and not held '+JSON.stringify(oatLead));
+    ok(oatLead.shown&&!oatLead.inStep&&oatLead.above&&(await held(p)).length===0,W+': one at a time, the line before the first group is drawn above the steps, in none of them, and not held '+JSON.stringify(oatLead));
     while(await p.locator('#main .cd-foot .oat-next').count()) await click(p,'#main .cd-foot .oat-next');
     const s3=await foot(p);
     ok(/^Back \| Page 1 of 2 \| Next$/.test(s3),W+': on the last step Next turns the page: '+s3);
@@ -366,7 +414,7 @@ See [[#Check-ins]] for the two-week questions.
       await click(p,'#main button.card','Readings');
       await click(p,'#main [role=tab]',name==='Where next'?'Keys':'Check-ins');
       await click(p,'#main button.card',name);};
-    /* one at a time, what comes before the first question stays, whole, above every step, whatever its length: a line of
+    /* one at a time, what comes before the first group stays, whole, above every step, whatever its length: a line of
        instructions, a four-sentence problem statement and a three-row reference table, at steps two and three (the reader
        answers against it) */
     for(const [name,words,qs] of [['Two weeks','Over the last 2 weeks',['Feeling down','Trouble falling']],
@@ -387,8 +435,22 @@ See [[#Check-ins]] for the two-week questions.
         await click(p,'#main .cd-foot .oat-next');
         const st=await lead(p,words);
         ok(st.shown&&!st.inStep&&st.above&&!st.cut&&st.q.includes(q)&&(name!=='A reference table'||st.rows===4&&st.rowsIn),
-          W+': one at a time, at step '+(i+2)+' of "'+name+'", what comes before the first question is still drawn, whole, above the step '+JSON.stringify(st));}
+          W+': one at a time, at step '+(i+2)+' of "'+name+'", what comes before the first group is still drawn, whole, above the step '+JSON.stringify(st));}
       await click(p,'#main .oat-ctl button','All at once');}
+    /* Next and Back land at the next thing: the start of the part now on show, its first words on screen under the bar, not
+       the top of a long opening above the tabs (six paragraphs: at 390 they run past the foot of the window) */
+    {await toAct('A long opening');
+     const land=words=>p.evaluate(words=>{const w=[...document.querySelectorAll('#main .ap-body p')].find(x=>x.textContent.includes(words)),
+         bar=document.querySelector('.bar').getBoundingClientRect().bottom,r=w&&w.getBoundingClientRect();
+       return {words:!!w,top:r&&Math.round(r.top),bar:Math.round(bar),vh:innerHeight,y:Math.round(scrollY),on:!!r&&r.top>=bar-1&&r.bottom<=innerHeight};},words);
+     await p.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await p.waitForTimeout(200);
+     await click(p,'#main .cd-foot .pg-next');
+     const l2=await land('Section two starts here');
+     ok(l2.on,W+': after a long opening, Next lands at the part now on show: its first words are on screen under the bar '+JSON.stringify(l2));
+     await p.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await p.waitForTimeout(200);
+     await click(p,'#main .cd-foot .pg-back');
+     const l1=await land('Section one starts here');
+     ok(l1.on,W+': and so does Back '+JSON.stringify(l1));}
     if(W===390){
       /* a citation open in an activity's prose stays open when the language changes */
       await p.setViewportSize({width:390,height:844});await p.waitForTimeout(300);

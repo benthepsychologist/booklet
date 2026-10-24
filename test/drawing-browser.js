@@ -28,23 +28,25 @@ Some words first, with $a^2+b^2$ in prose.
 > [!tip] A tip about $\\frac{1}{2}$ and [docs](https://example.org)
 > Tip words.
 
-> [!choice|bigger] Which is bigger, $\\frac{2}{3}$ or $\\frac{3}{5}$?
-> Remember to **compare** the *denominators*.
-
-- [x] $\\frac{2}{3}$ is **bigger**
-- [ ] $\\frac{3}{5}$ is bigger
-- [ ] [a link](https://example.org) in an option
-- [ ] $\\frac{1}{4}$
+> [!group] Compare
+> > [!choice|bigger] Which is bigger, $\\frac{2}{3}$ or $\\frac{3}{5}$?
+> > Remember to **compare** the *denominators*.
+>
+> - [x] $\\frac{2}{3}$ is **bigger**
+> - [ ] $\\frac{3}{5}$ is bigger
+> - [ ] [a link](https://example.org) in an option
+> - [ ] $\\frac{1}{4}$
 
 > [!scale|sure] How sure are you, $x^2$?
 
 0. Not **at all**
 1. Very
 
-> [!choice|second] And which is smaller, $\\frac{1}{2}$ or $\\frac{1}{3}$?
-
-- [ ] One half
-- [x] One third
+> [!group] Order
+> > [!choice|second] And which is smaller, $\\frac{1}{2}$ or $\\frac{1}{3}$?
+>
+> - [ ] One half
+> - [x] One third
 
 > [!activity|other] A *second* activity
 
@@ -197,11 +199,11 @@ You arrived by a card's link.
    await p.locator('#main .pill-btn').nth(1).click();await p.waitForTimeout(300);
    const live=await p.evaluate(()=>(document.querySelector('#main .q-live')||{}).textContent||'');
    ok(!/[$*]/.test(live)&&/Look again|Not quite|not|correct|bigger/i.test(live+'x'),'the line spoken after an answer is plain words ('+live+')');
-   /* the stepper: three questions, one at a time */
+   /* the stepper: two groups, one at a time (the scale between them goes with the second) */
    const steps=await p.locator('.oat-ctl button').count();
    if(steps===2){await p.locator('.oat-ctl button').first().click();await p.waitForTimeout(400);
      const st=await p.evaluate(()=>{const u=[...document.querySelectorAll('.oat-unit')].find(x=>!x.hasAttribute('hidden'))||{};return {math:u.querySelectorAll?u.querySelectorAll('h3 math').length:0,txt:u.textContent||''};});
-     ok(st.math===1||st.math===2,'the one-at-a-time stepper draws the formula in the question it shows ('+st.math+')');
+     ok(st.math>=1,'the one-at-a-time stepper draws the formulas in the questions of the step it shows ('+st.math+')');
      await shot(p,'maths-stepper-1280-paper');}
    else ok(false,'the one-at-a-time control is offered ('+steps+' buttons)');
    await p.setViewportSize({width:390,height:900});await p.waitForTimeout(300);await shot(p,'maths-question-390-paper');

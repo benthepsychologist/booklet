@@ -279,9 +279,10 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
   chk(`${what}: one error, as no marker`,r.status===1&&r.errors.length===1&&/front matter must say `booklet: "0\.15"`.*a marker is a 0\.x version/.test(r.errors[0]||"")&&r.warns.length===0,r.out);}
 }
 
-{// 0.15: a query view inside a callout (a `[!group]` fold, or any callout's body) is not yet supported: a renderer draws the
- // block as code, so the linter warns, naming the block's line; one in the activity's own text, or one shown as an example
- // in a fence inside the fold, is no warning
+{// 0.15: a group in an activity holds blocks, read as the file is with one `>` less: a query view there is read as one, and
+ // linted. In any other callout's body (a note, a tip, a hint, a group in a module's opening) a query view is not yet
+ // supported: a renderer draws the block as code, so the linter warns, naming the block's line; one in the activity's own
+ // text, or one shown as an example in a fence inside a callout, is no warning
  const Q="```booklet query\nfrom: log\nfields: hours\n```";
  const file=fold=>`---\nbooklet: "0.15"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|log repeat] Log\n\n`+
    `> [!number|hours min:0 max:24] Hours slept\n\n> [!activity|look] Look\n\n${Q}\n\n${fold}\n\n> [!module|m end] End\n`;
@@ -289,16 +290,40 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
  const run=t=>{const f=path.join(require("os").tmpdir(),"lint-qfold-"+process.pid+".md");fs.writeFileSync(f,t);const r=lint(f);fs.unlinkSync(f);
    return Object.assign(r,{at:t.split("\n").findIndex(l=>/^>.*```booklet query/.test(l))+1});};
  const g=run(file(quote("> [!group]- More","Words.\n\n"+Q)));
- chk("a query view in a `[!group]` fold: one warning, at the block's line, that it is not yet supported and is drawn as code",
-   g.status===0&&g.errors.length===0&&g.warns.length===1&&new RegExp(`line ${g.at}: a query view inside a callout \\(here a \`\\[!group\\]\`\\) is not yet supported: a renderer draws the \`booklet query\` block as code`).test(g.warns[0]||""),g.out);
+ chk("a query view in a `[!group]` in an activity is read as one: no warning",g.status===0&&/0 errors · 0 warnings/.test(g.out),g.out);
+ const gb=run(file(quote("> [!group]- More","```booklet query\nfrom: nothing-here\n```")));
+ chk("...and linted as one: a `from:` that names nothing is an error at its line",gb.status===1&&gb.errors.length===1&&new RegExp(`line ${gb.at}: `).test(gb.errors[0]||""),gb.out);
  const n=run(file(quote("> [!note] A note",Q)));
- chk("...and in any callout's body (a note)",n.errors.length===0&&n.warns.length===1&&/here a `\[!note\]`/.test(n.warns[0]||""),n.out);
+ chk("a query view in any other callout's body (a note): one warning, at the block's line, that it is not yet supported and is drawn as code",
+   n.status===0&&n.errors.length===0&&n.warns.length===1&&new RegExp(`line ${n.at}: a query view inside a callout \\(here a \`\\[!note\\]\`\\) is not yet supported: a renderer draws the \`booklet query\` block as code`).test(n.warns[0]||""),n.out);
  const deep=run(file(quote("> [!group] Outer","> [!tip] Inner\n"+Q.split("\n").map(l=>"> "+l).join("\n"))));
- chk("...and in a callout inside a callout",deep.errors.length===0&&deep.warns.length===1&&new RegExp(`line ${deep.at}: `).test(deep.warns[0]||""),deep.out);
- const shown=run(file(quote("> [!group]- How to write one","````markdown\n"+Q+"\n````")));
- chk("a query shown as an example, in a markdown fence inside the fold, is no warning",shown.status===0&&/0 errors · 0 warnings/.test(shown.out),shown.out);
+ chk("...and in a callout inside a group",deep.errors.length===0&&deep.warns.length===1&&new RegExp(`line ${deep.at}: .*here a \`\\[!tip\\]\``).test(deep.warns[0]||""),deep.out);
+ const open=run(`---\nbooklet: "0.15"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n${quote("> [!group]- In the opening",Q)}\n\n> [!activity|log repeat] Log\n\n> [!number|hours] Hours\n\n> [!module|m end] End\n`);
+ chk("...and in a group in a module's opening, which holds text",open.errors.length===0&&open.warns.length===1&&new RegExp(`line ${open.at}: .*here a \`\\[!group\\]\``).test(open.warns[0]||""),open.out);
+ const shown=run(file(quote("> [!note]- How to write one","````markdown\n"+Q+"\n````")));
+ chk("a query shown as an example, in a markdown fence inside a callout, is no warning",shown.status===0&&/0 errors · 0 warnings/.test(shown.out),shown.out);
  const top=run(file("Words."));
  chk("a query view in the activity's own text is no warning",top.status===0&&/0 errors · 0 warnings/.test(top.out),top.out);}
+
+{// 0.15: a group in an activity holds Booklet lines, written with one more `>`; they are linted as any others. Structure
+ // (a module, activity, tab, row, data or records line) cannot go in a group. A Booklet line in any other callout is drawn
+ // as text, and warned of
+ const head=`---\nbooklet: "0.15"\ntitle: G\nlang: en\n---\n\n> [!activity|a] A\n\n`;
+ const run=t=>{const f=path.join(require("os").tmpdir(),"lint-group-"+process.pid+".md");fs.writeFileSync(f,head+t);const r=lint(f);fs.unlinkSync(f);return r;};
+ const ok=run("> [!group] Step one\n> Some words.\n>\n> > [!choice|q1] Pick?\n> - [ ] A\n> - [ ] B\n>\n> > [!hint]- A hint\n> > Think.\n\n> [!group]- Step two\n> > [!scale|q2] How much?\n>\n> 1. Little\n> 2. Lots\n");
+ chk("questions, their options and a hint inside groups: no error, no warning",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);
+ const dup=run("> [!text|q1] Outside?\n\n> [!group] G\n> > [!text|q1] Inside?\n");
+ chk("a question in a group shares the module's ids: one used twice is an error, at its line",dup.status===1&&dup.errors.length===1&&/line 12: the id 'q1' is also used on line 9/.test(dup.errors[0]||""),dup.out);
+ const noopt=run("> [!group] G\n> > [!choice|q1] Pick?\n> > - [ ] A\n");
+ chk("options written inside the question's own callout (two `>`) are its help text, as at the top level: the choice has no options",noopt.status===1&&noopt.errors.length===1&&/has no options under it/.test(noopt.errors[0]||""),noopt.out);
+ const st=run("> [!group] G\n> > [!tab] A tab\n>\n> > [!activity|b] B\n");
+ chk("a tab line and an activity line in a group: an error each, that they cannot go there",st.status===1&&st.errors.length===2&&st.errors.every(e=>/line \d+: a `\[!(tab|activity)\]` line cannot go inside a group/.test(e)),st.out);
+ const after=run("> [!group] G\n> > [!text|q1] One?\n\n> [!hint]- A hint\n> Words.\n");
+ chk("a hint after a group is not its last question's: warned as not directly under a question",after.status===0&&after.warns.length===1&&/this hint is not directly under a question/.test(after.warns[0]||""),after.out);
+ const note=run("> [!note] A note\n> > [!text|q1] One?\n");
+ chk("a question in a note: one warning, at its line, that it is drawn as text",note.status===0&&note.warns.length===1&&/line 10: a `\[!text\]` line inside a `\[!note\]` is drawn as text, not read/.test(note.warns[0]||""),note.out);
+ const rule=run("> [!row]\n\n## One\n\n> [!group] G\n> Words.\n>\n> ***\n>\n> More.\n\n## Two\n\nWords.\n\n> [!row|end]\n");
+ chk("a thematic break inside a group is a rule in it, not a page break: the row around it is not cut",rule.status===0&&rule.errors.length===0,rule.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

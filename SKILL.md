@@ -454,12 +454,16 @@ A budget is a plan, not a judgement.
 > [!activity|why-budget tab:learn] Why a budget helps
 ```
 
-**One at a time.** A reader may take three or more questions one at a time,
-within the part on show (an activity, a tab, or one `***` section of either).
-What comes before its first question (instructions, a key to a scale, a heading,
-a callout, a picture) is drawn whole above every step, so it is there at each
-question, however long. All at once, it reads top to bottom as written, and
-nothing is held in view.
+**One at a time: steps are groups.** A reader may take the part on show (an
+activity, a tab, or one `***` section of either) one step at a time when it
+holds two or more `> [!group] Title` callouts: each group is a step, drawn
+open. A question in no group is never a step, so to offer steps, put each
+question (or each set to take together) in a group; a group holds anything the
+activity's text can (section 7). What comes before the first group
+(instructions, a key to a scale, a heading, a callout, a picture) is drawn whole
+above every step, so it is there at each one, however long; what comes between
+two groups goes with the group after. All at once, it reads top to bottom as
+written, and nothing is held in view.
 
 ---
 
@@ -592,13 +596,13 @@ itself is never shown.
   option is always the second option; if you ever add or remove one, treat
   the question as a new one with a new id, since existing answers point at a
   position.
-- **A question is never hidden by a file, and the renderer folds nothing on
-  its own.** There is no way to write "optional questions, folded shut until
-  opened". If a request calls for that ("a couple more if you want them"), put
-  the extra questions after the ones that matter, under their own heading, or on
-  their own page after a `***`. Extra reading can be folded by the author: a
-  `> [!group]- More on this` callout. A reader who would rather not click has
-  one switch that opens every such fold on the page.
+- **The renderer folds nothing on its own, and a question is folded only
+  where its author folds the group it is in.** A folded group
+  (`> [!group]- A couple more, if you want them`) is how to write optional
+  questions, folded shut until opened; a reader who would rather not click has
+  one switch that opens every such fold on the page, and a fold that holds an
+  answer is drawn open. Keep the questions that matter open, and fold only what
+  a reader may skip. Extra reading folds the same way.
 - **No question takes its options from another activity's answers.** There is
   no kind that draws a list of options pulled live from a different activity's
   answers, or a tick-list of what was done. (A `booklet query` can show another
@@ -621,10 +625,33 @@ between paragraphs for a new one. Section 4 says what a heading does.
 - **A pull-quote or a note set apart** is an Obsidian-style callout:
   `> [!note] …`, `> [!tip] …`, `> [!warning] …`, or Booklet's own `diff`
   (where a guide differs from this reading), `law` (a rule as it stands) or
-  `opinion` (an author's view), and `group`, the plain fold: `> [!group]- Title`
-  folds reading content shut until opened — fine for background material nobody
-  has to read, never for a question (section 6). Any callout kind written with
-  `-` folds the same way.
+  `opinion` (an author's view). Any callout kind written with `-` folds shut
+  until opened, which is fine for background material nobody has to read. Only
+  Markdown goes in these: a question or a `booklet query` in a note or a tip is
+  drawn as text (the linter warns).
+- **A group is a titled container**, `> [!group] Title`, folded with
+  `> [!group]- Title`. In an activity it holds anything the activity's text can,
+  questions included, and two or more groups in a part are its steps when the
+  reader takes it one at a time (section 5). Its body is quoted once, so a question in it gets a
+  second `>`, and what goes under the question gets the group's one:
+
+  ```markdown
+  > [!group] Your week
+  > Think of the last seven days.
+  >
+  > > [!choice|busy] How busy was it?
+  > - [ ] Quiet
+  > - [ ] Busy
+  >
+  > > [!hint]-
+  > > Count the evenings you were out.
+  ```
+
+  A group cannot hold a `module`, `activity`, `tab`, `row`, `data` or `records`
+  line (the linter refuses it), and a `***` in it is a rule, not a page break.
+  Outside an activity (in an opening) a group holds Markdown only. A question
+  in a folded group is still answered and kept; the fold opens once it holds an
+  answer.
 - **A citation is an ordinary footnote** — `[^id]` in the text, and its
   definition anywhere in the file:
 
@@ -782,7 +809,7 @@ not drawn. Section 12 ends with a whole report.
 nothing on its own, and its headings are drawn as headings. Fold only what a
 reader may skip, with a `-` callout (`> [!group]- The detail`); a reader who
 would rather not click has one switch that opens every such fold on the page. A
-reader may take a page of three or more questions one at a time.
+reader may take a `***` section of two or more groups one group at a time.
 
 - **One activity, the questions last.** The answer for every report. The
   booklet opens straight into it and nothing is blank. Split a long one into
@@ -973,7 +1000,9 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a query with a bad `as:` or `limit:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number` | use one of the six views; a whole number from 1 |
 | a query with a setting it does not take | `a query has no setting 'x' (it takes from, as, fields, …)` | use the listed keys; a warning `does not draw` means the view ignores that key |
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
-| a query view inside a callout's body (a `[!group]` fold, a note, any other) | `warn line N: a query view inside a callout (here a `[!group]`) is not yet supported: a renderer draws the `booklet query` block as code …` | put the query in the activity's own text, outside the callout |
+| a query view inside a callout that holds Markdown only (a note, any other kind but a group, or a group outside an activity) | `warn line N: a query view inside a callout (here a `[!note]`) is not yet supported: a renderer draws the `booklet query` block as code …` | put the query in a group in an activity, or in the activity's own text |
+| a question or another Booklet line inside a callout that holds Markdown only (the same callouts) | `warn line N: a `[!text]` line inside a `[!note]` is drawn as text, not read: only a `[!group]` in an activity holds Booklet lines …` | put it in a group in an activity, or outside the callout |
+| a `module`, `activity`, `tab`, `row`, `data` or `records` line inside a group | `line N: a `[!tab]` line cannot go inside a group, so a renderer ignores it …` | move it out of the group |
 | a `menu:` naming no menu | `` `menu:x` names no menu in this file`` | write the `> [!menu|x]` line and its bulleted list, or fix the id |
 | a `menu:` and a list of its own | `the question 'x' has both `menu:y` and a list of its own` | keep one |
 | a notice with a key it does not have, two in one module, or one outside a fence or after the first activity | `a notice has license, copyright, source, version, not 'x'` / `has two notices` / `a notice belongs inside a module's fence, before the module's first activity` | write only those four keys, one callout, right under the module line |

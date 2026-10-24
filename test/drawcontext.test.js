@@ -16,9 +16,10 @@ const LS=global.__ls;
 const byClass=(n,c)=>P.find(n,P.hasClass(c));
 const click=n=>n._on.click({target:n,currentTarget:n,preventDefault(){}});
 const FM=t=>'---\nbooklet: "0.15"\ntitle: '+t+'\nlang: en\n---\n\n';
-/* a module with a page of three questions (one at a time is offered) and a page of two callouts the author folded (the fold
-   switch is offered) */
-const MOD=FM("Steps")+"> [!module|steps] Steps\n\n> [!activity|ask] Ask\n\n> [!text|q1] One?\n\n> [!text|q2] Two?\n\n> [!text|q3] Three?\n\n"+
+/* a module with a page of three groups, a question in each (one at a time is offered: its steps are groups), and a page of
+   two callouts the author folded (the fold switch is offered) */
+const G=(t,q)=>"> [!group] "+t+"\n> > [!text|"+q+"] "+t+"?\n\n";
+const MOD=FM("Steps")+"> [!module|steps] Steps\n\n> [!activity|ask] Ask\n\n"+G("One","q1")+G("Two","q2")+G("Three","q3")+
   "> [!activity|read] Read\n\n> [!note]- First\n> One paragraph.\n\n> [!tip]- Second\n> Another.\n\n> [!module|steps end] End\n";
 const oneAtATime=A=>{const on=byClass(P.main(),"oat-ctl")[0];return !!on&&P.find(on,n=>n.tagName==="button"&&n.attrs["aria-pressed"]==="true").map(P.texts).join()==="One at a time";};
 const pressStep=(label)=>{const b=P.find(byClass(P.main(),"oat-ctl")[0],n=>n.tagName==="button"&&P.texts(n)===label)[0];click(b);};
@@ -76,7 +77,7 @@ const allShut=()=>folds().length===2&&folds().every(d=>d.attrs.open===undefined)
 
  /* ---- a booklet opened again in the visit shows what it showed; Clear everything and a newer file start it afresh ---- */
  P.wipe();{const F=P.boot();
-  const PAGED=FM("Paged")+"> [!module|pg] Paged\n\n> [!activity|ask] Ask\n\n> [!text|q1] One?\n\n> [!text|q2] Two?\n\n> [!text|q3] Three?\n\n---\n\n## Later\n\nMore words.\n\n"+
+  const PAGED=FM("Paged")+"> [!module|pg] Paged\n\n> [!activity|ask] Ask\n\n"+G("One","q1")+G("Two","q2")+G("Three","q3")+"---\n\n## Later\n\nMore words.\n\n"+
     "> [!activity|log repeat] Log\n\n> [!text|t] Today?\n\n> [!module|pg end] End\n";
   await F.createBooklet();F.addModuleText(PAGED);F.keptFor("pg/log").push({ts:"2026-10-01T09:00:00Z",t:"kept"});F.flushSave();const id=F.currentId;
   const step=()=>byClass(P.main(),"oat-unit").findIndex(n=>n.attrs.hidden===undefined);
@@ -84,7 +85,7 @@ const allShut=()=>folds().length===2&&folds().every(d=>d.attrs.open===undefined)
   const page=()=>{const at=F.screen==="pg/ask"&&byClass(P.main(),"pg-at")[0],m=at&&/Page (\d+) of/.exec(P.texts(at));return m?Number(m[1])-1:-1;};
   const at=(pid)=>{F.screen="pg/ask";if(pid) F.showPage("pg/ask",pid);F.render();};
   at("p1");pressStep("One at a time");click(byClass(P.main(),"oat-next")[0]);
-  chk("the reader is on the second question of page one",step()===1,String(step()));
+  chk("the reader is on the second step of page one",step()===1,String(step()));
   F.viewAt("pg/log").chip="2026-10-01T09:00:00Z";F.viewAt("pg/log").queries.set(0,F.newViewState());F.viewAt("pg/log").branch=true;
   at("p2");chk("and then on page two",page()===1,String(page()));
   F.closeBooklet();F.openFromList(id);at();
