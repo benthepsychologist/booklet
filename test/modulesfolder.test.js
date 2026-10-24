@@ -58,7 +58,7 @@ for(const [href,want,why] of [
  chk("one request, a GET with no method, no body, no credentials and no redirect, with a time limit",CALLS.length===1&&!c.opts.method&&!c.opts.body&&c.opts.credentials==="omit"&&c.opts.redirect==="error"&&!!c.opts.signal,JSON.stringify(CALLS));
  chk("the booklet opens into its one activity",ok===true&&A.screen==="m/a"&&/Week report/.test(JSON.stringify(A.BOOK.title)),A.screen);
  const pv=P.find(P.main(),P.hasClass("openedby"))[0];
- chk("the quiet line says it came from this page's own store, by its name (no new words)",!!pv&&text(pv).startsWith("Opened by a link, from this page's own store: week.booklet.md"),pv?text(pv):"none");
+ chk("the quiet line says it came from the modules folder beside this page, by its name (the default folder is not a store)",!!pv&&text(pv).startsWith("Opened by a link, from the modules folder beside this page: week.booklet.md")&&!/store/.test(text(pv)),pv?text(pv):"none");
  chk("it is listed in \"Your booklets\" at once, as a pointer from the default folder, with no copy of its content kept",lib().length===1&&lib()[0].from==="modules:/app/modules/#week.booklet.md"&&/Week report/.test(JSON.stringify(lib()[0].title))&&!Object.keys(global.__ls).some(k=>/^booklet\.b\./.test(k)),JSON.stringify(lib()));
  chk("...and nothing else was written but the list",Object.keys(global.__ls).filter(k=>!before.split(",").includes(k)).every(k=>k==="booklet.library.v1"||/^booklet\.(tick|ui\.)/.test(k)),Object.keys(global.__ls).join());}
 {const A=boot(APP);

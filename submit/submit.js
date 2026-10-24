@@ -26,7 +26,7 @@
    file's policy allows no other origin. */
 (function(){
 "use strict";
-const SUBMIT_VERSION="0.3.0";
+const SUBMIT_VERSION="0.3.1";
 const tag=document.querySelector('meta[name="booklet-submit"]');
 const ENDPOINT=tag?String(tag.getAttribute("content")||"").trim():"";
 let where="";
@@ -43,8 +43,8 @@ const T={
     unreachable:"Not sent: the address could not be reached. Your answers are still here, and you can try again.",
     clash:id=>"These answers cannot be sent: two parts of this booklet use the same question id, “"+id+"”.",
     nothing:"There are no answers to send yet."},
-  /* es and fr checked by /localize (2026-10-22; `help`, changed in 0.3.0, again 2026-10-24): "booklet" is cuadernillo and carnet,
-     as in the renderer's own tables */
+  /* es and fr checked by /localize (2026-10-22; `help`, changed in 0.3.0, again 2026-10-24, for 0.3.1): "booklet" is
+     cuadernillo and carnet, as in the renderer's own tables */
   es:{submit:"Enviar",title:"¿Enviar tus respuestas?",
     help:h=>"Al presionar Enviar, las respuestas de abajo se envían a "+h+", con las preguntas y las opciones tal como las viste, y nada más. Todavía no se ha enviado nada.",
     exact:"Mostrar exactamente lo que se envía",other:"Otras respuestas en este cuadernillo",

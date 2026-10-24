@@ -454,19 +454,12 @@ A budget is a plan, not a judgement.
 > [!activity|why-budget tab:learn] Why a budget helps
 ```
 
-**The frame.** Plain prose before an activity's first question (a tab's, when it
-has tabs: paragraphs, lists and tables, with no heading, callout, HTML or code
-fence) is its frame: the renderer keeps it in view while the questions are
-answered. One at a time, it is drawn whole above the question on show, however
-long. All at once, it is held at the top while they scroll, but only when it
-fits whole in that space: four lines of text at the renderer's usual size
-(fewer on a window under about 580 pixels high), or a key of a header row and
-two rows to a scale; a third row is too tall. **Instructions are short**: a
-sentence or two of what to do, or that two-row key. Longer prose is reading when
-the questions are all shown, and scrolls with its page whole, nothing cut. So is
-prose between two questions (it goes with the question after it), and reading
-with a heading or a callout before the first question. `pin:off` on the activity
-line lets the frame scroll away like any prose: `> [!activity|walk pin:off] Walk notes`.
+**One at a time.** A reader may take three or more questions one at a time,
+within the part on show (an activity, a tab, or one `***` section of either).
+What comes before its first question (instructions, a key to a scale, a heading,
+a callout, a picture) is drawn whole above every step, so it is there at each
+question, however long. All at once, it reads top to bottom as written, and
+nothing is held in view.
 
 ---
 
@@ -655,7 +648,9 @@ between paragraphs for a new one. Section 4 says what a heading does.
 - **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a tab's name, a question's prompt or a callout's title), on the right tab and page (a module's tab name opens the module's screen on that tab); the linter warns when nothing in the link's own module reads those words.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
-  module**. It is read-only and takes no answer. The kind goes on the fence
+  module**. Put it in the activity's own text, not inside a fold or another
+  callout: a query view there is not yet supported (it is drawn as code), and
+  the linter warns. It is read-only and takes no answer. The kind goes on the fence
   line and every setting is a `key: value` line:
 
   ````markdown
@@ -992,7 +987,6 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | two tabs with one id, in one activity or one module's opening | `this tab's id is 'x', the same as the tab on line N …` | give each tab its own name, or an id (`> [!tab|other-id] Name`) |
 | a tab line outside every activity and module opening | `a tab line belongs inside an activity, or in a module's opening …` | move it under an activity line, or into the module's opening |
 | a `tab:` naming no tab of the module | `` `tab:x` names no tab of the module 'm' `` | name a tab the module's opening declares, or declare it |
-| a `pin:` other than `off` | `` `pin:x` is not a setting; the one value is `pin:off` `` | write `pin:off`, or leave it out |
 | tab lines in the opening of a module of one activity | `warn the module 'm' has one activity, so it has no screen of its own to show tabs on …` | put that prose in the module's opening with no tab line, or the tabs inside the activity |
 | a tab line in a data section | `warn a tab line in a data section is not read …` | put the tab in an activity, or in a module's opening |
 | `---` straight under a line of text | `warn `---` straight under text makes that line a heading, not a page break` | write `***`, or leave a blank line above |

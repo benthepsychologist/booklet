@@ -18,8 +18,8 @@ const FM='---\nbooklet: "0.15"\ntitle: T\nlang: en\n---\n\n';
  const acts=R=>mod(R).activities;
 
  /* ---- the settings table ---- */
- chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, icon:, parent:, status:, tab: and pin:",
-   JSON.stringify(A.KIND_SETTINGS.module)==='["end","icon:"]'&&JSON.stringify(A.KIND_SETTINGS.activity)==='["repeat","daily","hidden","icon:","parent:","status:","tab:","pin:"]');
+ chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, icon:, parent:, status: and tab:",
+   JSON.stringify(A.KIND_SETTINGS.module)==='["end","icon:"]'&&JSON.stringify(A.KIND_SETTINGS.activity)==='["repeat","daily","hidden","icon:","parent:","status:","tab:"]');
  {const R=A.parseFile(FM+"> [!module|m icon:compass] M\n\n> [!activity|a icon:notebook-pen] A\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
   chk("icon: on a module and on an activity is read, with nothing reported",R.ok&&R.unread.length===0&&mod(R).icon==="compass"&&acts(R)[0].icon==="notebook-pen"&&acts(R)[1].icon===undefined,JSON.stringify(R.unread));}
  {const R=A.parseFile(FM+"> [!module|m icon:no-such-picture] M\n\n> [!activity|a icon:Compass] A\n\n> [!activity|b] B\n\n> [!module|m end] End\n");

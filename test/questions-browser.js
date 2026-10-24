@@ -1,7 +1,8 @@
 // Browser check of how a question is laid out and what it answers with (SPEC.md sections 5 and 7), at 1280 and 400 px.
 //  - a question's words keep a readable width; short options sit beside them only when both fit, else they drop under them;
 //  - a matrix is a grid of rows when each item's readable words and the anchors fit, and one single-choice question per item when they do not,
-//    with the same answers under the same key, kept across a window that is narrowed and widened again;
+//    with the same answers under the same key, kept across a window that is narrowed and widened again; drawn as separate
+//    questions it keeps its stem held under the bar while its items are answered, as far as its end, and as a grid it does not;
 //  - nothing scrolls sideways at 390 px, a grid-select with all four axis labels included (on a page beside the page menu's rail too);
 //  - an option's reply shows on a pick, changes on a re-pick, and for a multi is in option order;
 //  - an svg-regions widget honours `readonly` and `describe`, as a grid-select does.
@@ -170,6 +171,51 @@ lang: en
 3. Nearly every day
 
 > [!module|mc end] End
+`;
+/* a nine-item matrix with a stem, then a question after it (invented items) */
+const FILE3=`---
+booklet: "0.15"
+title: Matrix stem
+lang: en
+---
+
+> [!module|ms] Matrix stem
+
+> [!activity|week] This week
+
+> [!matrix|wk] Over the last week, how often did each of these happen to you at home or at work?
+
+- You ran late for something you had planned
+- You forgot where you had put your keys
+- You skipped a meal because you were busy
+- You stayed up later than you meant to
+- You put off a call you needed to make
+- You lost track of what you came into a room for
+- You said yes to something you wanted to refuse
+- You left a cup of tea to go cold
+- You checked the weather more than twice in a day
+
+0. Not at all
+1. Several days
+2. More than half the days
+3. Nearly every day
+
+> [!text|after] Anything else about the week?
+
+> [!text|after2] And one more thing?
+
+Some words after the questions, so the page can be scrolled well past the matrix: the kettle, the stove and the cups on the
+shelf, and what the week was like for each of them.
+
+> [!text|after3] What went well?
+
+> [!text|after4] What would you change?
+
+> [!text|after5] Who helped?
+
+> [!text|after6] What is next?
+
+> [!module|ms end] End
 `;
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -404,6 +450,45 @@ lang: en
   const kept2=await p.evaluate(()=>JSON.stringify(keptFor('mc/log').map(e=>e.phq)));
   ok(kept2==='[[1,null,null],[null,null,3]]'||kept2==='[[null,null,3],[1,null,null]]','1280: a second Finalize keeps a second entry, the first one unchanged '+kept2);
   ok(p.__bad.length===0,'matrix column: no policy violation or page error '+p.__bad.join(' | '));
+
+  /* ---- a matrix drawn as separate questions keeps its stem in view while its items are answered, as far as its own end;
+     drawn as a grid it is not held (SPEC section 5) ---- */
+  const file3=path.join(OUT,'matrixstem.booklet.md');fs.writeFileSync(file3,FILE3);
+  p=await open(390,file3);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+  const stem=()=>p.evaluate(()=>{const box=document.querySelector('#main .mxwrap').parentElement,h=box.querySelector(':scope > h3:first-child'),r=h.getBoundingClientRect(),bar=document.querySelector('.bar'),
+      c=getComputedStyle(bar),sh=c.boxShadow,col=(sh.match(/rgba?\([^)]*\)/)||[''])[0],px=sh&&sh!=='none'?sh.replace(col,'').trim().split(/\s+/).map(parseFloat):[];
+    return {asq:box.classList.contains('mx-asq'),pos:getComputedStyle(h).position,top:r.top,bottom:r.bottom,h:r.height,bar:bar.getBoundingClientRect().bottom,
+      reach:col===c.backgroundColor&&px.length>=3&&px[2]===0?px[1]+(px[3]||0):0,boxBottom:box.getBoundingClientRect().bottom,qs:box.querySelectorAll('.mxq').length,y:scrollY};});
+  let sm=await stem();
+  ok(sm.asq&&sm.qs===9&&sm.pos==='sticky',`390: the nine-item matrix is drawn as separate questions, and its stem is held (sticky) ${JSON.stringify({asq:sm.asq,qs:sm.qs,pos:sm.pos})}`);
+  /* scrolled past item 5: item 6 just under the stem */
+  /* (where the held stem's foot will be: the bar's foot and the stem's height) */
+  for(let i=0;i<2;i++){await p.evaluate(()=>{const q=document.querySelectorAll('#main .mxq')[5],h=document.querySelector('#main .mx-asq > h3:first-child');
+    window.scrollTo(0,scrollY+q.getBoundingClientRect().top-(document.querySelector('.bar').getBoundingClientRect().bottom+h.getBoundingClientRect().height)-2);});await p.waitForTimeout(300);}
+  sm=await stem();
+  const five=await p.evaluate(()=>{const q=document.querySelectorAll('#main .mxq');return {fifthBottom:q[4].getBoundingClientRect().bottom,sixthTop:q[5].getBoundingClientRect().top};});
+  ok(sm.y>0&&five.fifthBottom<=sm.bottom+1&&five.sixthTop>=sm.bottom-1&&Math.abs(sm.top-sm.bar)<=1,`390: scrolled past the fifth item, the stem is held under the bar, its words in view ${JSON.stringify({stem:[sm.top,sm.bottom],bar:sm.bar,five})}`);
+  ok(sm.bar+sm.reach>=sm.top-0.01,`390: nothing scrolled shows between the bar and the held stem: the bar's paint reaches the stem's top ${JSON.stringify({bar:sm.bar,reach:sm.reach,stem:sm.top})}`);
+  await p.screenshot({path:path.join(OUT,'matrix-stem-390.png')});
+  /* the keyboard, walking back up through the items' answers: none it lands on is under the held stem, wholly or in part */
+  await p.evaluate(()=>{const bs=document.querySelectorAll('#main .mxq button');bs[bs.length-1].focus();});
+  const kw=[];
+  for(let i=0;i<20;i++){kw.push(await p.evaluate(()=>{const a=document.activeElement,r=a.getBoundingClientRect(),h=document.querySelector('#main .mx-asq > h3:first-child').getBoundingClientRect();
+      return {item:!!a.closest('.mxq'),top:Math.round(r.top),stem:Math.round(h.bottom),held:Math.abs(h.top-document.querySelector('.bar').getBoundingClientRect().bottom)<=1};}));
+    await p.keyboard.press('Shift+Tab');await p.waitForTimeout(120);}
+  const hid=kw.filter(w=>w.item&&w.top<w.stem-1);
+  ok(kw.filter(w=>w.item&&w.held).length>=8&&hid.length===0,`390: Shift+Tab back up the items: no answer it lands on is under the held stem ${JSON.stringify({held:kw.filter(w=>w.item&&w.held).length,under:hid})}`);
+  /* past the matrix's end, the stem goes with its last item */
+  await p.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await p.waitForTimeout(300);
+  sm=await stem();
+  ok(sm.bottom<=sm.boxBottom+1&&sm.top<sm.bar,`390: scrolled past the matrix, the stem has gone up with its last item, not held over what follows ${JSON.stringify({stem:[sm.top,sm.bottom],box:sm.boxBottom,bar:sm.bar})}`);
+  /* as a grid it is not held; at every width, it is held exactly when the matrix is separate questions */
+  await size(p,1280);await p.evaluate(()=>window.scrollTo(0,0));await p.waitForTimeout(200);
+  sm=await stem();
+  ok(!sm.asq&&sm.pos!=='sticky',`1280: drawn as a grid, the stem is not held ${JSON.stringify({asq:sm.asq,pos:sm.pos})}`);
+  const both=[];for(const w of [320,390,600,760,860,960,1100]){await size(p,w);const x=await stem();both.push([w,x.asq,x.pos]);}
+  ok(both.every(([,a,pos])=>a===(pos==='sticky'))&&both.some(([,a])=>a)&&both.some(([,a])=>!a),`the stem is held at the widths the matrix is separate questions and at no other ${JSON.stringify(both)}`);
+  ok(p.__bad.length===0,'matrix stem: no policy violation or page error '+p.__bad.join(' | '));
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'ALL PASSED');process.exit(fails.length?1:0);
 })().catch(e=>{console.log('FAIL the check stopped: '+String((e&&e.message)||e).split('\n')[0]);process.exit(1);});

@@ -68,11 +68,11 @@ const allShut=()=>folds().length===2&&folds().every(d=>d.attrs.open===undefined)
   chk("the page on show is that record's",E.viewAt("steps/ask").page==="p1");
   const r=E.removeModule("steps");
   chk("removing a module takes its activities' records with it",r.ok&&!E.VIEW.at.has("steps/read")&&!E.VIEW.at.has("steps/ask"));
-  E.loadText(MOD);E.screen="steps/read";E.render();E.viewAt("steps/read").pin=true;const id=E.currentId;
+  E.loadText(MOD);E.screen="steps/read";E.render();E.viewAt("steps/read").probe=true;const id=E.currentId;
   E.closeBooklet();
   chk("closing the booklet leaves the list a view of its own, empty",E.VIEW.at.size===0&&E.VIEW.wiki.q==="");
   E.openBooklet(id);
-  chk("opening it again in the visit brings back its view: its frame shown whole, as it was",!!E.VIEW.at.get("steps/read")&&E.VIEW.at.get("steps/read").pin===true);}
+  chk("opening it again in the visit brings back its view: the record itself, as it was",!!E.VIEW.at.get("steps/read")&&E.VIEW.at.get("steps/read").probe===true);}
 
  /* ---- a booklet opened again in the visit shows what it showed; Clear everything and a newer file start it afresh ---- */
  P.wipe();{const F=P.boot();

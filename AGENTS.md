@@ -86,7 +86,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
    and nothing a file may say does, the spec's title, the renderer and the skill take
    a third number (v0.15.1). The marker and `FORMAT_VERSION` stay as they are, no file
    is re-marked, and the registry needs no release. Any change to what a file may say
-   bumps the minor (v0.15) and re-marks every file this repository holds that carries the current marker (not the fixtures that exist to carry another).
+   bumps the minor (v0.16) and re-marks every file this repository holds that carries the current marker (not the fixtures that exist to carry another).
 
 ## Code that sends a reader's work never goes in `booklet.html`
 

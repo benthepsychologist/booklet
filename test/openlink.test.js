@@ -285,7 +285,7 @@ reset();{const A=P.boot();META["booklet-store"]=STORE;
 reset();{const A=P.boot();
  for(const l of ["en","fr","es","es-AR"]){const B=A.STRINGS[l].booklet;
   const ks=["linkNoStore","linkBadName","linkNoModule","linkMissing","linkBig","linkSlow","linkNotText","linkFailed"];
-  chk(l+": every link message is worded",ks.every(k=>typeof B[k]==="string"&&B[k].length>3)&&/reports\/x\.md/.test(B.linkFromStore("reports/x.md"))&&/Mod/.test(B.linkFromRegistry("Mod")));}
+  chk(l+": every link message is worded",ks.every(k=>typeof B[k]==="string"&&B[k].length>3)&&/reports\/x\.md/.test(B.linkFromStore("reports/x.md"))&&/reports\/x\.md/.test(B.linkFromFolder("reports/x.md"))&&/Mod/.test(B.linkFromRegistry("Mod")));}
  chk("fr and es differ from en",A.STRINGS.fr.booklet.linkBadName!==A.STRINGS.en.booklet.linkBadName&&A.STRINGS.es.booklet.linkBadName!==A.STRINGS.en.booklet.linkBadName);}
 
 P.closePages();

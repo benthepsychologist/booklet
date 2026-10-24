@@ -74,7 +74,7 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads v0.3 only — no earlier format opens |
+| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.15; a file marked with any other 0.x opens as it is, with a notice that some of it may not draw, and a file with no marker, or one not 0.x, is refused |
 | [`SPEC.md`](SPEC.md) | the current format (v0.15), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`submit/`](submit/) | the submit build, never the published file: `node submit/build.js --endpoint <url>` makes `booklet-submit.html`, the one-file renderer with a Submit button that sends a reader's answers to the one address it was built with, on the reader's press (`docs/hosting.md`, "The submit build") |
@@ -209,7 +209,8 @@ own questions.
 - **An unfolded `group`**, or a kind with no colour of its own, is drawn as a `note` is.
 - **Tabs** are a tab bar at the top of the activity's column, under its title and opening, drawn for two or more tabs; on a narrow screen it scrolls sideways inside itself. A module's tabs are a bar above its list of activities.
 - **Pages** are turned at the foot: Back, "Page N of M" and Next, in the one row that one at a time's Back and Next also use. That row and the tab bar start at the column's left edge and keep the prose's measure.
-- **The frame** (the prose before the first question) stays whole above the step when the questions are taken one at a time, whatever its length. When they are all shown, it is held under the top bar while they scroll if it fits whole in the pin's height (`--pin-h`: the lesser of 7.5em of its text and 22% of the window's height); taller, it is reading: it scrolls with its page, nothing cut. A box the keyboard moves to is scrolled clear of the bar and the frame.
+- **One at a time**, what comes before the first question of the part on show (an activity, a tab, or one `***` section of either: prose, a heading, a callout, a picture, a table) is drawn whole above every step, whatever its length. All at once, the part on show is drawn as written and nothing is held in view. A box the keyboard moves to is scrolled clear of the top bar.
+- **A matrix drawn as separate questions** (on a phone, or in a narrow window) keeps its own words, the stem, held under the top bar while its items are answered, until its last item scrolls past; an answer the keyboard moves to is scrolled clear of it. Drawn as a grid, it is not held.
 - **Fonts.** Headings are set in Lexend and body text in Atkinson Hyperlegible, unless the theme's `font` says otherwise.
 - **Nothing is folded but what the author folded.** A screen holding callouts folded with `-` (other than a hint or a solution) has one switch, Open all, that opens or folds exactly those; the reader's choice is kept per booklet in the browser.
 
@@ -316,7 +317,8 @@ and can be dismissed. The page reads the link when it starts and whenever the fr
 address bar, so a reload opens the same thing.
 
 **The default folder is only read.** A booklet opened from `modules/` is listed, opened again and offered a newer file just as
-a store booklet is (all of the above), and its quiet line says the same, but it is never the host's: a host script on the
+a store booklet is (all of the above), and its quiet line names the folder ("Opened by a link, from the modules folder beside
+this page: week.booklet.md"), but it is never the host's: a host script on the
 page is not told of it and cannot read it, so it is never saved back to the folder, and the reader's answers stay in the
 browser and in any copy they download (`docs/hosting.md`, "Which booklets are the host's"). It is a separate booklet from one
 of the same name opened from a declared store, and from one of the same name in another default folder of the same site: a

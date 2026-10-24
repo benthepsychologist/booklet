@@ -1,16 +1,14 @@
-// Browser check of tabs, the pager, one at a time across pages, the fold switch and the frame (0.15), at 390 and 1280 px.
+// Browser check of tabs, the pager, one at a time across pages, and the fold switch (0.15), at 390 and 1280 px.
 // The page never scrolls sideways; an activity's column is the whole content area (wider than the module screen's centred
-// column at 1280), and its tab bar and pager start at its left edge and keep the prose's measure; the tab bar follows the ARIA tabs pattern by keyboard; a page turn brings the content's top into view and puts the focus
-// there, and a screen reader hears which page it is; a typed answer survives tab and page changes; the fold switch shows
-// only with callouts the author folded and never opens a hint; the frame is held under the bar while the questions scroll,
-// and stays above the step one at a time; a frame is held only when it fits whole in the pin's height (a short line of
-// instructions, a short key table), and a long plain reading is not held and nothing of it is cut; one at a time a frame of
-// any length (a problem statement, a reference table) stays above every step; a held frame that stops fitting when the
-// window gets shorter or narrower is drawn again as reading, keeping the box being typed in, and a citation open in a long opening stays
-// open when the language changes; a control the keyboard reaches is never under the bar and the frame; a link to a module's
-// tab opens it.
+// column at 1280), and its tab bar and pager start at its left edge and keep the prose's measure; the tab bar follows the
+// ARIA tabs pattern by keyboard, and fades at an edge its tabs run past; a page turn brings the activity's top into view and
+// puts the focus there, and a screen reader hears which page it is; a typed answer survives tab and page changes; the fold
+// switch shows only with callouts the author folded and never opens a hint; nothing of an activity is held in view, and a
+// control the keyboard reaches is never under the bar; one at a time, what comes before the first question (a line of
+// instructions, a problem statement, a reference table) is drawn whole above every step; a citation open in an activity's
+// prose stays open when the language changes; a link to a module's tab opens it.
 // Replaces the page menu's check (pagesmenu-browser.js), which 0.15 removed with the menu. Invented content, but for the
-// check-in's instruction line and items, which follow the PHQ-9's wording as an example of a short frame.
+// check-in's instruction line and items, which follow the PHQ-9's wording.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/tabs-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
@@ -97,7 +95,7 @@ Four.
 
 > [!module|m end] End
 
-> [!module|fr] Frames
+> [!module|fr] Readings
 
 > [!tab] Check-ins
 
@@ -171,14 +169,6 @@ The kettle in the shared kitchen has been switching itself off before the water 
 
 > [!text|r3] Anything else?
 
-> [!activity|five] Five lines
-
-Answer these about the kettle you use most at home, taking as long as you need for each one, and skip any question you like, then come back to it later on.
-
-> [!text|f1] A short answer?
-
-> [!text|f2] A longer answer?
-
 > [!activity|cite] With a citation
 
 Answer against the source.[^src] Keep the answers short; a phrase is enough for each. Skip anything you like, and come back later in the week when you have had time to look again at the kettle and the stove and the cups on the shelf and think it over.
@@ -186,33 +176,6 @@ Answer against the source.[^src] Keep the answers short; a phrase is enough for 
 > [!text|c1] Your answer?
 
 [^src]: Made-up source, page 3. "A quoted line." Verified
-
-> [!activity|essay] A short history
-
-Kettles were once heated on open fires, and the shape of the spout followed from how the steam had to leave the body without scalding the hand that poured. Over the years the handle moved, the lid grew a little knob, and the base widened so the kettle would not tip on an uneven hearth.
-
-When stoves arrived, the base flattened to sit on a hot plate, and makers began to add a whistle so that the cook could leave the room. The whistle is a small chamber with two holes, and the steam sets the air in it ringing at a pitch that carries.
-
-Electric kettles moved the element inside, then under a plate, and added a switch that trips when the steam reaches it. Today a kettle may keep water at a set heat for tea, and its shape still answers the same old questions.
-
-> [!text|e1] What surprised you in this history?
-
-> [!activity|key tab:keys] Calm
-
-| Score | Means |
-| --- | --- |
-| 1 | Not at all |
-| 7 | Completely |
-
-> [!scale|k1] How calm were you today?
-
-1. Not at all
-7. Completely
-
-> [!scale|k2] How calm were you yesterday?
-
-1. Not at all
-7. Completely
 
 > [!activity|link tab:keys] Where next
 
@@ -241,14 +204,22 @@ See [[#Check-ins]] for the two-week questions.
   const listed=p=>p.evaluate(()=>['Plan','Why a budget helps','Many areas'].filter(t=>[...document.querySelectorAll('#main [role=tabpanel] .card')].some(c=>c.textContent.includes(t))).join('|'));
   const foot=p=>p.evaluate(()=>{const f=document.querySelectorAll('#main .cd-foot');return f.length!==1?'('+f.length+' foot rows)':[...f[0].children].map(c=>c.textContent.trim()).join(' | ');});
   const click=async(p,sel,text)=>{await p.locator(sel).filter(text?{hasText:text}:{}).first().click();await p.waitForTimeout(350);};
-  /* the frame on show, if any: held or not, its words */
-  const frameNow=p=>p.evaluate(()=>{const n=document.querySelector('#main .pin');return n?{pinned:true,stick:n.classList.contains('pin-stick')&&getComputedStyle(n).position==='sticky',text:n.textContent.trim().slice(0,60),h:Math.round(n.getBoundingClientRect().height)}:{pinned:false};});
-  /* the frame is drawn whole: nothing in it overflows a clipped box or runs past a height limit, nothing is faded, and it has
-     no button (no Show all) */
-  const whole=p=>p.evaluate(()=>{const n=document.querySelector('#main .pin');if(!n) return false;
-    const boxes=[n,...n.querySelectorAll('*')].filter(x=>!x.closest('.md-table')||x.classList.contains('md-table'));
-    return !n.querySelector('button')&&boxes.every(x=>{const c=getComputedStyle(x);return !(c.overflowY==='hidden'||c.overflowY==='clip')||x.scrollHeight<=x.clientHeight+1;})
-      &&boxes.every(x=>{const c=getComputedStyle(x);return (c.maskImage||'none')==='none'&&(c.webkitMaskImage||'none')==='none'&&(c.maxHeight==='none'||x.scrollHeight<=x.clientHeight+1);});});
+  /* after a page turn: the activity (its column: title, opening, tab bar) starts just under the bar, its title not behind the
+     bar, unless the window is at the very top already (raw: the numbers) */
+  const atTop=(p,raw)=>p.evaluate(raw=>{const b=document.querySelector('#main .ap-body'),c=b&&b.closest('.col'),h=c&&c.querySelector('h2'),
+      bar=document.querySelector('.bar').getBoundingClientRect(),top=parseFloat(document.documentElement.style.getPropertyValue('--ap-top'))||0;
+    const r={col:c&&Math.round(c.getBoundingClientRect().top),title:h&&Math.round(h.getBoundingClientRect().top),bar:Math.round(bar.bottom),apTop:Math.round(top),y:Math.round(scrollY)};
+    return raw?r:!!c&&!!h&&r.title>=r.bar-1&&(r.y===0||Math.abs(r.col-r.apTop)<=2);},!!raw);
+  /* what is held in view (position sticky) inside the activity's body, if anything */
+  const held=p=>p.evaluate(()=>[...document.querySelectorAll('#main .ap-body *')].filter(x=>getComputedStyle(x).position==='sticky').map(x=>x.className||x.tagName));
+  /* the block whose words include `words`, drawn above the step on show (one at a time) and not inside any step: shown, whole
+     (nothing in it clipped or faded), and the table rows in it */
+  const lead=(p,words)=>p.evaluate(words=>{const u=[...document.querySelectorAll('#main .oat-unit')].find(x=>!x.hidden),body=document.querySelector('#main .ap-body');
+    const n=body&&[...body.children].find(k=>k.textContent.includes(words));if(!n||!u) return {lead:!!n,step:!!u};
+    const r=n.getBoundingClientRect(),tr=[...n.querySelectorAll('tr')],cut=[n,...n.querySelectorAll('*')].some(x=>{const c=getComputedStyle(x);
+      return ((c.overflowY==='hidden'||c.overflowY==='clip')&&x.scrollHeight>x.clientHeight+1&&!x.closest('.md-table'))||(c.maskImage&&c.maskImage!=='none');});
+    return {shown:r.height>0&&!n.closest('[hidden]'),inStep:!!n.closest('.oat'),above:r.bottom<=u.getBoundingClientRect().top+1,cut,rows:tr.length,
+      rowsIn:tr.every(x=>x.getBoundingClientRect().height>0),q:u.textContent.trim().slice(0,40)};},words);
   /* what has the keyboard's focus, as the accessibility tree has it: its role and name (what a screen reader says) */
   const focusedAx=async p=>{const s=await p.context().newCDPSession(p);await s.send('Accessibility.enable');
     const {nodes}=await s.send('Accessibility.getFullAXTree');await s.detach();
@@ -293,25 +264,20 @@ See [[#Check-ins]] for the two-week questions.
     ok(k.tab==='tab'&&k.text==='Read more'&&k.sel==='true',W+': Right arrow selects the next tab and the focus moves to it '+JSON.stringify(k));
     await p.keyboard.press('ArrowRight');await p.waitForTimeout(300);
     ok(await tabs(p)==='Do it*|Read more',W+': Right arrow on the last goes round to the first');
+    const fits=await p.evaluate(()=>{const t=document.querySelector('#main [role=tablist]'),m=getComputedStyle(t);return {more:t.getAttribute('data-more'),mask:m.maskImage||m.webkitMaskImage||'none',over:t.scrollWidth>t.clientWidth};});
+    ok(!fits.over&&!fits.more&&fits.mask==='none',W+': two tabs that fit: no fade at either edge '+JSON.stringify(fits));
 
-    /* the frame, all at once: held under the bar while the questions scroll */
-    const pin=await p.evaluate(()=>{const n=document.querySelector('#main .pin');return n&&{stick:n.classList.contains('pin-stick'),pos:getComputedStyle(n).position,text:n.textContent};});
-    ok(pin&&pin.stick&&pin.pos==='sticky'&&/against your last month/.test(pin.text),W+': the frame is drawn, held (sticky) '+JSON.stringify(pin&&{stick:pin.stick,pos:pin.pos}));
-    await p.evaluate(()=>window.scrollTo(0,document.querySelector('#main textarea[id]')?document.querySelectorAll('#main textarea')[2].getBoundingClientRect().top+scrollY-300:400));await p.waitForTimeout(300);
-    const held=await p.evaluate(()=>{const n=document.querySelector('#main .pin').getBoundingClientRect(),top=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ap-top'))||0;
-      return {top:Math.round(n.top),bar:Math.round(top),h:Math.round(n.height),vh:innerHeight,scrolled:Math.round(scrollY)};});
-    ok(held.scrolled>0&&Math.abs(held.top-held.bar)<=24,W+': scrolled down, the frame stays at the top, under the bar '+JSON.stringify(held));
-    ok(held.h<=held.vh*0.35,W+': the held frame takes no more than a third of the screen '+JSON.stringify(held));
-    ok(await whole(p),W+': the frame is drawn whole: nothing in it is cut or faded, and there is nothing to press to see the rest');
-    /* the keyboard: walking back through the boxes, each one it lands on is below the bar and the frame, never behind them */
+    /* all at once, nothing is held: the words before the questions scroll away with them */
+    ok((await held(p)).length===0,W+': nothing in the activity is held in view (no sticky block) '+JSON.stringify(await held(p)));
+    await p.evaluate(()=>window.scrollTo(0,document.querySelectorAll('#main textarea')[2].getBoundingClientRect().top+scrollY-300));await p.waitForTimeout(300);
+    /* the keyboard: walking back through the boxes, each one it lands on is below the bar, never behind it */
     await p.evaluate(()=>{const t=[...document.querySelectorAll('#main textarea')].pop();t.focus();});
     const walk=[];
-    for(let i=0;i<4;i++){walk.push(await p.evaluate(()=>{const a=document.activeElement,r=a.getBoundingClientRect(),n=document.querySelector('#main .pin').getBoundingClientRect();
-        return {el:a.tagName,top:Math.round(r.top),under:Math.round(n.bottom)};}));
+    for(let i=0;i<4;i++){walk.push(await p.evaluate(()=>{const a=document.activeElement,r=a.getBoundingClientRect();
+        return {el:a.tagName,top:Math.round(r.top),under:Math.round(document.querySelector('.bar').getBoundingClientRect().bottom)};}));
       await p.keyboard.press('Shift+Tab');await p.waitForTimeout(150);}
     const hidden=walk.filter(w=>/TEXTAREA|INPUT|BUTTON/.test(w.el)&&w.top<w.under-1);
-    ok(walk.length===4&&hidden.length===0,W+': Shift+Tab back up the page: no box it lands on is under the bar or the frame '+JSON.stringify(walk));
-    await p.screenshot({path:path.join(OUT,'tabs-frame-'+W+'.png')});
+    ok(walk.length===4&&hidden.length===0,W+': Shift+Tab back up the page: no box it lands on is under the bar '+JSON.stringify(walk));
     await p.evaluate(()=>window.scrollTo(0,0));
 
     /* typed answers survive tab and page changes */
@@ -324,12 +290,14 @@ See [[#Check-ins]] for the two-week questions.
     ok(turned.text&&turned.focus,W+': Next turns the page and puts the focus on its content '+JSON.stringify(turned));
     const heard=await focusedAx(p);
     ok(heard&&heard.role==='group'&&heard.name==='Page 2 of 2',W+': the accessibility tree: what has the focus is a group named Page 2 of 2, which is what a screen reader says '+JSON.stringify(heard));
-    ok(!turned.end&&turned.top>=turned.margin-2&&turned.top<=turned.margin+24,W+': the content\'s top is just under the bar, not behind it (page two is long enough to scroll it anywhere) '+JSON.stringify(turned));
+    ok(!turned.end&&turned.top>=turned.margin-2,W+': the content\'s top is under the bar, not behind it (page two is long enough to scroll it anywhere) '+JSON.stringify(turned));
+    ok(await atTop(p),W+': Next opens the page at the top of the activity: its title just under the bar, not behind it and not part-way down '+JSON.stringify(await atTop(p,true)));
     ok(/^Back \| Page 2 of 2 \| /.test(await foot(p)),W+': page two: Back, Page 2 of 2: '+await foot(p));
-    ok(await p.locator('#main .pin').count()===1,W+': the frame is drawn on the tab\'s second page too');
     await click(p,'#main [role=tab]','Read more');await click(p,'#main [role=tab]','Do it');
     ok(/Page 2 of 2/.test(await foot(p)),W+': the tab keeps the page it was left on this visit');
+    await p.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await p.waitForTimeout(200);
     await click(p,'#main .cd-foot .pg-back');
+    ok(await atTop(p),W+': so does Back, from the foot of page two '+JSON.stringify(await atTop(p,true)));
     ok(await p.locator('#main textarea').first().inputValue()==='hello typed',W+': after a tab change and two page turns the typed answer is there');
     ok(await sideways(p)<=0,W+': no sideways scroll on the pages');
 
@@ -337,8 +305,8 @@ See [[#Check-ins]] for the two-week questions.
     await click(p,'#main .oat-ctl button','One at a time');
     const s1=await foot(p);
     ok(/^Back \| Page 1 of 2 \| Next question$/.test(s1)&&await p.locator('#main .oat-nav').count()===0,W+': one at a time, on the first question still to answer: the foot\'s one row steps: '+s1);
-    const oatPin=await p.evaluate(()=>{const n=document.querySelector('#main .pin'),u=document.querySelector('#main .oat');return n&&u&&{stick:n.classList.contains('pin-stick'),above:n.getBoundingClientRect().bottom<=u.getBoundingClientRect().top+1};});
-    ok(oatPin&&!oatPin.stick&&oatPin.above,W+': one at a time, the frame is above the steps '+JSON.stringify(oatPin));
+    const oatLead=await lead(p,'against your last month');
+    ok(oatLead.shown&&!oatLead.inStep&&oatLead.above&&(await held(p)).length===0,W+': one at a time, the line before the first question is drawn above the steps, in none of them, and not held '+JSON.stringify(oatLead));
     while(await p.locator('#main .cd-foot .oat-next').count()) await click(p,'#main .cd-foot .oat-next');
     const s3=await foot(p);
     ok(/^Back \| Page 1 of 2 \| Next$/.test(s3),W+': on the last step Next turns the page: '+s3);
@@ -352,7 +320,6 @@ See [[#Check-ins]] for the two-week questions.
     /* the fold switch: only where the author folded; never a hint */
     ok(await p.locator('#main .fold-sw').count()===0,W+': a tab with no folded callout has no switch');
     await click(p,'#main [role=tab]','Read more');
-    ok(await p.locator('#main .pin').count()===0,W+': a tab that reads (a heading, a callout) before its question has no frame: its reading is drawn whole');
     const sw=p.locator('#main .fold-sw');
     ok(await sw.count()===1&&(await sw.getAttribute('aria-checked'))==='false',W+': the tab with a folded callout has one switch, off');
     const fold=()=>p.evaluate(()=>({au:[...document.querySelectorAll('#main details.au-fold')].map(d=>d.open),all:[...document.querySelectorAll('#main details')].filter(d=>!d.classList.contains('au-fold')).map(d=>d.open)}));
@@ -370,103 +337,66 @@ See [[#Check-ins]] for the two-week questions.
     const many=await p.evaluate(()=>{const t=document.querySelector('#main [role=tablist]');return {tabs:t.querySelectorAll('[role=tab]').length,inner:t.scrollWidth>t.clientWidth,ow:getComputedStyle(t).overflowX};});
     ok(many.tabs===4&&(W===1280||many.inner&&many.ow==='auto'),W+': four long tabs: '+(W===1280?'drawn':'the bar scrolls sideways inside itself')+' '+JSON.stringify(many));
     ok(await sideways(p)<=0,W+': and the page does not scroll sideways');
+    /* the bar shows there is more to scroll to: it fades at the edge the tabs run past, and only when they do */
+    const cue=()=>p.evaluate(()=>{const t=document.querySelector('#main [role=tablist]'),m=getComputedStyle(t);
+      return {more:t.getAttribute('data-more'),mask:m.maskImage||m.webkitMaskImage||'none',over:t.scrollWidth>t.clientWidth};});
+    let cu=await cue();
+    if(cu.over){ok(cu.more==='end'&&cu.mask!=='none',W+': the bar runs past its end: it fades there, the cue that there is more '+JSON.stringify(cu));
+      await p.evaluate(()=>{const t=document.querySelector('#main [role=tablist]');t.scrollLeft=t.scrollWidth;});await p.waitForTimeout(250);cu=await cue();
+      ok(cu.more==='start'&&cu.mask!=='none',W+': scrolled to its end, it fades at its start instead '+JSON.stringify(cu));
+      await p.evaluate(()=>{const t=document.querySelector('#main [role=tablist]');t.scrollLeft=0;});await p.waitForTimeout(250);}
+    else ok(!cu.more&&cu.mask==='none',W+': four tabs that fit: no fade '+JSON.stringify(cu));
+    if(W===390) ok(cu.over,W+': (the four long tabs do run past the bar at this width)');
     await p.locator('#main [role=tab]').last().click();await p.waitForTimeout(300);
     ok(/Four/.test(await p.locator('#main [role=tabpanel]').innerText()),W+': the last tab can be reached and shown');
     await p.screenshot({path:path.join(OUT,'tabs-many-'+W+'.png')});
 
-    /* what is pinned: a short line of instructions, and a short key table, whole; a long plain reading is not pinned */
-    const toFrames=async name=>{await p.locator('#btnHome').click();await p.waitForTimeout(500);
+    const toAct=async name=>{await p.locator('#btnHome').click();await p.waitForTimeout(500);
       if(!(await p.locator('#main button.card').count())) await click(p,'#main button.small.primary','Open');
-      await click(p,'#main button.card','Frames');
-      await click(p,'#main [role=tab]',name==='Calm'||name==='Where next'?'Keys':'Check-ins');
+      await click(p,'#main button.card','Readings');
+      await click(p,'#main [role=tab]',name==='Where next'?'Keys':'Check-ins');
       await click(p,'#main button.card',name);};
-    await toFrames('Two weeks');
-    let fr=await frameNow(p);
-    ok(fr.pinned&&fr.stick&&/Over the last 2 weeks/.test(fr.text),W+': a short line of instructions before the questions is pinned '+JSON.stringify(fr));
-    ok(await whole(p),W+': whole');
-    await p.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await p.waitForTimeout(250);
-    const held2=await p.evaluate(()=>{const n=document.querySelector('#main .pin').getBoundingClientRect();return {top:Math.round(n.top),bar:parseFloat(document.documentElement.style.getPropertyValue('--ap-top'))};});
-    ok(Math.abs(held2.top-held2.bar)<=24,W+': and held under the bar as the questions scroll '+JSON.stringify(held2));
-    await toFrames('A short history');
-    fr=await frameNow(p);
-    const read=await p.evaluate(()=>{const ps=[...document.querySelectorAll('#main .ap-body p')].filter(x=>/Kettles|stoves arrived|Electric kettles/.test(x.textContent));
-      const clipped=ps.some(x=>{for(let n=x;n&&n.id!=='main';n=n.parentElement){const c=getComputedStyle(n);if((c.overflowY==='hidden'||c.overflowY==='clip')&&n.scrollHeight>n.clientHeight+1) return true;
-        if(c.maskImage&&c.maskImage!=='none'||c.webkitMaskImage&&c.webkitMaskImage!=='none') return true;}return false;});
-      return {paras:ps.length,chars:ps.map(x=>x.textContent).join(' ').length,clipped,sticky:ps.some(x=>x.closest('[class*=pin]'))};});
-    ok(!fr.pinned&&read.paras===3&&read.chars>=700&&!read.clipped&&!read.sticky,W+': a '+read.chars+'-character plain reading ending in one question is not pinned, and nothing of it is cut '+JSON.stringify({fr,read}));
-    await p.screenshot({path:path.join(OUT,'tabs-reading-'+W+'.png')});
-    await toFrames('Calm');
-    fr=await frameNow(p);
-    const rows=await p.evaluate(()=>{const n=document.querySelector('#main .pin');if(!n) return null;const b=n.getBoundingClientRect(),tr=[...n.querySelectorAll('tr')];
-      return {rows:tr.length,inside:tr.every(r=>r.getBoundingClientRect().bottom<=b.bottom+1)};});
-    ok(fr.pinned&&rows&&rows.rows===3&&rows.inside,W+': a short key table before a scale is pinned, every row of it in view '+JSON.stringify({fr,rows}));
-    ok(await whole(p),W+': whole');
-    /* one at a time the frame is not held, so whatever its length it stays, whole, above every step: a four-sentence problem
-       statement and a three-row reference table, at steps two and three (the reader answers against it) */
-    for(const [name,last,qs] of [['A longer problem statement','the tea club meets on Thursday',['Who should decide','What would change your mind']],
-                                 ['A reference table','Borrow',['Why?','Anything else?']]]){
-      await toFrames(name);await click(p,'#main .oat-ctl button','One at a time');
+    /* one at a time, what comes before the first question stays, whole, above every step, whatever its length: a line of
+       instructions, a four-sentence problem statement and a three-row reference table, at steps two and three (the reader
+       answers against it) */
+    for(const [name,words,qs] of [['Two weeks','Over the last 2 weeks',['Feeling down','Trouble falling']],
+                                  ['A longer problem statement','the tea club meets on Thursday',['Who should decide','What would change your mind']],
+                                  ['A reference table','Borrow',['Why?','Anything else?']]]){
+      await toAct(name);
+      if(name==='Two weeks'){
+        /* all at once, nothing is held: scrolled to the foot of eight questions, the line before them has moved up with the
+           page, by as much as it scrolled, like any text */
+        const lineTop=()=>p.evaluate(()=>{const n=[...document.querySelectorAll('#main .ap-body p')].find(x=>/Over the last 2 weeks/.test(x.textContent));
+          return {top:n.getBoundingClientRect().top,y:scrollY};});
+        await p.evaluate(()=>window.scrollTo(0,0));await p.waitForTimeout(200);const t0=await lineTop();
+        await p.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await p.waitForTimeout(300);const t1=await lineTop();
+        ok(t1.y>t0.y&&Math.abs((t0.top-t1.top)-(t1.y-t0.y))<=1&&(await held(p)).length===0,W+': all at once, scrolled to the foot of the questions, the line before them has moved up with the page like any text '+JSON.stringify({t0,t1}));
+        await p.evaluate(()=>window.scrollTo(0,0));}
+      await click(p,'#main .oat-ctl button','One at a time');
       for(const [i,q] of qs.entries()){
         await click(p,'#main .cd-foot .oat-next');
-        const st=await p.evaluate(()=>{const n=document.querySelector('#main .pin'),u=[...document.querySelectorAll('#main .oat-unit')].find(x=>!x.hidden);
-          if(!n||!u) return {pin:!!n,step:!!u};const r=n.getBoundingClientRect(),tr=[...n.querySelectorAll('tr')];
-          return {shown:r.height>0&&!n.closest('[hidden]'),text:n.textContent,rows:tr.length,rowsIn:tr.every(x=>x.getBoundingClientRect().height>0&&x.getBoundingClientRect().bottom<=r.bottom+1),
-            above:r.bottom<=u.getBoundingClientRect().top+1,stick:n.classList.contains('pin-stick'),q:u.textContent.trim().slice(0,40)};});
-        ok(st.shown&&st.text.includes(last)&&st.above&&!st.stick&&st.q.includes(q)&&(name!=='A reference table'||st.rows===4&&st.rowsIn),
-          W+': one at a time, at step '+(i+2)+' of "'+name+'", the frame is still drawn, whole, above the step '+JSON.stringify({...st,text:undefined}));
-        ok(await whole(p),W+': whole');}
+        const st=await lead(p,words);
+        ok(st.shown&&!st.inStep&&st.above&&!st.cut&&st.q.includes(q)&&(name!=='A reference table'||st.rows===4&&st.rowsIn),
+          W+': one at a time, at step '+(i+2)+' of "'+name+'", what comes before the first question is still drawn, whole, above the step '+JSON.stringify(st));}
       await click(p,'#main .oat-ctl button','All at once');}
     if(W===390){
-      /* a citation opened in a frame too tall to hold (drawn as reading, after a second draw) stays open when the language
-         changes (the second draw opens it again, as the first did) */
+      /* a citation open in an activity's prose stays open when the language changes */
       await p.setViewportSize({width:390,height:844});await p.waitForTimeout(300);
-      await toFrames('With a citation');
-      const cf=await frameNow(p);
+      await toAct('With a citation');
       await p.locator('#main .rd-mark').first().click();await p.waitForTimeout(300);
       const was=await p.evaluate(()=>!document.getElementById('rd-panel').hasAttribute('hidden'));
       await p.locator('.lang button[data-lang="fr"]').click();await p.waitForTimeout(500);
       const cp=await p.evaluate(()=>{const e=document.getElementById('rd-panel');return {open:!e.hasAttribute('hidden'),text:e.textContent.slice(0,80),lang:document.documentElement.lang};});
-      ok(!cf.pinned&&was&&cp.open&&/Made-up source/.test(cp.text),'390x844: a citation open in a long opening stays open when the language changes to French '+JSON.stringify({cf,was,cp}));
+      ok(was&&cp.open&&/Made-up source/.test(cp.text),'390x844: a citation open in an activity\'s prose stays open when the language changes to French '+JSON.stringify({was,cp}));
       await p.locator('.lang button[data-lang="en"]').click();await p.waitForTimeout(400);
       if(await p.evaluate(()=>!document.getElementById('rd-panel').hasAttribute('hidden'))){await p.keyboard.press('Escape');await p.waitForTimeout(200);}
-      /* a held frame that stops fitting when the window gets shorter (a phone's keyboard): drawn again as reading, and the box
-         being typed in keeps the focus, its text and its selection */
-      await toFrames('Five lines');
-      const before=await frameNow(p);
-      await p.locator('#main textarea').nth(1).focus();await p.keyboard.type('line one');await p.keyboard.press('Enter');await p.keyboard.type('line two');
-      await p.evaluate(()=>document.activeElement.setSelectionRange(3,7));
-      /* the box, by what is said for it (its label) and its place among the boxes: its element is a new one after a redraw */
-      const box=()=>p.evaluate(()=>{const a=document.activeElement,t=a&&a.tagName==='TEXTAREA';
-        const said=t?[...(a.labels||[])].map(l=>l.textContent).concat((a.getAttribute('aria-labelledby')||'').split(/\s+/).map(i=>(document.getElementById(i)||{}).textContent||'')).join(' ').trim():'';
-        return {box:t?[...document.querySelectorAll('#main textarea')].indexOf(a)+': '+said:a&&a.tagName,value:a&&a.value,sel:a&&[a.selectionStart,a.selectionEnd]};});
-      const typed=await box();
-      await p.setViewportSize({width:390,height:450});await p.waitForTimeout(500);
-      const after=await frameNow(p);
-      const kept=await box();
-      ok(before.pinned&&before.stick&&!after.pinned,'390: a frame held at 844 high is drawn as reading when the window is 450 high '+JSON.stringify({before,after}));
-      ok(/^1: .*A longer answer/.test(typed.box)&&kept.box===typed.box&&kept.value==='line one\nline two'&&kept.sel.join()==='3,7',
-        '390: the redraw keeps the box being typed in: its focus, its text and its selection '+JSON.stringify({typed,kept}));
-      await p.keyboard.type('Q');
-      const went=await p.evaluate(()=>document.activeElement.value);
-      ok(went==='linQe\nline two','390: and typing goes on over that selection '+JSON.stringify(went));
       await p.setViewportSize({width:390,height:800});await p.waitForTimeout(300);}
-    if(W===1280){
-      /* the same when the window gets narrower: a frame held at 1280 wide that wraps past the pin's height at 390 is drawn
-         again as reading when its text reflows (the frame's own ResizeObserver), and the box being typed in keeps the focus */
-      await toFrames('With a citation');
-      const wide=await frameNow(p);
-      await p.locator('#main textarea').first().focus();await p.keyboard.type('narrow');
-      await p.setViewportSize({width:390,height:800});await p.waitForTimeout(700);
-      const narrow=await frameNow(p),still=await p.evaluate(()=>{const a=document.activeElement;return {tag:a&&a.tagName,value:a&&a.value};});
-      ok(wide.pinned&&wide.stick&&!narrow.pinned&&still.tag==='TEXTAREA'&&still.value==='narrow',
-        '1280 to 390 wide: a held frame that no longer fits is drawn as reading, and the box being typed in keeps the focus and its text '+JSON.stringify({wide,narrow,still}));
-      await p.setViewportSize({width:1280,height:800});await p.waitForTimeout(300);}
     /* a link to a module's tab opens the module's screen on it */
-    await toFrames('Where next');
+    await toAct('Where next');
     await click(p,'#main a.alink','Check-ins');
     ok(await tabs(p)==='Check-ins*|Keys'&&/Two weeks/.test(await p.locator('#main [role=tabpanel]').innerText()),W+': a link to a module\'s tab name opens the module\'s screen on that tab: '+await tabs(p));
     ok(await p.evaluate(()=>document.activeElement&&document.activeElement.id)==='tb-check-ins',W+': with the focus on the tab');
-    ok(await sideways(p)<=0,W+': no sideways scroll on the frames');
+    ok(await sideways(p)<=0,W+': no sideways scroll on the readings');
     ok(p.__bad.length===0,W+': no policy violation or page error: '+p.__bad.join(' | '));
     await p.context().close();
   }

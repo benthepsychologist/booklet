@@ -134,7 +134,7 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:", "pin:"), "row": ("end",), "text": ("long",),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (), "tab": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
@@ -776,6 +776,23 @@ def body_end(lines, i):
     return k
 
 
+def quoted_queries(lines, i):
+    """The line numbers of the `booklet query` blocks in the body of the Booklet line at i, at any depth of `>`, and not inside
+    another fence there: a query view in a callout (a `[!group]` fold, a hint, a note) is not yet drawn as a view (SPEC.md
+    section 6), so a renderer shows it as code."""
+    out, fence = [], None
+    for k in range(i + 1, body_end(lines, i)):
+        c = FENCE_LINE.match(re.sub(r'^(?:>[ \t]?)+', '', lines[k]))
+        if fence:
+            if c and c.group(1)[0] == fence[0] and len(c.group(1)) >= len(fence) and not c.group(2).strip():
+                fence = None
+        elif c:
+            fence, w = c.group(1), c.group(2).split()
+            if len(w) > 1 and w[0].lower() == "booklet" and w[1].lower() == "query":
+                out.append(k + 1)
+    return out
+
+
 def claim_end(kind, lines, i):
     """The index past everything the renderer reads as belonging to the Booklet line at i: its body, then the list straight under
     a choice, multi (a task list), scale (a numbered list), menu (bullets) or matrix (bullets, then numbered anchors)."""
@@ -890,8 +907,6 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: `status:{val}` is not a setting a line takes (only `status:off`, which hides the card's status line); a renderer ignores it")
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
-        elif key == "pin" and val.lower() != "off":
-            err(f, f"line {n}: `pin:{val}` is not a setting; the one value is `pin:off` (the frame scrolls away with the page)")
     for flag in sorted(w["flags"]):
         if flag not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
@@ -1222,6 +1237,9 @@ def check_format(f, text, fm):
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
             check_settings(f, n, kind, w)
+            for q in quoted_queries(lines, i):
+                warn(f, f"line {q}: a query view inside a callout (here a `[!{kind}]`) is not yet supported: a renderer draws the "
+                        f"`booklet query` block as code; put it in the activity's own text, outside the callout")
             if rowst["open"] and kind in ("data", "records", "module", "activity", "tab"):
                 close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line", "tab": "a tab line"}.get(kind, f"the {kind} section"))
             if kind == "notice":

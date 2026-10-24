@@ -1,10 +1,11 @@
-// Browser check of four layout rules of 0.15's pager and pinned frame, at 1280 and 390 px. Each fails without its rule:
-//  1. the held frame sits flush under the bar (`.pin-stick` is held 12px above --ap-top, which keeps a 12px gap for a side menu);
-//  2. the page's scroll padding is the bar, the held frame and 24px, with no 12px gap counted (holdTop);
+// Browser check of four layout rules of 0.15's bar and pager, at 1280 and 390 px. Each fails without its rule:
+//  1. nothing scrolled shows through the bar: it is opaque (--bar-bg, light and dark);
+//  2. the page's scroll padding is the bar and 24px (--ap-top and 12px), so a box the keyboard moves to is clear of the bar;
 //  3. the page count takes the room its row has (`.pg-at{flex:1 1 auto}`): between Back and Next, or to the row's end when
 //     Next has wrapped;
 //  4. Next on a row of its own, on a phone, stays on the right (`.cd-foot>.primary{margin-left:auto}`).
-// Invented content. Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/footpin-browser.js <booklet.html> <outdir>
+// (Begun as footpin-browser.js, with two checks of the prose 0.15 first held under the bar, which went with it.)
+// Invented content. Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pager-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
@@ -38,7 +39,7 @@ ${Q.map((q,i)=>`> [!text|q${i+1}] ${q}`).join('\n\n')}
 `;
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
-  const file=path.join(OUT,'footpin.booklet.md');fs.writeFileSync(file,FILE);
+  const file=path.join(OUT,'pager.booklet.md');fs.writeFileSync(file,FILE);
   const b=await chromium.launch();
   for(const W of [1280,390]){
     const p=await (await b.newContext({viewport:{width:W,height:800}})).newPage();
@@ -51,14 +52,17 @@ ${Q.map((q,i)=>`> [!text|q${i+1}] ${q}`).join('\n\n')}
     if(!(await p.locator('#main button.card').count())){await p.locator('#btnHome').click();await p.waitForTimeout(500);}
     await p.locator('#main button.card').first().click();await p.waitForTimeout(700);
 
-    /* 1 and 2: the frame is held; scrolled down, it sits flush under the bar, and the scroll padding counts the bar and it */
+    /* 1 and 2: scrolled down, the bar's own colour is opaque, in the light and the dark scheme; the scroll padding is the bar and 24px */
     await p.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await p.waitForTimeout(400);
-    const pin=await p.evaluate(()=>{const n=document.querySelector('#main .pin-stick'),bar=document.querySelector('.bar');if(!n||!bar) return null;
-      const r=n.getBoundingClientRect(),br=bar.getBoundingClientRect();
-      return {top:r.top,h:r.height,barBottom:br.bottom,barH:br.height,scrolled:scrollY,pad:parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)};});
-    ok(!!pin&&pin.scrolled>0,W+': the frame is held (sticky) and the page has scrolled '+JSON.stringify(pin));
-    ok(!!pin&&Math.abs(pin.top-pin.barBottom)<=1,W+': the held frame sits flush under the bar, no gap '+JSON.stringify(pin&&{top:pin.top,bar:pin.barBottom}));
-    ok(!!pin&&Math.abs(pin.pad-Math.ceil(pin.barH+pin.h+24))<=1,W+': the scroll padding is the bar, the frame and 24px '+JSON.stringify(pin&&{pad:pin.pad,want:Math.ceil(pin.barH+pin.h+24)}));
+    const top=await p.evaluate(()=>{const br=document.querySelector('.bar').getBoundingClientRect();
+      return {barH:br.height,scrolled:scrollY,pad:parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)};});
+    ok(top.scrolled>0,W+': the page has scrolled '+JSON.stringify(top));
+    for(const scheme of ['light','dark']){await p.emulateMedia({colorScheme:scheme});await p.waitForTimeout(150);
+      const bg=await p.evaluate(()=>getComputedStyle(document.querySelector('.bar')).backgroundColor);
+      const m=bg.match(/rgba?\(([^)]*)\)/),a=m?m[1].split(/[ ,\/]+/).filter(Boolean).map(Number):[];
+      ok(a.length===3||(a.length===4&&a[3]===1),W+': the bar is opaque ('+scheme+'): nothing scrolled shows through it '+bg);}
+    await p.emulateMedia({colorScheme:'light'});
+    ok(Math.abs(top.pad-(Math.ceil(top.barH+12)+12))<=1,W+': the scroll padding is the bar and 24px '+JSON.stringify({pad:top.pad,want:Math.ceil(top.barH+12)+12}));
 
     /* 3 and 4: the foot row. gap is the row's column gap */
     const foot=()=>p.evaluate(()=>{const f=document.querySelector('#main .cd-foot');if(!f) return null;
@@ -86,7 +90,7 @@ ${Q.map((q,i)=>`> [!text|q${i+1}] ${q}`).join('\n\n')}
     ok(!!f&&/^Back \| Page 2 of 2 \| Next: 2\. Another activity/.test(f.text),W+': page two: Back, Page 2 of 2, the next activity: '+(f&&f.text));
     const w2=row(f,'page two');
     ok(w2===(W===390),W+': page two: '+(W===390?'the next activity\'s long name wraps Next onto a row of its own':'one row'));
-    await p.screenshot({path:path.join(OUT,'footpin-'+W+'.png')});
+    await p.screenshot({path:path.join(OUT,'pager-'+W+'.png')});
     ok(bad.length===0,W+': no policy violation or page error: '+bad.join(' | '));
     await p.context().close();
   }
