@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-vvZFOt+Lg37spLSw/AlHMKXHfL7dpV0yFhVTwyXjPXM=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-NDjK4UZYOcC0smCkNosD0TvJEV5GP3eXJuVK7Ucsmwc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -6964,10 +6964,11 @@ const CITE_SCOPES=new WeakMap();
 function citeScope(v){let all=CITE_SCOPES.get(BOOK);if(!all) CITE_SCOPES.set(BOOK,all=new Map());
   if(all.has(v)) return all.get(v);
   const own=isModuleScreen(v)?moduleForScreen(v):null,mod=own||(hasOwn(SCREENS,v)?null:holderOf(v));
-  const lists=own?(own.activities.length&&Array.isArray(own.opening)&&own.opening.length?[own.opening]:null)
+  /* a module's screen draws its opening and the prose of each of its tabs (renderModulePage), numbered in that order */
+  const lists=own?(own.activities.length?[own.opening,...(tabsIn(own)||[]).map(t=>t.blocks)].filter(l=>Array.isArray(l)&&l.length):null)
     :mod?[...(openingWithActivity(mod)?[mod.opening]:[]),...activityOf(v).pages.map(blocksIn)]:null;
   let R=null;
-  if(lists){const {sources,cites}=registries(mod),nums=new Map();
+  if(lists&&lists.length){const {sources,cites}=registries(mod),nums=new Map();
     for(const list of lists) for(const b of list) for(const s of markedTexts(b)) for(const id of citeIds(s))
       if(cites.has(id)&&!nums.has(id)) nums.set(id,nums.size+1);
     R={screen:v,mod,sources,cites,nums};}
@@ -7122,9 +7123,9 @@ function citeRefText(c,src,Rt){const bits=[];
   const pl=pageLine(c,Rt);if(pl) bits.push(pl);
   const q=tx(c.quote,"");
   return bits.join(". ")+(bits.length&&nonEmpty(q)?". ":"")+(nonEmpty(q)?(plainRef(c,src)?q:Rt.quoted(q)):"");}
-/* the endnotes of the page on show (or, `openingOnly`, of a module's opening on its own screen) */
-function endnotesFor(id,openingOnly,dc){const R=dc.cite;if(!R) return null;
-  const here=[],mod=R.mod,shown=openingOnly?(mod.opening||[]):[...(openingWithActivity(mod)?mod.opening:[]),...pageBlocksShown(id)];
+/* the endnotes of the page on show (or, given `shown`, of the blocks a module's own screen draws: its opening and its tab's prose) */
+function endnotesFor(id,shown,dc){const R=dc.cite;if(!R) return null;
+  const here=[],mod=R.mod;shown=shown||[...(openingWithActivity(mod)?mod.opening:[]),...pageBlocksShown(id)];
   for(const b of shown) for(const s of markedTexts(b)) for(const cid of citeIds(s))
     if(R.nums.has(cid)&&!here.includes(cid)) here.push(cid);
   if(!here.length) return null;
@@ -7826,20 +7827,21 @@ function renderModulePage(main,v,dc){const mod=moduleForScreen(v);
   const col=el("div",{class:"col"});
   const acts=activitiesShown(mod);
   const first=(mod.activities[0]||{}).id;
-  /* the opening's sources are numbered on their own (the screen's scope, citeScope), so that a panel opened from the opening
-     survives a language switch (it is opened again below, once its mark is drawn) */
-  const opened=!!first&&Array.isArray(mod.opening)&&mod.opening.length>0;
-  if(opened) readingBegin(dc);
-  col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0,dc));
-  /* the opening's sources, numbered from 1 on their own, close it at the foot of the screen */
-  const openNotes=opened?endnotesFor(first,true,dc):null;
-  if(openNotes) citeReopen(dc);
-  const parts=[col];
   /* a module with tabs lists the activities of the tab on show under its tab bar (see AN ACTIVITY'S TABS AND PAGES), with what
      the opening has after that tab's line above them; each keeps its number in the module */
   const mts=tabsIn(mod),mt=moduleTabNow(mod),inTab=a=>!mts||moduleTabOf(mod,a)===mt,tt=mts&&mts.find(t=>t.id===mt);
+  const opening=Array.isArray(mod.opening)?mod.opening:[],tabProse=tt&&Array.isArray(tt.blocks)?tt.blocks:[];
+  /* the sources of the opening and the tabs' prose are numbered on their own (the screen's scope, citeScope), so that a panel
+     opened from them survives a language switch (it is opened again below, once its mark is drawn) */
+  const opened=!!first&&(opening.length>0||tabProse.length>0);
+  if(opened) readingBegin(dc);
+  col.append(moduleHead(mod,first,el("p",{class:"cd-meta"},moduleMeta(acts)),acts.length>0,dc));
+  const parts=[col];
   const list=[];
-  if(tt&&Array.isArray(tt.blocks)&&tt.blocks.length) list.push(renderBlocks(tt.blocks,nullMap(),first||"",dc));
+  if(tabProse.length) list.push(renderBlocks(tabProse,nullMap(),first||"",dc));
+  /* their sources, numbered from 1 on their own, close them at the foot of the screen */
+  const openNotes=opened?endnotesFor(first,[...opening,...tabProse],dc):null;
+  if(openNotes) citeReopen(dc);
   const grid=el("ol",{class:"modes",role:"list"}),top=W?W.top.filter(inTab):null;
   /* a wiki shows the pages at its top, and every other page is under one of them */
   if(W&&top.length) list.push(...wikiBatched(top,wikiCard,"modes wk-cards"));

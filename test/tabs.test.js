@@ -133,6 +133,23 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  if(ln) click(ln);
  chk("followed, it opens the title in the tab's own module, not the bare activity of the same title",A.screen==="m/why",A.screen);}
 
+/* 5d. a footnote in a module tab's prose is the module's, as one in its opening is: drawn as its mark, numbered after the
+   opening's, with its note at the foot of the screen (citeScope numbers the tabs' prose; renderModulePage draws their notes) */
+{const FN=FM+"> [!module|m] M\n\nThe opening.[^a]\n\n> [!tab] This month\n\n> [!tab|learn] Learn more\n\nA claim.[^b]\n\n"+
+   "> [!activity|spend] Spending\n\nWords.\n\n> [!activity|why tab:learn] Why it helps\n\nWords.\n\n"+
+   "[^a]: *The opening's source*, p. 1\n\n[^b]: *The tab's source*, p. 2\n\n> [!module|m end] End\n";
+ A.loadText(FN);draw(A.moduleScreen("m"));click(role("tab")[1]);
+ const marks=find(P.main(),hasClass("rd-mark")),notes=find(P.main(),hasClass("rd-notes"))[0],seen=marks.map(n=>n.attrs["data-cite"]+"="+texts(n).trim()).join(" ");
+ chk("the tab's footnote is drawn as a mark, not as its raw text",!/\[\^b\]/.test(texts(P.main()))&&marks.some(n=>n.attrs["data-cite"]==="b"),texts(P.main()));
+ chk("numbered after the opening's: 1 and 2",seen==="a=1 b=2",seen);
+ chk("its note is at the foot of the screen, with the opening's",!!notes&&/The opening's source/.test(texts(notes))&&/The tab's source/.test(texts(notes)),notes&&texts(notes));
+ click(role("tab")[0]);
+ chk("on a tab without it, only the opening's note",(()=>{const n=find(P.main(),hasClass("rd-notes"))[0];return !!n&&/The opening's source/.test(texts(n))&&!/The tab's source/.test(texts(n));})());
+ /* and with no opening before the first tab line: the tab's prose alone */
+ A.loadText(FN.replace("The opening.[^a]\n\n",""));draw(A.moduleScreen("m"));click(role("tab")[1]);
+ const m2=find(P.main(),hasClass("rd-mark")),n2=find(P.main(),hasClass("rd-notes"))[0];
+ chk("with no opening, the tab's footnote is mark 1 and its note is at the foot",m2.length===1&&m2[0].attrs["data-cite"]==="b"&&texts(m2[0]).trim()==="1"&&!!n2&&/The tab's source/.test(texts(n2)),texts(P.main()));}
+
 /* 6. the frame: the prose before the first question stays in view */
 {const T=FM+"> [!activity|a] A\n\nRead this first.\n\nAnd this.\n\n> [!text|q1] One?\n\n> [!hint]-\n> A hint.\n\nBetween.\n\n> [!text|q2] Two?\n\n> [!text|q3] Three?\n\n***\n\n> [!text|q4] Four?\n\n"+
    "> [!activity|b pin:off] B\n\nRead this.\n\n> [!text|qb] Q?\n\n> [!activity|c] C\n\n> [!text|qc] Q?\n\nAfter.\n\n"+
