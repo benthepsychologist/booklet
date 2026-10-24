@@ -6,7 +6,9 @@
 // the CORS headers recepture sends for the one origin it is set to allow). The published booklet.html is the file named on the
 // command line; the test only hashes it, before and after, to show it ran nothing against it.
 // Checks, in the order a reader meets them: the page loads clean and BookletSubmit is frozen; Submit is hidden on "Your
-// booklets" and on a booklet without a host name, shown on one with a name; the questionnaire fixture is answered through the
+// booklets", on a booklet without a host name and on one opened by link from the default folder (0.15: modules/ beside a page
+// that declares no store, never the host's; answered, it still shows none, a press on the button forced into view opens
+// nothing, and nothing goes to the endpoint), shown on one with a name; the questionnaire fixture is answered through the
 // screens, as a reader does; nothing has gone anywhere up to the press of Send; the confirm screen lists the answers as the
 // reader gave them, by module, with the exact JSON folded under them, and Cancel/Escape close it; an untrusted click opens
 // nothing and sends nothing; Send sends one POST whose body is the folded text, with no cookie and no referrer; after the 201
@@ -30,6 +32,8 @@ const PAGE=LIVE?(process.env.SUBMIT_PAGE_ORIGIN||'http://forms.example.com'):'ht
 const API=new URL(ENDPOINT).origin;
 const RECIPE='recipes/test-battery.yaml';
 const NAME='test/submit-questionnaire.md',CLASH_NAME='test/submit-clash.md';
+/* 0.15: the questionnaire again, in the default folder beside the page (/app/modules/), opened by a link */
+const FOLDER_NAME='test/submit-folder.md';
 /* a name per run below, so each starts blank: a booklet sent is kept, and the same name opens the kept copy again */
 const NAME_B='test/submit-questionnaire-b.md',NAME_C='test/submit-questionnaire-c.md',NAME_D='test/submit-questionnaire-d.md';
 const EMAIL='client@example.test';
@@ -46,6 +50,13 @@ const item=i=>'Test item '+i+' (placeholder wording)';
 const LISTED=[{title:'Your details',rows:[['Your email address',EMAIL]]},
   {title:'Part one',rows:PHQ.map((v,i)=>[item(i+1),FREQ[v-1]])},
   {title:'Part two',rows:GAD.map((v,i)=>[item(i+1),FREQ[v-1]])}];
+/* what the body also says: the booklet, and for each answered question what the reader was shown (the question's words, and for a
+   choice the options in the order shown and the words picked) */
+const BOOKLET={id:'test/submit-questionnaire',lang:'en'};
+const SEEN={email:{question:'Your email address'}};
+PHQ.forEach((v,i)=>SEEN['phq9-item'+(i+1)]={question:item(i+1),options:FREQ,picked:[FREQ[v-1]]});
+GAD.forEach((v,i)=>SEEN['gad7-item'+(i+1)]={question:item(i+1),options:FREQ,picked:[FREQ[v-1]]});
+const SEEN_FIXTURE=FIX('submit-seen.booklet.md');
 /* recepture's payload rules (its payload contract): an object; recipe a non-empty string or an object; answers an object */
 function receptureRules(text){let j;try{j=JSON.parse(text);}catch(e){return 'not JSON';}
   if(!j||typeof j!=='object'||Array.isArray(j)) return 'top level is not an object';
@@ -54,6 +65,7 @@ function receptureRules(text){let j;try{j=JSON.parse(text);}catch(e){return 'not
   return '';}
 const sortKeys=o=>Object.fromEntries(Object.keys(o).sort().map(k=>[k,o[k]]));
 const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
 
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -69,6 +81,7 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   if(LIVE){server=http.createServer((q,s)=>{const u=new URL(q.url,'http://x').pathname;
       if(u==='/app/'){s.writeHead(200,{'content-type':'text/html; charset=utf-8'});return s.end(BUILD);}
       if(u==='/host.js'){s.writeHead(200,{'content-type':'text/javascript'});return s.end(HOSTJS);}
+      if(u==='/app/modules/'+FOLDER_NAME){s.writeHead(200,{'content-type':'text/markdown; charset=utf-8'});return s.end(QUESTIONNAIRE);}
       s.writeHead(404);s.end('nf');});
     await new Promise(r=>server.listen(0,'127.0.0.1',r));
     args.push('--host-resolver-rules=MAP '+new URL(PAGE).hostname+' 127.0.0.1:'+server.address().port);}
@@ -92,6 +105,7 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   if(!LIVE) await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(u==='/app/')return r.fulfill({status:200,body:BUILD,headers:{'content-type':'text/html; charset=utf-8'}});
     if(u==='/host.js')return r.fulfill({status:200,body:HOSTJS,headers:{'content-type':'text/javascript'}});
+    if(u==='/app/modules/'+FOLDER_NAME)return r.fulfill({status:200,body:QUESTIONNAIRE,headers:{'content-type':'text/markdown; charset=utf-8'}});
     r.fulfill({status:404,body:'nf'});});
   const apiRoute=async r=>{const q=r.request();
     if(q.method()==='OPTIONS'){preflights++;
@@ -162,6 +176,27 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   ok(await submitHidden(p),'a booklet opened without a name (the reader\'s own) shows no Submit button');
   await grabViol(p);await p.close();
 
+  // 4b (0.15) a booklet opened by link from the default folder: the page declares no store, so a link reads modules/ beside it,
+  //    and what opens from there is never the host's. No Submit button, answered or not, and nothing goes to the endpoint.
+  p=await newPage();
+  {const a0=toApiOrigin().length,f0=reqs.length;
+   await p.evaluate(n=>{location.hash='#/open/'+n;},FOLDER_NAME);
+   await p.waitForFunction(()=>typeof BOOK!=='undefined'&&BOOK!==EMPTY_BOOKLET,null,{timeout:8000}).catch(()=>{});await wait(p,600);
+   const fr=reqs.slice(f0).filter(q=>/\/modules\//.test(q.url)).map(q=>q.method+' '+new URL(q.url).pathname);
+   ok(fr.join()==='GET /app/modules/'+FOLDER_NAME,'a link on the submit page (no store tag) read the booklet from modules/ beside it: '+fr.join(' '));
+   const from=await p.evaluate(()=>(currentEntry||{}).from||'');
+   ok(from==='modules:/app/modules/#'+FOLDER_NAME,'...and opened it as a booklet from the default folder: '+from);
+   ok(await submitHidden(p),'a booklet from the default folder shows no Submit button');
+   await answerAll(p);
+   ok(sameJSON(sortKeys(await answers(p)),sortKeys(EXPECT)),'it was answered through the screens, as the named one is below');
+   ok(await submitHidden(p),'answered, it still shows no Submit button');
+   /* the gate is the build's own check, not only the hidden attribute: a trusted press on the button, forced into view, opens nothing */
+   await p.evaluate(()=>{document.getElementById('btnSubmit').hidden=false;});
+   await p.locator('#btnSubmit').click({timeout:2000}).catch(()=>{});await wait(p,2500);
+   ok(!await dialogOpen(p),'a press on the button forced into view opens no confirm screen');
+   ok(toApiOrigin().length===a0,'nothing went to the endpoint\'s origin while it was open, answered and pressed ('+(toApiOrigin().length-a0)+' requests)');}
+  await grabViol(p);await p.close();
+
   // 5 with a name
   p=await newPage();
   r=await openBook(p,QUESTIONNAIRE,NAME);
@@ -187,7 +222,10 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   ok(await p.evaluate(()=>document.getElementById('submitExact').open)===false&&await p.locator('#submitBody').isHidden()&&await text(p,'#submitExact summary')==='Show exactly what is sent','the exact text is folded shut under the list, behind "Show exactly what is sent"');
   const shown=await text(p,'#submitBody');
   let parsed=null;try{parsed=JSON.parse(shown);}catch(e){}
-  ok(!!parsed&&sameJSON(Object.keys(parsed).sort(),['answers','recipe'])&&parsed.recipe===RECIPE&&sameJSON(sortKeys(parsed.answers),sortKeys(EXPECT)),'the folded text is exactly {"recipe","answers"} with the host\'s recipe and the answers given (choices as 1-based positions, the email as text): '+shown.replace(/\s+/g,' ').slice(0,240));
+  ok(!!parsed&&sameJSON(Object.keys(parsed).sort(),['answers','booklet','recipe','seen'])&&parsed.recipe===RECIPE&&sameJSON(sortKeys(parsed.answers),sortKeys(EXPECT)),'the folded text is {"recipe","answers","booklet","seen"} with the host\'s recipe and the answers given (choices as 1-based positions, the email as text): '+shown.slice(0,200));
+  ok(!!parsed&&sameJSON(parsed.booklet,BOOKLET),'it names the booklet it came from (its id and language; this fixture has no version): '+JSON.stringify(parsed&&parsed.booklet));
+  ok(!!parsed&&sameJSON(sortKeys(parsed.seen||{}),sortKeys(SEEN)),'and for each answered question it says what the reader was shown: the question\'s words, the options in the order shown and the words picked: '+JSON.stringify(parsed&&parsed.seen).slice(0,300));
+  ok(!!parsed&&Object.keys(parsed.seen||{}).every(k=>hasOwnKey(parsed.answers,k)),'every seen entry is for a question that is in answers, under the same id');
   const helpT=await text(p,'#submitHelp');
   ok(/Send your answers\?/.test(await text(p,'#submitTitle'))&&helpT.includes(new URL(ENDPOINT).host)&&helpT.includes('Nothing has been sent yet'),'the screen says who it sends to and that nothing has been sent: '+helpT);
   ok(toApiOrigin().length===0,'with the confirm screen open, still nothing sent');
@@ -349,6 +387,31 @@ const sameJSON=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   await p.locator('#langGroup [data-lang="en"]').click();await wait(p,300);
   ok(toEndpoint().length===nFr,'the French run sent nothing');
   await grabViol(p);await p.close();
+
+  // 11b what the reader saw, for every kind that has options: a booklet that already holds answers (made up)
+  {const sent0=toApiOrigin().length,q=await newPage();
+   const rr=await openBook(q,SEEN_FIXTURE,'test/submit-seen.md');
+   ok(rr&&rr.ok===true,'the seen fixture opens as a host booklet: '+JSON.stringify(rr));
+   await pressSubmit(q);
+   let body=null;try{body=JSON.parse(await text(q,'#submitBody'));}catch(e){}
+   ok(!!body&&sameJSON(body.answers,{note:'plain words',pick:2,several:[1,'my own'],mood:2,grid:[2,1,null],count:3,far:9,spot:['item-a']}),'answers carry the stored shape unchanged: a position, positions with the reader\'s own words, an anchor number, a number per matrix item: '+JSON.stringify(body&&body.answers));
+   ok(!!body&&sameJSON(body.booklet,{id:'test/submit-seen',version:'0.7',lang:'en'}),'booklet: id, version and language as the file says them: '+JSON.stringify(body&&body.booklet));
+   const s=(body&&body.seen)||{};
+   ok(sameJSON(s.note,{question:'A note in your words'}),'a text question: its words, with the Markdown taken out (the answer is already words): '+JSON.stringify(s.note));
+   ok(sameJSON(s.pick,{question:'Pick one',options:['Alpha','Beta','Gamma'],picked:['Beta']}),'a choice: the options in the order shown, the words picked, the Markdown taken out: '+JSON.stringify(s.pick));
+   ok(sameJSON(s.several,{question:'Pick any, or add your own',options:['One','Two','Three'],picked:['One','my own']}),'a multi: the options, and the picked words with the reader\'s own option as they wrote it: '+JSON.stringify(s.several));
+   ok(sameJSON(s.mood,{question:'How was it?',anchors:[{n:0,text:'Poor'},{n:1,text:'Fine'},{n:2,text:'Great'}],picked:'Great'}),'a scale: its anchors with their numbers, and the anchor\'s words picked: '+JSON.stringify(s.mood));
+   ok(sameJSON(s.grid,{question:'Rate each',items:['Tea','Coffee','Juice'],anchors:[{n:1,text:'Dislike'},{n:2,text:'Like'}],picked:['Like','Dislike',null]}),'a matrix: its items, its anchors, and the words picked for each item, null for an item left alone: '+JSON.stringify(s.grid));
+   ok(sameJSON(s.count,{question:'How many?'}),'a number: its question only: '+JSON.stringify(s.count));
+   ok(sameJSON(s.far,{question:'Out of range',options:['Only option'],picked:['#9']}),'a position the list does not have reads #n, as the confirm screen does: '+JSON.stringify(s.far));
+   const rows=await listed(q);const spotRow=rows.flatMap(g=>g.rows).find(r=>r[0]==='Pick what fits');
+   ok(!!s.spot&&s.spot.question==='Pick what fits'&&typeof s.spot.picked==='string'&&s.spot.picked!==''&&!!spotRow&&s.spot.picked===spotRow[1],'a widget: its question and what its engine says was picked, the same words the confirm screen shows: '+JSON.stringify(s.spot)+' / '+JSON.stringify(spotRow));
+   const raw=await text(q,'#submitBody');
+   ok(!('logq' in s)&&!('logq' in body.answers)&&!/entry words kept|draft words typed/.test(raw),'a repeating activity\'s kept entries and draft are in neither answers nor seen');
+   ok(Object.keys(s).sort().join()===Object.keys(body.answers).sort().join(),'seen has an entry for exactly the questions answers has (every one of these is a question the booklet names)');
+   ok(Buffer.byteLength(JSON.stringify(body))<20000,'the body stays small (the seen fixture: '+Buffer.byteLength(JSON.stringify(body))+' bytes)');
+   ok(toApiOrigin().length===sent0,'nothing has been sent by showing it');
+   await q.close();}
 
   // 12 across the whole run
   await Promise.all(pending);

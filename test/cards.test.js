@@ -37,12 +37,6 @@ chk("a bad index still gives a hue",A.cardHue(-1)==="petrol"&&A.cardHue("x")==="
  chk("item is a plain element carrying the card class",item.tagName==="li"&&hasClass("card-item")(item)&&hasClass("dv-tile")(item));
  chk("an unknown mode is a go card",hasClass("card-go")(A.cardNode({mode:"nope",title:"x"})));}
 
-/* 4. the heading of a section gives up its emoji to the tile, and keeps it hidden so a link to the heading still finds it */
-{const h={tagName:"h3",attrs:{},children:["🌱 Why it works"]};const got=A.takeLeadEmoji(h);
- chk("the emoji is taken from the heading",got==="🌱"&&texts(h).replace(/\s+/g," ").trim()==="🌱 Why it works"&&h.children[0].attrs.class==="cd-emo"&&h.children[1]==="Why it works",JSON.stringify(h.children.map(c=>c.attrs?c.attrs.class:c)));
- const plain={tagName:"h3",attrs:{},children:["Why it works"]};
- chk("a heading with none gives nothing",A.takeLeadEmoji(plain)===""&&plain.children[0]==="Why it works");}
-
 /* 5. status lines, over a fixture with answers */
 {const T=FM+"> [!module|m] Module\n\nBlurb words.\n\n"+
   "> [!activity|a] Sorting\n\n> [!text|q1] One?\n\n> [!text|q2] Two?\n\n> [!text|q3] Three?\n\n"+

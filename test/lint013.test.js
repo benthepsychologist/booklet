@@ -54,6 +54,7 @@ const ONE=[
  // done-when 4: messages
  ["lint13-lang-missing","a missing lang names the values","ERROR",0,/no `lang:`.*add `lang: en` \(or es, es-AR, fr/,null,/has no `lang:`/],
  ["lint13-image-scheme","the image error says a relative path","ERROR",15,/an image is linked by a relative path, never embedded or given another scheme/,null],
+ ["lint13-image-path","a relative image path the renderer never reads from a store or its default folder is a warning","warn",15,/the image \.\.\/maps\/harbour\.png is not a path the renderer reads from a store or its default folder.*no empty part and no part that begins with a dot so no \.\. and no \.\/, no leading \//,null],
  ["lint13-query-no-from","a query with no from says or data block","ERROR",15,/a query needs `from:`, the activity, question or data block it shows/,null],
  ["lint13-icon-close","an unknown icon name offers a close spelling","ERROR",11,/`icon:compas` is not a name in Booklet's icon set.*did you mean `compass`\?/,11,/“compas” is not a name/],
 ];

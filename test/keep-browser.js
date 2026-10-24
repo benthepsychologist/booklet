@@ -113,8 +113,8 @@ const SEED=n=>JSON.parse(fs.readFileSync(path.join(__dirname,'seeds','ls-'+n+'.j
    const ctx=await context(),p=await page(ctx,PAGE+'/app/store/#/open/dash.booklet.md');await p.waitForTimeout(2500);
    ok(/Dashboard/.test(await main(p)),'it opens by link from the store');
    await p.evaluate(()=>{location.hash='#/open/dash.booklet.md/inbox';});await p.waitForTimeout(2000);
-   /* the inbox's second page, the brief, from its page menu */
-   const brief=async()=>{await p.locator('#main button',{hasText:'A brief'}).first().click();await p.waitForTimeout(600);};
+   /* the inbox's second page, the brief, by the pager at the foot (0.15: a page has no menu) */
+   const brief=async()=>{await p.locator('#main .cd-foot .pg-next').first().click();await p.waitForTimeout(600);};
    await brief();
    const notes=p.locator('#main textarea').first();
    ok(await notes.count()===1,'the inbox\'s notes field is on screen');

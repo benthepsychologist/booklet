@@ -134,9 +134,9 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:"), "row": ("end",), "text": ("long",),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:", "pin:"), "row": ("end",), "text": ("long",),
     "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
-    "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (),
+    "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (), "tab": (),
     "choice": ("open", "menu:"), "multi": ("open", "menu:"),
     "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
 }
@@ -170,7 +170,7 @@ ICON_NAMES = frozenset((
 ENGINES = ("svg-regions", "grid-select")
 COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
-STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion"}
+STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab"}
 # what a module's notice (`> [!notice]`) may say about itself
 NOTICE_KEYS = ("license", "copyright", "source", "version")
 
@@ -673,6 +673,7 @@ def row_cells(rows):
 
 BULLET = re.compile(r'^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*)$')
 TASK = re.compile(r'^[ \t]*[-*+][ \t]+\[[ xX]\][ \t]+')
+OPTION = TASK
 NUMBERED = re.compile(r'^[ \t]*(\d+)[.)][ \t]+(.*)$')
 
 
@@ -693,6 +694,60 @@ def list_below(lines, i, pattern):
         out.append(m)
         j += 1
     return (out, j) if out else ([], i)
+
+
+NESTED_BULLET = re.compile(r'^[ \t]*[-*+][ \t]+(.*)$')
+
+
+def indent_of(line):
+    """A line's indent, a tab counted as four spaces (the renderer's `indentOf`)."""
+    return len(re.match(r'^[ \t]*', line).group(0).replace("\t", "    "))
+
+
+def nested_in(items):
+    """The positions, in a bulleted list's matches, of the bullets written deeper than the one before them."""
+    return [k for k in range(1, len(items)) if indent_of(items[k].string) > indent_of(items[k - 1].string)]
+
+
+def text_col_of(line):
+    """The column where an option's own text starts: the `[` of its box (two for `- [ ]`). A nested bullet is a reply only from here on."""
+    m = re.match(r'^([ \t]*[-*+][ \t]+)\[', line)
+    return len(m.group(1).replace("\t", "    ")) if m else indent_of(line) + 2
+
+
+def option_list_below(lines, i):
+    """The task list of a choice or multi straight under line i (zero or one blank line between), with each option's replies
+    (SPEC.md section 5), read as the renderer reads it: a bullet written at least as far in as its option's text is that option's reply
+    (each nested bullet one line of it), and a line that is no bullet, indented deeper than the bullet above it, goes on with it.
+    Returns (the option matches, the index after the list, the indexes of the reply lines, the column where the last option's text
+    starts)."""
+    j, blanks = i, 0
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+        blanks += 1
+        if blanks > 1:
+            return [], i, [], 0
+    out, replies, at, bullet = [], [], 0, -1
+    while j < len(lines):
+        m = OPTION.match(lines[j])
+        if m:
+            out.append(m)
+            at, bullet = text_col_of(lines[j]), -1
+            j += 1
+            continue
+        if not out or not lines[j].strip():
+            break
+        b = NESTED_BULLET.match(lines[j])
+        ind = indent_of(lines[j])
+        if b and ind >= at:
+            bullet = ind
+        elif not b and bullet >= 0 and ind > bullet:
+            pass
+        else:
+            break
+        replies.append(j)
+        j += 1
+    return (out, j, replies, at) if out else ([], i, [], 0)
 
 
 # any line that starts like a Booklet line, readable or not (the renderer's `calloutLine`)
@@ -725,7 +780,10 @@ def claim_end(kind, lines, i):
     """The index past everything the renderer reads as belonging to the Booklet line at i: its body, then the list straight under
     a choice, multi (a task list), scale (a numbered list), menu (bullets) or matrix (bullets, then numbered anchors)."""
     k = body_end(lines, i)
-    pat = {"choice": TASK, "multi": TASK, "scale": NUMBERED, "menu": BULLET, "matrix": BULLET}.get(kind)
+    if kind in ("choice", "multi"):
+        got, k2, _, _ = option_list_below(lines, k)
+        return k2 if got else k
+    pat = {"scale": NUMBERED, "menu": BULLET, "matrix": BULLET}.get(kind)
     if pat:
         got, k2 = list_below(lines, k, pat)
         if got:
@@ -832,11 +890,21 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: `status:{val}` is not a setting a line takes (only `status:off`, which hides the card's status line); a renderer ignores it")
         elif key == "parent" and not ID_PATTERN.match(val):
             err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
+        elif key == "pin" and val.lower() != "off":
+            err(f, f"line {n}: `pin:{val}` is not a setting; the one value is `pin:off` (the frame scrolls away with the page)")
     for flag in sorted(w["flags"]):
         if flag not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
     if "daily" in w["flags"] and "repeat" not in w["flags"]:
         err(f, f"line {n}: `daily` needs `repeat` (write `repeat daily`)")
+
+
+def id_word(s):
+    """A name as an id, as the renderer makes one (idWord in booklet.html): accents dropped, lowercase, every run of anything
+    but letters and digits one dash, at most 60 characters, then only ASCII letters, digits and dashes."""
+    t = re.sub(r"[\u0300-\u036f]", "", unicodedata.normalize("NFKD", s or ""))
+    t = re.sub(r"[\W_]+", "-", unicodedata.normalize("NFC", t).lower()).strip("-")[:60].rstrip("-")
+    return re.sub(r"-{2,}", "-", re.sub(r"[^A-Za-z0-9-]+", "-", t).strip("-"))
 
 
 def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
@@ -900,6 +968,17 @@ def check_format(f, text, fm):
     rec_lines = []           # (line, id) of every records line that names a module, checked once the file is read
     data_scope = None        # the module a `> [!data|module-id]` section belongs to, until the next data, records, module or activity line
     notice_seen, mod_has_activity = set(), False
+    # tabs (SPEC.md section 3): a module's, declared in its opening (module id -> {tab id: line}), and the open activity's;
+    # how many activities each module has (a module of one has no screen of its own to show its tabs on)
+    mod_tabs, act_tabs, in_act, mod_acts = {}, {}, False, {}
+    tab_places = {}  # the tab lines so far among one activity's tabs ("act") or one module's (("module", its id)), for `tab-N`
+    implicit, fence = True, None          # a file with no activity or module line is one activity (its tab lines are its tabs)
+    for l in lines:
+        fence, skip = fence_skip(l, fence)
+        c = None if skip else CALLOUT_LINE.match(l)
+        if c and c.group(1).lower() in ("activity", "module"):
+            implicit = False
+            break
     body_start = i
     menus, menu_uses, data_blocks = {}, [], {}
     theme_seen = False
@@ -1143,14 +1222,19 @@ def check_format(f, text, fm):
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
             check_settings(f, n, kind, w)
-            if rowst["open"] and kind in ("data", "records", "module", "activity"):
-                close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line"}.get(kind, f"the {kind} section"))
+            if rowst["open"] and kind in ("data", "records", "module", "activity", "tab"):
+                close_row(i, "runs into " + {"module": "a module fence", "activity": "an activity line", "tab": "a tab line"}.get(kind, f"the {kind} section"))
             if kind == "notice":
                 check_notice(f, n, w, lines, i, open_mod if section == "content" else None,
                              mod_has_activity, notice_seen, section == "content")
             if section == "data" and kind in ("module", "activity"):
                 # a module or an activity line ends a data section: what follows is the booklet's own text again
                 section, data_scope = "content", None
+            if section == "data" and kind == "tab":
+                warn(f, f"{where}: a tab line in a data section is not read (a data section holds blocks, menus and footnotes, "
+                        f"not an activity's text); put the tab in an activity, or in a module's opening")
+            if kind in ("module", "data"):
+                in_act = False
             if kind == "data":
                 section = "data"
                 data_scope = None
@@ -1197,9 +1281,36 @@ def check_format(f, text, fm):
                             if w["id"] in mod_ids:
                                 err(f, f"{where}: the module id {w['id']!r} is also used on line {mod_ids[w['id']]}")
                             mod_ids.setdefault(w["id"], n)
+                elif kind == "tab":
+                    # an activity's tab, or one of a module's declared in its opening; its id is the one written, else its name's,
+                    # else (a name that leaves nothing, `日本語`) `tab-` and its place among the tabs there, as a renderer makes it
+                    place_key = "act" if in_act or implicit else ("module", open_mod)
+                    place = tab_places[place_key] = tab_places.get(place_key, 0) + 1
+                    tid = (w["id"] if w["id"] and ID_PATTERN.match(w["id"]) else id_word(mm.group(4).strip())) or f"tab-{place}"
+                    if w["id"] and not ID_PATTERN.match(w["id"]):
+                        err(f, f"{where}: the tab id {w['id']!r} may hold only letters, digits and dashes")
+                    table = act_tabs if in_act or implicit else mod_tabs.setdefault(open_mod, {}) if open_mod else None
+                    if table is None:
+                        err(f, f"{where}: a tab line belongs inside an activity, or in a module's opening (before its first activity), "
+                               f"so a renderer ignores it")
+                    elif tid and tid in table:
+                        err(f, f"{where}: this tab's id is {tid!r}, the same as the tab on line {table[tid]} in this "
+                               + ("activity" if table is act_tabs else "module") + f"; give each tab its own name, or an id (`> [!tab|other-id] Name`). "
+                               f"A renderer keeps both and numbers this one")
+                    elif tid:
+                        table[tid] = n
+                    if not mm.group(4).strip():
+                        warn(f, f"{where}: this tab has no name, so its tab shows its id; write `> [!tab] Name`")
                 elif kind == "activity":
                     seen_activity = True
                     mod_has_activity = True
+                    in_act, act_tabs = True, {}
+                    tab_places["act"] = 0
+                    mod_acts[open_mod] = mod_acts.get(open_mod, 0) + 1
+                    tab_set = w["set"].get("tab")
+                    if tab_set is not None and tab_set not in mod_tabs.get(open_mod, {}):
+                        err(f, f"{where}: `tab:{tab_set}` names no tab of " + (f"the module {open_mod!r}" if open_mod else "a module (this activity is outside every module)")
+                               + "; a module's tabs are `> [!tab]` lines in its opening, before its first activity. A renderer puts the activity in the first tab")
                     cur_act = w["id"] or "(an activity with no id)"
                     if not w["id"]:
                         err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "
@@ -1245,12 +1356,15 @@ def check_format(f, text, fm):
                             err(f, f"{where}: the matrix {w['id']!r} has no items (a bulleted list under the line)")
                         if not anchors:
                             err(f, f"{where}: the matrix {w['id']!r} has no anchors (a numbered list under its items)")
+                        for off in nested_in(items):
+                            warn(f, f"line {after - len(items) + off + 1}: a nested bullet under a matrix item is read as another item, not as a reply: "
+                                    f"only the options of a choice or multi take replies")
                         nums = [a.group(1).lstrip("0") or "0" for a in anchors]
                         dup = sorted({x for x in nums if nums.count(x) > 1}, key=int)
                         if dup:
                             err(f, f"{where}: the matrix {w['id']!r} repeats anchor number {', '.join(dup)} (each anchor needs its own number)")
                     if kind in ("choice", "multi") and w["id"]:
-                        own, _ = list_below(lines, after_body, TASK)
+                        own, _, _, _ = option_list_below(lines, after_body)
                         if w["set"].get("menu"):
                             if own:
                                 err(f, f"{where}: the question {w['id']!r} has both `menu:{w['set']['menu']}` and a list of its own (use one)")
@@ -1274,9 +1388,29 @@ def check_format(f, text, fm):
                                 err(f, f"{where}: the scale {w['id']!r} repeats anchor number {', '.join(dup)}; the number is the stored answer, "
                                        f"so each anchor needs its own")
                     if kind in ("choice", "multi", "scale") and w["id"] and not bad_q:
-                        got, after_list = list_below(lines, after_body, TASK if kind != "scale" else NUMBERED)
-                        if got and after_list < len(lines) and re.match(r"^[ \t]+\S", lines[after_list]) and not (TASK if kind != "scale" else NUMBERED).match(lines[after_list]):
-                            warn(f, f"line {after_list + 1}: the line after this list is indented, so the list ends there: put each option on one line")
+                        if kind == "scale":
+                            got, after_list = list_below(lines, after_body, NUMBERED)
+                            text_at, reply_at = 0, []
+                        else:
+                            got, after_list, reply_at, text_at = option_list_below(lines, after_body)
+                        nxt_line = lines[after_list] if after_list < len(lines) else ""
+                        if got and nxt_line and re.match(r"^[ \t]+\S", nxt_line) and not (TASK if kind != "scale" else NUMBERED).match(nxt_line):
+                            if kind == "scale" and NESTED_BULLET.match(nxt_line):
+                                warn(f, f"line {after_list + 1}: a scale takes no replies (a nested bullet under an anchor): only the options of a choice or multi do, "
+                                        f"so the list ends there and this line is read as text")
+                            elif kind != "scale" and NESTED_BULLET.match(nxt_line) and indent_of(nxt_line) < text_at:
+                                warn(f, f"line {after_list + 1}: a bullet under an option is its reply only when it is indented at least to the option's text "
+                                        f"(two spaces under `- [ ]`); this one is not, so the list ends there and it is read as text")
+                            elif kind != "scale" and after_list - 1 in reply_at:
+                                warn(f, f"line {after_list + 1}: this line follows a reply but is neither a new bullet nor deeper than the reply's bullet, so the list ends "
+                                        f"there and it is read as text: a reply's next line must be a new bullet, or sit deeper than the bullet")
+                            else:
+                                warn(f, f"line {after_list + 1}: the line after this list is indented, so the list ends there: put each option on one line")
+                        elif got and kind != "scale" and after_list + 1 < len(lines) and not nxt_line.strip():
+                            after_blank = lines[after_list + 1]
+                            if OPTION.match(after_blank) or (NESTED_BULLET.match(after_blank) and indent_of(after_blank) > 0):
+                                warn(f, f"line {after_list + 1}: a blank line ends the option list, so the options and replies after it are read as text "
+                                        f"(with raw checkboxes), not as part of this question: remove the blank line")
                     if w["id"] and not bad_q:
                         last_q = True
                     # Markdown lets only a list starting at 1 interrupt a paragraph:
@@ -1295,6 +1429,9 @@ def check_format(f, text, fm):
                 items, after_menu = list_below(lines, body_end(lines, i), BULLET)
                 if not items:
                     err(f, f"{where}: the menu {w['id']!r} has no items (a bulleted list under the line)")
+                for off in nested_in(items):
+                    warn(f, f"line {after_menu - len(items) + off + 1}: a nested bullet under a menu entry is read as another entry, not as a reply: "
+                            f"only the options of a choice or multi take replies")
                 for off, im in enumerate(items):
                     if re.match(r'^[ \t]*[-*+][ \t]+\[[xX]\]', im.string):
                         warn(f, f"line {after_menu - len(items) + off + 1}: a menu cannot mark a right answer; to have one, give the question its "
@@ -1342,6 +1479,13 @@ def check_format(f, text, fm):
         err(f, f"line {noid_line}: the module opened here has no id, so it is never closed (an end line repeats the module's id)")
     if open_mod:
         err(f, f"line {open_line}: the module {open_mod!r} is opened and never closed")
+    # a module of fewer than two activities has no screen of its own (its activity's screen is its screen), so the tabs its
+    # opening declares, and the prose after them, are never drawn: said once, at its first tab line
+    for mid, table in mod_tabs.items():
+        if mid and table and mod_acts.get(mid, 0) < 2:
+            warn(f, f"line {min(table.values())}: the module {mid!r} has " + ("one activity" if mod_acts.get(mid) else "no activity")
+                    + ", so it has no screen of its own to show tabs on: its tab lines, and the prose after them, are never drawn. "
+                      "Put that prose in the module's opening with no tab line, or tabs inside the activity")
     for n, mid, mod in menu_uses:
         # a menu is read in its own module first, then in the data section (a menu outside every fence), never in another module
         if mid not in menus:
@@ -1532,10 +1676,18 @@ def check_prices(f, lines, start, regions):
     flush()
 
 
+# a relative image path the renderer will read from the host's store or its default folder (SPEC.md section 6); the part
+# rules are checked beside it
+IMAGE_PATH = re.compile(r'^(?=.{1,200}$)[A-Za-z0-9_./-]+\.(?:svg|png|jpe?g|webp|gif)$', re.I)
+
+
 def check_images(f, lines):
-    """An image is linked, never embedded, and a renderer fetches no image (SPEC.md section 6). A remote address
-    (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does not fetch it. An address with any
-    other scheme (`data:`, `javascript:`, `file:` ...) is an error. A relative path is fine. Reference-style
+    """An image is linked, never embedded, and a renderer fetches an image only from a store its host declares, or
+    (the reference renderer, on a page that declares none) from its default folder, `modules/` beside it (SPEC.md
+    section 6). A remote address (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does
+    not fetch it. An address with any other scheme (`data:`, `javascript:`, `file:` ...) is an error. A relative path
+    is fine, but a warning when it is one the renderer never reads (a `..`, a leading `/`, a character outside
+    letters, digits and `_ . / -`, or an extension it does not draw). Reference-style
     images are read through their `[id]: address` definitions; code fences and inline code are not images."""
     fence, defs, found = None, {}, []
     for k, ln in enumerate(lines):
@@ -1562,6 +1714,8 @@ def check_images(f, lines):
             warn(f, f"line {n}: the image {shown} has a remote address; a renderer does not fetch remote images, so it shows the alt text and the address as text")
         elif scheme:
             err(f, f"line {n}: the image {shown} has an address with the scheme `{scheme.group(1).lower()}:`; an image is linked by a relative path, never embedded or given another scheme")
+        elif not IMAGE_PATH.match(a) or any(p == "" or p.startswith(".") for p in a.split("/")):
+            warn(f, f"line {n}: the image {shown} is not a path the renderer reads from a store or its default folder (letters, digits, _ . / - only, at most 200 characters, no empty part and no part that begins with a dot so no .. and no ./, no leading /, ending .svg, .png, .jpg, .jpeg, .webp or .gif); it shows the alt text and the address as text")
 
 
 def _plain_heading(s):

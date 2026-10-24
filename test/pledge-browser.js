@@ -23,11 +23,13 @@
 // asked for the one checked name and nothing else).
 // CHANGED, 0.15 (booklet-hub item v015-host-modules-and-checksum, whose done-when 2 asks for exactly this; Ben, 2026-10-23:
 // "B. modules/ sounds good"). A page served over http(s) with no booklet-store tag reads `#/open/<name>` from `modules/` beside
-// the renderer. This test now allows exactly ONE more request: a plain GET of /folder/modules/<the checked name>, made by the
-// renderer served unchanged at /folder/ (under a header that allows its own origin), only after the reader follows that link.
-// It still fails any other request under any modules/ folder (on /app/, whose header leaves its own origin out, or on the
-// /linked/ copy that declares a store, which never reads its own), a second read of it, one before the link is followed, a
-// method other than GET, a body, a query string, and any word the reader typed into what it opened.
+// the renderer, and the booklet it opens draws its images from that folder by #64's rule for a store. This test now allows
+// exactly TWO more requests, both by the renderer served unchanged at /folder/ (under a header that allows its own origin) and
+// only after the reader follows that link: a plain GET of /folder/modules/<the checked name>, and a plain GET of the one image
+// that booklet writes, beside it (/folder/modules/pledge/images/map.svg), one request per image. It still fails any other
+// request under any modules/ folder (on /app/, whose header leaves its own origin out, or on the /linked/ copy that declares a
+// store, which never reads its own), a second read of either, one before the link is followed, a method other than GET, a body,
+// a query string, and any word the reader typed into what it opened.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pledge-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const {kept}=require('./kept.js');
@@ -39,8 +41,9 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 const PAGE_ORIGIN='https://bookletmd.test';
 /* every distinctive string the test types or names as the reader's work */
 const S={own:'QZXownoption4417',name:'QZXrenamedbooklet5528',keep:'QZXkeptentry6639',kit:'QZXkitchenanswer7741',link:'QZXlinkanswer8852',folder:'QZXfolderanswer9963'};
-/* the one file in the default folder (0.15), and its one allowed address */
-const FOLDER_FILE='/folder/modules/pledge/folder.booklet.md';
+/* the one booklet in the default folder (0.15), and the one image it writes, beside it: their allowed addresses */
+const FOLDER_FILE='/folder/modules/pledge/folder.booklet.md',FOLDER_IMG='/folder/modules/pledge/images/map.svg';
+const FOLDER_SVG='<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><rect width="40" height="20" fill="#2a6"/></svg>';
 /* the renderer carries its own policy (0.11.6): it may read only the page's own origin and the registry's host, so the store is on the page's own origin, under /pub/ */
 const STORE_ORIGIN=PAGE_ORIGIN;
 const mod=(id,title,body)=>`---\nbooklet: "0.13"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n${body}\n> [!module|${id} end] End\n`;
@@ -107,7 +110,9 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   await p.route(STORE_ORIGIN+'/pub/**',r=>r.fulfill({status:200,body:mod('linked','Linked booklet','> [!activity|l-act] Linked\n\n> [!text|l-text long] A linked answer\n\n'),headers:{'content-type':'text/markdown','access-control-allow-origin':'*'}}));
   /* 0.15: a host that serves the renderer unchanged (no tag), under a header that allows its own origin, and its modules/ folder */
   await p.route(PAGE_ORIGIN+'/folder/',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}}));
-  await p.route(PAGE_ORIGIN+'/folder/modules/**',r=>r.fulfill({status:200,body:mod('folder','Folder booklet','> [!activity|f-act] Folder\n\n> [!text|f-text long] A folder answer\n\n'),headers:{'content-type':'text/markdown'}}));
+  await p.route(PAGE_ORIGIN+'/folder/modules/**',r=>{const u=new URL(r.request().url()).pathname;
+    if(u===FOLDER_IMG) return r.fulfill({status:200,body:FOLDER_SVG,headers:{'content-type':'image/svg+xml'}});
+    r.fulfill({status:200,body:mod('folder','Folder booklet','> [!activity|f-act] Folder\n\n![A small map](images/map.svg)\n\n> [!text|f-text long] A folder answer\n\n'),headers:{'content-type':'text/markdown'}});});
   const wait=ms=>p.waitForTimeout(ms);
   const cards=()=>p.locator('#main button.mode');
   const fillAll=async(tag)=>{ /* answer every question on screen */
@@ -212,13 +217,15 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   {const K=await kept(p);ok(Object.keys(K).some(k=>/^booklet\.b\./.test(k)&&K[k].includes('QZXlinkanswer')),'the answer is kept in this browser');}
   await harvest();
   // 9b (0.15) the renderer served unchanged, with no store tag: nothing from its modules/ folder until the link is followed,
-  // then the one checked name, answered, nothing sent
+  // then the one checked name and the one image it writes, answered, nothing sent
   const folderAt=reqs.length;
   await p.goto(PAGE_ORIGIN+'/folder/');await wait(800);
   ok(!reqs.slice(folderAt).some(r=>/\/modules\//.test(r.url)),'a page with a default folder asks nothing of it before a link is followed');
   const linkAt=reqs.length;
   await p.evaluate(()=>{location.hash='#/open/pledge/folder.booklet.md';});await wait(1200);
   ok(await p.evaluate(()=>document.body.dataset.view)==='folder/f-act','a booklet opened by link from the default folder opens into its content');
+  {const im=await p.evaluate(()=>[...document.querySelectorAll('#main img')].map(i=>({alt:i.alt,src:i.src.slice(0,5),w:i.naturalWidth})));
+   ok(im.length===1&&im[0].alt==='A small map'&&im[0].src==='blob:'&&im[0].w===40,'its image beside it in the folder is drawn, from a blob: URL: '+JSON.stringify(im));}
   await p.locator('#main textarea').first().fill(S.folder);await wait(900);
   {const K=await kept(p);ok(Object.keys(K).some(k=>/^booklet\.b\./.test(k)&&K[k].includes(S.folder)),'its answer is kept in this browser');}
   await harvest();
@@ -230,10 +237,11 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   console.log('INFO '+reqs.length+' requests: '+net.length+' network ('+[...new Set(net.map(r=>r.method+' '+new URL(r.url).origin))].join(', ')+'), '+local.length+' local ('+[...new Set(local.map(r=>r.url.split(':')[0]))].join(', ')+')');
   ok(net.length>0,'requests were recorded');
   ok(net.every(r=>r.method==='GET'),'every request is a GET: '+[...new Set(net.map(r=>r.method))].join(','));
-  ok(net.filter(r=>new URL(r.url).origin===PAGE_ORIGIN).every(r=>{const u=new URL(r.url).pathname;return u==='/app/'||u==='/linked/'||u==='/folder/'||u==='/favicon.ico'||u===PART_PATH||u.startsWith('/pub/')||u===FOLDER_FILE;}),'on the page\'s own origin it asked for the page itself, a favicon, the declared store, the one file of the default folder and the one part: '+[...new Set(net.filter(r=>new URL(r.url).origin===PAGE_ORIGIN).map(r=>new URL(r.url).pathname))].join(', '));
-  /* 0.15: every request under any modules/ folder, over the whole run: exactly one, the checked name, after the link */
+  ok(net.filter(r=>new URL(r.url).origin===PAGE_ORIGIN).every(r=>{const u=new URL(r.url).pathname;return u==='/app/'||u==='/linked/'||u==='/folder/'||u==='/favicon.ico'||u===PART_PATH||u.startsWith('/pub/')||u===FOLDER_FILE||u===FOLDER_IMG;}),'on the page\'s own origin it asked for the page itself, a favicon, the declared store, the one booklet of the default folder and its one image, and the one part: '+[...new Set(net.filter(r=>new URL(r.url).origin===PAGE_ORIGIN).map(r=>new URL(r.url).pathname))].join(', '));
+  /* 0.15: every request under any modules/ folder, over the whole run: exactly two, after the link: the checked name, then the
+     one image its booklet writes (one request per image) */
   {const fr=reqs.map((r,i)=>({r,i})).filter(x=>/\/modules\//.test(x.r.url));
-   ok(fr.length===1&&fr[0].r.method==='GET'&&fr[0].r.url===PAGE_ORIGIN+FOLDER_FILE&&fr[0].i>=linkAt,'the default folder was asked once, for the checked name, by the page with no store tag, after the link was followed: '+fr.map(x=>x.r.method+' '+x.r.url).join(', '));}
+   ok(fr.length===2&&fr.every(x=>x.r.method==='GET'&&x.i>=linkAt)&&fr[0].r.url===PAGE_ORIGIN+FOLDER_FILE&&fr[1].r.url===PAGE_ORIGIN+FOLDER_IMG,'the default folder was asked twice, by the page with no store tag, after the link was followed: for the checked name and then for the one image beside it: '+fr.map(x=>x.r.method+' '+x.r.url).join(', '));}
   /* counted again at the end of the run, as the second run and the box run count theirs: the path check above allows the part's
      address but not how often, and steps 8b and 9 come after step 8's count */
   ok(reqs.filter(r=>/\/parts\//.test(r.url)).map(r=>r.method+' '+r.url).join()===(HAS_PART?'GET '+PAGE_ORIGIN+PART_PATH:''),'over the whole run the renderer asked for a part once, the diagram library at its own address, if the file does not hold it ('+reqs.filter(r=>/\/parts\//.test(r.url)).length+'): '+reqs.filter(r=>/\/parts\//.test(r.url)).map(r=>r.url).join(', '));

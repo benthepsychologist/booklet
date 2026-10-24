@@ -29,7 +29,6 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(900);if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
     await p.locator('button.mode').first().click();await p.waitForTimeout(700);
     if(act!==false){await p.locator('button.mode').filter({hasText:act||'Overview'}).first().click();await p.waitForTimeout(900);}
-    await p.evaluate(()=>document.querySelectorAll('details.rm-sec').forEach(d=>d.open=true));await p.waitForTimeout(200);   /* 0.11.10: a page with sections folds, data views included; these checks look at the views, so open them */
     return {p,ctx,csp,errs};}
   const over=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   const theme=async(p,n)=>{await p.selectOption('#themeSel',n);await p.waitForTimeout(250);};
@@ -253,13 +252,13 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    ok(xs<=2,'grouped list: at most two cards across at 1280px ('+xs+' columns)');
    await t.ctx.close();}
 
-  // 10 a page's name is drawn once
+  // 10 a page has no name (0.15): its heading shows once, in place, and a page with none has no name line
   {const t=await open(path.join(R,'test/fixtures/pagename.booklet.md'),1280,false);const p=t.p;
-   const c=async()=>({name:await p.locator('.ap-body :text-is("First page")').count(),title:await p.locator('.ap-body .ap-title').count()});
+   const c=async()=>({name:await p.locator('#main :text-is("First page")').count(),title:await p.locator('#main .ap-title').count()});
    const a=await c();
-   ok(a.name===1&&a.title===0,'a page named by its first heading shows that name once ('+JSON.stringify(a)+')');
-   await p.locator('.ap-item').nth(1).click();await p.waitForTimeout(300);
-   ok(await p.locator('.ap-body .ap-title').allInnerTexts().then(x=>x.join()==='Page 2'),'a page with no heading keeps its fallback name line');
+   ok(a.name===1&&a.title===0,'a page\'s first heading shows once, and names nothing else ('+JSON.stringify(a)+')');
+   await p.locator('#main .cd-foot .pg-next').click();await p.waitForTimeout(300);
+   ok(await p.locator('#main .ap-title').count()===0&&!/Page 2(?! of)/.test(await p.locator('#main .ap-body').innerText()),'a page with no heading has no name line');
    ok(t.csp.length===0&&t.errs.length===0,'pages: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));
    await t.ctx.close();}
 

@@ -222,7 +222,30 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("a diagram's source is read by diagramRisk() before mermaid is started, and one that is refused returns before the library is used or its part is asked for",
    (()=>{const m=hand.match(/function mermaidNode\(code\)\{[\s\S]*?useLib\("mermaid"\)/);return !!m&&/diagramRisk\(code\)\)\{[^\n]*\n[^\n]*return box;\}/.test(m[0])&&m[0].indexOf("diagramRisk(code)")<m[0].lastIndexOf('useLib("mermaid")')&&!/whenLib|loadPart/.test(m[0]);})());
  must("mermaid is never started anywhere but mermaidNode (so every diagram passes that check)",count(hand,'useLib("mermaid")')===1&&count(hand,"M.initialize(")===2&&count(hand,"M.render(")===1,count(hand,'useLib("mermaid")')+" / "+count(hand,"M.initialize(")+" / "+count(hand,"M.render("));
- must("the renderer builds no <img> from a file's Markdown (mkImg draws text), and creates no img element anywhere",count(hand,'el("img"')===0&&count(hand,"createElement(\"img\")")===0&&count(hand,"new Image")===0&&!/<img\b/i.test(hand.slice(hand.indexOf("<body>"))),"img found");
+ /* CHANGED WITH BEN'S SAY-SO (2026-10-23, chat; v0.15 item v015-store-images): the renderer draws an image from the host's declared
+    store, for a booklet opened from it and for no other. So the old rule "no img element anywhere" becomes this exact one: no
+    other way to make an image exists, and the one img element has its address only from a blob: URL made from bytes the one
+    shared reader (linkFetch, pinned above) returned, checked against the file's extension, for a booklet whose entry came from
+    "store:". A booklet from a file, the registry or a page with no store still draws the box (mkImg's text path).
+    CHANGED FOR THE DEFAULT FOLDER (0.15, item v015-host-modules-and-checksum; Ben, 2026-10-23: "B. modules/ sounds good"; the
+    rule for its images given by the booklet-hub coordinator at the merge of main, 2026-10-24, and still to be confirmed by Ben
+    before the PR merges): a booklet opened from this page's own default folder (`modules:<folder>#<name>`, the folder being
+    this page's modules/) draws its images by the same rule, read from beside it there. The check below now pins imageFolder's
+    new text exactly, and pins the three helpers it relies on (storeNameOf, fromParts' two forms, folderOf), so that a booklet
+    from another default folder, or from no folder at all, still gets none. */
+ must("the renderer builds no <img> from a file's Markdown except the one for the declared store: no el(\"img\"), createElement(\"img\"), new Image or <img markup, and exactly one E(\"img\" in mkImg",count(hand,'el("img"')===0&&count(hand,"createElement(\"img\")")===0&&count(hand,"new Image")===0&&!/<img\b/i.test(hand.slice(hand.indexOf("<body>")))&&count(hand,'E("img"')===1,"img found");
+ must("that one img takes its address from r.url only (its one other attribute is the error listener that swaps in the box), and r.url is only ever a blob: URL made from the bytes linkFetch read (the other createObjectURL is the download of a copy)",
+   count(hand,'E("img",{class:"mdimg",src:r.url,alt:alt||"",onerror:()=>{imageBroken(r.at);if(im.parentNode&&typeof im.replaceWith==="function") im.replaceWith(draw({note:strings("ui").imgBroken}));}})')===1&&count(hand,"src:r.url")===1&&count(hand,"createObjectURL(")===2&&count(hand,"{url:URL.createObjectURL(new Blob([got.bytes],{type:IMG_EXT[ext]}))}")===1&&count(hand,"linkFetch(at,{raw:true})")===1);
+ must("a booklet gets images only when its entry came from the declared store or from this page's own default folder (folderOf: the folder it came from, and only when that is this page's modules/), this visit read that folder's file, and every part the image is in (a module, or the opening and outside activities) holds the folder's own text (storeModule: the same text for that part in the file just read and in the booklet open), a prose block says which module it is in (imageScope), and only for a checked path inside that booklet's folder",
+   count(hand,'function imageFolder(scope){const e=currentEntry,f=e&&e.from,s=storeNameOf(e),n=s!==""&&STORE_SRC!==""&&typeof scope==="string"&&storeModule(scope)?linkName(s):null,at=n===null?null:storeAddress(n,folderOf(f));')===1
+   &&count(hand,'const storeNameOf=e=>{const p=fromParts(e&&e.from);return p?p.name:"";};')===1
+   &&count(hand,'if(f.startsWith("store:")){const name=f.slice("store:".length);return name?{kind:"store",name}:null;}')===1
+   &&count(hand,'if(f.startsWith("modules:")){const r=f.slice("modules:".length),i=r.indexOf("#");\n    return i>0&&i<r.length-1?{kind:"modules",folder:r.slice(0,i),name:r.slice(i+1)}:null;}\n  return null;}')===1
+   &&count(hand,'const folderOf=f=>{const p=fromParts(f);if(!p) return "";if(p.kind==="store") return storeUrl();\n  const d=defaultStore();try{return d&&new URL(d).pathname===p.folder?d:"";}catch(e){return "";}};')===1
+   &&count(hand,'function storeAddress(name,base){base=base===undefined?storeUrl():base;const n=linkName(name);if(!base||n===null) return null;')===1
+   &&count(hand,'const storeModule=id=>{const a=moduleMemo("store",STORE_SRC)[id];return a!==undefined&&a===moduleMemo("book",String(((typeof BOOK!=="undefined"&&BOOK&&BOOK.raw)||{}).source||""))[id];};')===1
+   &&/function storeImage\(src,done,scope\)\{const folder=imageFolder\(scope\);if\(folder===""\) return null;/.test(hand)&&/u\.href\.startsWith\(folder\)&&u\.origin===new URL\(folder\)\.origin/.test(hand)
+   &&count(hand,'typeof ctx.opts.imageScope==="string"?storeImage(')===1&&count(hand,"imageScope:scopeOfAddr(activityId)")===1&&count(hand,'STORE_SRC=')===3&&count(hand,'let STORE_SRC="";')===1&&count(hand,'function imagesRelease(){STORE_SRC="";')===1&&count(hand,'STORE_SRC=String((((R&&R.template)||{}).raw||{}).source||"");')===1&&count(hand,"noteStoreFile(R)")===5);
  must("temml is started with trust:false, so \\includegraphics and \\href are not drawn",/trust:false/.test(hand)&&!/trust:true/.test(hand));
  must("the libraries are stored as inert text (type text/plain), never as script that runs on load",!/<script(?![^>]*type="text\/plain")[^>]*id="lib-/.test(full));
  must("a part is woken or loaded only through useLib(), and only mermaidNode and mathNode ask for one by name",count(hand,'useLib("mermaid")')===1&&count(hand,'useLib("temml")')===1&&count(hand,"loadPart(")===2&&count(hand,"whenLib(")===2);
@@ -278,7 +301,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
 /* One builder for every card (0.11.10): the card class is given to an element in cardNode and nowhere else. The detector
    is itself tested: it must see the violation in a seeded line and must see cardNode's own, or a pass would mean nothing. */
 {const CARD_MAKER=/(?:\bclass|\bclassName)\s*[:=]\s*(["'`])[^"'`]*\bcard(?:-(?:go|fold|item|sub))?\b[^"'`]*\1|classList\.add\(\s*["'`]card\b|["'`]card["']\s*,\s*["'`]card-/;
- const a=html.indexOf("function cardNode(o){"),b=html.indexOf("/* a heading's leading emoji becomes the card's picture");
+ const a=html.indexOf("function cardNode(o){"),b=html.indexOf("/* what a reader has done in an activity");
  const must=(n,ok,d)=>{if(ok)console.log("  ok    "+n);else{fails++;console.log("  FAIL  "+n+(d?"   → "+d:""));}};
  must("cardNode is found in the renderer",a>0&&b>a);
  const body=html.slice(a,b),rest=html.slice(0,a)+html.slice(b);

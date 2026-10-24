@@ -167,8 +167,7 @@ You arrived by a card's link.
        qMath:q.querySelectorAll?q.querySelectorAll('math').length:-1,qText:q.textContent,
        aside:[...document.querySelectorAll('#main .aside')].map(a=>a.innerHTML).join('|'),
        opts:[...document.querySelectorAll('#main .pill-btn')].map(o=>({txt:o.textContent,strong:o.querySelectorAll('strong').length,math:o.querySelectorAll('math').length,a:o.querySelectorAll('a').length})),
-       raw:document.querySelectorAll('#main .math.raw').length,doc:document.title,
-       menuText:(document.querySelector('.ap-menu')||{}).textContent||''};});
+       raw:document.querySelectorAll('#main .math.raw').length,doc:document.title};});
    ok(act.headMath===1,'the activity\'s page head draws the formula in its title');
    ok(act.qMath===2,'the question\'s title draws both formulas as MathML ('+act.qMath+')');
    ok(/<strong>compare<\/strong>/.test(act.aside)&&/<em>denominators<\/em>/.test(act.aside),'its help text draws bold and emphasis');

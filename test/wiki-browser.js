@@ -233,14 +233,14 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
    const RS='---\nbooklet: "0.13"\ntitle: RS\nlang: en\n---\n\n> [!module|rs] RS\n\n> [!activity|one] One\n\nTop.\n\n'+PG.replace('ID PAR','multi parent:one').replace('Title','Multi')+'> [!module|rs end] End\n';
    p=await openBook(RS,600);
    await cards(p).first().click();await p.waitForTimeout(250);await cards(p).first().click();await p.waitForTimeout(300);
-   ok(await p.locator('.wk-fold').evaluate(d=>!d.open)&&await p.locator('.wk-pagelist .wk-pitem').count()===3,'600 px: the menu is closed and the three pages are listed in the page');
+   ok(await p.locator('.wk-fold').evaluate(d=>!d.open)&&await p.locator('.wk-pitem').count()===0&&/Page 1 of 3/.test(await p.locator('#main .cd-foot').innerText()),'600 px: the menu is closed, the pages are listed nowhere (0.15), and the pager at the foot turns them');
    await p.setViewportSize({width:1100,height:900});await p.waitForTimeout(400);
    ok(await p.locator('.wk-tree').isVisible()&&await p.locator('.wk-q').isVisible()&&await p.locator('.wk-fold').evaluate(d=>d.open),'widened to 1100 px: the menu shows its tree and search box at once (no empty outlined box)');
-   ok(await p.locator('.wk-pagelist').count()===0&&await p.locator('.wk-menu .wk-pitem').count()===3,'and the pages are in the menu, not the page');
+   ok(await p.locator('.wk-pitem').count()===0,'and the menu lists the activity, not its pages');
    await p.locator('.wk-q').fill('multi');await p.waitForTimeout(150);
    await p.locator('.wk-q').focus();
    await p.setViewportSize({width:600,height:900});await p.waitForTimeout(400);
-   ok(await p.locator('.wk-fold').evaluate(d=>!d.open)&&await p.locator('.wk-pagelist .wk-pitem').count()===3,'narrowed back to 600 px: the menu is closed again and the in-page list is back');
+   ok(await p.locator('.wk-fold').evaluate(d=>!d.open),'narrowed back to 600 px: the menu is closed again');
    await p.locator('.wk-fold > summary').click();await p.waitForTimeout(150);
    ok(await p.locator('.wk-q').inputValue()==='multi','the words in the search box survive the redraw (the box itself is inside the closed menu, so it cannot keep the focus)');
    ok((await h2(p)).trim()==='Multi','and the reader is still on the same page');
@@ -254,56 +254,44 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
    ok(await p.locator('.wk-crumbs,.wk-menu').count()===0,'and its pages have no breadcrumbs or menu');
    await p.context().close();}
 
-  /* ---- an activity of three pages in a wiki: listed in the menu, or in the page where the menu is not on screen ---- */
+  /* ---- an activity of three pages in a wiki: its pages are pagination (0.15), listed nowhere, turned by the pager ---- */
   {const PG='> [!activity|ID PAR] Title\n\n## First page\n\nAlpha content.\n\n***\n\n## Second page\n\nBeta content.\n\n***\n\n## Third page\n\nGamma content.\n\n';
    const MP='---\nbooklet: "0.13"\ntitle: MP\nlang: en\n---\n\n> [!module|mp] MP\n\n> [!activity|one] One\n\nTop.\n\n'+PG.replace('ID PAR','multi parent:one').replace('Title','Multi')+PG.replace('ID PAR','hid parent:one hidden').replace('Title','Hid')+'> [!activity|link] Link\n\nSee [[#Hid]].\n\n> [!module|mp end] End\n';
    const down=async q=>{await cards(q).first().click();await q.waitForTimeout(250);};
-   /* 1280: in the menu, not in the page */
-   p=await openBook(MP,1280);await down(p);await cards(p).first().click();await p.waitForTimeout(300);
-   ok((await h2(p)).trim()==='Multi'&&await p.locator('.wk-menu .wk-pages .wk-pitem').count()===3&&await p.locator('.wk-pagelist').count()===0,'1280 px: a three-page activity lists its pages in the menu, under its entry, and not in the page');
-   ok(await p.locator('.wk-menu [aria-current="page"]').count()===1&&await p.locator('.wk-menu [aria-current="step"]').innerText()==='First page','the activity\'s entry is the current page and the sub-page is the current step');
-   await p.locator('.wk-menu .wk-pitem').nth(1).click();await p.waitForTimeout(250);
-   ok(/Beta content/.test(await p.locator('#main').innerText())&&/^BUTTON\|step\|Second page/.test(await focused(p)),'choosing one shows it and focuses its entry in the menu ('+await focused(p)+')');
-   await p.keyboard.press('ArrowDown');
-   ok(/Third page/.test(await focused(p)),'the arrow keys move through the list, as in the rail ('+await focused(p)+')');
-   await p.context().close();
-   /* 390: in the page */
-   p=await openBook(MP,390);await down(p);await cards(p).first().click();await p.waitForTimeout(300);
-   ok(await p.locator('.wk-fold').evaluate(d=>!d.open)&&await p.locator('.wk-content .wk-pagelist .wk-pitem').count()===3,'390 px: with the menu closed the three pages are listed in the page itself');
-   await p.locator('.wk-pagelist .wk-pitem').nth(1).click();await p.waitForTimeout(250);
-   ok(/Beta content/.test(await p.locator('#main').innerText())&&/^BUTTON\|step\|Second page/.test(await focused(p))&&await p.locator('.wk-pagelist [aria-current="step"]').count()===1,'choosing one shows it and focuses its entry in that list ('+await focused(p)+')');
-   await p.keyboard.press('ArrowDown');
-   ok(/Third page/.test(await focused(p)),'the arrow keys move through it');
-   await p.screenshot({path:path.join(OUT,'wiki-pagelist-390.png')});
-   await p.context().close();
+   const pager=q=>q.locator('#main .cd-foot').innerText().then(t=>t.replace(/\s+/g,' ').trim());
+   for(const W of [1280,390]){
+     p=await openBook(MP,W);await down(p);await cards(p).first().click();await p.waitForTimeout(300);
+     ok((await h2(p)).trim()==='Multi'&&await p.locator('.wk-pitem').count()===0,W+' px: a three-page activity in a wiki lists its pages nowhere, in the menu or the page');
+     ok(/Page 1 of 3/.test(await pager(p)),W+' px: the pager at the foot says Page 1 of 3 ('+await pager(p)+')');
+     await p.locator('#main .cd-foot .pg-next').click();await p.waitForTimeout(250);
+     ok(/Beta content/.test(await p.locator('#main').innerText())&&/Page 2 of 3/.test(await pager(p))&&(await h2(p)).trim()==='Multi',W+' px: Next turns to the second page, on the same wiki page');
+     if(W===1280) ok(await p.locator('.wk-menu [aria-current="page"]').count()===1&&await p.locator('.wk-menu [aria-current="step"]').count()===0,'the menu marks the activity as the current page, and no page of it as a step');
+     await p.screenshot({path:path.join(OUT,'wiki-pages-'+W+'.png')});
+     await p.context().close();}
    /* hidden, reached by a link, at 1280 */
    p=await openBook(MP,1280);await p.locator('.wk-q').fill('link');await p.locator('.wk-results .wk-link').first().click();await p.waitForTimeout(250);
    await p.locator('.wk-q').fill('');await p.locator('.wk-content a.alink').click();await p.waitForTimeout(300);
-   ok((await h2(p)).trim()==='Hid'&&await p.locator('.wk-menu [data-id$="hid"]').count()===0&&await p.locator('.wk-content .wk-pagelist .wk-pitem').count()===3,'a hidden three-page activity reached by a link has no menu entry, so its pages are listed in the page');
-   await p.locator('.wk-pagelist .wk-pitem').nth(2).click();await p.waitForTimeout(250);
-   ok(/Gamma content/.test(await p.locator('#main').innerText())&&/^BUTTON\|step\|Third page/.test(await focused(p)),'and choosing one works there');
+   ok((await h2(p)).trim()==='Hid'&&await p.locator('.wk-menu [data-id$="hid"]').count()===0&&/Page 1 of 3/.test(await pager(p)),'a hidden three-page activity reached by a link has no menu entry, and its pager turns its pages');
+   await p.locator('#main .cd-foot .pg-next').click();await p.waitForTimeout(250);await p.locator('#main .cd-foot .pg-next').click();await p.waitForTimeout(250);
+   ok(/Gamma content/.test(await p.locator('#main').innerText()),'and turning to the third works there');
    await p.context().close();}
 
-  /* ---- a page with sections: they are listed in the wiki's menu, and no second rail is drawn ---- */
+  /* ---- a page with sections: drawn open, its sections listed nowhere, and no rail (0.15) ---- */
   {const chunks=WIKI.split(/^> \[!activity\|/m).slice(1).map((c,i)=>({page:pages[i],n:(c.match(/^#{2,6} /gm)||[]).length}));
    const sec=chunks.sort((x,y)=>y.n-x.n)[0];
    p=await openBook(WIKI,1280);
    await p.locator('.wk-q').fill(sec.page.title);await p.waitForTimeout(150);
    await p.locator('.wk-results .wk-link',{hasText:sec.page.title}).first().click();await p.waitForTimeout(400);
    await p.locator('.wk-q').fill('');await p.waitForTimeout(150);
-   const n=await p.locator('.wk-menu .ap-sec').count();
-   ok(sec.n>=3&&n>=2,'a page with sections lists them in the wiki menu, under its own entry ('+n+' of its '+sec.n+' headings)');
-   ok(await p.locator('.ap-menu, .ap-frame').count()===0,'and no separate sections rail is drawn beside it');
-   ok((await heights(p,'.wk-menu .ap-sec')).every(h=>h>=44),'the section entries are at least 44 px tall ('+(await heights(p,'.wk-menu .ap-sec')).slice(0,4)+')');
-   const entry=p.locator('.wk-menu .ap-sec').nth(1);await entry.click();await p.waitForTimeout(300);
-   ok(await p.locator('.wk-menu .ap-dot.on').count()>=1,'pressing a section goes to it, as the rail did (its dot fills)');
+   ok(sec.n>=3&&await p.locator('.ap-sec, .ap-menu, .ap-frame').count()===0,'a page with sections lists them nowhere, and no sections rail is drawn beside it ('+sec.n+' headings)');
+   ok(await p.locator('.wk-content details:not(.card-compact):not(.au-fold)').count()===0,'and its sections are drawn open');
    await p.screenshot({path:path.join(OUT,'wiki-sections.png')});
    await p.context().close();
-   /* a flat module keeps its rail */
+   /* a flat module: no rail either */
    const FLATSEC=FLAT.replace('One.\n','## Part one\n\nOne.\n\n## Part two\n\nTwo words.\n');
    p=await openBook(FLATSEC,1280);
    await p.locator('#main button.mode').first().click();await p.waitForTimeout(300);
-   ok(await p.locator('.ap-menu .ap-sec').count()>=2&&await p.locator('.wk-menu').count()===0,'a flat module\'s page keeps the sections rail exactly as it was');
+   ok(await p.locator('.ap-menu, .ap-sec').count()===0&&await p.locator('.wk-menu').count()===0&&/Two words/.test(await p.locator('#main').innerText()),'a flat module\'s page has no rail, and its sections are drawn open');
    await p.context().close();}
 
   /* ---- a long row of children: the first 24 cards, the rest on a press ---- */

@@ -92,12 +92,13 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  chk("table: a list value is shown comma-separated, an empty list shows nothing",text(walk(trs[1],x=>x.tagName==="td")[3])==="A, B"&&text(walk(trs[3],x=>x.tagName==="td")[3])==="");
  chk("table: a numeric column is marked to align right",cls(walk(trs[0],x=>x.tagName==="th")[1]).includes("num")&&!cls(walk(trs[0],x=>x.tagName==="th")[0]).includes("num"));
  chk("the empty block shows the query's own line",text(main).includes("Nothing needs you."));
- chk("a page with one data view and no sections is not foldable",!B.foldable(B.bookActivities().find(a=>a.id==="status")));
+ chk("a page of data views with nothing the author folded folds nothing, and has no fold switch",walk(main,x=>x.attrs&&x.attrs.role==="switch").length===0&&walk(main,x=>x.tagName==="details"&&cls(x).includes("au-fold")).length===0);
  chk("nothing in a data block is read as Markdown or HTML",(()=>{const r=A.parseFile(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
    P.wipe();const C=P.boot();C.addModuleText(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n\`\`\`booklet query\nfrom: d\nas: list\n\`\`\`\n\n\`\`\`booklet data\n[{"title":"**bold** <b>x</b> [l](http://e.com)"}]\n\`\`\`\n^d\n\n> [!module|m end] End\n`);
    C.screen="m/a";C.render();return r.ok&&text(P.main()).includes("**bold** <b>x</b> [l](http://e.com)")&&walk(P.main(),x=>x.tagName==="a"||x.tagName==="b"||x.tagName==="strong").length===0;})());
- chk("a prose-only page with sections still folds as before",(()=>{const r=A.parseFile(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);
-   P.wipe();const C=P.boot();C.applyParsed&&0;return r.ok&&C.foldable(r.template.modules[0].activities[0]);})());
+ chk("a prose-only page with sections is drawn open: its headings are headings, and nothing is folded (0.15)",(()=>{P.wipe();const C=P.boot();
+   C.loadText(`---\nbooklet: "0.13"\ntitle: T\nlang: en\n---\n\n## One\n\nText.\n\n## Two\n\nMore.\n`);C.render();
+   return walk(P.main(),x=>x.tagName==="details").length===0&&walk(P.main(),x=>x.tagName==="h3").map(text).join()==="One,Two";})(),walk(P.main(),x=>x.tagName==="h3").map(text).join());
 
  /* ---- the same words in the reader's language: a booklet started by a reader who chose it ---- */
  const inLang=async l=>{const L=P.boot();L.render();L.toggle.press(l);await L.createBooklet();L.addModuleText(FX);L.screen="allotment/status";L.render();return L;};

@@ -1,7 +1,7 @@
 // Format 0.13, item 2 (drawing): the words on a booklet line are inline Markdown (D4), the booklet's opening is drawn on its home
 // screen (D5), `as: cards` draws a data block (D15), and four visible bugs are gone (D18): a word typed into the feelings grid
 // shows as the word, a footnote's indented continuation lines belong to the note, and a citation with no italic title is a plain
-// reference. (The page-name bug has its test in pagename.test.js, the library wake bug in libwake-browser.js.) This suite draws
+// reference. (The page-name bug went with page names in 0.15: pages.test.js; the library wake bug is in libwake-browser.js.) This suite draws
 // into the recording DOM of page.js; the formulas themselves (MathML) and the clicks are checked in drawing-browser.js.
 // Run: node test/drawing.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
