@@ -1268,6 +1268,12 @@ def check_format(f, text, fm):
                 grp_ends.append(end)
             else:
                 qs, bl = quoted_queries(lines, i)
+                if section != "content":
+                    # a data section is not drawn: what is in its callouts is neither read nor shown as text or code
+                    for q in qs + [q for q, _ in bl]:
+                        warn(f, f"line {q}: this is inside a `[!{kind}]` in a data section, which is not drawn, so a renderer neither "
+                                f"reads nor shows it; put it in a group in an activity")
+                    qs, bl = [], []
                 for q in qs:
                     warn(f, f"line {q}: a query view inside a callout (here a `[!{kind}]`) is not yet supported: a renderer draws the "
                             f"`booklet query` block as code; put it in a group in an activity, or in the activity's own text")
@@ -1517,7 +1523,11 @@ def check_format(f, text, fm):
                     f"dashes), so it is left as text" + (", and it ends the callout above it" if i > 0 and lines[i - 1].startswith(">") else ""))
         if ln.strip():
             brk = re.match(r'^ {0,3}([-*_])([ \t]*\1){2,}[ \t]*$', ln)
-            if brk and re.match(r'^ {0,3}-', ln) and was_prose:
+            if brk and re.match(r'^ {0,3}-', ln) and was_prose and grp_ends:
+                # in a group a thematic break is a rule, never a page break (SPEC.md section 6): no page-break advice there
+                warn(f, f"line {n}: `{ln.strip()}` straight under text in a group makes that line a heading; for a rule, leave a blank "
+                        f"line above it; for a heading, write `## …`")
+            elif brk and re.match(r'^ {0,3}-', ln) and was_prose:
                 warn(f, f"line {n}: `{ln.strip()}` straight under text makes that line a heading and is not a page break; write `***`, "
                         f"or leave a blank line above it; for a heading, write `## …`")
             last_q = False

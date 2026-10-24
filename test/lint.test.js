@@ -323,7 +323,13 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
  const note=run("> [!note] A note\n> > [!text|q1] One?\n");
  chk("a question in a note: one warning, at its line, that it is drawn as text",note.status===0&&note.warns.length===1&&/line 10: a `\[!text\]` line inside a `\[!note\]` is drawn as text, not read/.test(note.warns[0]||""),note.out);
  const rule=run("> [!row]\n\n## One\n\n> [!group] G\n> Words.\n>\n> ***\n>\n> More.\n\n## Two\n\nWords.\n\n> [!row|end]\n");
- chk("a thematic break inside a group is a rule in it, not a page break: the row around it is not cut",rule.status===0&&rule.errors.length===0,rule.out);}
+ chk("a thematic break inside a group is a rule in it, not a page break: the row around it is not cut",rule.status===0&&rule.errors.length===0,rule.out);
+ const dat=run("Words.\n\n> [!data]\n\n> [!group] G\n> > [!text|x] X?\n>\n> ```booklet query\n> from: a\n> ```\n");
+ chk("a question and a query in a group in a data section: warned that a data section is not drawn, not that they are drawn as text or code",
+   dat.status===0&&dat.warns.length===2&&dat.warns.every(w=>/inside a `\[!group\]` in a data section, which is not drawn, so a renderer neither reads nor shows it/.test(w))&&/line 14:/.test(dat.warns.join())&&/line 16:/.test(dat.warns.join()),dat.out);
+ const dash=run("> [!group] G\n> Words.\n> ---\n>\n> More.\n\nText.\n---\n");
+ chk("`---` straight under text in a group: warned that it makes a heading, with no page-break advice (a group has no page break)",
+   dash.status===0&&dash.warns.length===2&&/line 11: `---` straight under text in a group makes that line a heading; for a rule, leave a blank line above it/.test(dash.warns[0]||"")&&!/page break|\*\*\*/.test(dash.warns[0]||"")&&/line 16: .*is not a page break; write `\*\*\*`/.test(dash.warns[1]||""),dash.out);}
 
 console.log(fails?`\n${fails} failed`:"\nlint checks passed");
 process.exit(fails?1:0);

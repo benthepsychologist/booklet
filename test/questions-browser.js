@@ -520,11 +520,25 @@ const FILE4=FILE3.replace('title: Matrix stem','title: Bare matrix').replace('> 
   /* one at a time, the matrix in a group is a step on a card: its held stem is painted with the card's colour, not the page's */
   {const file5=path.join(OUT,'matrixsteps.booklet.md');fs.writeFileSync(file5,FILE5);
    p=await open(390,file5);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+   /* all at once, the matrix sits in its open group's box: the held stem takes the box's colour, as it does the card's below */
+   const under=()=>p.evaluate(()=>{const h=document.querySelector('#main .mx-asq > h3:first-child');let u=h&&h.parentElement;
+     while(u&&/^rgba\(0, 0, 0, 0\)$|^transparent$/.test(getComputedStyle(u).backgroundColor)) u=u.parentElement;
+     return h&&u&&{stem:getComputedStyle(h).backgroundColor,under:getComputedStyle(u).backgroundColor,in:u.className,pos:getComputedStyle(h).position};});
+   let inBox=await under();
+   ok(!!inBox&&inBox.stem===inBox.under&&/rd-callout/.test(inBox.in)&&inBox.pos==='sticky',`390, all at once: the held stem in an open group is painted with the group's box ${JSON.stringify(inBox)}`);
    await p.locator('#main .oat-ctl button').filter({hasText:'One at a time'}).click();await p.waitForTimeout(400);
    const paint=await p.evaluate(()=>{const h=document.querySelector('#main .mx-asq > h3:first-child'),u=h&&h.closest('.oat-unit');
      return u&&{stem:getComputedStyle(h).backgroundColor,card:getComputedStyle(u).backgroundColor,pos:getComputedStyle(h).position};});
    ok(!!paint&&paint.stem===paint.card&&paint.pos==='sticky',`390, one at a time: the held stem is painted with the step's card it sits on ${JSON.stringify(paint)}`);
    ok(p.__bad.length===0,'matrix steps: no policy violation or page error '+p.__bad.join(' | '));
+   await p.context().close();
+   /* and in a group the author folded, opened: the stem takes the fold's colour */
+   const file6=path.join(OUT,'matrixfold.booklet.md');fs.writeFileSync(file6,FILE5.replace('> [!group] The week','> [!group]- The week'));
+   p=await open(390,file6);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+   await p.locator('#main details.au-fold > summary').first().click();await p.waitForTimeout(400);
+   inBox=await under();
+   ok(!!inBox&&inBox.stem===inBox.under&&inBox.pos==='sticky',`390, all at once: the held stem in a folded group, opened, is painted with the fold it sits in ${JSON.stringify(inBox)}`);
+   ok(p.__bad.length===0,'matrix in a fold: no policy violation or page error '+p.__bad.join(' | '));
    await p.context().close();}
   /* a touch on an answer just under the held stem answers it, and the page does not move */
   p=await open(390,file3,true);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);

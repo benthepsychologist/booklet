@@ -119,6 +119,17 @@ const mk=(mod,body)=>`---\nbooklet: "0.15"\ntitle: T ${mod}\nlang: en\n---\n\n> 
   /* nothing renamed when nothing clashes: the module text is added as written */
   await fresh();const r5=A.addModuleText(mod("mod-a","a"));
   chk("with nothing to clash with, the module is added as written",r5.ok&&r5.renamed.length===0&&A.toMarkdown().includes("\n^wd\n")&&A.toMarkdown().includes("[^1]: *Source a*"));}
+ /* ---- the same inside a group: a group in an activity reads its body, one `>` less, as a file is (SPEC.md section 6), so a
+    query, a block id and a question in it are found and follow the rename as they do outside it ---- */
+ {const mod=id=>`---\nbooklet: "0.15"\ntitle: T ${id}\nlang: en\n---\n\n> [!module|${id}] M ${id}\n\n> [!activity|look repeat] Look\n\n\`\`\`booklet data\n[{"x":"${id}"}]\n\`\`\`\n^rows\n\n\`\`\`booklet widget\n{ "engine": "grid-select" }\n\`\`\`\n^wd\n\n`+
+   `> [!group] In a group\n> \`\`\`booklet query\n> from: rows\n> \`\`\`\n>\n> > [!text|wd] Words?\n>\n> \`\`\`booklet query\n> from: wd\n> \`\`\`\n>\n> \`\`\`booklet data\n> [{"z":"${id}"}]\n> \`\`\`\n> ^inner\n>\n> \`\`\`booklet query\n> from: inner\n> \`\`\`\n\n> [!module|${id} end] End\n`;
+  await fresh();
+  const ra=A.addModuleText(mod("mod-a")),rb=A.addModuleText(mod("mod-b")),out=A.toMarkdown(),modB=out.slice(out.indexOf("> [!module|mod-b]"));
+  chk("in a group: a clashing block id in it is renamed, and said, with those outside it",ra.ok&&rb.ok&&rb.renamed.map(x=>x.from+">"+x.to).sort().join()==="inner>mod-b-inner,rows>mod-b-rows,wd>mod-b-wd"&&modB.includes("\n> ^mod-b-inner\n"),JSON.stringify([ra,rb]));
+  chk("...a query in a group follows the block it names, outside the group or in it",modB.includes("\n> from: mod-b-rows\n")&&modB.includes("\n> from: mod-b-inner\n"),modB);
+  chk("...and a query naming a question in a group still names the question: not renamed for a block of that id",modB.includes("\n> from: wd\n")&&modB.includes("> > [!text|wd] Words?"),modB);
+  const R=A.parseFile(out);A.loadText(out);A.screen="mod-b/look";A.render();
+  chk("...so it reads back with nothing said, each view drawing its own module's rows",R.ok&&R.refused.length===0&&R.unread.length===0&&/x mod-b/.test(P.texts(P.main()))&&/z mod-b/.test(P.texts(P.main())),JSON.stringify([R.unread.map(String),R.refused.map(String)])+P.texts(P.main()).slice(0,300));}
 
 
  /* what is said about a rename: one short line, at most three listed, the rest counted, in each language */

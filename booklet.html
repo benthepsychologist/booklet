@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-TtwaAJsImdnL5NPVlsYkfGt/NUxkz0i5y6e8P0vEdj8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-yfVK8Rn+d43La/TH4vOWmhc3JR9/Pc6AUYi4qtz0Jv8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -535,10 +535,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mx-q .mxq .pills{max-width:none}
   /* drawn as questions, the matrix's own words are the stem above them: quieter than the questions it frames, and held under
      the bar while its items are answered, as far as the matrix's end (its block is the stem's own sticky box), whatever its
-     length (SPEC.md section 5), painted with what it sits on (a step's card, one at a time). As a grid it is not held: its
+     length (SPEC.md section 5), painted with what it sits on (a step's card, one at a time; a group's box or fold). As a grid it is not held: its
      words are above the rows */
   .mx-asq>h3:first-child{position:sticky;top:calc(var(--ap-top,4.4rem) - 12px);z-index:2;background:var(--paper);font-family:var(--sans);font-weight:600;font-size:1.02rem;color:var(--ink);margin:.1rem 0 .3rem;padding:.4rem 0 .4rem .8rem;border-left:var(--focus-w) solid var(--rule)}
-  .oat-unit .mx-asq>h3:first-child{background:var(--surface)}
+  .oat-unit .mx-asq>h3:first-child,.rd-callout .mx-asq>h3:first-child,.card-plain .mx-asq>h3:first-child{background:var(--surface)}
   /* on a window too short to give the items room under the bar and a held stem (a phone on its side), the stem is not held:
      it scrolls with its items */
   @media (max-height:360px){.mx-asq>h3:first-child{position:static}}
@@ -1739,7 +1739,7 @@ const STRINGS_SRC={
       blockUnknown: (w,what)=>`${w}: a “booklet ${what}” block is not one this page reads`,
       rowEndStray: w=>`${w}: a row is closed that was never opened`,
       rowNested: w=>`${w}: a row opens inside a row, so it was ignored (rows do not nest)`,
-      groupHolds: (w,k)=>`${w}: a ${k} line cannot go inside a group, so it was ignored (a group holds text, questions and callouts)`,
+      groupHolds: (w,k)=>`${w}: ${/^[aeiou]/.test(k)?"an":"a"} ${k} line cannot go inside a group, so it was ignored (a group holds text, questions and callouts)`,
       moduleEndStray: w=>`${w}: a module is closed that was never opened`,
       moduleEndMismatch: (w,id,open)=>`${w}: this closes “${id}”, but “${open}” is open`,
       moduleNested: (w,id,open)=>`${w}: “${id}” opens before “${open}” is closed`,
@@ -1750,7 +1750,7 @@ const STRINGS_SRC={
       matrixNoItems: w=>`${w}: this matrix question has no items under it (a bulleted list)`,
       matrixNoAnchors: w=>`${w}: this matrix question has no anchors under its items (a numbered list)`,
       scaleNoAnchors: w=>`${w}: this scale question has no anchors under it (a numbered list)`,
-      settingUnknown: (w,kind,s)=>`${w}: a ${kind} line takes no “${s}”, so it was ignored`,
+      settingUnknown: (w,kind,s)=>`${w}: ${/^[aeiou]/.test(kind)?"an":"a"} ${kind} line takes no “${s}”, so it was ignored`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` is not a setting a line takes (only \`status:off\`), so it was ignored`,
       dailyAlone: w=>`${w}: \`daily\` needs \`repeat\`, so it was ignored`,
@@ -3307,7 +3307,8 @@ const keysOf=b=>READING_BLOCKS.has(b.type)?[]:(b.keys||[b.id]);
    wants the real one, shown but not operable */
 const engOpts=b=>({readonly:!!b.readonly,describe:!!b.describe});
 const placeOf=b=>b.placement||"open";
-const blocksOf=id=>activityBlocks(activityOf(id));
+/* every block of the activity `id` names, a group's and a row's too */
+const blocksOf=id=>allBlocksOf(activityOf(id));
 
 /* ======================= WHERE BOOKLETS ARE KEPT =======================
    A booklet is modules plus what was written in them, so two booklets with the
@@ -4630,13 +4631,19 @@ function moduleTextProblems(text,R){
    nothing is left exactly as the author wrote it, and question, activity, widget-line and menu ids are never
    renamed (nothing a host resolves depends on them). An update runs it again on the module's own text, so
    the result is the same. This whole block, and its one call in addModuleText, can be taken out alone. */
+/* some lines at each depth: [the lines, the lines one `>` in, two, …], a line "" where it is not that deep or is fenced
+   code one depth up. A group in an activity reads its body, one `>` less, as a file is (SPEC.md section 6), so the
+   ids, fences and Booklet lines below are looked for at every depth (a group in a group too) */
+function depthsOf(lines){const out=[lines];
+  for(let v=lines;;){const m=codeMask(v);v=v.map((x,i)=>!m[i]&&/^>/.test(x)?x.replace(/^>[ \t]?/,""):"");
+    if(!v.some(Boolean)) return out;out.push(v);}}
 /* the ids of the blocks (`^id` after a fence) in some lines, by the line the id is on */
 function blockIdLines(lines){const out=new Map();
-  codeFences(lines).forEach(F=>{if(F.id) out.set(F.idAt,F.id);});
+  depthsOf(lines).forEach(v=>codeFences(v).forEach(F=>{if(F.id) out.set(F.idAt,F.id);}));
   return out;}
 /* the ids of the footnotes defined in some lines (`[^id]: note`, outside fenced code), by line */
-function noteIdLines(lines){const mask=codeMask(lines),out=new Map();
-  lines.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CITE_DEF);if(m) out.set(i,m[1]);});
+function noteIdLines(lines){const out=new Map();
+  depthsOf(lines).forEach(v=>{const mask=codeMask(v);v.forEach((ln,i)=>{if(mask[i]) return;const m=ln.match(CITE_DEF);if(m) out.set(i,m[1]);});});
   return out;}
 /* a line with `fn` applied to every stretch of it that is not inline code */
 function outsideInlineCode(ln,fn){let out="",i=0;
@@ -4652,23 +4659,23 @@ const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 /* The module's lines with each block id or footnote id that `takenBlocks` or `takenNotes` already holds renamed
    to `<modId>-<id>`. Returns {lines, renamed:[{what,from,to}]}. */
 function renameClashingIds(lines,takenBlocks,takenNotes,modId){
-  const mask=codeMask(lines),bl=blockIdLines(lines),nl=noteIdLines(lines);
+  const D=depthsOf(lines),M=D.map(codeMask),mask=lines.map((_,i)=>D.some((v,d)=>M[d][i]&&v[i]!=="")),bl=blockIdLines(lines),nl=noteIdLines(lines);
   const usedB=new Set(bl.values()),usedN=new Set(nl.values());
   /* the ids the module's own lines give to activities, questions and menus: a query's `from:` that names one of
      these names that, not a block */
-  const own=new Set();bookletLines(lines).forEach(x=>{
-    if(["activity","menu","module"].concat([...QUESTION_KINDS]).includes(x.kind)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}});
+  const own=new Set();D.forEach(v=>bookletLines(v).forEach(x=>{
+    if(["activity","menu","module"].concat([...QUESTION_KINDS]).includes(x.kind)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
   const fresh=(id,taken,used)=>{let n=modId+"-"+id,k=2;while(taken.has(n)||used.has(n)){n=modId+"-"+id+"-"+k;k++;}used.add(n);return n;};
   const mapB=new Map(),mapN=new Map(),renamed=[];
   for(const id of [...usedB]) if(takenBlocks.has(id)){const to=fresh(id,takenBlocks,usedB);mapB.set(id,to);renamed.push({what:"block",from:id,to});}
   for(const id of [...usedN]) if(takenNotes.has(id)){const to=fresh(id,takenNotes,usedN);mapN.set(id,to);renamed.push({what:"footnote",from:id,to});}
   if(!renamed.length) return {lines,renamed};
-  /* the `from:` lines of query fences */
+  /* the `from:` lines of query fences, a group's too */
   const fromLines=new Set();
-  codeFences(lines).forEach(F=>{if(/^booklet[ \t]+query\b/i.test(F.info)) for(let j=F.start+1;j<Math.min(F.end,lines.length-1);j++) fromLines.add(j);});
+  D.forEach(v=>codeFences(v).forEach(F=>{if(/^booklet[ \t]+query\b/i.test(F.info)) for(let j=F.start+1;j<Math.min(F.end,lines.length-1);j++) if(v[j]!=="") fromLines.add(j);}));
   const out=lines.map((ln,i)=>{
     if(bl.has(i)&&mapB.has(bl.get(i))) return ln.replace(/\^[A-Za-z0-9-]+/,"^"+mapB.get(bl.get(i)));
-    if(fromLines.has(i)){const m=ln.match(/^(\s*from:\s*)(["']?)([A-Za-z0-9-]+)\2(\s*)$/i);
+    if(fromLines.has(i)){const m=ln.match(/^((?:>[ \t]?)*\s*from:\s*)(["']?)([A-Za-z0-9-]+)\2(\s*)$/i);
       return m&&mapB.has(m[3])&&!own.has(m[3])?m[1]+m[2]+mapB.get(m[3])+m[2]+m[4]:ln;}
     if(mask[i]) return ln;
     return outsideInlineCode(ln,seg=>{
@@ -6745,8 +6752,8 @@ function foldSwitch(){const on=foldsOpen();
   return b;}
 
 /* ---- drawing ---- */
-/* The tab on show (or the activity, with no tabs): the step control and the fold switch, the page on show (all at once, or
-   one question at a time) and its endnotes. The lists are read afresh on every redraw. */
+/* The tab on show (or the activity, with no tabs): the step control and the fold switch, the part on show (all at once, or
+   one group at a time) and its endnotes. The lists are read afresh on every redraw. */
 function pageBody(id,draft,dc){const cur=currentPage(id),own=blocksIn(cur);
   /* of two or more pages, the body is named for its page ("Page 2 of 3"), which is said when a page turn puts the focus on it */
   const ps=tabPages(activityOf(id),cur.tab||null),of=ps.length>1?strings("pages").of(ps.indexOf(cur)+1,ps.length):null;
@@ -6806,8 +6813,8 @@ function stepPage(id,draft,units,dc){const S=strings("steps"),page=currentPage(i
   const n=units.length,host=el("div",{class:"oat"});
   const prog=el("span",{class:"oat-prog",role:"status"}),dots=units.map(()=>el("span",{class:"oat-dot"}));
   host.append(el("div",{class:"oat-head"},prog,el("span",{class:"oat-dots","aria-hidden":"true"},...dots)));
-  /* a step draws its group open, whether or not the author folded it */
-  const nodes=units.map(u=>el("div",{class:"oat-unit",tabindex:"-1"},...u.blocks.map(b=>renderBlock(b===u.group?{...b,placement:undefined}:b,draft,id,dc))));
+  /* a step draws its group open, whether or not the author folded it; a group with no title is named by its place ("Step 2 of 3") */
+  const nodes=units.map((u,i)=>el("div",{class:"oat-unit",tabindex:"-1",...(nonEmpty(tx(u.group.title,""))?{}:{role:"group","aria-label":S.progress(i+1,n)})},...u.blocks.map(b=>renderBlock(b===u.group?{...b,placement:undefined}:b,draft,id,dc))));
   host.append(...nodes);
   const draw=()=>{const at=steps[key];
     nodes.forEach((x,i)=>{if(i===at) x.removeAttribute("hidden");else x.setAttribute("hidden","");});
@@ -7097,7 +7104,8 @@ function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),grp=isGr
     if(pic) head.append(el("span",{class:"rd-ci","aria-hidden":"true"},pic));
     head.append(el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
-  box.append(head);
+  /* the kind's word heads the box; a plain one (a group) has none, and with no title of its own it has no head at all */
+  if(look) box.append(head);
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title,false,true)));named.push(u+"-t");}
   if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));

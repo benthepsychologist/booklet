@@ -675,9 +675,10 @@ between paragraphs for a new one. Section 4 says what a heading does.
 - **A link to another activity** is an ordinary heading link: `[[#Log a moment]]` (or `[[#Log a moment|go on]]`) or `[Log a moment](#log-a-moment)`. It opens the first place in its own module whose heading or title reads those words (a heading, an activity's title, a tab's name, a question's prompt or a callout's title), on the right tab and page (a module's tab name opens the module's screen on that tab); the linter warns when nothing in the link's own module reads those words.
 - **Showing what was kept** — a `booklet query` block, in the prose of one
   activity, shows what the reader kept in another activity **of the same
-  module**. Put it in the activity's own text, not inside a fold or another
-  callout: a query view there is not yet supported (it is drawn as code), and
-  the linter warns. It is read-only and takes no answer. The kind goes on the fence
+  module**. Put it in the activity's own text, or in a group in the activity
+  (it is drawn there, folded or not). In any other callout (a note, a tip, a
+  group outside an activity) a query view is not yet supported (it is drawn as
+  code), and the linter warns. It is read-only and takes no answer. The kind goes on the fence
   line and every setting is a `key: value` line:
 
   ````markdown
@@ -1002,6 +1003,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
 | a query view inside a callout that holds Markdown only (a note, any other kind but a group, or a group outside an activity) | `warn line N: a query view inside a callout (here a `[!note]`) is not yet supported: a renderer draws the `booklet query` block as code …` | put the query in a group in an activity, or in the activity's own text |
 | a question or another Booklet line inside a callout that holds Markdown only (the same callouts) | `warn line N: a `[!text]` line inside a `[!note]` is drawn as text, not read: only a `[!group]` in an activity holds Booklet lines …` | put it in a group in an activity, or outside the callout |
+| a question, a query or another Booklet line in a callout in a data section | `warn line N: this is inside a `[!group]` in a data section, which is not drawn …` | put it in a group in an activity |
 | a `module`, `activity`, `tab`, `row`, `data` or `records` line inside a group | `line N: a `[!tab]` line cannot go inside a group, so a renderer ignores it …` | move it out of the group |
 | a `menu:` naming no menu | `` `menu:x` names no menu in this file`` | write the `> [!menu|x]` line and its bulleted list, or fix the id |
 | a `menu:` and a list of its own | `the question 'x' has both `menu:y` and a list of its own` | keep one |
@@ -1020,6 +1022,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | tab lines in the opening of a module of one activity | `warn the module 'm' has one activity, so it has no screen of its own to show tabs on …` | put that prose in the module's opening with no tab line, or the tabs inside the activity |
 | a tab line in a data section | `warn a tab line in a data section is not read …` | put the tab in an activity, or in a module's opening |
 | `---` straight under a line of text | `warn `---` straight under text makes that line a heading, not a page break` | write `***`, or leave a blank line above |
+| `---` straight under a line of text in a group | `warn `---` straight under text in a group makes that line a heading …` | for a rule, leave a blank line above (a group has no page break) |
 | a hint or solution not folded, or not directly under its question | `warn a hint that is not folded is drawn open …` / `is not directly under a question` | write `> [!hint]-`, straight under the question, with nothing between |
 | `[x]` in a menu | `warn a menu cannot mark a right answer` | give the question its own task list (`- [x] Mars`) in place of `menu:`, or drop the `[x]` |
 | a price in prose that reads as a formula | `warn `$5 a month ($` reads as a formula` | write `\$5` |

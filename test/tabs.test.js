@@ -59,7 +59,7 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  const bm=bad.template.modules[0];
  chk("`tab:` naming no tab: the activity is in the first, and it is said",bad.ok&&A.moduleTabOf(bm,bm.activities[1])==="learn"&&bad.unread.some(x=>/`tab:nope` names no tab/.test(x)),JSON.stringify(bad.unread));
  {const pin=A.parseFile(MOD.replace("tab:learn] More","tab:learn pin:off] More"));
-  chk("`pin:` is no setting of an activity: said as one it does not take, like any other",pin.ok&&pin.unread.some(x=>/activity line takes no “pin:”/.test(x)),JSON.stringify(pin.unread));}
+  chk("`pin:` is no setting of an activity: said as one it does not take, like any other",pin.ok&&pin.unread.some(x=>/^line \d+: an activity line takes no “pin:”/.test(x)),JSON.stringify(pin.unread));}
  chk("`tab:` in a module with no tabs is said",A.parseFile(FM+"> [!module|m] M\n\n> [!activity|a tab:x] A\n\nx\n\n> [!module|m end] E\n").unread.some(x=>/`tab:x` names no tab/.test(x)));
  chk("tab is an activity setting in KIND_SETTINGS (pin is not), and tab a kind with none",A.KIND_SETTINGS.activity.includes("tab:")&&!A.KIND_SETTINGS.activity.some(k=>/^pin/.test(k))&&Array.isArray(A.KIND_SETTINGS.tab)&&A.KIND_SETTINGS.tab.length===0);}
 
