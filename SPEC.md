@@ -4,7 +4,7 @@
 
 > **Status: v0.15, draft.** This format is young and will change. Nothing before v1.0 is stable, and
 > nobody keeps older files working. This spec, the renderer, the skill, the tests and the file marker
-> are all v0.13. Section 2 says how the marker works.
+> are all v0.15. Section 2 says how the marker works.
 >
 > **This document may describe things the reference renderer does not do yet.** Each one is marked where
 > it is described, in the words "The reference renderer does not do this yet", and all of them are
