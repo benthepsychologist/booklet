@@ -217,13 +217,15 @@ shelf, and what the week was like for each of them.
 
 > [!module|ms end] End
 `;
+/* the same matrix with no words of its own: no stem */
+const FILE4=FILE3.replace('title: Matrix stem','title: Bare matrix').replace('> [!matrix|wk] Over the last week, how often did each of these happen to you at home or at work?','> [!matrix|wk]');
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const file=path.join(OUT,'questions.booklet.md');fs.writeFileSync(file,FILE);
   const file2=path.join(OUT,'matrixcolumn.booklet.md');fs.writeFileSync(file2,FILE2);
   const b=await chromium.launch();
-  const open=async(W,fname)=>{
-    const p=await (await b.newContext({viewport:{width:W,height:900}})).newPage();
+  const open=async(W,fname,touch)=>{
+    const p=await (await b.newContext({viewport:{width:W,height:900},...(touch?{hasTouch:true,isMobile:true}:{})})).newPage();
     p.__bad=[];p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))p.__bad.push(m.text());});p.on('pageerror',e=>p.__bad.push(e.message));
     await p.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
@@ -461,6 +463,12 @@ shelf, and what the week was like for each of them.
       reach:col===c.backgroundColor&&px.length>=3&&px[2]===0?px[1]+(px[3]||0):0,boxBottom:box.getBoundingClientRect().bottom,qs:box.querySelectorAll('.mxq').length,y:scrollY};});
   let sm=await stem();
   ok(sm.asq&&sm.qs===9&&sm.pos==='sticky',`390: the nine-item matrix is drawn as separate questions, and its stem is held (sticky) ${JSON.stringify({asq:sm.asq,qs:sm.qs,pos:sm.pos})}`);
+  /* one at a time, the matrix is a step on a card: its held stem is painted with the card's colour, not the page's */
+  await p.locator('#main .oat-ctl button').filter({hasText:'One at a time'}).click();await p.waitForTimeout(400);
+  const paint=await p.evaluate(()=>{const h=document.querySelector('#main .mx-asq > h3:first-child'),u=h&&h.closest('.oat-unit');
+    return u&&{stem:getComputedStyle(h).backgroundColor,card:getComputedStyle(u).backgroundColor,pos:getComputedStyle(h).position};});
+  ok(!!paint&&paint.stem===paint.card&&paint.pos==='sticky',`390, one at a time: the held stem is painted with the step's card it sits on ${JSON.stringify(paint)}`);
+  await p.locator('#main .oat-ctl button').filter({hasText:'All at once'}).click();await p.waitForTimeout(300);
   /* scrolled past item 5: item 6 just under the stem */
   /* (where the held stem's foot will be: the bar's foot and the stem's height) */
   for(let i=0;i<2;i++){await p.evaluate(()=>{const q=document.querySelectorAll('#main .mxq')[5],h=document.querySelector('#main .mx-asq > h3:first-child');
@@ -470,14 +478,28 @@ shelf, and what the week was like for each of them.
   ok(sm.y>0&&five.fifthBottom<=sm.bottom+1&&five.sixthTop>=sm.bottom-1&&Math.abs(sm.top-sm.bar)<=1,`390: scrolled past the fifth item, the stem is held under the bar, its words in view ${JSON.stringify({stem:[sm.top,sm.bottom],bar:sm.bar,five})}`);
   ok(sm.bar+sm.reach>=sm.top-0.01,`390: nothing scrolled shows between the bar and the held stem: the bar's paint reaches the stem's top ${JSON.stringify({bar:sm.bar,reach:sm.reach,stem:sm.top})}`);
   await p.screenshot({path:path.join(OUT,'matrix-stem-390.png')});
-  /* the keyboard, walking back up through the items' answers: none it lands on is under the held stem, wholly or in part */
+  /* the keyboard, walking back up through the items' answers: no item it lands in has its words or the answer under the held
+     stem, wholly or in part */
   await p.evaluate(()=>{const bs=document.querySelectorAll('#main .mxq button');bs[bs.length-1].focus();});
   const kw=[];
-  for(let i=0;i<20;i++){kw.push(await p.evaluate(()=>{const a=document.activeElement,r=a.getBoundingClientRect(),h=document.querySelector('#main .mx-asq > h3:first-child').getBoundingClientRect();
-      return {item:!!a.closest('.mxq'),top:Math.round(r.top),stem:Math.round(h.bottom),held:Math.abs(h.top-document.querySelector('.bar').getBoundingClientRect().bottom)<=1};}));
+  for(let i=0;i<36;i++){kw.push(await p.evaluate(()=>{const a=document.activeElement,r=a.getBoundingClientRect(),h=document.querySelector('#main .mx-asq > h3:first-child').getBoundingClientRect(),q=a.closest('.mxq');
+      return {item:!!q,top:Math.round(r.top),words:q?Math.round(q.querySelector('h3').getBoundingClientRect().top):null,bottom:Math.round(r.bottom),vh:innerHeight,stem:Math.round(h.bottom),
+        held:Math.abs(h.top-document.querySelector('.bar').getBoundingClientRect().bottom)<=1};}));
     await p.keyboard.press('Shift+Tab');await p.waitForTimeout(120);}
-  const hid=kw.filter(w=>w.item&&w.top<w.stem-1);
-  ok(kw.filter(w=>w.item&&w.held).length>=8&&hid.length===0,`390: Shift+Tab back up the items: no answer it lands on is under the held stem ${JSON.stringify({held:kw.filter(w=>w.item&&w.held).length,under:hid})}`);
+  const hid=kw.filter(w=>w.item&&(w.top<w.stem-1||w.words<w.stem-1||w.bottom>w.vh));
+  ok(kw.filter(w=>w.item&&w.held).length>=20&&hid.length===0,`390: Shift+Tab back up the items: no item it lands in has its words or the answer under the held stem, and the answer is on screen ${JSON.stringify({held:kw.filter(w=>w.item&&w.held).length,under:hid.slice(0,4)})}`);
+  /* a press of the mouse on an answer just under the stem's foot (the answer partly under it) answers it, and the page does not
+     move under it (the answer is where it was on the screen; the window's own scroll may follow the bar's height, which the
+     saved state changes) */
+  const pressUnder=async(P,how,item,dy)=>{await P.evaluate(()=>window.scrollTo(0,0));await P.waitForTimeout(80);
+    const t=await P.evaluate(([item,dy])=>{const btn=document.querySelectorAll('#main .mxq')[item].querySelectorAll('button')[1],h=document.querySelector('#main .mx-asq > h3:first-child');
+      for(let i=0;i<2;i++) window.scrollTo(0,scrollY+btn.getBoundingClientRect().top-(document.querySelector('.bar').getBoundingClientRect().bottom+h.getBoundingClientRect().height)+24);
+      const r=btn.getBoundingClientRect();return {x:r.left+r.width/2,y:h.getBoundingClientRect().bottom+dy,top:r.top,was:btn.getAttribute('aria-pressed')};},[item,dy]);
+    if(how==='tap') await P.touchscreen.tap(t.x,t.y);else await P.mouse.click(t.x,t.y);await P.waitForTimeout(250);
+    const r=await P.evaluate(item=>{const btn=document.querySelectorAll('#main .mxq')[item].querySelectorAll('button')[1];return {now:btn.getAttribute('aria-pressed'),top:btn.getBoundingClientRect().top};},item);
+    return {item,dy,moved:Math.round(r.top-t.top),was:t.was,now:r.now};};
+  const clicks=[];for(const [i,dy] of [[1,3],[2,10],[3,16]]) clicks.push(await pressUnder(p,'click',i,dy));
+  ok(clicks.every(c=>c.moved===0&&c.was==='false'&&c.now==='true'),`390: a mouse press on an answer just under the held stem answers it, and the page does not move ${JSON.stringify(clicks)}`);
   /* past the matrix's end, the stem goes with its last item */
   await p.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await p.waitForTimeout(300);
   sm=await stem();
@@ -489,6 +511,27 @@ shelf, and what the week was like for each of them.
   const both=[];for(const w of [320,390,600,760,860,960,1100]){await size(p,w);const x=await stem();both.push([w,x.asq,x.pos]);}
   ok(both.every(([,a,pos])=>a===(pos==='sticky'))&&both.some(([,a])=>a)&&both.some(([,a])=>!a),`the stem is held at the widths the matrix is separate questions and at no other ${JSON.stringify(both)}`);
   ok(p.__bad.length===0,'matrix stem: no policy violation or page error '+p.__bad.join(' | '));
+  await p.context().close();
+  /* a touch on an answer just under the held stem answers it, and the page does not move */
+  p=await open(390,file3,true);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+  const taps=[];for(const [i,dy] of [[1,3],[2,6],[3,10],[4,14],[5,20]]) taps.push(await pressUnder(p,'tap',i,dy));
+  ok(taps.every(c=>c.moved===0&&c.was==='false'&&c.now==='true'),`390, touch: a tap on an answer just under the held stem answers it, and the page does not move ${JSON.stringify(taps)}`);
+  await p.context().close();
+  /* a matrix with no words of its own has no stem; the keyboard and the mouse move through it without the page jumping */
+  const file4=path.join(OUT,'matrixbare.booklet.md');fs.writeFileSync(file4,FILE4);
+  p=await open(390,file4);await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+  const bare=await p.evaluate(()=>{const box=document.querySelector('#main .mxwrap').parentElement;return {asq:box.classList.contains('mx-asq'),h3:!!box.querySelector(':scope > h3'),qs:box.querySelectorAll('.mxq').length};});
+  ok(bare.asq&&!bare.h3&&bare.qs===9,`390: a matrix with no words is drawn as separate questions, with no stem ${JSON.stringify(bare)}`);
+  await p.evaluate(()=>{const q=document.querySelectorAll('#main .mxq')[4];window.scrollTo(0,scrollY+q.getBoundingClientRect().top-300);});await p.waitForTimeout(250);
+  const y0=await p.evaluate(()=>scrollY);
+  await p.evaluate(()=>{const bs=document.querySelectorAll('#main .mxq')[3].querySelectorAll('button');bs[bs.length-1].focus();});await p.keyboard.press('Tab');await p.waitForTimeout(250);
+  const kb=await p.evaluate(()=>({y:scrollY,on:document.activeElement.closest('.mxq')===document.querySelectorAll('#main .mxq')[4]}));
+  ok(y0>0&&kb.on&&Math.abs(kb.y-y0)<=1,`390: with no stem, Tab into the fifth item leaves the page where it was ${JSON.stringify({y0,kb})}`);
+  const c5=await p.evaluate(()=>{const r=document.querySelectorAll('#main .mxq')[4].querySelectorAll('button')[2].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,top:r.top};});
+  await p.mouse.click(c5.x,c5.y);await p.waitForTimeout(250);
+  const ck=await p.evaluate(()=>{const b=document.querySelectorAll('#main .mxq')[4].querySelectorAll('button')[2];return {top:b.getBoundingClientRect().top,now:b.getAttribute('aria-pressed'),a:JSON.stringify(STATE.answers)};});
+  ok(ck.now==='true'&&Math.abs(ck.top-c5.top)<=1&&/"wk":\[null,null,null,null,2/.test(ck.a),`390: with no stem, a press on the fifth item answers it, and the page does not move under it ${JSON.stringify({before:c5.top,ck})}`);
+  ok(p.__bad.length===0,'matrix with no words: no policy violation or page error '+p.__bad.join(' | '));
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'ALL PASSED');process.exit(fails.length?1:0);
 })().catch(e=>{console.log('FAIL the check stopped: '+String((e&&e.message)||e).split('\n')[0]);process.exit(1);});

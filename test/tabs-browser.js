@@ -347,6 +347,16 @@ See [[#Check-ins]] for the two-week questions.
       await p.evaluate(()=>{const t=document.querySelector('#main [role=tablist]');t.scrollLeft=0;});await p.waitForTimeout(250);}
     else ok(!cu.more&&cu.mask==='none',W+': four tabs that fit: no fade '+JSON.stringify(cu));
     if(W===390) ok(cu.over,W+': (the four long tabs do run past the bar at this width)');
+    /* the tab on show is all in view and its words clear of the fades, as the arrow keys move through them (a tab wider than
+       the bar less both fades keeps the ends of its own padding in them) */
+    if(cu.over){await p.locator('#main [role=tab][aria-selected=true]').focus();const seen=[];
+      for(let i=0;i<3;i++){await p.keyboard.press('ArrowRight');await p.waitForTimeout(400);
+        seen.push(await p.evaluate(()=>{const t=document.querySelector('#main [role=tablist]'),r=t.getBoundingClientRect(),n=t.querySelector('[aria-selected=true]'),a=n.getBoundingClientRect(),
+          g=document.createRange();g.selectNodeContents(n);const w=g.getBoundingClientRect(),more=t.getAttribute('data-more')||'',fade=parseFloat(getComputedStyle(document.documentElement).fontSize)*2.5;
+          return {more,box:[Math.round(a.left-r.left),Math.round(r.right-a.right)],words:[Math.round(w.left-r.left),Math.round(r.right-w.right)],fade,
+            clear:a.left>=r.left-1&&a.right<=r.right+1&&(!/start/.test(more)||w.left-r.left>=fade-1)&&(!/end/.test(more)||r.right-w.right>=fade-1)};}));}
+      ok(seen.every(x=>x.clear),W+': the arrow keys show each tab whole, its words clear of the faded edges '+JSON.stringify(seen));
+      await p.locator('#main [role=tab]').first().click();await p.waitForTimeout(300);}
     await p.locator('#main [role=tab]').last().click();await p.waitForTimeout(300);
     ok(/Four/.test(await p.locator('#main [role=tabpanel]').innerText()),W+': the last tab can be reached and shown');
     await p.screenshot({path:path.join(OUT,'tabs-many-'+W+'.png')});

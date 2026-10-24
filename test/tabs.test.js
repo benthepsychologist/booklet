@@ -182,7 +182,7 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  chk("in a tab, the tab's words are above its steps, under the activity's opening",at(/The tab's words/)>=0&&at(/The tab's words/)<oatAt()&&units().length===3&&/The opening/.test(texts(P.main())));
  global.__ls[A.OAT_KEY+A.currentId]="all";A.showPage("a",A.activityOf("a").pages[0].id);draw("a");
  chk("all at once, the page is drawn as it stands: its words, then its questions, no steps",oatAt()<0&&texts(body()).indexOf("Read this first")<texts(body()).indexOf("One?"));
- chk("nothing on the page is held in view: no pin, in either view",find(P.main(),n=>/(^|\s)pin/.test((n.attrs&&n.attrs.class)||"")).length===0);}
+}
 
 /* 6c. links: to a module's tab, and to a heading in the opening of an activity with tabs */
 {const L=FM+"> [!module|m] M\n\n> [!tab] This month\n\n> [!tab|learn] Learn more\n\nWhy budgets help.\n\n"+

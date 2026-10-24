@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-8+IURw/J1+GguuwZLwzVhhQNLupWybe4w3CzVeEz83c=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-MZguReTSpX4k6ZntoQkYrJDEQ0nSQVRitmow53OAAOk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -535,8 +535,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mx-q .mxq .pills{max-width:none}
   /* drawn as questions, the matrix's own words are the stem above them: quieter than the questions it frames, and held under
      the bar while its items are answered, as far as the matrix's end (its block is the stem's own sticky box), whatever its
-     length (SPEC.md section 5). As a grid it is not held: its words are above the rows */
+     length (SPEC.md section 5), painted with what it sits on (a step's card, one at a time). As a grid it is not held: its
+     words are above the rows */
   .mx-asq>h3:first-child{position:sticky;top:calc(var(--ap-top,4.4rem) - 12px);z-index:2;background:var(--paper);font-family:var(--sans);font-weight:600;font-size:1.02rem;color:var(--ink);margin:.1rem 0 .3rem;padding:.4rem 0 .4rem .8rem;border-left:var(--focus-w) solid var(--rule)}
+  .oat-unit .mx-asq>h3:first-child{background:var(--surface)}
 
   /* entry read view */
   .entry{background:var(--surface);border:var(--bw) solid var(--rule);border-radius:14px;padding:.9rem 1.1rem;margin:0 0 1rem}
@@ -6039,9 +6041,13 @@ function drawMatrix(b,draft,activityId){const box=el("div",{});const items=b.ite
       anchors.forEach(a=>pills.append(el("button",{type:"button",class:"pill-btn","data-i":String(i),"data-n":String(a.n),"aria-pressed":String(cur(i)===a.n),
         onclick:()=>{set(i,cur(i)===a.n?null:a.n);paint();}},...words(a.text,true))));
       q.append(el("h3",{},...words(it)),pills);g.append(q);});
-    /* held, the stem covers what scrolls under it: a control the keyboard moves to there is scrolled clear of it */
-    g.addEventListener("focusin",e=>{const h=box.firstElementChild,t=e.target;if(!h||!t.getBoundingClientRect) return;
-      const d=h.getBoundingClientRect().bottom+12-t.getBoundingClientRect().top;if(d>12) window.scrollBy(0,-d);});
+    /* held, the stem covers what scrolls under it: an item the keyboard moves into there is scrolled clear of it, its words
+       too, as far as keeping the answer in focus on screen allows. Only the keyboard's focus: a press is never moved. A matrix
+       with no words has no stem */
+    g.addEventListener("focusin",e=>{const h=box.firstElementChild,t=e.target,q=t.closest&&t.closest(".mxq");
+      if(!h||h.tagName!=="H3"||!q||!t.matches(":focus-visible")) return;
+      const s=h.getBoundingClientRect().bottom,r=t.getBoundingClientRect(),top=q.getBoundingClientRect().top;if(top>=s) return;
+      const d=Math.max(s+12-r.top,Math.min(s+12-top,innerHeight-12-r.bottom));if(d) window.scrollBy(0,-d);});
     return g;};
   const probe=el("div",{class:"mxprobe"},...anchors.map(a=>el("span",{},...words(a.text,true))));
   const view=el("div",{});let mode=null;
@@ -6692,8 +6698,11 @@ function tabBar(tabs,cur,label,pick){const bar=el("div",{class:"tabbar",role:"ta
      it scrolls or changes size */
   const more=()=>{const m=bar.scrollWidth-bar.clientWidth,l=Math.abs(bar.scrollLeft),v=m>1?((l>1?"start ":"")+(l<m-1?"end":"")).trim():"";
     if(v) bar.setAttribute("data-more",v);else bar.removeAttribute("data-more");};
+  /* the tab on show is centred in the bar as it is laid out, so all of it shows, clear of the fades (a bar that fits stays) */
+  const show=()=>{const b=bar.querySelector('[aria-selected="true"]');if(!b) return;
+    const r=b.getBoundingClientRect(),br=bar.getBoundingClientRect();bar.scrollLeft+=r.left-br.left-(br.width-r.width)/2;};
   bar.addEventListener("scroll",more,{passive:true});
-  if(typeof ResizeObserver==="function") new ResizeObserver(more).observe(bar);
+  if(typeof ResizeObserver==="function") new ResizeObserver(()=>{show();more();}).observe(bar);
   return bar;}
 /* the panel under a tab bar: what the tab on show draws; in the Tab order, so a tab of prose alone can be reached and read */
 const tabPanel=(cur,...kids)=>el("div",{class:"tabpanel",role:"tabpanel",id:"tbpanel",tabindex:"0","aria-labelledby":"tb-"+cur},...kids);
@@ -7194,13 +7203,10 @@ let RENDERING=false;
 function settle(){lang=uiLang();
   if(isModuleScreen(screen)){const mod=moduleForScreen(screen);if(!mod||!isMulti(mod)) screen=mod?entryScreenOf(mod):HOME_SCREEN;}
   if(!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)){const m=activityOf(screen);if(m.kind==="entry") seedUpsertDraft(screen,m,answersFor(screen));}}
-/* draw the screen in force afresh, in a draw of its own (one draw, region 4) told `o`, and return it */
+/* draw the screen in force afresh, in a draw of its own (one draw, region 4), and return it */
 function render(){
   /* nothing is drawn before the page has read its store: the first draw is keepStart's (bootPage) */
   if(!KEEP.ready) return DRAWN;
-  return drawScreen();}
-/* the drawing itself */
-function drawScreen(){
   RENDERING=true;const dc=newDraw();DRAWN=dc;
   try{settle();dc.cite=citeDraw(screen);citeLeave(screen);renderBar();const main=document.getElementById("main");main.innerHTML="";
   if(hasOwn(SCREENS,screen)) SCREENS[screen](main,dc);
