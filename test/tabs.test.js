@@ -122,6 +122,17 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  draw("w/kid");draw(A.moduleScreen("w"));
  chk("opening a page under another puts the overview on its top page's tab",role("tab")[0].attrs["aria-selected"]==="true");}
 
+/* 5c. a module tab's prose is the module's: a link in it finds a title in its own module, not a bare activity of the same
+   title (renderModulePage draws the tab's blocks in the scope of the module's first activity) */
+{const SC=FM+"> [!module|m] M\n\n> [!tab] This month\n\n> [!tab|learn] Learn more\n\nRead [[#Why it helps]] first.\n\n"+
+   "> [!activity|spend] Spending\n\nWords.\n\n> [!text|q] Q?\n\n> [!activity|why tab:learn] Why it helps\n\nWords.\n\n> [!module|m end] End\n\n"+
+   "> [!activity|why2] Why it helps\n\nA bare activity of the same title.\n";
+ A.loadText(SC);draw(A.moduleScreen("m"));click(role("tab")[1]);
+ const ln=find(role("tabpanel")[0]||{children:[]},n=>n.tagName==="a"&&/Why it helps/.test(texts(n)))[0];
+ chk("a link in a module tab's prose is drawn",!!ln);
+ if(ln) click(ln);
+ chk("followed, it opens the title in the tab's own module, not the bare activity of the same title",A.screen==="m/why",A.screen);}
+
 /* 6. the frame: the prose before the first question stays in view */
 {const T=FM+"> [!activity|a] A\n\nRead this first.\n\nAnd this.\n\n> [!text|q1] One?\n\n> [!hint]-\n> A hint.\n\nBetween.\n\n> [!text|q2] Two?\n\n> [!text|q3] Three?\n\n***\n\n> [!text|q4] Four?\n\n"+
    "> [!activity|b pin:off] B\n\nRead this.\n\n> [!text|qb] Q?\n\n> [!activity|c] C\n\n> [!text|qc] Q?\n\nAfter.\n\n"+
