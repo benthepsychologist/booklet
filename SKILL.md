@@ -231,8 +231,10 @@ Write one booklet line for each question (section 6) where `my-question` stands.
 - **Images.** An image is linked, never embedded. A renderer fetches one only
   from a place its own host declares, never from an address the file names. The
   reference renderer draws an image for a booklet opened from the store its host
-  declares (the path is read relative to the booklet's own name there), and shows
-  any other booklet's images as the alt text and the address as text. The linter
+  declares, or from its default folder (`modules/` beside the renderer, on a page
+  that declares no store); the path is read relative to the booklet's own name
+  there. It shows any other booklet's images as the alt text and the address as
+  text. The linter
   warns on a remote address, and on a relative path the renderer would refuse
   (section 7).
 

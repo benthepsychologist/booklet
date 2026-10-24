@@ -1,7 +1,8 @@
 // Renderer 0.11.1: opening a booklet by link, from what the page's own host declares (a `booklet-store` meta tag and the
 // `booklet-registry` it already had). The name rule, the address that is built, what is fetched and what is not, that an
 // opened booklet is a view (not in "Your booklets" until something changes, never replacing one that is kept), and the
-// quiet line saying where it came from. The network is a stub: nothing here reaches one.
+// quiet line saying where it came from. The network is a stub: nothing here reaches one. A page served over http(s) with no
+// store tag reads `modules/` beside itself (0.15): test/modulesfolder.test.js; here only the one check that it changed.
 // Run: node test/openlink.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
 let fails=0;
@@ -52,11 +53,18 @@ reset();{const A=P.boot();
  META["booklet-store"]="file:///etc/";chk("...nor a file address",A.storeUrl()==="");
  chk("the link's shape: only #/open/ and #/module/ are links",A.linkOf("#/open/x.md").kind==="open"&&A.linkOf("#/module/a").kind==="module"&&A.linkOf("#x")===null&&A.linkOf("")===null&&A.linkOf("#/other/x")===null);}
 
-/* ---- no store declared: nothing is fetched ---- */
-reset();{const A=P.boot();
+/* ---- no store declared: on a page opened from disk nothing is fetched; over http(s), the default folder (0.15) ----
+   Changed in 0.15 (item v015-host-modules-and-checksum): this check was made on this file's http page, where a link with no
+   store tag now reads modules/ beside the page. Its old meaning holds on file:, and the default folder has its own test,
+   test/modulesfolder.test.js. */
+reset();{P.place("file:","");global.location.href="file:///home/reader/booklet.html";const A=P.boot();
  const ok=await A.openLink("#/open/reports/week.booklet.md");
- chk("with no store declared, nothing is fetched, nothing opens, and the page says so",ok===false&&CALLS.length===0&&A.currentId===null&&/no store/.test(text(P.byId("toast"))),text(P.byId("toast")));
+ chk("on a page opened from disk with no store declared, nothing is fetched, nothing opens, and the page says so",ok===false&&CALLS.length===0&&A.currentId===null&&/no store/.test(text(P.byId("toast"))),text(P.byId("toast")));
  chk("...and the start screen stays",A.screen==="library"||A.currentId===null);}
+global.location={href:PAGE,protocol:"http:",hostname:"fleet",hash:""};
+reset();{const A=P.boot();
+ await A.openLink("#/open/reports/week.booklet.md");
+ chk("over http with no store declared, the one request is for the name in modules/ beside the page",CALLS.map(c=>c.url).join()===PAGE+"modules/reports/week.booklet.md",JSON.stringify(CALLS.map(c=>c.url)));}
 
 /* ---- a bad name: nothing is requested ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;

@@ -6,7 +6,9 @@
 // the CORS headers recepture sends for the one origin it is set to allow). The published booklet.html is the file named on the
 // command line; the test only hashes it, before and after, to show it ran nothing against it.
 // Checks, in the order a reader meets them: the page loads clean and BookletSubmit is frozen; Submit is hidden on "Your
-// booklets" and on a booklet without a host name, shown on one with a name; the questionnaire fixture is answered through the
+// booklets", on a booklet without a host name and on one opened by link from the default folder (0.15: modules/ beside a page
+// that declares no store, never the host's; answered, it still shows none, a press on the button forced into view opens
+// nothing, and nothing goes to the endpoint), shown on one with a name; the questionnaire fixture is answered through the
 // screens, as a reader does; nothing has gone anywhere up to the press of Send; the confirm screen lists the answers as the
 // reader gave them, by module, with the exact JSON folded under them, and Cancel/Escape close it; an untrusted click opens
 // nothing and sends nothing; Send sends one POST whose body is the folded text, with no cookie and no referrer; after the 201
@@ -30,6 +32,8 @@ const PAGE=LIVE?(process.env.SUBMIT_PAGE_ORIGIN||'http://forms.example.com'):'ht
 const API=new URL(ENDPOINT).origin;
 const RECIPE='recipes/test-battery.yaml';
 const NAME='test/submit-questionnaire.md',CLASH_NAME='test/submit-clash.md';
+/* 0.15: the questionnaire again, in the default folder beside the page (/app/modules/), opened by a link */
+const FOLDER_NAME='test/submit-folder.md';
 /* a name per run below, so each starts blank: a booklet sent is kept, and the same name opens the kept copy again */
 const NAME_B='test/submit-questionnaire-b.md',NAME_C='test/submit-questionnaire-c.md',NAME_D='test/submit-questionnaire-d.md';
 const EMAIL='client@example.test';
@@ -77,6 +81,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   if(LIVE){server=http.createServer((q,s)=>{const u=new URL(q.url,'http://x').pathname;
       if(u==='/app/'){s.writeHead(200,{'content-type':'text/html; charset=utf-8'});return s.end(BUILD);}
       if(u==='/host.js'){s.writeHead(200,{'content-type':'text/javascript'});return s.end(HOSTJS);}
+      if(u==='/app/modules/'+FOLDER_NAME){s.writeHead(200,{'content-type':'text/markdown; charset=utf-8'});return s.end(QUESTIONNAIRE);}
       s.writeHead(404);s.end('nf');});
     await new Promise(r=>server.listen(0,'127.0.0.1',r));
     args.push('--host-resolver-rules=MAP '+new URL(PAGE).hostname+' 127.0.0.1:'+server.address().port);}
@@ -100,6 +105,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   if(!LIVE) await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(u==='/app/')return r.fulfill({status:200,body:BUILD,headers:{'content-type':'text/html; charset=utf-8'}});
     if(u==='/host.js')return r.fulfill({status:200,body:HOSTJS,headers:{'content-type':'text/javascript'}});
+    if(u==='/app/modules/'+FOLDER_NAME)return r.fulfill({status:200,body:QUESTIONNAIRE,headers:{'content-type':'text/markdown; charset=utf-8'}});
     r.fulfill({status:404,body:'nf'});});
   const apiRoute=async r=>{const q=r.request();
     if(q.method()==='OPTIONS'){preflights++;
@@ -168,6 +174,27 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   let r=await openBook(p,QUESTIONNAIRE,null);
   ok(r.ok===true&&await p.evaluate(()=>hookOpen()),'the host\'s script opened the booklet without a name: '+JSON.stringify(r));
   ok(await submitHidden(p),'a booklet opened without a name (the reader\'s own) shows no Submit button');
+  await grabViol(p);await p.close();
+
+  // 4b (0.15) a booklet opened by link from the default folder: the page declares no store, so a link reads modules/ beside it,
+  //    and what opens from there is never the host's. No Submit button, answered or not, and nothing goes to the endpoint.
+  p=await newPage();
+  {const a0=toApiOrigin().length,f0=reqs.length;
+   await p.evaluate(n=>{location.hash='#/open/'+n;},FOLDER_NAME);
+   await p.waitForFunction(()=>typeof BOOK!=='undefined'&&BOOK!==EMPTY_BOOKLET,null,{timeout:8000}).catch(()=>{});await wait(p,600);
+   const fr=reqs.slice(f0).filter(q=>/\/modules\//.test(q.url)).map(q=>q.method+' '+new URL(q.url).pathname);
+   ok(fr.join()==='GET /app/modules/'+FOLDER_NAME,'a link on the submit page (no store tag) read the booklet from modules/ beside it: '+fr.join(' '));
+   const from=await p.evaluate(()=>(currentEntry||{}).from||'');
+   ok(from==='modules:/app/modules/#'+FOLDER_NAME,'...and opened it as a booklet from the default folder: '+from);
+   ok(await submitHidden(p),'a booklet from the default folder shows no Submit button');
+   await answerAll(p);
+   ok(sameJSON(sortKeys(await answers(p)),sortKeys(EXPECT)),'it was answered through the screens, as the named one is below');
+   ok(await submitHidden(p),'answered, it still shows no Submit button');
+   /* the gate is the build's own check, not only the hidden attribute: a trusted press on the button, forced into view, opens nothing */
+   await p.evaluate(()=>{document.getElementById('btnSubmit').hidden=false;});
+   await p.locator('#btnSubmit').click({timeout:2000}).catch(()=>{});await wait(p,2500);
+   ok(!await dialogOpen(p),'a press on the button forced into view opens no confirm screen');
+   ok(toApiOrigin().length===a0,'nothing went to the endpoint\'s origin while it was open, answered and pressed ('+(toApiOrigin().length-a0)+' requests)');}
   await grabViol(p);await p.close();
 
   // 5 with a name

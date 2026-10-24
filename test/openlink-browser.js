@@ -2,7 +2,8 @@
 // under the hosted /app/ Content-Security-Policy with the store's origin added to connect-src (the host's own header must allow
 // the renderer to read from where its store is); the store, the registry and their files are served by page.route.
 // Checks: #/open/<name> opens the booklet into its content with the quiet provenance line; changing the fragment opens another;
-// a bad name requests nothing; #/module/<id> opens that module; a page with no store tag refuses politely; a file with records
+// a bad name requests nothing; #/module/<id> opens that module; a page with no store tag reads only modules/ beside itself
+// (0.15); a file with records
 // shows its kept entries; answering a question makes the booklet appear in "Your booklets"; a redirecting and an oversized
 // response are refused; every request is a GET to the page's origin, the store or the registry; no cookies, no body; zero CSP
 // violations and page errors. Screenshots (the provenance line at 1280px and 400px) are written to <outdir>.
@@ -141,11 +142,14 @@ const REGJ={modules:[{id:'t/journal',title:'Daily journal',file:'journal.md'}]};
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   await p.close();
 
-  // 10 a page with no store tag
+  // 10 a page with no store tag. Changed in 0.15 (item v015-host-modules-and-checksum): over https it now reads modules/
+  // beside itself (here there is no such file), where it used to say it had no store; a page opened from disk still says
+  // that (test/modulesfolder-browser.js has the default folder in full).
   p=await open(false);const nb=reqs.length;
   await p.goto(PAGE+'/plain/#/open/reports/week.booklet.md');await wait(p,1000);
   ok(reqs.slice(nb).every(r=>r.url.startsWith(PAGE)&&!r.url.startsWith(PAGE+'/pub/')),'a page with no store tag requests nothing from any store');
-  ok(/no store/.test(await toastText(p))&&await p.getByRole('button',{name:'Start a new booklet'}).count()===1,'and says so politely, on the start screen: '+await toastText(p));
+  ok(reqs.slice(nb).filter(r=>!/\/plain\/$|favicon/.test(r.url)).map(r=>r.url).join()===PAGE+'/plain/modules/reports/week.booklet.md','it reads the one name from modules/ beside itself and nothing else');
+  ok(/could not be found/.test(await toastText(p))&&await p.getByRole('button',{name:'Start a new booklet'}).count()===1,'and, finding nothing there, says so on the start screen: '+await toastText(p));
   viol.push(...await p.evaluate(()=>window.__viol||[]));
   await p.close();
 

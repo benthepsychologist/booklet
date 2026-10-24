@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-hHd4nhLjIdYG1B9FXkRf1D7vLyn4uQaDgzobSU6j/cU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-VrxKNgSr9sqISFy6aXVqct6JwEXQ8Vxul+d+ATCWYjc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -12,7 +12,8 @@
      carries its own Content-Security-Policy; a host's header can only tighten it),
      then run `node test/csp-hash.js --write booklet.html`. -->
 <!-- A host that serves a folder of booklets may add `<meta name="booklet-store" content="…/folder/">` to its own copy, so that
-     `#/open/<name>` opens a booklet from it (README.md, "Opening a booklet by link"). This file ships with none. -->
+     `#/open/<name>` opens a booklet from it (README.md, "Opening a booklet by link"). This file ships with none: served over
+     http or https without one, it reads `#/open/<name>` from `modules/` beside itself, so a host's copy can stay this file. -->
 <meta name="booklet-registry" content="https://raw.githubusercontent.com/benthepsychologist/booklet-registry/main/registry.json">
 <meta name="theme-color" content="#F7F2E8">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -836,7 +837,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mfig.bad{text-align:left}
   /* an image the renderer does not fetch: its alt text and address, as text, in a quiet frame */
   .md .imgbox{display:inline-flex;flex-direction:column;gap:.15rem;max-width:100%;margin:.2rem 0;padding:.45rem .65rem;border:1px dashed var(--rule);border-radius:var(--r-sm,6px);color:var(--muted);font-size:.9rem;text-align:left;vertical-align:top}
-  /* an image read from the host's declared store: its natural size, no wider than the column */
+  /* an image read from the host's declared store or the default folder: its natural size, no wider than the column */
   .md img.mdimg{max-width:100%;height:auto;vertical-align:middle}
   .md .imgbox .imgalt{color:var(--ink)}
   .md .imgbox .imgnote{font-size:.78rem;font-style:italic}
@@ -3340,14 +3341,29 @@ const entryById=id=>LIB.entries.find(e=>e.id===id)||null;
 function textPrint(t){t=String(t==null?"":t);let h=0x811c9dc5;
   for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193);}
   return (h>>>0).toString(36)+"."+t.length;}
-/* The booklet this browser keeps for a link: the entry whose `from` is "store:<name>" or "registry:<id>" (a store name,
-   and a registry module, is one booklet in one browser). If an older release left several, the one opened last. */
+/* The booklet this browser keeps for a link: the entry whose `from` is "store:<name>", "modules:<folder>#<name>" or
+   "registry:<id>" (a store name, a name in one default folder, and a registry module, is one booklet in one browser). If an
+   older release left several, the one opened last. */
 function entryFrom(from){if(!from) return null;let best=null;const at=e=>String(e.openedAt||e.updatedAt||"");
   readLib().entries.forEach(e=>{if(e.from===from&&(!best||at(e)>at(best))) best=e;});
   return best;}
 const keyOfEntry=e=>(e&&e.key)||bookKey(e.id);
-/* the store name a library entry is for ("" when it is not a store booklet) */
-const storeNameOf=e=>e&&typeof e.from==="string"&&e.from.startsWith("store:")?e.from.slice(6):"";
+/* Where a store booklet came from, read from its `from` and from nothing else; every reader of `from` uses this.
+   "store:<name>" came from the store the page declares: {kind:"store",name}. "modules:<folder>#<name>" came from the
+   default folder at that path on this site (defaultStore), "/app/modules/" for a page at /app/: {kind:"modules",folder,
+   name}. The folder is part of it because one site can serve the renderer at several paths, each with its own modules/
+   holding its own a.md: the reader's work on one is never another's. A name never holds "#" (linkName) and a URL's path
+   never does either, so the split is exact. null for any other `from` (a registry module, a file, none). */
+function fromParts(f){if(typeof f!=="string") return null;
+  if(f.startsWith("store:")){const name=f.slice("store:".length);return name?{kind:"store",name}:null;}
+  if(f.startsWith("modules:")){const r=f.slice("modules:".length),i=r.indexOf("#");
+    return i>0&&i<r.length-1?{kind:"modules",folder:r.slice(0,i),name:r.slice(i+1)}:null;}
+  return null;}
+const storeFrom=name=>"store:"+name;
+const folderFrom=(folder,name)=>{try{return "modules:"+new URL(folder).pathname+"#"+name;}catch(e){return "";}};
+/* the store name a library entry is for ("" when it is not a store booklet). Both kinds are store booklets here: read
+   afresh from their folder each time they open, and listed as pointers. Only "store:" is the host's (hostName). */
+const storeNameOf=e=>{const p=fromParts(e&&e.from);return p?p.name:"";};
 /* ---- a store booklet: the store's file is the truth, the kept copy only a buffer ----
    A store booklet (`from` is "store:<name>") is listed under "Your booklets" as soon as it is read, as a pointer: its
    entry, with no kept copy of its content (notePointer). A kept copy (booklet.b.<id>) appears only once the reader
@@ -3569,8 +3585,8 @@ function noteSaved(){const id=currentId,now=new Date().toISOString();
     if(e) Object.assign(e,fresh);});}
 /* A store booklet just read from the store is listed as a pointer (see "a store booklet" above storeHolds): its title,
    where it is kept, the fingerprint of the file read and when it was opened, and no copy of its content. A name the
-   reader gave it in the list (`named`) stays. Called only on a page that declares a store, so the list can always read
-   the file again. */
+   reader gave it in the list (`named`) stays. Called only on a page that has the folder it came from (folderOf), so the
+   list can always read the file again. */
 function notePointer(){const id=currentId,now=new Date().toISOString();
   const fresh={...describeBooklet(BOOK),openedAt:now,dirty:false,unsavedEntries:0,from:currentEntry.from,storeSeen:currentEntry.storeSeen};
   changeLib(L=>{let e=L.entries.find(x=>x.id===id);
@@ -4894,18 +4910,19 @@ const mkLink=(label,url,title,ctx)=>{const kids=typeof label==="string"?renderIn
   const {scheme}=cleanScheme(url);const attrs={href:String(url).replace(CTRL,""),title};
   if(scheme==="http"||scheme==="https"){attrs.target="_blank";attrs.rel="noopener noreferrer";}
   return E("a",attrs,...kids);};
-/* An image is fetched only from the host's declared store, and only for a booklet opened from it (SPEC.md section 6;
-   storeImage, region 12). Every other image, and one that cannot be drawn, is drawn as the alt text in a quiet framed
-   box that says the image is not shown, with the address as plain text beneath, so a reader can see what was meant.
-   Nothing is requested for any other address, and a typed or file-written address of any kind (remote, //host, data:,
-   or a relative path in a booklet not opened from the store) is treated alike. The address is shown, never used. */
+/* An image is fetched only from the host's declared store, or the default folder beside the renderer on a page that
+   declares none, and only for a booklet opened from it (SPEC.md section 6; storeImage, region 12). Every other image, and
+   one that cannot be drawn, is drawn as the alt text in a quiet framed box that says the image is not shown, with the
+   address as plain text beneath, so a reader can see what was meant. Nothing is requested for any other address, and a
+   typed or file-written address of any kind (remote, //host, data:, or a relative path in a booklet not opened from the
+   store or the folder) is treated alike. The address is shown, never used. */
 const mkImg=(alt,src,ctx)=>{
   /* a caller that wants only text (a card's blurb) says what stands for an image */
   if(ctx&&ctx.opts&&typeof ctx.opts.image==="function"){const n=ctx.opts.image(alt,src);if(n!=null) return n;}
   const a=String(src==null?"":src).replace(CTRL,""),shown=a.length>160?a.slice(0,160)+"\u2026":a;
   const note=typeof imgNoteText==="function"?imgNoteText():"Image not shown",E=(ctx&&ctx.el)||el;
-  /* A booklet opened from the host's declared store draws its images (storeImage, region 12); an empty alt text marks a
-     decorative one. Any other booklet, and any image that cannot be drawn, gets the box. */
+  /* A booklet opened from the host's declared store or the default folder draws its images (storeImage, region 12); an
+     empty alt text marks a decorative one. Any other booklet, and any image that cannot be drawn, gets the box. */
   const draw=r=>{
     if(r&&r.url){const im=E("img",{class:"mdimg",src:r.url,alt:alt||"",onerror:()=>{imageBroken(r.at);if(im.parentNode&&typeof im.replaceWith==="function") im.replaceWith(draw({note:strings("ui").imgBroken}));}});return im;}
     return E("span",{class:"imgbox"},
@@ -7375,8 +7392,9 @@ function openFromList(id,fresh){
   if(KEEP.mode==="idb"&&!fresh) return keepRefresh().then(()=>openFromList(id,true));
   LIB=readLib();const e=entryById(id);const name=storeNameOf(e);
   /* A store booklet opens from the store: its file is read afresh, and it is drawn unless this browser keeps work the
-     file lacks, which then opens with the offer to read the file (openLinked decides, on content). */
-  if(name&&storeUrl()!==""){
+     file lacks, which then opens with the offer to read the file (openLinked decides, on content). One from the default
+     folder opens from that folder, only on a page that has it (folderOf). */
+  if(name&&folderOf(e.from)!==""){
     const p=openLink("#/open/"+name,{entry:e.id}),gen=LINK_GEN;
     p.then(ok=>{
       /* the store did not answer, or sent a file the page refuses, and nothing newer has been asked for since (a second
@@ -7384,7 +7402,7 @@ function openFromList(id,fresh){
       if(ok===false&&gen===LINK_GEN&&!currentId&&lsGet(keyOfEntry(e))!==null&&(LIB=readLib(),entryById(e.id))){
         openBooklet(e.id);screen=startScreen();render();window.scrollTo({top:0});}});
     return;}
-  /* a pointer on a page that declares no store: there is nothing here to open, and no store to read it from */
+  /* a pointer on a page that has no store for it: there is nothing here to open, and no store to read it from */
   if(name&&lsGet(keyOfEntry(e))===null){toast(strings("booklet").linkNoStore);return;}
   if(!openBooklet(id)){render();return;}
   screen=startScreen();render();window.scrollTo({top:0});}
@@ -7414,7 +7432,11 @@ function renderBooklets(main){const L=strings("library");
   main.append(el("div",{class:"col addrow"},create,el("button",{type:"button",class:"small",onclick:openLoad},L.load)));
   hostStopLine(main);
   const last=e=>String(e.openedAt||e.updatedAt||e.createdAt||"");
-  const list=[...LIB.entries].sort((a,b)=>last(b).localeCompare(last(a)));
+  /* A pointer from a default folder this page does not have (one made on /app/, seen on /other/ of the same site) is not
+     listed here: there is nothing here to open and no folder to read it from. An entry that holds the reader's work is
+     listed wherever it is seen, and opens as that kept copy, never read from this page's folder (openFromList). */
+  const elsewhere=e=>{const p=fromParts(e.from);return !!p&&p.kind==="modules"&&folderOf(e.from)===""&&lsGet(keyOfEntry(e))===null;};
+  const list=LIB.entries.filter(e=>!elsewhere(e)).sort((a,b)=>last(b).localeCompare(last(a)));
   if(!list.length){if(LINK_LOADING===null) main.append(el("p",{class:"col hint"},L.empty));centreScreen(main);return;}
   const cards=el("ol",{class:"modes",role:"list"});
   list.forEach(e=>cards.append(el("li",{},bookletCard(e))));
@@ -7846,7 +7868,7 @@ async function download(){const t=strings("ui");
   const md=toMarkdown();const name=exportName();
   /* a store booklet of which nothing is kept here and in which nothing has changed (a pointer) has no copy to mark as
      downloaded, and none is made for it: a copy made only to say so would be a 3 MB write for a large file */
-  const keep=!(hostName()&&!dirty&&!(unsavedEntries>0)&&!saveTimer&&lsGet(currentKey)===null);
+  const keep=!(storeNameOf(currentEntry)&&!dirty&&!(unsavedEntries>0)&&!saveTimer&&lsGet(currentKey)===null);
   try{const blob=new Blob([md],{type:"text/markdown;charset=utf-8"});const url=URL.createObjectURL(blob);const a=el("a",{href:url,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);dirty=false;unsavedEntries=0;if(keep) saveLocal();toast(t.downloaded);render();}
   catch(e){toast(t.downloadFail);}}
 function draftsIn(o){const r=nullMap(o,1);Object.keys(r).forEach(k=>{if(!isObj(r[k])) delete r[k];});return r;}
@@ -7962,8 +7984,8 @@ function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
   FILE_NOTES=fileNotesOf(R,at);
   /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */
   if(via){PROVENANCE={...via,dismissed:false,at};
-    /* a store booklet joins the list at once, as a pointer, on a page that can read it from the store again */
-    if(via.store&&via.from&&currentEntry&&storeUrl()!=="") notePointer();
+    /* a store booklet joins the list at once, as a pointer, on a page that can read it from its folder again */
+    if(via.store&&via.from&&currentEntry&&folderOf(via.from)!=="") notePointer();
     hookChanged("open");go(at);return;}
   /* the file just read is what the store holds: the base of what is kept from now on (a newer file read on the offer) */
   BASE=recsOfParse(R);
@@ -7978,9 +8000,10 @@ const hookOpen=()=>!!currentId&&BOOK!==EMPTY_BOOKLET;
 /* A booklet is the HOST's when it came from the host: opened by #/open/<name> from the declared store, or handed over by
    Booklet.open(text,{name}) with a name. That is what a library entry's `from` ("store:<name>") records, and it follows
    the booklet whenever it is opened again. Every other booklet (picked from disk, pasted, dropped, started here, opened
-   by #/module/<id>, handed over without a name) is the reader's alone: the host is not told of it, cannot read it, and
-   the bar says it is kept in this browser only. */
-const hostName=()=>{const f=currentEntry&&currentEntry.from;return typeof f==="string"&&f.startsWith("store:")?f.slice(6):"";};
+   by #/module/<id> or from the default folder, handed over without a name) is the reader's alone: the host is not told
+   of it, cannot read it, and the bar says it is kept in this browser only. The default folder ("modules:<folder>#<name>")
+   is only read: it is where the page was served from, not a store a host declared and agreed to save to. */
+const hostName=()=>{const p=fromParts(currentEntry&&currentEntry.from);return p&&p.kind==="store"?p.name:"";};
 const hookBook=()=>hookOpen()&&hostName()!=="";
 function hostTime(d){const p=n=>String(n).padStart(2,"0");return p(d.getHours())+":"+p(d.getMinutes());}
 /* The line behind the save status: where the work is kept and why the status says what it does. With no host (or a
@@ -8223,7 +8246,7 @@ function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=
      store is read, and the answer is the text's own notices */
   if(!KEEP.ready){KEEP.later.push(()=>hostOpen(text,o));const N=fileNotesOf(R,null);
     return {ok:true,problems:N?[...(N.marker?[N.marker]:[]),...N.list].map(p=>problemWords([p])):[]};}
-  if(nm) openLinked(text,{store:true,host:true,label:nm,from:"store:"+nm});
+  if(nm) openLinked(text,{store:true,host:true,label:nm,from:storeFrom(nm)});
   else{const e=addEntry();openBooklet(e.id);finishLoad(R);}
   return {ok:true,problems:FILE_NOTES?[...(FILE_NOTES.marker?[FILE_NOTES.marker]:[]),...FILE_NOTES.list].map(p=>problemWords([p])):[]};}
 
@@ -8233,9 +8256,11 @@ function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=
    host declared, and only from that:
      #/open/<name>   the booklet at <store>/<name>
      #/module/<id>   the registry's module with that id, as a booklet of its own
+   A page served over http(s) with no `booklet-store` tag has a default folder instead, `modules/` beside the renderer
+   (defaultStore), so a host serves this file unchanged and its copy keeps the release's checksum. The tag always wins.
    The link rides in the fragment, which a browser never sends to a server. It carries a checked NAME, never an address:
-   what is asked for is always the declared store's address plus a name that passed linkName(), or an address the
-   registry's own list gave for an id it lists. Opening is a read of that one file, with no method, no body, no
+   what is asked for is always the declared store's address (or the default folder's) plus a name that passed linkName(),
+   or an address the registry's own list gave for an id it lists. Opening is a read of that one file, with no method, no body, no
    credentials, no redirect, a size cap and a timeout; the text then goes through the same parser as a file picked by
    hand. What opens, when this browser keeps nothing for the link, is a view. A store booklet joins "Your booklets" at
    once, as a pointer with no kept copy (notePointer); a module link joins it only when the reader changes something in
@@ -8262,8 +8287,23 @@ function storeUrl(){const m=typeof document!=="undefined"&&document.querySelecto
   try{const u=new URL(c,(typeof location!=="undefined"&&location.href)||"http://booklet.invalid/");
     if(u.protocol!=="https:"&&u.protocol!=="http:") return "";
     u.search="";u.hash="";return u.href.endsWith("/")?u.href:u.href+"/";}catch(e){return "";}}
-/* the one address a name stands for: the store's address plus the name, and never anything outside the store */
-function storeAddress(name){const base=storeUrl(),n=linkName(name);if(!base||n===null) return null;
+/* The default folder: `modules/` beside the renderer (a page at /app/ or /app/booklet.html reads /app/modules/), on a page
+   served over http or https that has no `booklet-store` tag at all. It comes from the page's own address and from nothing a
+   link, a booklet or the browser's storage holds. A page with a tag, even one it cannot use, has none (a declared store
+   always wins), and so has a page opened from disk. It is only read: what opens from it is "modules:<folder>#<name>"
+   (folderFrom), never the host's (hostName). "" when there is none. */
+function defaultStore(){
+  if(typeof document==="undefined"||!document.querySelector||document.querySelector('meta[name="booklet-store"]')) return "";
+  if(typeof location==="undefined"||(location.protocol!=="https:"&&location.protocol!=="http:")) return "";
+  try{const u=new URL("modules/",location.href);u.search="";u.hash="";return u.href;}catch(e){return "";}}
+/* the folder a store booklet's `from` is read from on this page: the declared store for "store:", and for "modules:" this
+   page's default folder only when it is the very folder the booklet came from (a page at /other/ never reads, lists or
+   offers what came from /app/modules/); "" for any other, or when this page has no such folder */
+const folderOf=f=>{const p=fromParts(f);if(!p) return "";if(p.kind==="store") return storeUrl();
+  const d=defaultStore();try{return d&&new URL(d).pathname===p.folder?d:"";}catch(e){return "";}};
+/* the one address a name stands for: a folder's address (the declared store unless `base` is given) plus the name, and
+   never anything outside that folder */
+function storeAddress(name,base){base=base===undefined?storeUrl():base;const n=linkName(name);if(!base||n===null) return null;
   try{const u=new URL(n,base);return u.href.startsWith(base)&&u.origin===new URL(base).origin?u.href:null;}catch(e){return null;}}
 /* what a link in the fragment asks for, or null */
 function linkOf(hash){const m=/^#\/(open|module)\/([\s\S]*)$/.exec(String(hash||""));return m?{kind:m[1],raw:m[2]}:null;}
@@ -8271,7 +8311,8 @@ function linkOf(hash){const m=/^#\/(open|module)\/([\s\S]*)$/.exec(String(hash||
    body or credentials; a redirect is an error; at most `bytes` (LINK_BYTES unless a caller gives less or more) and
    LINK_MS. A booklet or module is text, so a JSON answer is refused unless the caller (the registry's list) says it
    expects one. Resolves to {text} or {err}, where err is one of missing, big, slow, notText, failed. `raw` (an image, see
-   IMAGES FROM THE DECLARED STORE) asks for the bytes as they are, {bytes}, and refuses only a web page; the caller checks them. */
+   IMAGES FROM THE DECLARED STORE OR THE DEFAULT FOLDER) asks for the bytes as they are, {bytes}, and refuses only a web
+   page; the caller checks them. */
 async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.json),raw=!!(o&&o.raw);
   const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),LINK_MS);
   try{
@@ -8289,29 +8330,34 @@ async function linkFetch(url,o){const cap=(o&&o.bytes)||LINK_BYTES,json=!!(o&&o.
     try{return {text:new TextDecoder("utf-8",{fatal:true}).decode(buf)};}catch(e){return {err:"notText"};}
   }catch(e){return {err:ac.signal.aborted?"slow":"failed"};}
   finally{clearTimeout(timer);}}
-/* ---- IMAGES FROM THE DECLARED STORE (SPEC.md sections 6 and 13) ----
-   A booklet opened from the host's declared store (by link, by the host's open(), or from the "Your booklets" entry that
-   came from it: currentEntry.from is "store:<name>") draws its images, and only where the booklet still holds the store's
-   own text: each part of the booklet (a module, and the opening with the activities outside every module) must be the same
-   text as that part of the store's file just read for this visit (STORE_SRC, set by noteStoreFile when the file is read at
-   open, on "Read the newer file" and on the host's fileChanged; moduleTexts says what a part is). So a module the reader
-   added or updated in place (from the registry or another file, under an id the store's file also uses, or removed and
-   added again), a kept copy of an older file the store has since changed, and a copy kept from another store on the same
-   origin all draw boxes and ask for nothing: their paths are not this store's. A copy kept before this existed needs no
-   record, since the comparison is made against the file read each visit. A visit that did not read the file (the store
-   did not answer) draws no image.
-   Any other booklet (a file, the registry, a page that declares no store) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the
-   booklet's own name in the store: <store>/sub/x.booklet.md with images/a.png reads <store>/sub/images/a.png.
+/* ---- IMAGES FROM THE DECLARED STORE OR THE DEFAULT FOLDER (SPEC.md sections 6 and 13) ----
+   A booklet opened from the host's declared store (by link, by the host's open(), or from the "Your booklets" entry
+   that came from it: currentEntry.from is "store:<name>"), or from the default folder on a page that declares none (by
+   link, or from its entry, "modules:<folder>#<name>", on the page whose default folder that is: folderOf), draws its
+   images, and only where the booklet still holds that folder's own text (below, "the store" is whichever of the two it
+   came from): each part of the booklet (a module, and the opening with the activities outside every module) must be the
+   same text as that part of the store's file just read for this visit (STORE_SRC, set by noteStoreFile when the file is
+   read at open, on "Read the newer file" and on the host's fileChanged; moduleTexts says what a part is). So a module
+   the reader added or updated in place (from the registry or another file, under an id the store's file also uses, or
+   removed and added again), a kept copy of an older file the store has since changed, and a copy kept from another
+   store or another default folder on the same origin all draw boxes and ask for nothing: their paths are not this
+   store's. A copy kept before this existed needs no record, since the comparison is made against the file read each
+   visit. A visit that did not read the file (the store did not answer) draws no image.
+   Any other booklet (a file, the registry, one handed over without a name, one from a store or default folder this page
+   does not have) keeps the quiet box of mkImg and makes no request. A relative path is read relative to the booklet's
+   own name in the store: <store>/sub/x.booklet.md with images/a.png reads <store>/sub/images/a.png, and the same
+   booklet in the default folder at /app/modules/ reads /app/modules/sub/images/a.png.
    The path is checked before anything is asked for (imagePath): only [A-Za-z0-9_./-], at most 200 characters, no part
    that begins with a dot (so no .. and no . ), no leading / and no empty part (so no //host), no % ? # \ or : (so no
    scheme), and an extension of svg, png, jpg, jpeg, webp or gif. A path that fails is never requested; the box says so.
    The read is linkFetch (no method, no body, no credentials, no redirect, LINK_BYTES, LINK_MS), asked for as raw bytes.
    The bytes must be what the extension says (imageIs: SVG text, or the PNG, JPEG, GIF or WebP signature), and are then
-   drawn as an img element from a blob: URL of that type. An SVG is therefore only ever an image: it runs no script and loads
-   nothing. One answer, bytes or failure, is kept per address for the visit (IMG_SEEN), so a redraw asks for nothing again;
-   the blobs, and any failure, are released when the booklet closes or another opens (imagesRelease, from resetBookletState)
-   and when the store's file is read again (noteStoreFile), so a changed image at the same path is read again. Bytes that pass the check but
-   cannot be drawn (a file the browser will not decode) leave the img's error event, which draws the box with a reason. */
+   drawn as an img element from a blob: URL of that type. An SVG is therefore only ever an image: it runs no script and
+   loads nothing. One answer, bytes or failure, is kept per address for the visit (IMG_SEEN), so a redraw asks for
+   nothing again; the blobs, and any failure, are released when the booklet closes or another opens (imagesRelease, from
+   resetBookletState) and when the store's file is read again (noteStoreFile), so a changed image at the same path is
+   read again. Bytes that pass the check but cannot be drawn (a file the browser will not decode) leave the img's error
+   event, which draws the box with a reason. */
 const IMG_EXT={svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif"};
 const IMG_PATH_MAX=200;
 const IMG_SEEN=Object.create(null);   /* address → {wait:[fn]} while it is read, then {url} or {err: the name of the words} */
@@ -8321,8 +8367,9 @@ function imagePath(raw){const p=String(raw==null?"":raw);
   if(p.split("/").some(x=>x===""||x.charAt(0)===".")) return null;
   const m=/\.([A-Za-z0-9]+)$/.exec(p),ext=m?m[1].toLowerCase():"";
   return hasOwn(IMG_EXT,ext)?{rel:p,ext}:null;}
-/* the folder a booklet's images are read from: the folder of its own name in the declared store; "" when the booklet was
-   not opened from the store, the page declares none, this visit has not read the store's file, or `scope` (the module the
+/* the folder a booklet's images are read from: the folder of its own name in the declared store, or in the default folder
+   for a booklet from it (folderOf: only this page's own default folder, the one it came from); "" when the booklet was not
+   opened from either, this page has no such folder, this visit has not read the store's file, or `scope` (the module the
    image is drawn in, "" for the opening and bare activities) is a module whose text is not the store's own */
 let STORE_SRC="";   /* the design text of the store's file as read for this visit, "" before it is */
 /* A source's parts, each a text to compare: for a module id, its fence (open line to end line) and its data section; for "",
@@ -8339,7 +8386,7 @@ const moduleTexts=src=>{const lines=String(src||"").split("\n"),m=Object.create(
 const MOD_MEMO={store:{src:null,map:null},book:{src:null,map:null}};
 const moduleMemo=(k,src)=>{const c=MOD_MEMO[k];if(c.map===null||c.src!==src){c.map=moduleTexts(src);c.src=src;}return c.map;};
 const storeModule=id=>{const a=moduleMemo("store",STORE_SRC)[id];return a!==undefined&&a===moduleMemo("book",String(((typeof BOOK!=="undefined"&&BOOK&&BOOK.raw)||{}).source||""))[id];};
-function imageFolder(scope){const e=currentEntry,f=e&&e.from,n=typeof f==="string"&&f.startsWith("store:")&&STORE_SRC!==""&&typeof scope==="string"&&storeModule(scope)?linkName(f.slice(6)):null,at=n===null?null:storeAddress(n);
+function imageFolder(scope){const e=currentEntry,f=e&&e.from,s=storeNameOf(e),n=s!==""&&STORE_SRC!==""&&typeof scope==="string"&&storeModule(scope)?linkName(s):null,at=n===null?null:storeAddress(n,folderOf(f));
   return at?at.slice(0,at.lastIndexOf("/")+1):"";}
 /* The store's file was just read (opening it, and "Read the newer file" and the host's fileChanged, which make it what the
    booklet holds): keep its design text for this visit, so only a module with the store's own text draws the store's images,
@@ -8434,9 +8481,10 @@ function openLinked(text,via,o){const page=(o&&o.page)||null;
   const R=parseFile(text||"");
   if(!R.ok){toast(refusalList(R).join(" "));return false;}
   /* A store booklet whose file holds what is kept here (storeHolds, and the account above it) is drawn from the file just
-     read, into the same entry, and its kept copy is never drawn; any other opens as below. A page that declares no store
-     (a host's Booklet.open) cannot read the file again from the list, so there the kept copy opens as before. */
-  if(via.store&&storeUrl()!==""&&storeHolds(kept,R)) return openAsView(text,via,{page,reuse:kept,parsed:R});
+     read, into the same entry, and its kept copy is never drawn; any other opens as below. A page that has no folder for it
+     (a host's Booklet.open on a page that declares no store) cannot read the file again from the list, so there the kept
+     copy opens as before. */
+  if(via.store&&folderOf(via.from)!==""&&storeHolds(kept,R)) return openAsView(text,via,{page,reuse:kept,parsed:R});
   openBooklet(kept.id);
   if(BOOK===EMPTY_BOOKLET){/* an entry whose saved copy is gone is not a booklet kept */
     changeLib(L=>{L.entries=L.entries.filter(x=>x.id!==kept.id);});lsDel(baseKey(kept.id));
@@ -8466,11 +8514,12 @@ async function openLink(hash,o){const L=linkOf(hash);if(!L) return false;
   if(LINK_LOADING!==null){LINK_LOADING=null;render();}
   let url,via,at="";
   if(L.kind==="open"){
-    const sp=linkSplit(L.raw),name=linkName(sp.name);
+    /* the declared store, or with none the default folder: the same name rule, the same reader, the same checks */
+    const sp=linkSplit(L.raw),name=linkName(sp.name),own=storeUrl(),base=own||defaultStore();
     at=sp.act;
-    if(!storeUrl()) return said("linkNoStore");
-    if(name===null||!(url=storeAddress(name))) return said("linkBadName");
-    via={store:true,label:name,from:"store:"+name};}
+    if(!base) return said("linkNoStore");
+    if(name===null||!(url=storeAddress(name,base))) return said("linkBadName");
+    via={store:true,label:name,from:own?storeFrom(name):folderFrom(base,name)};}
   else{
     let id=L.raw.length<=LINK_NAME_MAX?(()=>{try{return decodeURIComponent(L.raw);}catch(e){return "";}})():"";
     if(!id||!registryUrl()) return said(id?"linkNoModule":"linkBadName");

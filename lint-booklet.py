@@ -1676,13 +1676,15 @@ def check_prices(f, lines, start, regions):
     flush()
 
 
-# a relative image path the renderer will read from the host's store (SPEC.md section 6); the part rules are checked beside it
+# a relative image path the renderer will read from the host's store or its default folder (SPEC.md section 6); the part
+# rules are checked beside it
 IMAGE_PATH = re.compile(r'^(?=.{1,200}$)[A-Za-z0-9_./-]+\.(?:svg|png|jpe?g|webp|gif)$', re.I)
 
 
 def check_images(f, lines):
-    """An image is linked, never embedded, and a renderer fetches an image only from a store its host declares
-    (SPEC.md section 6). A remote address (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does
+    """An image is linked, never embedded, and a renderer fetches an image only from a store its host declares, or
+    (the reference renderer, on a page that declares none) from its default folder, `modules/` beside it (SPEC.md
+    section 6). A remote address (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does
     not fetch it. An address with any other scheme (`data:`, `javascript:`, `file:` ...) is an error. A relative path
     is fine, but a warning when it is one the renderer never reads (a `..`, a leading `/`, a character outside
     letters, digits and `_ . / -`, or an extension it does not draw). Reference-style
@@ -1713,7 +1715,7 @@ def check_images(f, lines):
         elif scheme:
             err(f, f"line {n}: the image {shown} has an address with the scheme `{scheme.group(1).lower()}:`; an image is linked by a relative path, never embedded or given another scheme")
         elif not IMAGE_PATH.match(a) or any(p == "" or p.startswith(".") for p in a.split("/")):
-            warn(f, f"line {n}: the image {shown} is not a path the renderer reads from a store (letters, digits, _ . / - only, at most 200 characters, no empty part and no part that begins with a dot so no .. and no ./, no leading /, ending .svg, .png, .jpg, .jpeg, .webp or .gif); it shows the alt text and the address as text")
+            warn(f, f"line {n}: the image {shown} is not a path the renderer reads from a store or its default folder (letters, digits, _ . / - only, at most 200 characters, no empty part and no part that begins with a dot so no .. and no ./, no leading /, ending .svg, .png, .jpg, .jpeg, .webp or .gif); it shows the alt text and the address as text")
 
 
 def _plain_heading(s):

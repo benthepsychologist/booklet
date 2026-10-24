@@ -82,6 +82,7 @@ and it draws those too, as long as they use engines it has.
 | [`CHANGES.md`](CHANGES.md) | what changed in each version of the format, newest first; `SPEC.md` states the rules as they are and keeps no history |
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
+| [`tools/verify-renderer.py`](tools/verify-renderer.py) | checks a copy of the renderer, a file or an address, against a release's `sha256` ("Checking a copy against a release") |
 | [`examples/`](examples/) | complete booklets you can open: `how-tides-work` (reading, a citation, a quiz that says right or not), `mindful-check-in` (widgets, a module's notice and its own data section), `garden-week` (a theme and rows), `status-page` (tiles, a grouped list, tables and charts from data), `project-board` (row roles, a nested list, a question a reader can add to) |
 | [`art/`](art/) | the pictures the renderer carries: a pinned Lucide subset and Booklet's own spot drawings, with their licences; `node test/art-sprite.js --write booklet.html` turns them into the renderer's hidden sprite |
 | [`test/`](test/) | the suite, run with `test/run.sh` |
@@ -244,17 +245,29 @@ script hashes.
 
 ### Opening a booklet by link
 
-A host that serves a folder of booklets can let a link open one. It adds one more line to its own copy of the page
-(the shipped `booklet.html` has none, so it has no store):
+A host that serves a folder of booklets can let a link open one, without changing the renderer. Served over http or https,
+the shipped `booklet.html` reads links from **a `modules/` folder beside itself** (renderer 0.15): a renderer at
+`https://example.org/app/` (or at `https://example.org/app/booklet.html`) opens `#/open/week.booklet.md` from
+`https://example.org/app/modules/week.booklet.md`. So a host puts its booklets in `modules/` next to the file and serves the
+released file exactly as it is, and anyone can check that copy against the release (see "Checking a copy against a release"
+below). Serve the renderer at an address that ends in `/` or in the file name: at `/app`, with no slash, the folder is
+`/modules/`. Nothing is asked of the folder until a reader follows such a link; then it is asked for that booklet, and for
+the images that booklet draws (below).
+
+A host that keeps its booklets somewhere else declares that folder instead, with one more line in its own copy of the page
+(the shipped file has none). The line always wins over the default folder, and, being an edit, it changes the file's
+checksum:
 
 ```html
 <meta name="booklet-store" content="https://example.org/booklets/">
 ```
 
-The address is the folder, absolute or relative to the page. Two links then work, and both ride in the part after the
-`#`, which a browser never sends to a server:
+The address is the folder, absolute or relative to the page. A page with that line reads only its store, never `modules/`.
+A page opened from disk (`file:`) has no default folder: with no line, a link there says the page has no store, as it
+always did. Two links work, and both ride in the part after the `#`, which a browser never sends to a server:
 
-- `#/open/<name>` opens `<store>/<name>`, for example `#/open/reports/week.booklet.md`.
+- `#/open/<name>` opens `<store>/<name>` (the declared store, or else `modules/` beside the renderer), for example
+  `#/open/reports/week.booklet.md`.
 - `#/module/<id>` opens the module with that id from the registry the page already declares (the list "Add a module"
   reads) as a booklet of its own.
 
@@ -262,7 +275,8 @@ A link carries a name, never an address. A name is checked before anything is re
 letters, digits, `-`, `_`, `.` and `/`, with no empty part, no `.` or `..` part, no leading `/`, at most 200 characters, and
 it must end in `.md`. A module id must be one the registry's own list names. Anything else is refused with a plain message
 and nothing is requested. So a link cannot name a host, a scheme or a way out of the folder, and only the page's own tag can
-declare a store: not a booklet's front matter, not a link, nothing kept in the browser.
+declare a store (with none, the page's own address places the default folder): not a booklet's front matter, not a link,
+nothing kept in the browser.
 
 What opens is read once, as text (a plain read: no method, no body, no credentials, no redirect, at most 5 MB, 15 seconds),
 and then goes through the same parser as a file picked by hand, with the same refusals and notices. It opens with its records,
@@ -301,10 +315,41 @@ A quiet line at the top says where the booklet came from ("Opened by a link, fro
 and can be dismissed. The page reads the link when it starts and whenever the fragment changes, and the link stays in the
 address bar, so a reload opens the same thing.
 
+**The default folder is only read.** A booklet opened from `modules/` is listed, opened again and offered a newer file just as
+a store booklet is (all of the above), and its quiet line says the same, but it is never the host's: a host script on the
+page is not told of it and cannot read it, so it is never saved back to the folder, and the reader's answers stay in the
+browser and in any copy they download (`docs/hosting.md`, "Which booklets are the host's"). It is a separate booklet from one
+of the same name opened from a declared store, and from one of the same name in another default folder of the same site: a
+renderer at `/app/` and one at `/other/` each keep their own `a.md`, and a pointer from one is not listed on the other.
+It draws its images from the folder, relative to its own name there, by the rule a booklet from a declared store follows:
+each is a plain read, and only in the modules whose text is still the folder's file's (`docs/hosting.md`, "Images are files
+in the store"). A booklet from another default folder, or a module the reader added, draws the quiet box and asks for nothing.
+
 The store must be on the page's own origin: the renderer's own Content-Security-Policy lets it read only that origin and
 `raw.githubusercontent.com` (see "Putting the renderer on a site"), and a host's header can only tighten that, so a host's
-header must also allow the store's origin, which is the page's own. Nothing a reader writes is ever sent: the link is a read, and the pledge tests
-(`test/guard.test.js`, `test/pledge-browser.js`) pin that.
+header must also allow the store's origin, which is the page's own. The default folder is on the page's own origin by its
+nature; a header that leaves the page's own origin out of `connect-src` (bookletmd.org's does) blocks it, and the link then
+says the booklet could not be fetched. Nothing a reader writes is ever sent: the link is a read, and so is each image its
+booklet draws, and the pledge tests (`test/guard.test.js`, `test/pledge-browser.js`) pin that.
+
+### Checking a copy against a release
+
+A release's notes carry the `sha256` of its files (v0.13.1's: `booklet.html`, `parts/mermaid.js` and `booklet-one-file.html`), as lines of the form `sha256sum` prints. `tools/verify-renderer.py`
+(Python 3, nothing to install) prints the `sha256` of a copy, given as a path or an http(s) address, and says whether it is
+one of a release's files:
+
+```
+python3 tools/verify-renderer.py https://example.org/app/ --sums SHA256SUMS      # the notes' sha256 block, saved as a file
+python3 tools/verify-renderer.py booklet.html --expect 71e4b9343020c0df3b0416021b4a31c7dfdd308cb7ead6df9e95aa61451b8fd8
+```
+
+It exits 0 when the copy matches, 1 when it does not, 2 when it cannot read what it was given, and 3 when it was given nothing
+to compare with (it prints the `sha256` and says so, so a script that left out `--sums` or `--expect` does not read a pass).
+An address is read with one GET: only an answer of 200 counts, a redirect is followed only to another http(s) address (and
+the address read is then said), and the whole read has one deadline (`--timeout`, 30 seconds). A copy made before the
+default folder, with one `booklet-store` line added (as hosts did before renderer 0.15), is checked with
+`--strip-store-meta`: the one line that is exactly that tag is removed before comparing, so the copy matches the release it
+was made from if, and only if, nothing else was changed.
 
 ### Language and storage
 

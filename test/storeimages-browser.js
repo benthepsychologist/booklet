@@ -18,7 +18,12 @@
 //   - "Read the newer file" reads images again (a changed one, and one that was missing before), and a module the newer file adds is the store's;
 //   - Booklet.open with a name on a page with no store asks for nothing;
 //   - tabs and pages (0.15) are presentation: a module tab's prose, an activity's opening (drawn on every tab), a tab's own prose
-//     and a later page draw the store's images by the same rule.
+//     and a later page draw the store's images by the same rule;
+//   - the default folder (0.15, item v015-host-modules-and-checksum): on a page with no store tag, a booklet opened by link from
+//     `modules/` beside the renderer draws the images beside it there; a module updated in place afterwards (from the registry,
+//     under the folder's module id) is the box and asks for nothing; the entry kept from that folder, opened from "Your
+//     booklets" on a renderer at another path of the same site (another default folder), draws none and asks neither folder
+//     for anything; that page's own folder still draws its own copy's images (control).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/storeimages-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path'),zlib=require('zlib');
@@ -76,7 +81,16 @@ let TOPV=1;
 const DMOD=n=>'> [!module|dm] D module\n\n> [!activity|d] D\n\n![D pic](images/a.svg)\n\n> [!module|dm end] End\n\n> [!data|dm] Data for D module\n\n```booklet data\n[{"x": '+n+'}]\n```\n^rows\n';
 const DHEAD='---\nbooklet: "0.13"\ntitle: Data booklet\nlang: en\n---\n\n';
 const JFILES_D={'/dsame.md':DHEAD+DMOD(1),'/ddiff.md':DHEAD+DMOD(2)};
-const REGJ={modules:[{id:'t/dsame',title:'D module',file:'dsame.md'},{id:'t/ddiff',title:'D module',file:'ddiff.md'},{id:'t/regpic',title:'Registry pictures',file:'regpic.md'},{id:'t/ja',title:'Journal update A',file:'jupda.md'},{id:'t/jb',title:'Journal update B',file:'jupdb.md'},{id:'t/jc',title:'Journal readded',file:'jreadd.md'}]};
+/* the default folder (0.15): a booklet in modules/sub/ beside a renderer at /fold/ (and the same file beside one at /fold2/),
+   two modules, each with an image beside it; and a module file under the first module's id, whose image would draw if asked */
+const FOLDBOOK='---\nbooklet: "0.13"\ntitle: Folded\nlang: en\n---\n\n'+
+  ['> [!module|fm] Fold main','','> [!activity|fa] Fold main','','![Fold svg](images/a.svg)','','> [!module|fm end] End','',
+   '> [!module|fk] Fold kept','','> [!activity|fka] Fold kept','','![Kept png](images/c.png)','','> [!module|fk end] End',''].join('\n');
+JFILES['/foldupd.md']=bk('fm','Fold update',['> [!activity|fa] Fold main','','![Fold update pic](images/b.svg)',''].join('\n'));
+const FOLDFILES={};
+for(const d of ['/fold/','/fold2/']){FOLDFILES[d+'modules/sub/images/a.svg']={type:'image/svg+xml',body:SVG_NESTED};
+  FOLDFILES[d+'modules/sub/images/b.svg']={type:'image/svg+xml',body:SVG_NESTED};FOLDFILES[d+'modules/sub/images/c.png']={type:'image/png',body:png(30,30)};}
+const REGJ={modules:[{id:'t/dsame',title:'D module',file:'dsame.md'},{id:'t/ddiff',title:'D module',file:'ddiff.md'},{id:'t/regpic',title:'Registry pictures',file:'regpic.md'},{id:'t/ja',title:'Journal update A',file:'jupda.md'},{id:'t/jb',title:'Journal update B',file:'jupdb.md'},{id:'t/jc',title:'Journal readded',file:'jreadd.md'},{id:'t/fupd',title:'Fold update',file:'foldupd.md'}]};
 const newsBook=v=>bk('news','News',['> [!activity|n] News','','> [!text|nq] A note','','![Changed](images/chg.png)','','![Late](images/late.png)',''].join('\n'))+
   (v>=2?'\n'+bk('extra','Extra',['> [!activity|x] Extra','','![Extra svg](images/extra.svg)',''].join('\n')).replace(/^---[\s\S]*?---\n\n/,''):'');
 const dyn=u=>{
@@ -104,6 +118,10 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
     if(u==='/app/')return r.fulfill({status:200,body:page(true),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
     if(u==='/app2/')return r.fulfill({status:200,body:page(true).replace(STORE+'/pub/',STORE+'/pub2/'),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
     if(u==='/plain/')return r.fulfill({status:200,body:page(false),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
+    /* 0.15: the renderer as released (no store tag) at two paths, each with its own default folder */
+    if(u==='/fold/'||u==='/fold2/')return r.fulfill({status:200,body:page(false),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}});
+    if(u==='/fold/modules/sub/fold.booklet.md'||u==='/fold2/modules/sub/fold.booklet.md')return r.fulfill({status:200,body:FOLDBOOK,headers:{'content-type':'text/markdown; charset=utf-8'}});
+    if(FOLDFILES[u])return r.fulfill({status:200,body:FOLDFILES[u].body,headers:{'content-type':FOLDFILES[u].type}});
     {const d=dyn(u);if(d===null)return r.fulfill({status:404,body:'nf',headers:cors});if(d)return r.fulfill({status:200,body:d.body,headers:{'content-type':d.type,...cors}});}
     if(u==='/pub/images/redir.png')return r.fulfill({status:302,headers:{location:STORE+'/pub/images/redir-target.png',...cors}});
     if(u==='/pub/images/redir-target.png')return r.fulfill({status:200,body:png(5,5),headers:{'content-type':'image/png',...cors}});
@@ -434,6 +452,44 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   await p.locator('#main .cd-foot .pg-next').click();await wait(p,1500);
   ok(await drawn()==='Page two pic','a later page draws its store image: '+await drawn());
   await p.close();
+
+  // 13 the default folder (0.15): a page with no store tag reads a link from modules/ beside it, and the booklet draws the images
+  //    beside it there, by the store's rule; a module changed afterwards draws the box; an entry from another folder draws none
+  {const fold=await b.newContext({viewport:{width:1280,height:900}});await setup(fold);
+   const imgsUnder=(n,dir)=>since(n).filter(r=>r.url.startsWith(PAGE+dir)&&/\/images\//.test(r.url)).map(r=>new URL(r.url).pathname);
+   p=await open(fold);n0=mark();
+   await p.goto(PAGE+'/fold/#/open/sub/fold.booklet.md');await wait(p,2500);
+   ok(since(n0).filter(r=>/\.md$/.test(r.url)).map(r=>new URL(r.url).pathname).join()==='/fold/modules/sub/fold.booklet.md','the page with no store tag read the link from modules/ beside it: '+since(n0).map(r=>new URL(r.url).pathname).join(' '));
+   await goMod(p,/Fold main/);
+   s=await state(p);
+   ok(s.imgs.length===1&&s.imgs[0].alt==='Fold svg'&&s.imgs[0].ok&&/^blob:/.test(s.imgs[0].src)&&s.imgs[0].nw===120,'a booklet from the default folder draws the image beside it there, from a blob: URL: '+JSON.stringify(s.imgs.map(i=>[i.alt,i.nw])));
+   await goMod(p,/Fold kept/);
+   s=await state(p);
+   ok(s.imgs.length===1&&s.imgs[0].alt==='Kept png'&&s.imgs[0].ok,'...and its other module draws its own: '+JSON.stringify(s.imgs.map(i=>i.alt)));
+   ok(imgsUnder(n0,'/').sort().join()==='/fold/modules/sub/images/a.svg,/fold/modules/sub/images/c.png','each image was read once, relative to the booklet\'s name in that folder: '+imgsUnder(n0,'/').join(' '));
+   n0=mark();
+   await addMod('Fold update');await goMod(p,/Fold update/);
+   ok(await boxOf(/Fold update pic.*images\/b\.svg/),'a module updated in place under the folder\'s module id is no longer the folder\'s text: its image is the box, with its address');
+   ok(imgsUnder(n0,'/').length===0,'...and nothing is asked of the folder for it ('+imgsUnder(n0,'/').join(' ')+')');
+   await goMod(p,/Fold kept/);
+   s=await state(p);
+   ok(s.imgs.length===1&&s.imgs[0].alt==='Kept png'&&s.imgs[0].ok,'control: the module still the folder\'s draws its image');
+   await p.close();
+   /* a renderer at another path of the same site: its default folder is /fold2/modules/, not /fold/modules/ */
+   p=await open(fold);n0=mark();
+   await p.goto(PAGE+'/fold2/');await wait(p,1500);
+   ok(await p.getByText('Folded').count()>0,'the entry kept from /fold/ is listed on /fold2/ (it holds a kept copy)');
+   await p.getByText('Folded').first().click();await wait(p,2500);
+   await goMod(p,/Fold kept/);
+   s=await state(p);
+   ok(s.imgs.length===0&&s.boxes.some(x=>x.includes('Kept png')&&/Image not shown/.test(x)&&x.includes('images/c.png')),'opened on a renderer whose default folder is another one, the entry from /fold/ draws the quiet box: '+JSON.stringify(s.boxes));
+   ok(since(n0).filter(r=>/\/modules\//.test(r.url)).length===0,'...and neither folder is asked for anything, booklet or image ('+since(n0).filter(r=>/\/modules\//.test(r.url)).map(r=>r.url).join(' ')+')');
+   n0=mark();
+   await p.evaluate(()=>{location.hash='#/open/sub/fold.booklet.md';});await wait(p,2500);
+   await goMod(p,/Fold kept/);
+   s=await state(p);
+   ok(s.imgs.length===1&&s.imgs[0].alt==='Kept png'&&s.imgs[0].ok&&imgsUnder(n0,'/').join()==='/fold2/modules/sub/images/c.png','control: the same name opened by link on /fold2/ is that folder\'s own booklet, and draws from /fold2/modules/: '+imgsUnder(n0,'/').join(' '));
+   await p.close();await fold.close();}
 
   ok(net().every(r=>r.method==='GET'&&r.body===''&&!new URL(r.url).search),'over the whole run every request was a GET with no body and no query string');
   ok(!net().some(r=>/tracker\.example|secret/.test(r.url)),'over the whole run nothing was asked of a remote address or outside the store');
