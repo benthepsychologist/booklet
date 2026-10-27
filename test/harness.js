@@ -1,7 +1,8 @@
 // minimal DOM stub so the app's pure logic (export/import) can be exercised in node
 const mk=(tag)=>{const n={tagName:tag,children:[],attrs:{},style:{},value:"",_text:"",classList:{add(){},remove(){},toggle(){},contains(){return false}},
   setAttribute(k,v){this.attrs[k]=v},removeAttribute(k){delete this.attrs[k]},hasAttribute(k){return k in this.attrs},getAttribute(k){return this.attrs[k]},
-  addEventListener(){},append(...k){this.children.push(...k)},prepend(){},remove(){},querySelector(){return mk("div")},querySelectorAll(){return []},
+  addEventListener(){},append(...k){this.children.push(...k)},removeChild(n){const i=this.children.indexOf(n);if(i>=0) this.children.splice(i,1);return n;},insertBefore(n,ref){const j=this.children.indexOf(n);if(j>=0) this.children.splice(j,1);
+    const i=ref?this.children.indexOf(ref):-1;if(i<0) this.children.push(n);else this.children.splice(i,0,n);return n;},prepend(){},remove(){},querySelector(){return mk("div")},querySelectorAll(){return []},
   get textContent(){return this._text},set textContent(v){this._text=v},get innerHTML(){return ""},set innerHTML(v){this.children=[]},focus(){},click(){}};
   Object.defineProperty(n,"dataset",{value:{}}); return n;};
 const store={};
