@@ -323,7 +323,8 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
    chk("should-fix 6: every `[!records|id]` in an example in "+name+" names a module of that example",bad.length===0,bad.join());}
   const ex=docs["README.md"].match(/```markdown\n(---\nbooklet:[\s\S]*?)\n```/);
   chk("should-fix 6: README's example is a booklet that lints clean",!!ex&&lint(ex[1]+"\n").status===0&&/0 errors · 0 warnings/.test(lintOut(ex[1]+"\n")),ex?lintOut(ex[1]+"\n"):"no example found");
-  chk("should-fix 8: SPEC says a reader may write a record's JSON with other spacing",/may write a record's JSON with other spacing/.test(docs["SPEC.md"]));}
+  /* (0.16: the permission to respace and sort is gone; a record the reader did not change is written back as written) */
+  chk("should-fix 8: SPEC says a record the reader did not change is written back exactly as written, and no longer that it may be respaced or sorted",/did not change is written back exactly as written: nothing re-sorted, nothing respaced/.test(docs["SPEC.md"])&&!/with other spacing|may sort a list of entries/.test(docs["SPEC.md"]));}
 
  /* should-fix 7: any `> [!` line the callout pattern cannot read is reported, at its own line, and left as text */
  {const lines=["> [!row end]","> [! spaced] Words","> [!my_kind] Words","> [!café] Words","> [!note title] Words"];
