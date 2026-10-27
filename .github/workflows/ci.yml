@@ -43,20 +43,36 @@ jobs:
           # `check` is unchanged.
           PLAYWRIGHT_SKIP: '1'
 
-  # The six test/*-browser.js scripts, in a real Chromium. A separate job, not a
+  # Every test/*-browser.js script, in a real Chromium. A separate job, not a
   # step of `check`, so the required check does not wait on a browser download.
+  # Split four ways, side by side: part N takes every fourth script in name
+  # order, so together the parts run each script exactly once, and a script
+  # added later joins a part with no edit here. Run one after another, the
+  # scripts took 26m32s (main, 2026-10-24).
   browser:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
       - run: npm i --no-save playwright
       - run: npx playwright install --with-deps chromium
-      - run: bash test/run-browser.sh
+      - name: Browser scripts, part ${{ matrix.part }} of 4
+        run: |
+          names=$(ls test/*-browser.js | sed 's#^test/##; s#-browser\.js$##' | awk -v p=${{ matrix.part }} 'NR % 4 == p % 4')
+          # run-browser.sh runs every script when given no names, so an empty part is an error
+          [ -n "$names" ] || { echo "part ${{ matrix.part }} has no scripts"; exit 1; }
+          echo "part ${{ matrix.part }}:" $names
+          bash test/run-browser.sh booklet.html $names
       # the one-file build (test/one-file.js): the checks that protect the promise, on the renderer with every part inside it
-      - run: node test/one-file.js build/booklet.html
-      - run: bash test/run-browser.sh build/booklet.html pledge figures libwake mermaid filepage themes
+      - if: matrix.part == 1
+        run: node test/one-file.js build/booklet.html
+      - if: matrix.part == 1
+        run: bash test/run-browser.sh build/booklet.html pledge figures libwake mermaid filepage themes
 
   # Publishes booklet.html, examples/, docs, etc. — the
   # whole repo root, exactly as the old "Deploy from a branch" source did
