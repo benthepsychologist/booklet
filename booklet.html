@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-ESMCvGSDg7BVdICTyq6yghe3eauBcFk8iY9PsqLsCZQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-pnV95NedH6z3bajRBHge5VR+mesN9xiJoJI+XMdt6UM=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -992,8 +992,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .rowcell>:first-child,.rowcell>.md>:first-child{margin-top:0}
   .rowcell :is(h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.mxwrap,.oneline,blockquote,ul.plain,.rd-callout),
   .rowcell .md>:is(ul,ol,h4,h5,h6,dl){max-width:none}
+  /* an activity printed whole (printWhole): its copy is for paper only, and the part of the screen it stands for is left out of the print */
+  .print-whole{display:none}
+  .pr-tabname{margin:1.4rem 0 .5rem;font-size:1.15rem;border-bottom:var(--bw) solid var(--rule);padding-bottom:.2rem;break-after:avoid}
+  .pr-page+.pr-page{margin-top:1.2rem}
   /* print: the layout for paper. The light tokens are the next block, declared last. */
   @media print{
+    .print-whole{display:block}
+    .pr-skip{display:none!important}
     .dv-groups{display:block}
     .pblock.row{display:block}
     .dv-gcard{break-inside:avoid;border:0;padding:0}
@@ -4662,9 +4668,15 @@ function renameClashingIds(lines,takenBlocks,takenNotes,modId){
   const D=depthsOf(lines),M=D.map(codeMask),mask=lines.map((_,i)=>D.some((v,d)=>M[d][i]&&v[i]!=="")),bl=blockIdLines(lines),nl=noteIdLines(lines);
   const usedB=new Set(bl.values()),usedN=new Set(nl.values());
   /* the ids the module's own lines give to activities, questions and menus: a query's `from:` that names one of
-     these names that, not a block */
-  const own=new Set();D.forEach(v=>bookletLines(v).forEach(x=>{
-    if(["activity","menu","module"].concat([...QUESTION_KINDS]).includes(x.kind)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
+     these names that, not a block. Only a line drawn as such counts: one at the top, or one a group in an activity holds (a
+     group in a group too). A line in a note, a quote or a group outside an activity is drawn as text (SPEC.md section 6) and
+     gives no id, so it cannot make a query follow the wrong name. */
+  const own=new Set(),heads=D.map(v=>bookletLines(v)),KINDS=["activity","menu","module"].concat([...QUESTION_KINDS]);
+  const drawn=(d,i)=>{if(d===0) return true;
+    let h=null;for(const x of heads[d-1]) if(x.i<i) h=x;   /* the callout it is in: the nearest line one `>` out above it */
+    return !!h&&h.kind==="group"&&(d===1?heads[0].some(x=>x.kind==="activity"&&x.i<h.i):drawn(d-1,h.i));};
+  heads.forEach((hs,d)=>hs.forEach(x=>{
+    if(KINDS.includes(x.kind)&&drawn(d,x.i)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
   const fresh=(id,taken,used)=>{let n=modId+"-"+id,k=2;while(taken.has(n)||used.has(n)){n=modId+"-"+id+"-"+k;k++;}used.add(n);return n;};
   const mapB=new Map(),mapN=new Map(),renamed=[];
   for(const id of [...usedB]) if(takenBlocks.has(id)){const to=fresh(id,takenBlocks,usedB);mapB.set(id,to);renamed.push({what:"block",from:id,to});}
@@ -6188,7 +6200,7 @@ function foldedCallout(b,draft,activityId,dc,x){
   const look=hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
   /* an untitled callout is called by its kind's word; a kind the renderer does not know is called Note, as before, only drawn plain */
   const word=look||(hs?null:calloutLook(b.kind));
-  const title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
+  let title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
   const picture=emo?{emoji:emo}:look?{icon:icon(look.icon)}:hs?{icon:icon(hs==="hint"?"lightbulb":"circle-check")}:null;
@@ -6196,6 +6208,9 @@ function foldedCallout(b,draft,activityId,dc,x){
   let teaser="";
   if(!hs){const L=sectionLede(parts.filter(p=>p.x.type==="markdown").flatMap(p=>Array.from(p.n.children||[])));
     teaser=L.para?clip(textOf(L.para),220):L.text;}
+  /* an untitled group is not a note: its fold is named by the first words of what it holds, its prose or else its first question */
+  if(!hs&&isGroup(b)&&!nonEmpty(named)){const q=blocksAll(blocksIn(b)).find(isQuestion),first=nonEmpty(teaser)?teaser:q?plainText(tx(q.label,"")):"";
+    if(nonEmpty(first)){title=clip(first,80);teaser="";}}
   const body=parts.map(p=>p.n);
   if(b.unknown) body.unshift(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   /* a hint or a solution is a compact fold: one quiet line, a small icon, no tile, no teaser */
@@ -7164,8 +7179,8 @@ function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),grp=isGr
     if(pic) head.append(el("span",{class:"rd-ci","aria-hidden":"true"},pic));
     head.append(el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
-  /* the kind's word heads the box; a plain one (a group) has none, and with no title of its own it has no head at all */
-  if(look) box.append(head);
+  /* the kind's word heads the box; a plain one (a group) has none, and an untitled group has no head at all (any other callout keeps its head, empty or not) */
+  if(!(grp&&!nonEmpty(title))) box.append(head);
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title,false,true)));named.push(u+"-t");}
   if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
@@ -7612,6 +7627,34 @@ function activityFooter(id,dc){const C=strings("cards"),S=strings("steps"),G=str
     else if(ps.length>1) foot.append(el("span",{class:"pg-gap"}));};
   draw();if(dc) dc.foot=draw;
   return foot;}
+/* ---- PRINTING AN ACTIVITY WHOLE ----
+   The screen draws one tab and one page of an activity at a time. Paper gets all of them: as the print begins, a copy of the
+   activity's tabs and pages is drawn after the screen's own (each tab under its name, every page in order, the endnotes of
+   all of it in one list at the foot), and the screen's own tab or page is left out of the print; as the print ends the copy
+   goes, and the screen is as it was (it is not drawn again: the reader's place, focus and fields are untouched). The copy is a
+   draw of its own, with the marks numbered by the screen's scope (the whole activity's numbering, citeScope), and carries no
+   id, so none is used twice. It is hidden on screen and the screen's part is hidden only in print (the stylesheet). */
+let PRINT_COPY=null;
+function printWhole(){
+  if(PRINT_COPY||typeof document==="undefined") return;
+  const main=document.getElementById("main");
+  if(!main||!currentId||hasOwn(SCREENS,screen)||isModuleScreen(screen)) return;
+  const id=screen,m=activityOf(id),ts=tabsIn(m);
+  if(!Array.isArray(m.pages)||(!(ts&&ts.length>1)&&m.pages.length<2)) return;
+  const was=main.querySelector(ts&&ts.length>1?".tabpanel":".ap-body");if(!was||!was.parentNode) return;
+  const dc=newDraw(),draft=answersFor(id);dc.cite=citeDraw(id);dc.folds={open:true,n:0};
+  const pageNode=pg=>el("div",{class:"pr-page"},renderBlocks(blocksIn(pg),draft,id,dc));
+  const copy=el("div",{class:"print-whole"});
+  if(ts) ts.forEach(t=>copy.append(el("section",{class:"pr-tab"},ts.length>1?el("h3",{class:"pr-tabname"},...words(tx(t.title,t.id),true)):null,
+    ...m.pages.filter(p=>p.tab===t.id).map(pageNode))));
+  else m.pages.forEach(pg=>copy.append(pageNode(pg)));
+  const R=dc.cite,notes=R&&endnotesFor(id,[...(openingWithActivity(R.mod)?R.mod.opening:[]),...activityBlocks(m)],dc);
+  if(notes) copy.append(notes);
+  copy.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));
+  was.classList.add("pr-skip");was.parentNode.insertBefore(copy,was.nextSibling);
+  PRINT_COPY={copy,was};}
+function printWholeEnd(){if(!PRINT_COPY) return;
+  const {copy,was}=PRINT_COPY;PRINT_COPY=null;was.classList.remove("pr-skip");if(copy.parentNode) copy.parentNode.removeChild(copy);}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
 const activitiesShown=mod=>mod.activities.filter(isShown);
@@ -8220,7 +8263,7 @@ function hostAccept(){if(!newerWaiting()) return;
    generator owns the body and the reader owns the records (the store contract).
    - A store booklet: the new file's body is taken, with the work acceptWork gives (the one rule for reading a newer
      file, here and in hostAccept): with no host, the kept booklet's own answers, entries and drafts as they are (an
-     answer to a question the new body no longer has stays unused); with a host, the kept booklet's work and the file's
+     answer to a question the new body no longer has stays unused; work in a module it no longer has is kept as records, keepUnowned); with a host, the kept booklet's work and the file's
      merged against their base (mergeWork). The host then saves the result.
    - A registry module (#/module/<id>) is updated in place the way Add a module updates a module already present.
    Either way the entry remembers the text just read (storeSeen). A text the page refuses changes nothing but says why. */
@@ -8240,9 +8283,12 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
    (mergeWork, after followMoves), or by withFileWork for a kept booklet with no base. With none, the file never held the
    reader's work, and what is here stays as it is. Returns {S, D}, ready for finishLoad (which makes the file's records
    the new base). */
-const acceptWork=R=>{if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};
+const acceptWork=R=>{
+  /* whichever way the work is weighed, what the new design has no module for (a module the file dropped or renamed) is kept as
+     records, never left in this page where nothing would draw or write it: with a host, with none and with no base alike */
+  if(!(HOST&&hostName())) return keepUnowned({S:STATE,D:DRAFTS},R.template);
   /* a kept booklet with no base (written before bases were kept) can only be weighed on what holds something */
-  if(!BASE) return withFileWork(R);
+  if(!BASE) return keepUnowned(withFileWork(R),R.template);
   const file=recsOfParse(R),[here,base]=followMoves(clone({answers:STATE.answers||{},entries:STATE.entries||{},drafts:DRAFTS.custom||{}}),BASE,R.template);
   const m=mergeWork(here,base,file);
   return keepUnowned({S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}},R.template);};
@@ -8682,8 +8728,9 @@ window.addEventListener("booklet-theme",()=>{const s=document.getElementById("th
   new ResizeObserver(set).observe(bar);set();})();
 /* Printing prints everything: the folded callouts open for the print and fold back after */
 if(typeof window!=="undefined"&&window.addEventListener){let printed=[];
-  window.addEventListener("beforeprint",()=>{printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});
-  window.addEventListener("afterprint",()=>{printed.forEach(d=>{d.open=false;});printed=[];});}
+  window.addEventListener("beforeprint",()=>{try{printWhole();}catch(e){printWholeEnd();}
+    printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});
+  window.addEventListener("afterprint",()=>{printWholeEnd();printed.forEach(d=>{d.open=false;});printed=[];});}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&citeOpen()) closeCite();});
 window.addEventListener("scroll",hideTip,{passive:true});
 document.getElementById("btnHome").addEventListener("click",homeButton);

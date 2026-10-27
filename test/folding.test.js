@@ -149,9 +149,22 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
  chk("all at once, an untitled open group is drawn with no head: its body is its first child",!!box&&find(box,hasClass("rd-chead")).length===0&&hasClass("rd-cb")(box.children[0]),box&&JSON.stringify(box.children.map(c=>c.attrs.class)));
  global.__ls[A.OAT_KEY+A.currentId]="one";draw("a");
  const units=find(P.main(),hasClass("oat-unit"));
- chk("one at a time, no step's group has an empty head",units.length===3&&find(P.main(),hasClass("rd-chead")).length===0);
+ chk("one at a time, no untitled step's group has an empty head (the titled one keeps its head, as every other callout does)",units.length===3&&find(units[0],hasClass("rd-chead")).length===0&&find(units[1],hasClass("rd-chead")).length===0&&find(units[2],hasClass("rd-chead")).length===1);
  chk("an untitled group's step is a group named by its place; a titled one is named by its title",units.length===3&&units[0].attrs.role==="group"&&units[0].attrs["aria-label"]==="Step 1 of 3"&&units[1].attrs["aria-label"]==="Step 2 of 3"&&units[2].attrs["aria-label"]===undefined&&
    find(units[2],n=>n.attrs.role==="group"&&!!n.attrs["aria-labelledby"]).length===1,JSON.stringify(units.map(u=>[u.attrs.role,u.attrs["aria-label"]])));
+ delete global.__ls[A.OAT_KEY+A.currentId];}
+
+/* 5f. the empty head is taken off an untitled group alone; and a folded untitled group is named by what it holds, never "Note" */
+{A.loadText(FM+"> [!activity|a] A\n\n> [!group]-\n> Some words to start the fold.\n>\n> > [!text|u1] One?\n\n> [!group]-\n> > [!text|u2] Two?\n\n> [!group]- Named\n> > [!text|u3] Three?\n\n> [!note]-\n> A folded note.\n");
+ global.__ls[A.OAT_KEY+A.currentId]="all";draw("a");
+ const names=auFolds().map(d=>texts(find(d,n=>n.tagName==="summary")[0]||d).replace(/\s+/g," ").trim());
+ chk("a folded untitled group is named by the first words of its prose, else of its first question; a titled one by its title; a folded note is still a note",
+   names.length===4&&/^Some words to start the fold\./.test(names[0])&&/^Two\?/.test(names[1])&&/^Named/.test(names[2])&&/^Note/.test(names[3])&&!/^Note/.test(names[0])&&!/^Note/.test(names[1]),JSON.stringify(names));
+ chk("(that name is not said twice: the prose that names the fold is not also its teaser)",(names[0]||"").split("Some words to start the fold").length===2,names[0]);
+ /* a callout that is not a group keeps its head, empty as it was; a titled group keeps its head; only an untitled group has none */
+ A.loadText(FM+"> [!activity|a] A\n\n> [!group]\n> > [!text|u1] One?\n\n> [!group] Titled\n> > [!text|u2] Two?\n\n> [!tip] A tip\n> Words.\n");
+ draw("a");const boxes=find(P.main(),hasClass("rd-callout"));
+ chk("an untitled group has no head; a titled group and a tip keep theirs",boxes.length>=3&&find(boxes[0],n=>n.attrs.class==="rd-chead").length===0&&find(boxes[1],n=>n.attrs.class==="rd-chead").length===1&&find(boxes[2],n=>n.attrs.class==="rd-chead").length===1,boxes.map(g=>find(g,n=>n.attrs.class==="rd-chead").length).join());
  delete global.__ls[A.OAT_KEY+A.currentId];}
 
 /* 6. every word of the steps, the pager and the fold switch exists in en, fr, es (the tables themselves: a missing

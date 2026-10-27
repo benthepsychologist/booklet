@@ -3,13 +3,13 @@
 *As of 2026-10-24*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**project v0.15, renderer 0.15.0, not yet released**: format v0.15 (files say `booklet: "0.15"`, in quotes; no 0.14 was released) and renderer 0.15.0, from the release pull request (branch `release/v0.15.0`), to be tagged `v0.15.0` once it is merged; all of it is below. The last release is v0.13.1: renderer 0.13.1, tagged `v0.13.1` on 2026-10-15, live on the box and on bookletmd.org, with the format marker `"0.13"`. It carries the renderer's structure (#51), a core and its parts (#50), consolidations (#55), storage in IndexedDB (#54), the clean-up (#56), and the save status and auto-save (#57), all below. Before it, v0.13.0 (format v0.13 and renderer 0.13.0, tagged `v0.13.0` at `c808ad7`, live on the box and on bookletmd.org). The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
+**project v0.15, renderer 0.15.0, released**: format v0.15 (files say `booklet: "0.15"`, in quotes; no 0.14 was released) and renderer 0.15.0, from the release pull request (#69, branch `release/v0.15.0`), merged at `2f21a36` and tagged `v0.15.0`; all of it is below. The release before it is v0.13.1: renderer 0.13.1, tagged `v0.13.1` on 2026-10-15, live on the box and on bookletmd.org, with the format marker `"0.13"`. It carries the renderer's structure (#51), a core and its parts (#50), consolidations (#55), storage in IndexedDB (#54), the clean-up (#56), and the save status and auto-save (#57), all below. Before it, v0.13.0 (format v0.13 and renderer 0.13.0, tagged `v0.13.0` at `c808ad7`, live on the box and on bookletmd.org). The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, a core, and its parts in `parts/`; a build makes one static file of them), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and five examples. Modules live in their own
 repo, `booklet-registry`.
 
-## Current state — format 0.15 and renderer 0.15.0 (booklet-hub deliverable `booklet-v0-15-update`, item `v015-release`; the release pull request, not yet tagged)
+## Current state — format 0.15 and renderer 0.15.0 (booklet-hub deliverable `booklet-v0-15-update`, item `v015-release`; released, tagged `v0.15.0`)
 
 The lanes below were merged into main one by one with the marker still at `"0.13"`; the release pull request moves it, checks the new strings and adds the tests the last lane's review asked for.
 
