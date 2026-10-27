@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-0X2VzDM7doUbkoFXXLupJAoEgKY4M5f1KsujghGzUgA=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-EyIr8OKazgqf0IZ+Rc9G2izOpV6BM4RlW/VLuPWWaEk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4444,11 +4444,15 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
    beside the region (regionOf), so a booklet read again from it is still written as its file was. */
 function fileText(book,S,D,drop){const p=writeParts(book,S,D,drop);return p.head+p.sep+p.region;}
 const regionOf=(book,drop)=>writeParts(book,null,null,drop).region;
-function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol||"\n",src=String(V.source||"");
-  const head=typeof W.head==="string"&&src===W.src?W.head:(W.bom||"")+(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);
+function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol||"\n",src=String(V.source||""),same=typeof W.head==="string"&&src===W.src;
+  const head=same?W.head:(W.bom||"")+(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);
+  /* a blank line between the body and the region, where the body does not end with one: before a region this writer
+     adds, and before the file's own when its body is written from a changed design; a body as read is left as it was */
+  const gap=()=>{const ls=head.split(/\r\n?|\n/),z=ls[ls.length-1];return !head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"";};
+  const out=region=>({head,sep:!same&&region?gap():"",region});
   const mods=book.modules||[],fenced=id=>fencedModule(id,mods),text=String(W.region||"");
   const kept=[].concat(V.records||[]).filter(r=>r&&!r.w&&typeof r.text==="string"&&(!r.foreign||typeof r.foreign==="string"));
-  if(!S&&!drop&&!kept.length) return {head,sep:"",region:text};
+  if(!S&&!drop&&!kept.length) return out(text);
   const R=readRegion(text,mods),HEAD="> [!records] App record — do not edit below this line";
   const fence=(info,body)=>["```"+info,...body.split("\n"),"```"],ops=[],adds=new Map(),news=[],foreign=[];
   const add=(p,chunks)=>{if(!adds.has(p)) adds.set(p,[]);adds.get(p).push(...chunks);};
@@ -4507,12 +4511,11 @@ function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol|
     else if(first.length||fresh.length){const m=sc&&fenced(sc);news.push([[sc?"> [!records|"+m.id+"] "+tx(m.title,m.id):HEAD],...first,...fresh]);}});
   let fh;kept.filter(r=>r.foreign&&!fenced(r.scope)).forEach(r=>{if(r.foreign!==fh) foreign.push([fh=r.foreign]);foreign.push(r.text.split("\n"));});
   const T=R.T.slice(),E=R.E.slice(),nl=E.find(e=>e)||eol;
-  if(R.top<0){if(!news.length&&!foreign.length) return {head,sep:"",region:text};
+  if(R.top<0){if(!news.length&&!foreign.length) return out(text);
     const L=["%%",HEAD,""];news.forEach(g=>g.forEach((c,i)=>{if(i||c[0]!==HEAD) L.push(...c,"");}));foreign.forEach(c=>L.push(...c,""));L.push("%%","");
-    const ls=head.split(/\r\n?|\n/),z=ls[ls.length-1];
-    return {head,sep:!head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"",region:L.join(eol)};}
+    return {head,sep:gap(),region:L.join(eol)};}
   news.forEach(g=>add(g[0][0]===HEAD?R.top:R.end,g));if(foreign.length) add(R.end,foreign);
-  if(!ops.length&&!adds.size) return {head,sep:"",region:text};
+  if(!ops.length&&!adds.size) return out(text);
   /* a fence the region leaves open at the end of the file is closed before anything is put after it, so nothing is
      written into it */
   let shut=-1;if(R.open&&[...adds.keys()].some(p=>p>R.open.at)){shut=T[T.length-1]===""?T.length-1:T.length;if(shut===T.length) E[shut-1]=nl;T.splice(shut,0,R.open.mark);E.splice(shut,0,shut===T.length-1?"":nl);}
@@ -4532,7 +4535,7 @@ function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol|
     const n=Math.min(c,T.length-1)-p+1,last=E[p+n-1],L=s.lines||[];
     T.splice(p,n,...L);E.splice(p,n,...L.map(()=>nl));if(L.length) E[p+L.length-1]=last;
     else if((p===0||!T[p-1].trim())&&p<T.length-1&&!T[p].trim()){T.splice(p,1);E.splice(p,1);}});
-  return {head,sep:"",region:T.map((t,i)=>t+E[i]).join("")};}
+  return out(T.map((t,i)=>t+E[i]).join(""));}
 let REGION_READ=null;
 /* The records region's lines (T, and in E each one's ending) and what they hold, read as the parse reads them (splitItems,
    onRecordFence): its records lines (`groups`: each one's `scope`, a module's id, "" for the activities outside every
