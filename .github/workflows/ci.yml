@@ -45,10 +45,12 @@ jobs:
 
   # Every test/*-browser.js script, in a real Chromium. A separate job, not a
   # step of `check`, so the required check does not wait on a browser download.
-  # Split four ways, side by side: part N takes every fourth script in name
-  # order, so together the parts run each script exactly once, and a script
-  # added later joins a part with no edit here. Run one after another, the
-  # scripts took 26m32s (main, 2026-10-24).
+  # Split four ways, side by side. Run one after another, the scripts took
+  # 26m32s (main, 2026-10-24). Each part works out the same split: the longest
+  # scripts first, each to the part with the least time so far, by the seconds
+  # each took on CI (run 40597191979, 2026-10-27). Part 1 starts with the
+  # one-file checks' 157s, and a script not listed counts 15s. So every script
+  # runs exactly once, and a script added later joins a part with no edit here.
   browser:
     runs-on: ubuntu-latest
     strategy:
@@ -63,7 +65,18 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Browser scripts, part ${{ matrix.part }} of 4
         run: |
-          names=$(ls test/*-browser.js | sed 's#^test/##; s#-browser\.js$##' | awk -v p=${{ matrix.part }} 'NR % 4 == p % 4')
+          names=$(ls test/*-browser.js | sed 's#^test/##; s#-browser\.js$##' | awk -v p=${{ matrix.part }} '
+            BEGIN { split("keep 152 storeimages 149 storeheld 127 modulesfolder 95 wiki 89 roles 74 figures 65 tabs 64 pledge 57 questions 50 filepage 39 open 39 folding 37 solution 36 format012 36 autosave 35 submit 34 contents 34 addmodule 31 themes 28 cards 27 openlink 26", w, " ")
+                    for (i = 1; i in w; i += 2) secs[w[i]] = w[i+1] }
+            { n[NR] = $0; t[NR] = ($0 in secs) ? secs[$0] : 15 }
+            END { load[1] = 157; load[2] = 0; load[3] = 0; load[4] = 0
+                  for (k = 1; k <= NR; k++) {
+                    best = 0
+                    for (i = 1; i <= NR; i++) if (!(i in done) && (best == 0 || t[i] > t[best])) best = i
+                    done[best] = 1; q = 1
+                    for (j = 2; j <= 4; j++) if (load[j] < load[q]) q = j
+                    load[q] += t[best]
+                    if (q == p) print n[best] } }')
           # run-browser.sh runs every script when given no names, so an empty part is an error
           [ -n "$names" ] || { echo "part ${{ matrix.part }} has no scripts"; exit 1; }
           echo "part ${{ matrix.part }}:" $names
