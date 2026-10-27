@@ -613,6 +613,20 @@ itself is never shown.
   are identified by position like a `choice`'s options, and a matrix's
   anchor numbers must not repeat. Give it a title that reads as the stem
   ("How sure are you of each topic?") and one short phrase per item.
+- **A question can be asked once for each pick of another,** with
+  `each:<id>` after its id: name a `choice`, a `multi` or a widget in the same
+  activity, and write the follow-up after it
+  (`> [!text|tool-why each:tools] What was it for?`). The reader answers it
+  once per pick, and its answer is kept as one pair per pick. One level only:
+  a follow-up is never itself a source. The reference renderer, `booklet.html`,
+  does not draw a follow-up yet: it shows its title and a line saying so, and
+  keeps any answers it already has.
+- **A reader's own words can come back.** In an activity that keeps entries
+  (`repeat`), a `choice` or `multi` with `open` offers the reader's own options
+  from earlier entries again, newest first, at most 12. `earlier:<n>` after the
+  id sets how many, written in digits (`earlier:0` offers none). On a `lines`
+  question, `earlier:<n>` offers earlier lines, which the reference renderer
+  does not do yet.
 
 ---
 
@@ -977,7 +991,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | --- | --- | --- |
 | no `lang:` | `front matter has no `lang:` — a v0.15 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
-| a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
+| a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`, `each:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
 | a kind the format does not define | `warn `sticker` is not a kind this format defines …` | use a kind from section 6, or leave the id and settings off for a plain reading callout |
 | region spelled wrong | `'fr-ca' is not spelled the way a tag is: lowercase language, uppercase region (es-AR)` | `fr-CA` |

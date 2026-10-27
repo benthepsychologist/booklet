@@ -103,6 +103,11 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("the renderer's KIND_SETTINGS is found and has kinds",Object.keys(fromRenderer).length>10,JSON.stringify(Object.keys(fromRenderer)));
  must("KIND_SETTINGS is the same in the renderer and the linter",norm(fromRenderer)===norm(fromLinter),norm(fromRenderer)+" vs "+norm(fromLinter));
  must("and the same in SPEC.md's table in section 4",norm(fromRenderer)===norm(fromSpec),norm(fromRenderer)+" vs "+norm(fromSpec));
+ // `earlier:` takes a whole number written in digits only (SPEC.md section 4): the renderer's check and the linter's are one pattern
+ {const er=html.match(/const EARLIER_VALUE=\/(.+?)\/;/),ep=py.match(/^EARLIER_VALUE = r"([^"]*)"/m),re=er&&new RegExp(er[1]);
+  const take=["0","3","12","012"],refuse=["+3","3.0","-1",""," 3","3 ","1e2","0x3","\uff11\uff12"];
+  must("`earlier:`'s whole-number check is found in the renderer and the linter, and is the same pattern",!!(er&&ep)&&er[1]==="^"+ep[1]+"$",er&&ep?er[1]+" vs "+ep[1]:"not found");
+  must("and it takes "+take.join(", ")+" and nothing else of "+refuse.map(x=>JSON.stringify(x)).join(", "),!!re&&take.every(x=>re.test(x))&&refuse.every(x=>!re.test(x)));}
  const qk=html.match(/const QUESTION_KINDS=new Set\(\[([^\]]*)\]\)/),pk=py.match(/^QUESTION_KINDS = \{([^}]*)\}/m),ps=py.match(/^STRUCTURE_KINDS = \{([^}]*)\}/m);
  const words=t=>[...t.matchAll(/"(\w+)"/g)].map(x=>x[1]);
  must("its kinds are the question kinds and the structure kinds the linter knows, and no others",

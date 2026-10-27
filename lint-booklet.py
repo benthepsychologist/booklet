@@ -134,13 +134,18 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:"), "row": ("end",), "text": ("long",),
-    "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:"), "row": ("end",), "text": ("long", "each:"),
+    "lines": ("each:", "earlier:"), "scale": ("each:",), "matrix": ("each:",), "date": ("each:",), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (), "tab": (),
-    "choice": ("open", "menu:"), "multi": ("open", "menu:"),
-    "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
+    "choice": ("open", "menu:", "each:", "earlier:"), "multi": ("open", "menu:", "each:", "earlier:"),
+    "number": ("min:", "max:", "step:", "each:"), "widget": ("readonly", "describe", "each:", "earlier:"),
 }
 NUMBER_SETTINGS = ("min", "max", "step")
+# `earlier:`'s value: a whole number in digits only (SPEC.md section 4); booklet.html's EARLIER_VALUE is the same, and
+# test/guard.test.js pins the two
+EARLIER_VALUE = r"[0-9]+"
+# the kinds a question asked for each pick (`each:`, SPEC.md section 5) can be asked of
+EACH_SOURCES = ("choice", "multi", "widget")
 # the kinds that take no id: their words are settings only
 NO_ID_KINDS = ("row", "notice", "manifest", "hint", "solution", "group", "diff", "law", "opinion")
 # Booklet's icon set: the names in art/icons/ (Lucide 1.48). GENERATED: `node test/art-sprite.js --write booklet.html` rewrites
@@ -911,6 +916,8 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: a {kind} line takes no `{key}:` setting ({said})")
         elif key in NUMBER_SETTINGS and not re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", val.strip()):
             err(f, f"line {n}: `{key}:{val}` must be a number")
+        elif key == "earlier" and not re.fullmatch(EARLIER_VALUE, val):
+            err(f, f"line {n}: `earlier:{val}` must be a whole number written in digits; a renderer ignores it and offers its default")
         elif key == "icon" and "end" in w["flags"]:
             err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
         elif key == "icon" and val not in ICON_NAMES:
@@ -924,6 +931,59 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
     if "daily" in w["flags"] and "repeat" not in w["flags"]:
         err(f, f"line {n}: `daily` needs `repeat` (write `repeat daily`)")
+
+
+def check_each_earlier(f, q_lines, act_keeps, widget_engines):
+    """`each:` (SPEC.md section 5, "A question asked for each pick") and where `earlier:` can offer nothing (section 5, "Words the
+    reader wrote before"). A question's source is a question or widget in its own activity."""
+    def engine(q):
+        if q["kind"] != "widget" or not q["ref"]:
+            return None
+        own = widget_engines.get(q["mod"], {})
+        return own.get(q["ref"]) if q["ref"] in own else widget_engines.get(None, {}).get(q["ref"])
+    by_act = {}
+    for q in q_lines:
+        if q["id"]:
+            by_act.setdefault(q["seq"], {}).setdefault(q["id"], q)
+    named = set()
+    for q in q_lines:
+        s = q["set"].get("each")
+        if s is not None and s.strip() and q["id"] and s.strip() != q["id"]:
+            src = by_act.get(q["seq"], {}).get(s.strip())
+            if src is not None:
+                named.add(id(src))
+    for q in q_lines:
+        s = q["set"].get("each")
+        if s is None:
+            continue
+        s, qid, where = s.strip(), q["id"] or "?", f"line {q['n']}"
+        src = by_act.get(q["seq"], {}).get(s) if s else None
+        if not s:
+            err(f, f"{where}: `each:` names nothing; write the id of a choice, a multi or a widget in this activity")
+        elif s == qid:
+            err(f, f"{where}: `each:{s}` names this question itself; a question is asked for each pick of another")
+        elif src is None:
+            err(f, f"{where}: `each:{s}` names no question or widget in this activity; a renderer ignores the setting")
+        elif src["kind"] not in EACH_SOURCES:
+            err(f, f"{where}: `each:{s}` names a {src['kind']} question; only a choice, a multi or a widget can be a source")
+        elif src["set"].get("each") is not None:
+            err(f, f"{where}: `each:{s}` names a question that is itself asked for each pick (line {src['n']}); one level only")
+        elif id(q) in named:
+            err(f, f"{where}: {qid!r} is asked for each pick and is itself a source of another question's `each:`; one level only")
+        elif src["n"] > q["n"]:
+            warn(f, f"{where}: `each:{s}` names a source on line {src['n']}, after this question; it should sit after its source")
+    for q in q_lines:
+        if q["set"].get("earlier") is None:
+            continue
+        where, eng = f"line {q['n']}", engine(q)
+        if q["kind"] in ("choice", "multi") and "open" not in q["flags"]:
+            warn(f, f"{where}: `earlier:` offers own options again, and this {q['kind']} has no `open`, so it offers nothing")
+        elif q["kind"] == "widget" and "readonly" in q["flags"]:
+            warn(f, f"{where}: `earlier:` on a `readonly` widget offers nothing: nothing is written there")
+        elif q["kind"] == "widget" and eng == "grid-select":
+            warn(f, f"{where}: `earlier:` does nothing on a grid-select widget: a word written in a cell is not offered again")
+        elif not act_keeps.get(q["seq"], False) and not (eng == "svg-regions" or q["set"].get("each") is not None):
+            warn(f, f"{where}: `earlier:` offers words from kept entries, and this activity keeps none (it is not `repeat`), so it offers nothing")
 
 
 def id_word(s):
@@ -988,6 +1048,9 @@ def check_format(f, text, fm):
     mod_ids = {}             # module ids -> line
     note_defs = {}           # scope -> {footnote id: line}
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
+    # every question line, for `each:` and `earlier:` (checked once the file is read); `act_seq` numbers the activity lines,
+    # so two modules' activities with one id stay apart; `act_keeps` says whether each keeps entries
+    q_lines, act_seq, act_keeps, widget_engines = [], 0, {0: False}, {}
     loose_questions = []   # questions before any activity line
     early_questions = []   # the same, with their line and kind, before the file's first module or activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
@@ -1203,6 +1266,8 @@ def check_format(f, text, fm):
                 if what == "widget":
                     if not bid:
                         err(f, f"line {n}: a widget block needs a ^id on the line after it")
+                    if isinstance(obj, dict) and bid:
+                        widget_engines.setdefault(scope_mod(), {})[bid] = obj.get("engine")
                     if isinstance(obj, dict):
                         if not obj.get("engine"):
                             err(f, f"line {n}: the widget ^{bid} names no `engine`")
@@ -1370,6 +1435,8 @@ def check_format(f, text, fm):
                         err(f, f"{where}: `tab:{tab_set}` names no tab of " + (f"the module {open_mod!r}" if open_mod else "a module (this activity is outside every module)")
                                + "; a module's tabs are `> [!tab]` lines in its opening, before its first activity. A renderer puts the activity in the first tab")
                     cur_act = w["id"] or "(an activity with no id)"
+                    act_seq += 1
+                    act_keeps[act_seq] = "repeat" in w["flags"] or "daily" in w["flags"]
                     if not w["id"]:
                         err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "
                                f"id, so an id the renderer makes up from the title is lost the day the title changes, orphaning the entries")
@@ -1398,7 +1465,7 @@ def check_format(f, text, fm):
                             early_questions.append((n, kind))
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go; write `> [!{kind}|my-id] Title`")
-                    bad_q = False
+                    bad_q, e = False, None
                     if kind == "widget":
                         body = lines[i + 1:body_end(lines, i)]
                         e = re.search(r'!\[\[[^\]#|]*#\^([A-Za-z0-9-]+)', "\n".join(body))
@@ -1406,6 +1473,8 @@ def check_format(f, text, fm):
                             embeds.append((n, e.group(1), open_mod))
                         else:
                             err(f, f"{where}: the widget {w['id']!r} names no data block (write ![[#^its-id]] under the line)")
+                    q_lines.append({"n": n, "id": w["id"], "kind": kind, "set": w["set"], "flags": w["flags"], "mod": open_mod, "seq": act_seq,
+                                    "ref": e.group(1) if e else None})
                     after_body = body_end(lines, i)        # a list is read from here: the renderer takes the body first
                     if kind == "matrix" and w["id"]:
                         items, after = list_below(lines, after_body, BULLET)
@@ -1567,6 +1636,7 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")
         elif not found.lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
+    check_each_earlier(f, q_lines, act_keeps, widget_engines)
     # A file with no activity line and no module line is one activity (SPEC section 3),
     # so its queries and questions belong to that one activity.
     if seen_activity or any_module:
