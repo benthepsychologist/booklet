@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-yfVK8Rn+d43La/TH4vOWmhc3JR9/Pc6AUYi4qtz0Jv8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-0X2VzDM7doUbkoFXXLupJAoEgKY4M5f1KsujghGzUgA=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3551,8 +3551,10 @@ function renameStored(id,name){const n=cleanName(name);if(!n) return false;
    there is nothing of the reader's to save yet — saveLocal() below is a no-op
    until a booklet is actually created or opened. */
 function slotKey(){return currentId?currentKey:null;}
-/* the snapshot of the booklet in memory, as it is stored */
-const snapshot=()=>JSON.stringify({S:STATE,D:DRAFTS,...(OLD_DESIGN?{TPL:BOOK}:{text:bookText(BOOK)}),...(CUSTOMIZED?{customized:true}:{}),dirty,unsavedEntries});
+/* the snapshot of the booklet in memory, as it is stored: its design's text and, beside it, the records region its file was
+   read with (`region`, which loadLocal adopts with the text's parse), so what the reader did not change is written back
+   as that file had it */
+const snapshot=()=>JSON.stringify({S:STATE,D:DRAFTS,...(OLD_DESIGN?{TPL:BOOK}:{text:bookText(BOOK),region:regionOf(BOOK)}),...(CUSTOMIZED?{customized:true}:{}),dirty,unsavedEntries});
 /* whether a snapshot's design was changed here (CUSTOMIZED); an older release's kept it in its design (TPL) */
 const keptCustomized=o=>isObj(o)&&(o.customized===true||(isObj(o.TPL)&&o.TPL.customized===true));
 function saveLocal(){const key=slotKey();if(!key) return;
@@ -3616,7 +3618,7 @@ function loadLocal(){const key=slotKey();if(!key) return false;
     if(R&&R.template){const no=R.refused.length>0;
       const T=old?keptShape(o.TPL):null;
       if(no&&old&&oldDesign(T)){BOOK={...T,widgets:Array.isArray(T.widgets)?T.widgets:[]};OLD_DESIGN=true;}
-      else{adoptParse(R);if(old) lsSet(key,snapshot());}
+      else{adoptParse(R,!old&&typeof o.region==="string"?o.region:undefined);if(old) lsSet(key,snapshot());}
       if(old||no) FILE_NOTES=fileNotesOf(R,startScreen());}
     return true;
   }catch(e){return false;}}
@@ -3920,12 +3922,23 @@ function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),
   /* `start: home` is the one value; anything else is said and left out */
   if(fm.start!==undefined&&fm.start!=="home") problems.push(PROBLEM.startBad(String(fm.start).slice(0,40)));
   if(!fm.lang) problems.push(PROBLEM.langMissing);
-  const {items,source,moved}=splitItems(lines,next);
+  const {items,source,moved,first,regs}=splitItems(lines,next);
   if(moved) problems.push(PROBLEM.designMoved);
   const doc=readBlocks(items,fm,problems,icons);
   resolveMenus(doc,problems);
   linkQueries(doc,problems);
-  return shapeBooklet(doc,fm,L,source,problems);}
+  return shapeBooklet(doc,fm,L,source,problems,wroteOf(text,regs,first,moved,source));}
+/* What a writer needs of the file as it was read (fileText, SPEC section 8): `head`, its bytes before the records region,
+   every one of them (its trailing blank lines, its line endings and a byte order mark included), or null when design
+   follows the region, since that design is written above it; `region`, the region's own bytes, from its first line to the
+   end of the file (when design followed it, each region's lines, one after another); `src`, the source they were read
+   with; the file's first line ending, `eol`; and `bom`. Lines are counted as frontMatter splits them. These are bytes of
+   one file, not design: the design's JSON leaves them out (toJSON), so a design is still the parse of its text. */
+function wroteOf(text,regs,first,moved,source){const t=String(text||""),bom=/^\uFEFF/.test(t)?"\uFEFF":"",u=bom?t.slice(1):t;
+  const starts=[0],re=/\r\n?|\n/g;let m;while((m=re.exec(u))) starts.push(re.lastIndex);
+  const off=n=>n<starts.length?starts[n]:u.length;
+  return {head:moved?null:bom+u.slice(0,off(first)),src:source,eol:(u.match(/\r\n?|\n/)||["\n"])[0],bom,
+    region:moved?regs.map(([x,y])=>u.slice(off(x),off(y+1))).join(""):u.slice(off(first)),toJSON:()=>undefined};}
 function splitItems(lines,start,inner){let i=start;
   /* One pass over the lines, fences first: nothing inside a fence is ever a
      Booklet line, a page break or a comment marker. A choice/multi/scale
@@ -3973,7 +3986,7 @@ function splitItems(lines,start,inner){let i=start;
   const first=regs.length?regs[0][0]:lines.length,gone=new Set();regs.forEach(([x,y])=>{for(let k=x;k<=y;k++) gone.add(k);});
   const post=lines.slice(first).filter((l,k)=>!gone.has(first+k));while(post.length&&!post[0].trim()) post.shift();while(post.length&&!post[post.length-1].trim()) post.pop();
   const source=lines.slice(0,first).join("\n").replace(/\s+$/,"")+"\n"+(post.length?"\n"+post.join("\n")+"\n":"");
-  return {items,source,moved:post.length>0};}
+  return {items,source,moved:post.length>0,first,regs};}
 /* What each kind of question line makes: {block} (and {menu:true} when its options come from a
    shared menu, filled in once the whole file is read), or {bad: message} when the line cannot be
    drawn. Called with the line, its help text, where it is for a message, and the messages. */
@@ -4156,7 +4169,8 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     if(RECORD_KINDS.includes(what)) return void problems.push(P.recordOutside(P.line(it.line),what));
     withJson((x,o,w)=>problems.push(P.blockUnknown(P.line(x.line),w)))(it,what);};
   /* in the region a block is a record or is kept as written and said (SPEC.md section 8) */
-  const keepRec=(text,line)=>recordsKept.push(recForeign?{scope:recForeign.id,foreign:recForeign.head,text}:{scope:recScope,text});
+  /* `w`: it stands in the region as the file wrote it, which a writer keeps, so it is never written a second time (fileText) */
+  const keepRec=(text,line)=>recordsKept.push(recForeign?{scope:recForeign.id,foreign:recForeign.head,text,w:1}:{scope:recScope,text,w:1});
   function onRecordFence(it,info){const L=P.line(it.line),what=(info[1]||"").toLowerCase(),at=info[2]&&addrOf(recScope,info[2]);let o=null;
     const no=m=>{problems.push(m);keepRec(it.raw);};
     if(!/^booklet$/i.test(info[0])||DESIGN_KINDS.includes(what)) return no(P.recordsOther(L));
@@ -4388,7 +4402,7 @@ function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities
   const o={...rest,...(blurb?{blurb}:{}),...(opening.length?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   o.activities=acts;
   return o;}
-function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept,opening},fm,L,source,problems){
+function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept,opening},fm,L,source,problems,wrote){
   /* a file that holds one module and no notice callout is covered by its own front matter: its license,
      copyright and source are that module's notice (a callout, when there is one, wins) */
   const holders=modules.filter(m=>m.activities.length);
@@ -4404,51 +4418,211 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
   const book={booklet:FORMAT_VERSION,id:fm.id||slugify(fm.title)||"booklet",version:fm.version||"",...(fm.start==="home"?{start:"home"}:{}),
     title:fm.title||undefined,...(opening.length?{opening}:{}),modules:out,widgets,
     ...(Object.keys(figures).length?{figures:{...figures}}:{}),
-    ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L,...(recordsKept.length?{records:recordsKept}:{})}};
+    ...(shared.sources.length?{sources:shared.sources}:{}),...(shared.citations.length?{citations:shared.citations}:{}),...(theme&&Object.keys(theme).length?{theme}:{}),raw:{source,lang:L,wrote,...(recordsKept.length?{records:recordsKept}:{})}};
   /* a file with its front matter and no module and no activity at all is an empty booklet with that name (what a
      booklet started here and not yet given a module downloads as); a module that holds no activity is still refused */
   const empty=!modules.length;
   const refused=problems.filter(p=>p.refuses);
   return {ok:(out.length>0||empty)&&!refused.length,empty:empty||undefined,unread:problems,refused,dupIds:problems.dupIds,markerNote:problems.markerNote,drafts:{activities:drafts},template:book,lang:L,S:st};}
-/* A file as written: `book`'s design as read (what sat after the region included), then the records region of state `S`
-   and drafts `D`, each scope's kept blocks first so the reader's values win. toMarkdown is the booklet in force's;
-   bookText a design's text with nothing of a reader's, which this browser keeps. */
-function fileText(book,S,D){const V=book.raw||{};const out=[String(V.source||"").replace(/\s+$/,""),""];
-  const fence=(info,body)=>["```"+info,body,"```",""];
-  const recs=[],mods=book.modules||[],fenced=id=>fencedModule(id,mods);
-  const kept=[].concat(V.records||[]).filter(r=>r&&typeof r.text==="string"&&(!r.foreign||typeof r.foreign==="string"));
-  const scopes=["",...mods.map(scopeOfModule).filter(s=>s)];
-  scopes.forEach(sc=>{const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(m=>m.activities),own=[],gd=hasOwn(S.answers,sc)?S.answers[sc]:nullMap();
+/* ---- writing a booklet back (SPEC.md section 8) ----
+   A file is written back as it was read. Its body, everything before the records region, comes back byte for byte, its
+   trailing blank lines and line endings with it, and so does every line and block of the region. Only what the reader
+   changed differs: an answer, a draft's field or a kept entry is set, cleared or added inside the block that holds it, in
+   its place and in that block's own layout (jsonAt), and every other answer and entry of the block keeps its text. Nothing
+   is re-sorted and nothing respaced. What the reader's work needs and no block holds goes into a new block, in this page's
+   own shape: answers at the end of their scope's group, an activity's first entries where its draft stood (else at the end
+   of the group), a new draft after its activity's last entries. A group the file lacks is added (the activities outside
+   every module before the region's first records line, a module's at the end of the region), and a file with no region
+   gets one after the body, with a blank line between them only where the body does not already end with one. A block the
+   reader's change leaves empty is taken out, and the blank line beside it.
+   `book.raw.wrote` is what the parse kept of the file (wroteOf). A design changed here since (Add, Remove or Rename, each
+   a new `source`) is written from `source`, in the file's line endings. `S` and `D` are the reader's work; with S null the
+   region is written as it was read. `drop`: a module whose records go with it (Remove a module). Records kept for a scope
+   from elsewhere (keepUnowned's, an older release's kept design's: those with no `w`) are put into the region, first in
+   their scope's group or, for a scope the design has no module for, at its end, under their own records line.
+   toMarkdown is the booklet in force's file; bookText a design's text with nothing of a reader's, which this browser keeps
+   beside the region (regionOf), so a booklet read again from it is still written as its file was. */
+function fileText(book,S,D,drop){const p=writeParts(book,S,D,drop);return p.head+p.sep+p.region;}
+const regionOf=(book,drop)=>writeParts(book,null,null,drop).region;
+function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol||"\n",src=String(V.source||"");
+  const head=typeof W.head==="string"&&src===W.src?W.head:(W.bom||"")+(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);
+  const mods=book.modules||[],fenced=id=>fencedModule(id,mods),text=String(W.region||"");
+  const kept=[].concat(V.records||[]).filter(r=>r&&!r.w&&typeof r.text==="string"&&(!r.foreign||typeof r.foreign==="string"));
+  if(!S&&!drop&&!kept.length) return {head,sep:"",region:text};
+  const R=readRegion(text,mods),HEAD="> [!records] App record — do not edit below this line";
+  const fence=(info,body)=>["```"+info,...body.split("\n"),"```"],ops=[],adds=new Map(),news=[],foreign=[];
+  const add=(p,chunks)=>{if(!adds.has(p)) adds.set(p,[]);adds.get(p).push(...chunks);};
+  /* what of `was` (a scope's answers, or a draft, as the file holds them) the reader's `now` changes: `put`, set to a new
+     value; `off`, taken out. `keep` says whether a value is written at all. */
+  const diff=(was,now,keep)=>{const put=nullMap(),off=new Set();
+    new Set([...Object.keys(was),...Object.keys(now)]).forEach(k=>{const s=hasOwn(now,k)?now[k]:undefined,v=hasOwn(was,k)?was[k]:undefined;
+      if(s!==undefined&&v!==undefined&&canon(s)===canon(v)) return;
+      if(s!==undefined&&keep(k,s)) put[k]=s;else if(v!==undefined) off.add(k);});
+    return {put,off};};
+  /* A scope's answers blocks, or an activity's draft blocks (`bs`), changed by `put` and `off`: a value is set in the last
+     block, where it is read last; one taken out goes from every block that holds it; a block left with nothing goes. With
+     no block, a new one (`info`, its JSON by `shape`) is returned to be placed. */
+  const objects=(bs,{put,off},shape,info)=>{const z=bs[bs.length-1],ks=Object.keys(put);
+    bs.forEach(b=>{const mine=Object.keys(b.value);
+      if((b!==z||!ks.length)&&mine.length&&mine.every(k=>off.has(k))) return void ops.push({b,gone:1});
+      let c=b.code;off.forEach(k=>{if(c!==null&&hasOwn(b.value,k)) c=dropMember(c,k);});
+      if(b===z) ks.forEach(k=>{if(c!==null) c=setMember(c,k,put[k],shape);});
+      if(c!==null&&c!==b.code) ops.push(/^\s*\{\s*\}\s*$/.test(c)?{b,gone:1}:{b,code:c});});
+    return !z&&ks.length?fence(info,shape(put)):null;};
+  if(drop) R.groups.forEach(g=>{if(g.scope===drop) ops.push({p:g.line,del:g.end-g.line});});
+  ["",...mods.map(scopeOfModule).filter(s=>s)].forEach(sc=>{if(drop&&sc===drop) return;
+    const acts=mods.filter(m=>scopeOfModule(m)===sc).flatMap(m=>m.activities),mine=R.blocks.filter(b=>b.value&&b.scope===sc);
+    const grp=R.groups.filter(g=>g.scope===sc).pop(),fresh=[];
     /* kept blocks first in their scope (or under the module's one line once a module has that id) */
-    kept.filter(r=>(!r.foreign||fenced(r.scope))&&r.scope===sc).forEach(r=>own.push(r.text,""));
-    const keys=new Set(),entryIds=new Set(acts.filter(a=>a.kind==="entry").map(a=>a.id));
-    acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
-    const ans=nullMap();Object.keys(gd).forEach(k=>{if(!keys.has(k)||holdsSomething(gd[k])) ans[k]=gd[k];});
-    if(Object.keys(ans).length) own.push(...fence("booklet answers",JSON.stringify(ans,null,1)));
-    const held=Object.keys(S.entries||{}).concat(Object.keys((D||{}).custom||{})).filter(k=>scopeOfAddr(k)===sc&&!entryIds.has(k));
-    [...acts.filter(a=>a.kind==="entry").map(a=>a.id),...[...new Set(held)].sort()].forEach(id=>{
-      const fid=shortId(id),items=((S.entries||{})[id]||[]).filter(e=>e&&e.ts).slice().sort((x,y)=>String(x.ts).localeCompare(String(y.ts)));
-      if(items.length) own.push(...fence("booklet entries "+fid,"{\"items\": [\n"+items.map(e=>JSON.stringify(e)).join(",\n")+"\n]}"));
-      const d=D.custom&&D.custom[id];
-      /* only what holds something: the empty lists an engine starts with are not work */
-      const work=d&&Object.fromEntries(Object.entries(d).filter(([,v])=>holdsSomething(v)));
-      if(work&&Object.keys(work).length) own.push(...fence("booklet draft "+fid,JSON.stringify(work)));});
-    if(!own.length) return;
-    const m=sc&&fenced(sc);
-    recs.push(...(m?["> [!records|"+m.id+"] "+tx(m.title,m.id),""]:[]),...own);});
-  let head;kept.filter(r=>r.foreign&&!fenced(r.scope)).forEach(r=>{if(r.foreign!==head) recs.push(head=r.foreign,"");recs.push(r.text,"");});
-  if(recs.length) out.push("%%","> [!records] App record — do not edit below this line","",...recs,"%%","");
-  return out.join("\n");}
+    const first=kept.filter(r=>(!r.foreign||fenced(r.scope))&&r.scope===sc).map(r=>r.text.split("\n"));
+    if(S){const gd=hasOwn(S.answers,sc)?S.answers[sc]:nullMap(),keys=new Set(),entryIds=acts.filter(a=>a.kind==="entry").map(a=>a.id);
+      acts.filter(a=>a.kind!=="entry").forEach(a=>allBlocksOf(a).forEach(b=>writesKeys(b).forEach(k=>keys.add(k))));
+      const ab=mine.filter(b=>b.what==="answers"),nb=objects(ab,diff(Object.assign(nullMap(),...ab.map(b=>b.value)),gd,(k,s)=>holdsSomething(s)||!keys.has(k)),o=>JSON.stringify(o,null,1),"booklet answers");
+      if(nb) fresh.push(nb);
+      const held=[...Object.keys(S.entries||{}),...Object.keys((D||{}).custom||{}),...mine.filter(b=>b.at).map(b=>b.at)].filter(k=>scopeOfAddr(k)===sc&&!entryIds.includes(k));
+      [...entryIds,...[...new Set(held)].sort()].forEach(at=>{const fid=shortId(at),eb=mine.filter(b=>b.what==="entries"&&b.at===at),db=mine.filter(b=>b.what==="draft"&&b.at===at);
+        /* the kept entries as read, merged as the parse merges them (mergeEntries), each with the places [block, item] that hold it */
+        const was=[],ix=new Map();
+        eb.forEach((b,bi)=>{const own=[];b.value.items.forEach((e,i)=>{const x=ix.get(e.ts);
+          if(x){Object.assign(x.v,e);x.at.push([bi,i]);}else{const n={v:Object.assign(nullMap(),e),at:[[bi,i]]};was.push(n);own.push(n);}});
+          own.forEach(n=>{if(!ix.has(n.v.ts)) ix.set(n.v.ts,n);});});
+        /* each entry the reader has is the one read with its ts (the first unclaimed, for two that share one), changed or
+           not; one with no such entry is new, or, standing where a read one no longer is, that one replaced (a `repeat
+           daily` Finalize keeps the day's one entry in its place) */
+        const list=((S.entries||{})[at]||[]).filter(e=>e&&e.ts),q=new Map(),used=new Set(),put=eb.map(()=>new Map()),gone=eb.map(()=>new Set()),more=[];
+        was.forEach(x=>{if(!q.has(x.v.ts)) q.set(x.v.ts,[]);q.get(x.v.ts).push(x);});
+        const twin=list.map(e=>{const x=(q.get(e.ts)||[]).shift();if(x) used.add(x);return x;});
+        const swap=(x,e)=>{used.add(x);put[x.at[0][0]].set(x.at[0][1],JSON.stringify(e));x.at.slice(1).forEach(([b,i])=>gone[b].add(i));};
+        list.forEach((e,j)=>{const x=twin[j],o=was[j];if(x){if(canon(e)!==canon(x.v)) swap(x,e);}else if(o&&!used.has(o)) swap(o,e);else more.push(JSON.stringify(e));});
+        was.forEach(x=>{if(!used.has(x)) x.at.forEach(([b,i])=>gone[b].add(i));});
+        const z=eb.length-1;
+        eb.forEach((b,bi)=>{const plus=bi===z?more:[];if(!put[bi].size&&!gone[bi].size&&!plus.length) return;
+          if(!(b.value.items.length-gone[bi].size+plus.length)) return void ops.push({b,gone:1});
+          const c=editItems(b.code,put[bi],gone[bi],plus);if(c!==null) ops.push({b,code:c});});
+        const nd=objects(db,diff(Object.assign(nullMap(),...db.map(b=>b.value)),(D&&D.custom&&D.custom[at])||nullMap(),(k,s)=>holdsSomething(s)),o=>JSON.stringify(o),"booklet draft "+fid);
+        if(z<0&&more.length){const ne=fence("booklet entries "+fid,"{\"items\": [\n"+more.join(",\n")+"\n]}"),d0=db[0],o=d0&&ops.find(x=>x.b===d0&&x.gone);
+          if(o){delete o.gone;o.lines=ne;}else if(d0) add(d0.start,[ne]);else fresh.push(ne);}
+        if(nd){if(z>=0) add(Math.min(eb[z].close+1,R.T.length),[nd]);else fresh.push(nd);}});}
+    if(grp){if(first.length) add(grp.line+1,first);if(fresh.length) add(grp.last,fresh);}
+    else if(first.length||fresh.length){const m=sc&&fenced(sc);news.push([[sc?"> [!records|"+m.id+"] "+tx(m.title,m.id):HEAD],...first,...fresh]);}});
+  let fh;kept.filter(r=>r.foreign&&!fenced(r.scope)).forEach(r=>{if(r.foreign!==fh) foreign.push([fh=r.foreign]);foreign.push(r.text.split("\n"));});
+  const T=R.T.slice(),E=R.E.slice(),nl=E.find(e=>e)||eol;
+  if(R.top<0){if(!news.length&&!foreign.length) return {head,sep:"",region:text};
+    const L=["%%",HEAD,""];news.forEach(g=>g.forEach((c,i)=>{if(i||c[0]!==HEAD) L.push(...c,"");}));foreign.forEach(c=>L.push(...c,""));L.push("%%","");
+    const ls=head.split(/\r\n?|\n/),z=ls[ls.length-1];
+    return {head,sep:!head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"",region:L.join(eol)};}
+  news.forEach(g=>add(g[0][0]===HEAD?R.top:R.end,g));if(foreign.length) add(R.end,foreign);
+  if(!ops.length&&!adds.size) return {head,sep:"",region:text};
+  /* a fence the region leaves open at the end of the file is closed before anything is put after it, so nothing is
+     written into it */
+  let shut=-1;if(R.open&&[...adds.keys()].some(p=>p>R.open.at)){shut=T[T.length-1]===""?T.length-1:T.length;if(shut===T.length) E[shut-1]=nl;T.splice(shut,0,R.open.mark);E.splice(shut,0,shut===T.length-1?"":nl);}
+  const at=p=>shut>=0&&p>=shut?p+1:p,close=b=>b.start===(R.open||{}).at?shut:b.close;
+  const steps=[...ops.map(o=>({...o,p:at(o.b?o.b.start:o.p)})),...[...adds].map(([p,chunks])=>({p:at(p),chunks}))];
+  steps.sort((x,y)=>y.p-x.p||(x.chunks?1:0)-(y.chunks?1:0)).forEach(s=>{const p=s.p;
+    if(s.del) return void(T.splice(p,s.del),E.splice(p,s.del));
+    if(s.chunks){const L=[];s.chunks.forEach(c=>{if(L.length) L.push("");L.push(...c);});
+      if(p>0&&T[p-1].trim()&&T[p-1].trim()!=="%%") L.unshift("");
+      if(p<T.length&&T[p].trim()&&T[p].trim()!=="%%") L.push("");
+      const end=p>=T.length;if(end&&p>0) E[p-1]=nl;T.splice(p,0,...L);E.splice(p,0,...L.map(()=>nl));if(end) E[T.length-1]="";return;}
+    const b=s.b,c=close(b);
+    if(s.code!==undefined){const o=T.slice(p+1,c),n=s.code.split("\n");let i=0,j=0;
+      while(i<o.length&&i<n.length&&o[i]===n[i]) i++;
+      while(j<o.length-i&&j<n.length-i&&o[o.length-1-j]===n[n.length-1-j]) j++;
+      const mid=n.slice(i,n.length-j);T.splice(p+1+i,o.length-i-j,...mid);E.splice(p+1+i,o.length-i-j,...mid.map(()=>E[p]||nl));return;}
+    const n=Math.min(c,T.length-1)-p+1,last=E[p+n-1],L=s.lines||[];
+    T.splice(p,n,...L);E.splice(p,n,...L.map(()=>nl));if(L.length) E[p+L.length-1]=last;
+    else if((p===0||!T[p-1].trim())&&p<T.length-1&&!T[p].trim()){T.splice(p,1);E.splice(p,1);}});
+  return {head,sep:"",region:T.map((t,i)=>t+E[i]).join("")};}
+let REGION_READ=null;
+/* The records region's lines (T, and in E each one's ending) and what they hold, read as the parse reads them (splitItems,
+   onRecordFence): its records lines (`groups`: each one's `scope`, a module's id, "" for the activities outside every
+   module, or null for an id the design does not have, whose blocks are kept and not read; `end`, the next records line or
+   closing `%%`; `last`, the line after its last one that is not blank), its fenced blocks (`blocks`: `value`, the object
+   of one read as a record; `at`, an entries or draft block's activity; `close`, its closing line), the first records line
+   (`top`, -1 for no region), where a new module's group goes (`end`, before the last closing `%%`) and a fence left open at
+   the end of the file (`open`). The last read is kept, since every save of a booklet reads the same region. */
+function readRegion(text,mods){const key=mods.map(m=>m.id+(scopeOfModule(m)?"/":"")).join(" ");
+  if(REGION_READ&&REGION_READ.text===text&&REGION_READ.key===key) return REGION_READ.R;
+  const T=[],E=[],re=/\r\n?|\n/g;let a=0,m;while((m=re.exec(text))){T.push(text.slice(a,m.index));E.push(m[0]);a=re.lastIndex;}T.push(text.slice(a));E.push("");
+  const fenced=new Set(mods.filter(scopeOfModule).map(x=>x.id)),bare=new Set(mods.filter(x=>!scopeOfModule(x)).map(x=>x.id));
+  const blocks=[],groups=[],R={T,E,blocks,groups,top:-1,end:0,open:null};let sc="",inReg=false,g=null;
+  const full=(x,y)=>{let k=y-1;while(k>x&&!T[k].trim()) k--;return k+1;};
+  const shut=i=>{if(g){g.end=i;g.last=full(g.line,i);g=null;}};
+  for(let i=0;text&&i<T.length;i++){const ln=T[i],f=FENCE_RE.exec(ln);
+    if(f){const F=fenceAt(T,i,f),w=F.info.split(/\s+/),what=(w[1]||"").toLowerCase(),b={start:i,close:F.end,what,scope:sc,code:T.slice(i+1,F.end).join("\n")};
+      if(F.end>=T.length) R.open={at:i,mark:F.mark};
+      if(sc!==null&&/^booklet$/i.test(w[0])&&RECORD_KINDS.includes(what)&&(what==="answers"||w[2])){let o=null;try{o=JSON.parse(b.code);}catch(e){}
+        if(isObj(o)&&(what!=="entries"||Array.isArray(o.items)&&o.items.every(e=>e&&typeof e==="object"&&e.ts))){b.value=o;if(what!=="answers") b.at=addrOf(sc,w[2]);}}
+      blocks.push(b);i=F.end;continue;}
+    if(ln.trim()==="%%"){if(inReg){shut(i);R.end=full(-1,i);}inReg=!inReg;continue;}
+    const c=ln.match(CALLOUT_LINE);
+    if(c&&c[1].toLowerCase()==="records"){shut(i);inReg=true;const id=calloutWords("records",c[2]).id;
+      sc=!id?"":fenced.has(id)?id:bare.has(id)?"":null;groups.push(g={line:i,scope:sc});if(R.top<0) R.top=i;}}
+  shut(T.length);if(inReg) R.end=full(-1,T.length);
+  REGION_READ={text,key,R};return R;}
+/* ---- small edits to a record's JSON, made where the change is and nowhere else (fileText) ----
+   Where each value of a JSON text sits: {k:"o",s,e,m:[{key,ks,ke,v}]} for an object, {k:"a",s,e,el:[…]} for a list, {k:"v",
+   s,e} for any other value (s and e: the offset of its first character, and just past its last); null for a text that is
+   not one JSON value. Only a block JSON.parse has read is given to it. The Obsidian plugin's records writer is the model
+   (booklet-obsidian, src/core/json-edit.ts). */
+function jsonAt(s){let p=0;const ws=()=>{while(p<s.length&&" \t\n\r".includes(s[p])) p++;},no=()=>{throw 0;};
+  const str=()=>{if(s[p]!=='"') no();for(p++;p<s.length;) if(s[p]==="\\") p+=2;else if(s[p++]==='"') return p;return no();};
+  const val=()=>{ws();const st=p,c=s[p];
+    if(c==="{"||c==="["){const o=c==="{",l=[];p++;ws();
+      if(s[p]!==(o?"}":"]")) for(;;){ws();
+        if(o){const ks=p,ke=str();ws();if(s[p]!==":") no();p++;l.push({key:JSON.parse(s.slice(ks,ke)),ks,ke,v:val()});}else l.push(val());
+        ws();if(s[p]===",") p++;else if(s[p]===(o?"}":"]")) break;else no();}
+      p++;return o?{k:"o",s:st,e:p,m:l}:{k:"a",s:st,e:p,el:l};}
+    if(c==='"') return {k:"v",s:st,e:str()};
+    while(p<s.length&&!" \t\n\r,]}".includes(s[p])) p++;if(p===st) no();return {k:"v",s:st,e:p};};
+  try{const v=val();ws();return p===s.length?v:null;}catch(e){return null;}}
+const spliceAt=(s,a,b,put)=>s.slice(0,a)+put+s.slice(b);
+const lineIndent=(s,at)=>{const lead=s.slice(s.lastIndexOf("\n",at-1)+1,at);return /^[ \t]*$/.test(lead)?lead:"";};
+/* how an object or a list `n` of `s` lays out what it holds (`st`, each one's start; `en`, its end): one to a line (`ml`,
+   each after `ind`) or all on one, what stands between one and the next (`sep`) and after a key (`col`) */
+function jsonLayout(s,n,st,en,col){const z=st.length-1,ml=z>=0&&s.slice(n.s,st[0]).includes("\n"),ind=ml?lineIndent(s,st[z]):"";
+  return {ml,ind,col,sep:z>0?s.slice(en[z-1],st[z]):ml?",\n"+ind:/ /.test(col)?", ":","};}
+/* a value written to sit in a layout: across lines at its indent, or on one line with its spacing */
+function jsonIn(v,L){if(L.ml) return JSON.stringify(v,null,/^[ \t]{1,10}$/.test(L.ind)?L.ind:" ").split("\n").join("\n"+L.ind);
+  const cm=/ /.test(L.sep)?", ":",",one=x=>Array.isArray(x)?"["+x.map(one).join(cm)+"]":isObj(x)?"{"+Object.keys(x).map(k=>JSON.stringify(k)+L.col+one(x[k])).join(cm)+"}":JSON.stringify(x);
+  return one(v);}
+/* the object `code` with its member `key` set to `v`, where it stands or after the last member, in the object's layout (an
+   object with none is written by `shape`); null when `code` is no object */
+function setMember(code,key,v,shape){const o=jsonAt(code);if(!o||o.k!=="o") return null;const ms=o.m,z=ms[ms.length-1];
+  if(!z){const n=nullMap();n[key]=v;return spliceAt(code,o.s,o.e,shape(n));}
+  const L=jsonLayout(code,o,ms.map(m=>m.ks),ms.map(m=>m.v.e),code.slice(z.ke,z.v.s)),i=ms.map(m=>m.key).lastIndexOf(key);
+  if(i>=0) return spliceAt(code,ms[i].v.s,ms[i].v.e,jsonIn(v,{...L,ind:L.ml?lineIndent(code,ms[i].ks):""}));
+  return spliceAt(code,z.v.e,z.v.e,L.sep+JSON.stringify(key)+L.col+jsonIn(v,L));}
+/* the object `code` with every member `key` taken out (a key written twice is read as its last, so an earlier one would
+   come back), `{}` when none is left; null when `code` is no object */
+function dropMember(code,key){for(;;){const o=jsonAt(code);if(!o||o.k!=="o") return null;const ms=o.m,i=ms.map(m=>m.key).lastIndexOf(key);
+  if(i<0) return code;
+  code=ms.length===1?spliceAt(code,o.s,o.e,"{}"):i?spliceAt(code,ms[i-1].v.e,ms[i].v.e,""):spliceAt(code,ms[0].ks,ms[1].ks,"");}}
+/* an entries block's `code` with the items at `put`'s places (index → text) replaced, those at `gone` taken out with their
+   comma, and `add` after the last in the list's own layout (one to a line in an empty list); null with no `items` list */
+function editItems(code,put,gone,add){const at=c=>{const o=jsonAt(c),m=o&&o.k==="o"?o.m.filter(x=>x.key==="items").pop():null;return m&&m.v.k==="a"?m.v:null;};
+  let a=at(code);if(!a) return null;
+  [...put.keys()].sort((x,y)=>y-x).forEach(i=>{const e=a.el[i];code=spliceAt(code,e.s,e.e,put.get(i));});
+  [...gone].sort((x,y)=>y-x).forEach(i=>{a=at(code);const el=a.el;
+    code=el.length===1?spliceAt(code,a.s,a.e,"[]"):i?spliceAt(code,el[i-1].e,el[i].e,""):spliceAt(code,el[0].s,el[1].s,"");});
+  if(add.length){a=at(code);const el=a.el,z=el[el.length-1];
+    if(!z) return spliceAt(code,a.s,a.e,"[\n"+add.join(",\n")+"\n]");
+    const L=jsonLayout(code,a,el.map(e=>e.s),el.map(e=>e.e),": ");code=spliceAt(code,z.e,z.e,add.map(t=>L.sep+t).join(""));}
+  return code;}
 const toMarkdown=()=>fileText(BOOK,STATE,DRAFTS);
 const bookText=book=>fileText(book,emptyState(),emptyDrafts());
 /* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` */
 const textWith=(source,drop)=>{const raw=BOOK.raw||{};
-  return bookText({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}});};
+  return fileText({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}},emptyState(),emptyDrafts(),drop);};
 /* The design is always its text's parse: a booklet's text (kept here, or made by Add, Remove or Rename) is parsed as a
-   file is and adopted whole. Returns the parse, or null (the design unchanged) for no booklet. */
-function adoptText(text){const R=parseFile(text);if(!R.template) return null;
-  adoptParse(R);return R;}
-const adoptParse=R=>{BOOK=R.template;OLD_DESIGN=false;joinRecords(R);};
+   file is and adopted whole. Returns the parse, or null (the design unchanged) for no booklet. `region`: the records
+   region the booklet had (regionOf), which a text made by bookText holds only the kept records of; adopted with the
+   parse, the next save still writes what the reader did not change as the file had it. */
+function adoptText(text,region){const R=parseFile(text);if(!R.template) return null;
+  adoptParse(R,region);return R;}
+const adoptParse=(R,region)=>{BOOK=R.template;OLD_DESIGN=false;
+  if(typeof region==="string"&&isObj(BOOK.raw)&&isObj(BOOK.raw.wrote)) BOOK.raw.wrote={...BOOK.raw.wrote,region};
+  joinRecords(R);};
 /* the records a text's parse read (only one kept as written for a module the booklet has since gained), joined to the
    reader's work as a file read back joins them (mergeEntries, by `ts`): the reader's values win, kept entries come first */
 function joinRecords(R){const st=R.S||emptyState(),dr=(R.drafts||{}).activities||{};
@@ -4593,7 +4767,7 @@ function setTitleIn(source,name,langTag){
 const blankText=()=>setTitleIn("",strings("library").untitled,lang);
 /* Rename the booklet in memory: its text with the new `title:` line, read again. An empty name keeps the old one. */
 function renameBooklet(name){const n=cleanName(name);if(!n||n===BOOK.title) return false;
-  if(OLD_DESIGN) BOOK=namedDesign(BOOK,n);else adoptText(setTitleIn(bookText(BOOK),n,(BOOK.raw||{}).lang));
+  if(OLD_DESIGN) BOOK=namedDesign(BOOK,n);else adoptText(setTitleIn(bookText(BOOK),n,(BOOK.raw||{}).lang),regionOf(BOOK));
   CUSTOMIZED=true;markDirty();flushSave();return true;}
 
 /* ================ ADD A MODULE ================
@@ -4823,8 +4997,9 @@ function addModuleText(text,R){
   if(refused.length){const dups=made.dupIds||[];
     const dids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
     return {ok:false,problems:[...dids.map(id=>PROBLEM.moduleIdClash(id)),...refused.filter(m=>!said.has(m))]};}
-  /* the design is that file's parse, whole (an added module's notice, from its fence's callout, rides on it) */
-  adoptParse(made);CUSTOMIZED=true;markDirty();
+  /* the design is that file's parse, whole (an added module's notice, from its fence's callout, rides on it), with the
+     records region the booklet had */
+  adoptParse(made,regionOf(BOOK));CUSTOMIZED=true;markDirty();
   const mine=new Set(incoming.filter(Boolean));
   return {ok:true,added:BOOK.modules.filter(m=>mine.has(m.id)&&scopeOfModule(m)!=="").map(m=>m.id),renamed:renamedIds};}
 /* What the reader has kept in a module, as counts: entries and drafts at every address in its scope (orphans included) and every answer. Read-only. */
@@ -4868,7 +5043,7 @@ function removeModule(id){
   if(STATE.answers) delete STATE.answers[scope];
   const left=Object.values(STATE.entries||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);
   if(unsavedEntries>left) unsavedEntries=left;
-  adoptParse(made);CUSTOMIZED=true;markDirty();
+  adoptParse(made,regionOf(BOOK,id));CUSTOMIZED=true;markDirty();
   return {ok:true};}
 /* the page's way into the parser, with its sprite's icon names */
 function parseFile(text){
@@ -7975,9 +8150,9 @@ function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
   /* `o.keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
   if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;
     /* work for a scope the design has no module for, kept as written with the file's own such records (keepUnowned):
-       the design is then the parse of the text that holds them */
-    if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET){const raw=BOOK.raw||{};
-      adoptText(bookText({...BOOK,raw:{...raw,records:[...(raw.records||[]),...keep.records]}}));}}
+       the design is then the parse of the text that holds them, and its region the file's with them added */
+    if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET){const raw=BOOK.raw||{},B={...BOOK,raw:{...raw,records:[...(raw.records||[]),...keep.records]}};
+      adoptText(bookText(B),regionOf(B));}}
   const at=startScreen(o.page);
   FILE_NOTES=fileNotesOf(R,at);
   /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */

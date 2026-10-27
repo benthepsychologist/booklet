@@ -40,12 +40,14 @@ const merge=(disk,browser)=>{const b=split(disk)[0].replace(/\s+$/,""),r=split(b
 const sameBody=(a,b)=>split(a)[0].replace(/\s+$/,"")===split(b)[0].replace(/\s+$/,"");
 /* A stand-in for booklet-host.js and its server. o.delay(c): ms before answering; o.fail(c): answer failed(); o.bare:
    answer saved()/failed() naming no change (a host written before `change` existed); o.refuseEmpty: refuse a text with no
-   records over a file that has some, as the box's server does. */
+   records over a file that has some, as the box's server does (storefile.has_records: a region with nothing but its `%%`
+   and records lines holds nothing; 0.16 writes back the lines of a region whose answers are all cleared). */
+const holds=t=>split(t)[1].split("\n").some(l=>l.trim()&&l.trim()!=="%%"&&!/^>\s*\[!records[|\]]/i.test(l.trim()));
 function host(A,o={}){const me=A.BookletApi.host({label:LABEL});const log=[];
   A.BookletApi.onChange(c=>{log.push(c);const url=STORE+c.name;
     const go=()=>{if(o.fail&&o.fail(c)){o.bare?me.failed("down"):me.failed("down",c);return;}
       const disk=typeof ROUTES[url]==="string"?ROUTES[url]:c.text;
-      if(o.refuseEmpty&&!split(c.text)[1]&&split(disk)[1]){o.bare?me.failed("refused"):me.failed("refused",c);return;}
+      if(o.refuseEmpty&&!holds(c.text)&&holds(disk)){o.bare?me.failed("refused"):me.failed("refused",c);return;}
       const m=merge(disk,c.text),kept=!sameBody(c.text,disk);ROUTES[url]=m;if(kept) me.fileChanged(m);
       o.bare?me.saved():me.saved(c);};
     const d=o.delay?o.delay(c):0;if(d) setTimeout(go,d);else go();});

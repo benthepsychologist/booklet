@@ -103,7 +103,11 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const B=load(spo);
   chk("a records line naming a bare activity is read as the nameless module's",B.peekAnswers("").q==="one"&&B.peekAnswers("").r==="two");
   const o=B.toMarkdown();
-  chk("and is written back under the plain records line, once, with no activity's name on a records line",!/\[!records\|/.test(o)&&(o.match(/\[!records/g)||[]).length===1&&answersOf(o,"").q==="one"&&answersOf(o,"").r==="two",o.slice(-400));
+  /* (0.16, SPEC section 8: a record the reader did not change is written back as written, its records line with it; until
+     0.15 a save moved it under the plain records line) */
+  chk("and is written back as written, its records line with it",o===spo,o.slice(-400));
+  {const C=load(spo);C.answersIn("").q="changed";const c=C.toMarkdown();
+   chk("a change to it goes into its block, under the records line that names the bare activity",c===spo.replace('"q":"one"','"q":"changed"'),c.slice(-400));}
   chk("load, save, load, save changes nothing",load(o).toMarkdown()===o);
   /* a bare activity and a module that share an id are two things: adding the module leaves the activity, removing it leaves the activity */
   {const X=load(FM+"> [!activity|inbox] Bare\n\n> [!text|q] Q\n");X.answersIn("").q="mine";
@@ -199,7 +203,8 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("B1: two entries blocks for one activity are both held, in file order",(A.STATE.entries["m/e"]||[]).map(x=>x.t).join()==="first block,second block",JSON.stringify(A.STATE.entries["m/e"]));
   chk("B1: and a later draft block fills in keys without wiping the earlier one's",JSON.stringify(A.DRAFTS.custom["m/e"])==='{"a":"one","b":"three","c":"four"}',JSON.stringify(A.DRAFTS.custom["m/e"]));
   const out=A.toMarkdown(),r=recordsOf(out);
-  chk("B1: a save writes them as one block each, nothing lost",r.filter(x=>x.info==="booklet entries e").length===1&&/first block/.test(r[0].code+r[1].code)&&cnt(out,/second block/g)===1&&cnt(out,/first block/g)===1,out.slice(-400));}
+  /* (0.16: written back as written, two blocks each; until 0.15 a save joined them into one) */
+  chk("B1: a save writes them back as written, two blocks each, nothing lost",out===two&&r.filter(x=>x.info==="booklet entries e").length===2,out.slice(-400));}
  /* B1b (0.13.1, SPEC section 8): entries are identified by `ts`; an entry two blocks both hold is one entry, and for a key both hold the later wins */
  {const T1="2026-01-01T10:00:00Z",T2="2026-01-02T10:00:00Z",T3="2026-01-03T10:00:00Z";
   const file=FM+MODE+REC+rec("m",fence("booklet entries e",items(entry(T1,{t:"old",u:"only in the first"}),entry(T2,{t:"two"}))),
@@ -209,8 +214,12 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("B1b: for a key both hold the later wins, and a key only one holds is kept",got[0].t==="new"&&got[0].u==="only in the first"&&got[0].v==="only in the second",JSON.stringify(got[0]));
   chk("B1b: the entries only one block holds are untouched",got[1].t==="two"&&got[2].t==="three");
   const out=A.toMarkdown();
-  chk("B1b: a save writes the merged entry once, and nothing of the overwritten value",cnt(out,/"ts":"2026-01-01T10:00:00Z"/g)===1&&cnt(out,/"t":"old"/g)===0,out.slice(-500));
-  chk("B1b: load, save, load, save changes nothing",load(out).toMarkdown()===out);}
+  /* (0.16: an entry the reader did not change is written back as written, in both blocks; until 0.15 a save wrote the
+     merged entry once) */
+  chk("B1b: a save with no change writes both blocks back as written",out===file,out.slice(-500));
+  chk("B1b: load, save, load, save changes nothing",load(out).toMarkdown()===out);
+  {const C=load(file);C.STATE.entries["m/e"][0].t="changed";C.markDirty();const c=C.toMarkdown(),R=C.parseFile(c),e=(R.S.entries||{})["m/e"]||[];
+   chk("B1b: a changed entry both blocks held is written once, merged, in the first one's place, the overwritten value gone",cnt(c,/"ts":"2026-01-01T10:00:00Z"/g)===1&&cnt(c,/"t":"old"/g)===0&&e.map(x=>x.ts).join()===[T1,T2,T3].join()&&e[0].t==="changed"&&e[0].u==="only in the first"&&e[0].v==="only in the second"&&c.indexOf('"t":"two"')>c.indexOf('"t":"changed"'),c.slice(-500));}}
  /* B1c: the merge is one pass (a Map from ts beside the list), not a search per entry: 60,000 entries in two blocks (about 5 MB of
     file would hold that many) read in well under the seconds a search per entry takes (70 s at this size) */
  {P.wipe();const A0=P.boot();const N=60000,mk=(tag)=>items(...Array.from({length:N},(_,i)=>entry("2026-01-01T00:00:00."+String(i).padStart(6,"0")+"Z",{t:tag+i})));
@@ -237,7 +246,8 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const B=load(fixed);
   chk("B1 flow: after a new entry the file holds the broken block as it was and the new entry beside it; the reader mends the comma; the load holds all three entries, nothing reported",setup&&fixed!==saved&&(B.STATE.entries["m/e"]||[]).map(x=>x.t).sort().join("|")==="new entry, kept after the broken block|old entry 1|old entry 2"&&B.parseFile(fixed).unread.length===0,JSON.stringify(B.STATE.entries["m/e"]));
   const again=B.toMarkdown();
-  chk("B1 flow: the next save keeps every entry, in one block",/new entry, kept after/.test(again)&&/old entry 1/.test(again)&&/old entry 2/.test(again)&&cnt(again,/```booklet entries e/g)===1,again.slice(-500));
+  /* (0.16: as written, in its two blocks; until 0.15 the next save joined them into one) */
+  chk("B1 flow: the next save keeps every entry, as written",again===fixed&&/new entry, kept after/.test(again)&&/old entry 1/.test(again)&&/old entry 2/.test(again),again.slice(-500));
   chk("B1 flow: and load, save changes nothing more",load(again).toMarkdown()===again);}
 
  /* B2 and should-fix 2: a bare activity and a fenced module that share an id are two things */
@@ -265,16 +275,18 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   back._on.click({});
   chk("should-fix 2: Back from an activity of the fenced module leads to that module's page",B.screen===B.moduleScreen("inbox")&&/Module inbox/.test(P.texts(P.main())),String(B.screen));}
 
- /* should-fix 1: an unclosed fence in the records is closed with its own marker, and nothing grows on a save */
+ /* should-fix 1: nothing grows on a save, and an unclosed fence in the records is closed with its own marker before
+    anything is written after it (0.16: and only then; a save that adds nothing after it leaves it as written) */
  for(const open of ["```","~~~","````"]){
-  let t=FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q1] One\n\n> [!module|m end] End\n"+REC+rec("m",fence("booklet answers",'{"q1":"x"}'))+open+"booklet sync\n{\"x\":1}\n%%\n";
-  const sizes=[];
+  const t0=FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q1] One\n\n> [!module|m end] End\n"+REC+rec("m",fence("booklet answers",'{"q1":"x"}'))+open+"booklet sync\n{\"x\":1}\n%%\n";
+  let t=t0;const sizes=[];
   for(let n=0;n<4;n++){const A=load(t);A.answersIn("m").q1="x"+n;t=A.toMarkdown();sizes.push(t.length);}
-  chk("an unclosed "+open+" fence in the records does not grow the file on each save ("+sizes.join(">")+")",sizes[1]===sizes[2]&&sizes[2]===sizes[3]&&cnt(t,/^%%$/gm)===3,t.slice(-120));
+  chk("an unclosed "+open+" fence in the records does not grow the file on each save ("+sizes.join(">")+")",sizes[1]===sizes[2]&&sizes[2]===sizes[3]&&t===t0.replace('"q1":"x"','"q1":"x3"'),t.slice(-120));
   chk("and the answer is still the last one saved, the block still there",load(t).peekAnswers("m").q1==="x3"&&/booklet sync/.test(t));}
- {const A=load(FM+MODE+REC+rec("m",'~~~booklet sync\n{"x":1}\n%%\n'));
-  const o=A.toMarkdown();
-  chk("an unclosed ~~~ fence is closed with ~~~, not with a backtick fence",/~~~booklet sync\n\{"x":1\}\n%%\n\n?~~~\n/.test(o)&&!/\n```\n/.test(o),o.slice(-120));}
+ {const f=FM+MODE+REC+rec("m",'~~~booklet sync\n{"x":1}\n%%\n'),A=load(f);
+  chk("an unclosed ~~~ fence with nothing to write after it is written back as written",A.toMarkdown()===f);
+  A.draftFor("m/e").t="a draft";A.markDirty();const o=A.toMarkdown();
+  chk("an unclosed ~~~ fence is closed with ~~~, not with a backtick fence, before a block is written after it",/~~~booklet sync\n\{"x":1\}\n%%\n~~~\n/.test(o)&&load(o).DRAFTS.custom["m/e"].t==="a draft",o.slice(-160));}
  {const f=FM+MODE+REC+rec("m","```booklet widget\n{\"engine\":\"grid-select\",\"cells\":[]}\n```\n^w1\n\n","```mermaid\ngraph TD; A-->B\n```\n^fig1\n\n")+"%%\n";
   const o=load(f).toMarkdown();
   chk("a fence's ^id line is kept with its raw text, in the records",/```booklet widget\n.*\n```\n\^w1\n/.test(o)&&/```mermaid\ngraph TD; A-->B\n```\n\^fig1\n/.test(o),o.slice(-300));}
@@ -457,7 +469,10 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("region: a `> [!data]` line inside the region is reported and kept as written, and the widget under it is not read",R.unread.length===2&&A.BOOK.widgets.length===0&&/> \[!data\] Data\n\n```booklet widget/.test(o)&&cnt(o,/\n\^grid\n/g)===1,JSON.stringify(R.unread));}
  {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+"> [!records] Again\n\n"+fence("booklet answers",'{"q":"x"}')+"%%\n\n> [!records] A second region\n\n"+fence("booklet answers",'{"q":"y"}');
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
-  chk("region: a records line after the closing `%%` is read as records, not design: the later value wins, one region is written, nothing is reported",A.peekAnswers("").q==="y"&&R.unread.length===0&&cnt(o,/\[!records\]/g)===1&&cnt(o,/```booklet answers/g)===1&&!/"q":"x"/.test(o),JSON.stringify(R.unread));}
+  /* (0.16: both regions are written back as written; until 0.15 a save joined them into one) */
+  chk("region: a records line after the closing `%%` is read as records, not design: the later value wins, the file is written back as written, nothing is reported",A.peekAnswers("").q==="y"&&R.unread.length===0&&o===f,JSON.stringify(R.unread));
+  A.answersIn("").q="z";const c=A.toMarkdown();
+  chk("region: a change goes into the block read last, the earlier one left as written",c===f.replace('{"q":"y"}','{"q":"z"}')&&load(c).peekAnswers("").q==="z",c.slice(-200));}
  /* two complete saved booklets joined into one file: every record comes back once, in one region, and the file is stable */
  {const D1="> [!module|a] A\n\n> [!activity|a1] A1\n\n> [!text|qa] QA\n\n> [!text|shared] S\n\n> [!activity|ea repeat] EA\n\n> [!text|ta] TA\n\n> [!module|a end] End\n";
   const D2="> [!module|b] B\n\n> [!activity|b1] B1\n\n> [!text|qb] QB\n\n> [!activity|eb repeat] EB\n\n> [!text|tb] TB\n\n> [!module|b end] End\n";
@@ -467,7 +482,9 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const f=first+second,A=load(f),o=A.toMarkdown(),B=load(o);
   const ok=X=>X.peekAnswers("a").qa==="a-first"&&X.peekAnswers("a").shared==="from second"&&X.peekAnswers("b").qb==="b-second"&&(X.STATE.entries["a/ea"]||[]).length===2&&(X.STATE.entries["b/eb"]||[]).length===1&&X.DRAFTS.custom["a/ea"].ta==="draft a"&&X.DRAFTS.custom["b/eb"].tb==="draft b";
   chk("joined booklets: every answer, entry and draft is read, the shared key takes the later value",ok(A)&&A.allModules().length===2,JSON.stringify([A.peekAnswers("a"),A.peekAnswers("b")]));
-  chk("joined booklets: one region is written, each record once, the design between the regions above it; a reopen reads the same with nothing reported",cnt(o,/^> \[!records\] App record/gm)===1&&cnt(o,/\[!records\|a\]/g)===1&&cnt(o,/\[!records\|b\]/g)===1&&cnt(o,/```booklet entries ea/g)===1&&cnt(o,/b-second/g)===1&&o.indexOf("[!module|b]")<o.indexOf("%%\n> [!records]")&&ok(B)&&B.parseFile(o).unread.length===0,o.slice(-700));
+  /* (0.16: the regions are kept as written, one after the other, below the design; until 0.15 a save joined them into one) */
+  const regs=f.split(/(?=\n%%\n> \[!records\])/).slice(1).map(x=>x.replace(/\n\n> \[!module\|b\][^]*$/,"\n"));
+  chk("joined booklets: the design between the regions is written above them, each region kept as written, one after the other; a reopen reads the same with nothing reported",o.indexOf("[!module|b]")<o.indexOf("%%\n> [!records]")&&o.endsWith(regs.map(x=>x.slice(1)).join(""))&&cnt(o,/b-second/g)===1&&ok(B)&&B.parseFile(o).unread.length===0,o.slice(-700));
   chk("joined booklets: a second save changes nothing",B.toMarkdown()===o);}
  /* nits */
  {const f=FM+MODE+REC+rec("m","A note someone wrote by hand.\n\n","> [!my_kind] Kept?\n> body\n\n")+"%%\n";
