@@ -171,7 +171,7 @@ The words after the id are the activity's **settings**:
 | --- | --- |
 | *(none)* | answered once, edited in place |
 | `repeat` | each completion is kept as a dated entry, with a history |
-| `repeat daily` | one kept entry per day; completing again replaces today's |
+| `repeat daily` | one kept entry per day (a day: section 8); completing again replaces today's |
 
 `hidden` may follow either (kept in the file, not offered). `daily` needs `repeat`.
 
@@ -582,7 +582,8 @@ empty: Nothing logged yet.
 
 - `from:` (required) is an activity id or a question id in the same module. An activity must keep entries (`repeat` or `repeat daily`); the query shows its kept entries, newest first, each with its date and answers. A question shows that question's answers: each kept answer with its date if its activity keeps entries, or its one answer if not.
 - `fields:` (optional, with an activity) names the questions to show, comma-separated, in that order. Without it, every question is shown.
-- `limit:` (optional) shows only that many of the most recent entries.
+- `limit:` (optional) shows only that many of the most recent entries; written as a span of days, `limit: 7 days`, it shows the entries of the past 7 days ("A span of days, and summaries", below).
+- `summary:` (optional) takes one value, `on`, and turns the kept entries into summary rows (below).
 - `empty:` (optional) is what shows while nothing is kept. Without it, the renderer shows its own short line.
 - It reads kept entries and given answers only, never a draft in progress.
 - A query never reads across modules. One whose `from:` names nothing, or something in another module, cannot be drawn: the linter reports an error, and a renderer draws nothing for it and reports it. The file still opens. The activities outside any module fence are one module for this rule.
@@ -614,7 +615,7 @@ group: why
 
 So rows whose fields are already called `label`, `value` and so on need only `from:` and `as:`. A line such as `label: bucket` points a role at a field with another name. A role no row carries is simply not drawn.
 
-**Tone.** A view's `tone` is `good`, `warn` or `bad`, exactly as written. A theme's `good`, `warn` and `bad` keys (section 7) set those same three colours, which a widget names `green`, `amber` and `warm` (section 7). A widget may also use the colour names `slate` and `teal`, which have no tone.
+**Tone.** A view's `tone` is `good`, `warn` or `bad`, exactly as written. A theme's `good`, `warn` and `bad` keys (section 7) set those same three colours, which a widget names `green`, `amber` and `warm` (section 7). A widget may also use the colour names `slate`, `teal`, `blue` and `purple`, which have no tone.
 
 **Link and icon.** A `link` value is a link target written as prose writes one: `#Heading`, `week-2.booklet.md` or a web address. A view makes the row's label lead there, and a target it cannot follow is plain text. An `icon` value is an icon name (section 3); a name that is not one is not drawn. Both stay plain text in the data: a target is followed, never read as Markdown.
 
@@ -631,7 +632,7 @@ So rows whose fields are already called `label`, `value` and so on need only `fr
 - A table shows the fields its data block declares, or else the keys of the first row. A list's extras, without `fields:`, never include the `id` field, the `group` field or the `parent` field.
 - `label:` falls back to the first field only when the query gives no `label:` at all. A `label:` that names a field no row carries draws no label (the linter warns).
 - `group:` names a field; rows that share its value are drawn together under that value, in the order the values first appear, with a count.
-- `limit:` is a positive whole number (anything else is ignored and reported). It draws only the first rows, that many, and it is applied before grouping and before anything the reader filters. For kept entries those are the newest.
+- `limit:` is a positive whole number, or a positive whole number of days such as `7 days` (anything else is ignored and reported; the linter reports an error). A number draws only the first rows, that many, and it is applied before grouping and before anything the reader filters. For kept entries those are the newest. A number of days keeps the entries of a span instead ("A span of days, and summaries", below).
 - `from:` naming a single question makes that question the value.
 - With `fields:` on kept entries, an entry that answers none of the named questions is not shown.
 - `parent:` names the field that holds the `id` of the row this row sits under. A list whose rows carry it is drawn nested: each row under its parent, opened and closed by the reader. The default field is `parent`, so rows with `id` and `parent` fields nest with no key at all. A row whose parent is not among the rows is drawn at the top. A row that is its own ancestor (a cycle) is drawn once, at the top. When two rows share an `id`, the first is used. `limit` counts top-level rows; `group` is not drawn on a nested list.
@@ -673,6 +674,76 @@ A query that names a data block in another module, or an `as:` that is not one o
 3. A look that styling, density, or the shaping of rows by whatever wrote the file can give is never a new view or key.
 4. A reader may open, close, sort and filter what is on screen, and none of it is saved. Anything that changes the file or sends something elsewhere is not a view's business.
 
+### A span of days, and summaries
+
+Two additions to a query over kept entries. They are the one place Booklet computes anything from rows, and they are for kept entries only (see "Why a reader computes these", below).
+
+**A span of days.** `limit: 7` stays the newest 7 entries. `limit: 7 days` is the entries of the past 7 days: today and the 6 dates before it. The span rolls with today; it is not a calendar week. `limit: 1 day` is today's entries. It works on every view, with or without a summary: a table of this week, a line of the last 30 days.
+
+- A day is defined once, in section 8.
+- An entry whose `ts` will not parse, or is in the future, is in no span. It is kept as written.
+- The span is worked out when the page is drawn, and nothing about it is saved.
+- A span of days on a data block, or on a question whose activity keeps no entries, is ignored and reported (the linter warns).
+- A `limit:` that is neither a positive whole number nor a positive whole number of days (`limit: week`) is ignored and reported; the linter reports an error.
+
+**Summaries.** `summary: on` turns the kept entries into summary rows, which every view draws as it draws any rows. Any other value (`summary: yes`) is ignored and reported; the linter reports an error. A query that names an activity gets one row for the entries' dates, then one row per question, in the activity's order. Each row carries its statistics as named fields:
+
+| field | what it holds | rows that have it |
+| --- | --- | --- |
+| `label` | the question's title (for dates, "Days logged") | every row |
+| `count` | how many answered (for dates, how many entries) | every row |
+| `days` | how many different days | dates |
+| `average` | the mean, over entries | number, scale |
+| `lowest`, `highest` | the least and the most | number, scale |
+| `total` | the sum | number, scale |
+| `most` | the option picked most | choice, multi, grid-select |
+
+The roles `value` and `note` take a default by kind, so a query needs to name nothing:
+
+| row | `value` | `note` |
+| --- | --- | --- |
+| dates | `days` | "5 entries" |
+| number or scale | `average` | "lowest 1 · highest 4" |
+| choice or multi | `most` | "Rough 1 · Mixed 1 · Good 3" |
+| a `grid-select` widget | `most` | "Anxiety / stress 4 · Sadness 2" |
+| any other kind | `count` | "answered" |
+
+A query points the roles elsewhere with the keys it already has: `value: total` for a tracker of minutes, `value: count`, `note: highest`. A table shows every field, one column each, so a chart always has the same numbers in a table. A matrix gives one row per item, each summarised like a scale. A `grid-select` is summarised like a `multi`: each item's count and the item picked most, the reader's own words counted by their words. An `svg-regions` widget has no summary rule. A question with `each:` gives one row per pick, labelled "<title> · <the pick's words>" and summarised by its own kind, over the picks its source holds in the same record. A query with no `as:` draws a summary as a table.
+
+**One question, one distribution.** A query that names a single question gets that question's distribution instead: one row per value, its `value` the count. A choice, a multi, a grid-select or a scale gives its listed options, items or anchors in list order, with zeros; any other kind gives its values in the order they first appear. This is what `bars` draws well.
+
+```booklet query
+from: evening
+limit: 7 days
+summary: on
+as: tiles
+```
+
+This draws four tiles: **Days logged 5** (5 entries); **How did today feel? Good** (Rough 1 · Mixed 1 · Good 3); **Energy 2.6** (lowest 1 · highest 4); **Anything else? 4** (answered).
+
+```booklet query
+from: feel
+limit: 7 days
+summary: on
+as: bars
+```
+
+This draws three bars, in list order: Rough 1, Mixed 1, Good 3.
+
+**The rules a second reader needs.**
+
+- **The order.** `from:` picks the entries; `limit:` keeps the newest N, or the past N days; `summary: on` summarises every entry kept; `fields:` picks which rows appear (the questions, and `date` for the dates row); the view draws them. Without `summary`, `fields:` keeps its present meaning.
+- **Counting.** Averages, lowest, highest and totals are over entries, so with `repeat` a day with three entries counts three times; `days` says how many days. A multi answered with an empty list is not answered. With no answers there is no value and no note.
+- **Options.** Rows and notes go in list order. The reader's own options (`open`, section 5) come after, in the order first seen, matched as section 5 matches them (ignoring case and spaces). A tie for `most` goes to the earlier in that order. A distribution shows an option picked zero times; a note leaves it out.
+- **Numbers and words.** An average is rounded to one decimal, half away from zero, and a whole number has no decimal ("3", not "3.0"). Numbers are drawn in the renderer's locale ("2,6" in French). A scale's lowest and highest are its anchor numbers. A title is drawn as inline Markdown, as on a kept entry. The renderer's own words ("Days logged", "entries", "lowest", "highest", "answered" and the table's column names) are in the renderer's language (section 9), like its other words.
+- **Nothing in the span.** The query's `empty:` shows.
+- **What a summary ignores and reports.** `group:` (summary rows have nothing to group by), and `summary` on a data block or on a question whose activity keeps no entries.
+- **Nothing is saved.** A summary is drawn, never written, and reads kept entries only, never a draft.
+
+**Why a reader computes these.** Section 7 says a renderer computes nothing from a data block, because whatever wrote the block has already counted and ordered its rows. Kept entries have no upstream: the reader's own app writes them, one at a time. A week's statistics saved into the file would be wrong by tomorrow, and keeping them right would make the writer change the file on every save, against section 8's rule that a writer changes only what the reader changed. So the reader works them out when it draws the page.
+
+**The reference renderer** draws a span of days on every view. It does not draw summaries yet (section 13): a query with `summary: on` shows a line saying so in place of the view, never the plain entries as if the key were not there.
+
 ---
 
 ## 7. Widgets and other data
@@ -697,7 +768,7 @@ A query that names a data block in another module, or an `as:` that is not one o
 - **An `svg-regions` figure** marks each region the reader can tap as a shape with `class="rg"` and a `data-r` attribute naming the region id. Every other shape in the figure is drawn as a plain outline, and the renderer styles both; a figure needs no styling of its own.
 - **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
 - Every `svg` string is sanitized before drawing.
-- **Colours are colour names.** A colour in widget data is a **colour name**: `warm`, `green`, `amber`, `slate` or `teal`, exactly as written; anything else is no colour, and the linter reports it. The renderer draws the name in the active theme's colours, so a widget looks right in every theme. `green`, `amber` and `warm` are the colours the three tones `good`, `warn` and `bad` use (section 6); `slate` and `teal` have no tone. "Tone" means `good`, `warn` or `bad` and nothing else.
+- **Colours are colour names.** A colour in widget data is a **colour name**: `warm`, `green`, `amber`, `slate`, `teal`, `blue` or `purple`, exactly as written; anything else is no colour, and the linter reports it. The renderer draws the name in the active theme's colours, so a widget looks right in every theme. `green`, `amber` and `warm` are the colours the three tones `good`, `warn` and `bad` use (section 6); `slate`, `teal`, `blue` and `purple` have no tone. "Tone" means `good`, `warn` or `bad` and nothing else.
 
 **What each engine reads.** The keys of a widget's data, and nothing else is read.
 
@@ -741,7 +812,7 @@ A report or a dashboard page carries its numbers as a data block: a fenced block
 - It lives where a widget's data lives: inside its module's fence (and is that module's), or in the data section at the end (shared by every module).
 - Its id may not also be the id of an activity or a question in the same module, because a query reads by id and could not tell them apart.
 - A data block belongs to whoever wrote the file. A reader never changes it, it is not a record, and a renderer writes it back exactly as it found it.
-- Nothing is computed from it. Whatever wrote the file has already ordered, counted and filtered the rows; a renderer draws them. Draw them with a `booklet query` (section 6).
+- Nothing is computed from it. Whatever wrote the file has already ordered, counted and filtered the rows; a renderer draws them. Draw them with a `booklet query` (section 6). The one exception is a summary of kept entries (`summary: on`, section 6), which is for kept entries only and never for a data block.
 
 ### A theme: how the booklet would like to look
 
@@ -803,6 +874,7 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 
 - `answers` holds once-answered questions, keyed by question id within the module whose records line it sits under, so no activity prefix is needed. Records sit in the records section at the end, grouped by module under `> [!records|<module>]` lines, never inside a module's fence (section 3).
 - `entries <activity>` holds a `repeat` activity's kept entries, each with a `ts`, identified by timestamp. `draft <activity>` holds what is typed and not yet kept. Each names the activity by the id the file gives it, in the module whose records line it sits under.
+- **A day** is the calendar date of an entry's `ts` in the reader's own time zone, and "today" is the reader's date at the moment the page is drawn. `repeat daily` (section 3) keeps one entry a day by this day, and a span of days, `limit: 7 days` (section 6), is counted in these days.
 - A choice is stored as the option's position from 1, a scale as the anchor's number. Words are shown by the renderer from the file's own lists. A string in a choice or multi answer is the reader's own option (`open`, section 5): it is shown as it was written.
 - **The whole records section sits inside `%%` … `%%`**, which hides it from Obsidian's Reading view. A block a `![[…]]` embed points to is never put inside `%%`, because an embed cannot reach a block hidden that way — only data no other part of the file references belongs there, and the records section is exactly that.
 - **A reader writes back every record it read, unchanged, unless the reader changed it.** That covers an answer to a question the reader does not know (a kind from a later version) or that the design no longer has; an entry or a draft for an activity the design no longer has; a record block the reader does not understand, such as `sync` or a kind a later version adds; and a block it could not parse, which is written back exactly as it was and is still reported (section 12). A record is dropped only when the reader changes it: an answer the reader clears, a module the reader removes. A reader may write a record's JSON with other spacing, and may sort a list of entries; it changes no value.
@@ -942,6 +1014,7 @@ This is a young format, and the reference renderer does not yet do everything th
 - **The drafts below.** The manifest and the linter's sibling check are written down and not built.
 - **Reading `sync`**, the record of where a file is kept (section 8). A reader keeps the block as written; it does not read it.
 - **Showing images to a booklet that was not opened from the host's store or the default folder** (section 6). The reference renderer reads images only from the store its host declares, or from its default folder on a page that declares none, and only for a booklet opened from it. For any other booklet (one from a file, one from the registry, or one a host handed over on a page with no store) it draws the alt text in a quiet box that says the image is not shown, with the address as text beneath. A way to give such a booklet its images, such as a folder of images picked by hand, is not built.
+- **Summaries** (`summary: on`, section 6). The reference renderer reads the key and shows a line saying summaries are not yet supported in place of the view; it does not work out the rows. A span of days, `limit: 7 days`, is drawn.
 - **Roles on kept-entry cards** (section 6): `label`, `value`, `note`, `badge` and `tone` are not drawn on cards over kept entries.
 - **Heading links in the booklet's opening** (section 3). The opening belongs to no module, so a `[[#Heading]]` link there leads only to a heading among the activities outside every module fence, and is otherwise drawn as plain words.
 - **Footnotes in the booklet's opening and in a title** (sections 3 and 4). The reference renderer leaves a mark there out and draws no note.

@@ -279,13 +279,13 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
    "id": "draining",
    "label": "Draining",
    "note": "Less activated and unpleasant. Sadness, grief, shame, guilt. These feelings slow you down — sometimes to grieve or repair, sometimes further than is helpful.",
-   "color": "slate"
+   "color": "blue"
   },
   {
    "id": "soothing",
    "label": "Soothing",
    "note": "Less activated and pleasant. Warmth, comfort, safety, caring, connection. These feelings say that it is all right to rest, and that you are not alone.",
-   "color": "teal"
+   "color": "purple"
   }
  ],
  "items": [

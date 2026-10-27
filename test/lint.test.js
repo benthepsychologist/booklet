@@ -53,7 +53,7 @@ const CASES=[
  ["lint-query-other-module","a query whose `from:` is in another module",/line 23: the query's `from: elsewhere` is in another module/],
  ["lint-query-no-entries","a query of an activity that keeps no entries",/line 23: the query's `from: once` keeps no entries/],
  ["lint-query-bad-field","a query whose `fields:` names a question not in the activity",/line 23: the query's `fields: far` is not a question of 'log'/],
- ["lint-query-bad-newest","a query still using `newest:` (it became `limit:` in 0.7)",/line 25: a query has no setting 'newest' \(it takes from, as, fields, group, limit, parent, empty, label, value, note, badge, tone, link, icon\)/],
+ ["lint-query-bad-newest","a query still using `newest:` (it became `limit:` in 0.7)",/line 25: a query has no setting 'newest' \(it takes from, as, fields, group, limit, parent, empty, label, value, note, badge, tone, link, icon, summary\)/],
  ["lint-query-old-title","a query still using `title:` (it became `label:` in 0.7)",/line 28: a query has no setting 'title'/],
  ["lint-query-bad-key","a query with a setting it does not take",/line 25: a query has no setting 'sort'/],
  ["lint-query-not-kv","a query body line that is not `key: value`",/line 25: a query line is written `key: value` \(found 'limit 3'\)/],
@@ -83,6 +83,8 @@ const CASES=[
  ["lint-query-in-data","a query in the data section",/line 19: a query belongs in an activity's prose, not in the data section/],
  ["lint-widget-unknown-engine","a widget naming an engine that does not exist",/line 16: the widget \^picker-data names the engine 'tag-cloud', which is not one of svg-regions, grid-select/],
  ["lint-limit-zero","a query with `limit: 0`",/line 17: the query's `limit: 0` must be a positive whole number/],
+ ["lint-limit-week","a query with `limit: week` (0.16: a bad span is an error)",/line 16: the query's `limit: week` must be a positive whole number, or a number of days such as `7 days`/],
+ ["lint-summary-yes","a query with `summary: yes` (0.16: only `on`)",/line 16: the query's `summary: yes` must be `on`/],
 ];
 for(const [name,what,rx] of CASES){
   const r=lint(path.join(FX,name+".md"));
@@ -142,6 +144,12 @@ for(const [name,what,rx] of CASES){
  chk("`as: cards` over a data block, with `label:`, `fields:` and `limit:`, lints clean (cards draw label, fields, limit, link, icon)",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);
  chk("and so does the prose and the reading callout before the file's first module line (the booklet's opening)",r.status===0&&r.errors.length===0&&r.warns.length===0,r.out);}
 
+{// 0.16: a span of days and summaries, written correctly, are clean; on a data block they are a warning
+ const ok=lint(path.join(FX,"lint-span-summary-ok.md"));
+ chk("`limit: 7 days`, `limit: 1 day` and `summary: on` (with tiles, bars and a single question) lint clean",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);
+ const w=lint(path.join(FX,"lint-span-data-warn.md"));
+ chk("a span of days and a summary on a data block: one warning naming the line, no error",w.status===0&&w.errors.length===0&&w.warns.length===1&&/line 13: the query's `limit: 7 days` and `summary: on` are ignored/.test(w.warns[0]||""),w.out);}
+
 {// a query written correctly is clean
  const r=lint(path.join(FX,"lint-query-ok.md"));
  chk("a `booklet query` block with every setting lints clean",r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);}
@@ -185,7 +193,7 @@ const CASES5=[
  ["lint-theme-in-module","a theme inside a module fence",/line 13: a theme belongs to the booklet, not to a module/],
  ["lint-row-end-alone","a row closed that was never opened",/line 13: a row is closed that was never opened/],
  ["lint-row-unclosed","a row never closed",/line 13: the row opened here runs into a module fence/],
- ["lint-tone-bad-name","a widget colour that is not a tone name",/line 16: the widget \^picker-data has the colour 'pink', which is not a colour name \(warm, green, amber, slate, teal\)/],
+ ["lint-tone-bad-name","a widget colour that is not a tone name",/line 16: the widget \^picker-data has the colour 'pink', which is not a colour name \(warm, green, amber, slate, teal, blue, purple\)/],
  ["lint-tone-hex-pair","a widget colour that is a pair of hex colours (0.13: colours are names only)",/line 16: the widget \^picker-data has the colour \{'tint': '#F0D9CF', 'deep': '#A04E34'\}, which is not a colour name/],
  ["lint-tone-not-string-or-pair","a widget colour that is not a string",/line 16: the widget \^picker-data has the colour .*, which is not a colour name/],
 ];
