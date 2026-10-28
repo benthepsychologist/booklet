@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-KtZeSeipMWQ6tu0JIyZrkL93hpCmoQf5me5NY/H3QCk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-ZyTPnFReXLtLoQPXwKxj/oAUhonz2P5Fhon7MRcdnM0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1771,7 +1771,7 @@ const STRINGS_SRC={
       queryKeyUnknown: (w,key)=>`${w}: a query has no setting “${key}”, so it was ignored`,
       queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number or a number of days (such as \`7 days\`), so it was ignored`,
       querySummaryBad: (w,v)=>`${w}: the query's \`summary: ${v}\` is not \`on\`, so it was ignored`,
-      queryEntriesOnly: (w,keys)=>`${w}: the query's ${keys} reads kept entries only, so it was ignored`,
+      queryEntriesOnly: (w,keys,n)=>`${w}: the query's ${keys} ${n>1?"read":"reads"} kept entries only, so ${n>1?"they were":"it was"} ignored`,
       queryInData: w=>`${w}: a query belongs in an activity's prose, not in the data section, so it was ignored`,
       recordNoItems: (w,id)=>`${w}: the entries record for “${id}” holds no list of items, so it is kept as written`,
       recordOutside: (w,what)=>`${w}: a “booklet ${what}” block belongs in the records region, so it is not read here`,
@@ -4355,7 +4355,7 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
    const entriesOnly=({block,line})=>{const v=block.view||{},ks=[];
      if(v.days){ks.push("limit: "+v.days+" days");delete v.days;}
      if(v.summary){ks.push("summary: on");delete v.summary;}
-     if(ks.length) problems.push(P.queryEntriesOnly(P.line(line),ks.map(k=>"`"+k+"`").join(", ")));};
+     if(ks.length) problems.push(P.queryEntriesOnly(P.line(line),ks.map(k=>"`"+k+"`").join(", "),ks.length));};
    for(const x of queries){const {q,block}=x,drop=why=>{problems.push(P.queryRefused(shortId(x.act.id),why));
        x.act.pages.forEach(pg=>stripBlock(pg.blocks,block));};
      const here=moduleHolding(modules,x.act),sc=scopeOf(here),as=(q.view||{}).as;
@@ -6262,11 +6262,12 @@ function queryEntries(from,activityId,days){
   return inSpan([...keptFor(from)],days).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
 /* `limit: N days` (SPEC.md section 6, a day as section 8 defines it): the entries whose own calendar date, in the reader's time zone,
    is today or one of the N-1 dates before it. Today is taken now, when the page is drawn. An entry whose `ts` will not parse, or
-   is in the future, is in no span. No `days` is every entry. */
+   is later than that moment (even later today), is in no span. No `days` is every entry. */
 function inSpan(ents,days){if(!days) return ents;
-  const first=new Date();first.setDate(first.getDate()-(days-1));
-  const from=localStamp(first).slice(0,10),to=todayDate();
-  return ents.filter(e=>{if(!e||!Number.isFinite(Date.parse(e.ts))) return false;const d=dayKey(e.ts);return d>=from&&d<=to;});}
+  /* compared as moments, not as date text, so any year holds: from the first moment of the oldest day to now (taken once) */
+  const now=new Date(),first=new Date(now);first.setDate(first.getDate()-(days-1));first.setHours(0,0,0,0);
+  const from=first.getTime(),to=now.getTime();
+  return ents.filter(e=>{const t=e?Date.parse(e.ts):NaN;return Number.isFinite(t)&&t>=from&&t<=to;});}
 /* A kept entry as a card: a `.when` line holding `whenKids` (none when null),
    then what each question in `qs` recorded, as a `dl`. Returns the card and how
    many questions had an answer to show. */

@@ -203,6 +203,8 @@ VIEW_DRAWS = {
     "line": ("label", "value", "fields", "limit"),
 }
 QUERY_EVERY_VIEW = ("from", "as", "empty", "summary")
+# the fields a summary's rows carry (SPEC.md section 6), and the two roles that default to one of them
+SUMMARY_FIELDS = ("label", "count", "days", "average", "lowest", "highest", "total", "most", "value", "note")
 # the settings that name a field of the rows being drawn
 QUERY_FIELD_KEYS = ("group", "parent", "label", "value", "note", "badge", "tone", "link", "icon")
 
@@ -287,7 +289,9 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             warn(f, f"line {n}: the query's default view, `{view}`, does not draw `{key}`")
     # cards over kept entries are titled by their date and list their questions: the roles that name a row's parts are not drawn there
     # (over a data block they are: `label` the title, `value` the figure, `note`, `badge`, `tone`)
-    if view == "cards" and src_act:
+    # (a summary's rows are not kept entries: their fields are the summary's own, below)
+    summarising = s.get("summary") == "on" and bool(src_act)
+    if view == "cards" and src_act and not summarising:
         for key in ("label", "value", "note", "badge", "tone"):
             if key in s:
                 warn(f, f"line {n}: the query's `{key}:` is not drawn on cards over kept entries (each card is titled by its date and lists its questions); use `as: list` or `as: table` to draw it")
@@ -295,10 +299,17 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     names = None
     if src_data is not None:
         names = src_data
+    elif src_act and summarising:
+        # summary rows (SPEC.md section 6) carry the statistics as named fields, and `value` and `note` are their default roles
+        names = set(SUMMARY_FIELDS)
+        if "group" in s:
+            warn(f, f"line {n}: the query's `group: {s['group']}` is ignored: summary rows have nothing to group by")
     elif src_act:
         names = {q for q, a in q_owner.items() if a == src_act and (src_q is None or q == src_q)} | {"date"}
     if names is not None:
         for key in QUERY_FIELD_KEYS:
+            if key == "group" and summarising:
+                continue
             if key in s and key not in ignored and s[key] not in names:
                 warn(f, f"line {n}: the query's `{key}: {s[key]}` names a field the rows never carry")
         if src_data is not None and "fields" in s and "fields" not in ignored:
@@ -346,7 +357,8 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     summing = s.get("summary") == "on"
     if (spanning or summing) and (src_data is not None or (src_q is not None and not act_info[src_act][1])):
         what = " and ".join(([f"`limit: {s['limit']}`"] if spanning else []) + (["`summary: on`"] if summing else []))
-        warn(f, f"line {n}: the query's {what} {'is' if spanning != summing else 'are'} ignored: they read kept entries, and `from: {src_id}` is not an activity that keeps them")
+        one = spanning != summing
+        warn(f, f"line {n}: the query's {what} {'is' if one else 'are'} ignored: {'it reads' if one else 'they read'} kept entries, and `from: {src_id}` is not an activity that keeps them")
     if src_act:
         src_mod, keeps = act_info[src_act]
         # a file with no module fence is one module

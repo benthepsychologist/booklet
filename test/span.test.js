@@ -111,6 +111,7 @@ const blocks=(R,id)=>R.template.modules.find(m=>m.id==="span").activities.find(a
    {ts:at(3,23,50),situation:"out-3-late",ease:1},     /* the last minutes of the day before it */
    {ts:at(5,12,0),situation:"out-5",ease:1},
    {ts:at(-1,12,0),situation:"out-tomorrow",ease:2},   /* in the future */
+   {ts:new Date(Date.now()+10*60*1000).toISOString(),situation:"out-later-today",ease:2},   /* ten minutes from now: later today is the future too */
    {ts:"not a date",situation:"out-bad",ease:2},
    {ts:undefined,situation:"out-none",ease:2});
  A.screen="span/look";A.render();
@@ -118,12 +119,12 @@ const blocks=(R,id)=>R.template.modules.find(m=>m.id==="span").activities.find(a
  const first=seen.slice(0,seen.indexOf("Summarised"));
  chk("`limit: 3 days` shows today, yesterday and the day before, to its first minute",["in-today","in-1","in-2-early"].every(w=>first.includes(w)),first);
  chk("and not the last minutes of the day before that, an older day, tomorrow, or an entry whose `ts` will not parse",
-   ["out-3-late","out-5","out-tomorrow","out-bad","out-none"].every(w=>!first.includes(w)),first);
+   ["out-3-late","out-5","out-tomorrow","out-later-today","out-bad","out-none"].every(w=>!first.includes(w)),first);
  /* a query with no span shows every entry: the span is the query's own */
  A.parseFile(FX_ALL);
  const whole=A.queryEntries("span/log","span/look");
- chk("a query with no span shows every entry, those too (the span is the query's own)",whole.length===8,String(whole.length));
- chk("the entries stay in the file as written: a span hides, it deletes nothing",kept.length===8&&/out-bad/.test(A.toMarkdown())&&/out-tomorrow/.test(A.toMarkdown()));
+ chk("a query with no span shows every entry, those too (the span is the query's own)",whole.length===9,String(whole.length));
+ chk("the entries stay in the file as written: a span hides, it deletes nothing",kept.length===9&&/out-bad/.test(A.toMarkdown())&&/out-tomorrow/.test(A.toMarkdown()));
 
  /* ---- every view takes the span ---- */
  const block=qs[0];
@@ -135,6 +136,12 @@ const blocks=(R,id)=>R.template.modules.find(m=>m.id==="span").activities.find(a
  chk("the span keeps the order (newest first)",sorted.join()==="in-today,in-1,in-2-early",sorted.join());
  chk("`limit: 1 day` is today alone",A.entrySet({...block,view:{days:1},fields:undefined},"span/look","cards").rows.map(r=>r.situation).join()==="in-today");
  chk("a span on one question reads that question's answers in the span",A.queryEntries("span/log","span/look",2).map(e=>e.situation).join()==="in-today,in-1",A.queryEntries("span/log","span/look",2).map(e=>e.situation).join());
+
+ /* a very long span reaches back past the year 1000: moments are compared, not date text with an unpadded year */
+ kept.push({ts:"0500-03-01T12:00:00.000Z",situation:"in-ancient",ease:1});
+ const long=A.queryEntries("span/log","span/look",900000).map(e=>e.situation);
+ chk("a span of 900,000 days reaches an entry from the year 500, and still leaves out the future",long.includes("in-ancient")&&long.includes("in-today")&&!long.includes("out-later-today")&&!long.includes("out-tomorrow"),long.join());
+ kept.pop();
 
  /* ---- a summary is not yet drawn here: a line says so, in place of the view, never the plain entries ---- */
  const sum=seen.slice(seen.indexOf("Summarised"),seen.indexOf("A span of data"));

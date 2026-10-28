@@ -148,6 +148,10 @@ for(const [name,what,rx] of CASES){
  const ok=lint(path.join(FX,"lint-span-summary-ok.md"));
  chk("`limit: 7 days`, `limit: 1 day` and `summary: on` (with tiles, bars and a single question) lint clean",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);
  const w=lint(path.join(FX,"lint-span-data-warn.md"));
+ const sr=lint(path.join(FX,"lint-summary-roles-ok.md"));
+ chk("a summary's own fields (`value: total`, `note: highest`, `value: count`, `fields: date, feel`) and `as: cards` lint clean",sr.status===0&&/0 errors · 0 warnings/.test(sr.out),sr.out);
+ const sg=lint(path.join(FX,"lint-summary-group-warn.md"));
+ chk("`group:` with `summary: on`: one warning, as SPEC says it is ignored and reported",sg.status===0&&sg.errors.length===0&&sg.warns.length===1&&/line 22: the query's `group: feel` is ignored/.test(sg.warns[0]||""),sg.out);
  chk("a span of days and a summary on a data block: one warning naming the line, no error",w.status===0&&w.errors.length===0&&w.warns.length===1&&/line 13: the query's `limit: 7 days` and `summary: on` are ignored/.test(w.warns[0]||""),w.out);}
 
 {// a query written correctly is clean
