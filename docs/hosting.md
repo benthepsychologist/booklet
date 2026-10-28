@@ -2,7 +2,7 @@
 
 This page is for someone who serves the renderer (`booklet.html`) on their own site or machine and wants a reader's work saved somewhere other than the reader's browser. It is the contract such a host follows.
 
-It describes renderer 0.11.4 and later (the section on `window.bookletStyle`, 0.12.0 and later; when `onChange` is called, and the save status the reader sees, 0.13.1 and later; the default folder, `modules/` beside the renderer, 0.15 and later). The format (`SPEC.md`) is not involved: nothing here changes what a booklet file may say.
+It describes renderer 0.11.4 and later (the section on `window.bookletStyle`, 0.12.0 and later; when `onChange` is called, and the save status the reader sees, 0.13.1 and later; the default folder, `modules/` beside the renderer, 0.15 and later; the refusal to write records after a body that ends inside a code fence that never closes, 0.16 and later). The format (`SPEC.md`) is not involved: nothing here changes what a booklet file may say.
 
 ## When the renderer will hand a booklet to a host
 

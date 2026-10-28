@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-FZOcveGr1iNOAhO/DGvSlk2Mw7YBUFUc3fwMltu4JOQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-gc/2z0BZCmbuqbl4Ze6fQF8W+a8zCSeFNAlNF1nMAJE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -8577,7 +8577,9 @@ function hostTime(d){const p=n=>String(n).padStart(2,"0");return p(d.getHours())
    was read or downloaded, that; with a host, where saves go, then its last answer ("Saved 10:42", "Saving…", "Not saved:
    message", with "trying again" after it while a change waits to be sent or is on its way), or the file when that is what
    saved it. A save the renderer refused itself (FENCE_OPEN) is "Not saved" and then why, with no "trying again": the
-   next try is refused too until the file's fence is closed. */
+   next change is refused too while it would still put records after the body. Once a change can be written again (the
+   answers that needed records all taken back, or the fence closed in the file), hookFire drops the reason and sends it,
+   and the line is a failed save's again, "trying again" included, until the host says saved. */
 function hostLineText(u){const st=saveState(),mine=hostActive()&&!(hookOpen()&&!hookBook());
   const byFile=st==="saved"&&!(mine&&HOST.status==="saved");
   if(!mine) return byFile?u.saveSince:u.hostKept;
@@ -8647,6 +8649,9 @@ function hookFire(){HOOK_TIMER=null;HOOK_DUE=0;
      sent, a failed save, Unsaved, with the reason behind it (FENCE_OPEN) and no wait for an answer to an earlier send to
      replace it; the change goes with the next one that can be written */
   if(text===null){hookStopWait();HOST.status="failed";HOST.message=FENCE_OPEN;HOST.silent=false;HOOK_SEEN="";return drawSaveState();}
+  /* a text that can be written: the refusal's reason no longer holds, so it is not shown beside this send (the status stays a
+     failed save until the host says saved for it, as after any failure) */
+  if(HOST.message===FENCE_OPEN) HOST.message="";
   const key=currentId+"\u0000"+text;
   /* the text is what was last sent: nothing is unsent, and if the host said saved for that text, it is saved */
   if(key===HOOK_SEEN){HOOK_UNSENT=false;if(HOST.savedKey===key&&HOOK_ANSWER_TIMER===null) HOST.status="saved";return calm();}
@@ -8672,7 +8677,9 @@ function hookFire(){HOOK_TIMER=null;HOOK_DUE=0;
    waiting for the pause, or held back) is not about the latest change: it leaves the status at Saving, with Saved kept for
    when that change turns out to be no change (calm, HOST.savedKey), and a failure in place. "failed" is shown at once, and
    stays until a "saved" for the latest change (see hookChanged). After a failure the text it was about counts as not sent,
-   so the next change goes again even if it leaves the text as it was. */
+   so the next change goes again even if it leaves the text as it was. While the latest change was one the renderer refused
+   to write (FENCE_OPEN, hookFire), a "failed" about a change sent before it leaves that reason in place: the refusal is
+   what the reader can act on, and it still holds. */
 function hostSet(status,message,silent,change){if(!hostActive()) return;
   const n=typeof change==="number"?change:isObj(change)&&typeof change.change==="number"?change.change:null;
   const waiting=HOOK_TIMER!==null||HOOK_UNSENT;
@@ -8682,6 +8689,7 @@ function hostSet(status,message,silent,change){if(!hostActive()) return;
   hookStopWait();
   if(status==="saved"){HOST.at=new Date();HOST.savedKey=HOOK_SEEN;}
   if(status==="saved"&&waiting){if(HOST.status!=="failed"){HOST.prev="saved";HOST.status="saving";}}
+  else if(status==="failed"&&HOST.status==="failed"&&HOST.message===FENCE_OPEN) HOST.silent=false;
   else{HOST.silent=!!silent;HOST.message=status==="failed"?message||"":"";HOST.status=status;}
   if(status==="failed"){HOOK_SEEN="";HOST.savedKey="";}
   drawSaveState();}

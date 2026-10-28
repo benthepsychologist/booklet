@@ -59,7 +59,7 @@ const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
 
 /* ---- the host's write-back and Booklet.text() ---- */
 {P.wipe();P.place("http:","fleet");global.__ls["booklet.host.allowed"]="fleet: garden";const A=P.boot(),B=A.BookletApi;
- const calls=[];B.host({label:"fleet: garden"});B.onChange(x=>{calls.push(x);});
+ const calls=[],h=B.host({label:"fleet: garden"}),line=()=>A.hostLineText(A.STRINGS.en.ui);B.onChange(x=>{calls.push(x);});
  B.open(OPEN,{name:"garden/week.booklet.md"});await sleep(700);
  chk("opened with nothing changed, the host is sent the file as it is",calls.length===1&&calls[0].text===OPEN,calls.map(c=>show(c.text)).join());
  const n=calls.length;A.screen="a1";A.render();const ta=P.find(P.main(),x=>x.tagName==="textarea")[0];ta.value="runner beans";ta._on.input();
@@ -67,11 +67,53 @@ const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
  chk("an answer is not sent to the host",calls.length===n,calls.slice(n).map(c=>show(c.text)).join());
  chk("the save status says Unsaved, and the line behind it says why",P.byId("saveBtn").attrs["data-state"]==="unsaved"&&
    A.hostLineText(A.STRINGS.en.ui).includes(say(A,"en"))&&/^Saves go to: fleet: garden · Not saved/.test(A.hostLineText(A.STRINGS.en.ui)),A.hostLineText(A.STRINGS.en.ui));
+ /* a late answer about the change sent before the refusal (the open's): the refusal still holds, and its reason stays */
+ h.failed("the disk is full",calls[0]);
+ chk("a late failed() for the change sent before the refusal leaves the fence's reason in the line",
+   P.byId("saveBtn").attrs["data-state"]==="unsaved"&&line().includes(say(A,"en"))&&!/disk is full/.test(line()),line());
+ h.failed("the disk is full");
+ chk("and so does a failed() that names no change",line().includes(say(A,"en"))&&!/disk is full/.test(line()),line());
  chk("Booklet.text() gives the host nothing to write",B.text()==="",show(B.text()));
  chk("and the answer stays in the page",A.peekAnswers("").q1==="runner beans");
  A.lang="fr";chk("the line says why in the reader's language",A.hostLineText(A.STRINGS.fr.ui).includes(say(A,"fr")),A.hostLineText(A.STRINGS.fr.ui));A.lang="en";
+ ta.value="runner peas";ta._on.input();await sleep(700);
+ chk("typed again: refused again, with the fence's reason in the line",calls.length===n&&line().includes(say(A,"en")),line());
  ta.value="";ta._on.input();await sleep(700);
- chk("the answer taken back, the host is sent the file as it was, and nothing more",calls.length===n+1&&calls[n].text===OPEN,calls.slice(n).map(c=>show(c.text)).join());}
+ chk("the answer taken back, the host is sent the file as it was, and nothing more",calls.length===n+1&&calls[n].text===OPEN,calls.slice(n).map(c=>show(c.text)).join());
+ /* the reason is gone with the answer: the line is a failed save's until the host answers, "trying again" while it is awaited */
+ chk("and the line no longer gives the fence's reason: it says Not saved, trying again, while the host's answer is awaited",
+   !line().includes(say(A,"en"))&&/Not saved/.test(line())&&line().includes(A.STRINGS.en.ui.saveAgain),line());
+ h.saved(calls[n]);
+ chk("the host's saved() for that change makes it Saved",P.byId("saveBtn").attrs["data-state"]==="saved"&&!line().includes(say(A,"en")),
+   P.byId("saveBtn").attrs["data-state"]+" | "+line());}
+
+/* ---- every kind of fence: a write is refused exactly when the answer would not be read back from the file ----
+   For each body, the writer's own text (toMarkdown, which never refuses) is read again: if the answer is not in what it reads,
+   the region went into a fence, and the download must be refused; if it is, the download must be that text, byte for byte. */
+{const CASES=[
+   ["a tilde fence, never closed","~~~\nbeans\n",true],
+   ["four backticks opened, three after","````\nbeans\n```\n",true],
+   ["three backticks opened, four after (it closes)","```\nbeans\n````\n",false],
+   ["a closing line with an info string (it does not close)","```\nbeans\n``` shed\n",true],
+   ["an opener indented three spaces, never closed","   ```\nbeans\n",true],
+   ["an opener indented four spaces (indented code, not a fence)","    ```\n    beans\n",false],
+   ["Windows line endings, never closed",{crlf:"```text\nbeans\n"},true],
+   ["Windows line endings, closed",{crlf:"```text\nbeans\n```\n"},false],
+   ["a byte order mark, never closed",{bom:"```text\nbeans\n"},true],
+   ["an opener with no line ending after it","```text",true],
+   ["a fence in a quote, never closed (the quote ends it)","> ```\n> beans\n",false],
+   ["a fence in a callout, never closed (the callout ends it)","> [!note] Shed\n> ```\n> beans\n",false],
+   ["a fence in the front matter only",{fm:"text\n"},false]];
+ for(const [name,body,refuse] of CASES){
+   const text=typeof body==="string"?FM+ACT+body:body.crlf!==undefined?(FM+ACT+body.crlf).replace(/\n/g,"\r\n")
+     :body.bom!==undefined?"﻿"+FM+ACT+body.bom:FM.replace("lang: en\n","lang: en\nnote: \"```\"\n")+ACT+body.fm;
+   const A=load(text);A.answersIn("").q1="runner beans";A.markDirty();
+   const t=A.toMarkdown(),back=((A.parseFile(t).S||{}).answers||{})[""]||{},readBack=back.q1==="runner beans";
+   BLOBS.length=0;await A.download();
+   const refused=BLOBS.length===0;
+   chk(name+": "+(refuse?"refused, as the answer would not be read back":"written as the writer writes it, and the answer is read back"),
+     refused===refuse&&readBack===!refuse&&(refused?toastText()===say(A,"en")&&A.STATE.answers[""].q1==="runner beans":BLOBS[0]===t),
+     "refused "+refused+", read back "+readBack+" "+show(t));}}
 
 /* ---- a body whose fences all close: written exactly as before ---- */
 {const CLOSED=FM+ACT+"A reminder for the shed:\n\n```text\nwater the beans at dawn\n```";
