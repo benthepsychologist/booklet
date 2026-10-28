@@ -74,7 +74,7 @@ The file has three parts, in order:
 | --- | --- | --- |
 | **Front matter** (`---` on line 1) | `booklet: "0.15"`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design |
-| **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | the renderer only; a fresh file has none at all |
+| **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only (the web renderer, or the Booklet plugin in Obsidian), which writes back only what the reader changed; a fresh file has none at all |
 
 **Never invent or edit:** kept entries or answers, a `sync` record, a module's
 `notice` terms nobody gave you, a kind or engine not listed here. When changing
@@ -1295,7 +1295,7 @@ whether to publish it. Lint it the same way:
 python3 lint-booklet.py my-module.booklet.md
 ```
 
-For anything this document does not cover, such as a Booklet plugin for
-Obsidian, `SPEC.md` is the authority. If someone
+For anything this document does not cover, such as how a renderer writes the
+records back, `SPEC.md` is the authority. If someone
 hands you a file this renderer and validator refuse to open, say so plainly
 rather than guessing at what it might have once been.

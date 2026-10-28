@@ -347,7 +347,7 @@ part("the linter",()=>{const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"answers01
 /* ---- 7. a daily activity's draft that holds only pairs for picks taken back keeps them when today's entry is shown ---- */
 part("seeding a daily draft",()=>{
  const today=new Date().toISOString(),A=P.boot();
- A.loadText(FM+`> [!activity|log repeat daily] Log
+ const T0=FM+`> [!activity|log repeat daily] Log
 
 > [!multi|tools open] Which tools?
 - [ ] Hammer
@@ -369,12 +369,15 @@ part("seeding a daily draft",()=>{
 {"tools":[],"why":[{"pick":1,"a":"the draft's newer hammer"},{"pick":3,"a":"the draft's drill"}]}
 \`\`\`
 %%
-`);
+`;A.loadText(T0);
  A.screen="log";A.render();
  const why=A.draftFor("log").why,want=[{pick:1,a:"the draft's newer hammer"},{pick:3,a:"the draft's drill"},{pick:2,a:"the entry's saw"}];
  chk("today's entry is shown, and the draft's pairs go over the entry's pick by pick, the entry's other pairs beside them",
    JSON.stringify(A.draftFor("log").tools)==="[1,2]"&&JSON.stringify(why)===JSON.stringify(want),JSON.stringify(A.draftFor("log")));
- chk("and the file written holds them",A.toMarkdown().includes(JSON.stringify(want)));});
+ /* (lane 4, SPEC section 8: what is shown is not written until the reader changes it, as the Obsidian plugin does) */
+ chk("and the file written is the file read until the reader changes the draft",A.toMarkdown()===T0);
+ A.draftFor("log").why[1].a="the draft's sharper drill";A.markDirty();
+ chk("then the file written holds them, the reader's change with them",A.toMarkdown().includes(JSON.stringify([want[0],{pick:3,a:"the draft's sharper drill"},want[2]])));});
 
 /* ---- 8. a follow-up named alone in `from:`: rows in a table, a list and cards; a line saying so in tiles, bars and a line ---- */
 part("a follow-up alone in from:",()=>{
