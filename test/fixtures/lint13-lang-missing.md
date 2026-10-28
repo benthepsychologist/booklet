@@ -1,5 +1,5 @@
 ---
-booklet: "0.15"
+booklet: "0.16"
 title: Lint fixture
 ---
 

@@ -47,13 +47,13 @@ function agrees(A,label){A.flushSave();
 
  /* ---- what a file keeps as written travels with the text ---- */
  P.wipe();A=P.boot();
- const KEEP='---\nbooklet: "0.15"\ntitle: Kept\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n\n'+
+ const KEEP='---\nbooklet: "0.16"\ntitle: Kept\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n\n'+
    '%%\n> [!records] App record\n\n```booklet sync\n{"by":"another reader"}\n```\n\n> [!records|later] Later module\n\n```booklet answers\n{"x":"from the file"}\n```\n\n%%\n';
  A.loadText(KEEP);
  chk("a file's records kept as written (a sync record, a records line for a module it does not hold) are written back",/booklet sync/.test(A.toMarkdown())&&/records\|later/.test(A.toMarkdown()));
  A=agrees(A,"a booklet holding kept records");
  chk("and come back after a reload",/booklet sync/.test(A.toMarkdown())&&/"from the file"/.test(A.toMarkdown()));
- const LATER='---\nbooklet: "0.15"\ntitle: Later\nlang: en\n---\n\n> [!module|later] Later module\n\n> [!activity|b] B\n\n> [!text|x] X\n\n> [!module|later end] End\n';
+ const LATER='---\nbooklet: "0.16"\ntitle: Later\nlang: en\n---\n\n> [!module|later] Later module\n\n> [!activity|b] B\n\n> [!text|x] X\n\n> [!module|later end] End\n';
  chk("adding the module those records named",A.addModuleText(LATER).ok);
  chk("its kept answers are now the reader's, as the file read back would have them",A.peekAnswers("later").x==="from the file",json(A.STATE.answers));
  A=agrees(A,"after the module the records named is added");
@@ -78,7 +78,7 @@ function agrees(A,label){A.flushSave();
    delete o.text;o.TPL={...JSON.parse(json(K.BOOK)),booklet:"0.12",customized:true,languages:["en"]};o.TPL.raw.source=then12;
    LS[key]=json(o);P.closePages();return {id,key};};
  {const then=OLD12("> [!text|long seen] What did you see?\n\n> [!text|long heard] What did you hear?");
-  const {id,key}=await keep12(OLD12("> [!text|seen long] What did you see?\n\n> [!text|heard long] What did you hear?").replace('"0.12"','"0.15"'),then,{seen:"I saw the tide",heard:"I heard gulls"});
+  const {id,key}=await keep12(OLD12("> [!text|seen long] What did you see?\n\n> [!text|heard long] What did you hear?").replace('"0.12"','"0.16"'),then,{seen:"I saw the tide",heard:"I heard gulls"});
   const line=then.split("\n").indexOf("> [!text|long heard] What did you hear?")+1;
   const B=P.boot();B.openBooklet(id);B.screen="m/a";B.render();
   const fields=P.find(P.main(),n=>n.tagName==="textarea").map(n=>n.value);
@@ -92,7 +92,7 @@ function agrees(A,label){A.flushSave();
   P.closePages();const C=P.boot();C.openBooklet(id);C.screen="m/a";C.render();
   chk("and a reload opens it the same way",json(P.find(P.main(),n=>n.tagName==="textarea").map(n=>n.value))===json(["I saw the tide","I heard gulls"])&&C.BOOK.title==="Fixed later");}
  {const then=OLD12("> [!text|seen] What did you see?\n\n> [!row|end]");
-  const {id,key}=await keep12(OLD12("> [!text|seen] What did you see?").replace('"0.12"','"0.15"'),then,{seen:"Low water"});
+  const {id,key}=await keep12(OLD12("> [!text|seen] What did you see?").replace('"0.12"','"0.16"'),then,{seen:"Low water"});
   const entry=()=>JSON.parse(LS["booklet.library.v1"]).entries.find(e=>e.id===id),e0=entry(),d0=JSON.parse(LS[key]).dirty;
   const B=P.boot();B.openBooklet(id);B.screen="m/a";B.render();
   const box=P.find(P.main(),P.hasClass("filenotes"))[0],items=P.find(box||{},n=>n.tagName==="li").map(P.texts);
@@ -103,7 +103,7 @@ function agrees(A,label){A.flushSave();
   P.closePages();const C=P.boot();C.openBooklet(id);C.screen="m/a";C.render();
   chk("opened again, it shows no notice (0.13.0 showed it once), and its answer is there",!P.find(P.main(),P.hasClass("filenotes")).length&&P.find(P.main(),n=>n.tagName==="textarea").map(n=>n.value).join()==="Low water");}
  /* the rewrite tells a host nothing: a host's booklet kept by 0.12 calls the host as often on its first open as on the next */
- {const {id,key}=await keep12(OLD12("> [!text|seen] What did you see?").replace('"0.12"','"0.15"'),OLD12("> [!text|seen] What did you see?\n\n> [!row|end]"),{seen:"Low water"});
+ {const {id,key}=await keep12(OLD12("> [!text|seen] What did you see?").replace('"0.12"','"0.16"'),OLD12("> [!text|seen] What did you see?\n\n> [!row|end]"),{seen:"Low water"});
   {const L=JSON.parse(LS["booklet.library.v1"]);L.entries.find(e=>e.id===id).from="store:old.booklet.md";LS["booklet.library.v1"]=json(L);}
   const opened=async()=>{P.closePages();P.place("http:","fleet");LS["booklet.host.allowed"]="h";const H=P.boot();H.BookletApi.host({label:"h"});
     const calls=[];H.BookletApi.onChange(x=>calls.push(x));H.openBooklet(id);await new Promise(r=>setTimeout(r,800));return calls.length;};

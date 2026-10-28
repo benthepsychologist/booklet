@@ -8,7 +8,7 @@ const fs=require("fs"),os=require("os"),path=require("path"),cp=require("child_p
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-const FM='---\nbooklet: "0.15"\ntitle: "Parts"\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.16"\ntitle: "Parts"\nlang: en\n---\n\n';
 const BODY=`> [!module|m] Module M
 
 > [!activity|plain] Plain

@@ -1,5 +1,5 @@
 ---
-booklet: "0.15"
+booklet: "0.16"
 id: test/submit-seen
 title: Seen test
 lang: en

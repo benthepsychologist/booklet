@@ -13,7 +13,7 @@ const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const THEME=s=>s?'```booklet theme\nstyle: '+s+'\n```\n\n':'';
 const FILE=style=>`---
-booklet: "0.15"
+booklet: "0.16"
 title: Opening test
 lang: en
 ---
@@ -143,7 +143,7 @@ Text.
   /* ---- review fixes ---- */
   {const file=path.join(OUT,'f012-extra.booklet.md');
    fs.writeFileSync(file,`---
-booklet: "0.15"
+booklet: "0.16"
 title: Extra
 lang: en
 ---
@@ -219,10 +219,10 @@ Only prose.
 [^x]: *Activity source*, p. 2: "Activity quote."
 `;
    const files={
-     one:`---\nbooklet: "0.15"\ntitle: One\nlang: en\n---\n\n> [!module|one] One module\n\n## Background\n\nOpening mark[^o].\n\n> [!activity|a] Only\n\n## Background\n\nActivity mark[^x]. See [[#Background]].\n\n${NOTES}\n> [!module|one end] End\n`,
-     multi:`---\nbooklet: "0.15"\ntitle: Multi\nlang: en\n---\n\n> [!module|mm icon:compass] Multi module\n\nOpening mark[^o].\n\n> [!activity|a icon:house] First\n\nActivity mark[^x].\n\n> [!activity|b] Second\n\nPlain.\n\n${NOTES}\n> [!module|mm end] End\n`,
-     iconOnly:`---\nbooklet: "0.15"\ntitle: Icon\nlang: en\n---\n\n> [!module|io icon:compass] Icon module\n\n> [!activity|a icon:house] Only\n\nProse.\n\n> [!module|io end] End\n`,
-     actIcon:`---\nbooklet: "0.15"\ntitle: ActIcon\nlang: en\n---\n\n> [!module|ai] Plain module\n\nAn opening.\n\n> [!activity|a icon:house] Only\n\nProse.\n\n> [!module|ai end] End\n`};
+     one:`---\nbooklet: "0.16"\ntitle: One\nlang: en\n---\n\n> [!module|one] One module\n\n## Background\n\nOpening mark[^o].\n\n> [!activity|a] Only\n\n## Background\n\nActivity mark[^x]. See [[#Background]].\n\n${NOTES}\n> [!module|one end] End\n`,
+     multi:`---\nbooklet: "0.16"\ntitle: Multi\nlang: en\n---\n\n> [!module|mm icon:compass] Multi module\n\nOpening mark[^o].\n\n> [!activity|a icon:house] First\n\nActivity mark[^x].\n\n> [!activity|b] Second\n\nPlain.\n\n${NOTES}\n> [!module|mm end] End\n`,
+     iconOnly:`---\nbooklet: "0.16"\ntitle: Icon\nlang: en\n---\n\n> [!module|io icon:compass] Icon module\n\n> [!activity|a icon:house] Only\n\nProse.\n\n> [!module|io end] End\n`,
+     actIcon:`---\nbooklet: "0.16"\ntitle: ActIcon\nlang: en\n---\n\n> [!module|ai] Plain module\n\nAn opening.\n\n> [!activity|a icon:house] Only\n\nProse.\n\n> [!module|ai end] End\n`};
    const go=async(name)=>{const f=path.join(OUT,'f012-r2-'+name+'.booklet.md');fs.writeFileSync(f,files[name]);
      const pg=await (await b.newContext({viewport:{width:1100,height:900}})).newPage();
      pg.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))cons.push(m.text());});pg.on('pageerror',e=>errs.push(e.message));

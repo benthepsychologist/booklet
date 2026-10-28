@@ -15,7 +15,7 @@ if(!process.env.SPAN_ZONE){
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const FX_ALL=`---
-booklet: "0.15"
+booklet: "0.16"
 id: fixture/span
 title: A span of days
 lang: en
@@ -149,9 +149,12 @@ const blocks=(R,id)=>R.template.modules.find(m=>m.id==="span").activities.find(a
  chk("and not the entries as if the key were not there",!/in-today|in-1|in-2-early/.test(sum),sum);
  const data=seen.slice(seen.indexOf("A span of data"));
  chk("a data block beside it is drawn as it always was, with no 'not yet supported' line",/a row of data/.test(data)&&!/not yet supported/.test(data),data);
- for(const [lang,rx] of [["fr",/^Les résumés \(summary: on\) ne sont pas encore pris en charge/],["es",/^Los resúmenes \(summary: on\) aún no son compatibles/]])
+ for(const [lang,rx] of [["fr",/^Les résumés \(summary: on\) ne sont pas encore pris en charge/],["es",/^Los resúmenes \(summary: on\) aún no se admiten/]])
    chk("the line is in "+lang+" too",rx.test((A.STRINGS[lang].query||{}).summaryLater||""),JSON.stringify((A.STRINGS[lang]||{}).query));
  for(const lang of ["en","fr","es"]){const p=A.STRINGS[lang].problem;
-   chk("the reports are in "+lang+" too",["querySummaryBad","queryEntriesOnly"].every(k=>typeof p[k]==="function"&&p[k]({code:"x"},"v").length>10));}
+   chk("the reports are in "+lang+" too",["querySummaryBad","queryEntriesOnly"].every(k=>typeof p[k]==="function"&&p[k]({code:"x"},"v").length>10));
+   /* the "kept entries only" report names one key or two, and says so in the number its words take, in every language */
+   const one=p.queryEntriesOnly("line 3","`limit:`",1),two=p.queryEntriesOnly("line 3","`limit:`, `summary:`",2);
+   chk("in "+lang+", the kept-entries-only report's words follow how many keys it names",one!==two&&one.replace("`limit:`","")!==two.replace("`limit:`, `summary:`",""),one+" | "+two);}
  console.log(fails?"\n"+fails+" FAILURES":"\nspan checks passed");process.exit(fails?1:0);
 })().catch(e=>{console.log("  FAIL  the suite threw: "+(e&&e.stack||e));process.exit(1);});

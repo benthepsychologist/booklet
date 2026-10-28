@@ -11,7 +11,7 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
-const FM='---\nbooklet: "0.15"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
 (async()=>{
  const A=P.boot();
  const mod=R=>R.template.modules[0];
