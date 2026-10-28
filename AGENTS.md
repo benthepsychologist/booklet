@@ -51,6 +51,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
    capabilities, versions, inventory, or known gaps change.
 5. After any change to the renderer's scripts (the theme-boot script, the main script or a vendored library), run `node test/csp-hash.js --write booklet.html`: the renderer carries its own Content-Security-Policy as a meta tag, naming those scripts by sha256, and `test/run.sh` and CI fail on a stale one.
    After any change to `art/`, run `node test/art-sprite.js --write booklet.html` (the picture sprite is generated from that folder, and so is the list of icon names in `lint-booklet.py` between its `# icons:start` and `# icons:end` lines; `--check` is in `test/run.sh`). The renderer also carries two font families as `data:` fonts, so its policy allows `font-src data:` and nothing more.
+   **The compiler, `compile/`, is a fifth part** (beside the renderer, the format, the validator and the submit build): a Node build step that turns a booklet into a plain web page (`compile/README.md`). It reads the format only through `booklet.html`'s own parse and Markdown engine, never with a pattern of its own, and never reads a file's records; `test/compile-guard.test.js` fails when a renderer name it uses is renamed or gone. After a change that alters what a page holds, run `node test/compile-golden.test.js --write` and commit the pages it rewrites.
 6. Open a pull request. `.github/workflows/ci.yml` runs the same checks; a
    merge to `main` publishes at once (`CONTRIBUTING.md`).
 
