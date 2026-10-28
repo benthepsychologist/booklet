@@ -54,7 +54,7 @@ const seen=P.texts(P.main());
 
 /* 4. answer, keep, write, read back */
 const d=A.draftFor("mensio-check-in/check-in");
-d.body=["chest"];d.emotions=["curiosity"];d.other="the kettle";d.thoughts=["the deadline",""];
+d.body=[{id:"chest",s:[]}];d.emotions=["curiosity"];d.other="the kettle";d.thoughts=["the deadline",""];
 A.finalizeEntry("mensio-check-in/check-in");
 const kept=A.keptFor("mensio-check-in/check-in");
 chk("the check-in is kept as an entry",kept.length===1&&kept[0].other==="the kettle");

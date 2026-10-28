@@ -225,8 +225,8 @@ const boot=()=>{P.wipe();const A=P.boot();A.loadText(OPEN);return A;};
 
 /* ---- A5: the settings table ---- */
 {const A=P.boot();
- chk("KIND_SETTINGS is the table of SPEC.md section 4",JSON.stringify(A.KIND_SETTINGS)===JSON.stringify({module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:","tab:"],row:["end"],text:["long"],
-   lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],tab:[],choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]}));
+ chk("KIND_SETTINGS is the table of SPEC.md section 4",JSON.stringify(A.KIND_SETTINGS)===JSON.stringify({module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:","tab:"],row:["end"],text:["long","each:"],
+   lines:["each:","earlier:"],scale:["each:"],matrix:["each:"],date:["each:"],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],tab:[],choice:["open","menu:","each:","earlier:"],multi:["open","menu:","each:","earlier:"],number:["min:","max:","step:","each:"],widget:["readonly","describe","each:","earlier:"]}));
  const mk=body=>A.parseFile("---\nbooklet: \"0.15\"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n"+body+"\n");
  const q=(R,id)=>R.template.modules[0].activities[0].pages[0].blocks.find(b=>b.id===id);
  let R=mk("> [!number|n mx:5 min:1] N");

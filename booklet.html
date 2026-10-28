@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-ZyTPnFReXLtLoQPXwKxj/oAUhonz2P5Fhon7MRcdnM0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-Hpvkz7TWoMW9lvQB1kt/rS5voVcOsgY5yjaB2YIMHvc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -292,6 +292,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   h3{font-family:var(--sans);font-weight:700;font-size:.95rem;letter-spacing:.02em;margin:1.75rem 0 .5rem;color:var(--accent)}
   .aside{color:var(--muted);font-size:.95rem}
   .hint{color:var(--muted);font-size:.88rem;font-family:var(--sans)}
+  .q-kept-v{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.85rem;margin:.3rem 0 0}
 
   /* top bar: opaque, and its 1px shadow of its own colour (the paper's) covers the part of a pixel that --ap-top, rounded up,
      leaves above what is held under it */
@@ -1488,11 +1489,15 @@ const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
-const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:","tab:"],row:["end"],text:["long"],
-  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],tab:[],
-  choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
+const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:","tab:"],row:["end"],text:["long","each:"],
+  lines:["each:","earlier:"],scale:["each:"],matrix:["each:"],date:["each:"],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],tab:[],
+  choice:["open","menu:","each:","earlier:"],multi:["open","menu:","each:","earlier:"],number:["min:","max:","step:","each:"],widget:["readonly","describe","each:","earlier:"]};
 /* the settings above that must be numbers */
 const NUMBER_SETTINGS=["min","max","step"];
+/* `earlier:`'s value: a whole number in digits only (SPEC.md section 4); the linter's EARLIER_VALUE is the same, and test/guard.test.js pins the two */
+const EARLIER_VALUE=/^[0-9]+$/;
+/* how many earlier words a question offers at each place when its line does not say (SPEC.md section 5) */
+const EARLIER_DEFAULT=12;
 const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
 /* An id belongs to its module (SPEC.md section 4). Inside the page an activity is known by its
    ADDRESS: its module's id, a slash, and the id the file gives it (an id never holds a slash, so
@@ -1684,7 +1689,9 @@ const STRINGS_SRC={
       notQuite: "Not quite",
       theAnswer: "The answer",
       liveRight: "Right.",
-      liveNot: a=>`Not quite. The answer is ${a}.`
+      liveNot: a=>`Not quite. The answer is ${a}.`,
+      eachNotYet: "This question is asked once for each pick in another, which this page does not draw yet. Its answers are kept as written.",
+      keptAsWritten: (k,widget,each)=>`Kept as written: this answer is not in the shape ${each?"a question asked for each pick keeps (a list of pairs, one for each pick)":(widget?"a "+k+" widget":(/^[aeiou]/.test(k)?"an ":"a ")+k+" question")+" keeps"}, so it is shown here and not changed. The file holds:`
     },
     query: {
       empty: "Nothing kept here yet.",
@@ -1705,7 +1712,8 @@ const STRINGS_SRC={
         numbers: "Show the numbers",
         bars: (n,lo,hi)=>`Bar chart, ${n===1?"1 bar":n+" bars"}, from ${lo} to ${hi}`,
         line: (n,names,lo,hi)=>`Line chart of ${names}, ${n===1?"1 point":n+" points"}, from ${lo} to ${hi}`
-      }
+      },
+      eachNotYet: "This view does not draw a question asked for each pick yet; a table, a list or cards show it."
     },
     /* what the file parser says is wrong with a file, and the messages that
        load and add-a-module refuse with. `w` is a place, "line 12" (see `line`);
@@ -1763,6 +1771,13 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: this scale question has no anchors under it (a numbered list)`,
       settingUnknown: (w,kind,s)=>`${w}: ${/^[aeiou]/.test(kind)?"an":"a"} ${kind} line takes no “${s}”, so it was ignored`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
+      earlierBad: (w,v)=>`${w}: \`earlier:${v}\` is not a whole number written in digits, so it was ignored and the question offers its default`,
+      eachNone: (w,id)=>`${w}: “${id}” is to be asked for each pick, and its each: names nothing, so it was ignored`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” is to be asked for each pick of “${s}”, which is no question or widget in its activity, so its each: was ignored`,
+      eachSelf: (w,id)=>`${w}: “${id}” is to be asked for each pick of itself, so its each: was ignored`,
+      eachKind: (w,id,s,k)=>`${w}: “${id}” is to be asked for each pick of “${s}”, a ${k} question: only a choice, a multi or a widget can be a source, so its each: was ignored`,
+      eachChain: (w,id,s)=>`${w}: “${id}” is to be asked for each pick of “${s}”, which is itself asked for each pick of another (one level only), so its each: was ignored`,
+      shapesKept: n=>`${n===1?"One answer is not in the shape its question keeps, so it is":n+" answers are not in the shape their questions keep, so they are"} kept as written: shown read-only with a notice, and left out of what views show`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` is not a setting a line takes (only \`status:off\`), so it was ignored`,
       dailyAlone: w=>`${w}: \`daily\` needs \`repeat\`, so it was ignored`,
       iconUnknown: (w,n)=>`${w}: “${n}” is not a name in Booklet's icon set, so it was ignored`,
@@ -2022,7 +2037,9 @@ const STRINGS_SRC={
       notQuite: "Pas tout à fait",
       theAnswer: "La réponse",
       liveRight: "Juste.",
-      liveNot: a=>`Pas tout à fait. La réponse est ${a}.`
+      liveNot: a=>`Pas tout à fait. La réponse est ${a}.`,
+      eachNotYet: "Cette question est posée une fois pour chaque choix d’une autre question, ce que cette page n’affiche pas encore. Ses réponses sont gardées telles quelles.",
+      keptAsWritten: (k,widget,each)=>`Gardée telle quelle : cette réponse n’a pas la forme que garde ${each?"une question posée pour chaque choix (une liste de paires, une par choix)":widget?"un élément "+k:"une question "+k} ; elle est donc affichée ici sans être modifiée. Le fichier contient :`
     },
     query: {
       empty: "Rien n’est encore enregistré ici.",
@@ -2043,7 +2060,8 @@ const STRINGS_SRC={
         numbers: "Afficher les chiffres",
         bars: (n,lo,hi)=>`Diagramme à barres, ${n===1?"1 barre":n+" barres"}, de ${lo} à ${hi}`,
         line: (n,names,lo,hi)=>`Graphique linéaire de ${names}, ${n===1?"1 point":n+" points"}, de ${lo} à ${hi}`
-      }
+      },
+      eachNotYet: "Cette vue n’affiche pas encore une question posée pour chaque choix ; un tableau, une liste ou des cartes l’affichent."
     },
     problem: {
       line: n=>`ligne ${n}`,
@@ -2097,6 +2115,14 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w} : cette question scale n’a pas d’ancres en dessous (une liste numérotée)`,
       settingUnknown: (w,kind,s)=>`${w} : une ligne ${kind} n’accepte pas « ${s} » ; il a donc été ignoré`,
       numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
+      earlierBad: (w,v)=>`${w} : \`earlier:${v}\` n’est pas un nombre entier écrit en chiffres ; il a donc été ignoré et la question propose son nombre par défaut`,
+      eachNone: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix, et son each: ne nomme rien ; il a donc été ignoré`,
+      eachMissing: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui n’est ni une question ni un élément de son activité ; son each: a donc été ignoré`,
+      eachSelf: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix d’elle-même ; son each: a donc été ignoré`,
+      eachKind: (w,id,s,k)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », une question ${k} : seule une question choice ou multi, ou un élément, peut en être la source ; son each: a donc été ignoré`,
+      eachChain: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui est elle-même posée pour chaque choix d’une autre (un seul niveau) ; son each: a donc été ignoré`,
+      shapesKept: n=>n===1?"Une réponse n’a pas la forme que garde sa question ; elle est donc gardée telle quelle : affichée en lecture seule avec un avis, et laissée hors de ce que montrent les vues"
+        :`${n} réponses n’ont pas la forme que gardent leurs questions ; elles sont donc gardées telles quelles : affichées en lecture seule avec un avis, et laissées hors de ce que montrent les vues`,
       statusBad: (w,v)=>`${w} : \`status:${v}\` n’est pas un réglage que la ligne accepte (seulement \`status:off\`) ; il a donc été ignoré`,
       dailyAlone: w=>`${w} : \`daily\` nécessite \`repeat\` ; il a donc été ignoré`,
       iconUnknown: (w,n)=>`${w} : « ${n} » ne fait pas partie des icônes de Booklet ; il a donc été ignoré`,
@@ -2356,7 +2382,9 @@ const STRINGS_SRC={
       notQuite: "No del todo",
       theAnswer: "La respuesta",
       liveRight: "Correcto.",
-      liveNot: a=>`No del todo. La respuesta es ${a}.`
+      liveNot: a=>`No del todo. La respuesta es ${a}.`,
+      eachNotYet: "Esta pregunta se hace una vez por cada elección de otra pregunta, algo que esta página todavía no muestra. Sus respuestas se guardan tal como están.",
+      keptAsWritten: (k,widget,each)=>`Se guarda tal como está: esta respuesta no tiene la forma que guarda ${each?"una pregunta que se hace por cada elección (una lista de pares, uno por elección)":widget?"un elemento "+k:"una pregunta "+k}, así que se muestra aquí sin cambios. El archivo contiene:`
     },
     query: {
       empty: "Todavía no hay nada guardado aquí.",
@@ -2377,7 +2405,8 @@ const STRINGS_SRC={
         numbers: "Mostrar los números",
         bars: (n,lo,hi)=>`Gráfico de barras, ${n===1?"1 barra":n+" barras"}, de ${lo} a ${hi}`,
         line: (n,names,lo,hi)=>`Gráfico de líneas de ${names}, ${n===1?"1 punto":n+" puntos"}, de ${lo} a ${hi}`
-      }
+      },
+      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada elección; una tabla, una lista o tarjetas la muestran."
     },
     problem: {
       line: n=>`línea ${n}`,
@@ -2431,6 +2460,14 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: esta pregunta scale no tiene anclas debajo (una lista numerada)`,
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
+      earlierBad: (w,v)=>`${w}: \`earlier:${v}\` no es un número entero escrito con cifras, así que se ignoró y la pregunta ofrece su valor por defecto`,
+      eachNone: (w,id)=>`${w}: “${id}” debe hacerse por cada elección, y su each: no nombra nada, así que se ignoró`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que no es una pregunta ni un elemento de su actividad, así que su each: se ignoró`,
+      eachSelf: (w,id)=>`${w}: “${id}” debe hacerse por cada elección de sí misma, así que su each: se ignoró`,
+      eachKind: (w,id,s,k)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, una pregunta ${k}: solo una pregunta choice o multi, o un elemento, puede ser la fuente, así que su each: se ignoró`,
+      eachChain: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que a su vez se hace por cada elección de otra (un solo nivel), así que su each: se ignoró`,
+      shapesKept: n=>n===1?"Una respuesta no tiene la forma que guarda su pregunta, así que se guarda tal como está: se muestra solo para leer, con un aviso, y queda fuera de lo que muestran las vistas"
+        :`${n} respuestas no tienen la forma que guardan sus preguntas, así que se guardan tal como están: se muestran solo para leer, con un aviso, y quedan fuera de lo que muestran las vistas`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` no es un ajuste que admita la línea (solo \`status:off\`), así que se ignoró`,
       dailyAlone: w=>`${w}: \`daily\` requiere \`repeat\`, así que se ignoró`,
       iconUnknown: (w,n)=>`${w}: “${n}” no está entre los íconos de Booklet, así que se ignoró`,
@@ -2694,7 +2731,7 @@ const dayKey=ts=>localStamp(new Date(ts)).slice(0,10);
 /* words compared for matching a vocabulary: case, curly quotes, dashes and spacing never matter (linkNorm, below, is for headings and keeps quotes) */
 const norm=s=>String(s).toLowerCase().replace(/[’‘`´]/g,"'").replace(/[—–]/g,"-").replace(/\s+/g," ").trim();
 /* a string with something other than whitespace in it; null and undefined are empty */
-const nonEmpty=v=>(v||"").trim().length>0;
+const nonEmpty=v=>typeof v==="string"&&v.trim().length>0;
 const splitList=s=>String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),3400);}
 const slugify=s=>String(s==null?"":s).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").normalize("NFC")
@@ -3821,7 +3858,8 @@ function checkSettings(it,where,P,icons){const allowed=KIND_SETTINGS[it.kind],ou
     if(key==="icon"&&allowed.includes("icon:")&&!icons.has(val)){out.push(P.iconUnknown(where,val));delete it.set[key];continue;}
     if(key==="status"&&allowed.includes("status:")&&val!=="off"){out.push(P.statusBad(where,val));delete it.set[key];continue;}
     if(!allowed.includes(key+":")){out.push(P.settingUnknown(where,it.kind,key+":"));delete it.set[key];continue;}
-    if(NUMBER_SETTINGS.includes(key)&&!(String(val).trim()!==""&&Number.isFinite(Number(val)))){out.push(P.numberBad(where,key,val));delete it.set[key];}}
+    if(NUMBER_SETTINGS.includes(key)&&!(String(val).trim()!==""&&Number.isFinite(Number(val)))){out.push(P.numberBad(where,key,val));delete it.set[key];}
+    if(key==="earlier"&&!EARLIER_VALUE.test(val)){out.push(P.earlierBad(where,val));delete it.set[key];}}
   for(const f of [...it.flags]) if(!allowed.includes(f)){out.push(P.settingUnknown(where,it.kind,f));it.flags.delete(f);}
   if(it.flags.has("daily")&&!it.flags.has("repeat")){out.push(P.dailyAlone(where));it.flags.delete("daily");}
   return out;}
@@ -3948,7 +3986,9 @@ function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),
   if(moved) problems.push(PROBLEM.designMoved);
   const doc=readBlocks(items,fm,problems,icons);
   resolveMenus(doc,problems);
+  resolveEach(doc,problems);
   linkQueries(doc,problems);
+  noteShapes(doc,problems);
   return shapeBooklet(doc,fm,L,source,problems);}
 function splitItems(lines,start,inner){let i=start;
   /* One pass over the lines, fences first: nothing inside a fence is ever a
@@ -4077,7 +4117,7 @@ const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 const helpOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),entryIx=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
-  const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
+  const queries=[],menus=[],menuUses=[],eachUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
   let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,grp=null,theme=null,recScope="",recForeign=null,dataMod=null;
   /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
      as a module's opening is, and drawn on the home screen. `started` is set when that first line is met. */
@@ -4283,6 +4323,9 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       if(r.bad){problems.push(r.bad);return;}
       if(k==="scale"){const seen=new Set(),d=it.anchors.find(a=>seen.size===seen.add(a.n).size);if(d) problems.push(P.scaleAnchorRepeat(where,d.n));}
       if(r.block.type==="widget"&&mod) r.block.module=mod.id;
+      /* `earlier:` (checkSettings has taken a bad value off); `each:` is settled once the file is read (resolveEach) */
+      if(it.set.earlier!==undefined) r.block.earlier=Number(it.set.earlier);
+      if(it.set.each!==undefined){r.block.each=it.set.each;eachUses.push({block:r.block,act,where});}
       lastQ=put(r.block);lastQAct=act;
       if(r.menu) menuUses.push({block:lastQ,menu:it.set.menu,mod,where});});
   /* A hint or a solution straight after a question belongs to it (SPEC.md section 6). Folded, it is the question's own `hint` or
@@ -4331,7 +4374,7 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
      within its module (a block outside every fence, in the module with no name) */
   dataBlocks.forEach(d=>{const set=ids.get(d.mod?d.mod.id:"");if(set&&set.has(d.id)) dup(P.line(d.line),d.id);});
   if(mod) refuse(P.moduleNeverClosed(P.line(mod.__line),mod.id));
-  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme,sharedNotes,recordsKept,opening};}
+  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,eachUses,figures,dataBlocks,theme,sharedNotes,recordsKept,opening};}
 function resolveMenus({menus,menuUses,modules},problems){const P=PROBLEM;
   /* a question that names a shared menu takes its options from it: from its own module's menus first,
      then from the data section's (a menu outside every fence), never from another module's */
@@ -4341,6 +4384,55 @@ function resolveMenus({menus,menuUses,modules},problems){const P=PROBLEM;
       modules.forEach(m=>m.activities.forEach(a=>a.pages.forEach(pg=>stripBlock(pg.blocks,u.block))));continue;}
     u.block.options=hit.items.slice();}
 }
+/* ---- An answer's shape (SPEC.md section 8), and a question asked for each pick (`each:`, section 5). An answer whose shape is not
+   its kind's is kept as written: its question is drawn read-only (renderBlock), nothing writes it, and a view leaves it out of its
+   row (entryFields). Its shape is the JSON type its kind stores, never whether a value is in range (a scale's 7 on anchors 0 to 4
+   fits): the same table as the Obsidian plugin's core/shape.ts. ---- */
+const wholeFrom=(x,n)=>typeof x==="number"&&Number.isInteger(x)&&x>=n;
+const isStr=x=>typeof x==="string";
+const everyIs=t=>v=>Array.isArray(v)&&v.every(t);
+const isPosOrOwn=x=>wholeFrom(x,1)||isStr(x);
+const KIND_SHAPE={text:isStr,date:isStr,lines:everyIs(isStr),number:x=>typeof x==="number"&&Number.isFinite(x),scale:x=>wholeFrom(x,0),
+  choice:isPosOrOwn,multi:everyIs(isPosOrOwn),matrix:everyIs(x=>x===null||wholeFrom(x,0))};
+const ENGINE_SHAPE={"grid-select":everyIs(isStr),"svg-regions":everyIs(r=>!!r&&typeof r==="object"&&!Array.isArray(r)&&isStr(r.id)&&everyIs(isStr)(r.s))};
+/* one pair of a question asked for each pick: its pick as the source stores it (a number or a string) and its answer `a`; other keys
+   a hand edit gave it are kept */
+const isPair=x=>!!x&&typeof x==="object"&&!Array.isArray(x)&&(isStr(x.pick)||(typeof x.pick==="number"&&Number.isFinite(x.pick)))&&hasOwn(x,"a");
+/* the widget a widget block names, among `ws`: its own module's, else the data section's (widgetOf reads the booklet in force) */
+const widgetIn=(ws,id,scope)=>(scope&&ws.find(w=>w.id===id&&w.module===scope))||ws.find(w=>w.id===id&&!w.module)||null;
+/* whether `v` is of the wrong shape for question `b` (`W`: a widget's data). An answer that holds nothing never is, and neither is
+   anything under a widget whose data or engine this page does not have, which nothing here writes. */
+function wrongShape(b,v,W){if(!holdsSomething(v)) return false;
+  const one=b.type==="widget"?(W&&hasOwn(ENGINE_SHAPE,W.engine)?ENGINE_SHAPE[W.engine]:null):hasOwn(KIND_SHAPE,b.type)?KIND_SHAPE[b.type]:null;
+  if(!one) return false;
+  return !(b.each?everyIs(p=>isPair(p)&&(!holdsSomething(p.a)||one(p.a))):one)(v);}
+/* a pick as a key that keeps its type: a position 3 is "n:3", an own option "3" is "s:3" */
+const pickKey=p=>(typeof p==="number"?"n:":"s:")+p;
+/* the picks in a source's answer, in the order it holds them, each once; an answer of the wrong shape holds none */
+function sourcePicks(src,v,W){if(!holdsSomething(v)||wrongShape(src,v,W)) return [];
+  const all=src.type==="choice"?[v]:src.type==="multi"?v:src.type==="widget"&&W?(W.engine==="svg-regions"?v.map(r=>r.id):W.engine==="grid-select"?v:[]):[];
+  const seen=new Set();
+  return all.filter(x=>{if(!(typeof x==="number"||(isStr(x)&&x.trim()))) return false;const k=pickKey(x);if(seen.has(k)) return false;seen.add(k);return true;});}
+const pairsOf=v=>Array.isArray(v)?v.filter(isPair):[];
+/* a pick's pair, compared exactly (a number and a string never match); the first, if a hand edit gave a pick two */
+const pairFor=(v,p)=>pairsOf(v).find(x=>x.pick===p);
+/* `each:<id>` holds when it names a choice, a multi or a widget in the question's own activity, not the question itself, and one
+   level only: the source has no `each:` of its own. One that does not hold is said and taken off, and the question is its kind. */
+const EACH_SOURCES=new Set(["choice","multi","widget"]);
+function resolveEach({eachUses},problems){const P=PROBLEM,named=new Set(eachUses.map(u=>u.block));
+  for(const {block:q,act,where} of eachUses){const s=String(q.each).trim();
+    const src=s&&act?blocksAll(activityBlocks(act)).find(b=>QUESTION_KINDS.has(b.type)&&b.id===s):null;
+    const why=!s?P.eachNone(where,q.id):s===q.id?P.eachSelf(where,q.id):!src?P.eachMissing(where,q.id,s)
+      :!EACH_SOURCES.has(src.type)?P.eachKind(where,q.id,s,src.type):named.has(src)?P.eachChain(where,q.id,s):null;
+    if(why){problems.push(why);delete q.each;}else q.each=s;}}
+/* how many answers are of the wrong shape, in the answers, the drafts and the kept entries: said once among the file's problems */
+function noteShapes({modules,widgets,answers,entries,drafts},problems){let n=0;
+  for(const m of modules) for(const a of m.activities){
+    const qs=blocksAll(activityBlocks(a)).filter(b=>QUESTION_KINDS.has(b.type));
+    const recs=a.kind==="entry"?[drafts[a.id],...(entries[a.id]||[])]:[answers[scopeOfAddr(a.id)]];
+    for(const r of recs) if(r&&typeof r==="object") for(const b of qs)
+      if(hasOwn(r,b.id)&&wrongShape(b,r[b.id],b.type==="widget"?widgetIn(widgets,b.widget,b.module):null)) n++;}
+  if(n) problems.push(PROBLEM.shapesKept(n));}
 function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
   /* A query reads within its own module, so a `from` that names nothing, or something only in another
      module, is refused here and never reaches drawing. It is looked for in the query's own module first
@@ -5689,7 +5781,7 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const wrap=el("div",{});
   let active=null, side=(figs[0]||{}).id||null;
   /* drawing reads the answer; only an answer writes it */
-  const rows=()=>e[key]||[];
+  const rows=()=>Array.isArray(e[key])?e[key].filter(r=>isObj(r)&&isStr(r.id)&&everyIs(isStr)(r.s)):[];
   const rowFor=id=>rows().find(r=>r.id===id);
   const sides=el("div",{class:"sideswitch",role:"group","aria-label":C.sideLbl||""});
   /* `readonly` (SPEC.md section 7): the figure is shown and its regions named, and nothing can be pointed at or answered */
@@ -5784,7 +5876,7 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const u=strings("ui");
   const cells=W.cells||[];const ax=W.axes||{};
   /* drawing reads the answer; only a press or a typed word writes it */
-  const chosen=()=>e[key]||[];
+  const chosen=()=>Array.isArray(e[key])?e[key].filter(isStr):[];
   const extra=id=>id.startsWith("x|");
   const itemLabel=id=>gridLabel(W,id);
   const box=el("div",{});
@@ -5850,7 +5942,7 @@ const ENGINES={"svg-regions":{draw:svgRegions,summary:regionNames},"grid-select"
 /* ======================= 9. QUESTIONS AND BLOCKS =======================
    drawing a block (a question, prose, a row, a widget), and keeping an activity's drafts and entries. */
 /* a text box bound to obj[key]: what is typed is kept at once */
-function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});ta.value=obj[key]||"";
+function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});ta.value=typeof obj[key]==="string"?obj[key]:"";
   const grow=()=>{ta.style.height="auto";ta.style.height=Math.max(ta.scrollHeight+4,rows*24+18)+"px";};
   ta.addEventListener("input",()=>{obj[key]=ta.value;markDirty();grow();});
   if(nonEmpty(ta.value)) requestAnimationFrame(grow);
@@ -5862,7 +5954,7 @@ function renderBlocks(list,draft,activityId,dc){const host=el("div",{});
 function entryCard(e,type,onDelete){const u=strings("ui");
   const tag=tx((moduleOf(type)||{}).title,shortId(activityOf(type).id));
   /* an entry is read back through the blocks that asked for it */
-  const {card}=entryBody(e,blocksOf(type),[el("span",{class:"tag"},...words(tag,true)),fmtWhen(e.ts)]);
+  const {card}=entryBody(e,blocksOf(type),[el("span",{class:"tag"},...words(tag,true)),fmtWhen(e.ts)],{asWritten:true});
   if(onDelete){const foot=el("div",{class:"foot"});const btn=el("button",{type:"button",class:"small danger"},u.del);
     btn.addEventListener("click",()=>{foot.innerHTML="";foot.append(el("span",{class:"inlineconfirm"},u.delConfirm,
       el("button",{type:"button",class:"small danger",onclick:onDelete},u.yes),el("button",{type:"button",class:"small",onclick:()=>{foot.innerHTML="";foot.append(btn);}},u.no)));});
@@ -5880,7 +5972,11 @@ function chipStrip(id){const u=strings("ui");const list=[...keptFor(id)].sort((a
 function removeEntry(id,ts){const arr=keptFor(id);const i=arr.findIndex(x=>x.ts===ts);if(i>=0){arr.splice(i,1);markDirty();}}
 function finalizeRow(onFinalize){const u=strings("ui");return el("div",{class:"finrow"},el("button",{type:"button",class:"finalize",onclick:onFinalize},u.finalize),el("span",{class:"hint"},u.finalizeHint));}
 /* every activity keeps its drafts and its kept entries under its own id */
-const anyFilled=e=>Object.keys(e||{}).some(k=>holdsSomething(e[k]));
+/* whether a draft holds anything: for activity `id`, a draft whose only answers are pairs for picks taken back counts as empty
+   (SPEC.md section 5, "A question asked for each pick") */
+const anyFilled=(e,id)=>{const fu=new Map(id?blocksOf(id).filter(q=>q.each).map(q=>[keysOf(q)[0],q]):[]);
+  return Object.keys(e||{}).some(k=>{if(!holdsSomething(e[k])) return false;const q=fu.get(k);
+    return !q||wrongShape(q,e[k],widgetFor(q))||heldPairs(q,e).some(p=>holdsSomething(p.a));});};
 const draftFor=id=>{DRAFTS.custom=DRAFTS.custom||nullMap();return hasOwn(DRAFTS.custom,id)?DRAFTS.custom[id]:(DRAFTS.custom[id]=nullMap());};
 const keptFor=id=>{STATE.entries=STATE.entries||{};STATE.entries[id]=STATE.entries[id]||[];return STATE.entries[id];};
 /* where an activity's answers live: a repeating one keeps a draft, any other the
@@ -5922,6 +6018,9 @@ function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"}
   /* a summary (SPEC.md section 6) is not drawn yet: the line says so, in place of the view, never the plain entries as if the key were not there */
   if(v.summary==="on"){box.append(el("p",{class:"hint"},strings("query").summaryLater));return box;}
   const none={kind:"entries",rows:[],keys:new Set(),own:[],first:"date",lab:k=>k,qs:[]};
+  /* a question asked for each pick, named alone in `from:`, has no one value for tiles, bars or a line (SPEC.md section 6) */
+  if(b.field&&["tiles","bars","line"].includes(v.as)&&blocksOf(b.from).some(q=>q.id===b.field&&q.each)){
+    box.append(el("p",{class:"hint"},strings("dv").eachNotYet));return box;}
   box.append(...viewNodes(queryReads(b,activityId)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}));
   return box;}
 /* A widget block names a widget; the widget names an engine. The renderer
@@ -5948,7 +6047,7 @@ function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[
   const head=questionHead(box,b);
   const tl=el("div",{});
   /* the lines typed so far, else one to type in (the draft holds them from the first keystroke, not the draw) */
-  const lines=()=>Array.isArray(draft[K])&&draft[K].length?draft[K]:[""];
+  const lines=()=>Array.isArray(draft[K])&&draft[K].length?draft[K].map(x=>isStr(x)?x:""):[""];
   const draw=()=>{tl.innerHTML="";lines().forEach((v,i)=>{
       const inp=el("input",{type:"text","aria-label":head});inp.value=v;
       inp.addEventListener("input",()=>{const l=lines();l[i]=inp.value;draft[K]=l;markDirty();
@@ -5963,13 +6062,19 @@ function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[
 const sameWords=(a,x)=>String(a).trim().toLowerCase()===String(x).trim().toLowerCase();
 /* an answer as a list: positions and the reader's own strings */
 const picksOf=v=>Array.isArray(v)?v:(v===null||v===undefined||v===""?[]:[v]);
-/* the reader's own options offered again: the words they added to this question in earlier kept entries of its
-   activity, most recent first, at most 12, leaving out any that are listed, or in the answer now, or repeated */
-function ownEarlier(activityId,K,listed,now){const out=[];
-  const kept=[...(((STATE.entries||{})[activityId])||[])].sort((a,x)=>String(x.ts).localeCompare(String(a.ts)));
+/* the reader's own options offered again (SPEC.md section 5, "Words the reader wrote before"): the words they added to question
+   `b` (under key K) in the kept entries of its activity, newest first by the time in their `ts`, at most 12 or the number its `earlier:` sets
+   (`earlier:0`, none), leaving out any that are listed, or in the answer now, or repeated. A daily activity's entry for today,
+   which the draft will replace, gives none, and neither does an answer not in its kind's shape. */
+const tsTime=t=>{const n=Date.parse(t);return Number.isFinite(n)?n:null;};
+const newestFirst=(a,x)=>{const p=tsTime(a.ts),q=tsTime(x.ts);return p!==null&&q!==null&&p!==q?q-p:String(x.ts).localeCompare(String(a.ts));};
+function ownEarlier(activityId,K,listed,now,b){const out=[],most=b&&b.earlier!==undefined?b.earlier:EARLIER_DEFAULT;
+  if(!(most>0)) return out;
+  const daily=activityOf(activityId).upsert==="day";
+  const kept=[...(((STATE.entries||{})[activityId])||[])].filter(e=>!(daily&&dayKey(e.ts)===todayDate())&&!(b&&wrongShape(b,e[K],null))).sort(newestFirst);
   for(const e of kept) for(const x of picksOf(e[K])){if(typeof x!=="string") continue;const t=x.trim();
     if(!t||listed.some(o=>sameWords(plainText(o),t))||now.some(o=>typeof o==="string"&&sameWords(o,t))||out.some(o=>sameWords(o,t))) continue;
-    out.push(t);if(out.length>=12) return out;}
+    out.push(t);if(out.length>=most) return out;}
   return out;}
 /* Options short enough (at most four, each at most 24 characters) sit as pills beside their question when there is room,
    under it when there is not; any longer list stands under the question as before. */
@@ -6031,7 +6136,7 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
     now.filter(x=>typeof x==="string").forEach(t=>pills.append(el("span",{class:"pill-own"},
       el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
       el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"))));
-    if(b.open) ownEarlier(activityId,K,listed,now).forEach(t=>pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":"false",
+    if(b.open) ownEarlier(activityId,K,listed,now,b).forEach(t=>pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":"false",
       onclick:()=>addOwn(t)},t)));
     if(graded){const c=chosen(),shown=multi?checked:typeof c[0]==="number";
       if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
@@ -6119,7 +6224,7 @@ function drawNumber(b,draft,activityId){const box=el("div",{});const K=b.keys[0]
   questionHead(box,b,id);
   const attrs={type:b.type,id,class:"field"};
   if(b.type==="number"){if(b.min!=null) attrs.min=b.min;if(b.max!=null) attrs.max=b.max;if(b.step!=null) attrs.step=b.step;}
-  const inp=el("input",attrs);if(draft[K]!=null) inp.value=draft[K];
+  const inp=el("input",attrs);if(typeof draft[K]==="number"||typeof draft[K]==="string") inp.value=String(draft[K]);
   inp.addEventListener("input",()=>{draft[K]=b.type==="number"?(inp.value===""?null:Number(inp.value)):inp.value;markDirty();});
   box.append(inp);return box;}
 const DRAW_BLOCK={
@@ -6136,11 +6241,25 @@ const DRAW_BLOCK={
   matrix:drawMatrix,
   number:drawNumber,
   date:drawNumber};
+/* A question whose answer is not in its kind's shape (SPEC.md section 8) is drawn read-only: its heading, a notice saying so and
+   what the file holds, as written, with nothing to press, so no tap writes it and the answer stays as it is. A question asked
+   for each pick (`each:`) is drawn as its heading and a line saying this page does not draw it yet; its answer stays as written.
+   Null for any other block, which its own drawer draws. */
+function keptQuestion(b,draft){if(!QUESTION_KINDS.has(b.type)) return null;
+  const K=keysOf(b)[0],W=b.type==="widget"?widgetOf(b.widget,b.module):null,v=K===undefined?undefined:draft[K],Q=strings("question");
+  const wrong=wrongShape(b,v,W);if(!wrong&&!b.each) return null;
+  /* a widget with no title of its own is headed by its widget's words, as drawWidget heads it */
+  const box=el("div",{class:"pblock q-kept"});questionHead(box,W&&!nonEmpty(tx(b.label,""))?{...b,label:tx(wordsOf(W.copy).h,"")}:b);
+  if(!wrong){box.append(el("p",{class:"hint"},Q.eachNotYet));return box;}
+  box.append(el("p",{class:"hint"},Q.keptAsWritten(W?W.engine:b.type,!!W,!!b.each)),
+    el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(v,null,1))));
+  return box;}
 function renderBlock(b,draft,activityId,dc){
+  const kq=keptQuestion(b,draft);
   /* a question's own hint and solution are its controls: handed to its drawer (choice and multi tell the solution what the
      reader did) and drawn at the end of its block */
   const qc=qControls(b,draft,activityId,dc);
-  const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc,qc)
+  const node=kq?kq:hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc,qc)
     :el("p",{class:"hint"},strings("ui").unknownBlock(b.type||"?",b.id||"?"));
   if(qc) node.append(qc.node);
   if(placeOf(b)!=="folded") return node;
@@ -6198,13 +6317,14 @@ function qControls(q,draft,activityId,dc){const sol=ownPart(q,"solution")?soluti
    replaces that day's entry instead of adding a second one. */
 function finalizeEntry(id){const u=strings("ui");
   const draft=draftFor(id);
-  if(!anyFilled(draft)){toast(u.nothingYet);return;}
+  if(!anyFilled(draft,id)){toast(u.nothingYet);return;}
   const kept=keptFor(id);
   /* an entry is identified by its ts (SPEC section 8), so two kept in the same millisecond must not share one: the later takes the next free millisecond */
   const e=nullMap(clone(draft)),taken=new Set(kept.map(x=>x.ts));let at=Date.now();while(taken.has(new Date(at).toISOString())) at++;
   e.ts=new Date(at).toISOString();
-  /* lines typed and left blank are not kept, whichever block owns them */
-  for(const k of Object.keys(e)) if(Array.isArray(e[k])&&e[k].every(x=>typeof x==="string")) e[k]=e[k].filter(nonEmpty);
+  /* lines typed and left blank are not kept, whichever block owns them; an answer not in its kind's shape is kept as written */
+  const qs=blocksOf(id).filter(b=>QUESTION_KINDS.has(b.type)),asWritten=k=>qs.some(b=>keysOf(b)[0]===k&&wrongShape(b,e[k],widgetFor(b)));
+  for(const k of Object.keys(e)) if(Array.isArray(e[k])&&e[k].every(x=>typeof x==="string")&&!asWritten(k)) e[k]=e[k].filter(nonEmpty);
   if(activityOf(id).upsert==="day"){
     const idx=kept.findIndex(x=>dayKey(x.ts)===dayKey(e.ts));
     if(idx>=0) kept[idx]=e; else kept.push(e);
@@ -6213,9 +6333,16 @@ function finalizeEntry(id){const u=strings("ui");
   unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;hookChanged("typed");render();saveLocal();toast(u.kept);}
 /* a daily activity's empty draft shows today's entry, to be finished again (settle) */
 function seedUpsertDraft(id,m,draft){
-  if(m.upsert!=="day"||anyFilled(draft)) return;
-  const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());
-  if(today){const {ts,...rest}=clone(today);Object.assign(draft,rest);}}
+  if(m.upsert!=="day"||anyFilled(draft,id)) return;
+  const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());if(!today) return;
+  /* a draft that counts as empty may still hold pairs for picks taken back: they are the reader's newer work, so whatever the
+     draft holds wins, a follow-up's pairs over the entry's pick by pick, the entry's pairs for other picks beside them */
+  const {ts,...rest}=clone(today);
+  for(const k of Object.keys(draft)){const v=draft[k],was=rest[k],q=blocksOf(id).find(x=>x.each&&keysOf(x)[0]===k);if(!holdsSomething(v)) continue;
+    if(q&&Array.isArray(v)&&Array.isArray(was)&&!wrongShape(q,v,widgetFor(q))&&!wrongShape(q,was,widgetFor(q))){
+      const mine=new Set(pairsOf(v).map(x=>pickKey(x.pick)));rest[k]=[...v,...was.filter(x=>!(isPair(x)&&mine.has(pickKey(x.pick))))];}
+    else rest[k]=v;}
+  Object.assign(draft,rest);}
 
 /* ======================= 10. QUERY VIEWS =======================
    row sets, roles, the views (table, list, tiles, cards, bars, line), the pipeline and its one control. */
@@ -6248,8 +6375,30 @@ const SUMMARY={
       return el("li",{},wordsNode(it,{lit:": "},typeof v[i]==="number"?(a?a.text:{lit:String(v[i])}):{lit:"\u2013"}));}))];},
   number:numberSummary,
   date:numberSummary};
-function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
+function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length||!holdsSomething(e[keys[0]])) return null;
   return hasOwn(SUMMARY,b.type)?SUMMARY[b.type](b,e,keys[0]):null;}
+const widgetFor=b=>b&&b.type==="widget"?widgetOf(b.widget,b.module):null;
+/* the source a question asked for each pick is asked of: a question or widget in its own activity (resolveEach made sure) */
+function eachSource(q){if(!q||!q.each) return null;const l=bookActivities().map(allBlocksOf).find(x=>x.includes(q));
+  return l?l.find(b=>QUESTION_KINDS.has(b.type)&&b.id===q.each)||null:null;}
+/* a follow-up's pairs whose pick the source holds in the same record `e`, in the source's order, with each pick: [{pick, a}] */
+function heldPairs(q,e){const src=eachSource(q),k=keysOf(q)[0];if(!src||k===undefined) return [];
+  return sourcePicks(src,e[keysOf(src)[0]],widgetFor(src)).map(p=>({p,x:pairFor(e[k],p)})).filter(o=>o.x).map(o=>({...o.x,pick:o.p}));}
+/* a pick's words, as a part wordsNode takes: a listed option's words, the reader's own as written, a widget's place or item */
+function pickPart(src,p){const W=widgetFor(src);
+  if(W) return {lit:String(W.engine==="svg-regions"?regionNames(W,[{id:p}])[0]:W.engine==="grid-select"?gridLabel(W,p):p)};
+  return typeof p==="string"?{lit:p}:((src.options||[])[p-1]||{lit:"#"+p});}
+const PICK_SEP="\u0001";
+/* What one question shows of a kept answer, as fields [{key, parts, node, v}]: `parts` its label (for wordsNode), `node` what it
+   shows, `v` the value. One field for most questions. None for an answer not in its kind's shape (SPEC.md section 8: a view leaves
+   it out of its row). A question asked for each pick has one field per pick its source holds in the same record, in the source's
+   order, labelled "<title> · <pick's words>" (section 6). */
+function entryFields(q,e){const k=keysOf(q)[0];if(k===undefined||!e) return [];
+  if(wrongShape(q,e[k],widgetFor(q))) return [];
+  if(!q.each){const r=fieldSummary(q,e);return r?[{key:q.id,parts:[r[0]],node:r[1],v:e[k]}]:[];}
+  const one={...q};delete one.each;const src=eachSource(q);
+  return heldPairs(q,e).flatMap(x=>{const r=fieldSummary(one,{[k]:x.a});
+    return r?[{key:q.id+PICK_SEP+pickKey(x.pick),parts:[r[0],{lit:" \u00b7 "},pickPart(src,x.pick)],node:r[1],v:x.a}]:[];});}
 /* A query reads what was kept in the SAME module: the kept entries of an
    activity that keeps them, newest first, and nothing across a module boundary
    (the activities outside every module fence are one module). `from` and `activityId` are addresses. */
@@ -6273,7 +6422,12 @@ function inSpan(ents,days){if(!days) return ents;
    many questions had an answer to show. */
 function entryBody(e,qs,whenKids,extra){extra=extra||{};
   const dl=el("dl",{});let rows=0;
-  for(const q of qs){const r=fieldSummary(q,e);if(r){rows++;dl.append(el("dt",{},wordsNode(r[0])),el("dd",{},r[1]));}}
+  for(const q of qs){const k=keysOf(q)[0],W=widgetFor(q);
+    /* a kept entry's own card shows an answer not in its kind's shape as written, with the notice; a view leaves it out */
+    if(extra.asWritten&&k!==undefined&&wrongShape(q,e[k],W)){rows++;
+      dl.append(el("dt",{},wordsNode(fieldLabel(q))),el("dd",{},el("p",{class:"hint"},strings("question").keptAsWritten(W?W.engine:q.type,!!W,!!q.each)),
+        el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(e[k],null,1)))));continue;}
+    for(const f of entryFields(q,e)){rows++;dl.append(el("dt",{},wordsNode(...f.parts)),el("dd",{},f.node));}}
   return {card:cardNode({mode:"item",cls:"entry",picture:extra.picture||null,kids:[whenKids?el("div",{class:"when"},...(extra.lead?extra.lead(whenKids):whenKids)):null,dl]}),rows};}
 function queryCard(e,from,fields,extra){
   /* `fields` names the questions, and their order is the order shown */
@@ -6308,23 +6462,27 @@ function entrySet(b,activityId,as){
   const named=(b.fields&&!b.field)?qs.filter(q=>b.fields.includes(q.id)):[];
   const need=named.length?named:qs;
   const raw=new Map(),ent=new Map(),mk=new Map();
+  /* a question asked for each pick is one field per pick (entryFields): its fields, in the order rows first show them */
+  const picks=new Map(qs.filter(q=>q.each).map(q=>[q.id,new Map()]));
   let rows=ents.map(e=>{const r={},w={};
     if(e.ts){r.date=numeric?dayMonth(e.ts):fmtWhen(e.ts);
       const t=Date.parse(e.ts);w.date=Number.isFinite(t)?t:String(e.ts);}
     let any=false;
-    for(const q of qs){const x=fieldSummary(q,e);if(!x) continue;
-      const n=(q.type==="number"||q.type==="scale")&&isFinite(parseFloat(e[q.id]))?Number(e[q.id]):null;
-      r[q.id]=numeric&&n!==null?n:nodeText(x[1]);
-      if(x[1]&&x[1].parts) mk.set(r,{...mk.get(r),[q.id]:x[1].parts});
-      if(n!==null) w[q.id]=n;
+    for(const q of qs) for(const f of entryFields(q,e)){
+      const n=(q.type==="number"||q.type==="scale")&&isFinite(parseFloat(f.v))?Number(f.v):null;
+      r[f.key]=numeric&&n!==null?n:nodeText(f.node);
+      if(f.node&&f.node.parts) mk.set(r,{...mk.get(r),[f.key]:f.node.parts});
+      if(n!==null) w[f.key]=n;
+      if(picks.has(q.id)&&!picks.get(q.id).has(f.key)) picks.get(q.id).set(f.key,f.parts);
       if(need.includes(q)) any=true;}
     if(!any) return null;
     raw.set(r,w);ent.set(r,e);return r;}).filter(Boolean);
   if(numeric) rows.reverse();
-  const own=["date",...qs.map(q=>q.id)];
-  const labw=k=>k==="date"?undefined:fieldLabel(qs.find(q=>q.id===k));
-  const lab=k=>k==="date"?strings("dv").date:plainText(labw(k));
-  return {kind:"entries",from:b.from,rows,keys:new Set(own),own,first:"date",lab,labw,qs,mk,
+  const expand=k=>picks.has(k)?[...picks.get(k).keys()]:[k],pickParts=k=>{for(const m of picks.values()) if(m.has(k)) return m.get(k);return null;};
+  const own=["date",...qs.flatMap(q=>expand(q.id))];
+  const labw=k=>k==="date"||pickParts(k)?undefined:fieldLabel(qs.find(q=>q.id===k));
+  const lab=k=>k==="date"?strings("dv").date:pickParts(k)?pickParts(k).map(x=>typeof x==="object"?x.lit:plainText(x)).join(""):plainText(labw(k));
+  return {kind:"entries",from:b.from,rows,keys:new Set(own),own,first:"date",lab,labw,qs,mk,expand,
     entryOf:r=>ent.get(r),sortVal:(r,k)=>{const w=raw.get(r);return w&&hasOwn(w,k)?w[k]:r[k];}};}
 const unset=v=>v==null||v==="";
 const sortCmp=(a,b)=>{
@@ -6588,7 +6746,9 @@ function nestRows(rows,pk,limit){
 const uniq=a=>a.filter((x,i)=>x&&a.indexOf(x)===i);
 /* the other fields a view shows: a table's columns, a list row's extras, a chart's series, a card's questions */
 function colsOf(as,set,v,roles){
-  const fields=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,mk=ks=>ks.map(k=>({key:k,label:set.lab(k),raw:set.labw&&set.labw(k)}));
+  /* `fields:` naming a question asked for each pick names its every pick's field (entrySet's expand); a card shows the question */
+  const named=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,fields=named&&as!=="cards"&&set.expand?named.flatMap(set.expand):named,
+    mk=ks=>ks.map(k=>({key:k,label:set.lab(k),raw:set.labw&&set.labw(k)}));
   /* the fields that play no role: a list's extras and a data block's card lines (never `id`, the group or the parent) */
   const rest=()=>{const d=VIEW_DRAWS[as],skip=new Set([...ROLE_NAMES.map(n=>roles[n]),d.includes("group")?v.group:null,d.includes("parent")?v.parent||"parent":null,"id"]);return set.own.filter(k=>!skip.has(k));};
   if(as==="table") return mk(fields||set.own);
