@@ -27,7 +27,7 @@ const GRID=JSON.stringify({engine:'grid-select',axes:{top:'more',bottom:'less',l
   cells:[{id:'a',label:'Agitating',color:'warm'},{id:'b',label:'Invigorating',color:'green'},{id:'c',label:'Draining',color:'slate'},{id:'d',label:'Soothing',color:'teal'}],
   items:[{id:'i1',cell:'a',label:'Tense'},{id:'i2',cell:'a',label:'Wired'},{id:'i3',cell:'b',label:'Curious'},{id:'i4',cell:'d',label:'Warm, tender'}]});
 const FILE=`---
-booklet: "0.15"
+booklet: "0.16"
 title: Fixes
 lang: en
 ---

@@ -54,7 +54,7 @@ chk("the ones that refuse the file are its refusals, and none else",files.every(
  chk("a refused file's refusals say so",r.ok===false&&r.refused.length>0&&r.refused.every(p=>p.refuses===true),json(r.refused));}
 
 /* ---- worded only when shown, in the language in force then ---- */
-{const r=A.parseFile('---\nbooklet: "0.15"\ntitle: T\n---\n\n> [!activity|a daily] A\n\n> [!text|q] Q\n');
+{const r=A.parseFile('---\nbooklet: "0.16"\ntitle: T\n---\n\n> [!activity|a daily] A\n\n> [!text|q] Q\n');
  const [miss,daily]=r.unread;
  chk("a problem is worded in English",A.problemText(miss)==="The front matter has no `lang:`, so this page took the file to be in English"&&/^line 6: `daily` needs `repeat`/.test(A.problemText(daily)),A.problemText(daily));
  A.lang="fr";const fr=[A.problemText(miss),A.problemText(daily)];A.lang="en";
@@ -62,7 +62,7 @@ chk("the ones that refuse the file are its refusals, and none else",files.every(
  chk("a problem's string is its words, so a sentence of several words each one",String(daily)===A.problemText(daily)&&[miss,daily].join(" ")===A.problemText(miss)+" "+A.problemText(daily));}
 
 /* ---- the notices of an opened file follow a language switch ---- */
-{P.wipe();const B=P.boot();B.loadText('---\nbooklet: "0.15"\ntitle: T\n---\n\n> [!activity|a daily] A\n\n> [!text|q] Q\n');
+{P.wipe();const B=P.boot();B.loadText('---\nbooklet: "0.16"\ntitle: T\n---\n\n> [!activity|a daily] A\n\n> [!text|q] Q\n');
  const items=()=>P.find(B.fileNotesNode()||{},n=>n.tagName==="li").map(P.texts);
  const en=items();B.lang="fr";const fr=items();B.lang="en";
  chk("the file's notices are drawn in English",en.length===2&&/needs/.test(en.join()),en.join(" | "));

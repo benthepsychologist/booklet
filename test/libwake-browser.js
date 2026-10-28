@@ -16,7 +16,7 @@ const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const PARTS=require('./parts.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const BOOK=`---
-booklet: "0.15"
+booklet: "0.16"
 title: Waking
 lang: en
 ---

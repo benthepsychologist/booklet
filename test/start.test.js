@@ -4,7 +4,7 @@
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
-const head=(extra="")=>`---\nbooklet: "0.15"\ntitle: Start\nlang: en\n${extra}---\n\n`;
+const head=(extra="")=>`---\nbooklet: "0.16"\ntitle: Start\nlang: en\n${extra}---\n\n`;
 const act=(id,t="Act")=>`> [!activity|${id}] ${t}\n\n> [!text|${id}-q] Q ${id}\n\n`;
 const FILES={
   bare:  head()+act("only"),
@@ -54,7 +54,7 @@ for(const k of ["bare","oneOne","oneThree"]){const A=open(withHome(FILES[k]));
  chk("...two modules open on the home screen",go(id4)==="@home",A.screen);
  chk("...and the back control from the activity leads home",(go(id2),A.homeButton(),A.screen==="@home"),A.screen);}
 {/* a file with another marker: the notice is the first thing on the screen it opens into */
- const A=open(FILES.oneOne.replace('booklet: "0.15"','booklet: 0.9'));
+ const A=open(FILES.oneOne.replace('booklet: "0.16"','booklet: 0.9'));
  const note=P.find(P.main(),P.hasClass("filenotes"))[0];
  chk("a 0.9 file of one activity opens in it, with the marker notice on that screen",where(A)==="m/a"&&!!note&&/booklet: 0\.9/.test(P.texts(note)),where(A)+" "+(note?P.texts(note):"no notice"));
  const first=A.FILE_NOTES&&A.FILE_NOTES.marker;

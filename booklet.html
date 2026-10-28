@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-xjqs0g6Zy1T2iSqOTZUpO7uUNwd7MfQpPGsJDrITsFs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-gc/2z0BZCmbuqbl4Ze6fQF8W+a8zCSeFNAlNF1nMAJE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1441,11 +1441,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.15.0";
-/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.15"`, and a
+const RENDERER_VERSION="0.16.0";
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.16"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
-const FORMAT_VERSION="0.15";
+const FORMAT_VERSION="0.16";
 /* the toggle's languages, each named in itself (es-AR has strings but no button) */
 const LANG_NAMES={en:"English",es:"Español",fr:"Français"};
 const LANG_PREF_KEY="booklet.ui.lang";
@@ -1582,6 +1582,7 @@ const STRINGS_SRC={
       clearLink: "Clear everything on this page",
       downloaded: "Downloaded. Keep the file somewhere you will find it.",
       downloadFail: "Could not download a copy.",
+      fenceOpen: "This booklet ends inside a code fence that is never closed, so an answer cannot be written after it. Close the fence in Markdown first.",
       leaving: "Your entries are kept in this browser, but you have not downloaded a copy to this device.",
       unsavedEntries: n=>`${n} entr${n===1?"y":"ies"} not yet downloaded`,
       unsavedChanges: "Changes not yet downloaded",
@@ -1930,6 +1931,7 @@ const STRINGS_SRC={
       clearLink: "Effacer tout ce qui se trouve sur cette page",
       downloaded: "Téléchargé. Conservez le fichier à un endroit où vous le retrouverez.",
       downloadFail: "Impossible de télécharger une copie.",
+      fenceOpen: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; aucune réponse ne peut donc être écrite après ce bloc. Fermez d’abord le bloc en Markdown.",
       leaving: "Vos entrées sont conservées dans ce navigateur, mais vous n’avez pas téléchargé de copie sur cet appareil.",
       unsavedEntries: n=>`${n} entrée${n===1?"":"s"} pas encore téléchargée${n===1?"":"s"}`,
       unsavedChanges: "Modifications pas encore téléchargées",
@@ -2124,7 +2126,7 @@ const STRINGS_SRC={
       earlierBad: (w,v)=>`${w} : \`earlier:${v}\` n’est pas un nombre entier écrit en chiffres ; il a donc été ignoré et la question propose son nombre par défaut`,
       eachNone: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix, et son each: ne nomme rien ; il a donc été ignoré`,
       eachMissing: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui n’est ni une question ni un élément de son activité ; son each: a donc été ignoré`,
-      eachSelf: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix d’elle-même ; son each: a donc été ignoré`,
+      eachSelf: (w,id)=>`${w} : « ${id} » doit être posée pour chacun de ses propres choix ; son each: a donc été ignoré`,
       eachKind: (w,id,s,k)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », une question ${k} : seule une question choice ou multi, ou un élément, peut en être la source ; son each: a donc été ignoré`,
       eachChain: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui est elle-même posée pour chaque choix d’une autre (un seul niveau) ; son each: a donc été ignoré`,
       shapesKept: n=>n===1?"Une réponse n’a pas la forme que garde sa question ; elle est donc gardée telle quelle : affichée en lecture seule avec un avis, et laissée hors de ce que montrent les vues"
@@ -2137,7 +2139,7 @@ const STRINGS_SRC={
       queryKeyUnknown: (w,key)=>`${w} : une requête n’a pas de réglage « ${key} » ; il a donc été ignoré`,
       queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est ni un nombre entier positif ni un nombre de jours (comme \`7 days\`) ; il a donc été ignoré`,
       querySummaryBad: (w,v)=>`${w} : \`summary: ${v}\` dans la requête n’est pas \`on\` ; il a donc été ignoré`,
-      queryEntriesOnly: (w,keys)=>`${w} : ${keys} dans la requête ne lit que des entrées enregistrées ; il a donc été ignoré`,
+      queryEntriesOnly: (w,keys,n)=>`${w} : ${keys} dans la requête ${n>1?"ne lisent":"ne lit"} que des entrées enregistrées ; ${n>1?"ils ont donc été ignorés":"il a donc été ignoré"}`,
       queryInData: w=>`${w} : une requête doit se trouver dans le texte d’une activité, pas dans la section des données ; elle a donc été ignorée`,
       recordNoItems: (w,id)=>`${w} : le registre des entrées de « ${id} » ne contient aucune liste d’éléments ; il est donc conservé tel quel`,
       recordOutside: (w,what)=>`${w} : un bloc « booklet ${what} » doit se trouver dans la zone des registres ; il n’est donc pas lu ici`,
@@ -2275,6 +2277,7 @@ const STRINGS_SRC={
       clearLink: "Borrar todo lo que hay en esta página",
       downloaded: "Descargado. Guarda el archivo en un lugar donde puedas encontrarlo.",
       downloadFail: "No se pudo descargar una copia.",
+      fenceOpen: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede escribir una respuesta después de él. Primero hay que cerrar el bloque en Markdown.",
       leaving: "Tus entradas se guardan en este navegador, pero no has descargado una copia en este dispositivo.",
       unsavedEntries: n=>`${n} entrada${n===1?"":"s"} sin descargar todavía`,
       unsavedChanges: "Cambios sin descargar todavía",
@@ -2389,12 +2392,12 @@ const STRINGS_SRC={
       theAnswer: "La respuesta",
       liveRight: "Correcto.",
       liveNot: a=>`No del todo. La respuesta es ${a}.`,
-      eachNotYet: "Esta pregunta se hace una vez por cada elección de otra pregunta, algo que esta página todavía no muestra. Sus respuestas se guardan tal como están.",
-      keptAsWritten: (k,widget,each)=>`Se guarda tal como está: esta respuesta no tiene la forma que guarda ${each?"una pregunta que se hace por cada elección (una lista de pares, uno por elección)":widget?"un elemento "+k:"una pregunta "+k}, así que se muestra aquí sin cambios. El archivo contiene:`
+      eachNotYet: "Esta pregunta se hace una vez por cada opción elegida en otra pregunta, algo que esta página todavía no muestra. Sus respuestas se guardan tal como están.",
+      keptAsWritten: (k,widget,each)=>`Se guarda tal como está: esta respuesta no tiene la forma que guarda ${each?"una pregunta que se hace por cada opción elegida (una lista de pares, uno por cada opción elegida)":widget?"un elemento "+k:"una pregunta "+k}, así que se muestra aquí sin cambios. El archivo contiene:`
     },
     query: {
       empty: "Todavía no hay nada guardado aquí.",
-      summaryLater: "Los resúmenes (summary: on) aún no son compatibles aquí, así que esta vista no se muestra."
+      summaryLater: "Los resúmenes (summary: on) aún no se admiten aquí, así que esta vista no se muestra."
     },
     dv: {
       empty: "Nada que mostrar aquí.",
@@ -2412,7 +2415,7 @@ const STRINGS_SRC={
         bars: (n,lo,hi)=>`Gráfico de barras, ${n===1?"1 barra":n+" barras"}, de ${lo} a ${hi}`,
         line: (n,names,lo,hi)=>`Gráfico de líneas de ${names}, ${n===1?"1 punto":n+" puntos"}, de ${lo} a ${hi}`
       },
-      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada elección; una tabla, una lista o tarjetas la muestran."
+      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada opción elegida; una tabla, una lista o unas tarjetas sí la muestran."
     },
     problem: {
       line: n=>`línea ${n}`,
@@ -2467,11 +2470,11 @@ const STRINGS_SRC={
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
       earlierBad: (w,v)=>`${w}: \`earlier:${v}\` no es un número entero escrito con cifras, así que se ignoró y la pregunta ofrece su valor por defecto`,
-      eachNone: (w,id)=>`${w}: “${id}” debe hacerse por cada elección, y su each: no nombra nada, así que se ignoró`,
-      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que no es una pregunta ni un elemento de su actividad, así que su each: se ignoró`,
-      eachSelf: (w,id)=>`${w}: “${id}” debe hacerse por cada elección de sí misma, así que su each: se ignoró`,
-      eachKind: (w,id,s,k)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, una pregunta ${k}: solo una pregunta choice o multi, o un elemento, puede ser la fuente, así que su each: se ignoró`,
-      eachChain: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que a su vez se hace por cada elección de otra (un solo nivel), así que su each: se ignoró`,
+      eachNone: (w,id)=>`${w}: “${id}” debe hacerse por cada opción elegida, y su each: no nombra nada, así que se ignoró`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, que no es una pregunta ni un elemento de su actividad, así que su each: se ignoró`,
+      eachSelf: (w,id)=>`${w}: “${id}” debe hacerse por cada una de sus propias opciones elegidas, así que su each: se ignoró`,
+      eachKind: (w,id,s,k)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, una pregunta ${k}: solo una pregunta choice o multi, o un elemento, puede ser la fuente, así que su each: se ignoró`,
+      eachChain: (w,id,s)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, que a su vez se hace por cada opción elegida en otra (un solo nivel), así que su each: se ignoró`,
       shapesKept: n=>n===1?"Una respuesta no tiene la forma que guarda su pregunta, así que se guarda tal como está: se muestra solo para leer, con un aviso, y queda fuera de lo que muestran las vistas"
         :`${n} respuestas no tienen la forma que guardan sus preguntas, así que se guardan tal como están: se muestran solo para leer, con un aviso, y quedan fuera de lo que muestran las vistas`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` no es un ajuste que admita la línea (solo \`status:off\`), así que se ignoró`,
@@ -2482,7 +2485,7 @@ const STRINGS_SRC={
       queryKeyUnknown: (w,key)=>`${w}: una consulta no tiene el ajuste “${key}”, así que se ignoró`,
       queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo ni un número de días (como \`7 days\`), así que se ignoró`,
       querySummaryBad: (w,v)=>`${w}: el \`summary: ${v}\` de la consulta no es \`on\`, así que se ignoró`,
-      queryEntriesOnly: (w,keys)=>`${w}: ${keys} de la consulta solo lee entradas guardadas, así que se ignoró`,
+      queryEntriesOnly: (w,keys,n)=>`${w}: ${n>1?"los":"el"} ${keys} de la consulta solo ${n>1?"leen":"lee"} entradas guardadas, así que ${n>1?"se ignoraron":"se ignoró"}`,
       queryInData: w=>`${w}: una consulta va en el texto de una actividad, no en la sección de datos, así que se ignoró`,
       recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se conserva tal cual`,
       recordOutside: (w,what)=>`${w}: un bloque “booklet ${what}” va en la zona de registros, así que no se lee aquí`,
@@ -3244,6 +3247,9 @@ let LINK_NEWER=null;
    (idle, saving, saved, failed), at, message, prev, pending}. Null on a page with no host, which is the shipped file.
    In memory only, never saved. HOOK_LISTENERS are the functions a host gave onChange. */
 let HOST=null;
+/* HOST.message for a save the renderer refused itself, because the booklet's body ends inside a code fence that never
+   closes (hookFire, fileToWrite): the line behind the save status words it in the reader's language when it is drawn */
+const FENCE_OPEN=Object.freeze({});
 const HOOK_LISTENERS=[];
 /* Whether a page at this address is on the reader's own machine or private network. Pure: the table in docs/hosting.md.
    Allowed: a file on the reader's disk; loopback (localhost, *.localhost, 127/8, ::1); private IPv4 (10/8, 172.16/12,
@@ -3293,7 +3299,8 @@ const hostActive=()=>!!HOST&&HOST.state==="active";
    hookChanged sets it, before it does anything else, and only hookFire clears it, when it sends or finds the text is what
    it last sent (or a booklet with no module that nothing has changed since its file was read). While it is set nothing is
    Saved (hostCovers, saveState, hostSet), whatever an answer about an earlier send says: a change held back (by the offer
-   to read a newer file, by nobody listening, by a booklet with no module) or never told (Clear everything) is not saved. */
+   to read a newer file, by nobody listening, by a booklet with no module, by a body that ends inside a code fence that
+   never closes) or never told (Clear everything) is not saved. */
 let HOOK_TIMER=null,HOOK_DUE=0,HOOK_SEEN="",HOOK_UNSENT=false;
 /* the last change told to the host: its number (`change`, counted from 1 in this page) and the booklet it was for */
 let HOOK_SEQ=0,HOOK_OUT=null;
@@ -3773,7 +3780,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.15 booklet is Markdown that reads as a document anywhere: front
+   A v0.16 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -3821,7 +3828,7 @@ const NOTICE_KEYS=["license","copyright","source","version"];
 const FRONT_NOTICE_KEYS=["license","copyright","source"];
 /* the kinds that take no id: their words are settings only */
 const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","diff","law","opinion"]);
-/* A file is read when its front matter says `booklet: "0.15"` (quoted or not, as text); another 0.x marker opens with a notice. */
+/* A file is read when its front matter says `booklet: "0.16"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -3840,7 +3847,7 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
   if(/^".*"$/.test(v)){try{v=JSON.parse(v);}catch(e){v=v.slice(1,-1);}}
   else if(/^'.*'$/.test(v)) v=v.slice(1,-1).replace(/''/g,"'");
   return [m[1],v];}
-/* The marker a file's front matter carries, quotes off: "0.15", "1.0", "x", or "" with no `booklet:` line. A 0.x marker makes a booklet
+/* The marker a file's front matter carries, quotes off: "0.16", "1.0", "x", or "" with no `booklet:` line. A 0.x marker makes a booklet
    for this page; any other 0.x version opens by this page's rules with a notice and no promise (SPEC.md section 12). */
 function markerOf(text){const {head}=frontMatter(text);
   for(const l of head||[]){const m=l.match(/^booklet:[ \t]*(.*?)[ \t]*$/);
@@ -4762,6 +4769,18 @@ const ownDrafts=()=>{const c=nullMap(),all=DRAFTS.custom||{};
   Object.keys(all).forEach(k=>{const d=all[k],s=SEEDS.get(d);c[k]=s&&s.shown===canon(d)?nullMap(s.before):d;});
   return {...DRAFTS,custom:c};};
 const toMarkdown=()=>fileText(BOOK,STATE,ownDrafts());
+/* The booklet in force's file as a write sends it out of this page (a download, the host's onChange, Booklet.text()), or
+   null when it cannot be written: a body that ends inside a code fence that never closes would take the records region
+   written after it into that fence, and its records would not be read back (SPEC section 8). Nothing is then written, and
+   the reader's work stays in this browser as it is. The fence is never closed for the author, since that would change
+   the body's bytes. A write with nothing to put after the body, and any file whose fences all close, is toMarkdown's. */
+function fileToWrite(){const p=writeParts(BOOK,STATE,ownDrafts());return p.region&&endsInFence(p.head)?null:p.head+p.sep+p.region;}
+/* whether a file's text ends inside a code fence that never closes (codeFences, from the end of its front matter, as the
+   parse reads it). The last text asked about is kept, since every save of a booklet asks about the same body. */
+let FENCE_END=null;
+function endsInFence(text){if(FENCE_END&&FENCE_END.text===text) return FENCE_END.open;
+  const {lines,next}=frontMatter(text,true),body=lines.slice(next),F=codeFences(body).pop();
+  FENCE_END={text,open:!!F&&F.end>=body.length};return FENCE_END.open;}
 /* the booklet's text with no records, worked out once per booklet and its raw.wrote, so a save does not run the whole writer
    again to get it: a design change adopts a new booklet whole, and the one later change, adoptParse's, gives a new raw.wrote */
 let BOOK_TEXT=null;
@@ -8408,7 +8427,10 @@ const exportName=()=>fileBase()+".booklet.md";
 async function download(){const t=strings("ui");
   /* a change still waiting for a pause in typing goes to the host now, as the reader takes a copy (and the status may speak) */
   SAVE_QUIET=false;hookFlush();
-  const md=toMarkdown();const name=exportName();
+  /* a body that ends inside a code fence that never closes (fileToWrite): no file is made, nothing is marked as downloaded,
+     and the reader is told why */
+  const md=fileToWrite();if(md===null){toast(t.fenceOpen);return;}
+  const name=exportName();
   /* a store booklet of which nothing is kept here and in which nothing has changed (a pointer) has no copy to mark as
      downloaded, and none is made for it: a copy made only to say so would be a 3 MB write for a large file */
   const keep=!(storeNameOf(currentEntry)&&!dirty&&!(unsavedEntries>0)&&!saveTimer&&lsGet(currentKey)===null);
@@ -8554,15 +8576,19 @@ function hostTime(d){const p=n=>String(n).padStart(2,"0");return p(d.getHours())
    booklet that is not the host's) "Kept in this browser only", or, when it is saved because nothing changed since its file
    was read or downloaded, that; with a host, where saves go, then its last answer ("Saved 10:42", "Saving…", "Not saved:
    message", with "trying again" after it while a change waits to be sent or is on its way), or the file when that is what
-   saved it. */
+   saved it. A save the renderer refused itself (FENCE_OPEN) is "Not saved" and then why, with no "trying again": the
+   next change is refused too while it would still put records after the body. Once a change can be written again (the
+   answers that needed records all taken back, or the fence closed in the file), hookFire drops the reason and sends it,
+   and the line is a failed save's again, "trying again" included, until the host says saved. */
 function hostLineText(u){const st=saveState(),mine=hostActive()&&!(hookOpen()&&!hookBook());
   const byFile=st==="saved"&&!(mine&&HOST.status==="saved");
   if(!mine) return byFile?u.saveSince:u.hostKept;
   const head=HOST.label?u.hostSavesTo(HOST.label):"";
+  const fence=!byFile&&HOST.status==="failed"&&HOST.message===FENCE_OPEN;
   /* (a "saved" for an earlier text is not shown beside a change the host was never sent: Clear everything, a change held back) */
-  const said=byFile?u.saveSince:HOST.status==="saving"?u.hostSaving:HOST.status==="saved"?(st==="saved"?u.hostSaved(hostTime(HOST.at)):""):HOST.status==="failed"?u.hostFailed(HOST.silent?u.hostNoAnswer:HOST.message):"";
-  const again=!byFile&&HOST.status==="failed"&&HOOK_LISTENERS.length>0&&(HOOK_TIMER!==null||HOOK_ANSWER_TIMER!==null)?u.saveAgain:"";
-  return [head,said,again].filter(Boolean).join(" · ");}
+  const said=byFile?u.saveSince:HOST.status==="saving"?u.hostSaving:HOST.status==="saved"?(st==="saved"?u.hostSaved(hostTime(HOST.at)):""):HOST.status==="failed"?u.hostFailed(HOST.silent?u.hostNoAnswer:fence?"":HOST.message):"";
+  const again=!fence&&!byFile&&HOST.status==="failed"&&HOOK_LISTENERS.length>0&&(HOOK_TIMER!==null||HOOK_ANSWER_TIMER!==null)?u.saveAgain:"";
+  return [head,said,fence?u.fenceOpen:"",again].filter(Boolean).join(" · ");}
 /* ---- THE SAVE STATUS ----
    One place in the bar of a booklet says whether the reader's work is safe: Saved, Saving… or Unsaved (saveState), in a
    word and a shape as well as a colour (the good, warn and bad tones), so it reads without colour too. Pressed, it opens
@@ -8618,7 +8644,15 @@ function hookFire(){HOOK_TIMER=null;HOOK_DUE=0;
      one whose last module was removed here holds a change the host never gets (HOOK_UNSENT stays) */
   if(hookBook()&&!allModules().length&&!(dirty||unsavedEntries>0)) HOOK_UNSENT=false;
   if(!hookBook()||!hostActive()||LINK_NEWER||!allModules().length) return calm();
-  const text=toMarkdown(),key=currentId+"\u0000"+text;
+  const text=fileToWrite();
+  /* a body that ends inside a code fence that never closes cannot have records written after it (fileToWrite): nothing is
+     sent, a failed save, Unsaved, with the reason behind it (FENCE_OPEN) and no wait for an answer to an earlier send to
+     replace it; the change goes with the next one that can be written */
+  if(text===null){hookStopWait();HOST.status="failed";HOST.message=FENCE_OPEN;HOST.silent=false;HOOK_SEEN="";return drawSaveState();}
+  /* a text that can be written: the refusal's reason no longer holds, so it is not shown beside this send (the status stays a
+     failed save until the host says saved for it, as after any failure) */
+  if(HOST.message===FENCE_OPEN) HOST.message="";
+  const key=currentId+"\u0000"+text;
   /* the text is what was last sent: nothing is unsent, and if the host said saved for that text, it is saved */
   if(key===HOOK_SEEN){HOOK_UNSENT=false;if(HOST.savedKey===key&&HOOK_ANSWER_TIMER===null) HOST.status="saved";return calm();}
   /* a change with nobody listening through onChange cannot be sent: a failed save, Unsaved until one succeeds (so a
@@ -8643,7 +8677,9 @@ function hookFire(){HOOK_TIMER=null;HOOK_DUE=0;
    waiting for the pause, or held back) is not about the latest change: it leaves the status at Saving, with Saved kept for
    when that change turns out to be no change (calm, HOST.savedKey), and a failure in place. "failed" is shown at once, and
    stays until a "saved" for the latest change (see hookChanged). After a failure the text it was about counts as not sent,
-   so the next change goes again even if it leaves the text as it was. */
+   so the next change goes again even if it leaves the text as it was. While the latest change was one the renderer refused
+   to write (FENCE_OPEN, hookFire), a "failed" about a change sent before it leaves that reason in place: the refusal is
+   what the reader can act on, and it still holds. */
 function hostSet(status,message,silent,change){if(!hostActive()) return;
   const n=typeof change==="number"?change:isObj(change)&&typeof change.change==="number"?change.change:null;
   const waiting=HOOK_TIMER!==null||HOOK_UNSENT;
@@ -8653,6 +8689,7 @@ function hostSet(status,message,silent,change){if(!hostActive()) return;
   hookStopWait();
   if(status==="saved"){HOST.at=new Date();HOST.savedKey=HOOK_SEEN;}
   if(status==="saved"&&waiting){if(HOST.status!=="failed"){HOST.prev="saved";HOST.status="saving";}}
+  else if(status==="failed"&&HOST.status==="failed"&&HOST.message===FENCE_OPEN) HOST.silent=false;
   else{HOST.silent=!!silent;HOST.message=status==="failed"?message||"":"";HOST.status=status;}
   if(status==="failed"){HOOK_SEEN="";HOST.savedKey="";}
   drawSaveState();}
@@ -9137,7 +9174,8 @@ if(typeof window!=="undefined"){
     HOOK_LISTENERS.push(fn);drawSaveState();
     return ()=>{const i=HOOK_LISTENERS.indexOf(fn);if(i>=0){HOOK_LISTENERS.splice(i,1);drawSaveState();}};};
   const openFn=function open(text,o){return hostOpen(text,o);};
-  const textFn=function text(){return hookBook()&&hostActive()?toMarkdown():"";};
+  /* empty, too, for a text that cannot be written (fileToWrite): a host is never handed records that would not be read back */
+  const textFn=function text(){return hookBook()&&hostActive()?fileToWrite()||"":"";};
   /* set once and never replaceable; a second copy of this script in the same window (a test harness) leaves the first */
   try{Object.defineProperty(window,"Booklet",{value:Object.freeze({version:RENDERER_VERSION,host:hostFn,onChange:onChangeFn,open:openFn,text:textFn}),
     writable:false,configurable:false,enumerable:true});}catch(e){}}

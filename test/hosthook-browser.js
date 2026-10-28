@@ -16,7 +16,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 /* 0.11.4: the hook works only on the reader's own machine or network, after the reader says yes. The page is served at a
    private name (no dot) and the reader's yes is already remembered, as on a later visit. test/hostlock-browser.js covers the ask. */
 const PAGE='http://fleet';
-const bk=(t,body,after)=>`---\nbooklet: "0.15"\ntitle: ${t}\nlang: en\n---\n\n> [!module|m] ${t} module\n\n${body}\n> [!module|m end] End\n${after||''}`;
+const bk=(t,body,after)=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n---\n\n> [!module|m] ${t} module\n\n${body}\n> [!module|m end] End\n${after||''}`;
 const BOOK=bk('Hosted report','> [!activity|a] Report\n\n> [!text|q long] What stood out?\n\n');
 const NEWER=bk('Hosted report','> [!activity|a] Report\n\n> [!text|q long] What stood out?\n\n','\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] Hosted report module\n\n```booklet answers\n{"q": "QZXfromthefile"}\n```\n\n%%\n');
 const HOSTILE=bk('Hostile','> [!activity|a] A\n\n[x](javascript:window.__pwn=1) <div onclick="window.__pwn=1;Booklet.host({label:\'pwned\'})">hi</div> <svg onload="window.__pwn=1"><script>window.__pwn=1</script></svg>\n\n> [!text|q long] window.Booklet.host\n\n');

@@ -29,8 +29,8 @@ const kids=p=>kidsOf.get(p.id)||[];
 /* the first path of three levels whose steps are all among a row's first 24 cards */
 let path3=null;(function find(l,trail){for(const [i,p] of l.entries()){if(i>=24)break;const t=trail.concat([[p,i]]);if(t.length===3){path3=t;return true;}if(find(kids(p),t))return true;}return false;})(roots,[]);
 
-const FLAT=`---\nbooklet: "0.15"\ntitle: Flat\nlang: en\n---\n\n> [!module|f] Flat module\n\nOpening words.\n\n> [!activity|one] First\n\nOne.\n\n> [!activity|two] Second\n\nTwo.\n\n> [!activity|three] Third\n\nThree.\n\n> [!module|f end] End\n`;
-const CHIP=`---\nbooklet: "0.15"\ntitle: Programme\nlang: en\n---\n\n> [!module|prog] Programme\n\n> [!activity|start] Start here\n\nThe first week: [[week-1.booklet]]. The second: [Week 2](week-2.booklet.md). A row below.\n\n\`\`\`booklet data\n[{"label":"Third week","link":"week-3.booklet"}]\n\`\`\`\n^weeks\n\n\`\`\`booklet query\nfrom: weeks\nas: list\n\`\`\`\n\n> [!activity|more] More\n\nMore.\n\n> [!module|prog end] End\n\n> [!module|week-1] Week 1\n\n> [!activity|w1] Words\n\nWeek one.\n\n> [!activity|w1b] More words\n\nStill week one.\n\n> [!module|week-1 end] End\n`;
+const FLAT=`---\nbooklet: "0.16"\ntitle: Flat\nlang: en\n---\n\n> [!module|f] Flat module\n\nOpening words.\n\n> [!activity|one] First\n\nOne.\n\n> [!activity|two] Second\n\nTwo.\n\n> [!activity|three] Third\n\nThree.\n\n> [!module|f end] End\n`;
+const CHIP=`---\nbooklet: "0.16"\ntitle: Programme\nlang: en\n---\n\n> [!module|prog] Programme\n\n> [!activity|start] Start here\n\nThe first week: [[week-1.booklet]]. The second: [Week 2](week-2.booklet.md). A row below.\n\n\`\`\`booklet data\n[{"label":"Third week","link":"week-3.booklet"}]\n\`\`\`\n^weeks\n\n\`\`\`booklet query\nfrom: weeks\nas: list\n\`\`\`\n\n> [!activity|more] More\n\nMore.\n\n> [!module|prog end] End\n\n> [!module|week-1] Week 1\n\n> [!activity|w1] Words\n\nWeek one.\n\n> [!activity|w1b] More words\n\nStill week one.\n\n> [!module|week-1 end] End\n`;
 const WEEK2=`---\nbooklet: "0.11"\ntitle: Week 2\nlang: en\n---\n\n> [!module|week-2] Week 2\n\n> [!activity|w2] Week two\n\nWeek two reading.\n\n> [!activity|w2b] More\n\nx\n\n> [!module|week-2 end] End\n`;
 const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
 
@@ -207,7 +207,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   await p.context().close();
 
   /* ---- a hidden page: left out of every list, its children in its place; reached by a link it shows its place ---- */
-  {const HID='---\nbooklet: "0.15"\ntitle: Hidden\nlang: en\n---\n\n> [!module|h] Hid\n\n> [!activity|a] Alpha\n\nAlpha words.\n\n> [!activity|h1 parent:a hidden] Hidden one\n\nHidden words.\n\n> [!activity|c parent:h1] Child\n\nChild words.\n\n> [!activity|z] Zed\n\nSee [[#Hidden one]].\n\n> [!module|h end] End\n';
+  {const HID='---\nbooklet: "0.16"\ntitle: Hidden\nlang: en\n---\n\n> [!module|h] Hid\n\n> [!activity|a] Alpha\n\nAlpha words.\n\n> [!activity|h1 parent:a hidden] Hidden one\n\nHidden words.\n\n> [!activity|c parent:h1] Child\n\nChild words.\n\n> [!activity|z] Zed\n\nSee [[#Hidden one]].\n\n> [!module|h end] End\n';
    p=await openBook(HID,1280);
    ok(await cards(p).count()===2&&(await p.locator('.wk-tree > li').count())===2,'a hidden page is not among the top cards or the menu\'s top ('+await cards(p).count()+' cards)');
    await cards(p).first().click();await p.waitForTimeout(250);
@@ -230,7 +230,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
 
   /* ---- the window crosses the narrow width: the screen is drawn again for the new width ---- */
   {const PG='> [!activity|ID PAR] Title\n\n## First page\n\nAlpha.\n\n***\n\n## Second page\n\nBeta.\n\n***\n\n## Third page\n\nGamma.\n\n';
-   const RS='---\nbooklet: "0.15"\ntitle: RS\nlang: en\n---\n\n> [!module|rs] RS\n\n> [!activity|one] One\n\nTop.\n\n'+PG.replace('ID PAR','multi parent:one').replace('Title','Multi')+'> [!module|rs end] End\n';
+   const RS='---\nbooklet: "0.16"\ntitle: RS\nlang: en\n---\n\n> [!module|rs] RS\n\n> [!activity|one] One\n\nTop.\n\n'+PG.replace('ID PAR','multi parent:one').replace('Title','Multi')+'> [!module|rs end] End\n';
    p=await openBook(RS,600);
    await cards(p).first().click();await p.waitForTimeout(250);await cards(p).first().click();await p.waitForTimeout(300);
    ok(await p.locator('.wk-fold').evaluate(d=>!d.open)&&await p.locator('.wk-pitem').count()===0&&/Page 1 of 3/.test(await p.locator('#main .cd-foot').innerText()),'600 px: the menu is closed, the pages are listed nowhere (0.15), and the pager at the foot turns them');
@@ -247,7 +247,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
    await p.context().close();}
 
   /* ---- a hidden parent: alone, it does not make a wiki ---- */
-  {const HP='---\nbooklet: "0.15"\ntitle: HP\nlang: en\n---\n\n> [!module|hp] HP\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\ny\n\n> [!activity|h parent:a hidden] H\n\nz\n\n> [!module|hp end] End\n';
+  {const HP='---\nbooklet: "0.16"\ntitle: HP\nlang: en\n---\n\n> [!module|hp] HP\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\ny\n\n> [!activity|h parent:a hidden] H\n\nz\n\n> [!module|hp end] End\n';
    p=await openBook(HP,1280);
    ok(await p.locator('.wk-frame').count()===0&&await p.locator('#main button.mode').count()===2,'a parent: that only reaches a hidden page makes no wiki: two flat cards, no menu');
    await p.locator('#main button.mode').first().click();await p.waitForTimeout(250);
@@ -256,7 +256,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
 
   /* ---- an activity of three pages in a wiki: its pages are pagination (0.15), listed nowhere, turned by the pager ---- */
   {const PG='> [!activity|ID PAR] Title\n\n## First page\n\nAlpha content.\n\n***\n\n## Second page\n\nBeta content.\n\n***\n\n## Third page\n\nGamma content.\n\n';
-   const MP='---\nbooklet: "0.15"\ntitle: MP\nlang: en\n---\n\n> [!module|mp] MP\n\n> [!activity|one] One\n\nTop.\n\n'+PG.replace('ID PAR','multi parent:one').replace('Title','Multi')+PG.replace('ID PAR','hid parent:one hidden').replace('Title','Hid')+'> [!activity|link] Link\n\nSee [[#Hid]].\n\n> [!module|mp end] End\n';
+   const MP='---\nbooklet: "0.16"\ntitle: MP\nlang: en\n---\n\n> [!module|mp] MP\n\n> [!activity|one] One\n\nTop.\n\n'+PG.replace('ID PAR','multi parent:one').replace('Title','Multi')+PG.replace('ID PAR','hid parent:one hidden').replace('Title','Hid')+'> [!activity|link] Link\n\nSee [[#Hid]].\n\n> [!module|mp end] End\n';
    const down=async q=>{await cards(q).first().click();await q.waitForTimeout(250);};
    const pager=q=>q.locator('#main .cd-foot').innerText().then(t=>t.replace(/\s+/g,' ').trim());
    for(const W of [1280,390]){
@@ -295,7 +295,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
    await p.context().close();}
 
   /* ---- a long row of children: the first 24 cards, the rest on a press ---- */
-  {const wide='---\nbooklet: "0.15"\ntitle: Wide\nlang: en\n---\n\n> [!module|w] Wide\n\n> [!activity|top] Top\n\nTop page.\n\n'+
+  {const wide='---\nbooklet: "0.16"\ntitle: Wide\nlang: en\n---\n\n> [!module|w] Wide\n\n> [!activity|top] Top\n\nTop page.\n\n'+
     Array.from({length:60},(_,i)=>'> [!activity|k'+i+' parent:top] Kid '+(i+1)+'\n\nBody '+(i+1)+'.\n\n').join('')+'> [!module|w end] End\n';
    p=await openBook(wide,1280);
    await cards(p).first().click();await p.waitForTimeout(300);
@@ -332,7 +332,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   ok(asked().length===2&&/registry\.json$/.test(asked()[1])&&await p.locator('.mc-add').count()===1,'pressing it again asks again (the registry list, once more), and now offers "Add it"');
   await p.locator('.mc-add').click();await p.waitForTimeout(900);
   ok(asked().length===3&&/week-2\.md$/.test(asked()[2]),'"Add it" reads that module\'s file, and nothing else');
-  ok(/It says booklet: 0\.11, so it was read as format 0\.15/.test(await p.locator('#toast').innerText()),'a module marked "0.11" added from a chip shows the older-version notice, as Add a module does ('+(await p.locator('#toast').innerText()).slice(0,100)+')');
+  ok(/It says booklet: 0\.11, so it was read as format 0\.16/.test(await p.locator('#toast').innerText()),'a module marked "0.11" added from a chip shows the older-version notice, as Add a module does ('+(await p.locator('#toast').innerText()).slice(0,100)+')');
   await p.locator('#btnHome').click().catch(()=>{});await p.waitForTimeout(300);
   ok(await p.locator('#main button.mode').filter({hasText:'Week 2'}).count()===1,'the module is now in the booklet');
   await p.locator('#main button.mode').filter({hasText:'Programme'}).first().click();await p.waitForTimeout(300);

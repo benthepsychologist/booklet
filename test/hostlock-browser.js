@@ -23,7 +23,7 @@ const HOST_CSP=CSP.replace('connect-src https://raw.githubusercontent.com','conn
 if(HOST_CSP===CSP) throw new Error('csp.js no longer has the expected connect-src: update this test');
 const LABEL='fleet: booklets/reports';
 const KEY='booklet.host.allowed';
-const WEEK=`---\nbooklet: "0.15"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] Week module\n\n> [!activity|a] Report\n\n> [!text|q long] What stood out?\n\n> [!module|m end] End\n`;
+const WEEK=`---\nbooklet: "0.16"\ntitle: Week report\nlang: en\n---\n\n> [!module|m] Week module\n\n> [!activity|a] Report\n\n> [!text|q long] What stood out?\n\n> [!module|m end] End\n`;
 const hostScript=label=>`<script>(function(){
   window.__calls=[];window.__h=window.Booklet.host({label:${JSON.stringify(label)}});
   window.Booklet.onChange(function(x){window.__calls.push(x);});

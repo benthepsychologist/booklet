@@ -23,7 +23,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 const PAGE='http://fleet',LABEL='fleet: test store';
 const BOX_CSP=CSP.replace('connect-src https://raw.githubusercontent.com',"connect-src 'self' https://raw.githubusercontent.com");
 if(BOX_CSP===CSP) throw new Error('csp.js no longer has the expected connect-src: update this test');
-const FM=t=>`---\nbooklet: "0.15"\ntitle: ${t}\nlang: en\n---\n\n`;
+const FM=t=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n---\n\n`;
 const bk=(t,q)=>FM(t)+`> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q long] ${q||'What stood out?'}\n\n> [!module|m end] End\n`;
 const FILES={};
 /* the test's host script: it records every call (and the last one's text under a key of its own in local storage, which a
