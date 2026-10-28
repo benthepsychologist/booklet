@@ -65,13 +65,13 @@ const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
  const MOVED=FM+ACT+REC+"\n> [!text|q3] Anything else?\n\n```text\nmulch the beds\n";
  const A=load(MOVED),design=A.BOOK.raw.source;
  chk("(the design read from the file ends inside the fence and holds no records line)",/```text\nmulch the beds\n$/.test(design)&&!design.includes(HEAD),show(design));
- A.answersIn("").q2="the squash";A.markDirty();A.flushSave();const id=A.currentId;P.closePages();
+ A.answersIn("").q2="the squash";A.markDirty();A.flushSave();const id=A.currentId,wrote=A.toMarkdown();P.closePages();
  const B=P.boot();B.openBooklet(id);
  chk("the browser's copy, read again after a reload: the design as it was, nothing of the records region in the fence",B.BOOK.raw.source===design,show(B.BOOK.raw.source));
  chk("and the answers are kept, the file's and the one typed",B.peekAnswers("").q1==="peas"&&B.peekAnswers("").q2==="the squash",JSON.stringify(B.peekAnswers("")));
  {const t=B.toMarkdown(),at=t.indexOf("%%\n"+HEAD);
-  chk("and the records region is kept beside the design: the writer's text is the design, then the file's region with the answer typed",
-    at>0&&t.slice(0,at).trimEnd()===design.trimEnd()&&t.slice(at).startsWith("%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"peas\"")&&t.includes('"q2": "the squash"'),show(t));}
+  chk("and the records region is kept beside it: the text the writer would write is byte for byte what it was before the reload",
+    t===wrote&&at>0&&t.slice(at).startsWith("%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"peas\"")&&t.includes('"q2": "the squash"'),show(t)+" | before "+show(wrote));}
  BLOBS.length=0;await B.download();
  chk("and a download is still refused",BLOBS.length===0&&toastText()===say(B,"en"));
  const named=design.replace("title: Garden notes\n","title: \"Garden notes in May\"\n");

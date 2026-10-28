@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-oYTN6yD2uwFwszOA6+8vwpLt6dByPNUZgyODfsE0kzc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-DS4f0nT03hZf+XEI2Aylk+qk/qckvnLkoeEG54j/0tg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4788,10 +4788,11 @@ function endsInFence(text){if(FENCE_END&&FENCE_END.text===text) return FENCE_END
   FENCE_END={text,open:!!F&&F.end>=body.length};return FENCE_END.open;}
 /* The text a design is read from (bookText, textWith): its file's text with nothing of the reader's, its kept records with
    it. Where that would put a records region after a body that ends inside a code fence that never closes (design after the
-   file's records, moved above them), it is the body alone: the parse would read the region as that fence's code, and the
-   design read back would gain the region's lines inside the author's code block. The region is kept beside the text
-   (regionOf, adopted with the parse), so nothing of it is lost; any other text is fileText's. */
-function designText(book,drop){const p=writeParts(book,emptyState(),emptyDrafts(),drop);return p.region&&endsInFence(p.head)?p.head:p.head+p.sep+p.region;}
+   file's records, moved above them), it is the body alone, with the blank line the writer puts before the region: the parse
+   would read the region as that fence's code, and the design read back would gain the region's lines inside the author's
+   code block. The region is kept beside the text (regionOf, adopted with the parse), so nothing of it is lost, and the
+   file's text is written as before; any other text is fileText's. */
+function designText(book,drop){const p=writeParts(book,emptyState(),emptyDrafts(),drop);return p.region&&endsInFence(p.head)?p.head+p.sep:p.head+p.sep+p.region;}
 /* the booklet's text with no records, worked out once per booklet and its raw.wrote, so a save does not run the whole writer
    again to get it: a design change adopts a new booklet whole, and the one later change, adoptParse's, gives a new raw.wrote */
 let BOOK_TEXT=null;
