@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-9c9kgeOTu61dAu1hdhCu7KBGuJ7AagQf1k9MklpXG+Q=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-FZOcveGr1iNOAhO/DGvSlk2Mw7YBUFUc3fwMltu4JOQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1931,7 +1931,7 @@ const STRINGS_SRC={
       clearLink: "Effacer tout ce qui se trouve sur cette page",
       downloaded: "Téléchargé. Conservez le fichier à un endroit où vous le retrouverez.",
       downloadFail: "Impossible de télécharger une copie.",
-      fenceOpen: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé, donc aucune réponse ne peut être écrite après lui. Fermez d’abord le bloc en Markdown.",
+      fenceOpen: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; aucune réponse ne peut donc être écrite après ce bloc. Fermez d’abord le bloc en Markdown.",
       leaving: "Vos entrées sont conservées dans ce navigateur, mais vous n’avez pas téléchargé de copie sur cet appareil.",
       unsavedEntries: n=>`${n} entrée${n===1?"":"s"} pas encore téléchargée${n===1?"":"s"}`,
       unsavedChanges: "Modifications pas encore téléchargées",
@@ -2126,7 +2126,7 @@ const STRINGS_SRC={
       earlierBad: (w,v)=>`${w} : \`earlier:${v}\` n’est pas un nombre entier écrit en chiffres ; il a donc été ignoré et la question propose son nombre par défaut`,
       eachNone: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix, et son each: ne nomme rien ; il a donc été ignoré`,
       eachMissing: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui n’est ni une question ni un élément de son activité ; son each: a donc été ignoré`,
-      eachSelf: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix d’elle-même ; son each: a donc été ignoré`,
+      eachSelf: (w,id)=>`${w} : « ${id} » doit être posée pour chacun de ses propres choix ; son each: a donc été ignoré`,
       eachKind: (w,id,s,k)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », une question ${k} : seule une question choice ou multi, ou un élément, peut en être la source ; son each: a donc été ignoré`,
       eachChain: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui est elle-même posée pour chaque choix d’une autre (un seul niveau) ; son each: a donc été ignoré`,
       shapesKept: n=>n===1?"Une réponse n’a pas la forme que garde sa question ; elle est donc gardée telle quelle : affichée en lecture seule avec un avis, et laissée hors de ce que montrent les vues"
@@ -2139,7 +2139,7 @@ const STRINGS_SRC={
       queryKeyUnknown: (w,key)=>`${w} : une requête n’a pas de réglage « ${key} » ; il a donc été ignoré`,
       queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est ni un nombre entier positif ni un nombre de jours (comme \`7 days\`) ; il a donc été ignoré`,
       querySummaryBad: (w,v)=>`${w} : \`summary: ${v}\` dans la requête n’est pas \`on\` ; il a donc été ignoré`,
-      queryEntriesOnly: (w,keys)=>`${w} : ${keys} dans la requête ne lit que des entrées enregistrées ; il a donc été ignoré`,
+      queryEntriesOnly: (w,keys,n)=>`${w} : ${keys} dans la requête ${n>1?"ne lisent":"ne lit"} que des entrées enregistrées ; ${n>1?"ils ont donc été ignorés":"il a donc été ignoré"}`,
       queryInData: w=>`${w} : une requête doit se trouver dans le texte d’une activité, pas dans la section des données ; elle a donc été ignorée`,
       recordNoItems: (w,id)=>`${w} : le registre des entrées de « ${id} » ne contient aucune liste d’éléments ; il est donc conservé tel quel`,
       recordOutside: (w,what)=>`${w} : un bloc « booklet ${what} » doit se trouver dans la zone des registres ; il n’est donc pas lu ici`,
@@ -2277,7 +2277,7 @@ const STRINGS_SRC={
       clearLink: "Borrar todo lo que hay en esta página",
       downloaded: "Descargado. Guarda el archivo en un lugar donde puedas encontrarlo.",
       downloadFail: "No se pudo descargar una copia.",
-      fenceOpen: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede escribir una respuesta después. Primero hay que cerrar el bloque en Markdown.",
+      fenceOpen: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede escribir una respuesta después de él. Primero hay que cerrar el bloque en Markdown.",
       leaving: "Tus entradas se guardan en este navegador, pero no has descargado una copia en este dispositivo.",
       unsavedEntries: n=>`${n} entrada${n===1?"":"s"} sin descargar todavía`,
       unsavedChanges: "Cambios sin descargar todavía",
@@ -2392,12 +2392,12 @@ const STRINGS_SRC={
       theAnswer: "La respuesta",
       liveRight: "Correcto.",
       liveNot: a=>`No del todo. La respuesta es ${a}.`,
-      eachNotYet: "Esta pregunta se hace una vez por cada elección de otra pregunta, algo que esta página todavía no muestra. Sus respuestas se guardan tal como están.",
-      keptAsWritten: (k,widget,each)=>`Se guarda tal como está: esta respuesta no tiene la forma que guarda ${each?"una pregunta que se hace por cada elección (una lista de pares, uno por elección)":widget?"un elemento "+k:"una pregunta "+k}, así que se muestra aquí sin cambios. El archivo contiene:`
+      eachNotYet: "Esta pregunta se hace una vez por cada opción elegida en otra pregunta, algo que esta página todavía no muestra. Sus respuestas se guardan tal como están.",
+      keptAsWritten: (k,widget,each)=>`Se guarda tal como está: esta respuesta no tiene la forma que guarda ${each?"una pregunta que se hace por cada opción elegida (una lista de pares, uno por cada opción elegida)":widget?"un elemento "+k:"una pregunta "+k}, así que se muestra aquí sin cambios. El archivo contiene:`
     },
     query: {
       empty: "Todavía no hay nada guardado aquí.",
-      summaryLater: "Los resúmenes (summary: on) aún no son compatibles aquí, así que esta vista no se muestra."
+      summaryLater: "Los resúmenes (summary: on) aún no se admiten aquí, así que esta vista no se muestra."
     },
     dv: {
       empty: "Nada que mostrar aquí.",
@@ -2415,7 +2415,7 @@ const STRINGS_SRC={
         bars: (n,lo,hi)=>`Gráfico de barras, ${n===1?"1 barra":n+" barras"}, de ${lo} a ${hi}`,
         line: (n,names,lo,hi)=>`Gráfico de líneas de ${names}, ${n===1?"1 punto":n+" puntos"}, de ${lo} a ${hi}`
       },
-      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada elección; una tabla, una lista o tarjetas la muestran."
+      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada opción elegida; una tabla, una lista o unas tarjetas sí la muestran."
     },
     problem: {
       line: n=>`línea ${n}`,
@@ -2470,11 +2470,11 @@ const STRINGS_SRC={
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
       earlierBad: (w,v)=>`${w}: \`earlier:${v}\` no es un número entero escrito con cifras, así que se ignoró y la pregunta ofrece su valor por defecto`,
-      eachNone: (w,id)=>`${w}: “${id}” debe hacerse por cada elección, y su each: no nombra nada, así que se ignoró`,
-      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que no es una pregunta ni un elemento de su actividad, así que su each: se ignoró`,
-      eachSelf: (w,id)=>`${w}: “${id}” debe hacerse por cada elección de sí misma, así que su each: se ignoró`,
-      eachKind: (w,id,s,k)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, una pregunta ${k}: solo una pregunta choice o multi, o un elemento, puede ser la fuente, así que su each: se ignoró`,
-      eachChain: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que a su vez se hace por cada elección de otra (un solo nivel), así que su each: se ignoró`,
+      eachNone: (w,id)=>`${w}: “${id}” debe hacerse por cada opción elegida, y su each: no nombra nada, así que se ignoró`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, que no es una pregunta ni un elemento de su actividad, así que su each: se ignoró`,
+      eachSelf: (w,id)=>`${w}: “${id}” debe hacerse por cada una de sus propias opciones elegidas, así que su each: se ignoró`,
+      eachKind: (w,id,s,k)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, una pregunta ${k}: solo una pregunta choice o multi, o un elemento, puede ser la fuente, así que su each: se ignoró`,
+      eachChain: (w,id,s)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, que a su vez se hace por cada opción elegida en otra (un solo nivel), así que su each: se ignoró`,
       shapesKept: n=>n===1?"Una respuesta no tiene la forma que guarda su pregunta, así que se guarda tal como está: se muestra solo para leer, con un aviso, y queda fuera de lo que muestran las vistas"
         :`${n} respuestas no tienen la forma que guardan sus preguntas, así que se guardan tal como están: se muestran solo para leer, con un aviso, y quedan fuera de lo que muestran las vistas`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` no es un ajuste que admita la línea (solo \`status:off\`), así que se ignoró`,
@@ -2485,7 +2485,7 @@ const STRINGS_SRC={
       queryKeyUnknown: (w,key)=>`${w}: una consulta no tiene el ajuste “${key}”, así que se ignoró`,
       queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo ni un número de días (como \`7 days\`), así que se ignoró`,
       querySummaryBad: (w,v)=>`${w}: el \`summary: ${v}\` de la consulta no es \`on\`, así que se ignoró`,
-      queryEntriesOnly: (w,keys)=>`${w}: ${keys} de la consulta solo lee entradas guardadas, así que se ignoró`,
+      queryEntriesOnly: (w,keys,n)=>`${w}: ${n>1?"los":"el"} ${keys} de la consulta solo ${n>1?"leen":"lee"} entradas guardadas, así que ${n>1?"se ignoraron":"se ignoró"}`,
       queryInData: w=>`${w}: una consulta va en el texto de una actividad, no en la sección de datos, así que se ignoró`,
       recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se conserva tal cual`,
       recordOutside: (w,what)=>`${w}: un bloque “booklet ${what}” va en la zona de registros, así que no se lee aquí`,
