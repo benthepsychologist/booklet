@@ -33,7 +33,13 @@ if(WRITE){
   console.log("\nwrote "+want.size+" golden files under test/compile-golden/ (commit them)");process.exit(fails?1:0);}
 
 chk("the golden folder is there",have.length>0,"run: node test/compile-golden.test.js --write");
-const firstDiff=(a,b)=>{const x=a.split("\n"),y=b.split("\n");for(let i=0;i<Math.max(x.length,y.length);i++) if(x[i]!==y[i]) return "line "+(i+1)+": golden "+JSON.stringify((x[i]||"").slice(0,120))+", now "+JSON.stringify((y[i]||"").slice(0,120));return "";};
+/* the first line that differs, past the stamp line (whose hash differs whenever anything else does) */
+const STAMP_LINE=/^<!-- booklet compile \S+ \u00b7 from .* \u00b7 sha256:[0-9a-f]{64} -->$/;
+const firstDiff=(a,b)=>{const x=a.split("\n"),y=b.split("\n");let stampOnly=false;
+  for(let i=0;i<Math.max(x.length,y.length);i++){if(x[i]===y[i]) continue;
+    if(STAMP_LINE.test(x[i]||"")&&STAMP_LINE.test(y[i]||"")){stampOnly=true;continue;}
+    return "line "+(i+1)+": golden "+JSON.stringify((x[i]||"").slice(0,120))+", now "+JSON.stringify((y[i]||"").slice(0,120));}
+  return stampOnly?"only the stamp line differs":"";};
 for(const [rel,data] of want){
   const p=path.join(GOLD,rel);
   if(!fs.existsSync(p)){chk(rel+" has a golden copy",false,"missing: node test/compile-golden.test.js --write");continue;}

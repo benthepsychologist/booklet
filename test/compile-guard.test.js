@@ -1,7 +1,11 @@
 // The compiler's guard (compile/, compile 0.1.0): what it may never do, checked by reading its own source.
 //   1. No second reader. The compiler reads the format only through booklet.html's own parse and Markdown engine, so no
 //      code under compile/ may hold a callout-line, fence, footnote, link, image, heading, list, quote or math pattern of
-//      its own, and the booklet's text may go nowhere but to the parse.
+//      its own, as a regular expression or as a string test (startsWith("> [!"), "%"+"%", "`".repeat(3)), and the
+//      booklet's text may go nowhere but to the parse. The patterns are tried on made-up re-readings first, so a pattern
+//      that stops catching one fails here. One region is let off one pattern: engine.js's author comments (%% ... %%,
+//      Obsidian's hidden comments, which the renderer publishes as prose and the compiler leaves off the page) hold the
+//      comment mark, once, and read nothing else of the format: fenced code is the renderer's own codeMask.
 //   2. Every renderer name it uses exists. Each name compile/ takes from the renderer is in engine.js's list, and each
 //      one, with the Markdown engine's markers, the formula library, the icons and the fonts, is in this commit's
 //      booklet.html, so a rename there fails here, in booklet's own CI, and not on a host's build.
@@ -20,26 +24,57 @@ const src=Object.fromEntries(files.map(f=>[f,fs.readFileSync(path.join(DIR,f),"u
 /* the code without its comments: block comments, and line comments that start a line (the compiler writes no other kind) */
 const code=Object.fromEntries(files.map(f=>[f,src[f].replace(/\/\*[\s\S]*?\*\//g,"").replace(/^\s*\/\/.*$/gm,"")]));
 const allCode=files.map(f=>code[f]).join("\n");
+const strip=t=>t.replace(/\/\*[\s\S]*?\*\//g,"").replace(/^\s*\/\/.*$/gm,"");
+/* engine.js's author-comments region, cut out of the code the patterns are tried on, and checked on its own below */
+const AC_START="/* AUTHOR COMMENTS\n",AC_END="/* /AUTHOR COMMENTS */",eng=src["engine.js"]||"";
+const acA=eng.indexOf(AC_START),acB=eng.indexOf(AC_END);
+const acRegion=acA>=0&&acB>acA?strip(eng.slice(acA,acB+AC_END.length)):"";
+const outside=Object.fromEntries(files.map(f=>[f,f==="engine.js"&&acRegion?strip(eng.slice(0,acA)+eng.slice(acB+AC_END.length)):code[f]]));
 chk("compile/ holds the four files the compiler is made of",["compile.js","draw.js","engine.js","html.js"].every(f=>files.includes(f)),files.join(", "));
 
 /* ---- 1. no second reader ---- */
 const FORBIDDEN=[
-  ["a callout line (\\[! or \"[!)",/\\\[!|["'`]\[!/],
-  ["a code fence (``` or ~~~)",/```|~~~|`\{3|~\{3/],
-  ["a footnote mark ([^)",/\\\[\\\^/],
+  ["a callout line ([! anywhere)",/\[!/],
+  ["a code fence (``` or ~~~, a lone ` or ~ string, a repeat of one)",/```|~~~|`\{3|~\{3|["']`+["']|["'`]~+["'`]|`\\`+`/],
+  ["a footnote mark or a block link's caret ([^, a lone \"^\" string)",/\\\[\\\^|["'`]\^["'`]/],
   ["an image (![)",/!\\\[/],
   ["a link's address (](  )",/\\\]\\\(/],
-  ["a heading (#{1,6} or ^#)",/#\{1,6\}|\^#/],
-  ["a quote line (^>)",/\^\\s\*>|(?<!\[)\^>|\^ \{0,3\}>/],
+  ["a heading (#{1,6}, ^#, ^(#, #+)",/#\{1,6\}|\^\(?#|#\+/],
+  ["a quote line (^>, or a string test for \">\")",/\^\\s\*>|(?<!\[)\^>|\^ \{0,3\}>|(?:startsWith\(|===|!==|==|!=)\s*["'`]>/],
+  ["a format character built from its code (fromCharCode, \\x60 and the like)",/fromCharCode|\\(?:x|u00)(?:60|7e|25|23|5b)/i],
   ["display math ($$)",/\\\$\\\$|"\$\$"/],
   ["strong or emphasis (\\*\\*, __)",/\\\*\\\*|\\_\\_/],
   ["a list item (^- , ^\\d+\\.)",/\^\\s\*\[-\*\+\]|\^\[-\*\+\]|\^\\d\+\\\./],
   ["a table row (^\\|)",/\^\\\|/],
   ["a page break (***)",/\\\*\{3\}|\\\*\\\*\\\*/],
   ["front matter (^---)",/\^---/],
-  ["a records line or region (%%)",/%%/]];
-for(const [what,re] of FORBIDDEN){const hits=files.filter(f=>re.test(code[f]));
+  ["a records line, region or author comment (%%, a lone % string)",/%%|["'`]%+["'`]/]];
+/* made-up re-readings of the format, each written the way a second reader might slip in: every one must be caught */
+const REREADINGS=[
+  'const isRecordLine=s=>s.startsWith("> [!records");',
+  'const isRegionEdge=s=>s.trim()==="%"+"%";',
+  'const fenceMark="`".repeat(3);',
+  'const tildeMark="~".repeat(3);',
+  'const calloutRe=/^>\\s?\\[!(\\w+)\\]/;',
+  'const headingRe=/^(#+)\\s/;',
+  'const toBlock=t=>t[0]==="#"&&t[1]==="^";',
+  'const isQuote=s=>s.trimStart().startsWith(">");',
+  'const tick=String.fromCharCode(96);',
+  'const ticks="\\x60\\x60\\x60";',
+  'const atx=/#{1,6} /;',
+  'const fence=/^```/;'];
+const missed=REREADINGS.filter(t=>!FORBIDDEN.some(([,re])=>re.test(t)));
+chk("the patterns catch every made-up re-reading of the format ("+REREADINGS.length+")",!missed.length,missed.join("  |  "));
+for(const [what,re] of FORBIDDEN){const hits=files.filter(f=>re.test(outside[f]));
   chk("no "+what+" pattern of its own under compile/",!hits.length,hits.join(", "));}
+/* the author-comments region: there once, the mark once, fenced code from the renderer, and no other pattern */
+chk("engine.js holds one author-comments region",acA>=0&&acB>acA&&eng.indexOf(AC_START,acA+1)<0&&eng.indexOf(AC_END,acB+1)<0);
+chk("…whose only format string is the comment mark, once",(acRegion.match(/%%/g)||[]).length===1&&/const COMMENT_MARK="%%";/.test(acRegion),acRegion.match(/.{0,30}%%.{0,10}/g));
+chk("…which takes fenced code from the renderer's own codeMask",/R\.codeMask\(/.test(acRegion));
+const acOther=FORBIDDEN.slice(0,-1).filter(([,re])=>re.test(acRegion)).map(([w])=>w);
+chk("…and holds no other pattern of the format",!acOther.length,acOther.join("; "));
+/* the link rule is the renderer's: draw.js asks linkHooks where a link goes, and decides nothing of its own */
+chk("draw.js takes where a link goes from the renderer's linkHooks",/R\.linkHooks\(/.test(code["draw.js"]));
 /* the booklet's text goes to the parse and nowhere else: compile.js reads an input file in one place, parseInput, whose
    only job is to hand the text to X.parse */
 const reads=(code["compile.js"].match(/readFileSync\(input\.file/g)||[]).length;
@@ -74,7 +109,13 @@ if(X){
   chk("the fonts: eight faces, Atkinson Hyperlegible and Lexend",F.faces.length===8&&new Set(F.faces.map(f=>f.family)).size===2,F.faces.map(f=>f.name).join(", "));
   chk("each face's bytes are a woff2 file",F.faces.every(f=>f.bytes.slice(0,4).toString("latin1")==="wOF2"));
   chk("the fonts' licence is the SIL Open Font License, whole",/SIL OPEN FONT LICENSE Version 1\.1/.test(F.licence)&&/OTHER DEALINGS IN THE FONT SOFTWARE\.\n$/.test(F.licence));
-  chk("the renderer's tables the coverage test reads are there",X.R.DRAW_BLOCK&&X.R.QUESTION_KINDS&&X.R.ENGINES&&X.R.QUERY_VIEWS&&X.R.COLOUR_NAMES);}
+  chk("the renderer's tables the coverage test reads are there",X.R.DRAW_BLOCK&&X.R.QUESTION_KINDS&&X.R.ENGINES&&X.R.QUERY_VIEWS&&X.R.COLOUR_NAMES);
+  /* the records refusals lean on three of the renderer's own things: its problem for a record block outside the region,
+     its callout line, and its fences */
+  const codes=[...code["engine.js"].matchAll(/\.code==="(\w+)"/g)].map(m=>m[1]);
+  chk("each problem code engine.js looks for is one the renderer has ("+codes.join(", ")+")",codes.length>0&&codes.every(c=>typeof X.R.strings("problem")[c]==="function"),codes.join(", "));
+  chk("the renderer's callout line reads a records line, and its fences report one left open",
+    (()=>{const m=X.R.CALLOUT_LINE.exec("> [!records|m] x");const F=Array.from(X.R.codeFences(["a","```text","b"]));return !!m&&m[1]==="records"&&F.length===1&&F[0].end>=3;})());}
 
 /* ---- 3. records are never handed over ---- */
 for(const [what,re] of [["the parse's state (.S)",/\.S\b/],["the drafts",/\bdrafts\b/],["the records region's bytes (.wrote)",/\bwrote\b/],

@@ -4,7 +4,10 @@
 // stand in COVERAGE that the renderer no longer has. Then the made-up fixture test/fixtures/compile-kinds.booklet.md is
 // compiled and the page is held to that table: every callout kind in its own look (CALLOUT_LOOK, each alias too), every
 // question kind and both engines drawn, and everything that is marked marked twice: an HTML comment where it stood and a
-// line in the report's tidy-up list. A query of each of the six views is marked the same way.
+// line in the report's tidy-up list. A query of each of the six views is marked the same way. COVERAGE is made from the
+// very tables draw.js dispatches from (BLOCK_WAY for blocks, ENGINE_WAY for engines), so a type the table calls drawn is
+// one block() sends to a drawer; and the fixture, which holds every kind the renderer draws, yields no mark for a block
+// the compiler does not know, and no engine mark but for the one engine it makes up.
 // Run: node test/compile-coverage.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path");
 const C=require("../compile/compile.js"),D=require("../compile/draw.js"),E=require("../compile/engine.js");
@@ -23,6 +26,10 @@ chk("every engine is in COVERAGE.engines, and nothing else",engines.every(e=>e i
 chk("every query view is in COVERAGE.views, and nothing else",views.every(v=>v in COV.views)&&Object.keys(COV.views).every(v=>views.includes(v)),Object.keys(COV.views).join(", "));
 chk("each entry says drawn, or marked with its reason",[COV.blocks,COV.engines,COV.views].every(t=>Object.values(t).every(handled)));
 chk("every kind of mark has the words the comment and the report give it",Object.values(D.MARKED).every(v=>typeof v==="string"&&v.length>10));
+const same=(a,b)=>JSON.stringify(Object.keys(a).sort())===JSON.stringify(Object.keys(b).sort());
+chk("COVERAGE.blocks is made from BLOCK_WAY, the table block() dispatches from",same(COV.blocks,D.BLOCK_WAY)
+  &&Object.entries(D.BLOCK_WAY).every(([k,v])=>COV.blocks[k]===(typeof v==="string"?"drawn":"marked: "+v.marked)));
+chk("COVERAGE.engines is ENGINE_WAY, the table widget() dispatches from",same(COV.engines,D.ENGINE_WAY)&&Object.entries(D.ENGINE_WAY).every(([k,v])=>COV.engines[k]===v));
 
 /* ---- the fixture, drawn ---- */
 const FIX=path.join(__dirname,"fixtures","compile-kinds.booklet.md");
@@ -68,6 +75,9 @@ const expect=[["kind","the callout kind “sparkle”"],["each","the question �
 for(const [kind,what] of expect){
   chk("marked on the page: "+what,marks.some(m=>m.startsWith(what)&&m.endsWith(D.MARKED[kind])),marks.join(" | "));
   chk("listed to tidy in the report: "+what,tidy.some(l=>l.includes(what)&&l.endsWith(D.MARKED[kind])));}
+const unknownBlocks=r.rep.marked.filter(m=>m.kind==="block"),engineMarks=r.rep.marked.filter(m=>m.kind==="engine");
+chk("the fixture yields no mark for a block the compiler does not know",!unknownBlocks.length,unknownBlocks.map(m=>m.what).join(", "));
+chk("…and an engine mark only for an engine the renderer does not have either",engineMarks.length===1&&engineMarks.every(m=>/engine “([^”]+)”/.test(m.what)&&!keys(R.ENGINES).includes(/engine “([^”]+)”/.exec(m.what)[1])),engineMarks.map(m=>m.what).join(", "));
 chk("the report lists exactly the marks on the page, one line for each comment",tidy.length===marks.length&&r.rep.marked.length===marks.length,tidy.length+" lines, "+marks.length+" comments, "+r.rep.marked.length+" marks");
 chk("a broken mark is shown as [?id]",/<span class="bk-broken" title="[^"]*">\[\?nowhere\]<\/span>/.test(page));
 chk("a diagram is shown as its source",/<pre class="bk-figure-src"><code data-lang="mermaid">graph LR; Build --&gt; Fly<\/code><\/pre>/.test(page));
