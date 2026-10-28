@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-EefIr/0Hr/T1IU5GSom3AZkAoql7bLEk6SzX+pRmvnE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-54JFHI5q6ArTQBbF8i4HQqgNXXNnwyiUfkt7x6ycdg0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3455,12 +3455,14 @@ const storeNameOf=e=>{const p=fromParts(e&&e.from);return p?p.name:"";};
    answered in or whether the reader downloaded since.
    The file is drawn into the same entry, and the kept copy goes (storeHolds), when nothing is kept (a pointer); or when
    the kept copy holds no change to the booklet itself (`customized`: a rename inside it, a module added or removed,
-   which the store cannot hold, since it keeps its own body) and either nothing changed here since the base, so that
-   the file is the truth whatever it holds now (work another device added just appears), or the kept copy and the file
-   hold exactly the same work. A kept copy with no base (one written before bases were kept) is judged on that second
-   test alone. A blank kept copy (no module in it) is judged one way only, on its own answers: it holds nothing worth
-   keeping over the file's. Otherwise the kept copy opens, the newer file is offered if it changed, and reading it
-   merges the two against the base, place by place (acceptWork, mergeWork). */
+   which the store cannot hold, since it keeps its own body), no records kept as written that the file lacks
+   (keptBeyond: the reader's work in a module a newer file dropped, which neither the base nor the answers weighed below
+   hold), and either nothing changed here since the base, so that the file is the truth whatever it holds now (work
+   another device added just appears), or the kept copy and the file hold exactly the same work. A kept copy with no
+   base (one written before bases were kept) is judged on that second test alone. A blank kept copy (no module in it),
+   past the kept records, is judged on its own answers only: it holds nothing worth keeping over the file's. Otherwise
+   the kept copy opens, the newer file is offered if it changed, and reading it merges the two against the base, place
+   by place (acceptWork, mergeWork). */
 /* What "empty" is for a reader's work: nothing typed or picked at any depth (holdsSomething), so "", [""] (a list of
    lines only looked at), [] (an activity's entries, or a list never filled) and a draft with nothing in it are all
    empty. A page that was only viewed makes such values, so an empty value counts as no value at all. That is the rule
@@ -3519,13 +3521,23 @@ function unflatWork(m){const r={answers:nullMap(),entries:nullMap(),drafts:nullM
     else into(r.entries,p[1],[]).push(v);});
   Object.keys(r.entries).forEach(at=>r.entries[at].sort((x,y)=>String(x.ts).localeCompare(String(y.ts))));
   return r;}
+/* The records a copy keeps as written under a records line for a module its design has none for (keepUnowned's, made
+   when a newer file dropped the module the reader wrote in, or its file's own: SPEC section 8), less those the file just
+   read (R, its parse) holds as written too. They are the reader's work as much as any answer: reading R carries them
+   forward (acceptWork), and a kept copy that holds any is never drawn over (storeHolds). T: the copy's design. */
+function keptBeyond(T,R){const recs=t=>(isObj(t)&&isObj(t.raw)&&Array.isArray(t.raw.records))?t.raw.records.filter(isObj):[],now=recs(R&&R.template);
+  return recs(T).filter(r=>r.foreign&&typeof r.text==="string"&&!now.some(x=>x.scope===r.scope&&x.text===r.text));}
 /* Whether the file just read for a store entry (R, its parse) holds everything this browser keeps of it (see "a store
    booklet" above). A kept copy that cannot be read is not judged here: it takes the old path, which says what it can. */
 function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return true;
   let o=null;try{o=JSON.parse(raw);}catch(x){o=null;}
   if(!isObj(o)||!isObj(o.S)) return false;
-  /* the kept design: the parse of the kept text, or an older release's design (TPL) */
-  const T=typeof o.text==="string"?parseFile(o.text).template||null:isObj(o.TPL)?keptShape(o.TPL):null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
+  /* the kept design: the parse of the kept text, read with the records region kept beside it as loadLocal reads it
+     (readMade: a text cut before its region), or an older release's design (TPL) */
+  const kt=typeof o.text==="string"?parseFile(o.text):null,
+    T=kt?readMade(kt,cutAgain(kt,typeof o.region==="string"?o.region:undefined)).template||null:isObj(o.TPL)?keptShape(o.TPL):null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
+  /* records kept as written that the file lacks are work the file lacks, whatever else the copy holds or does not */
+  if(keptBeyond(T,R).length) return false;
   if(blank) return workWithin(o.S,o.D,R);
   if(keptCustomized(o)) return false;
   const keep=T?scopesOfBook(T):null,here=flatWork({answers:o.S.answers,entries:o.S.entries,drafts:isObj(o.D)?o.D.custom:{}},keep);
@@ -8811,13 +8823,11 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
 const acceptWork=R=>{
   /* whichever way the work is weighed (acceptWorkOf), what the new design has no module for (a module the file dropped or renamed)
      is kept as records, never left in this page where nothing would draw or write it: with a host, with none and with no base alike */
-  const W=keepUnowned(acceptWorkOf(R),R.template),raw=BOOK&&BOOK.raw,T=R.template,
-    /* what an earlier read kept as records for a module this design has no module for stays with the booklet: the new file's
-       parse holds none of it, and without this a later newer file (a title changed) would drop it. If the module comes back,
-       its text and these records are parsed together and the answers return as answers (finishLoad, adoptText). */
-    had=((raw&&Array.isArray(raw.records))?raw.records:[]).filter(r=>isObj(r)&&r.foreign&&typeof r.text==="string"),
-    now=(isObj(T)&&isObj(T.raw)&&Array.isArray(T.raw.records))?T.raw.records:[];
-  W.records=[...had.filter(r=>!now.some(x=>isObj(x)&&x.scope===r.scope&&x.text===r.text)),...W.records];
+  const W=keepUnowned(acceptWorkOf(R),R.template);
+  /* what an earlier read kept as records for a module this design has no module for stays with the booklet (keptBeyond): the
+     new file's parse holds none of it, and without this a later newer file (a title changed) would drop it. If the module
+     comes back, its text and these records are parsed together and the answers return as answers (finishLoad, adoptText). */
+  W.records=[...keptBeyond(BOOK,R),...W.records];
   return W;};
 const acceptWorkOf=R=>{
   if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};

@@ -177,8 +177,8 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
    body:{getReader(){const b=Buffer.from(body);let done=false;return {read:async()=>done?{done:true}:(done=true,{done:false,value:new Uint8Array(b)})};}}});
  const type=(A,scope,words)=>{A.screen=scope+"/a1";A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea"||n.tagName==="input")[0];ta.value=words;ta._on.input();A.flushSave();};
  /* the two ways a newer file is read: the host's (Booklet.host, fileChanged) and a store's (a #/open/ link, no host). The
-    reader also answers in a module every file keeps, so the store's newer file is offered: a store file that holds all
-    the work kept in the page is drawn with no offer (storeHolds) */
+    reader's only work is in the module the newer file drops, so after that read the copy holds nothing but those records,
+    and the store's next file is offered all the same (storeHolds weighs them, keptBeyond) */
  const WAYS={
    host:{boot(){P.place("http:","fleet");global.__ls["booklet.host.allowed"]="fleet: garden";const A=P.boot(),B=A.BookletApi;
        h=B.host({label:"fleet: garden"});B.onChange(x=>calls.push(x));return A;},
@@ -195,7 +195,7 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
  for(const [way,W] of Object.entries(WAYS)){
    for(const [label,last] of [["the module still gone",V3],["the module back",V3b]]) for(const rl of [false,true]){
      const as=" ("+way+"; a newer file ending inside the fence, then "+(rl?"a reload, then ":"")+"a newer file with it closed and "+label+")";
-     let A=await W.open(V1);type(A,"shed","snails");type(A,"beds","peas and beans");
+     let A=await W.open(V1);type(A,"shed","snails");
      A=await W.newer(A,V2);
      chk("the work in the module the newer file drops is kept as records beside the copy's text"+as,A.BOOK.raw.source===V2&&/snails/.test(A.toMarkdown()),show(A.toMarkdown()));
      if(rl) A=await W.again(A);
@@ -210,7 +210,7 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
      chk("a file's own records for a module its design lacks, the design after them ending inside the fence: a newer file keeps them"+as,
        A.BOOK.raw.source===V3&&t.includes("> [!records|shed] The shed\n\n```booklet answers\n{\"q1\": \"snails\"}\n```")&&A.peekAnswers("beds").q1==="peas and beans",show(t));}
    /* a newer file that brings the module back and still ends inside the fence: the answer is the reader's again, at once */
-   {let A=await W.open(V1);type(A,"shed","snails");type(A,"beds","peas and beans");A=await W.newer(A,V2);
+   {let A=await W.open(V1);type(A,"shed","snails");A=await W.newer(A,V2);
     const V2b=FM+MOD("beds")+MOD("shed")+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
     A=await W.newer(A,V2b);const shown=A.peekAnswers("shed").q1;A=await W.again(A);const kept=A.peekAnswers("shed").q1;A=await W.newer(A,V3);
     chk("a newer file that brings the module back, still ending inside the fence: the answer is in its module at once, after a reload, and kept by the next file ("+way+")",
