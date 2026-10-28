@@ -282,19 +282,19 @@ const mode=t=>{const r=A.parseFile(ROWFM+t);return {r,a:r.template.modules[0].ac
 {const cell=c=>({id:"x",label:"X",color:c});
  const k=A.cellColor(cell("warm"),0);
  chk("a tone name draws in the theme's own tone tokens",k.tint==="var(--tone-warm)"&&k.deep==="var(--tone-warm-deep)"&&k.tone===true);
- chk("every one of the five names resolves",["warm","green","amber","slate","teal"].every(n=>A.cellColor(cell(n),0).tint==="var(--tone-"+n+")"));
+ chk("every one of the seven names resolves",["warm","green","amber","slate","teal","blue","purple"].every(n=>A.cellColor(cell(n),0).tint==="var(--tone-"+n+")"));
  chk("its style names the theme's tokens only",A.cellStyle(cell("green"),0)==="background:var(--tone-green);--qd:var(--tone-green-deep);--qt:var(--tone-green)");
  chk("a pair of hex colours is no colour (0.13): the cell takes the default tint",A.cellColor(cell({tint:"#F0D9CF",deep:"#A04E34"}),1).tint==="var(--cell-1)"&&A.cellStyle(cell({tint:"#F0D9CF",deep:"#A04E34"}),1).indexOf("#F0D9CF")<0);
  chk("an unknown name falls back to the default cell tints",A.cellColor(cell("chartreuse"),2).tint==="var(--cell-2)"&&A.cellColor(cell("chartreuse"),2).deep==="var(--tint-ink)"&&!A.colourOf(cell("chartreuse")));
  chk("a name that is not a plain string name never reaches a style",["constructor","__proto__","warm;background:red",["warm"],{}].every(v=>A.cellStyle(cell(v),0).indexOf("red")<0&&!A.colourOf(cell(v))));
  /* the tone tokens exist in every theme, with ink readable on them */
- chk("every theme has the five tone tints and deep colours, and the floor checks them",["paper","daylight","night","contrast"].every(n=>["warm","green","amber","slate","teal"].every(t=>TABLES[n]["--tone-"+t]&&TABLES[n]["--tone-"+t+"-deep"])&&passes(n,{})));
+ chk("every theme has the seven tone tints and deep colours, and the floor checks them",["paper","daylight","night","contrast"].every(n=>["warm","green","amber","slate","teal","blue","purple"].every(t=>TABLES[n]["--tone-"+t]&&TABLES[n]["--tone-"+t+"-deep"])&&passes(n,{})));
  chk("Night's tones are dark tints (a cell does not glare)",lum(rgb(TABLES.night["--tone-green"]))<.05&&lum(rgb(TABLES.paper["--tone-green"]))>.5);
  chk("Paper's and Daylight's green is BTP's \"yes\" wash (0.11.9; it was #DCE7D2 before)",TABLES.paper["--tone-green"]==="#E1F1E7"&&TABLES.daylight["--tone-green"]==="#E1F1E7");
  const ex=fs.readFileSync(path.join(R,"examples/mindful-check-in.booklet.md"),"utf8");
- chk("the example names its cell colours as tones",["warm","green","slate","teal"].every(n=>ex.includes('"color": "'+n+'"'))&&!/"tint"/.test(ex));
+ chk("the example names its cell colours as tones",["warm","green","blue","purple"].every(n=>ex.includes('"color": "'+n+'"'))&&!/"tint"/.test(ex));
  const r=A.parseFile(ex);const w=r.template.widgets.find(x=>x.cells);
- chk("and loads, its cells carrying the names",r.ok&&w.cells.map(c=>c.color).join()==="warm,green,slate,teal",JSON.stringify(w.cells.map(c=>c.color)));
+ chk("and loads, its cells carrying the names",r.ok&&w.cells.map(c=>c.color).join()==="warm,green,blue,purple",JSON.stringify(w.cells.map(c=>c.color)));
 }
 
 /* a colour from a file goes into a style attribute only as a name from the list */

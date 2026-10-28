@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-yfVK8Rn+d43La/TH4vOWmhc3JR9/Pc6AUYi4qtz0Jv8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-ZyTPnFReXLtLoQPXwKxj/oAUhonz2P5Fhon7MRcdnM0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -47,6 +47,8 @@
     --tone-amber:#F8EBD0; --tone-amber-deep:#8B5F10;
     --tone-slate:#E6E9EC; --tone-slate-deep:#3E4E59;
     --tone-teal:#E4EFEF; --tone-teal-deep:#15464F;
+    --tone-blue:#E3EEF7; --tone-blue-deep:#2F6596;
+    --tone-purple:#ECE8F6; --tone-purple-deep:#6453A6;
     --bw:2px; --focus-w:3px;
     --h-sky:#E3EEF7; --h-sky-vivid:#3F7FB5; --h-sky-solid:#2F6FA8; --h-sky-deep:#2F6596;
     --h-rose:#F9E3E8; --h-rose-vivid:#BF5470; --h-rose-solid:#B4475F; --h-rose-deep:#A3405B;
@@ -69,6 +71,8 @@
     --tone-amber:#F8EBD0; --tone-amber-deep:#8B5F10;
     --tone-slate:#ECEFF1; --tone-slate-deep:#3E4E59;
     --tone-teal:#E6F0F0; --tone-teal-deep:#15464F;
+    --tone-blue:#E8F1F9; --tone-blue-deep:#2F6596;
+    --tone-purple:#EFECF8; --tone-purple-deep:#6453A6;
     --bw:2px; --focus-w:3px;
     --h-sky:#E8F1F9; --h-sky-vivid:#3F7FB5; --h-sky-solid:#2F6FA8; --h-sky-deep:#2F6596;
     --h-rose:#FAE8EC; --h-rose-vivid:#BF5470; --h-rose-solid:#B4475F; --h-rose-deep:#A3405B;
@@ -91,6 +95,8 @@
     --tone-amber:#31281A; --tone-amber-deep:#F0BA55;
     --tone-slate:#232D33; --tone-slate-deep:#A9BBC6;
     --tone-teal:#163139; --tone-teal-deep:#7CC0CB;
+    --tone-blue:#172A3B; --tone-blue-deep:#88B8E4;
+    --tone-purple:#25223A; --tone-purple-deep:#B3A5EE;
     --bw:2px; --focus-w:3px;
     --h-sky:#172A3B; --h-sky-vivid:#88B8E4; --h-sky-solid:#3A78B0; --h-sky-deep:#88B8E4;
     --h-rose:#381F28; --h-rose-vivid:#EC93AA; --h-rose-solid:#B24A64; --h-rose-deep:#EC93AA;
@@ -113,6 +119,8 @@
     --tone-amber:#FFF3C4; --tone-amber-deep:#5C4300;
     --tone-slate:#E6EAEE; --tone-slate-deep:#243746;
     --tone-teal:#DDF2F0; --tone-teal-deep:#004D45;
+    --tone-blue:#E6F0FA; --tone-blue-deep:#003A70;
+    --tone-purple:#EFEAFB; --tone-purple-deep:#3A2380;
     --bw:3px; --focus-w:4px;
     --h-sky:#E6F0FA; --h-sky-vivid:#003A70; --h-sky-solid:#003A70; --h-sky-deep:#003A70;
     --h-rose:#FFE9EE; --h-rose-vivid:#7A0F2E; --h-rose-solid:#7A0F2E; --h-rose-deep:#7A0F2E;
@@ -1041,6 +1049,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       --tone-amber:#F8EBD0 !important; --tone-amber-deep:#8B5F10 !important;
       --tone-slate:#ECEFF1 !important; --tone-slate-deep:#3E4E59 !important;
       --tone-teal:#E6F0F0 !important; --tone-teal-deep:#15464F !important;
+      --tone-blue:#E8F1F9 !important; --tone-blue-deep:#2F6596 !important;
+      --tone-purple:#EFECF8 !important; --tone-purple-deep:#6453A6 !important;
       --bw:2px !important; --focus-w:3px !important;
       --h-sky:#E8F1F9 !important; --h-sky-vivid:#3F7FB5 !important; --h-sky-solid:#2F6FA8 !important; --h-sky-deep:#2F6596 !important;
       --h-rose:#FAE8EC !important; --h-rose-vivid:#BF5470 !important; --h-rose-solid:#B4475F !important; --h-rose-deep:#A3405B !important;
@@ -1088,7 +1098,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   var STYLES={teaching:{"--r-lg":"22px","--r-md":"14px","--r-sm":"8px","--tile-solid":"0",picture:"spot"},
     briefing:{"--r-lg":"10px","--r-md":"6px","--r-sm":"4px","--tile-solid":"1",picture:"icon"}};
   var STYLE_NAMES=["teaching","briefing"],styleOn="teaching",hostStyle="teaching",styleSet=[];
-  var TOKEN=/^--(paper|paper-deep|ink|reader|field|surface|rule|muted|placeholder|on-ink|on-ink-soft|bar-bg|mark|accent|accent-soft|rg-on|on-accent|warn|warn-soft|tone-(warm|green|amber|slate|teal)(-deep)?|h-(sky|rose|sage|sun|lilac|petrol|slate)(-vivid|-solid|-deep)?|on-solid|spark)$/;
+  var TOKEN=/^--(paper|paper-deep|ink|reader|field|surface|rule|muted|placeholder|on-ink|on-ink-soft|bar-bg|mark|accent|accent-soft|rg-on|on-accent|warn|warn-soft|tone-(warm|green|amber|slate|teal|blue|purple)(-deep)?|h-(sky|rose|sage|sun|lilac|petrol|slate)(-vivid|-solid|-deep)?|on-solid|spark)$/;
   function put(n,v){try{de.style.setProperty(n,v);applied.push(n);}catch(e){/* a value the browser will not take is skipped */}}
   function clearCustom(){applied.forEach(function(n){try{de.style.removeProperty(n);}catch(e){/* nothing to remove */}});applied=[];de.removeAttribute("data-theme-custom");}
   function setCustom(colours){
@@ -1440,10 +1450,10 @@ const LIB_KEY="booklet.library.v1", bookKey=id=>"booklet.b."+id;
 const LIB_SCREEN="@booklets",HOME_SCREEN="@home";
 /* every dialog the page has, by id */
 const VEIL_IDS=["veilLoad","veilClear","veilAddModule"];
-/* A colour in widget data is a colour name (warm, green, amber, slate, teal), drawn in the active
+/* A colour in widget data is a colour name (warm, green, amber, slate, teal, blue, purple), drawn in the active
    theme's own tone tokens with the theme's ink on it, so a cell looks right in every theme. A name
    this list does not hold is no colour. (A "tone" is `good`, `warn` or `bad`, in a view.) */
-const COLOUR_NAMES=["warm","green","amber","slate","teal"];
+const COLOUR_NAMES=["warm","green","amber","slate","teal","blue","purple"];
 /* the built-in themes by name, in the order the menu offers them; the head
    script keeps a copy of this list (THEMES, and NAMES with "auto" first),
    the one place the page cannot read it from */
@@ -1491,8 +1501,8 @@ const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
    the parser keeps a module's ids apart from it: no module id can be spelled like it. */
 const ADDR_SEP="/";
 const SHARED="*";
-/* A query's fourteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
-const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon"];
+/* A query's fifteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
+const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
 const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
   list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
@@ -1677,7 +1687,8 @@ const STRINGS_SRC={
       liveNot: a=>`Not quite. The answer is ${a}.`
     },
     query: {
-      empty: "Nothing kept here yet."
+      empty: "Nothing kept here yet.",
+      summaryLater: "Summaries (summary: on) are not yet supported here, so this view is not drawn."
     },
     dv: {
       empty: "Nothing to show here.",
@@ -1758,7 +1769,9 @@ const STRINGS_SRC={
       iconOnEnd: w=>`${w}: a module's end line takes no “icon:”, so it was ignored`,
       kindUnknown: (w,k)=>`${w}: this page does not know the kind “${k}”, so it is shown as a callout`,
       queryKeyUnknown: (w,key)=>`${w}: a query has no setting “${key}”, so it was ignored`,
-      queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number, so it was ignored`,
+      queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number or a number of days (such as \`7 days\`), so it was ignored`,
+      querySummaryBad: (w,v)=>`${w}: the query's \`summary: ${v}\` is not \`on\`, so it was ignored`,
+      queryEntriesOnly: (w,keys,n)=>`${w}: the query's ${keys} ${n>1?"read":"reads"} kept entries only, so ${n>1?"they were":"it was"} ignored`,
       queryInData: w=>`${w}: a query belongs in an activity's prose, not in the data section, so it was ignored`,
       recordNoItems: (w,id)=>`${w}: the entries record for “${id}” holds no list of items, so it is kept as written`,
       recordOutside: (w,what)=>`${w}: a “booklet ${what}” block belongs in the records region, so it is not read here`,
@@ -2012,7 +2025,8 @@ const STRINGS_SRC={
       liveNot: a=>`Pas tout à fait. La réponse est ${a}.`
     },
     query: {
-      empty: "Rien n’est encore enregistré ici."
+      empty: "Rien n’est encore enregistré ici.",
+      summaryLater: "Les résumés (summary: on) ne sont pas encore pris en charge ici ; cette vue n’est donc pas affichée."
     },
     dv: {
       empty: "Rien à afficher ici.",
@@ -2089,7 +2103,9 @@ const STRINGS_SRC={
       iconOnEnd: w=>`${w} : la ligne de fin d’un module n’accepte pas « icon: » ; il a donc été ignoré`,
       kindUnknown: (w,k)=>`${w} : cette page ne connaît pas le type « ${k} » ; il est donc affiché comme un encadré`,
       queryKeyUnknown: (w,key)=>`${w} : une requête n’a pas de réglage « ${key} » ; il a donc été ignoré`,
-      queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est pas un nombre entier positif ; il a donc été ignoré`,
+      queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est ni un nombre entier positif ni un nombre de jours (comme \`7 days\`) ; il a donc été ignoré`,
+      querySummaryBad: (w,v)=>`${w} : \`summary: ${v}\` dans la requête n’est pas \`on\` ; il a donc été ignoré`,
+      queryEntriesOnly: (w,keys)=>`${w} : ${keys} dans la requête ne lit que des entrées enregistrées ; il a donc été ignoré`,
       queryInData: w=>`${w} : une requête doit se trouver dans le texte d’une activité, pas dans la section des données ; elle a donc été ignorée`,
       recordNoItems: (w,id)=>`${w} : le registre des entrées de « ${id} » ne contient aucune liste d’éléments ; il est donc conservé tel quel`,
       recordOutside: (w,what)=>`${w} : un bloc « booklet ${what} » doit se trouver dans la zone des registres ; il n’est donc pas lu ici`,
@@ -2343,7 +2359,8 @@ const STRINGS_SRC={
       liveNot: a=>`No del todo. La respuesta es ${a}.`
     },
     query: {
-      empty: "Todavía no hay nada guardado aquí."
+      empty: "Todavía no hay nada guardado aquí.",
+      summaryLater: "Los resúmenes (summary: on) aún no son compatibles aquí, así que esta vista no se muestra."
     },
     dv: {
       empty: "Nada que mostrar aquí.",
@@ -2420,7 +2437,9 @@ const STRINGS_SRC={
       iconOnEnd: w=>`${w}: la línea de cierre de un módulo no admite “icon:”, así que se ignoró`,
       kindUnknown: (w,k)=>`${w}: esta página no conoce el tipo “${k}”, así que se muestra como un recuadro`,
       queryKeyUnknown: (w,key)=>`${w}: una consulta no tiene el ajuste “${key}”, así que se ignoró`,
-      queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo, así que se ignoró`,
+      queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo ni un número de días (como \`7 days\`), así que se ignoró`,
+      querySummaryBad: (w,v)=>`${w}: el \`summary: ${v}\` de la consulta no es \`on\`, así que se ignoró`,
+      queryEntriesOnly: (w,keys)=>`${w}: ${keys} de la consulta solo lee entradas guardadas, así que se ignoró`,
       queryInData: w=>`${w}: una consulta va en el texto de una actividad, no en la sección de datos, así que se ignoró`,
       recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se conserva tal cual`,
       recordOutside: (w,what)=>`${w}: un bloque “booklet ${what}” va en la zona de registros, así que no se lee aquí`,
@@ -3872,19 +3891,24 @@ function optionsUnder(lines,i){let j=i,blanks=0;
   return items.length?{items,next:j}:null;}
 /* A query block's body: `key: value` lines (YAML's plainest form). Returns
    its settings, or `bad` with the first line that is not one; `unknown` names the keys a query does not
-   have, and `limitBad` a `limit` that is not a positive whole number (both are ignored). */
+   have, `limitBad` a `limit` that is neither a positive whole number nor that many days (`7 days`), and `summaryBad` a `summary`
+   that is not `on` (all three are ignored). A span of days is `view.days`; a count is `view.limit`. */
 function readQuery(code){const o={};
   for(const raw of String(code||"").split("\n")){const ln=raw.trim();if(!ln) continue;
     const kv=kvLine(ln);if(!kv) return {bad:ln};
     o[kv[0].toLowerCase()]=kv[1];}
   const unknown=Object.keys(o).filter(k=>!QUERY_KEYS.includes(k));
-  const limitBad=o.limit!==undefined&&!/^[1-9]\d*$/.test(o.limit)?o.limit:undefined;
-  const lim=limitBad===undefined&&o.limit!==undefined?Number(o.limit):0;
+  const limitBad=o.limit!==undefined&&!/^[1-9]\d*(?:[ \t]+days?)?$/.test(o.limit)?o.limit:undefined;
+  const span=limitBad===undefined&&o.limit!==undefined?/^([1-9]\d*)[ \t]+days?$/.exec(o.limit):null;
+  const lim=limitBad===undefined&&o.limit!==undefined&&!span?Number(o.limit):0;
+  const summaryBad=o.summary!==undefined&&o.summary!=="on"?o.summary:undefined;
   /* how a view draws: the view, and the names of the fields it reads */
-  const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
+  const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit","summary"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
   if(lim>0) view.limit=lim;
+  if(span) view.days=Number(span[1]);
+  if(o.summary==="on") view.summary="on";
   return {from:o.from||"",fields:o.fields?o.fields.split(",").map(x=>x.trim()).filter(Boolean):undefined,
-    empty:o.empty||undefined,view,unknown,limitBad};}
+    empty:o.empty||undefined,view,unknown,limitBad,summaryBad};}
 /* A `booklet data` block: rows a generator wrote. JSON: an object with
    `rows` (and optionally `fields`, each key's label and the default order), or
    the list of rows itself. A value is a string, a number, true, false, null, or
@@ -4125,6 +4149,7 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       if(q.bad){problems.push(P.queryBadLine(P.line(it.line),q.bad));return;}
       q.unknown.forEach(k=>problems.push(P.queryKeyUnknown(P.line(it.line),k)));
       if(q.limitBad!==undefined) problems.push(P.queryLimitBad(P.line(it.line),q.limitBad));
+      if(q.summaryBad!==undefined) problems.push(P.querySummaryBad(P.line(it.line),q.summaryBad));
       queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,empty:q.empty,view:q.view})});lastQ=null;},
     /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
     theme:it=>{
@@ -4326,6 +4351,11 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
    modules.forEach(m=>{const sc=scopeOf(m),t=where.get(sc)||where.set(sc,new Map()).get(sc);
      m.activities.forEach(a=>{t.set(shortId(a.id),{m,a});
        blocksAll(activityBlocks(a)).forEach(b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) t.set(b.id,{m,a,q:b});});});});
+   /* a span of days and a summary read kept entries: on a data block or on a question that keeps none they are reported and ignored */
+   const entriesOnly=({block,line})=>{const v=block.view||{},ks=[];
+     if(v.days){ks.push("limit: "+v.days+" days");delete v.days;}
+     if(v.summary){ks.push("summary: on");delete v.summary;}
+     if(ks.length) problems.push(P.queryEntriesOnly(P.line(line),ks.map(k=>"`"+k+"`").join(", "),ks.length));};
    for(const x of queries){const {q,block}=x,drop=why=>{problems.push(P.queryRefused(shortId(x.act.id),why));
        x.act.pages.forEach(pg=>stripBlock(pg.blocks,block));};
      const here=moduleHolding(modules,x.act),sc=scopeOf(here),as=(q.view||{}).as;
@@ -4334,10 +4364,10 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
      if(as!==undefined&&!QUERY_VIEWS.has(as)){drop(P.queryViewBad(as,[...QUERY_VIEWS]));continue;}
      if(!src){const d=q.from&&(dataBlocks.find(z=>z.id===q.from&&z.mod===here)||dataBlocks.find(z=>z.id===q.from&&z.mod===null));
        if(d){
-         block.data={rows:d.rows,fields:d.fields};continue;}
+         block.data={rows:d.rows,fields:d.fields};entriesOnly(x);continue;}
        if(elsewhere()){drop(P.queryOtherModule(q.from));continue;}
        drop(P.queryNothing(q.from||""));continue;}
-     if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};}
+     if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};if(src.a.kind!=="entry") entriesOnly(x);}
      else if(src.a.kind!=="entry"){drop(P.queryNoEntries(q.from));continue;}
      else block.from=src.a.id;}}
 }
@@ -4512,7 +4542,7 @@ function thBuild(B,use){
   const g=n=>thRgb(B["--"+n]),c=k=>use[k]?thRgb(use[k]):null;
   const P=c("paper")||g("paper"),I=c("ink")||g("ink"),A=c("accent")||g("accent");
   const deep={green:c("good")||g("tone-green-deep"),amber:c("warn")||g("tone-amber-deep"),warm:c("bad")||g("tone-warm-deep"),
-    slate:g("tone-slate-deep"),teal:g("tone-teal-deep")};
+    slate:g("tone-slate-deep"),teal:g("tone-teal-deep"),blue:g("tone-blue-deep"),purple:g("tone-purple-deep")};
   const dark=thLum(P)<thLum(I),pi=!!(use.paper||use.ink),o={};
   const set=(n,v)=>{o["--"+n]=thHex(v);};
   if(pi){const pd=thMix(P,I,.05),fd=dark?pd:thMix(P,[255,255,255],.7);
@@ -5889,6 +5919,8 @@ function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"}
   const v={...(b.view||{}),fields:b.fields},state=queryView(activityId,b);
   const scope=scopeOfAddr(activityId);
   if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,state,scope}));return box;}
+  /* a summary (SPEC.md section 6) is not drawn yet: the line says so, in place of the view, never the plain entries as if the key were not there */
+  if(v.summary==="on"){box.append(el("p",{class:"hint"},strings("query").summaryLater));return box;}
   const none={kind:"entries",rows:[],keys:new Set(),own:[],first:"date",lab:k=>k,qs:[]};
   box.append(...viewNodes(queryReads(b,activityId)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}));
   return box;}
@@ -6225,9 +6257,17 @@ function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
    being one of its blocks): the one test both draws and status lines make */
 const sameModule=(from,activityId)=>!!holderOf(from)&&scopeOfAddr(from)===scopeOfAddr(activityId);
 const queryReads=(b,activityId)=>sameModule(b.from,activityId)&&(!b.field||blocksOf(b.from).some(x=>x.id===b.field));
-function queryEntries(from,activityId){
+function queryEntries(from,activityId,days){
   if(!sameModule(from,activityId)) return [];
-  return [...keptFor(from)].sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
+  return inSpan([...keptFor(from)],days).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
+/* `limit: N days` (SPEC.md section 6, a day as section 8 defines it): the entries whose own calendar date, in the reader's time zone,
+   is today or one of the N-1 dates before it. Today is taken now, when the page is drawn. An entry whose `ts` will not parse, or
+   is later than that moment (even later today), is in no span. No `days` is every entry. */
+function inSpan(ents,days){if(!days) return ents;
+  /* compared as moments, not as date text, so any year holds: from the first moment of the oldest day to now (taken once) */
+  const now=new Date(),first=new Date(now);first.setDate(first.getDate()-(days-1));first.setHours(0,0,0,0);
+  const from=first.getTime(),to=now.getTime();
+  return ents.filter(e=>{const t=e?Date.parse(e.ts):NaN;return Number.isFinite(t)&&t>=from&&t<=to;});}
 /* A kept entry as a card: a `.when` line holding `whenKids` (none when null),
    then what each question in `qs` recorded, as a `dl`. Returns the card and how
    many questions had an answer to show. */
@@ -6264,7 +6304,7 @@ function entrySet(b,activityId,as){
   const numeric=as==="bars"||as==="line";
   const all=blocksOf(b.from).filter(q=>keysOf(q).length);
   const qs=b.field?all.filter(q=>q.id===b.field):all;
-  const ents=b.field&&activityOf(b.from).kind!=="entry"?[peekAnswers(scopeOfAddr(b.from))]:queryEntries(b.from,activityId);
+  const ents=b.field&&activityOf(b.from).kind!=="entry"?[peekAnswers(scopeOfAddr(b.from))]:queryEntries(b.from,activityId,b.view&&b.view.days);
   const named=(b.fields&&!b.field)?qs.filter(q=>b.fields.includes(q.id)):[];
   const need=named.length?named:qs;
   const raw=new Map(),ent=new Map(),mk=new Map();
