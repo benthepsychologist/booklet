@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-8bXMHuIezLp4NZnqrey/v/k8IKt4Yj4ntyjwk7wbDx8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-qiJFfOBap06pFVZsD60UBgK56kfds+heWkAvWvx1qIk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1681,7 +1681,7 @@ const STRINGS_SRC={
       liveRight: "Right.",
       liveNot: a=>`Not quite. The answer is ${a}.`,
       eachNotYet: "This question is asked once for each pick in another, which this page does not draw yet. Its answers are kept as written.",
-      keptAsWritten: (k,widget)=>`Kept as written: this answer is not in the shape ${widget?"a "+k+" widget":(/^[aeiou]/.test(k)?"an ":"a ")+k+" question"} keeps, so it is shown here and not changed. The file holds:`
+      keptAsWritten: (k,widget,each)=>`Kept as written: this answer is not in the shape ${each?"a question asked for each pick keeps (a list of pairs, one for each pick)":(widget?"a "+k+" widget":(/^[aeiou]/.test(k)?"an ":"a ")+k+" question")+" keeps"}, so it is shown here and not changed. The file holds:`
     },
     query: {
       empty: "Nothing kept here yet."
@@ -1701,7 +1701,8 @@ const STRINGS_SRC={
         numbers: "Show the numbers",
         bars: (n,lo,hi)=>`Bar chart, ${n===1?"1 bar":n+" bars"}, from ${lo} to ${hi}`,
         line: (n,names,lo,hi)=>`Line chart of ${names}, ${n===1?"1 point":n+" points"}, from ${lo} to ${hi}`
-      }
+      },
+      eachNotYet: "This view does not draw a question asked for each pick yet; a table, a list or cards show it."
     },
     /* what the file parser says is wrong with a file, and the messages that
        load and add-a-module refuse with. `w` is a place, "line 12" (see `line`);
@@ -2023,7 +2024,9 @@ const STRINGS_SRC={
       notQuite: "Pas tout à fait",
       theAnswer: "La réponse",
       liveRight: "Juste.",
-      liveNot: a=>`Pas tout à fait. La réponse est ${a}.`
+      liveNot: a=>`Pas tout à fait. La réponse est ${a}.`,
+      eachNotYet: "Cette question est posée une fois pour chaque choix d’une autre question, ce que cette page n’affiche pas encore. Ses réponses sont gardées telles quelles.",
+      keptAsWritten: (k,widget,each)=>`Gardée telle quelle : cette réponse n’a pas la forme que garde ${each?"une question posée pour chaque choix (une liste de paires, une par choix)":widget?"un élément "+k:"une question "+k} ; elle est donc affichée ici sans être modifiée. Le fichier contient :`
     },
     query: {
       empty: "Rien n’est encore enregistré ici."
@@ -2043,7 +2046,8 @@ const STRINGS_SRC={
         numbers: "Afficher les chiffres",
         bars: (n,lo,hi)=>`Diagramme à barres, ${n===1?"1 barre":n+" barres"}, de ${lo} à ${hi}`,
         line: (n,names,lo,hi)=>`Graphique linéaire de ${names}, ${n===1?"1 point":n+" points"}, de ${lo} à ${hi}`
-      }
+      },
+      eachNotYet: "Cette vue n’affiche pas encore une question posée pour chaque choix ; un tableau, une liste ou des cartes l’affichent."
     },
     problem: {
       line: n=>`ligne ${n}`,
@@ -2097,6 +2101,14 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w} : cette question scale n’a pas d’ancres en dessous (une liste numérotée)`,
       settingUnknown: (w,kind,s)=>`${w} : une ligne ${kind} n’accepte pas « ${s} » ; il a donc été ignoré`,
       numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
+      earlierBad: (w,v)=>`${w} : \`earlier:${v}\` n’est pas un nombre entier écrit en chiffres ; il a donc été ignoré et la question propose son nombre par défaut`,
+      eachNone: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix, et son each: ne nomme rien ; il a donc été ignoré`,
+      eachMissing: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui n’est ni une question ni un élément de son activité ; son each: a donc été ignoré`,
+      eachSelf: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix d’elle-même ; son each: a donc été ignoré`,
+      eachKind: (w,id,s,k)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », une question ${k} : seule une question choice ou multi, ou un élément, peut en être la source ; son each: a donc été ignoré`,
+      eachChain: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui est elle-même posée pour chaque choix d’une autre (un seul niveau) ; son each: a donc été ignoré`,
+      shapesKept: n=>n===1?"Une réponse n’a pas la forme que garde sa question ; elle est donc gardée telle quelle : affichée en lecture seule avec un avis, et laissée hors de ce que montrent les vues"
+        :`${n} réponses n’ont pas la forme que gardent leurs questions ; elles sont donc gardées telles quelles : affichées en lecture seule avec un avis, et laissées hors de ce que montrent les vues`,
       statusBad: (w,v)=>`${w} : \`status:${v}\` n’est pas un réglage que la ligne accepte (seulement \`status:off\`) ; il a donc été ignoré`,
       dailyAlone: w=>`${w} : \`daily\` nécessite \`repeat\` ; il a donc été ignoré`,
       iconUnknown: (w,n)=>`${w} : « ${n} » ne fait pas partie des icônes de Booklet ; il a donc été ignoré`,
@@ -2354,7 +2366,9 @@ const STRINGS_SRC={
       notQuite: "No del todo",
       theAnswer: "La respuesta",
       liveRight: "Correcto.",
-      liveNot: a=>`No del todo. La respuesta es ${a}.`
+      liveNot: a=>`No del todo. La respuesta es ${a}.`,
+      eachNotYet: "Esta pregunta se hace una vez por cada elección de otra pregunta, algo que esta página todavía no muestra. Sus respuestas se guardan tal como están.",
+      keptAsWritten: (k,widget,each)=>`Se guarda tal como está: esta respuesta no tiene la forma que guarda ${each?"una pregunta que se hace por cada elección (una lista de pares, uno por elección)":widget?"un elemento "+k:"una pregunta "+k}, así que se muestra aquí sin cambios. El archivo contiene:`
     },
     query: {
       empty: "Todavía no hay nada guardado aquí."
@@ -2374,7 +2388,8 @@ const STRINGS_SRC={
         numbers: "Mostrar los números",
         bars: (n,lo,hi)=>`Gráfico de barras, ${n===1?"1 barra":n+" barras"}, de ${lo} a ${hi}`,
         line: (n,names,lo,hi)=>`Gráfico de líneas de ${names}, ${n===1?"1 punto":n+" puntos"}, de ${lo} a ${hi}`
-      }
+      },
+      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada elección; una tabla, una lista o tarjetas la muestran."
     },
     problem: {
       line: n=>`línea ${n}`,
@@ -2428,6 +2443,14 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: esta pregunta scale no tiene anclas debajo (una lista numerada)`,
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
+      earlierBad: (w,v)=>`${w}: \`earlier:${v}\` no es un número entero escrito con cifras, así que se ignoró y la pregunta ofrece su valor por defecto`,
+      eachNone: (w,id)=>`${w}: “${id}” debe hacerse por cada elección, y su each: no nombra nada, así que se ignoró`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que no es una pregunta ni un elemento de su actividad, así que su each: se ignoró`,
+      eachSelf: (w,id)=>`${w}: “${id}” debe hacerse por cada elección de sí misma, así que su each: se ignoró`,
+      eachKind: (w,id,s,k)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, una pregunta ${k}: solo una pregunta choice o multi, o un elemento, puede ser la fuente, así que su each: se ignoró`,
+      eachChain: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que a su vez se hace por cada elección de otra (un solo nivel), así que su each: se ignoró`,
+      shapesKept: n=>n===1?"Una respuesta no tiene la forma que guarda su pregunta, así que se guarda tal como está: se muestra solo para leer, con un aviso, y queda fuera de lo que muestran las vistas"
+        :`${n} respuestas no tienen la forma que guardan sus preguntas, así que se guardan tal como están: se muestran solo para leer, con un aviso, y quedan fuera de lo que muestran las vistas`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` no es un ajuste que admita la línea (solo \`status:off\`), así que se ignoró`,
       dailyAlone: w=>`${w}: \`daily\` requiere \`repeat\`, así que se ignoró`,
       iconUnknown: (w,n)=>`${w}: “${n}” no está entre los íconos de Booklet, así que se ignoró`,
@@ -2689,7 +2712,7 @@ const dayKey=ts=>localStamp(new Date(ts)).slice(0,10);
 /* words compared for matching a vocabulary: case, curly quotes, dashes and spacing never matter (linkNorm, below, is for headings and keeps quotes) */
 const norm=s=>String(s).toLowerCase().replace(/[’‘`´]/g,"'").replace(/[—–]/g,"-").replace(/\s+/g," ").trim();
 /* a string with something other than whitespace in it; null and undefined are empty */
-const nonEmpty=v=>(v||"").trim().length>0;
+const nonEmpty=v=>typeof v==="string"&&v.trim().length>0;
 const splitList=s=>String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),3400);}
 const slugify=s=>String(s==null?"":s).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").normalize("NFC")
@@ -5728,7 +5751,7 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const wrap=el("div",{});
   let active=null, side=(figs[0]||{}).id||null;
   /* drawing reads the answer; only an answer writes it */
-  const rows=()=>e[key]||[];
+  const rows=()=>Array.isArray(e[key])?e[key].filter(r=>isObj(r)&&isStr(r.id)&&everyIs(isStr)(r.s)):[];
   const rowFor=id=>rows().find(r=>r.id===id);
   const sides=el("div",{class:"sideswitch",role:"group","aria-label":C.sideLbl||""});
   /* `readonly` (SPEC.md section 7): the figure is shown and its regions named, and nothing can be pointed at or answered */
@@ -5823,7 +5846,7 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const u=strings("ui");
   const cells=W.cells||[];const ax=W.axes||{};
   /* drawing reads the answer; only a press or a typed word writes it */
-  const chosen=()=>e[key]||[];
+  const chosen=()=>Array.isArray(e[key])?e[key].filter(isStr):[];
   const extra=id=>id.startsWith("x|");
   const itemLabel=id=>gridLabel(W,id);
   const box=el("div",{});
@@ -5889,7 +5912,7 @@ const ENGINES={"svg-regions":{draw:svgRegions,summary:regionNames},"grid-select"
 /* ======================= 9. QUESTIONS AND BLOCKS =======================
    drawing a block (a question, prose, a row, a widget), and keeping an activity's drafts and entries. */
 /* a text box bound to obj[key]: what is typed is kept at once */
-function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});ta.value=obj[key]||"";
+function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});ta.value=typeof obj[key]==="string"?obj[key]:"";
   const grow=()=>{ta.style.height="auto";ta.style.height=Math.max(ta.scrollHeight+4,rows*24+18)+"px";};
   ta.addEventListener("input",()=>{obj[key]=ta.value;markDirty();grow();});
   if(nonEmpty(ta.value)) requestAnimationFrame(grow);
@@ -5963,6 +5986,9 @@ function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"}
   const scope=scopeOfAddr(activityId);
   if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,state,scope}));return box;}
   const none={kind:"entries",rows:[],keys:new Set(),own:[],first:"date",lab:k=>k,qs:[]};
+  /* a question asked for each pick, named alone in `from:`, has no one value for tiles, bars or a line (SPEC.md section 6) */
+  if(b.field&&["tiles","bars","line"].includes(v.as)&&blocksOf(b.from).some(q=>q.id===b.field&&q.each)){
+    box.append(el("p",{class:"hint"},strings("dv").eachNotYet));return box;}
   box.append(...viewNodes(queryReads(b,activityId)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}));
   return box;}
 /* A widget block names a widget; the widget names an engine. The renderer
@@ -5989,7 +6015,7 @@ function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[
   const head=questionHead(box,b);
   const tl=el("div",{});
   /* the lines typed so far, else one to type in (the draft holds them from the first keystroke, not the draw) */
-  const lines=()=>Array.isArray(draft[K])&&draft[K].length?draft[K]:[""];
+  const lines=()=>Array.isArray(draft[K])&&draft[K].length?draft[K].map(x=>isStr(x)?x:""):[""];
   const draw=()=>{tl.innerHTML="";lines().forEach((v,i)=>{
       const inp=el("input",{type:"text","aria-label":head});inp.value=v;
       inp.addEventListener("input",()=>{const l=lines();l[i]=inp.value;draft[K]=l;markDirty();
@@ -6166,7 +6192,7 @@ function drawNumber(b,draft,activityId){const box=el("div",{});const K=b.keys[0]
   questionHead(box,b,id);
   const attrs={type:b.type,id,class:"field"};
   if(b.type==="number"){if(b.min!=null) attrs.min=b.min;if(b.max!=null) attrs.max=b.max;if(b.step!=null) attrs.step=b.step;}
-  const inp=el("input",attrs);if(draft[K]!=null) inp.value=draft[K];
+  const inp=el("input",attrs);if(typeof draft[K]==="number"||typeof draft[K]==="string") inp.value=String(draft[K]);
   inp.addEventListener("input",()=>{draft[K]=b.type==="number"?(inp.value===""?null:Number(inp.value)):inp.value;markDirty();});
   box.append(inp);return box;}
 const DRAW_BLOCK={
@@ -6193,14 +6219,14 @@ function keptQuestion(b,draft){if(!QUESTION_KINDS.has(b.type)) return null;
   /* a widget with no title of its own is headed by its widget's words, as drawWidget heads it */
   const box=el("div",{class:"pblock q-kept"});questionHead(box,W&&!nonEmpty(tx(b.label,""))?{...b,label:tx(wordsOf(W.copy).h,"")}:b);
   if(!wrong){box.append(el("p",{class:"hint"},Q.eachNotYet));return box;}
-  box.append(el("p",{class:"hint"},Q.keptAsWritten(W?W.engine:b.type,!!W)),
+  box.append(el("p",{class:"hint"},Q.keptAsWritten(W?W.engine:b.type,!!W,!!b.each)),
     el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(v,null,1))));
   return box;}
 function renderBlock(b,draft,activityId,dc){
   const kq=keptQuestion(b,draft);
   /* a question's own hint and solution are its controls: handed to its drawer (choice and multi tell the solution what the
      reader did) and drawn at the end of its block */
-  const qc=kq?null:qControls(b,draft,activityId,dc);
+  const qc=qControls(b,draft,activityId,dc);
   const node=kq?kq:hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc,qc)
     :el("p",{class:"hint"},strings("ui").unknownBlock(b.type||"?",b.id||"?"));
   if(qc) node.append(qc.node);
@@ -6276,8 +6302,15 @@ function finalizeEntry(id){const u=strings("ui");
 /* a daily activity's empty draft shows today's entry, to be finished again (settle) */
 function seedUpsertDraft(id,m,draft){
   if(m.upsert!=="day"||anyFilled(draft,id)) return;
-  const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());
-  if(today){const {ts,...rest}=clone(today);Object.assign(draft,rest);}}
+  const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());if(!today) return;
+  /* a draft that counts as empty may still hold pairs for picks taken back: they are the reader's newer work, so whatever the
+     draft holds wins, a follow-up's pairs over the entry's pick by pick, the entry's pairs for other picks beside them */
+  const {ts,...rest}=clone(today);
+  for(const k of Object.keys(draft)){const v=draft[k],was=rest[k],q=blocksOf(id).find(x=>x.each&&keysOf(x)[0]===k);if(!holdsSomething(v)) continue;
+    if(q&&Array.isArray(v)&&Array.isArray(was)&&!wrongShape(q,v,widgetFor(q))&&!wrongShape(q,was,widgetFor(q))){
+      const mine=new Set(pairsOf(v).map(x=>pickKey(x.pick)));rest[k]=[...v,...was.filter(x=>!(isPair(x)&&mine.has(pickKey(x.pick))))];}
+    else rest[k]=v;}
+  Object.assign(draft,rest);}
 
 /* ======================= 10. QUERY VIEWS =======================
    row sets, roles, the views (table, list, tiles, cards, bars, line), the pipeline and its one control. */
@@ -6310,7 +6343,7 @@ const SUMMARY={
       return el("li",{},wordsNode(it,{lit:": "},typeof v[i]==="number"?(a?a.text:{lit:String(v[i])}):{lit:"\u2013"}));}))];},
   number:numberSummary,
   date:numberSummary};
-function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
+function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length||!holdsSomething(e[keys[0]])) return null;
   return hasOwn(SUMMARY,b.type)?SUMMARY[b.type](b,e,keys[0]):null;}
 const widgetFor=b=>b&&b.type==="widget"?widgetOf(b.widget,b.module):null;
 /* the source a question asked for each pick is asked of: a question or widget in its own activity (resolveEach made sure) */
@@ -6352,7 +6385,7 @@ function entryBody(e,qs,whenKids,extra){extra=extra||{};
   for(const q of qs){const k=keysOf(q)[0],W=widgetFor(q);
     /* a kept entry's own card shows an answer not in its kind's shape as written, with the notice; a view leaves it out */
     if(extra.asWritten&&k!==undefined&&wrongShape(q,e[k],W)){rows++;
-      dl.append(el("dt",{},wordsNode(fieldLabel(q))),el("dd",{},el("p",{class:"hint"},strings("question").keptAsWritten(W?W.engine:q.type,!!W)),
+      dl.append(el("dt",{},wordsNode(fieldLabel(q))),el("dd",{},el("p",{class:"hint"},strings("question").keptAsWritten(W?W.engine:q.type,!!W,!!q.each)),
         el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(e[k],null,1)))));continue;}
     for(const f of entryFields(q,e)){rows++;dl.append(el("dt",{},wordsNode(...f.parts)),el("dd",{},f.node));}}
   return {card:cardNode({mode:"item",cls:"entry",picture:extra.picture||null,kids:[whenKids?el("div",{class:"when"},...(extra.lead?extra.lead(whenKids):whenKids)):null,dl]}),rows};}

@@ -625,8 +625,11 @@ itself is never shown.
   (`repeat`), a `choice` or `multi` with `open` offers the reader's own options
   from earlier entries again, newest first, at most 12. `earlier:<n>` after the
   id sets how many, written in digits (`earlier:0` offers none). On a `lines`
-  question, `earlier:<n>` offers earlier lines, which the reference renderer
-  does not do yet.
+  question, `earlier:<n>` offers earlier lines. In a body map (an
+  `svg-regions` widget), the words a reader wrote for a place come back under
+  every place, since a widget's words belong to the whole widget. The
+  reference renderer does neither of these two yet. A `grid-select` cell's
+  words and a `text` answer never come back.
 
 ---
 

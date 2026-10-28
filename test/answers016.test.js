@@ -143,7 +143,7 @@ part("views",()=>{const A=P.boot();A.loadText(EACH);
  A.screen="fu/log";A.viewAt("fu/log").chip="2026-10-02T09:00:00Z";A.render();const card=T(P.main());
  chk("and so are a kept entry's card's",/What was it for\? · Glue gun sticking/.test(card)&&!/its pick taken back/.test(card),card.slice(0,600));
  A.viewAt("fu/log").chip="2026-10-01T09:00:00Z";A.render();const old=T(P.main());
- chk("a kept entry's card shows an answer of the wrong shape as written, with the notice",/How many hours\? Kept as written: this answer is not in the shape a number question keeps/.test(old)&&/"not a list"/.test(old),old.slice(0,600));});
+ chk("a kept entry's card shows an answer of the wrong shape as written, with the notice",/How many hours\? Kept as written: this answer is not in the shape a question asked for each pick keeps \(a list of pairs/.test(old)&&/"not a list"/.test(old),old.slice(0,600));});
 
 /* ---- 4. the wrong shape, for every kind and both widgets, in answers, drafts and kept entries ---- */
 const KINDS=(p)=>`> [!text|${p}t] A text
@@ -343,6 +343,100 @@ part("the linter",()=>{const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"answers01
  chk("`earlier:` without `open`, on a grid-select widget, and in an activity that keeps no entries: warnings",
    eat(12,/has no `open`, so it offers nothing/,e.warns)&&eat(15,/does nothing on a grid-select widget/,e.warns)&&eat(20,/keeps none/,e.warns)&&eat(23,/keeps none/,e.warns)&&e.warns.length===4,e.out);
  fs.rmSync(tmp,{recursive:true,force:true});});
+
+/* ---- 7. a daily activity's draft that holds only pairs for picks taken back keeps them when today's entry is shown ---- */
+part("seeding a daily draft",()=>{
+ const today=new Date().toISOString(),A=P.boot();
+ A.loadText(FM+`> [!activity|log repeat daily] Log
+
+> [!multi|tools open] Which tools?
+- [ ] Hammer
+- [ ] Saw
+- [ ] Drill
+
+> [!text|why each:tools] What was it for?
+
+%%
+> [!records] App record
+
+\`\`\`booklet entries log
+{"items": [
+{"ts":"${today}","tools":[1,2],"why":[{"pick":1,"a":"the entry's hammer"},{"pick":2,"a":"the entry's saw"}]}
+]}
+\`\`\`
+
+\`\`\`booklet draft log
+{"tools":[],"why":[{"pick":1,"a":"the draft's newer hammer"},{"pick":3,"a":"the draft's drill"}]}
+\`\`\`
+%%
+`);
+ A.screen="log";A.render();
+ const why=A.draftFor("log").why,want=[{pick:1,a:"the draft's newer hammer"},{pick:3,a:"the draft's drill"},{pick:2,a:"the entry's saw"}];
+ chk("today's entry is shown, and the draft's pairs go over the entry's pick by pick, the entry's other pairs beside them",
+   JSON.stringify(A.draftFor("log").tools)==="[1,2]"&&JSON.stringify(why)===JSON.stringify(want),JSON.stringify(A.draftFor("log")));
+ chk("and the file written holds them",A.toMarkdown().includes(JSON.stringify(want)));});
+
+/* ---- 8. a follow-up named alone in `from:`: rows in a table, a list and cards; a line saying so in tiles, bars and a line ---- */
+part("a follow-up alone in from:",()=>{
+ const A=P.boot(),views=["table","list","cards","tiles","bars","line"];
+ A.loadText(FM+`> [!activity|log repeat] Log
+
+> [!multi|tools] Which tools?
+- [ ] Hammer
+- [ ] Saw
+
+> [!number|hours each:tools] Hours?
+
+${views.map(v=>`> [!activity|v-${v}] V ${v}\n\n\`\`\`booklet query\nfrom: hours\nas: ${v}\n\`\`\`\n\n`).join("")}`);
+ A.keptFor("log").push({ts:"2026-10-02T09:00:00Z",tools:[1,2],hours:[{pick:1,a:3},{pick:2,a:5}]});
+ const said={};for(const v of views){A.screen="v-"+v;A.render();said[v]=T(P.main());}
+ chk("a table, a list and cards show one field per pick",["table","list","cards"].every(v=>/Hours\? · Hammer/.test(said[v])&&/Hours\? · Saw/.test(said[v])&&!/does not draw/.test(said[v])),JSON.stringify(said).slice(0,600));
+ chk("tiles, bars and a line say the view does not draw it yet, and draw nothing else",["tiles","bars","line"].every(v=>/This view does not draw a question asked for each pick yet/.test(said[v])&&!/Oct/.test(said[v])),JSON.stringify(said).slice(0,600));});
+
+/* ---- 9. the notice of a follow-up of the wrong shape names its list of pairs; a read-only question keeps its hint ---- */
+part("the follow-up's notice and a kept question's hint",()=>{
+ const A=P.boot();
+ A.loadText(FM+`> [!activity|log repeat] Log
+
+> [!multi|tools] Which tools?
+- [ ] Hammer
+
+> [!number|hours each:tools] Hours?
+
+> [!text|t] A text
+
+> [!hint]- A hint
+> THE-HINT-WORDS
+`);
+ const d=A.draftFor("log");d.hours=5;d.t=["not","a string"];
+ A.screen="log";A.render();const all=T(P.main());
+ chk("a follow-up of the wrong shape: its notice says it keeps a list of pairs",/not in the shape a question asked for each pick keeps \(a list of pairs, one for each pick\)/.test(all),all.slice(0,500));
+ const box=find(P.main(),x=>/q-kept/.test((x.attrs||{}).class||"")&&/^A text/.test(T(x)))[0];
+ chk("a question drawn read-only still has its hint",!!box&&/A hint/.test(T(box)),box?T(box):"no box");});
+
+/* ---- 10. an answer that holds nothing, whatever its type, draws as no answer: no page error, nothing of the value shown ---- */
+part("answers that hold nothing",()=>{
+ const EMPTY=[{},{a:""},false,[[]],[" "],"",[],[null],[{id:""}]];
+ const probs=[];
+ for(const v of EMPTY) for(const k of kinds){
+   P.wipe();const A=P.boot();A.loadText(SHAPES);
+   A.answersIn("sh")["a"+k]=JSON.parse(JSON.stringify(v));A.draftFor("sh/log")["e"+k]=JSON.parse(JSON.stringify(v));
+   A.keptFor("sh/log").push({ts:"2026-10-01T09:00:00Z",["e"+k]:JSON.parse(JSON.stringify(v)),et:"words"});
+   try{for(const s of ["sh/once","sh/log"]){A.screen=s;if(s==="sh/log") A.viewAt(s).chip="2026-10-01T09:00:00Z";A.render();
+       const t=T(P.main());if(/object Object|Kept as written/.test(t)) probs.push(k+" over "+JSON.stringify(v)+" on "+s+": "+(t.match(/.{0,40}(object Object|Kept as written).{0,40}/)||[""])[0]);
+       /* a field shows a string, or nothing: never the value itself */
+       if(find(P.main(),x=>x.tagName==="textarea"||x.tagName==="input").some(x=>typeof x.value!=="string")) probs.push(k+" over "+JSON.stringify(v)+" on "+s+": a field holds the value itself");}
+     A.entrySet({from:"sh/log"},"sh/once","table");}
+   catch(e){probs.push(k+" over "+JSON.stringify(v)+": "+String(e).slice(0,90));}}
+ chk("every kind and both widgets over {}, {\"a\":\"\"}, false, [[]], [\" \"], \"\", [], [null] and [{\"id\":\"\"}] draw with no page error and show nothing of the value",probs.length===0,probs.slice(0,6).join(" | "));});
+
+/* ---- 11. the new strings are in French and Spanish (provisional until the release's /localize pass) ---- */
+part("the new strings in fr and es",()=>{
+ const A=P.boot(),S=A.STRINGS_SRC,keys={question:["eachNotYet","keptAsWritten"],dv:["eachNotYet"],problem:["earlierBad","eachNone","eachMissing","eachSelf","eachKind","eachChain","shapesKept"]};
+ const missing=[];
+ for(const lang of ["fr","es"]) for(const [g,ks] of Object.entries(keys)) for(const k of ks){const x=((S[lang]||{})[g]||{})[k],en=S.en[g][k];
+   if(x===undefined||typeof x!==typeof en||(typeof x==="string"&&x===en)) missing.push(lang+"."+g+"."+k);}
+ chk("every new string has its own French and Spanish",missing.length===0,missing.join(", "));});
 
 console.log(fails?`\n${fails} FAILURES`:"\nall answers checks passed");
 process.exit(fails?1:0);
