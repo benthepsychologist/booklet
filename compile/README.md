@@ -79,7 +79,7 @@ line to the layout's `<head>`:
 
 In a Hugo layout the address can be written `{{ "booklet/booklet.css" | relURL }}`, so it follows the site's base
 address. That is all a host needs, for any site. The stylesheet styles only what is inside `.booklet` (and a standalone page's
-`.bk-page` body), so it leaves the host's own page alone.
+`.bk-page` body), so it leaves the host's own page alone, and the host's own stylesheet does not reach inside it (below).
 
 **Both** (`--form both`) writes the two, under `<out>/standalone/` and `<out>/site/`.
 
@@ -100,6 +100,24 @@ with `data-bk-base="paper"`, `"daylight"`, `"night"` or `"contrast"` takes that 
 device's dark setting with the renderer's Night colours; an article on a host's page stays light unless the host sets a
 base, since the host's page around it decides. Print is always light, with every fold open where the browser allows it.
 `test/compile-css.test.js` holds every colour to the renderer's token it copies.
+
+**Its own look on any site.** A site's theme styles bare elements (`footer`, `aside`, `blockquote`, `ol`, a heading's
+face) and elements under a class of its own (`.content ol` as numbered cards), and without a guard those rules would
+reach the page. The stylesheet holds them off in two ways, and looks on a plain page exactly as it did without them:
+
+- every rule in it starts `.booklet:not(#bk)`. No element has the id `bk`, so this matches every article, and it weighs
+  as much as an id, so it outweighs any host rule made of classes and elements, wherever the host's stylesheet sits;
+- one rule sends every property the stylesheet does not set, on every element inside the article, back to the browser's
+  own default (`all: revert`), which is what a plain page shows. It is the lightest rule in the file, so every other rule
+  wins over it. The icons and the formulas are left out of it (revert would also drop the attributes they are drawn
+  with): an icon's paint is set in full, and a formula's box (margin, padding, border) is reverted on its own.
+
+The article itself is placed by the host: its margin, width and display are the host's. It sets its own text (face,
+size, weight, spacing, capitals) and paints nothing, so a host's page around it does not flow in. A host changes the
+look with the `--bk-*` variables; a rule of its own inside the article needs the same start, `.booklet:not(#bk)`, after
+this file. Three things still reach the page: a host rule marked `!important`, a host rule that weighs more than an id and
+a class, and a host that changes the root font size (`html { font-size: 62.5% }`), since the stylesheet's sizes are in
+`rem`. `test/compile-host-browser.js` holds the page to its plain look on a hostile host.
 
 **The fonts** are the two families the renderer bundles, under the SIL Open Font License. The compiler extracts them from
 `booklet.html` on each run and writes them as `.woff2` files in `<out>/booklet/fonts/`, with the licence text beside them
@@ -250,6 +268,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |
 | `compile-browser.js` | in Chromium with scripting off, at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
+| `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; with the guard taken out, the same check fails |
 
 `examples/mindful-check-in.booklet.md` is compiled by the content and browser tests but has no golden page, since its
 notice names its author; the golden pages hold made-up content only.
