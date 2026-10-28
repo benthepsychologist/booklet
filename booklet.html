@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-QfvaXmjZ4i22XjB5RGm0rRaUUjnQqpeeRCrZSvuyI9Q=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-GRKDQXY0jeJcm63GywKyLxx+gigDxCR//Q3S9eEQqco=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7660,7 +7660,9 @@ function activityFooter(id,dc){const C=strings("cards"),S=strings("steps"),G=str
    id, so none is used twice. It is hidden on screen and the screen's part is hidden only in print (the stylesheet). */
 let PRINT_COPY=null;
 function printWhole(){
-  if(PRINT_COPY||typeof document==="undefined") return;
+  /* a copy left by a print that never ended (no afterprint came) is not this print's: it is ended first, so this one is drawn afresh */
+  if(PRINT_COPY) printWholeEnd();
+  if(typeof document==="undefined") return;
   const main=document.getElementById("main");
   if(!main||!currentId||hasOwn(SCREENS,screen)||isModuleScreen(screen)) return;
   const id=screen,m=activityOf(id),ts=tabsIn(m);
@@ -7676,9 +7678,13 @@ function printWhole(){
   if(notes) copy.append(notes);
   copy.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));
   was.classList.add("pr-skip");was.parentNode.insertBefore(copy,was.nextSibling);
-  PRINT_COPY={copy,was};}
+  PRINT_COPY={copy,was,x:window.scrollX||0,y:window.scrollY||0};}
 function printWholeEnd(){if(!PRINT_COPY) return;
-  const {copy,was}=PRINT_COPY;PRINT_COPY=null;was.classList.remove("pr-skip");if(copy.parentNode) copy.parentNode.removeChild(copy);}
+  const {copy,was,x,y}=PRINT_COPY;PRINT_COPY=null;was.classList.remove("pr-skip");if(copy.parentNode) copy.parentNode.removeChild(copy);
+  /* the page is where it was: printing laid it out differently, and the browser moved the scroll with it */
+  const back=()=>{if(typeof window.scrollTo==="function"&&(window.scrollX!==x||window.scrollY!==y)) window.scrollTo(x,y);};
+  /* now, and again once the browser has laid the screen out again (it does that after the event, and moves the scroll as it does) */
+  back();if(typeof window.requestAnimationFrame==="function") window.requestAnimationFrame(()=>{back();setTimeout(back,50);});else setTimeout(back,50);}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
 const activitiesShown=mod=>mod.activities.filter(isShown);

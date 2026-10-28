@@ -76,6 +76,101 @@ Only page words.[^g]
 
 [^g]: Source G, p. 7
 
+> [!activity|long] Long
+
+> [!tab|la] Short tab
+
+Short tab words.
+
+> [!tab|lb] Long tab
+
+Filler paragraph 1 with enough words to make the page long enough to scroll.
+
+Filler paragraph 2 with enough words to make the page long enough to scroll.
+
+Filler paragraph 3 with enough words to make the page long enough to scroll.
+
+Filler paragraph 4 with enough words to make the page long enough to scroll.
+
+Filler paragraph 5 with enough words to make the page long enough to scroll.
+
+Filler paragraph 6 with enough words to make the page long enough to scroll.
+
+Filler paragraph 7 with enough words to make the page long enough to scroll.
+
+Filler paragraph 8 with enough words to make the page long enough to scroll.
+
+Filler paragraph 9 with enough words to make the page long enough to scroll.
+
+Filler paragraph 10 with enough words to make the page long enough to scroll.
+
+Filler paragraph 11 with enough words to make the page long enough to scroll.
+
+Filler paragraph 12 with enough words to make the page long enough to scroll.
+
+Filler paragraph 13 with enough words to make the page long enough to scroll.
+
+Filler paragraph 14 with enough words to make the page long enough to scroll.
+
+Filler paragraph 15 with enough words to make the page long enough to scroll.
+
+Filler paragraph 16 with enough words to make the page long enough to scroll.
+
+Filler paragraph 17 with enough words to make the page long enough to scroll.
+
+Filler paragraph 18 with enough words to make the page long enough to scroll.
+
+Filler paragraph 19 with enough words to make the page long enough to scroll.
+
+Filler paragraph 20 with enough words to make the page long enough to scroll.
+
+Filler paragraph 21 with enough words to make the page long enough to scroll.
+
+Filler paragraph 22 with enough words to make the page long enough to scroll.
+
+Filler paragraph 23 with enough words to make the page long enough to scroll.
+
+Filler paragraph 24 with enough words to make the page long enough to scroll.
+
+Filler paragraph 25 with enough words to make the page long enough to scroll.
+
+Filler paragraph 26 with enough words to make the page long enough to scroll.
+
+Filler paragraph 27 with enough words to make the page long enough to scroll.
+
+Filler paragraph 28 with enough words to make the page long enough to scroll.
+
+Filler paragraph 29 with enough words to make the page long enough to scroll.
+
+Filler paragraph 30 with enough words to make the page long enough to scroll.
+
+Filler paragraph 31 with enough words to make the page long enough to scroll.
+
+Filler paragraph 32 with enough words to make the page long enough to scroll.
+
+Filler paragraph 33 with enough words to make the page long enough to scroll.
+
+Filler paragraph 34 with enough words to make the page long enough to scroll.
+
+Filler paragraph 35 with enough words to make the page long enough to scroll.
+
+Filler paragraph 36 with enough words to make the page long enough to scroll.
+
+Filler paragraph 37 with enough words to make the page long enough to scroll.
+
+Filler paragraph 38 with enough words to make the page long enough to scroll.
+
+Filler paragraph 39 with enough words to make the page long enough to scroll.
+
+Filler paragraph 40 with enough words to make the page long enough to scroll.
+
+> [!note]- A fold
+> Folded long words.[^h]
+
+> [!text|lq] A long question?
+
+[^h]: Source H, p. 8
+
 > [!module|pm end] End
 `;
 const hasPdftotext=(()=>{try{return cp.spawnSync('pdftotext',['-v']).status!==null;}catch(e){return false;}})();
@@ -164,6 +259,32 @@ const hasPdftotext=(()=>{try{return cp.spawnSync('pdftotext',['-v']).status!==nu
   await p.evaluate(()=>{document.querySelector('#main .pg-next').click();});await p.waitForTimeout(200);
   pr=await printed();
   ok(inOrder(pr.text,['First page words.','Second page words.','Third page words.'])&&pr.text.split('Third page words.').length===2,'paged: turned to the last page, the print is still every page, once each');
+
+  /* ---- the page stays where the reader scrolled it, and a print that never ended does not leave a stale copy ---- */
+  await go('pm/long');
+  await p.locator('#main .tabbar button').nth(1).click();await p.waitForTimeout(200);
+  await p.setViewportSize({width:1100,height:700});await p.evaluate(()=>window.scrollTo(0,900));await p.waitForTimeout(150);
+  const y0=await p.evaluate(()=>Math.round(scrollY));
+  ok(y0>600,'set up: a long tabbed activity, scrolled down ('+y0+')');
+  await pdfText('print-long');await p.waitForTimeout(250);
+  ok(await p.evaluate(()=>Math.round(scrollY))===y0,'scroll: after page.pdf the page is where it was ('+await p.evaluate(()=>Math.round(scrollY))+', was '+y0+')');
+  await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));await p.emulateMedia({media:'print'});await p.waitForTimeout(100);await p.emulateMedia({media:null});
+  await p.evaluate(()=>window.dispatchEvent(new Event('afterprint')));await p.waitForTimeout(250);
+  ok(await p.evaluate(()=>Math.round(scrollY))===y0,'scroll: after the print events the page is where it was ('+await p.evaluate(()=>Math.round(scrollY))+', was '+y0+')');
+  /* the browser lays the page out for paper while it prints and moves the scroll as it does (the reviewer saw 900 come back as 873
+     from page.pdf on a longer fixture): here the move is made by hand between the two events, and the scroll must come back */
+  await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
+  await p.evaluate(()=>window.scrollTo(0,120));
+  await p.evaluate(()=>window.dispatchEvent(new Event('afterprint')));await p.waitForTimeout(250);
+  ok(await p.evaluate(()=>Math.round(scrollY))===y0,'scroll: moved while the print was under way, it is put back at afterprint ('+await p.evaluate(()=>Math.round(scrollY))+', was '+y0+')');
+  /* beforeprint with no afterprint: the reader changes tab and types, then prints again: the print is of what is on the page now */
+  await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
+  await p.locator('#main .tabbar button').nth(0).click();await p.waitForTimeout(200);
+  const stale=await p.evaluate(()=>{window.dispatchEvent(new Event('beforeprint'));
+    const r={copies:document.querySelectorAll('.print-whole').length,text:document.querySelector('.print-whole')?document.querySelector('.print-whole').innerText:''};
+    window.dispatchEvent(new Event('afterprint'));return r;});
+  ok(stale.copies===1&&/Long tab/.test(stale.text)&&/Short tab words\./.test(stale.text),'stale: a second beforeprint with no afterprint between draws one fresh copy of the whole activity, both tabs ('+stale.copies+')');
+  ok(await p.evaluate(()=>document.querySelectorAll('.print-whole,.pr-skip').length)===0,'stale: and the afterprint after it leaves nothing behind');
 
   /* ---- an activity of one page and no tabs is printed as it is ---- */
   await go('pm/single');
