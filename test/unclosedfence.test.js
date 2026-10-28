@@ -103,15 +103,21 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
    less the module, the same bytes with a reload first or not, with Windows line endings too. The blank line the writer
    puts before the region is the writer's, not the body's: kept in the copy's text, it would stay there when the region
    went, one blank line more after a reload (the writer puts it before the region kept beside the text, as before the
-   reload). */
+   reload). The white space at the end of the fence's last line is the author's code: the design keeps it through a
+   reload, Remove and a Rename, and the file has it (the parse of a text that ends inside the fence takes it off). */
 {const REC="%%\n> [!records|shed] The shed\n\n```booklet answers\n{\"q1\": \"snails\"}\n```\n\n%%\n";
- for(const [how,crlf] of [["",false],[", with Windows line endings",true]]) for(const rl of [false,true]){
-   const cr=t=>crlf?t.replace(/\n/g,"\r\n"):t,AFTER="\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
+ for(const [how,end,crlf] of [["","",false],[", with Windows line endings","",true],[", with white space at the end of the fence's last line","   ",false],
+   [", with both","  \t",true]]) for(const rl of [false,true]){
+   const cr=t=>crlf?t.replace(/\n/g,"\r\n"):t,AFTER="\nA reminder for the shed:\n\n```text\nwater the beans at dawn"+end+"\n";
    const text=cr(FM+MOD("beds")+MOD("shed")+"\n"+REC+AFTER),want=cr(FM+MOD("beds")+AFTER),as=how+(rl?", a reload first":"");
    let A=load(text);if(rl) A=again(A);
+   if(end) chk("the design keeps the white space at the end of the fence's last line"+as,A.BOOK.raw.source.endsWith("dawn"+end+"\n"),show(A.BOOK.raw.source));
    const r=A.removeModule("shed");BLOBS.length=0;await A.download();
    chk("Remove the module whose records are the region's only records: the download is the file less the module, byte for byte"+as,
-     r.ok&&BLOBS.length===1&&BLOBS[0]===want,BLOBS.map(show).join()+" | want "+show(want));}}
+     r.ok&&BLOBS.length===1&&BLOBS[0]===want,BLOBS.map(show).join()+" | want "+show(want));
+   if(!end) continue;
+   A.renameBooklet("Garden notes in May");const B=again(A);
+   chk("and the white space stays in the design after Remove, a Rename and a reload"+as,A.BOOK.raw.source.endsWith("dawn"+end+"\n")&&B.BOOK.raw.source.endsWith("dawn"+end+"\n"),show(B.BOOK.raw.source));}}
 
 /* ---- Add a module on a booklet whose body ends inside such a fence (0.16.1) ----
    Where the module would be put after that fence's opening line (at the end of the body), it would be read as the fence's

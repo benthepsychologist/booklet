@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-+x64KG9i95KEMAEzoH1EXWNv1qwO6o6Z/N8aLYMgqrk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-EefIr/0Hr/T1IU5GSom3AZkAoql7bLEk6SzX+pRmvnE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4799,13 +4799,17 @@ function designCut(book,drop){const p=writeParts(book,emptyState(),emptyDrafts()
   return p.region&&endsInFence(p.head)?{text:p.head,cut:p.region}:{text:p.head+p.sep+p.region,cut:""};}
 const designText=(book,drop)=>designCut(book,drop).text;
 /* The parse of a text designCut made (Add, Remove, Rename, a newer file's kept work, a reload), as a file's, with what the
-   parse of such a text alone loses where it was cut before its region (`cut`): that region's records. Read as the whole
-   file would read them with the fence closed after the body, they are the parse's (the answers, entries and drafts
-   joinRecords joins, and what is kept as written, raw.records), as a text that held its region would have them; the writer
-   then puts its blank line before the region again (writeParts, `cut`). The design is the text's own parse. Returns R. */
+   parse of such a text alone loses where it ends inside a code fence that never closes. The white space at the end of its
+   last line, that fence's code: the parse takes it off the end of any body, and the design the text was made from kept it,
+   so it is put back. And, where the text was cut before its region (`cut`), that region's records: read as the whole file
+   would read them with the fence closed after the body, they are the parse's (the answers, entries and drafts joinRecords
+   joins, and what is kept as written, raw.records), as a text that held its region would have them; the writer then puts
+   its blank line before the region again (writeParts, `cut`). The design is the text's own parse. Returns R. */
 function readMade(R,cut){const raw=R&&R.template&&R.template.raw,W=raw&&raw.wrote;
   if(!W||typeof W.head!=="string"||!endsInFence(W.head)) return R;
   const {lines,next}=frontMatter(W.head,true),F=codeFences(lines.slice(next)).pop(),e=W.eol||"\n";
+  const z=lines.filter(l=>l.trim()).pop()||"",t=z.replace(/\s+$/,""),s=String(raw.source||"");
+  if(z!==t&&s.endsWith("\n"+t+"\n")) raw.source=W.src=s.slice(0,s.length-t.length-1)+z+"\n";
   if(cut){const Q=parseFile(W.head+(/[\r\n]$/.test(W.head)?"":e)+F.mark+e+e+cut);W.cut=true;
     if(Q.template){R.S=Q.S;R.drafts=Q.drafts;raw.records=Q.template.raw.records;}}
   return R;}
@@ -5119,6 +5123,9 @@ function spliceApart(lines,at,ins){
    fence, so the notice is in the file the reader downloads. Nothing is changed unless the file this makes is one
    the renderer reads with nothing refused; then the booklet's design is read from that file, so what is on screen
    is what the written file holds. */
+/* a design's source as Add a module and Remove a module leave it: no blank line at its start or its end, and no white space
+   at the end of its last line, except where that line is the code of a fence that never closes, which is kept as written */
+const sourceEnd=t=>{t=t.replace(/^\n+/,"");return (endsInFence(t)?t.replace(/\n\s*$/,""):t.replace(/\s+$/,""))+"\n";};
 /* (`R`: the module text's parse, when the caller has it: the text is read once) */
 function addModuleText(text,R){
   R=R||(isBooklet(text)?parseFile(text):null);
@@ -5202,7 +5209,7 @@ function addModuleText(text,R){
       cur=spliceApart(cur,sh.end,extraChunks.join("\n\n").split("\n"));}
     else cur=spliceApart(cur,cur.length,["> [!data] Data","",...extraChunks.join("\n\n").split("\n")]);}
   /* a booklet with no text (its saved copy gone) has no front matter yet; without it the file would not be one */
-  const body=cur.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
+  const body=sourceEnd(cur.join("\n"));
   const newSource=blank?setTitleIn(body,strings("library").untitled,(BOOK.raw||{}).lang||lang):body;
 
   /* read the booklet this would make (with its kept records) before changing anything: if the renderer would refuse
@@ -5253,7 +5260,7 @@ function removeModule(id){
       if(!blank&&last!==null&&last.trim()) out.push("");
       after=false;}
     out.push(ln);});
-  const newSource=out.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
+  const newSource=sourceEnd(out.join("\n"));
   const w=textWith(newSource,id),made=readMade(parseFile(w.text),w.cut),refused=(made&&made.refused)||[];
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[PROBLEM.notReadable]};
   if(refused.length) return {ok:false,problems:refused};
