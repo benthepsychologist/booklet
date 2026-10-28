@@ -1,0 +1,22 @@
+---
+title: "Figures and math"
+description: "The cycle, placed by reference:"
+---
+<!-- booklet compile 0.1.0 · from figures.booklet.md · sha256:59216e5616dfb68263f35f05102308a7b7d3961c4d1a8f9af70abe269032435f -->
+<article class="booklet" lang="en">
+  <p class="bk-lede">The cycle, placed by reference:</p>
+  <!-- booklet: the figure “tide-cycle” (activity “Diagrams and formulas”): a diagram: not compiled yet, shown as its source -->
+  <pre class="bk-figure-src"><code data-lang="mermaid">graph LR; New --&gt; Spring --&gt; Quarter --&gt; Neap --&gt; Full</code></pre>
+  <p>A diagram written straight in the prose:</p>
+  <!-- booklet: a mermaid fence (activity “Diagrams and formulas”): a diagram: not compiled yet, shown as its source -->
+  <pre class="bk-figure-src"><code data-lang="mermaid">graph TD; Sun --&gt; Moon --&gt; Sea</code></pre>
+  <p>A broken one, placed by reference:</p>
+  <!-- booklet: the figure “broken-one” (activity “Diagrams and formulas”): a diagram: not compiled yet, shown as its source -->
+  <pre class="bk-figure-src"><code data-lang="mermaid">graph LR; A --&gt;</code></pre>
+  <p>A fence that is not a diagram, placed by reference:</p>
+  <pre><code data-lang="python">print("hello")</code></pre>
+  <p>Inline math <span class="bk-math"><math><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>+</mo><msup><mi>b</mi><mn>2</mn></msup><mo>=</mo><msup><mi>c</mi><mn class="tml-sml-pad">2</mn></msup></mrow></math></span> and display math:</p>
+  <p><span class="bk-math bk-math-display"><math display="block" class="tml-display"><mrow><msubsup><mo movablelimits="false">∫</mo><mn>0</mn><mn>1</mn></msubsup><msup><mi>x</mi><mn class="tml-sml-pad">2</mn></msup><mspace width="0.1667em"></mspace><mi>d</mi><mi>x</mi><mo>=</mo><mstyle displaystyle="false" scriptlevel="0"><mfrac><mn>1</mn><mn>3</mn></mfrac></mstyle></mrow></math></span></p>
+  <p>A formula Temml cannot read: <span class="bk-math bk-math-raw">\badmacro{x}</span>.</p>
+  <p>Prices stay prices: it costs $5 and $10 today, and a literal $ sign stays.</p>
+</article>
