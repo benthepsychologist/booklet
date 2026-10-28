@@ -2,7 +2,9 @@
 // rest), in a real Chromium with the hosted /app/ Content-Security-Policy and the browser's own storage:
 //  1. Add a module on such a booklet is refused in the dialog, with the reason, and nothing is added;
 //  2. the browser's own copy of a booklet whose design after its records ends inside such a fence: after a real reload, and
-//     after a Rename and a reload, the design is as it was (before 0.16.1 it gained the records region's lines in the fence).
+//     after a Rename and a reload, the design is as it was (before 0.16.1 it gained the records region's lines in the fence);
+//  3. work kept as records by a newer file that drops its module and ends inside such a fence, through a real reload and
+//     a later newer file with the fence closed: still kept (before 0.16.1's fix that later file dropped it).
 // Invented content. Usage: PLAYWRIGHT=/path/to/node_modules/playwright-core node test/unclosedfence-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
@@ -15,6 +17,9 @@ const OPEN=FM('Seed shed')+ACT+"A reminder for the shed:\n\n```text\nwater the b
 const REC="%%\n> [!records] App record — do not edit below this line\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n%%\n";
 const MOVED=FM('Garden notes')+ACT+REC+"\n> [!text|q3] Anything else?\n\n```text\nmulch the beds\n";
 const MODULE=FM('Seed swap')+"\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] Which seeds?\n\n> [!module|seeds end]\n";
+const MOD=id=>"\n> [!module|"+id+"] The "+id+"\n\n> [!activity|a1] This week\n\n> [!text|q1] What grew?\n\n> [!module|"+id+" end]\n";
+const WEEK=[FM('Garden week')+MOD('beds')+MOD('shed'),FM('Garden week')+MOD('beds')+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n",
+  FM('Garden week')+MOD('beds')+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n```\n"];
 const REG={modules:[{id:'t/seeds',title:'Seed swap',file:'seeds.md'}]};
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
@@ -62,6 +67,24 @@ const REG={modules:[{id:'t/seeds',title:'Seed swap',file:'seeds.md'}]};
    ok(await source(p)===named,'2: a Rename changes the title line and nothing else of the design');
    await reload(p,'Garden notes in May');
    ok(await source(p)===named&&await p.evaluate(()=>peekAnswers("").q2==="the squash"),'2: and a reload after the Rename shows the same design: '+JSON.stringify((await source(p)).slice(-120)));
+   await p.context().close();}
+
+  /* ---- 3. work kept as records, through a newer file ending inside such a fence, a real reload, and a later newer file ----
+     A newer file is read here as "Read the newer file" reads a store's (linkAccept, with no host): acceptWork, then
+     finishLoad with the reader's work kept. */
+  {const p=await page();await loadFile(p,'garden-week.booklet.md',WEEK[0]);
+   const read=t=>p.evaluate(t=>{const R=parseFile(t),W=acceptWork(R);noteStoreFile(R);finishLoad(R,{keep:{S:W.S,D:W.D,dirty,unsavedEntries,records:W.records}});},t);
+   const md=()=>p.evaluate(()=>toMarkdown());
+   await p.evaluate(()=>{answersIn("shed").q1="snails";markDirty();});await p.waitForTimeout(900);
+   await read(WEEK[1]);await p.waitForTimeout(900);
+   ok(await source(p)===WEEK[1]&&/snails/.test(await md()),'3: a newer file that drops the module and ends inside the fence: the answer is kept as records beside the copy');
+   await reload(p,'Garden week');
+   ok(await source(p)===WEEK[1]&&/snails/.test(await md())&&await p.evaluate(()=>(BOOK.raw.records||[]).some(r=>r.scope==="shed")),'3: after a real reload, still kept, and known as kept records');
+   await read(WEEK[2]);await p.waitForTimeout(900);
+   const t=await md();
+   ok(await source(p)===WEEK[2]&&t.includes('> [!records|shed]')&&/snails/.test(t),'3: a later newer file, the fence closed, keeps it: '+JSON.stringify(t.slice(-160)));
+   await reload(p,'Garden week');
+   ok(/snails/.test(await md()),'3: and so does a reload after it');
    await p.context().close();}
 
   ok(bad.length===0,'no policy violation or page error '+bad.join(' | '));

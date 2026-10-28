@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-DS4f0nT03hZf+XEI2Aylk+qk/qckvnLkoeEG54j/0tg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-IvNj/UUkWelCWQ20yK3CJbCHXhFZSzdqExc2WWsUQiw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3691,7 +3691,8 @@ function loadLocal(){const key=slotKey();if(!key) return false;
     if(R&&R.template){const no=R.refused.length>0;
       const T=old?keptShape(o.TPL):null;
       if(no&&old&&oldDesign(T)){BOOK={...T,widgets:Array.isArray(T.widgets)?T.widgets:[]};OLD_DESIGN=true;}
-      else{adoptParse(R,!old&&typeof o.region==="string"?o.region:undefined);if(old) lsSet(key,snapshot());}
+      else{const region=!old&&typeof o.region==="string"?o.region:undefined;
+        adoptParse(readMade(R,cutAgain(R,region)),region);if(old) lsSet(key,snapshot());}
       if(old||no) FILE_NOTES=fileNotesOf(R,startScreen());}
     return true;
   }catch(e){return false;}}
@@ -4787,25 +4788,44 @@ function endsInFence(text){if(FENCE_END&&FENCE_END.text===text) return FENCE_END
   const {lines,next}=frontMatter(text,true),body=lines.slice(next),F=codeFences(body).pop();
   FENCE_END={text,open:!!F&&F.end>=body.length};return FENCE_END.open;}
 /* The text a design is read from (bookText, textWith): its file's text with nothing of the reader's, its kept records with
-   it. Where that would put a records region after a body that ends inside a code fence that never closes (design after the
-   file's records, moved above them), it is the body alone, with the blank line the writer puts before the region: the parse
-   would read the region as that fence's code, and the design read back would gain the region's lines inside the author's
-   code block. The region is kept beside the text (regionOf, adopted with the parse), so nothing of it is lost, and the
-   file's text is written as before; any other text is fileText's. */
-function designText(book,drop){const p=writeParts(book,emptyState(),emptyDrafts(),drop);return p.region&&endsInFence(p.head)?p.head+p.sep:p.head+p.sep+p.region;}
+   it, as {text, cut}. Where that would put a records region after a body that ends inside a code fence that never closes
+   (design after the file's records, moved above them), the text is the body alone, with the blank line the writer puts
+   before the region, and `cut` the region it would have had:
+   the parse would read the region as that fence's code, and the design read back would gain the region's lines inside the
+   author's code block. That region's records are read beside the text (readMade), and the region is kept beside it
+   (regionOf, adopted with the parse), so nothing of it is lost, and the file's text is written as before; any other text
+   is fileText's, and its `cut` "". */
+function designCut(book,drop){const p=writeParts(book,emptyState(),emptyDrafts(),drop);
+  return p.region&&endsInFence(p.head)?{text:p.head+p.sep,cut:p.region}:{text:p.head+p.sep+p.region,cut:""};}
+const designText=(book,drop)=>designCut(book,drop).text;
+/* The parse of a text designCut made (Add, Remove, Rename, a newer file's kept work, a reload), as a file's, with what the
+   parse of such a text alone loses where it was cut before its region (`cut`): that region's records. Read as the whole
+   file would read them with the fence closed after the body, they are the parse's (the answers, entries and drafts
+   joinRecords joins, and what is kept as written, raw.records), as a text that held its region would have them. The
+   design is the text's own parse. Returns R. */
+function readMade(R,cut){const raw=R&&R.template&&R.template.raw,W=raw&&raw.wrote;
+  if(!W||typeof W.head!=="string"||!endsInFence(W.head)) return R;
+  const {lines,next}=frontMatter(W.head,true),F=codeFences(lines.slice(next)).pop(),e=W.eol||"\n";
+  if(cut){const Q=parseFile(W.head+(/[\r\n]$/.test(W.head)?"":e)+F.mark+e+e+cut);
+    if(Q.template){R.S=Q.S;R.drafts=Q.drafts;raw.records=Q.template.raw.records;}}
+  return R;}
+/* the region a kept copy's text was cut before (designCut), worked out again on a reload from the region kept beside it
+   (snapshot): the design is the text's parse, as it was, and the booklet then held no records but those its region holds */
+const cutAgain=(R,region)=>{const T=R&&R.template,W=T&&T.raw&&T.raw.wrote;
+  return region&&W&&typeof W.head==="string"&&endsInFence(W.head)?writeParts({...T,raw:{...T.raw,wrote:{...W,region}}},emptyState(),emptyDrafts()).region:"";};
 /* the booklet's text with no records, worked out once per booklet and its raw.wrote, so a save does not run the whole writer
    again to get it: a design change adopts a new booklet whole, and the one later change, adoptParse's, gives a new raw.wrote */
 let BOOK_TEXT=null;
 const bookText=book=>{const w=book&&book.raw&&book.raw.wrote;if(BOOK_TEXT&&BOOK_TEXT.b===book&&BOOK_TEXT.w===w) return BOOK_TEXT.t;
   const t=designText(book);BOOK_TEXT={b:book,w,t};return t;};
-/* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` */
+/* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` (designCut's) */
 const textWith=(source,drop)=>{const raw=BOOK.raw||{};
-  return designText({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}},drop);};
+  return designCut({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}},drop);};
 /* The design is always its text's parse: a booklet's text (kept here, or made by Add, Remove or Rename) is parsed as a
    file is and adopted whole. Returns the parse, or null (the design unchanged) for no booklet. `region`: the records
    region the booklet had (regionOf), which a text made by bookText holds only the kept records of; adopted with the
-   parse, the next save still writes what the reader did not change as the file had it. */
-function adoptText(text,region){const R=parseFile(text);if(!R.template) return null;
+   parse, the next save still writes what the reader did not change as the file had it. `cut`: designCut's. */
+function adoptText(text,region,cut){const R=readMade(parseFile(text),cut);if(!R.template) return null;
   adoptParse(R,region);return R;}
 const adoptParse=(R,region)=>{BOOK=R.template;OLD_DESIGN=false;
   if(typeof region==="string"&&isObj(BOOK.raw)&&isObj(BOOK.raw.wrote)) BOOK.raw.wrote={...BOOK.raw.wrote,region};
@@ -4954,7 +4974,7 @@ function setTitleIn(source,name,langTag){
 const blankText=()=>setTitleIn("",strings("library").untitled,lang);
 /* Rename the booklet in memory: its text with the new `title:` line, read again. An empty name keeps the old one. */
 function renameBooklet(name){const n=cleanName(name);if(!n||n===BOOK.title) return false;
-  if(OLD_DESIGN) BOOK=namedDesign(BOOK,n);else adoptText(setTitleIn(bookText(BOOK),n,(BOOK.raw||{}).lang),regionOf(BOOK));
+  if(OLD_DESIGN) BOOK=namedDesign(BOOK,n);else{const c=designCut(BOOK);adoptText(setTitleIn(c.text,n,(BOOK.raw||{}).lang),regionOf(BOOK),c.cut);}
   CUSTOMIZED=true;markDirty();flushSave();return true;}
 
 /* ================ ADD A MODULE ================
@@ -5191,7 +5211,7 @@ function addModuleText(text,R){
   /* read the booklet this would make (with its kept records) before changing anything: if the renderer would refuse
      that file, nothing is added and the reader is told why. An id another module uses is no clash (an id is unique
      within its module). */
-  const made=parseFile(textWith(newSource)),refused=(made&&made.refused)||[];
+  const w=textWith(newSource),made=readMade(parseFile(w.text),w.cut),refused=(made&&made.refused)||[];
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[PROBLEM.notReadable]};
   if(refused.length){const dups=made.dupIds||[];
     const dids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
@@ -5232,7 +5252,7 @@ function removeModule(id){
       after=false;}
     out.push(ln);});
   const newSource=out.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
-  const made=parseFile(textWith(newSource,id)),refused=(made&&made.refused)||[];
+  const w=textWith(newSource,id),made=readMade(parseFile(w.text),w.cut),refused=(made&&made.refused)||[];
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[PROBLEM.notReadable]};
   if(refused.length) return {ok:false,problems:refused};
   /* the reader's work in the module goes with it */
@@ -8557,10 +8577,11 @@ function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
   /* `o.keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
   if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;
     /* work for a scope the design has no module for, kept as written with the file's own such records (keepUnowned):
-       the design is then the parse of the text that holds them, and its region the file's with them added (each one is
-       written into it: none was read from this file's region, so none keeps the mark `w` an earlier read gave it) */
+       the design is then the parse of the text that holds them (or, cut before its region, is read with them: readMade),
+       and its region the file's with them added (each one is written into it: none was read from this file's region, so
+       none keeps the mark `w` an earlier read gave it) */
     if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET){const raw=BOOK.raw||{},B={...BOOK,raw:{...raw,records:[...(raw.records||[]),...keep.records.map(({w,...r})=>r)]}};
-      adoptText(bookText(B),regionOf(B));}}
+      const c=designCut(B);adoptText(c.text,regionOf(B),c.cut);}}
   const at=startScreen(o.page);
   FILE_NOTES=fileNotesOf(R,at);
   /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */

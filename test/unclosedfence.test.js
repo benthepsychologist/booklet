@@ -23,6 +23,9 @@ const BLOBS=[];global.Blob=class{constructor(parts){BLOBS.push(parts.map(String)
 const toastText=()=>P.byId("toast").textContent;
 const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
 const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
+const MOD=id=>"\n> [!module|"+id+"] The "+id+"\n\n> [!activity|a1] This week\n\n> [!text|q1] What grew?\n\n> [!module|"+id+" end]\n";
+/* a page load: the booklet open now, read again from the browser's copy */
+const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot();B.openBooklet(id);return B;};
 
 (async()=>{
 /* ---- why: records written after such a body are read as that fence's code, and lost ---- */
@@ -90,14 +93,12 @@ const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
  global.__ls[key]=JSON.stringify(o);P.closePages();const B=P.boot();B.openBooklet(id);
  const kept=JSON.parse(global.__ls[key]);
  chk("an older release's copy of such a booklet keeps the records it kept as written",kept.text.includes('```booklet sync\n{"by":"another reader"}\n```')&&B.peekAnswers("").q1==="runner beans",show(kept.text));}
-{const MOD=id=>"\n> [!module|"+id+"] The "+id+"\n\n> [!activity|a1] This week\n\n> [!text|q1] What grew?\n\n> [!module|"+id+" end]\n";
- const REC="%%\n> [!records|beds] App record — do not edit below this line\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n%%\n";
+{const REC="%%\n> [!records|beds] App record — do not edit below this line\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n%%\n";
  const AFTER="\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
  const A=load(FM+MOD("beds")+MOD("shed")+"\n"+REC+AFTER),r=A.removeModule("shed");
  chk("Remove a module on such a booklet: the design is what remains, with nothing of the records region in the fence",
    r.ok&&A.BOOK.raw.source===FM+MOD("beds")+AFTER&&A.BOOK.modules.map(m=>m.id).join()==="beds",show(A.BOOK.raw.source));
  chk("and the module left keeps its answers, in the page and in the region",A.peekAnswers("beds").q1==="peas"&&A.toMarkdown().includes('{"q1": "peas"}'),show(A.toMarkdown()));}
-
 /* ---- Add a module on a booklet whose body ends inside such a fence (0.16.1): refused, said, nothing changed ----
    The module would be added at the end of the body, inside the fence, and never read as a module. */
 {const MODFILE='---\nbooklet: "0.16"\ntitle: Seed swap\nlang: en\n---\n\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] Which seeds?\n\n> [!module|seeds end]\n';
@@ -118,6 +119,64 @@ const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
  const CLOSED=FM+ACT+"A reminder for the shed:\n\n```text\nwater the beans at dawn\n```\n",C=load(CLOSED),r3=C.addModuleText(MODFILE);
  chk("with the fence closed, the module is added as before: after the body, and read as a module",
    r3.ok===true&&(r3.added||[]).join()==="seeds"&&C.BOOK.raw.source===CLOSED+"\n"+FENCE&&C.BOOK.modules.some(m=>m.id==="seeds"),show(C.BOOK.raw.source)+" "+JSON.stringify(r3));}
+
+/* ---- work kept as records, through a newer file whose body ends inside such a fence (0.16.1) ----
+   A newer file read on the offer ("Read the newer file": the host's, hostAccept, or a store's, linkAccept) that drops a
+   module the reader worked in keeps that work as records (keepUnowned), and a file's own records for a module its design
+   lacks are kept as written. Where the body ends inside such a fence, those records are kept beside the copy's text, not in
+   it, and a later newer file (the fence closed; the module back, or still gone) must keep them too, with a reload between
+   or not. They are read from the region kept beside the text, as from a text that holds its region (readMade); read from
+   the copy's text alone, they were dropped by that later file (0.16.0 dropped them in some of these orders too). */
+{const V1=FM+MOD("beds")+MOD("shed"),V2=FM+MOD("beds")+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
+ const V3=FM+MOD("beds")+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n```\n",V3b=FM+MOD("beds")+MOD("shed")+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n```\n";
+ /* a file whose region holds records for a module its design lacks, the design after it ending inside the fence */
+ const V6=FM+MOD("beds")+"\n%%\n> [!records|beds] The beds\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n> [!records|shed] The shed\n\n```booklet answers\n{\"q1\": \"snails\"}\n```\n\n%%\n"+
+   "\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
+ const STORE="http://fleet/booklets/",LINK="#/open/garden/week.booklet.md",qs=global.document.querySelector,ft=global.fetch;let FILE="",calls=[],h=null;
+ const reply=(body,ok)=>({ok:ok!==false,status:ok===false?404:200,headers:{get:k=>({"content-type":"text/plain"}[k.toLowerCase()])},text:async()=>body,
+   body:{getReader(){const b=Buffer.from(body);let done=false;return {read:async()=>done?{done:true}:(done=true,{done:false,value:new Uint8Array(b)})};}}});
+ const type=(A,scope,words)=>{A.screen=scope+"/a1";A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea"||n.tagName==="input")[0];ta.value=words;ta._on.input();A.flushSave();};
+ /* the two ways a newer file is read: the host's (Booklet.host, fileChanged) and a store's (a #/open/ link, no host). The
+    reader also answers in a module every file keeps, so the store's newer file is offered: a store file that holds all
+    the work kept in the page is drawn with no offer (storeHolds) */
+ const WAYS={
+   host:{boot(){P.place("http:","fleet");global.__ls["booklet.host.allowed"]="fleet: garden";const A=P.boot(),B=A.BookletApi;
+       h=B.host({label:"fleet: garden"});B.onChange(x=>calls.push(x));return A;},
+     async open(text){P.wipe();const A=this.boot();A.BookletApi.open(text,{name:"garden/week.booklet.md"});await sleep(300);return A;},
+     async again(A){A.flushSave();P.closePages();const B=this.boot();B.openBooklet(B.readLib().entries[0].id);await sleep(300);return B;},
+     async newer(A,text){calls.length=0;h.fileChanged(text);A.hostAccept();await sleep(700);return A;}},
+   store:{boot(){P.place("http:","fleet");global.document.querySelector=s=>/booklet-store/.test(s)?{getAttribute:k=>k==="content"?STORE:null}:null;
+       global.fetch=async u=>String(u)===STORE+"garden/week.booklet.md"?reply(FILE):reply("nf",false);return P.boot();},
+     async open(text){P.wipe();FILE=text;const A=this.boot();await A.openLink(LINK);return A;},
+     async again(A){A.flushSave();P.closePages();const B=this.boot();await B.openLink(LINK);return B;},
+     async newer(A,text){FILE=text;A.closeBooklet();await A.openLink(LINK);
+       const b=P.find(P.find(P.main(),P.hasClass("hostnote"))[0]||{children:[]},n=>n.tagName==="button"&&/Read the newer file/.test(P.texts(n)))[0];
+       if(b) b._on.click({target:b});return A;}}};
+ for(const [way,W] of Object.entries(WAYS)){
+   for(const [label,last] of [["the module still gone",V3],["the module back",V3b]]) for(const rl of [false,true]){
+     const as=" ("+way+"; a newer file ending inside the fence, then "+(rl?"a reload, then ":"")+"a newer file with it closed and "+label+")";
+     let A=await W.open(V1);type(A,"shed","snails");type(A,"beds","peas and beans");
+     A=await W.newer(A,V2);
+     chk("the work in the module the newer file drops is kept as records beside the copy's text"+as,A.BOOK.raw.source===V2&&/snails/.test(A.toMarkdown()),show(A.toMarkdown()));
+     if(rl) A=await W.again(A);
+     A=await W.newer(A,last);
+     const t=A.toMarkdown();
+     chk("and the later newer file keeps it: "+(last===V3b?"the answer is back in its module":"still kept as records")+as,
+       A.BOOK.raw.source===last&&/snails/.test(t)&&(last===V3b?A.peekAnswers("shed").q1==="snails"&&A.parseFile(t).S.answers.shed.q1==="snails":t.includes("> [!records|shed]")),show(t));
+     if(way==="host") chk("and what the host is sent holds it"+as,calls.length>0&&calls.every(c=>/snails/.test(c.text)),calls.map(c=>show(c.text)).join());}
+   for(const rl of [false,true]){const as=" ("+way+(rl?"; a reload first":"")+")";
+     let A=await W.open(V6);type(A,"beds","peas and beans");if(rl) A=await W.again(A);
+     A=await W.newer(A,V3);const t=A.toMarkdown();
+     chk("a file's own records for a module its design lacks, the design after them ending inside the fence: a newer file keeps them"+as,
+       A.BOOK.raw.source===V3&&t.includes("> [!records|shed] The shed\n\n```booklet answers\n{\"q1\": \"snails\"}\n```")&&A.peekAnswers("beds").q1==="peas and beans",show(t));}
+   /* a newer file that brings the module back and still ends inside the fence: the answer is the reader's again, at once */
+   {let A=await W.open(V1);type(A,"shed","snails");type(A,"beds","peas and beans");A=await W.newer(A,V2);
+    const V2b=FM+MOD("beds")+MOD("shed")+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
+    A=await W.newer(A,V2b);const shown=A.peekAnswers("shed").q1;A=await W.again(A);const kept=A.peekAnswers("shed").q1;A=await W.newer(A,V3);
+    chk("a newer file that brings the module back, still ending inside the fence: the answer is in its module at once, after a reload, and kept by the next file ("+way+")",
+      shown==="snails"&&kept==="snails"&&/snails/.test(A.toMarkdown()),JSON.stringify([shown,kept])+" "+show(A.toMarkdown()));}
+   P.closePages();}
+ global.document.querySelector=qs;global.fetch=ft;}
 
 /* ---- the host's write-back and Booklet.text() ---- */
 {P.wipe();P.place("http:","fleet");global.__ls["booklet.host.allowed"]="fleet: garden";const A=P.boot(),B=A.BookletApi;
