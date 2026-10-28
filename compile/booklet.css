@@ -1,0 +1,486 @@
+/* booklet.css: the look of a page the Booklet compiler wrote (compile 0.1.0).
+
+   One stylesheet for every compiled page, standalone or on a host site. A host site loads it with one line in its
+   layout's head, from wherever it puts the compiler's booklet/ folder:
+
+     <link rel="stylesheet" href="/booklet/booklet.css">
+
+   The fonts it names sit beside it in fonts/, with their licence (OFL.txt); the compiler writes all three out of
+   booklet.html, unmodified, each time it runs.
+
+   What it draws: the reading view of the Booklet renderer (booklet.html), made a plain page. The type, the measure, the
+   colours and the callout looks are the renderer's own values; nothing of the renderer's app (its bar, its cards, its
+   buttons) is here. Every class starts bk-, and the article's root is .booklet.
+
+   What a host sets. Every value is a variable on .booklet, so one rule in the host's own stylesheet changes the look:
+
+     .booklet { --bk-accent: #7a1f5c; --bk-font-text: Georgia, serif; }
+
+   The defaults below are written with :where(), so they weigh nothing: a host's rule on .booklet wins wherever it sits.
+   Nothing else of a host's own stylesheet reaches the page: its rules on bare elements, on a class and an element, and
+   with an id and !important (footer, .content ol, #main .content a { color: … !important }) are held off, so the page
+   keeps this look on any site ("held against a host", below).
+     --bk-ink, --bk-muted        text, quiet text                       (the renderer's --ink, --muted)
+     --bk-accent, --bk-accent-soft  links, marks, fold signs; a hover wash  (--accent, --accent-soft)
+     --bk-rule, --bk-surface     borders; the fill of callouts and folds (--rule, --surface)
+     --bk-paper, --bk-paper-deep a standalone page's background; code   (--paper, --paper-deep)
+     --bk-mark, --bk-warn        ==highlight==; a broken mark            (--mark, --warn)
+     --bk-border, --bk-focus     line width; focus ring width            (--bw, --focus-w)
+     --bk-<hue>-soft, -vivid, -deep   a callout's wash, line and word, for the seven hues sky, rose, sage, sun,
+                                 lilac, petrol, slate                    (--h-<hue>, --h-<hue>-vivid, --h-<hue>-deep)
+     --bk-<colour>, --bk-<colour>-ink  a widget's colour names warm, green, amber, slate, teal, blue, purple: the cell's
+                                 wash and the ink of its name            (--tone-<colour>, --tone-<colour>-deep)
+     --bk-font-text, --bk-font-head, --bk-font-code   the three faces    (--sans, --serif, --fam-mono)
+     --bk-size, --bk-line, --bk-measure   text size, leading, prose measure (the page's defaults, --measure)
+     --bk-gap, --bk-radius, --bk-radius-small   spacing between tiles; corners (--v-gap, --r-md, --r-sm)
+
+   Light and dark. The defaults are the renderer's Paper theme. A standalone page (body.bk-page) follows the device:
+   Paper, or Night when the device asks for dark. A page on a host site stays light, because a dark article inside a
+   light site jars; a host that wants another of the renderer's four base themes sets it on the article or any element
+   around it: data-bk-base="paper", "daylight", "night" or "contrast". Print is always light (the renderer prints in
+   its Daylight colours), with every fold open where the browser can open one for print.
+
+   test/compile-css.test.js holds this file to the renderer: every colour in the four tables equals the renderer's
+   token it names, every font face is one booklet.html carries, and every hue a callout kind uses has its rule. */
+
+/* ---- the fonts: the renderer's own faces (SIL Open Font License 1.1, fonts/OFL.txt) ---- */
+@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-ext-400-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-ext-700-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-ext-400-italic.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Lexend';font-style:normal;font-weight:600;font-display:swap;
+  src:url(fonts/lexend-latin-600-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Lexend';font-style:normal;font-weight:600;font-display:swap;
+  src:url(fonts/lexend-latin-ext-600-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+/* ---- the defaults: the renderer's Paper theme, and the values every theme shares ---- */
+:where(.booklet, .bk-page){
+  color-scheme:light;
+  --bk-paper:#F8F6F1; --bk-paper-deep:#EFEBE3; --bk-ink:#24323A; --bk-muted:#56646B; --bk-rule:#E4E0D6;
+  --bk-surface:#FEFDFB; --bk-accent:#1E5E6B; --bk-accent-soft:#E4EFEF; --bk-mark:#FFF3B0; --bk-warn:#A04E34;
+  --bk-border:2px; --bk-focus:3px;
+  --bk-warm:#F9E3E8; --bk-warm-ink:#A3405B; --bk-green:#E1F1E7; --bk-green-ink:#2D7751; --bk-amber:#F8EBD0; --bk-amber-ink:#8B5F10; --bk-slate:#E6E9EC; --bk-slate-ink:#3E4E59;
+  --bk-teal:#E4EFEF; --bk-teal-ink:#15464F; --bk-blue:#E3EEF7; --bk-blue-ink:#2F6596; --bk-purple:#ECE8F6; --bk-purple-ink:#6453A6;
+  --bk-sky-soft:#E3EEF7; --bk-sky-vivid:#3F7FB5; --bk-sky-deep:#2F6596;
+  --bk-rose-soft:#F9E3E8; --bk-rose-vivid:#BF5470; --bk-rose-deep:#A3405B;
+  --bk-sage-soft:#E2F0E7; --bk-sage-vivid:#4F8C6B; --bk-sage-deep:#3B6E52;
+  --bk-sun-soft:#FBF0D6; --bk-sun-vivid:#B07A0F; --bk-sun-deep:#8A5E0B;
+  --bk-lilac-soft:#ECE8F6; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
+  --bk-petrol-soft:#E4EFEF; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
+  --bk-slate-soft:#E6E9EC; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+  --bk-font-text:'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --bk-font-head:'Lexend', 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --bk-font-code:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --bk-size:1.0625rem; --bk-line:1.6; --bk-measure:70ch;
+  --bk-gap:.75rem; --bk-radius:14px; --bk-radius-small:8px;
+  /* a grid cell with no colour name takes a quiet ramp by its place, the same in every theme, with its own ink and chips */
+  --bk-tint-ink:#292421; --bk-chip:rgba(255,255,255,.75); --bk-chip-line:rgba(255,255,255,.9);
+  --bk-cell-0:#E8E4DE; --bk-cell-1:#E2E6E0; --bk-cell-2:#DEE2E6; --bk-cell-3:#E0E6E5; --bk-cell-4:#E6E2E6; --bk-cell-5:#E6E5DE;
+}
+/* a standalone page on a device that asks for dark: the Night theme */
+@media (prefers-color-scheme: dark){
+  :where(.bk-page:not([data-bk-base]), .bk-page:not([data-bk-base]) .booklet:not([data-bk-base])){
+    color-scheme:dark;
+    --bk-paper:#11181C; --bk-paper-deep:#1D2A31; --bk-ink:#E7EDEF; --bk-muted:#A9B7BD; --bk-rule:#2A3840;
+    --bk-surface:#18232A; --bk-accent:#7CC0CB; --bk-accent-soft:#163139; --bk-mark:#5C4E12; --bk-warn:#E08A6B;
+    --bk-border:2px; --bk-focus:3px;
+    --bk-warm:#381F28; --bk-warm-ink:#EC93AA; --bk-green:#172E24; --bk-green-ink:#8CC8A5; --bk-amber:#31281A; --bk-amber-ink:#F0BA55; --bk-slate:#232D33; --bk-slate-ink:#A9BBC6;
+    --bk-teal:#163139; --bk-teal-ink:#7CC0CB; --bk-blue:#172A3B; --bk-blue-ink:#88B8E4; --bk-purple:#25223A; --bk-purple-ink:#B3A5EE;
+    --bk-sky-soft:#172A3B; --bk-sky-vivid:#88B8E4; --bk-sky-deep:#88B8E4;
+    --bk-rose-soft:#381F28; --bk-rose-vivid:#EC93AA; --bk-rose-deep:#EC93AA;
+    --bk-sage-soft:#172E24; --bk-sage-vivid:#8CC8A5; --bk-sage-deep:#8CC8A5;
+    --bk-sun-soft:#31281A; --bk-sun-vivid:#F0BA55; --bk-sun-deep:#F0BA55;
+    --bk-lilac-soft:#25223A; --bk-lilac-vivid:#B3A5EE; --bk-lilac-deep:#B3A5EE;
+    --bk-petrol-soft:#163139; --bk-petrol-vivid:#7CC0CB; --bk-petrol-deep:#7CC0CB;
+    --bk-slate-soft:#232D33; --bk-slate-vivid:#A9BBC6; --bk-slate-deep:#A9BBC6;
+  }
+}
+/* a base theme a host (or a page) asks for by name */
+:where([data-bk-base="paper"], [data-bk-base="paper"] .booklet:not([data-bk-base])){
+  color-scheme:light;
+  --bk-paper:#F8F6F1; --bk-paper-deep:#EFEBE3; --bk-ink:#24323A; --bk-muted:#56646B; --bk-rule:#E4E0D6;
+  --bk-surface:#FEFDFB; --bk-accent:#1E5E6B; --bk-accent-soft:#E4EFEF; --bk-mark:#FFF3B0; --bk-warn:#A04E34;
+  --bk-border:2px; --bk-focus:3px;
+  --bk-warm:#F9E3E8; --bk-warm-ink:#A3405B; --bk-green:#E1F1E7; --bk-green-ink:#2D7751; --bk-amber:#F8EBD0; --bk-amber-ink:#8B5F10; --bk-slate:#E6E9EC; --bk-slate-ink:#3E4E59;
+  --bk-teal:#E4EFEF; --bk-teal-ink:#15464F; --bk-blue:#E3EEF7; --bk-blue-ink:#2F6596; --bk-purple:#ECE8F6; --bk-purple-ink:#6453A6;
+  --bk-sky-soft:#E3EEF7; --bk-sky-vivid:#3F7FB5; --bk-sky-deep:#2F6596;
+  --bk-rose-soft:#F9E3E8; --bk-rose-vivid:#BF5470; --bk-rose-deep:#A3405B;
+  --bk-sage-soft:#E2F0E7; --bk-sage-vivid:#4F8C6B; --bk-sage-deep:#3B6E52;
+  --bk-sun-soft:#FBF0D6; --bk-sun-vivid:#B07A0F; --bk-sun-deep:#8A5E0B;
+  --bk-lilac-soft:#ECE8F6; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
+  --bk-petrol-soft:#E4EFEF; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
+  --bk-slate-soft:#E6E9EC; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+}
+:where([data-bk-base="daylight"], [data-bk-base="daylight"] .booklet:not([data-bk-base])){
+  color-scheme:light;
+  --bk-paper:#FFFFFF; --bk-paper-deep:#F3F4F6; --bk-ink:#1F2328; --bk-muted:#57606A; --bk-rule:#D0D7DE;
+  --bk-surface:#FFFFFF; --bk-accent:#103E46; --bk-accent-soft:#E6F0F1; --bk-mark:#FFF3B0; --bk-warn:#A04E34;
+  --bk-border:2px; --bk-focus:3px;
+  --bk-warm:#FAE8EC; --bk-warm-ink:#A3405B; --bk-green:#E1F1E7; --bk-green-ink:#2D7751; --bk-amber:#F8EBD0; --bk-amber-ink:#8B5F10; --bk-slate:#ECEFF1; --bk-slate-ink:#3E4E59;
+  --bk-teal:#E6F0F0; --bk-teal-ink:#15464F; --bk-blue:#E8F1F9; --bk-blue-ink:#2F6596; --bk-purple:#EFECF8; --bk-purple-ink:#6453A6;
+  --bk-sky-soft:#E8F1F9; --bk-sky-vivid:#3F7FB5; --bk-sky-deep:#2F6596;
+  --bk-rose-soft:#FAE8EC; --bk-rose-vivid:#BF5470; --bk-rose-deep:#A3405B;
+  --bk-sage-soft:#E6F2EA; --bk-sage-vivid:#4F8C6B; --bk-sage-deep:#3B6E52;
+  --bk-sun-soft:#FBF2DC; --bk-sun-vivid:#B07A0F; --bk-sun-deep:#8A5E0B;
+  --bk-lilac-soft:#EFECF8; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
+  --bk-petrol-soft:#E6F0F0; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
+  --bk-slate-soft:#ECEFF1; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+}
+:where([data-bk-base="night"], [data-bk-base="night"] .booklet:not([data-bk-base])){
+  color-scheme:dark;
+  --bk-paper:#11181C; --bk-paper-deep:#1D2A31; --bk-ink:#E7EDEF; --bk-muted:#A9B7BD; --bk-rule:#2A3840;
+  --bk-surface:#18232A; --bk-accent:#7CC0CB; --bk-accent-soft:#163139; --bk-mark:#5C4E12; --bk-warn:#E08A6B;
+  --bk-border:2px; --bk-focus:3px;
+  --bk-warm:#381F28; --bk-warm-ink:#EC93AA; --bk-green:#172E24; --bk-green-ink:#8CC8A5; --bk-amber:#31281A; --bk-amber-ink:#F0BA55; --bk-slate:#232D33; --bk-slate-ink:#A9BBC6;
+  --bk-teal:#163139; --bk-teal-ink:#7CC0CB; --bk-blue:#172A3B; --bk-blue-ink:#88B8E4; --bk-purple:#25223A; --bk-purple-ink:#B3A5EE;
+  --bk-sky-soft:#172A3B; --bk-sky-vivid:#88B8E4; --bk-sky-deep:#88B8E4;
+  --bk-rose-soft:#381F28; --bk-rose-vivid:#EC93AA; --bk-rose-deep:#EC93AA;
+  --bk-sage-soft:#172E24; --bk-sage-vivid:#8CC8A5; --bk-sage-deep:#8CC8A5;
+  --bk-sun-soft:#31281A; --bk-sun-vivid:#F0BA55; --bk-sun-deep:#F0BA55;
+  --bk-lilac-soft:#25223A; --bk-lilac-vivid:#B3A5EE; --bk-lilac-deep:#B3A5EE;
+  --bk-petrol-soft:#163139; --bk-petrol-vivid:#7CC0CB; --bk-petrol-deep:#7CC0CB;
+  --bk-slate-soft:#232D33; --bk-slate-vivid:#A9BBC6; --bk-slate-deep:#A9BBC6;
+}
+:where([data-bk-base="contrast"], [data-bk-base="contrast"] .booklet:not([data-bk-base])){
+  color-scheme:light;
+  --bk-paper:#FFFFFF; --bk-paper-deep:#EDEDED; --bk-ink:#000000; --bk-muted:#1A1A1A; --bk-rule:#000000;
+  --bk-surface:#FFFFFF; --bk-accent:#003B49; --bk-accent-soft:#FFFFFF; --bk-mark:#FFE600; --bk-warn:#8B0000;
+  --bk-border:3px; --bk-focus:4px;
+  --bk-warm:#FFE9EE; --bk-warm-ink:#7A0F2E; --bk-green:#E8F5E0; --bk-green-ink:#1B4D0E; --bk-amber:#FFF3C4; --bk-amber-ink:#5C4300; --bk-slate:#E6EAEE; --bk-slate-ink:#243746;
+  --bk-teal:#DDF2F0; --bk-teal-ink:#004D45; --bk-blue:#E6F0FA; --bk-blue-ink:#003A70; --bk-purple:#EFEAFB; --bk-purple-ink:#3A2380;
+  --bk-sky-soft:#E6F0FA; --bk-sky-vivid:#003A70; --bk-sky-deep:#003A70;
+  --bk-rose-soft:#FFE9EE; --bk-rose-vivid:#7A0F2E; --bk-rose-deep:#7A0F2E;
+  --bk-sage-soft:#E8F5E0; --bk-sage-vivid:#1B4D0E; --bk-sage-deep:#1B4D0E;
+  --bk-sun-soft:#FFF3C4; --bk-sun-vivid:#5C4300; --bk-sun-deep:#5C4300;
+  --bk-lilac-soft:#EFEAFB; --bk-lilac-vivid:#3A2380; --bk-lilac-deep:#3A2380;
+  --bk-petrol-soft:#DDF2F0; --bk-petrol-vivid:#004D45; --bk-petrol-deep:#004D45;
+  --bk-slate-soft:#E6EAEE; --bk-slate-vivid:#243746; --bk-slate-deep:#243746;
+}
+
+/* ---- the standalone page: the paper, and one centred column held to the measure ---- */
+.bk-page{margin:0;background:var(--bk-paper);color:var(--bk-ink);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.bk-main{box-sizing:border-box;max-width:calc(var(--bk-measure) + 3rem);margin:0 auto;padding:2.5rem 1.5rem 5rem;
+  font-family:var(--bk-font-text);font-size:var(--bk-size)}
+@media (max-width:520px){.bk-main{max-width:none;padding:1.5rem 1rem 4rem}}
+
+/* ---- the article: it sits on whatever is under it, and never paints the page ----
+   The host places the article (its margin, width and display are the host's); the article sets its own text and paints
+   nothing, so text settings a host gives its page around it (a weight, a letter spacing, capitals) do not flow in. */
+.booklet:not(#bk):not(#bk):not(#bk){color:var(--bk-ink)!important;font-family:var(--bk-font-text)!important;
+  font-size:var(--bk-size)!important;line-height:var(--bk-line)!important;overflow-wrap:break-word!important;
+  font-weight:400!important;font-style:normal!important;font-variant:normal!important;font-stretch:normal!important;
+  font-feature-settings:normal!important;font-variation-settings:normal!important;font-kerning:auto!important;
+  letter-spacing:normal!important;word-spacing:normal!important;text-transform:none!important;text-align:start!important;
+  text-indent:0!important;text-shadow:none!important;hyphens:manual!important;white-space:normal!important;
+  word-break:normal!important;quotes:auto!important;-webkit-font-smoothing:auto!important;
+  background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+/* ---- held against a host: on any site, the page inside the article keeps this look ----
+   A host's own rules would otherwise reach the page: on bare elements (footer, aside, blockquote, ol, h1), on a class and
+   an element (.content ol), and with an id and !important (#main .content blockquote { color: … !important }). Three
+   things keep them off, wherever the host's stylesheet sits:
+   - every declaration under the article is !important (custom properties aside), so no plain host rule can win;
+   - every rule starts .booklet:not(#bk):not(#bk):not(#bk). No element has the id bk, so this matches every article,
+     and it weighs as much as three ids, so it outweighs a host's !important rule with fewer than three ids;
+   - the rule below sends every property this file does not set, on every element inside the article, back to the
+     browser's own default (revert): what a plain page would show. It is the lightest rule here, so every rule after it
+     wins over it. The icons (svg) and formulas (math) are left out of it, since revert would also drop the attributes
+     they are drawn with: the icons' paint is set in .bk-ic, and a formula's box is reverted on its own.
+   A host changes the look with the --bk-* variables above, which are plain, so its own rule setting them wins. A rule of
+   its own inside the article needs the same start, !important, and to come after this file. A host rule that still
+   reaches the page: an !important one with three ids or more, one inside a cascade layer (@layer), and an inline style. */
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *)),
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::before,
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::after{all:revert!important}
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::marker{all:revert!important}
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::first-letter{all:revert!important}
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::first-line{all:revert!important}
+/* a formula: only its box, which none of its attributes set (a host's reset of every margin and padding would reach it) */
+.booklet:not(#bk):not(#bk):not(#bk) :where(math, math *){margin:revert!important;padding:revert!important;
+  border:revert!important;border-radius:revert!important;box-shadow:revert!important;background-image:revert!important;
+  float:revert!important}
+.booklet:not(#bk):not(#bk):not(#bk) *,.booklet:not(#bk):not(#bk):not(#bk) *::before,.booklet:not(#bk):not(#bk):not(#bk) *::after{box-sizing:border-box!important}
+.booklet:not(#bk):not(#bk):not(#bk) [id]{scroll-margin-top:1rem!important}
+/* prose keeps the readable measure; a table, a grid or a row uses the width it is given */
+.booklet:not(#bk):not(#bk):not(#bk) :is(h1,h2,h3,h4,h5,h6,p,ul,ol,dl,blockquote,pre,.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-toc){max-width:var(--bk-measure)!important}
+/* the notes and the foot are set smaller, so they take the article's width rather than a measure of their own */
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-notes,.bk-foot) :is(h2,p,ol,dl){max-width:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q.bk-widget{max-width:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-widget>:is(p,ul,dl){max-width:var(--bk-measure)!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) p{margin:0 0 1rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) a{color:var(--bk-accent)!important;text-underline-offset:.15em!important}
+.booklet:not(#bk):not(#bk):not(#bk) a:hover{text-decoration-thickness:2px!important}
+.booklet:not(#bk):not(#bk):not(#bk) :focus-visible{outline:var(--bk-focus) solid var(--bk-accent)!important;outline-offset:2px!important;border-radius:2px!important}
+
+/* headings: the title and sections in the heading face, as the renderer's reading view sets them */
+.booklet:not(#bk):not(#bk):not(#bk) :is(h1,h2,h3){font-family:var(--bk-font-head)!important;font-weight:600!important;letter-spacing:0!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) h1{font-size:2.1rem!important;line-height:1.15!important;margin:0 0 .6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) h2{font-size:1.6rem!important;line-height:1.25!important;margin:2.4rem 0 .6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) h3{font-size:1.2rem!important;line-height:1.3!important;margin:2rem 0 .5rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) h4{font-family:var(--bk-font-text)!important;font-weight:700!important;font-size:.95rem!important;line-height:1.4!important;letter-spacing:.02em!important;color:var(--bk-accent)!important;margin:1.75rem 0 .5rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(h5,h6){font-family:var(--bk-font-text)!important;font-weight:700!important;font-size:.9rem!important;line-height:1.4!important;color:var(--bk-muted)!important;margin:1.5rem 0 .4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk)>:first-child,.booklet:not(#bk):not(#bk):not(#bk) section>:first-child{margin-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(h1,h2,h3,h4)+:is(h2,h3,h4,h5,h6){margin-top:.75rem!important}
+/* the small link on a heading, for sharing a section: shown on hover and on focus (faintly, always, on a touch screen) */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-anchor{margin-left:.3rem!important;font-family:var(--bk-font-text)!important;font-weight:400!important;font-size:.8em!important;color:var(--bk-muted)!important;
+  text-decoration:none!important;opacity:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(h2,h3,h4):hover>.bk-anchor,.booklet:not(#bk):not(#bk):not(#bk) .bk-anchor:focus-visible{opacity:1!important}
+@media (hover:none){.booklet:not(#bk):not(#bk):not(#bk) .bk-anchor{opacity:.45!important}}
+
+/* the lede: the first paragraph under the title, larger and quieter (the renderer's module lede) */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-lede{font-size:1.2rem!important;line-height:1.6!important;color:var(--bk-muted)!important;margin:.4rem 0 1.4rem!important}
+
+/* "On this page" */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-toc{margin:0 0 2rem!important;padding:.75rem 1rem .85rem!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important;
+  background:var(--bk-surface)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-toc-h{margin:0 0 .3rem!important;font-weight:700!important;font-size:.85rem!important;letter-spacing:.02em!important;color:var(--bk-muted)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-toc ul{margin:0!important;padding-left:0!important;list-style:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-toc li{margin:.2rem 0!important}
+
+/* plain prose */
+.booklet:not(#bk):not(#bk):not(#bk) :is(ul,ol){margin:0 0 1rem!important;padding-left:1.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) li{margin:.25rem 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) li>:is(ul,ol){margin:.25rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) blockquote{margin:1.25rem 0!important;padding:0 0 0 1rem!important;border-left:3px solid var(--bk-accent)!important;color:var(--bk-muted)!important;font-style:italic!important}
+.booklet:not(#bk):not(#bk):not(#bk) blockquote>:last-child{margin-bottom:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) mark{background:var(--bk-mark)!important;color:var(--bk-ink)!important;padding:.05em .15em!important;border-radius:3px!important}
+.booklet:not(#bk):not(#bk):not(#bk) code{font-family:var(--bk-font-code)!important;font-size:.9em!important;background:var(--bk-paper-deep)!important;padding:.1em .3em!important;border-radius:4px!important}
+.booklet:not(#bk):not(#bk):not(#bk) pre{margin:1.1rem 0!important;padding:.8rem 1rem!important;background:var(--bk-paper-deep)!important;border-radius:var(--bk-radius-small)!important;
+  overflow-x:auto!important;font-size:.88rem!important;line-height:1.5!important}
+.booklet:not(#bk):not(#bk):not(#bk) pre code{background:none!important;padding:0!important;font-size:inherit!important;border-radius:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) hr{border:0!important;border-top:var(--bk-border) solid var(--bk-rule)!important;margin:2rem 0!important;max-width:var(--bk-measure)!important}
+/* between the pages of a tab: a quieter divider */
+.booklet:not(#bk):not(#bk):not(#bk) hr.bk-next-page{border-top-style:dashed!important;margin:2.25rem 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) hr+:is(h2,h3,h4,h5,h6){margin-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) img{max-width:100%!important;height:auto!important;vertical-align:middle!important}
+.booklet:not(#bk):not(#bk):not(#bk) sup,.booklet:not(#bk):not(#bk):not(#bk) sub{line-height:0!important}
+
+/* tables: a wide one scrolls inside its own box, never the page */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table{margin:1.1rem 0!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table table{border-collapse:collapse!important;min-width:100%!important;font-size:.95rem!important;line-height:1.45!important;font-variant-numeric:tabular-nums!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table :is(th,td){text-align:left!important;vertical-align:top!important;padding:.5rem .8rem!important;border-bottom:1px solid var(--bk-rule)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table th{font-weight:700!important;font-size:.85rem!important;letter-spacing:.02em!important;color:var(--bk-ink)!important;
+  border-bottom:var(--bk-border) solid var(--bk-accent)!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table tbody th{border-bottom:1px solid var(--bk-rule)!important;white-space:normal!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table :is(th,td).bk-num{text-align:right!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table tbody tr:last-child :is(td,th){border-bottom:var(--bk-border) solid var(--bk-rule)!important}
+
+/* math, as MathML the browser draws */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math math{font-size:1.08em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math-display{display:block!important;margin:.7rem 0!important;text-align:center!important;overflow-x:auto!important;max-width:100%!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math-display math{display:block math!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math-raw{font-family:var(--bk-font-code)!important;font-size:.92em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math-display.bk-math-raw{text-align:left!important;white-space:pre-wrap!important}
+
+/* a diagram shown as its source, until the compiler draws it */
+.booklet:not(#bk):not(#bk):not(#bk) pre.bk-figure-src{border:1px dashed var(--bk-rule)!important}
+
+/* an image the page does not show: its words and its address, in a quiet box */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-imgbox{display:inline-flex!important;flex-direction:column!important;gap:.15rem!important;max-width:100%!important;margin:.2rem 0!important;padding:.45rem .65rem!important;
+  border:1px dashed var(--bk-rule)!important;border-radius:var(--bk-radius-small)!important;color:var(--bk-muted)!important;font-size:.9rem!important;text-align:left!important;vertical-align:top!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-imgalt{color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-imgnote{font-size:.78rem!important;font-style:italic!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-imgsrc{font-size:.78rem!important;overflow-wrap:anywhere!important;word-break:break-all!important;background:none!important;padding:0!important}
+
+/* ---- the seven hues: a callout or a fold of a kind takes its hue's wash, line and word ---- */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-sky{--bk-c-soft:var(--bk-sky-soft);--bk-c-vivid:var(--bk-sky-vivid);--bk-c-deep:var(--bk-sky-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-rose{--bk-c-soft:var(--bk-rose-soft);--bk-c-vivid:var(--bk-rose-vivid);--bk-c-deep:var(--bk-rose-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-sage{--bk-c-soft:var(--bk-sage-soft);--bk-c-vivid:var(--bk-sage-vivid);--bk-c-deep:var(--bk-sage-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-sun{--bk-c-soft:var(--bk-sun-soft);--bk-c-vivid:var(--bk-sun-vivid);--bk-c-deep:var(--bk-sun-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-lilac{--bk-c-soft:var(--bk-lilac-soft);--bk-c-vivid:var(--bk-lilac-vivid);--bk-c-deep:var(--bk-lilac-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-petrol{--bk-c-soft:var(--bk-petrol-soft);--bk-c-vivid:var(--bk-petrol-vivid);--bk-c-deep:var(--bk-petrol-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-slate{--bk-c-soft:var(--bk-slate-soft);--bk-c-vivid:var(--bk-slate-vivid);--bk-c-deep:var(--bk-slate-deep)}
+
+/* ---- callouts: the renderer's reading-view box, a wash with the hue's line down its left ---- */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-callout,.booklet:not(#bk):not(#bk):not(#bk) .bk-group{margin:1.25rem 0!important;padding:.7rem 1rem .75rem!important;background:var(--bk-surface)!important;
+  border:var(--bk-border) solid var(--bk-rule)!important;border-left:6px solid var(--bk-muted)!important;border-radius:0 var(--bk-radius) var(--bk-radius) 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-callout:not(.bk-plain){background:var(--bk-c-soft)!important;border-color:var(--bk-c-soft)!important;border-left-color:var(--bk-c-vivid)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-k-diff{border-left-style:dashed!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-k-law{border-left-style:double!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-k-opinion{border-left-style:dotted!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-chead{display:flex!important;align-items:center!important;gap:.5rem!important;flex-wrap:wrap!important;margin:0 0 .3rem!important;font-family:var(--bk-font-head)!important;
+  font-size:.9rem!important;font-weight:600!important;line-height:1.4!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ci{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:none!important;font-size:1.25rem!important;line-height:1!important;color:var(--bk-c-vivid,var(--bk-accent))!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ic{width:1em!important;height:1em!important;flex:none!important;display:block!important;margin:0!important;color:inherit!important;
+  fill:none!important;stroke:currentColor!important;stroke-width:2!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ic *{fill:inherit!important;stroke:inherit!important;stroke-width:inherit!important;stroke-linecap:inherit!important;stroke-linejoin:inherit!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cl{color:var(--bk-c-deep)!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-ctitle,.bk-gtitle){margin:0 0 .35rem!important;font-weight:700!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-unknown{margin:0 0 .5rem!important;color:var(--bk-muted)!important;font-size:.88rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cb>:first-child{margin-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cb>:last-child{margin-bottom:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-callout,.bk-group,.bk-fold) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,p,ul,ol,dl,blockquote,pre){max-width:none!important}
+
+/* ---- folds: a quiet bordered box, closed, with a plus that turns into a minus; it opens with no script ---- */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold{margin:1rem 0!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary{display:flex!important;align-items:center!important;gap:.6rem!important;min-height:44px!important;padding:.5rem 1rem!important;cursor:pointer!important;list-style:none!important;
+  font-weight:700!important;line-height:1.35!important;border-radius:calc(var(--bk-radius) - var(--bk-border))!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::-webkit-details-marker{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::after{content:"+"!important;margin-left:auto!important;padding-left:.5rem!important;flex:none!important;font-family:var(--bk-font-text)!important;
+  font-size:1.35rem!important;font-weight:700!important;line-height:1!important;color:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold[open]>summary::after{content:"\2212"!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary:hover{background:var(--bk-accent-soft)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold[open]>summary{border-bottom-left-radius:0!important;border-bottom-right-radius:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>.bk-cb{padding:.35rem 1rem .9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ftitle{min-width:0!important}
+/* a folded callout of a kind: its hue's wash and line, as the open box has */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold:not(.bk-plain):not(.bk-compact){background:var(--bk-c-soft)!important;border-color:var(--bk-c-soft)!important;border-left:6px solid var(--bk-c-vivid)!important;
+  border-radius:0 var(--bk-radius) var(--bk-radius) 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold:not(.bk-plain):not(.bk-compact)>summary:hover{background:color-mix(in srgb,var(--bk-c-vivid) 12%,transparent)!important}
+/* a question's hint or solution: one quiet line with a small picture, the renderer's compact fold */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold.bk-compact{margin:.5rem 0 0!important;background:none!important;border:0!important;border-radius:var(--bk-radius-small)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact>summary{min-height:44px!important;padding:.2rem .5rem!important;gap:.5rem!important;font-weight:600!important;color:var(--bk-muted)!important;border-radius:var(--bk-radius-small)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact>summary::after{margin-left:0!important;padding-left:.1rem!important;font-size:1.15rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact[open]>summary{color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact .bk-ci{font-size:1.05rem!important;color:var(--bk-slate-vivid)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact>.bk-cb{padding:.2rem .5rem .5rem 2.05rem!important}
+
+/* ---- questions, read-only: what they ask and what they offer ---- */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q{margin:1.25rem 0!important;padding:.9rem 1rem 1rem!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;
+  border-radius:var(--bk-radius)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q-ask{margin:0 0 .25rem!important;font-family:var(--bk-font-head)!important;font-weight:600!important;font-size:1.05rem!important;line-height:1.35!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q-help{margin:0 0 .6rem!important;color:var(--bk-muted)!important;font-size:.95rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q-hint{margin:0 0 .6rem!important;color:var(--bk-muted)!important;font-size:.88rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q>:last-child{margin-bottom:0!important}
+/* the options, each with an empty circle (pick one) or square (pick any), nothing to press */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options{list-style:none!important;margin:.5rem 0 0!important;padding:0!important;display:flex!important;flex-direction:column!important;gap:.35rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options li{display:flex!important;align-items:baseline!important;gap:.6rem!important;margin:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options li::before{content:""!important;flex:none!important;width:.95rem!important;height:.95rem!important;border:var(--bk-border) solid var(--bk-muted)!important;
+  transform:translateY(.15em)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pick-one li::before{border-radius:50%!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pick-many li::before{border-radius:3px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options .bk-own{color:var(--bk-muted)!important;font-style:italic!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options .bk-own::before{border-style:dashed!important}
+/* a scale's anchors, in a row that wraps */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-scale{list-style:none!important;margin:.5rem 0 0!important;padding:0!important;display:flex!important;flex-wrap:wrap!important;gap:.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-scale li{margin:0!important;padding:.25rem .8rem!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:999px!important;font-size:.92rem!important;line-height:1.35!important}
+/* a matrix: its items down the side, its anchors across the top, an empty circle in each cell */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-matrix td{text-align:center!important;color:var(--bk-muted)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-matrix thead th{text-align:center!important;white-space:normal!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-matrix thead td{border-bottom:var(--bk-border) solid var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-matrix tbody th{font-weight:400!important;letter-spacing:0!important;font-size:.95rem!important}
+
+/* ---- widgets, read-only ---- */
+/* the grid: its axes round its cells, the cells in their colour names */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-grid{display:grid!important;grid-template-columns:1.5rem minmax(0,1fr) 1.5rem!important;grid-template-rows:auto 1fr auto!important;gap:.3rem!important;margin:1rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax{margin:0!important;color:var(--bk-muted)!important;font-size:.8rem!important;font-weight:700!important;line-height:1.3!important;text-align:center!important;align-self:center!important;justify-self:center!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax-top{grid-column:2!important;grid-row:1!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax-bottom{grid-column:2!important;grid-row:3!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax-left{grid-column:1!important;grid-row:2!important;writing-mode:vertical-rl!important;transform:rotate(180deg)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax-right{grid-column:3!important;grid-row:2!important;writing-mode:vertical-rl!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cells{grid-column:2!important;grid-row:2!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:.45rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cell{min-width:0!important;min-height:7rem!important;margin:0!important;padding:.75rem .8rem .8rem!important;border-radius:var(--bk-radius)!important;display:flex!important;flex-direction:column!important;gap:.5rem!important;
+  background:var(--bk-cell-wash)!important;color:var(--bk-cell-text)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cell-name{margin:0!important;font-weight:800!important;font-size:.95rem!important;line-height:1.3!important;color:var(--bk-cell-name)!important}
+/* a colour name: the theme's wash and ink, so it reads in every theme */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-warm{--bk-cell-wash:var(--bk-warm);--bk-cell-name:var(--bk-warm-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-green{--bk-cell-wash:var(--bk-green);--bk-cell-name:var(--bk-green-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-amber{--bk-cell-wash:var(--bk-amber);--bk-cell-name:var(--bk-amber-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-slate{--bk-cell-wash:var(--bk-slate);--bk-cell-name:var(--bk-slate-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-teal{--bk-cell-wash:var(--bk-teal);--bk-cell-name:var(--bk-teal-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-blue{--bk-cell-wash:var(--bk-blue);--bk-cell-name:var(--bk-blue-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-purple{--bk-cell-wash:var(--bk-purple);--bk-cell-name:var(--bk-purple-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-c-warm,.bk-c-green,.bk-c-amber,.bk-c-slate,.bk-c-teal,.bk-c-blue,.bk-c-purple){--bk-cell-text:var(--bk-ink)}
+/* no colour name: the quiet ramp by place, with the tint's own ink and chips */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n0{--bk-cell-wash:var(--bk-cell-0)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n1{--bk-cell-wash:var(--bk-cell-1)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n2{--bk-cell-wash:var(--bk-cell-2)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n3{--bk-cell-wash:var(--bk-cell-3)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n4{--bk-cell-wash:var(--bk-cell-4)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n5{--bk-cell-wash:var(--bk-cell-5)}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5){--bk-cell-text:var(--bk-tint-ink);--bk-cell-name:var(--bk-tint-ink)}
+/* a place's note (describe), on the page's own deeper paper */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-plain{--bk-cell-wash:var(--bk-paper-deep);--bk-cell-text:var(--bk-ink);--bk-cell-name:var(--bk-ink)}
+/* the words a cell or a place offers, as chips */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-words{list-style:none!important;margin:0!important;padding:0!important;display:flex!important;flex-wrap:wrap!important;gap:.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-words li{display:inline-block!important;max-width:100%!important;margin:0!important;padding:.25rem .7rem!important;border:var(--bk-border) solid var(--bk-rule)!important;
+  border-radius:14px!important;background:var(--bk-paper)!important;color:var(--bk-ink)!important;font-size:.9rem!important;font-weight:600!important;line-height:1.3!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5) .bk-words li{background:var(--bk-chip)!important;border-color:var(--bk-chip-line)!important;color:var(--bk-tint-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-places-h{margin:.9rem 0 .4rem!important;font-weight:700!important;font-size:.9rem!important;color:var(--bk-muted)!important}
+/* each cell's or place's note, with `describe` */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of{display:grid!important;grid-template-columns:1fr!important;gap:.6rem!important;margin:1rem 0 0!important}
+@media (min-width:600px){.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of{grid-template-columns:1fr 1fr!important}}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of .bk-cell{min-height:0!important;gap:.2rem!important;padding:.8rem .95rem!important;font-size:.95rem!important;line-height:1.45!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of dt{font-weight:800!important;color:var(--bk-cell-name)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of dd{margin:0!important}
+
+/* ---- rows: cells side by side when there is room, one under another when there is not ---- */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-row{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr))!important;gap:0 1.5rem!important;align-items:start!important;margin:0 0 1rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-rowcell{min-width:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-rowcell>:first-child{margin-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-rowcell :is(h1,h2,h3,h4,h5,h6,p,ul,ol,dl,blockquote,.bk-callout,.bk-group,.bk-fold,.bk-q){max-width:none!important}
+
+/* ---- citation marks and the notes at the foot ---- */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-mark{font-size:.72em!important;line-height:0!important;vertical-align:baseline!important;position:relative!important;top:-.5em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-mark-a{margin:0 .05em!important;padding:.05em .18em!important;border-radius:4px!important;font-weight:700!important;text-decoration:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-mark-a:hover{text-decoration:underline!important;background:var(--bk-accent-soft)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-broken{font-size:.72em!important;font-weight:700!important;color:var(--bk-warn)!important;border:1px dashed var(--bk-warn)!important;border-radius:4px!important;padding:0 .2em!important;
+  margin:0 .1em!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes{margin:2.5rem 0 0!important;padding-top:.6rem!important;border-top:var(--bk-border) solid var(--bk-rule)!important;font-size:.92rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-h{margin:0 0 .6rem!important;font-size:1.2rem!important;line-height:1.3!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-list{margin:0!important;padding-left:1.6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-list li{margin:0 0 .45rem!important;padding:.1rem .3rem!important;border-radius:4px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-list li:target{background:var(--bk-mark)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes cite{font-style:italic!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-back{text-decoration:none!important;padding:0 .2rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-verified{color:var(--bk-green-ink)!important;font-weight:700!important;font-size:.88rem!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-bad{color:var(--bk-warn)!important}
+
+/* ---- the foot: each module's notice (licence, copyright, source, version), quiet ---- */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foot{margin:2.5rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about{margin:0 0 1rem!important;padding:.8rem 1rem!important;border:var(--bk-border) dashed var(--bk-rule)!important;border-radius:12px!important;
+  color:var(--bk-muted)!important;font-size:.88rem!important;line-height:1.5!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about-h{margin:0 0 .4rem!important;font-weight:700!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about dl{margin:0!important;display:grid!important;grid-template-columns:max-content minmax(0,1fr)!important;gap:.3rem .9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about dl>div{display:contents!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about dt{font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about dd{margin:0!important;overflow-wrap:anywhere!important}
+@media (max-width:520px){.booklet:not(#bk):not(#bk):not(#bk) .bk-about dl{grid-template-columns:minmax(0,1fr)!important;gap:0!important}.booklet:not(#bk):not(#bk):not(#bk) .bk-about dd{margin-bottom:.4rem!important}}
+
+/* ---- print: always light, every fold open where the browser can open one for print ---- */
+@media print{
+  :where(.booklet, .bk-page){
+    color-scheme:light;
+    --bk-paper:#FFFFFF; --bk-paper-deep:#F3F4F6; --bk-ink:#1F2328; --bk-muted:#57606A; --bk-rule:#D0D7DE;
+    --bk-surface:#FFFFFF; --bk-accent:#103E46; --bk-accent-soft:#E6F0F1; --bk-mark:#FFF3B0; --bk-warn:#A04E34;
+    --bk-border:2px; --bk-focus:3px;
+    --bk-warm:#FAE8EC; --bk-warm-ink:#A3405B; --bk-green:#E1F1E7; --bk-green-ink:#2D7751; --bk-amber:#F8EBD0; --bk-amber-ink:#8B5F10; --bk-slate:#ECEFF1; --bk-slate-ink:#3E4E59;
+    --bk-teal:#E6F0F0; --bk-teal-ink:#15464F; --bk-blue:#E8F1F9; --bk-blue-ink:#2F6596; --bk-purple:#EFECF8; --bk-purple-ink:#6453A6;
+    --bk-sky-soft:#E8F1F9; --bk-sky-vivid:#3F7FB5; --bk-sky-deep:#2F6596;
+    --bk-rose-soft:#FAE8EC; --bk-rose-vivid:#BF5470; --bk-rose-deep:#A3405B;
+    --bk-sage-soft:#E6F2EA; --bk-sage-vivid:#4F8C6B; --bk-sage-deep:#3B6E52;
+    --bk-sun-soft:#FBF2DC; --bk-sun-vivid:#B07A0F; --bk-sun-deep:#8A5E0B;
+    --bk-lilac-soft:#EFECF8; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
+    --bk-petrol-soft:#E6F0F0; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
+    --bk-slate-soft:#ECEFF1; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+  }
+  .bk-page{background:none}
+  .bk-main{max-width:none;padding:0}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-anchor{display:none!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::after{display:none!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-fold::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-cell,pre,figure){break-inside:avoid!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-table{overflow:visible!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-table tr{break-inside:avoid!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-table thead{display:table-header-group!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-math-display{overflow:visible!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(h2,h3,h4){break-after:avoid!important}
+}
+
+@media (prefers-reduced-motion:reduce){.booklet:not(#bk):not(#bk):not(#bk) *{transition:none!important;animation:none!important}}

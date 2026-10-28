@@ -912,6 +912,14 @@ values are plain text.
 written in, never computed: say where each came from, and state any assumption
 behind a worked figure ("assumes one reminder per visit").
 
+**A report on the web.** A booklet can also be published as a plain web page
+with the compiler (`node compile/compile.js report.booklet.md`;
+`compile/README.md`). The page shows the prose, callouts, folds, tables,
+formulas, notes and images, and the questions read-only; it leaves out, with a
+note to tidy, the data views and diagrams, which it does not draw yet, and it
+never shows a file's records. So for a booklet meant to be read on a site, put
+the substance in prose and tables, and the views and questions after it.
+
 ---
 
 ## 9. Widgets, languages, and the file name
