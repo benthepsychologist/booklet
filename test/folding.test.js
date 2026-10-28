@@ -74,14 +74,14 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
 /* 5b. a group in an activity holds blocks: its body, one `>` less, is read as the file is (SPEC.md section 6), so a
    question in it is written with a second `>` and its options with one; its ids are the module's like any other; a line
    that makes structure is said and left out; a `***` in it is a rule; the group in a module's opening stays words */
-{const T=FM+"> [!module|m] M\n\n> [!group] About\n> > [!text|x] Q in the opening?\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n"+
+{const T=FM+"> [!module|m] M\n\n> [!group] About\n> > [!text|x] Q in the opening?\n\n> [!activity|log repeat] Log\n\n> [!group] An entry\n> > [!text|what] What?\n\n"+
    "> [!activity|a] A\n\n> [!text|out] Outside?\n\n"+
    "> [!group]- Folded\n> Words with a note.[^n]\n>\n> [^n]: The note.\n>\n> > [!choice|g1] Pick?\n> - [ ] Alpha\n> - [ ] Beta\n>\n> > [!hint]-\n> > A hint.\n>\n> ***\n>\n> > [!tab] Nope\n>\n> > [!text|g2] Why?\n\n"+
    "> [!group] Kept\n> ```booklet query\n> from: log\n> ```\n\n> [!module|m end] E\n";
  const R=A.parseFile(T),said=R.unread.map(String);
- chk("(the file opens; one thing said: the tab line in the group, at its own line)",R.ok&&R.refused.length===0&&said.length===1&&/^line 35: a tab line cannot go inside a group/.test(said[0]),JSON.stringify([said,R.refused.map(String)]));
+ chk("(the file opens; one thing said: the tab line in the group, at its own line)",R.ok&&R.refused.length===0&&said.length===1&&/^line 36: a tab line cannot go inside a group/.test(said[0]),JSON.stringify([said,R.refused.map(String)]));
  const act=A.parseFile(T.replace("> > [!tab] Nope","> > [!activity|nope] Nope")).unread.map(String);
- chk("...an activity line there is said in plain English too (an activity, not a activity)",act.length===1&&/^line 35: an activity line cannot go inside a group/.test(act[0]),JSON.stringify(act));
+ chk("...an activity line there is said in plain English too (an activity, not a activity)",act.length===1&&/^line 36: an activity line cannot go inside a group/.test(act[0]),JSON.stringify(act));
  A.loadText(T);
  const a=A.activityOf("m/a"),g=a.pages[0].blocks[1],ids=b=>b.blocks.map(x=>x.type+(x.id&&!/^(md|c)\d/.test(x.id)?":"+x.id:"")).join();
  chk("the group holds its words, the choice with its two options and its hint, a rule, and the question after; no tab",
@@ -133,7 +133,9 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
  chk("an earlier entry, opened, shows what its group's questions were given",e.length===1&&/What\? kept words Hours\? 7/.test(texts(e[0])),e.map(texts).join("|"));}
 
 /* 5d. a fold holding an answer is drawn open however deep the question is in it: a question in a group inside the folded
-   group opens it, as one straight in it does */
+   group opens it, as one straight in it does
+   (A guard, not a test of a change: nothing in b0f6a00 touched what makes a fold draw open (blockFilled), so this check passes
+   with or without that commit. It is kept to hold the behaviour, and is not claimed to fail without any change.) */
 {const T=FM+"> [!activity|a] A\n\n> [!group]- Outer\n> Words.\n>\n> > [!group] Inner\n> > > [!text|deep] Deep?\n\n> [!group]- Other\n> > [!text|near] Near?\n";
  A.loadText(T);global.__ls[A.OAT_KEY+A.currentId]="all";
  const folds=()=>{draw("a");return auFolds().map(d=>[texts(d).slice(0,5),isOpen(d)]);};
