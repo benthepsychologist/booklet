@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-xO2XK4Z1FgqeQF0uyfV9o+shQCLDcDUiBzsg8mHADs4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-xjqs0g6Zy1T2iSqOTZUpO7uUNwd7MfQpPGsJDrITsFs=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3331,8 +3331,9 @@ const isShown=a=>(a||{}).home!==false;
 const bookWidgets=()=>BOOK.widgets||[];
 /* A widget block belongs to the module whose fence holds it (`w.module`), or to the data section
    (no `module`), and a module sees its own first, then the data section's, never another module's. */
-const widgetOf=(id,scope)=>{const ws=bookWidgets();
-  return (scope&&ws.find(w=>w.id===id&&w.module===scope))||ws.find(w=>w.id===id&&!w.module)||null;};
+/* the widget a widget block names, among `ws`: its own module's, else the data section's (widgetOf reads the booklet in force) */
+const widgetIn=(ws,id,scope)=>(scope&&ws.find(w=>w.id===id&&w.module===scope))||ws.find(w=>w.id===id&&!w.module)||null;
+const widgetOf=(id,scope)=>widgetIn(bookWidgets(),id,scope);
 const allModules=()=>BOOK.modules||[];
 /* a booklet holds modules, a module holds its activities (`activities`, one or several) and an activity its pages
    (`pages`, one or several): one shape each, whatever their number */
@@ -3944,14 +3945,11 @@ function readQuery(code){const o={};
     const kv=kvLine(ln);if(!kv) return {bad:ln};
     o[kv[0].toLowerCase()]=kv[1];}
   const unknown=Object.keys(o).filter(k=>!QUERY_KEYS.includes(k));
-  const limitBad=o.limit!==undefined&&!/^[1-9]\d*(?:[ \t]+days?)?$/.test(o.limit)?o.limit:undefined;
-  const span=limitBad===undefined&&o.limit!==undefined?/^([1-9]\d*)[ \t]+days?$/.exec(o.limit):null;
-  const lim=limitBad===undefined&&o.limit!==undefined&&!span?Number(o.limit):0;
+  const lm=o.limit===undefined?null:/^([1-9]\d*)([ \t]+days?)?$/.exec(o.limit),limitBad=o.limit!==undefined&&!lm?o.limit:undefined;
   const summaryBad=o.summary!==undefined&&o.summary!=="on"?o.summary:undefined;
   /* how a view draws: the view, and the names of the fields it reads */
   const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit","summary"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
-  if(lim>0) view.limit=lim;
-  if(span) view.days=Number(span[1]);
+  if(lm) view[lm[2]?"days":"limit"]=Number(lm[1]);
   if(o.summary==="on") view.summary="on";
   return {from:o.from||"",fields:o.fields?o.fields.split(",").map(x=>x.trim()).filter(Boolean):undefined,
     empty:o.empty||undefined,view,unknown,limitBad,summaryBad};}
@@ -4408,18 +4406,18 @@ function resolveMenus({menus,menuUses,modules},problems){const P=PROBLEM;
    its kind's is kept as written: its question is drawn read-only (renderBlock), nothing writes it, and a view leaves it out of its
    row (entryFields). Its shape is the JSON type its kind stores, never whether a value is in range (a scale's 7 on anchors 0 to 4
    fits): the same table as the Obsidian plugin's core/shape.ts. ---- */
-const wholeFrom=(x,n)=>typeof x==="number"&&Number.isInteger(x)&&x>=n;
+const wholeFrom=(x,n)=>Number.isInteger(x)&&x>=n;
 const isStr=x=>typeof x==="string";
 const everyIs=t=>v=>Array.isArray(v)&&v.every(t);
 const isPosOrOwn=x=>wholeFrom(x,1)||isStr(x);
-const KIND_SHAPE={text:isStr,date:isStr,lines:everyIs(isStr),number:x=>typeof x==="number"&&Number.isFinite(x),scale:x=>wholeFrom(x,0),
+const KIND_SHAPE={text:isStr,date:isStr,lines:everyIs(isStr),number:Number.isFinite,scale:x=>wholeFrom(x,0),
   choice:isPosOrOwn,multi:everyIs(isPosOrOwn),matrix:everyIs(x=>x===null||wholeFrom(x,0))};
-const ENGINE_SHAPE={"grid-select":everyIs(isStr),"svg-regions":everyIs(r=>!!r&&typeof r==="object"&&!Array.isArray(r)&&isStr(r.id)&&everyIs(isStr)(r.s))};
+/* one row of an svg-regions answer in its shape: a region's `id` and its words `s` (ENGINE_SHAPE, and the rows svgRegions reads) */
+const isRegionRow=r=>isObj(r)&&isStr(r.id)&&everyIs(isStr)(r.s);
+const ENGINE_SHAPE={"grid-select":everyIs(isStr),"svg-regions":everyIs(isRegionRow)};
 /* one pair of a question asked for each pick: its pick as the source stores it (a number or a string) and its answer `a`; other keys
    a hand edit gave it are kept */
-const isPair=x=>!!x&&typeof x==="object"&&!Array.isArray(x)&&(isStr(x.pick)||(typeof x.pick==="number"&&Number.isFinite(x.pick)))&&hasOwn(x,"a");
-/* the widget a widget block names, among `ws`: its own module's, else the data section's (widgetOf reads the booklet in force) */
-const widgetIn=(ws,id,scope)=>(scope&&ws.find(w=>w.id===id&&w.module===scope))||ws.find(w=>w.id===id&&!w.module)||null;
+const isPair=x=>isObj(x)&&(isStr(x.pick)||Number.isFinite(x.pick))&&hasOwn(x,"a");
 /* whether `v` is of the wrong shape for question `b` (`W`: a widget's data). An answer that holds nothing never is, and neither is
    anything under a widget whose data or engine this page does not have, which nothing here writes. */
 function wrongShape(b,v,W){if(!holdsSomething(v)) return false;
@@ -4629,7 +4627,9 @@ function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol|
         was.forEach(x=>{if(!q.has(x.v.ts)) q.set(x.v.ts,[]);q.get(x.v.ts).push(x);});
         const twin=list.map(e=>{const x=(q.get(e.ts)||[]).shift();if(x) used.add(x);return x;});
         const swap=(x,e)=>{used.add(x);put[x.at[0][0]].set(x.at[0][1],JSON.stringify(e));x.at.slice(1).forEach(([b,i])=>gone[b].add(i));};
-        list.forEach((e,j)=>{const x=twin[j],o=was[j];if(x){if(canon(e)!==canon(x.v)) swap(x,e);}else if(o&&!used.has(o)) swap(o,e);else more.push(JSON.stringify(e));});
+        /* an entry the reader did not touch has the file's keys in the file's order: its plain JSON says so at once, and canon
+           (which sorts every key) is asked only when the two differ */
+        list.forEach((e,j)=>{const x=twin[j],o=was[j];if(x){if(JSON.stringify(e)!==JSON.stringify(x.v)&&canon(e)!==canon(x.v)) swap(x,e);}else if(o&&!used.has(o)) swap(o,e);else more.push(JSON.stringify(e));});
         was.forEach(x=>{if(!used.has(x)) x.at.forEach(([b,i])=>gone[b].add(i));});
         const z=eb.length-1;
         eb.forEach((b,bi)=>{const plus=bi===z?more:[];if(!put[bi].size&&!gone[bi].size&&!plus.length) return;
@@ -4762,7 +4762,11 @@ const ownDrafts=()=>{const c=nullMap(),all=DRAFTS.custom||{};
   Object.keys(all).forEach(k=>{const d=all[k],s=SEEDS.get(d);c[k]=s&&s.shown===canon(d)?nullMap(s.before):d;});
   return {...DRAFTS,custom:c};};
 const toMarkdown=()=>fileText(BOOK,STATE,ownDrafts());
-const bookText=book=>fileText(book,emptyState(),emptyDrafts());
+/* the booklet's text with no records, worked out once per booklet and its raw.wrote, so a save does not run the whole writer
+   again to get it: a design change adopts a new booklet whole, and the one later change, adoptParse's, gives a new raw.wrote */
+let BOOK_TEXT=null;
+const bookText=book=>{const w=book&&book.raw&&book.raw.wrote;if(BOOK_TEXT&&BOOK_TEXT.b===book&&BOOK_TEXT.w===w) return BOOK_TEXT.t;
+  const t=fileText(book,emptyState(),emptyDrafts());BOOK_TEXT={b:book,w,t};return t;};
 /* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` */
 const textWith=(source,drop)=>{const raw=BOOK.raw||{};
   return fileText({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}},emptyState(),emptyDrafts(),drop);};
@@ -5944,6 +5948,8 @@ const within=(btn,t)=>!!btn&&!!t&&(btn===t||(typeof btn.contains==="function"&&b
 function holdPress(btn){btn.__held=true;HELD.add(btn);
   if(btn.addEventListener) btn.addEventListener("blur",()=>{btn.__held=false;HELD.delete(btn);},{once:true});}
 function heldPress(btn){if(!btn.__held) return false;btn.__held=false;HELD.delete(btn);return true;}
+/* hold the one of `nodes` the field is being left for (`dest`), when `ok` says the words typed have just pressed it */
+const holdIn=(nodes,dest,ok)=>{if(dest&&nodes) Array.from(nodes).forEach(n=>{if(within(n,dest)&&ok(n)) holdPress(n);});};
 function afterPress(f){if(!PRESSING){setTimeout(f,0);return;}AFTER_PRESS.push(f);setTimeout(()=>{PRESSING=false;runAfterPress();},1500);}
 
 /* ======================= tagInput =======================
@@ -5956,8 +5962,9 @@ function afterPress(f){if(!PRESSING){setTimeout(f,0);return;}AFTER_PRESS.push(f)
    to keep in sync with what's visibly there.
 
    opts: {values():current labels in order, vocab():[{id,label}] to
-   suggest from, onChange(labels): replace the selection with exactly
-   these labels, placeholder, hint}. onChange must never rebuild anything
+   suggest from, onChange(labels, dest, was): replace the selection with exactly
+   these labels (as the field is left, `dest` is where the focus goes, nextTo,
+   and `was` the labels before), placeholder, hint}. onChange must never rebuild anything
    this field's own DOM lives inside: replacing the node being typed into
    drops the focus and the word in progress. */
 let tagInputSeq=0;
@@ -6043,7 +6050,7 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const wrap=el("div",{});
   let active=null, side=(figs[0]||{}).id||null;
   /* drawing reads the answer; only an answer writes it */
-  const rows=()=>Array.isArray(e[key])?e[key].filter(r=>isObj(r)&&isStr(r.id)&&everyIs(isStr)(r.s)):[];
+  const rows=()=>Array.isArray(e[key])?e[key].filter(isRegionRow):[];
   const rowFor=id=>rows().find(r=>r.id===id);
   const sides=el("div",{class:"sideswitch",role:"group","aria-label":C.sideLbl||""});
   /* `readonly` (SPEC.md section 7): the figure is shown and its regions named, and nothing can be pointed at or answered */
@@ -6093,8 +6100,7 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
       onChange:(labels,dest,was)=>{const codes=labels.map(labelToSense);
         let r=rowFor(active);
         /* leaving the field for a sense word's button, having typed that word: it is pressed now, and the press confirms it */
-        const nowBtn=dest&&panel.querySelectorAll?Array.from(panel.querySelectorAll("button.sense")).find(b=>within(b,dest)):null;
-        if(nowBtn){const w=nowBtn.getAttribute("data-w"),had=(was||[]).map(labelToSense);if(codes.includes(w)&&!had.includes(w)) holdPress(nowBtn);}
+        holdIn(dest&&panel.querySelectorAll&&panel.querySelectorAll("button.sense"),dest,b=>{const w=b.getAttribute("data-w");return codes.includes(w)&&!(was||[]).map(labelToSense).includes(w);});
         if(codes.length){if(!r){r={id:active,s:[]};e[key]=[...rows(),r];}r.s=codes;}
         else if(r) e[key]=rows().filter(x=>x!==r);
         markDirty();drawChips();drawSummary();paintSenses();},
@@ -6195,7 +6201,7 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
           const stay=chosen().filter(id=>!mine(id)||newIds.includes(id));
           e[key]=[...stay,...newIds.filter(id=>!stay.includes(id))];
           /* leaving the field for the button of an item just typed: it is pressed now, and the press confirms it */
-          if(dest&&btns.children) Array.from(btns.children).forEach(bt=>{if(within(bt,dest)&&bt.__id!==undefined&&chosen().includes(bt.__id)&&!was.includes(bt.__id)) holdPress(bt);});
+          holdIn(btns.children,dest,bt=>bt.__id!==undefined&&chosen().includes(bt.__id)&&!was.includes(bt.__id));
           markDirty();drawBtns();},
         placeholder:u.tagPh||"",hint:u.tagHint||""});
       qb.append(tag.el);}
@@ -6345,11 +6351,12 @@ const picksOf=v=>Array.isArray(v)?v:(v===null||v===undefined||v===""?[]:[v]);
    (`earlier:0`, none), leaving out any that are listed, or in the answer now, or repeated. A daily activity's entry for today,
    which the draft will replace, gives none, and neither does an answer not in its kind's shape. */
 const tsTime=t=>{const n=Date.parse(t);return Number.isFinite(n)?n:null;};
-const newestFirst=(a,x)=>{const p=tsTime(a.ts),q=tsTime(x.ts);return p!==null&&q!==null&&p!==q?q-p:String(x.ts).localeCompare(String(a.ts));};
+/* newest first, over [time, entry] pairs, each `ts` parsed once (tsTime): by time when both parse and differ, else by `ts` as text */
+const newestFirst=([p,a],[q,x])=>p!==null&&q!==null&&p!==q?q-p:String(x.ts).localeCompare(String(a.ts));
 function ownEarlier(activityId,K,listed,now,b){const out=[],most=b&&b.earlier!==undefined?b.earlier:EARLIER_DEFAULT;
   if(!(most>0)) return out;
   const daily=activityOf(activityId).upsert==="day";
-  const kept=[...(((STATE.entries||{})[activityId])||[])].filter(e=>!(daily&&dayKey(e.ts)===todayDate())&&!(b&&wrongShape(b,e[K],null))).sort(newestFirst);
+  const kept=[...(((STATE.entries||{})[activityId])||[])].filter(e=>!(daily&&dayKey(e.ts)===todayDate())&&!(b&&wrongShape(b,e[K],null))).map(e=>[tsTime(e.ts),e]).sort(newestFirst).map(p=>p[1]);
   for(const e of kept) for(const x of picksOf(e[K])){if(typeof x!=="string") continue;const t=x.trim();
     if(!t||listed.some(o=>sameWords(plainText(o),t))||now.some(o=>typeof o==="string"&&sameWords(o,t))||out.some(o=>sameWords(o,t))) continue;
     out.push(t);if(out.length>=most) return out;}
@@ -6386,8 +6393,7 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
     const at=listed.findIndex(o=>sameWords(plainText(o),t));
     if(at>=0){if(!chosen().includes(at+1)){toggle(at+1,later);
       /* leaving the field for the very option just typed: it is pressed now, and the press confirms it */
-      const bt=dest&&Array.from(pills.children).find(n=>n.__key&&String(n.__key).split(":")[0]==="o"+(at+1));
-      if(bt&&within(bt,dest)) holdPress(bt);}
+      holdIn(pills.children,dest,n=>n.__key&&String(n.__key).split(":")[0]==="o"+(at+1));}
       return;}
     if(chosen().some(x=>typeof x==="string"&&sameWords(x,t))) return;
     put(multi?[...chosen(),t]:[t],later);};
@@ -6542,14 +6548,16 @@ const DRAW_BLOCK={
    for each pick (`each:`) is drawn as its heading and a line saying this page does not draw it yet; its answer stays as written.
    Null for any other block, which its own drawer draws. */
 function keptQuestion(b,draft){if(!QUESTION_KINDS.has(b.type)) return null;
-  const K=keysOf(b)[0],W=b.type==="widget"?widgetOf(b.widget,b.module):null,v=K===undefined?undefined:draft[K],Q=strings("question");
+  const K=keysOf(b)[0],W=widgetFor(b),v=K===undefined?undefined:draft[K],Q=strings("question");
   const wrong=wrongShape(b,v,W);if(!wrong&&!b.each) return null;
   /* a widget with no title of its own is headed by its widget's words, as drawWidget heads it */
   const box=el("div",{class:"pblock q-kept"});questionHead(box,W&&!nonEmpty(tx(b.label,""))?{...b,label:tx(wordsOf(W.copy).h,"")}:b);
   if(!wrong){box.append(el("p",{class:"hint"},Q.eachNotYet));return box;}
-  box.append(el("p",{class:"hint"},Q.keptAsWritten(W?W.engine:b.type,!!W,!!b.each)),
-    el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(v,null,1))));
+  box.append(...keptNote(b,W,v));
   return box;}
+/* the notice for an answer kept as written, and what the file holds, as written (keptQuestion; a kept entry's card) */
+const keptNote=(b,W,v)=>[el("p",{class:"hint"},strings("question").keptAsWritten(W?W.engine:b.type,!!W,!!b.each)),
+  el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(v,null,1)))];
 function renderBlock(b,draft,activityId,dc){
   const kq=keptQuestion(b,draft);
   /* a question's own hint and solution are its controls: handed to its drawer (choice and multi tell the solution what the
@@ -6679,9 +6687,12 @@ const SUMMARY={
 function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length||!holdsSomething(e[keys[0]])) return null;
   return hasOwn(SUMMARY,b.type)?SUMMARY[b.type](b,e,keys[0]):null;}
 const widgetFor=b=>b&&b.type==="widget"?widgetOf(b.widget,b.module):null;
-/* the source a question asked for each pick is asked of: a question or widget in its own activity (resolveEach made sure) */
-function eachSource(q){if(!q||!q.each) return null;const l=bookActivities().map(allBlocksOf).find(x=>x.includes(q));
-  return l?l.find(b=>QUESTION_KINDS.has(b.type)&&b.id===q.each)||null:null;}
+/* the source a question asked for each pick is asked of: a question or widget in its own activity (resolveEach made sure).
+   Found once per question: a design change parses the whole text again, so its blocks are new and none is found stale */
+const EACH_SRC=new WeakMap();
+function eachSource(q){if(!q||!q.each) return null;if(EACH_SRC.has(q)) return EACH_SRC.get(q);
+  const l=bookActivities().map(allBlocksOf).find(x=>x.includes(q)),s=l?l.find(b=>QUESTION_KINDS.has(b.type)&&b.id===q.each)||null:null;
+  EACH_SRC.set(q,s);return s;}
 /* a follow-up's pairs whose pick the source holds in the same record `e`, in the source's order, with each pick: [{pick, a}] */
 function heldPairs(q,e){const src=eachSource(q),k=keysOf(q)[0];if(!src||k===undefined) return [];
   return sourcePicks(src,e[keysOf(src)[0]],widgetFor(src)).map(p=>({p,x:pairFor(e[k],p)})).filter(o=>o.x).map(o=>({...o.x,pick:o.p}));}
@@ -6726,8 +6737,7 @@ function entryBody(e,qs,whenKids,extra){extra=extra||{};
   for(const q of qs){const k=keysOf(q)[0],W=widgetFor(q);
     /* a kept entry's own card shows an answer not in its kind's shape as written, with the notice; a view leaves it out */
     if(extra.asWritten&&k!==undefined&&wrongShape(q,e[k],W)){rows++;
-      dl.append(el("dt",{},wordsNode(fieldLabel(q))),el("dd",{},el("p",{class:"hint"},strings("question").keptAsWritten(W?W.engine:q.type,!!W,!!q.each)),
-        el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(e[k],null,1)))));continue;}
+      dl.append(el("dt",{},wordsNode(fieldLabel(q))),el("dd",{},...keptNote(q,W,e[k])));continue;}
     for(const f of entryFields(q,e)){rows++;dl.append(el("dt",{},wordsNode(...f.parts)),el("dd",{},f.node));}}
   return {card:cardNode({mode:"item",cls:"entry",picture:extra.picture||null,kids:[whenKids?el("div",{class:"when"},...(extra.lead?extra.lead(whenKids):whenKids)):null,dl]}),rows};}
 function queryCard(e,from,fields,extra){
@@ -8717,7 +8727,9 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
    reader's work, and what is here stays as it is. Returns {S, D}, ready for finishLoad (which makes the file's records
    the new base). */
 const acceptWork=R=>{
-  const W=acceptWorkOf(R),raw=BOOK&&BOOK.raw,T=R.template,
+  /* whichever way the work is weighed (acceptWorkOf), what the new design has no module for (a module the file dropped or renamed)
+     is kept as records, never left in this page where nothing would draw or write it: with a host, with none and with no base alike */
+  const W=keepUnowned(acceptWorkOf(R),R.template),raw=BOOK&&BOOK.raw,T=R.template,
     /* what an earlier read kept as records for a module this design has no module for stays with the booklet: the new file's
        parse holds none of it, and without this a later newer file (a title changed) would drop it. If the module comes back,
        its text and these records are parsed together and the answers return as answers (finishLoad, adoptText). */
@@ -8726,14 +8738,12 @@ const acceptWork=R=>{
   W.records=[...had.filter(r=>!now.some(x=>isObj(x)&&x.scope===r.scope&&x.text===r.text)),...W.records];
   return W;};
 const acceptWorkOf=R=>{
-  /* whichever way the work is weighed, what the new design has no module for (a module the file dropped or renamed) is kept as
-     records, never left in this page where nothing would draw or write it: with a host, with none and with no base alike */
-  if(!(HOST&&hostName())) return keepUnowned({S:STATE,D:DRAFTS},R.template);
+  if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};
   /* a kept booklet with no base (written before bases were kept) can only be weighed on what holds something */
-  if(!BASE) return keepUnowned(withFileWork(R),R.template);
+  if(!BASE) return withFileWork(R);
   const file=recsOfParse(R),[here,base]=followMoves(clone({answers:STATE.answers||{},entries:STATE.entries||{},drafts:DRAFTS.custom||{}}),BASE,R.template);
   const m=mergeWork(here,base,file);
-  return keepUnowned({S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}},R.template);};
+  return {S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}};};
 /* Work the merge leaves under a scope the new design has no module for (a move neither this page nor the store
    followed, or a module the generator removed): this page would never write it, so it is written back as records
    blocks kept as written under that scope's records line, the way the file's own records for a missing module are kept
