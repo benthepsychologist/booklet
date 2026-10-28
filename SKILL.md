@@ -709,7 +709,9 @@ between paragraphs for a new one. Section 4 says what a heading does.
 
   `from:` is required: an activity that is `repeat` or `repeat daily` (its
   kept entries, newest first), or one question's id (its answers).
-  `fields:`, `limit:` (the newest that many) and `empty:` are optional. Never point it at another
+  `fields:`, `limit:` (the newest that many, or `limit: 7 days` for the entries of the past 7 days, today and the 6 dates before it) and `empty:` are optional.
+  `summary: on` turns the kept entries into summary rows (a dates row, then one row per question with its average, lowest, highest, total or most-picked option; one named question gets a row per value), drawn by any `as:`, and a tracker that wants "how did the week go" writes `from:`, `limit: 7 days`, `summary: on` and `as: tiles`.
+  Any other value of `limit:` or `summary:` is an error. The reference renderer draws a span of days but does not draw summaries yet (it shows a line saying so), so write `summary: on` only when it was asked for. Never point it at another
   module, and never write anything else in the block. In Obsidian without a
   plugin it shows as a plain code block, so say in the prose above it what it
   will show.
@@ -977,7 +979,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 ## 10. Layout and look (optional)
 
 - **Rows.** `> [!row]` … `> [!row|end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`***`), an activity line or a module fence.
-- **Widget colours** are colour names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, never hex colours (they are no colour), so a widget reads in every theme.
+- **Widget colours** are colour names: `"color": "warm"` (red), `"green"`, `"amber"`, `"slate"`, `"teal"`, `"blue"` or `"purple"`, never hex colours (they are no colour), so a widget reads in every theme.
 - **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`, `style`) is only for a booklet that has a reason to look different. `style: teaching` (soft tiles with pictures, the default) or `style: briefing` (solid tiles with icons, for reading at a glance) is the booklet's look, and holds whatever colours the reader picks. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
 
 ---
@@ -1015,7 +1017,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a `>` embed pointing at nothing | `![[#^x]] points at no block in this file` | fix the id, or add the fenced block |
 | an embed pointing at the wrong fence | `^x is not a widget block` | point the embed at the actual `booklet widget` fence |
 | a data block with no `^id`, a nested value, or no rows | `a data block needs a ^id` / `has a nested value in 'x'` / `holds no list of rows` | add the id; flatten the value; write `rows` |
-| a query with a bad `as:` or `limit:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number` | use one of the six views; a whole number from 1 |
+| a query with a bad `as:`, `limit:` or `summary:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number, or a number of days` / `must be `on`` | use one of the six views; a whole number from 1 or `7 days`; `summary: on` |
 | a query with a setting it does not take | `a query has no setting 'x' (it takes from, as, fields, …)` | use the listed keys; a warning `does not draw` means the view ignores that key |
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
 | a query view inside a callout that holds Markdown only (a note, any other kind but a group, or a group outside an activity) | `warn line N: a query view inside a callout (here a `[!note]`) is not yet supported: a renderer draws the `booklet query` block as code …` | put the query in a group in an activity, or in the activity's own text |

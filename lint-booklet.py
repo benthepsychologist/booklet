@@ -173,7 +173,7 @@ ICON_NAMES = frozenset((
 # icons:end
 # the widget engines the renderer has
 ENGINES = ("svg-regions", "grid-select")
-COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal")
+COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal", "blue", "purple")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
 STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab"}
 # what a module's notice (`> [!notice]`) may say about itself
@@ -195,9 +195,9 @@ def callout_words(kind, s):
     return out
 
 
-# A query's fourteen keys, the six views, and which keys each view draws. A new key or view needs two
+# A query's fifteen keys, the six views, and which keys each view draws. A new key or view needs two
 # real pages that need it (SPEC.md, design rules for views). `from`, `as` and `empty` apply to every view.
-QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon")
+QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon", "summary")
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 VIEW_DRAWS = {
     "cards": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "link", "icon"),
@@ -207,7 +207,9 @@ VIEW_DRAWS = {
     "bars": ("label", "value", "tone", "limit"),
     "line": ("label", "value", "fields", "limit"),
 }
-QUERY_EVERY_VIEW = ("from", "as", "empty")
+QUERY_EVERY_VIEW = ("from", "as", "empty", "summary")
+# the fields a summary's rows carry (SPEC.md section 6), and the two roles that default to one of them
+SUMMARY_FIELDS = ("label", "count", "days", "average", "lowest", "highest", "total", "most", "value", "note")
 # the settings that name a field of the rows being drawn
 QUERY_FIELD_KEYS = ("group", "parent", "label", "value", "note", "badge", "tone", "link", "icon")
 
@@ -259,8 +261,10 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
         err(f, f"line {n}: a query belongs in an activity's prose")
     if "as" in s and s["as"].lower() not in QUERY_VIEWS:
         err(f, f"line {n}: the query's `as: {s['as']}` is not one of {', '.join(QUERY_VIEWS)}")
-    if "limit" in s and not re.fullmatch(r'[1-9][0-9]*', s["limit"]):
-        err(f, f"line {n}: the query's `limit: {s['limit']}` must be a positive whole number")
+    if "limit" in s and not re.fullmatch(r'[1-9][0-9]*([ \t]+days?)?', s["limit"]):
+        err(f, f"line {n}: the query's `limit: {s['limit']}` must be a positive whole number, or a number of days such as `7 days`")
+    if "summary" in s and s["summary"] != "on":
+        err(f, f"line {n}: the query's `summary: {s['summary']}` must be `on`")
     src_id = s.get("from", "")
     src_act, src_q, src_data, src_nums, src_rows = None, None, None, set(), []
     if not src_id:
@@ -290,7 +294,9 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             warn(f, f"line {n}: the query's default view, `{view}`, does not draw `{key}`")
     # cards over kept entries are titled by their date and list their questions: the roles that name a row's parts are not drawn there
     # (over a data block they are: `label` the title, `value` the figure, `note`, `badge`, `tone`)
-    if view == "cards" and src_act:
+    # (a summary's rows are not kept entries: their fields are the summary's own, below)
+    summarising = s.get("summary") == "on" and bool(src_act)
+    if view == "cards" and src_act and not summarising:
         for key in ("label", "value", "note", "badge", "tone"):
             if key in s:
                 warn(f, f"line {n}: the query's `{key}:` is not drawn on cards over kept entries (each card is titled by its date and lists its questions); use `as: list` or `as: table` to draw it")
@@ -298,10 +304,17 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     names = None
     if src_data is not None:
         names = src_data
+    elif src_act and summarising:
+        # summary rows (SPEC.md section 6) carry the statistics as named fields, and `value` and `note` are their default roles
+        names = set(SUMMARY_FIELDS)
+        if "group" in s:
+            warn(f, f"line {n}: the query's `group: {s['group']}` is ignored: summary rows have nothing to group by")
     elif src_act:
         names = {q for q, a in q_owner.items() if a == src_act and (src_q is None or q == src_q)} | {"date"}
     if names is not None:
         for key in QUERY_FIELD_KEYS:
+            if key == "group" and summarising:
+                continue
             if key in s and key not in ignored and s[key] not in names:
                 warn(f, f"line {n}: the query's `{key}: {s[key]}` names a field the rows never carry")
         if src_data is not None and "fields" in s and "fields" not in ignored:
@@ -344,6 +357,13 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
                     warn(f, f"line {n}: the query's `as: {view}` has no number in the field {name!r}, so it draws nothing")
                 elif names and name not in names and name == "value" and "value" not in s and "fields" not in s:
                     warn(f, f"line {n}: the query's `as: {view}` reads the field 'value', which the rows never carry (name the field with `value:`)")
+    # a span of days and a summary read kept entries: on a data block, or on one question of an activity that keeps none, they are ignored
+    spanning = bool(re.fullmatch(r'[1-9][0-9]*[ \t]+days?', s.get("limit", "")))
+    summing = s.get("summary") == "on"
+    if (spanning or summing) and (src_data is not None or (src_q is not None and not act_info[src_act][1])):
+        what = " and ".join(([f"`limit: {s['limit']}`"] if spanning else []) + (["`summary: on`"] if summing else []))
+        one = spanning != summing
+        warn(f, f"line {n}: the query's {what} {'is' if one else 'are'} ignored: {'it reads' if one else 'they read'} kept entries, and `from: {src_id}` is not an activity that keeps them")
     if src_act:
         src_mod, keeps = act_info[src_act]
         # a file with no module fence is one module
@@ -381,6 +401,8 @@ TH_BASE = {
         "tone-warm-deep": "#a3405b", "tone-green": "#e1f1e7", "tone-green-deep": "#2d7751",
         "tone-amber": "#f8ebd0", "tone-amber-deep": "#8b5f10", "tone-slate": "#e6e9ec",
         "tone-slate-deep": "#3e4e59", "tone-teal": "#e4efef", "tone-teal-deep": "#15464f",
+        "tone-blue": "#e3eef7", "tone-blue-deep": "#2f6596",
+        "tone-purple": "#ece8f6", "tone-purple-deep": "#6453a6",
         "h-sky": "#e3eef7", "h-sky-vivid": "#3f7fb5", "h-sky-solid": "#2f6fa8",
         "h-sky-deep": "#2f6596", "h-rose": "#f9e3e8", "h-rose-vivid": "#bf5470",
         "h-rose-solid": "#b4475f", "h-rose-deep": "#a3405b", "h-sage": "#e2f0e7",
@@ -401,6 +423,8 @@ TH_BASE = {
         "tone-warm-deep": "#a3405b", "tone-green": "#e1f1e7", "tone-green-deep": "#2d7751",
         "tone-amber": "#f8ebd0", "tone-amber-deep": "#8b5f10", "tone-slate": "#eceff1",
         "tone-slate-deep": "#3e4e59", "tone-teal": "#e6f0f0", "tone-teal-deep": "#15464f",
+        "tone-blue": "#e8f1f9", "tone-blue-deep": "#2f6596",
+        "tone-purple": "#efecf8", "tone-purple-deep": "#6453a6",
         "h-sky": "#e8f1f9", "h-sky-vivid": "#3f7fb5", "h-sky-solid": "#2f6fa8",
         "h-sky-deep": "#2f6596", "h-rose": "#fae8ec", "h-rose-vivid": "#bf5470",
         "h-rose-solid": "#b4475f", "h-rose-deep": "#a3405b", "h-sage": "#e6f2ea",
@@ -421,6 +445,8 @@ TH_BASE = {
         "tone-warm-deep": "#ec93aa", "tone-green": "#172e24", "tone-green-deep": "#8cc8a5",
         "tone-amber": "#31281a", "tone-amber-deep": "#f0ba55", "tone-slate": "#232d33",
         "tone-slate-deep": "#a9bbc6", "tone-teal": "#163139", "tone-teal-deep": "#7cc0cb",
+        "tone-blue": "#172a3b", "tone-blue-deep": "#88b8e4",
+        "tone-purple": "#25223a", "tone-purple-deep": "#b3a5ee",
         "h-sky": "#172a3b", "h-sky-vivid": "#88b8e4", "h-sky-solid": "#3a78b0",
         "h-sky-deep": "#88b8e4", "h-rose": "#381f28", "h-rose-vivid": "#ec93aa",
         "h-rose-solid": "#b24a64", "h-rose-deep": "#ec93aa", "h-sage": "#172e24",
@@ -441,6 +467,8 @@ TH_BASE = {
         "tone-warm-deep": "#7a0f2e", "tone-green": "#e8f5e0", "tone-green-deep": "#1b4d0e",
         "tone-amber": "#fff3c4", "tone-amber-deep": "#5c4300", "tone-slate": "#e6eaee",
         "tone-slate-deep": "#243746", "tone-teal": "#ddf2f0", "tone-teal-deep": "#004d45",
+        "tone-blue": "#e6f0fa", "tone-blue-deep": "#003a70",
+        "tone-purple": "#efeafb", "tone-purple-deep": "#3a2380",
         "h-sky": "#e6f0fa", "h-sky-vivid": "#003a70", "h-sky-solid": "#003a70",
         "h-sky-deep": "#003a70", "h-rose": "#ffe9ee", "h-rose-vivid": "#7a0f2e",
         "h-rose-solid": "#7a0f2e", "h-rose-deep": "#7a0f2e", "h-sage": "#e8f5e0",
@@ -457,7 +485,7 @@ TH_PAIRS = [("ink", "paper"), ("ink", "paper-deep"), ("muted", "paper"), ("accen
             ("ink", "field"), ("reader", "field"), ("ink", "surface"), ("accent", "surface"), ("muted", "surface"),
             ("warn", "paper"), ("on-ink", "ink"), ("on-ink", "muted"), ("ink", "accent-soft"), ("ink", "mark"),
             ("warn", "warn-soft")]
-for _t in ("warm", "green", "amber", "slate", "teal"):
+for _t in COLOUR_NAMES:
     TH_PAIRS += [("tone-" + _t + "-deep", "tone-" + _t), ("ink", "tone-" + _t)]
 # the views: a plain pill, a toned value on a card, a quiet note and a label on a toned tile
 TH_PAIRS += [("reader", "paper-deep"), ("muted", "paper-deep")]
@@ -513,7 +541,8 @@ def _th_build(B, use):
     c = lambda k: _th_rgb(use[k]) if k in use else None
     P, I, A = c("paper") or g("paper"), c("ink") or g("ink"), c("accent") or g("accent")
     deep = {"green": c("good") or g("tone-green-deep"), "amber": c("warn") or g("tone-amber-deep"),
-            "warm": c("bad") or g("tone-warm-deep"), "slate": g("tone-slate-deep"), "teal": g("tone-teal-deep")}
+            "warm": c("bad") or g("tone-warm-deep"), "slate": g("tone-slate-deep"), "teal": g("tone-teal-deep"),
+            "blue": g("tone-blue-deep"), "purple": g("tone-purple-deep")}
     dark = _th_lum(P) < _th_lum(I)
     pi = "paper" in use or "ink" in use
     o = {}
@@ -544,7 +573,7 @@ def _th_build(B, use):
     if "bad" in use or pi:
         o["warn"] = deep["warm"]
         o["warn-soft"] = _th_tint(P, deep["warm"], .2 if dark else .12, [deep["warm"]])
-    for t in ("warm", "green", "amber", "slate", "teal"):
+    for t in COLOUR_NAMES:
         own = (t == "green" and "good" in use) or (t == "amber" and "warn" in use) or (t == "warm" and "bad" in use)
         if own:
             o["tone-" + t + "-deep"] = deep[t]

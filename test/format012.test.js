@@ -60,7 +60,7 @@ const FM='---\nbooklet: "0.15"\ntitle: T\nlang: en\n---\n\n';
   chk("the card's blurb is still its first paragraph",mod(R).blurb==="First paragraph here.");}
 
  /* ---- the roles ---- */
- chk("seven roles and fourteen query keys",A.ROLE_NAMES.join()==="label,value,note,badge,tone,link,icon"&&A.QUERY_KEYS.length===14&&A.QUERY_KEYS.includes("link")&&A.QUERY_KEYS.includes("icon"));
+ chk("seven roles and fifteen query keys",A.ROLE_NAMES.join()==="label,value,note,badge,tone,link,icon"&&A.QUERY_KEYS.length===15&&A.QUERY_KEYS.includes("link")&&A.QUERY_KEYS.includes("icon"));
  chk("table, list, tiles and cards draw link and icon; bars and line do not",["table","list","tiles","cards"].every(v=>A.VIEW_DRAWS[v].includes("link")&&A.VIEW_DRAWS[v].includes("icon"))&&["bars","line"].every(v=>!A.VIEW_DRAWS[v].includes("link")&&!A.VIEW_DRAWS[v].includes("icon")));
  /* a booklet whose headings a link can lead to */
  const book=FM+"> [!module|m] M\n\n> [!activity|a] Home\n\n## Spring tides\n\nProse.\n\n> [!activity|b] Elsewhere\n\n## Neap tides\n\nMore.\n\n> [!module|m end] End\n";
