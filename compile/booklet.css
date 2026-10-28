@@ -17,8 +17,9 @@
      .booklet { --bk-accent: #7a1f5c; --bk-font-text: Georgia, serif; }
 
    The defaults below are written with :where(), so they weigh nothing: a host's rule on .booklet wins wherever it sits.
-   Nothing else of a host's own stylesheet reaches the page: its rules on bare elements and on a class and an element
-   (footer, blockquote, .content ol) are held off, so the page keeps this look on any site ("held against a host", below).
+   Nothing else of a host's own stylesheet reaches the page: its rules on bare elements, on a class and an element, and
+   with an id and !important (footer, .content ol, #main .content a { color: … !important }) are held off, so the page
+   keeps this look on any site ("held against a host", below).
      --bk-ink, --bk-muted        text, quiet text                       (the renderer's --ink, --muted)
      --bk-accent, --bk-accent-soft  links, marks, fold signs; a hover wash  (--accent, --accent-soft)
      --bk-rule, --bk-surface     borders; the fill of callouts and folds (--rule, --surface)
@@ -181,268 +182,276 @@
 /* ---- the article: it sits on whatever is under it, and never paints the page ----
    The host places the article (its margin, width and display are the host's); the article sets its own text and paints
    nothing, so text settings a host gives its page around it (a weight, a letter spacing, capitals) do not flow in. */
-.booklet:not(#bk){color:var(--bk-ink);font-family:var(--bk-font-text);font-size:var(--bk-size);line-height:var(--bk-line);
-  overflow-wrap:break-word;font-weight:400;font-style:normal;font-variant:normal;font-stretch:normal;font-feature-settings:normal;
-  font-variation-settings:normal;font-kerning:auto;letter-spacing:normal;word-spacing:normal;text-transform:none;text-align:start;
-  text-indent:0;text-shadow:none;hyphens:manual;white-space:normal;word-break:normal;quotes:auto;-webkit-font-smoothing:auto;
-  background:none;border:0;border-radius:0;box-shadow:none;padding:0}
+.booklet:not(#bk):not(#bk):not(#bk){color:var(--bk-ink)!important;font-family:var(--bk-font-text)!important;
+  font-size:var(--bk-size)!important;line-height:var(--bk-line)!important;overflow-wrap:break-word!important;
+  font-weight:400!important;font-style:normal!important;font-variant:normal!important;font-stretch:normal!important;
+  font-feature-settings:normal!important;font-variation-settings:normal!important;font-kerning:auto!important;
+  letter-spacing:normal!important;word-spacing:normal!important;text-transform:none!important;text-align:start!important;
+  text-indent:0!important;text-shadow:none!important;hyphens:manual!important;white-space:normal!important;
+  word-break:normal!important;quotes:auto!important;-webkit-font-smoothing:auto!important;
+  background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
 /* ---- held against a host: on any site, the page inside the article keeps this look ----
-   A host's own rules on bare elements (footer, aside, blockquote, ol, li, h1) and on a class and an element (.content ol)
-   would otherwise reach the page. Two things keep them off. Every rule here starts .booklet:not(#bk), which weighs as
-   much as an id (no element has the id bk, so it matches every article), so it outweighs any host rule made of classes
-   and elements, wherever the host's stylesheet sits. And the rule below sends every property this file does not set,
-   on every element inside the article, back to the browser's own default (revert): what a plain page would show. It is
-   the lightest rule here, so every rule after it wins over it. The icons (svg) and formulas (math) are left out of it,
-   since revert would also drop the attributes they are drawn with; the icons' paint is set below, in .bk-ic. A host
-   changes the look with the --bk-* variables above; a rule of its own inside the article needs the same start,
-   .booklet:not(#bk), and to come after this file. */
-.booklet:not(#bk) :where(:not(svg, svg *, math, math *)),
-.booklet:not(#bk) :where(:not(svg, svg *, math, math *))::before,
-.booklet:not(#bk) :where(:not(svg, svg *, math, math *))::after{all:revert}
-.booklet:not(#bk) :where(:not(svg, svg *, math, math *))::marker{all:revert}
-.booklet:not(#bk) :where(:not(svg, svg *, math, math *))::first-letter{all:revert}
-.booklet:not(#bk) :where(:not(svg, svg *, math, math *))::first-line{all:revert}
+   A host's own rules would otherwise reach the page: on bare elements (footer, aside, blockquote, ol, h1), on a class and
+   an element (.content ol), and with an id and !important (#main .content blockquote { color: … !important }). Three
+   things keep them off, wherever the host's stylesheet sits:
+   - every declaration under the article is !important (custom properties aside), so no plain host rule can win;
+   - every rule starts .booklet:not(#bk):not(#bk):not(#bk). No element has the id bk, so this matches every article,
+     and it weighs as much as three ids, so it outweighs a host's !important rule with fewer than three ids;
+   - the rule below sends every property this file does not set, on every element inside the article, back to the
+     browser's own default (revert): what a plain page would show. It is the lightest rule here, so every rule after it
+     wins over it. The icons (svg) and formulas (math) are left out of it, since revert would also drop the attributes
+     they are drawn with: the icons' paint is set in .bk-ic, and a formula's box is reverted on its own.
+   A host changes the look with the --bk-* variables above, which are plain, so its own rule setting them wins. A rule of
+   its own inside the article needs the same start, !important, and to come after this file. A host rule that still
+   reaches the page: an !important one with three ids or more, one inside a cascade layer (@layer), and an inline style. */
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *)),
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::before,
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::after{all:revert!important}
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::marker{all:revert!important}
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::first-letter{all:revert!important}
+.booklet:not(#bk):not(#bk):not(#bk) :where(:not(svg, svg *, math, math *))::first-line{all:revert!important}
 /* a formula: only its box, which none of its attributes set (a host's reset of every margin and padding would reach it) */
-.booklet:not(#bk) :where(math, math *){margin:revert;padding:revert;border:revert;border-radius:revert;box-shadow:revert;
-  background-image:revert;float:revert}
-.booklet:not(#bk) *,.booklet:not(#bk) *::before,.booklet:not(#bk) *::after{box-sizing:border-box}
-.booklet:not(#bk) [id]{scroll-margin-top:1rem}
+.booklet:not(#bk):not(#bk):not(#bk) :where(math, math *){margin:revert!important;padding:revert!important;
+  border:revert!important;border-radius:revert!important;box-shadow:revert!important;background-image:revert!important;
+  float:revert!important}
+.booklet:not(#bk):not(#bk):not(#bk) *,.booklet:not(#bk):not(#bk):not(#bk) *::before,.booklet:not(#bk):not(#bk):not(#bk) *::after{box-sizing:border-box!important}
+.booklet:not(#bk):not(#bk):not(#bk) [id]{scroll-margin-top:1rem!important}
 /* prose keeps the readable measure; a table, a grid or a row uses the width it is given */
-.booklet:not(#bk) :is(h1,h2,h3,h4,h5,h6,p,ul,ol,dl,blockquote,pre,.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-toc){max-width:var(--bk-measure)}
+.booklet:not(#bk):not(#bk):not(#bk) :is(h1,h2,h3,h4,h5,h6,p,ul,ol,dl,blockquote,pre,.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-toc){max-width:var(--bk-measure)!important}
 /* the notes and the foot are set smaller, so they take the article's width rather than a measure of their own */
-.booklet:not(#bk) :is(.bk-notes,.bk-foot) :is(h2,p,ol,dl){max-width:none}
-.booklet:not(#bk) .bk-q.bk-widget{max-width:none}
-.booklet:not(#bk) .bk-widget>:is(p,ul,dl){max-width:var(--bk-measure)}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-notes,.bk-foot) :is(h2,p,ol,dl){max-width:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q.bk-widget{max-width:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-widget>:is(p,ul,dl){max-width:var(--bk-measure)!important}
 
-.booklet:not(#bk) p{margin:0 0 1rem}
-.booklet:not(#bk) a{color:var(--bk-accent);text-underline-offset:.15em}
-.booklet:not(#bk) a:hover{text-decoration-thickness:2px}
-.booklet:not(#bk) :focus-visible{outline:var(--bk-focus) solid var(--bk-accent);outline-offset:2px;border-radius:2px}
+.booklet:not(#bk):not(#bk):not(#bk) p{margin:0 0 1rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) a{color:var(--bk-accent)!important;text-underline-offset:.15em!important}
+.booklet:not(#bk):not(#bk):not(#bk) a:hover{text-decoration-thickness:2px!important}
+.booklet:not(#bk):not(#bk):not(#bk) :focus-visible{outline:var(--bk-focus) solid var(--bk-accent)!important;outline-offset:2px!important;border-radius:2px!important}
 
 /* headings: the title and sections in the heading face, as the renderer's reading view sets them */
-.booklet:not(#bk) :is(h1,h2,h3){font-family:var(--bk-font-head);font-weight:600;letter-spacing:0;color:var(--bk-ink)}
-.booklet:not(#bk) h1{font-size:2.1rem;line-height:1.15;margin:0 0 .6rem}
-.booklet:not(#bk) h2{font-size:1.6rem;line-height:1.25;margin:2.4rem 0 .6rem}
-.booklet:not(#bk) h3{font-size:1.2rem;line-height:1.3;margin:2rem 0 .5rem}
-.booklet:not(#bk) h4{font-family:var(--bk-font-text);font-weight:700;font-size:.95rem;line-height:1.4;letter-spacing:.02em;color:var(--bk-accent);margin:1.75rem 0 .5rem}
-.booklet:not(#bk) :is(h5,h6){font-family:var(--bk-font-text);font-weight:700;font-size:.9rem;line-height:1.4;color:var(--bk-muted);margin:1.5rem 0 .4rem}
-.booklet:not(#bk)>:first-child,.booklet:not(#bk) section>:first-child{margin-top:0}
-.booklet:not(#bk) :is(h1,h2,h3,h4)+:is(h2,h3,h4,h5,h6){margin-top:.75rem}
+.booklet:not(#bk):not(#bk):not(#bk) :is(h1,h2,h3){font-family:var(--bk-font-head)!important;font-weight:600!important;letter-spacing:0!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) h1{font-size:2.1rem!important;line-height:1.15!important;margin:0 0 .6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) h2{font-size:1.6rem!important;line-height:1.25!important;margin:2.4rem 0 .6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) h3{font-size:1.2rem!important;line-height:1.3!important;margin:2rem 0 .5rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) h4{font-family:var(--bk-font-text)!important;font-weight:700!important;font-size:.95rem!important;line-height:1.4!important;letter-spacing:.02em!important;color:var(--bk-accent)!important;margin:1.75rem 0 .5rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(h5,h6){font-family:var(--bk-font-text)!important;font-weight:700!important;font-size:.9rem!important;line-height:1.4!important;color:var(--bk-muted)!important;margin:1.5rem 0 .4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk)>:first-child,.booklet:not(#bk):not(#bk):not(#bk) section>:first-child{margin-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(h1,h2,h3,h4)+:is(h2,h3,h4,h5,h6){margin-top:.75rem!important}
 /* the small link on a heading, for sharing a section: shown on hover and on focus (faintly, always, on a touch screen) */
-.booklet:not(#bk) .bk-anchor{margin-left:.3rem;font-family:var(--bk-font-text);font-weight:400;font-size:.8em;color:var(--bk-muted);
-  text-decoration:none;opacity:0}
-.booklet:not(#bk) :is(h2,h3,h4):hover>.bk-anchor,.booklet:not(#bk) .bk-anchor:focus-visible{opacity:1}
-@media (hover:none){.booklet:not(#bk) .bk-anchor{opacity:.45}}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-anchor{margin-left:.3rem!important;font-family:var(--bk-font-text)!important;font-weight:400!important;font-size:.8em!important;color:var(--bk-muted)!important;
+  text-decoration:none!important;opacity:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(h2,h3,h4):hover>.bk-anchor,.booklet:not(#bk):not(#bk):not(#bk) .bk-anchor:focus-visible{opacity:1!important}
+@media (hover:none){.booklet:not(#bk):not(#bk):not(#bk) .bk-anchor{opacity:.45!important}}
 
 /* the lede: the first paragraph under the title, larger and quieter (the renderer's module lede) */
-.booklet:not(#bk) .bk-lede{font-size:1.2rem;line-height:1.6;color:var(--bk-muted);margin:.4rem 0 1.4rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-lede{font-size:1.2rem!important;line-height:1.6!important;color:var(--bk-muted)!important;margin:.4rem 0 1.4rem!important}
 
 /* "On this page" */
-.booklet:not(#bk) .bk-toc{margin:0 0 2rem;padding:.75rem 1rem .85rem;border:var(--bk-border) solid var(--bk-rule);border-radius:var(--bk-radius);
-  background:var(--bk-surface)}
-.booklet:not(#bk) .bk-toc-h{margin:0 0 .3rem;font-weight:700;font-size:.85rem;letter-spacing:.02em;color:var(--bk-muted)}
-.booklet:not(#bk) .bk-toc ul{margin:0;padding-left:0;list-style:none}
-.booklet:not(#bk) .bk-toc li{margin:.2rem 0}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-toc{margin:0 0 2rem!important;padding:.75rem 1rem .85rem!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important;
+  background:var(--bk-surface)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-toc-h{margin:0 0 .3rem!important;font-weight:700!important;font-size:.85rem!important;letter-spacing:.02em!important;color:var(--bk-muted)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-toc ul{margin:0!important;padding-left:0!important;list-style:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-toc li{margin:.2rem 0!important}
 
 /* plain prose */
-.booklet:not(#bk) :is(ul,ol){margin:0 0 1rem;padding-left:1.4rem}
-.booklet:not(#bk) li{margin:.25rem 0}
-.booklet:not(#bk) li>:is(ul,ol){margin:.25rem 0 0}
-.booklet:not(#bk) blockquote{margin:1.25rem 0;padding:0 0 0 1rem;border-left:3px solid var(--bk-accent);color:var(--bk-muted);font-style:italic}
-.booklet:not(#bk) blockquote>:last-child{margin-bottom:0}
-.booklet:not(#bk) mark{background:var(--bk-mark);color:var(--bk-ink);padding:.05em .15em;border-radius:3px}
-.booklet:not(#bk) code{font-family:var(--bk-font-code);font-size:.9em;background:var(--bk-paper-deep);padding:.1em .3em;border-radius:4px}
-.booklet:not(#bk) pre{margin:1.1rem 0;padding:.8rem 1rem;background:var(--bk-paper-deep);border-radius:var(--bk-radius-small);
-  overflow-x:auto;font-size:.88rem;line-height:1.5}
-.booklet:not(#bk) pre code{background:none;padding:0;font-size:inherit;border-radius:0}
-.booklet:not(#bk) hr{border:0;border-top:var(--bk-border) solid var(--bk-rule);margin:2rem 0;max-width:var(--bk-measure)}
+.booklet:not(#bk):not(#bk):not(#bk) :is(ul,ol){margin:0 0 1rem!important;padding-left:1.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) li{margin:.25rem 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) li>:is(ul,ol){margin:.25rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) blockquote{margin:1.25rem 0!important;padding:0 0 0 1rem!important;border-left:3px solid var(--bk-accent)!important;color:var(--bk-muted)!important;font-style:italic!important}
+.booklet:not(#bk):not(#bk):not(#bk) blockquote>:last-child{margin-bottom:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) mark{background:var(--bk-mark)!important;color:var(--bk-ink)!important;padding:.05em .15em!important;border-radius:3px!important}
+.booklet:not(#bk):not(#bk):not(#bk) code{font-family:var(--bk-font-code)!important;font-size:.9em!important;background:var(--bk-paper-deep)!important;padding:.1em .3em!important;border-radius:4px!important}
+.booklet:not(#bk):not(#bk):not(#bk) pre{margin:1.1rem 0!important;padding:.8rem 1rem!important;background:var(--bk-paper-deep)!important;border-radius:var(--bk-radius-small)!important;
+  overflow-x:auto!important;font-size:.88rem!important;line-height:1.5!important}
+.booklet:not(#bk):not(#bk):not(#bk) pre code{background:none!important;padding:0!important;font-size:inherit!important;border-radius:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) hr{border:0!important;border-top:var(--bk-border) solid var(--bk-rule)!important;margin:2rem 0!important;max-width:var(--bk-measure)!important}
 /* between the pages of a tab: a quieter divider */
-.booklet:not(#bk) hr.bk-next-page{border-top-style:dashed;margin:2.25rem 0}
-.booklet:not(#bk) hr+:is(h2,h3,h4,h5,h6){margin-top:0}
-.booklet:not(#bk) img{max-width:100%;height:auto;vertical-align:middle}
-.booklet:not(#bk) sup,.booklet:not(#bk) sub{line-height:0}
+.booklet:not(#bk):not(#bk):not(#bk) hr.bk-next-page{border-top-style:dashed!important;margin:2.25rem 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) hr+:is(h2,h3,h4,h5,h6){margin-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) img{max-width:100%!important;height:auto!important;vertical-align:middle!important}
+.booklet:not(#bk):not(#bk):not(#bk) sup,.booklet:not(#bk):not(#bk):not(#bk) sub{line-height:0!important}
 
 /* tables: a wide one scrolls inside its own box, never the page */
-.booklet:not(#bk) .bk-table{margin:1.1rem 0;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.booklet:not(#bk) .bk-table table{border-collapse:collapse;min-width:100%;font-size:.95rem;line-height:1.45;font-variant-numeric:tabular-nums}
-.booklet:not(#bk) .bk-table :is(th,td){text-align:left;vertical-align:top;padding:.5rem .8rem;border-bottom:1px solid var(--bk-rule)}
-.booklet:not(#bk) .bk-table th{font-weight:700;font-size:.85rem;letter-spacing:.02em;color:var(--bk-ink);
-  border-bottom:var(--bk-border) solid var(--bk-accent);white-space:nowrap}
-.booklet:not(#bk) .bk-table tbody th{border-bottom:1px solid var(--bk-rule);white-space:normal}
-.booklet:not(#bk) .bk-table :is(th,td).bk-num{text-align:right;white-space:nowrap}
-.booklet:not(#bk) .bk-table tbody tr:last-child :is(td,th){border-bottom:var(--bk-border) solid var(--bk-rule)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table{margin:1.1rem 0!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table table{border-collapse:collapse!important;min-width:100%!important;font-size:.95rem!important;line-height:1.45!important;font-variant-numeric:tabular-nums!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table :is(th,td){text-align:left!important;vertical-align:top!important;padding:.5rem .8rem!important;border-bottom:1px solid var(--bk-rule)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table th{font-weight:700!important;font-size:.85rem!important;letter-spacing:.02em!important;color:var(--bk-ink)!important;
+  border-bottom:var(--bk-border) solid var(--bk-accent)!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table tbody th{border-bottom:1px solid var(--bk-rule)!important;white-space:normal!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table :is(th,td).bk-num{text-align:right!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table tbody tr:last-child :is(td,th){border-bottom:var(--bk-border) solid var(--bk-rule)!important}
 
 /* math, as MathML the browser draws */
-.booklet:not(#bk) .bk-math math{font-size:1.08em}
-.booklet:not(#bk) .bk-math-display{display:block;margin:.7rem 0;text-align:center;overflow-x:auto;max-width:100%}
-.booklet:not(#bk) .bk-math-display math{display:block math}
-.booklet:not(#bk) .bk-math-raw{font-family:var(--bk-font-code);font-size:.92em}
-.booklet:not(#bk) .bk-math-display.bk-math-raw{text-align:left;white-space:pre-wrap}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math math{font-size:1.08em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math-display{display:block!important;margin:.7rem 0!important;text-align:center!important;overflow-x:auto!important;max-width:100%!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math-display math{display:block math!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math-raw{font-family:var(--bk-font-code)!important;font-size:.92em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-math-display.bk-math-raw{text-align:left!important;white-space:pre-wrap!important}
 
 /* a diagram shown as its source, until the compiler draws it */
-.booklet:not(#bk) pre.bk-figure-src{border:1px dashed var(--bk-rule)}
+.booklet:not(#bk):not(#bk):not(#bk) pre.bk-figure-src{border:1px dashed var(--bk-rule)!important}
 
 /* an image the page does not show: its words and its address, in a quiet box */
-.booklet:not(#bk) .bk-imgbox{display:inline-flex;flex-direction:column;gap:.15rem;max-width:100%;margin:.2rem 0;padding:.45rem .65rem;
-  border:1px dashed var(--bk-rule);border-radius:var(--bk-radius-small);color:var(--bk-muted);font-size:.9rem;text-align:left;vertical-align:top}
-.booklet:not(#bk) .bk-imgalt{color:var(--bk-ink)}
-.booklet:not(#bk) .bk-imgnote{font-size:.78rem;font-style:italic}
-.booklet:not(#bk) .bk-imgsrc{font-size:.78rem;overflow-wrap:anywhere;word-break:break-all;background:none;padding:0}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-imgbox{display:inline-flex!important;flex-direction:column!important;gap:.15rem!important;max-width:100%!important;margin:.2rem 0!important;padding:.45rem .65rem!important;
+  border:1px dashed var(--bk-rule)!important;border-radius:var(--bk-radius-small)!important;color:var(--bk-muted)!important;font-size:.9rem!important;text-align:left!important;vertical-align:top!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-imgalt{color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-imgnote{font-size:.78rem!important;font-style:italic!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-imgsrc{font-size:.78rem!important;overflow-wrap:anywhere!important;word-break:break-all!important;background:none!important;padding:0!important}
 
 /* ---- the seven hues: a callout or a fold of a kind takes its hue's wash, line and word ---- */
-.booklet:not(#bk) .bk-hue-sky{--bk-c-soft:var(--bk-sky-soft);--bk-c-vivid:var(--bk-sky-vivid);--bk-c-deep:var(--bk-sky-deep)}
-.booklet:not(#bk) .bk-hue-rose{--bk-c-soft:var(--bk-rose-soft);--bk-c-vivid:var(--bk-rose-vivid);--bk-c-deep:var(--bk-rose-deep)}
-.booklet:not(#bk) .bk-hue-sage{--bk-c-soft:var(--bk-sage-soft);--bk-c-vivid:var(--bk-sage-vivid);--bk-c-deep:var(--bk-sage-deep)}
-.booklet:not(#bk) .bk-hue-sun{--bk-c-soft:var(--bk-sun-soft);--bk-c-vivid:var(--bk-sun-vivid);--bk-c-deep:var(--bk-sun-deep)}
-.booklet:not(#bk) .bk-hue-lilac{--bk-c-soft:var(--bk-lilac-soft);--bk-c-vivid:var(--bk-lilac-vivid);--bk-c-deep:var(--bk-lilac-deep)}
-.booklet:not(#bk) .bk-hue-petrol{--bk-c-soft:var(--bk-petrol-soft);--bk-c-vivid:var(--bk-petrol-vivid);--bk-c-deep:var(--bk-petrol-deep)}
-.booklet:not(#bk) .bk-hue-slate{--bk-c-soft:var(--bk-slate-soft);--bk-c-vivid:var(--bk-slate-vivid);--bk-c-deep:var(--bk-slate-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-sky{--bk-c-soft:var(--bk-sky-soft);--bk-c-vivid:var(--bk-sky-vivid);--bk-c-deep:var(--bk-sky-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-rose{--bk-c-soft:var(--bk-rose-soft);--bk-c-vivid:var(--bk-rose-vivid);--bk-c-deep:var(--bk-rose-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-sage{--bk-c-soft:var(--bk-sage-soft);--bk-c-vivid:var(--bk-sage-vivid);--bk-c-deep:var(--bk-sage-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-sun{--bk-c-soft:var(--bk-sun-soft);--bk-c-vivid:var(--bk-sun-vivid);--bk-c-deep:var(--bk-sun-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-lilac{--bk-c-soft:var(--bk-lilac-soft);--bk-c-vivid:var(--bk-lilac-vivid);--bk-c-deep:var(--bk-lilac-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-petrol{--bk-c-soft:var(--bk-petrol-soft);--bk-c-vivid:var(--bk-petrol-vivid);--bk-c-deep:var(--bk-petrol-deep)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-hue-slate{--bk-c-soft:var(--bk-slate-soft);--bk-c-vivid:var(--bk-slate-vivid);--bk-c-deep:var(--bk-slate-deep)}
 
 /* ---- callouts: the renderer's reading-view box, a wash with the hue's line down its left ---- */
-.booklet:not(#bk) .bk-callout,.booklet:not(#bk) .bk-group{margin:1.25rem 0;padding:.7rem 1rem .75rem;background:var(--bk-surface);
-  border:var(--bk-border) solid var(--bk-rule);border-left:6px solid var(--bk-muted);border-radius:0 var(--bk-radius) var(--bk-radius) 0}
-.booklet:not(#bk) .bk-callout:not(.bk-plain){background:var(--bk-c-soft);border-color:var(--bk-c-soft);border-left-color:var(--bk-c-vivid)}
-.booklet:not(#bk) .bk-k-diff{border-left-style:dashed}
-.booklet:not(#bk) .bk-k-law{border-left-style:double}
-.booklet:not(#bk) .bk-k-opinion{border-left-style:dotted}
-.booklet:not(#bk) .bk-chead{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 .3rem;font-family:var(--bk-font-head);
-  font-size:.9rem;font-weight:600;line-height:1.4}
-.booklet:not(#bk) .bk-ci{display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:1.25rem;line-height:1;color:var(--bk-c-vivid,var(--bk-accent))}
-.booklet:not(#bk) .bk-ic{width:1em;height:1em;flex:none;display:block;margin:0;color:inherit;
-  fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.booklet:not(#bk) .bk-ic *{fill:inherit;stroke:inherit;stroke-width:inherit;stroke-linecap:inherit;stroke-linejoin:inherit}
-.booklet:not(#bk) .bk-cl{color:var(--bk-c-deep)}
-.booklet:not(#bk) :is(.bk-ctitle,.bk-gtitle){margin:0 0 .35rem;font-weight:700;color:var(--bk-ink)}
-.booklet:not(#bk) .bk-unknown{margin:0 0 .5rem;color:var(--bk-muted);font-size:.88rem}
-.booklet:not(#bk) .bk-cb>:first-child{margin-top:0}
-.booklet:not(#bk) .bk-cb>:last-child{margin-bottom:0}
-.booklet:not(#bk) :is(.bk-callout,.bk-group,.bk-fold) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,p,ul,ol,dl,blockquote,pre){max-width:none}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-callout,.booklet:not(#bk):not(#bk):not(#bk) .bk-group{margin:1.25rem 0!important;padding:.7rem 1rem .75rem!important;background:var(--bk-surface)!important;
+  border:var(--bk-border) solid var(--bk-rule)!important;border-left:6px solid var(--bk-muted)!important;border-radius:0 var(--bk-radius) var(--bk-radius) 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-callout:not(.bk-plain){background:var(--bk-c-soft)!important;border-color:var(--bk-c-soft)!important;border-left-color:var(--bk-c-vivid)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-k-diff{border-left-style:dashed!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-k-law{border-left-style:double!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-k-opinion{border-left-style:dotted!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-chead{display:flex!important;align-items:center!important;gap:.5rem!important;flex-wrap:wrap!important;margin:0 0 .3rem!important;font-family:var(--bk-font-head)!important;
+  font-size:.9rem!important;font-weight:600!important;line-height:1.4!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ci{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:none!important;font-size:1.25rem!important;line-height:1!important;color:var(--bk-c-vivid,var(--bk-accent))!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ic{width:1em!important;height:1em!important;flex:none!important;display:block!important;margin:0!important;color:inherit!important;
+  fill:none!important;stroke:currentColor!important;stroke-width:2!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ic *{fill:inherit!important;stroke:inherit!important;stroke-width:inherit!important;stroke-linecap:inherit!important;stroke-linejoin:inherit!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cl{color:var(--bk-c-deep)!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-ctitle,.bk-gtitle){margin:0 0 .35rem!important;font-weight:700!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-unknown{margin:0 0 .5rem!important;color:var(--bk-muted)!important;font-size:.88rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cb>:first-child{margin-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cb>:last-child{margin-bottom:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-callout,.bk-group,.bk-fold) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,p,ul,ol,dl,blockquote,pre){max-width:none!important}
 
 /* ---- folds: a quiet bordered box, closed, with a plus that turns into a minus; it opens with no script ---- */
-.booklet:not(#bk) .bk-fold{margin:1rem 0;background:var(--bk-surface);border:var(--bk-border) solid var(--bk-rule);border-radius:var(--bk-radius)}
-.booklet:not(#bk) .bk-fold>summary{display:flex;align-items:center;gap:.6rem;min-height:44px;padding:.5rem 1rem;cursor:pointer;list-style:none;
-  font-weight:700;line-height:1.35;border-radius:calc(var(--bk-radius) - var(--bk-border))}
-.booklet:not(#bk) .bk-fold>summary::-webkit-details-marker{display:none}
-.booklet:not(#bk) .bk-fold>summary::after{content:"+";margin-left:auto;padding-left:.5rem;flex:none;font-family:var(--bk-font-text);
-  font-size:1.35rem;font-weight:700;line-height:1;color:var(--bk-accent)}
-.booklet:not(#bk) .bk-fold[open]>summary::after{content:"\2212"}
-.booklet:not(#bk) .bk-fold>summary:hover{background:var(--bk-accent-soft)}
-.booklet:not(#bk) .bk-fold[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
-.booklet:not(#bk) .bk-fold>.bk-cb{padding:.35rem 1rem .9rem}
-.booklet:not(#bk) .bk-ftitle{min-width:0}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold{margin:1rem 0!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary{display:flex!important;align-items:center!important;gap:.6rem!important;min-height:44px!important;padding:.5rem 1rem!important;cursor:pointer!important;list-style:none!important;
+  font-weight:700!important;line-height:1.35!important;border-radius:calc(var(--bk-radius) - var(--bk-border))!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::-webkit-details-marker{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::after{content:"+"!important;margin-left:auto!important;padding-left:.5rem!important;flex:none!important;font-family:var(--bk-font-text)!important;
+  font-size:1.35rem!important;font-weight:700!important;line-height:1!important;color:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold[open]>summary::after{content:"\2212"!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary:hover{background:var(--bk-accent-soft)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold[open]>summary{border-bottom-left-radius:0!important;border-bottom-right-radius:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold>.bk-cb{padding:.35rem 1rem .9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ftitle{min-width:0!important}
 /* a folded callout of a kind: its hue's wash and line, as the open box has */
-.booklet:not(#bk) .bk-fold:not(.bk-plain):not(.bk-compact){background:var(--bk-c-soft);border-color:var(--bk-c-soft);border-left:6px solid var(--bk-c-vivid);
-  border-radius:0 var(--bk-radius) var(--bk-radius) 0}
-.booklet:not(#bk) .bk-fold:not(.bk-plain):not(.bk-compact)>summary:hover{background:color-mix(in srgb,var(--bk-c-vivid) 12%,transparent)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold:not(.bk-plain):not(.bk-compact){background:var(--bk-c-soft)!important;border-color:var(--bk-c-soft)!important;border-left:6px solid var(--bk-c-vivid)!important;
+  border-radius:0 var(--bk-radius) var(--bk-radius) 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold:not(.bk-plain):not(.bk-compact)>summary:hover{background:color-mix(in srgb,var(--bk-c-vivid) 12%,transparent)!important}
 /* a question's hint or solution: one quiet line with a small picture, the renderer's compact fold */
-.booklet:not(#bk) .bk-fold.bk-compact{margin:.5rem 0 0;background:none;border:0;border-radius:var(--bk-radius-small)}
-.booklet:not(#bk) .bk-compact>summary{min-height:44px;padding:.2rem .5rem;gap:.5rem;font-weight:600;color:var(--bk-muted);border-radius:var(--bk-radius-small)}
-.booklet:not(#bk) .bk-compact>summary::after{margin-left:0;padding-left:.1rem;font-size:1.15rem}
-.booklet:not(#bk) .bk-compact[open]>summary{color:var(--bk-ink)}
-.booklet:not(#bk) .bk-compact .bk-ci{font-size:1.05rem;color:var(--bk-slate-vivid)}
-.booklet:not(#bk) .bk-compact>.bk-cb{padding:.2rem .5rem .5rem 2.05rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-fold.bk-compact{margin:.5rem 0 0!important;background:none!important;border:0!important;border-radius:var(--bk-radius-small)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact>summary{min-height:44px!important;padding:.2rem .5rem!important;gap:.5rem!important;font-weight:600!important;color:var(--bk-muted)!important;border-radius:var(--bk-radius-small)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact>summary::after{margin-left:0!important;padding-left:.1rem!important;font-size:1.15rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact[open]>summary{color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact .bk-ci{font-size:1.05rem!important;color:var(--bk-slate-vivid)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-compact>.bk-cb{padding:.2rem .5rem .5rem 2.05rem!important}
 
 /* ---- questions, read-only: what they ask and what they offer ---- */
-.booklet:not(#bk) .bk-q{margin:1.25rem 0;padding:.9rem 1rem 1rem;background:var(--bk-surface);border:var(--bk-border) solid var(--bk-rule);
-  border-radius:var(--bk-radius)}
-.booklet:not(#bk) .bk-q-ask{margin:0 0 .25rem;font-family:var(--bk-font-head);font-weight:600;font-size:1.05rem;line-height:1.35}
-.booklet:not(#bk) .bk-q-help{margin:0 0 .6rem;color:var(--bk-muted);font-size:.95rem}
-.booklet:not(#bk) .bk-q-hint{margin:0 0 .6rem;color:var(--bk-muted);font-size:.88rem}
-.booklet:not(#bk) .bk-q>:last-child{margin-bottom:0}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q{margin:1.25rem 0!important;padding:.9rem 1rem 1rem!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;
+  border-radius:var(--bk-radius)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q-ask{margin:0 0 .25rem!important;font-family:var(--bk-font-head)!important;font-weight:600!important;font-size:1.05rem!important;line-height:1.35!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q-help{margin:0 0 .6rem!important;color:var(--bk-muted)!important;font-size:.95rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q-hint{margin:0 0 .6rem!important;color:var(--bk-muted)!important;font-size:.88rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q>:last-child{margin-bottom:0!important}
 /* the options, each with an empty circle (pick one) or square (pick any), nothing to press */
-.booklet:not(#bk) .bk-options{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
-.booklet:not(#bk) .bk-options li{display:flex;align-items:baseline;gap:.6rem;margin:0}
-.booklet:not(#bk) .bk-options li::before{content:"";flex:none;width:.95rem;height:.95rem;border:var(--bk-border) solid var(--bk-muted);
-  transform:translateY(.15em)}
-.booklet:not(#bk) .bk-pick-one li::before{border-radius:50%}
-.booklet:not(#bk) .bk-pick-many li::before{border-radius:3px}
-.booklet:not(#bk) .bk-options .bk-own{color:var(--bk-muted);font-style:italic}
-.booklet:not(#bk) .bk-options .bk-own::before{border-style:dashed}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options{list-style:none!important;margin:.5rem 0 0!important;padding:0!important;display:flex!important;flex-direction:column!important;gap:.35rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options li{display:flex!important;align-items:baseline!important;gap:.6rem!important;margin:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options li::before{content:""!important;flex:none!important;width:.95rem!important;height:.95rem!important;border:var(--bk-border) solid var(--bk-muted)!important;
+  transform:translateY(.15em)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pick-one li::before{border-radius:50%!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pick-many li::before{border-radius:3px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options .bk-own{color:var(--bk-muted)!important;font-style:italic!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options .bk-own::before{border-style:dashed!important}
 /* a scale's anchors, in a row that wraps */
-.booklet:not(#bk) .bk-scale{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-wrap:wrap;gap:.4rem}
-.booklet:not(#bk) .bk-scale li{margin:0;padding:.25rem .8rem;border:var(--bk-border) solid var(--bk-rule);border-radius:999px;font-size:.92rem;line-height:1.35}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-scale{list-style:none!important;margin:.5rem 0 0!important;padding:0!important;display:flex!important;flex-wrap:wrap!important;gap:.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-scale li{margin:0!important;padding:.25rem .8rem!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:999px!important;font-size:.92rem!important;line-height:1.35!important}
 /* a matrix: its items down the side, its anchors across the top, an empty circle in each cell */
-.booklet:not(#bk) .bk-matrix td{text-align:center;color:var(--bk-muted)}
-.booklet:not(#bk) .bk-matrix thead th{text-align:center;white-space:normal}
-.booklet:not(#bk) .bk-matrix thead td{border-bottom:var(--bk-border) solid var(--bk-accent)}
-.booklet:not(#bk) .bk-matrix tbody th{font-weight:400;letter-spacing:0;font-size:.95rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-matrix td{text-align:center!important;color:var(--bk-muted)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-matrix thead th{text-align:center!important;white-space:normal!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-matrix thead td{border-bottom:var(--bk-border) solid var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-matrix tbody th{font-weight:400!important;letter-spacing:0!important;font-size:.95rem!important}
 
 /* ---- widgets, read-only ---- */
 /* the grid: its axes round its cells, the cells in their colour names */
-.booklet:not(#bk) .bk-grid{display:grid;grid-template-columns:1.5rem minmax(0,1fr) 1.5rem;grid-template-rows:auto 1fr auto;gap:.3rem;margin:1rem 0 0}
-.booklet:not(#bk) .bk-ax{margin:0;color:var(--bk-muted);font-size:.8rem;font-weight:700;line-height:1.3;text-align:center;align-self:center;justify-self:center}
-.booklet:not(#bk) .bk-ax-top{grid-column:2;grid-row:1}
-.booklet:not(#bk) .bk-ax-bottom{grid-column:2;grid-row:3}
-.booklet:not(#bk) .bk-ax-left{grid-column:1;grid-row:2;writing-mode:vertical-rl;transform:rotate(180deg)}
-.booklet:not(#bk) .bk-ax-right{grid-column:3;grid-row:2;writing-mode:vertical-rl}
-.booklet:not(#bk) .bk-cells{grid-column:2;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem}
-.booklet:not(#bk) .bk-cell{min-width:0;min-height:7rem;margin:0;padding:.75rem .8rem .8rem;border-radius:var(--bk-radius);display:flex;flex-direction:column;gap:.5rem;
-  background:var(--bk-cell-wash);color:var(--bk-cell-text)}
-.booklet:not(#bk) .bk-cell-name{margin:0;font-weight:800;font-size:.95rem;line-height:1.3;color:var(--bk-cell-name)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-grid{display:grid!important;grid-template-columns:1.5rem minmax(0,1fr) 1.5rem!important;grid-template-rows:auto 1fr auto!important;gap:.3rem!important;margin:1rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax{margin:0!important;color:var(--bk-muted)!important;font-size:.8rem!important;font-weight:700!important;line-height:1.3!important;text-align:center!important;align-self:center!important;justify-self:center!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax-top{grid-column:2!important;grid-row:1!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax-bottom{grid-column:2!important;grid-row:3!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax-left{grid-column:1!important;grid-row:2!important;writing-mode:vertical-rl!important;transform:rotate(180deg)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ax-right{grid-column:3!important;grid-row:2!important;writing-mode:vertical-rl!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cells{grid-column:2!important;grid-row:2!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:.45rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cell{min-width:0!important;min-height:7rem!important;margin:0!important;padding:.75rem .8rem .8rem!important;border-radius:var(--bk-radius)!important;display:flex!important;flex-direction:column!important;gap:.5rem!important;
+  background:var(--bk-cell-wash)!important;color:var(--bk-cell-text)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cell-name{margin:0!important;font-weight:800!important;font-size:.95rem!important;line-height:1.3!important;color:var(--bk-cell-name)!important}
 /* a colour name: the theme's wash and ink, so it reads in every theme */
-.booklet:not(#bk) .bk-c-warm{--bk-cell-wash:var(--bk-warm);--bk-cell-name:var(--bk-warm-ink)}
-.booklet:not(#bk) .bk-c-green{--bk-cell-wash:var(--bk-green);--bk-cell-name:var(--bk-green-ink)}
-.booklet:not(#bk) .bk-c-amber{--bk-cell-wash:var(--bk-amber);--bk-cell-name:var(--bk-amber-ink)}
-.booklet:not(#bk) .bk-c-slate{--bk-cell-wash:var(--bk-slate);--bk-cell-name:var(--bk-slate-ink)}
-.booklet:not(#bk) .bk-c-teal{--bk-cell-wash:var(--bk-teal);--bk-cell-name:var(--bk-teal-ink)}
-.booklet:not(#bk) .bk-c-blue{--bk-cell-wash:var(--bk-blue);--bk-cell-name:var(--bk-blue-ink)}
-.booklet:not(#bk) .bk-c-purple{--bk-cell-wash:var(--bk-purple);--bk-cell-name:var(--bk-purple-ink)}
-.booklet:not(#bk) :is(.bk-c-warm,.bk-c-green,.bk-c-amber,.bk-c-slate,.bk-c-teal,.bk-c-blue,.bk-c-purple){--bk-cell-text:var(--bk-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-warm{--bk-cell-wash:var(--bk-warm);--bk-cell-name:var(--bk-warm-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-green{--bk-cell-wash:var(--bk-green);--bk-cell-name:var(--bk-green-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-amber{--bk-cell-wash:var(--bk-amber);--bk-cell-name:var(--bk-amber-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-slate{--bk-cell-wash:var(--bk-slate);--bk-cell-name:var(--bk-slate-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-teal{--bk-cell-wash:var(--bk-teal);--bk-cell-name:var(--bk-teal-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-blue{--bk-cell-wash:var(--bk-blue);--bk-cell-name:var(--bk-blue-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-purple{--bk-cell-wash:var(--bk-purple);--bk-cell-name:var(--bk-purple-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-c-warm,.bk-c-green,.bk-c-amber,.bk-c-slate,.bk-c-teal,.bk-c-blue,.bk-c-purple){--bk-cell-text:var(--bk-ink)}
 /* no colour name: the quiet ramp by place, with the tint's own ink and chips */
-.booklet:not(#bk) .bk-c-n0{--bk-cell-wash:var(--bk-cell-0)}
-.booklet:not(#bk) .bk-c-n1{--bk-cell-wash:var(--bk-cell-1)}
-.booklet:not(#bk) .bk-c-n2{--bk-cell-wash:var(--bk-cell-2)}
-.booklet:not(#bk) .bk-c-n3{--bk-cell-wash:var(--bk-cell-3)}
-.booklet:not(#bk) .bk-c-n4{--bk-cell-wash:var(--bk-cell-4)}
-.booklet:not(#bk) .bk-c-n5{--bk-cell-wash:var(--bk-cell-5)}
-.booklet:not(#bk) :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5){--bk-cell-text:var(--bk-tint-ink);--bk-cell-name:var(--bk-tint-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n0{--bk-cell-wash:var(--bk-cell-0)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n1{--bk-cell-wash:var(--bk-cell-1)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n2{--bk-cell-wash:var(--bk-cell-2)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n3{--bk-cell-wash:var(--bk-cell-3)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n4{--bk-cell-wash:var(--bk-cell-4)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-n5{--bk-cell-wash:var(--bk-cell-5)}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5){--bk-cell-text:var(--bk-tint-ink);--bk-cell-name:var(--bk-tint-ink)}
 /* a place's note (describe), on the page's own deeper paper */
-.booklet:not(#bk) .bk-c-plain{--bk-cell-wash:var(--bk-paper-deep);--bk-cell-text:var(--bk-ink);--bk-cell-name:var(--bk-ink)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-c-plain{--bk-cell-wash:var(--bk-paper-deep);--bk-cell-text:var(--bk-ink);--bk-cell-name:var(--bk-ink)}
 /* the words a cell or a place offers, as chips */
-.booklet:not(#bk) .bk-words{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.4rem}
-.booklet:not(#bk) .bk-words li{display:inline-block;max-width:100%;margin:0;padding:.25rem .7rem;border:var(--bk-border) solid var(--bk-rule);
-  border-radius:14px;background:var(--bk-paper);color:var(--bk-ink);font-size:.9rem;font-weight:600;line-height:1.3}
-.booklet:not(#bk) :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5) .bk-words li{background:var(--bk-chip);border-color:var(--bk-chip-line);color:var(--bk-tint-ink)}
-.booklet:not(#bk) .bk-places-h{margin:.9rem 0 .4rem;font-weight:700;font-size:.9rem;color:var(--bk-muted)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-words{list-style:none!important;margin:0!important;padding:0!important;display:flex!important;flex-wrap:wrap!important;gap:.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-words li{display:inline-block!important;max-width:100%!important;margin:0!important;padding:.25rem .7rem!important;border:var(--bk-border) solid var(--bk-rule)!important;
+  border-radius:14px!important;background:var(--bk-paper)!important;color:var(--bk-ink)!important;font-size:.9rem!important;font-weight:600!important;line-height:1.3!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5) .bk-words li{background:var(--bk-chip)!important;border-color:var(--bk-chip-line)!important;color:var(--bk-tint-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-places-h{margin:.9rem 0 .4rem!important;font-weight:700!important;font-size:.9rem!important;color:var(--bk-muted)!important}
 /* each cell's or place's note, with `describe` */
-.booklet:not(#bk) .bk-notes-of{display:grid;grid-template-columns:1fr;gap:.6rem;margin:1rem 0 0}
-@media (min-width:600px){.booklet:not(#bk) .bk-notes-of{grid-template-columns:1fr 1fr}}
-.booklet:not(#bk) .bk-notes-of .bk-cell{min-height:0;gap:.2rem;padding:.8rem .95rem;font-size:.95rem;line-height:1.45}
-.booklet:not(#bk) .bk-notes-of dt{font-weight:800;color:var(--bk-cell-name)}
-.booklet:not(#bk) .bk-notes-of dd{margin:0}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of{display:grid!important;grid-template-columns:1fr!important;gap:.6rem!important;margin:1rem 0 0!important}
+@media (min-width:600px){.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of{grid-template-columns:1fr 1fr!important}}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of .bk-cell{min-height:0!important;gap:.2rem!important;padding:.8rem .95rem!important;font-size:.95rem!important;line-height:1.45!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of dt{font-weight:800!important;color:var(--bk-cell-name)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of dd{margin:0!important}
 
 /* ---- rows: cells side by side when there is room, one under another when there is not ---- */
-.booklet:not(#bk) .bk-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr));gap:0 1.5rem;align-items:start;margin:0 0 1rem}
-.booklet:not(#bk) .bk-rowcell{min-width:0}
-.booklet:not(#bk) .bk-rowcell>:first-child{margin-top:0}
-.booklet:not(#bk) .bk-rowcell :is(h1,h2,h3,h4,h5,h6,p,ul,ol,dl,blockquote,.bk-callout,.bk-group,.bk-fold,.bk-q){max-width:none}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-row{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr))!important;gap:0 1.5rem!important;align-items:start!important;margin:0 0 1rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-rowcell{min-width:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-rowcell>:first-child{margin-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-rowcell :is(h1,h2,h3,h4,h5,h6,p,ul,ol,dl,blockquote,.bk-callout,.bk-group,.bk-fold,.bk-q){max-width:none!important}
 
 /* ---- citation marks and the notes at the foot ---- */
-.booklet:not(#bk) .bk-mark{font-size:.72em;line-height:0;vertical-align:baseline;position:relative;top:-.5em}
-.booklet:not(#bk) .bk-mark-a{margin:0 .05em;padding:.05em .18em;border-radius:4px;font-weight:700;text-decoration:none}
-.booklet:not(#bk) .bk-mark-a:hover{text-decoration:underline;background:var(--bk-accent-soft)}
-.booklet:not(#bk) .bk-broken{font-size:.72em;font-weight:700;color:var(--bk-warn);border:1px dashed var(--bk-warn);border-radius:4px;padding:0 .2em;
-  margin:0 .1em;white-space:nowrap}
-.booklet:not(#bk) .bk-notes{margin:2.5rem 0 0;padding-top:.6rem;border-top:var(--bk-border) solid var(--bk-rule);font-size:.92rem}
-.booklet:not(#bk) .bk-notes-h{margin:0 0 .6rem;font-size:1.2rem;line-height:1.3}
-.booklet:not(#bk) .bk-notes-list{margin:0;padding-left:1.6rem}
-.booklet:not(#bk) .bk-notes-list li{margin:0 0 .45rem;padding:.1rem .3rem;border-radius:4px}
-.booklet:not(#bk) .bk-notes-list li:target{background:var(--bk-mark)}
-.booklet:not(#bk) .bk-notes cite{font-style:italic;font-weight:600}
-.booklet:not(#bk) .bk-back{text-decoration:none;padding:0 .2rem}
-.booklet:not(#bk) .bk-verified{color:var(--bk-green-ink);font-weight:700;font-size:.88rem;white-space:nowrap}
-.booklet:not(#bk) .bk-bad{color:var(--bk-warn)}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-mark{font-size:.72em!important;line-height:0!important;vertical-align:baseline!important;position:relative!important;top:-.5em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-mark-a{margin:0 .05em!important;padding:.05em .18em!important;border-radius:4px!important;font-weight:700!important;text-decoration:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-mark-a:hover{text-decoration:underline!important;background:var(--bk-accent-soft)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-broken{font-size:.72em!important;font-weight:700!important;color:var(--bk-warn)!important;border:1px dashed var(--bk-warn)!important;border-radius:4px!important;padding:0 .2em!important;
+  margin:0 .1em!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes{margin:2.5rem 0 0!important;padding-top:.6rem!important;border-top:var(--bk-border) solid var(--bk-rule)!important;font-size:.92rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-h{margin:0 0 .6rem!important;font-size:1.2rem!important;line-height:1.3!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-list{margin:0!important;padding-left:1.6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-list li{margin:0 0 .45rem!important;padding:.1rem .3rem!important;border-radius:4px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes-list li:target{background:var(--bk-mark)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-notes cite{font-style:italic!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-back{text-decoration:none!important;padding:0 .2rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-verified{color:var(--bk-green-ink)!important;font-weight:700!important;font-size:.88rem!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-bad{color:var(--bk-warn)!important}
 
 /* ---- the foot: each module's notice (licence, copyright, source, version), quiet ---- */
-.booklet:not(#bk) .bk-foot{margin:2.5rem 0 0}
-.booklet:not(#bk) .bk-about{margin:0 0 1rem;padding:.8rem 1rem;border:var(--bk-border) dashed var(--bk-rule);border-radius:12px;
-  color:var(--bk-muted);font-size:.88rem;line-height:1.5}
-.booklet:not(#bk) .bk-about-h{margin:0 0 .4rem;font-weight:700;color:var(--bk-ink)}
-.booklet:not(#bk) .bk-about dl{margin:0;display:grid;grid-template-columns:max-content minmax(0,1fr);gap:.3rem .9rem}
-.booklet:not(#bk) .bk-about dl>div{display:contents}
-.booklet:not(#bk) .bk-about dt{font-weight:700}
-.booklet:not(#bk) .bk-about dd{margin:0;overflow-wrap:anywhere}
-@media (max-width:520px){.booklet:not(#bk) .bk-about dl{grid-template-columns:minmax(0,1fr);gap:0}.booklet:not(#bk) .bk-about dd{margin-bottom:.4rem}}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foot{margin:2.5rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about{margin:0 0 1rem!important;padding:.8rem 1rem!important;border:var(--bk-border) dashed var(--bk-rule)!important;border-radius:12px!important;
+  color:var(--bk-muted)!important;font-size:.88rem!important;line-height:1.5!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about-h{margin:0 0 .4rem!important;font-weight:700!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about dl{margin:0!important;display:grid!important;grid-template-columns:max-content minmax(0,1fr)!important;gap:.3rem .9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about dl>div{display:contents!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about dt{font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-about dd{margin:0!important;overflow-wrap:anywhere!important}
+@media (max-width:520px){.booklet:not(#bk):not(#bk):not(#bk) .bk-about dl{grid-template-columns:minmax(0,1fr)!important;gap:0!important}.booklet:not(#bk):not(#bk):not(#bk) .bk-about dd{margin-bottom:.4rem!important}}
 
 /* ---- print: always light, every fold open where the browser can open one for print ---- */
 @media print{
@@ -463,15 +472,15 @@
   }
   .bk-page{background:none}
   .bk-main{max-width:none;padding:0}
-  .booklet:not(#bk) .bk-anchor{display:none}
-  .booklet:not(#bk) .bk-fold>summary::after{display:none}
-  .booklet:not(#bk) .bk-fold::details-content{content-visibility:visible;display:block;height:auto}
-  .booklet:not(#bk) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-cell,pre,figure){break-inside:avoid}
-  .booklet:not(#bk) .bk-table{overflow:visible}
-  .booklet:not(#bk) .bk-table tr{break-inside:avoid}
-  .booklet:not(#bk) .bk-table thead{display:table-header-group}
-  .booklet:not(#bk) .bk-math-display{overflow:visible}
-  .booklet:not(#bk) :is(h2,h3,h4){break-after:avoid}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-anchor{display:none!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::after{display:none!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-fold::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-cell,pre,figure){break-inside:avoid!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-table{overflow:visible!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-table tr{break-inside:avoid!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-table thead{display:table-header-group!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-math-display{overflow:visible!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(h2,h3,h4){break-after:avoid!important}
 }
 
-@media (prefers-reduced-motion:reduce){.booklet:not(#bk) *{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){.booklet:not(#bk):not(#bk):not(#bk) *{transition:none!important;animation:none!important}}
