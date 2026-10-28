@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-IvNj/UUkWelCWQ20yK3CJbCHXhFZSzdqExc2WWsUQiw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-sssbwvUJgj+5YQAm5t4pjVcpPpQjB9ZSnxLAy1qH3/M=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4591,7 +4591,8 @@ function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol|
   /* a blank line between the body and the region, where the body does not end with one: before a region this writer
      adds, and before the file's own when its body is written from a changed design; a body as read is left as it was */
   const gap=()=>{const ls=head.split(/\r\n?|\n/),z=ls[ls.length-1];return !head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"";};
-  const out=region=>({head,sep:!same&&region?gap():"",region});
+  /* and before the region of a text designCut cut before it, as the writer put it there before the cut (readMade) */
+  const out=region=>({head,sep:(!same||W.cut)&&region?gap():"",region});
   const mods=book.modules||[],fenced=id=>fencedModule(id,mods),text=String(W.region||"");
   const kept=[].concat(V.records||[]).filter(r=>r&&!r.w&&typeof r.text==="string"&&(!r.foreign||typeof r.foreign==="string"));
   if(!S&&!drop&&!kept.length) return out(text);
@@ -4789,24 +4790,23 @@ function endsInFence(text){if(FENCE_END&&FENCE_END.text===text) return FENCE_END
   FENCE_END={text,open:!!F&&F.end>=body.length};return FENCE_END.open;}
 /* The text a design is read from (bookText, textWith): its file's text with nothing of the reader's, its kept records with
    it, as {text, cut}. Where that would put a records region after a body that ends inside a code fence that never closes
-   (design after the file's records, moved above them), the text is the body alone, with the blank line the writer puts
-   before the region, and `cut` the region it would have had:
+   (design after the file's records, moved above them), the text is the body alone and `cut` the region it would have had:
    the parse would read the region as that fence's code, and the design read back would gain the region's lines inside the
    author's code block. That region's records are read beside the text (readMade), and the region is kept beside it
    (regionOf, adopted with the parse), so nothing of it is lost, and the file's text is written as before; any other text
    is fileText's, and its `cut` "". */
 function designCut(book,drop){const p=writeParts(book,emptyState(),emptyDrafts(),drop);
-  return p.region&&endsInFence(p.head)?{text:p.head+p.sep,cut:p.region}:{text:p.head+p.sep+p.region,cut:""};}
+  return p.region&&endsInFence(p.head)?{text:p.head,cut:p.region}:{text:p.head+p.sep+p.region,cut:""};}
 const designText=(book,drop)=>designCut(book,drop).text;
 /* The parse of a text designCut made (Add, Remove, Rename, a newer file's kept work, a reload), as a file's, with what the
    parse of such a text alone loses where it was cut before its region (`cut`): that region's records. Read as the whole
    file would read them with the fence closed after the body, they are the parse's (the answers, entries and drafts
-   joinRecords joins, and what is kept as written, raw.records), as a text that held its region would have them. The
-   design is the text's own parse. Returns R. */
+   joinRecords joins, and what is kept as written, raw.records), as a text that held its region would have them; the writer
+   then puts its blank line before the region again (writeParts, `cut`). The design is the text's own parse. Returns R. */
 function readMade(R,cut){const raw=R&&R.template&&R.template.raw,W=raw&&raw.wrote;
   if(!W||typeof W.head!=="string"||!endsInFence(W.head)) return R;
   const {lines,next}=frontMatter(W.head,true),F=codeFences(lines.slice(next)).pop(),e=W.eol||"\n";
-  if(cut){const Q=parseFile(W.head+(/[\r\n]$/.test(W.head)?"":e)+F.mark+e+e+cut);
+  if(cut){const Q=parseFile(W.head+(/[\r\n]$/.test(W.head)?"":e)+F.mark+e+e+cut);W.cut=true;
     if(Q.template){R.S=Q.S;R.drafts=Q.drafts;raw.records=Q.template.raw.records;}}
   return R;}
 /* the region a kept copy's text was cut before (designCut), worked out again on a reload from the region kept beside it

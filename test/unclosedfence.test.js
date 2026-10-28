@@ -99,6 +99,20 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
  chk("Remove a module on such a booklet: the design is what remains, with nothing of the records region in the fence",
    r.ok&&A.BOOK.raw.source===FM+MOD("beds")+AFTER&&A.BOOK.modules.map(m=>m.id).join()==="beds",show(A.BOOK.raw.source));
  chk("and the module left keeps its answers, in the page and in the region",A.peekAnswers("beds").q1==="peas"&&A.toMarkdown().includes('{"q1": "peas"}'),show(A.toMarkdown()));}
+/* Remove a module whose records are the region's only records: the region goes with it, and the file is the body as it was
+   less the module, the same bytes with a reload first or not, with Windows line endings too. The blank line the writer
+   puts before the region is the writer's, not the body's: kept in the copy's text, it would stay there when the region
+   went, one blank line more after a reload (the writer puts it before the region kept beside the text, as before the
+   reload). */
+{const REC="%%\n> [!records|shed] The shed\n\n```booklet answers\n{\"q1\": \"snails\"}\n```\n\n%%\n";
+ for(const [how,crlf] of [["",false],[", with Windows line endings",true]]) for(const rl of [false,true]){
+   const cr=t=>crlf?t.replace(/\n/g,"\r\n"):t,AFTER="\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
+   const text=cr(FM+MOD("beds")+MOD("shed")+"\n"+REC+AFTER),want=cr(FM+MOD("beds")+AFTER),as=how+(rl?", a reload first":"");
+   let A=load(text);if(rl) A=again(A);
+   const r=A.removeModule("shed");BLOBS.length=0;await A.download();
+   chk("Remove the module whose records are the region's only records: the download is the file less the module, byte for byte"+as,
+     r.ok&&BLOBS.length===1&&BLOBS[0]===want,BLOBS.map(show).join()+" | want "+show(want));}}
+
 /* ---- Add a module on a booklet whose body ends inside such a fence (0.16.1): refused, said, nothing changed ----
    The module would be added at the end of the body, inside the fence, and never read as a module. */
 {const MODFILE='---\nbooklet: "0.16"\ntitle: Seed swap\nlang: en\n---\n\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] Which seeds?\n\n> [!module|seeds end]\n';
