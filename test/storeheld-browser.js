@@ -11,6 +11,9 @@
 //     the file keeps it (the first version of this change saved a blank booklet over it);
 //   - Open from the list after a rewrite draws the new file; "Opening <name>…" shows while a slow file is read;
 //   - work the store lacks (its saves fail) opens as kept, with the offer;
+//   - on a page with no host script (0.16.1), an answer in a module a newer file dropped, kept as records kept as written,
+//     is the reader's work: each later file is offered, never drawn over the copy, on fresh page loads; Dismiss leaves
+//     the copy as it was; reading carries the records forward byte for byte; the module back shows the answer again;
 //   - zero CSP violations and page errors.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/storeheld-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
@@ -47,16 +50,20 @@ const page=()=>{let h=fs.readFileSync(HTML,'utf8');
   h=h.replace('<meta name="theme-color"','<meta name="booklet-store" content="/store/">\n<meta name="theme-color"');
   const i=h.lastIndexOf('</body>');if(i<0) throw new Error('no </body>');
   return h.slice(0,i)+'<script src="/app/host.js"></script>\n'+h.slice(i);};
+/* the same page with no host script of its own, at /bare/ (the store still declared) */
+const bare=()=>fs.readFileSync(HTML,'utf8').replace('<meta name="theme-color"','<meta name="booklet-store" content="/store/">\n<meta name="theme-color"');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
-  const HTMLPAGE=page();
+  const HTMLPAGE=page(),HTMLBARE=bare();
+  if(HTMLBARE===fs.readFileSync(HTML,'utf8')) throw new Error('no theme-color meta tag to put the store tag before: update this test');
   const b=await chromium.launch();
   const errs=[],viol=[],csp=[];
   const ctx=await b.newContext({viewport:{width:1280,height:900}});
   /* the test's box, for any browser context: its pages, the host's script and the store */
   const box=async r=>{const q=r.request(),u=new URL(q.url()).pathname;
     if(u==='/app/') return r.fulfill({status:200,body:HTMLPAGE,headers:{'content-type':'text/html; charset=utf-8','content-security-policy':BOX_CSP}});
+    if(u==='/bare/') return r.fulfill({status:200,body:HTMLBARE,headers:{'content-type':'text/html; charset=utf-8','content-security-policy':BOX_CSP}});
     if(u==='/app/host.js'){await sleep(HOST_DELAY);return r.fulfill({status:200,body:HOSTJS,headers:{'content-type':'text/javascript'}});}
     if(u==='/') return r.fulfill({status:200,body:'<!doctype html><title>box</title>',headers:{'content-type':'text/html'}});
     if(u.startsWith('/store/')){const name=decodeURIComponent(u.slice(7));
@@ -175,6 +182,42 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   ok(/QZXphone shipped it/.test(FILES['two.md'])&&/QZXphone next step/.test(FILES['two.md'])&&!/QZXlaptop planning/.test(FILES['two.md']),'...and the file keeps the phone\'s answers');
   for(const x of [L1,P1]) viol.push(...await x.evaluate(()=>window.__viol||[]));
   await lap.close();await ph.close();
+
+  // 6 (0.16.1) no host script: the reader's only answer is in a module a newer file drops. Reading that file keeps it as
+  // records kept as written, and this page's answers are then empty; each later file must still be offered, not drawn
+  // over the copy (0.16.0 drew it, and the answer was gone)
+  {const SHED=FM('Shed')+'> [!module|k] Keep\n\n> [!activity|k] K\n\n> [!text|kq long] What is kept?\n\n> [!module|k end] End\n\n'+
+     '> [!module|g] Going\n\n> [!activity|g] G\n\n> [!text|gq long] What is going?\n\n> [!module|g end] End\n';
+   const DROPPED=SHED.replace(/\n> \[!module\|g\][\s\S]*$/,''),titled=(t,n)=>t.replace('title: Shed','title: '+n);
+   const LINK=PAGE+'/bare/#/open/shed.md',fresh=async(p,at)=>{await p.goto(PAGE+'/');await p.goto(LINK+(at||''));await p.waitForSelector('#main h1, #main textarea',{timeout:10000}).catch(()=>null);await sleep(700);};
+   const state=p=>p.evaluate(()=>{const t=toMarkdown(),i=t.indexOf('> [!records|g]');return {title:BOOK.title,rec:i<0?'':t.slice(i,t.indexOf('\n%%',i)),n:t.split('QZXonly-here').length-1};});
+   /* a button of the offer, pressed when it is there (when it is not, the checks after say so) */
+   const press=async(p,text)=>{const b=p.locator('#main .hostnote button',{hasText:text});if(await b.count()){await b.click();await sleep(500);}};
+   const read=p=>press(p,'Read the newer file');
+   FILES['shed.md']=SHED;
+   p=await open();
+   await fresh(p,'/g');await p.locator('#main textarea').first().click();await p.keyboard.type('QZXonly-here');await sleep(700);
+   FILES['shed.md']=DROPPED;
+   await fresh(p);
+   ok(await offer(p)===1,'no host: a newer file that drops the module the answer is in is offered');
+   await read(p);
+   const kept=await state(p);
+   ok(kept.n===1&&/"gq": "QZXonly-here"/.test(kept.rec)&&!/QZXonly-here/.test(await p.evaluate(()=>JSON.stringify(STATE))),'...read, the answer is kept as records kept as written, once, and not in the page\'s answers: '+JSON.stringify(kept));
+   for(let i=1;i<=3;i++){const N='Shed '+i;FILES['shed.md']=titled(DROPPED,N);
+     await fresh(p);let st=await state(p);
+     ok(await offer(p)===1&&st.title!==N&&st.rec===kept.rec,`change ${i}, a fresh page load by the link: offered, not drawn over the copy: `+JSON.stringify({offer:await offer(p),title:st.title,same:st.rec===kept.rec}));
+     if(i===1){await press(p,'Dismiss');st=await state(p);
+       ok(await offer(p)===0&&st.title!==N&&st.rec===kept.rec,'...declined, the copy is as it was');
+       await fresh(p);st=await state(p);
+       ok(await offer(p)===1&&st.rec===kept.rec,'...and on the next page load the newer file is offered again');}
+     await read(p);st=await state(p);
+     ok(st.title===N&&st.rec===kept.rec&&st.n===1,`...read, the kept records are carried forward byte for byte, once (change ${i})`);}
+   FILES['shed.md']=titled(SHED,'Shed back');
+   await fresh(p);await read(p);
+   await fresh(p,'/g');
+   ok(await answer(p)==='QZXonly-here'&&await offer(p)===0&&(await state(p)).n===1,'the module back: the answer shows in it again, once');
+   await p.screenshot({path:path.join(OUT,'store-kept-records-1280.png')});
+   viol.push(...await p.evaluate(()=>window.__viol||[]));await p.close();}
 
   ok(viol.length===0&&csp.length===0,'zero CSP violations: '+viol.concat(csp).join('|'));
   ok(errs.length===0,'zero page errors '+errs.join('|'));

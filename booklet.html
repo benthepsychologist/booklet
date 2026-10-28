@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-gc/2z0BZCmbuqbl4Ze6fQF8W+a8zCSeFNAlNF1nMAJE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-54JFHI5q6ArTQBbF8i4HQqgNXXNnwyiUfkt7x6ycdg0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1441,7 +1441,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.16.0";
+const RENDERER_VERSION="0.16.1";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.16"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
@@ -1817,7 +1817,8 @@ const STRINGS_SRC={
       notBooklet: `Not a booklet file this page can read (it needs a \`booklet:\` line with a 0.x version).`,
       noModule: "This file holds no module.",
       noBooklet: `Add a module needs an open booklet.`,
-      noFence: "Could not find a complete `[!module|…]` … `[!module|… end]` fence."
+      noFence: "Could not find a complete `[!module|…]` … `[!module|… end]` fence.",
+      addFenceOpen: "This booklet ends inside a code fence that is never closed, so a module cannot be added after it. Close the fence in Markdown first."
     },
     moduleView: {
       noneShown: "Nothing in this module is shown at the moment."
@@ -2163,7 +2164,8 @@ const STRINGS_SRC={
       notBooklet: `Ce n’est pas un fichier de carnet que cette page peut lire (il faut une ligne \`booklet:\` avec une version 0.x).`,
       noModule: "Ce fichier ne contient aucun module.",
       noBooklet: `Ajouter un module demande un carnet ouvert.`,
-      noFence: "Impossible de trouver une clôture complète `[!module|…]` … `[!module|… end]`."
+      noFence: "Impossible de trouver une clôture complète `[!module|…]` … `[!module|… end]`.",
+      addFenceOpen: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; aucun module ne peut donc être ajouté après ce bloc. Fermez d’abord le bloc en Markdown."
     },
     moduleView: {
       noneShown: "Rien dans ce module n’est affiché pour l’instant."
@@ -2509,7 +2511,8 @@ const STRINGS_SRC={
       notBooklet: `Este no es un archivo de cuadernillo que esta página pueda leer (necesita una línea \`booklet:\` con una versión 0.x).`,
       noModule: "Este archivo no contiene ningún módulo.",
       noBooklet: `Agregar un módulo requiere un cuadernillo abierto.`,
-      noFence: "No se encontró una valla completa `[!module|…]` … `[!module|… end]`."
+      noFence: "No se encontró una valla completa `[!module|…]` … `[!module|… end]`.",
+      addFenceOpen: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede agregar un módulo después de él. Primero hay que cerrar el bloque en Markdown."
     },
     moduleView: {
       noneShown: "Por ahora no se muestra nada en este módulo."
@@ -3452,12 +3455,14 @@ const storeNameOf=e=>{const p=fromParts(e&&e.from);return p?p.name:"";};
    answered in or whether the reader downloaded since.
    The file is drawn into the same entry, and the kept copy goes (storeHolds), when nothing is kept (a pointer); or when
    the kept copy holds no change to the booklet itself (`customized`: a rename inside it, a module added or removed,
-   which the store cannot hold, since it keeps its own body) and either nothing changed here since the base, so that
-   the file is the truth whatever it holds now (work another device added just appears), or the kept copy and the file
-   hold exactly the same work. A kept copy with no base (one written before bases were kept) is judged on that second
-   test alone. A blank kept copy (no module in it) is judged one way only, on its own answers: it holds nothing worth
-   keeping over the file's. Otherwise the kept copy opens, the newer file is offered if it changed, and reading it
-   merges the two against the base, place by place (acceptWork, mergeWork). */
+   which the store cannot hold, since it keeps its own body), no records kept as written that the file lacks
+   (keptBeyond: the reader's work in a module a newer file dropped, which neither the base nor the answers weighed below
+   hold), and either nothing changed here since the base, so that the file is the truth whatever it holds now (work
+   another device added just appears), or the kept copy and the file hold exactly the same work. A kept copy with no
+   base (one written before bases were kept) is judged on that second test alone. A blank kept copy (no module in it),
+   past the kept records, is judged on its own answers only: it holds nothing worth keeping over the file's. Otherwise
+   the kept copy opens, the newer file is offered if it changed, and reading it merges the two against the base, place
+   by place (acceptWork, mergeWork). */
 /* What "empty" is for a reader's work: nothing typed or picked at any depth (holdsSomething), so "", [""] (a list of
    lines only looked at), [] (an activity's entries, or a list never filled) and a draft with nothing in it are all
    empty. A page that was only viewed makes such values, so an empty value counts as no value at all. That is the rule
@@ -3516,13 +3521,23 @@ function unflatWork(m){const r={answers:nullMap(),entries:nullMap(),drafts:nullM
     else into(r.entries,p[1],[]).push(v);});
   Object.keys(r.entries).forEach(at=>r.entries[at].sort((x,y)=>String(x.ts).localeCompare(String(y.ts))));
   return r;}
+/* The records a copy keeps as written under a records line for a module its design has none for (keepUnowned's, made
+   when a newer file dropped the module the reader wrote in, or its file's own: SPEC section 8), less those the file just
+   read (R, its parse) holds as written too. They are the reader's work as much as any answer: reading R carries them
+   forward (acceptWork), and a kept copy that holds any is never drawn over (storeHolds). T: the copy's design. */
+function keptBeyond(T,R){const recs=t=>(isObj(t)&&isObj(t.raw)&&Array.isArray(t.raw.records))?t.raw.records.filter(isObj):[],now=recs(R&&R.template);
+  return recs(T).filter(r=>r.foreign&&typeof r.text==="string"&&!now.some(x=>x.scope===r.scope&&x.text===r.text));}
 /* Whether the file just read for a store entry (R, its parse) holds everything this browser keeps of it (see "a store
    booklet" above). A kept copy that cannot be read is not judged here: it takes the old path, which says what it can. */
 function storeHolds(e,R){const raw=lsGet(keyOfEntry(e));if(raw===null) return true;
   let o=null;try{o=JSON.parse(raw);}catch(x){o=null;}
   if(!isObj(o)||!isObj(o.S)) return false;
-  /* the kept design: the parse of the kept text, or an older release's design (TPL) */
-  const T=typeof o.text==="string"?parseFile(o.text).template||null:isObj(o.TPL)?keptShape(o.TPL):null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
+  /* the kept design: the parse of the kept text, read with the records region kept beside it as loadLocal reads it
+     (readMade: a text cut before its region), or an older release's design (TPL) */
+  const kt=typeof o.text==="string"?parseFile(o.text):null,
+    T=kt?readMade(kt,cutAgain(kt,typeof o.region==="string"?o.region:undefined)).template||null:isObj(o.TPL)?keptShape(o.TPL):null,blank=!!T&&!(Array.isArray(T.modules)&&T.modules.length);
+  /* records kept as written that the file lacks are work the file lacks, whatever else the copy holds or does not */
+  if(keptBeyond(T,R).length) return false;
   if(blank) return workWithin(o.S,o.D,R);
   if(keptCustomized(o)) return false;
   const keep=T?scopesOfBook(T):null,here=flatWork({answers:o.S.answers,entries:o.S.entries,drafts:isObj(o.D)?o.D.custom:{}},keep);
@@ -3688,7 +3703,8 @@ function loadLocal(){const key=slotKey();if(!key) return false;
     if(R&&R.template){const no=R.refused.length>0;
       const T=old?keptShape(o.TPL):null;
       if(no&&old&&oldDesign(T)){BOOK={...T,widgets:Array.isArray(T.widgets)?T.widgets:[]};OLD_DESIGN=true;}
-      else{adoptParse(R,!old&&typeof o.region==="string"?o.region:undefined);if(old) lsSet(key,snapshot());}
+      else{const region=!old&&typeof o.region==="string"?o.region:undefined;
+        adoptParse(readMade(R,cutAgain(R,region)),region);if(old) lsSet(key,snapshot());}
       if(old||no) FILE_NOTES=fileNotesOf(R,startScreen());}
     return true;
   }catch(e){return false;}}
@@ -3725,10 +3741,12 @@ const oldDesign=t=>isObj(t)&&Array.isArray(t.modules)&&t.modules.every(m=>isObj(
   &&m.activities.every(a=>typeof a.id==="string"&&(a.kind==="entry"||a.kind==="board")));
 /* an older release's kept design, renamed (its source's `title:` line too) */
 const namedDesign=(t,n)=>({...t,title:n,raw:{...(t.raw||{}),source:setTitleIn((t.raw||{}).source,n,(t.raw||{}).lang)}});
-/* the text a snapshot keeps, or null; an older one's (TPL) is its design's source with the records it kept as written */
+/* the text a snapshot keeps, or null; an older one's (TPL) is its design's source with the records it kept as written,
+   after the source whatever it ends in: such a snapshot keeps no region beside its text (designText), so the text is the
+   one place those records are kept */
 function storedText(o){if(typeof o.text==="string") return o.text;
   const raw=isObj(o.TPL)&&isObj(o.TPL.raw)?o.TPL.raw:null,R=raw?parseFile(String(raw.source||"")):null;
-  return R&&R.template?bookText({...R.template,raw:{...R.template.raw,records:raw.records}}):null;}
+  return R&&R.template?fileText({...R.template,raw:{...R.template.raw,records:raw.records}},emptyState(),emptyDrafts()):null;}
 /* A save is scheduled for the booklet that asked for it. Leaving a booklet
    writes any save still pending to that booklet's own key first (flushSave),
    and a timer that somehow outlives its booklet finds bookletGen moved on and
@@ -4585,7 +4603,8 @@ function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol|
   /* a blank line between the body and the region, where the body does not end with one: before a region this writer
      adds, and before the file's own when its body is written from a changed design; a body as read is left as it was */
   const gap=()=>{const ls=head.split(/\r\n?|\n/),z=ls[ls.length-1];return !head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"";};
-  const out=region=>({head,sep:!same&&region?gap():"",region});
+  /* and before the region of a text designCut cut before it, as the writer put it there before the cut (readMade) */
+  const out=region=>({head,sep:(!same||W.cut)&&region?gap():"",region});
   const mods=book.modules||[],fenced=id=>fencedModule(id,mods),text=String(W.region||"");
   const kept=[].concat(V.records||[]).filter(r=>r&&!r.w&&typeof r.text==="string"&&(!r.foreign||typeof r.foreign==="string"));
   if(!S&&!drop&&!kept.length) return out(text);
@@ -4781,19 +4800,48 @@ let FENCE_END=null;
 function endsInFence(text){if(FENCE_END&&FENCE_END.text===text) return FENCE_END.open;
   const {lines,next}=frontMatter(text,true),body=lines.slice(next),F=codeFences(body).pop();
   FENCE_END={text,open:!!F&&F.end>=body.length};return FENCE_END.open;}
+/* The text a design is read from (bookText, textWith): its file's text with nothing of the reader's, its kept records with
+   it, as {text, cut}. Where that would put a records region after a body that ends inside a code fence that never closes
+   (design after the file's records, moved above them), the text is the body alone and `cut` the region it would have had:
+   the parse would read the region as that fence's code, and the design read back would gain the region's lines inside the
+   author's code block. That region's records are read beside the text (readMade), and the region is kept beside it
+   (regionOf, adopted with the parse), so nothing of it is lost, and the file's text is written as before; any other text
+   is fileText's, and its `cut` "". */
+function designCut(book,drop){const p=writeParts(book,emptyState(),emptyDrafts(),drop);
+  return p.region&&endsInFence(p.head)?{text:p.head,cut:p.region}:{text:p.head+p.sep+p.region,cut:""};}
+const designText=(book,drop)=>designCut(book,drop).text;
+/* The parse of a text designCut made (Add, Remove, Rename, a newer file's kept work, a reload), as a file's, with what the
+   parse of such a text alone loses where it ends inside a code fence that never closes. The white space at the end of its
+   last line, that fence's code: the parse takes it off the end of any body, and the design the text was made from kept it,
+   so it is put back. And, where the text was cut before its region (`cut`), that region's records: read as the whole file
+   would read them with the fence closed after the body, they are the parse's (the answers, entries and drafts joinRecords
+   joins, and what is kept as written, raw.records), as a text that held its region would have them; the writer then puts
+   its blank line before the region again (writeParts, `cut`). The design is the text's own parse. Returns R. */
+function readMade(R,cut){const raw=R&&R.template&&R.template.raw,W=raw&&raw.wrote;
+  if(!W||typeof W.head!=="string"||!endsInFence(W.head)) return R;
+  const {lines,next}=frontMatter(W.head,true),F=codeFences(lines.slice(next)).pop(),e=W.eol||"\n";
+  const z=lines.filter(l=>l.trim()).pop()||"",t=z.replace(/\s+$/,""),s=String(raw.source||"");
+  if(z!==t&&s.endsWith("\n"+t+"\n")) raw.source=W.src=s.slice(0,s.length-t.length-1)+z+"\n";
+  if(cut){const Q=parseFile(W.head+(/[\r\n]$/.test(W.head)?"":e)+F.mark+e+e+cut);W.cut=true;
+    if(Q.template){R.S=Q.S;R.drafts=Q.drafts;raw.records=Q.template.raw.records;}}
+  return R;}
+/* the region a kept copy's text was cut before (designCut), worked out again on a reload from the region kept beside it
+   (snapshot): the design is the text's parse, as it was, and the booklet then held no records but those its region holds */
+const cutAgain=(R,region)=>{const T=R&&R.template,W=T&&T.raw&&T.raw.wrote;
+  return region&&W&&typeof W.head==="string"&&endsInFence(W.head)?writeParts({...T,raw:{...T.raw,wrote:{...W,region}}},emptyState(),emptyDrafts()).region:"";};
 /* the booklet's text with no records, worked out once per booklet and its raw.wrote, so a save does not run the whole writer
    again to get it: a design change adopts a new booklet whole, and the one later change, adoptParse's, gives a new raw.wrote */
 let BOOK_TEXT=null;
 const bookText=book=>{const w=book&&book.raw&&book.raw.wrote;if(BOOK_TEXT&&BOOK_TEXT.b===book&&BOOK_TEXT.w===w) return BOOK_TEXT.t;
-  const t=fileText(book,emptyState(),emptyDrafts());BOOK_TEXT={b:book,w,t};return t;};
-/* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` */
+  const t=designText(book);BOOK_TEXT={b:book,w,t};return t;};
+/* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` (designCut's) */
 const textWith=(source,drop)=>{const raw=BOOK.raw||{};
-  return fileText({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}},emptyState(),emptyDrafts(),drop);};
+  return designCut({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}},drop);};
 /* The design is always its text's parse: a booklet's text (kept here, or made by Add, Remove or Rename) is parsed as a
    file is and adopted whole. Returns the parse, or null (the design unchanged) for no booklet. `region`: the records
    region the booklet had (regionOf), which a text made by bookText holds only the kept records of; adopted with the
-   parse, the next save still writes what the reader did not change as the file had it. */
-function adoptText(text,region){const R=parseFile(text);if(!R.template) return null;
+   parse, the next save still writes what the reader did not change as the file had it. `cut`: designCut's. */
+function adoptText(text,region,cut){const R=readMade(parseFile(text),cut);if(!R.template) return null;
   adoptParse(R,region);return R;}
 const adoptParse=(R,region)=>{BOOK=R.template;OLD_DESIGN=false;
   if(typeof region==="string"&&isObj(BOOK.raw)&&isObj(BOOK.raw.wrote)) BOOK.raw.wrote={...BOOK.raw.wrote,region};
@@ -4942,7 +4990,7 @@ function setTitleIn(source,name,langTag){
 const blankText=()=>setTitleIn("",strings("library").untitled,lang);
 /* Rename the booklet in memory: its text with the new `title:` line, read again. An empty name keeps the old one. */
 function renameBooklet(name){const n=cleanName(name);if(!n||n===BOOK.title) return false;
-  if(OLD_DESIGN) BOOK=namedDesign(BOOK,n);else adoptText(setTitleIn(bookText(BOOK),n,(BOOK.raw||{}).lang),regionOf(BOOK));
+  if(OLD_DESIGN) BOOK=namedDesign(BOOK,n);else{const c=designCut(BOOK);adoptText(setTitleIn(c.text,n,(BOOK.raw||{}).lang),regionOf(BOOK),c.cut);}
   CUSTOMIZED=true;markDirty();flushSave();return true;}
 
 /* ================ ADD A MODULE ================
@@ -5087,6 +5135,9 @@ function spliceApart(lines,at,ins){
    fence, so the notice is in the file the reader downloads. Nothing is changed unless the file this makes is one
    the renderer reads with nothing refused; then the booklet's design is read from that file, so what is on screen
    is what the written file holds. */
+/* a design's source as Add a module and Remove a module leave it: no blank line at its start or its end, and no white space
+   at the end of its last line, except where that line is the code of a fence that never closes, which is kept as written */
+const sourceEnd=t=>{t=t.replace(/^\n+/,"");return (endsInFence(t)?t.replace(/\n\s*$/,""):t.replace(/\s+$/,""))+"\n";};
 /* (`R`: the module text's parse, when the caller has it: the text is read once) */
 function addModuleText(text,R){
   R=R||(isBooklet(text)?parseFile(text):null);
@@ -5170,17 +5221,22 @@ function addModuleText(text,R){
       cur=spliceApart(cur,sh.end,extraChunks.join("\n\n").split("\n"));}
     else cur=spliceApart(cur,cur.length,["> [!data] Data","",...extraChunks.join("\n\n").split("\n")]);}
   /* a booklet with no text (its saved copy gone) has no front matter yet; without it the file would not be one */
-  const body=cur.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
+  const body=sourceEnd(cur.join("\n"));
   const newSource=blank?setTitleIn(body,strings("library").untitled,(BOOK.raw||{}).lang||lang):body;
 
   /* read the booklet this would make (with its kept records) before changing anything: if the renderer would refuse
      that file, nothing is added and the reader is told why. An id another module uses is no clash (an id is unique
      within its module). */
-  const made=parseFile(textWith(newSource)),refused=(made&&made.refused)||[];
+  const w=textWith(newSource),made=readMade(parseFile(w.text),w.cut),refused=(made&&made.refused)||[];
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[PROBLEM.notReadable]};
   if(refused.length){const dups=made.dupIds||[];
     const dids=[...new Set(dups.map(d=>d.id))],said=new Set(dups.map(d=>d.m));
     return {ok:false,problems:[...dids.map(id=>PROBLEM.moduleIdClash(id)),...refused.filter(m=>!said.has(m))]};}
+  /* a module that file does not read as one, where its body ends inside a code fence that never closes: put after that
+     fence's opening line, it is that fence's code (as a file read back would read it), never a module. Nothing is added,
+     and the fence is never closed for the author. Anywhere else (an update in place, a module put before a data section
+     that fence is in), the module is added as before. */
+  if(endsInFence(made.template.raw.wrote.head)&&incoming.some(id=>id&&!fencedModule(id,made.template.modules))) return {ok:false,problems:[PROBLEM.addFenceOpen]};
   /* the design is that file's parse, whole (an added module's notice, from its fence's callout, rides on it), with the
      records region the booklet had */
   adoptParse(made,regionOf(BOOK));CUSTOMIZED=true;markDirty();
@@ -5216,8 +5272,8 @@ function removeModule(id){
       if(!blank&&last!==null&&last.trim()) out.push("");
       after=false;}
     out.push(ln);});
-  const newSource=out.join("\n").replace(/^\n+/,"").replace(/\s+$/,"")+"\n";
-  const made=parseFile(textWith(newSource,id)),refused=(made&&made.refused)||[];
+  const newSource=sourceEnd(out.join("\n"));
+  const w=textWith(newSource,id),made=readMade(parseFile(w.text),w.cut),refused=(made&&made.refused)||[];
   if(!made.template&&!refused.length) return {ok:false,problems:made.unread&&made.unread.length?made.unread:[PROBLEM.notReadable]};
   if(refused.length) return {ok:false,problems:refused};
   /* the reader's work in the module goes with it */
@@ -8542,10 +8598,11 @@ function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
   /* `o.keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
   if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;
     /* work for a scope the design has no module for, kept as written with the file's own such records (keepUnowned):
-       the design is then the parse of the text that holds them, and its region the file's with them added (each one is
-       written into it: none was read from this file's region, so none keeps the mark `w` an earlier read gave it) */
+       the design is then the parse of the text that holds them (or, cut before its region, is read with them: readMade),
+       and its region the file's with them added (each one is written into it: none was read from this file's region, so
+       none keeps the mark `w` an earlier read gave it) */
     if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET){const raw=BOOK.raw||{},B={...BOOK,raw:{...raw,records:[...(raw.records||[]),...keep.records.map(({w,...r})=>r)]}};
-      adoptText(bookText(B),regionOf(B));}}
+      const c=designCut(B);adoptText(c.text,regionOf(B),c.cut);}}
   const at=startScreen(o.page);
   FILE_NOTES=fileNotesOf(R,at);
   /* a booklet opened by a link is a view: nothing is kept until the reader changes something in it */
@@ -8766,13 +8823,11 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
 const acceptWork=R=>{
   /* whichever way the work is weighed (acceptWorkOf), what the new design has no module for (a module the file dropped or renamed)
      is kept as records, never left in this page where nothing would draw or write it: with a host, with none and with no base alike */
-  const W=keepUnowned(acceptWorkOf(R),R.template),raw=BOOK&&BOOK.raw,T=R.template,
-    /* what an earlier read kept as records for a module this design has no module for stays with the booklet: the new file's
-       parse holds none of it, and without this a later newer file (a title changed) would drop it. If the module comes back,
-       its text and these records are parsed together and the answers return as answers (finishLoad, adoptText). */
-    had=((raw&&Array.isArray(raw.records))?raw.records:[]).filter(r=>isObj(r)&&r.foreign&&typeof r.text==="string"),
-    now=(isObj(T)&&isObj(T.raw)&&Array.isArray(T.raw.records))?T.raw.records:[];
-  W.records=[...had.filter(r=>!now.some(x=>isObj(x)&&x.scope===r.scope&&x.text===r.text)),...W.records];
+  const W=keepUnowned(acceptWorkOf(R),R.template);
+  /* what an earlier read kept as records for a module this design has no module for stays with the booklet (keptBeyond): the
+     new file's parse holds none of it, and without this a later newer file (a title changed) would drop it. If the module
+     comes back, its text and these records are parsed together and the answers return as answers (finishLoad, adoptText). */
+  W.records=[...keptBeyond(BOOK,R),...W.records];
   return W;};
 const acceptWorkOf=R=>{
   if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};

@@ -587,6 +587,76 @@ for(const withHost of [false,true]){const tag=withHost?" (with a host script)":"
   chk("a third newer file with the module back: the answer is an answer again, written once, in no foreign records",ans(A,"g","gq")==="GOING-ANSWER-removed"&&count()===1&&!/> \[!records\]\s*\n*\s*> \[!records\|g\] *\n/.test(A.toMarkdown())&&A.BOOK.modules.length===2,A.toMarkdown().split("%%")[1]);
   A.flushSave();A.closeBooklet();}}
 
+/* ---- 0.16.1: records kept as written are the reader's work (v016-store-kept-records) ----
+   The reader's only answer was in a module a newer file dropped. Reading that file kept the answer as records, kept as
+   written (keepUnowned), and this page's own answers were then empty. The next time the file changed, storeHolds weighed
+   only those answers, found nothing kept here, drew the file and dropped the kept copy, and the answer went with it.
+   "a host whose saves fail": the store never gets the answer. "a host that comes back": it gets the kept records once the
+   newer file is read, so the file holds them byte for byte and is drawn, with no offer, every time after. */
+for(const way of ["no host","a host whose saves fail","a host that comes back"]){const tag=" ("+way+")",saves=way==="a host that comes back";
+ const V1=FM("Shed")+"> [!module|k] Keep\n\n> [!activity|k] K\n\n> [!text|kq] Kept question\n\n> [!module|k end] End\n\n> [!module|g] Going\n\n> [!activity|g] G\n\n> [!text|gq] Going question\n\n> [!module|g end] End\n";
+ const DROPPED=V1.replace(/\n> \[!module\|g\][\s\S]*$/,""),titled=(t,n)=>t.replace("title: Shed","title: "+n);
+ const name="kept-"+way.replace(/\W+/g,"-")+".md",U=STORE+name,LINK="#/open/"+name,WORDS="ONLY-HERE "+way;
+ /* the generator's new file: the new body, and (the box's rule) the records the store holds */
+ const gen=t=>{ROUTES[U]=saves?merge(t,ROUTES[U]):t;};
+ const count=A=>A.toMarkdown().split(WORDS).length-1;
+ const recOf=t=>{const i=t.indexOf("> [!records|g]");return i<0?"":t.slice(i,t.indexOf("\n%%",i));};
+ let down=way!=="no host",A=boot();const on=A=>{if(way!=="no host") host(A,{fail:()=>down});};on(A);
+ ROUTES[U]=V1;await A.openLink(LINK);await sleep(600);
+ typeIn(A,"g/g",WORDS);A.flushSave();await sleep(600);A.closeBooklet();
+ gen(DROPPED);
+ await A.openLink(LINK);const id=A.currentId;
+ chk("kept records"+tag+": the module the answer is in is dropped by a newer file, which is offered",offer()===1&&ans(A,"g","gq")===WORDS);
+ if(saves) down=false;
+ press(/Read the newer file/);await sleep(600);
+ const REC=recOf(A.toMarkdown());
+ chk("...reading it keeps the answer as records kept as written, once, and none in this page's answers",
+   count(A)===1&&/"gq": "ONLY-HERE/.test(REC)&&ans(A,"g","gq")===undefined&&!/ONLY-HERE/.test(JSON.stringify(A.STATE)),A.toMarkdown().split("%%")[1]);
+ if(saves) chk("...and the host that came back saved them to the store",recOf(ROUTES[U])===REC,ROUTES[U]);
+ A.flushSave();A.closeBooklet();
+ for(let i=1;i<=3;i++){const N="Shed "+i;
+  /* the third change comes after a fresh page load */
+  if(i===3){A=boot({keep:true});on(A);}
+  gen(titled(DROPPED,N));const before=global.__ls[keyOf(id)];
+  await A.openLink(LINK);
+  if(saves){chk("change "+i+tag+": the file holds the kept records, so it is drawn, with no offer, the records as they were",
+    !offer()&&A.BOOK.title===N&&recOf(A.toMarkdown())===REC&&count(A)===1,A.toMarkdown().split("%%")[1]);
+   A.closeBooklet();continue;}
+  chk("change "+i+tag+": the page offers the newer file and does not draw it over the copy",
+    offer()===1&&A.currentId===id&&A.BOOK.title!==N&&recOf(A.toMarkdown())===REC&&global.__ls[keyOf(id)]===before,"offer="+offer()+" title="+A.BOOK.title+" kept="+(keyOf(id) in global.__ls));
+  if(i===1){press(/Dismiss/,P.find(P.main(),P.hasClass("hostnote"))[0]);
+   chk("...declined, the reader's copy is as it was",!offer()&&recOf(A.toMarkdown())===REC&&A.BOOK.title!==N&&global.__ls[keyOf(id)]===before);
+   A.flushSave();A.closeBooklet();
+   chk("...and kept as it was once closed",global.__ls[keyOf(id)]===before);
+   await A.openLink(LINK);
+   chk("...and opened again, the newer file is offered again",offer()===1&&recOf(A.toMarkdown())===REC);}
+  press(/Read the newer file/);await sleep(300);
+  chk("...read, the kept records are carried forward byte for byte, once",A.BOOK.title===N&&recOf(A.toMarkdown())===REC&&count(A)===1,A.toMarkdown().split("%%")[1]);
+  A.flushSave();A.closeBooklet();}
+ /* the host's Booklet.open with the store name is the same decision */
+ if(way==="a host whose saves fail"){gen(titled(DROPPED,"Shed by the host"));const before=global.__ls[keyOf(id)];
+  A.BookletApi.open(ROUTES[U],{name});
+  chk("Booklet.open"+tag+": the newer file is offered, not drawn over the copy",offer()===1&&A.currentId===id&&recOf(A.toMarkdown())===REC&&global.__ls[keyOf(id)]===before);
+  A.flushSave();A.closeBooklet();}
+ /* the module comes back: its text and the kept records are read together, and the answer is an answer again */
+ gen(titled(V1,"Shed back"));
+ await A.openLink(LINK);if(!saves) press(/Read the newer file/);
+ chk("the module back"+tag+": the answer shows in it again, once",ans(A,"g","gq")===WORDS&&count(A)===1&&A.BOOK.modules.length===2,JSON.stringify(A.STATE.answers));
+ A.flushSave();await sleep(300);A.closeBooklet();}
+/* the same with no module left at all (front matter only; prose alone is a module of its own): a blank kept copy holding
+   only kept records is judged on them too */
+{const V1=FM("Lone")+"> [!module|g] Going\n\n> [!activity|g] G\n\n> [!text|gq] Going question\n\n> [!module|g end] End\n",BARE=t=>FM(t);
+ const U=STORE+"lone.md",LINK="#/open/lone.md";const A=boot();ROUTES[U]=V1;
+ await A.openLink(LINK);typeIn(A,"g/g","LONE ANSWER");A.flushSave();A.closeBooklet();
+ ROUTES[U]=BARE("Lone");await A.openLink(LINK);press(/Read the newer file/);const id=A.currentId,REC=A.toMarkdown().split("%%")[1];
+ chk("a newer file with no module (no host): the answer is kept as records",A.BOOK.modules.length===0&&/LONE ANSWER/.test(REC));
+ A.flushSave();A.closeBooklet();const before=global.__ls[keyOf(id)];
+ ROUTES[U]=BARE("Lone again");await A.openLink(LINK);
+ chk("...the next change is offered, not drawn over the blank copy holding them",offer()===1&&A.currentId===id&&A.toMarkdown().split("%%")[1]===REC&&global.__ls[keyOf(id)]===before);
+ press(/Read the newer file/);
+ chk("...and read, they are carried forward byte for byte",A.BOOK.title==="Lone again"&&A.toMarkdown().split("%%")[1]===REC);
+ A.flushSave();A.closeBooklet();}
+
 P.closePages();
 console.log(fails?"\n"+fails+" FAILURES":"\nstore-held checks passed");process.exit(fails?1:0);
 })();
