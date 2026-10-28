@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-fgC86cJ3QZDexXhctsLLvHyZWYRVEN9uTovpWxlwGZ4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-xO2XK4Z1FgqeQF0uyfV9o+shQCLDcDUiBzsg8mHADs4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -47,6 +47,8 @@
     --tone-amber:#F8EBD0; --tone-amber-deep:#8B5F10;
     --tone-slate:#E6E9EC; --tone-slate-deep:#3E4E59;
     --tone-teal:#E4EFEF; --tone-teal-deep:#15464F;
+    --tone-blue:#E3EEF7; --tone-blue-deep:#2F6596;
+    --tone-purple:#ECE8F6; --tone-purple-deep:#6453A6;
     --bw:2px; --focus-w:3px;
     --h-sky:#E3EEF7; --h-sky-vivid:#3F7FB5; --h-sky-solid:#2F6FA8; --h-sky-deep:#2F6596;
     --h-rose:#F9E3E8; --h-rose-vivid:#BF5470; --h-rose-solid:#B4475F; --h-rose-deep:#A3405B;
@@ -69,6 +71,8 @@
     --tone-amber:#F8EBD0; --tone-amber-deep:#8B5F10;
     --tone-slate:#ECEFF1; --tone-slate-deep:#3E4E59;
     --tone-teal:#E6F0F0; --tone-teal-deep:#15464F;
+    --tone-blue:#E8F1F9; --tone-blue-deep:#2F6596;
+    --tone-purple:#EFECF8; --tone-purple-deep:#6453A6;
     --bw:2px; --focus-w:3px;
     --h-sky:#E8F1F9; --h-sky-vivid:#3F7FB5; --h-sky-solid:#2F6FA8; --h-sky-deep:#2F6596;
     --h-rose:#FAE8EC; --h-rose-vivid:#BF5470; --h-rose-solid:#B4475F; --h-rose-deep:#A3405B;
@@ -91,6 +95,8 @@
     --tone-amber:#31281A; --tone-amber-deep:#F0BA55;
     --tone-slate:#232D33; --tone-slate-deep:#A9BBC6;
     --tone-teal:#163139; --tone-teal-deep:#7CC0CB;
+    --tone-blue:#172A3B; --tone-blue-deep:#88B8E4;
+    --tone-purple:#25223A; --tone-purple-deep:#B3A5EE;
     --bw:2px; --focus-w:3px;
     --h-sky:#172A3B; --h-sky-vivid:#88B8E4; --h-sky-solid:#3A78B0; --h-sky-deep:#88B8E4;
     --h-rose:#381F28; --h-rose-vivid:#EC93AA; --h-rose-solid:#B24A64; --h-rose-deep:#EC93AA;
@@ -113,6 +119,8 @@
     --tone-amber:#FFF3C4; --tone-amber-deep:#5C4300;
     --tone-slate:#E6EAEE; --tone-slate-deep:#243746;
     --tone-teal:#DDF2F0; --tone-teal-deep:#004D45;
+    --tone-blue:#E6F0FA; --tone-blue-deep:#003A70;
+    --tone-purple:#EFEAFB; --tone-purple-deep:#3A2380;
     --bw:3px; --focus-w:4px;
     --h-sky:#E6F0FA; --h-sky-vivid:#003A70; --h-sky-solid:#003A70; --h-sky-deep:#003A70;
     --h-rose:#FFE9EE; --h-rose-vivid:#7A0F2E; --h-rose-solid:#7A0F2E; --h-rose-deep:#7A0F2E;
@@ -284,6 +292,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   h3{font-family:var(--sans);font-weight:700;font-size:.95rem;letter-spacing:.02em;margin:1.75rem 0 .5rem;color:var(--accent)}
   .aside{color:var(--muted);font-size:.95rem}
   .hint{color:var(--muted);font-size:.88rem;font-family:var(--sans)}
+  .q-kept-v{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.85rem;margin:.3rem 0 0}
 
   /* top bar: opaque, and its 1px shadow of its own colour (the paper's) covers the part of a pixel that --ap-top, rounded up,
      leaves above what is held under it */
@@ -992,8 +1001,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .rowcell>:first-child,.rowcell>.md>:first-child{margin-top:0}
   .rowcell :is(h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.mxwrap,.oneline,blockquote,ul.plain,.rd-callout),
   .rowcell .md>:is(ul,ol,h4,h5,h6,dl){max-width:none}
+  /* an activity printed whole (printWhole): its copy is for paper only, and the part of the screen it stands for is left out of the print */
+  .print-whole{display:none}
+  .pr-tabname{margin:1.4rem 0 .5rem;font-size:1.15rem;border-bottom:var(--bw) solid var(--rule);padding-bottom:.2rem;break-after:avoid}
+  .pr-page+.pr-page{margin-top:1.2rem}
   /* print: the layout for paper. The light tokens are the next block, declared last. */
   @media print{
+    .print-whole{display:block}
+    .pr-skip{display:none!important}
     .dv-groups{display:block}
     .pblock.row{display:block}
     .dv-gcard{break-inside:avoid;border:0;padding:0}
@@ -1041,6 +1056,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       --tone-amber:#F8EBD0 !important; --tone-amber-deep:#8B5F10 !important;
       --tone-slate:#ECEFF1 !important; --tone-slate-deep:#3E4E59 !important;
       --tone-teal:#E6F0F0 !important; --tone-teal-deep:#15464F !important;
+      --tone-blue:#E8F1F9 !important; --tone-blue-deep:#2F6596 !important;
+      --tone-purple:#EFECF8 !important; --tone-purple-deep:#6453A6 !important;
       --bw:2px !important; --focus-w:3px !important;
       --h-sky:#E8F1F9 !important; --h-sky-vivid:#3F7FB5 !important; --h-sky-solid:#2F6FA8 !important; --h-sky-deep:#2F6596 !important;
       --h-rose:#FAE8EC !important; --h-rose-vivid:#BF5470 !important; --h-rose-solid:#B4475F !important; --h-rose-deep:#A3405B !important;
@@ -1088,7 +1105,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   var STYLES={teaching:{"--r-lg":"22px","--r-md":"14px","--r-sm":"8px","--tile-solid":"0",picture:"spot"},
     briefing:{"--r-lg":"10px","--r-md":"6px","--r-sm":"4px","--tile-solid":"1",picture:"icon"}};
   var STYLE_NAMES=["teaching","briefing"],styleOn="teaching",hostStyle="teaching",styleSet=[];
-  var TOKEN=/^--(paper|paper-deep|ink|reader|field|surface|rule|muted|placeholder|on-ink|on-ink-soft|bar-bg|mark|accent|accent-soft|rg-on|on-accent|warn|warn-soft|tone-(warm|green|amber|slate|teal)(-deep)?|h-(sky|rose|sage|sun|lilac|petrol|slate)(-vivid|-solid|-deep)?|on-solid|spark)$/;
+  var TOKEN=/^--(paper|paper-deep|ink|reader|field|surface|rule|muted|placeholder|on-ink|on-ink-soft|bar-bg|mark|accent|accent-soft|rg-on|on-accent|warn|warn-soft|tone-(warm|green|amber|slate|teal|blue|purple)(-deep)?|h-(sky|rose|sage|sun|lilac|petrol|slate)(-vivid|-solid|-deep)?|on-solid|spark)$/;
   function put(n,v){try{de.style.setProperty(n,v);applied.push(n);}catch(e){/* a value the browser will not take is skipped */}}
   function clearCustom(){applied.forEach(function(n){try{de.style.removeProperty(n);}catch(e){/* nothing to remove */}});applied=[];de.removeAttribute("data-theme-custom");}
   function setCustom(colours){
@@ -1440,10 +1457,10 @@ const LIB_KEY="booklet.library.v1", bookKey=id=>"booklet.b."+id;
 const LIB_SCREEN="@booklets",HOME_SCREEN="@home";
 /* every dialog the page has, by id */
 const VEIL_IDS=["veilLoad","veilClear","veilAddModule"];
-/* A colour in widget data is a colour name (warm, green, amber, slate, teal), drawn in the active
+/* A colour in widget data is a colour name (warm, green, amber, slate, teal, blue, purple), drawn in the active
    theme's own tone tokens with the theme's ink on it, so a cell looks right in every theme. A name
    this list does not hold is no colour. (A "tone" is `good`, `warn` or `bad`, in a view.) */
-const COLOUR_NAMES=["warm","green","amber","slate","teal"];
+const COLOUR_NAMES=["warm","green","amber","slate","teal","blue","purple"];
 /* the built-in themes by name, in the order the menu offers them; the head
    script keeps a copy of this list (THEMES, and NAMES with "auto" first),
    the one place the page cannot read it from */
@@ -1478,11 +1495,15 @@ const QUESTION_KINDS=new Set(["text","lines","widget","choice","multi","scale","
 /* What each kind of booklet line takes after its id: a flag is a bare word, `key:` a setting written key:value.
    The same table is in SPEC.md section 4 and in lint-booklet.py (test/guard.test.js pins the three together). A
    kind in this table is a kind the format defines; any other kind with an id or settings is an unknown kind. */
-const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:","tab:"],row:["end"],text:["long"],
-  lines:[],scale:[],matrix:[],date:[],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],tab:[],
-  choice:["open","menu:"],multi:["open","menu:"],number:["min:","max:","step:"],widget:["readonly","describe"]};
+const KIND_SETTINGS={module:["end","icon:"],activity:["repeat","daily","hidden","icon:","parent:","status:","tab:"],row:["end"],text:["long","each:"],
+  lines:["each:","earlier:"],scale:["each:"],matrix:["each:"],date:["each:"],menu:[],hint:[],solution:[],data:[],records:[],manifest:[],notice:[],group:[],diff:[],law:[],opinion:[],tab:[],
+  choice:["open","menu:","each:","earlier:"],multi:["open","menu:","each:","earlier:"],number:["min:","max:","step:","each:"],widget:["readonly","describe","each:","earlier:"]};
 /* the settings above that must be numbers */
 const NUMBER_SETTINGS=["min","max","step"];
+/* `earlier:`'s value: a whole number in digits only (SPEC.md section 4); the linter's EARLIER_VALUE is the same, and test/guard.test.js pins the two */
+const EARLIER_VALUE=/^[0-9]+$/;
+/* how many earlier words a question offers at each place when its line does not say (SPEC.md section 5) */
+const EARLIER_DEFAULT=12;
 const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
 /* An id belongs to its module (SPEC.md section 4). Inside the page an activity is known by its
    ADDRESS: its module's id, a slash, and the id the file gives it (an id never holds a slash, so
@@ -1491,8 +1512,8 @@ const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
    the parser keeps a module's ids apart from it: no module id can be spelled like it. */
 const ADDR_SEP="/";
 const SHARED="*";
-/* A query's fourteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
-const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon"];
+/* A query's fifteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
+const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
 const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
   list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
@@ -1674,10 +1695,13 @@ const STRINGS_SRC={
       notQuite: "Not quite",
       theAnswer: "The answer",
       liveRight: "Right.",
-      liveNot: a=>`Not quite. The answer is ${a}.`
+      liveNot: a=>`Not quite. The answer is ${a}.`,
+      eachNotYet: "This question is asked once for each pick in another, which this page does not draw yet. Its answers are kept as written.",
+      keptAsWritten: (k,widget,each)=>`Kept as written: this answer is not in the shape ${each?"a question asked for each pick keeps (a list of pairs, one for each pick)":(widget?"a "+k+" widget":(/^[aeiou]/.test(k)?"an ":"a ")+k+" question")+" keeps"}, so it is shown here and not changed. The file holds:`
     },
     query: {
-      empty: "Nothing kept here yet."
+      empty: "Nothing kept here yet.",
+      summaryLater: "Summaries (summary: on) are not yet supported here, so this view is not drawn."
     },
     dv: {
       empty: "Nothing to show here.",
@@ -1694,7 +1718,8 @@ const STRINGS_SRC={
         numbers: "Show the numbers",
         bars: (n,lo,hi)=>`Bar chart, ${n===1?"1 bar":n+" bars"}, from ${lo} to ${hi}`,
         line: (n,names,lo,hi)=>`Line chart of ${names}, ${n===1?"1 point":n+" points"}, from ${lo} to ${hi}`
-      }
+      },
+      eachNotYet: "This view does not draw a question asked for each pick yet; a table, a list or cards show it."
     },
     /* what the file parser says is wrong with a file, and the messages that
        load and add-a-module refuse with. `w` is a place, "line 12" (see `line`);
@@ -1752,13 +1777,22 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: this scale question has no anchors under it (a numbered list)`,
       settingUnknown: (w,kind,s)=>`${w}: ${/^[aeiou]/.test(kind)?"an":"a"} ${kind} line takes no “${s}”, so it was ignored`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
+      earlierBad: (w,v)=>`${w}: \`earlier:${v}\` is not a whole number written in digits, so it was ignored and the question offers its default`,
+      eachNone: (w,id)=>`${w}: “${id}” is to be asked for each pick, and its each: names nothing, so it was ignored`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” is to be asked for each pick of “${s}”, which is no question or widget in its activity, so its each: was ignored`,
+      eachSelf: (w,id)=>`${w}: “${id}” is to be asked for each pick of itself, so its each: was ignored`,
+      eachKind: (w,id,s,k)=>`${w}: “${id}” is to be asked for each pick of “${s}”, a ${k} question: only a choice, a multi or a widget can be a source, so its each: was ignored`,
+      eachChain: (w,id,s)=>`${w}: “${id}” is to be asked for each pick of “${s}”, which is itself asked for each pick of another (one level only), so its each: was ignored`,
+      shapesKept: n=>`${n===1?"One answer is not in the shape its question keeps, so it is":n+" answers are not in the shape their questions keep, so they are"} kept as written: shown read-only with a notice, and left out of what views show`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` is not a setting a line takes (only \`status:off\`), so it was ignored`,
       dailyAlone: w=>`${w}: \`daily\` needs \`repeat\`, so it was ignored`,
       iconUnknown: (w,n)=>`${w}: “${n}” is not a name in Booklet's icon set, so it was ignored`,
       iconOnEnd: w=>`${w}: a module's end line takes no “icon:”, so it was ignored`,
       kindUnknown: (w,k)=>`${w}: this page does not know the kind “${k}”, so it is shown as a callout`,
       queryKeyUnknown: (w,key)=>`${w}: a query has no setting “${key}”, so it was ignored`,
-      queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number, so it was ignored`,
+      queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number or a number of days (such as \`7 days\`), so it was ignored`,
+      querySummaryBad: (w,v)=>`${w}: the query's \`summary: ${v}\` is not \`on\`, so it was ignored`,
+      queryEntriesOnly: (w,keys,n)=>`${w}: the query's ${keys} ${n>1?"read":"reads"} kept entries only, so ${n>1?"they were":"it was"} ignored`,
       queryInData: w=>`${w}: a query belongs in an activity's prose, not in the data section, so it was ignored`,
       recordNoItems: (w,id)=>`${w}: the entries record for “${id}” holds no list of items, so it is kept as written`,
       recordOutside: (w,what)=>`${w}: a “booklet ${what}” block belongs in the records region, so it is not read here`,
@@ -2009,10 +2043,13 @@ const STRINGS_SRC={
       notQuite: "Pas tout à fait",
       theAnswer: "La réponse",
       liveRight: "Juste.",
-      liveNot: a=>`Pas tout à fait. La réponse est ${a}.`
+      liveNot: a=>`Pas tout à fait. La réponse est ${a}.`,
+      eachNotYet: "Cette question est posée une fois pour chaque choix d’une autre question, ce que cette page n’affiche pas encore. Ses réponses sont gardées telles quelles.",
+      keptAsWritten: (k,widget,each)=>`Gardée telle quelle : cette réponse n’a pas la forme que garde ${each?"une question posée pour chaque choix (une liste de paires, une par choix)":widget?"un élément "+k:"une question "+k} ; elle est donc affichée ici sans être modifiée. Le fichier contient :`
     },
     query: {
-      empty: "Rien n’est encore enregistré ici."
+      empty: "Rien n’est encore enregistré ici.",
+      summaryLater: "Les résumés (summary: on) ne sont pas encore pris en charge ici ; cette vue n’est donc pas affichée."
     },
     dv: {
       empty: "Rien à afficher ici.",
@@ -2029,7 +2066,8 @@ const STRINGS_SRC={
         numbers: "Afficher les chiffres",
         bars: (n,lo,hi)=>`Diagramme à barres, ${n===1?"1 barre":n+" barres"}, de ${lo} à ${hi}`,
         line: (n,names,lo,hi)=>`Graphique linéaire de ${names}, ${n===1?"1 point":n+" points"}, de ${lo} à ${hi}`
-      }
+      },
+      eachNotYet: "Cette vue n’affiche pas encore une question posée pour chaque choix ; un tableau, une liste ou des cartes l’affichent."
     },
     problem: {
       line: n=>`ligne ${n}`,
@@ -2083,13 +2121,23 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w} : cette question scale n’a pas d’ancres en dessous (une liste numérotée)`,
       settingUnknown: (w,kind,s)=>`${w} : une ligne ${kind} n’accepte pas « ${s} » ; il a donc été ignoré`,
       numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
+      earlierBad: (w,v)=>`${w} : \`earlier:${v}\` n’est pas un nombre entier écrit en chiffres ; il a donc été ignoré et la question propose son nombre par défaut`,
+      eachNone: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix, et son each: ne nomme rien ; il a donc été ignoré`,
+      eachMissing: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui n’est ni une question ni un élément de son activité ; son each: a donc été ignoré`,
+      eachSelf: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix d’elle-même ; son each: a donc été ignoré`,
+      eachKind: (w,id,s,k)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », une question ${k} : seule une question choice ou multi, ou un élément, peut en être la source ; son each: a donc été ignoré`,
+      eachChain: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui est elle-même posée pour chaque choix d’une autre (un seul niveau) ; son each: a donc été ignoré`,
+      shapesKept: n=>n===1?"Une réponse n’a pas la forme que garde sa question ; elle est donc gardée telle quelle : affichée en lecture seule avec un avis, et laissée hors de ce que montrent les vues"
+        :`${n} réponses n’ont pas la forme que gardent leurs questions ; elles sont donc gardées telles quelles : affichées en lecture seule avec un avis, et laissées hors de ce que montrent les vues`,
       statusBad: (w,v)=>`${w} : \`status:${v}\` n’est pas un réglage que la ligne accepte (seulement \`status:off\`) ; il a donc été ignoré`,
       dailyAlone: w=>`${w} : \`daily\` nécessite \`repeat\` ; il a donc été ignoré`,
       iconUnknown: (w,n)=>`${w} : « ${n} » ne fait pas partie des icônes de Booklet ; il a donc été ignoré`,
       iconOnEnd: w=>`${w} : la ligne de fin d’un module n’accepte pas « icon: » ; il a donc été ignoré`,
       kindUnknown: (w,k)=>`${w} : cette page ne connaît pas le type « ${k} » ; il est donc affiché comme un encadré`,
       queryKeyUnknown: (w,key)=>`${w} : une requête n’a pas de réglage « ${key} » ; il a donc été ignoré`,
-      queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est pas un nombre entier positif ; il a donc été ignoré`,
+      queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est ni un nombre entier positif ni un nombre de jours (comme \`7 days\`) ; il a donc été ignoré`,
+      querySummaryBad: (w,v)=>`${w} : \`summary: ${v}\` dans la requête n’est pas \`on\` ; il a donc été ignoré`,
+      queryEntriesOnly: (w,keys)=>`${w} : ${keys} dans la requête ne lit que des entrées enregistrées ; il a donc été ignoré`,
       queryInData: w=>`${w} : une requête doit se trouver dans le texte d’une activité, pas dans la section des données ; elle a donc été ignorée`,
       recordNoItems: (w,id)=>`${w} : le registre des entrées de « ${id} » ne contient aucune liste d’éléments ; il est donc conservé tel quel`,
       recordOutside: (w,what)=>`${w} : un bloc « booklet ${what} » doit se trouver dans la zone des registres ; il n’est donc pas lu ici`,
@@ -2340,10 +2388,13 @@ const STRINGS_SRC={
       notQuite: "No del todo",
       theAnswer: "La respuesta",
       liveRight: "Correcto.",
-      liveNot: a=>`No del todo. La respuesta es ${a}.`
+      liveNot: a=>`No del todo. La respuesta es ${a}.`,
+      eachNotYet: "Esta pregunta se hace una vez por cada elección de otra pregunta, algo que esta página todavía no muestra. Sus respuestas se guardan tal como están.",
+      keptAsWritten: (k,widget,each)=>`Se guarda tal como está: esta respuesta no tiene la forma que guarda ${each?"una pregunta que se hace por cada elección (una lista de pares, uno por elección)":widget?"un elemento "+k:"una pregunta "+k}, así que se muestra aquí sin cambios. El archivo contiene:`
     },
     query: {
-      empty: "Todavía no hay nada guardado aquí."
+      empty: "Todavía no hay nada guardado aquí.",
+      summaryLater: "Los resúmenes (summary: on) aún no son compatibles aquí, así que esta vista no se muestra."
     },
     dv: {
       empty: "Nada que mostrar aquí.",
@@ -2360,7 +2411,8 @@ const STRINGS_SRC={
         numbers: "Mostrar los números",
         bars: (n,lo,hi)=>`Gráfico de barras, ${n===1?"1 barra":n+" barras"}, de ${lo} a ${hi}`,
         line: (n,names,lo,hi)=>`Gráfico de líneas de ${names}, ${n===1?"1 punto":n+" puntos"}, de ${lo} a ${hi}`
-      }
+      },
+      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada elección; una tabla, una lista o tarjetas la muestran."
     },
     problem: {
       line: n=>`línea ${n}`,
@@ -2414,13 +2466,23 @@ const STRINGS_SRC={
       scaleNoAnchors: w=>`${w}: esta pregunta scale no tiene anclas debajo (una lista numerada)`,
       settingUnknown: (w,kind,s)=>`${w}: una línea ${kind} no admite “${s}”, así que se ignoró`,
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
+      earlierBad: (w,v)=>`${w}: \`earlier:${v}\` no es un número entero escrito con cifras, así que se ignoró y la pregunta ofrece su valor por defecto`,
+      eachNone: (w,id)=>`${w}: “${id}” debe hacerse por cada elección, y su each: no nombra nada, así que se ignoró`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que no es una pregunta ni un elemento de su actividad, así que su each: se ignoró`,
+      eachSelf: (w,id)=>`${w}: “${id}” debe hacerse por cada elección de sí misma, así que su each: se ignoró`,
+      eachKind: (w,id,s,k)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, una pregunta ${k}: solo una pregunta choice o multi, o un elemento, puede ser la fuente, así que su each: se ignoró`,
+      eachChain: (w,id,s)=>`${w}: “${id}” debe hacerse por cada elección de “${s}”, que a su vez se hace por cada elección de otra (un solo nivel), así que su each: se ignoró`,
+      shapesKept: n=>n===1?"Una respuesta no tiene la forma que guarda su pregunta, así que se guarda tal como está: se muestra solo para leer, con un aviso, y queda fuera de lo que muestran las vistas"
+        :`${n} respuestas no tienen la forma que guardan sus preguntas, así que se guardan tal como están: se muestran solo para leer, con un aviso, y quedan fuera de lo que muestran las vistas`,
       statusBad: (w,v)=>`${w}: \`status:${v}\` no es un ajuste que admita la línea (solo \`status:off\`), así que se ignoró`,
       dailyAlone: w=>`${w}: \`daily\` requiere \`repeat\`, así que se ignoró`,
       iconUnknown: (w,n)=>`${w}: “${n}” no está entre los íconos de Booklet, así que se ignoró`,
       iconOnEnd: w=>`${w}: la línea de cierre de un módulo no admite “icon:”, así que se ignoró`,
       kindUnknown: (w,k)=>`${w}: esta página no conoce el tipo “${k}”, así que se muestra como un recuadro`,
       queryKeyUnknown: (w,key)=>`${w}: una consulta no tiene el ajuste “${key}”, así que se ignoró`,
-      queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo, así que se ignoró`,
+      queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo ni un número de días (como \`7 days\`), así que se ignoró`,
+      querySummaryBad: (w,v)=>`${w}: el \`summary: ${v}\` de la consulta no es \`on\`, así que se ignoró`,
+      queryEntriesOnly: (w,keys)=>`${w}: ${keys} de la consulta solo lee entradas guardadas, así que se ignoró`,
       queryInData: w=>`${w}: una consulta va en el texto de una actividad, no en la sección de datos, así que se ignoró`,
       recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se conserva tal cual`,
       recordOutside: (w,what)=>`${w}: un bloque “booklet ${what}” va en la zona de registros, así que no se lee aquí`,
@@ -2675,7 +2737,7 @@ const dayKey=ts=>localStamp(new Date(ts)).slice(0,10);
 /* words compared for matching a vocabulary: case, curly quotes, dashes and spacing never matter (linkNorm, below, is for headings and keeps quotes) */
 const norm=s=>String(s).toLowerCase().replace(/[’‘`´]/g,"'").replace(/[—–]/g,"-").replace(/\s+/g," ").trim();
 /* a string with something other than whitespace in it; null and undefined are empty */
-const nonEmpty=v=>(v||"").trim().length>0;
+const nonEmpty=v=>typeof v==="string"&&v.trim().length>0;
 const splitList=s=>String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),3400);}
 const slugify=s=>String(s==null?"":s).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").normalize("NFC")
@@ -3804,7 +3866,8 @@ function checkSettings(it,where,P,icons){const allowed=KIND_SETTINGS[it.kind],ou
     if(key==="icon"&&allowed.includes("icon:")&&!icons.has(val)){out.push(P.iconUnknown(where,val));delete it.set[key];continue;}
     if(key==="status"&&allowed.includes("status:")&&val!=="off"){out.push(P.statusBad(where,val));delete it.set[key];continue;}
     if(!allowed.includes(key+":")){out.push(P.settingUnknown(where,it.kind,key+":"));delete it.set[key];continue;}
-    if(NUMBER_SETTINGS.includes(key)&&!(String(val).trim()!==""&&Number.isFinite(Number(val)))){out.push(P.numberBad(where,key,val));delete it.set[key];}}
+    if(NUMBER_SETTINGS.includes(key)&&!(String(val).trim()!==""&&Number.isFinite(Number(val)))){out.push(P.numberBad(where,key,val));delete it.set[key];}
+    if(key==="earlier"&&!EARLIER_VALUE.test(val)){out.push(P.earlierBad(where,val));delete it.set[key];}}
   for(const f of [...it.flags]) if(!allowed.includes(f)){out.push(P.settingUnknown(where,it.kind,f));it.flags.delete(f);}
   if(it.flags.has("daily")&&!it.flags.has("repeat")){out.push(P.dailyAlone(where));it.flags.delete("daily");}
   return out;}
@@ -3874,19 +3937,24 @@ function optionsUnder(lines,i){let j=i,blanks=0;
   return items.length?{items,next:j}:null;}
 /* A query block's body: `key: value` lines (YAML's plainest form). Returns
    its settings, or `bad` with the first line that is not one; `unknown` names the keys a query does not
-   have, and `limitBad` a `limit` that is not a positive whole number (both are ignored). */
+   have, `limitBad` a `limit` that is neither a positive whole number nor that many days (`7 days`), and `summaryBad` a `summary`
+   that is not `on` (all three are ignored). A span of days is `view.days`; a count is `view.limit`. */
 function readQuery(code){const o={};
   for(const raw of String(code||"").split("\n")){const ln=raw.trim();if(!ln) continue;
     const kv=kvLine(ln);if(!kv) return {bad:ln};
     o[kv[0].toLowerCase()]=kv[1];}
   const unknown=Object.keys(o).filter(k=>!QUERY_KEYS.includes(k));
-  const limitBad=o.limit!==undefined&&!/^[1-9]\d*$/.test(o.limit)?o.limit:undefined;
-  const lim=limitBad===undefined&&o.limit!==undefined?Number(o.limit):0;
+  const limitBad=o.limit!==undefined&&!/^[1-9]\d*(?:[ \t]+days?)?$/.test(o.limit)?o.limit:undefined;
+  const span=limitBad===undefined&&o.limit!==undefined?/^([1-9]\d*)[ \t]+days?$/.exec(o.limit):null;
+  const lim=limitBad===undefined&&o.limit!==undefined&&!span?Number(o.limit):0;
+  const summaryBad=o.summary!==undefined&&o.summary!=="on"?o.summary:undefined;
   /* how a view draws: the view, and the names of the fields it reads */
-  const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
+  const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit","summary"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
   if(lim>0) view.limit=lim;
+  if(span) view.days=Number(span[1]);
+  if(o.summary==="on") view.summary="on";
   return {from:o.from||"",fields:o.fields?o.fields.split(",").map(x=>x.trim()).filter(Boolean):undefined,
-    empty:o.empty||undefined,view,unknown,limitBad};}
+    empty:o.empty||undefined,view,unknown,limitBad,summaryBad};}
 /* A `booklet data` block: rows a generator wrote. JSON: an object with
    `rows` (and optionally `fields`, each key's label and the default order), or
    the list of rows itself. A value is a string, a number, true, false, null, or
@@ -3926,7 +3994,9 @@ function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),
   if(moved) problems.push(PROBLEM.designMoved);
   const doc=readBlocks(items,fm,problems,icons);
   resolveMenus(doc,problems);
+  resolveEach(doc,problems);
   linkQueries(doc,problems);
+  noteShapes(doc,problems);
   return shapeBooklet(doc,fm,L,source,problems,wroteOf(text,regs,first,moved,source));}
 /* What a writer needs of the file as it was read (fileText, SPEC section 8): `head`, its bytes before the records region,
    every one of them (its trailing blank lines, its line endings and a byte order mark included), or null when design
@@ -4066,7 +4136,7 @@ const moduleHolding=(modules,a)=>modules.find(m=>m.activities.includes(a));
 const helpOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),entryIx=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
-  const queries=[],menus=[],menuUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
+  const queries=[],menus=[],menuUses=[],eachUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
   let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,grp=null,theme=null,recScope="",recForeign=null,dataMod=null;
   /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
      as a module's opening is, and drawn on the home screen. `started` is set when that first line is met. */
@@ -4138,6 +4208,7 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       if(q.bad){problems.push(P.queryBadLine(P.line(it.line),q.bad));return;}
       q.unknown.forEach(k=>problems.push(P.queryKeyUnknown(P.line(it.line),k)));
       if(q.limitBad!==undefined) problems.push(P.queryLimitBad(P.line(it.line),q.limitBad));
+      if(q.summaryBad!==undefined) problems.push(P.querySummaryBad(P.line(it.line),q.summaryBad));
       queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,empty:q.empty,view:q.view})});lastQ=null;},
     /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
     theme:it=>{
@@ -4272,6 +4343,9 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       if(r.bad){problems.push(r.bad);return;}
       if(k==="scale"){const seen=new Set(),d=it.anchors.find(a=>seen.size===seen.add(a.n).size);if(d) problems.push(P.scaleAnchorRepeat(where,d.n));}
       if(r.block.type==="widget"&&mod) r.block.module=mod.id;
+      /* `earlier:` (checkSettings has taken a bad value off); `each:` is settled once the file is read (resolveEach) */
+      if(it.set.earlier!==undefined) r.block.earlier=Number(it.set.earlier);
+      if(it.set.each!==undefined){r.block.each=it.set.each;eachUses.push({block:r.block,act,where});}
       lastQ=put(r.block);lastQAct=act;
       if(r.menu) menuUses.push({block:lastQ,menu:it.set.menu,mod,where});});
   /* A hint or a solution straight after a question belongs to it (SPEC.md section 6). Folded, it is the question's own `hint` or
@@ -4320,7 +4394,7 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
      within its module (a block outside every fence, in the module with no name) */
   dataBlocks.forEach(d=>{const set=ids.get(d.mod?d.mod.id:"");if(set&&set.has(d.id)) dup(P.line(d.line),d.id);});
   if(mod) refuse(P.moduleNeverClosed(P.line(mod.__line),mod.id));
-  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,figures,dataBlocks,theme,sharedNotes,recordsKept,opening};}
+  return {modules,widgets,answers,entries,drafts,queries,menus,menuUses,eachUses,figures,dataBlocks,theme,sharedNotes,recordsKept,opening};}
 function resolveMenus({menus,menuUses,modules},problems){const P=PROBLEM;
   /* a question that names a shared menu takes its options from it: from its own module's menus first,
      then from the data section's (a menu outside every fence), never from another module's */
@@ -4330,6 +4404,55 @@ function resolveMenus({menus,menuUses,modules},problems){const P=PROBLEM;
       modules.forEach(m=>m.activities.forEach(a=>a.pages.forEach(pg=>stripBlock(pg.blocks,u.block))));continue;}
     u.block.options=hit.items.slice();}
 }
+/* ---- An answer's shape (SPEC.md section 8), and a question asked for each pick (`each:`, section 5). An answer whose shape is not
+   its kind's is kept as written: its question is drawn read-only (renderBlock), nothing writes it, and a view leaves it out of its
+   row (entryFields). Its shape is the JSON type its kind stores, never whether a value is in range (a scale's 7 on anchors 0 to 4
+   fits): the same table as the Obsidian plugin's core/shape.ts. ---- */
+const wholeFrom=(x,n)=>typeof x==="number"&&Number.isInteger(x)&&x>=n;
+const isStr=x=>typeof x==="string";
+const everyIs=t=>v=>Array.isArray(v)&&v.every(t);
+const isPosOrOwn=x=>wholeFrom(x,1)||isStr(x);
+const KIND_SHAPE={text:isStr,date:isStr,lines:everyIs(isStr),number:x=>typeof x==="number"&&Number.isFinite(x),scale:x=>wholeFrom(x,0),
+  choice:isPosOrOwn,multi:everyIs(isPosOrOwn),matrix:everyIs(x=>x===null||wholeFrom(x,0))};
+const ENGINE_SHAPE={"grid-select":everyIs(isStr),"svg-regions":everyIs(r=>!!r&&typeof r==="object"&&!Array.isArray(r)&&isStr(r.id)&&everyIs(isStr)(r.s))};
+/* one pair of a question asked for each pick: its pick as the source stores it (a number or a string) and its answer `a`; other keys
+   a hand edit gave it are kept */
+const isPair=x=>!!x&&typeof x==="object"&&!Array.isArray(x)&&(isStr(x.pick)||(typeof x.pick==="number"&&Number.isFinite(x.pick)))&&hasOwn(x,"a");
+/* the widget a widget block names, among `ws`: its own module's, else the data section's (widgetOf reads the booklet in force) */
+const widgetIn=(ws,id,scope)=>(scope&&ws.find(w=>w.id===id&&w.module===scope))||ws.find(w=>w.id===id&&!w.module)||null;
+/* whether `v` is of the wrong shape for question `b` (`W`: a widget's data). An answer that holds nothing never is, and neither is
+   anything under a widget whose data or engine this page does not have, which nothing here writes. */
+function wrongShape(b,v,W){if(!holdsSomething(v)) return false;
+  const one=b.type==="widget"?(W&&hasOwn(ENGINE_SHAPE,W.engine)?ENGINE_SHAPE[W.engine]:null):hasOwn(KIND_SHAPE,b.type)?KIND_SHAPE[b.type]:null;
+  if(!one) return false;
+  return !(b.each?everyIs(p=>isPair(p)&&(!holdsSomething(p.a)||one(p.a))):one)(v);}
+/* a pick as a key that keeps its type: a position 3 is "n:3", an own option "3" is "s:3" */
+const pickKey=p=>(typeof p==="number"?"n:":"s:")+p;
+/* the picks in a source's answer, in the order it holds them, each once; an answer of the wrong shape holds none */
+function sourcePicks(src,v,W){if(!holdsSomething(v)||wrongShape(src,v,W)) return [];
+  const all=src.type==="choice"?[v]:src.type==="multi"?v:src.type==="widget"&&W?(W.engine==="svg-regions"?v.map(r=>r.id):W.engine==="grid-select"?v:[]):[];
+  const seen=new Set();
+  return all.filter(x=>{if(!(typeof x==="number"||(isStr(x)&&x.trim()))) return false;const k=pickKey(x);if(seen.has(k)) return false;seen.add(k);return true;});}
+const pairsOf=v=>Array.isArray(v)?v.filter(isPair):[];
+/* a pick's pair, compared exactly (a number and a string never match); the first, if a hand edit gave a pick two */
+const pairFor=(v,p)=>pairsOf(v).find(x=>x.pick===p);
+/* `each:<id>` holds when it names a choice, a multi or a widget in the question's own activity, not the question itself, and one
+   level only: the source has no `each:` of its own. One that does not hold is said and taken off, and the question is its kind. */
+const EACH_SOURCES=new Set(["choice","multi","widget"]);
+function resolveEach({eachUses},problems){const P=PROBLEM,named=new Set(eachUses.map(u=>u.block));
+  for(const {block:q,act,where} of eachUses){const s=String(q.each).trim();
+    const src=s&&act?blocksAll(activityBlocks(act)).find(b=>QUESTION_KINDS.has(b.type)&&b.id===s):null;
+    const why=!s?P.eachNone(where,q.id):s===q.id?P.eachSelf(where,q.id):!src?P.eachMissing(where,q.id,s)
+      :!EACH_SOURCES.has(src.type)?P.eachKind(where,q.id,s,src.type):named.has(src)?P.eachChain(where,q.id,s):null;
+    if(why){problems.push(why);delete q.each;}else q.each=s;}}
+/* how many answers are of the wrong shape, in the answers, the drafts and the kept entries: said once among the file's problems */
+function noteShapes({modules,widgets,answers,entries,drafts},problems){let n=0;
+  for(const m of modules) for(const a of m.activities){
+    const qs=blocksAll(activityBlocks(a)).filter(b=>QUESTION_KINDS.has(b.type));
+    const recs=a.kind==="entry"?[drafts[a.id],...(entries[a.id]||[])]:[answers[scopeOfAddr(a.id)]];
+    for(const r of recs) if(r&&typeof r==="object") for(const b of qs)
+      if(hasOwn(r,b.id)&&wrongShape(b,r[b.id],b.type==="widget"?widgetIn(widgets,b.widget,b.module):null)) n++;}
+  if(n) problems.push(PROBLEM.shapesKept(n));}
 function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
   /* A query reads within its own module, so a `from` that names nothing, or something only in another
      module, is refused here and never reaches drawing. It is looked for in the query's own module first
@@ -4340,6 +4463,11 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
    modules.forEach(m=>{const sc=scopeOf(m),t=where.get(sc)||where.set(sc,new Map()).get(sc);
      m.activities.forEach(a=>{t.set(shortId(a.id),{m,a});
        blocksAll(activityBlocks(a)).forEach(b=>{if(b.keys&&b.keys.length&&!READING_BLOCKS.has(b.type)) t.set(b.id,{m,a,q:b});});});});
+   /* a span of days and a summary read kept entries: on a data block or on a question that keeps none they are reported and ignored */
+   const entriesOnly=({block,line})=>{const v=block.view||{},ks=[];
+     if(v.days){ks.push("limit: "+v.days+" days");delete v.days;}
+     if(v.summary){ks.push("summary: on");delete v.summary;}
+     if(ks.length) problems.push(P.queryEntriesOnly(P.line(line),ks.map(k=>"`"+k+"`").join(", "),ks.length));};
    for(const x of queries){const {q,block}=x,drop=why=>{problems.push(P.queryRefused(shortId(x.act.id),why));
        x.act.pages.forEach(pg=>stripBlock(pg.blocks,block));};
      const here=moduleHolding(modules,x.act),sc=scopeOf(here),as=(q.view||{}).as;
@@ -4348,10 +4476,10 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
      if(as!==undefined&&!QUERY_VIEWS.has(as)){drop(P.queryViewBad(as,[...QUERY_VIEWS]));continue;}
      if(!src){const d=q.from&&(dataBlocks.find(z=>z.id===q.from&&z.mod===here)||dataBlocks.find(z=>z.id===q.from&&z.mod===null));
        if(d){
-         block.data={rows:d.rows,fields:d.fields};continue;}
+         block.data={rows:d.rows,fields:d.fields};entriesOnly(x);continue;}
        if(elsewhere()){drop(P.queryOtherModule(q.from));continue;}
        drop(P.queryNothing(q.from||""));continue;}
-     if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};}
+     if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};if(src.a.kind!=="entry") entriesOnly(x);}
      else if(src.a.kind!=="entry"){drop(P.queryNoEntries(q.from));continue;}
      else block.from=src.a.id;}}
 }
@@ -4710,7 +4838,7 @@ function thBuild(B,use){
   const g=n=>thRgb(B["--"+n]),c=k=>use[k]?thRgb(use[k]):null;
   const P=c("paper")||g("paper"),I=c("ink")||g("ink"),A=c("accent")||g("accent");
   const deep={green:c("good")||g("tone-green-deep"),amber:c("warn")||g("tone-amber-deep"),warm:c("bad")||g("tone-warm-deep"),
-    slate:g("tone-slate-deep"),teal:g("tone-teal-deep")};
+    slate:g("tone-slate-deep"),teal:g("tone-teal-deep"),blue:g("tone-blue-deep"),purple:g("tone-purple-deep")};
   const dark=thLum(P)<thLum(I),pi=!!(use.paper||use.ink),o={};
   const set=(n,v)=>{o["--"+n]=thHex(v);};
   if(pi){const pd=thMix(P,I,.05),fd=dark?pd:thMix(P,[255,255,255],.7);
@@ -4860,9 +4988,18 @@ function renameClashingIds(lines,takenBlocks,takenNotes,modId){
   const D=depthsOf(lines),M=D.map(codeMask),mask=lines.map((_,i)=>D.some((v,d)=>M[d][i]&&v[i]!=="")),bl=blockIdLines(lines),nl=noteIdLines(lines);
   const usedB=new Set(bl.values()),usedN=new Set(nl.values());
   /* the ids the module's own lines give to activities, questions and menus: a query's `from:` that names one of
-     these names that, not a block */
-  const own=new Set();D.forEach(v=>bookletLines(v).forEach(x=>{
-    if(["activity","menu","module"].concat([...QUESTION_KINDS]).includes(x.kind)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
+     these names that, not a block. Only a line drawn as such counts: one at the top, or one a group in an activity holds (a
+     group in a group too). A line in a note, a quote or a group outside an activity is drawn as text (SPEC.md section 6) and
+     gives no id, so it cannot make a query follow the wrong name. */
+  const own=new Set(),heads=D.map(v=>bookletLines(v)),KINDS=["activity","menu","module"].concat([...QUESTION_KINDS]);
+  /* the callout a line is in: the nearest callout line one `>` out above it, with every line between them still quoted that deep
+     (a blank line, or a quote that is not the callout's, ends it) */
+  const inside=(h,i,d)=>{const re=new RegExp("^ {0,3}(?:>[ \\t]?){"+d+"}");for(let j=h.i+1;j<i;j++) if(!re.test(lines[j])) return false;return true;};
+  const drawn=(d,i)=>{if(d===0) return true;
+    let h=null;for(const x of heads[d-1]) if(x.i<i) h=x;
+    return !!h&&h.kind==="group"&&inside(h,i,d)&&(d===1?heads[0].some(x=>x.kind==="activity"&&x.i<h.i):drawn(d-1,h.i));};
+  heads.forEach((hs,d)=>hs.forEach(x=>{
+    if(KINDS.includes(x.kind)&&drawn(d,x.i)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
   const fresh=(id,taken,used)=>{let n=modId+"-"+id,k=2;while(taken.has(n)||used.has(n)){n=modId+"-"+id+"-"+k;k++;}used.add(n);return n;};
   const mapB=new Map(),mapN=new Map(),renamed=[];
   for(const id of [...usedB]) if(takenBlocks.has(id)){const to=fresh(id,takenBlocks,usedB);mapB.set(id,to);renamed.push({what:"block",from:id,to});}
@@ -5753,7 +5890,17 @@ const figureHooks=scope=>({
    in order" for that); the text after it is still being typed or dictated
    and stays uncommitted until a comma, Enter, or blur turns it into one
    more confirmed word. */
-const parseTagValue=raw=>{const s=String(raw||"");const i=s.lastIndexOf(",");
+const parseTagValue=(raw,stored)=>{const s=String(raw||"");
+  /* A word already stored that holds a comma ("Warm, tender") is one word when the text still holds it whole, so focusing the
+     field and leaving it cannot split it. The field is only ever written from the stored words, and `stored` names them. */
+  const keep=(stored||[]).filter(w=>typeof w==="string"&&w.includes(","));
+  if(keep.length){const segs=s.split(","),out=[];
+    for(let i=0;i<segs.length;){let n=1,whole=null;
+      for(const w of keep){const k=w.split(",").length;
+        if(k>n&&i+k<=segs.length&&segs.slice(i,i+k).join(",").trim()===w){n=k;whole=w;}}
+      out.push(whole===null?segs[i].trim():whole);i+=n;}
+    const tail=out.pop();return {confirmed:out.filter(nonEmpty),inProgress:tail||""};}
+  const i=s.lastIndexOf(",");
   return i<0?{confirmed:[],inProgress:s.trim()}
             :{confirmed:splitList(s.slice(0,i)),inProgress:s.slice(i+1).trim()};};
 /* Vocabulary suggestions for whatever's typed after the last comma. Exact
@@ -5766,6 +5913,38 @@ const matchVocab=(fragment,vocab)=>{const f=norm(fragment||"");
    casing and spelling is kept. */
 const dedupeLabels=arr=>{const seen=new Set();
   return (arr||[]).filter(x=>{const k=norm(x);if(seen.has(k)) return false;seen.add(k);return true;});};
+
+/* Redraw a row of controls without replacing the ones that stay. A press that began on a control a redraw replaced is lost (the
+   browser sends no click to a node that has left the page), and leaving a typing field redraws the controls beside it. `keyOf`
+   names each item, `make(item)` builds a control, `update(node,item)` brings a kept one up to date; the controls end up in the
+   items' order, and a control that was in place stays where it is. */
+function syncKids(host,items,keyOf,make,update){
+  const have=new Map();Array.from(host.children).forEach(n=>{if(n&&n.__key!==undefined) have.set(n.__key,n);});
+  const want=items.map(it=>{const k=keyOf(it);let n=have.get(k);
+    if(n) have.delete(k); else{n=make(it);n.__key=k;}
+    if(update) update(n,it);return n;});
+  have.forEach(n=>host.removeChild(n));
+  want.forEach((n,i)=>{if(host.children[i]!==n) host.insertBefore(n,host.children[i]||null);});}
+
+/* Run `f` once a press that is under way is over (a pointer held down, then the click it ends in), else on the next turn. Leaving a
+   typing field is what starts a press on a control beside it, and what that leaves draws (a chip, a pill) moves the controls under
+   the pointer: the press would land on what has moved there. A fallback runs it anyway if the pointer's release never arrives. */
+let PRESSING=false,PRESS_TARGET=null;const AFTER_PRESS=[],HELD=new Set();
+const runAfterPress=()=>{AFTER_PRESS.splice(0).forEach(f=>{try{f();}catch(e){}});};
+if(typeof document!=="undefined"&&document.addEventListener){
+  document.addEventListener("pointerdown",e=>{PRESSING=true;PRESS_TARGET=e&&e.target||null;HELD.forEach(b=>{b.__held=false;});HELD.clear();},true);
+  const over=()=>{PRESSING=false;setTimeout(runAfterPress,0);};
+  document.addEventListener("pointerup",over,true);document.addEventListener("pointercancel",over,true);}
+/* Leaving a typing field adds the words typed, and the reader may be leaving it to press the very control that word names (an option,
+   a sense word, an item): the words have then pressed it already, and the press that follows must not undo it. `nextTo(e)` is what
+   the field is being left for (the focus's new place, or the pointer's press); `holdPress(btn)` has btn's next press only confirm
+   (heldPress); it ends when the focus leaves btn or any new press begins. */
+const nextTo=e=>e?(e.relatedTarget||(PRESSING?PRESS_TARGET:null)):null;
+const within=(btn,t)=>!!btn&&!!t&&(btn===t||(typeof btn.contains==="function"&&btn.contains(t)));
+function holdPress(btn){btn.__held=true;HELD.add(btn);
+  if(btn.addEventListener) btn.addEventListener("blur",()=>{btn.__held=false;HELD.delete(btn);},{once:true});}
+function heldPress(btn){if(!btn.__held) return false;btn.__held=false;HELD.delete(btn);return true;}
+function afterPress(f){if(!PRESSING){setTimeout(f,0);return;}AFTER_PRESS.push(f);setTimeout(()=>{PRESSING=false;runAfterPress();},1500);}
 
 /* ======================= tagInput =======================
    A comma-separated, suggest-as-you-type field over a small vocabulary,
@@ -5786,15 +5965,17 @@ function tagInput(opts){
   const dlId="taglist"+(++tagInputSeq);
   const wrap=el("div",{class:"tagfield"});
   if(opts.hint) wrap.append(el("p",{class:"hint"},opts.hint));
-  const inp=el("input",{type:"text",class:"field",style:"min-height:0",
+  const inp=el("input",{type:"text",class:"field tag-in",style:"min-height:0",
     placeholder:opts.placeholder||"",list:dlId,"aria-label":opts.placeholder||""});
   const dl=el("datalist",{id:dlId});
   const chips=el("div",{class:"tagchips"});
 
-  const drawChips=()=>{chips.innerHTML="";
-    (opts.values()||[]).forEach(label=>chips.append(el("span",{class:"tagchip"},label,
+  /* the chips that stay are not replaced: Tab from the field lands on one, and the redraw at blur must not take the focus with it */
+  const drawChips=()=>syncKids(chips,opts.values()||[],label=>label,label=>el("span",{class:"tagchip"},label,
       el("button",{type:"button",class:"x",onclick:()=>{
-        opts.onChange((opts.values()||[]).filter(x=>x!==label));refresh();}},"×"))));};
+        opts.onChange((opts.values()||[]).filter(x=>x!==label));refresh();}},"×")));
+  /* a listed word whose label holds a comma is one word, as a stored one is (parseTagValue) */
+  const known=()=>[...(opts.values()||[]),...(opts.vocab()||[]).map(v=>String(v.label||"")).filter(l=>l.includes(","))];
 
   /* Datalist only ever matches/replaces the WHOLE input value, which is
      wrong for a multi-value field — so every option is written out as the
@@ -5811,22 +5992,24 @@ function tagInput(opts){
      is actively typing into — a button click elsewhere, for instance.
      Never resets it out from under an in-progress keystroke. */
   const refresh=()=>{if(document.activeElement!==inp) inp.value=(opts.values()||[]).join(", ");
-    drawChips();drawSuggestions(parseTagValue(inp.value).inProgress);};
+    drawChips();drawSuggestions(parseTagValue(inp.value,known()).inProgress);};
 
   inp.addEventListener("input",()=>{
-    const {confirmed,inProgress}=parseTagValue(inp.value);
+    const {confirmed,inProgress}=parseTagValue(inp.value,known());
     const next=dedupeLabels(confirmed);
     const cur=opts.values()||[];
     if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
     drawChips();drawSuggestions(inProgress);});
   /* A dangling in-progress word (typed but no trailing comma yet) commits
      on blur, so nothing typed or dictated is silently dropped. */
-  inp.addEventListener("blur",()=>{
-    const {confirmed,inProgress}=parseTagValue(inp.value);
+  const commit=e=>{
+    const {confirmed,inProgress}=parseTagValue(inp.value,known());
     const next=dedupeLabels(inProgress?[...confirmed,inProgress]:confirmed);
     const cur=opts.values()||[];
-    if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
-    refresh();});
+    if(next.join("\0")!==cur.join("\0")) opts.onChange(next,nextTo(e),cur);};
+  inp.addEventListener("blur",e=>{commit(e);afterPress(refresh);});
+  /* the same, when the page is closed or reloaded (commitOwnFields) */
+  inp.commitOwn=()=>{commit(null);refresh();};
 
   refresh();
   wrap.append(inp,dl,chips);
@@ -5842,6 +6025,10 @@ const cellColor=(c,i)=>{const t=colourOf(c);
   return {tint:FALLBACK_TINT[i%FALLBACK_TINT.length],deep:"var(--tint-ink)"};};
 const cellStyle=(c,i)=>{const k=cellColor(c,i);return `background:${k.tint};--qd:${k.deep}`+(k.tone?`;--qt:${k.tint}`:"");};
 
+/* a sense word's label, or the code itself for a word the reader typed that no sense lists */
+const senseLabel=(W,code)=>{for(const g of (W.senses||[])) for(const w of (g.words||[]))
+    if(w.id===code) return tx(w.label,code);
+  return code;};
 /* ======================= ENGINE: svg-regions =======================
    Given a widget carrying one or more figures — each an SVG whose shapes have
    a `data-r` region id — let a person point at a region and say what it is
@@ -5851,14 +6038,12 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const C=wordsOf(W.copy);
   const figs=W.figures||[];
   const labelOf=id=>{const r=(W.regions||[]).find(x=>x.id===id);return r?tx(r.label,id):id;};
-  const senseWord=code=>{for(const g of (W.senses||[])) for(const w of (g.words||[]))
-      if(w.id===code) return tx(w.label,code);
-    return code;};
+  const senseWord=code=>senseLabel(W,code);
   const figFor=id=>figs.find(f=>(f.regions||[]).includes(id));
   const wrap=el("div",{});
   let active=null, side=(figs[0]||{}).id||null;
   /* drawing reads the answer; only an answer writes it */
-  const rows=()=>e[key]||[];
+  const rows=()=>Array.isArray(e[key])?e[key].filter(r=>isObj(r)&&isStr(r.id)&&everyIs(isStr)(r.s)):[];
   const rowFor=id=>rows().find(r=>r.id===id);
   const sides=el("div",{class:"sideswitch",role:"group","aria-label":C.sideLbl||""});
   /* `readonly` (SPEC.md section 7): the figure is shown and its regions named, and nothing can be pointed at or answered */
@@ -5884,11 +6069,12 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
       node.setAttribute("aria-label",labelOf(id));
       node.onclick=()=>setActive(id);
       node.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();setActive(id);}};});};
-  const drawChips=()=>{chips.innerHTML="";
-    if(opts.readonly){const f=figs.find(x=>x.id===side)||figs[0];(f&&f.regions||[]).forEach(id=>chips.append(el("span",{class:"emw"},labelOf(id))));return;}
-    (W.chips||[]).forEach(id=>{
-      chips.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(!!rowFor(id)||active===id),
-        onclick:()=>setActive(id)},labelOf(id)));});};
+  const drawChips=()=>{
+    if(opts.readonly){chips.innerHTML="";const f=figs.find(x=>x.id===side)||figs[0];
+      /* a widget with no figure names its places from `regions` */
+      (f?(f.regions||[]):(W.regions||[]).map(r=>r.id)).forEach(id=>chips.append(el("span",{class:"emw"},labelOf(id))));return;}
+    syncKids(chips,W.chips||[],id=>id,id=>el("button",{type:"button",class:"pill-btn",onclick:()=>setActive(id)},labelOf(id)),
+      (n,id)=>n.setAttribute("aria-pressed",String(!!rowFor(id)||active===id)));};
   /* The label for a sense code, and back again. A typed/dictated word that
      matches no known sense stays a freeform code exactly as typed — the
      same fallback senseWord() already uses for a code it doesn't
@@ -5904,32 +6090,41 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
       vocab:()=>(W.senses||[]).flatMap(g=>(g.words||[]).map(w=>({id:w.id,label:tx(w.label,w.id)}))),
       /* typing here must never rebuild this panel, which would destroy the
          field being typed into: only what lives outside it is refreshed */
-      onChange:labels=>{const codes=labels.map(labelToSense);
+      onChange:(labels,dest,was)=>{const codes=labels.map(labelToSense);
         let r=rowFor(active);
+        /* leaving the field for a sense word's button, having typed that word: it is pressed now, and the press confirms it */
+        const nowBtn=dest&&panel.querySelectorAll?Array.from(panel.querySelectorAll("button.sense")).find(b=>within(b,dest)):null;
+        if(nowBtn){const w=nowBtn.getAttribute("data-w"),had=(was||[]).map(labelToSense);if(codes.includes(w)&&!had.includes(w)) holdPress(nowBtn);}
         if(codes.length){if(!r){r={id:active,s:[]};e[key]=[...rows(),r];}r.s=codes;}
         else if(r) e[key]=rows().filter(x=>x!==r);
-        markDirty();drawChips();drawSummary();},
+        markDirty();drawChips();drawSummary();paintSenses();},
       placeholder:u.tagPh||"",hint:u.tagHint||""}).el);
     (W.senses||[]).forEach(g=>{
       const set=el("div",{class:"senseset"},el("div",{class:"lbl2"},tx(g.label,g.id)));
       const ws=el("div",{class:"sensewrap"});
       (g.words||[]).forEach(w=>{const row=rowFor(active);const on=!!row&&row.s.includes(w.id);
-        ws.append(el("button",{type:"button",class:"sense","aria-pressed":String(on),onclick:()=>{
-          let r=rowFor(active);
+        /* what is pressed is read when the button is pressed, not when it was drawn: a word typed into the field has changed it */
+        const sb=el("button",{type:"button",class:"sense","data-w":w.id,"aria-pressed":String(on),onclick:()=>{
+          if(heldPress(sb)) return;
+          let r=rowFor(active);const now=!!r&&r.s.includes(w.id);
           if(!r){r={id:active,s:[]};e[key]=[...rows(),r];}
-          r.s=on?r.s.filter(x=>x!==w.id):[...r.s,w.id];
+          r.s=now?r.s.filter(x=>x!==w.id):[...r.s,w.id];
           if(!r.s.length) e[key]=rows().filter(x=>x!==r);
-          markDirty();drawAll();}},tx(w.label,w.id)));});
+          markDirty();drawAll();}},tx(w.label,w.id));
+        ws.append(sb);});
       set.append(ws);panel.append(set);});
     const row=rowFor(active);
     if(row) panel.append(el("p",{style:"margin:.7rem 0 0"},
       el("button",{type:"button",class:"small",onclick:()=>{e[key]=rows().filter(x=>x!==row);markDirty();drawAll();}},C.clear||"")));};
-  const drawSummary=()=>{summary.innerHTML="";
-    rows().forEach(r=>summary.append(el("div",{class:"bodyrow"},
+  /* the words panel's sense buttons, brought up to date with the answer (typing a sense word's label presses it) */
+  const paintSenses=()=>{const row=rowFor(active);
+    panel.querySelectorAll("button.sense").forEach(b=>b.setAttribute("aria-pressed",String(!!row&&row.s.includes(b.getAttribute("data-w")))));};
+  const drawSummary=()=>syncKids(summary,rows(),r=>r.id,r=>el("div",{class:"bodyrow"},
       el("button",{type:"button",class:"x",title:C.clear||"","aria-label":(C.clear||"")+": "+labelOf(r.id),
-        onclick:()=>{e[key]=rows().filter(x=>x!==r);markDirty();drawAll();}},"×"),
+        onclick:()=>{e[key]=rows().filter(x=>x.id!==r.id);markDirty();drawAll();}},"×"),
       el("button",{type:"button",class:"r rlink",onclick:()=>setActive(r.id)},labelOf(r.id)),
-      el("span",{},"— "+r.s.map(senseWord).join(", ")))));};
+      el("span",{})),
+    (n,r)=>{const t="— "+r.s.map(senseWord).join(", "),sp=n.lastChild;if(sp&&sp.textContent!==t) sp.textContent=t;});
   const drawAll=()=>{drawSides();drawFig();drawChips();if(!opts.readonly){drawPanel();drawSummary();}};
   drawAll();
   wrap.append(el("div",{class:"bodywrap"},el("div",{},sides,fig,chips),opts.readonly?null:panel));
@@ -5953,7 +6148,7 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const u=strings("ui");
   const cells=W.cells||[];const ax=W.axes||{};
   /* drawing reads the answer; only a press or a typed word writes it */
-  const chosen=()=>e[key]||[];
+  const chosen=()=>Array.isArray(e[key])?e[key].filter(isStr):[];
   const extra=id=>id.startsWith("x|");
   const itemLabel=id=>gridLabel(W,id);
   const box=el("div",{});
@@ -5967,17 +6162,18 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
     /* a freeform word is kept in the same answer, as "x|cell|word" */
     const idsFor=()=>[...(W.items||[]).filter(i=>i.cell===c.id).map(i=>i.id),
                ...chosen().filter(id=>id.startsWith("x|"+c.id+"|"))];
-    const drawBtns=()=>{btns.innerHTML="";
-      idsFor().forEach(id=>{
-        if(opts.readonly){btns.append(el("span",{class:"emw"},itemLabel(id)));return;}
-        const on=chosen().includes(id);
-        const bt=el("button",{type:"button",class:"emb","aria-pressed":String(on)},itemLabel(id));
-        bt.addEventListener("click",()=>{const now=chosen().includes(id);
+    const drawBtns=()=>{
+      if(opts.readonly){btns.innerHTML="";idsFor().forEach(id=>btns.append(el("span",{class:"emw"},itemLabel(id))));return;}
+      /* the buttons that stay are not replaced: a press that began on one, right after typing in the field, would be lost */
+      syncKids(btns,idsFor(),id=>id,id=>{
+        const bt=el("button",{type:"button",class:"emb"},itemLabel(id));bt.__id=id;
+        bt.addEventListener("click",()=>{if(heldPress(bt)) return;const now=chosen().includes(id);
           e[key]=now?chosen().filter(x=>x!==id):[...chosen(),id];
           bt.setAttribute("aria-pressed",String(!now));markDirty();
           /* keep the tag field's own chips in sync with a button click */
           if(tag) tag.refresh();});
-        btns.append(bt);});};
+        return bt;},
+        (bt,id)=>bt.setAttribute("aria-pressed",String(chosen().includes(id))));};
     drawBtns();
     /* One instance per cell, always visible. The buttons below it work
        identically either way. */
@@ -5989,13 +6185,17 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
         vocab:()=>known.map(k=>({id:k.id,label:tx(k.label,k.id)})),
         /* typing here must never rebuild this field's own DOM; the button row
            below carries no typing of its own, so it redraws at once */
-        onChange:labels=>{
-          const otherCellIds=chosen().filter(id=>!id.startsWith("x|"+c.id+"|")&&!known.some(k=>k.id===id));
-          const newIds=[];
+        onChange:(labels,dest)=>{
+          const newIds=[],was=chosen().slice();
           labels.forEach(label=>{
             const match=known.find(k=>norm(tx(k.label,k.id))===norm(label));
             newIds.push(match?match.id:"x|"+c.id+"|"+label);});
-          e[key]=[...otherCellIds,...newIds];
+          /* the answer keeps the order the reader picked: what stays keeps its place, a word added goes last */
+          const mine=id=>id.startsWith("x|"+c.id+"|")||known.some(k=>k.id===id);
+          const stay=chosen().filter(id=>!mine(id)||newIds.includes(id));
+          e[key]=[...stay,...newIds.filter(id=>!stay.includes(id))];
+          /* leaving the field for the button of an item just typed: it is pressed now, and the press confirms it */
+          if(dest&&btns.children) Array.from(btns.children).forEach(bt=>{if(within(bt,dest)&&bt.__id!==undefined&&chosen().includes(bt.__id)&&!was.includes(bt.__id)) holdPress(bt);});
           markDirty();drawBtns();},
         placeholder:u.tagPh||"",hint:u.tagHint||""});
       qb.append(tag.el);}
@@ -6012,14 +6212,15 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
 
 /* what each engine kept, as words: the one place that knows how its answer reads back (the kept-entry card and a query use it).
    A svg-regions answer is a list of {id}; a grid-select one a list of item ids, or "x|cell|word" for a word the reader typed. */
-const regionNames=(W,vals)=>vals.map(r=>{const rg=(W.regions||[]).find(x=>x.id===r.id);return rg?tx(rg.label,r.id):r.id;});
+const regionNames=(W,vals)=>vals.map(r=>{const rg=(W.regions||[]).find(x=>x.id===r.id),name=rg?tx(rg.label,r.id):r.id,
+  ws=(Array.isArray(r.s)?r.s:[]).map(c=>senseLabel(W,c));return ws.length?name+" — "+ws.join(", "):name;});
 const gridNames=(W,vals)=>vals.map(id=>gridLabel(W,id));
 const ENGINES={"svg-regions":{draw:svgRegions,summary:regionNames},"grid-select":{draw:gridSelect,summary:gridNames}};
 
 /* ======================= 9. QUESTIONS AND BLOCKS =======================
    drawing a block (a question, prose, a row, a widget), and keeping an activity's drafts and entries. */
 /* a text box bound to obj[key]: what is typed is kept at once */
-function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});ta.value=obj[key]||"";
+function textField(obj,key,rows=2){const ta=el("textarea",{class:"field",rows});ta.value=typeof obj[key]==="string"?obj[key]:"";
   const grow=()=>{ta.style.height="auto";ta.style.height=Math.max(ta.scrollHeight+4,rows*24+18)+"px";};
   ta.addEventListener("input",()=>{obj[key]=ta.value;markDirty();grow();});
   if(nonEmpty(ta.value)) requestAnimationFrame(grow);
@@ -6031,7 +6232,7 @@ function renderBlocks(list,draft,activityId,dc){const host=el("div",{});
 function entryCard(e,type,onDelete){const u=strings("ui");
   const tag=tx((moduleOf(type)||{}).title,shortId(activityOf(type).id));
   /* an entry is read back through the blocks that asked for it */
-  const {card}=entryBody(e,blocksOf(type),[el("span",{class:"tag"},...words(tag,true)),fmtWhen(e.ts)]);
+  const {card}=entryBody(e,blocksOf(type),[el("span",{class:"tag"},...words(tag,true)),fmtWhen(e.ts)],{asWritten:true});
   if(onDelete){const foot=el("div",{class:"foot"});const btn=el("button",{type:"button",class:"small danger"},u.del);
     btn.addEventListener("click",()=>{foot.innerHTML="";foot.append(el("span",{class:"inlineconfirm"},u.delConfirm,
       el("button",{type:"button",class:"small danger",onclick:onDelete},u.yes),el("button",{type:"button",class:"small",onclick:()=>{foot.innerHTML="";foot.append(btn);}},u.no)));});
@@ -6049,7 +6250,11 @@ function chipStrip(id){const u=strings("ui");const list=[...keptFor(id)].sort((a
 function removeEntry(id,ts){const arr=keptFor(id);const i=arr.findIndex(x=>x.ts===ts);if(i>=0){arr.splice(i,1);markDirty();}}
 function finalizeRow(onFinalize){const u=strings("ui");return el("div",{class:"finrow"},el("button",{type:"button",class:"finalize",onclick:onFinalize},u.finalize),el("span",{class:"hint"},u.finalizeHint));}
 /* every activity keeps its drafts and its kept entries under its own id */
-const anyFilled=e=>Object.keys(e||{}).some(k=>holdsSomething(e[k]));
+/* whether a draft holds anything: for activity `id`, a draft whose only answers are pairs for picks taken back counts as empty
+   (SPEC.md section 5, "A question asked for each pick") */
+const anyFilled=(e,id)=>{const fu=new Map(id?blocksOf(id).filter(q=>q.each).map(q=>[keysOf(q)[0],q]):[]);
+  return Object.keys(e||{}).some(k=>{if(!holdsSomething(e[k])) return false;const q=fu.get(k);
+    return !q||wrongShape(q,e[k],widgetFor(q))||heldPairs(q,e).some(p=>holdsSomething(p.a));});};
 const draftFor=id=>{DRAFTS.custom=DRAFTS.custom||nullMap();return hasOwn(DRAFTS.custom,id)?DRAFTS.custom[id]:(DRAFTS.custom[id]=nullMap());};
 const keptFor=id=>{STATE.entries=STATE.entries||{};STATE.entries[id]=STATE.entries[id]||[];return STATE.entries[id];};
 /* where an activity's answers live: a repeating one keeps a draft, any other the
@@ -6088,7 +6293,12 @@ function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"}
   const v={...(b.view||{}),fields:b.fields},state=queryView(activityId,b);
   const scope=scopeOfAddr(activityId);
   if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,state,scope}));return box;}
+  /* a summary (SPEC.md section 6) is not drawn yet: the line says so, in place of the view, never the plain entries as if the key were not there */
+  if(v.summary==="on"){box.append(el("p",{class:"hint"},strings("query").summaryLater));return box;}
   const none={kind:"entries",rows:[],keys:new Set(),own:[],first:"date",lab:k=>k,qs:[]};
+  /* a question asked for each pick, named alone in `from:`, has no one value for tiles, bars or a line (SPEC.md section 6) */
+  if(b.field&&["tiles","bars","line"].includes(v.as)&&blocksOf(b.from).some(q=>q.id===b.field&&q.each)){
+    box.append(el("p",{class:"hint"},strings("dv").eachNotYet));return box;}
   box.append(...viewNodes(queryReads(b,activityId)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}));
   return box;}
 /* A widget block names a widget; the widget names an engine. The renderer
@@ -6115,7 +6325,7 @@ function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[
   const head=questionHead(box,b);
   const tl=el("div",{});
   /* the lines typed so far, else one to type in (the draft holds them from the first keystroke, not the draw) */
-  const lines=()=>Array.isArray(draft[K])&&draft[K].length?draft[K]:[""];
+  const lines=()=>Array.isArray(draft[K])&&draft[K].length?draft[K].map(x=>isStr(x)?x:""):[""];
   const draw=()=>{tl.innerHTML="";lines().forEach((v,i)=>{
       const inp=el("input",{type:"text","aria-label":head});inp.value=v;
       inp.addEventListener("input",()=>{const l=lines();l[i]=inp.value;draft[K]=l;markDirty();
@@ -6130,13 +6340,19 @@ function drawLines(b,draft,activityId){const box=el("div",{});const K=keysOf(b)[
 const sameWords=(a,x)=>String(a).trim().toLowerCase()===String(x).trim().toLowerCase();
 /* an answer as a list: positions and the reader's own strings */
 const picksOf=v=>Array.isArray(v)?v:(v===null||v===undefined||v===""?[]:[v]);
-/* the reader's own options offered again: the words they added to this question in earlier kept entries of its
-   activity, most recent first, at most 12, leaving out any that are listed, or in the answer now, or repeated */
-function ownEarlier(activityId,K,listed,now){const out=[];
-  const kept=[...(((STATE.entries||{})[activityId])||[])].sort((a,x)=>String(x.ts).localeCompare(String(a.ts)));
+/* the reader's own options offered again (SPEC.md section 5, "Words the reader wrote before"): the words they added to question
+   `b` (under key K) in the kept entries of its activity, newest first by the time in their `ts`, at most 12 or the number its `earlier:` sets
+   (`earlier:0`, none), leaving out any that are listed, or in the answer now, or repeated. A daily activity's entry for today,
+   which the draft will replace, gives none, and neither does an answer not in its kind's shape. */
+const tsTime=t=>{const n=Date.parse(t);return Number.isFinite(n)?n:null;};
+const newestFirst=(a,x)=>{const p=tsTime(a.ts),q=tsTime(x.ts);return p!==null&&q!==null&&p!==q?q-p:String(x.ts).localeCompare(String(a.ts));};
+function ownEarlier(activityId,K,listed,now,b){const out=[],most=b&&b.earlier!==undefined?b.earlier:EARLIER_DEFAULT;
+  if(!(most>0)) return out;
+  const daily=activityOf(activityId).upsert==="day";
+  const kept=[...(((STATE.entries||{})[activityId])||[])].filter(e=>!(daily&&dayKey(e.ts)===todayDate())&&!(b&&wrongShape(b,e[K],null))).sort(newestFirst);
   for(const e of kept) for(const x of picksOf(e[K])){if(typeof x!=="string") continue;const t=x.trim();
     if(!t||listed.some(o=>sameWords(plainText(o),t))||now.some(o=>typeof o==="string"&&sameWords(o,t))||out.some(o=>sameWords(o,t))) continue;
-    out.push(t);if(out.length>=12) return out;}
+    out.push(t);if(out.length>=most) return out;}
   return out;}
 /* Options short enough (at most four, each at most 24 characters) sit as pills beside their question when there is room,
    under it when there is not; any longer list stands under the question as before. */
@@ -6162,13 +6378,19 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
   const graded=right.length>0,chosen=()=>picksOf(draft[K]);
   let checked=false;
   let byReader=false;
-  const put=list=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();byReader=true;draw();};
-  const toggle=n=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n]);};
-  const addOwn=text=>{const t=String(text).trim();if(!t) return;
+  /* `later`: the answer is changed now and the options are drawn once any press under way is over (leaving the Add-your-own field) */
+  const put=(list,later)=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();byReader=true;
+    if(later) afterPress(draw);else draw();};
+  const toggle=(n,later)=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n],later);};
+  const addOwn=(text,later,dest)=>{const t=String(text).trim();if(!t) return;
     const at=listed.findIndex(o=>sameWords(plainText(o),t));
-    if(at>=0){if(!chosen().includes(at+1)) toggle(at+1);return;}
+    if(at>=0){if(!chosen().includes(at+1)){toggle(at+1,later);
+      /* leaving the field for the very option just typed: it is pressed now, and the press confirms it */
+      const bt=dest&&Array.from(pills.children).find(n=>n.__key&&String(n.__key).split(":")[0]==="o"+(at+1));
+      if(bt&&within(bt,dest)) holdPress(bt);}
+      return;}
     if(chosen().some(x=>typeof x==="string"&&sameWords(x,t))) return;
-    put(multi?[...chosen(),t]:[t]);};
+    put(multi?[...chosen(),t]:[t],later);};
   const dropOwn=t=>put(chosen().filter(x=>x!==t));
   /* what each listed option shows once the reader has answered, if anything */
   const markOf=n=>{const c=chosen(),on=c.includes(n),isRight=right.includes(n);
@@ -6186,22 +6408,29 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
   if(SP) live.classList.add("q-live-sr");
   const draw=()=>{const ae=document.activeElement,at=ae&&ae.parentNode===pills?Array.from(pills.children).indexOf(ae):-1,
       onCheck=!!ae&&ae.parentNode===acts;
-    pills.innerHTML="";acts.innerHTML="";live.textContent="";replies.innerHTML="";
-    listed.forEach((o,idx)=>{const n=idx+1,mark=markOf(n);
-      pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),
-        onclick:()=>toggle(n)},...words(o,true),mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
+    live.textContent="";replies.innerHTML="";
     const now=chosen();
     /* a graded multi (it has Check) shows its replies with its marks, once Check is pressed; any other question on the pick */
     if(b.replies&&(!(multi&&graded)||checked)){const got=now.filter(x=>typeof x==="number").sort((a,x)=>a-x);
       (multi?got:got.slice(0,1)).forEach(n=>{if(b.replies[n-1]) replies.append(el("div",{class:"q-reply"},
         ...b.replies[n-1].split("\n").map(l=>el("p",{},...words(l)))));});}
-    now.filter(x=>typeof x==="string").forEach(t=>pills.append(el("span",{class:"pill-own"},
-      el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
-      el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"))));
-    if(b.open) ownEarlier(activityId,K,listed,now).forEach(t=>pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":"false",
-      onclick:()=>addOwn(t)},t)));
+    /* the options, the reader's own words and the earlier ones offered again, redrawn without replacing a button that stays: the
+       field adds its words when it is left, and a press that began on a button this replaced would be lost */
+    syncKids(pills,[
+      ...listed.map((o,idx)=>{const mark=markOf(idx+1);return {k:"o"+(idx+1)+(mark?":"+mark:""),n:idx+1,o,mark};}),
+      ...now.filter(x=>typeof x==="string").map(t=>({k:"w:"+t,own:t})),
+      ...(b.open?ownEarlier(activityId,K,listed,now,b).map(t=>({k:"e:"+t,again:t})):[])],it=>it.k,it=>{
+        if(it.own!==undefined){const t=it.own;return el("span",{class:"pill-own"},
+          el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
+          el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"));}
+        if(it.again!==undefined){const t=it.again;return el("button",{type:"button",class:"pill-btn","aria-pressed":"false",onclick:()=>addOwn(t)},t);}
+        /* an option whose mark changes is a new button (its key holds the mark); the others stay */
+        const {n,o,mark}=it;const pb=el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),onclick:()=>{if(heldPress(pb)) return;toggle(n);}},...words(o,true),
+          mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null);return pb;},
+      (nd,it)=>{if(it.n!==undefined) nd.setAttribute("aria-pressed",String(chosen().includes(it.n)));});
+    const wantCheck=graded&&multi&&now.length>0;
+    syncKids(acts,wantCheck?[1]:[],()=>"check",()=>el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
     if(graded){const c=chosen(),shown=multi?checked:typeof c[0]==="number";
-      if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
       if(shown){const missed=right.some(n=>!c.includes(n)),extra=c.some(x=>typeof x==="number"&&!right.includes(x)),
           bad=multi?(missed||extra):!right.includes(c[0]);
         live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).map(plainText).join(", ")):Q.liveRight;
@@ -6215,7 +6444,12 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
   draw();box.append(pills,replies);
   if(inline) besideWhenFit(box,pills);
   if(b.open){const inp=el("input",{type:"text",class:"field q-own","aria-label":Q.addOwn,placeholder:Q.addOwn,autocomplete:"off"});
-    const go=()=>{const t=inp.value;inp.value="";addOwn(t);inp.focus();};
+    /* the words in the field are added as Enter or Add would add them: on Enter, on Add, when the field is left and when the page is
+       closed or reloaded (commitOwnFields). On a choice they replace the pick. */
+    const take=(later,dest)=>{const t=inp.value;if(t==="") return;inp.value="";addOwn(t,later,dest);};
+    const go=()=>{take();inp.focus();};
+    inp.commitOwn=()=>take();
+    inp.addEventListener("blur",e=>take(true,nextTo(e)));
     inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go();}});
     box.append(el("div",{class:"q-ownrow"},inp,el("button",{type:"button",class:"small",onclick:go},Q.addBtn)));}
   if(graded) box.append(acts,live);
@@ -6286,7 +6520,7 @@ function drawNumber(b,draft,activityId){const box=el("div",{});const K=b.keys[0]
   questionHead(box,b,id);
   const attrs={type:b.type,id,class:"field"};
   if(b.type==="number"){if(b.min!=null) attrs.min=b.min;if(b.max!=null) attrs.max=b.max;if(b.step!=null) attrs.step=b.step;}
-  const inp=el("input",attrs);if(draft[K]!=null) inp.value=draft[K];
+  const inp=el("input",attrs);if(typeof draft[K]==="number"||typeof draft[K]==="string") inp.value=String(draft[K]);
   inp.addEventListener("input",()=>{draft[K]=b.type==="number"?(inp.value===""?null:Number(inp.value)):inp.value;markDirty();});
   box.append(inp);return box;}
 const DRAW_BLOCK={
@@ -6303,11 +6537,25 @@ const DRAW_BLOCK={
   matrix:drawMatrix,
   number:drawNumber,
   date:drawNumber};
+/* A question whose answer is not in its kind's shape (SPEC.md section 8) is drawn read-only: its heading, a notice saying so and
+   what the file holds, as written, with nothing to press, so no tap writes it and the answer stays as it is. A question asked
+   for each pick (`each:`) is drawn as its heading and a line saying this page does not draw it yet; its answer stays as written.
+   Null for any other block, which its own drawer draws. */
+function keptQuestion(b,draft){if(!QUESTION_KINDS.has(b.type)) return null;
+  const K=keysOf(b)[0],W=b.type==="widget"?widgetOf(b.widget,b.module):null,v=K===undefined?undefined:draft[K],Q=strings("question");
+  const wrong=wrongShape(b,v,W);if(!wrong&&!b.each) return null;
+  /* a widget with no title of its own is headed by its widget's words, as drawWidget heads it */
+  const box=el("div",{class:"pblock q-kept"});questionHead(box,W&&!nonEmpty(tx(b.label,""))?{...b,label:tx(wordsOf(W.copy).h,"")}:b);
+  if(!wrong){box.append(el("p",{class:"hint"},Q.eachNotYet));return box;}
+  box.append(el("p",{class:"hint"},Q.keptAsWritten(W?W.engine:b.type,!!W,!!b.each)),
+    el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(v,null,1))));
+  return box;}
 function renderBlock(b,draft,activityId,dc){
+  const kq=keptQuestion(b,draft);
   /* a question's own hint and solution are its controls: handed to its drawer (choice and multi tell the solution what the
      reader did) and drawn at the end of its block */
   const qc=qControls(b,draft,activityId,dc);
-  const node=hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc,qc)
+  const node=kq?kq:hasOwn(DRAW_BLOCK,b.type)?DRAW_BLOCK[b.type](b,draft,activityId,dc,qc)
     :el("p",{class:"hint"},strings("ui").unknownBlock(b.type||"?",b.id||"?"));
   if(qc) node.append(qc.node);
   if(placeOf(b)!=="folded") return node;
@@ -6329,7 +6577,7 @@ function foldedCallout(b,draft,activityId,dc,x){
   const look=hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
   /* an untitled callout is called by its kind's word; a kind the renderer does not know is called Note, as before, only drawn plain */
   const word=look||(hs?null:calloutLook(b.kind));
-  const title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
+  let title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
   const picture=emo?{emoji:emo}:look?{icon:icon(look.icon)}:hs?{icon:icon(hs==="hint"?"lightbulb":"circle-check")}:null;
@@ -6337,6 +6585,9 @@ function foldedCallout(b,draft,activityId,dc,x){
   let teaser="";
   if(!hs){const L=sectionLede(parts.filter(p=>p.x.type==="markdown").flatMap(p=>Array.from(p.n.children||[])));
     teaser=L.para?clip(textOf(L.para),220):L.text;}
+  /* an untitled group is not a note: its fold is named by the first words of what it holds, its prose or else its first question */
+  if(!hs&&isGroup(b)&&!nonEmpty(named)){const q=blocksAll(blocksIn(b)).find(isQuestion),first=nonEmpty(teaser)?teaser:q?plainText(tx(q.label,"")):"";
+    if(nonEmpty(first)){title=clip(first,80);teaser="";}}
   const body=parts.map(p=>p.n);
   if(b.unknown) body.unshift(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   /* a hint or a solution is a compact fold: one quiet line, a small icon, no tile, no teaser */
@@ -6365,13 +6616,14 @@ function qControls(q,draft,activityId,dc){const sol=ownPart(q,"solution")?soluti
    replaces that day's entry instead of adding a second one. */
 function finalizeEntry(id){const u=strings("ui");
   const draft=draftFor(id);
-  if(!anyFilled(draft)){toast(u.nothingYet);return;}
+  if(!anyFilled(draft,id)){toast(u.nothingYet);return;}
   const kept=keptFor(id);
   /* an entry is identified by its ts (SPEC section 8), so two kept in the same millisecond must not share one: the later takes the next free millisecond */
   const e=nullMap(clone(draft)),taken=new Set(kept.map(x=>x.ts));let at=Date.now();while(taken.has(new Date(at).toISOString())) at++;
   e.ts=new Date(at).toISOString();
-  /* lines typed and left blank are not kept, whichever block owns them */
-  for(const k of Object.keys(e)) if(Array.isArray(e[k])&&e[k].every(x=>typeof x==="string")) e[k]=e[k].filter(nonEmpty);
+  /* lines typed and left blank are not kept, whichever block owns them; an answer not in its kind's shape is kept as written */
+  const qs=blocksOf(id).filter(b=>QUESTION_KINDS.has(b.type)),asWritten=k=>qs.some(b=>keysOf(b)[0]===k&&wrongShape(b,e[k],widgetFor(b)));
+  for(const k of Object.keys(e)) if(Array.isArray(e[k])&&e[k].every(x=>typeof x==="string")&&!asWritten(k)) e[k]=e[k].filter(nonEmpty);
   if(activityOf(id).upsert==="day"){
     const idx=kept.findIndex(x=>dayKey(x.ts)===dayKey(e.ts));
     if(idx>=0) kept[idx]=e; else kept.push(e);
@@ -6380,9 +6632,16 @@ function finalizeEntry(id){const u=strings("ui");
   unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;hookChanged("typed");render();saveLocal();toast(u.kept);}
 /* a daily activity's empty draft shows today's entry, to be finished again (settle) */
 function seedUpsertDraft(id,m,draft){
-  if(m.upsert!=="day"||anyFilled(draft)) return;
-  const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());
-  if(today){const {ts,...rest}=clone(today);Object.assign(draft,rest);}}
+  if(m.upsert!=="day"||anyFilled(draft,id)) return;
+  const today=keptFor(id).find(x=>dayKey(x.ts)===todayDate());if(!today) return;
+  /* a draft that counts as empty may still hold pairs for picks taken back: they are the reader's newer work, so whatever the
+     draft holds wins, a follow-up's pairs over the entry's pick by pick, the entry's pairs for other picks beside them */
+  const {ts,...rest}=clone(today);
+  for(const k of Object.keys(draft)){const v=draft[k],was=rest[k],q=blocksOf(id).find(x=>x.each&&keysOf(x)[0]===k);if(!holdsSomething(v)) continue;
+    if(q&&Array.isArray(v)&&Array.isArray(was)&&!wrongShape(q,v,widgetFor(q))&&!wrongShape(q,was,widgetFor(q))){
+      const mine=new Set(pairsOf(v).map(x=>pickKey(x.pick)));rest[k]=[...v,...was.filter(x=>!(isPair(x)&&mine.has(pickKey(x.pick))))];}
+    else rest[k]=v;}
+  Object.assign(draft,rest);}
 
 /* ======================= 10. QUERY VIEWS =======================
    row sets, roles, the views (table, list, tiles, cards, bars, line), the pipeline and its one control. */
@@ -6400,7 +6659,9 @@ const SUMMARY={
   widget:(b,e,k)=>{const W=widgetOf(b.widget,b.module);if(!W) return null;
     const vals=e[k];if(!Array.isArray(vals)||!vals.length) return null;
     const eng=hasOwn(ENGINES,W.engine)?ENGINES[W.engine]:null;
-    return eng?[fieldLabel(b),eng.summary(W,vals).join(", ")]:null;},
+    if(!eng) return null;const names=eng.summary(W,vals);
+    /* a place with words is a line of its own ("Feet — Restless, Sore"); plain names read as one list */
+    return [fieldLabel(b),names.some(n=>String(n).includes(" — "))?el("ul",{class:"plain"},...names.map(n=>el("li",{},n))):names.join(", ")];},
   lines:(b,e,k)=>{const items=(e[k]||[]).filter(nonEmpty);if(!items.length) return null;
     return [fieldLabel(b),el("ul",{class:"plain"},...items.map(x=>el("li",{},x.trim())))];},
   text:(b,e,k)=>{const v=e[k];if(!nonEmpty(v)) return null;
@@ -6415,8 +6676,30 @@ const SUMMARY={
       return el("li",{},wordsNode(it,{lit:": "},typeof v[i]==="number"?(a?a.text:{lit:String(v[i])}):{lit:"\u2013"}));}))];},
   number:numberSummary,
   date:numberSummary};
-function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
+function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length||!holdsSomething(e[keys[0]])) return null;
   return hasOwn(SUMMARY,b.type)?SUMMARY[b.type](b,e,keys[0]):null;}
+const widgetFor=b=>b&&b.type==="widget"?widgetOf(b.widget,b.module):null;
+/* the source a question asked for each pick is asked of: a question or widget in its own activity (resolveEach made sure) */
+function eachSource(q){if(!q||!q.each) return null;const l=bookActivities().map(allBlocksOf).find(x=>x.includes(q));
+  return l?l.find(b=>QUESTION_KINDS.has(b.type)&&b.id===q.each)||null:null;}
+/* a follow-up's pairs whose pick the source holds in the same record `e`, in the source's order, with each pick: [{pick, a}] */
+function heldPairs(q,e){const src=eachSource(q),k=keysOf(q)[0];if(!src||k===undefined) return [];
+  return sourcePicks(src,e[keysOf(src)[0]],widgetFor(src)).map(p=>({p,x:pairFor(e[k],p)})).filter(o=>o.x).map(o=>({...o.x,pick:o.p}));}
+/* a pick's words, as a part wordsNode takes: a listed option's words, the reader's own as written, a widget's place or item */
+function pickPart(src,p){const W=widgetFor(src);
+  if(W) return {lit:String(W.engine==="svg-regions"?regionNames(W,[{id:p}])[0]:W.engine==="grid-select"?gridLabel(W,p):p)};
+  return typeof p==="string"?{lit:p}:((src.options||[])[p-1]||{lit:"#"+p});}
+const PICK_SEP="\u0001";
+/* What one question shows of a kept answer, as fields [{key, parts, node, v}]: `parts` its label (for wordsNode), `node` what it
+   shows, `v` the value. One field for most questions. None for an answer not in its kind's shape (SPEC.md section 8: a view leaves
+   it out of its row). A question asked for each pick has one field per pick its source holds in the same record, in the source's
+   order, labelled "<title> · <pick's words>" (section 6). */
+function entryFields(q,e){const k=keysOf(q)[0];if(k===undefined||!e) return [];
+  if(wrongShape(q,e[k],widgetFor(q))) return [];
+  if(!q.each){const r=fieldSummary(q,e);return r?[{key:q.id,parts:[r[0]],node:r[1],v:e[k]}]:[];}
+  const one={...q};delete one.each;const src=eachSource(q);
+  return heldPairs(q,e).flatMap(x=>{const r=fieldSummary(one,{[k]:x.a});
+    return r?[{key:q.id+PICK_SEP+pickKey(x.pick),parts:[r[0],{lit:" \u00b7 "},pickPart(src,x.pick)],node:r[1],v:x.a}]:[];});}
 /* A query reads what was kept in the SAME module: the kept entries of an
    activity that keeps them, newest first, and nothing across a module boundary
    (the activities outside every module fence are one module). `from` and `activityId` are addresses. */
@@ -6424,15 +6707,28 @@ function fieldSummary(b,e){const keys=keysOf(b);if(!keys.length) return null;
    being one of its blocks): the one test both draws and status lines make */
 const sameModule=(from,activityId)=>!!holderOf(from)&&scopeOfAddr(from)===scopeOfAddr(activityId);
 const queryReads=(b,activityId)=>sameModule(b.from,activityId)&&(!b.field||blocksOf(b.from).some(x=>x.id===b.field));
-function queryEntries(from,activityId){
+function queryEntries(from,activityId,days){
   if(!sameModule(from,activityId)) return [];
-  return [...keptFor(from)].sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
+  return inSpan([...keptFor(from)],days).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
+/* `limit: N days` (SPEC.md section 6, a day as section 8 defines it): the entries whose own calendar date, in the reader's time zone,
+   is today or one of the N-1 dates before it. Today is taken now, when the page is drawn. An entry whose `ts` will not parse, or
+   is later than that moment (even later today), is in no span. No `days` is every entry. */
+function inSpan(ents,days){if(!days) return ents;
+  /* compared as moments, not as date text, so any year holds: from the first moment of the oldest day to now (taken once) */
+  const now=new Date(),first=new Date(now);first.setDate(first.getDate()-(days-1));first.setHours(0,0,0,0);
+  const from=first.getTime(),to=now.getTime();
+  return ents.filter(e=>{const t=e?Date.parse(e.ts):NaN;return Number.isFinite(t)&&t>=from&&t<=to;});}
 /* A kept entry as a card: a `.when` line holding `whenKids` (none when null),
    then what each question in `qs` recorded, as a `dl`. Returns the card and how
    many questions had an answer to show. */
 function entryBody(e,qs,whenKids,extra){extra=extra||{};
   const dl=el("dl",{});let rows=0;
-  for(const q of qs){const r=fieldSummary(q,e);if(r){rows++;dl.append(el("dt",{},wordsNode(r[0])),el("dd",{},r[1]));}}
+  for(const q of qs){const k=keysOf(q)[0],W=widgetFor(q);
+    /* a kept entry's own card shows an answer not in its kind's shape as written, with the notice; a view leaves it out */
+    if(extra.asWritten&&k!==undefined&&wrongShape(q,e[k],W)){rows++;
+      dl.append(el("dt",{},wordsNode(fieldLabel(q))),el("dd",{},el("p",{class:"hint"},strings("question").keptAsWritten(W?W.engine:q.type,!!W,!!q.each)),
+        el("pre",{class:"q-kept-v"},el("code",{},JSON.stringify(e[k],null,1)))));continue;}
+    for(const f of entryFields(q,e)){rows++;dl.append(el("dt",{},wordsNode(...f.parts)),el("dd",{},f.node));}}
   return {card:cardNode({mode:"item",cls:"entry",picture:extra.picture||null,kids:[whenKids?el("div",{class:"when"},...(extra.lead?extra.lead(whenKids):whenKids)):null,dl]}),rows};}
 function queryCard(e,from,fields,extra){
   /* `fields` names the questions, and their order is the order shown */
@@ -6463,27 +6759,31 @@ function entrySet(b,activityId,as){
   const numeric=as==="bars"||as==="line";
   const all=blocksOf(b.from).filter(q=>keysOf(q).length);
   const qs=b.field?all.filter(q=>q.id===b.field):all;
-  const ents=b.field&&activityOf(b.from).kind!=="entry"?[peekAnswers(scopeOfAddr(b.from))]:queryEntries(b.from,activityId);
+  const ents=b.field&&activityOf(b.from).kind!=="entry"?[peekAnswers(scopeOfAddr(b.from))]:queryEntries(b.from,activityId,b.view&&b.view.days);
   const named=(b.fields&&!b.field)?qs.filter(q=>b.fields.includes(q.id)):[];
   const need=named.length?named:qs;
   const raw=new Map(),ent=new Map(),mk=new Map();
+  /* a question asked for each pick is one field per pick (entryFields): its fields, in the order rows first show them */
+  const picks=new Map(qs.filter(q=>q.each).map(q=>[q.id,new Map()]));
   let rows=ents.map(e=>{const r={},w={};
     if(e.ts){r.date=numeric?dayMonth(e.ts):fmtWhen(e.ts);
       const t=Date.parse(e.ts);w.date=Number.isFinite(t)?t:String(e.ts);}
     let any=false;
-    for(const q of qs){const x=fieldSummary(q,e);if(!x) continue;
-      const n=(q.type==="number"||q.type==="scale")&&isFinite(parseFloat(e[q.id]))?Number(e[q.id]):null;
-      r[q.id]=numeric&&n!==null?n:nodeText(x[1]);
-      if(x[1]&&x[1].parts) mk.set(r,{...mk.get(r),[q.id]:x[1].parts});
-      if(n!==null) w[q.id]=n;
+    for(const q of qs) for(const f of entryFields(q,e)){
+      const n=(q.type==="number"||q.type==="scale")&&isFinite(parseFloat(f.v))?Number(f.v):null;
+      r[f.key]=numeric&&n!==null?n:nodeText(f.node);
+      if(f.node&&f.node.parts) mk.set(r,{...mk.get(r),[f.key]:f.node.parts});
+      if(n!==null) w[f.key]=n;
+      if(picks.has(q.id)&&!picks.get(q.id).has(f.key)) picks.get(q.id).set(f.key,f.parts);
       if(need.includes(q)) any=true;}
     if(!any) return null;
     raw.set(r,w);ent.set(r,e);return r;}).filter(Boolean);
   if(numeric) rows.reverse();
-  const own=["date",...qs.map(q=>q.id)];
-  const labw=k=>k==="date"?undefined:fieldLabel(qs.find(q=>q.id===k));
-  const lab=k=>k==="date"?strings("dv").date:plainText(labw(k));
-  return {kind:"entries",from:b.from,rows,keys:new Set(own),own,first:"date",lab,labw,qs,mk,
+  const expand=k=>picks.has(k)?[...picks.get(k).keys()]:[k],pickParts=k=>{for(const m of picks.values()) if(m.has(k)) return m.get(k);return null;};
+  const own=["date",...qs.flatMap(q=>expand(q.id))];
+  const labw=k=>k==="date"||pickParts(k)?undefined:fieldLabel(qs.find(q=>q.id===k));
+  const lab=k=>k==="date"?strings("dv").date:pickParts(k)?pickParts(k).map(x=>typeof x==="object"?x.lit:plainText(x)).join(""):plainText(labw(k));
+  return {kind:"entries",from:b.from,rows,keys:new Set(own),own,first:"date",lab,labw,qs,mk,expand,
     entryOf:r=>ent.get(r),sortVal:(r,k)=>{const w=raw.get(r);return w&&hasOwn(w,k)?w[k]:r[k];}};}
 const unset=v=>v==null||v==="";
 const sortCmp=(a,b)=>{
@@ -6747,7 +7047,9 @@ function nestRows(rows,pk,limit){
 const uniq=a=>a.filter((x,i)=>x&&a.indexOf(x)===i);
 /* the other fields a view shows: a table's columns, a list row's extras, a chart's series, a card's questions */
 function colsOf(as,set,v,roles){
-  const fields=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,mk=ks=>ks.map(k=>({key:k,label:set.lab(k),raw:set.labw&&set.labw(k)}));
+  /* `fields:` naming a question asked for each pick names its every pick's field (entrySet's expand); a card shows the question */
+  const named=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,fields=named&&as!=="cards"&&set.expand?named.flatMap(set.expand):named,
+    mk=ks=>ks.map(k=>({key:k,label:set.lab(k),raw:set.labw&&set.labw(k)}));
   /* the fields that play no role: a list's extras and a data block's card lines (never `id`, the group or the parent) */
   const rest=()=>{const d=VIEW_DRAWS[as],skip=new Set([...ROLE_NAMES.map(n=>roles[n]),d.includes("group")?v.group:null,d.includes("parent")?v.parent||"parent":null,"id"]);return set.own.filter(k=>!skip.has(k));};
   if(as==="table") return mk(fields||set.own);
@@ -7303,8 +7605,8 @@ function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),grp=isGr
     if(pic) head.append(el("span",{class:"rd-ci","aria-hidden":"true"},pic));
     head.append(el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
-  /* the kind's word heads the box; a plain one (a group) has none, and with no title of its own it has no head at all */
-  if(look) box.append(head);
+  /* the kind's word heads the box; a plain one (a group) has none, and an untitled group has no head at all (any other callout keeps its head, empty or not) */
+  if(!(grp&&!nonEmpty(title))) box.append(head);
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title,false,true)));named.push(u+"-t");}
   if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
@@ -7751,6 +8053,40 @@ function activityFooter(id,dc){const C=strings("cards"),S=strings("steps"),G=str
     else if(ps.length>1) foot.append(el("span",{class:"pg-gap"}));};
   draw();if(dc) dc.foot=draw;
   return foot;}
+/* ---- PRINTING AN ACTIVITY WHOLE ----
+   The screen draws one tab and one page of an activity at a time. Paper gets all of them: as the print begins, a copy of the
+   activity's tabs and pages is drawn after the screen's own (each tab under its name, every page in order, the endnotes of
+   all of it in one list at the foot), and the screen's own tab or page is left out of the print; as the print ends the copy
+   goes, and the screen is as it was (it is not drawn again: the reader's place, focus and fields are untouched). The copy is a
+   draw of its own, with the marks numbered by the screen's scope (the whole activity's numbering, citeScope), and carries no
+   id, so none is used twice. It is hidden on screen and the screen's part is hidden only in print (the stylesheet). */
+let PRINT_COPY=null;
+function printWhole(){
+  /* a copy left by a print that never ended (no afterprint came) is not this print's: it is ended first, so this one is drawn afresh */
+  if(PRINT_COPY) printWholeEnd();
+  if(typeof document==="undefined") return;
+  const main=document.getElementById("main");
+  if(!main||!currentId||hasOwn(SCREENS,screen)||isModuleScreen(screen)) return;
+  const id=screen,m=activityOf(id),ts=tabsIn(m);
+  if(!Array.isArray(m.pages)||(!(ts&&ts.length>1)&&m.pages.length<2)) return;
+  const was=main.querySelector(ts&&ts.length>1?".tabpanel":".ap-body");if(!was||!was.parentNode) return;
+  const dc=newDraw(),draft=answersFor(id);dc.cite=citeDraw(id);dc.folds={open:true,n:0};
+  const pageNode=pg=>el("div",{class:"pr-page"},renderBlocks(blocksIn(pg),draft,id,dc));
+  const copy=el("div",{class:"print-whole"});
+  if(ts) ts.forEach(t=>copy.append(el("section",{class:"pr-tab"},ts.length>1?el("h3",{class:"pr-tabname"},...words(tx(t.title,t.id),true)):null,
+    ...m.pages.filter(p=>p.tab===t.id).map(pageNode))));
+  else m.pages.forEach(pg=>copy.append(pageNode(pg)));
+  const R=dc.cite,notes=R&&endnotesFor(id,[...(openingWithActivity(R.mod)?R.mod.opening:[]),...activityBlocks(m)],dc);
+  if(notes) copy.append(notes);
+  copy.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));
+  was.classList.add("pr-skip");was.parentNode.insertBefore(copy,was.nextSibling);
+  PRINT_COPY={copy,was,x:window.scrollX||0,y:window.scrollY||0};}
+function printWholeEnd(){if(!PRINT_COPY) return;
+  const {copy,was,x,y}=PRINT_COPY;PRINT_COPY=null;was.classList.remove("pr-skip");if(copy.parentNode) copy.parentNode.removeChild(copy);
+  /* the page is where it was: printing laid it out differently, and the browser moved the scroll with it */
+  const back=()=>{if(typeof window.scrollTo==="function"&&(window.scrollX!==x||window.scrollY!==y)) window.scrollTo(x,y);};
+  /* now, and again once the browser has laid the screen out again (it does that after the event, and moves the scroll as it does) */
+  back();if(typeof window.requestAnimationFrame==="function") window.requestAnimationFrame(()=>{back();setTimeout(back,50);});else setTimeout(back,50);}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
 const activitiesShown=mod=>mod.activities.filter(isShown);
@@ -8174,8 +8510,9 @@ function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
   /* `o.keep`: the reader's own work stays as it was and only the booklet's design is the file's (see linkAccept) */
   if(keep){STATE=keep.S;DRAFTS=keep.D;dirty=keep.dirty;unsavedEntries=keep.unsavedEntries;
     /* work for a scope the design has no module for, kept as written with the file's own such records (keepUnowned):
-       the design is then the parse of the text that holds them, and its region the file's with them added */
-    if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET){const raw=BOOK.raw||{},B={...BOOK,raw:{...raw,records:[...(raw.records||[]),...keep.records]}};
+       the design is then the parse of the text that holds them, and its region the file's with them added (each one is
+       written into it: none was read from this file's region, so none keeps the mark `w` an earlier read gave it) */
+    if(Array.isArray(keep.records)&&keep.records.length&&BOOK!==EMPTY_BOOKLET){const raw=BOOK.raw||{},B={...BOOK,raw:{...raw,records:[...(raw.records||[]),...keep.records.map(({w,...r})=>r)]}};
       adoptText(bookText(B),regionOf(B));}}
   const at=startScreen(o.page);
   FILE_NOTES=fileNotesOf(R,at);
@@ -8359,7 +8696,7 @@ function hostAccept(){if(!newerWaiting()) return;
    generator owns the body and the reader owns the records (the store contract).
    - A store booklet: the new file's body is taken, with the work acceptWork gives (the one rule for reading a newer
      file, here and in hostAccept): with no host, the kept booklet's own answers, entries and drafts as they are (an
-     answer to a question the new body no longer has stays unused); with a host, the kept booklet's work and the file's
+     answer to a question the new body no longer has stays unused; work in a module it no longer has is kept as records, keepUnowned); with a host, the kept booklet's work and the file's
      merged against their base (mergeWork). The host then saves the result.
    - A registry module (#/module/<id>) is updated in place the way Add a module updates a module already present.
    Either way the entry remembers the text just read (storeSeen). A text the page refuses changes nothing but says why. */
@@ -8379,9 +8716,21 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
    (mergeWork, after followMoves), or by withFileWork for a kept booklet with no base. With none, the file never held the
    reader's work, and what is here stays as it is. Returns {S, D}, ready for finishLoad (which makes the file's records
    the new base). */
-const acceptWork=R=>{if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};
+const acceptWork=R=>{
+  const W=acceptWorkOf(R),raw=BOOK&&BOOK.raw,T=R.template,
+    /* what an earlier read kept as records for a module this design has no module for stays with the booklet: the new file's
+       parse holds none of it, and without this a later newer file (a title changed) would drop it. If the module comes back,
+       its text and these records are parsed together and the answers return as answers (finishLoad, adoptText). */
+    had=((raw&&Array.isArray(raw.records))?raw.records:[]).filter(r=>isObj(r)&&r.foreign&&typeof r.text==="string"),
+    now=(isObj(T)&&isObj(T.raw)&&Array.isArray(T.raw.records))?T.raw.records:[];
+  W.records=[...had.filter(r=>!now.some(x=>isObj(x)&&x.scope===r.scope&&x.text===r.text)),...W.records];
+  return W;};
+const acceptWorkOf=R=>{
+  /* whichever way the work is weighed, what the new design has no module for (a module the file dropped or renamed) is kept as
+     records, never left in this page where nothing would draw or write it: with a host, with none and with no base alike */
+  if(!(HOST&&hostName())) return keepUnowned({S:STATE,D:DRAFTS},R.template);
   /* a kept booklet with no base (written before bases were kept) can only be weighed on what holds something */
-  if(!BASE) return withFileWork(R);
+  if(!BASE) return keepUnowned(withFileWork(R),R.template);
   const file=recsOfParse(R),[here,base]=followMoves(clone({answers:STATE.answers||{},entries:STATE.entries||{},drafts:DRAFTS.custom||{}}),BASE,R.template);
   const m=mergeWork(here,base,file);
   return keepUnowned({S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}},R.template);};
@@ -8821,8 +9170,9 @@ window.addEventListener("booklet-theme",()=>{const s=document.getElementById("th
   new ResizeObserver(set).observe(bar);set();})();
 /* Printing prints everything: the folded callouts open for the print and fold back after */
 if(typeof window!=="undefined"&&window.addEventListener){let printed=[];
-  window.addEventListener("beforeprint",()=>{printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});
-  window.addEventListener("afterprint",()=>{printed.forEach(d=>{d.open=false;});printed=[];});}
+  window.addEventListener("beforeprint",()=>{try{printWhole();}catch(e){printWholeEnd();}
+    printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});
+  window.addEventListener("afterprint",()=>{printWholeEnd();printed.forEach(d=>{d.open=false;});printed=[];});}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&citeOpen()) closeCite();});
 window.addEventListener("scroll",hideTip,{passive:true});
 document.getElementById("btnHome").addEventListener("click",homeButton);
@@ -8848,17 +9198,21 @@ window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].inclu
 window.addEventListener("dragleave",e=>{if(dragDepth>0) dragDepth--;if(dragDepth===0) dropVeil.classList.remove("show");});
 window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.classList.remove("show");const f=e.dataTransfer?.files?.[0];if(f) readFileInto(f,loadText);});
 window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&hostCovers()!=="saved"){e.preventDefault();e.returnValue=strings("ui").leaving;}});
+/* Words typed in a choice or multi's "Add your own" field and not yet added are added as the page is hidden or left, as leaving the
+   field would add them, so closing or reloading the page does not drop them (SPEC.md section 5) */
+function commitOwnFields(){if(typeof document==="undefined"||!document.querySelectorAll) return;
+  document.querySelectorAll("input.q-own,input.tag-in").forEach(i=>{if(typeof i.commitOwn==="function") i.commitOwn();});}
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
 /* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers; and what
    the store has not been handed yet is handed to the browser at once (keepFlush(true)), even while an earlier write is
    still on its way, which would otherwise hand it on only when it ends, after the page has gone */
-window.addEventListener("pagehide",()=>{flushSave();hookFlush();keepFlush(true);});
+window.addEventListener("pagehide",()=>{commitOwnFields();flushSave();hookFlush();keepFlush(true);});
 /* back from the browser's page cache (bfcache): a change the host has not confirmed (the one sent as the page went may never
    have arrived) is sent again at once, so it does not stay Unsaved until the next edit */
 window.addEventListener("pageshow",e=>{if(!e||!e.persisted||!hookBook()||!hostActive()) return;
   if(HOOK_UNSENT||HOST.status!=="saved"){HOOK_SEEN="";hookChanged("open");}});
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();keepFlush(true);}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){commitOwnFields();flushSave();hookFlush();keepFlush(true);}});
 /* a booklet drawn while the page was still arriving had no formula or diagram (useLib waits): it is drawn again now */
 document.addEventListener("DOMContentLoaded",()=>{if(LIB_WAITED){LIB_WAITED=false;render();}});
 /* The page opens on "Your booklets", once it has read what this browser keeps (keepStart: from local storage at once,

@@ -20,7 +20,8 @@ const mkNode=tag=>{const n={tagName:tag,children:[],attrs:{},style:{},dataset:{}
   setAttribute(k,v){this.attrs[k]=String(v);},getAttribute(k){return k in this.attrs?this.attrs[k]:null;},
   removeAttribute(k){delete this.attrs[k];},hasAttribute(k){return k in this.attrs;},
   classList:{add(){},remove(){},toggle(){},contains(){return false;}},addEventListener(k,f){this._on[k]=f;},
-  append(...k){this.children.push(...k);},prepend(...k){this.children.unshift(...k);},remove(){},
+  append(...k){this.children.push(...k);},removeChild(n){const i=this.children.indexOf(n);if(i>=0) this.children.splice(i,1);return n;},insertBefore(n,ref){const i=ref?this.children.indexOf(ref):-1;const j=this.children.indexOf(n);if(j>=0) this.children.splice(j,1);
+    if(i<0||!ref) this.children.push(n); else this.children.splice(this.children.indexOf(ref),0,n);return n;},prepend(...k){this.children.unshift(...k);},remove(){},
   querySelector(){return mkNode("div");},querySelectorAll(){return [];},focus(){},click(){},scrollIntoView(){},
   get textContent(){return this._text||this.children.map(c=>typeof c==="string"?c:(c&&c.textContent)||"").join("");},set textContent(v){this._text=String(v);this.children=[];},
   get innerHTML(){return this._html;},set innerHTML(v){this._html=String(v);this.children=[];},

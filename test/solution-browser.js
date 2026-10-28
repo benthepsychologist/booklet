@@ -105,8 +105,8 @@ const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('
     ok(pv,`${W}px: print shows a shut solution's words`);
     await p.emulateMedia({media:'screen'});
     {const g=await p.evaluate(()=>[...document.querySelectorAll('#main details.card-plain')].map(d=>{d.open=true;const s=d.querySelector('summary');return {t:s.querySelector('.k').innerText.trim(),tile:!!s.querySelector('.cd-tile'),pad:parseFloat(getComputedStyle(d.querySelector('.cd-body')).paddingLeft),rem:parseFloat(getComputedStyle(document.documentElement).fontSize)};}));
-      const un=g.filter(x=>x.t==='Note');
-      ok(un.length===2&&un.every(x=>!x.tile&&x.pad<=x.rem*1.01),`${W}px: an untitled group or unknown kind is called Note, and with no tile its body is not indented for one (${JSON.stringify(g)})`);}
+      const un=g.filter(x=>x.t==='Note'||x.t==='Untitled group words.'),oneEach=g.filter(x=>x.t==='Note').length===1&&g.filter(x=>x.t==='Untitled group words.').length===1;
+      ok(un.length===2&&oneEach&&un.every(x=>!x.tile&&x.pad<=x.rem*1.01),`${W}px: an untitled group is named by its first words (0.16, no longer Note) and an unknown kind is called Note, and with no tile its body is not indented for one (${JSON.stringify(g)})`);}
     /* the folded group draws on the card surface */
     for(const th of ['paper','night']){
       await p.evaluate(t=>window.bookletTheme.set(t),th);await wait(250);

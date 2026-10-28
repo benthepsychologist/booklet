@@ -549,6 +549,44 @@ const THREE=FM("Three")+"> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!
  typeIn(A,"m/a","LAST-WORDS");P.closePages();
  chk("a change made just before the page is closed is told to the host as it goes (pagehide)",h.log.length>n0&&/LAST-WORDS/.test(h.log[h.log.length-1].text)&&/LAST-WORDS/.test(ROUTES[U]));}
 
+/* ---- 0.16: a module the newer file drops or renames keeps the reader's work, with a host script and without ----
+   The answers sat in this page under a module the new design no longer has, where nothing drew or wrote them: they could
+   not be reached or downloaded (acceptWork returned early unless a host was registered, so keepUnowned never ran). */
+for(const withHost of [false,true]){const tag=withHost?" (with a host script)":" (no host script)";
+ const V1=FM("Gone")+"> [!module|k] Keep\n\n> [!activity|k] K\n\n> [!text|kq] Kept question\n\n> [!module|k end] End\n\n> [!module|g] Going\n\n> [!activity|g] G\n\n> [!text|gq] Going question\n\n> [!module|g end] End\n";
+ const REMOVED=V1.replace(/> \[!module\|g\][\s\S]*$/,"");
+ const RENAMED=V1.replace("> [!module|g] Going","> [!module|h] Renamed").replace("> [!module|g end] End","> [!module|h end] End");
+ for(const [what,V2] of [["removed",REMOVED],["renamed",RENAMED]]){
+  const U=STORE+"gone-"+what+(withHost?"-h":"")+".md";const A=boot();if(withHost) host(A,{fail:()=>true});ROUTES[U]=V1;
+  await A.openLink("#/open/"+U.split("/").pop());await sleep(600);
+  typeIn(A,"k/k","k answered");typeIn(A,"g/g","GOING-ANSWER-"+what);A.flushSave();await sleep(600);A.closeBooklet();
+  ROUTES[U]=V2;
+  await A.openLink("#/open/"+U.split("/").pop());
+  chk("a module "+what+tag+": the kept copy opens with the offer, its answers still here",offer()===1&&ans(A,"g","gq")==="GOING-ANSWER-"+what,JSON.stringify(A.STATE.answers));
+  press(/Read the newer file/);
+  /* (with a host, a renamed module's work follows its activities into the new module, the store's own move rule; every other way it is kept as written under its old records line) */
+  chk("...reading the newer file keeps the "+what+" module's answer as records, written once, where it can be downloaded",
+    (A.toMarkdown().match(new RegExp("GOING-ANSWER-"+what,"g"))||[]).length===1&&new RegExp("> \\[!records\\|"+(what==="renamed"&&withHost?"h":"g")+"\\]").test(A.toMarkdown()),A.toMarkdown().split("%%")[1]);
+  chk("...the answer is no longer in this page's answers (written once), and the module that stayed keeps its own",ans(A,"g","gq")===undefined&&ans(A,"k","kq")==="k answered",JSON.stringify(A.STATE.answers));
+  chk("...and the design holding it is its text's parse",JSON.stringify(A.BOOK)===JSON.stringify(A.parseFile(A.bookText(A.BOOK)).template));
+  A.flushSave();A.closeBooklet();
+  await A.openLink("#/open/"+U.split("/").pop());
+  chk("...and the next open still holds it, with no offer, and nothing written twice",!offer()&&(A.toMarkdown().match(new RegExp("GOING-ANSWER-"+what,"g"))||[]).length===1,A.toMarkdown().split("%%")[1]);
+  if(what!=="removed") continue;
+  /* a second newer file (only its title changed) and a third (the module back): the kept records are the booklet's, they go on
+     being kept, and they return as answers when the module does */
+  const count=()=>(A.toMarkdown().match(/GOING-ANSWER-removed/g)||[]).length;
+  ROUTES[U]=REMOVED.replace("title: Gone","title: Gone again");
+  A.closeBooklet();await A.openLink("#/open/"+U.split("/").pop());
+  chk("a second newer file, "+tag+": offered",offer()===1);
+  press(/Read the newer file/);
+  chk("...the removed module's answer is still kept, once, and the other module's answer too",count()===1&&ans(A,"k","kq")==="k answered",A.toMarkdown().split("%%")[1]);
+  A.flushSave();A.closeBooklet();
+  ROUTES[U]=V1.replace("title: Gone","title: Back");
+  await A.openLink("#/open/"+U.split("/").pop());press(/Read the newer file/);
+  chk("a third newer file with the module back: the answer is an answer again, written once, in no foreign records",ans(A,"g","gq")==="GOING-ANSWER-removed"&&count()===1&&!/> \[!records\]\s*\n*\s*> \[!records\|g\] *\n/.test(A.toMarkdown())&&A.BOOK.modules.length===2,A.toMarkdown().split("%%")[1]);
+  A.flushSave();A.closeBooklet();}}
+
 P.closePages();
 console.log(fails?"\n"+fails+" FAILURES":"\nstore-held checks passed");process.exit(fails?1:0);
 })();
