@@ -261,9 +261,12 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
         err(f, f"line {n}: a query belongs in an activity's prose")
     if "as" in s and s["as"].lower() not in QUERY_VIEWS:
         err(f, f"line {n}: the query's `as: {s['as']}` is not one of {', '.join(QUERY_VIEWS)}")
-    if "limit" in s and not re.fullmatch(r'[1-9][0-9]*([ \t]+days?)?', s["limit"]):
+    # `limit:` read once: a whole number, or a span of days (its group 2 the days); `summary:` takes `on` only
+    lim = re.fullmatch(r'([1-9][0-9]*)([ \t]+days?)?', s["limit"]) if "limit" in s else None
+    summing = s.get("summary") == "on"
+    if "limit" in s and not lim:
         err(f, f"line {n}: the query's `limit: {s['limit']}` must be a positive whole number, or a number of days such as `7 days`")
-    if "summary" in s and s["summary"] != "on":
+    if "summary" in s and not summing:
         err(f, f"line {n}: the query's `summary: {s['summary']}` must be `on`")
     src_id = s.get("from", "")
     src_act, src_q, src_data, src_nums, src_rows = None, None, None, set(), []
@@ -295,7 +298,7 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     # cards over kept entries are titled by their date and list their questions: the roles that name a row's parts are not drawn there
     # (over a data block they are: `label` the title, `value` the figure, `note`, `badge`, `tone`)
     # (a summary's rows are not kept entries: their fields are the summary's own, below)
-    summarising = s.get("summary") == "on" and bool(src_act)
+    summarising = summing and bool(src_act)
     if view == "cards" and src_act and not summarising:
         for key in ("label", "value", "note", "badge", "tone"):
             if key in s:
@@ -358,8 +361,7 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
                 elif names and name not in names and name == "value" and "value" not in s and "fields" not in s:
                     warn(f, f"line {n}: the query's `as: {view}` reads the field 'value', which the rows never carry (name the field with `value:`)")
     # a span of days and a summary read kept entries: on a data block, or on one question of an activity that keeps none, they are ignored
-    spanning = bool(re.fullmatch(r'[1-9][0-9]*[ \t]+days?', s.get("limit", "")))
-    summing = s.get("summary") == "on"
+    spanning = bool(lim and lim.group(2))
     if (spanning or summing) and (src_data is not None or (src_q is not None and not act_info[src_act][1])):
         what = " and ".join(([f"`limit: {s['limit']}`"] if spanning else []) + (["`summary: on`"] if summing else []))
         one = spanning != summing
