@@ -569,7 +569,21 @@ for(const withHost of [false,true]){const tag=withHost?" (with a host script)":"
   chk("...and the design holding it is its text's parse",JSON.stringify(A.BOOK)===JSON.stringify(A.parseFile(A.bookText(A.BOOK)).template));
   A.flushSave();A.closeBooklet();
   await A.openLink("#/open/"+U.split("/").pop());
-  chk("...and the next open still holds it, with no offer, and nothing written twice",!offer()&&(A.toMarkdown().match(new RegExp("GOING-ANSWER-"+what,"g"))||[]).length===1,A.toMarkdown().split("%%")[1]);}}
+  chk("...and the next open still holds it, with no offer, and nothing written twice",!offer()&&(A.toMarkdown().match(new RegExp("GOING-ANSWER-"+what,"g"))||[]).length===1,A.toMarkdown().split("%%")[1]);
+  if(what!=="removed") continue;
+  /* a second newer file (only its title changed) and a third (the module back): the kept records are the booklet's, they go on
+     being kept, and they return as answers when the module does */
+  const count=()=>(A.toMarkdown().match(/GOING-ANSWER-removed/g)||[]).length;
+  ROUTES[U]=REMOVED.replace("title: Gone","title: Gone again");
+  A.closeBooklet();await A.openLink("#/open/"+U.split("/").pop());
+  chk("a second newer file, "+tag+": offered",offer()===1);
+  press(/Read the newer file/);
+  chk("...the removed module's answer is still kept, once, and the other module's answer too",count()===1&&ans(A,"k","kq")==="k answered",A.toMarkdown().split("%%")[1]);
+  A.flushSave();A.closeBooklet();
+  ROUTES[U]=V1.replace("title: Gone","title: Back");
+  await A.openLink("#/open/"+U.split("/").pop());press(/Read the newer file/);
+  chk("a third newer file with the module back: the answer is an answer again, written once, in no foreign records",ans(A,"g","gq")==="GOING-ANSWER-removed"&&count()===1&&!/> \[!records\]\s*\n*\s*> \[!records\|g\] *\n/.test(A.toMarkdown())&&A.BOOK.modules.length===2,A.toMarkdown().split("%%")[1]);
+  A.flushSave();A.closeBooklet();}}
 
 P.closePages();
 console.log(fails?"\n"+fails+" FAILURES":"\nstore-held checks passed");process.exit(fails?1:0);

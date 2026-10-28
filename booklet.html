@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-pnV95NedH6z3bajRBHge5VR+mesN9xiJoJI+XMdt6UM=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-8tOEnfzB2sIu5nJAQIuWYc7lg8AqspBGlK3ctGLJOzI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -8284,6 +8284,15 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
    reader's work, and what is here stays as it is. Returns {S, D}, ready for finishLoad (which makes the file's records
    the new base). */
 const acceptWork=R=>{
+  const W=acceptWorkOf(R),raw=BOOK&&BOOK.raw,T=R.template,
+    /* what an earlier read kept as records for a module this design has no module for stays with the booklet: the new file's
+       parse holds none of it, and without this a later newer file (a title changed) would drop it. If the module comes back,
+       its text and these records are parsed together and the answers return as answers (finishLoad, adoptText). */
+    had=((raw&&Array.isArray(raw.records))?raw.records:[]).filter(r=>isObj(r)&&r.foreign&&typeof r.text==="string"),
+    now=(isObj(T)&&isObj(T.raw)&&Array.isArray(T.raw.records))?T.raw.records:[];
+  W.records=[...had.filter(r=>!now.some(x=>isObj(x)&&x.scope===r.scope&&x.text===r.text)),...W.records];
+  return W;};
+const acceptWorkOf=R=>{
   /* whichever way the work is weighed, what the new design has no module for (a module the file dropped or renamed) is kept as
      records, never left in this page where nothing would draw or write it: with a host, with none and with no base alike */
   if(!(HOST&&hostName())) return keepUnowned({S:STATE,D:DRAFTS},R.template);
