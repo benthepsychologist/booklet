@@ -142,7 +142,12 @@ const mk=(mod,body)=>`---\nbooklet: "0.15"\ntitle: T ${mod}\nlang: en\n---\n\n> 
     modB.includes("A claim in a group.[^mod-b-2]")&&modB.includes("\n> [^mod-b-2]: *Group source mod-b*\n")&&!/\[\^2\]/.test(modB)&&out.includes("> [^2]: *Group source mod-a*"),JSON.stringify(rb)+modB);
   chk("...and the footnote outside it is renamed as before",modB.includes("A claim.[^mod-b-1]")&&modB.includes("[^mod-b-1]: *Source mod-b*"));
   chk("a question line written as text in a note is no question of the module's own: a query naming that id still follows the block",rb.renamed.some(x=>x.what==="block"&&x.from==="rows"&&x.to==="mod-b-rows")&&modB.includes("\nfrom: mod-b-rows\n")&&!modB.includes("\nfrom: rows\n"),modB);
-  chk("...and it reads back, nothing refused",A.parseFile(out).refused.length===0);}
+  chk("...and it reads back, nothing refused",A.parseFile(out).refused.length===0);
+  /* the container of a line is its own: a plain quote that follows a group, with a blank line between, is not the group's body */
+  const mid2=id=>mod(id).replace("> [!note] A note\n> > [!text|rows] Written as text","> A plain quote\n> > [!text|rows] Written as text");
+  await fresh();
+  const rc=A.addModuleText(mid2("mod-a")),rd=A.addModuleText(mid2("mod-b")),out2=A.toMarkdown(),modD=out2.slice(out2.indexOf("> [!module|mod-b]"));
+  chk("a question line in a plain quote that comes after a group is drawn as text: a query naming that id follows the block",rc.ok&&rd.ok&&modD.includes("\nfrom: mod-b-rows\n")&&!modD.includes("\nfrom: rows\n"),modD);}
 
  /* what is said about a rename: one short line, at most three listed, the rest counted, in each language */
  {const T=l=>A.STRINGS[l].booklet.renamed,mk2=n=>Array.from({length:n},(_,i)=>({from:"a"+i,to:"m-a"+i}));

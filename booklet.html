@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-GRKDQXY0jeJcm63GywKyLxx+gigDxCR//Q3S9eEQqco=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-dHHVpOPWNdI7UY8VHD+AIG+R1cQxVSu53Kbh9DX+p+U=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4672,9 +4672,12 @@ function renameClashingIds(lines,takenBlocks,takenNotes,modId){
      group in a group too). A line in a note, a quote or a group outside an activity is drawn as text (SPEC.md section 6) and
      gives no id, so it cannot make a query follow the wrong name. */
   const own=new Set(),heads=D.map(v=>bookletLines(v)),KINDS=["activity","menu","module"].concat([...QUESTION_KINDS]);
+  /* the callout a line is in: the nearest callout line one `>` out above it, with every line between them still quoted that deep
+     (a blank line, or a quote that is not the callout's, ends it) */
+  const inside=(h,i,d)=>{const re=new RegExp("^ {0,3}(?:>[ \\t]?){"+d+"}");for(let j=h.i+1;j<i;j++) if(!re.test(lines[j])) return false;return true;};
   const drawn=(d,i)=>{if(d===0) return true;
-    let h=null;for(const x of heads[d-1]) if(x.i<i) h=x;   /* the callout it is in: the nearest line one `>` out above it */
-    return !!h&&h.kind==="group"&&(d===1?heads[0].some(x=>x.kind==="activity"&&x.i<h.i):drawn(d-1,h.i));};
+    let h=null;for(const x of heads[d-1]) if(x.i<i) h=x;
+    return !!h&&h.kind==="group"&&inside(h,i,d)&&(d===1?heads[0].some(x=>x.kind==="activity"&&x.i<h.i):drawn(d-1,h.i));};
   heads.forEach((hs,d)=>hs.forEach(x=>{
     if(KINDS.includes(x.kind)&&drawn(d,x.i)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
   const fresh=(id,taken,used)=>{let n=modId+"-"+id,k=2;while(taken.has(n)||used.has(n)){n=modId+"-"+id+"-"+k;k++;}used.add(n);return n;};
