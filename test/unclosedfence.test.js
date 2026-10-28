@@ -57,6 +57,27 @@ const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
  const A=load(MOVED);BLOBS.length=0;await A.download();
  chk("design after the records that ends inside such a fence: a download is refused, even with nothing changed",BLOBS.length===0&&toastText()===say(A,"en")&&A.peekAnswers("").q1==="peas",BLOBS.map(show).join());}
 
+/* ---- Add a module on a booklet whose body ends inside such a fence (0.16.1): refused, said, nothing changed ----
+   The module would be added at the end of the body, inside the fence, and never read as a module. */
+{const MODFILE='---\nbooklet: "0.16"\ntitle: Seed swap\nlang: en\n---\n\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] Which seeds?\n\n> [!module|seeds end]\n';
+ const FENCE=MODFILE.slice(MODFILE.indexOf("> [!module|"));
+ chk("(why) a module written after such a body is read as that fence's code, never as a module",
+   !load(OPEN).parseFile(OPEN+"\n"+FENCE).template.modules.some(m=>m.id==="seeds"));
+ const A=load(OPEN);A.answersIn("").q1="runner beans";A.markDirty();
+ const book=A.BOOK,source=A.BOOK.raw.source,text=A.toMarkdown(),r=A.addModuleText(MODFILE),p=r.problems&&r.problems[0];
+ chk("Add a module is refused",r.ok===false&&r.problems.length===1&&p.code==="addFenceOpen",JSON.stringify(r));
+ chk("and the reader is told why, and what to do",/ends inside a code fence that is never closed/.test(A.problemText(p))&&/Close the fence in Markdown first/.test(A.problemText(p)),A.problemText(p));
+ for(const l of ["fr","es"]){A.lang=l;const w=A.problemText(p);A.lang="en";
+   chk("in "+l+", in "+l,w===A.STRINGS[l].problem.addFenceOpen&&w!==A.STRINGS.en.problem.addFenceOpen,w);}
+ chk("and nothing is changed: the design, the reader's work, the text the writer would write",
+   A.BOOK===book&&A.BOOK.raw.source===source&&A.toMarkdown()===text&&A.peekAnswers("").q1==="runner beans"&&!A.BOOK.modules.some(m=>m.id==="seeds"));
+ const REC="%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n%%\n";
+ const B=load(FM+ACT+REC+"\n> [!text|q3] Anything else?\n\n```text\nmulch the beds\n"),src=B.BOOK.raw.source,r2=B.addModuleText(MODFILE);
+ chk("and so is it where the design after the records ends inside such a fence",r2.ok===false&&r2.problems[0].code==="addFenceOpen"&&B.BOOK.raw.source===src,JSON.stringify(r2));
+ const CLOSED=FM+ACT+"A reminder for the shed:\n\n```text\nwater the beans at dawn\n```\n",C=load(CLOSED),r3=C.addModuleText(MODFILE);
+ chk("with the fence closed, the module is added as before: after the body, and read as a module",
+   r3.ok===true&&(r3.added||[]).join()==="seeds"&&C.BOOK.raw.source===CLOSED+"\n"+FENCE&&C.BOOK.modules.some(m=>m.id==="seeds"),show(C.BOOK.raw.source)+" "+JSON.stringify(r3));}
+
 /* ---- the host's write-back and Booklet.text() ---- */
 {P.wipe();P.place("http:","fleet");global.__ls["booklet.host.allowed"]="fleet: garden";const A=P.boot(),B=A.BookletApi;
  const calls=[],h=B.host({label:"fleet: garden"}),line=()=>A.hostLineText(A.STRINGS.en.ui);B.onChange(x=>{calls.push(x);});

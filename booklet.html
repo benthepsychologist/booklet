@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-gc/2z0BZCmbuqbl4Ze6fQF8W+a8zCSeFNAlNF1nMAJE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-K2PsO/wrmHTGki7/FScZ7c9GhE47paEWt9jbHO2OrqQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1817,7 +1817,8 @@ const STRINGS_SRC={
       notBooklet: `Not a booklet file this page can read (it needs a \`booklet:\` line with a 0.x version).`,
       noModule: "This file holds no module.",
       noBooklet: `Add a module needs an open booklet.`,
-      noFence: "Could not find a complete `[!module|…]` … `[!module|… end]` fence."
+      noFence: "Could not find a complete `[!module|…]` … `[!module|… end]` fence.",
+      addFenceOpen: "This booklet ends inside a code fence that is never closed, so a module cannot be added after it. Close the fence in Markdown first."
     },
     moduleView: {
       noneShown: "Nothing in this module is shown at the moment."
@@ -2163,7 +2164,8 @@ const STRINGS_SRC={
       notBooklet: `Ce n’est pas un fichier de carnet que cette page peut lire (il faut une ligne \`booklet:\` avec une version 0.x).`,
       noModule: "Ce fichier ne contient aucun module.",
       noBooklet: `Ajouter un module demande un carnet ouvert.`,
-      noFence: "Impossible de trouver une clôture complète `[!module|…]` … `[!module|… end]`."
+      noFence: "Impossible de trouver une clôture complète `[!module|…]` … `[!module|… end]`.",
+      addFenceOpen: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; aucun module ne peut donc être ajouté après ce bloc. Fermez d’abord le bloc en Markdown."
     },
     moduleView: {
       noneShown: "Rien dans ce module n’est affiché pour l’instant."
@@ -2509,7 +2511,8 @@ const STRINGS_SRC={
       notBooklet: `Este no es un archivo de cuadernillo que esta página pueda leer (necesita una línea \`booklet:\` con una versión 0.x).`,
       noModule: "Este archivo no contiene ningún módulo.",
       noBooklet: `Agregar un módulo requiere un cuadernillo abierto.`,
-      noFence: "No se encontró una valla completa `[!module|…]` … `[!module|… end]`."
+      noFence: "No se encontró una valla completa `[!module|…]` … `[!module|… end]`.",
+      addFenceOpen: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede agregar un módulo después de él. Primero hay que cerrar el bloque en Markdown."
     },
     moduleView: {
       noneShown: "Por ahora no se muestra nada en este módulo."
@@ -5093,6 +5096,9 @@ function addModuleText(text,R){
   const problems=moduleTextProblems(text,R);
   if(problems.length) return {ok:false,problems};
   if(!BOOK) return {ok:false,problems:[PROBLEM.noBooklet]};
+  /* a body that ends inside a code fence that never closes, by fileToWrite's test of it: a module added at its end would be
+     read as that fence's code, never as a module. Nothing is added, and the fence is never closed for the author */
+  if(endsInFence(writeParts(BOOK,null,null).head)) return {ok:false,problems:[PROBLEM.addFenceOpen]};
   const lines=String((R.template.raw||{}).source||"").split("\n");
   const spans=moduleSpans(lines);
   if(!spans.length) return {ok:false,problems:[PROBLEM.noFence]};
