@@ -57,6 +57,47 @@ const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
  const A=load(MOVED);BLOBS.length=0;await A.download();
  chk("design after the records that ends inside such a fence: a download is refused, even with nothing changed",BLOBS.length===0&&toastText()===say(A,"en")&&A.peekAnswers("").q1==="peas",BLOBS.map(show).join());}
 
+/* ---- the browser's own copy of such a booklet (0.16.1): a reload, a Rename and Remove a module keep the design ----
+   The copy is the design's text with the records region kept beside it (bookText, regionOf). Written after this body,
+   the region (its `%%` and records lines) was read into the fence at the next reload, Rename or Remove, and the design
+   shown gained those lines in the author's code block. The copy is now the body alone, and nothing of the region is lost. */
+{const REC="%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n%%\n";
+ const MOVED=FM+ACT+REC+"\n> [!text|q3] Anything else?\n\n```text\nmulch the beds\n";
+ const A=load(MOVED),design=A.BOOK.raw.source;
+ chk("(the design read from the file ends inside the fence and holds no records line)",/```text\nmulch the beds\n$/.test(design)&&!design.includes(HEAD),show(design));
+ A.answersIn("").q2="the squash";A.markDirty();A.flushSave();const id=A.currentId;P.closePages();
+ const B=P.boot();B.openBooklet(id);
+ chk("the browser's copy, read again after a reload: the design as it was, nothing of the records region in the fence",B.BOOK.raw.source===design,show(B.BOOK.raw.source));
+ chk("and the answers are kept, the file's and the one typed",B.peekAnswers("").q1==="peas"&&B.peekAnswers("").q2==="the squash",JSON.stringify(B.peekAnswers("")));
+ {const t=B.toMarkdown(),at=t.indexOf("%%\n"+HEAD);
+  chk("and the records region is kept beside the design: the writer's text is the design, then the file's region with the answer typed",
+    at>0&&t.slice(0,at).trimEnd()===design.trimEnd()&&t.slice(at).startsWith("%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"peas\"")&&t.includes('"q2": "the squash"'),show(t));}
+ BLOBS.length=0;await B.download();
+ chk("and a download is still refused",BLOBS.length===0&&toastText()===say(B,"en"));
+ const named=design.replace("title: Garden notes\n","title: \"Garden notes in May\"\n");
+ B.renameBooklet("Garden notes in May");
+ chk("a Rename changes the title line and nothing else of the design",named!==design&&B.BOOK.raw.source===named,show(B.BOOK.raw.source));
+ P.closePages();const C=P.boot();C.openBooklet(id);
+ chk("and a reload after the Rename shows the same design",C.BOOK.raw.source===named&&C.peekAnswers("").q2==="the squash",show(C.BOOK.raw.source));
+ C.answersIn("").q2="the beans";C.markDirty();C.flushSave();P.closePages();const D=P.boot();D.openBooklet(id);
+ chk("and so does another answer, saved and read again",D.BOOK.raw.source===named&&D.peekAnswers("").q2==="the beans"&&D.peekAnswers("").q1==="peas",show(D.BOOK.raw.source));}
+/* a copy an older release kept (its parsed design, TPL) keeps no region beside it: the records it kept as written are
+   written after its source whatever the source ends in, as before, and never left out */
+{const src=FM+ACT+"A reminder for the shed:\n\n```text\nwater the beans at dawn\n";
+ const A=load(src);A.answersIn("").q1="runner beans";A.markDirty();A.flushSave();const id=A.currentId,key="booklet.b."+id;
+ const o=JSON.parse(global.__ls[key]);delete o.text;delete o.region;
+ o.TPL={booklet:"0.13",id:"garden",version:"",modules:[],widgets:[],raw:{source:src,lang:"en",records:[{scope:"",text:'```booklet sync\n{"by":"another reader"}\n```'}]}};
+ global.__ls[key]=JSON.stringify(o);P.closePages();const B=P.boot();B.openBooklet(id);
+ const kept=JSON.parse(global.__ls[key]);
+ chk("an older release's copy of such a booklet keeps the records it kept as written",kept.text.includes('```booklet sync\n{"by":"another reader"}\n```')&&B.peekAnswers("").q1==="runner beans",show(kept.text));}
+{const MOD=id=>"\n> [!module|"+id+"] The "+id+"\n\n> [!activity|a1] This week\n\n> [!text|q1] What grew?\n\n> [!module|"+id+" end]\n";
+ const REC="%%\n> [!records|beds] App record — do not edit below this line\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n%%\n";
+ const AFTER="\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
+ const A=load(FM+MOD("beds")+MOD("shed")+"\n"+REC+AFTER),r=A.removeModule("shed");
+ chk("Remove a module on such a booklet: the design is what remains, with nothing of the records region in the fence",
+   r.ok&&A.BOOK.raw.source===FM+MOD("beds")+AFTER&&A.BOOK.modules.map(m=>m.id).join()==="beds",show(A.BOOK.raw.source));
+ chk("and the module left keeps its answers, in the page and in the region",A.peekAnswers("beds").q1==="peas"&&A.toMarkdown().includes('{"q1": "peas"}'),show(A.toMarkdown()));}
+
 /* ---- Add a module on a booklet whose body ends inside such a fence (0.16.1): refused, said, nothing changed ----
    The module would be added at the end of the body, inside the fence, and never read as a module. */
 {const MODFILE='---\nbooklet: "0.16"\ntitle: Seed swap\nlang: en\n---\n\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] Which seeds?\n\n> [!module|seeds end]\n';
@@ -144,15 +185,18 @@ const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
    BLOBS.length===1&&BLOBS[0]===t&&t.startsWith(CLOSED+"\n\n%%\n"+HEAD)&&A.parseFile(t).S.answers[""].q1==="runner beans",show(BLOBS[0]));
  const files=[...fs.readdirSync(P.R+"/examples").filter(f=>f.endsWith(".md")).map(f=>"examples/"+f),
    ...fs.readdirSync(P.R+"/test/fixtures").filter(f=>f.endsWith(".md")).map(f=>"test/fixtures/"+f)];
- const differ=[];let n=0,moved=0;
+ const differ=[],copies=[];let n=0,moved=0;
  for(const f of files){const text=fs.readFileSync(P.R+"/"+f,"utf8");P.wipe();const C=P.boot(),R=C.parseFile(text);
    if(!R.template||!R.ok) continue;
    C.loadText(text);BLOBS.length=0;await C.download();n++;
    /* a file with design after its records is written with that design above them (section 8), as toMarkdown writes it */
    const mv=R.unread.some(p=>/moved above/.test(String(p)));if(mv) moved++;
-   if(BLOBS.length!==1||BLOBS[0]!==(mv?C.toMarkdown():text)) differ.push(f);}
+   if(BLOBS.length!==1||BLOBS[0]!==(mv?C.toMarkdown():text)) differ.push(f);
+   /* the browser's copy of its design is the writer's text with nothing of the reader's, as before 0.16.1 */
+   if(C.bookText(C.BOOK)!==C.fileText(C.BOOK,C.emptyState(),C.emptyDrafts())) copies.push(f);}
  chk("every example and fixture the renderer opens downloads as before: the file byte for byte ("+n+" files; "+moved+
-   " with design after their records, as the writer writes them)",n>5&&!differ.length,differ.join());}
+   " with design after their records, as the writer writes them)",n>5&&!differ.length,differ.join());
+ chk("and the browser's copy of each one's design is the writer's text, as before",n>5&&!copies.length,copies.join());}
 
 P.closePages();
 if(fails){console.log("\n"+fails+" FAILURES");process.exitCode=1;}else console.log("\nall unclosed-fence checks passed");

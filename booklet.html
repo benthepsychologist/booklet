@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-K2PsO/wrmHTGki7/FScZ7c9GhE47paEWt9jbHO2OrqQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-Mxf23MiHzQi6NCeYrDT6TSqk+N050qByv1bAsw0wE4E=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3728,10 +3728,12 @@ const oldDesign=t=>isObj(t)&&Array.isArray(t.modules)&&t.modules.every(m=>isObj(
   &&m.activities.every(a=>typeof a.id==="string"&&(a.kind==="entry"||a.kind==="board")));
 /* an older release's kept design, renamed (its source's `title:` line too) */
 const namedDesign=(t,n)=>({...t,title:n,raw:{...(t.raw||{}),source:setTitleIn((t.raw||{}).source,n,(t.raw||{}).lang)}});
-/* the text a snapshot keeps, or null; an older one's (TPL) is its design's source with the records it kept as written */
+/* the text a snapshot keeps, or null; an older one's (TPL) is its design's source with the records it kept as written,
+   after the source whatever it ends in: such a snapshot keeps no region beside its text (designText), so the text is the
+   one place those records are kept */
 function storedText(o){if(typeof o.text==="string") return o.text;
   const raw=isObj(o.TPL)&&isObj(o.TPL.raw)?o.TPL.raw:null,R=raw?parseFile(String(raw.source||"")):null;
-  return R&&R.template?bookText({...R.template,raw:{...R.template.raw,records:raw.records}}):null;}
+  return R&&R.template?fileText({...R.template,raw:{...R.template.raw,records:raw.records}},emptyState(),emptyDrafts()):null;}
 /* A save is scheduled for the booklet that asked for it. Leaving a booklet
    writes any save still pending to that booklet's own key first (flushSave),
    and a timer that somehow outlives its booklet finds bookletGen moved on and
@@ -4784,14 +4786,20 @@ let FENCE_END=null;
 function endsInFence(text){if(FENCE_END&&FENCE_END.text===text) return FENCE_END.open;
   const {lines,next}=frontMatter(text,true),body=lines.slice(next),F=codeFences(body).pop();
   FENCE_END={text,open:!!F&&F.end>=body.length};return FENCE_END.open;}
+/* The text a design is read from (bookText, textWith): its file's text with nothing of the reader's, its kept records with
+   it. Where that would put a records region after a body that ends inside a code fence that never closes (design after the
+   file's records, moved above them), it is the body alone: the parse would read the region as that fence's code, and the
+   design read back would gain the region's lines inside the author's code block. The region is kept beside the text
+   (regionOf, adopted with the parse), so nothing of it is lost; any other text is fileText's. */
+function designText(book,drop){const p=writeParts(book,emptyState(),emptyDrafts(),drop);return p.region&&endsInFence(p.head)?p.head:p.head+p.sep+p.region;}
 /* the booklet's text with no records, worked out once per booklet and its raw.wrote, so a save does not run the whole writer
    again to get it: a design change adopts a new booklet whole, and the one later change, adoptParse's, gives a new raw.wrote */
 let BOOK_TEXT=null;
 const bookText=book=>{const w=book&&book.raw&&book.raw.wrote;if(BOOK_TEXT&&BOOK_TEXT.b===book&&BOOK_TEXT.w===w) return BOOK_TEXT.t;
-  const t=fileText(book,emptyState(),emptyDrafts());BOOK_TEXT={b:book,w,t};return t;};
+  const t=designText(book);BOOK_TEXT={b:book,w,t};return t;};
 /* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` */
 const textWith=(source,drop)=>{const raw=BOOK.raw||{};
-  return fileText({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}},emptyState(),emptyDrafts(),drop);};
+  return designText({...BOOK,raw:{...raw,source,records:[].concat(raw.records||[]).filter(r=>!drop||!r||r.scope!==drop)}},drop);};
 /* The design is always its text's parse: a booklet's text (kept here, or made by Add, Remove or Rename) is parsed as a
    file is and adopted whole. Returns the parse, or null (the design unchanged) for no booklet. `region`: the records
    region the booklet had (regionOf), which a text made by bookText holds only the kept records of; adopted with the
