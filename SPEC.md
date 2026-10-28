@@ -334,7 +334,7 @@ from: due-soon
 
 `icon:` takes an icon name, `parent:` an activity id, `status:` the one value `off`, and `tab:` the id of one of its module's tabs (section 3). None is written on a module's end line.
 
-`each:` names a question or widget in the same activity, whose picks the question is asked for (section 5, "A question asked for each pick"). `earlier:` takes a whole number, written in digits only (`[0-9]+`): how many earlier words a question offers (section 5, "Words the reader wrote before"). Any other value is ignored and reported, and the question offers its default.
+`each:` names a question or widget in the same activity, whose picks the question is asked for (section 5, "A question asked for each pick"). `earlier:` takes a whole number, written in digits only (`[0-9]+`): how many earlier words a question offers (section 5, "Words the reader wrote before"). Any other value of `earlier:` is ignored and reported, and the question offers its default.
 
 **Unknown kinds.** A line with an id or settings whose kind is not in this table is an **unknown kind**. A renderer draws it as a callout, with a quiet line under its title saying that it does not know the kind, and reports it; the linter warns. A line with no id and no settings is a reading callout of whatever kind its author chose (`note`, `tip`, Booklet's `diff`, and so on, section 6), drawn with no notice. `group`, `diff`, `law` and `opinion`, Booklet's own reading kinds (section 6), are in the table above and take no settings. A line that starts `> [!` but cannot be read as a Booklet line is reported, and is read as text.
 
@@ -454,10 +454,15 @@ A widget the reader operates (the body map, a grid of cells) is a `widget` line 
 `each:<id>` on a question line names another question or widget in the same activity, its **source**. The question is asked once for each pick in the source's answer, and its answer holds one answer per pick.
 
 ```markdown
+> [!menu|rooms]
+- Kitchen
+- Garage
+- Garden
+
 > [!multi|tools] Which tools did you use today?
-> - [ ] Hammer
-> - [ ] Saw
-> - [ ] Drill
+- [ ] Hammer
+- [ ] Saw
+- [ ] Drill
 
 > [!multi|tool-where each:tools menu:rooms] Where did you use it?
 ```
