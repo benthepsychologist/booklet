@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-EyIr8OKazgqf0IZ+Rc9G2izOpV6BM4RlW/VLuPWWaEk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-5ZE5iiqk1Z6inb0QvDHx2AML+XJ+Vj9/MbcWMV8olcw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4445,7 +4445,10 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
 function fileText(book,S,D,drop){const p=writeParts(book,S,D,drop);return p.head+p.sep+p.region;}
 const regionOf=(book,drop)=>writeParts(book,null,null,drop).region;
 function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol||"\n",src=String(V.source||""),same=typeof W.head==="string"&&src===W.src;
-  const head=same?W.head:(W.bom||"")+(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);
+  /* a body written from a changed design (Add, Remove, Rename) ends as the body read did: its trailing blank lines kept */
+  const tl=typeof W.head==="string"?(W.head.match(/(?:\r\n?|\n)\s*$/)||[""])[0]:"";
+  let body=(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);if(body&&tl) body=body.replace(/(?:\r\n?|\n)$/,"")+tl;
+  const head=same?W.head:(W.bom||"")+body;
   /* a blank line between the body and the region, where the body does not end with one: before a region this writer
      adds, and before the file's own when its body is written from a changed design; a body as read is left as it was */
   const gap=()=>{const ls=head.split(/\r\n?|\n/),z=ls[ls.length-1];return !head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"";};
@@ -4469,8 +4472,9 @@ function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol|
   const objects=(bs,{put,off},shape,info)=>{const z=bs[bs.length-1],ks=Object.keys(put);
     bs.forEach(b=>{const mine=Object.keys(b.value);
       if((b!==z||!ks.length)&&mine.length&&mine.every(k=>off.has(k))) return void ops.push({b,gone:1});
-      let c=b.code;off.forEach(k=>{if(c!==null&&hasOwn(b.value,k)) c=dropMember(c,k);});
-      if(b===z) ks.forEach(k=>{if(c!==null) c=setMember(c,k,put[k],shape);});
+      /* set before taking out, so a block whose one member is replaced by another keeps its own layout */
+      let c=b.code;if(b===z) ks.forEach(k=>{if(c!==null) c=setMember(c,k,put[k],shape);});
+      off.forEach(k=>{if(c!==null&&hasOwn(b.value,k)) c=dropMember(c,k);});
       if(c!==null&&c!==b.code) ops.push(/^\s*\{\s*\}\s*$/.test(c)?{b,gone:1}:{b,code:c});});
     return !z&&ks.length?fence(info,shape(put)):null;};
   if(drop) R.groups.forEach(g=>{if(g.scope===drop) ops.push({p:g.line,del:g.end-g.line});});
@@ -4519,7 +4523,9 @@ function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol|
   /* a fence the region leaves open at the end of the file is closed before anything is put after it, so nothing is
      written into it */
   let shut=-1;if(R.open&&[...adds.keys()].some(p=>p>R.open.at)){shut=T[T.length-1]===""?T.length-1:T.length;if(shut===T.length) E[shut-1]=nl;T.splice(shut,0,R.open.mark);E.splice(shut,0,shut===T.length-1?"":nl);}
-  const at=p=>shut>=0&&p>=shut?p+1:p,close=b=>b.start===(R.open||{}).at?shut:b.close;
+  /* a block's closing line: for the block left open, the line closing it now, or (nothing put after it) the end of the
+     file, its last line ending, or the lack of one, kept as it was */
+  const at=p=>shut>=0&&p>=shut?p+1:p,open=b=>b.start===(R.open||{}).at,close=b=>open(b)&&shut>=0?shut:b.close;
   const steps=[...ops.map(o=>({...o,p:at(o.b?o.b.start:o.p)})),...[...adds].map(([p,chunks])=>({p:at(p),chunks}))];
   steps.sort((x,y)=>y.p-x.p||(x.chunks?1:0)-(y.chunks?1:0)).forEach(s=>{const p=s.p;
     if(s.del) return void(T.splice(p,s.del),E.splice(p,s.del));
@@ -4531,17 +4537,23 @@ function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol|
     if(s.code!==undefined){const o=T.slice(p+1,c),n=s.code.split("\n");let i=0,j=0;
       while(i<o.length&&i<n.length&&o[i]===n[i]) i++;
       while(j<o.length-i&&j<n.length-i&&o[o.length-1-j]===n[n.length-1-j]) j++;
-      const mid=n.slice(i,n.length-j);T.splice(p+1+i,o.length-i-j,...mid);E.splice(p+1+i,o.length-i-j,...mid.map(()=>E[p]||nl));return;}
-    const n=Math.min(c,T.length-1)-p+1,last=E[p+n-1],L=s.lines||[];
+      const a=p+1+i,k=o.length-i-j,mid=n.slice(i,n.length-j),ends=mid.map(()=>E[p]||nl);
+      if(a+k===T.length){if(mid.length){ends[mid.length-1]=E[T.length-1];if(!k) E[a-1]=E[p]||nl;}else if(k) E[a-1]=E[T.length-1];}
+      T.splice(a,k,...mid);E.splice(a,k,...ends);return;}
+    const z=open(b)&&shut<0?b.close:Math.min(c,T.length-1)+1,n=z-p,last=E[z-1],L=s.lines||[];
     T.splice(p,n,...L);E.splice(p,n,...L.map(()=>nl));if(L.length) E[p+L.length-1]=last;
     else if((p===0||!T[p-1].trim())&&p<T.length-1&&!T[p].trim()){T.splice(p,1);E.splice(p,1);}});
+  /* a module removed with the region's only records line takes the region's `%%` lines with it: left, they would be
+     read as the body's own text */
+  if(drop&&!T.some(t=>t.trim()&&t.trim()!=="%%")) return out("");
   return out(T.map((t,i)=>t+E[i]).join(""));}
 let REGION_READ=null;
 /* The records region's lines (T, and in E each one's ending) and what they hold, read as the parse reads them (splitItems,
    onRecordFence): its records lines (`groups`: each one's `scope`, a module's id, "" for the activities outside every
    module, or null for an id the design does not have, whose blocks are kept and not read; `end`, the next records line or
    closing `%%`; `last`, the line after its last one that is not blank), its fenced blocks (`blocks`: `value`, the object
-   of one read as a record; `at`, an entries or draft block's activity; `close`, its closing line), the first records line
+   of one read as a record; `at`, an entries or draft block's activity; `close`, its closing line, which for a fence left
+   open is the end of the file, before the empty piece after a last line ending), the first records line
    (`top`, -1 for no region), where a new module's group goes (`end`, before the last closing `%%`) and a fence left open at
    the end of the file (`open`). The last read is kept, since every save of a booklet reads the same region. */
 function readRegion(text,mods){const key=mods.map(m=>m.id+(scopeOfModule(m)?"/":"")).join(" ");
@@ -4552,7 +4564,8 @@ function readRegion(text,mods){const key=mods.map(m=>m.id+(scopeOfModule(m)?"/":
   const full=(x,y)=>{let k=y-1;while(k>x&&!T[k].trim()) k--;return k+1;};
   const shut=i=>{if(g){g.end=i;g.last=full(g.line,i);g=null;}};
   for(let i=0;text&&i<T.length;i++){const ln=T[i],f=FENCE_RE.exec(ln);
-    if(f){const F=fenceAt(T,i,f),w=F.info.split(/\s+/),what=(w[1]||"").toLowerCase(),b={start:i,close:F.end,what,scope:sc,code:T.slice(i+1,F.end).join("\n")};
+    if(f){const F=fenceAt(T,i,f),w=F.info.split(/\s+/),what=(w[1]||"").toLowerCase(),end=F.end>=T.length&&T.length-1>i&&T[T.length-1]===""?T.length-1:F.end;
+      const b={start:i,close:end,what,scope:sc,code:T.slice(i+1,end).join("\n")};
       if(F.end>=T.length) R.open={at:i,mark:F.mark};
       if(sc!==null&&/^booklet$/i.test(w[0])&&RECORD_KINDS.includes(what)&&(what==="answers"||w[2])){let o=null;try{o=JSON.parse(b.code);}catch(e){}
         if(isObj(o)&&(what!=="entries"||Array.isArray(o.items)&&o.items.every(e=>e&&typeof e==="object"&&e.ts))){b.value=o;if(what!=="answers") b.at=addrOf(sc,w[2]);}}

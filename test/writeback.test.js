@@ -101,7 +101,7 @@ for(const f of fs.readdirSync(P.R+"/examples").filter(f=>f.endsWith(".md"))){con
  chk("renamed, only the title changes: the records as written",A.renameBooklet("Sky and rain")&&region(A.toMarkdown())===region(want)&&/title: "?Sky and rain/.test(A.toMarkdown()),show(A.toMarkdown()));
  const MOD=fs.readFileSync(P.R+"/test/fixtures/module-daily-journal.md","utf8");
  chk("a module added",A.addModuleText(MOD).ok);
- chk("with a module added, the records are as written, a blank line before them",region(A.toMarkdown())===region(want)&&/End of Daily journal\n\n%%\n/.test(A.toMarkdown()),show(A.toMarkdown()));
+ chk("with a module added, the records are as written, the body's trailing blank lines before them as read",region(A.toMarkdown())===region(want)&&/End of Daily journal\n\n\n%%\n/.test(A.toMarkdown()),show(A.toMarkdown()));
  chk("and removed again, they are still as written",A.removeModule("example-daily-journal").ok&&region(A.toMarkdown())===region(want),show(A.toMarkdown()));
  A.flushSave();const id2=A.currentId;P.closePages();A=P.boot();A.openBooklet(id2);
  chk("and so after a reload",region(A.toMarkdown())===region(want),show(A.toMarkdown()));}
@@ -111,6 +111,43 @@ for(const f of fs.readdirSync(P.R+"/examples").filter(f=>f.endsWith(".md"))){con
  chk("two answers blocks: written back byte for byte",A.toMarkdown()===T);
  A.answersIn("").q3="hail";
  chk("a new answer goes into the last block, the first as written",A.toMarkdown()===T.replace('{"q2": "west"}','{"q2": "west", "q3": "hail"}'),show(A.toMarkdown()));}
+
+/* ---- clear one answer and set another in one save: the block keeps its own layout ---- */
+{const T=BODY+"\n%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"grey\"}\n```\n\n%%\n",A=load(T);
+ A.answersIn("").q2="west";A.answersIn("").q1="";
+ chk("a one-member block whose member is cleared as another is set stays on one line",A.toMarkdown()===T.replace('{"q1": "grey"}','{"q2": "west"}'),show(A.toMarkdown()));}
+
+/* ---- a records block left open at the end of the file (cut short, a hand edit): a change goes inside it ---- */
+for(const [name,tail] of [["ending in a newline",'{"q1": "grey"}\n'],["with no final newline",'{"q1": "grey"}'],["across lines, with no final newline",'{\n "q1": "grey",\n "q2": "west"\n}']]){
+  const T=BODY+"\n%%\n"+HEAD+"\n\n```booklet answers\n"+tail,A=load(T);
+  chk("an answers block left open, "+name+": read, and written back byte for byte",A.peekAnswers("").q1==="grey"&&A.toMarkdown()===T);
+  A.answersIn("").q1="blue";const o=A.toMarkdown();
+  chk("  a change is made in its place, nothing else differs",o===T.replace('"grey"','"blue"'),show(o.slice(-60)));
+  chk("  and reads back",load(o).peekAnswers("").q1==="blue");
+  let u=T;for(let k=0;k<3;k++){const C=load(u);C.answersIn("").q1="v"+k;u=C.toMarkdown();}
+  chk("  three saves in a row do not grow it",u===T.replace('"grey"','"v2"'),show(u.slice(-60)));
+  const D=load(T);D.answersIn("").q1="";D.answersIn("").q2="";const c=D.toMarkdown();
+  chk("  every answer cleared stays cleared when the file is read again",!load(c).peekAnswers("").q1&&!load(c).peekAnswers("").q2&&!/booklet answers/.test(c),show(c.slice(-60)));}
+{const T=BODY+"\n%%\n"+HEAD+"\n\n```booklet entries d1\n{\"items\": [\n"+ITEMS+"\n]}",A=load(T);
+ A.draftFor("d1").n="a lot";A.finalizeEntry("d1");const o=A.toMarkdown(),e=A.STATE.entries.d1,z=e[e.length-1];
+ chk("an entries block left open: a new entry goes after the last, nothing else differs",o===T.replace(ITEMS,ITEMS+",\n  "+JSON.stringify(z)),show(o.slice(-120)));
+ chk("  and all three are read back",(load(o).STATE.entries.d1||[]).length===3);}
+{const T=BODY+"\n%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"grey\"}\n",A=load(T);
+ A.draftFor("d1").n="started";A.markDirty();const o=A.toMarkdown();
+ chk("an answers block left open, with a block written after it: closed with its own mark first, its lines as written",o.startsWith(T+"```\n")&&load(o).DRAFTS.custom.d1.n==="started"&&load(o).peekAnswers("").q1==="grey",show(o.slice(-120)));}
+
+/* ---- Remove a module whose records line is the region's only one: the region goes, and stays gone ---- */
+{const MA="> [!module|herbs] Herbs\n\n> [!activity|h1] Herb bed\n\n> [!text|basil] Basil?\n\n> [!module|herbs end] End of Herbs\n";
+ const MB="> [!module|roots] Roots\n\n> [!activity|r1] Root bed\n\n> [!text|carrot] Carrots?\n\n> [!module|roots end] End of Roots\n";
+ const T=FM+"\n"+MA+"\n"+MB+"\n%%\n> [!records|herbs] Herbs\n\n```booklet answers\n{\"basil\": \"yes\"}\n```\n\n%%\n";
+ let A=load(T);const cnt=s=>(s.match(/^%%$/gm)||[]).length;
+ chk("Remove a module whose records line is the region's only one",A.removeModule("herbs").ok);
+ A.flushSave();const id=A.currentId,seen=[cnt(A.toMarkdown())];
+ for(let i=0;i<3;i++){P.closePages();A=P.boot();A.openBooklet(id);A.markDirty();A.flushSave();seen.push(cnt(A.toMarkdown()));}
+ chk("  leaves no `%%` line in the file, after it or after each of three reloads",seen.every(n=>n===0),seen.join());
+ /* the body's own trailing blank lines stay through a Remove */
+ const U=FM+"\n"+MA+"\n"+MB+"\n\n\n"+"%%\n"+HEAD+"\n\n> [!records|roots] Roots\n\n```booklet answers\n{\"carrot\": \"few\"}\n```\n\n%%\n",B=load(U);
+ chk("Remove a module keeps the body's trailing blank lines and the other module's records as written",B.removeModule("herbs").ok&&B.toMarkdown()===U.replace(MA+"\n",""),show(B.toMarkdown()));}
 
 P.closePages();
 if(fails){console.log("\n"+fails+" FAILURES");process.exitCode=1;}else console.log("\nall write-back checks passed");
