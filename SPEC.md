@@ -981,7 +981,7 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 - **Questions in a `repeat` activity** are answered in its `draft` and kept in its `entries`, never in `answers`.
 - **Finishing an entry again.** A `repeat daily` activity keeps one entry a day (section 3; a day as defined above): finishing it again replaces that day's first entry, which a writer may write in its place, and every copy of the old entry (its `ts` in a later block) goes with it. Finishing it again with nothing changed may be refused (the Obsidian plugin) or kept again with a new `ts` (the reference renderer).
 - **A value a writer cannot show**, such as a date not written as `YYYY-MM-DD`, is kept as written until the reader changes it. A number outside its question's `min` and `max` is stored as typed. The reader's own option words may be trimmed of spaces at either end.
-- **A body that ends inside an unclosed code fence.** A region added after it would be read as part of the fence, and its records would not be read back. A writer may refuse to add records to such a file and say why (the Obsidian plugin does); the reference renderer does not check yet (section 13).
+- **A body that ends inside an unclosed code fence.** A region added after it would be read as part of the fence, and its records would not be read back. A writer may refuse to add records to such a file and say why (the Obsidian plugin and the reference renderer do).
 
 ---
 
@@ -1111,7 +1111,6 @@ This is a young format, and the reference renderer does not yet do everything th
 
 - **Editing a booklet's design in the browser.** Today, editing a file's design means a text editor, not the renderer — a deliberate, temporary scope decision so the format and the read-only renderer could be proven first.
 - **All of this document in Obsidian, and a second complete implementation.** The Booklet plugin for Obsidian (`booklet-obsidian`, section 10), in pre-release, is a second, independent reader and writer of booklets, and draws part of what the reference renderer draws; its own repository lists what it does not draw yet. The renderer in this repository is the only reader of all of this document so far.
-- **Checking for a body that ends inside an unclosed code fence** (section 8, "Writing records back").
 - **The drafts below.** The manifest and the linter's sibling check are written down and not built.
 - **Reading `sync`**, the record of where a file is kept (section 8). A reader keeps the block as written; it does not read it.
 - **Showing images to a booklet that was not opened from the host's store or the default folder** (section 6). The reference renderer reads images only from the store its host declares, or from its default folder on a page that declares none, and only for a booklet opened from it. For any other booklet (one from a file, one from the registry, or one a host handed over on a page with no store) it draws the alt text in a quiet box that says the image is not shown, with the address as text beneath. A way to give such a booklet its images, such as a folder of images picked by hand, is not built.
