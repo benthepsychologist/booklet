@@ -28,7 +28,7 @@ const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-compile-"));
 const cli=(args,cwd)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:cwd||TMP,encoding:"utf8"});
 const tree=d=>!fs.existsSync(d)?[]:fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?tree(path.join(d,e.name)).map(x=>e.name+"/"+x):[e.name]);
 const sha=f=>crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex");
-const HEAD='---\nbooklet: "0.15"\nid: t/x\ntitle: TITLE\nlang: en\n---\n\n';
+const HEAD='---\nbooklet: "0.16"\nid: t/x\ntitle: TITLE\nlang: en\n---\n\n';
 const booklet=(title,body)=>HEAD.replace("TITLE",title)+body;
 
 /* ======================= 1. nothing lost ======================= */
@@ -361,6 +361,14 @@ const WRITER=(()=>{const page=fs.readFileSync(path.join(ROOT,"booklet.html"),"ut
 {const text=booklet("Odd","# Odd\n\nA made-up page.\n\n> [!sparkle]- A folded odd one\n> Inside the fold.\n");
   const p=C.compile([{text,name:"odd",dir:TMP}],{form:"standalone",engine:X}).results[0].files.get("odd/index.html");
   chk("a folded callout of an unknown kind is drawn in the note look",/<details class="bk-fold bk-hue-sky bk-k-note">/.test(p),(p.match(/<details[^>]*>/)||[""])[0]);}
+/* a callout with its own title shows it, as the renderer does: open, under the kind's word (the renderer's calloutNode keeps
+   the word in the head and the title as a line of its own); folded, in place of the word (its foldedCallout) */
+{const text=booklet("Tips","# Tips\n\nA made-up page.\n\n> [!tip] Why it works\n> Inside the open tip.\n\n> [!tip]- Why it folds\n> Inside the folded tip.\n\n> [!tip]\n> An untitled tip.\n");
+  const p=C.compile([{text,name:"tips",dir:TMP}],{form:"standalone",engine:X}).results[0].files.get("tips/index.html");
+  const boxes=[...p.matchAll(/<aside class="bk-callout bk-hue-sage bk-k-tip"[^]*?<\/aside>/g)].map(m=>m[0]),fold=(p.match(/<details class="bk-fold bk-hue-sage bk-k-tip">[^]*?<\/summary>/)||[""])[0];
+  chk("a tip with its own title shows the title, under the word Tip, as the renderer does",boxes.length===2&&/<span class="bk-cl">Tip<\/span><\/p>\s*<p class="bk-ctitle">Why it works<\/p>/.test(boxes[0]),boxes[0]);
+  chk("…an untitled tip shows the word Tip alone",boxes.length===2&&/<span class="bk-cl">Tip<\/span>/.test(boxes[1])&&!/bk-ctitle/.test(boxes[1]),boxes[1]);
+  chk("…a folded tip with its own title shows the title in place of the word",/<span class="bk-ftitle">Why it folds<\/span><\/summary>$/.test(fold)&&!/>Tip</.test(fold),fold);}
 
 /* ======================= 5. the command ======================= */
 {const src=path.join(FIX,"compile-article.booklet.md"),before=sha(src),mtime=fs.statSync(src).mtimeMs;
