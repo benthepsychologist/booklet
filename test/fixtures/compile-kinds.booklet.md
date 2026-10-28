@@ -1,5 +1,5 @@
 ---
-booklet: "0.15"
+booklet: "0.16"
 id: fixture/compile-kinds
 title: A kite workshop
 lang: en

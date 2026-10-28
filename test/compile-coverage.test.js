@@ -86,7 +86,7 @@ chk("a heading link inside the page is a link",/<a class="bk-link" href="#mornin
 
 /* each of the six query views, marked */
 const q=views.map((v,i)=>"```booklet query\nfrom: rows\nas: "+v+"\n```\n").join("\n");
-const text='---\nbooklet: "0.15"\nid: t/views\ntitle: Views\nlang: en\n---\n\n# Views\n\nEvery view.\n\n'+q+'\n```booklet data\n[ { "label": "A", "value": 1 } ]\n```\n^rows\n';
+const text='---\nbooklet: "0.16"\nid: t/views\ntitle: Views\nlang: en\n---\n\n# Views\n\nEvery view.\n\n'+q+'\n```booklet data\n[ { "label": "A", "value": 1 } ]\n```\n^rows\n';
 const rv=C.compile([{text,name:"views",dir:__dirname}],{form:"standalone",engine:X}),pv=rv.results[0].files.get("views/index.html")||"";
 for(const v of views) chk("a query shown as "+v+" is marked, not dropped",pv.includes("<!-- booklet: the query over “rows”, as "+v+" (")&&rv.results[0].rep.marked.some(m=>m.kind==="query"&&m.what.endsWith("as "+v)));
 
