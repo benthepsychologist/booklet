@@ -74,14 +74,14 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
 /* 5b. a group in an activity holds blocks: its body, one `>` less, is read as the file is (SPEC.md section 6), so a
    question in it is written with a second `>` and its options with one; its ids are the module's like any other; a line
    that makes structure is said and left out; a `***` in it is a rule; the group in a module's opening stays words */
-{const T=FM+"> [!module|m] M\n\n> [!group] About\n> > [!text|x] Q in the opening?\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n"+
+{const T=FM+"> [!module|m] M\n\n> [!group] About\n> > [!text|x] Q in the opening?\n\n> [!activity|log repeat] Log\n\n> [!group] An entry\n> > [!text|what] What?\n\n"+
    "> [!activity|a] A\n\n> [!text|out] Outside?\n\n"+
    "> [!group]- Folded\n> Words with a note.[^n]\n>\n> [^n]: The note.\n>\n> > [!choice|g1] Pick?\n> - [ ] Alpha\n> - [ ] Beta\n>\n> > [!hint]-\n> > A hint.\n>\n> ***\n>\n> > [!tab] Nope\n>\n> > [!text|g2] Why?\n\n"+
    "> [!group] Kept\n> ```booklet query\n> from: log\n> ```\n\n> [!module|m end] E\n";
  const R=A.parseFile(T),said=R.unread.map(String);
- chk("(the file opens; one thing said: the tab line in the group, at its own line)",R.ok&&R.refused.length===0&&said.length===1&&/^line 35: a tab line cannot go inside a group/.test(said[0]),JSON.stringify([said,R.refused.map(String)]));
+ chk("(the file opens; one thing said: the tab line in the group, at its own line)",R.ok&&R.refused.length===0&&said.length===1&&/^line 36: a tab line cannot go inside a group/.test(said[0]),JSON.stringify([said,R.refused.map(String)]));
  const act=A.parseFile(T.replace("> > [!tab] Nope","> > [!activity|nope] Nope")).unread.map(String);
- chk("...an activity line there is said in plain English too (an activity, not a activity)",act.length===1&&/^line 35: an activity line cannot go inside a group/.test(act[0]),JSON.stringify(act));
+ chk("...an activity line there is said in plain English too (an activity, not a activity)",act.length===1&&/^line 36: an activity line cannot go inside a group/.test(act[0]),JSON.stringify(act));
  A.loadText(T);
  const a=A.activityOf("m/a"),g=a.pages[0].blocks[1],ids=b=>b.blocks.map(x=>x.type+(x.id&&!/^(md|c)\d/.test(x.id)?":"+x.id:"")).join();
  chk("the group holds its words, the choice with its two options and its hint, a rule, and the question after; no tab",
@@ -133,7 +133,9 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
  chk("an earlier entry, opened, shows what its group's questions were given",e.length===1&&/What\? kept words Hours\? 7/.test(texts(e[0])),e.map(texts).join("|"));}
 
 /* 5d. a fold holding an answer is drawn open however deep the question is in it: a question in a group inside the folded
-   group opens it, as one straight in it does */
+   group opens it, as one straight in it does
+   (A guard, not a test of a change: nothing in b0f6a00 touched what makes a fold draw open (blockFilled), so this check passes
+   with or without that commit. It is kept to hold the behaviour, and is not claimed to fail without any change.) */
 {const T=FM+"> [!activity|a] A\n\n> [!group]- Outer\n> Words.\n>\n> > [!group] Inner\n> > > [!text|deep] Deep?\n\n> [!group]- Other\n> > [!text|near] Near?\n";
  A.loadText(T);global.__ls[A.OAT_KEY+A.currentId]="all";
  const folds=()=>{draw("a");return auFolds().map(d=>[texts(d).slice(0,5),isOpen(d)]);};
@@ -149,9 +151,22 @@ chk("at most four options, each at most 24 characters",A.shortOptions(["Yes","No
  chk("all at once, an untitled open group is drawn with no head: its body is its first child",!!box&&find(box,hasClass("rd-chead")).length===0&&hasClass("rd-cb")(box.children[0]),box&&JSON.stringify(box.children.map(c=>c.attrs.class)));
  global.__ls[A.OAT_KEY+A.currentId]="one";draw("a");
  const units=find(P.main(),hasClass("oat-unit"));
- chk("one at a time, no step's group has an empty head",units.length===3&&find(P.main(),hasClass("rd-chead")).length===0);
+ chk("one at a time, no untitled step's group has an empty head (the titled one keeps its head, as every other callout does)",units.length===3&&find(units[0],hasClass("rd-chead")).length===0&&find(units[1],hasClass("rd-chead")).length===0&&find(units[2],hasClass("rd-chead")).length===1);
  chk("an untitled group's step is a group named by its place; a titled one is named by its title",units.length===3&&units[0].attrs.role==="group"&&units[0].attrs["aria-label"]==="Step 1 of 3"&&units[1].attrs["aria-label"]==="Step 2 of 3"&&units[2].attrs["aria-label"]===undefined&&
    find(units[2],n=>n.attrs.role==="group"&&!!n.attrs["aria-labelledby"]).length===1,JSON.stringify(units.map(u=>[u.attrs.role,u.attrs["aria-label"]])));
+ delete global.__ls[A.OAT_KEY+A.currentId];}
+
+/* 5f. the empty head is taken off an untitled group alone; and a folded untitled group is named by what it holds, never "Note" */
+{A.loadText(FM+"> [!activity|a] A\n\n> [!group]-\n> Some words to start the fold.\n>\n> > [!text|u1] One?\n\n> [!group]-\n> > [!text|u2] Two?\n\n> [!group]- Named\n> > [!text|u3] Three?\n\n> [!note]-\n> A folded note.\n");
+ global.__ls[A.OAT_KEY+A.currentId]="all";draw("a");
+ const names=auFolds().map(d=>texts(find(d,n=>n.tagName==="summary")[0]||d).replace(/\s+/g," ").trim());
+ chk("a folded untitled group is named by the first words of its prose, else of its first question; a titled one by its title; a folded note is still a note",
+   names.length===4&&/^Some words to start the fold\./.test(names[0])&&/^Two\?/.test(names[1])&&/^Named/.test(names[2])&&/^Note/.test(names[3])&&!/^Note/.test(names[0])&&!/^Note/.test(names[1]),JSON.stringify(names));
+ chk("(that name is not said twice: the prose that names the fold is not also its teaser)",(names[0]||"").split("Some words to start the fold").length===2,names[0]);
+ /* a callout that is not a group keeps its head, empty as it was; a titled group keeps its head; only an untitled group has none */
+ A.loadText(FM+"> [!activity|a] A\n\n> [!group]\n> > [!text|u1] One?\n\n> [!group] Titled\n> > [!text|u2] Two?\n\n> [!tip] A tip\n> Words.\n");
+ draw("a");const boxes=find(P.main(),hasClass("rd-callout"));
+ chk("an untitled group has no head; a titled group and a tip keep theirs",boxes.length>=3&&find(boxes[0],n=>n.attrs.class==="rd-chead").length===0&&find(boxes[1],n=>n.attrs.class==="rd-chead").length===1&&find(boxes[2],n=>n.attrs.class==="rd-chead").length===1,boxes.map(g=>find(g,n=>n.attrs.class==="rd-chead").length).join());
  delete global.__ls[A.OAT_KEY+A.currentId];}
 
 /* 6. every word of the steps, the pager and the fold switch exists in en, fr, es (the tables themselves: a missing

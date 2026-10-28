@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-Hpvkz7TWoMW9lvQB1kt/rS5voVcOsgY5yjaB2YIMHvc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-CCgJgBy/pzcEZXRwPk5jCFbgJj7iLZtahMRDfODggy4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1001,8 +1001,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .rowcell>:first-child,.rowcell>.md>:first-child{margin-top:0}
   .rowcell :is(h1,h2,h3,p,.aside,.hint,label.lbl,.field,.pills,.mxwrap,.oneline,blockquote,ul.plain,.rd-callout),
   .rowcell .md>:is(ul,ol,h4,h5,h6,dl){max-width:none}
+  /* an activity printed whole (printWhole): its copy is for paper only, and the part of the screen it stands for is left out of the print */
+  .print-whole{display:none}
+  .pr-tabname{margin:1.4rem 0 .5rem;font-size:1.15rem;border-bottom:var(--bw) solid var(--rule);padding-bottom:.2rem;break-after:avoid}
+  .pr-page+.pr-page{margin-top:1.2rem}
   /* print: the layout for paper. The light tokens are the next block, declared last. */
   @media print{
+    .print-whole{display:block}
+    .pr-skip{display:none!important}
     .dv-groups{display:block}
     .pblock.row{display:block}
     .dv-gcard{break-inside:avoid;border:0;padding:0}
@@ -4784,9 +4790,18 @@ function renameClashingIds(lines,takenBlocks,takenNotes,modId){
   const D=depthsOf(lines),M=D.map(codeMask),mask=lines.map((_,i)=>D.some((v,d)=>M[d][i]&&v[i]!=="")),bl=blockIdLines(lines),nl=noteIdLines(lines);
   const usedB=new Set(bl.values()),usedN=new Set(nl.values());
   /* the ids the module's own lines give to activities, questions and menus: a query's `from:` that names one of
-     these names that, not a block */
-  const own=new Set();D.forEach(v=>bookletLines(v).forEach(x=>{
-    if(["activity","menu","module"].concat([...QUESTION_KINDS]).includes(x.kind)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
+     these names that, not a block. Only a line drawn as such counts: one at the top, or one a group in an activity holds (a
+     group in a group too). A line in a note, a quote or a group outside an activity is drawn as text (SPEC.md section 6) and
+     gives no id, so it cannot make a query follow the wrong name. */
+  const own=new Set(),heads=D.map(v=>bookletLines(v)),KINDS=["activity","menu","module"].concat([...QUESTION_KINDS]);
+  /* the callout a line is in: the nearest callout line one `>` out above it, with every line between them still quoted that deep
+     (a blank line, or a quote that is not the callout's, ends it) */
+  const inside=(h,i,d)=>{const re=new RegExp("^ {0,3}(?:>[ \\t]?){"+d+"}");for(let j=h.i+1;j<i;j++) if(!re.test(lines[j])) return false;return true;};
+  const drawn=(d,i)=>{if(d===0) return true;
+    let h=null;for(const x of heads[d-1]) if(x.i<i) h=x;
+    return !!h&&h.kind==="group"&&inside(h,i,d)&&(d===1?heads[0].some(x=>x.kind==="activity"&&x.i<h.i):drawn(d-1,h.i));};
+  heads.forEach((hs,d)=>hs.forEach(x=>{
+    if(KINDS.includes(x.kind)&&drawn(d,x.i)){const w=calloutWords(x.kind,x.m[2]);if(w.id) own.add(w.id);}}));
   const fresh=(id,taken,used)=>{let n=modId+"-"+id,k=2;while(taken.has(n)||used.has(n)){n=modId+"-"+id+"-"+k;k++;}used.add(n);return n;};
   const mapB=new Map(),mapN=new Map(),renamed=[];
   for(const id of [...usedB]) if(takenBlocks.has(id)){const to=fresh(id,takenBlocks,usedB);mapB.set(id,to);renamed.push({what:"block",from:id,to});}
@@ -5676,7 +5691,17 @@ const figureHooks=scope=>({
    in order" for that); the text after it is still being typed or dictated
    and stays uncommitted until a comma, Enter, or blur turns it into one
    more confirmed word. */
-const parseTagValue=raw=>{const s=String(raw||"");const i=s.lastIndexOf(",");
+const parseTagValue=(raw,stored)=>{const s=String(raw||"");
+  /* A word already stored that holds a comma ("Warm, tender") is one word when the text still holds it whole, so focusing the
+     field and leaving it cannot split it. The field is only ever written from the stored words, and `stored` names them. */
+  const keep=(stored||[]).filter(w=>typeof w==="string"&&w.includes(","));
+  if(keep.length){const segs=s.split(","),out=[];
+    for(let i=0;i<segs.length;){let n=1,whole=null;
+      for(const w of keep){const k=w.split(",").length;
+        if(k>n&&i+k<=segs.length&&segs.slice(i,i+k).join(",").trim()===w){n=k;whole=w;}}
+      out.push(whole===null?segs[i].trim():whole);i+=n;}
+    const tail=out.pop();return {confirmed:out.filter(nonEmpty),inProgress:tail||""};}
+  const i=s.lastIndexOf(",");
   return i<0?{confirmed:[],inProgress:s.trim()}
             :{confirmed:splitList(s.slice(0,i)),inProgress:s.slice(i+1).trim()};};
 /* Vocabulary suggestions for whatever's typed after the last comma. Exact
@@ -5689,6 +5714,38 @@ const matchVocab=(fragment,vocab)=>{const f=norm(fragment||"");
    casing and spelling is kept. */
 const dedupeLabels=arr=>{const seen=new Set();
   return (arr||[]).filter(x=>{const k=norm(x);if(seen.has(k)) return false;seen.add(k);return true;});};
+
+/* Redraw a row of controls without replacing the ones that stay. A press that began on a control a redraw replaced is lost (the
+   browser sends no click to a node that has left the page), and leaving a typing field redraws the controls beside it. `keyOf`
+   names each item, `make(item)` builds a control, `update(node,item)` brings a kept one up to date; the controls end up in the
+   items' order, and a control that was in place stays where it is. */
+function syncKids(host,items,keyOf,make,update){
+  const have=new Map();Array.from(host.children).forEach(n=>{if(n&&n.__key!==undefined) have.set(n.__key,n);});
+  const want=items.map(it=>{const k=keyOf(it);let n=have.get(k);
+    if(n) have.delete(k); else{n=make(it);n.__key=k;}
+    if(update) update(n,it);return n;});
+  have.forEach(n=>host.removeChild(n));
+  want.forEach((n,i)=>{if(host.children[i]!==n) host.insertBefore(n,host.children[i]||null);});}
+
+/* Run `f` once a press that is under way is over (a pointer held down, then the click it ends in), else on the next turn. Leaving a
+   typing field is what starts a press on a control beside it, and what that leaves draws (a chip, a pill) moves the controls under
+   the pointer: the press would land on what has moved there. A fallback runs it anyway if the pointer's release never arrives. */
+let PRESSING=false,PRESS_TARGET=null;const AFTER_PRESS=[],HELD=new Set();
+const runAfterPress=()=>{AFTER_PRESS.splice(0).forEach(f=>{try{f();}catch(e){}});};
+if(typeof document!=="undefined"&&document.addEventListener){
+  document.addEventListener("pointerdown",e=>{PRESSING=true;PRESS_TARGET=e&&e.target||null;HELD.forEach(b=>{b.__held=false;});HELD.clear();},true);
+  const over=()=>{PRESSING=false;setTimeout(runAfterPress,0);};
+  document.addEventListener("pointerup",over,true);document.addEventListener("pointercancel",over,true);}
+/* Leaving a typing field adds the words typed, and the reader may be leaving it to press the very control that word names (an option,
+   a sense word, an item): the words have then pressed it already, and the press that follows must not undo it. `nextTo(e)` is what
+   the field is being left for (the focus's new place, or the pointer's press); `holdPress(btn)` has btn's next press only confirm
+   (heldPress); it ends when the focus leaves btn or any new press begins. */
+const nextTo=e=>e?(e.relatedTarget||(PRESSING?PRESS_TARGET:null)):null;
+const within=(btn,t)=>!!btn&&!!t&&(btn===t||(typeof btn.contains==="function"&&btn.contains(t)));
+function holdPress(btn){btn.__held=true;HELD.add(btn);
+  if(btn.addEventListener) btn.addEventListener("blur",()=>{btn.__held=false;HELD.delete(btn);},{once:true});}
+function heldPress(btn){if(!btn.__held) return false;btn.__held=false;HELD.delete(btn);return true;}
+function afterPress(f){if(!PRESSING){setTimeout(f,0);return;}AFTER_PRESS.push(f);setTimeout(()=>{PRESSING=false;runAfterPress();},1500);}
 
 /* ======================= tagInput =======================
    A comma-separated, suggest-as-you-type field over a small vocabulary,
@@ -5709,15 +5766,17 @@ function tagInput(opts){
   const dlId="taglist"+(++tagInputSeq);
   const wrap=el("div",{class:"tagfield"});
   if(opts.hint) wrap.append(el("p",{class:"hint"},opts.hint));
-  const inp=el("input",{type:"text",class:"field",style:"min-height:0",
+  const inp=el("input",{type:"text",class:"field tag-in",style:"min-height:0",
     placeholder:opts.placeholder||"",list:dlId,"aria-label":opts.placeholder||""});
   const dl=el("datalist",{id:dlId});
   const chips=el("div",{class:"tagchips"});
 
-  const drawChips=()=>{chips.innerHTML="";
-    (opts.values()||[]).forEach(label=>chips.append(el("span",{class:"tagchip"},label,
+  /* the chips that stay are not replaced: Tab from the field lands on one, and the redraw at blur must not take the focus with it */
+  const drawChips=()=>syncKids(chips,opts.values()||[],label=>label,label=>el("span",{class:"tagchip"},label,
       el("button",{type:"button",class:"x",onclick:()=>{
-        opts.onChange((opts.values()||[]).filter(x=>x!==label));refresh();}},"×"))));};
+        opts.onChange((opts.values()||[]).filter(x=>x!==label));refresh();}},"×")));
+  /* a listed word whose label holds a comma is one word, as a stored one is (parseTagValue) */
+  const known=()=>[...(opts.values()||[]),...(opts.vocab()||[]).map(v=>String(v.label||"")).filter(l=>l.includes(","))];
 
   /* Datalist only ever matches/replaces the WHOLE input value, which is
      wrong for a multi-value field — so every option is written out as the
@@ -5734,22 +5793,24 @@ function tagInput(opts){
      is actively typing into — a button click elsewhere, for instance.
      Never resets it out from under an in-progress keystroke. */
   const refresh=()=>{if(document.activeElement!==inp) inp.value=(opts.values()||[]).join(", ");
-    drawChips();drawSuggestions(parseTagValue(inp.value).inProgress);};
+    drawChips();drawSuggestions(parseTagValue(inp.value,known()).inProgress);};
 
   inp.addEventListener("input",()=>{
-    const {confirmed,inProgress}=parseTagValue(inp.value);
+    const {confirmed,inProgress}=parseTagValue(inp.value,known());
     const next=dedupeLabels(confirmed);
     const cur=opts.values()||[];
     if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
     drawChips();drawSuggestions(inProgress);});
   /* A dangling in-progress word (typed but no trailing comma yet) commits
      on blur, so nothing typed or dictated is silently dropped. */
-  inp.addEventListener("blur",()=>{
-    const {confirmed,inProgress}=parseTagValue(inp.value);
+  const commit=e=>{
+    const {confirmed,inProgress}=parseTagValue(inp.value,known());
     const next=dedupeLabels(inProgress?[...confirmed,inProgress]:confirmed);
     const cur=opts.values()||[];
-    if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
-    refresh();});
+    if(next.join("\0")!==cur.join("\0")) opts.onChange(next,nextTo(e),cur);};
+  inp.addEventListener("blur",e=>{commit(e);afterPress(refresh);});
+  /* the same, when the page is closed or reloaded (commitOwnFields) */
+  inp.commitOwn=()=>{commit(null);refresh();};
 
   refresh();
   wrap.append(inp,dl,chips);
@@ -5765,6 +5826,10 @@ const cellColor=(c,i)=>{const t=colourOf(c);
   return {tint:FALLBACK_TINT[i%FALLBACK_TINT.length],deep:"var(--tint-ink)"};};
 const cellStyle=(c,i)=>{const k=cellColor(c,i);return `background:${k.tint};--qd:${k.deep}`+(k.tone?`;--qt:${k.tint}`:"");};
 
+/* a sense word's label, or the code itself for a word the reader typed that no sense lists */
+const senseLabel=(W,code)=>{for(const g of (W.senses||[])) for(const w of (g.words||[]))
+    if(w.id===code) return tx(w.label,code);
+  return code;};
 /* ======================= ENGINE: svg-regions =======================
    Given a widget carrying one or more figures — each an SVG whose shapes have
    a `data-r` region id — let a person point at a region and say what it is
@@ -5774,9 +5839,7 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
   const C=wordsOf(W.copy);
   const figs=W.figures||[];
   const labelOf=id=>{const r=(W.regions||[]).find(x=>x.id===id);return r?tx(r.label,id):id;};
-  const senseWord=code=>{for(const g of (W.senses||[])) for(const w of (g.words||[]))
-      if(w.id===code) return tx(w.label,code);
-    return code;};
+  const senseWord=code=>senseLabel(W,code);
   const figFor=id=>figs.find(f=>(f.regions||[]).includes(id));
   const wrap=el("div",{});
   let active=null, side=(figs[0]||{}).id||null;
@@ -5807,11 +5870,12 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
       node.setAttribute("aria-label",labelOf(id));
       node.onclick=()=>setActive(id);
       node.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();setActive(id);}};});};
-  const drawChips=()=>{chips.innerHTML="";
-    if(opts.readonly){const f=figs.find(x=>x.id===side)||figs[0];(f&&f.regions||[]).forEach(id=>chips.append(el("span",{class:"emw"},labelOf(id))));return;}
-    (W.chips||[]).forEach(id=>{
-      chips.append(el("button",{type:"button",class:"pill-btn","aria-pressed":String(!!rowFor(id)||active===id),
-        onclick:()=>setActive(id)},labelOf(id)));});};
+  const drawChips=()=>{
+    if(opts.readonly){chips.innerHTML="";const f=figs.find(x=>x.id===side)||figs[0];
+      /* a widget with no figure names its places from `regions` */
+      (f?(f.regions||[]):(W.regions||[]).map(r=>r.id)).forEach(id=>chips.append(el("span",{class:"emw"},labelOf(id))));return;}
+    syncKids(chips,W.chips||[],id=>id,id=>el("button",{type:"button",class:"pill-btn",onclick:()=>setActive(id)},labelOf(id)),
+      (n,id)=>n.setAttribute("aria-pressed",String(!!rowFor(id)||active===id)));};
   /* The label for a sense code, and back again. A typed/dictated word that
      matches no known sense stays a freeform code exactly as typed — the
      same fallback senseWord() already uses for a code it doesn't
@@ -5827,32 +5891,41 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
       vocab:()=>(W.senses||[]).flatMap(g=>(g.words||[]).map(w=>({id:w.id,label:tx(w.label,w.id)}))),
       /* typing here must never rebuild this panel, which would destroy the
          field being typed into: only what lives outside it is refreshed */
-      onChange:labels=>{const codes=labels.map(labelToSense);
+      onChange:(labels,dest,was)=>{const codes=labels.map(labelToSense);
         let r=rowFor(active);
+        /* leaving the field for a sense word's button, having typed that word: it is pressed now, and the press confirms it */
+        const nowBtn=dest&&panel.querySelectorAll?Array.from(panel.querySelectorAll("button.sense")).find(b=>within(b,dest)):null;
+        if(nowBtn){const w=nowBtn.getAttribute("data-w"),had=(was||[]).map(labelToSense);if(codes.includes(w)&&!had.includes(w)) holdPress(nowBtn);}
         if(codes.length){if(!r){r={id:active,s:[]};e[key]=[...rows(),r];}r.s=codes;}
         else if(r) e[key]=rows().filter(x=>x!==r);
-        markDirty();drawChips();drawSummary();},
+        markDirty();drawChips();drawSummary();paintSenses();},
       placeholder:u.tagPh||"",hint:u.tagHint||""}).el);
     (W.senses||[]).forEach(g=>{
       const set=el("div",{class:"senseset"},el("div",{class:"lbl2"},tx(g.label,g.id)));
       const ws=el("div",{class:"sensewrap"});
       (g.words||[]).forEach(w=>{const row=rowFor(active);const on=!!row&&row.s.includes(w.id);
-        ws.append(el("button",{type:"button",class:"sense","aria-pressed":String(on),onclick:()=>{
-          let r=rowFor(active);
+        /* what is pressed is read when the button is pressed, not when it was drawn: a word typed into the field has changed it */
+        const sb=el("button",{type:"button",class:"sense","data-w":w.id,"aria-pressed":String(on),onclick:()=>{
+          if(heldPress(sb)) return;
+          let r=rowFor(active);const now=!!r&&r.s.includes(w.id);
           if(!r){r={id:active,s:[]};e[key]=[...rows(),r];}
-          r.s=on?r.s.filter(x=>x!==w.id):[...r.s,w.id];
+          r.s=now?r.s.filter(x=>x!==w.id):[...r.s,w.id];
           if(!r.s.length) e[key]=rows().filter(x=>x!==r);
-          markDirty();drawAll();}},tx(w.label,w.id)));});
+          markDirty();drawAll();}},tx(w.label,w.id));
+        ws.append(sb);});
       set.append(ws);panel.append(set);});
     const row=rowFor(active);
     if(row) panel.append(el("p",{style:"margin:.7rem 0 0"},
       el("button",{type:"button",class:"small",onclick:()=>{e[key]=rows().filter(x=>x!==row);markDirty();drawAll();}},C.clear||"")));};
-  const drawSummary=()=>{summary.innerHTML="";
-    rows().forEach(r=>summary.append(el("div",{class:"bodyrow"},
+  /* the words panel's sense buttons, brought up to date with the answer (typing a sense word's label presses it) */
+  const paintSenses=()=>{const row=rowFor(active);
+    panel.querySelectorAll("button.sense").forEach(b=>b.setAttribute("aria-pressed",String(!!row&&row.s.includes(b.getAttribute("data-w")))));};
+  const drawSummary=()=>syncKids(summary,rows(),r=>r.id,r=>el("div",{class:"bodyrow"},
       el("button",{type:"button",class:"x",title:C.clear||"","aria-label":(C.clear||"")+": "+labelOf(r.id),
-        onclick:()=>{e[key]=rows().filter(x=>x!==r);markDirty();drawAll();}},"×"),
+        onclick:()=>{e[key]=rows().filter(x=>x.id!==r.id);markDirty();drawAll();}},"×"),
       el("button",{type:"button",class:"r rlink",onclick:()=>setActive(r.id)},labelOf(r.id)),
-      el("span",{},"— "+r.s.map(senseWord).join(", ")))));};
+      el("span",{})),
+    (n,r)=>{const t="— "+r.s.map(senseWord).join(", "),sp=n.lastChild;if(sp&&sp.textContent!==t) sp.textContent=t;});
   const drawAll=()=>{drawSides();drawFig();drawChips();if(!opts.readonly){drawPanel();drawSummary();}};
   drawAll();
   wrap.append(el("div",{class:"bodywrap"},el("div",{},sides,fig,chips),opts.readonly?null:panel));
@@ -5890,17 +5963,18 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
     /* a freeform word is kept in the same answer, as "x|cell|word" */
     const idsFor=()=>[...(W.items||[]).filter(i=>i.cell===c.id).map(i=>i.id),
                ...chosen().filter(id=>id.startsWith("x|"+c.id+"|"))];
-    const drawBtns=()=>{btns.innerHTML="";
-      idsFor().forEach(id=>{
-        if(opts.readonly){btns.append(el("span",{class:"emw"},itemLabel(id)));return;}
-        const on=chosen().includes(id);
-        const bt=el("button",{type:"button",class:"emb","aria-pressed":String(on)},itemLabel(id));
-        bt.addEventListener("click",()=>{const now=chosen().includes(id);
+    const drawBtns=()=>{
+      if(opts.readonly){btns.innerHTML="";idsFor().forEach(id=>btns.append(el("span",{class:"emw"},itemLabel(id))));return;}
+      /* the buttons that stay are not replaced: a press that began on one, right after typing in the field, would be lost */
+      syncKids(btns,idsFor(),id=>id,id=>{
+        const bt=el("button",{type:"button",class:"emb"},itemLabel(id));bt.__id=id;
+        bt.addEventListener("click",()=>{if(heldPress(bt)) return;const now=chosen().includes(id);
           e[key]=now?chosen().filter(x=>x!==id):[...chosen(),id];
           bt.setAttribute("aria-pressed",String(!now));markDirty();
           /* keep the tag field's own chips in sync with a button click */
           if(tag) tag.refresh();});
-        btns.append(bt);});};
+        return bt;},
+        (bt,id)=>bt.setAttribute("aria-pressed",String(chosen().includes(id))));};
     drawBtns();
     /* One instance per cell, always visible. The buttons below it work
        identically either way. */
@@ -5912,13 +5986,17 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
         vocab:()=>known.map(k=>({id:k.id,label:tx(k.label,k.id)})),
         /* typing here must never rebuild this field's own DOM; the button row
            below carries no typing of its own, so it redraws at once */
-        onChange:labels=>{
-          const otherCellIds=chosen().filter(id=>!id.startsWith("x|"+c.id+"|")&&!known.some(k=>k.id===id));
-          const newIds=[];
+        onChange:(labels,dest)=>{
+          const newIds=[],was=chosen().slice();
           labels.forEach(label=>{
             const match=known.find(k=>norm(tx(k.label,k.id))===norm(label));
             newIds.push(match?match.id:"x|"+c.id+"|"+label);});
-          e[key]=[...otherCellIds,...newIds];
+          /* the answer keeps the order the reader picked: what stays keeps its place, a word added goes last */
+          const mine=id=>id.startsWith("x|"+c.id+"|")||known.some(k=>k.id===id);
+          const stay=chosen().filter(id=>!mine(id)||newIds.includes(id));
+          e[key]=[...stay,...newIds.filter(id=>!stay.includes(id))];
+          /* leaving the field for the button of an item just typed: it is pressed now, and the press confirms it */
+          if(dest&&btns.children) Array.from(btns.children).forEach(bt=>{if(within(bt,dest)&&bt.__id!==undefined&&chosen().includes(bt.__id)&&!was.includes(bt.__id)) holdPress(bt);});
           markDirty();drawBtns();},
         placeholder:u.tagPh||"",hint:u.tagHint||""});
       qb.append(tag.el);}
@@ -5935,7 +6013,8 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
 
 /* what each engine kept, as words: the one place that knows how its answer reads back (the kept-entry card and a query use it).
    A svg-regions answer is a list of {id}; a grid-select one a list of item ids, or "x|cell|word" for a word the reader typed. */
-const regionNames=(W,vals)=>vals.map(r=>{const rg=(W.regions||[]).find(x=>x.id===r.id);return rg?tx(rg.label,r.id):r.id;});
+const regionNames=(W,vals)=>vals.map(r=>{const rg=(W.regions||[]).find(x=>x.id===r.id),name=rg?tx(rg.label,r.id):r.id,
+  ws=(Array.isArray(r.s)?r.s:[]).map(c=>senseLabel(W,c));return ws.length?name+" — "+ws.join(", "):name;});
 const gridNames=(W,vals)=>vals.map(id=>gridLabel(W,id));
 const ENGINES={"svg-regions":{draw:svgRegions,summary:regionNames},"grid-select":{draw:gridSelect,summary:gridNames}};
 
@@ -6100,13 +6179,19 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
   const graded=right.length>0,chosen=()=>picksOf(draft[K]);
   let checked=false;
   let byReader=false;
-  const put=list=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();byReader=true;draw();};
-  const toggle=n=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n]);};
-  const addOwn=text=>{const t=String(text).trim();if(!t) return;
+  /* `later`: the answer is changed now and the options are drawn once any press under way is over (leaving the Add-your-own field) */
+  const put=(list,later)=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();byReader=true;
+    if(later) afterPress(draw);else draw();};
+  const toggle=(n,later)=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n],later);};
+  const addOwn=(text,later,dest)=>{const t=String(text).trim();if(!t) return;
     const at=listed.findIndex(o=>sameWords(plainText(o),t));
-    if(at>=0){if(!chosen().includes(at+1)) toggle(at+1);return;}
+    if(at>=0){if(!chosen().includes(at+1)){toggle(at+1,later);
+      /* leaving the field for the very option just typed: it is pressed now, and the press confirms it */
+      const bt=dest&&Array.from(pills.children).find(n=>n.__key&&String(n.__key).split(":")[0]==="o"+(at+1));
+      if(bt&&within(bt,dest)) holdPress(bt);}
+      return;}
     if(chosen().some(x=>typeof x==="string"&&sameWords(x,t))) return;
-    put(multi?[...chosen(),t]:[t]);};
+    put(multi?[...chosen(),t]:[t],later);};
   const dropOwn=t=>put(chosen().filter(x=>x!==t));
   /* what each listed option shows once the reader has answered, if anything */
   const markOf=n=>{const c=chosen(),on=c.includes(n),isRight=right.includes(n);
@@ -6124,22 +6209,29 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
   if(SP) live.classList.add("q-live-sr");
   const draw=()=>{const ae=document.activeElement,at=ae&&ae.parentNode===pills?Array.from(pills.children).indexOf(ae):-1,
       onCheck=!!ae&&ae.parentNode===acts;
-    pills.innerHTML="";acts.innerHTML="";live.textContent="";replies.innerHTML="";
-    listed.forEach((o,idx)=>{const n=idx+1,mark=markOf(n);
-      pills.append(el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),"aria-pressed":String(chosen().includes(n)),
-        onclick:()=>toggle(n)},...words(o,true),mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null));});
+    live.textContent="";replies.innerHTML="";
     const now=chosen();
     /* a graded multi (it has Check) shows its replies with its marks, once Check is pressed; any other question on the pick */
     if(b.replies&&(!(multi&&graded)||checked)){const got=now.filter(x=>typeof x==="number").sort((a,x)=>a-x);
       (multi?got:got.slice(0,1)).forEach(n=>{if(b.replies[n-1]) replies.append(el("div",{class:"q-reply"},
         ...b.replies[n-1].split("\n").map(l=>el("p",{},...words(l)))));});}
-    now.filter(x=>typeof x==="string").forEach(t=>pills.append(el("span",{class:"pill-own"},
-      el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
-      el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"))));
-    if(b.open) ownEarlier(activityId,K,listed,now,b).forEach(t=>pills.append(el("button",{type:"button",class:"pill-btn","aria-pressed":"false",
-      onclick:()=>addOwn(t)},t)));
+    /* the options, the reader's own words and the earlier ones offered again, redrawn without replacing a button that stays: the
+       field adds its words when it is left, and a press that began on a button this replaced would be lost */
+    syncKids(pills,[
+      ...listed.map((o,idx)=>{const mark=markOf(idx+1);return {k:"o"+(idx+1)+(mark?":"+mark:""),n:idx+1,o,mark};}),
+      ...now.filter(x=>typeof x==="string").map(t=>({k:"w:"+t,own:t})),
+      ...(b.open?ownEarlier(activityId,K,listed,now,b).map(t=>({k:"e:"+t,again:t})):[])],it=>it.k,it=>{
+        if(it.own!==undefined){const t=it.own;return el("span",{class:"pill-own"},
+          el("button",{type:"button",class:"pill-btn","aria-pressed":"true",onclick:()=>dropOwn(t)},t),
+          el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"));}
+        if(it.again!==undefined){const t=it.again;return el("button",{type:"button",class:"pill-btn","aria-pressed":"false",onclick:()=>addOwn(t)},t);}
+        /* an option whose mark changes is a new button (its key holds the mark); the others stay */
+        const {n,o,mark}=it;const pb=el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),onclick:()=>{if(heldPress(pb)) return;toggle(n);}},...words(o,true),
+          mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null);return pb;},
+      (nd,it)=>{if(it.n!==undefined) nd.setAttribute("aria-pressed",String(chosen().includes(it.n)));});
+    const wantCheck=graded&&multi&&now.length>0;
+    syncKids(acts,wantCheck?[1]:[],()=>"check",()=>el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
     if(graded){const c=chosen(),shown=multi?checked:typeof c[0]==="number";
-      if(multi&&c.length) acts.append(el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
       if(shown){const missed=right.some(n=>!c.includes(n)),extra=c.some(x=>typeof x==="number"&&!right.includes(x)),
           bad=multi?(missed||extra):!right.includes(c[0]);
         live.textContent=bad?Q.liveNot(right.map(n=>listed[n-1]).filter(Boolean).map(plainText).join(", ")):Q.liveRight;
@@ -6153,7 +6245,12 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
   draw();box.append(pills,replies);
   if(inline) besideWhenFit(box,pills);
   if(b.open){const inp=el("input",{type:"text",class:"field q-own","aria-label":Q.addOwn,placeholder:Q.addOwn,autocomplete:"off"});
-    const go=()=>{const t=inp.value;inp.value="";addOwn(t);inp.focus();};
+    /* the words in the field are added as Enter or Add would add them: on Enter, on Add, when the field is left and when the page is
+       closed or reloaded (commitOwnFields). On a choice they replace the pick. */
+    const take=(later,dest)=>{const t=inp.value;if(t==="") return;inp.value="";addOwn(t,later,dest);};
+    const go=()=>{take();inp.focus();};
+    inp.commitOwn=()=>take();
+    inp.addEventListener("blur",e=>take(true,nextTo(e)));
     inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go();}});
     box.append(el("div",{class:"q-ownrow"},inp,el("button",{type:"button",class:"small",onclick:go},Q.addBtn)));}
   if(graded) box.append(acts,live);
@@ -6281,7 +6378,7 @@ function foldedCallout(b,draft,activityId,dc,x){
   const look=hs||!hasOwn(CALLOUT_LOOK,String(b.kind).toLowerCase())?null:calloutLook(b.kind),named=tx(b.title,"");
   /* an untitled callout is called by its kind's word; a kind the renderer does not know is called Note, as before, only drawn plain */
   const word=look||(hs?null:calloutLook(b.kind));
-  const title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
+  let title=nonEmpty(named)?named:hs?C[hs]:word?Rt.kind[word.label]:foldName(b);
   /* a leading emoji in the title is the picture; otherwise the kind's icon */
   const lead=cardPicture(title,null),emo=lead.picture&&lead.picture.emoji;
   const picture=emo?{emoji:emo}:look?{icon:icon(look.icon)}:hs?{icon:icon(hs==="hint"?"lightbulb":"circle-check")}:null;
@@ -6289,6 +6386,9 @@ function foldedCallout(b,draft,activityId,dc,x){
   let teaser="";
   if(!hs){const L=sectionLede(parts.filter(p=>p.x.type==="markdown").flatMap(p=>Array.from(p.n.children||[])));
     teaser=L.para?clip(textOf(L.para),220):L.text;}
+  /* an untitled group is not a note: its fold is named by the first words of what it holds, its prose or else its first question */
+  if(!hs&&isGroup(b)&&!nonEmpty(named)){const q=blocksAll(blocksIn(b)).find(isQuestion),first=nonEmpty(teaser)?teaser:q?plainText(tx(q.label,"")):"";
+    if(nonEmpty(first)){title=clip(first,80);teaser="";}}
   const body=parts.map(p=>p.n);
   if(b.unknown) body.unshift(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   /* a hint or a solution is a compact fold: one quiet line, a small icon, no tile, no teaser */
@@ -6360,7 +6460,9 @@ const SUMMARY={
   widget:(b,e,k)=>{const W=widgetOf(b.widget,b.module);if(!W) return null;
     const vals=e[k];if(!Array.isArray(vals)||!vals.length) return null;
     const eng=hasOwn(ENGINES,W.engine)?ENGINES[W.engine]:null;
-    return eng?[fieldLabel(b),eng.summary(W,vals).join(", ")]:null;},
+    if(!eng) return null;const names=eng.summary(W,vals);
+    /* a place with words is a line of its own ("Feet — Restless, Sore"); plain names read as one list */
+    return [fieldLabel(b),names.some(n=>String(n).includes(" — "))?el("ul",{class:"plain"},...names.map(n=>el("li",{},n))):names.join(", ")];},
   lines:(b,e,k)=>{const items=(e[k]||[]).filter(nonEmpty);if(!items.length) return null;
     return [fieldLabel(b),el("ul",{class:"plain"},...items.map(x=>el("li",{},x.trim())))];},
   text:(b,e,k)=>{const v=e[k];if(!nonEmpty(v)) return null;
@@ -7304,8 +7406,8 @@ function calloutNode(b,draft,activityId,dc){const Rt=strings("reading"),grp=isGr
     if(pic) head.append(el("span",{class:"rd-ci","aria-hidden":"true"},pic));
     head.append(el("span",{class:"rd-cl",id:u+"-k"},Rt.kind[k]));named.push(u+"-k");}
   const body=el("div",{class:"rd-cb",id:u+"-b"});
-  /* the kind's word heads the box; a plain one (a group) has none, and with no title of its own it has no head at all */
-  if(look) box.append(head);
+  /* the kind's word heads the box; a plain one (a group) has none, and an untitled group has no head at all (any other callout keeps its head, empty or not) */
+  if(!(grp&&!nonEmpty(title))) box.append(head);
   if(nonEmpty(title)){box.append(el("p",{class:"rd-ctitle",id:u+"-t"},...words(title,false,true)));named.push(u+"-t");}
   if(b.unknown) box.append(el("p",{class:"hint rd-unknown"},Rt.unknownKind(b.kind)));
   if(named.length) box.setAttribute("aria-labelledby",named.join(" "));
@@ -7752,6 +7854,40 @@ function activityFooter(id,dc){const C=strings("cards"),S=strings("steps"),G=str
     else if(ps.length>1) foot.append(el("span",{class:"pg-gap"}));};
   draw();if(dc) dc.foot=draw;
   return foot;}
+/* ---- PRINTING AN ACTIVITY WHOLE ----
+   The screen draws one tab and one page of an activity at a time. Paper gets all of them: as the print begins, a copy of the
+   activity's tabs and pages is drawn after the screen's own (each tab under its name, every page in order, the endnotes of
+   all of it in one list at the foot), and the screen's own tab or page is left out of the print; as the print ends the copy
+   goes, and the screen is as it was (it is not drawn again: the reader's place, focus and fields are untouched). The copy is a
+   draw of its own, with the marks numbered by the screen's scope (the whole activity's numbering, citeScope), and carries no
+   id, so none is used twice. It is hidden on screen and the screen's part is hidden only in print (the stylesheet). */
+let PRINT_COPY=null;
+function printWhole(){
+  /* a copy left by a print that never ended (no afterprint came) is not this print's: it is ended first, so this one is drawn afresh */
+  if(PRINT_COPY) printWholeEnd();
+  if(typeof document==="undefined") return;
+  const main=document.getElementById("main");
+  if(!main||!currentId||hasOwn(SCREENS,screen)||isModuleScreen(screen)) return;
+  const id=screen,m=activityOf(id),ts=tabsIn(m);
+  if(!Array.isArray(m.pages)||(!(ts&&ts.length>1)&&m.pages.length<2)) return;
+  const was=main.querySelector(ts&&ts.length>1?".tabpanel":".ap-body");if(!was||!was.parentNode) return;
+  const dc=newDraw(),draft=answersFor(id);dc.cite=citeDraw(id);dc.folds={open:true,n:0};
+  const pageNode=pg=>el("div",{class:"pr-page"},renderBlocks(blocksIn(pg),draft,id,dc));
+  const copy=el("div",{class:"print-whole"});
+  if(ts) ts.forEach(t=>copy.append(el("section",{class:"pr-tab"},ts.length>1?el("h3",{class:"pr-tabname"},...words(tx(t.title,t.id),true)):null,
+    ...m.pages.filter(p=>p.tab===t.id).map(pageNode))));
+  else m.pages.forEach(pg=>copy.append(pageNode(pg)));
+  const R=dc.cite,notes=R&&endnotesFor(id,[...(openingWithActivity(R.mod)?R.mod.opening:[]),...activityBlocks(m)],dc);
+  if(notes) copy.append(notes);
+  copy.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));
+  was.classList.add("pr-skip");was.parentNode.insertBefore(copy,was.nextSibling);
+  PRINT_COPY={copy,was,x:window.scrollX||0,y:window.scrollY||0};}
+function printWholeEnd(){if(!PRINT_COPY) return;
+  const {copy,was,x,y}=PRINT_COPY;PRINT_COPY=null;was.classList.remove("pr-skip");if(copy.parentNode) copy.parentNode.removeChild(copy);
+  /* the page is where it was: printing laid it out differently, and the browser moved the scroll with it */
+  const back=()=>{if(typeof window.scrollTo==="function"&&(window.scrollX!==x||window.scrollY!==y)) window.scrollTo(x,y);};
+  /* now, and again once the browser has laid the screen out again (it does that after the event, and moves the scroll as it does) */
+  back();if(typeof window.requestAnimationFrame==="function") window.requestAnimationFrame(()=>{back();setTimeout(back,50);});else setTimeout(back,50);}
 /* An activity's own name: its `title`, else its id. */
 function activityName(a){return tx(a&&a.title,null)||(a&&shortId(a.id))||"";}
 const activitiesShown=mod=>mod.activities.filter(isShown);
@@ -8360,7 +8496,7 @@ function hostAccept(){if(!newerWaiting()) return;
    generator owns the body and the reader owns the records (the store contract).
    - A store booklet: the new file's body is taken, with the work acceptWork gives (the one rule for reading a newer
      file, here and in hostAccept): with no host, the kept booklet's own answers, entries and drafts as they are (an
-     answer to a question the new body no longer has stays unused); with a host, the kept booklet's work and the file's
+     answer to a question the new body no longer has stays unused; work in a module it no longer has is kept as records, keepUnowned); with a host, the kept booklet's work and the file's
      merged against their base (mergeWork). The host then saves the result.
    - A registry module (#/module/<id>) is updated in place the way Add a module updates a module already present.
    Either way the entry remembers the text just read (storeSeen). A text the page refuses changes nothing but says why. */
@@ -8380,9 +8516,21 @@ function linkAccept(){const N=LINK_NEWER;LINK_NEWER=null;
    (mergeWork, after followMoves), or by withFileWork for a kept booklet with no base. With none, the file never held the
    reader's work, and what is here stays as it is. Returns {S, D}, ready for finishLoad (which makes the file's records
    the new base). */
-const acceptWork=R=>{if(!(HOST&&hostName())) return {S:STATE,D:DRAFTS};
+const acceptWork=R=>{
+  const W=acceptWorkOf(R),raw=BOOK&&BOOK.raw,T=R.template,
+    /* what an earlier read kept as records for a module this design has no module for stays with the booklet: the new file's
+       parse holds none of it, and without this a later newer file (a title changed) would drop it. If the module comes back,
+       its text and these records are parsed together and the answers return as answers (finishLoad, adoptText). */
+    had=((raw&&Array.isArray(raw.records))?raw.records:[]).filter(r=>isObj(r)&&r.foreign&&typeof r.text==="string"),
+    now=(isObj(T)&&isObj(T.raw)&&Array.isArray(T.raw.records))?T.raw.records:[];
+  W.records=[...had.filter(r=>!now.some(x=>isObj(x)&&x.scope===r.scope&&x.text===r.text)),...W.records];
+  return W;};
+const acceptWorkOf=R=>{
+  /* whichever way the work is weighed, what the new design has no module for (a module the file dropped or renamed) is kept as
+     records, never left in this page where nothing would draw or write it: with a host, with none and with no base alike */
+  if(!(HOST&&hostName())) return keepUnowned({S:STATE,D:DRAFTS},R.template);
   /* a kept booklet with no base (written before bases were kept) can only be weighed on what holds something */
-  if(!BASE) return withFileWork(R);
+  if(!BASE) return keepUnowned(withFileWork(R),R.template);
   const file=recsOfParse(R),[here,base]=followMoves(clone({answers:STATE.answers||{},entries:STATE.entries||{},drafts:DRAFTS.custom||{}}),BASE,R.template);
   const m=mergeWork(here,base,file);
   return keepUnowned({S:{answers:m.answers,entries:m.entries},D:{custom:m.drafts}},R.template);};
@@ -8822,8 +8970,9 @@ window.addEventListener("booklet-theme",()=>{const s=document.getElementById("th
   new ResizeObserver(set).observe(bar);set();})();
 /* Printing prints everything: the folded callouts open for the print and fold back after */
 if(typeof window!=="undefined"&&window.addEventListener){let printed=[];
-  window.addEventListener("beforeprint",()=>{printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});
-  window.addEventListener("afterprint",()=>{printed.forEach(d=>{d.open=false;});printed=[];});}
+  window.addEventListener("beforeprint",()=>{try{printWhole();}catch(e){printWholeEnd();}
+    printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});
+  window.addEventListener("afterprint",()=>{printWholeEnd();printed.forEach(d=>{d.open=false;});printed=[];});}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&citeOpen()) closeCite();});
 window.addEventListener("scroll",hideTip,{passive:true});
 document.getElementById("btnHome").addEventListener("click",homeButton);
@@ -8849,17 +8998,21 @@ window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].inclu
 window.addEventListener("dragleave",e=>{if(dragDepth>0) dragDepth--;if(dragDepth===0) dropVeil.classList.remove("show");});
 window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.classList.remove("show");const f=e.dataTransfer?.files?.[0];if(f) readFileInto(f,loadText);});
 window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&hostCovers()!=="saved"){e.preventDefault();e.returnValue=strings("ui").leaving;}});
+/* Words typed in a choice or multi's "Add your own" field and not yet added are added as the page is hidden or left, as leaving the
+   field would add them, so closing or reloading the page does not drop them (SPEC.md section 5) */
+function commitOwnFields(){if(typeof document==="undefined"||!document.querySelectorAll) return;
+  document.querySelectorAll("input.q-own,input.tag-in").forEach(i=>{if(typeof i.commitOwn==="function") i.commitOwn();});}
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
 /* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers; and what
    the store has not been handed yet is handed to the browser at once (keepFlush(true)), even while an earlier write is
    still on its way, which would otherwise hand it on only when it ends, after the page has gone */
-window.addEventListener("pagehide",()=>{flushSave();hookFlush();keepFlush(true);});
+window.addEventListener("pagehide",()=>{commitOwnFields();flushSave();hookFlush();keepFlush(true);});
 /* back from the browser's page cache (bfcache): a change the host has not confirmed (the one sent as the page went may never
    have arrived) is sent again at once, so it does not stay Unsaved until the next edit */
 window.addEventListener("pageshow",e=>{if(!e||!e.persisted||!hookBook()||!hostActive()) return;
   if(HOOK_UNSENT||HOST.status!=="saved"){HOOK_SEEN="";hookChanged("open");}});
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();hookFlush();keepFlush(true);}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){commitOwnFields();flushSave();hookFlush();keepFlush(true);}});
 /* a booklet drawn while the page was still arriving had no formula or diagram (useLib waits): it is drawn again now */
 document.addEventListener("DOMContentLoaded",()=>{if(LIB_WAITED){LIB_WAITED=false;render();}});
 /* The page opens on "Your booklets", once it has read what this browser keeps (keepStart: from local storage at once,
