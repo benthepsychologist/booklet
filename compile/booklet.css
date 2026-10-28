@@ -1,0 +1,449 @@
+/* booklet.css: the look of a page the Booklet compiler wrote (compile 0.1.0).
+
+   One stylesheet for every compiled page, standalone or on a host site. A host site loads it with one line in its
+   layout's head, from wherever it puts the compiler's booklet/ folder:
+
+     <link rel="stylesheet" href="/booklet/booklet.css">
+
+   The fonts it names sit beside it in fonts/, with their licence (OFL.txt); the compiler writes all three out of
+   booklet.html, unmodified, each time it runs.
+
+   What it draws: the reading view of the Booklet renderer (booklet.html), made a plain page. The type, the measure, the
+   colours and the callout looks are the renderer's own values; nothing of the renderer's app (its bar, its cards, its
+   buttons) is here. Every class starts bk-, and the article's root is .booklet.
+
+   What a host sets. Every value is a variable on .booklet, so one rule in the host's own stylesheet changes the look:
+
+     .booklet { --bk-accent: #7a1f5c; --bk-font-text: Georgia, serif; }
+
+   The defaults below are written with :where(), so they weigh nothing: a host's rule on .booklet wins wherever it sits.
+     --bk-ink, --bk-muted        text, quiet text                       (the renderer's --ink, --muted)
+     --bk-accent, --bk-accent-soft  links, marks, fold signs; a hover wash  (--accent, --accent-soft)
+     --bk-rule, --bk-surface     borders; the fill of callouts and folds (--rule, --surface)
+     --bk-paper, --bk-paper-deep a standalone page's background; code   (--paper, --paper-deep)
+     --bk-mark, --bk-warn        ==highlight==; a broken mark            (--mark, --warn)
+     --bk-border, --bk-focus     line width; focus ring width            (--bw, --focus-w)
+     --bk-<hue>-soft, -vivid, -deep   a callout's wash, line and word, for the seven hues sky, rose, sage, sun,
+                                 lilac, petrol, slate                    (--h-<hue>, --h-<hue>-vivid, --h-<hue>-deep)
+     --bk-<colour>, --bk-<colour>-ink  a widget's colour names warm, green, amber, slate, teal, blue, purple: the cell's
+                                 wash and the ink of its name            (--tone-<colour>, --tone-<colour>-deep)
+     --bk-font-text, --bk-font-head, --bk-font-code   the three faces    (--sans, --serif, --fam-mono)
+     --bk-size, --bk-line, --bk-measure   text size, leading, prose measure (the page's defaults, --measure)
+     --bk-gap, --bk-radius, --bk-radius-small   spacing between tiles; corners (--v-gap, --r-md, --r-sm)
+
+   Light and dark. The defaults are the renderer's Paper theme. A standalone page (body.bk-page) follows the device:
+   Paper, or Night when the device asks for dark. A page on a host site stays light, because a dark article inside a
+   light site jars; a host that wants another of the renderer's four base themes sets it on the article or any element
+   around it: data-bk-base="paper", "daylight", "night" or "contrast". Print is always light (the renderer prints in
+   its Daylight colours), with every fold open where the browser can open one for print.
+
+   test/compile-css.test.js holds this file to the renderer: every colour in the four tables equals the renderer's
+   token it names, every font face is one booklet.html carries, and every hue a callout kind uses has its rule. */
+
+/* ---- the fonts: the renderer's own faces (SIL Open Font License 1.1, fonts/OFL.txt) ---- */
+@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-ext-400-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-ext-700-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;
+  src:url(fonts/atkinson-hyperlegible-latin-ext-400-italic.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Lexend';font-style:normal;font-weight:600;font-display:swap;
+  src:url(fonts/lexend-latin-600-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Lexend';font-style:normal;font-weight:600;font-display:swap;
+  src:url(fonts/lexend-latin-ext-600-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+/* ---- the defaults: the renderer's Paper theme, and the values every theme shares ---- */
+:where(.booklet, .bk-page){
+  color-scheme:light;
+  --bk-paper:#F8F6F1; --bk-paper-deep:#EFEBE3; --bk-ink:#24323A; --bk-muted:#56646B; --bk-rule:#E4E0D6;
+  --bk-surface:#FEFDFB; --bk-accent:#1E5E6B; --bk-accent-soft:#E4EFEF; --bk-mark:#FFF3B0; --bk-warn:#A04E34;
+  --bk-border:2px; --bk-focus:3px;
+  --bk-warm:#F9E3E8; --bk-warm-ink:#A3405B; --bk-green:#E1F1E7; --bk-green-ink:#2D7751; --bk-amber:#F8EBD0; --bk-amber-ink:#8B5F10; --bk-slate:#E6E9EC; --bk-slate-ink:#3E4E59;
+  --bk-teal:#E4EFEF; --bk-teal-ink:#15464F; --bk-blue:#E3EEF7; --bk-blue-ink:#2F6596; --bk-purple:#ECE8F6; --bk-purple-ink:#6453A6;
+  --bk-sky-soft:#E3EEF7; --bk-sky-vivid:#3F7FB5; --bk-sky-deep:#2F6596;
+  --bk-rose-soft:#F9E3E8; --bk-rose-vivid:#BF5470; --bk-rose-deep:#A3405B;
+  --bk-sage-soft:#E2F0E7; --bk-sage-vivid:#4F8C6B; --bk-sage-deep:#3B6E52;
+  --bk-sun-soft:#FBF0D6; --bk-sun-vivid:#B07A0F; --bk-sun-deep:#8A5E0B;
+  --bk-lilac-soft:#ECE8F6; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
+  --bk-petrol-soft:#E4EFEF; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
+  --bk-slate-soft:#E6E9EC; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+  --bk-font-text:'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --bk-font-head:'Lexend', 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --bk-font-code:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --bk-size:1.0625rem; --bk-line:1.6; --bk-measure:70ch;
+  --bk-gap:.75rem; --bk-radius:14px; --bk-radius-small:8px;
+  /* a grid cell with no colour name takes a quiet ramp by its place, the same in every theme, with its own ink and chips */
+  --bk-tint-ink:#292421; --bk-chip:rgba(255,255,255,.75); --bk-chip-line:rgba(255,255,255,.9);
+  --bk-cell-0:#E8E4DE; --bk-cell-1:#E2E6E0; --bk-cell-2:#DEE2E6; --bk-cell-3:#E0E6E5; --bk-cell-4:#E6E2E6; --bk-cell-5:#E6E5DE;
+}
+/* a standalone page on a device that asks for dark: the Night theme */
+@media (prefers-color-scheme: dark){
+  :where(.bk-page:not([data-bk-base]), .bk-page:not([data-bk-base]) .booklet:not([data-bk-base])){
+    color-scheme:dark;
+    --bk-paper:#11181C; --bk-paper-deep:#1D2A31; --bk-ink:#E7EDEF; --bk-muted:#A9B7BD; --bk-rule:#2A3840;
+    --bk-surface:#18232A; --bk-accent:#7CC0CB; --bk-accent-soft:#163139; --bk-mark:#5C4E12; --bk-warn:#E08A6B;
+    --bk-border:2px; --bk-focus:3px;
+    --bk-warm:#381F28; --bk-warm-ink:#EC93AA; --bk-green:#172E24; --bk-green-ink:#8CC8A5; --bk-amber:#31281A; --bk-amber-ink:#F0BA55; --bk-slate:#232D33; --bk-slate-ink:#A9BBC6;
+    --bk-teal:#163139; --bk-teal-ink:#7CC0CB; --bk-blue:#172A3B; --bk-blue-ink:#88B8E4; --bk-purple:#25223A; --bk-purple-ink:#B3A5EE;
+    --bk-sky-soft:#172A3B; --bk-sky-vivid:#88B8E4; --bk-sky-deep:#88B8E4;
+    --bk-rose-soft:#381F28; --bk-rose-vivid:#EC93AA; --bk-rose-deep:#EC93AA;
+    --bk-sage-soft:#172E24; --bk-sage-vivid:#8CC8A5; --bk-sage-deep:#8CC8A5;
+    --bk-sun-soft:#31281A; --bk-sun-vivid:#F0BA55; --bk-sun-deep:#F0BA55;
+    --bk-lilac-soft:#25223A; --bk-lilac-vivid:#B3A5EE; --bk-lilac-deep:#B3A5EE;
+    --bk-petrol-soft:#163139; --bk-petrol-vivid:#7CC0CB; --bk-petrol-deep:#7CC0CB;
+    --bk-slate-soft:#232D33; --bk-slate-vivid:#A9BBC6; --bk-slate-deep:#A9BBC6;
+  }
+}
+/* a base theme a host (or a page) asks for by name */
+:where([data-bk-base="paper"], [data-bk-base="paper"] .booklet:not([data-bk-base])){
+  color-scheme:light;
+  --bk-paper:#F8F6F1; --bk-paper-deep:#EFEBE3; --bk-ink:#24323A; --bk-muted:#56646B; --bk-rule:#E4E0D6;
+  --bk-surface:#FEFDFB; --bk-accent:#1E5E6B; --bk-accent-soft:#E4EFEF; --bk-mark:#FFF3B0; --bk-warn:#A04E34;
+  --bk-border:2px; --bk-focus:3px;
+  --bk-warm:#F9E3E8; --bk-warm-ink:#A3405B; --bk-green:#E1F1E7; --bk-green-ink:#2D7751; --bk-amber:#F8EBD0; --bk-amber-ink:#8B5F10; --bk-slate:#E6E9EC; --bk-slate-ink:#3E4E59;
+  --bk-teal:#E4EFEF; --bk-teal-ink:#15464F; --bk-blue:#E3EEF7; --bk-blue-ink:#2F6596; --bk-purple:#ECE8F6; --bk-purple-ink:#6453A6;
+  --bk-sky-soft:#E3EEF7; --bk-sky-vivid:#3F7FB5; --bk-sky-deep:#2F6596;
+  --bk-rose-soft:#F9E3E8; --bk-rose-vivid:#BF5470; --bk-rose-deep:#A3405B;
+  --bk-sage-soft:#E2F0E7; --bk-sage-vivid:#4F8C6B; --bk-sage-deep:#3B6E52;
+  --bk-sun-soft:#FBF0D6; --bk-sun-vivid:#B07A0F; --bk-sun-deep:#8A5E0B;
+  --bk-lilac-soft:#ECE8F6; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
+  --bk-petrol-soft:#E4EFEF; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
+  --bk-slate-soft:#E6E9EC; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+}
+:where([data-bk-base="daylight"], [data-bk-base="daylight"] .booklet:not([data-bk-base])){
+  color-scheme:light;
+  --bk-paper:#FFFFFF; --bk-paper-deep:#F3F4F6; --bk-ink:#1F2328; --bk-muted:#57606A; --bk-rule:#D0D7DE;
+  --bk-surface:#FFFFFF; --bk-accent:#103E46; --bk-accent-soft:#E6F0F1; --bk-mark:#FFF3B0; --bk-warn:#A04E34;
+  --bk-border:2px; --bk-focus:3px;
+  --bk-warm:#FAE8EC; --bk-warm-ink:#A3405B; --bk-green:#E1F1E7; --bk-green-ink:#2D7751; --bk-amber:#F8EBD0; --bk-amber-ink:#8B5F10; --bk-slate:#ECEFF1; --bk-slate-ink:#3E4E59;
+  --bk-teal:#E6F0F0; --bk-teal-ink:#15464F; --bk-blue:#E8F1F9; --bk-blue-ink:#2F6596; --bk-purple:#EFECF8; --bk-purple-ink:#6453A6;
+  --bk-sky-soft:#E8F1F9; --bk-sky-vivid:#3F7FB5; --bk-sky-deep:#2F6596;
+  --bk-rose-soft:#FAE8EC; --bk-rose-vivid:#BF5470; --bk-rose-deep:#A3405B;
+  --bk-sage-soft:#E6F2EA; --bk-sage-vivid:#4F8C6B; --bk-sage-deep:#3B6E52;
+  --bk-sun-soft:#FBF2DC; --bk-sun-vivid:#B07A0F; --bk-sun-deep:#8A5E0B;
+  --bk-lilac-soft:#EFECF8; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
+  --bk-petrol-soft:#E6F0F0; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
+  --bk-slate-soft:#ECEFF1; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+}
+:where([data-bk-base="night"], [data-bk-base="night"] .booklet:not([data-bk-base])){
+  color-scheme:dark;
+  --bk-paper:#11181C; --bk-paper-deep:#1D2A31; --bk-ink:#E7EDEF; --bk-muted:#A9B7BD; --bk-rule:#2A3840;
+  --bk-surface:#18232A; --bk-accent:#7CC0CB; --bk-accent-soft:#163139; --bk-mark:#5C4E12; --bk-warn:#E08A6B;
+  --bk-border:2px; --bk-focus:3px;
+  --bk-warm:#381F28; --bk-warm-ink:#EC93AA; --bk-green:#172E24; --bk-green-ink:#8CC8A5; --bk-amber:#31281A; --bk-amber-ink:#F0BA55; --bk-slate:#232D33; --bk-slate-ink:#A9BBC6;
+  --bk-teal:#163139; --bk-teal-ink:#7CC0CB; --bk-blue:#172A3B; --bk-blue-ink:#88B8E4; --bk-purple:#25223A; --bk-purple-ink:#B3A5EE;
+  --bk-sky-soft:#172A3B; --bk-sky-vivid:#88B8E4; --bk-sky-deep:#88B8E4;
+  --bk-rose-soft:#381F28; --bk-rose-vivid:#EC93AA; --bk-rose-deep:#EC93AA;
+  --bk-sage-soft:#172E24; --bk-sage-vivid:#8CC8A5; --bk-sage-deep:#8CC8A5;
+  --bk-sun-soft:#31281A; --bk-sun-vivid:#F0BA55; --bk-sun-deep:#F0BA55;
+  --bk-lilac-soft:#25223A; --bk-lilac-vivid:#B3A5EE; --bk-lilac-deep:#B3A5EE;
+  --bk-petrol-soft:#163139; --bk-petrol-vivid:#7CC0CB; --bk-petrol-deep:#7CC0CB;
+  --bk-slate-soft:#232D33; --bk-slate-vivid:#A9BBC6; --bk-slate-deep:#A9BBC6;
+}
+:where([data-bk-base="contrast"], [data-bk-base="contrast"] .booklet:not([data-bk-base])){
+  color-scheme:light;
+  --bk-paper:#FFFFFF; --bk-paper-deep:#EDEDED; --bk-ink:#000000; --bk-muted:#1A1A1A; --bk-rule:#000000;
+  --bk-surface:#FFFFFF; --bk-accent:#003B49; --bk-accent-soft:#FFFFFF; --bk-mark:#FFE600; --bk-warn:#8B0000;
+  --bk-border:3px; --bk-focus:4px;
+  --bk-warm:#FFE9EE; --bk-warm-ink:#7A0F2E; --bk-green:#E8F5E0; --bk-green-ink:#1B4D0E; --bk-amber:#FFF3C4; --bk-amber-ink:#5C4300; --bk-slate:#E6EAEE; --bk-slate-ink:#243746;
+  --bk-teal:#DDF2F0; --bk-teal-ink:#004D45; --bk-blue:#E6F0FA; --bk-blue-ink:#003A70; --bk-purple:#EFEAFB; --bk-purple-ink:#3A2380;
+  --bk-sky-soft:#E6F0FA; --bk-sky-vivid:#003A70; --bk-sky-deep:#003A70;
+  --bk-rose-soft:#FFE9EE; --bk-rose-vivid:#7A0F2E; --bk-rose-deep:#7A0F2E;
+  --bk-sage-soft:#E8F5E0; --bk-sage-vivid:#1B4D0E; --bk-sage-deep:#1B4D0E;
+  --bk-sun-soft:#FFF3C4; --bk-sun-vivid:#5C4300; --bk-sun-deep:#5C4300;
+  --bk-lilac-soft:#EFEAFB; --bk-lilac-vivid:#3A2380; --bk-lilac-deep:#3A2380;
+  --bk-petrol-soft:#DDF2F0; --bk-petrol-vivid:#004D45; --bk-petrol-deep:#004D45;
+  --bk-slate-soft:#E6EAEE; --bk-slate-vivid:#243746; --bk-slate-deep:#243746;
+}
+
+/* ---- the standalone page: the paper, and one centred column held to the measure ---- */
+.bk-page{margin:0;background:var(--bk-paper);color:var(--bk-ink);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.bk-main{box-sizing:border-box;max-width:calc(var(--bk-measure) + 3rem);margin:0 auto;padding:2.5rem 1.5rem 5rem;
+  font-family:var(--bk-font-text);font-size:var(--bk-size)}
+@media (max-width:520px){.bk-main{max-width:none;padding:1.5rem 1rem 4rem}}
+
+/* ---- the article: it sits on whatever is under it, and never paints the page ---- */
+.booklet{color:var(--bk-ink);font-family:var(--bk-font-text);font-size:var(--bk-size);line-height:var(--bk-line);
+  overflow-wrap:break-word}
+.booklet *,.booklet *::before,.booklet *::after{box-sizing:border-box}
+.booklet [id]{scroll-margin-top:1rem}
+/* prose keeps the readable measure; a table, a grid or a row uses the width it is given */
+.booklet :is(h1,h2,h3,h4,h5,h6,p,ul,ol,dl,blockquote,pre,.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-toc){max-width:var(--bk-measure)}
+/* the notes and the foot are set smaller, so they take the article's width rather than a measure of their own */
+.booklet :is(.bk-notes,.bk-foot) :is(h2,p,ol,dl){max-width:none}
+.booklet .bk-q.bk-widget{max-width:none}
+.booklet .bk-widget>:is(p,ul,dl){max-width:var(--bk-measure)}
+
+.booklet p{margin:0 0 1rem}
+.booklet a{color:var(--bk-accent);text-underline-offset:.15em}
+.booklet a:hover{text-decoration-thickness:2px}
+.booklet :focus-visible{outline:var(--bk-focus) solid var(--bk-accent);outline-offset:2px;border-radius:2px}
+
+/* headings: the title and sections in the heading face, as the renderer's reading view sets them */
+.booklet :is(h1,h2,h3){font-family:var(--bk-font-head);font-weight:600;letter-spacing:0;color:var(--bk-ink)}
+.booklet h1{font-size:2.1rem;line-height:1.15;margin:0 0 .6rem}
+.booklet h2{font-size:1.6rem;line-height:1.25;margin:2.4rem 0 .6rem}
+.booklet h3{font-size:1.2rem;line-height:1.3;margin:2rem 0 .5rem}
+.booklet h4{font-family:var(--bk-font-text);font-weight:700;font-size:.95rem;line-height:1.4;letter-spacing:.02em;color:var(--bk-accent);margin:1.75rem 0 .5rem}
+.booklet :is(h5,h6){font-family:var(--bk-font-text);font-weight:700;font-size:.9rem;line-height:1.4;color:var(--bk-muted);margin:1.5rem 0 .4rem}
+.booklet>:first-child,.booklet section>:first-child{margin-top:0}
+.booklet :is(h1,h2,h3,h4)+:is(h2,h3,h4,h5,h6){margin-top:.75rem}
+/* the small link on a heading, for sharing a section: shown on hover and on focus (faintly, always, on a touch screen) */
+.booklet .bk-anchor{margin-left:.3rem;font-family:var(--bk-font-text);font-weight:400;font-size:.8em;color:var(--bk-muted);
+  text-decoration:none;opacity:0}
+.booklet :is(h2,h3,h4):hover>.bk-anchor,.booklet .bk-anchor:focus-visible{opacity:1}
+@media (hover:none){.booklet .bk-anchor{opacity:.45}}
+
+/* the lede: the first paragraph under the title, larger and quieter (the renderer's module lede) */
+.booklet .bk-lede{font-size:1.2rem;line-height:1.6;color:var(--bk-muted);margin:.4rem 0 1.4rem}
+
+/* "On this page" */
+.booklet .bk-toc{margin:0 0 2rem;padding:.75rem 1rem .85rem;border:var(--bk-border) solid var(--bk-rule);border-radius:var(--bk-radius);
+  background:var(--bk-surface)}
+.booklet .bk-toc-h{margin:0 0 .3rem;font-weight:700;font-size:.85rem;letter-spacing:.02em;color:var(--bk-muted)}
+.booklet .bk-toc ol{margin:0;padding-left:1.4rem}
+.booklet .bk-toc li{margin:.2rem 0}
+
+/* plain prose */
+.booklet :is(ul,ol){margin:0 0 1rem;padding-left:1.4rem}
+.booklet li{margin:.25rem 0}
+.booklet li>:is(ul,ol){margin:.25rem 0 0}
+.booklet blockquote{margin:1.25rem 0;padding:0 0 0 1rem;border-left:3px solid var(--bk-accent);color:var(--bk-muted);font-style:italic}
+.booklet blockquote>:last-child{margin-bottom:0}
+.booklet mark{background:var(--bk-mark);color:var(--bk-ink);padding:.05em .15em;border-radius:3px}
+.booklet code{font-family:var(--bk-font-code);font-size:.9em;background:var(--bk-paper-deep);padding:.1em .3em;border-radius:4px}
+.booklet pre{margin:1.1rem 0;padding:.8rem 1rem;background:var(--bk-paper-deep);border-radius:var(--bk-radius-small);
+  overflow-x:auto;font-size:.88rem;line-height:1.5}
+.booklet pre code{background:none;padding:0;font-size:inherit;border-radius:0}
+.booklet hr{border:0;border-top:var(--bk-border) solid var(--bk-rule);margin:2rem 0;max-width:var(--bk-measure)}
+/* between the pages of a tab: a quieter divider */
+.booklet hr.bk-next-page{border-top-style:dashed;margin:2.25rem 0}
+.booklet hr+:is(h2,h3,h4,h5,h6){margin-top:0}
+.booklet img{max-width:100%;height:auto;vertical-align:middle}
+.booklet sup,.booklet sub{line-height:0}
+
+/* tables: a wide one scrolls inside its own box, never the page */
+.booklet .bk-table{margin:1.1rem 0;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.booklet .bk-table table{border-collapse:collapse;min-width:100%;font-size:.95rem;line-height:1.45;font-variant-numeric:tabular-nums}
+.booklet .bk-table :is(th,td){text-align:left;vertical-align:top;padding:.5rem .8rem;border-bottom:1px solid var(--bk-rule)}
+.booklet .bk-table th{font-weight:700;font-size:.85rem;letter-spacing:.02em;color:var(--bk-ink);
+  border-bottom:var(--bk-border) solid var(--bk-accent);white-space:nowrap}
+.booklet .bk-table tbody th{border-bottom:1px solid var(--bk-rule);white-space:normal}
+.booklet .bk-table :is(th,td).bk-num{text-align:right;white-space:nowrap}
+.booklet .bk-table tbody tr:last-child :is(td,th){border-bottom:var(--bk-border) solid var(--bk-rule)}
+
+/* math, as MathML the browser draws */
+.booklet .bk-math math{font-size:1.08em}
+.booklet .bk-math-display{display:block;margin:.7rem 0;text-align:center;overflow-x:auto;max-width:100%}
+.booklet .bk-math-display math{display:block math}
+.booklet .bk-math-raw{font-family:var(--bk-font-code);font-size:.92em}
+.booklet .bk-math-display.bk-math-raw{text-align:left;white-space:pre-wrap}
+
+/* a diagram shown as its source, until the compiler draws it */
+.booklet pre.bk-figure-src{border:1px dashed var(--bk-rule)}
+
+/* an image the page does not show: its words and its address, in a quiet box */
+.booklet .bk-imgbox{display:inline-flex;flex-direction:column;gap:.15rem;max-width:100%;margin:.2rem 0;padding:.45rem .65rem;
+  border:1px dashed var(--bk-rule);border-radius:var(--bk-radius-small);color:var(--bk-muted);font-size:.9rem;text-align:left;vertical-align:top}
+.booklet .bk-imgalt{color:var(--bk-ink)}
+.booklet .bk-imgnote{font-size:.78rem;font-style:italic}
+.booklet .bk-imgsrc{font-size:.78rem;overflow-wrap:anywhere;word-break:break-all;background:none;padding:0}
+
+/* ---- the seven hues: a callout or a fold of a kind takes its hue's wash, line and word ---- */
+.booklet .bk-hue-sky{--bk-c-soft:var(--bk-sky-soft);--bk-c-vivid:var(--bk-sky-vivid);--bk-c-deep:var(--bk-sky-deep)}
+.booklet .bk-hue-rose{--bk-c-soft:var(--bk-rose-soft);--bk-c-vivid:var(--bk-rose-vivid);--bk-c-deep:var(--bk-rose-deep)}
+.booklet .bk-hue-sage{--bk-c-soft:var(--bk-sage-soft);--bk-c-vivid:var(--bk-sage-vivid);--bk-c-deep:var(--bk-sage-deep)}
+.booklet .bk-hue-sun{--bk-c-soft:var(--bk-sun-soft);--bk-c-vivid:var(--bk-sun-vivid);--bk-c-deep:var(--bk-sun-deep)}
+.booklet .bk-hue-lilac{--bk-c-soft:var(--bk-lilac-soft);--bk-c-vivid:var(--bk-lilac-vivid);--bk-c-deep:var(--bk-lilac-deep)}
+.booklet .bk-hue-petrol{--bk-c-soft:var(--bk-petrol-soft);--bk-c-vivid:var(--bk-petrol-vivid);--bk-c-deep:var(--bk-petrol-deep)}
+.booklet .bk-hue-slate{--bk-c-soft:var(--bk-slate-soft);--bk-c-vivid:var(--bk-slate-vivid);--bk-c-deep:var(--bk-slate-deep)}
+
+/* ---- callouts: the renderer's reading-view box, a wash with the hue's line down its left ---- */
+.booklet .bk-callout,.booklet .bk-group{margin:1.25rem 0;padding:.7rem 1rem .75rem;background:var(--bk-surface);
+  border:var(--bk-border) solid var(--bk-rule);border-left:6px solid var(--bk-muted);border-radius:0 var(--bk-radius) var(--bk-radius) 0}
+.booklet .bk-callout:not(.bk-plain){background:var(--bk-c-soft);border-color:var(--bk-c-soft);border-left-color:var(--bk-c-vivid)}
+.booklet .bk-k-diff{border-left-style:dashed}
+.booklet .bk-k-law{border-left-style:double}
+.booklet .bk-k-opinion{border-left-style:dotted}
+.booklet .bk-chead{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 .3rem;font-family:var(--bk-font-head);
+  font-size:.9rem;font-weight:600;line-height:1.4}
+.booklet .bk-ci{display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:1.25rem;line-height:1;color:var(--bk-c-vivid,var(--bk-accent))}
+.booklet .bk-ic{width:1em;height:1em;flex:none;display:block}
+.booklet .bk-cl{color:var(--bk-c-deep)}
+.booklet :is(.bk-ctitle,.bk-gtitle){margin:0 0 .35rem;font-weight:700;color:var(--bk-ink)}
+.booklet .bk-unknown{margin:0 0 .5rem;color:var(--bk-muted);font-size:.88rem}
+.booklet .bk-cb>:first-child{margin-top:0}
+.booklet .bk-cb>:last-child{margin-bottom:0}
+.booklet :is(.bk-callout,.bk-group,.bk-fold) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,p,ul,ol,dl,blockquote,pre){max-width:none}
+
+/* ---- folds: a quiet bordered box, closed, with a plus that turns into a minus; it opens with no script ---- */
+.booklet .bk-fold{margin:1rem 0;background:var(--bk-surface);border:var(--bk-border) solid var(--bk-rule);border-radius:var(--bk-radius)}
+.booklet .bk-fold>summary{display:flex;align-items:center;gap:.6rem;min-height:44px;padding:.5rem 1rem;cursor:pointer;list-style:none;
+  font-weight:700;line-height:1.35;border-radius:calc(var(--bk-radius) - var(--bk-border))}
+.booklet .bk-fold>summary::-webkit-details-marker{display:none}
+.booklet .bk-fold>summary::after{content:"+";margin-left:auto;padding-left:.5rem;flex:none;font-family:var(--bk-font-text);
+  font-size:1.35rem;font-weight:700;line-height:1;color:var(--bk-accent)}
+.booklet .bk-fold[open]>summary::after{content:"\2212"}
+.booklet .bk-fold>summary:hover{background:var(--bk-accent-soft)}
+.booklet .bk-fold[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.booklet .bk-fold>.bk-cb{padding:.35rem 1rem .9rem}
+.booklet .bk-ftitle{min-width:0}
+/* a folded callout of a kind: its hue's wash and line, as the open box has */
+.booklet .bk-fold:not(.bk-plain):not(.bk-compact){background:var(--bk-c-soft);border-color:var(--bk-c-soft);border-left:6px solid var(--bk-c-vivid);
+  border-radius:0 var(--bk-radius) var(--bk-radius) 0}
+.booklet .bk-fold:not(.bk-plain):not(.bk-compact)>summary:hover{background:color-mix(in srgb,var(--bk-c-vivid) 12%,transparent)}
+/* a question's hint or solution: one quiet line with a small picture, the renderer's compact fold */
+.booklet .bk-fold.bk-compact{margin:.5rem 0 0;background:none;border:0;border-radius:var(--bk-radius-small)}
+.booklet .bk-compact>summary{min-height:44px;padding:.2rem .5rem;gap:.5rem;font-weight:600;color:var(--bk-muted);border-radius:var(--bk-radius-small)}
+.booklet .bk-compact>summary::after{margin-left:0;padding-left:.1rem;font-size:1.15rem}
+.booklet .bk-compact[open]>summary{color:var(--bk-ink)}
+.booklet .bk-compact .bk-ci{font-size:1.05rem;color:var(--bk-slate-vivid)}
+.booklet .bk-compact>.bk-cb{padding:.2rem .5rem .5rem 2.05rem}
+
+/* ---- questions, read-only: what they ask and what they offer ---- */
+.booklet .bk-q{margin:1.25rem 0;padding:.9rem 1rem 1rem;background:var(--bk-surface);border:var(--bk-border) solid var(--bk-rule);
+  border-radius:var(--bk-radius)}
+.booklet .bk-q-ask{margin:0 0 .25rem;font-family:var(--bk-font-head);font-weight:600;font-size:1.05rem;line-height:1.35}
+.booklet .bk-q-help{margin:0 0 .6rem;color:var(--bk-muted);font-size:.95rem}
+.booklet .bk-q-hint{margin:0 0 .6rem;color:var(--bk-muted);font-size:.88rem}
+.booklet .bk-q>:last-child{margin-bottom:0}
+/* the options, each with an empty circle (pick one) or square (pick any), nothing to press */
+.booklet .bk-options{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.booklet .bk-options li{display:flex;align-items:baseline;gap:.6rem;margin:0}
+.booklet .bk-options li::before{content:"";flex:none;width:.95rem;height:.95rem;border:var(--bk-border) solid var(--bk-muted);
+  transform:translateY(.15em)}
+.booklet .bk-pick-one li::before{border-radius:50%}
+.booklet .bk-pick-many li::before{border-radius:3px}
+.booklet .bk-options .bk-own{color:var(--bk-muted);font-style:italic}
+.booklet .bk-options .bk-own::before{border-style:dashed}
+/* a scale's anchors, in a row that wraps */
+.booklet .bk-scale{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-wrap:wrap;gap:.4rem}
+.booklet .bk-scale li{margin:0;padding:.25rem .8rem;border:var(--bk-border) solid var(--bk-rule);border-radius:999px;font-size:.92rem;line-height:1.35}
+/* a matrix: its items down the side, its anchors across the top, an empty circle in each cell */
+.booklet .bk-matrix td{text-align:center;color:var(--bk-muted)}
+.booklet .bk-matrix thead th{text-align:center;white-space:normal}
+.booklet .bk-matrix thead td{border-bottom:var(--bk-border) solid var(--bk-accent)}
+.booklet .bk-matrix tbody th{font-weight:400;letter-spacing:0;font-size:.95rem}
+
+/* ---- widgets, read-only ---- */
+/* the grid: its axes round its cells, the cells in their colour names */
+.booklet .bk-grid{display:grid;grid-template-columns:1.5rem minmax(0,1fr) 1.5rem;grid-template-rows:auto 1fr auto;gap:.3rem;margin:1rem 0 0}
+.booklet .bk-ax{margin:0;color:var(--bk-muted);font-size:.8rem;font-weight:700;line-height:1.3;text-align:center;align-self:center;justify-self:center}
+.booklet .bk-ax-top{grid-column:2;grid-row:1}
+.booklet .bk-ax-bottom{grid-column:2;grid-row:3}
+.booklet .bk-ax-left{grid-column:1;grid-row:2;writing-mode:vertical-rl;transform:rotate(180deg)}
+.booklet .bk-ax-right{grid-column:3;grid-row:2;writing-mode:vertical-rl}
+.booklet .bk-cells{grid-column:2;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem}
+.booklet .bk-cell{min-width:0;min-height:7rem;margin:0;padding:.75rem .8rem .8rem;border-radius:var(--bk-radius);display:flex;flex-direction:column;gap:.5rem;
+  background:var(--bk-cell-wash);color:var(--bk-cell-text)}
+.booklet .bk-cell-name{margin:0;font-weight:800;font-size:.95rem;line-height:1.3;color:var(--bk-cell-name)}
+/* a colour name: the theme's wash and ink, so it reads in every theme */
+.booklet .bk-c-warm{--bk-cell-wash:var(--bk-warm);--bk-cell-name:var(--bk-warm-ink)}
+.booklet .bk-c-green{--bk-cell-wash:var(--bk-green);--bk-cell-name:var(--bk-green-ink)}
+.booklet .bk-c-amber{--bk-cell-wash:var(--bk-amber);--bk-cell-name:var(--bk-amber-ink)}
+.booklet .bk-c-slate{--bk-cell-wash:var(--bk-slate);--bk-cell-name:var(--bk-slate-ink)}
+.booklet .bk-c-teal{--bk-cell-wash:var(--bk-teal);--bk-cell-name:var(--bk-teal-ink)}
+.booklet .bk-c-blue{--bk-cell-wash:var(--bk-blue);--bk-cell-name:var(--bk-blue-ink)}
+.booklet .bk-c-purple{--bk-cell-wash:var(--bk-purple);--bk-cell-name:var(--bk-purple-ink)}
+.booklet :is(.bk-c-warm,.bk-c-green,.bk-c-amber,.bk-c-slate,.bk-c-teal,.bk-c-blue,.bk-c-purple){--bk-cell-text:var(--bk-ink)}
+/* no colour name: the quiet ramp by place, with the tint's own ink and chips */
+.booklet .bk-c-n0{--bk-cell-wash:var(--bk-cell-0)}
+.booklet .bk-c-n1{--bk-cell-wash:var(--bk-cell-1)}
+.booklet .bk-c-n2{--bk-cell-wash:var(--bk-cell-2)}
+.booklet .bk-c-n3{--bk-cell-wash:var(--bk-cell-3)}
+.booklet .bk-c-n4{--bk-cell-wash:var(--bk-cell-4)}
+.booklet .bk-c-n5{--bk-cell-wash:var(--bk-cell-5)}
+.booklet :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5){--bk-cell-text:var(--bk-tint-ink);--bk-cell-name:var(--bk-tint-ink)}
+/* a place's note (describe), on the page's own deeper paper */
+.booklet .bk-c-plain{--bk-cell-wash:var(--bk-paper-deep);--bk-cell-text:var(--bk-ink);--bk-cell-name:var(--bk-ink)}
+/* the words a cell or a place offers, as chips */
+.booklet .bk-words{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.4rem}
+.booklet .bk-words li{display:inline-block;max-width:100%;margin:0;padding:.25rem .7rem;border:var(--bk-border) solid var(--bk-rule);
+  border-radius:14px;background:var(--bk-paper);color:var(--bk-ink);font-size:.9rem;font-weight:600;line-height:1.3}
+.booklet :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5) .bk-words li{background:var(--bk-chip);border-color:var(--bk-chip-line);color:var(--bk-tint-ink)}
+.booklet .bk-places-h{margin:.9rem 0 .4rem;font-weight:700;font-size:.9rem;color:var(--bk-muted)}
+/* each cell's or place's note, with `describe` */
+.booklet .bk-notes-of{display:grid;grid-template-columns:1fr;gap:.6rem;margin:1rem 0 0}
+@media (min-width:600px){.booklet .bk-notes-of{grid-template-columns:1fr 1fr}}
+.booklet .bk-notes-of .bk-cell{min-height:0;gap:.2rem;padding:.8rem .95rem;font-size:.95rem;line-height:1.45}
+.booklet .bk-notes-of dt{font-weight:800;color:var(--bk-cell-name)}
+.booklet .bk-notes-of dd{margin:0}
+
+/* ---- rows: cells side by side when there is room, one under another when there is not ---- */
+.booklet .bk-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(20rem,100%),1fr));gap:0 1.5rem;align-items:start;margin:0 0 1rem}
+.booklet .bk-rowcell{min-width:0}
+.booklet .bk-rowcell>:first-child{margin-top:0}
+.booklet .bk-rowcell :is(h1,h2,h3,h4,h5,h6,p,ul,ol,dl,blockquote,.bk-callout,.bk-group,.bk-fold,.bk-q){max-width:none}
+
+/* ---- citation marks and the notes at the foot ---- */
+.booklet .bk-mark{font-size:.72em;line-height:0;vertical-align:baseline;position:relative;top:-.5em}
+.booklet .bk-mark-a{margin:0 .05em;padding:.05em .18em;border-radius:4px;font-weight:700;text-decoration:none}
+.booklet .bk-mark-a:hover{text-decoration:underline;background:var(--bk-accent-soft)}
+.booklet .bk-broken{font-size:.72em;font-weight:700;color:var(--bk-warn);border:1px dashed var(--bk-warn);border-radius:4px;padding:0 .2em;
+  margin:0 .1em;white-space:nowrap}
+.booklet .bk-notes{margin:2.5rem 0 0;padding-top:.6rem;border-top:var(--bk-border) solid var(--bk-rule);font-size:.92rem}
+.booklet .bk-notes-h{margin:0 0 .6rem;font-size:1.2rem;line-height:1.3}
+.booklet .bk-notes-list{margin:0;padding-left:1.6rem}
+.booklet .bk-notes-list li{margin:0 0 .45rem;padding:.1rem .3rem;border-radius:4px}
+.booklet .bk-notes-list li:target{background:var(--bk-mark)}
+.booklet .bk-notes cite{font-style:italic;font-weight:600}
+.booklet .bk-back{text-decoration:none;padding:0 .2rem}
+.booklet .bk-verified{color:var(--bk-green-ink);font-weight:700;font-size:.88rem;white-space:nowrap}
+.booklet .bk-bad{color:var(--bk-warn)}
+
+/* ---- the foot: each module's notice (licence, copyright, source, version), quiet ---- */
+.booklet .bk-foot{margin:2.5rem 0 0}
+.booklet .bk-about{margin:0 0 1rem;padding:.8rem 1rem;border:var(--bk-border) dashed var(--bk-rule);border-radius:12px;
+  color:var(--bk-muted);font-size:.88rem;line-height:1.5}
+.booklet .bk-about-h{margin:0 0 .4rem;font-weight:700;color:var(--bk-ink)}
+.booklet .bk-about dl{margin:0;display:grid;grid-template-columns:max-content minmax(0,1fr);gap:.3rem .9rem}
+.booklet .bk-about dl>div{display:contents}
+.booklet .bk-about dt{font-weight:700}
+.booklet .bk-about dd{margin:0;overflow-wrap:anywhere}
+@media (max-width:520px){.booklet .bk-about dl{grid-template-columns:minmax(0,1fr);gap:0}.booklet .bk-about dd{margin-bottom:.4rem}}
+
+/* ---- print: always light, every fold open where the browser can open one for print ---- */
+@media print{
+  :where(.booklet, .bk-page){
+    color-scheme:light;
+    --bk-paper:#FFFFFF; --bk-paper-deep:#F3F4F6; --bk-ink:#1F2328; --bk-muted:#57606A; --bk-rule:#D0D7DE;
+    --bk-surface:#FFFFFF; --bk-accent:#103E46; --bk-accent-soft:#E6F0F1; --bk-mark:#FFF3B0; --bk-warn:#A04E34;
+    --bk-border:2px; --bk-focus:3px;
+    --bk-warm:#FAE8EC; --bk-warm-ink:#A3405B; --bk-green:#E1F1E7; --bk-green-ink:#2D7751; --bk-amber:#F8EBD0; --bk-amber-ink:#8B5F10; --bk-slate:#ECEFF1; --bk-slate-ink:#3E4E59;
+    --bk-teal:#E6F0F0; --bk-teal-ink:#15464F; --bk-blue:#E8F1F9; --bk-blue-ink:#2F6596; --bk-purple:#EFECF8; --bk-purple-ink:#6453A6;
+    --bk-sky-soft:#E8F1F9; --bk-sky-vivid:#3F7FB5; --bk-sky-deep:#2F6596;
+    --bk-rose-soft:#FAE8EC; --bk-rose-vivid:#BF5470; --bk-rose-deep:#A3405B;
+    --bk-sage-soft:#E6F2EA; --bk-sage-vivid:#4F8C6B; --bk-sage-deep:#3B6E52;
+    --bk-sun-soft:#FBF2DC; --bk-sun-vivid:#B07A0F; --bk-sun-deep:#8A5E0B;
+    --bk-lilac-soft:#EFECF8; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
+    --bk-petrol-soft:#E6F0F0; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
+    --bk-slate-soft:#ECEFF1; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+  }
+  .bk-page{background:none}
+  .bk-main{max-width:none;padding:0}
+  .booklet .bk-anchor{display:none}
+  .booklet .bk-fold>summary::after{display:none}
+  .booklet .bk-fold::details-content{content-visibility:visible;display:block;height:auto}
+  .booklet :is(.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-cell,pre,figure){break-inside:avoid}
+  .booklet .bk-table{overflow:visible}
+  .booklet .bk-table tr{break-inside:avoid}
+  .booklet .bk-table thead{display:table-header-group}
+  .booklet .bk-math-display{overflow:visible}
+  .booklet :is(h2,h3,h4){break-after:avoid}
+}
+
+@media (prefers-reduced-motion:reduce){.booklet *{transition:none!important;animation:none!important}}
