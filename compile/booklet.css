@@ -215,7 +215,7 @@
 .booklet .bk-toc{margin:0 0 2rem;padding:.75rem 1rem .85rem;border:var(--bk-border) solid var(--bk-rule);border-radius:var(--bk-radius);
   background:var(--bk-surface)}
 .booklet .bk-toc-h{margin:0 0 .3rem;font-weight:700;font-size:.85rem;letter-spacing:.02em;color:var(--bk-muted)}
-.booklet .bk-toc ol{margin:0;padding-left:1.4rem}
+.booklet .bk-toc ul{margin:0;padding-left:0;list-style:none}
 .booklet .bk-toc li{margin:.2rem 0}
 
 /* plain prose */

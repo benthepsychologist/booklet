@@ -9,9 +9,12 @@
    in double quotes with &, ", < and > escaped. An attribute whose name is not a plain name, or that names an event
    handler (on...), is never written: the engine hands the image box an onerror function, and nothing of the kind may
    reach a page. The only way to write markup as it stands is trusted(text), which the compiler uses for exactly two things
-   that come from booklet.html itself, never from a booklet: the MathML Temml writes (with trust:false, so a formula
-   cannot carry a link) and the inner drawing of an icon from the renderer's sprite. comment(text) writes an HTML comment,
-   with anything that could end it early taken out. */
+   that come from booklet.html itself, never from a booklet: the MathML Temml writes and the inner drawing of an icon from
+   the renderer's sprite. Temml runs with trust:false, so a formula cannot carry \href, \url or an outside address, but it
+   does write two things of its own: \label{...} gives a row an id, and \ref / \eqref a link to that id (href="#..."). The
+   drawing (draw.js, math) gives both the bk-tml- prefix and keeps the ids unique, and the page's id de-duplication starts
+   from them, so a label can never take an id the page or a host uses. comment(text) writes an HTML comment, with anything
+   that could end it early taken out. */
 
 const VOID=new Set(["area","base","br","col","embed","hr","img","input","link","meta","source","track","wbr"]);
 /* elements written on lines of their own, indented; everything else runs inline with the text around it */

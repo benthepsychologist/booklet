@@ -22,14 +22,21 @@ const PAGE_WORDS={
   fr:{toc:"Sur cette page",back:"Retour au texte",anchor:"Lien vers cette section"},
   es:{toc:"En esta página",back:"Volver al texto",anchor:"Enlace a esta sección"}};
 
+/* How each block type the renderer draws is drawn here: the name of its drawer in drawPage (DRAWERS), or {marked: the
+   kind of mark it gets}. block() dispatches from this table, and drawPage refuses to run when a drawer it names is
+   missing; COVERAGE, below, is made from it, and test/compile-coverage.test.js holds COVERAGE to the renderer's own
+   tables. So a type marked drawn here is drawn, by a drawer that exists. */
+const BLOCK_WAY={markdown:"prose",callout:"callout",row:"row",widget:"widget",
+  text:"question",lines:"question",choice:"question",multi:"question",scale:"question",matrix:"question",number:"question",date:"question",
+  query:{marked:"query"}};
+/* each widget engine drawn, and how: drawPage's ENGINE_DRAW must hold exactly these */
+const ENGINE_WAY={"grid-select":"drawn","svg-regions":"drawn: its places by name; its figure is marked (compile 0.2)"};
 /* How each of the renderer's tables is handled: "drawn", or a reason it is marked instead. test/compile-coverage.test.js
    fails when the renderer has a block type, question kind, engine or query view that is in neither. Callout kinds are
    all drawn, each in its own look (CALLOUT_LOOK), and an unknown kind is marked and drawn as the renderer draws it. */
 const COVERAGE={
-  blocks:{markdown:"drawn",callout:"drawn",row:"drawn",widget:"drawn",text:"drawn",lines:"drawn",choice:"drawn",
-    multi:"drawn",scale:"drawn",matrix:"drawn",number:"drawn",date:"drawn",
-    query:"marked: a query view is not compiled yet (compile 0.2)"},
-  engines:{"grid-select":"drawn","svg-regions":"drawn: its places by name; its figure is marked (compile 0.2)"},
+  blocks:Object.fromEntries(Object.entries(BLOCK_WAY).map(([k,v])=>[k,typeof v==="string"?"drawn":"marked: "+v.marked])),
+  engines:{...ENGINE_WAY},
   views:{cards:"marked",table:"marked",list:"marked",tiles:"marked",bars:"marked",line:"marked"}};
 /* the things the page leaves off, and why, as the report and the comments word them */
 const MARKED={
@@ -62,7 +69,7 @@ function drawPage(X,P,o){
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
     marked:[],images:[],links:[],counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,images:0,math:0,notes:0,links:0},
-    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null};
+    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[]};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const pageTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
 
@@ -71,15 +78,17 @@ function drawPage(X,P,o){
     return comment("booklet: "+what+" ("+st.where+"): "+MARKED[kind]);};
 
   /* ---- the renderer's Markdown engine, with this page's hooks ---- */
-  const modsHere=()=>design.modules.filter(m=>R.scopeOfModule(m)===st.scope);
   const headingLink=(hit,kids)=>{const a=el("a",{class:"bk-link"},...kids);st.pend.push({a,hit,where:st.where});return a;};
+  /* The links in prose are the renderer's own link hooks (linkHooks, for the module in hand): which targets are links,
+     which heading a link finds and which module a link names are its rules. engine.js has its headingLink and
+     moduleLinkNode return what they were handed, and the element is made here. */
+  const linkOut=x=>{if(x&&typeof x==="object"&&x.__heading) return headingLink(x.__heading.hit,Array.from(x.__heading.kids||[]));
+    if(x&&typeof x==="object"&&x.__module) return moduleLink(x.__module.target,x.__module.kids?Array.from(x.__module.kids):null);
+    return x;};
   const linkHooks={
-    link:(target,label)=>{if(M.isModuleLink(target)) return moduleLink(target,label!==undefined?[label]:null);
-      if(target[0]!=="#"||target[1]==="^") return null;
-      const h=target.slice(1).trim(),text=label!==undefined?label:h,hit=R.findHeading(modsHere(),h,false);
-      return hit?headingLink(hit,[text]):text;},
-    anchor:(slug,kids)=>{const hit=R.findHeading(modsHere(),slug,true);return hit?headingLink(hit,kids):M.textOf(kids);},
-    moduleLink:(target,kids)=>moduleLink(target,kids)};
+    link:(target,label)=>linkOut(R.linkHooks(st.scope).link(target,label)),
+    anchor:(slug,kids)=>linkOut(R.linkHooks(st.scope).anchor(slug,kids)),
+    moduleLink:(target,kids)=>linkOut(R.linkHooks(st.scope).moduleLink(target,kids))};
   const proseOpts=()=>({idPrefix:"",image,mark:noteMark,math,embed,...linkHooks,
     fence:(lang,code)=>lang==="mermaid"?diagram(code,"a mermaid fence"):null});
   /* a booklet line's words (a title, a label, help, an option): inline Markdown as the renderer's words() reads it, an image
@@ -127,7 +136,11 @@ function drawPage(X,P,o){
     /* Temml writes a display formula's one style as an inline style attribute; booklet.css sets the same thing
        (.bk-math-display math), so a host whose security policy refuses inline styles draws it the same */
     ml=ml.replace(/^(<math\b[^>]*?) style="display:block math;"/,"$1");
+    /* \label writes an id and \ref / \eqref a link to one (href="#…"): both are given the bk-tml- prefix, so no label
+       can take an id the page or a host uses, and a label written twice keeps its ids unique (the links go to the first) */
+    ml=ml.replace(/(\sid=)(["'])([^"']*)\2/g,(m,a,q,id)=>a+q+mathId(id)+q).replace(/(\shref=)(["'])#([^"']*)\2/g,(m,a,q,id)=>a+q+"#bk-tml-"+id+q);
     return el("span",{class:cls},trusted(ml));}
+  function mathId(id){const base="bk-tml-"+id;let v=base,i=2;while(st.mathIds.has(v)) v=base+"-"+(i++);st.mathIds.add(v);return v;}
 
   /* ---- figures: a prose embed (![[#^id]]) read by the renderer's figureHooks; a diagram is marked, anything else is code ---- */
   function embed(t){const f=R.figureHooks(st.scope).embed(t);
@@ -178,18 +191,20 @@ function drawPage(X,P,o){
   /* ---- blocks ---- */
   /* a list of blocks drawn; a block that draws as several nodes (prose, a mark and what it marks) stands as those nodes */
   const blocks=list=>(Array.isArray(list)?list:[]).map(block).filter(x=>x!=null).flatMap(x=>x instanceof H.Node&&x.tag===""?x.kids:[x]);
+  /* the drawers BLOCK_WAY names, and the words each kind of marked block is named by */
+  const DRAWERS={prose:b=>frag(...prose(b.text)),callout:b=>callout(b),widget:b=>widget(b),question:b=>question(b),
+    row:b=>el("div",{class:"bk-row"},...R.blocksIn(b).map(c=>el("div",{class:"bk-rowcell"},...blocks(R.blocksIn(c)))))};
+  const MARKED_AS={query:b=>"the query"+(b.from?" over “"+String(b.from)+"”":"")+(b.view&&b.view.as?", as "+String(b.view.as):"")};
+  for(const way of Object.values(BLOCK_WAY)) if(typeof way==="string"?!hasOwn(DRAWERS,way):!hasOwn(MARKED_AS,way.marked)||!hasOwn(MARKED,way.marked))
+    throw new Error("draw.js: BLOCK_WAY names a way to draw that drawPage does not have: "+JSON.stringify(way));
   function block(b){
     if(!b||typeof b!=="object") return null;
     if(R.QUESTION_KINDS.has(b.type)&&b.each){st.counts.questions++;return mark("each","the question “"+(plain(b.label)||b.id)+"”");}
-    let node;
-    switch(b.type){
-      case "markdown":node=frag(...prose(b.text));break;
-      case "callout":return callout(b);
-      case "row":node=el("div",{class:"bk-row"},...R.blocksIn(b).map(c=>el("div",{class:"bk-rowcell"},...blocks(R.blocksIn(c)))));break;
-      case "query":return mark("query","the query"+(b.from?" over “"+String(b.from)+"”":"")+(b.view&&b.view.as?", as "+String(b.view.as):""));
-      case "widget":node=widget(b);break;
-      case "text":case "lines":case "number":case "date":case "choice":case "multi":case "scale":case "matrix":node=question(b);break;
-      default:return mark("block","the “"+String(b.type)+"” block “"+String(b.id||"?")+"”");}
+    const way=hasOwn(BLOCK_WAY,b.type)?BLOCK_WAY[b.type]:null;
+    if(!way) return mark("block","the “"+String(b.type)+"” block “"+String(b.id||"?")+"”");
+    if(typeof way!=="string") return mark(way.marked,MARKED_AS[way.marked](b));
+    if(way==="callout") return DRAWERS.callout(b);
+    const node=DRAWERS[way](b);
     if(R.QUESTION_KINDS.has(b.type)&&node instanceof H.Node&&node.tag==="div") R.qParts(b).forEach(p=>node.append(fold(p,true)));
     if(b.type!=="callout"&&R.placeOf(b)==="folded"){st.counts.folds++;
       return el("details",{class:"bk-fold bk-plain"},el("summary",{},el("span",{class:"bk-ftitle"},...words(R.foldName(b),true))),el("div",{class:"bk-cb"},node));}
@@ -213,8 +228,10 @@ function drawPage(X,P,o){
     return flag?frag(flag,box):box;}
   /* a callout folded with "-", or a question's own hint or solution (inQ): a <details>, closed, that opens with no script */
   function fold(b,inQ){st.counts.folds++;
-    const hs=R.hintKind(b),k=String(b.kind==null?"":b.kind).toLowerCase();
-    const look=hs||!hasOwn(R.CALLOUT_LOOK,k)?null:R.calloutLook(b.kind),word=look||(hs?null:R.calloutLook(b.kind));
+    const hs=R.hintKind(b);
+    /* a kind the page does not know takes the note's look, as it does unfolded (calloutLook's own fallback). The renderer's
+       own fold draws such a kind plain, under the word Note; the compiler keeps folded and unfolded alike */
+    const look=hs||R.isGroup(b)?null:R.calloutLook(b.kind),word=look||(hs?null:R.calloutLook(b.kind));
     const named=tx(b.title,"");
     const body=blocks(R.blocksIn(b));
     if(b.unknown) body.unshift(el("p",{class:"bk-unknown"},T("reading").unknownKind(String(b.kind))));
@@ -251,7 +268,7 @@ function drawPage(X,P,o){
     const Wd=R.widgetIn(design.widgets||[],b.widget,b.module);
     if(!Wd) return mark("widget","the widget block “"+(b.id||"?")+"” (widget “"+String(b.widget||"?")+"”)");
     const eng=String(Wd.engine||"");
-    if(!hasOwn(R.ENGINES,eng)||!hasOwn(ENGINE_DRAW,eng)) return mark("engine","the widget “"+String(Wd.id||b.widget)+"” (engine “"+eng+"”)");
+    if(!hasOwn(R.ENGINES,eng)||!hasOwn(ENGINE_WAY,eng)) return mark("engine","the widget “"+String(Wd.id||b.widget)+"” (engine “"+eng+"”)");
     const C=R.wordsOf(Wd.copy),box=el("div",{class:"bk-q bk-widget bk-w-"+eng});
     qHead(box,tx(b.label,C.h),tx(b.help,C.p));
     [C.stance,C.invite].filter(R.nonEmpty).forEach(x=>box.append(el("p",{class:"bk-q-hint"},x)));
@@ -277,6 +294,8 @@ function drawPage(X,P,o){
         box.append(list(f.regions||[]));});
       if(op.describe&&(Wd.regions||[]).some(r=>r.note)) box.append(el("dl",{class:"bk-notes-of"},...(Wd.regions||[]).filter(r=>r.note).map(r=>
         el("div",{class:"bk-cell bk-c-plain"},el("dt",{},tx(r.label,r.id)),el("dd",{},tx(r.note,""))))));}};
+  if(JSON.stringify(Object.keys(ENGINE_DRAW).sort())!==JSON.stringify(Object.keys(ENGINE_WAY).sort()))
+    throw new Error("draw.js: ENGINE_DRAW and ENGINE_WAY name different engines");
 
   /* ---- headings: the booklet's shallowest is one below its container, deeper ones keep their depth ---- */
   const levelOf=n=>n instanceof H.Node?+((HEAD.exec(n.tag)||[])[1]||0):0;
@@ -384,22 +403,25 @@ function drawPage(X,P,o){
   if(st.notes.length){st.counts.notes=st.notes.length;const Rt=T("reading");
     const ol=el("ol",{class:"bk-notes-list"},...st.notes.map(n=>{n.li=el("li",{id:"bk-note-"+n.n},...noteBody(n));
       const back=el("a",{class:"bk-back","aria-label":W.back},"↩");st.refs.push({a:back,to:()=>n.first});n.li.append(" ",back);return n.li;}));
-    article.append(el("section",{class:"bk-notes","aria-labelledby":"bk-notes-h"},el("h2",{id:"bk-notes-h",class:"bk-notes-h"},Rt.notes),ol));}
+    const h=el("h2",{id:"bk-notes-h",class:"bk-notes-h"},Rt.notes),sec=el("section",{class:"bk-notes"},h,ol);st.labelled.push([sec,h]);
+    article.append(sec);}
   /* each module's notice: its licence, copyright, source and version, as text (a source is a link only when it is a web address) */
   if(st.notices.length){const N=T("notice");
-    article.append(el("footer",{class:"bk-foot"},...st.notices.map(({m,titleText})=>{const rows=[];
+    article.append(el("div",{class:"bk-foot"},...st.notices.map(({m,titleText})=>{const rows=[];
       R.NOTICE_KEYS.forEach(k=>{const v=typeof m.notice[k]==="string"?m.notice[k].trim():"";if(!v) return;
         const val=k==="source"&&/^https?:\/\//i.test(v)?el("a",{href:v,rel:"noopener noreferrer"},v):v;
         rows.push(el("div",{},el("dt",{},N[k]),el("dd",{},val)));});
       return rows.length?el("section",{class:"bk-about"},el("p",{class:"bk-about-h"},N.about+(st.notices.length>1?": "+titleText:"")),el("dl",{},...rows)):null;})));}
 
   /* ids: every heading gets one from the renderer's slug, made unique on the page; then every in-page link is pointed */
-  const used=new Set();
-  const uniq=base=>{let b=String(base||"").slice(0,60)||"section",id=b,i=2;while(used.has(id)) id=b+"-"+(i++);used.add(id);return id;};
+  const used=new Set(st.mathIds);
+  const uniq=base=>{let b=String(base||"").slice(0,60)||"bk-section",id=b,i=2;while(used.has(id)) id=b+"-"+(i++);used.add(id);return id;};
   H.walk(article,x=>{if(!(x instanceof H.Node)) return;
     if(levelOf(x)&&!("id" in x.attrs)) x.attrs.id=R.slugify(H.textOf(x));
     if("id" in x.attrs) x.attrs.id=uniq(x.attrs.id);});
-  const idOf=n=>{if(!n) return null;if(!n.attrs.id) n.attrs.id=uniq(n===article?"booklet":R.slugify(H.textOf(n)));return n.attrs.id;};
+  const idOf=n=>{if(!n) return null;if(!n.attrs.id) n.attrs.id=uniq(n===article?"bk-top":R.slugify(H.textOf(n)));return n.attrs.id;};
+  /* a region named by its heading keeps pointing at it when the heading's id was made unique */
+  for(const [sec,h] of st.labelled) sec.attrs["aria-labelledby"]=h.attrs.id;
   /* heading links: findHeading named the activity (or module tab) and the heading's words; the node is looked up here */
   for(const p of st.pend){const h=p.hit;let to=null;
     if(h.mtab){const m=st.mtabs.get(h.mod);to=m&&m.get(norm(h.heading));}
@@ -416,8 +438,10 @@ function drawPage(X,P,o){
     const L=levelOf(x);if(L>1){if(L<topLevel){topLevel=L;tops.length=0;}if(L===topLevel) tops.push(x);}});
   let toc=null;
   if(tops.length>=2){
-    toc=el("nav",{class:"bk-toc","aria-labelledby":"bk-toc-h"},el("p",{class:"bk-toc-h",id:uniq("bk-toc-h")},W.toc),
-      el("ol",{},...tops.map(h=>el("li",{},el("a",{href:"#"+h.attrs.id},H.textOf(h).trim())))));
+    /* a plain list: a heading that carries its own number keeps it, and the list adds none */
+    const tocId=uniq("bk-toc-h");
+    toc=el("nav",{class:"bk-toc","aria-labelledby":tocId},el("p",{class:"bk-toc-h",id:tocId},W.toc),
+      el("ul",{},...tops.map(h=>el("li",{},el("a",{href:"#"+h.attrs.id},H.textOf(h).trim())))));
     /* after the lede when the page opens with one, else after the title */
     let placed=false;
     if(st.lede) H.walk(article,(x,parent)=>{if(placed||!(x instanceof H.Node)) return;
@@ -428,13 +452,16 @@ function drawPage(X,P,o){
   H.walk(article,x=>{if(!(x instanceof H.Node)) return;if(x.tag==="details"||x.tag==="nav") return false;
     const L=levelOf(x);if(L>1&&L<5&&x.attrs.id&&x.attrs.class!=="bk-notes-h") {x.append(" ",el("a",{class:"bk-anchor",href:"#"+x.attrs.id,"aria-label":W.anchor},"#"));return false;}});
 
-  return {article,title:tx(design.title,"")||pageTitle,description:describe(st.lede?H.textOf(st.lede):firstPara(article)),
+  return {article,title:plain(design.title)||pageTitle,description:describe(st.lede?descText(st.lede):firstPara(article)),
     lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc};}
 
 /* the first paragraph of the page's own text, when it has no lede (not one in a fold, a callout or a question) */
 function firstPara(article){let t="";H.walk(article,x=>{if(t) return false;
-  if(x instanceof H.Node&&(["nav","details","aside","footer"].includes(x.tag)||/\bbk-(q|group|notes)\b/.test(String(x.attrs.class||"")))) return false;
-  if(x instanceof H.Node&&x.tag==="p"&&!x.attrs.class) {t=H.textOf(x);return false;}});return t;}
+  if(x instanceof H.Node&&(["nav","details","aside","footer"].includes(x.tag)||/\bbk-(q|group|notes|foot)\b/.test(String(x.attrs.class||"")))) return false;
+  if(x instanceof H.Node&&x.tag==="p"&&!x.attrs.class) {t=descText(x);return false;}});return t;}
+/* a paragraph's words for the description: no image box (its note and address), no citation number, no share link */
+const descText=x=>Array.isArray(x)?x.map(descText).join(""):typeof x==="string"?x
+  :x instanceof H.Node?(/\bbk-(imgbox|mark|anchor)\b/.test(String(x.attrs.class||""))?"":descText(x.kids)):"";
 /* the description: the first paragraph as plain text, cut at a sentence's end near 160 characters */
 function describe(text){const t=String(text||"").replace(/\s+/g," ").trim();
   if(t.length<=160) return t;
@@ -442,4 +469,4 @@ function describe(text){const t=String(text||"").replace(/\s+/g," ").trim();
   if(cut>=60) return t.slice(0,cut);
   const sp=t.lastIndexOf(" ",157);return t.slice(0,sp>60?sp:157).replace(/[\s,;:]+$/,"")+"…";}
 
-module.exports={drawPage,describe,COVERAGE,MARKED,PAGE_WORDS};
+module.exports={drawPage,describe,COVERAGE,BLOCK_WAY,ENGINE_WAY,MARKED,PAGE_WORDS};

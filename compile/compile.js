@@ -12,17 +12,28 @@
 //     --base-url <url>    the address the pages are served under (https://example.org/library/): a standalone page then
 //                         carries its canonical address and og:url, <url><name>/
 //     --report <file>     also write the build report to this file (it is always printed)
-//     --force             overwrite a page that was changed by hand since it was compiled, or one the compiler did not write
-//     --renderer <file>   the booklet.html to read the format with (default: the one beside compile/)
+//     --force             overwrite a page or a stylesheet that was changed by hand since it was compiled, or one the
+//                         compiler did not write
+//     --renderer <file>   the booklet.html to read the format with (default: the one beside compile/). Name only a file
+//                         you trust as much as this compiler: its script runs with the compiler's own rights (it is
+//                         evaluated in a Node vm context, which keeps names apart and is not a security boundary)
 //     --version           print the compiler's version and the renderer's
-// Each file is compiled on its own; its address is its name before .booklet.md. Exit 0 when every file was compiled and
-// written, 1 when one was refused or a page was kept back by the stamp guard, 2 for a mistake in the command.
+// Each file is compiled on its own; its address is its name before .booklet.md (two files whose names differ only in
+// case are one address). Exit 0 when every file was compiled and written, 1 when one was refused or failed or a page or
+// stylesheet was kept back by the stamp guard, 2 for a mistake in the command.
+//
+// The stamp guard: a page and the stylesheet carry a stamp, and one changed by hand since it was compiled is kept back
+// (not overwritten) unless --force is given. The fonts, their licence and the images copied beside a page carry none:
+// they are always written again from their sources (booklet.html, and the images beside the booklet), so change an
+// image at its source and the look with --bk-* variables in the site's own stylesheet.
 //
 // What it reads and what it never reads:
 //   - the format only through booklet.html's own parse and Markdown engine (engine.js), so a file the renderer refuses is
 //     refused here, and the problems it reports are in the report;
 //   - the booklet's design only: its records (answers, kept entries, drafts) are never read, so none can reach a page or
-//     the report;
+//     the report; a file in which they would be read as design (a code fence that never closes, a records line or a
+//     record block in the design's text) is refused;
+//   - its author comments (Obsidian's hidden %% comments) are left off the page; the report names their lines only;
 //   - images only from relative paths, by the renderer's own rule, from inside the booklet's own folder (images, below);
 //   - nothing from the network: this folder opens no connection and installs nothing (test/compile-guard.test.js checks it).
 // It never writes to a .booklet.md file.
@@ -55,8 +66,8 @@ const NAME=/^[A-Za-z0-9][A-Za-z0-9._-]*$/;
      foreignObject, an address with a scheme that runs or embeds (javascript:, vbscript:, data:, file:), a CSS url()
      that leads outside the file, image-set(), @import, expression(), and any backslash (CSS can spell a word with one).
    Numeric character references are decoded first, so an entity cannot hide a word, and any other entity is refused.
-   Inkscape's and Illustrator's own editing data is prefixed (sodipodi:, inkscape:), so such a file is refused until it
-   is saved as plain SVG. */
+   An editor's own data and metadata are in other namespaces (sodipodi:, inkscape:, dc:, Adobe's x:), so such a file is
+   refused until it is saved without them. */
 const SVG_NS="http://www.w3.org/2000/svg",XLINK_NS="http://www.w3.org/1999/xlink";
 const SVG_ELEMENTS=new Set(["svg","g","defs","desc","title","metadata","symbol","use","switch","view","style",
   "path","rect","circle","ellipse","line","polyline","polygon","text","tspan","textPath",
@@ -169,15 +180,22 @@ function headTags(page,o){
 function standalone(page,o){
   return "<!doctype html>\n"+'<html'+(page.lang?' lang="'+esc(page.lang)+'"':"")+'>\n<head>\n'+headTags(page,o).join("\n")+"\n</head>\n"
     +'<body class="bk-page">\n<main class="bk-main">\n'+H.html(page.article,0)+"</main>\n</body>\n</html>\n";}
+/* A value a layout prints from the front matter: a layout may print it unescaped (Jekyll's {{ page.title }}, Eleventy's
+   Liquid), so it holds no character that could open a tag: < and > are written as the look-alike quotation marks
+   \u2039 and \u203A. A layout must still escape it where it prints it inside an attribute (Hugo does so on its own). */
+const noMarkup=s=>String(s).replace(/</g,"\u2039").replace(/>/g,"\u203A");
 function sitePage(page){
-  return "---\ntitle: "+yamlString(page.title)+"\n"+(page.description?"description: "+yamlString(page.description)+"\n":"")+"---\n"
+  return "---\ntitle: "+yamlString(noMarkup(page.title))+"\n"+(page.description?"description: "+yamlString(noMarkup(page.description))+"\n":"")+"---\n"
     +noTemplates(H.html(page.article,0));}
 
 /* ======================= THE STAMP =======================
    Each page carries one comment line naming the compiler's version, the source file's name and the sha256 of the page as
-   written without that line. On the next run, a page whose text no longer matches its stamp was changed by hand, and one
-   with no stamp was not written by the compiler: neither is overwritten unless --force is given. */
+   written without that line, and the stylesheet carries the same as a CSS comment on its first line. On the next run, a
+   file whose text no longer matches its stamp was changed by hand, and one with no stamp was not written by the
+   compiler: neither is overwritten unless --force is given. The fonts, their licence and the copied images carry no
+   stamp: they are always written again from their sources. */
 const STAMP=/^<!-- booklet compile (\S+) \u00b7 from (.*) \u00b7 sha256:([0-9a-f]{64}) -->\n/m;
+const CSS_STAMP=/^\/\* booklet compile (\S+) \u00b7 booklet\.css \u00b7 sha256:([0-9a-f]{64}) \*\/\n/;
 const sha256=t=>crypto.createHash("sha256").update(t,"utf8").digest("hex");
 /* the stamp goes after the doctype (standalone) or the front matter (site), where the line is free */
 function stamp(text,source,form){
@@ -188,6 +206,9 @@ function stamp(text,source,form){
 function stampState(text){const m=STAMP.exec(text);if(!m) return "foreign";
   const rest=text.slice(0,m.index)+text.slice(m.index+m[0].length);
   return sha256(rest)===m[3]?"compiled":"changed";}
+const cssStamp=css=>"/* booklet compile "+VERSION+" \u00b7 booklet.css \u00b7 sha256:"+sha256(css)+" */\n"+css;
+function cssStampState(text){const m=CSS_STAMP.exec(text);if(!m) return "foreign";
+  return sha256(text.slice(m[0].length))===m[2]?"compiled":"changed";}
 
 /* ======================= ONE BOOKLET ======================= */
 /* compileOne(X, {file|text, name, dir}, o): what one booklet makes, as files relative to the output folder, and its report.
@@ -196,11 +217,11 @@ function stampState(text){const m=STAMP.exec(text);if(!m) return "foreign";
 function compileOne(X,input,o){
   const source=path.basename(input.file||input.name+".booklet.md");
   const name=input.name;
-  const rep={source,name,form:o.form,ok:false,refused:[],problems:[],marker:"",pages:[],
+  const rep={source,name,form:o.form,ok:false,refused:[],problems:[],marker:"",pages:[],comments:[],
     counts:null,marked:[],images:[],links:[],description:"",toc:false};
   if(!NAME.test(name)||name==="booklet"){rep.refused.push("its address, “"+name+"”, must be letters, digits, . _ or - (and not “booklet”, the stylesheet's folder): rename the file");return {rep,files:new Map()};}
   const P=o.parsed||parseInput(X,input);
-  rep.problems=P.problems;rep.marker=P.marker;
+  rep.problems=P.problems;rep.marker=P.marker;rep.comments=P.comments||[];
   if(!P.ok||!P.design){rep.refused=P.refused.length?P.refused:P.problems.length?P.problems:["the renderer could not read it"];return {rep,files:new Map()};}
   const keep=new Map(),files=new Map();
   const forms=o.form==="both"?["standalone","site"]:[o.form];
@@ -225,7 +246,7 @@ const dedupe=list=>{const seen=new Set();return list.filter(x=>{const k=x.src+"\
 
 /* the stylesheet and its fonts, for each form's booklet/ folder */
 function assets(X,form){const F=X.fonts(),out=new Map(),roots=form==="both"?["standalone/","site/"]:[""];
-  const css=fs.readFileSync(STYLESHEET,"utf8");
+  const css=cssStamp(fs.readFileSync(STYLESHEET,"utf8"));
   for(const r of roots){out.set(r+"booklet/booklet.css",css);
     for(const f of F.faces) out.set(r+"booklet/fonts/"+f.name,f.bytes);
     out.set(r+"booklet/fonts/OFL.txt",F.licence);}
@@ -240,23 +261,36 @@ function compile(inputs,o){o=o||{};
   const X=o.engine||E.load(o.renderer);
   const list=inputs.map(i=>({...i,name:i.name||nameOf(i.file),dir:i.dir||(i.file?path.dirname(i.file):".")}));
   /* each file is read once, first, so a page knows which of the others it can link to, and by what title */
-  const seen=new Set(),siblings=new Map(),parsed=new Map();
-  for(const i of list){if(seen.has(i.name)){i.dup=true;continue;}seen.add(i.name);
+  /* two addresses that differ only in case are the same folder on a case-insensitive disk, so they clash too */
+  const seen=new Map(),siblings=new Map(),parsed=new Map(),failed=new Map();
+  for(const i of list){const key=i.name.toLowerCase();
+    if(seen.has(key)){i.dup=seen.get(key);continue;}seen.set(key,i.name);
     if(!NAME.test(i.name)||i.name==="booklet") continue;
-    const P=parseInput(X,i);parsed.set(i,P);
+    let P;try{P=parseInput(X,i);}catch(e){failed.set(i,e);continue;}
+    parsed.set(i,P);
     if(P.ok&&P.design) siblings.set(i.name,titleOf(X,P,i.name));}
   const results=[];
   for(const i of list){
-    if(i.dup){results.push({rep:{source:path.basename(i.file||i.name),name:i.name,ok:false,refused:["another file in this run has the same address, “"+i.name+"”"],problems:[],pages:[]},files:new Map()});continue;}
-    results.push(compileOne(X,i,{form,baseUrl,siblings,parsed:parsed.get(i)}));}
+    if(i.dup){results.push(refusedResult(i,"another file in this run has the same address, “"+i.dup+"”"+(i.dup===i.name?"":" (addresses that differ only in case clash)")));continue;}
+    if(failed.has(i)){results.push(refusedResult(i,failure(failed.get(i))));continue;}
+    try{results.push(compileOne(X,i,{form,baseUrl,siblings,parsed:parsed.get(i)}));}
+    catch(e){results.push(refusedResult(i,failure(e)));}}
   return {results,assets:assets(X,form),form,renderer:X.R.RENDERER_VERSION,format:X.R.FORMAT_VERSION};}
+const refusedResult=(i,why)=>({rep:{source:path.basename(i.file||i.name),name:i.name,ok:false,refused:[why],problems:[],pages:[],comments:[]},files:new Map()});
+/* one file that throws stops only itself. The report names the kind of error and where in the code it was raised, never
+   its message: a message can carry a piece of the file's text, and the report may be published. */
+function failure(e){
+  const kind=e&&typeof e.name==="string"&&/^[A-Za-z]+$/.test(e.name)?e.name:"an error";
+  const frames=String(e&&e.stack||"").split("\n").filter(l=>/^\s+at /.test(l));
+  const at=frames.map(l=>/([^\s()\/\\]+\.(?:js|html)):(\d+)(?::\d+)?\)?\s*$/.exec(l)).find(Boolean);
+  return "the compiler failed on it ("+kind+(at?" in "+at[1]+" at line "+at[2]:"")+"), so nothing was written for it; this is a fault in the compiler, not in the file, and worth reporting with the file";}
 const nameOf=f=>path.basename(String(f)).replace(/\.booklet\.md$/i,"").replace(/\.md$/i,"");
 function checkBase(u){let x;try{x=new URL(String(u));}catch(e){throw new Error("--base-url is not an address: "+u);}
   if(x.protocol!=="https:"&&x.protocol!=="http:") throw new Error("--base-url must be an http or https address: "+u);
   if(x.search||x.hash) throw new Error("--base-url may carry no query and no fragment: "+u);
   return x.href.endsWith("/")?x.href:x.href+"/";}
 
-/* write(result, out, {force}): the files, with the stamp guard; returns the pages kept back */
+/* write(result, out, {force}): the files, with the stamp guard; returns the pages (and the stylesheet) kept back */
 function write(C,out,o){o=o||{};const kept=[];
   const put=(rel,data)=>{const p=path.join(out,rel);fs.mkdirSync(path.dirname(p),{recursive:true});
     if(fs.existsSync(p)){const was=fs.readFileSync(p);if(Buffer.isBuffer(data)?was.equals(data):was.toString("utf8")===data) return;}
@@ -269,7 +303,12 @@ function write(C,out,o){o=o||{};const kept=[];
       const s=stampState(fs.readFileSync(p,"utf8"));if(s!=="compiled") held.push({rel,state:s});}
     if(held.length){kept.push(...held.map(h=>({...h,source:r.rep.source})));r.rep.held=held;continue;}
     for(const [rel,data] of r.files) put(rel,data);}
-  for(const [rel,data] of C.assets) put(rel,data);
+  /* the stylesheet is guarded like a page: a hand-tidied booklet.css is kept back, and the fonts beside it still written */
+  C.heldAssets=[];
+  for(const [rel,data] of C.assets){const p=path.join(out,rel);
+    if(rel.endsWith("/booklet.css")&&fs.existsSync(p)&&!o.force){const s=cssStampState(fs.readFileSync(p,"utf8"));
+      if(s!=="compiled"){C.heldAssets.push({rel,state:s});kept.push({rel,state:s,source:"booklet.css"});continue;}}
+    put(rel,data);}
   return kept;}
 
 /* ======================= THE REPORT =======================
@@ -298,8 +337,11 @@ function reportText(C){const L=[];
       refused.forEach(i=>L.push("    [ ] the image "+JSON.stringify(i.src)+", in "+i.where+", was not copied (its words and address are shown): "+i.why));}
     else L.push("  To tidy: nothing was left off.");
     if(rep.problems.length){L.push("  The renderer reported:");rep.problems.forEach(p=>L.push("    - "+p));}
+    /* author comments are left off the page; the report gives their place only, never their words */
+    if(rep.comments&&rep.comments.length) L.push("  Author comments left off the page: "+rep.comments.map(c=>(c.to>c.from?"lines "+c.from+"\u2013"+c.to:"line "+c.from)+(c.open?" (never closed, so it runs to the end of the text)":"")).join(", ")+".");
     /* the records region is never read, so the report cannot say whether there is one: it says what that means instead */
     L.push("  Records: never read. Whatever answers or entries the file keeps are not on the page; the source file itself is not for a public site if it keeps any.");}
+  for(const h of C.heldAssets||[]) L.push("","\u2022 "+h.rel+": KEPT BACK, "+(h.state==="changed"?"changed by hand since it was compiled":"not written by the compiler")+" (--force overwrites it). The fonts beside it were written.");
   return L.join("\n")+"\n";}
 
 /* ======================= THE COMMAND ======================= */
@@ -331,4 +373,4 @@ if(require.main===module){
   catch(e){console.error("compile: "+e.message+(e.usage?"\n(node compile/compile.js --help)":""));code=e.usage?2:1;}
   process.exitCode=code;}
 
-module.exports={VERSION,compile,compileOne,write,reportText,stamp,stampState,svgProblem,noTemplates,yamlString,scriptJson,main};
+module.exports={VERSION,compile,compileOne,write,reportText,stamp,stampState,cssStampState,svgProblem,noTemplates,yamlString,scriptJson,main};
