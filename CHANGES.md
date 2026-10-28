@@ -2,6 +2,13 @@
 
 What changed in each version of the format, newest first. `SPEC.md` states the rules as they are now and carries no history; this file keeps it. Section numbers are those of `SPEC.md`. A version marked "wording only", "drawing only", "the reference renderer only" or "wording and the reference renderer" changed no file: the marker stayed as it was.
 
+## Changes in v0.16.1: the reference renderer only
+
+Nothing a file may say has changed: the marker stays `booklet: "0.16"`, and no file needs touching. The renderer is 0.16.1.
+
+- **Add a module on a booklet whose body ends inside an unclosed code fence is refused.** The module would be added inside the fence and never read as a module. The reader is told why ("This booklet ends inside a code fence that is never closed, so a module cannot be added after it. Close the fence in Markdown first."), and nothing is changed. Before, the module was accepted with no problem reported, and was not read. With the fence closed, a module is added as before.
+- **The browser's copy of such a booklet keeps its design.** For a booklet whose design after its records ends inside an unclosed code fence, the copy the renderer keeps in the browser reads back the design as it was after a reload, a Rename or Remove a module. Before, the design gained the records region's lines (`%%` and the records line) inside the author's code block. The records are kept beside it as before, and a download stays refused while the fence is open.
+
 ## Changes from v0.15
 
 The format becomes 0.16. The renderer is 0.16.0.
