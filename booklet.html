@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-5ZE5iiqk1Z6inb0QvDHx2AML+XJ+Vj9/MbcWMV8olcw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-fgC86cJ3QZDexXhctsLLvHyZWYRVEN9uTovpWxlwGZ4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -3554,7 +3554,7 @@ function slotKey(){return currentId?currentKey:null;}
 /* the snapshot of the booklet in memory, as it is stored: its design's text and, beside it, the records region its file was
    read with (`region`, which loadLocal adopts with the text's parse), so what the reader did not change is written back
    as that file had it */
-const snapshot=()=>JSON.stringify({S:STATE,D:DRAFTS,...(OLD_DESIGN?{TPL:BOOK}:{text:bookText(BOOK),region:regionOf(BOOK)}),...(CUSTOMIZED?{customized:true}:{}),dirty,unsavedEntries});
+const snapshot=()=>JSON.stringify({S:STATE,D:ownDrafts(),...(OLD_DESIGN?{TPL:BOOK}:{text:bookText(BOOK),region:regionOf(BOOK)}),...(CUSTOMIZED?{customized:true}:{}),dirty,unsavedEntries});
 /* whether a snapshot's design was changed here (CUSTOMIZED); an older release's kept it in its design (TPL) */
 const keptCustomized=o=>isObj(o)&&(o.customized===true||(isObj(o.TPL)&&o.TPL.customized===true));
 function saveLocal(){const key=slotKey();if(!key) return;
@@ -4625,7 +4625,15 @@ function editItems(code,put,gone,add){const at=c=>{const o=jsonAt(c),m=o&&o.k===
     if(!z) return spliceAt(code,a.s,a.e,"[\n"+add.join(",\n")+"\n]");
     const L=jsonLayout(code,a,el.map(e=>e.s),el.map(e=>e.e),": ");code=spliceAt(code,z.e,z.e,add.map(t=>L.sep+t).join(""));}
   return code;}
-const toMarkdown=()=>fileText(BOOK,STATE,DRAFTS);
+/* A draft filled for the reader to see (a `repeat daily` activity's, from today's entry: seedUpsertDraft) is not yet
+   the reader's work: until the reader changes it, a save writes the draft as it was before (SPEC section 8, only what
+   the reader changed; the Obsidian plugin's rule). `seeded` fills a draft by `fill` and remembers what it was. */
+const SEEDS=new WeakMap();
+function seeded(d,fill){const was=canon(d),before=clone(d);fill(d);if(canon(d)!==was) SEEDS.set(d,{before,shown:canon(d)});}
+const ownDrafts=()=>{const c=nullMap(),all=DRAFTS.custom||{};
+  Object.keys(all).forEach(k=>{const d=all[k],s=SEEDS.get(d);c[k]=s&&s.shown===canon(d)?nullMap(s.before):d;});
+  return {...DRAFTS,custom:c};};
+const toMarkdown=()=>fileText(BOOK,STATE,ownDrafts());
 const bookText=book=>fileText(book,emptyState(),emptyDrafts());
 /* the booklet's text with `source` as its design, its kept records with it but those of a module `drop` */
 const textWith=(source,drop)=>{const raw=BOOK.raw||{};
@@ -7422,7 +7430,7 @@ let RENDERING=false;
    holds one activity leads where its card would), a daily activity's draft */
 function settle(){lang=uiLang();
   if(isModuleScreen(screen)){const mod=moduleForScreen(screen);if(!mod||!isMulti(mod)) screen=mod?entryScreenOf(mod):HOME_SCREEN;}
-  if(!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)){const m=activityOf(screen);if(m.kind==="entry") seedUpsertDraft(screen,m,answersFor(screen));}}
+  if(!hasOwn(SCREENS,screen)&&!isModuleScreen(screen)){const m=activityOf(screen);if(m.kind==="entry") seeded(answersFor(screen),d=>seedUpsertDraft(screen,m,d));}}
 /* draw the screen in force afresh, in a draw of its own (one draw, region 4), and return it */
 function render(){
   /* nothing is drawn before the page has read its store: the first draw is keepStart's (bootPage) */

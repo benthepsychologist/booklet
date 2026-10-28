@@ -149,5 +149,15 @@ for(const [name,tail] of [["ending in a newline",'{"q1": "grey"}\n'],["with no f
  const U=FM+"\n"+MA+"\n"+MB+"\n\n\n"+"%%\n"+HEAD+"\n\n> [!records|roots] Roots\n\n```booklet answers\n{\"carrot\": \"few\"}\n```\n\n%%\n",B=load(U);
  chk("Remove a module keeps the body's trailing blank lines and the other module's records as written",B.removeModule("herbs").ok&&B.toMarkdown()===U.replace(MA+"\n",""),show(B.toMarkdown()));}
 
+/* ---- a `repeat daily` activity drawn with today's entry: nothing the reader did not change is written ---- */
+{const M="> [!activity|hlog repeat daily] Herb log\n\n> [!text|cut] Cut today?\n";
+ const T=FM+"\n"+M+"\n%%\n"+HEAD+"\n\n```booklet entries hlog\n{\"items\": [\n  {\"ts\": \""+new Date().toISOString()+"\", \"cut\": \"some\"}\n]}\n```\n\n%%\n";
+ const A=load(T);A.screen="hlog";A.render();
+ chk("a daily activity drawn with today's entry in its fields: an untouched save is byte for byte",A.draftFor("hlog").cut==="some"&&A.toMarkdown()===T,show(A.toMarkdown().slice(-120)));
+ A.markDirty();A.flushSave();const id=A.currentId;P.closePages();let B=P.boot();B.openBooklet(id);
+ chk("  and so after a reload",B.toMarkdown()===T,show(B.toMarkdown().slice(-120)));
+ B.screen="hlog";B.render();B.draftFor("hlog").cut="more";B.markDirty();
+ chk("  once the reader changes it, the draft is written",B.parseFile(B.toMarkdown()).drafts.activities.hlog.cut==="more");}
+
 P.closePages();
 if(fails){console.log("\n"+fails+" FAILURES");process.exitCode=1;}else console.log("\nall write-back checks passed");
