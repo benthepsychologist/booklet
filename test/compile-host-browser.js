@@ -5,17 +5,26 @@
 // of a real site's theme: rules on bare elements (footer, blockquote, aside, ol, ul, li, h1-h3, p, a, table, th, td,
 // nav, code, pre, strong, details, summary, dl, dt, dd, hr, img, section, svg paths, the article itself, and a reset
 // on *), a body with its own face, weight, spacing and colour, and rules of a class and an element (.wrapper ol with
-// counters and a card for each item, .wrapper p, .wrapper a:visited). A site page is the fragment in that host's
-// <main class="wrapper">; a standalone page gets the hostile stylesheet as a host serving it would add it. It asserts:
+// counters and a card for each item, .wrapper p, .wrapper a:visited), and rules marked !important in the shapes a real
+// theme was seen to use: an inline <style> on every heading's face and weight, and #main .content rules on headings'
+// and links' colours, a blockquote's line and colour, and a blockquote's and all its contents' background
+// (#main .content blockquote *), with one more of two ids (#site #main .content p). A site page is the fragment in that
+// host's <main id="main" class="wrapper"><div class="content">; a standalone page gets the same ids and class and the
+// hostile stylesheets as a host serving it would add them. It asserts:
 //   - every element inside the article has the same computed values on the hostile host as on the plain one: colours,
 //     backgrounds, borders, corners, shadows, margins, padding, list style, counters, faces, sizes, weights, styles,
 //     spacing, capitals, alignment, display and float, and an icon's paint; so do their ::before and ::after, and the
 //     ::marker of each list item; the article's own text and paint are the same too;
 //   - every element has the same box, measured from the article's corner, with every fold open;
-//   - the hostile stylesheet is live: the host's own footer, its own numbered card list and its own headings, outside
-//     the article, take its rules, so the page holds its look without restyling the host around it;
-//   - the check can fail: with the stylesheet's guard taken out (its revert rule, and the id's weight on every rule),
-//     the hostile host does change the page (the blockquote, the asides, the lists, the headings).
+//   - the hostile stylesheet is live: the host's own footer, its own numbered card list, its own headings and its own
+//     link, outside the article, take its rules, so the page holds its look without restyling the host around it;
+//   - the check can fail, and each part of the guard is needed. The stylesheet is served three ways weaker: with no
+//     guard (no revert rule, no !important, no ids' weight), the hostile host changes the blockquote, the asides, the
+//     lists, the headings, the paragraphs, the links and the tables; with the guard as it was before !important (one
+//     id's weight, no !important), the !important rules change the headings' face and colour, the links' colour and the
+//     blockquote; with !important but one id's weight, the rules of one id that tie with it (a heading's and a link's
+//     colour, from a sheet loaded later) or outweigh it (#main .content blockquote *, and the two-id rule on paragraphs)
+//     still reach the page.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/compile-host-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
@@ -91,23 +100,38 @@ svg path,svg circle,svg rect{fill:#c0392b;stroke:#0b4f4a;stroke-width:3px}
   background:#0b4f4a;color:#fff;font-weight:700;text-align:center}
 .wrapper p{color:#777;font-size:1.25rem}
 .wrapper a:visited{color:#8e44ad}
+/* !important, with an id: the shapes a real theme was seen to use, and one more of two ids */
+#main .content h1,#main .content h2,#main .content h3,#main .content h4{color:#0b4f4a!important}
+#main .content a{color:#c0392b!important}
+#main .content blockquote{border-left-width:10px!important;border-left-style:dotted!important;border-left-color:#c9a96e!important;color:#6b4f1d!important}
+#main .content blockquote,#main .content blockquote *{background-color:#f3e9d2!important}
+#site #main .content p{color:#777!important;letter-spacing:.05em!important}
 `;
+/* the theme's own inline <style>, as a site's typography partial writes one: every heading's face and weight, !important */
+const INLINE='<style>h1,h2,h3,h4,h5,h6,.hero h1,.section-heading{font-family:Lora,Georgia,serif!important;font-weight:300!important}</style>';
 fs.writeFileSync(path.join(OUT,'hostile.css'),HOSTILE);
-/* the host around the page: its own header, a numbered card list of its own in the wrapper, and its own footer */
-const hostPage=(frag,hostile,title)=>'<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n'
-  +'<title>'+title+'</title><link rel="stylesheet" href="../booklet/booklet.css">'+(hostile?'<link rel="stylesheet" href="../../hostile.css">':'')+'\n'
+const SHEETS='<link rel="stylesheet" href="../../hostile.css">'+INLINE;
+/* the host around the page: its own header, a numbered card list and a link of its own in the content, and its own footer */
+const hostPage=(frag,hostile,title)=>'<!doctype html>\n<html lang="en" id="site"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n'
+  +'<title>'+title+'</title><link rel="stylesheet" href="../booklet/booklet.css">'+(hostile?SHEETS:'')+'\n'
   +'<style>body{margin:0}header,main,footer{display:block;max-width:56rem;margin:0 auto;padding:1rem}</style></head>\n'
-  +'<body><header><h1 class="host-h">A host site</h1></header>\n<main class="wrapper"><ol class="host-steps"><li>A host\'s own step</li><li>And another</li></ol>\n'
-  +frag+'</main>\n<footer class="host-foot"><p>A host site\'s own footer</p></footer></body></html>\n';
+  +'<body><header><h1 class="host-h">A host site</h1></header>\n<main id="main" class="wrapper"><div class="content">\n'
+  +'<ol class="host-steps"><li>A host\'s own step</li><li>And another</li></ol><p><a class="host-a" href="#top">A host\'s own link</a></p>\n'
+  +frag+'</div></main>\n<footer class="host-foot"><p>A host site\'s own footer</p></footer></body></html>\n';
+/* a standalone page as a host would serve it: the same ids and class round the article, and the hostile sheets added */
+const asHosted=(whole,hostile)=>whole.replace(/<html lang="([^"]*)">/,'<html lang="$1" id="site">').replace('<body class="bk-page">','<body class="bk-page" id="main">')
+  .replace('<main class="bk-main">','<main class="bk-main content">').replace(/(<link rel="stylesheet" href="[^"]*booklet\.css">)/,'$1'+(hostile?SHEETS:''));
 const pages=[];
 for(const r of run.results){const name=r.rep.name;
   const frag=fs.readFileSync(path.join(OUT,'site',name,'index.html'),'utf8').replace(/^---\n[\s\S]*?\n---\n/,'');
   for(const hostile of [false,true]) fs.writeFileSync(path.join(OUT,'site',name,hostile?'hostile.html':'plain.html'),hostPage(frag,hostile,'A host'));
   pages.push({name,form:'site',plain:'/site/'+name+'/plain.html',hostile:'/site/'+name+'/hostile.html'});
   const whole=fs.readFileSync(path.join(OUT,'standalone',name,'index.html'),'utf8');
-  fs.writeFileSync(path.join(OUT,'standalone',name,'hostile.html'),whole.replace(/(<link rel="stylesheet" href="[^"]*booklet\.css">)/,'$1<link rel="stylesheet" href="../../hostile.css">'));
-  pages.push({name,form:'standalone',plain:'/standalone/'+name+'/index.html',hostile:'/standalone/'+name+'/hostile.html'});}
-ok(pages.filter(p=>p.form==='standalone').every(p=>fs.readFileSync(path.join(OUT,p.hostile),'utf8').includes('hostile.css')),'each standalone page has a hostile copy');
+  for(const hostile of [false,true]) fs.writeFileSync(path.join(OUT,'standalone',name,hostile?'hostile.html':'plain.html'),asHosted(whole,hostile));
+  pages.push({name,form:'standalone',plain:'/standalone/'+name+'/plain.html',hostile:'/standalone/'+name+'/hostile.html'});}
+ok(pages.filter(p=>p.form==='standalone').every(p=>{const h=fs.readFileSync(path.join(OUT,p.hostile),'utf8');
+  return h.includes('hostile.css')&&h.includes(INLINE)&&/<html [^>]*id="site"/.test(h)&&h.includes('id="main"')&&h.includes('bk-main content');}),
+  'each standalone page has a hosted copy, with the ids, the class and the hostile sheets');
 
 /* the computed values compared: what a host's theme commonly sets */
 const PROPS=['color','background-color','background-image',
@@ -132,52 +156,68 @@ async function measure(p){
           m:s.display==='list-item'?pick(getComputedStyle(e,'::marker'),MARKER):''};}),
       host:{foot:getComputedStyle(document.querySelector('.host-foot')||document.body).backgroundColor,
         step:(()=>{const li=document.querySelector('.host-steps li');return li?getComputedStyle(li,'::before').content:'';})(),
-        head:(()=>{const h=document.querySelector('.host-h');return h?getComputedStyle(h).fontFamily:'';})()}};},[PROPS,MARKER]);}
-/* the first property that differs between two piped value lists */
-const which=(x,y,list)=>{const a=x.split(' | '),b=y.split(' | ');const i=a.findIndex((v,j)=>v!==b[j]);return i<0?'':list[i]+': '+a[i]+' → '+b[i];};
-function differences(A,B){const out=[];
-  if(A.root!==B.root) out.push('the article: '+which(A.root,B.root,PROPS.filter(k=>!/^margin|^display$|^float$|^position$/.test(k))));
-  if(A.els.length!==B.els.length){out.push('element count '+A.els.length+' → '+B.els.length);return out;}
-  A.els.forEach((x,i)=>{const y=B.els[i];
+        head:(()=>{const h=document.querySelector('.host-h');return h?getComputedStyle(h).fontFamily+' '+getComputedStyle(h).fontWeight:'';})(),
+        link:(()=>{const l=document.querySelector('.host-a');return l?getComputedStyle(l).color:'';})()},
+      inQuote:els.map(e=>e.tagName!=='BLOCKQUOTE'&&!!e.closest('blockquote'))};},[PROPS,MARKER]);}
+/* what differs between the plain and the hostile host: one entry per element and part, naming every property that differs */
+const ROOTPROPS=PROPS.filter(k=>!/^margin|^display$|^float$|^position$/.test(k));
+const which=(x,y,list)=>{const a=x.split(' | '),b=y.split(' | ');return list.map((k,i)=>a[i]!==b[i]?{k,from:a[i],to:b[i]}:null).filter(Boolean);};
+function differences(A,B){const out=[];const put=(tag,inQuote,label,props)=>out.push({tag,inQuote,props:props.map(d=>d.k),
+    text:label+' '+props.slice(0,2).map(d=>d.k+': '+d.from+' → '+d.to).join(', ')});
+  if(A.root!==B.root) put('article',false,'the article',which(A.root,B.root,ROOTPROPS));
+  if(A.els.length!==B.els.length){out.push({tag:'',props:[],text:'element count '+A.els.length+' → '+B.els.length});return out;}
+  A.els.forEach((x,i)=>{const y=B.els[i],tag=x.k.split('.')[0];
     for(const [part,list,label] of [['s',PROPS,''],['b',PROPS,'::before'],['a',PROPS,'::after'],['m',MARKER,'::marker']])
-      if(x[part]!==y[part]) out.push(x.k+label+' '+which(x[part],y[part],list));
-    if(x.box!==y.box) out.push(x.k+' box '+x.box+' → '+y.box);});
+      if(x[part]!==y[part]) put(tag,A.inQuote[i],x.k+label,which(x[part],y[part],list));
+    if(x.box!==y.box) out.push({tag,inQuote:A.inQuote[i],props:['box'],text:x.k+' box '+x.box+' → '+y.box});});
   return out;}
+/* booklet.css served weaker, for the controls: with no guard at all; with the guard as it was before !important (one id's
+   weight, no !important); and with !important but one id's weight */
+const WEIGHT='.booklet:not(#bk):not(#bk):not(#bk)';
+const WEAKER={none:css=>css.replace(/[^{}]*\{all:revert(!important)?\}/g,'').replace(/!important/g,'').split(WEIGHT).join('.booklet'),
+  second:css=>css.replace(/!important/g,'').split(WEIGHT).join('.booklet:not(#bk)'),
+  oneid:css=>css.split(WEIGHT).join('.booklet:not(#bk)')};
 
 (async()=>{
   const b=await chromium.launch();
-  /* every file is served from a made-up host; `strip` serves booklet.css with its guard taken out, for the control */
-  const ctxFor=async(width,strip)=>{const ctx=await b.newContext({viewport:{width,height:900},javaScriptEnabled:false,colorScheme:'light'});
+  /* every file is served from a made-up host; `weaker` serves booklet.css made weaker, for a control */
+  const ctxFor=async(width,weaker)=>{const ctx=await b.newContext({viewport:{width,height:900},javaScriptEnabled:false,colorScheme:'light'});
     await ctx.route('http://host.test/**',route=>{const u=decodeURIComponent(new URL(route.request().url()).pathname);const f=path.join(OUT,u);
       if(!f.startsWith(OUT+path.sep)||!fs.existsSync(f)||!fs.statSync(f).isFile()) return route.fulfill({status:404,body:'not here'});
       let body=fs.readFileSync(f);
-      if(strip&&u.endsWith('/booklet/booklet.css')) body=String(body).replace(/[^{}]*\{all:revert\}/g,'').split('.booklet:not(#bk)').join('.booklet');
+      if(weaker&&u.endsWith('/booklet/booklet.css')) body=WEAKER[weaker](String(body));
       const type=f.endsWith('.css')?'text/css':f.endsWith('.woff2')?'font/woff2':f.endsWith('.svg')?'image/svg+xml':f.endsWith('.png')?'image/png':'text/html';
       return route.fulfill({status:200,contentType:type,body});});
     return ctx;};
   const tags=new Set();
   for(const width of [1280,390]){
-    const ctx=await ctxFor(width,false),p=await ctx.newPage();
+    const ctx=await ctxFor(width,null),p=await ctx.newPage();
     for(const pg of pages){const at=pg.form+' '+pg.name+' at '+width;
       await p.goto('http://host.test'+pg.plain);const A=await measure(p);
       await p.goto('http://host.test'+pg.hostile);const B=await measure(p);
       A.tags.forEach(t=>tags.add(t));
       const d=differences(A,B);
-      ok(!d.length,at+': on the hostile host every element keeps its values and its box ('+A.els.length+' elements)'+(d.length?' — '+d.length+' differ, first: '+d.slice(0,4).join('; '):''));
-      if(pg.form==='site') ok(B.host.foot==='rgb(11, 79, 74)'&&B.host.step==='counter(step)'&&/^Lora/.test(B.host.head)&&A.host.foot!==B.host.foot,
-        at+': the hostile rules are live around the page (the host\'s footer, its numbered cards, its headings)'+' ['+B.host.foot+', '+B.host.step+', '+B.host.head.slice(0,12)+']');}
+      ok(!d.length,at+': on the hostile host every element keeps its values and its box ('+A.els.length+' elements)'+(d.length?' — '+d.length+' differ, first: '+d.slice(0,4).map(x=>x.text).join('; '):''));
+      if(pg.form==='site') ok(B.host.foot==='rgb(11, 79, 74)'&&B.host.step==='counter(step)'&&/^Lora.* 300$/.test(B.host.head)&&B.host.link==='rgb(192, 57, 43)'&&A.host.foot!==B.host.foot,
+        at+': the hostile rules are live around the page (the host\'s footer, its numbered cards, its headings, its link)'+' ['+B.host.foot+', '+B.host.step+', '+B.host.head.slice(0,8)+'…'+B.host.head.slice(-3)+', '+B.host.link+']');}
     await ctx.close();}
   const want=['aside','blockquote','ol','li','h1','h2','h3','p','a','table','th','td','nav','ul','code','pre','details','summary','dl','dt','dd','hr','img','section','svg','path'];
   const missing=want.filter(t=>!tags.has(t));
   ok(!missing.length,'the pages hold every element the hostile rules aim at ('+want.length+')'+(missing.length?', but not: '+missing.join(', '):''));
   ok(!tags.has('footer'),'no page holds a <footer> (a module\'s notice is a plain box), so a host\'s footer rule has nothing to reach');
-  /* the control: the same pages with the guard taken out do change on the hostile host */
-  {const ctx=await ctxFor(1280,true),p=await ctx.newPage(),hit=new Set();
-    for(const pg of pages.filter(x=>x.form==='site')){await p.goto('http://host.test'+pg.plain);const A=await measure(p);
+  /* the controls: the same pages, with booklet.css made weaker, do change on the hostile host */
+  const control=async weaker=>{const ctx=await ctxFor(1280,weaker),p=await ctx.newPage(),hit=new Set();
+    for(const pg of pages){await p.goto('http://host.test'+pg.plain);const A=await measure(p);
       await p.goto('http://host.test'+pg.hostile);const B=await measure(p);
-      for(const line of differences(A,B)){const m=/^(aside|blockquote|ol|li|h2|h3|p|a|table)\b/.exec(line);if(m) hit.add(m[1]);}}
-    ok(['aside','blockquote','ol','li','h2','p','a','table'].every(t=>hit.has(t)),'the check can fail: with the guard taken out, the hostile host changes '+[...hit].sort().join(', '));
-    await ctx.close();}
+      for(const d of differences(A,B)){hit.add(d.tag);for(const k of d.props){hit.add(d.tag+':'+k);if(d.inQuote) hit.add('in a blockquote:'+k);}}}
+    await ctx.close();return hit;};
+  {const hit=await control('none'),want=['aside','blockquote','ol','li','h2','h3','p','a','table'];
+    ok(want.every(t=>hit.has(t)),'the check can fail: with no guard, the hostile host changes '+want.filter(t=>hit.has(t)).join(', ')+(want.some(t=>!hit.has(t))?' but not '+want.filter(t=>!hit.has(t)).join(', '):''));}
+  {const hit=await control('second'),want=['h2:font-family','h2:font-weight','h2:color','h3:font-family','a:color','blockquote:border-left-style','blockquote:color','blockquote:background-color','in a blockquote:background-color'];
+    ok(want.every(t=>hit.has(t)),'…with the guard as it was before !important (one id, no !important), the !important rules change '+want.filter(t=>hit.has(t)).join(', ')+(want.some(t=>!hit.has(t))?' but not '+want.filter(t=>!hit.has(t)).join(', '):''));}
+  {const hit=await control('oneid'),want=['h2:color','a:color','in a blockquote:background-color','p:letter-spacing'];
+    ok(want.every(t=>hit.has(t)),'…with !important but one id\'s weight, the rules that tie with it (a heading\'s and a link\'s colour, from a later sheet) or outweigh it (the blockquote\'s contents, two ids on paragraphs) still reach: '
+      +want.filter(t=>hit.has(t)).join(', ')+(want.some(t=>!hit.has(t))?' but not '+want.filter(t=>!hit.has(t)).join(', '):''));}
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'compile on a hostile host: all checks passed');
   process.exit(fails.length?1:0);

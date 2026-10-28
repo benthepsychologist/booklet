@@ -81,18 +81,28 @@ chk("every class the compiler writes has a rule ("+classes.size+" classes; hooks
 chk("every class it writes is a bk- class, the article's root, or Temml's own",[...classes].every(c=>/^bk-|^booklet$|^tml-/.test(c)),[...classes].filter(c=>!/^bk-|^booklet$|^tml-/.test(c)).join(", "));
 for(const h of HUES) chk("the "+h+" hue has its rule",new RegExp("\\.bk-hue-"+h+"\\{--bk-c-soft:var\\(--bk-"+h+"-soft\\);--bk-c-vivid:var\\(--bk-"+h+"-vivid\\);--bk-c-deep:var\\(--bk-"+h+"-deep\\)\\}").test(css));
 for(const c of COLOURS) chk("the colour name "+c+" has its rule",new RegExp("\\.bk-c-"+c+"\\{--bk-cell-wash:var\\(--bk-"+c+"\\);--bk-cell-name:var\\(--bk-"+c+"-ink\\)\\}").test(css));
-chk("a fold's sign, a plus that turns into a minus, needs no script",/\.bk-fold>summary::after\{content:"\+"/.test(css)&&/\.bk-fold\[open\]>summary::after\{content:"\\2212"\}/.test(css));
-chk("a display formula's style is the stylesheet's, not an inline one",/\.bk-math-display math\{display:block math\}/.test(css));
+chk("a fold's sign, a plus that turns into a minus, needs no script",/\.bk-fold>summary::after\{content:"\+"/.test(css)&&/\.bk-fold\[open\]>summary::after\{content:"\\2212"!important\}/.test(css));
+chk("a display formula's style is the stylesheet's, not an inline one",/\.bk-math-display math\{display:block math!important\}/.test(css));
 
-/* ---- held against a host: every rule inside the article weighs an id, and the revert rule comes first ---- */
+/* ---- held against a host: every rule inside the article weighs three ids and every declaration in it is !important
+   (custom properties aside, so a host's own --bk-* values still win), and the revert rule comes first ---- */
 const code=css.replace(/\/\*[\s\S]*?\*\//g,"");
-const selectors=[];
-for(const m of code.matchAll(/([^{}]*)\{/g)){const s=m[1].trim();if(!s||s.startsWith("@")) continue;
-  let depth=0,cur="";for(const ch of s){if(ch==="(") depth++;if(ch===")") depth--;if(ch===","&&!depth){selectors.push(cur.trim());cur="";}else cur+=ch;}selectors.push(cur.trim());}
-const loose=selectors.filter(s=>!/^:where\(/.test(s)&&!/^\.bk-(page|main)(?![\w-])/.test(s)&&!/^\.booklet:not\(#bk\)(?![\w-])/.test(s));
-chk("every rule inside the article starts .booklet:not(#bk), an id's weight ("+selectors.length+" selectors; the :where() tables and the standalone page's body aside)",!loose.length,loose.slice(0,5).join(" | "));
-const firstLook=code.search(/\.booklet:not\(#bk\) [^{]*\{(?!all:revert)/),guard=code.indexOf(".booklet:not(#bk) :where(:not(svg, svg *, math, math *)),");
-chk("the revert rule is there, for every element but the icons and formulas, and before every other rule inside the article",
-  guard>=0&&guard<firstLook&&/:where\(:not\(svg, svg \*, math, math \*\)\)::after\{all:revert\}/.test(code)&&/::marker\{all:revert\}/.test(code),guard+" vs "+firstLook);
+const WEIGHT=".booklet:not(#bk):not(#bk):not(#bk)";
+const rules=[];
+for(const m of code.matchAll(/([^{}]*)\{([^{}]*)\}/g)){const s=m[1].trim();if(!s||s.startsWith("@")) continue;
+  const sels=[];let depth=0,cur="";for(const ch of s){if(ch==="(") depth++;if(ch===")") depth--;if(ch===","&&!depth){sels.push(cur.trim());cur="";}else cur+=ch;}sels.push(cur.trim());
+  rules.push({sels,body:m[2]});}
+const selectors=rules.flatMap(r=>r.sels);
+const esc=WEIGHT.replace(/[().#]/g,"\\$&");
+const loose=selectors.filter(s=>!/^:where\(/.test(s)&&!/^\.bk-(page|main)(?![\w-])/.test(s)&&!new RegExp("^"+esc+"(?![\\w(-])").test(s));
+chk("every rule inside the article starts "+WEIGHT+", three ids' weight ("+selectors.length+" selectors; the :where() tables and the standalone page's body aside)",!loose.length,loose.slice(0,5).join(" | "));
+const guarded=rules.filter(r=>r.sels.every(s=>s.startsWith(WEIGHT)));
+const plainDecls=guarded.flatMap(r=>r.body.split(";").map(d=>d.trim()).filter(d=>d&&!d.startsWith("--")&&!/!important$/.test(d)).map(d=>r.sels[0].slice(WEIGHT.length).trim()+" { "+d+" }"));
+const customImportant=guarded.flatMap(r=>r.body.split(";").map(d=>d.trim()).filter(d=>d.startsWith("--")&&/!important$/.test(d)));
+chk("every declaration inside the article is !important ("+guarded.length+" rules), and no custom property is (a host's --bk-* values win)",!plainDecls.length&&!customImportant.length,[...plainDecls,...customImportant].slice(0,4).join(" | "));
+chk("the variables' defaults stay plain and weigh nothing",[...code.matchAll(/^\s*(:where\([^{]*)\{([^}]*)\}/gm)].every(m=>!/!important/.test(m[2])));
+const firstLook=code.search(new RegExp(esc+" [^{]*\\{(?!all:revert)")),guard=code.indexOf(WEIGHT+" :where(:not(svg, svg *, math, math *)),");
+chk("the revert rule is there, !important, for every element but the icons and formulas, and before every other rule inside the article",
+  guard>=0&&guard<firstLook&&/:where\(:not\(svg, svg \*, math, math \*\)\)::after\{all:revert!important\}/.test(code)&&/::marker\{all:revert!important\}/.test(code),guard+" vs "+firstLook);
 
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile stylesheet passed");process.exit(fails?1:0);
