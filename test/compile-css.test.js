@@ -84,4 +84,15 @@ for(const c of COLOURS) chk("the colour name "+c+" has its rule",new RegExp("\\.
 chk("a fold's sign, a plus that turns into a minus, needs no script",/\.bk-fold>summary::after\{content:"\+"/.test(css)&&/\.bk-fold\[open\]>summary::after\{content:"\\2212"\}/.test(css));
 chk("a display formula's style is the stylesheet's, not an inline one",/\.bk-math-display math\{display:block math\}/.test(css));
 
+/* ---- held against a host: every rule inside the article weighs an id, and the revert rule comes first ---- */
+const code=css.replace(/\/\*[\s\S]*?\*\//g,"");
+const selectors=[];
+for(const m of code.matchAll(/([^{}]*)\{/g)){const s=m[1].trim();if(!s||s.startsWith("@")) continue;
+  let depth=0,cur="";for(const ch of s){if(ch==="(") depth++;if(ch===")") depth--;if(ch===","&&!depth){selectors.push(cur.trim());cur="";}else cur+=ch;}selectors.push(cur.trim());}
+const loose=selectors.filter(s=>!/^:where\(/.test(s)&&!/^\.bk-(page|main)(?![\w-])/.test(s)&&!/^\.booklet:not\(#bk\)(?![\w-])/.test(s));
+chk("every rule inside the article starts .booklet:not(#bk), an id's weight ("+selectors.length+" selectors; the :where() tables and the standalone page's body aside)",!loose.length,loose.slice(0,5).join(" | "));
+const firstLook=code.search(/\.booklet:not\(#bk\) [^{]*\{(?!all:revert)/),guard=code.indexOf(".booklet:not(#bk) :where(:not(svg, svg *, math, math *)),");
+chk("the revert rule is there, for every element but the icons and formulas, and before every other rule inside the article",
+  guard>=0&&guard<firstLook&&/:where\(:not\(svg, svg \*, math, math \*\)\)::after\{all:revert\}/.test(code)&&/::marker\{all:revert\}/.test(code),guard+" vs "+firstLook);
+
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile stylesheet passed");process.exit(fails?1:0);
