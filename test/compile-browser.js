@@ -7,7 +7,9 @@
 //   - the page asks for nothing but its own stylesheet and fonts, every one of which loads, and logs no error;
 //   - the text is in the renderer's faces (Atkinson Hyperlegible, headings in Lexend);
 //   - a standalone page follows the device's dark setting and keeps the text's contrast, and a site page stays light;
-//   - the "On this page" list's links reach their headings.
+//   - the "On this page" list's links reach their headings;
+//   - with scripting ON, as a visitor's browser has it: an SVG whose script hides behind a namespace prefix runs when it is
+//     opened directly from a host, so the case is real, and the compiler copies no such file (a plain SVG it does copy).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/compile-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
@@ -37,6 +39,40 @@ for(const r of run.results){const name=r.rep.name;
 const lum=c=>{const m=/rgba?\(([\d.]+), ([\d.]+), ([\d.]+)/.exec(c);if(!m) return null;
   const f=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return 0.2126*f(+m[1])+0.7152*f(+m[2])+0.0722*f(+m[3]);};
 const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
+
+/* the SVG proof. Made-up pictures: a circle, and two ways of hiding a script behind a prefix (one bound to the SVG
+   namespace, one to XHTML's). Each source file is served from a made-up host, with the SVG media type a host gives it. */
+async function svgProof(b){
+  const dir=path.join(OUT,'svg-proof'),book=path.join(dir,'book'),out=path.join(dir,'out');fs.mkdirSync(book,{recursive:true});
+  const ran='document.documentElement.setAttribute("data-ran","yes")',circle='<circle cx="4" cy="4" r="3" fill="teal"/>';
+  const svgs={'prefixed.svg':['<svg xmlns="http://www.w3.org/2000/svg" xmlns:p="http://www.w3.org/2000/svg" viewBox="0 0 8 8">'+circle+'<p:script>'+ran+'</p:script></svg>',false],
+    'xhtml.svg':['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8">'+circle+'<x:script xmlns:x="http://www.w3.org/1999/xhtml">'+ran+'</x:script></svg>',false],
+    'plain.svg':['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8">'+circle+'</svg>',true]};
+  for(const [f,[svg]] of Object.entries(svgs)) fs.writeFileSync(path.join(book,f),svg);
+  fs.writeFileSync(path.join(book,'circles.booklet.md'),'---\nbooklet: "'+run.format+'"\nid: test/circles\ntitle: Circles\nlang: en\n---\n\n# Circles\n\nA made-up page of three circles.\n\n'
+    +Object.keys(svgs).map(f=>'![A circle, '+f+']('+f+')').join('\n\n')+'\n');
+  const C2=C.compile([{file:path.join(book,'circles.booklet.md')}],{form:'standalone',renderer:HTML});C.write(C2,out,{force:true});
+  ok(C2.results[0].rep.ok,'svg proof: the page of circles compiles');
+  const roots={'/src/':book,'/out/':path.join(out,'circles')+'/','/booklet/':path.join(out,'booklet')+'/'};
+  const ctx=await b.newContext({javaScriptEnabled:true});
+  await ctx.route('http://host.test/**',route=>{const u=new URL(route.request().url()).pathname;
+    const k=Object.keys(roots).find(r=>u.startsWith(r));const f=k?path.join(roots[k],decodeURIComponent(u.slice(k.length))):null;
+    if(!f||!fs.existsSync(f)||!fs.statSync(f).isFile()) return route.fulfill({status:404,body:'not here'});
+    const type=f.endsWith('.svg')?'image/svg+xml':f.endsWith('.css')?'text/css':f.endsWith('.woff2')?'font/woff2':'text/html';
+    return route.fulfill({status:200,contentType:type,body:fs.readFileSync(f)});});
+  const p=await ctx.newPage();
+  for(const [f,[,copied]] of Object.entries(svgs)){
+    await p.goto('http://host.test/src/'+f);
+    const ranSrc=await p.evaluate(()=>document.documentElement.getAttribute('data-ran'));
+    const there=fs.existsSync(path.join(out,'circles',f));
+    if(copied){ok(there&&ranSrc===null,'svg proof: the plain '+f+' runs nothing and is copied');continue;}
+    ok(ranSrc==='yes','svg proof: '+f+' runs its script when opened directly, scripting on (the case is real)');
+    const res=await p.goto('http://host.test/out/'+f);
+    ok(!there&&res.status()===404,'svg proof: '+f+' is refused, so the host has no copy of it to serve');}
+  await p.goto('http://host.test/out/index.html');
+  const pg=await p.evaluate(()=>({ran:document.documentElement.getAttribute('data-ran'),imgs:[...document.querySelectorAll('article img')].map(i=>i.getAttribute('src'))}));
+  ok(pg.ran===null&&JSON.stringify(pg.imgs)==='["plain.svg"]','svg proof: the compiled page, scripting on, runs nothing and shows only the plain circle as a picture ('+pg.imgs.join(', ')+')');
+  await ctx.close();}
 
 (async()=>{
   const b=await chromium.launch();
@@ -88,6 +124,7 @@ const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return
       if(sums.length){const after=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,w:window.innerWidth}));
         ok(after.sw<=after.w,at+': no sideways scroll with every fold open');}}
     await ctx.close();}
+  await svgProof(b);
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'compile pages: all checks passed');
   process.exit(fails.length?1:0);

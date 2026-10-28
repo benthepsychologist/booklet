@@ -42,13 +42,35 @@ const NAME=/^[A-Za-z0-9][A-Za-z0-9._-]*$/;
    rewriting. Anything else is never read and never written as a src: the page shows its alt text and address. */
 
 /* An SVG is drawn as <img>, so inside the page it runs nothing. But the host serves the copy from its own site, where
-   opening the file directly would run whatever it holds. So an SVG that holds any of these is refused (never cleaned:
-   nothing is rewritten, so there is no cleaned markup for a browser to read differently). Numeric character references
-   are decoded first, so an entity cannot hide a word, and any other entity is refused. */
+   opening the file directly would run whatever it holds. So the compiler copies only an SVG it can read whole as a plain
+   picture, and refuses every other (never cleaned: nothing is rewritten, so there is no cleaned markup for a browser to
+   read differently). Two layers, and a file must pass both (the second runs first, as it names what it finds best):
+   - the markup is read tag by tag, and every element must be one of SVG_ELEMENTS, the elements that draw a picture, under
+     no namespace prefix (an XML prefix can name the SVG or XHTML namespace, so <s:script> is a script); the only
+     namespaces are SVG's (xmlns) and xlink's (xmlns:xlink), each with its own address; the only prefixed attributes are
+     xlink:href, xml:space and xml:lang; every href and src points inside the file (#id); no attribute is an event
+     handler; an animation may not change a link or a handler; and anything the reading cannot place (a processing
+     instruction past the XML declaration, a DOCTYPE with an internal subset, an unquoted value, a stray <) is refused.
+   - the whole text, comments included, is then searched for what could load or run something: a script or
+     foreignObject, an address with a scheme that runs or embeds (javascript:, vbscript:, data:, file:), a CSS url()
+     that leads outside the file, image-set(), @import, expression(), and any backslash (CSS can spell a word with one).
+   Numeric character references are decoded first, so an entity cannot hide a word, and any other entity is refused.
+   Inkscape's and Illustrator's own editing data is prefixed (sodipodi:, inkscape:), so such a file is refused until it
+   is saved as plain SVG. */
+const SVG_NS="http://www.w3.org/2000/svg",XLINK_NS="http://www.w3.org/1999/xlink";
+const SVG_ELEMENTS=new Set(["svg","g","defs","desc","title","metadata","symbol","use","switch","view","style",
+  "path","rect","circle","ellipse","line","polyline","polygon","text","tspan","textPath",
+  "marker","pattern","clipPath","mask","linearGradient","radialGradient","stop",
+  "filter","feBlend","feColorMatrix","feComponentTransfer","feComposite","feConvolveMatrix","feDiffuseLighting",
+  "feDisplacementMap","feDistantLight","feDropShadow","feFlood","feFuncA","feFuncB","feFuncG","feFuncR","feGaussianBlur",
+  "feMerge","feMergeNode","feMorphology","feOffset","fePointLight","feSpecularLighting","feSpotLight","feTile","feTurbulence",
+  "animate","animateMotion","animateTransform","set","mpath"]);
+const SVG_PREFIXED_OK=new Set(["xlink:href","xml:space","xml:lang"]);
 function svgProblem(bytes){
   const raw=Buffer.from(bytes).toString("utf8");
   if(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/.test(raw)) return "an entity other than the XML five";
-  const t=raw.replace(/&#x([0-9a-fA-F]+);/g,(m,h)=>safeChar(parseInt(h,16))).replace(/&#(\d+);/g,(m,d)=>safeChar(parseInt(d,10)));
+  const decode=v=>v.replace(/&#x([0-9a-fA-F]+);/g,(m,h)=>safeChar(parseInt(h,16))).replace(/&#(\d+);/g,(m,d)=>safeChar(parseInt(d,10)));
+  const t=decode(raw);
   const low=t.toLowerCase(),squeezed=low.replace(/[\u0000-\u0020\u007f-\u00a0]+/g,"");
   if(/<!doctype[^>]*\[/.test(low)||low.includes("<!entity")) return "a DOCTYPE with entities";
   if(low.includes("<?xml-stylesheet")) return "an outside stylesheet";
@@ -58,10 +80,42 @@ function svgProblem(bytes){
   if(/[\s"'/]on[a-z]+\s*=/.test(low)) return "an event attribute";
   if(/(?:javascript|vbscript|data|file):/.test(squeezed)) return "a javascript:, vbscript:, data: or file: address";
   if(low.includes("@import")||/expression\s*\(/.test(low)) return "an outside stylesheet";
+  if(t.includes("\\")) return "a backslash (CSS can spell a word with one)";
+  if(/image-set\s*\(/.test(low)) return "an image-set() (it loads images by address)";
   for(const m of low.matchAll(/(?:^|[\s"'/])(?:xlink:)?(?:href|src)\s*=\s*(["'])([\s\S]*?)\1/g)) if(!m[2].trim().startsWith("#")) return "an outside reference ("+clipWords(m[2])+")";
   if(/(?:^|[\s"'/])(?:xlink:)?(?:href|src)\s*=\s*[^\s"']/.test(low)) return "an unquoted reference";
   for(const m of low.matchAll(/url\(\s*(["']?)\s*([^)"']*)/g)) if(!m[2].startsWith("#")) return "an outside reference (url("+clipWords(m[2])+"))";
   if(/<(?:set|animate)\b[^>]*attributename\s*=\s*["']\s*(?:xlink:)?href/.test(low)) return "an animation that changes a link";
+  return svgMarkup(raw,decode);}
+/* the tag-by-tag reading: null when every piece of markup is one the compiler knows to be inert, else what it found */
+function svgMarkup(raw,decode){
+  const text=raw.replace(/^\uFEFF/,"");
+  const TAG=/<(\/?)([^\s\/>!?=<"']+)((?:\s+[^\s=\/>"'<]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>/y;
+  const ATTR=/([^\s=\/>"'<]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+  let i=0,first=true;
+  while(i<text.length){const lt=text.indexOf("<",i);if(lt<0) break;i=lt;
+    const at=(re)=>{re.lastIndex=i;const m=re.exec(text);return m&&m.index===i?m:null;};
+    let m;
+    if(text.startsWith("<!--",i)){const e=text.indexOf("-->",i+4);if(e<0) return "a comment that never closes";i=e+3;first=false;continue;}
+    if(text.startsWith("<![CDATA[",i)){const e=text.indexOf("]]>",i+9);if(e<0) return "a CDATA section that never closes";i=e+3;first=false;continue;}
+    if(text.startsWith("<?",i)){
+      if(first&&/^\s*$/.test(text.slice(0,i))&&(m=at(/<\?xml\s[^<>?]*\?>/y))){i+=m[0].length;first=false;continue;}
+      return "a processing instruction";}
+    if(/^<!doctype/i.test(text.slice(i,i+9))){if((m=at(/<!DOCTYPE[^<>\[\]]*>/y))){i+=m[0].length;first=false;continue;}return "a DOCTYPE with entities";}
+    if(!(m=at(TAG))) return "markup the compiler cannot read (at character "+i+")";
+    first=false;i+=m[0].length;
+    const name=m[2];
+    if(name.includes(":")) return "a prefixed element (<"+clipWords(name)+">: a prefix can name another namespace)";
+    if(!SVG_ELEMENTS.has(name)) return "an element that does not draw a picture (<"+clipWords(name)+">)";
+    if(m[1]) continue;
+    for(const a of m[3].matchAll(ATTR)){const an=a[1],v=decode(a[2]!=null?a[2]:a[3]),vt=v.trim(),vl=vt.toLowerCase();
+      if(v.includes("<")) return "markup the compiler cannot read (a < inside a value)";
+      if(an==="xmlns"){if(vt!==SVG_NS) return "a namespace other than SVG's ("+clipWords(vt)+")";continue;}
+      if(an.startsWith("xmlns:")){if(an!=="xmlns:xlink"||vt!==XLINK_NS) return "a namespace other than SVG's and xlink's ("+clipWords(an)+")";continue;}
+      if(an.includes(":")&&!SVG_PREFIXED_OK.has(an)) return "a prefixed attribute ("+clipWords(an)+")";
+      if(/^on/i.test(an)) return "an event attribute";
+      if(/^(?:xlink:)?(?:href|src)$/i.test(an)&&!vt.startsWith("#")) return "an outside reference ("+clipWords(vt)+")";
+      if(/^attributename$/i.test(an)&&(vl.includes("href")||vl.startsWith("on")||vl.includes(":"))) return "an animation that changes a link or a handler";}}
   return null;}
 const safeChar=n=>{try{return String.fromCodePoint(n);}catch(e){return "\uFFFD";}};
 const clipWords=s=>{s=String(s).trim();return s.length>40?s.slice(0,40)+"\u2026":s;};
