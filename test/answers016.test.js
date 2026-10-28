@@ -313,8 +313,9 @@ part("the linter",()=>{const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"answers01
  const at=(n,re,list)=>(list||r.errors).some(l=>new RegExp(": line "+n+": ").test(l)&&re.test(l));
  chk("each: names nothing, names itself, names no question in its activity, names a source of another kind: errors",
    at(14,/names nothing/)&&at(16,/names this question itself/)&&at(18,/names no question or widget in this activity/)&&at(20,/names a text question/),r.out);
- chk("a chain: one naming a follow-up, and a follow-up that is itself a source: errors",at(25,/itself asked for each pick/)&&at(22,/itself a source of another question/),r.out);
- chk("a follow-up placed before its source: a warning",at(9,/after this question; it should sit after its source/,r.warns)&&r.errors.length===6&&r.warns.length===1,r.out);
+ chk("a chain: the line naming a follow-up is an error, the each: a renderer drops; the follow-up it names, which keeps its own, is not",
+   at(25,/itself asked for each pick/)&&!at(22,/./)&&!at(22,/./,r.warns),r.out);
+ chk("a follow-up placed before its source: a warning",at(9,/after this question; it should sit after its source/,r.warns)&&r.errors.length===5&&r.warns.length===1,r.out);
  const e=lint(FM+`> [!activity|log repeat] Log
 
 > [!multi|a open earlier:+3] A

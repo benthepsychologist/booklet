@@ -976,13 +976,6 @@ def check_each_earlier(f, q_lines, act_keeps, widget_engines):
     for q in q_lines:
         if q["id"]:
             by_act.setdefault(q["seq"], {}).setdefault(q["id"], q)
-    named = set()
-    for q in q_lines:
-        s = q["set"].get("each")
-        if s is not None and s.strip() and q["id"] and s.strip() != q["id"]:
-            src = by_act.get(q["seq"], {}).get(s.strip())
-            if src is not None:
-                named.add(id(src))
     for q in q_lines:
         s = q["set"].get("each")
         if s is None:
@@ -998,9 +991,9 @@ def check_each_earlier(f, q_lines, act_keeps, widget_engines):
         elif src["kind"] not in EACH_SOURCES:
             err(f, f"{where}: `each:{s}` names a {src['kind']} question; only a choice, a multi or a widget can be a source")
         elif src["set"].get("each") is not None:
+            # a chain is an error on the line that names a follow-up, the `each:` a renderer drops (section 5); the follow-up
+            # it names keeps its own
             err(f, f"{where}: `each:{s}` names a question that is itself asked for each pick (line {src['n']}); one level only")
-        elif id(q) in named:
-            err(f, f"{where}: {qid!r} is asked for each pick and is itself a source of another question's `each:`; one level only")
         elif src["n"] > q["n"]:
             warn(f, f"{where}: `each:{s}` names a source on line {src['n']}, after this question; it should sit after its source")
     for q in q_lines:
