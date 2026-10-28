@@ -613,6 +613,23 @@ itself is never shown.
   are identified by position like a `choice`'s options, and a matrix's
   anchor numbers must not repeat. Give it a title that reads as the stem
   ("How sure are you of each topic?") and one short phrase per item.
+- **A question can be asked once for each pick of another,** with
+  `each:<id>` after its id: name a `choice`, a `multi` or a widget in the same
+  activity, and write the follow-up after it
+  (`> [!text|tool-why each:tools] What was it for?`). The reader answers it
+  once per pick, and its answer is kept as one pair per pick. One level only:
+  a follow-up is never itself a source. The reference renderer, `booklet.html`,
+  does not draw a follow-up yet: it shows its title and a line saying so, and
+  keeps any answers it already has.
+- **A reader's own words can come back.** In an activity that keeps entries
+  (`repeat`), a `choice` or `multi` with `open` offers the reader's own options
+  from earlier entries again, newest first, at most 12. `earlier:<n>` after the
+  id sets how many, written in digits (`earlier:0` offers none). On a `lines`
+  question, `earlier:<n>` offers earlier lines. In a body map (an
+  `svg-regions` widget), the words a reader wrote for a place come back under
+  every place, since a widget's words belong to the whole widget. The
+  reference renderer does neither of these two yet. A `grid-select` cell's
+  words and a `text` answer never come back.
 
 ---
 
@@ -692,7 +709,9 @@ between paragraphs for a new one. Section 4 says what a heading does.
 
   `from:` is required: an activity that is `repeat` or `repeat daily` (its
   kept entries, newest first), or one question's id (its answers).
-  `fields:`, `limit:` (the newest that many) and `empty:` are optional. Never point it at another
+  `fields:`, `limit:` (the newest that many, or `limit: 7 days` for the entries of the past 7 days, today and the 6 dates before it) and `empty:` are optional.
+  `summary: on` turns the kept entries into summary rows (a dates row, then one row per question with its average, lowest, highest, total or most-picked option; one named question gets a row per value), drawn by any `as:`, and a tracker that wants "how did the week go" writes `from:`, `limit: 7 days`, `summary: on` and `as: tiles`.
+  Any other value of `limit:` or `summary:` is an error. The reference renderer draws a span of days but does not draw summaries yet (it shows a line saying so), so write `summary: on` only when it was asked for. Never point it at another
   module, and never write anything else in the block. In Obsidian without a
   plugin it shows as a plain code block, so say in the prose above it what it
   will show.
@@ -960,7 +979,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 ## 10. Layout and look (optional)
 
 - **Rows.** `> [!row]` … `> [!row|end]` lays what is between them side by side when there is room: each heading at the shallowest level inside starts a cell. Use it for two or three short things that belong together (two tables, a question beside its note). Never inside another row, and never across a page break (`***`), an activity line or a module fence.
-- **Widget colours** are colour names: `"color": "warm"`, `"green"`, `"amber"`, `"slate"` or `"teal"`, never hex colours (they are no colour), so a widget reads in every theme.
+- **Widget colours** are colour names: `"color": "warm"` (red), `"green"`, `"amber"`, `"slate"`, `"teal"`, `"blue"` or `"purple"`, never hex colours (they are no colour), so a widget reads in every theme.
 - **A theme block** (`booklet theme`, one per file, outside any module, lines of `key: value`: `base`, `paper`, `ink`, `accent`, `good`, `warn`, `bad`, `font`, `density`, `style`) is only for a booklet that has a reason to look different. `style: teaching` (soft tiles with pictures, the default) or `style: briefing` (solid tiles with icons, for reading at a glance) is the booklet's look, and holds whatever colours the reader picks. Ask for none by default. Never put CSS in it; the linter reports any value that is not a hex colour or one of the listed words.
 
 ---
@@ -977,7 +996,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | --- | --- | --- |
 | no `lang:` | `front matter has no `lang:` — a v0.15 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
-| a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
+| a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`, `each:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
 | a kind the format does not define | `warn `sticker` is not a kind this format defines …` | use a kind from section 6, or leave the id and settings off for a plain reading callout |
 | region spelled wrong | `'fr-ca' is not spelled the way a tag is: lowercase language, uppercase region (es-AR)` | `fr-CA` |
@@ -998,7 +1017,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a `>` embed pointing at nothing | `![[#^x]] points at no block in this file` | fix the id, or add the fenced block |
 | an embed pointing at the wrong fence | `^x is not a widget block` | point the embed at the actual `booklet widget` fence |
 | a data block with no `^id`, a nested value, or no rows | `a data block needs a ^id` / `has a nested value in 'x'` / `holds no list of rows` | add the id; flatten the value; write `rows` |
-| a query with a bad `as:` or `limit:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number` | use one of the six views; a whole number from 1 |
+| a query with a bad `as:`, `limit:` or `summary:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number, or a number of days` / `must be `on`` | use one of the six views; a whole number from 1 or `7 days`; `summary: on` |
 | a query with a setting it does not take | `a query has no setting 'x' (it takes from, as, fields, …)` | use the listed keys; a warning `does not draw` means the view ignores that key |
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
 | a query view inside a callout that holds Markdown only (a note, any other kind but a group, or a group outside an activity) | `warn line N: a query view inside a callout (here a `[!note]`) is not yet supported: a renderer draws the `booklet query` block as code …` | put the query in a group in an activity, or in the activity's own text |

@@ -134,13 +134,18 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:"), "row": ("end",), "text": ("long",),
-    "lines": (), "scale": (), "matrix": (), "date": (), "menu": (), "hint": (), "solution": (),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:"), "row": ("end",), "text": ("long", "each:"),
+    "lines": ("each:", "earlier:"), "scale": ("each:",), "matrix": ("each:",), "date": ("each:",), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (), "tab": (),
-    "choice": ("open", "menu:"), "multi": ("open", "menu:"),
-    "number": ("min:", "max:", "step:"), "widget": ("readonly", "describe"),
+    "choice": ("open", "menu:", "each:", "earlier:"), "multi": ("open", "menu:", "each:", "earlier:"),
+    "number": ("min:", "max:", "step:", "each:"), "widget": ("readonly", "describe", "each:", "earlier:"),
 }
 NUMBER_SETTINGS = ("min", "max", "step")
+# `earlier:`'s value: a whole number in digits only (SPEC.md section 4); booklet.html's EARLIER_VALUE is the same, and
+# test/guard.test.js pins the two
+EARLIER_VALUE = r"[0-9]+"
+# the kinds a question asked for each pick (`each:`, SPEC.md section 5) can be asked of
+EACH_SOURCES = ("choice", "multi", "widget")
 # the kinds that take no id: their words are settings only
 NO_ID_KINDS = ("row", "notice", "manifest", "hint", "solution", "group", "diff", "law", "opinion")
 # Booklet's icon set: the names in art/icons/ (Lucide 1.48). GENERATED: `node test/art-sprite.js --write booklet.html` rewrites
@@ -168,7 +173,7 @@ ICON_NAMES = frozenset((
 # icons:end
 # the widget engines the renderer has
 ENGINES = ("svg-regions", "grid-select")
-COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal")
+COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal", "blue", "purple")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
 STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab"}
 # what a module's notice (`> [!notice]`) may say about itself
@@ -190,9 +195,9 @@ def callout_words(kind, s):
     return out
 
 
-# A query's fourteen keys, the six views, and which keys each view draws. A new key or view needs two
+# A query's fifteen keys, the six views, and which keys each view draws. A new key or view needs two
 # real pages that need it (SPEC.md, design rules for views). `from`, `as` and `empty` apply to every view.
-QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon")
+QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon", "summary")
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 VIEW_DRAWS = {
     "cards": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "link", "icon"),
@@ -202,7 +207,9 @@ VIEW_DRAWS = {
     "bars": ("label", "value", "tone", "limit"),
     "line": ("label", "value", "fields", "limit"),
 }
-QUERY_EVERY_VIEW = ("from", "as", "empty")
+QUERY_EVERY_VIEW = ("from", "as", "empty", "summary")
+# the fields a summary's rows carry (SPEC.md section 6), and the two roles that default to one of them
+SUMMARY_FIELDS = ("label", "count", "days", "average", "lowest", "highest", "total", "most", "value", "note")
 # the settings that name a field of the rows being drawn
 QUERY_FIELD_KEYS = ("group", "parent", "label", "value", "note", "badge", "tone", "link", "icon")
 
@@ -254,8 +261,10 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
         err(f, f"line {n}: a query belongs in an activity's prose")
     if "as" in s and s["as"].lower() not in QUERY_VIEWS:
         err(f, f"line {n}: the query's `as: {s['as']}` is not one of {', '.join(QUERY_VIEWS)}")
-    if "limit" in s and not re.fullmatch(r'[1-9][0-9]*', s["limit"]):
-        err(f, f"line {n}: the query's `limit: {s['limit']}` must be a positive whole number")
+    if "limit" in s and not re.fullmatch(r'[1-9][0-9]*([ \t]+days?)?', s["limit"]):
+        err(f, f"line {n}: the query's `limit: {s['limit']}` must be a positive whole number, or a number of days such as `7 days`")
+    if "summary" in s and s["summary"] != "on":
+        err(f, f"line {n}: the query's `summary: {s['summary']}` must be `on`")
     src_id = s.get("from", "")
     src_act, src_q, src_data, src_nums, src_rows = None, None, None, set(), []
     if not src_id:
@@ -285,7 +294,9 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             warn(f, f"line {n}: the query's default view, `{view}`, does not draw `{key}`")
     # cards over kept entries are titled by their date and list their questions: the roles that name a row's parts are not drawn there
     # (over a data block they are: `label` the title, `value` the figure, `note`, `badge`, `tone`)
-    if view == "cards" and src_act:
+    # (a summary's rows are not kept entries: their fields are the summary's own, below)
+    summarising = s.get("summary") == "on" and bool(src_act)
+    if view == "cards" and src_act and not summarising:
         for key in ("label", "value", "note", "badge", "tone"):
             if key in s:
                 warn(f, f"line {n}: the query's `{key}:` is not drawn on cards over kept entries (each card is titled by its date and lists its questions); use `as: list` or `as: table` to draw it")
@@ -293,10 +304,17 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     names = None
     if src_data is not None:
         names = src_data
+    elif src_act and summarising:
+        # summary rows (SPEC.md section 6) carry the statistics as named fields, and `value` and `note` are their default roles
+        names = set(SUMMARY_FIELDS)
+        if "group" in s:
+            warn(f, f"line {n}: the query's `group: {s['group']}` is ignored: summary rows have nothing to group by")
     elif src_act:
         names = {q for q, a in q_owner.items() if a == src_act and (src_q is None or q == src_q)} | {"date"}
     if names is not None:
         for key in QUERY_FIELD_KEYS:
+            if key == "group" and summarising:
+                continue
             if key in s and key not in ignored and s[key] not in names:
                 warn(f, f"line {n}: the query's `{key}: {s[key]}` names a field the rows never carry")
         if src_data is not None and "fields" in s and "fields" not in ignored:
@@ -339,6 +357,13 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
                     warn(f, f"line {n}: the query's `as: {view}` has no number in the field {name!r}, so it draws nothing")
                 elif names and name not in names and name == "value" and "value" not in s and "fields" not in s:
                     warn(f, f"line {n}: the query's `as: {view}` reads the field 'value', which the rows never carry (name the field with `value:`)")
+    # a span of days and a summary read kept entries: on a data block, or on one question of an activity that keeps none, they are ignored
+    spanning = bool(re.fullmatch(r'[1-9][0-9]*[ \t]+days?', s.get("limit", "")))
+    summing = s.get("summary") == "on"
+    if (spanning or summing) and (src_data is not None or (src_q is not None and not act_info[src_act][1])):
+        what = " and ".join(([f"`limit: {s['limit']}`"] if spanning else []) + (["`summary: on`"] if summing else []))
+        one = spanning != summing
+        warn(f, f"line {n}: the query's {what} {'is' if one else 'are'} ignored: {'it reads' if one else 'they read'} kept entries, and `from: {src_id}` is not an activity that keeps them")
     if src_act:
         src_mod, keeps = act_info[src_act]
         # a file with no module fence is one module
@@ -376,6 +401,8 @@ TH_BASE = {
         "tone-warm-deep": "#a3405b", "tone-green": "#e1f1e7", "tone-green-deep": "#2d7751",
         "tone-amber": "#f8ebd0", "tone-amber-deep": "#8b5f10", "tone-slate": "#e6e9ec",
         "tone-slate-deep": "#3e4e59", "tone-teal": "#e4efef", "tone-teal-deep": "#15464f",
+        "tone-blue": "#e3eef7", "tone-blue-deep": "#2f6596",
+        "tone-purple": "#ece8f6", "tone-purple-deep": "#6453a6",
         "h-sky": "#e3eef7", "h-sky-vivid": "#3f7fb5", "h-sky-solid": "#2f6fa8",
         "h-sky-deep": "#2f6596", "h-rose": "#f9e3e8", "h-rose-vivid": "#bf5470",
         "h-rose-solid": "#b4475f", "h-rose-deep": "#a3405b", "h-sage": "#e2f0e7",
@@ -396,6 +423,8 @@ TH_BASE = {
         "tone-warm-deep": "#a3405b", "tone-green": "#e1f1e7", "tone-green-deep": "#2d7751",
         "tone-amber": "#f8ebd0", "tone-amber-deep": "#8b5f10", "tone-slate": "#eceff1",
         "tone-slate-deep": "#3e4e59", "tone-teal": "#e6f0f0", "tone-teal-deep": "#15464f",
+        "tone-blue": "#e8f1f9", "tone-blue-deep": "#2f6596",
+        "tone-purple": "#efecf8", "tone-purple-deep": "#6453a6",
         "h-sky": "#e8f1f9", "h-sky-vivid": "#3f7fb5", "h-sky-solid": "#2f6fa8",
         "h-sky-deep": "#2f6596", "h-rose": "#fae8ec", "h-rose-vivid": "#bf5470",
         "h-rose-solid": "#b4475f", "h-rose-deep": "#a3405b", "h-sage": "#e6f2ea",
@@ -416,6 +445,8 @@ TH_BASE = {
         "tone-warm-deep": "#ec93aa", "tone-green": "#172e24", "tone-green-deep": "#8cc8a5",
         "tone-amber": "#31281a", "tone-amber-deep": "#f0ba55", "tone-slate": "#232d33",
         "tone-slate-deep": "#a9bbc6", "tone-teal": "#163139", "tone-teal-deep": "#7cc0cb",
+        "tone-blue": "#172a3b", "tone-blue-deep": "#88b8e4",
+        "tone-purple": "#25223a", "tone-purple-deep": "#b3a5ee",
         "h-sky": "#172a3b", "h-sky-vivid": "#88b8e4", "h-sky-solid": "#3a78b0",
         "h-sky-deep": "#88b8e4", "h-rose": "#381f28", "h-rose-vivid": "#ec93aa",
         "h-rose-solid": "#b24a64", "h-rose-deep": "#ec93aa", "h-sage": "#172e24",
@@ -436,6 +467,8 @@ TH_BASE = {
         "tone-warm-deep": "#7a0f2e", "tone-green": "#e8f5e0", "tone-green-deep": "#1b4d0e",
         "tone-amber": "#fff3c4", "tone-amber-deep": "#5c4300", "tone-slate": "#e6eaee",
         "tone-slate-deep": "#243746", "tone-teal": "#ddf2f0", "tone-teal-deep": "#004d45",
+        "tone-blue": "#e6f0fa", "tone-blue-deep": "#003a70",
+        "tone-purple": "#efeafb", "tone-purple-deep": "#3a2380",
         "h-sky": "#e6f0fa", "h-sky-vivid": "#003a70", "h-sky-solid": "#003a70",
         "h-sky-deep": "#003a70", "h-rose": "#ffe9ee", "h-rose-vivid": "#7a0f2e",
         "h-rose-solid": "#7a0f2e", "h-rose-deep": "#7a0f2e", "h-sage": "#e8f5e0",
@@ -452,7 +485,7 @@ TH_PAIRS = [("ink", "paper"), ("ink", "paper-deep"), ("muted", "paper"), ("accen
             ("ink", "field"), ("reader", "field"), ("ink", "surface"), ("accent", "surface"), ("muted", "surface"),
             ("warn", "paper"), ("on-ink", "ink"), ("on-ink", "muted"), ("ink", "accent-soft"), ("ink", "mark"),
             ("warn", "warn-soft")]
-for _t in ("warm", "green", "amber", "slate", "teal"):
+for _t in COLOUR_NAMES:
     TH_PAIRS += [("tone-" + _t + "-deep", "tone-" + _t), ("ink", "tone-" + _t)]
 # the views: a plain pill, a toned value on a card, a quiet note and a label on a toned tile
 TH_PAIRS += [("reader", "paper-deep"), ("muted", "paper-deep")]
@@ -508,7 +541,8 @@ def _th_build(B, use):
     c = lambda k: _th_rgb(use[k]) if k in use else None
     P, I, A = c("paper") or g("paper"), c("ink") or g("ink"), c("accent") or g("accent")
     deep = {"green": c("good") or g("tone-green-deep"), "amber": c("warn") or g("tone-amber-deep"),
-            "warm": c("bad") or g("tone-warm-deep"), "slate": g("tone-slate-deep"), "teal": g("tone-teal-deep")}
+            "warm": c("bad") or g("tone-warm-deep"), "slate": g("tone-slate-deep"), "teal": g("tone-teal-deep"),
+            "blue": g("tone-blue-deep"), "purple": g("tone-purple-deep")}
     dark = _th_lum(P) < _th_lum(I)
     pi = "paper" in use or "ink" in use
     o = {}
@@ -539,7 +573,7 @@ def _th_build(B, use):
     if "bad" in use or pi:
         o["warn"] = deep["warm"]
         o["warn-soft"] = _th_tint(P, deep["warm"], .2 if dark else .12, [deep["warm"]])
-    for t in ("warm", "green", "amber", "slate", "teal"):
+    for t in COLOUR_NAMES:
         own = (t == "green" and "good" in use) or (t == "amber" and "warn" in use) or (t == "warm" and "bad" in use)
         if own:
             o["tone-" + t + "-deep"] = deep[t]
@@ -911,6 +945,8 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: a {kind} line takes no `{key}:` setting ({said})")
         elif key in NUMBER_SETTINGS and not re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", val.strip()):
             err(f, f"line {n}: `{key}:{val}` must be a number")
+        elif key == "earlier" and not re.fullmatch(EARLIER_VALUE, val):
+            err(f, f"line {n}: `earlier:{val}` must be a whole number written in digits; a renderer ignores it and offers its default")
         elif key == "icon" and "end" in w["flags"]:
             err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
         elif key == "icon" and val not in ICON_NAMES:
@@ -924,6 +960,59 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
     if "daily" in w["flags"] and "repeat" not in w["flags"]:
         err(f, f"line {n}: `daily` needs `repeat` (write `repeat daily`)")
+
+
+def check_each_earlier(f, q_lines, act_keeps, widget_engines):
+    """`each:` (SPEC.md section 5, "A question asked for each pick") and where `earlier:` can offer nothing (section 5, "Words the
+    reader wrote before"). A question's source is a question or widget in its own activity."""
+    def engine(q):
+        if q["kind"] != "widget" or not q["ref"]:
+            return None
+        own = widget_engines.get(q["mod"], {})
+        return own.get(q["ref"]) if q["ref"] in own else widget_engines.get(None, {}).get(q["ref"])
+    by_act = {}
+    for q in q_lines:
+        if q["id"]:
+            by_act.setdefault(q["seq"], {}).setdefault(q["id"], q)
+    named = set()
+    for q in q_lines:
+        s = q["set"].get("each")
+        if s is not None and s.strip() and q["id"] and s.strip() != q["id"]:
+            src = by_act.get(q["seq"], {}).get(s.strip())
+            if src is not None:
+                named.add(id(src))
+    for q in q_lines:
+        s = q["set"].get("each")
+        if s is None:
+            continue
+        s, qid, where = s.strip(), q["id"] or "?", f"line {q['n']}"
+        src = by_act.get(q["seq"], {}).get(s) if s else None
+        if not s:
+            err(f, f"{where}: `each:` names nothing; write the id of a choice, a multi or a widget in this activity")
+        elif s == qid:
+            err(f, f"{where}: `each:{s}` names this question itself; a question is asked for each pick of another")
+        elif src is None:
+            err(f, f"{where}: `each:{s}` names no question or widget in this activity; a renderer ignores the setting")
+        elif src["kind"] not in EACH_SOURCES:
+            err(f, f"{where}: `each:{s}` names a {src['kind']} question; only a choice, a multi or a widget can be a source")
+        elif src["set"].get("each") is not None:
+            err(f, f"{where}: `each:{s}` names a question that is itself asked for each pick (line {src['n']}); one level only")
+        elif id(q) in named:
+            err(f, f"{where}: {qid!r} is asked for each pick and is itself a source of another question's `each:`; one level only")
+        elif src["n"] > q["n"]:
+            warn(f, f"{where}: `each:{s}` names a source on line {src['n']}, after this question; it should sit after its source")
+    for q in q_lines:
+        if q["set"].get("earlier") is None:
+            continue
+        where, eng = f"line {q['n']}", engine(q)
+        if q["kind"] in ("choice", "multi") and "open" not in q["flags"]:
+            warn(f, f"{where}: `earlier:` offers own options again, and this {q['kind']} has no `open`, so it offers nothing")
+        elif q["kind"] == "widget" and "readonly" in q["flags"]:
+            warn(f, f"{where}: `earlier:` on a `readonly` widget offers nothing: nothing is written there")
+        elif q["kind"] == "widget" and eng == "grid-select":
+            warn(f, f"{where}: `earlier:` does nothing on a grid-select widget: a word written in a cell is not offered again")
+        elif not act_keeps.get(q["seq"], False) and not (eng == "svg-regions" or q["set"].get("each") is not None):
+            warn(f, f"{where}: `earlier:` offers words from kept entries, and this activity keeps none (it is not `repeat`), so it offers nothing")
 
 
 def id_word(s):
@@ -988,6 +1077,9 @@ def check_format(f, text, fm):
     mod_ids = {}             # module ids -> line
     note_defs = {}           # scope -> {footnote id: line}
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
+    # every question line, for `each:` and `earlier:` (checked once the file is read); `act_seq` numbers the activity lines,
+    # so two modules' activities with one id stay apart; `act_keeps` says whether each keeps entries
+    q_lines, act_seq, act_keeps, widget_engines = [], 0, {0: False}, {}
     loose_questions = []   # questions before any activity line
     early_questions = []   # the same, with their line and kind, before the file's first module or activity line
     open_mod, open_line, section, seen_activity = None, 0, "content", False
@@ -1203,6 +1295,8 @@ def check_format(f, text, fm):
                 if what == "widget":
                     if not bid:
                         err(f, f"line {n}: a widget block needs a ^id on the line after it")
+                    if isinstance(obj, dict) and bid:
+                        widget_engines.setdefault(scope_mod(), {})[bid] = obj.get("engine")
                     if isinstance(obj, dict):
                         if not obj.get("engine"):
                             err(f, f"line {n}: the widget ^{bid} names no `engine`")
@@ -1370,6 +1464,8 @@ def check_format(f, text, fm):
                         err(f, f"{where}: `tab:{tab_set}` names no tab of " + (f"the module {open_mod!r}" if open_mod else "a module (this activity is outside every module)")
                                + "; a module's tabs are `> [!tab]` lines in its opening, before its first activity. A renderer puts the activity in the first tab")
                     cur_act = w["id"] or "(an activity with no id)"
+                    act_seq += 1
+                    act_keeps[act_seq] = "repeat" in w["flags"] or "daily" in w["flags"]
                     if not w["id"]:
                         err(f, f"{where}: an activity line needs an id; write `> [!activity|my-id] Title`. A kept entry is stored under the activity's "
                                f"id, so an id the renderer makes up from the title is lost the day the title changes, orphaning the entries")
@@ -1398,7 +1494,7 @@ def check_format(f, text, fm):
                             early_questions.append((n, kind))
                     if not w["id"]:
                         err(f, f"{where}: this {kind} question has no id, so its answer would have nowhere to go; write `> [!{kind}|my-id] Title`")
-                    bad_q = False
+                    bad_q, e = False, None
                     if kind == "widget":
                         body = lines[i + 1:body_end(lines, i)]
                         e = re.search(r'!\[\[[^\]#|]*#\^([A-Za-z0-9-]+)', "\n".join(body))
@@ -1406,6 +1502,8 @@ def check_format(f, text, fm):
                             embeds.append((n, e.group(1), open_mod))
                         else:
                             err(f, f"{where}: the widget {w['id']!r} names no data block (write ![[#^its-id]] under the line)")
+                    q_lines.append({"n": n, "id": w["id"], "kind": kind, "set": w["set"], "flags": w["flags"], "mod": open_mod, "seq": act_seq,
+                                    "ref": e.group(1) if e else None})
                     after_body = body_end(lines, i)        # a list is read from here: the renderer takes the body first
                     if kind == "matrix" and w["id"]:
                         items, after = list_below(lines, after_body, BULLET)
@@ -1567,6 +1665,7 @@ def check_format(f, text, fm):
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")
         elif not found.lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
+    check_each_earlier(f, q_lines, act_keeps, widget_engines)
     # A file with no activity line and no module line is one activity (SPEC section 3),
     # so its queries and questions belong to that one activity.
     if seen_activity or any_module:

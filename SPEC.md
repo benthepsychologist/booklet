@@ -171,7 +171,7 @@ The words after the id are the activity's **settings**:
 | --- | --- |
 | *(none)* | answered once, edited in place |
 | `repeat` | each completion is kept as a dated entry, with a history |
-| `repeat daily` | one kept entry per day; completing again replaces today's |
+| `repeat daily` | one kept entry per day (a day: section 8); completing again replaces today's |
 
 `hidden` may follow either (kept in the file, not offered). `daily` needs `repeat`.
 
@@ -324,13 +324,17 @@ from: due-soon
 | `module` | `end`, `icon:` |
 | `activity` | `repeat`, `repeat daily`, `hidden`, `icon:`, `parent:`, `status:` (only `status:off`), `tab:<id>` |
 | `row` | `end` |
-| `text` | `long` |
-| `lines`, `scale`, `matrix`, `date`, `menu`, `hint`, `solution`, `data`, `records`, `manifest`, `notice`, `group`, `diff`, `law`, `opinion`, `tab` | none |
-| `choice`, `multi` | `open`, `menu:<id>` |
-| `number` | `min:`, `max:`, `step:` (numbers) |
-| `widget` | `readonly`, `describe` |
+| `text` | `long`, `each:<id>` |
+| `lines` | `each:<id>`, `earlier:<n>` |
+| `scale`, `matrix`, `date` | `each:<id>` |
+| `menu`, `hint`, `solution`, `data`, `records`, `manifest`, `notice`, `group`, `diff`, `law`, `opinion`, `tab` | none |
+| `choice`, `multi` | `open`, `menu:<id>`, `each:<id>`, `earlier:<n>` |
+| `number` | `min:`, `max:`, `step:` (numbers), `each:<id>` |
+| `widget` | `readonly`, `describe`, `each:<id>`, `earlier:<n>` |
 
 `icon:` takes an icon name, `parent:` an activity id, `status:` the one value `off`, and `tab:` the id of one of its module's tabs (section 3). None is written on a module's end line.
+
+`each:` names a question or widget in the same activity, whose picks the question is asked for (section 5, "A question asked for each pick"). `earlier:` takes a whole number, written in digits only (`[0-9]+`): how many earlier words a question offers (section 5, "Words the reader wrote before"). Any other value is ignored and reported, and the question offers its default.
 
 **Unknown kinds.** A line with an id or settings whose kind is not in this table is an **unknown kind**. A renderer draws it as a callout, with a quiet line under its title saying that it does not know the kind, and reports it; the linter warns. A line with no id and no settings is a reading callout of whatever kind its author chose (`note`, `tip`, Booklet's `diff`, and so on, section 6), drawn with no notice. `group`, `diff`, `law` and `opinion`, Booklet's own reading kinds (section 6), are in the table above and take no settings. A line that starts `> [!` but cannot be read as a Booklet line is reported, and is read as text.
 
@@ -370,7 +374,7 @@ In Obsidian, an unknown kind renders as a note-style callout with the title, so 
 ```
 
 - `choice` takes one answer, `multi` any number. `open` lets the reader add options of their own.
-- **The reader's own option.** With `open`, a field and an Add button sit under the options. An option the reader adds is stored in the answer as the words they wrote, a string, in the place a position would be: a `choice` holds the position or the string, a `multi` a list of positions and strings. Text equal to a listed option (ignoring case and spaces) presses that option instead; an own option is never added twice, and nothing is ever written into the file's list of options. A renderer should offer again, in an activity that keeps entries, the own options the reader added to that question in earlier kept entries, as ordinary unpressed options after the listed ones. A shared menu (`menu:id`) with `open` behaves the same. Words typed in the field and not yet added are added, exactly as Enter or Add would add them, when the field is left and when the page is closed or reloaded; on a `choice` they replace the pick.
+- **The reader's own option.** With `open`, a field and an Add button sit under the options. An option the reader adds is stored in the answer as the words they wrote, a string, in the place a position would be: a `choice` holds the position or the string, a `multi` a list of positions and strings. Text equal to a listed option (ignoring case, and white space at either end) presses that option instead; an own option is never added twice, and nothing is ever written into the file's list of options. The own options the reader added before are offered again (below, "Words the reader wrote before"). A shared menu (`menu:id`) with `open` behaves the same. Words typed in the field and not yet added are added, exactly as Enter or Add would add them, when the field is left and when the page is closed or reloaded; on a `choice` they replace the pick.
 - **`[x]` marks a correct option**, for study booklets. A worksheet with no right answer leaves every box `[ ]`. A renderer shows the reader whether they were right once they have answered: for a `choice`, as soon as they pick, the picked option is marked right or not, and the correct one is marked as the answer; for a `multi`, a Check button marks each option picked and right, picked and not right, or right and missed. Nothing is scored and nothing is stored: the answer is recorded as usual and the file never says whether it was right. An own option (`open`) is neither right nor wrong. A `choice` with more than one `[x]` has the first as its answer. **The correct option is visible to anyone who opens the file as text.** In Obsidian's Reading view, a click on a checkbox rewrites `[ ]` to `[x]` in the file — a real behavior, and the accepted trade-off: a booklet's own reader answers it in Booklet, never by clicking a checkbox in an Obsidian note, so the answer key is never at risk from ordinary use.
 - **A reply for each option.** A bullet nested under an option is that option's **reply**. It is nested the way Markdown, and so Obsidian, nests it: written at least as far in as the option's own text starts (two spaces under `- [ ]`). A bullet indented less than that, one space for instance, is not a reply; it ends the option list.
 
@@ -445,6 +449,59 @@ A list used by several questions is written once, in the module whose questions 
 
 A widget the reader operates (the body map, a grid of cells) is a `widget` line whose body embeds the widget's data block (section 7). What the engine records is stored under the widget's id.
 
+### A question asked for each pick
+
+`each:<id>` on a question line names another question or widget in the same activity, its **source**. The question is asked once for each pick in the source's answer, and its answer holds one answer per pick.
+
+```markdown
+> [!multi|tools] Which tools did you use today?
+> - [ ] Hammer
+> - [ ] Saw
+> - [ ] Drill
+
+> [!multi|tool-where each:tools menu:rooms] Where did you use it?
+```
+
+With Saw and Drill picked, the reader sees the question once, then its rooms under each tool.
+
+- **A source is a `choice`, a `multi` or a widget.** Their picks are identities that are added and taken away but never edited. The picks: a `choice`'s one answer; each member of a `multi`'s answer, an option's position or the reader's own option; each id in a `grid-select`'s answer, an item id or the reader's own `x|cell|word`; each region an `svg-regions` marked, by its `id`.
+- **One level only.** A question with `each:` cannot be a source, and a source cannot itself have `each:`.
+- **What does not hold.** An `each:` that names nothing in its activity, names the question itself, names a question of another kind, or names a question that has `each:` of its own, is an error in the linter, and a renderer ignores the setting and reports it, as for any setting a line cannot take (section 4), and draws the question as its kind.
+- **Where it is drawn:** where it is written, one copy per pick, in the order the source's answer holds them (the order they were picked), so a new pick adds a copy at the end and nothing already on screen moves. Nothing is drawn while nothing is picked.
+- **The heading.** The question's title, help text, hint and solution once, then each pick as a subheading in its own words: the option's words, the item's or region's label, or the reader's own words (for `x|cell|word`, the word).
+- **Everything else the question takes applies to every copy:** its options, its marks (`[x]`), `open`, `menu:`, `min:`, `max:`, `step:`, `earlier:`. The reader's own options added under one pick are offered under every pick, and again in later entries (below).
+- **Any question kind or widget can follow.**
+- **It should sit after its source,** in the same activity. One placed before its source is drawn the same way, and the linter warns about it. Several questions may follow one source, each drawn where it is written.
+- **What is stored: a list of pairs,** `{ "pick": <the pick exactly as the source stores it>, "a": <the answer its kind stores> }`, where any answer is stored (section 8):
+
+  ```json
+  "tool-where": [ { "pick": 2, "a": [1, 3] }, { "pick": 3, "a": [2] } ]
+  ```
+
+  A pick keeps its type (a position is a number, the reader's own option a string), so a position `3` and an own option `"3"` stay apart, and so do an item id `warm` and an own word `x|soothing|warm`. A pick with no answer has no pair. The order of the pairs means nothing; views use the source's order.
+- **A pick taken back.** Nothing is dropped. If the reader unpicks a tool, its pair stays as written and is not drawn; it comes back if the tool is picked again. A kept entry keeps it too. Every view shows and counts only the pairs whose pick the source holds in the same record (section 6), and a draft whose only answers are pairs for picks taken back counts as empty. A pick whose option or item the design has since removed keeps its pair; its copy is headed as the source shows that pick.
+
+**The reference renderer does not do this yet:** it draws a question with `each:` as its title and a line saying it is not yet supported, and keeps its answer as written through opening, saving and Finalize. Its views show the pairs as section 6 says.
+
+### Words the reader wrote before
+
+**Some of a reader's own words come back.** In an activity that keeps entries, a renderer should offer these again, as unpressed buttons:
+
+- **an own option** (`open`), after the question's options, and under every copy of a follow-up (`each:`);
+- **a word written for a place in an `svg-regions` widget**, after the widget's words, under every place: a widget's words belong to the whole widget, not to one place;
+- **an earlier line of a `lines` question**, under its lines, only when its line sets `earlier:<n>`.
+
+A word written in a `grid-select` cell and a `text` answer are not offered again.
+
+- **What an own word is:** a string in a `choice` or `multi` answer (under `each:`, in a pair's answer); a line of a `lines` answer with something other than white space in it; a string in an `svg-regions` row's `s` that is not a word id in the widget's `senses` and does not start with one of its `senses` group ids followed by a colon. Words are read only from an answer in its kind's shape (section 8). A word holding a comma (possible only by hand) is not offered in a widget, whose field splits words at commas.
+- **Where they come from:** the activity's kept entries; and, while an answer is being written, its other places (a body widget's other places, a follow-up's other copies). No other draft. In a `repeat daily` activity, today's kept entry, which the draft will replace, is not a source. Under `each:`, only the pairs whose pick the source holds in the same record give words, as every view reads them; a pair whose pick's option the design has since removed still gives words. A row for a place the widget no longer lists still gives words, since they are the widget's.
+- **How many, and in what order:** newest first: the answer being written, then the kept entries by the time in their `ts`; within one answer, in the source's order under `each:`, in the widget's order of places for `svg-regions` (rows for places it no longer lists after the rest), and within one place in the order written. At most 12 at each place, or the number the question's line sets with `earlier:`; `earlier:0` offers none. A `lines` question offers none unless its line sets `earlier:`.
+- **Each word once:** a word is offered once at each place, and not where it is listed there or already in the answer at that place (that place's row, that copy's answer). Own options and lines are compared as an own option is compared with a listed one (above); a widget's words as section 7 compares them.
+- **Taking one:** a tap adds the word as the same words typed and added there would be: to the answer, to that place's row, or as a new line, filling the empty line at the end. It never changes what the reader has typed, and Enter never takes an offered word. Nothing else is stored, and the entries a word came from are not changed.
+- **Drawing:** a renderer draws a body widget's and a `lines` question's earlier words as a group of their own, named in the renderer's own words ("Earlier words"). It may draw a long word shortened to two lines, with its full words as the button's accessible name; a tap stores the full words.
+
+**The reference renderer does not do this yet** for a body widget's words or a `lines` question's earlier lines: it offers neither. It offers own options again as this part says, `earlier:` included.
+
 ### The kinds, in one table
 
 | kind | answer stored | under the line |
@@ -458,6 +515,8 @@ A widget the reader operates (the body map, a grid of cells) is a `widget` line 
 | `date` | `YYYY-MM-DD` | nothing |
 | `matrix` | one anchor number per item, by position | a bulleted list, then a numbered list |
 | `widget` | whatever its engine records | an embed of the data block |
+
+A question asked for each pick (`each:`, above) stores a list of pairs instead, each pair holding one answer of its kind.
 
 **How the vocabulary grows.** A new question kind is a new kind word, a documented shape for what follows the line, and an engine in the renderer. The grammar never changes. A renderer that meets a kind it doesn't know shows the line as a callout and what follows as lists, and says so, instead of failing (section 4, "Unknown kinds").
 
@@ -582,7 +641,8 @@ empty: Nothing logged yet.
 
 - `from:` (required) is an activity id or a question id in the same module. An activity must keep entries (`repeat` or `repeat daily`); the query shows its kept entries, newest first, each with its date and answers. A question shows that question's answers: each kept answer with its date if its activity keeps entries, or its one answer if not.
 - `fields:` (optional, with an activity) names the questions to show, comma-separated, in that order. Without it, every question is shown.
-- `limit:` (optional) shows only that many of the most recent entries.
+- `limit:` (optional) shows only that many of the most recent entries; written as a span of days, `limit: 7 days`, it shows the entries of the past 7 days ("A span of days, and summaries", below).
+- `summary:` (optional) takes one value, `on`, and turns the kept entries into summary rows (below).
 - `empty:` (optional) is what shows while nothing is kept. Without it, the renderer shows its own short line.
 - It reads kept entries and given answers only, never a draft in progress.
 - A query never reads across modules. One whose `from:` names nothing, or something in another module, cannot be drawn: the linter reports an error, and a renderer draws nothing for it and reports it. The file still opens. The activities outside any module fence are one module for this rule.
@@ -614,7 +674,7 @@ group: why
 
 So rows whose fields are already called `label`, `value` and so on need only `from:` and `as:`. A line such as `label: bucket` points a role at a field with another name. A role no row carries is simply not drawn.
 
-**Tone.** A view's `tone` is `good`, `warn` or `bad`, exactly as written. A theme's `good`, `warn` and `bad` keys (section 7) set those same three colours, which a widget names `green`, `amber` and `warm` (section 7). A widget may also use the colour names `slate` and `teal`, which have no tone.
+**Tone.** A view's `tone` is `good`, `warn` or `bad`, exactly as written. A theme's `good`, `warn` and `bad` keys (section 7) set those same three colours, which a widget names `green`, `amber` and `warm` (section 7). A widget may also use the colour names `slate`, `teal`, `blue` and `purple`, which have no tone.
 
 **Link and icon.** A `link` value is a link target written as prose writes one: `#Heading`, `week-2.booklet.md` or a web address. A view makes the row's label lead there, and a target it cannot follow is plain text. An `icon` value is an icon name (section 3); a name that is not one is not drawn. Both stay plain text in the data: a target is followed, never read as Markdown.
 
@@ -631,7 +691,7 @@ So rows whose fields are already called `label`, `value` and so on need only `fr
 - A table shows the fields its data block declares, or else the keys of the first row. A list's extras, without `fields:`, never include the `id` field, the `group` field or the `parent` field.
 - `label:` falls back to the first field only when the query gives no `label:` at all. A `label:` that names a field no row carries draws no label (the linter warns).
 - `group:` names a field; rows that share its value are drawn together under that value, in the order the values first appear, with a count.
-- `limit:` is a positive whole number (anything else is ignored and reported). It draws only the first rows, that many, and it is applied before grouping and before anything the reader filters. For kept entries those are the newest.
+- `limit:` is a positive whole number, or a positive whole number of days such as `7 days` (anything else is ignored and reported; the linter reports an error). A number draws only the first rows, that many, and it is applied before grouping and before anything the reader filters. For kept entries those are the newest. A number of days keeps the entries of a span instead ("A span of days, and summaries", below).
 - `from:` naming a single question makes that question the value.
 - With `fields:` on kept entries, an entry that answers none of the named questions is not shown.
 - `parent:` names the field that holds the `id` of the row this row sits under. A list whose rows carry it is drawn nested: each row under its parent, opened and closed by the reader. The default field is `parent`, so rows with `id` and `parent` fields nest with no key at all. A row whose parent is not among the rows is drawn at the top. A row that is its own ancestor (a cycle) is drawn once, at the top. When two rows share an `id`, the first is used. `limit` counts top-level rows; `group` is not drawn on a nested list.
@@ -639,6 +699,8 @@ So rows whose fields are already called `label`, `value` and so on need only `fr
 - A `badge` that is a list is drawn as several pills.
 - **Tiles with no value are pills.** When no row has a value, there is no big figure to draw, and each tile is a short pill holding its label: a strip of them reads as a status line.
 - Every view also works on kept entries (`from:` an activity): each kept entry is a row, its questions are the fields, and its date is the field `date`. Over a data block, `cards` draws one card per row and reads the roles as every other view does: the `label` is its title (and where the row's `link` leads), the `note` the line under it, the `badge` pills, the `value` its figure, the `tone` its colour, the `icon` its picture, and every field that plays no role is a line under it, named by its label, as on a kept entry's card (`fields:` picks them and their order; the `id` and group fields are never lines). `group:` draws the cards under group headings. Over kept entries a card is titled by its date and its lines are the questions: of the roles, kept-entry cards draw `link` and `icon`, and the view takes `fields`, `limit` and `group`. **The reference renderer does not do this yet:** `label`, `value`, `note`, `badge` and `tone` on kept-entry cards are not drawn (the linter warns; `list` and `table` draw them).
+- **A question asked for each pick** (`each:`, section 5) is one field per pick, labelled "<title> · <pick's words>", in the source's order, for the picks its rows hold. That one rule covers a card's lines, a kept entry's card, a table's columns, a list's extras, a `line` view's lines and a summary's rows (below). `fields: tool-where` names all of those fields at once. A pair whose pick the source does not hold in the same record is not shown. A follow-up named alone in `from:` gives one row per pick and value. **The reference renderer does not do this yet:** for a follow-up named alone in `from:`, `table`, `list` and `cards` give one row per entry, with one field per pick, and `tiles`, `bars` and `line` draw only a line saying the view does not draw it yet.
+- **An answer whose shape is not its kind's** (section 8) is left out of its row, and a renderer says once, among the file's problems, that such answers are kept as written.
 - Values are plain text: nothing in a data block is read as Markdown or HTML.
 - A query that sets a key its view does not read is not an error; the linter says so.
 
@@ -673,6 +735,76 @@ A query that names a data block in another module, or an `as:` that is not one o
 3. A look that styling, density, or the shaping of rows by whatever wrote the file can give is never a new view or key.
 4. A reader may open, close, sort and filter what is on screen, and none of it is saved. Anything that changes the file or sends something elsewhere is not a view's business.
 
+### A span of days, and summaries
+
+Two additions to a query over kept entries. They are the one place Booklet computes anything from rows, and they are for kept entries only (see "Why a reader computes these", below).
+
+**A span of days.** `limit: 7` stays the newest 7 entries. `limit: 7 days` is the entries of the past 7 days: today and the 6 dates before it. The span rolls with today; it is not a calendar week. `limit: 1 day` is today's entries. It works on every view, with or without a summary: a table of this week, a line of the last 30 days.
+
+- A day is defined once, in section 8.
+- An entry whose `ts` will not parse, or is in the future, is in no span. It is kept as written.
+- The span is worked out when the page is drawn, and nothing about it is saved.
+- A span of days on a data block, or on a question whose activity keeps no entries, is ignored and reported (the linter warns).
+- A `limit:` that is neither a positive whole number nor a positive whole number of days (`limit: week`) is ignored and reported; the linter reports an error.
+
+**Summaries.** `summary: on` turns the kept entries into summary rows, which every view draws as it draws any rows. Any other value (`summary: yes`) is ignored and reported; the linter reports an error. A query that names an activity gets one row for the entries' dates, then one row per question, in the activity's order. Each row carries its statistics as named fields:
+
+| field | what it holds | rows that have it |
+| --- | --- | --- |
+| `label` | the question's title (for dates, "Days logged") | every row |
+| `count` | how many answered (for dates, how many entries) | every row |
+| `days` | how many different days | dates |
+| `average` | the mean, over entries | number, scale |
+| `lowest`, `highest` | the least and the most | number, scale |
+| `total` | the sum | number, scale |
+| `most` | the option picked most | choice, multi, grid-select |
+
+The roles `value` and `note` take a default by kind, so a query needs to name nothing:
+
+| row | `value` | `note` |
+| --- | --- | --- |
+| dates | `days` | "5 entries" |
+| number or scale | `average` | "lowest 1 · highest 4" |
+| choice or multi | `most` | "Rough 1 · Mixed 1 · Good 3" |
+| a `grid-select` widget | `most` | "Anxiety / stress 4 · Sadness 2" |
+| any other kind | `count` | "answered" |
+
+A query points the roles elsewhere with the keys it already has: `value: total` for a tracker of minutes, `value: count`, `note: highest`. A table shows every field, one column each, so a chart always has the same numbers in a table. A matrix gives one row per item, each summarised like a scale. A `grid-select` is summarised like a `multi`: each item's count and the item picked most, the reader's own words counted by their words. An `svg-regions` widget has no summary rule of its own, so it is summarised like any other kind: its row is its `count`, noted "answered". A question asked for each pick (`each:`, above) gives one row per pick, its field for that pick: labelled "<title> · <pick's words>" as in every view, in the source's order, and summarised by its own kind, over the pairs whose pick the source holds in the same record. A query with no `as:` draws a summary as a table.
+
+**One question, one distribution.** A query that names a single question gets that question's distribution instead: one row per value, its `value` the count. A choice, a multi, a grid-select or a scale gives its listed options, items or anchors in list order, with zeros; any other kind gives its values in the order they first appear. A question asked for each pick gives one row per pick and value, as it does with no summary (above). This is what `bars` draws well.
+
+```booklet query
+from: evening
+limit: 7 days
+summary: on
+as: tiles
+```
+
+This draws four tiles: **Days logged 5** (5 entries); **How did today feel? Good** (Rough 1 · Mixed 1 · Good 3); **Energy 2.6** (lowest 1 · highest 4); **Anything else? 4** (answered).
+
+```booklet query
+from: feel
+limit: 7 days
+summary: on
+as: bars
+```
+
+This draws three bars, in list order: Rough 1, Mixed 1, Good 3.
+
+**The rules a second reader needs.**
+
+- **The order.** `from:` picks the entries; `limit:` keeps the newest N, or the past N days; `summary: on` summarises every entry kept; `fields:` picks which rows appear (the questions, and `date` for the dates row); the view draws them. Without `summary`, `fields:` keeps its present meaning.
+- **Counting.** Averages, lowest, highest and totals are over entries, so with `repeat` a day with three entries counts three times; `days` says how many days. A multi answered with an empty list is not answered. With no answers there is no value and no note.
+- **Options.** Rows and notes go in list order. The reader's own options (`open`, section 5) come after, in the order first seen, matched as section 5 matches them (ignoring case and spaces). A tie for `most` goes to the earlier in that order. A distribution shows an option picked zero times; a note leaves it out.
+- **Numbers and words.** An average is rounded to one decimal, half away from zero, and a whole number has no decimal ("3", not "3.0"). Numbers are drawn in the renderer's locale ("2,6" in French). A scale's lowest and highest are its anchor numbers. A title is drawn as inline Markdown, as on a kept entry. The renderer's own words ("Days logged", "entries", "lowest", "highest", "answered" and the table's column names) are in the renderer's language (section 9), like its other words.
+- **Nothing in the span.** The query's `empty:` shows.
+- **What a summary ignores and reports.** `group:` (summary rows have nothing to group by; the linter warns), and `summary` on a data block or on a question whose activity keeps no entries.
+- **Nothing is saved.** A summary is drawn, never written, and reads kept entries only, never a draft.
+
+**Why a reader computes these.** Section 7 says a renderer computes nothing from a data block, because whatever wrote the block has already counted and ordered its rows. Kept entries have no upstream: the reader's own app writes them, one at a time. A week's statistics saved into the file would be wrong by tomorrow, and keeping them right would make the writer change the file on every save, against section 8's rule that a writer changes only what the reader changed. So the reader works them out when it draws the page.
+
+**The reference renderer** draws a span of days on every view. It does not draw summaries yet (section 13): a query with `summary: on` shows a line saying so in place of the view, never the plain entries as if the key were not there.
+
 ---
 
 ## 7. Widgets and other data
@@ -693,11 +825,11 @@ A query that names a data block in another module, or an `as:` that is not one o
 
 - The fence holds JSON, as a data block's does. The widget's title is the title on the widget line, not a key in the data.
 - `engine` names what draws it: `svg-regions` or `grid-select`. An engine a renderer does not have is shown as a notice, and the linter reports an error for one that does not exist. Labels are plain strings, because the file has one language.
-- Settings on the widget line: `readonly` (shown, not operated) and `describe` (followed by what each part says about itself). Both engines honour both. A `grid-select` shows its items as plain words and `describe` adds each cell's `note`; an `svg-regions` shows its figure, with its regions named beneath it and nothing to point at or answer, and `describe` adds each region's `note`. Neither setting stores anything.
+- Settings on the widget line: `readonly` (shown, not operated) and `describe` (followed by what each part says about itself). Both engines honour both. A `grid-select` shows its items as plain words and `describe` adds each cell's `note`; an `svg-regions` shows its figure, with its regions named beneath it and nothing to point at or answer, and `describe` adds each region's `note`. Neither setting stores anything. `earlier:<n>` says how many of the reader's earlier words an `svg-regions` widget offers at each place (section 5, "Words the reader wrote before"); a `grid-select` offers none, so on one it does nothing. `each:<id>` asks the widget once for each pick of another question (section 5).
 - **An `svg-regions` figure** marks each region the reader can tap as a shape with `class="rg"` and a `data-r` attribute naming the region id. Every other shape in the figure is drawn as a plain outline, and the renderer styles both; a figure needs no styling of its own.
 - **Where it renders:** Booklet draws the widget. A Booklet plugin in Obsidian would draw it through the code-block handler for `booklet` — not yet built (section 13). Obsidian without the plugin shows the data block inside the embed frame, which is long but harmless. GitHub shows the embed line as text and the fence as code.
 - Every `svg` string is sanitized before drawing.
-- **Colours are colour names.** A colour in widget data is a **colour name**: `warm`, `green`, `amber`, `slate` or `teal`, exactly as written; anything else is no colour, and the linter reports it. The renderer draws the name in the active theme's colours, so a widget looks right in every theme. `green`, `amber` and `warm` are the colours the three tones `good`, `warn` and `bad` use (section 6); `slate` and `teal` have no tone. "Tone" means `good`, `warn` or `bad` and nothing else.
+- **Colours are colour names.** A colour in widget data is a **colour name**: `warm`, `green`, `amber`, `slate`, `teal`, `blue` or `purple`, exactly as written; anything else is no colour, and the linter reports it. The renderer draws the name in the active theme's colours, so a widget looks right in every theme. `green`, `amber` and `warm` are the colours the three tones `good`, `warn` and `bad` use (section 6); `slate`, `teal`, `blue` and `purple` have no tone. "Tone" means `good`, `warn` or `bad` and nothing else.
 
 **What each engine reads.** The keys of a widget's data, and nothing else is read.
 
@@ -710,6 +842,8 @@ A query that names a data block in another module, or an `as:` that is not one o
 | `senses` | groups of words to say what it is like: `{ "id", "label", "words": [ { "id", "label" } ] }` |
 | `chips` | region ids offered as buttons beside the figure |
 | `copy` | the words the widget says: `h`, `p`, `stance`, `invite`, `pick`, `clear`, `none`, `sideLbl` |
+
+A word the reader writes is offered again later (section 5). A typed word is one of the widget's words when the two match in lower case, with ’ ‘ \` and ´ read as ', — and – read as -, every run of white space read as one space, and white space at either end taken off.
 
 `grid-select`: a grid of cells, each holding items to press and a field for a word of the reader's own. What it records is a list of item ids, and `x|cell|word` for a word of their own.
 
@@ -741,7 +875,7 @@ A report or a dashboard page carries its numbers as a data block: a fenced block
 - It lives where a widget's data lives: inside its module's fence (and is that module's), or in the data section at the end (shared by every module).
 - Its id may not also be the id of an activity or a question in the same module, because a query reads by id and could not tell them apart.
 - A data block belongs to whoever wrote the file. A reader never changes it, it is not a record, and a renderer writes it back exactly as it found it.
-- Nothing is computed from it. Whatever wrote the file has already ordered, counted and filtered the rows; a renderer draws them. Draw them with a `booklet query` (section 6).
+- Nothing is computed from it. Whatever wrote the file has already ordered, counted and filtered the rows; a renderer draws them. Draw them with a `booklet query` (section 6). The one exception is a summary of kept entries (`summary: on`, section 6), which is for kept entries only and never for a data block.
 
 ### A theme: how the booklet would like to look
 
@@ -803,7 +937,29 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 
 - `answers` holds once-answered questions, keyed by question id within the module whose records line it sits under, so no activity prefix is needed. Records sit in the records section at the end, grouped by module under `> [!records|<module>]` lines, never inside a module's fence (section 3).
 - `entries <activity>` holds a `repeat` activity's kept entries, each with a `ts`, identified by timestamp. `draft <activity>` holds what is typed and not yet kept. Each names the activity by the id the file gives it, in the module whose records line it sits under.
+- **A day** is the calendar date of an entry's `ts` in the reader's own time zone, and "today" is the reader's date at the moment the page is drawn. `repeat daily` (section 3) keeps one entry a day by this day, and a span of days, `limit: 7 days` (section 6), is counted in these days.
 - A choice is stored as the option's position from 1, a scale as the anchor's number. Words are shown by the renderer from the file's own lists. A string in a choice or multi answer is the reader's own option (`open`, section 5): it is shown as it was written.
+
+- **A question asked for each pick** (`each:`, section 5) stores its list of pairs where any answer is stored: in `answers`, or in a `repeat` activity's draft and then its entry. A pair whose pick the source no longer holds is kept as written, as an answer to a question the design no longer has is.
+
+- **An answer whose shape is not its kind's is kept as written, and its question is drawn read-only, with a notice saying so.** An answer's shape is the JSON type its kind stores (section 5's table, section 7's engines), and whether a position or an anchor is a whole number counted as the format counts it (an option's position from 1, an anchor's number from 0), never whether the question lists that value: a `scale` answer of `7` on anchors `0` to `4` has its kind's shape, and `1.5` or `-1` has not. An answer that holds nothing is no answer, never one of the wrong shape. Holding nothing goes all the way down: `null`, `false`, a string of only white space, and a list or an object whose every member holds nothing (`[]`, `[""]`, `{}`, `{"a": ""}`) hold nothing; any number, `0` included, and `true` hold something. The shapes:
+
+  | kind | its shape |
+  | --- | --- |
+  | `text`, `date` | a string |
+  | `lines` | a list of strings |
+  | `number` | a number |
+  | `scale` | an anchor's number: a whole number from 0 |
+  | `choice` | a position (a whole number from 1), or a string |
+  | `multi` | a list of positions and strings |
+  | `matrix` | a list of anchor numbers and `null` |
+  | `grid-select` widget | a list of strings |
+  | `svg-regions` widget | a list of `{ "id": a string, "s": a list of strings }` |
+  | a question with `each:` | a list of pairs, `{ "pick": a number or a string, "a": its kind's shape }` |
+
+  Other keys in a pair or a region's row are kept and allowed. A widget whose engine a reader does not have is not checked. This holds in `answers`, in drafts and in kept entries. No press, Finalize or save changes such an answer: it is written back as it was read. A view leaves it out of its row (section 6), and a reader says once, among the file's problems, that answers are kept as written. Such an answer comes from a hand edit, or from a reader that did not know a setting: a reader without `each:` draws an ordinary question over a list of pairs.
+
+- **A word typed in a grid cell leaves the answer's order as the reader picked it.** A `grid-select` answer holds item ids and the reader's own `x|cell|word` in the order they were added: a word typed in a cell goes at the end, and one taken out leaves the others where they were, so the copies of a question asked for each pick of the grid (section 5) never move on screen.
 - **The whole records section sits inside `%%` … `%%`**, which hides it from Obsidian's Reading view. A block a `![[…]]` embed points to is never put inside `%%`, because an embed cannot reach a block hidden that way — only data no other part of the file references belongs there, and the records section is exactly that.
 - **A reader writes back every record it read, unchanged, unless the reader changed it.** That covers an answer to a question the reader does not know (a kind from a later version) or that the design no longer has; an entry or a draft for an activity the design no longer has; a record block the reader does not understand, such as `sync` or a kind a later version adds; and a block it could not parse, which is written back exactly as it was and is still reported (section 12). A record is dropped only when the reader changes it: an answer the reader clears, a module the reader removes. A reader may write a record's JSON with other spacing, and may sort a list of entries; it changes no value.
 - **The records region** runs from the `%%` directly before the first records line (only blank lines between) to the `%%` that closes it; with no `%%` before the records line it starts at that line, and with no closing `%%` it runs to the end of the file. Only records are read inside it. Anything else there, such as a block of another kind (a `widget` or `data` block, a `> [!data]` line), prose or a line, is reported and kept as written. A file is written with one records region; records found after it (a second region, for example from two saved booklets pasted together) are read as records, exactly as if they sat in the one region, and merge under the rule below. After the closing `%%` the file is design again: it is read as design (prose, a module, a data section), reported once, and written above the region when the booklet is saved, because the records sit at the end; the region itself is read after the rest of the file, so a records line finds a module wherever the file writes it. A `%%` … `%%` comment anywhere else is design text and stays where it is. A record block outside the region is reported and not read.
@@ -913,7 +1069,7 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: "0.15"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names (no remote image, no diagram image or style, no font), and draw a link to a module it does not hold without fetching anything. Opening a file therefore asks the network for nothing but the renderer's own parts, from where the renderer came, and only when a booklet needs one, with one exception: a reader whose host declares a store, or a reader on a page served over http or https that declares none (which reads the default folder, `modules/` beside the renderer), may read the images of a booklet it opened from that store or folder, only where the booklet still holds that store's or folder's own text for the part the image is in (section 6), as a plain read of the store's or folder's own address plus a checked relative path (section 6). That is an address the reader builds from the host's store, or from the page's own address, and a path, never an address a file spells out; a booklet opened any other way asks for no image at all. (The reference renderer is a core and its parts. Its one part loaded this way today is the diagram library, `parts/mermaid.js`: the page asks for it with an ordinary GET of the file beside itself, only when a booklet has a diagram. A booklet with no diagram and no image to read from a store or the default folder makes no request at all. A build can always put every part inside one file. A link the reader follows, `#/open/<name>`, is not a file naming an address: it asks for that one booklet, by a name it checks, from the store the page's host declares or, on a page served over http or https that declares none, from `modules/` beside the renderer, and nothing is asked for until it is followed.)
+A conforming reader must: read a file whose front matter declares `booklet: "0.15"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; keep an answer whose shape is not its kind's as written, and draw its question read-only, with a notice saying so (section 8); open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names (no remote image, no diagram image or style, no font), and draw a link to a module it does not hold without fetching anything. Opening a file therefore asks the network for nothing but the renderer's own parts, from where the renderer came, and only when a booklet needs one, with one exception: a reader whose host declares a store, or a reader on a page served over http or https that declares none (which reads the default folder, `modules/` beside the renderer), may read the images of a booklet it opened from that store or folder, only where the booklet still holds that store's or folder's own text for the part the image is in (section 6), as a plain read of the store's or folder's own address plus a checked relative path (section 6). That is an address the reader builds from the host's store, or from the page's own address, and a path, never an address a file spells out; a booklet opened any other way asks for no image at all. (The reference renderer is a core and its parts. Its one part loaded this way today is the diagram library, `parts/mermaid.js`: the page asks for it with an ordinary GET of the file beside itself, only when a booklet has a diagram. A booklet with no diagram and no image to read from a store or the default folder makes no request at all. A build can always put every part inside one file. A link the reader follows, `#/open/<name>`, is not a file naming an address: it asks for that one booklet, by a name it checks, from the store the page's host declares or, on a page served over http or https that declares none, from `modules/` beside the renderer, and nothing is asked for until it is followed.)
 
 A conforming reader should open a file marked with another `0.x` version, earlier or later, by its own rules and with the notice that section 2 describes. A reader saves such a file back with the marker it came with.
 
@@ -942,10 +1098,13 @@ This is a young format, and the reference renderer does not yet do everything th
 - **The drafts below.** The manifest and the linter's sibling check are written down and not built.
 - **Reading `sync`**, the record of where a file is kept (section 8). A reader keeps the block as written; it does not read it.
 - **Showing images to a booklet that was not opened from the host's store or the default folder** (section 6). The reference renderer reads images only from the store its host declares, or from its default folder on a page that declares none, and only for a booklet opened from it. For any other booklet (one from a file, one from the registry, or one a host handed over on a page with no store) it draws the alt text in a quiet box that says the image is not shown, with the address as text beneath. A way to give such a booklet its images, such as a folder of images picked by hand, is not built.
+- **Summaries** (`summary: on`, section 6). The reference renderer reads the key and shows a line saying summaries are not yet supported in place of the view; it does not work out the rows. A span of days, `limit: 7 days`, is drawn.
 - **Roles on kept-entry cards** (section 6): `label`, `value`, `note`, `badge` and `tone` are not drawn on cards over kept entries.
 - **Heading links in the booklet's opening** (section 3). The opening belongs to no module, so a `[[#Heading]]` link there leads only to a heading among the activities outside every module fence, and is otherwise drawn as plain words.
 - **Footnotes in the booklet's opening and in a title** (sections 3 and 4). The reference renderer leaves a mark there out and draws no note.
 - **A query view or a Booklet line inside a callout that holds Markdown only** (section 6): in a note, a tip or any other kind but a group, or in a group outside an activity, the reference renderer draws a `booklet query` block as code and a Booklet line as text, not as a view or a question; the linter warns. A group in an activity reads both.
+- **A question asked for each pick** (`each:`, section 5). The reference renderer draws its title and a line saying it is not yet supported, and keeps its answer as written; its views show the pairs (section 6). A follow-up named alone in a query's `from:` gives one row per entry, with one field per pick, in `table`, `list` and `cards`, not one row per pick and value; `tiles`, `bars` and `line` draw only a line saying the view does not draw it yet.
+- **A body widget's earlier words and a `lines` question's earlier lines** (section 5, "Words the reader wrote before"). The reference renderer offers neither; it offers own options again, with `earlier:`.
 
 None of this affects what already works: loading, reading, answering, and saving a v0.15 booklet with every question kind above, its widgets, and its citations.
 

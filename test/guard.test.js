@@ -42,7 +42,7 @@ if(!html.includes('el("div",{class:"svgfig"})')){fails++;console.log("  FAIL  sv
 if(/\.bodyfig/.test(html)){fails++;console.log("  FAIL  booklet.html styles a module's own class (.bodyfig)");}
 // The query's keys and views are pinned, and a view reads only the roles it is handed. Adding a key or a view means
 // changing this list on purpose, in the same change as SPEC.md's table and the linter's list.
-const FROZEN_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon"];
+const FROZEN_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary"];
 const FROZEN_VIEWS=["cards","table","list","tiles","bars","line"];
 const FROZEN_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
   list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
@@ -67,8 +67,8 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  check("the first column of SPEC.md's views table",rows.map(c=>c[0].replace(/`/g,"")),FROZEN_VIEWS);
  const sd={};rows.forEach(c=>{sd[c[0].replace(/`/g,"")]=[...c[2].matchAll(/`(\w+)`/g)].map(m=>m[1]);});
  check("the keys SPEC.md's views table says each view reads",sd,FROZEN_DRAWS);
- const named=[...new Set([...Object.values(sd).flat(),"from","as","empty"])].sort();
- check("every key SPEC.md's table names is one of the fourteen",named,[...FROZEN_KEYS].sort());
+ const named=[...new Set([...Object.values(sd).flat(),"from","as","empty","summary"])].sort();
+ check("every key SPEC.md's table names is one of the fifteen",named,[...FROZEN_KEYS].sort());
  // a view reads the roles it is handed; the one control is drawn in one place; no view styles anything from a file's value
  const a=html.indexOf("const toneWords="),b=html.indexOf("/* ---- the pipeline");
  const views=a>0&&b>a?html.slice(a,b):"";
@@ -103,6 +103,11 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  must("the renderer's KIND_SETTINGS is found and has kinds",Object.keys(fromRenderer).length>10,JSON.stringify(Object.keys(fromRenderer)));
  must("KIND_SETTINGS is the same in the renderer and the linter",norm(fromRenderer)===norm(fromLinter),norm(fromRenderer)+" vs "+norm(fromLinter));
  must("and the same in SPEC.md's table in section 4",norm(fromRenderer)===norm(fromSpec),norm(fromRenderer)+" vs "+norm(fromSpec));
+ // `earlier:` takes a whole number written in digits only (SPEC.md section 4): the renderer's check and the linter's are one pattern
+ {const er=html.match(/const EARLIER_VALUE=\/(.+?)\/;/),ep=py.match(/^EARLIER_VALUE = r"([^"]*)"/m),re=er&&new RegExp(er[1]);
+  const take=["0","3","12","012"],refuse=["+3","3.0","-1",""," 3","3 ","1e2","0x3","\uff11\uff12"];
+  must("`earlier:`'s whole-number check is found in the renderer and the linter, and is the same pattern",!!(er&&ep)&&er[1]==="^"+ep[1]+"$",er&&ep?er[1]+" vs "+ep[1]:"not found");
+  must("and it takes "+take.join(", ")+" and nothing else of "+refuse.map(x=>JSON.stringify(x)).join(", "),!!re&&take.every(x=>re.test(x))&&refuse.every(x=>!re.test(x)));}
  const qk=html.match(/const QUESTION_KINDS=new Set\(\[([^\]]*)\]\)/),pk=py.match(/^QUESTION_KINDS = \{([^}]*)\}/m),ps=py.match(/^STRUCTURE_KINDS = \{([^}]*)\}/m);
  const words=t=>[...t.matchAll(/"(\w+)"/g)].map(x=>x[1]);
  must("its kinds are the question kinds and the structure kinds the linter knows, and no others",
