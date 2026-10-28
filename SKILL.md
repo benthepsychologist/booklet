@@ -74,7 +74,7 @@ The file has three parts, in order:
 | --- | --- | --- |
 | **Front matter** (`---` on line 1) | `booklet: "0.15"`, `id`, `title`, `lang`, `version` | you |
 | **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design |
-| **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only (the web renderer, or the Booklet plugin in Obsidian), which writes back only what the reader changed; a fresh file has none at all |
+| **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only; a fresh file has none at all |
 
 **Never invent or edit:** kept entries or answers, a `sync` record, a module's
 `notice` terms nobody gave you, a kind or engine not listed here. When changing
@@ -616,20 +616,16 @@ itself is never shown.
 - **A question can be asked once for each pick of another,** with
   `each:<id>` after its id: name a `choice`, a `multi` or a widget in the same
   activity, and write the follow-up after it
-  (`> [!text|tool-why each:tools] What was it for?`). The reader answers it
-  once per pick, and its answer is kept as one pair per pick. One level only:
-  a follow-up is never itself a source. The reference renderer, `booklet.html`,
-  does not draw a follow-up yet: it shows its title and a line saying so, and
-  keeps any answers it already has.
+  (`> [!text|tool-why each:tools] What was it for?`). One level only: a
+  follow-up is never itself a source. The reference renderer, `booklet.html`,
+  does not draw a follow-up yet (it shows its title and a line saying so), so
+  write `each:` only when it was asked for.
 - **A reader's own words can come back.** In an activity that keeps entries
   (`repeat`), a `choice` or `multi` with `open` offers the reader's own options
-  from earlier entries again, newest first, at most 12. `earlier:<n>` after the
-  id sets how many, written in digits (`earlier:0` offers none). On a `lines`
-  question, `earlier:<n>` offers earlier lines. In a body map (an
-  `svg-regions` widget), the words a reader wrote for a place come back under
-  every place, since a widget's words belong to the whole widget. The
-  reference renderer does neither of these two yet. A `grid-select` cell's
-  words and a `text` answer never come back.
+  from earlier entries again. `earlier:<n>` after the id sets how many, written
+  in digits (`earlier:0` offers none). On a `lines` question, `earlier:<n>`
+  offers earlier lines; the reference renderer does not do this yet. A
+  `grid-select` cell's words and a `text` answer never come back.
 
 ---
 
@@ -710,7 +706,7 @@ between paragraphs for a new one. Section 4 says what a heading does.
   `from:` is required: an activity that is `repeat` or `repeat daily` (its
   kept entries, newest first), or one question's id (its answers).
   `fields:`, `limit:` (the newest that many, or `limit: 7 days` for the entries of the past 7 days, today and the 6 dates before it) and `empty:` are optional.
-  `summary: on` turns the kept entries into summary rows (a dates row, then one row per question with its average, lowest, highest, total or most-picked option; one named question gets a row per value), drawn by any `as:`, and a tracker that wants "how did the week go" writes `from:`, `limit: 7 days`, `summary: on` and `as: tiles`.
+  `summary: on` turns the kept entries into summary rows, drawn by any `as:`, and a tracker that wants "how did the week go" writes `from:`, `limit: 7 days`, `summary: on` and `as: tiles`.
   Any other value of `limit:` or `summary:` is an error. The reference renderer draws a span of days but does not draw summaries yet (it shows a line saying so), so write `summary: on` only when it was asked for. Never point it at another
   module, and never write anything else in the block. In Obsidian without a
   plugin it shows as a plain code block, so say in the prose above it what it
