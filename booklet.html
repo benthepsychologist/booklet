@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-J4ERIzEpK45F8ep/2ASTrAQtrX6cy+8I7O4r/+8x+Z0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-9c9kgeOTu61dAu1hdhCu7KBGuJ7AagQf1k9MklpXG+Q=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1441,11 +1441,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.15.0";
-/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.15"`, and a
+const RENDERER_VERSION="0.16.0";
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.16"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
-const FORMAT_VERSION="0.15";
+const FORMAT_VERSION="0.16";
 /* the toggle's languages, each named in itself (es-AR has strings but no button) */
 const LANG_NAMES={en:"English",es:"Español",fr:"Français"};
 const LANG_PREF_KEY="booklet.ui.lang";
@@ -3780,7 +3780,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.15 booklet is Markdown that reads as a document anywhere: front
+   A v0.16 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -3828,7 +3828,7 @@ const NOTICE_KEYS=["license","copyright","source","version"];
 const FRONT_NOTICE_KEYS=["license","copyright","source"];
 /* the kinds that take no id: their words are settings only */
 const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","diff","law","opinion"]);
-/* A file is read when its front matter says `booklet: "0.15"` (quoted or not, as text); another 0.x marker opens with a notice. */
+/* A file is read when its front matter says `booklet: "0.16"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -3847,7 +3847,7 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
   if(/^".*"$/.test(v)){try{v=JSON.parse(v);}catch(e){v=v.slice(1,-1);}}
   else if(/^'.*'$/.test(v)) v=v.slice(1,-1).replace(/''/g,"'");
   return [m[1],v];}
-/* The marker a file's front matter carries, quotes off: "0.15", "1.0", "x", or "" with no `booklet:` line. A 0.x marker makes a booklet
+/* The marker a file's front matter carries, quotes off: "0.16", "1.0", "x", or "" with no `booklet:` line. A 0.x marker makes a booklet
    for this page; any other 0.x version opens by this page's rules with a notice and no promise (SPEC.md section 12). */
 function markerOf(text){const {head}=frontMatter(text);
   for(const l of head||[]){const m=l.match(/^booklet:[ \t]*(.*?)[ \t]*$/);

@@ -1,10 +1,10 @@
-# The booklet format, v0.15.0
+# The booklet format, v0.16.0
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Data, and anything a reader answers, lives in fenced blocks. Before anyone has answered, the only JSON in a booklet is the data of its widgets and data blocks.
 
-> **Status: v0.15, draft.** This format is young and will change. Nothing before v1.0 is stable, and
+> **Status: v0.16, draft.** This format is young and will change. Nothing before v1.0 is stable, and
 > nobody keeps older files working. This spec, the renderer, the skill, the tests and the file marker
-> are all v0.15. Section 2 says how the marker works.
+> are all v0.16. Section 2 says how the marker works.
 >
 > **This document may describe things the reference renderer does not do yet.** Each one is marked where
 > it is described, in the words "The reference renderer does not do this yet", and all of them are
@@ -52,7 +52,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: "0.15"
+booklet: "0.16"
 id: example/tides
 title: How tides work
 lang: en
@@ -62,21 +62,21 @@ license: CC-BY-4.0
 ---
 ```
 
-- `booklet` is the format version the file uses: `0.15` for this document. The marker rule is below.
+- `booklet` is the format version the file uses: `0.16` for this document. The marker rule is below.
 - `id` names this booklet across its translations and versions.
 - `lang` is the language of the page around the content: the renderer's own words and defaults. In a module's own file it is also the language the module is written in (section 9).
 - **The front matter's `id` is the booklet's own name, not an id in the sense of section 4.** It may hold slashes (`example/tides`), and it is not one of the ids a question, an activity or a module carries, so the rule for those (letters, digits and dashes, unique in the file) does not apply to it.
 - `title` is the booklet's own name: the one name its home screen, its row in a list of booklets and the name of the file a renderer saves all show. A module file's own `title` names the module and never the booklet, so adding a module leaves the booklet's name alone. A renderer may let a reader rename the booklet, which rewrites this one line, with the new name as a quoted string.
-- **The marker is written in quotes: `booklet: "0.15"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way, so the linter warns on any unquoted marker whose minor ends in 0.
-  - A reader reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9. `booklet: 0.15`, `"0.15"` and `'0.15'` are all this format. `booklet: 0.1` is the earlier version 0.1, not 0.10.
+- **The marker is written in quotes: `booklet: "0.16"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way, so the linter warns on any unquoted marker whose minor ends in 0.
+  - A reader reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9. `booklet: 0.16`, `"0.16"` and `'0.16'` are all this format. `booklet: 0.1` is the earlier version 0.1, not 0.10.
   - A tool that writes booklets writes the current marker. `lint-booklet.py --marker` prints the line.
-  - A reader never changes a file's marker. It saves a file back with the marker the file came with, and a booklet it makes itself says `"0.15"`.
+  - A reader never changes a file's marker. It saves a file back with the marker the file came with, and a booklet it makes itself says `"0.16"`.
 - **Another marker.** A file with no marker, or one that is not a `0.x` version (`1.0`, `2`, words), is not a booklet for this version. A file marked with another `0.x` version, earlier or later, is opened by this version's rules.
-  - A reader says so first among the file's problems: "This file says booklet: 0.9. This page reads format 0.15 and has opened it as it is; some of it may not draw."
+  - A reader says so first among the file's problems: "This file says booklet: 0.9. This page reads format 0.16 and has opened it as it is; some of it may not draw."
   - It makes no promise about what such a file draws. What its rules do not understand is reported like any other problem.
   - A rule that refuses a file (a module opened and not closed, an id used twice in a module) refuses it whatever the marker.
   - A module file with another `0.x` marker may be added to a booklet, with the same notice.
-  - A third number (v0.15.1) is a patch to this wording or to the renderer. It changes no file, and files go on saying `"0.15"`.
+  - A third number (v0.16.1) is a patch to this wording or to the renderer. It changes no file, and files go on saying `"0.16"`.
 - `start` is optional and has one value, `start: home`. Any other value is an error in the linter, and a renderer reports it and ignores it.
   - Without `start`, a booklet that holds exactly one activity opens straight into that activity. A booklet that holds exactly one module, with several activities, opens on that module's own screen. Any other booklet opens on its home screen.
   - `start: home` keeps the home screen. Use it for a booklet still being built, or one whose home screen says something a reader should see first.
@@ -1026,7 +1026,7 @@ A regional variant (`es-AR`) is its own sibling file.
 
 ````markdown
 ---
-booklet: "0.15"
+booklet: "0.16"
 id: example/tides
 title: How tides work
 lang: en
@@ -1086,7 +1086,7 @@ Two activities, the first with two pages, one figure placed by reference, one ci
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: "0.15"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; keep an answer whose shape is not its kind's as written, and draw its question read-only, with a notice saying so (section 8); open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names (no remote image, no diagram image or style, no font), and draw a link to a module it does not hold without fetching anything. Opening a file therefore asks the network for nothing but the renderer's own parts, from where the renderer came, and only when a booklet needs one, with one exception: a reader whose host declares a store, or a reader on a page served over http or https that declares none (which reads the default folder, `modules/` beside the renderer), may read the images of a booklet it opened from that store or folder, only where the booklet still holds that store's or folder's own text for the part the image is in (section 6), as a plain read of the store's or folder's own address plus a checked relative path (section 6). That is an address the reader builds from the host's store, or from the page's own address, and a path, never an address a file spells out; a booklet opened any other way asks for no image at all. (The reference renderer is a core and its parts. Its one part loaded this way today is the diagram library, `parts/mermaid.js`: the page asks for it with an ordinary GET of the file beside itself, only when a booklet has a diagram. A booklet with no diagram and no image to read from a store or the default folder makes no request at all. A build can always put every part inside one file. A link the reader follows, `#/open/<name>`, is not a file naming an address: it asks for that one booklet, by a name it checks, from the store the page's host declares or, on a page served over http or https that declares none, from `modules/` beside the renderer, and nothing is asked for until it is followed.)
+A conforming reader must: read a file whose front matter declares `booklet: "0.16"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; keep an answer whose shape is not its kind's as written, and draw its question read-only, with a notice saying so (section 8); open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names (no remote image, no diagram image or style, no font), and draw a link to a module it does not hold without fetching anything. Opening a file therefore asks the network for nothing but the renderer's own parts, from where the renderer came, and only when a booklet needs one, with one exception: a reader whose host declares a store, or a reader on a page served over http or https that declares none (which reads the default folder, `modules/` beside the renderer), may read the images of a booklet it opened from that store or folder, only where the booklet still holds that store's or folder's own text for the part the image is in (section 6), as a plain read of the store's or folder's own address plus a checked relative path (section 6). That is an address the reader builds from the host's store, or from the page's own address, and a path, never an address a file spells out; a booklet opened any other way asks for no image at all. (The reference renderer is a core and its parts. Its one part loaded this way today is the diagram library, `parts/mermaid.js`: the page asks for it with an ordinary GET of the file beside itself, only when a booklet has a diagram. A booklet with no diagram and no image to read from a store or the default folder makes no request at all. A build can always put every part inside one file. A link the reader follows, `#/open/<name>`, is not a file naming an address: it asks for that one booklet, by a name it checks, from the store the page's host declares or, on a page served over http or https that declares none, from `modules/` beside the renderer, and nothing is asked for until it is followed.)
 
 A conforming reader should open a file marked with another `0.x` version, earlier or later, by its own rules and with the notice that section 2 describes. A reader saves such a file back with the marker it came with.
 
@@ -1099,9 +1099,9 @@ A reader may also offer conveniences that this document does not define and that
 - a theme menu with Auto, which follows the booklet's own look if it asks for one and the device otherwise;
 - "draw the title once", which leaves out an activity's first heading when it repeats the activity's title above it.
 
-A conforming writer must: emit front matter with the current marker, `booklet: "0.15"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read exactly as written, nothing re-sorted and nothing respaced, unless the reader changed it, and change only what the reader changed (section 8); write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with the current marker, `booklet: "0.16"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read exactly as written, nothing re-sorted and nothing respaced, unless the reader changed it, and change only what the reader changed (section 8); write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: "0.15"` files, and is the reference implementation of "is this file valid." A file with another `0.x` marker is checked as 0.15 and gets one warning ("this file says booklet: 0.9; the current format is 0.15, and it is checked as 0.15"); a file with no marker, or a marker that is not a `0.x` version, is an error.
+`lint-booklet.py` in this repository checks `booklet: "0.16"` files, and is the reference implementation of "is this file valid." A file with another `0.x` marker is checked as 0.16 and gets one warning ("this file says booklet: 0.9; the current format is 0.16, and it is checked as 0.16"); a file with no marker, or a marker that is not a `0.x` version, is an error.
 
 ---
 
@@ -1122,7 +1122,7 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A question asked for each pick** (`each:`; section 5, "A question asked for each pick", and section 6 for a follow-up named alone in `from:`).
 - **A body widget's earlier words and a `lines` question's earlier lines** (section 5, "Words the reader wrote before").
 
-None of this affects what already works: loading, reading, answering, and saving a v0.15 booklet with every question kind above, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.16 booklet with every question kind above, its widgets, and its citations.
 
 ### Drafts
 

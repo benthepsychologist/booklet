@@ -10,7 +10,7 @@
 const P=require("./page.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const show=s=>JSON.stringify(String(s).slice(0,200));
-const FM=t=>'---\nbooklet: "0.15"\ntitle: '+t+'\nlang: en\n---\n\n';
+const FM=t=>'---\nbooklet: "0.16"\ntitle: '+t+'\nlang: en\n---\n\n';
 const HEAD="> [!records] App record — do not edit below this line";
 const POND="> [!module|pond] Pond\n\n> [!activity|frogs repeat] Frog count\n\n> [!number|n] How many frogs?\n\n> [!module|pond end] End\n";
 const SHED="> [!module|shed] Shed\n\n> [!activity|tools] Tools\n\n> [!text|kept] Which tools are in the shed?\n\n> [!module|shed end] End\n";

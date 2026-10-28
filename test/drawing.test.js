@@ -14,7 +14,7 @@ const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const byTag=(n,t)=>walk(n,x=>x.tagName===t);
 const text=n=>typeof n==="string"?n:(n&&n._text||"")+kids(n).map(text).join("");
-const FM=(t,extra)=>`---\nbooklet: "0.15"\ntitle: ${t}\nlang: en\n${extra||""}---\n\n`;
+const FM=(t,extra)=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n${extra||""}---\n\n`;
 
 (async()=>{
  /* ---------------- D4: the words on a booklet line are inline Markdown ---------------- */

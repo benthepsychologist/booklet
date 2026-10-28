@@ -30,7 +30,7 @@ async function idle(A){A.flushSave();
   for(let i=0;i<600;i++){await sleep(4);const K=A.KEEP;
     if(!K.queued&&!K.pending.size&&!K.inflight.length&&!K.leftBusy&&![...IDB.dbs.values()].some(d=>d.queue.length||d.running)) return true;}
   return false;}
-const FM=t=>`---\nbooklet: "0.15"\ntitle: ${t}\nlang: en\n---\n\n`;
+const FM=t=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n---\n\n`;
 /* a booklet with one question outside every module, so its answer is answersIn("").q */
 const BARE=(t,body)=>FM(t)+(body||"")+"\n> [!activity|a] A\n\n> [!text|q] A question\n";
 const BIG=(t,n)=>BARE(t,"Words to make it large. ".repeat(Math.ceil(n/24))+"\n");

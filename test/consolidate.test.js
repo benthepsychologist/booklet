@@ -17,7 +17,7 @@
 const P=require("./page.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const json=JSON.stringify;
-const FM=(t,x)=>`---\nbooklet: "0.15"\ntitle: ${t}\nlang: en\n${x||""}---\n\n`;
+const FM=(t,x)=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n${x||""}---\n\n`;
 const LS=global.__ls;
 
 /* ---- R7: one shape ---- */

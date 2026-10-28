@@ -28,7 +28,7 @@ const marks=()=>findAll(main(),n=>hasClass(n,"rd-mark"));
 const click=n=>n._on.click({target:n,currentTarget:n});
 const panelOpen=()=>!!A.getPanel()&&!A.getPanel().hasAttribute("hidden");
 const flat=n=>n==null?"":typeof n==="string"?n:((n._text||"")+" "+(n._html||"").replace(/<[^>]*>/g," ")+" "+(n.children||[]).map(flat).join(" ")).replace(/\s+/g," ").trim();
-const FM='---\nbooklet: "0.15"\ntitle: Cites\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.16"\ntitle: Cites\nlang: en\n---\n\n';
 const NOTE='\n[^s1]: *The Harbour Tide Atlas*, p. 12: "Twice a day." Verified 2026-09-20.\n';
 const ONE=FM+"> [!module|m] Tides\n\nThe opening says it first.[^s1]\n\n> [!activity|a] Tides\n\nThe activity says it again.[^s1]\n\nAnd a second time.[^s1]\n"+NOTE+"\n> [!module|m end] End\n";
 const MANY=FM+"> [!module|m] Tides\n\nThe opening says it first.[^s1]\n\n> [!activity|a] First\n\nThe first activity.[^s1]\n\n> [!activity|b] Second\n\nThe second.\n"+NOTE+"\n> [!module|m end] End\n";

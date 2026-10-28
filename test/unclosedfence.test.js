@@ -13,7 +13,7 @@ const fs=require("fs");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const show=s=>JSON.stringify(String(s).slice(-200));
-const FM='---\nbooklet: "0.15"\ntitle: Garden notes\nlang: en\n---\n';
+const FM='---\nbooklet: "0.16"\ntitle: Garden notes\nlang: en\n---\n';
 const ACT="\n> [!activity|a1] This week in the garden\n\n> [!text|q1] What grew this week?\n\n> [!text|q2] What needs water?\n\n";
 /* the body ends inside a fence that never closes: everything after its opening line is that fence's code */
 const OPEN=FM+ACT+"A reminder for the shed:\n\n```text\nwater the beans at dawn\n";

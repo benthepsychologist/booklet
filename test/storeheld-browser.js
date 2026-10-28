@@ -22,7 +22,7 @@ const PAGE='http://fleet',LABEL='fleet: test store';
 /* the box's policy: the page may read and write its own origin (the store and the host's saves), and the registry's */
 const BOX_CSP=CSP.replace('connect-src https://raw.githubusercontent.com',"connect-src 'self' https://raw.githubusercontent.com");
 if(BOX_CSP===CSP) throw new Error('csp.js no longer has the expected connect-src: update this test');
-const FM=t=>`---\nbooklet: "0.15"\ntitle: ${t}\nlang: en\n---\n\n`;
+const FM=t=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n---\n\n`;
 const bk=(t,q)=>FM(t)+`> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q long] ${q}\n\n> [!module|m end] End\n`;
 const rec=(t,words)=>t.replace(/\n$/,'')+'\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|m] M\n\n```booklet answers\n{"q": "'+words+'"}\n```\n\n%%\n';
 /* the test's store: name -> text, and the server's rule (storefile.merge, for the texts this renderer writes) */
