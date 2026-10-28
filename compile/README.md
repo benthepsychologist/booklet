@@ -102,22 +102,34 @@ base, since the host's page around it decides. Print is always light, with every
 `test/compile-css.test.js` holds every colour to the renderer's token it copies.
 
 **Its own look on any site.** A site's theme styles bare elements (`footer`, `aside`, `blockquote`, `ol`, a heading's
-face) and elements under a class of its own (`.content ol` as numbered cards), and without a guard those rules would
-reach the page. The stylesheet holds them off in two ways, and looks on a plain page exactly as it did without them:
+face), elements under a class of its own (`.content ol` as numbered cards), and often marks a rule `!important` with an
+id in front (`#main .content blockquote { background-color: … !important }`, or an inline `<style>` setting every
+heading's face `!important`). Without a guard those rules would reach the page. The stylesheet holds them off in three
+ways, wherever the host's stylesheet sits, and looks on a plain page exactly as it did without them:
 
-- every rule in it starts `.booklet:not(#bk)`. No element has the id `bk`, so this matches every article, and it weighs
-  as much as an id, so it outweighs any host rule made of classes and elements, wherever the host's stylesheet sits;
+- every declaration inside the article is `!important` (custom properties aside), so no plain host rule can win;
+- every rule starts `.booklet:not(#bk):not(#bk):not(#bk)`. No element has the id `bk`, so this matches every article,
+  and it weighs as much as three ids, so it outweighs a host's `!important` rule with fewer than three ids;
 - one rule sends every property the stylesheet does not set, on every element inside the article, back to the browser's
-  own default (`all: revert`), which is what a plain page shows. It is the lightest rule in the file, so every other rule
-  wins over it. The icons and the formulas are left out of it (revert would also drop the attributes they are drawn
-  with): an icon's paint is set in full, and a formula's box (margin, padding, border) is reverted on its own.
+  own default (`all: revert`, also `!important`), which is what a plain page shows. It is the lightest rule in the file,
+  so every other rule wins over it. The icons and the formulas are left out of it (revert would also drop the attributes
+  they are drawn with): an icon's paint is set in full, and a formula's box (margin, padding, border) is reverted on its
+  own.
 
-The article itself is placed by the host: its margin, width and display are the host's. It sets its own text (face,
-size, weight, spacing, capitals) and paints nothing, so a host's page around it does not flow in. A host changes the
-look with the `--bk-*` variables; a rule of its own inside the article needs the same start, `.booklet:not(#bk)`, after
-this file. Three things still reach the page: a host rule marked `!important`, a host rule that weighs more than an id and
-a class, and a host that changes the root font size (`html { font-size: 62.5% }`), since the stylesheet's sizes are in
-`rem`. `test/compile-host-browser.js` holds the page to its plain look on a hostile host.
+It does this without a cascade layer (`@layer`): a layer would beat a host's `!important` at any weight, but a browser
+without layers (before Chrome 99, Firefox 97 and Safari 15.4) would drop the whole stylesheet, and a page would show
+unstyled. The three ids are written as three `:not(#bk)`, which any browser reads.
+
+**What a host can still change.** The `--bk-*` variables are plain declarations, so a host's own rule setting them wins
+(`.booklet { --bk-accent: #7a1f5c; }`): the colours, the faces, the size, the leading, the measure, the gap and the
+corners; and `data-bk-base` picks one of the four bases. The article itself is placed by the host: its margin, width and display are the host's (the article
+sets its own text and paints nothing, so the page around it does not flow in). Anything else inside the article needs a
+rule of the host's own with the same start, `!important` on each declaration, after this file. **What still reaches
+the page:** a host rule marked `!important` with three ids or more; one inside a cascade layer (`@layer`), since an
+`!important` declaration in a layer beats one outside every layer; an inline `style="… !important"` on an element; and a
+host that changes the root font size (`html { font-size: 62.5% }`), since the stylesheet's sizes are in `rem`.
+`test/compile-host-browser.js` holds the page to its plain look on a hostile host, `!important` rules of one and two ids
+included.
 
 **The fonts** are the two families the renderer bundles, under the SIL Open Font License. The compiler extracts them from
 `booklet.html` on each run and writes them as `.woff2` files in `<out>/booklet/fonts/`, with the licence text beside them
@@ -268,7 +280,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |
 | `compile-browser.js` | in Chromium with scripting off, at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
-| `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; with the guard taken out, the same check fails |
+| `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards, and `!important` rules of one and two ids, among them `#main .content blockquote *`); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; the check fails with no guard, with the guard as it was before `!important`, and with `!important` but one id's weight |
 
 `examples/mindful-check-in.booklet.md` is compiled by the content and browser tests but has no golden page, since its
 notice names its author; the golden pages hold made-up content only.
