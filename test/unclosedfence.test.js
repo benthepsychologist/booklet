@@ -113,8 +113,9 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
    chk("Remove the module whose records are the region's only records: the download is the file less the module, byte for byte"+as,
      r.ok&&BLOBS.length===1&&BLOBS[0]===want,BLOBS.map(show).join()+" | want "+show(want));}}
 
-/* ---- Add a module on a booklet whose body ends inside such a fence (0.16.1): refused, said, nothing changed ----
-   The module would be added at the end of the body, inside the fence, and never read as a module. */
+/* ---- Add a module on a booklet whose body ends inside such a fence (0.16.1) ----
+   Where the module would be put after that fence's opening line (at the end of the body), it would be read as the fence's
+   code and never as a module: Add a module is refused, says why, and changes nothing. Anywhere else it is added as before. */
 {const MODFILE='---\nbooklet: "0.16"\ntitle: Seed swap\nlang: en\n---\n\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] Which seeds?\n\n> [!module|seeds end]\n';
  const FENCE=MODFILE.slice(MODFILE.indexOf("> [!module|"));
  chk("(why) a module written after such a body is read as that fence's code, never as a module",
@@ -132,7 +133,26 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
  chk("and so is it where the design after the records ends inside such a fence",r2.ok===false&&r2.problems[0].code==="addFenceOpen"&&B.BOOK.raw.source===src,JSON.stringify(r2));
  const CLOSED=FM+ACT+"A reminder for the shed:\n\n```text\nwater the beans at dawn\n```\n",C=load(CLOSED),r3=C.addModuleText(MODFILE);
  chk("with the fence closed, the module is added as before: after the body, and read as a module",
-   r3.ok===true&&(r3.added||[]).join()==="seeds"&&C.BOOK.raw.source===CLOSED+"\n"+FENCE&&C.BOOK.modules.some(m=>m.id==="seeds"),show(C.BOOK.raw.source)+" "+JSON.stringify(r3));}
+   r3.ok===true&&(r3.added||[]).join()==="seeds"&&C.BOOK.raw.source===CLOSED+"\n"+FENCE&&C.BOOK.modules.some(m=>m.id==="seeds"),show(C.BOOK.raw.source)+" "+JSON.stringify(r3));
+ /* where the module is not put after that fence's opening line, it is added and read as before: (a) an update of a module
+    the booklet has, in place, the fence after it; (b) a new module, put before the data section the fence is in; (c) a
+    module whose data section ends inside the fence, updated by its newer file, which closes it. A download, with the answer
+    to write after the body, stays refused while the body ends inside the fence. */
+ const SEEDS=q=>"\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] "+q+"\n\n> [!module|seeds end]\n";
+ const SEEDFILE=(q,after)=>'---\nbooklet: "0.16"\ntitle: Seed swap\nlang: en\n---\n'+SEEDS(q)+(after||"");
+ const asked=A=>((A.BOOK.modules.find(m=>m.id==="seeds")||{}).activities||[]).flatMap(a=>a.pages.flatMap(p=>p.blocks)).filter(b=>b.id==="which").map(b=>b.label).join();
+ for(const [name,book,mod,q,open] of [
+   ["(a) an update of a module the booklet has, the fence after it",FM+SEEDS("Which seeds?")+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n",
+     SEEDFILE("Which seeds will you swap?"),"Which seeds will you swap?",true],
+   ["(b) a new module, before the data section the fence is in",FM+ACT+"> [!data] Data\n\n```text\nan example that never closes\n",SEEDFILE("Which seeds?"),"Which seeds?",true],
+   ["(c) a module whose data section ends inside the fence, updated by its newer file, which closes it",
+     SEEDFILE("Which seeds?","\n> [!data|seeds] Data for Seed swap\n\n```text\nan example that never closes\n"),
+     SEEDFILE("Which seeds?","\n> [!data|seeds] Data for Seed swap\n\n```text\nan example that now closes\n```\n"),"Which seeds?",false]]){
+   const A=load(book);A.answersIn("seeds").which="runner beans";A.markDirty();
+   const r=A.addModuleText(mod);BLOBS.length=0;await A.download();
+   chk("Add a module "+name+": added, and read as a module",r.ok===true&&asked(A)===q,JSON.stringify(r)+" "+asked(A));
+   chk("and the reader's answer is kept; a download is "+(open?"still refused, the body still ending inside the fence":"made, with the answer, the fence closed"),
+     A.peekAnswers("seeds").which==="runner beans"&&(open?BLOBS.length===0:BLOBS.length===1&&A.parseFile(BLOBS[0]).S.answers.seeds.which==="runner beans"),BLOBS.map(show).join());}}
 
 /* ---- work kept as records, through a newer file whose body ends inside such a fence (0.16.1) ----
    A newer file read on the offer ("Read the newer file": the host's, hostAccept, or a store's, linkAccept) that drops a
