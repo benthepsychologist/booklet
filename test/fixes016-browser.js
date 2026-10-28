@@ -240,6 +240,47 @@ ${NOFIG}
   if(!(await p.locator('#main .ap-body').count())){await p.locator('button.mode').first().click();await p.waitForTimeout(600);}
   const after=await ans(p,'m1');
   ok(after.includes('"Wren"')&&after.includes('"Heron"'),'7: a page reloaded with words typed and not added keeps them: the booklet opened again holds Wren and Heron '+after);
+  /* ---- 8. a press on the control the typed word names, after typing: the control ends pressed, once ---- */
+  const setA=async(k,v)=>{await p.evaluate(([k,v])=>{if(v===null) delete STATE.answers.fx[k]; else STATE.answers.fx[k]=v;render();},[k,v]);await p.waitForTimeout(200);};
+  const F=()=>p.evaluate(()=>{const a=document.activeElement;return a.tagName+':'+(a.tagName==='BODY'?'':a.textContent.slice(0,20));});
+  await setA('m1',null);await own(1).click();await p.keyboard.type('Red');await pill(1,'Red').click();await settle(p);
+  ok(await ans(p,'m1')==='[1]','8: a multi: typed "Red", then pressed Red: Red ends pressed, once '+await ans(p,'m1'));
+  await setA('c1',null);await own(0).click();await p.keyboard.type('Red');await pill(0,'Red').click();await settle(p);
+  ok(/^\[?1\]?$/.test(await ans(p,'c1')),'8: a choice: typed "Red", then pressed Red: Red is the pick '+await ans(p,'c1'));
+  await setA('m1',null);await own(1).click();await p.keyboard.type('Blue');await p.keyboard.press('Shift+Tab');await settle(p);
+  const fb=await F();await p.keyboard.press('Space');await settle(p);
+  ok(await ans(p,'m1')==='[2]','8: a multi, by keyboard: typed "Blue", Shift+Tab to Blue (focus '+fb+'), Space: Blue ends pressed '+await ans(p,'m1'));
+  await setA('m1',null);await own(1).click();await p.keyboard.type('Owl');await pill(1,'Blue').click();await settle(p);
+  ok(await ans(p,'m1')==='["Owl",2]','8: (unchanged) a word typed and another option pressed: both kept '+await ans(p,'m1'));
+  await setA('body',null);await pickPlace(p,'Head');await field(p).click();await p.keyboard.type('Sore');await sense(p,'Sore').click();await settle(p);
+  ok(await ans(p,'body')==='[{"id":"head","s":["sore"]}]'&&(await senses(p)).includes('Sore:true'),'8: body: typed "Sore", then pressed Sore: it ends pressed, one row '+await ans(p,'body')+' '+await senses(p));
+  await setA('grid',[]);await cell(p,0).locator('input.field').click();await p.keyboard.type('Wired');await cell(p,0).locator('button.emb',{hasText:/^Wired$/}).click();await settle(p);
+  ok(await ans(p,'grid')==='["i2"]','8: grid: typed "Wired", then pressed Wired: it ends pressed '+await ans(p,'grid'));
+  /* ---- 9. a press by keyboard right after typing, when the field already shows a word: Tab lands on that word's chip, and it stays ---- */
+  await setA('body',[{id:'head',s:['restless']}]);await pickPlace(p,'Head');await field(p).click();await p.keyboard.press('End');await p.keyboard.type(', Sore');await p.keyboard.press('Tab');await p.waitForTimeout(40);
+  const f1=await F();await settle(p);const f2=await F();await p.keyboard.press('Space');await settle(p);
+  ok(f1===f2&&/^BUTTON/.test(f2)&&await ans(p,'body')==='[{"id":"head","s":["sore"]}]','9: body, a word stored: typed ", Sore", Tab (focus '+f1+' then '+f2+'), Space presses that chip\'s x: restless gone, Sore kept '+await ans(p,'body'));
+  await setA('grid',['x|a|zest']);await cell(p,0).locator('input.field').click();await p.keyboard.press('End');await p.keyboard.type(', fizzy');await p.keyboard.press('Tab');await p.waitForTimeout(40);
+  const g1=await F();await settle(p);const g2=await F();await p.keyboard.press('Space');await settle(p);
+  ok(g1===g2&&/^BUTTON/.test(g2)&&await ans(p,'grid')==='["x|a|fizzy"]','9: grid, "zest" stored: typed ", fizzy", Tab (focus '+g1+' then '+g2+'), Space removes zest, fizzy kept '+await ans(p,'grid'));
+  /* ---- 10. a listed word whose label holds a comma stays one word ---- */
+  await setA('body',null);await pickPlace(p,'Head');await field(p).click();await p.keyboard.type('Warm, tender');await p.keyboard.press('Tab');await settle(p);
+  ok(await ans(p,'body')==='[{"id":"head","s":["warm"]}]','10: body: typed "Warm, tender" (a listed sense word), left: one word '+await ans(p,'body'));
+  await setA('grid',[]);await cell(p,3).locator('input.field').click();await p.keyboard.type('Warm, tender');await p.keyboard.press('Tab');await settle(p);
+  ok(await ans(p,'grid')==='["i4"]','10: grid: typed "Warm, tender" (a listed item), left: one item '+await ans(p,'grid'));
+  /* ---- 11. words typed in a widget's field and not left are added when the page is hidden or closed (call 10, the same rule) ---- */
+  await setA('body',null);await pickPlace(p,'Head');await field(p).click();await p.keyboard.type('Sore');
+  await p.evaluate(()=>window.dispatchEvent(new Event('pagehide')));await settle(p);
+  ok(await ans(p,'body')==='[{"id":"head","s":["sore"]}]','11: body: a word in the field when the page is hidden (pagehide) is added '+await ans(p,'body'));
+  await setA('grid',[]);await cell(p,0).locator('input.field').click();await p.keyboard.type('brisk');
+  await p.evaluate(()=>{Object.defineProperty(document,'visibilityState',{value:'hidden',configurable:true});document.dispatchEvent(new Event('visibilitychange'));});await settle(p);
+  await p.evaluate(()=>{delete document.visibilityState;});
+  ok(await ans(p,'grid')==='["x|a|brisk"]','11: grid: a word in a cell\'s field when the page goes to the background is added '+await ans(p,'grid'));
+  await setA('body',null);await pickPlace(p,'Head');await field(p).click();await p.keyboard.type('Sore');await p.waitForTimeout(150);
+  await p.reload();await p.waitForTimeout(900);
+  await p.locator('#main button').filter({hasText:/Fixes/}).first().click();await p.waitForTimeout(500);
+  if(!(await p.locator('#main .ap-body').count())){await p.locator('button.mode').first().click();await p.waitForTimeout(600);}
+  ok((await ans(p,'body')||'').includes('sore'),'11: body: a page reloaded with a word typed and not added keeps it '+await ans(p,'body'));
   ok(p.__bad.length===0,'choice field: no policy violation or page error '+p.__bad.join(' | '));
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'ALL PASSED');process.exit(fails.length?1:0);

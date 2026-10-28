@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-8tOEnfzB2sIu5nJAQIuWYc7lg8AqspBGlK3ctGLJOzI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EdRJC5kPLr+1jR5UhpM9c+HS0JT26X26Y1X4Vky0Odg=' 'sha256-QfvaXmjZ4i22XjB5RGm0rRaUUjnQqpeeRCrZSvuyI9Q=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -5605,12 +5605,21 @@ function syncKids(host,items,keyOf,make,update){
 /* Run `f` once a press that is under way is over (a pointer held down, then the click it ends in), else on the next turn. Leaving a
    typing field is what starts a press on a control beside it, and what that leaves draws (a chip, a pill) moves the controls under
    the pointer: the press would land on what has moved there. A fallback runs it anyway if the pointer's release never arrives. */
-let PRESSING=false;const AFTER_PRESS=[];
+let PRESSING=false,PRESS_TARGET=null;const AFTER_PRESS=[],HELD=new Set();
 const runAfterPress=()=>{AFTER_PRESS.splice(0).forEach(f=>{try{f();}catch(e){}});};
 if(typeof document!=="undefined"&&document.addEventListener){
-  document.addEventListener("pointerdown",()=>{PRESSING=true;},true);
+  document.addEventListener("pointerdown",e=>{PRESSING=true;PRESS_TARGET=e&&e.target||null;HELD.forEach(b=>{b.__held=false;});HELD.clear();},true);
   const over=()=>{PRESSING=false;setTimeout(runAfterPress,0);};
   document.addEventListener("pointerup",over,true);document.addEventListener("pointercancel",over,true);}
+/* Leaving a typing field adds the words typed, and the reader may be leaving it to press the very control that word names (an option,
+   a sense word, an item): the words have then pressed it already, and the press that follows must not undo it. `nextTo(e)` is what
+   the field is being left for (the focus's new place, or the pointer's press); `holdPress(btn)` has btn's next press only confirm
+   (heldPress); it ends when the focus leaves btn or any new press begins. */
+const nextTo=e=>e?(e.relatedTarget||(PRESSING?PRESS_TARGET:null)):null;
+const within=(btn,t)=>!!btn&&!!t&&(btn===t||(typeof btn.contains==="function"&&btn.contains(t)));
+function holdPress(btn){btn.__held=true;HELD.add(btn);
+  if(btn.addEventListener) btn.addEventListener("blur",()=>{btn.__held=false;HELD.delete(btn);},{once:true});}
+function heldPress(btn){if(!btn.__held) return false;btn.__held=false;HELD.delete(btn);return true;}
 function afterPress(f){if(!PRESSING){setTimeout(f,0);return;}AFTER_PRESS.push(f);setTimeout(()=>{PRESSING=false;runAfterPress();},1500);}
 
 /* ======================= tagInput =======================
@@ -5632,15 +5641,17 @@ function tagInput(opts){
   const dlId="taglist"+(++tagInputSeq);
   const wrap=el("div",{class:"tagfield"});
   if(opts.hint) wrap.append(el("p",{class:"hint"},opts.hint));
-  const inp=el("input",{type:"text",class:"field",style:"min-height:0",
+  const inp=el("input",{type:"text",class:"field tag-in",style:"min-height:0",
     placeholder:opts.placeholder||"",list:dlId,"aria-label":opts.placeholder||""});
   const dl=el("datalist",{id:dlId});
   const chips=el("div",{class:"tagchips"});
 
-  const drawChips=()=>{chips.innerHTML="";
-    (opts.values()||[]).forEach(label=>chips.append(el("span",{class:"tagchip"},label,
+  /* the chips that stay are not replaced: Tab from the field lands on one, and the redraw at blur must not take the focus with it */
+  const drawChips=()=>syncKids(chips,opts.values()||[],label=>label,label=>el("span",{class:"tagchip"},label,
       el("button",{type:"button",class:"x",onclick:()=>{
-        opts.onChange((opts.values()||[]).filter(x=>x!==label));refresh();}},"×"))));};
+        opts.onChange((opts.values()||[]).filter(x=>x!==label));refresh();}},"×")));
+  /* a listed word whose label holds a comma is one word, as a stored one is (parseTagValue) */
+  const known=()=>[...(opts.values()||[]),...(opts.vocab()||[]).map(v=>String(v.label||"")).filter(l=>l.includes(","))];
 
   /* Datalist only ever matches/replaces the WHOLE input value, which is
      wrong for a multi-value field — so every option is written out as the
@@ -5657,22 +5668,24 @@ function tagInput(opts){
      is actively typing into — a button click elsewhere, for instance.
      Never resets it out from under an in-progress keystroke. */
   const refresh=()=>{if(document.activeElement!==inp) inp.value=(opts.values()||[]).join(", ");
-    drawChips();drawSuggestions(parseTagValue(inp.value,opts.values()).inProgress);};
+    drawChips();drawSuggestions(parseTagValue(inp.value,known()).inProgress);};
 
   inp.addEventListener("input",()=>{
-    const {confirmed,inProgress}=parseTagValue(inp.value,opts.values());
+    const {confirmed,inProgress}=parseTagValue(inp.value,known());
     const next=dedupeLabels(confirmed);
     const cur=opts.values()||[];
     if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
     drawChips();drawSuggestions(inProgress);});
   /* A dangling in-progress word (typed but no trailing comma yet) commits
      on blur, so nothing typed or dictated is silently dropped. */
-  inp.addEventListener("blur",()=>{
-    const {confirmed,inProgress}=parseTagValue(inp.value,opts.values());
+  const commit=e=>{
+    const {confirmed,inProgress}=parseTagValue(inp.value,known());
     const next=dedupeLabels(inProgress?[...confirmed,inProgress]:confirmed);
     const cur=opts.values()||[];
-    if(next.join("\0")!==cur.join("\0")) opts.onChange(next);
-    afterPress(refresh);});
+    if(next.join("\0")!==cur.join("\0")) opts.onChange(next,nextTo(e),cur);};
+  inp.addEventListener("blur",e=>{commit(e);afterPress(refresh);});
+  /* the same, when the page is closed or reloaded (commitOwnFields) */
+  inp.commitOwn=()=>{commit(null);refresh();};
 
   refresh();
   wrap.append(inp,dl,chips);
@@ -5753,8 +5766,11 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
       vocab:()=>(W.senses||[]).flatMap(g=>(g.words||[]).map(w=>({id:w.id,label:tx(w.label,w.id)}))),
       /* typing here must never rebuild this panel, which would destroy the
          field being typed into: only what lives outside it is refreshed */
-      onChange:labels=>{const codes=labels.map(labelToSense);
+      onChange:(labels,dest,was)=>{const codes=labels.map(labelToSense);
         let r=rowFor(active);
+        /* leaving the field for a sense word's button, having typed that word: it is pressed now, and the press confirms it */
+        const nowBtn=dest&&panel.querySelectorAll?Array.from(panel.querySelectorAll("button.sense")).find(b=>within(b,dest)):null;
+        if(nowBtn){const w=nowBtn.getAttribute("data-w"),had=(was||[]).map(labelToSense);if(codes.includes(w)&&!had.includes(w)) holdPress(nowBtn);}
         if(codes.length){if(!r){r={id:active,s:[]};e[key]=[...rows(),r];}r.s=codes;}
         else if(r) e[key]=rows().filter(x=>x!==r);
         markDirty();drawChips();drawSummary();paintSenses();},
@@ -5764,12 +5780,14 @@ function svgRegions(e,W,keys,opts){opts=opts||{};const key=keys[0];
       const ws=el("div",{class:"sensewrap"});
       (g.words||[]).forEach(w=>{const row=rowFor(active);const on=!!row&&row.s.includes(w.id);
         /* what is pressed is read when the button is pressed, not when it was drawn: a word typed into the field has changed it */
-        ws.append(el("button",{type:"button",class:"sense","data-w":w.id,"aria-pressed":String(on),onclick:()=>{
+        const sb=el("button",{type:"button",class:"sense","data-w":w.id,"aria-pressed":String(on),onclick:()=>{
+          if(heldPress(sb)) return;
           let r=rowFor(active);const now=!!r&&r.s.includes(w.id);
           if(!r){r={id:active,s:[]};e[key]=[...rows(),r];}
           r.s=now?r.s.filter(x=>x!==w.id):[...r.s,w.id];
           if(!r.s.length) e[key]=rows().filter(x=>x!==r);
-          markDirty();drawAll();}},tx(w.label,w.id)));});
+          markDirty();drawAll();}},tx(w.label,w.id));
+        ws.append(sb);});
       set.append(ws);panel.append(set);});
     const row=rowFor(active);
     if(row) panel.append(el("p",{style:"margin:.7rem 0 0"},
@@ -5824,8 +5842,8 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
       if(opts.readonly){btns.innerHTML="";idsFor().forEach(id=>btns.append(el("span",{class:"emw"},itemLabel(id))));return;}
       /* the buttons that stay are not replaced: a press that began on one, right after typing in the field, would be lost */
       syncKids(btns,idsFor(),id=>id,id=>{
-        const bt=el("button",{type:"button",class:"emb"},itemLabel(id));
-        bt.addEventListener("click",()=>{const now=chosen().includes(id);
+        const bt=el("button",{type:"button",class:"emb"},itemLabel(id));bt.__id=id;
+        bt.addEventListener("click",()=>{if(heldPress(bt)) return;const now=chosen().includes(id);
           e[key]=now?chosen().filter(x=>x!==id):[...chosen(),id];
           bt.setAttribute("aria-pressed",String(!now));markDirty();
           /* keep the tag field's own chips in sync with a button click */
@@ -5843,8 +5861,8 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
         vocab:()=>known.map(k=>({id:k.id,label:tx(k.label,k.id)})),
         /* typing here must never rebuild this field's own DOM; the button row
            below carries no typing of its own, so it redraws at once */
-        onChange:labels=>{
-          const newIds=[];
+        onChange:(labels,dest)=>{
+          const newIds=[],was=chosen().slice();
           labels.forEach(label=>{
             const match=known.find(k=>norm(tx(k.label,k.id))===norm(label));
             newIds.push(match?match.id:"x|"+c.id+"|"+label);});
@@ -5852,6 +5870,8 @@ function gridSelect(e,W,keys,opts){opts=opts||{};const key=keys[0];
           const mine=id=>id.startsWith("x|"+c.id+"|")||known.some(k=>k.id===id);
           const stay=chosen().filter(id=>!mine(id)||newIds.includes(id));
           e[key]=[...stay,...newIds.filter(id=>!stay.includes(id))];
+          /* leaving the field for the button of an item just typed: it is pressed now, and the press confirms it */
+          if(dest&&btns.children) Array.from(btns.children).forEach(bt=>{if(within(bt,dest)&&bt.__id!==undefined&&chosen().includes(bt.__id)&&!was.includes(bt.__id)) holdPress(bt);});
           markDirty();drawBtns();},
         placeholder:u.tagPh||"",hint:u.tagHint||""});
       qb.append(tag.el);}
@@ -6023,9 +6043,13 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
   const put=(list,later)=>{draft[K]=multi?list:(list.length?list[list.length-1]:null);checked=false;markDirty();byReader=true;
     if(later) afterPress(draw);else draw();};
   const toggle=(n,later)=>{const c=chosen(),on=c.includes(n);put(on?c.filter(x=>x!==n):multi?[...c,n]:[n],later);};
-  const addOwn=(text,later)=>{const t=String(text).trim();if(!t) return;
+  const addOwn=(text,later,dest)=>{const t=String(text).trim();if(!t) return;
     const at=listed.findIndex(o=>sameWords(plainText(o),t));
-    if(at>=0){if(!chosen().includes(at+1)) toggle(at+1,later);return;}
+    if(at>=0){if(!chosen().includes(at+1)){toggle(at+1,later);
+      /* leaving the field for the very option just typed: it is pressed now, and the press confirms it */
+      const bt=dest&&Array.from(pills.children).find(n=>n.__key&&String(n.__key).split(":")[0]==="o"+(at+1));
+      if(bt&&within(bt,dest)) holdPress(bt);}
+      return;}
     if(chosen().some(x=>typeof x==="string"&&sameWords(x,t))) return;
     put(multi?[...chosen(),t]:[t],later);};
   const dropOwn=t=>put(chosen().filter(x=>x!==t));
@@ -6062,8 +6086,8 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
           el("button",{type:"button",class:"pill-x","aria-label":Q.ownRemove(t),onclick:()=>dropOwn(t)},"×"));}
         if(it.again!==undefined){const t=it.again;return el("button",{type:"button",class:"pill-btn","aria-pressed":"false",onclick:()=>addOwn(t)},t);}
         /* an option whose mark changes is a new button (its key holds the mark); the others stay */
-        const {n,o,mark}=it;return el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),onclick:()=>toggle(n)},...words(o,true),
-          mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null);},
+        const {n,o,mark}=it;const pb=el("button",{type:"button",class:"pill-btn"+(mark?" q-"+mark:""),onclick:()=>{if(heldPress(pb)) return;toggle(n);}},...words(o,true),
+          mark?el("span",{class:"q-mk"},"  "+MARK[mark][0]+MARK[mark][1]):null);return pb;},
       (nd,it)=>{if(it.n!==undefined) nd.setAttribute("aria-pressed",String(chosen().includes(it.n)));});
     const wantCheck=graded&&multi&&now.length>0;
     syncKids(acts,wantCheck?[1]:[],()=>"check",()=>el("button",{type:"button",class:"small",onclick:()=>{checked=true;byReader=true;draw();}},Q.check));
@@ -6083,10 +6107,10 @@ function drawChoice(b,draft,activityId,dc,qc){const listed=b.options||[],Q=strin
   if(b.open){const inp=el("input",{type:"text",class:"field q-own","aria-label":Q.addOwn,placeholder:Q.addOwn,autocomplete:"off"});
     /* the words in the field are added as Enter or Add would add them: on Enter, on Add, when the field is left and when the page is
        closed or reloaded (commitOwnFields). On a choice they replace the pick. */
-    const take=later=>{const t=inp.value;if(t==="") return;inp.value="";addOwn(t,later);};
+    const take=(later,dest)=>{const t=inp.value;if(t==="") return;inp.value="";addOwn(t,later,dest);};
     const go=()=>{take();inp.focus();};
     inp.commitOwn=()=>take();
-    inp.addEventListener("blur",()=>take(true));
+    inp.addEventListener("blur",e=>take(true,nextTo(e)));
     inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go();}});
     box.append(el("div",{class:"q-ownrow"},inp,el("button",{type:"button",class:"small",onclick:go},Q.addBtn)));}
   if(graded) box.append(acts,live);
@@ -8768,7 +8792,7 @@ window.addEventListener("beforeunload",e=>{if((dirty||unsavedEntries>0)&&hostCov
 /* Words typed in a choice or multi's "Add your own" field and not yet added are added as the page is hidden or left, as leaving the
    field would add them, so closing or reloading the page does not drop them (SPEC.md section 5) */
 function commitOwnFields(){if(typeof document==="undefined"||!document.querySelectorAll) return;
-  document.querySelectorAll("input.q-own").forEach(i=>{if(typeof i.commitOwn==="function") i.commitOwn();});}
+  document.querySelectorAll("input.q-own,input.tag-in").forEach(i=>{if(typeof i.commitOwn==="function") i.commitOwn();});}
 /* A save still waiting out its 400ms is written the moment the page is hidden
    or left: on a phone those are the last events a page reliably gets. */
 /* ...and a change the host has not yet been told of is told then too, rather than lost with the page's timers; and what
