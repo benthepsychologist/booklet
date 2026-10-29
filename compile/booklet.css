@@ -253,6 +253,29 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-toc ul{margin:0!important;padding-left:0!important;list-style:none!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-toc li{margin:.2rem 0!important}
 
+/* a many-page booklet: the contents page's cards (a title, a picture, a blurb, a status line; a card's own pages under it),
+   the line above an activity's page, and the way on at its foot */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cards{list-style:none!important;margin:1rem 0 2rem!important;padding:0!important;display:grid!important;gap:.6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card{display:grid!important;grid-template-columns:2.4rem 1fr!important;gap:.15rem .8rem!important;align-items:start!important;margin:0!important;padding:.8rem .95rem!important;
+  border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important;background:var(--bk-surface)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card>.bk-cards{grid-column:2!important;margin:.5rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-pic{display:flex!important;align-items:center!important;justify-content:center!important;width:2.4rem!important;height:2.4rem!important;border-radius:var(--bk-radius-small)!important;
+  background:var(--bk-accent-soft)!important;color:var(--bk-accent)!important;font-weight:800!important;font-size:1.05rem!important;line-height:1!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-pic .bk-ci{color:inherit!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-body{min-width:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-body>p{margin:.15rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-title{font-family:var(--bk-font-head)!important;font-weight:700!important;font-size:1.1rem!important;line-height:1.3!important;color:var(--bk-ink)!important;text-decoration:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-title:hover{color:var(--bk-accent)!important;text-decoration:underline!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-blurb{color:var(--bk-muted)!important;font-size:.95rem!important;line-height:1.5!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-status{color:var(--bk-muted)!important;font-size:.85rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-crumb{margin:0 0 .5rem!important;font-size:.9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pager{display:flex!important;flex-wrap:wrap!important;justify-content:space-between!important;gap:.6rem 1.2rem!important;margin:2.5rem 0 0!important;padding-top:.8rem!important;
+  border-top:var(--bk-border) solid var(--bk-rule)!important;font-size:.95rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pager>:is(a,span):not(.bk-up){flex:1 1 12rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-next{text-align:right!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-prev{text-align:left!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-up{flex:none!important;font-weight:700!important}
+
 /* plain prose */
 .booklet:not(#bk):not(#bk):not(#bk) :is(ul,ol){margin:0 0 1rem!important;padding-left:1.4rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) li{margin:.25rem 0!important}
@@ -524,7 +547,7 @@
   }
   .bk-page{background:none}
   .bk-main{max-width:none;padding:0}
-  .booklet:not(#bk):not(#bk):not(#bk) .bk-anchor{display:none!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-anchor,.bk-pager,.bk-crumb){display:none!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::after{display:none!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-fold::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
   .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-cell,pre,figure){break-inside:avoid!important}

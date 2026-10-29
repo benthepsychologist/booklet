@@ -34,7 +34,8 @@ chk("COVERAGE.engines is ENGINE_WAY, the table widget() dispatches from",same(CO
 /* ---- the fixture, drawn ---- */
 const FIX=path.join(__dirname,"fixtures","compile-kinds.booklet.md");
 const run=C.compile([{file:FIX}],{form:"standalone",engine:X});
-const r=run.results[0],page=r.files.get("compile-kinds/index.html")||"",report=C.reportText(run);
+/* the fixture shows four activities, so it is a contents page and a page for each: what is drawn is on them together */
+const r=run.results[0],page=[...r.files].filter(([k])=>k.endsWith("/index.html")).map(([,v])=>v).join("\n"),report=C.reportText(run);
 chk("the fixture compiles",r.rep.ok&&page.length>0,r.rep.refused);
 const has=(cls,tag)=>new RegExp("<"+(tag||"[a-z0-9]+")+"\\b[^>]*class=\"[^\"]*\\b"+cls.replace(/[-]/g,"\\-")+"\\b").test(page);
 
@@ -63,7 +64,7 @@ chk("the report lists what is read-only here, with the reason",/Read-only here/.
 chk("an open choice offers the renderer's Add your own",page.includes('<li class="bk-own">'+R.strings("question").addOwn+"</li>"));
 chk("a scale shows its anchors, a matrix its items and anchors",/<ul class="bk-scale">\s*<li>Wobbly<\/li>/.test(page)&&/<table class="bk-matrix">[^]*?<th scope="row">A light breeze<\/th>/.test(page));
 /* both engines */
-chk("the grid-select widget is drawn: axes, cells in their colour names, items",has("bk-w-grid-select","fieldset")&&/bk-ax bk-ax-top">higher</.test(page)&&/<div class="bk-cell bk-c-blue">\s*<p class="bk-cell-name">Soaring<\/p>\s*<ul class="bk-words">\s*<li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-w1" autocomplete="off"><label for="bk-compile-kinds-w1">Glide<\/label><span class="bk-shows" hidden>High and calm\.<\/span><\/li>/.test(page));
+chk("the grid-select widget is drawn: axes, cells in their colour names, items",has("bk-w-grid-select","fieldset")&&/bk-ax bk-ax-top">higher</.test(page)&&/<div class="bk-cell bk-c-blue">\s*<p class="bk-cell-name">Soaring<\/p>\s*<ul class="bk-words">\s*<li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-asks-w1" autocomplete="off"><label for="bk-compile-kinds-asks-w1">Glide<\/label><span class="bk-shows" hidden>High and calm\.<\/span><\/li>/.test(page));
 chk("a grid with no colour names takes the quiet ramp by place",/bk-cell bk-c-n0[^]*bk-cell bk-c-n3/.test(page));
 chk("the svg-regions widget is drawn by its places, figure by figure",has("bk-w-svg-regions","fieldset")&&/<p class="bk-places-h">Front<\/p>\s*<ul class="bk-words">\s*<li>Sail<\/li>\s*<li>Tail<\/li>/.test(page));
 chk("describe adds each place's note",/<dl class="bk-notes-of">[^]*?<dt>Spar<\/dt>\s*<dd>The stick that holds it open\.<\/dd>/.test(page));

@@ -20,22 +20,26 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 
 const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures');
 const inputs=[...fs.readdirSync(path.join(ROOT,'examples')).filter(f=>f.endsWith('.booklet.md')).map(f=>({file:path.join(ROOT,'examples',f)})),
-  ...['compile-article','compile-kinds','compile-quiz','figures','charts','data-views','compile-records'].map(n=>({file:path.join(FIX,n+'.booklet.md')}))];
+  ...['compile-article','compile-kinds','compile-quiz','figures','charts','data-views','compile-records','compile-pages','compile-pair','compile-pair.es'].map(n=>({file:path.join(FIX,n+'.booklet.md')}))];
 fs.rmSync(OUT,{recursive:true,force:true});
 const run=C.compile(inputs,{form:'both',renderer:HTML});
 C.write(run,OUT,{force:true});
 ok(run.results.every(r=>r.rep.ok),'every page compiles with '+path.basename(HTML)+' ('+run.results.length+' booklets, both forms)');
-/* a bare host for each site page: the one stylesheet line, and the fragment under the front matter, in its own <main> */
+/* a bare host for each site page: the one stylesheet line, and the fragment under the front matter, in its own <main>. A booklet
+   of many pages has a contents page and a page for each activity, and each is checked as the booklet's one page is. */
 const pages=[];
 for(const r of run.results){const name=r.rep.name;
-  pages.push({name,form:'standalone',file:path.join(OUT,'standalone',name,'index.html')});
-  const frag=fs.readFileSync(path.join(OUT,'site',name,'index.html'),'utf8').replace(/^---\n[\s\S]*?\n---\n/,'');
-  const host=path.join(OUT,'site',name,'host.html');
+ for(const rel of r.rep.pages.filter(p=>p.startsWith('standalone/')&&p.endsWith('/index.html'))){
+  const label=rel.slice('standalone/'.length,-'/index.html'.length);
+  pages.push({name:label,form:'standalone',file:path.join(OUT,rel)});
+  const site=path.join(OUT,'site',label,'index.html');
+  const frag=fs.readFileSync(site,'utf8').replace(/^---\n[\s\S]*?\n---\n/,'');
+  const host=path.join(OUT,'site',label,'host.html');
   fs.writeFileSync(host,'<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n'
-    +'<title>A host</title><link rel="stylesheet" href="../booklet/booklet.css">\n'
+    +'<title>A host</title><link rel="stylesheet" href="'+path.relative(path.dirname(host),path.join(OUT,'site','booklet','booklet.css'))+'">\n'
     +'<style>body{margin:0;font-family:Georgia,serif;background:#fff;color:#111}header,main{max-width:56rem;margin:0 auto;padding:1rem}</style></head>\n'
     +'<body><header><p>A host site\'s own header</p></header><main>\n'+frag+'</main></body></html>\n');
-  pages.push({name,form:'site',file:host});}
+  pages.push({name:label,form:'site',file:host});}}
 const lum=c=>{const m=/rgba?\(([\d.]+), ([\d.]+), ([\d.]+)/.exec(c);if(!m) return null;
   const f=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return 0.2126*f(+m[1])+0.7152*f(+m[2])+0.0722*f(+m[3]);};
 const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
@@ -72,6 +76,58 @@ async function svgProof(b){
   await p.goto('http://host.test/out/index.html');
   const pg=await p.evaluate(()=>({ran:document.documentElement.getAttribute('data-ran'),imgs:[...document.querySelectorAll('article img')].map(i=>i.getAttribute('src'))}));
   ok(pg.ran===null&&JSON.stringify(pg.imgs)==='["plain.svg"]','svg proof: the compiled page, scripting on, runs nothing and shows only the plain circle as a picture ('+pg.imgs.join(', ')+')');
+  await ctx.close();}
+
+/* A reader's way through a booklet of many pages, scripting off, served as a host serves a folder (a folder address is its
+   index.html): each card opens its page, a page's "Contents" link goes back, and "next" from the first page reaches every
+   page in the booklet's reading order, then "back" returns the same way. Nothing 404s. */
+async function journey(b){
+  const mime={'.css':'text/css','.woff2':'font/woff2','.svg':'image/svg+xml','.png':'image/png'};
+  const ctx=await b.newContext({viewport:{width:1280,height:900},javaScriptEnabled:false});
+  await ctx.route('http://host.test/**',route=>{const u=decodeURIComponent(new URL(route.request().url()).pathname);
+    const f=path.join(OUT,u.endsWith('/')?u+'index.html':u);
+    if(!f.startsWith(OUT+path.sep)||!fs.existsSync(f)||!fs.statSync(f).isFile()) return route.fulfill({status:404,body:'not here'});
+    return route.fulfill({status:200,contentType:mime[path.extname(f)]||'text/html',body:fs.readFileSync(f)});});
+  const p=await ctx.newPage(),missing=[];p.on('response',r=>{if(r.status()>=400) missing.push(r.url());});
+  let books=0;
+  for(const r of run.results){const name=r.rep.name,list=r.rep.pageList;if(list.length<2) continue;books++;
+    const home='http://host.test/standalone/'+name+'/',folders=list.slice(1).map(x=>x.path.split('/')[1]);
+    await p.goto(home);
+    const hrefs=await p.$$eval('a.bk-card-title',as=>as.map(a=>a.getAttribute('href')));
+    ok(JSON.stringify(hrefs.map(h=>h.replace(/\/$/,'')).sort())===JSON.stringify(folders.slice().sort()),name+': the contents page has a card for each activity page ('+hrefs.length+')');
+    const lost=[];
+    for(let i=0;i<hrefs.length;i++){await p.goto(home);const card=(await p.$$('a.bk-card-title'))[i],want=(await card.innerText()).trim();
+      await card.click();await p.waitForLoadState();
+      const h1=(await p.$eval('h1',e=>e.innerText)).trim(),at=p.url();
+      if(at!==home+hrefs[i]||!h1.includes(want)) lost.push(want+' → '+at+' ('+h1+')');
+      await p.click('a.bk-up');await p.waitForLoadState();if(p.url()!==home) lost.push(want+': the contents link went to '+p.url());}
+    ok(!lost.length,name+': each card opens its own page, and the page links back to the contents'+(lost.length?' ('+lost.slice(0,2).join('; ')+')':''));
+    await p.goto(home+folders[0]+'/');const fwd=[folders[0]];
+    while(await p.$('a.bk-next')){await p.click('a.bk-next');await p.waitForLoadState();fwd.push(new URL(p.url()).pathname.split('/')[3]);if(fwd.length>folders.length+1) break;}
+    const back=[fwd[fwd.length-1]];
+    while(await p.$('a.bk-prev')){await p.click('a.bk-prev');await p.waitForLoadState();back.push(new URL(p.url()).pathname.split('/')[3]);if(back.length>folders.length+1) break;}
+    ok(JSON.stringify(fwd)===JSON.stringify(folders)&&JSON.stringify(back)===JSON.stringify(folders.slice().reverse()),name+': "next" reads every page in order, and "back" returns ('+fwd.join(' > ')+')');}
+  ok(books>=5&&!missing.length,'the journeys asked for nothing that is not there ('+books+' booklets'+(missing.length?'; missing: '+missing.slice(0,3).join(', '):'')+')');
+  await ctx.close();}
+
+/* the script lane on a many-page booklet: the activity page with a graded question is one folder deeper than a one-page booklet's, so it
+   links booklet.js as ../../booklet/booklet.js; with script on, the file is fetched (200) and the part does its work on that page. */
+async function scriptOnDeepPage(b){
+  const ctx=await b.newContext({viewport:{width:1280,height:900}});
+  const seen=[];
+  await ctx.route('http://host.test/**',route=>{const u=decodeURIComponent(new URL(route.request().url()).pathname);
+    const f=path.join(OUT,u.endsWith('/')?u+'index.html':u);
+    if(!f.startsWith(OUT+path.sep)||!fs.existsSync(f)||!fs.statSync(f).isFile()){seen.push([u,404]);return route.fulfill({status:404,body:'not here'});}
+    seen.push([u,200]);
+    return route.fulfill({status:200,contentType:({'.css':'text/css','.js':'text/javascript','.woff2':'font/woff2','.svg':'image/svg+xml'})[path.extname(f)]||'text/html',body:fs.readFileSync(f)});});
+  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  await p.goto('http://host.test/standalone/how-tides-work/rd-check/');await p.waitForLoadState('load');
+  ok(seen.some(([u,c])=>u==='/standalone/booklet/booklet.js'&&c===200)&&!seen.some(([,c])=>c===404),'a many-page booklet: the activity page with a graded question fetches ../../booklet/booklet.js (200), and nothing 404s'+(seen.filter(([,c])=>c===404).length?' ('+seen.filter(([,c])=>c===404)[0][0]+')':''));
+  await p.click('li.bk-right label');
+  const said=(await p.$eval('.bk-q[data-bk-graded] .bk-live',e=>e.textContent)).trim();
+  ok(said==='Right.'&&!errs.length,'…and the part works there: the right option is spoken as "Right." ('+JSON.stringify(said)+(errs.length?'; '+errs[0]:'')+')');
+  await p.goto('http://host.test/standalone/how-tides-work/');
+  ok(!(await p.$('script[src]')),'…while the contents page, which has no question, links no script');
   await ctx.close();}
 
 (async()=>{
@@ -124,6 +180,8 @@ async function svgProof(b){
       if(sums.length){const after=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,w:window.innerWidth}));
         ok(after.sw<=after.w,at+': no sideways scroll with every fold open');}}
     await ctx.close();}
+  await journey(b);
+  await scriptOnDeepPage(b);
   await svgProof(b);
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'compile pages: all checks passed');

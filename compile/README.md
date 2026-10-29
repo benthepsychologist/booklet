@@ -26,7 +26,8 @@ node compile/compile.js --help
 | `--version` | the compiler's version, and the renderer's and format's it reads |
 
 Each file becomes one page, at an address made from its name: `how-tides-work.booklet.md` becomes
-`how-tides-work/index.html`. Two files whose addresses differ only in case clash (they would be one folder on a
+`how-tides-work/index.html`; a booklet that shows two or more activities becomes a contents page and a page for each
+activity (**Many pages**, below). Two files whose addresses differ only in case clash (they would be one folder on a
 case-insensitive disk), and the second is refused. A run's pages can link to one another (below). The exit code is 0
 when every file was compiled and written, 1 when one was refused, the compiler failed on one, or a page or the
 stylesheet was kept back, and 2 for a mistake in the command. A file the compiler fails on stops only itself: the others
@@ -40,7 +41,7 @@ message can carry a piece of the file's text).
 sentence's end, with no image's alt text or address in it), its language, Open Graph tags, a JSON-LD `Article` block
 (whose `<` is escaped, so no title can end it), and, with `--base-url`, its canonical address. The title in `<title>`,
 `og:title` and the JSON-LD is the title's words, never its Markdown. Open the page from the disk, or serve the folder as
-it is.
+it is (a booklet of many pages is better served: see below).
 
 **The page's language** is the booklet's own: its front matter's `lang:`, read with the renderer's own front-matter
 reader and written as the renderer writes a tag (`PT-br` is `pt-BR`). It is the page's `<html lang>` and the article's
@@ -84,6 +85,105 @@ address. That is all a host needs, for any site. The stylesheet styles only what
 
 **Both** (`--form both`) writes the two, under `<out>/standalone/` and `<out>/site/`.
 
+## Many pages, and translations
+
+**One page or many.** A booklet that shows no more than one activity (a hidden activity is not shown) is the one page
+above, written exactly as 0.1.0 wrote it. A booklet that shows **two or more** is a **contents page** and **one page for
+each activity**, each a page of its own, with its own title, description, "On this page" list and head:
+
+```
+<out>/how-tides-work/index.html               the contents page
+<out>/how-tides-work/rd-tides/index.html      one activity
+<out>/how-tides-work/rd-check/index.html      another
+```
+
+- **The contents page** holds the booklet's title and opening, then each module: its title, opening and notice, its tabs
+  (SPEC.md section 3, "A module's tabs": each tab's name, its prose and the cards of its activities), and a **card** for
+  each activity, drawn from the file's parts (SPEC.md, "A card's parts"): its title, its picture (the line's `icon:`
+  when the picture sprite has it, else an emoji the title begins with, which then leaves the title, else its number in
+  its list), its blurb (the first paragraph, as the renderer's own card has it: plain words, so a picture in it is its alt text and a formula its TeX; the page's description leaves both out) and its status line (the `>` lines under the activity line; with none, how
+  many questions it holds; `status:off` hides it). An activity written under another with `parent:` is a card inside its
+  parent's card. A module of one activity, or a bare activity, is a single card, taking the module's title, blurb and
+  picture first (as the renderer does), and its page is that activity's page, with the module's opening above it. There
+  is no page for a module of several activities: its section of the contents page is its page.
+- **An activity's page** holds the activity (its tabs one after another, as in 0.1.0), a line above it linking to the
+  contents, and a way on at its foot: **back**, **Contents** and **next**, in the booklet's reading order (its modules in
+  file order, each module's activities as the format keeps them: a page before the ones under it). A page's `<title>` is
+  the activity's title and then the booklet's. Hidden activities have no page.
+- **The words** on the way on are the renderer's own "Back" and "Next" in the booklet's language, and the compiler's
+  "Contents" (English, French and Spanish, like "On this page").
+
+**The address, and the one that was not chosen.** An activity's page is at `<name>/<id>/`, the activity's id as the author
+wrote it, made a plain address by the renderer's own `slugify` (`rd-tides` stays `rd-tides`). The module is not in the
+address, because a booklet is usually one module and the author's own ids are what stay put: add an activity or a module and
+no other address moves. The one case that changes an address is the author's own: two activities with one id in two modules
+(an id belongs to its module) take their module's id in front (`week-1-intro`, `week-2-intro`), and two that differ only in
+case, or are left clashing, take a number (`intro-2`). The rejected scheme is `<name>/<module>/<id>/` always: it never
+moves an address, but it writes a folder the author did not choose into every address of the usual one-module booklet,
+holds no place for the bare activities (which have no module id), and is two levels deeper than "a folder per activity
+under the booklet's folder".
+
+**A link that reaches another page goes there.** A link to a heading of another activity, to a module's tab, to a module of
+the booklet, or to another activity's title is written as the address of the page it lives on and the id of the heading
+(`../flour/#flour-and-water`, `../#go-further`), once every page has its ids; a link within a page stays within it. A link
+to a heading that is nowhere is marked and drawn as its words, as before. A link to another booklet compiled in the same
+run is to its contents page (`../other/`, or `../../other/` from an activity page). **A folder address needs a host that
+serves a folder's `index.html`**, as any web server and any static site generator does; a page opened straight from the
+disk (`file://`) has working links within itself, but a card or a way on opens the folder's listing, so look at a
+many-page booklet through a server (for example `python3 -m http.server` in the output folder).
+
+**Translations.** Booklets compiled in one run that carry **one front matter `id` and each its own `lang`** (SPEC.md section 9:
+`tides.booklet.md` and `tides.es.booklet.md`) are linked to each other, page for page: an activity's page links the page
+with the same **module id and activity id** in each translation (the id as the renderer keeps it, module first: `eggs/soft` pairs with
+`eggs/soft`, not with `huevos/soft`, so a translation that renames its module ids is not paired page by page), and the contents page (or the one page of a one-page booklet) the others'.
+Each page carries `<link rel="alternate" hreflang="es" href="…">` for every translation, itself among them, so search
+engines and readers find the other language. The language is the front matter's `lang`, as the page's own language is read.
+The address is relative (`../../tides.es/rd-tides/`), and whole with `--base-url`, which search engines ask for. A page the
+other translation has no page for, and a group in which two booklets share a language (two versions, or a mistake), is not
+linked; the report names the translations, how many of the booklet's pages were linked, and the pages that were not. The files must be compiled in one run; a translation in a run of
+its own is not found.
+
+**The site form** writes each page as a fragment under front matter, for a site generator's content folder
+(`<out>/<name>/index.html`, `<out>/<name>/<id>/index.html`). Besides `title` and `description` a many-page booklet's
+fragments carry `weight`, the page's number in the report's list (1 for the contents page), and a booklet with translations
+carries `alternates`, a list of `hreflang` and `href`:
+
+```
+---
+title: "A hard egg"
+description: "Lower the egg into boiling water for ten minutes…"
+weight: 3
+alternates:
+  - hreflang: "en"
+    href: "../../eggs/hard/"
+  - hreflang: "es"
+    href: "../../eggs.es/hard/"
+---
+```
+
+**To build the site's menu**, read the report: for each booklet it lists its pages in reading order, one numbered line each,
+with the page's title (`--report <file>` writes it to a file), and the same number is each fragment's `weight`, so a
+generator that sorts a section by weight (Hugo does) lists them in order with no more. A layout that prints the alternates
+writes one `<link rel="alternate" hreflang="{{ .hreflang }}" href="{{ .href }}">` for each (the layout must escape the values
+where it prints them, as for `title`). Every fragment also carries the page's own way on (the `bk-pager`), which a layout
+that draws its own menu can hide with a rule of its own.
+
+**A generator's own rules.** Jekyll, Eleventy and the like take the fragments as they stand: a contents page with the activity
+folders beside it. **Hugo reads an `index` file as a leaf bundle, which holds no pages below it, so a many-page booklet's contents
+fragment must be renamed `_index.html`** (a section page) for the activity folders beside it to be pages of that section. This
+was written from Hugo's documentation and has not been run against a Hugo build here.
+
+**Not built here.** A wiki written with `parent:` is pages under their parent where the format states it (cards inside the
+card of their parent, the reading order a page before the ones under it), but a page-tree address (`<name>/<parent>/<child>/`)
+and a breadcrumb of the ancestors wait for format 0.17.
+
+**Stamped page by page.** The stamp guard (below) keeps each page apart: a rerun leaves a page tidied by hand as it is and
+writes the booklet's other pages again, and the report says which it kept and how many others it wrote ("no page of the booklet
+was written" when its only page, or every page, was tidied). Before it writes anything it looks at every path it will write: a
+booklet whose folder (or page) is already a file, or whose page's place is already a folder, is refused whole with a line saying
+which, and the other booklets are still written. The compiler never deletes a file: the page of an
+activity that was renamed or removed stays in the output folder until it is deleted by hand.
+
 ## Questions as a quiz
 
 A pick-one (`choice`) or pick-any (`multi`) question is a `<fieldset class="bk-q" data-bk-kind="…">` whose options are real
@@ -124,7 +224,7 @@ words of its own is named for a screen reader by its help text, else its id.
 
 A page **reads fully with no script**. Where a part of it can respond when pressed (a quiz answer, a widget), the compiler
 also writes one script, `booklet.js`, beside `booklet.css`, and a standalone page links it with
-`<script src="../booklet/booklet.js" defer></script>` only when something on that page needs it. A site's layout adds the
+`<script src="../booklet/booklet.js" defer></script>` (`../../booklet/booklet.js` from an activity's page of a many-page booklet) only when something on that page needs it, page by page, so a contents page with no question links none while an activity page that has one does. A site's layout adds the
 line itself, `<script src="/booklet/booklet.js" defer></script>`, next to the stylesheet line, and the build report says
 which pages need it. A host that never loads it still gets every page readable. **The script keeps nothing and sends
 nothing**: no cookie, `localStorage`, `sessionStorage` or IndexedDB, no request of any kind, and no booklet text turned
@@ -198,7 +298,7 @@ own `--bk-font-text` and `--bk-font-head` never loads them.
 **Drawn**, the way the renderer's reading view draws it:
 
 - the booklet's title (standalone; on a site the layout draws it), its opening and lede, and every shown activity in file
-  order, each under its title;
+  order, each under its title (a booklet of two or more shown activities draws them on pages of their own, above);
 - an activity's tabs one after another, each under its name, and its pages run on with a quiet divider;
 - rows, callouts of every kind in their own colour and icon, groups, and folds as `<details>` that open with no script;
 - footnotes and citations as numbered marks, with the notes at the page's foot (source, edition, page, quote, verified);
@@ -292,7 +392,8 @@ Chromium with scripting on, to show the case is real, and checks the compiler co
 
 ## The report, and tidying a page
 
-Every run prints a build report for each file: where its pages went, what was drawn (by count), the description it
+Every run prints a build report for each file: where its pages went (a many-page booklet's, in reading order, numbered),
+what was drawn (by count), the description it
 took, the images it copied, the links between booklets, what the renderer reported about the file, and the **To tidy**
 list, one `[ ]` line per marked part, which is also an HTML comment at that spot on the page. That list is the tidy-up
 list: open the page, find each comment, and replace it by hand with what the site should show there (a table written
@@ -320,9 +421,9 @@ that would break the compiler is caught here and never on a host's build.
 
 | File | What it holds |
 | --- | --- |
-| `compile.js` | the command, the two forms, images and the SVG check, the stamp, writing, the report |
+| `compile.js` | the command, the two forms, images and the SVG check, the stamp, the pages of a booklet and its translations, writing, the report |
 | `engine.js` | the renderer, loaded in a `vm` context (not a security boundary): the parse, the Markdown engine, Temml, icons and fonts; the records checks; author comments |
-| `draw.js` | a design drawn as one page's markup; what is drawn and what is marked (`COVERAGE`, `MARKED`) |
+| `draw.js` | a design drawn as a page's markup (the plan for a many-page booklet, its cards and way on); what is drawn and what is marked (`COVERAGE`, `MARKED`) |
 | `script.js` | the assembler and the scan for `booklet.js` (below) |
 | `script/` | the script's parts, one file each |
 | `html.js` | the markup as nodes, written out as indented HTML a person can tidy |
@@ -341,7 +442,8 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-golden.test.js` | the pages for the examples and page-shaped fixtures equal the committed ones in `test/compile-golden/`; `node test/compile-golden.test.js --write` refreshes them |
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |
-| `compile-browser.js` | in Chromium with scripting off, at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
+| `compile-pages.test.js` | many pages: the address of each page and of a clash; every relative link on every page of every many-page booklet reaches a file and an id; no page is orphaned; the way on and the reading order; translations (hreflang in the head and in the front matter, relative and whole; a shared language or a missing page is not linked, and the report names the pages left unlinked); an activity called `index`, one whose id makes no folder name, and one called `page`; the site form's `weight`; a page tidied by hand kept page by page, and the report's words about it; a folder path that is a file refusing the booklet before anything is written; an image reached from every page |
+| `compile-browser.js` | in Chromium with scripting off, every page of every booklet, and a journey through each many-page booklet served as a host serves a folder (each card opens its page, the contents link goes back, "next" reads every page in order and "back" returns, nothing 404s); at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
 | `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards, and `!important` rules of one and two ids, among them `#main .content blockquote *`); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; the check fails with no guard, with the guard as it was before `!important`, and with `!important` but one id's weight |
 
 `examples/mindful-check-in.booklet.md` is compiled by the content and browser tests but has no golden page, since its

@@ -92,7 +92,9 @@ const PLAIN='---\nbooklet: "0.16"\nid: t/plain\ntitle: Plain\nlang: en\n---\n\n#
 const without=C.compile([{text:PLAIN,name:"plain",dir:tmp}],{form:"both",engine:X,scriptDir:good});
 chk("a page that needs no script links none, and booklet.js is not written",!/<script src/.test(pageOf(without,"standalone/plain/index.html"))&&![...without.assets.keys()].some(k=>k.endsWith(".js"))&&without.script===null);
 const real=C.compile([{file:book}],{form:"standalone",engine:X,scriptDir:good});
-chk("a page with a graded question asks for the script on its own (no forcing)",/<script src="..\/booklet\/booklet\.js" defer><\/script>/.test(pageOf(real,"how-tides-work/index.html")));
+/* how-tides-work is a contents page and a page per activity: the page with the graded question links the script, one folder deeper, and the contents page has nothing that needs it */
+chk("a page with a graded question asks for the script on its own (no forcing), as the page one folder down reaches it; the contents page links none",
+  /<script src="\.\.\/\.\.\/booklet\/booklet\.js" defer><\/script>/.test(pageOf(real,"how-tides-work/rd-check/index.html"))&&!/<script src/.test(pageOf(real,"how-tides-work/index.html")));
 chk("no parts at all: no link and no script, even when a page claims to need one",(()=>{const r=C.compile([{file:book}],{form:"standalone",engine:X,scriptDir:path.join(tmp,"none"),forceScript:true});return !/<script src/.test(pageOf(r,"standalone/how-tides-work/index.html"))&&![...r.assets.keys()].some(k=>k.endsWith(".js"));})());
 let threw="";try{C.compile([{file:book}],{engine:X,scriptDir:mk("evil",{"10-a.js":part("document.cookie='a=b';")}),forceScript:true});}catch(e){threw=e.message;}
 chk("a part with a banned word stops the build, naming the part and the line",/booklet\.js was not built, and nothing was written for it/.test(threw)&&/10-a\.js line 3/.test(threw),threw);
