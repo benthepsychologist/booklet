@@ -1,0 +1,65 @@
+---
+title: "A body map"
+description: "A made-up booklet for the compiler's tests: a body map whose figure is drawn, a second whose figure is refused, and a third drawn with several figures."
+---
+<!-- booklet compile 0.1.0 · from compile-bodymap.booklet.md · sha256:22e4623fdd98e1fcc25fb1d12ffad0c143a828d0d7dfcfbbe933ef3591fa70e5 -->
+<article class="booklet" lang="en">
+  <p class="bk-lede">A made-up booklet for the compiler's tests: a body map whose figure is drawn, a second whose figure is refused, and a third drawn with several figures.</p>
+  <div class="bk-q bk-widget bk-w-svg-regions">
+    <p class="bk-q-ask">Where do you feel it?</p>
+    <p class="bk-q-help">Point to where you feel it.</p>
+    <p class="bk-places-h">Front</p>
+    <div class="bk-svgfig">
+      <svg viewBox="0 0 100 160" class="figure" aria-hidden="true" focusable="false">
+        <defs>
+          <clipPath id="bk-f1-headclip">
+            <ellipse cx="50" cy="20" rx="16" ry="18"/>
+          </clipPath>
+        </defs>
+        <g clip-path="url(#bk-f1-headclip)">
+          <rect class="rg" data-r="head" x="30" y="0" width="40" height="40" role="img" aria-label="Head"/>
+        </g>
+        <ellipse class="outline" cx="50" cy="20" rx="16" ry="18"/>
+        <path class="rg" data-r="chest" d="M30 44 Q50 38 70 44 L68 84 Q50 90 32 84 Z" style="stroke-width:3" role="img" aria-label="Chest"/>
+        <path class="rg" data-r="arms" d="M26 46 L14 100 L22 102 L32 52 Z" role="img" aria-label="Arms"/>
+        <path class="rg" data-r="arms" d="M74 46 L86 100 L78 102 L68 52 Z" role="img" aria-label="Arms"/>
+        <text x="50" y="150" text-anchor="middle" font-size="9">Profile: front</text>
+      </svg>
+    </div>
+    <ul class="bk-words">
+      <li>Head</li>
+      <li>Chest</li>
+      <li>Arms</li>
+    </ul>
+    <p class="bk-places-h">Back</p>
+    <div class="bk-svgfig">
+      <svg viewBox="0 0 100 160" aria-hidden="true">
+        <use href="#bk-f2-bk" x="0" y="0"/>
+        <defs>
+          <path id="bk-f2-bk" class="rg" data-r="back" d="M30 44 Q50 38 70 44 L68 90 Q50 96 32 90 Z" role="img" aria-label="Back"/>
+        </defs>
+      </svg>
+    </div>
+    <ul class="bk-words">
+      <li>Back</li>
+    </ul>
+    <dl class="bk-notes-of">
+      <div class="bk-cell bk-c-plain">
+        <dt>Head</dt>
+        <dd>From the crown to the jaw.</dd>
+      </div>
+      <div class="bk-cell bk-c-plain">
+        <dt>Chest</dt>
+        <dd>Between the collar bones and the ribs.</dd>
+      </div>
+    </dl>
+  </div>
+  <div class="bk-q bk-widget bk-w-svg-regions">
+    <p class="bk-q-ask">A figure that carries a script</p>
+    <p class="bk-q-help">Nothing here.</p>
+    <!-- booklet: the figure “only” of the widget “bad-map” (activity “Where it shows”): the body map's figure is not drawn, but its places are named below it: an element the renderer's figure rule does not keep (<script>) -->
+    <ul class="bk-words">
+      <li>Box</li>
+    </ul>
+  </div>
+</article>

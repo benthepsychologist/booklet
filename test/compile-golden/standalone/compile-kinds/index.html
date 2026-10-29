@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- booklet compile 0.1.0 · from compile-kinds.booklet.md · sha256:469aa425b92e40fd5c059bc148191e45d5eb26ba1c53bd581063629f8e4519f7 -->
+<!-- booklet compile 0.1.0 · from compile-kinds.booklet.md · sha256:a7b37b313ed1726d11ddea1a2c2a8c3871f5e638bdac3d8032f6c3543c2f2151 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -315,14 +315,23 @@
     <div class="bk-q bk-widget bk-w-svg-regions">
       <p class="bk-q-ask">Where it broke</p>
       <p class="bk-q-help">Which part gave way?</p>
-      <!-- booklet: the figure “front” of the widget “kite-parts” (activity “Every question kind”): the body map's figure: not compiled yet; its places are named below it -->
       <p class="bk-places-h">Front</p>
+      <div class="bk-svgfig">
+        <svg viewBox="0 0 100 100">
+          <rect class="rg" data-r="sail" x="10" y="10" width="80" height="60" role="img" aria-label="Sail"/>
+          <rect class="rg" data-r="tail" x="45" y="70" width="10" height="25" role="img" aria-label="Tail"/>
+        </svg>
+      </div>
       <ul class="bk-words">
         <li>Sail</li>
         <li>Tail</li>
       </ul>
-      <!-- booklet: the figure “back” of the widget “kite-parts” (activity “Every question kind”): the body map's figure: not compiled yet; its places are named below it -->
       <p class="bk-places-h">Back</p>
+      <div class="bk-svgfig">
+        <svg viewBox="0 0 100 100">
+          <rect class="rg" data-r="spar" x="48" y="5" width="4" height="90" role="img" aria-label="Spar"/>
+        </svg>
+      </div>
       <ul class="bk-words">
         <li>Spar</li>
       </ul>
@@ -374,11 +383,55 @@
     <h2 id="what-the-compiler-leaves-off">What the compiler leaves off <a class="bk-anchor" href="#what-the-compiler-leaves-off" aria-label="Link to this section">#</a></h2>
     <p>A query view, a diagram, a figure, a link to a booklet that is not compiled with this one, a broken citation mark, and two widgets it cannot draw.</p>
     <!-- booklet: the query over “flights”, as table (activity “What the compiler leaves off”): a query view: not compiled yet -->
-    <!-- booklet: a mermaid fence (activity “What the compiler leaves off”): a diagram: not compiled yet, shown as its source -->
-    <pre class="bk-figure-src"><code data-lang="mermaid">graph LR; Build --&gt; Fly</code></pre>
+    <figure class="bk-diagram">
+      <svg id="bk-dg3" class="flowchart" viewBox="0 0 220 64" width="220" role="graphics-document document" aria-label="Diagram">
+        <rect x="0" y="0" width="220" height="64" fill="#F8F6F1"/>
+        <style>#bk-dg3 :where(:not([fill])){fill:inherit}
+      #bk-dg3 :where(:not([stroke])){stroke:inherit}
+      #bk-dg3 :where(:not([stroke-width])){stroke-width:inherit}
+      #bk-dg3 :where(:not([stroke-linecap])){stroke-linecap:inherit}
+      #bk-dg3 :where(:not([stroke-linejoin])){stroke-linejoin:inherit}
+      #bk-dg3 :where(:not([stroke-dasharray])){stroke-dasharray:inherit}
+      #bk-dg3 :where([fill="#F8F6F1"]){fill:#F8F6F1}
+      #bk-dg3{font-family:sans-serif;font-size:16px;fill:#24323A;}
+      #bk-dg3 .node rect{fill:#EFEBE3;stroke:#1E5E6B;stroke-width:1px;}</style>
+        <g>
+          <marker id="bk-dg3_flowchart-v2-pointEnd" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath"/>
+          </marker>
+          <g class="node">
+            <rect x="10" y="10" width="90" height="44"/>
+            <text x="55" y="38" text-anchor="middle">Stand-in 1</text>
+          </g>
+          <path d="M100,32L160,32" class="flowchart-link" marker-end="url(#bk-dg3_flowchart-v2-pointEnd)"/>
+        </g>
+      </svg>
+    </figure>
     <p>The day, as a figure:</p>
-    <!-- booklet: the figure “day-plan” (activity “What the compiler leaves off”): a diagram: not compiled yet, shown as its source -->
-    <pre class="bk-figure-src"><code data-lang="mermaid">graph TD; Breakfast --&gt; Build --&gt; Lunch --&gt; Fly</code></pre>
+    <figure class="bk-diagram">
+      <svg id="bk-dg4" class="flowchart" viewBox="0 0 220 64" width="220" role="graphics-document document" aria-label="Diagram">
+        <rect x="0" y="0" width="220" height="64" fill="#F8F6F1"/>
+        <style>#bk-dg4 :where(:not([fill])){fill:inherit}
+      #bk-dg4 :where(:not([stroke])){stroke:inherit}
+      #bk-dg4 :where(:not([stroke-width])){stroke-width:inherit}
+      #bk-dg4 :where(:not([stroke-linecap])){stroke-linecap:inherit}
+      #bk-dg4 :where(:not([stroke-linejoin])){stroke-linejoin:inherit}
+      #bk-dg4 :where(:not([stroke-dasharray])){stroke-dasharray:inherit}
+      #bk-dg4 :where([fill="#F8F6F1"]){fill:#F8F6F1}
+      #bk-dg4{font-family:sans-serif;font-size:16px;fill:#24323A;}
+      #bk-dg4 .node rect{fill:#EFEBE3;stroke:#1E5E6B;stroke-width:1px;}</style>
+        <g>
+          <marker id="bk-dg4_flowchart-v2-pointEnd" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath"/>
+          </marker>
+          <g class="node">
+            <rect x="10" y="10" width="90" height="44"/>
+            <text x="55" y="38" text-anchor="middle">Stand-in 2</text>
+          </g>
+          <path d="M100,32L160,32" class="flowchart-link" marker-end="url(#bk-dg4_flowchart-v2-pointEnd)"/>
+        </g>
+      </svg>
+    </figure>
     <p>See also <!-- booklet: the link to “spare-kites” (activity “What the compiler leaves off”): a link to a booklet not compiled with this one: drawn as its words -->spare-kites and a mark that names nothing.<!-- booklet: the mark [^nowhere] (activity “What the compiler leaves off”): a citation mark that names no note in its module: drawn as [?id] --><span class="bk-broken" title="No citation called “nowhere” in this module">[?nowhere]</span></p>
     <!-- booklet: the widget “odd-engine” (engine “weather-vane”) (activity “What the compiler leaves off”): a widget whose engine this compiler does not draw: left off -->
     <!-- booklet: the widget block “gone” (widget “no-such-widget”) (activity “What the compiler leaves off”): a widget block whose widget is not in the file: left off -->

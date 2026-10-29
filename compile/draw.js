@@ -18,9 +18,9 @@ const {el,frag,trusted,comment}=H;
    (Hint, Solution, Notes, a callout kind's name, "About this module", an image's note) is the renderer's, in the
    booklet's language. */
 const PAGE_WORDS={
-  en:{toc:"On this page",back:"Back to the text",anchor:"Link to this section"},
-  fr:{toc:"Sur cette page",back:"Retour au texte",anchor:"Lien vers cette section"},
-  es:{toc:"En esta página",back:"Volver al texto",anchor:"Enlace a esta sección"}};
+  en:{toc:"On this page",back:"Back to the text",anchor:"Link to this section",diagram:"Diagram"},
+  fr:{toc:"Sur cette page",back:"Retour au texte",anchor:"Lien vers cette section",diagram:"Diagramme"},
+  es:{toc:"En esta página",back:"Volver al texto",anchor:"Enlace a esta sección",diagram:"Diagrama"}};
 
 /* How each block type the renderer draws is drawn here: the name of its drawer in drawPage (DRAWERS), or {marked: the
    kind of mark it gets}. block() dispatches from this table, and drawPage refuses to run when a drawer it names is
@@ -30,7 +30,7 @@ const BLOCK_WAY={markdown:"prose",callout:"callout",row:"row",widget:"widget",
   text:"question",lines:"question",choice:"question",multi:"question",scale:"question",matrix:"question",number:"question",date:"question",
   query:{marked:"query"}};
 /* each widget engine drawn, and how: drawPage's ENGINE_DRAW must hold exactly these */
-const ENGINE_WAY={"grid-select":"drawn","svg-regions":"drawn: its places by name; its figure is marked (compile 0.2)"};
+const ENGINE_WAY={"grid-select":"drawn","svg-regions":"drawn: its figure, and its places by name"};
 /* How each of the renderer's tables is handled: "drawn", or a reason it is marked instead. test/compile-coverage.test.js
    fails when the renderer has a block type, question kind, engine or query view that is in neither. Callout kinds are
    all drawn, each in its own look (CALLOUT_LOOK), and an unknown kind is marked and drawn as the renderer draws it. */
@@ -41,8 +41,8 @@ const COVERAGE={
 /* the things the page leaves off, and why, as the report and the comments word them */
 const MARKED={
   query:"a query view: not compiled yet",
-  mermaid:"a diagram: not compiled yet, shown as its source",
-  regionsFigure:"the body map's figure: not compiled yet; its places are named below it",
+  mermaid:"a diagram shown as its source, not drawn",
+  regionsFigure:"the body map's figure is not drawn, but its places are named below it",
   link:"a link to a booklet not compiled with this one: drawn as its words",
   each:"a question asked for each pick in another: not compiled",
   kind:"an unknown callout kind: drawn as a note, with the renderer's line saying the kind is not known",
@@ -60,7 +60,9 @@ const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 
 /* drawPage(X, parsed, o): the page's article and what the page and the report need.
    o: {name, form: "standalone"|"site", siblings: Map of the addresses compiled in the same run to their titles, image(rel, ext) ->
-   {ok} | {ok:false, why: a renderer ui string's name, detail}}. */
+   {ok, width, height} | {ok:false, why: a renderer ui string's name, detail}, figure(svgText, idPrefix, labelOf) ->
+   {ok, html} | {ok:false, why}, diagram(code, idPrefix, word) -> {ok, html} | {ok:false, why}}. A drawPage without figure or diagram
+   draws neither: a figure is marked and a diagram is its source. */
 function drawPage(X,P,o){
   const R=X.R,M=X.M,design=P.design;
   X.setBook(design);
@@ -68,14 +70,14 @@ function drawPage(X,P,o){
   X.setLang(ui);
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
-    marked:[],images:[],links:[],counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,images:0,math:0,notes:0,links:0},
-    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[]};
+    marked:[],images:[],links:[],counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
+    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const pageTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
 
   /* ---- marks: what the page leaves off ---- */
-  const mark=(kind,what)=>{st.marked.push({kind,what,where:st.where});
-    return comment("booklet: "+what+" ("+st.where+"): "+MARKED[kind]);};
+  const mark=(kind,what,why)=>{st.marked.push({kind,what,where:st.where,...(why?{why}:{})});
+    return comment("booklet: "+what+" ("+st.where+"): "+MARKED[kind]+(why?": "+why:""));};
 
   /* ---- the renderer's Markdown engine, with this page's hooks ---- */
   const headingLink=(hit,kids)=>{const a=el("a",{class:"bk-link"},...kids);st.pend.push({a,hit,where:st.where});return a;};
@@ -126,7 +128,7 @@ function drawPage(X,P,o){
     const r=o.image(p.rel,p.ext);
     if(!r.ok){st.images.push({src:p.rel,ok:false,where:st.where,why:r.detail||r.why});return box(T("ui")[r.why]||T("ui").imgNotShown);}
     st.images.push({src:p.rel,ok:true});st.counts.images++;
-    return el("img",{src:p.rel,alt:alt||""});}
+    return el("img",{src:p.rel,alt:alt||"",width:r.width,height:r.height});}
 
   /* ---- math, as MathML at build time; a formula Temml cannot read is shown as its TeX ---- */
   function math(tex,display){st.counts.math++;let ml=null;
@@ -142,13 +144,20 @@ function drawPage(X,P,o){
     return el("span",{class:cls},trusted(ml));}
   function mathId(id){const base="bk-tml-"+id;let v=base,i=2;while(st.mathIds.has(v)) v=base+"-"+(i++);st.mathIds.add(v);return v;}
 
-  /* ---- figures: a prose embed (![[#^id]]) read by the renderer's figureHooks; a diagram is marked, anything else is code ---- */
+  /* ---- figures: a prose embed (![[#^id]]) read by the renderer's figureHooks; a diagram is drawn or shown as its source, anything else is code ---- */
   function embed(t){const f=R.figureHooks(st.scope).embed(t);
     if(!f||!f.__figure) return null;
     const g=f.__figure;
     if(g.lang==="mermaid") return diagram(g.code,"the figure “"+g.id+"”");
     return el("pre",{},el("code",g.lang?{"data-lang":g.lang}:{},g.code));}
-  const diagram=(code,what)=>frag(mark("mermaid",what),el("pre",{class:"bk-figure-src"},el("code",{"data-lang":"mermaid"},String(code))));
+  /* the ids an SVG carries are kept apart from the page's own: no heading takes one */
+  const ownIds=svg=>{for(const m of String(svg).matchAll(/\sid="([^"]*)"/g)) st.mathIds.add(m[1]);};
+  /* a diagram drawn at build time (o.diagram, compile.js), else its source with the reason in the mark; the source is the
+     fallback, so a page without a browser to draw with still holds every diagram's words */
+  function diagram(code,what){
+    const r=o.diagram?o.diagram(String(code),"bk-dg"+(++st.svgSeq),W.diagram):{ok:false,why:"this build draws no diagrams"};
+    if(r&&r.ok){st.counts.diagrams++;ownIds(r.html);return el("figure",{class:"bk-diagram"},trusted(r.html,true));}
+    return frag(mark("mermaid",what,r&&r.why),el("pre",{class:"bk-figure-src"},el("code",{"data-lang":"mermaid"},String(code))));}
 
   /* ---- links to a whole module (SPEC.md section 3) ---- */
   function moduleLink(target,kids){const id=R.moduleLinkId(target);
@@ -285,12 +294,17 @@ function drawPage(X,P,o){
         axis("right",ax.right),axis("bottom",ax.bottom)));
       if(op.describe&&cells.some(c=>c.note)) box.append(el("dl",{class:"bk-notes-of"},...cells.map((c,i)=>
         el("div",{class:"bk-cell "+tone(c,i)},el("dt",{},tx(c.label,c.id)),el("dd",{},tx(c.note,""))))));},
-    /* the body map: its places named, figure by figure; the figure itself is marked (compile 0.2 draws it) */
+    /* the body map: each figure drawn as the SVG its file holds (checked, and written out again: diagrams.js figure()), with its
+       places named beneath it; a figure that fails the checks is marked, and its places are still named */
     "svg-regions":(box,Wd,op)=>{const figs=Wd.figures||[],labelOf=id=>{const r=(Wd.regions||[]).find(x=>x.id===id);return r?tx(r.label,id):id;};
       const list=ids=>el("ul",{class:"bk-words"},...ids.map(id=>el("li",{},labelOf(id))));
       if(!figs.length) box.append(list((Wd.regions||[]).map(r=>r.id)));
-      figs.forEach(f=>{box.append(mark("regionsFigure","the figure “"+String(f.id)+"” of the widget “"+String(Wd.id||"")+"”"));
+      figs.forEach(f=>{
         if(figs.length>1) box.append(el("p",{class:"bk-places-h"},tx(f.label,f.id)));
+        if(typeof f.svg==="string"&&f.svg.trim()){
+          const r=o.figure?o.figure(f.svg,"bk-f"+(++st.svgSeq),id=>plain(labelOf(id))):{ok:false,why:"this build draws no figures"};
+          if(r&&r.ok){st.counts.figures++;ownIds(r.html);box.append(el("div",{class:"bk-svgfig"},trusted(r.html,true)));}
+          else box.append(mark("regionsFigure","the figure “"+String(f.id)+"” of the widget “"+String(Wd.id||"")+"”",r&&r.why));}
         box.append(list(f.regions||[]));});
       if(op.describe&&(Wd.regions||[]).some(r=>r.note)) box.append(el("dl",{class:"bk-notes-of"},...(Wd.regions||[]).filter(r=>r.note).map(r=>
         el("div",{class:"bk-cell bk-c-plain"},el("dt",{},tx(r.label,r.id)),el("dd",{},tx(r.note,""))))));}};

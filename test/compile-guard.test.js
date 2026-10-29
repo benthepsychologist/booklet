@@ -12,7 +12,10 @@
 //   3. Records are never handed over. No code under compile/ reaches the parse's state (S), its drafts, or the records
 //      region's text (raw.wrote, raw.records); the design's own text (raw.source) is read in one place, engine.js.
 //   4. It installs nothing and fetches nothing. No package.json or node_modules under compile/, no module beyond fs,
-//      path, vm, crypto and its own files, and no network call of any kind.
+//      path, vm, crypto and its own files, and no network call of any kind. One exception, for drawing diagrams (compile 0.2.0):
+//      diagrams.js starts diagrams-run.js, once, with spawnSync and no shell, and nothing else starts a process; diagrams-run.js
+//      loads Playwright from the path it is handed (the one require that is not a plain string) and runs Chromium offline, on a
+//      page that holds no script of the booklet's, with every request refused. The checks below hold each of these to its place.
 //   5. It writes only where it is told. Every file write is in compile.js's write() or the report, and never a .md file.
 // Run: node test/compile-guard.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path");
@@ -30,7 +33,7 @@ const AC_START="/* AUTHOR COMMENTS\n",AC_END="/* /AUTHOR COMMENTS */",eng=src["e
 const acA=eng.indexOf(AC_START),acB=eng.indexOf(AC_END);
 const acRegion=acA>=0&&acB>acA?strip(eng.slice(acA,acB+AC_END.length)):"";
 const outside=Object.fromEntries(files.map(f=>[f,f==="engine.js"&&acRegion?strip(eng.slice(0,acA)+eng.slice(acB+AC_END.length)):code[f]]));
-chk("compile/ holds the four files the compiler is made of",["compile.js","draw.js","engine.js","html.js"].every(f=>files.includes(f)),files.join(", "));
+chk("compile/ holds the six files the compiler is made of",["compile.js","diagrams-run.js","diagrams.js","draw.js","engine.js","html.js"].every(f=>files.includes(f)),files.join(", "));
 
 /* ---- 1. no second reader ---- */
 const FORBIDDEN=[
@@ -130,15 +133,31 @@ chk("the parse's raw is read in engine.js only, for its source and to leave it b
 const tree=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?[e.name+"/",...tree(path.join(d,e.name)).map(x=>e.name+"/"+x)]:[e.name]);
 const all=tree(DIR);
 chk("no package.json, lock file or node_modules under compile/",!all.some(f=>/(^|\/)(package(-lock)?\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|node_modules\/)/.test(f)),all.join(", "));
-chk("compile/ holds only the compiler's files, its stylesheet and its README",all.every(f=>/^(compile|draw|engine|html)\.js$|^booklet\.css$|^README\.md$/.test(f)),all.join(", "));
-const mods=new Set([...allCode.matchAll(/require\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map(m=>m[1]));
-const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./draw.js"]);
-chk("it requires only fs, path, vm, crypto and its own files",[...mods].every(m=>allowed.has(m)),[...mods].join(", "));
-chk("every require names its module as a plain string",(allCode.match(/require\(/g)||[]).length===(allCode.match(/require\(\s*["'`][^"'`]+["'`]\s*\)/g)||[]).length);
+chk("compile/ holds only the compiler's files, its stylesheet and its README",all.every(f=>/^(compile|diagrams|diagrams-run|draw|engine|html)\.js$|^booklet\.css$|^README\.md$/.test(f)),all.join(", "));
+const modsIn=f=>new Set([...code[f].matchAll(/require\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map(m=>m[1]));
+const mods=new Set(files.flatMap(f=>[...modsIn(f)]));
+const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./draw.js","./diagrams.js","child_process"]);
+chk("it requires only fs, path, vm, crypto, child_process and its own files",[...mods].every(m=>allowed.has(m)),[...mods].join(", "));
+chk("child_process is required in diagrams.js alone",files.filter(f=>modsIn(f).has("child_process")).join()==="diagrams.js",files.filter(f=>modsIn(f).has("child_process")).join());
+/* every require is a plain string but one: diagrams-run.js loads Playwright from the path the job names */
+const dynamic=files.flatMap(f=>[...code[f].matchAll(/require\((?!\s*["'`][^"'`]+["'`]\s*\))([^)]*)\)/g)].map(m=>f+": require("+m[1]+")"));
+chk("every require names its module as a plain string, but for the one that loads Playwright from the path it is handed",dynamic.length===1&&dynamic[0]==="diagrams-run.js: require(job.playwright)",dynamic.join("; "));
 for(const [what,re] of [["fetch",/\bfetch\b/],["XMLHttpRequest",/XMLHttpRequest/],["WebSocket",/WebSocket/],["EventSource",/EventSource/],
-  ["a dynamic import",/\bimport\s*\(/],["a network module",/["'`](?:node:)?(?:https?|http2|net|tls|dgram|dns|child_process|worker_threads|cluster|inspector)["'`]/],
+  ["a dynamic import",/\bimport\s*\(/],["a network module",/["'`](?:node:)?(?:https?|http2|net|tls|dgram|dns|worker_threads|cluster|inspector)["'`]/],
   ["process.binding or process.dlopen",/process\.(?:binding|dlopen)/],["eval or new Function",/\beval\s*\(|new Function\b/]]){
   const hits=files.filter(f=>re.test(code[f]));chk("no "+what+" under compile/",!hits.length,hits.join(", "));}
+
+/* the one process the compiler starts: diagrams-run.js, by diagrams.js, with spawnSync, no shell, this same Node */
+{const start=files.flatMap(f=>[...code[f].matchAll(/\bcp\.\w+\s*\(/g)].map(m=>f+": "+m[0].replace(/\s+/g,"")));
+  chk("the only process it starts is one spawnSync call, in diagrams.js",start.length===1&&start[0]==="diagrams.js: cp.spawnSync(",start.join("; "));
+  chk("…which runs this Node on diagrams-run.js, with no shell",/cp\.spawnSync\(process\.execPath,\[path\.join\(__dirname,"diagrams-run\.js"\)\]/.test(code["diagrams.js"])&&!/shell\s*:/.test(code["diagrams.js"]));
+  const run=code["diagrams-run.js"]||"";
+  chk("diagrams-run.js runs Chromium offline, refusing every request but the one page it serves itself",/offline:true/.test(run)&&/r\.abort\(\)/.test(run)&&/serviceWorkers:"block"/.test(run));
+  chk("…on a page whose policy allows no connection, no frame and no image or font but data:, and no script but the part (by its digest)",
+    /default-src 'none'; script-src 'sha256-/.test(run)&&/font-src data:; img-src data:/.test(run));
+  chk("…hands a diagram's source to the library as data, never as script text",/page\.evaluate\(async \(\{g,id,code\}\)=>/.test(run)&&!/addScriptTag\(\{content:[^}]*\bcode\b/.test(run));
+  chk("…closes the browser however it ends",/finally\{\s*await browser\.close\(\)/.test(run));
+  chk("…writes nothing to disk",!/fs\.(?:write|append|copy|rename|rm|unlink|mkdir)/.test(run));}
 
 /* ---- 5. writes only where it is told ---- */
 const writes=files.flatMap(f=>[...code[f].matchAll(/fs\.(writeFileSync|writeFile|appendFileSync|appendFile|copyFileSync|renameSync|rmSync|unlinkSync|createWriteStream|symlinkSync|cpSync)\b/g)].map(m=>f+": "+m[1]));

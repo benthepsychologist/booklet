@@ -1,4 +1,4 @@
-// Golden pages for the compiler (compile/, compile 0.1.0): what it writes for the examples and the page-shaped fixtures,
+// Golden pages for the compiler (compile/, compile 0.1.0; figures and sizes added in 0.2.0): what it writes for the examples and the page-shaped fixtures,
 // committed under test/compile-golden/, so a change to what the compiler writes is seen in review, line by line.
 // The set is compiled in one run, in both forms (as `--form both` writes it: standalone/<name>/index.html and
 // site/<name>/index.html), and every file it writes for a booklet must equal its golden copy. The stylesheet and its fonts
@@ -7,18 +7,23 @@
 // A page that differs fails, with its first differing line. When the change is meant, write the pages again and commit them:
 //   node test/compile-golden.test.js --write
 //
+// A diagram is drawn by a browser, which the tests that must give the same answer everywhere cannot count on: here a stand-in answers
+// in its place (test/diagram-stub.js), so the golden pages hold a drawn diagram, written out the way a drawn one is. The drawing
+// itself, by the renderer's mermaid part in Chromium, is checked by test/compile-figures-browser.js.
+//
 // examples/mindful-check-in.booklet.md is compiled by the other tests but has no golden page here: its notice names its
 // author and the practice it comes from, and these pages are meant to hold made-up content only.
 // Run: node test/compile-golden.test.js [--write]      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path");
 const ROOT=path.join(__dirname,".."),GOLD=path.join(__dirname,"compile-golden");
-const C=require("../compile/compile.js"),E=require("../compile/engine.js");
+const C=require("../compile/compile.js"),E=require("../compile/engine.js"),STUB=require("./diagram-stub.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const SET=[...["garden-week","how-tides-work","project-board","status-page"].map(n=>path.join(ROOT,"examples",n+".booklet.md")),
-  ...["compile-article","compile-kinds","figures","charts","data-views"].map(n=>path.join(__dirname,"fixtures",n+".booklet.md"))];
+  ...["compile-article","compile-kinds","figures","charts","data-views"].map(n=>path.join(__dirname,"fixtures",n+".booklet.md")),
+  ...["compile-bodymap","compile-pictures","compile-diagrams"].map(n=>path.join(__dirname,"compile-assets",n+".booklet.md"))];
 const WRITE=process.argv.includes("--write");
 
-const run=C.compile(SET.map(file=>({file})),{form:"both",engine:E.load()});
+const run=C.compile(SET.map(file=>({file})),{form:"both",engine:E.load(),drawer:STUB.drawer});
 const want=new Map();
 for(const r of run.results){chk("compiles: "+r.rep.source,r.rep.ok,(r.rep.refused||[]).join("; "));for(const [rel,data] of r.files) want.set(rel,data);}
 const tree=d=>!fs.existsSync(d)?[]:fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?tree(path.join(d,e.name)).map(x=>e.name+"/"+x):[e.name]);

@@ -38,7 +38,7 @@
 //   - nothing from the network: this folder opens no connection and installs nothing (test/compile-guard.test.js checks it).
 // It never writes to a .booklet.md file.
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
-const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js");
+const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js"),G=require("./diagrams.js");
 
 const VERSION="0.1.0";
 const STYLESHEET=path.join(__dirname,"booklet.css");
@@ -131,7 +131,39 @@ function svgMarkup(raw,decode){
 const safeChar=n=>{try{return String.fromCodePoint(n);}catch(e){return "\uFFFD";}};
 const clipWords=s=>{s=String(s).trim();return s.length>40?s.slice(0,40)+"\u2026":s;};
 
-/* the image check for one booklet: (rel, ext) -> {ok} | {ok:false, why, detail}; what passes is kept to be copied */
+/* The size an image file says it has, so the page can keep room for it before it loads: {width, height} in whole pixels, or null
+   when the bytes do not say (a truncated file, a format variant not read here), and the image is then drawn with no size, as it
+   was. PNG: the header chunk. GIF: the logical screen. JPEG: the first frame header (a rotation in EXIF is not applied). WebP: the
+   lossy, lossless or extended header. SVG: its width and height when both are plain numbers (or px), else its viewBox; a picture
+   whose viewBox is small is written at a whole power of ten times it, enough to reach 100 wide, since a viewBox has no pixels. */
+function imageSize(ext,b){
+  const u16=(i,le)=>le?b[i]|b[i+1]<<8:b[i]<<8|b[i+1],u32=i=>(b[i]*16777216)+(b[i+1]<<16|b[i+2]<<8|b[i+3]);
+  let w=0,h=0;
+  if(ext==="png"){if(b.length>=24&&b.toString("latin1",12,16)==="IHDR"){w=u32(16);h=u32(20);}}
+  else if(ext==="gif"){if(b.length>=10){w=u16(6,true);h=u16(8,true);}}
+  else if(ext==="webp"){const kind=b.length>=16?b.toString("latin1",12,16):"";
+    if(kind==="VP8 "&&b.length>=30&&b[23]===0x9d&&b[24]===0x01&&b[25]===0x2a){w=u16(26,true)&0x3fff;h=u16(28,true)&0x3fff;}
+    else if(kind==="VP8L"&&b.length>=25&&b[20]===0x2f){const bits=(b[21]|b[22]<<8|b[23]<<16|b[24]*16777216)>>>0;w=(bits&0x3fff)+1;h=((bits>>>14)&0x3fff)+1;}
+    else if(kind==="VP8X"&&b.length>=30){w=1+(b[24]|b[25]<<8|b[26]<<16);h=1+(b[27]|b[28]<<8|b[29]<<16);}}
+  else if(ext==="svg"){
+    const tag=/<svg\b[^>]*>/i.exec(b.toString("utf8"));
+    if(tag){const num=n=>{const m=new RegExp("\\s"+n+"\\s*=\\s*[\"']\\s*([0-9]+(?:\\.[0-9]+)?)\\s*(?:px)?\\s*[\"']","i").exec(tag[0]);return m?Number(m[1]):0;};
+      const vb=/\sviewBox\s*=\s*["']\s*([^"']*)["']/i.exec(tag[0]),v=vb?vb[1].trim().split(/[\s,]+/).map(Number):[];
+      if(num("width")>0&&num("height")>0){w=num("width");h=num("height");}
+      else if(v.length===4&&v.every(Number.isFinite)&&v[2]>0&&v[3]>0){let k=1;while(v[2]*k<100&&k<1e6) k*=10;w=v[2]*k;h=v[3]*k;}}}
+  else{ /* jpeg */
+    let i=2;
+    while(i+9<b.length){
+      if(b[i]!==0xff){i++;continue;}
+      const m=b[i+1];
+      if(m===0xff){i++;continue;}
+      if(m===0xd8||m===0x01||(m>=0xd0&&m<=0xd7)){i+=2;continue;}
+      if(m>=0xc0&&m<=0xcf&&m!==0xc4&&m!==0xc8&&m!==0xcc){h=u16(i+5);w=u16(i+7);break;}
+      i+=2+u16(i+2);}}
+  w=Math.round(w);h=Math.round(h);
+  return w>=1&&h>=1&&w<=100000&&h<=100000?{width:w,height:h}:null;}
+
+/* the image check for one booklet: (rel, ext) -> {ok, width, height} | {ok:false, why, detail}; what passes is kept to be copied */
 function imageReader(dir,X,keep){
   let root=null;try{root=fs.realpathSync(dir);}catch(e){root=null;}
   return (rel,ext)=>{
@@ -145,7 +177,33 @@ function imageReader(dir,X,keep){
     if(!ok) return {ok:false,why:"imgWrong",detail:"its bytes are not a ."+ext+" file"};
     if(ext==="svg"){const why=svgProblem(bytes);if(why) return {ok:false,why:"imgNotShown",detail:"an SVG the compiler refuses: it holds "+why};}
     keep.set(rel,bytes);
-    return {ok:true};};}
+    return {ok:true,...(imageSize(ext,bytes)||{})};};}
+
+/* ======================= FIGURES AND DIAGRAMS =======================
+   A body map's figure is written into the page by diagrams.js's figure(), behind the rules of svgProblem above and the renderer's
+   own sanitizer rule. A diagram is drawn at build time by the renderer's mermaid part in headless Chromium (diagrams.js and
+   diagrams-run.js), in one browser run for all the diagrams a booklet needs (a source drawn for one booklet is not drawn again for another), and the SVG that comes back is passed through the same SVG rules before
+   it is written. `o.browser` is a path to a Playwright package, false for none, or undefined to look for one (diagrams.js
+   findPlaywright); `o.drawer(codes)`, for tests, stands in for the browser and answers a Map of each code to {svg} or {why}. */
+function makeDiagrams(X,o){
+  const colours=G.paperColours(fs.readFileSync(STYLESHEET,"utf8"));
+  return {cache:new Map(),need:new Set(),colours,
+    /* the diagrams asked for and not yet known are drawn now: screened by the renderer's own rule first, then handed over together */
+    run(){
+      const codes=[...this.need].filter(c=>!this.cache.has(c));this.need.clear();
+      const send=[];
+      for(const c of codes){const risk=X.R.diagramRisk(c);
+        if(risk) this.cache.set(c,{why:"the renderer does not hand this source to its diagram library, since it could make a request ("+risk+")"});
+        else send.push(c);}
+      if(!send.length) return;
+      const got=o.drawer?o.drawer(send):G.drawBatch(X,send,{playwright:o.browser});
+      for(const c of send) this.cache.set(c,(got&&got.get(c))||{why:"the diagram library could not draw it"});},
+    /* what drawPage is given for a diagram: its markup, or why it is shown as its source. A diagram not drawn yet is noted, and the page is drawn again. */
+    draw(code,prefix,word){
+      const hit=this.cache.get(code);
+      if(!hit){this.need.add(code);return {ok:false,why:"not drawn yet"};}
+      if(hit.why) return {ok:false,why:hit.why};
+      return G.diagram(hit.svg,{svgProblem,prefix,paper:this.colours.paper,word});}};}
 
 /* ======================= THE TWO FORMS ======================= */
 const esc=H.escAttr;
@@ -226,8 +284,14 @@ function compileOne(X,input,o){
   const keep=new Map(),files=new Map();
   const forms=o.form==="both"?["standalone","site"]:[o.form];
   let first=null;
+  const dg=o.diagrams||makeDiagrams(X,{});
   for(const form of forms){
-    const page=D.drawPage(X,P,{name,form,siblings:o.siblings,image:imageReader(input.dir||".",X,keep)});
+    const opts={name,form,siblings:o.siblings,image:imageReader(input.dir||".",X,keep),
+      figure:(text,prefix,labelOf)=>G.figure(text,{R:X.R,svgProblem,prefix,labelOf}),
+      diagram:(code,prefix,word)=>dg.draw(code,prefix,word)};
+    let page=D.drawPage(X,P,opts);
+    /* a diagram the run has not drawn yet is drawn now, with the others of this booklet, and the page is drawn again with them */
+    if(dg.need.size){dg.run();page=D.drawPage(X,P,opts);}
     const mods=P.design.modules||[],withNotice=mods.filter(m=>m.notice&&typeof m.notice==="object");
     const nt=(withNotice[0]||{}).notice||{};
     page.copyright=typeof nt.copyright==="string"?nt.copyright.trim():"";page.license=typeof nt.license==="string"?nt.license.trim():"";
@@ -269,11 +333,11 @@ function compile(inputs,o){o=o||{};
     let P;try{P=parseInput(X,i);}catch(e){failed.set(i,e);continue;}
     parsed.set(i,P);
     if(P.ok&&P.design) siblings.set(i.name,titleOf(X,P,i.name));}
-  const results=[];
+  const results=[],diagrams=makeDiagrams(X,o);
   for(const i of list){
     if(i.dup){results.push(refusedResult(i,"another file in this run has the same address, “"+i.dup+"”"+(i.dup===i.name?"":" (addresses that differ only in case clash)")));continue;}
     if(failed.has(i)){results.push(refusedResult(i,failure(failed.get(i))));continue;}
-    try{results.push(compileOne(X,i,{form,baseUrl,siblings,parsed:parsed.get(i)}));}
+    try{results.push(compileOne(X,i,{form,baseUrl,siblings,parsed:parsed.get(i),diagrams}));}
     catch(e){results.push(refusedResult(i,failure(e)));}}
   return {results,assets:assets(X,form),form,renderer:X.R.RENDERER_VERSION,format:X.R.FORMAT_VERSION};}
 const refusedResult=(i,why)=>({rep:{source:path.basename(i.file||i.name),name:i.name,ok:false,refused:[why],problems:[],pages:[],comments:[]},files:new Map()});
@@ -324,7 +388,7 @@ function reportText(C){const L=[];
     if(rep.held) {L.push("  KEPT BACK, nothing written for it:");rep.held.forEach(h=>L.push("    - "+h.rel+": "+(h.state==="changed"?"changed by hand since it was compiled":"not written by the compiler")+" (--force overwrites it)"));}
     const c=rep.counts;
     L.push("  Drawn: "+[plural(c.modules,"module","modules"),plural(c.activities,"activity","activities"),plural(c.questions,"question","questions"),
-      plural(c.widgets,"widget","widgets"),plural(c.callouts,"callout","callouts"),plural(c.folds,"fold","folds"),plural(c.notes,"note","notes"),
+      plural(c.widgets,"widget","widgets"),plural(c.figures,"figure","figures"),plural(c.diagrams,"diagram","diagrams"),plural(c.callouts,"callout","callouts"),plural(c.folds,"fold","folds"),plural(c.notes,"note","notes"),
       plural(c.math,"formula","formulas"),plural(c.images,"image","images"),plural(c.links,"in-page link","in-page links")].join(", ")+".");
     L.push("  Description: "+(rep.description?"“"+rep.description+"”":"none (the page has no first paragraph)"));
     L.push("  On this page: "+(rep.toc?"listed":"not listed (fewer than two top headings)"));
@@ -333,7 +397,7 @@ function reportText(C){const L=[];
     if(copied.length) L.push("  Images copied beside the page: "+copied.map(i=>i.src).join(", "));
     if(rep.links.length) L.push("  Links to booklets compiled with it: "+[...new Set(rep.links.map(l=>l.to))].join(", "));
     if(rep.marked.length||refused.length){L.push("  To tidy (each is an HTML comment on the page, where it stood):");
-      rep.marked.forEach(m=>L.push("    [ ] "+m.what+", in "+m.where+": "+D.MARKED[m.kind]));
+      rep.marked.forEach(m=>L.push("    [ ] "+m.what+", in "+m.where+": "+D.MARKED[m.kind]+(m.why?": "+m.why:"")));
       refused.forEach(i=>L.push("    [ ] the image "+JSON.stringify(i.src)+", in "+i.where+", was not copied (its words and address are shown): "+i.why));}
     else L.push("  To tidy: nothing was left off.");
     if(rep.problems.length){L.push("  The renderer reported:");rep.problems.forEach(p=>L.push("    - "+p));}
@@ -373,4 +437,4 @@ if(require.main===module){
   catch(e){console.error("compile: "+e.message+(e.usage?"\n(node compile/compile.js --help)":""));code=e.usage?2:1;}
   process.exitCode=code;}
 
-module.exports={VERSION,compile,compileOne,write,reportText,stamp,stampState,cssStampState,svgProblem,noTemplates,yamlString,scriptJson,main};
+module.exports={VERSION,compile,compileOne,write,reportText,stamp,stampState,cssStampState,svgProblem,imageSize,noTemplates,yamlString,scriptJson,main};

@@ -288,8 +288,24 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-math-raw{font-family:var(--bk-font-code)!important;font-size:.92em!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-math-display.bk-math-raw{text-align:left!important;white-space:pre-wrap!important}
 
-/* a diagram shown as its source, until the compiler draws it */
+/* a diagram shown as its source, when it could not be drawn (the build report says why) */
 .booklet:not(#bk):not(#bk):not(#bk) pre.bk-figure-src{border:1px dashed var(--bk-rule)!important}
+
+/* a diagram drawn at build time: an SVG that carries its own paper and its own style (one theme's colours, so it reads the same on
+   a dark page), as wide as it was drawn and no wider than the text */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-diagram{margin:1.1rem 0!important;max-width:100%!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-diagram svg{display:block!important;max-width:100%!important;height:auto!important;margin:0 auto!important;border-radius:var(--bk-radius-small)!important}
+
+/* the root of a drawn SVG holds off a host's rules for bare svg (svg{color;fill;stroke-width}): the colour, as the page's ink, which is what
+   it inherits on a plain page, and the width of a line, as the browser's own 1. A figure's text is in the page's ink; a diagram sets its own
+   fill and paper. Whatever sits below inherits these, and the rules below set the paint of the shapes themselves. */
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-diagram,.bk-svgfig) svg{color:var(--bk-ink)!important;stroke-width:1!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-svgfig svg{fill:var(--bk-ink)!important;stroke:none!important}
+
+/* a body map's figure: the author's SVG, its regions as quiet shapes and every other shape an outline, in the page's colours */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-svgfig svg{display:block!important;width:100%!important;max-width:15rem!important;height:auto!important;margin:.4rem auto!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-svgfig .rg{fill:var(--bk-paper-deep)!important;stroke:var(--bk-rule)!important;stroke-width:2!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-svgfig svg :is(ellipse,circle,path,rect,polygon,polyline,line):not(.rg){fill:none!important;stroke:var(--bk-rule)!important;stroke-width:2!important}
 
 /* an image the page does not show: its words and its address, in a quiet box */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-imgbox{display:inline-flex!important;flex-direction:column!important;gap:.15rem!important;max-width:100%!important;margin:.2rem 0!important;padding:.45rem .65rem!important;
