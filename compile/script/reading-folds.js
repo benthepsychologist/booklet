@@ -23,10 +23,11 @@
     for (var i = 0; i < folds.length; i++) if (!folds[i].open) return false;
     return true;
   }
-  /* the switch goes under the heading it belongs to, past a page's title, lede and contents */
+  /* the switch goes under the heading it belongs to: an activity's own heading, or a page's title, lede and contents */
   function spot(box) {
     var n = box.firstElementChild;
-    while (n && (/^H[1-6]$/.test(n.tagName) || n.classList.contains("bk-lede") || n.classList.contains("bk-toc"))) n = n.nextElementSibling;
+    if (box.tagName === "SECTION") return n && /^H[1-6]$/.test(n.tagName) ? n.nextElementSibling : n;
+    while (n && (n.tagName === "H1" || n.classList.contains("bk-lede") || n.classList.contains("bk-toc"))) n = n.nextElementSibling;
     return n;
   }
 

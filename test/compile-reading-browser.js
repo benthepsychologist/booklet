@@ -37,14 +37,14 @@ const PLAIN_DIR=path.join(OUT,'src');fs.mkdirSync(PLAIN_DIR,{recursive:true});
 const plainFile=path.join(PLAIN_DIR,'plain.booklet.md');
 const run0=C.compile([{file:path.join(FIX,'compile-reading.booklet.md')}],{form:'standalone',renderer:HTML});
 fs.writeFileSync(plainFile,'---\nbooklet: "'+run0.format+'"\nid: test/plain\ntitle: A plain page\nlang: en\n---\n\n# A plain page\n\nOne made-up paragraph and nothing else.\n');
-const run=C.compile([{file:path.join(FIX,'compile-reading.booklet.md')},{file:plainFile}],{form:'standalone',renderer:HTML});
+const run=C.compile([{file:path.join(FIX,'compile-reading.booklet.md')},{file:path.join(FIX,'compile-article.booklet.md')},{file:plainFile}],{form:'standalone',renderer:HTML});
 C.write(run,OUT,{force:true});
-ok(run.results.every(r=>r.rep.ok),'the fixture and the plain page compile with '+path.basename(HTML));
+ok(run.results.every(r=>r.rep.ok),'the fixtures and the plain page compile with '+path.basename(HTML));
 fs.writeFileSync(path.join(OUT,'booklet','booklet.js'),script);
 const withScript=name=>{const src=fs.readFileSync(path.join(OUT,name,'index.html'),'utf8');
   /* a page the compiler already links the script from is left as it is (the assembler does that for a page that needs a part) */
   fs.writeFileSync(path.join(OUT,name,'with-script.html'),/booklet\/booklet\.js/.test(src)?src:src.replace('</body>','<script src="../booklet/booklet.js" defer></script>\n</body>'));};
-withScript('compile-reading');withScript('plain');
+withScript('compile-reading');withScript('compile-article');withScript('plain');
 
 /* a page of made-up data views, written the way the compiler's views lane writes them (the lane brief's markup contract) */
 const row=(t,vals)=>'<'+t+' data-bk-row>'+Object.entries(vals).map(([k,v])=>'<span data-bk-col="'+k+'">'+v+'</span>').join(' ')+'</'+t+'>';
@@ -226,6 +226,15 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
       window.dispatchEvent(new Event('beforeprint'));const during=all.map(d=>d.open);window.dispatchEvent(new Event('afterprint'));return {was,during,after:all.map(d=>d.open)};});
     ok(beforeP.during.every(Boolean)&&beforeP.during.length===6,'before printing every fold is open (four the author folded, a hint and a solution): '+beforeP.during.length);
     ok(JSON.stringify(beforeP.after)===JSON.stringify(beforeP.was),'after printing each fold is as it was');
+
+    /* a fold outside any activity: one switch for the page, under its title, lede and contents */
+    await p.goto(BASE+'compile-article/with-script.html');
+    const pg=await p.evaluate(()=>({n:document.querySelectorAll('.bk-foldsw').length,prev:document.querySelector('.bk-foldsw').previousElementSibling.className,next:document.querySelector('.bk-foldsw').nextElementSibling.id,
+      parent:document.querySelector('.bk-foldsw').parentElement.tagName}));
+    ok(pg.n===1&&pg.prev==='bk-toc'&&pg.next==='gathering'&&pg.parent==='ARTICLE','a fold outside any activity gets one switch for the page, after its title, lede and contents ('+JSON.stringify(pg)+')');
+    await p.click('.bk-foldsw');
+    ok(await p.evaluate(()=>document.querySelector('details.bk-fold').open&&document.querySelector('.bk-foldsw').getAttribute('aria-checked')==='true'),'…and it opens that fold');
+    await p.goto(BASE+'compile-reading/with-script.html');
 
     /* ---- copy a heading's link ---- */
     await p.goto(BASE+'compile-reading/with-script.html');
