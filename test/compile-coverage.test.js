@@ -34,7 +34,8 @@ chk("COVERAGE.engines is ENGINE_WAY, the table widget() dispatches from",same(CO
 /* ---- the fixture, drawn ---- */
 const FIX=path.join(__dirname,"fixtures","compile-kinds.booklet.md");
 const run=C.compile([{file:FIX}],{form:"standalone",engine:X});
-const r=run.results[0],page=r.files.get("compile-kinds/index.html")||"",report=C.reportText(run);
+/* the fixture shows four activities, so it is a contents page and a page for each: what is drawn is on them together */
+const r=run.results[0],page=[...r.files].filter(([k])=>k.endsWith("/index.html")).map(([,v])=>v).join("\n"),report=C.reportText(run);
 chk("the fixture compiles",r.rep.ok&&page.length>0,r.rep.refused);
 const has=(cls,tag)=>new RegExp("<"+(tag||"[a-z0-9]+")+"\\b[^>]*class=\"[^\"]*\\b"+cls.replace(/[-]/g,"\\-")+"\\b").test(page);
 

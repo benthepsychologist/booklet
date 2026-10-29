@@ -45,7 +45,7 @@ fs.writeFileSync(path.join(POND,'pond.booklet.md'),'---\nbooklet: "'+C.compile([
   +'### Fish\n\n| Fish | Seen |\n| --- | --- |\n| Carp | 3 |\n\n> [!note]- A folded note\n> Words inside the fold.\n\n***\n\nLast words after a rule.\n\n'
   +'[^pond]: A made-up note about the pond.\n');
 const inputs=[...fs.readdirSync(path.join(ROOT,'examples')).filter(f=>f.endsWith('.booklet.md')).map(f=>({file:path.join(ROOT,'examples',f)})),
-  ...['compile-article','compile-kinds','figures','charts','data-views'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),{file:path.join(POND,'pond.booklet.md')}];
+  ...['compile-article','compile-kinds','figures','charts','data-views','compile-pages'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),{file:path.join(POND,'pond.booklet.md')}];
 const run=C.compile(inputs,{form:'both',renderer:HTML});
 C.write(run,OUT,{force:true});
 ok(run.results.every(r=>r.rep.ok),'every page compiles ('+run.results.length+' booklets, both forms)');
@@ -110,24 +110,27 @@ svg path,svg circle,svg rect{fill:#c0392b;stroke:#0b4f4a;stroke-width:3px}
 /* the theme's own inline <style>, as a site's typography partial writes one: every heading's face and weight, !important */
 const INLINE='<style>h1,h2,h3,h4,h5,h6,.hero h1,.section-heading{font-family:Lora,Georgia,serif!important;font-weight:300!important}</style>';
 fs.writeFileSync(path.join(OUT,'hostile.css'),HOSTILE);
-const SHEETS='<link rel="stylesheet" href="../../hostile.css">'+INLINE;
+/* a booklet of many pages has pages one folder deeper: the sheets are reached as many folders up as the page is deep */
+const up=label=>'../'.repeat(label.split('/').length);
+const SHEETS=label=>'<link rel="stylesheet" href="../'+up(label)+'hostile.css">'+INLINE;
 /* the host around the page: its own header, a numbered card list and a link of its own in the content, and its own footer */
-const hostPage=(frag,hostile,title)=>'<!doctype html>\n<html lang="en" id="site"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n'
-  +'<title>'+title+'</title><link rel="stylesheet" href="../booklet/booklet.css">'+(hostile?SHEETS:'')+'\n'
+const hostPage=(frag,hostile,title,label)=>'<!doctype html>\n<html lang="en" id="site"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n'
+  +'<title>'+title+'</title><link rel="stylesheet" href="'+up(label)+'booklet/booklet.css">'+(hostile?SHEETS(label):'')+'\n'
   +'<style>body{margin:0}header,main,footer{display:block;max-width:56rem;margin:0 auto;padding:1rem}</style></head>\n'
   +'<body><header><h1 class="host-h">A host site</h1></header>\n<main id="main" class="wrapper"><div class="content">\n'
   +'<ol class="host-steps"><li>A host\'s own step</li><li>And another</li></ol><p><a class="host-a" href="#top">A host\'s own link</a></p>\n'
   +frag+'</div></main>\n<footer class="host-foot"><p>A host site\'s own footer</p></footer></body></html>\n';
 /* a standalone page as a host would serve it: the same ids and class round the article, and the hostile sheets added */
-const asHosted=(whole,hostile)=>whole.replace(/<html lang="([^"]*)">/,'<html lang="$1" id="site">').replace('<body class="bk-page">','<body class="bk-page" id="main">')
-  .replace('<main class="bk-main">','<main class="bk-main content">').replace(/(<link rel="stylesheet" href="[^"]*booklet\.css">)/,'$1'+(hostile?SHEETS:''));
+const asHosted=(whole,hostile,label)=>whole.replace(/<html lang="([^"]*)">/,'<html lang="$1" id="site">').replace('<body class="bk-page">','<body class="bk-page" id="main">')
+  .replace('<main class="bk-main">','<main class="bk-main content">').replace(/(<link rel="stylesheet" href="[^"]*booklet\.css">)/,'$1'+(hostile?SHEETS(label):''));
 const pages=[];
-for(const r of run.results){const name=r.rep.name;
+for(const r of run.results) for(const rel of r.rep.pages.filter(p=>p.startsWith('standalone/')&&p.endsWith('/index.html'))){
+  const name=rel.slice('standalone/'.length,-'/index.html'.length);
   const frag=fs.readFileSync(path.join(OUT,'site',name,'index.html'),'utf8').replace(/^---\n[\s\S]*?\n---\n/,'');
-  for(const hostile of [false,true]) fs.writeFileSync(path.join(OUT,'site',name,hostile?'hostile.html':'plain.html'),hostPage(frag,hostile,'A host'));
+  for(const hostile of [false,true]) fs.writeFileSync(path.join(OUT,'site',name,hostile?'hostile.html':'plain.html'),hostPage(frag,hostile,'A host',name));
   pages.push({name,form:'site',plain:'/site/'+name+'/plain.html',hostile:'/site/'+name+'/hostile.html'});
   const whole=fs.readFileSync(path.join(OUT,'standalone',name,'index.html'),'utf8');
-  for(const hostile of [false,true]) fs.writeFileSync(path.join(OUT,'standalone',name,hostile?'hostile.html':'plain.html'),asHosted(whole,hostile));
+  for(const hostile of [false,true]) fs.writeFileSync(path.join(OUT,'standalone',name,hostile?'hostile.html':'plain.html'),asHosted(whole,hostile,name));
   pages.push({name,form:'standalone',plain:'/standalone/'+name+'/plain.html',hostile:'/standalone/'+name+'/hostile.html'});}
 ok(pages.filter(p=>p.form==='standalone').every(p=>{const h=fs.readFileSync(path.join(OUT,p.hostile),'utf8');
   return h.includes('hostile.css')&&h.includes(INLINE)&&/<html [^>]*id="site"/.test(h)&&h.includes('id="main"')&&h.includes('bk-main content');}),

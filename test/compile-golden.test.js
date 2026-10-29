@@ -7,6 +7,8 @@
 // A page that differs fails, with its first differing line. When the change is meant, write the pages again and commit them:
 //   node test/compile-golden.test.js --write
 //
+// A booklet that shows two or more activities has a golden page for its contents and one for each activity
+// (compile-pages is a module with tabs, cards and links across pages; compile-pair and compile-pair.es are a translation pair).
 // examples/mindful-check-in.booklet.md is compiled by the other tests but has no golden page here: its notice names its
 // author and the practice it comes from, and these pages are meant to hold made-up content only.
 // Run: node test/compile-golden.test.js [--write]      (Needs node; nothing to install.)
@@ -15,7 +17,7 @@ const ROOT=path.join(__dirname,".."),GOLD=path.join(__dirname,"compile-golden");
 const C=require("../compile/compile.js"),E=require("../compile/engine.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const SET=[...["garden-week","how-tides-work","project-board","status-page"].map(n=>path.join(ROOT,"examples",n+".booklet.md")),
-  ...["compile-article","compile-kinds","figures","charts","data-views"].map(n=>path.join(__dirname,"fixtures",n+".booklet.md"))];
+  ...["compile-article","compile-kinds","figures","charts","data-views","compile-pages","compile-pair","compile-pair.es"].map(n=>path.join(__dirname,"fixtures",n+".booklet.md"))];
 const WRITE=process.argv.includes("--write");
 
 const run=C.compile(SET.map(file=>({file})),{form:"both",engine:E.load()});
@@ -51,7 +53,8 @@ chk("no golden file is left that the compiler no longer writes",!extra.length,ex
 /* the golden pages are what a host gets: each standalone page links the one stylesheet, each site page has front matter */
 for(const rel of [...want.keys()].filter(k=>k.endsWith("/index.html"))){
   const t=String(want.get(rel));
-  if(rel.startsWith("standalone/")) chk(rel+" links the one stylesheet",(t.match(/<link rel="stylesheet"/g)||[]).length===1&&t.includes('<link rel="stylesheet" href="../booklet/booklet.css">'));
-  else chk(rel+" starts with its front matter",/^---\ntitle: "[^\n]*"\n(description: "[^\n]*"\n)?---\n<!-- booklet compile /.test(t));}
+  /* the stylesheet is one folder up from a booklet's own page, and two from an activity's page of a many-page booklet */
+  if(rel.startsWith("standalone/")) chk(rel+" links the one stylesheet",(t.match(/<link rel="stylesheet"/g)||[]).length===1&&t.includes('<link rel="stylesheet" href="'+(rel.split("/").length>3?"../../":"../")+'booklet/booklet.css">'));
+  else chk(rel+" starts with its front matter",/^---\ntitle: "[^\n]*"\n(description: "[^\n]*"\n)?(weight: \d+\n)?(alternates:\n(  - hreflang: "[^\n]*"\n    href: "[^\n]*"\n)+)?---\n<!-- booklet compile /.test(t));}
 
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile golden pages passed");process.exit(fails?1:0);
