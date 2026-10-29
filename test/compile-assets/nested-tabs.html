@@ -1,0 +1,87 @@
+<!doctype html>
+<!-- HAND-BUILT, not compiled: a page written by hand to the compiler's markup contract (SPEC section 3: a tab is a
+     <section class="bk-tab"> under its heading; an activity is a <section class="bk-activity">), because the compiler no
+     longer produces tabs inside tabs (since 0.2.0 each activity of a booklet is a page of its own). It keeps the reading
+     helpers' code for a tab inside a tab covered, and a page-level case of two activities with folds, each with its own Open
+     all. Made-up words only. test/compile-nested-browser.js copies it beside a compiled stylesheet and script and runs it. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A walk in the park (nested tabs)</title>
+<link rel="stylesheet" href="booklet/booklet.css">
+</head>
+<body class="bk-page">
+<main class="bk-main">
+<article class="booklet" lang="en">
+  <h1 id="walk">A walk in the park</h1>
+  <p class="bk-lede">A made-up page: tabs inside tabs, and two activities that each hold folds.</p>
+  <section class="bk-tab">
+    <h2 id="plan">Plan <a class="bk-anchor" href="#plan" aria-label="Link to this section">#</a></h2>
+    <p>Choose a route and pack the bag before you set out.</p>
+    <section class="bk-activity">
+      <h3 id="choose-a-route">Choose a route <a class="bk-anchor" href="#choose-a-route" aria-label="Link to this section">#</a></h3>
+      <p>Three loops start at the gate. For wet weather see <a class="bk-link" href="#wet">the wet path</a>.</p>
+      <section class="bk-tab">
+        <h4 id="short-loop">Short loop <a class="bk-anchor" href="#short-loop" aria-label="Link to this section">#</a></h4>
+        <p>A short loop takes twenty minutes and stays on the flat. See also <a class="bk-link" href="#hilly-loop">Hilly loop</a>.</p>
+      </section>
+      <section class="bk-tab">
+        <h4 id="long-loop">Long loop <a class="bk-anchor" href="#long-loop" aria-label="Link to this section">#</a></h4>
+        <p>The long loop circles the pond and takes an hour.</p>
+        <details class="bk-fold bk-hue-sky bk-k-note">
+      <summary>Wet ground</summary>
+      <div class="bk-cb"><p>After rain the far side of the pond is soft.</p></div>
+    </details>
+      </section>
+      <section class="bk-tab">
+        <h4 id="hilly-loop">Hilly loop <a class="bk-anchor" href="#hilly-loop" aria-label="Link to this section">#</a></h4>
+        <p>The hilly loop climbs to the lookout and back.</p>
+        <details class="bk-fold bk-hue-sage bk-k-tip">
+      <summary>Take poles</summary>
+      <div class="bk-cb"><p>Walking poles help on the steep stretch.</p></div>
+    </details>
+      </section>
+    </section>
+    <section class="bk-activity">
+      <h3 id="what-to-bring">What to bring <a class="bk-anchor" href="#what-to-bring" aria-label="Link to this section">#</a></h3>
+      <p>Pack light.</p>
+      <details class="bk-fold bk-hue-sky bk-k-note">
+      <summary>A thermos</summary>
+      <div class="bk-cb"><p>Hot tea keeps well for an hour.</p></div>
+    </details>
+      <details class="bk-fold bk-hue-sage bk-k-tip">
+      <summary>A hat</summary>
+      <div class="bk-cb"><p>A brim keeps the sun off.</p></div>
+    </details>
+      <details class="bk-fold bk-hue-sky bk-k-note bk-compact bk-hint">
+      <summary>A hint</summary>
+      <div class="bk-cb"><p>Choose what is easy to eat while walking.</p></div>
+    </details>
+      <details class="bk-fold bk-hue-sage bk-k-tip bk-compact bk-solution">
+      <summary>A solution</summary>
+      <div class="bk-cb"><p>There is no wrong snack.</p></div>
+    </details>
+    </section>
+  </section>
+  <section class="bk-tab">
+    <h2 id="during">During <a class="bk-anchor" href="#during" aria-label="Link to this section">#</a></h2>
+    <p>Keep to the path and watch the weather. The <a class="bk-link" href="#hilly-loop">hilly loop</a> is back under Plan.</p>
+    <section class="bk-activity">
+      <h3 id="on-the-path">On the path <a class="bk-anchor" href="#on-the-path" aria-label="Link to this section">#</a></h3>
+      <p>Say hello, and give way to bikes.</p>
+      <section class="bk-tab">
+        <h4 id="dry">Dry path <a class="bk-anchor" href="#dry" aria-label="Link to this section">#</a></h4>
+        <p>The dry path is firm all the way round.</p>
+      </section>
+      <section class="bk-tab">
+        <h4 id="wet">Wet path <a class="bk-anchor" href="#wet" aria-label="Link to this section">#</a></h4>
+        <p>The wet path has boards over the muddy stretch.</p>
+      </section>
+    </section>
+  </section>
+</article>
+</main>
+<script src="booklet/booklet.js" defer></script>
+</body>
+</html>
