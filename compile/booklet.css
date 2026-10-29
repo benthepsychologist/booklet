@@ -453,6 +453,57 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-about dd{margin:0!important;overflow-wrap:anywhere!important}
 @media (max-width:520px){.booklet:not(#bk):not(#bk):not(#bk) .bk-about dl{grid-template-columns:minmax(0,1fr)!important;gap:0!important}.booklet:not(#bk):not(#bk):not(#bk) .bk-about dd{margin-bottom:.4rem!important}}
 
+/* ---- reading helpers: what the optional script (booklet.js) adds, styled here. A page without the script has none of it ----
+   A tab bar over an activity's tabs; a citation's note beside its mark; the "Open all" switch on folds; the sort and filter
+   control over a data view; the words said when a heading's link is copied. Every one is made by a part of the script out
+   of the compiler's own markup, so none of these classes is in a page that does not load it. */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tabbar{display:flex!important;gap:.25rem!important;margin:1rem 0 1.25rem!important;max-width:var(--bk-measure)!important;overflow-x:auto!important;
+  overscroll-behavior-x:contain!important;border-bottom:var(--bk-border) solid var(--bk-rule)!important;scrollbar-width:thin!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tabbtn{flex:none!important;min-height:44px!important;padding:.45rem 1rem!important;border:0!important;border-bottom:3px solid transparent!important;
+  border-radius:8px 8px 0 0!important;background:transparent!important;color:var(--bk-muted)!important;cursor:pointer!important;
+  font-family:var(--bk-font-text)!important;font-size:.95rem!important;font-weight:600!important;line-height:1.25!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tabbtn:hover{color:var(--bk-ink)!important;background:var(--bk-accent-soft)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tabbtn[aria-selected="true"]{border-bottom-color:var(--bk-accent)!important;background:var(--bk-accent-soft)!important;color:var(--bk-ink)!important;font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tab[hidden]{display:none!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) .bk-peek{position:fixed!important;z-index:50!important;box-sizing:border-box!important;width:max-content!important;max-width:min(24rem,calc(100vw - 1rem))!important;
+  padding:.65rem .85rem!important;background:var(--bk-surface)!important;color:var(--bk-ink)!important;border:var(--bk-border) solid var(--bk-rule)!important;
+  border-radius:var(--bk-radius)!important;box-shadow:0 4px 18px rgba(0,0,0,.18)!important;font-size:.92rem!important;line-height:1.45!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-peek[hidden]{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-peek cite{font-style:italic!important;font-weight:600!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldsw{display:inline-flex!important;align-items:center!important;gap:.55rem!important;min-height:44px!important;margin:.25rem 0!important;padding:.2rem .5rem .2rem 0!important;
+  border:0!important;background:none!important;color:var(--bk-muted)!important;cursor:pointer!important;font-family:var(--bk-font-text)!important;font-size:.9rem!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldsw:hover{color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldknob{position:relative!important;flex:none!important;width:2.2rem!important;height:1.25rem!important;border:var(--bk-border) solid var(--bk-muted)!important;border-radius:999px!important;background:var(--bk-surface)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldknob::after{content:""!important;position:absolute!important;top:50%!important;left:.15rem!important;width:.7rem!important;height:.7rem!important;margin-top:-.35rem!important;border-radius:50%!important;background:var(--bk-muted)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldsw[aria-checked="true"] .bk-foldknob{border-color:var(--bk-accent)!important;background:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldsw[aria-checked="true"] .bk-foldknob::after{left:auto!important;right:.15rem!important;background:var(--bk-surface)!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vctl{margin:0 0 .35rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vctl-top{display:flex!important;justify-content:flex-end!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vbtn{min-height:2.25rem!important;padding:.2rem .5rem!important;border:0!important;border-radius:8px!important;background:none!important;color:var(--bk-muted)!important;
+  cursor:pointer!important;font-family:var(--bk-font-text)!important;font-size:.85rem!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vbtn:hover,.booklet:not(#bk):not(#bk):not(#bk) .bk-vbtn[aria-expanded="true"]{color:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vbar{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:.4rem .5rem!important;padding:.35rem 0 .55rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vbar[hidden],.booklet:not(#bk):not(#bk):not(#bk) .bk-vclear[hidden]{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-vq,.bk-vsel){box-sizing:border-box!important;min-height:2.25rem!important;padding:.25rem .55rem!important;border:var(--bk-border) solid var(--bk-rule)!important;
+  border-radius:8px!important;background:var(--bk-surface)!important;color:var(--bk-ink)!important;font-family:var(--bk-font-text)!important;font-size:.9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vq{flex:1 1 11rem!important;min-width:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vq::placeholder{color:var(--bk-muted)!important;opacity:1!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vsel{max-width:100%!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-vdir,.bk-vclear){min-height:2.25rem!important;padding:.2rem .65rem!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:8px!important;
+  background:var(--bk-surface)!important;color:var(--bk-ink)!important;cursor:pointer!important;font-family:var(--bk-font-text)!important;font-size:.9rem!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-vdir,.bk-vclear,.bk-vq,.bk-vsel):hover{border-color:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vdir:disabled{opacity:.5!important;cursor:default!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vlive{margin:0 0 .35rem!important;color:var(--bk-muted)!important;font-size:.85rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vlive:empty{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) [data-bk-row][hidden]{display:none!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) .bk-said{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;
+  clip:rect(0 0 0 0)!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-anchor.bk-copied{opacity:1!important;color:var(--bk-green-ink)!important}
+
 /* ---- print: always light, every fold open where the browser can open one for print ---- */
 @media print{
   :where(.booklet, .bk-page){
@@ -481,6 +532,8 @@
   .booklet:not(#bk):not(#bk):not(#bk) .bk-table thead{display:table-header-group!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-math-display{overflow:visible!important}
   .booklet:not(#bk):not(#bk):not(#bk) :is(h2,h3,h4){break-after:avoid!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-tabbar,.bk-foldsw,.bk-vctl,.bk-peek,.bk-said){display:none!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-tab[hidden]{display:block!important}
 }
 
 @media (prefers-reduced-motion:reduce){.booklet:not(#bk):not(#bk):not(#bk) *{transition:none!important;animation:none!important}}

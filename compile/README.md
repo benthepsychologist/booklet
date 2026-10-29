@@ -232,6 +232,35 @@ Dublin Core's `dc:` in a `<metadata>` block, Adobe's `x:`), so it is refused unt
 Optimized SVG, or an optimiser such as SVGO, takes them out). `test/compile-browser.js` opens a prefixed-script SVG directly in
 Chromium with scripting on, to show the case is real, and checks the compiler copies no such file.
 
+## Reading helpers (the optional script)
+
+A page may load one optional script, `booklet.js`, written beside `booklet.css` and built from the parts in `compile/script/`.
+Five of those parts (`reading-*.js`) make a page read better where a script helps. With scripting off, or on a host that does
+not load the file, the page is exactly what it was: every part below only works on markup the compiler already wrote, and
+a page without that markup is left alone. None of it is saved: no storage, no cookie, nothing sent, and a reload starts clean.
+
+- **A tab bar.** An activity's (or a module's) tabs, written one after another under their names, become a bar that opens on
+  the first tab, as SPEC section 3 describes for a renderer with one. It is the ARIA tabs pattern: a button for each tab, the
+  one on show the only one in the Tab order, Left, Right, Home and End to move. A link into a tab that is not showing (a link in
+  the text, a heading's share link, a `#fragment` in the page's address) shows that tab first. A bar inside a tab works too.
+  The page prints with every tab shown and the bar left off.
+- **A citation's note where its mark is.** Hovering a mark with a mouse, focusing it from the keyboard or tapping it shows the
+  note beside it (Escape closes it). A click with a mouse, Enter, or a second tap on a touch screen still goes to the note at
+  the foot, and the foot's notes stay. The box is a copy of what the compiler wrote, with its ids and back link left out.
+- **Open all.** An activity that holds a fold the author made (a callout folded with `-`) gets one switch, "Open all", under its
+  heading, which opens or folds exactly those folds and never a question's hint or solution. Folds outside any activity get one
+  at the top of the page. The switch follows folds opened by hand. Folds also open for printing and close again afterwards.
+- **Sort and filter on a data view.** A container marked `data-bk-view` (rows `data-bk-row`, values `data-bk-col`) gets a quiet
+  "Sort and filter" button that opens a bar: a search box that looks in every column, a column to sort by with a direction
+  button, and Clear. Numbers sort as numbers, rows sort among their own group, and a line chart keeps its order, as SPEC section 6
+  says, so it is left alone.
+- **A heading's link.** The share link on a heading also copies the heading's full address, and says "Link copied". Without a
+  clipboard it is only a link.
+
+The parts write no markup from a string and no text of the booklet's: their own words (in English, French and Spanish, the
+renderer's own for the sort and filter bar and its fold switch) are set as text, and a tab's name is read from its heading.
+`test/compile-reading.test.js` holds them to that.
+
 ## The report, and tidying a page
 
 Every run prints a build report for each file: where its pages went, what was drawn (by count), the description it
@@ -267,6 +296,7 @@ that would break the compiler is caught here and never on a host's build.
 | `draw.js` | a design drawn as one page's markup; what is drawn and what is marked (`COVERAGE`, `MARKED`) |
 | `html.js` | the markup as nodes, written out as indented HTML a person can tidy |
 | `booklet.css` | the stylesheet |
+| `script/reading-*.js` | the optional script's reading helpers: a tab bar, citation previews, Open all, sort and filter, a heading's copied link |
 
 ## Tests
 
@@ -280,6 +310,8 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |
 | `compile-browser.js` | in Chromium with scripting off, at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
+| `compile-reading.test.js` | the reading helpers: five files, each one function called at once, none leaving a global; the pledge (no storage, no network, no navigation, no element that loads, no markup built from a string, no string evaluated), tried on made-up breaking parts first; a rule for every class they add and the print rules |
+| `compile-reading-browser.js` | in Chromium, the reading helpers on the made-up `compile-reading` fixture and on a page of data views: tab bars (roles, keys, links and addresses into a tab, print), citation previews (mouse, keyboard, touch), Open all and printing, the copied link, sort and filter; with scripting off, and with a page that has none of their markup, the page is unchanged; no storage, no request but its own files, readable contrast; an axe pass when `AXE` is given |
 | `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards, and `!important` rules of one and two ids, among them `#main .content blockquote *`); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; the check fails with no guard, with the guard as it was before `!important`, and with `!important` but one id's weight |
 
 `examples/mindful-check-in.booklet.md` is compiled by the content and browser tests but has no golden page, since its
