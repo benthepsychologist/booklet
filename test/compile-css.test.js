@@ -7,9 +7,10 @@
 //   - Its @font-face rules are the faces booklet.html carries, one for one, named as the compiler writes them beside it.
 //   - Every class the compiler writes on a page has a rule (save the few that are only hooks for a host), every callout
 //     hue and every widget colour name has its rule, and the stylesheet fetches nothing but its own fonts.
+//   - A drawn body-map figure (.bk-svgfig) and a drawn diagram (.bk-diagram) have their rules, in the page's colours and as wide as the text.
 // Run: node test/compile-css.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path");
-const ROOT=path.join(__dirname,".."),C=require("../compile/compile.js"),E=require("../compile/engine.js");
+const ROOT=path.join(__dirname,".."),C=require("../compile/compile.js"),E=require("../compile/engine.js"),STUB=require("./diagram-stub.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const X=E.load(),R=X.R;
 const css=fs.readFileSync(path.join(ROOT,"compile","booklet.css"),"utf8");
@@ -82,10 +83,15 @@ chk("it fetches nothing but its own fonts (no @import, no other url())",!/@impor
 
 /* ---- every class the compiler writes has a rule ---- */
 const inputs=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWith(".booklet.md")).map(f=>({file:path.join(ROOT,"examples",f)})),
-  ...["compile-article","compile-kinds","compile-quiz","figures","data-views","charts","compile-pages","compile-pair","compile-views","compile-theme"].map(n=>({file:path.join(__dirname,"fixtures",n+".booklet.md")}))];
-const run=C.compile(inputs,{form:"both",engine:X});
+  ...["compile-article","compile-kinds","compile-quiz","figures","data-views","charts","compile-pages","compile-pair","compile-views","compile-theme"].map(n=>({file:path.join(__dirname,"fixtures",n+".booklet.md")})),
+  ...["compile-bodymap","compile-pictures","compile-diagrams"].map(n=>({file:path.join(__dirname,"compile-assets",n+".booklet.md")}))];
+const run=C.compile(inputs,{form:"both",engine:X,drawer:STUB.drawer});
 const classes=new Set();
-for(const r of run.results) for(const [rel,data] of r.files) if(rel.endsWith(".html")) for(const m of String(data).matchAll(/class="([^"]*)"/g)) m[1].split(/\s+/).forEach(c=>c&&classes.add(c));
+/* the classes inside a drawn figure or diagram are the author's, or the diagram library's, and are styled by the SVG's own style
+   (a diagram) or by the page's .bk-svgfig rules (a figure); the wrapper's own class is the compiler's */
+const outerOnly=t=>t.replace(/(<(?:div|figure) class="bk-(?:svgfig|diagram)">)\s*<svg\b[\s\S]*?<\/svg>/g,"$1");
+for(const r of run.results) for(const [rel,data] of r.files) if(rel.endsWith(".html")) for(const m of outerOnly(String(data)).matchAll(/class="([^"]*)"/g)) m[1].split(/\s+/).forEach(c=>c&&classes.add(c));
+chk("a drawn figure and a drawn diagram are on the pages checked",run.results.some(r=>[...r.files.values()].some(d=>/class="bk-svgfig"/.test(String(d))))&&run.results.some(r=>[...r.files.values()].some(d=>/class="bk-diagram"/.test(String(d)))));
 const HOOK=/^bk-(activity|module|tab|q-(text|lines|number|date|choice|multi|scale|matrix)|w-[a-z-]+|k-[a-z]+|hint|solution|link|quote|page)$|^tml-/;
 const bare=[...classes].filter(c=>!HOOK.test(c)&&!new RegExp("\\."+c.replace(/-/g,"\\-")+"(?![\\w-])").test(css));
 chk("every class the compiler writes has a rule ("+classes.size+" classes; hooks for a host aside)",!bare.length,bare.join(", "));

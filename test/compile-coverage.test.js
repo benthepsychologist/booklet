@@ -1,4 +1,4 @@
-// What the compiler draws and what it marks (compile/): nothing the renderer draws is passed over in silence.
+// What the compiler draws and what it marks (compile/; the body map's figure and diagrams drawn in 0.2.0): nothing the renderer draws is passed over in silence.
 // Every block type the renderer draws (DRAW_BLOCK), every question kind (QUESTION_KINDS), every widget engine (ENGINES) and
 // every query view (QUERY_VIEWS) must be in draw.js's COVERAGE, as drawn or with the reason it is marked, and nothing may
 // stand in COVERAGE that the renderer no longer has. Then the made-up fixture test/fixtures/compile-kinds.booklet.md is
@@ -8,9 +8,13 @@
 // very tables draw.js dispatches from (BLOCK_WAY for blocks, ENGINE_WAY for engines), so a type the table calls drawn is
 // one block() sends to a drawer; and the fixture, which holds every kind the renderer draws, yields no mark for a block
 // the compiler does not know, and no engine mark but for the one engine it makes up.
+// A diagram is drawn by a browser, so the fixture is first compiled with none to find (PLAYWRIGHT names nothing), where each diagram is
+// its source with a mark and a reason, and then with a stand-in for the browser (test/diagram-stub.js), where each is drawn and
+// marks nothing. The body map's figure is drawn in both, and marks nothing.
 // Run: node test/compile-coverage.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path");
-const C=require("../compile/compile.js"),D=require("../compile/draw.js"),E=require("../compile/engine.js");
+process.env.PLAYWRIGHT="/nonexistent/playwright-core";
+const C=require("../compile/compile.js"),D=require("../compile/draw.js"),E=require("../compile/engine.js"),STUB=require("./diagram-stub.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const X=E.load(),R=X.R;
 /* a table from the renderer's sandbox: a Set or an array there is not one here (another realm), so it is told by its shape */
@@ -66,19 +70,25 @@ chk("a scale shows its anchors, a matrix its items and anchors",/<ul class="bk-s
 /* both engines */
 chk("the grid-select widget is drawn: axes, cells in their colour names, items",has("bk-w-grid-select","fieldset")&&/bk-ax bk-ax-top">higher</.test(page)&&/<div class="bk-cell bk-c-blue">\s*<p class="bk-cell-name">Soaring<\/p>\s*<ul class="bk-words">\s*<li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-asks-w1" autocomplete="off"><label for="bk-compile-kinds-asks-w1">Glide<\/label><span class="bk-shows" hidden>High and calm\.<\/span><\/li>/.test(page));
 chk("a grid with no colour names takes the quiet ramp by place",/bk-cell bk-c-n0[^]*bk-cell bk-c-n3/.test(page));
-chk("the svg-regions widget is drawn by its places, figure by figure",has("bk-w-svg-regions","fieldset")&&/<p class="bk-places-h">Front<\/p>\s*<ul class="bk-words">\s*<li>Sail<\/li>\s*<li>Tail<\/li>/.test(page));
+chk("the svg-regions widget is drawn by its figures, each with its places beneath it",has("bk-w-svg-regions","fieldset")&&/<p class="bk-places-h">Front<\/p>\s*<div class="bk-svgfig">[^]*?<\/div>\s*<ul class="bk-words">\s*<li>Sail<\/li>\s*<li>Tail<\/li>/.test(page));
 chk("describe adds each place's note",/<dl class="bk-notes-of">[^]*?<dt>Spar<\/dt>\s*<dd>The stick that holds it open\.<\/dd>/.test(page));
-chk("no figure's SVG reaches the page",!/<svg viewBox="0 0 100 100"/.test(page)&&!/class="rg"/.test(page));
+chk("the figure's SVG is on the page: its regions are pictures with their labels for names",
+  /<div class="bk-svgfig">\s*<svg viewBox="0 0 100 100">\s*<rect class="rg" data-r="sail" x="10" y="10" width="80" height="60" role="img" aria-label="Sail"\/>/.test(page)&&r.rep.counts.figures===2);
 
 /* what is marked: a comment where it stood, a line in the report */
 const tidy=report.split("\n").filter(l=>/^\s+\[ \] /.test(l));
 const marks=[...page.matchAll(/<!-- booklet: ([^]*?) -->/g)].map(m=>m[1]);
-const expect=[["kind","the callout kind “sparkle”"],["each","the question “Why that tool?”"],["regionsFigure","the figure “front” of the widget “kite-parts”"],
+const expect=[["kind","the callout kind “sparkle”"],["each","the question “Why that tool?”"],
 ["mermaid","a mermaid fence"],["mermaid","the figure “day-plan”"],["link","the link to “spare-kites”"],
   ["brokenMark","the mark [^nowhere]"],["engine","the widget “odd-engine” (engine “weather-vane”)"],["widget","the widget block “gone”"]];
 for(const [kind,what] of expect){
-  chk("marked on the page: "+what,marks.some(m=>m.startsWith(what)&&m.endsWith(D.MARKED[kind])),marks.join(" | "));
-  chk("listed to tidy in the report: "+what,tidy.some(l=>l.includes(what)&&l.endsWith(D.MARKED[kind])));}
+  /* a mark may carry the reason after the words of its kind (a diagram: why it is its source) */
+  const tail=m=>m.includes(D.MARKED[kind]);
+  chk("marked on the page: "+what,marks.some(m=>m.startsWith(what)&&tail(m)),marks.join(" | "));
+  chk("listed to tidy in the report: "+what,tidy.some(l=>l.includes(what)&&tail(l)));}
+chk("a diagram with no browser to draw it says so, on the page and in the report",marks.some(m=>m.startsWith("a mermaid fence")&&m.endsWith("no browser to draw it with (set PLAYWRIGHT to the path of the playwright-core package)"))
+  &&tidy.some(l=>l.includes("the figure “day-plan”")&&l.endsWith("no browser to draw it with (set PLAYWRIGHT to the path of the playwright-core package)")));
+chk("the body map's figure is drawn, so it is not marked",!r.rep.marked.some(m=>m.kind==="regionsFigure"));
 const unknownBlocks=r.rep.marked.filter(m=>m.kind==="block"),engineMarks=r.rep.marked.filter(m=>m.kind==="engine");
 chk("the fixture yields no mark for a block the compiler does not know",!unknownBlocks.length,unknownBlocks.map(m=>m.what).join(", "));
 chk("…and an engine mark only for an engine the renderer does not have either",engineMarks.length===1&&engineMarks.every(m=>/engine “([^”]+)”/.test(m.what)&&!keys(R.ENGINES).includes(/engine “([^”]+)”/.exec(m.what)[1])),engineMarks.map(m=>m.what).join(", "));
@@ -87,6 +97,12 @@ chk("a broken mark is shown as [?id]",/<span class="bk-broken" title="[^"]*">\[\
 chk("a diagram is shown as its source",/<pre class="bk-figure-src"><code data-lang="mermaid">graph LR; Build --&gt; Fly<\/code><\/pre>/.test(page));
 chk("a hidden activity is left off, and not marked",!page.includes("Never on the page")&&!report.includes("Hidden notes"));
 chk("a heading link inside the page is a link",/<a class="bk-link" href="#morning">Morning<\/a>/.test(page));
+
+/* the same fixture with a stand-in for the browser: each diagram is drawn, and none is marked */
+{const rs=C.compile([{file:FIX}],{form:"standalone",engine:X,drawer:STUB.drawer}).results[0],ps=[...rs.files].filter(([k])=>k.endsWith("/index.html")).map(([,v])=>v).join("\n");
+  chk("with a browser to draw them, both diagrams are drawn, in the order they stand",rs.rep.counts.diagrams===2&&(ps.match(/<figure class="bk-diagram">/g)||[]).length===2&&/<svg id="bk-compile-kinds-left-off-dg1"[^]*<svg id="bk-compile-kinds-left-off-dg2"/.test(ps));
+  chk("…and a drawn diagram is no longer marked, nor shown as its source",!rs.rep.marked.some(m=>m.kind==="mermaid")&&!ps.includes('data-lang="mermaid"'));
+  chk("…the report counts them as drawn",/ 2 diagrams, /.test(C.reportText({results:[rs],renderer:"",format:"",form:"standalone"})));}
 
 /* each of the six query views, drawn (compile 0.2): its container says which, and nothing is marked */
 const q=views.map((v,i)=>"```booklet query\nfrom: rows\nas: "+v+"\n```\n").join("\n");

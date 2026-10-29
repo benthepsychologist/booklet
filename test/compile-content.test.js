@@ -18,8 +18,11 @@
 //      standalone head carries a JSON-LD block no title can break out of. Every in-page link has its target.
 //   5. The command. The stamp guard keeps a hand-tidied page; a refused file writes nothing; the source is never written;
 //      a mistake in the command exits 2.
+// A diagram is drawn by a browser, which this test does not rely on: PLAYWRIGHT names nothing, so each diagram stays its source
+// (test/compile-figures.test.js and test/compile-figures-browser.js check the drawing).
 // Run: node test/compile-content.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path"),os=require("os"),crypto=require("crypto"),cp=require("child_process");
+process.env.PLAYWRIGHT="/nonexistent/playwright-core";
 const ROOT=path.join(__dirname,".."),FIX=path.join(__dirname,"fixtures"),CLI=path.join(ROOT,"compile","compile.js");
 const C=require("../compile/compile.js"),D=require("../compile/draw.js"),E=require("../compile/engine.js"),H=require("../compile/html.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
@@ -136,7 +139,8 @@ function shortOf(units,page){const have=count(tokens(Array.isArray(page)?page.ma
   const short=[...need].filter(([t,n])=>(have.get(t)||0)<n).map(([t])=>t);
   return {short,need,where:units.filter(u=>u.words.some(w=>short.includes(w))).map(u=>u.where+": "+[...new Set(u.words.filter(w=>short.includes(w)))].join(" "))};}
 const LOST_SET=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWith(".booklet.md")).map(f=>path.join(ROOT,"examples",f)),
-  ...["compile-article","compile-kinds","compile-quiz","figures","charts","data-views","compile-pages","compile-pair","compile-pair.es","compile-views","compile-theme"].map(n=>path.join(FIX,n+".booklet.md"))];
+  ...["compile-article","compile-kinds","compile-quiz","figures","charts","data-views","compile-pages","compile-pair","compile-pair.es","compile-views","compile-theme"].map(n=>path.join(FIX,n+".booklet.md")),
+  ...["compile-bodymap","compile-diagrams"].map(n=>path.join(__dirname,"compile-assets",n+".booklet.md"))];
 {const run=C.compile(LOST_SET.map(file=>({file})),{form:"both",engine:X});
   run.results.forEach((r,i)=>{const P=X.parse(fs.readFileSync(LOST_SET[i],"utf8")),units=designUnits(P);
     /* a booklet that shows two or more activities is a contents page and a page for each: its words are on them together */
@@ -250,7 +254,7 @@ const WRITER=(()=>{const page=fs.readFileSync(path.join(ROOT,"booklet.html"),"ut
   chk("a booklet with images compiles",r.status===0,r.stderr||r.stdout);
   const page=fs.readFileSync(path.join(out,"pictures","index.html"),"utf8"),written=tree(path.join(out,"pictures"));
   for(const [alt,at,ok,why] of imgs){const esc=at.replace(/[.*+?^${}()|[\]\\/]/g,"\\$&");
-    if(ok){chk("copied and drawn: "+at,new RegExp('<img src="'+esc+'" alt="'+alt+'">').test(page)&&written.includes(at)&&sha(path.join(out,"pictures",at))===sha(path.join(book,at)));continue;}
+    if(ok){chk("copied and drawn: "+at,new RegExp('<img src="'+esc+'" alt="'+alt+'"( width="\\d+" height="\\d+")?>').test(page)&&written.includes(at)&&sha(path.join(out,"pictures",at))===sha(path.join(book,at)));continue;}
     chk("refused, shown as words and address: "+at,!new RegExp('src="[^"]*'+esc).test(page)&&page.includes('<span class="bk-imgalt">'+alt+"</span>")&&page.includes('<code class="bk-imgsrc">'+H.escText(at)+"</code>"),why);
     chk("…with a comment where it stood and a line in the report saying why ("+why+")",page.includes("<!-- booklet: the image “"+alt+"” at "+JSON.stringify(at))
       &&r.stdout.split("\n").some(l=>l.includes("[ ] the image "+JSON.stringify(at))&&l.includes(why)),r.stdout.split("\n").filter(l=>l.includes(alt)||l.includes(at)).join(" / "));}

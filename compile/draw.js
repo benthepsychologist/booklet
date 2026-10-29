@@ -27,9 +27,9 @@ const {el,frag,trusted,comment}=H;
    (Hint, Solution, Notes, a callout kind's name, "About this module", an image's note) is the renderer's, in the
    booklet's language. */
 const PAGE_WORDS={
-  en:{toc:"On this page",back:"Back to the text",anchor:"Link to this section",contents:"Contents"},
-  fr:{toc:"Sur cette page",back:"Retour au texte",anchor:"Lien vers cette section",contents:"Sommaire"},
-  es:{toc:"En esta página",back:"Volver al texto",anchor:"Enlace a esta sección",contents:"Contenido"}};
+  en:{toc:"On this page",back:"Back to the text",anchor:"Link to this section",diagram:"Diagram",contents:"Contents"},
+  fr:{toc:"Sur cette page",back:"Retour au texte",anchor:"Lien vers cette section",diagram:"Diagramme",contents:"Sommaire"},
+  es:{toc:"En esta página",back:"Volver al texto",anchor:"Enlace a esta sección",diagram:"Diagrama",contents:"Contenido"}};
 
 /* How each block type the renderer draws is drawn here: the name of its drawer in drawPage (DRAWERS), or {marked: the
    kind of mark it gets}. block() dispatches from this table, and drawPage refuses to run when a drawer it names is
@@ -39,7 +39,7 @@ const BLOCK_WAY={markdown:"prose",callout:"callout",row:"row",widget:"widget",
   text:"question",lines:"question",choice:"question",multi:"question",scale:"question",matrix:"question",number:"question",date:"question",
   query:"query"};
 /* each widget engine drawn, and how: drawPage's ENGINE_DRAW must hold exactly these */
-const ENGINE_WAY={"grid-select":"drawn: its words press and highlight on the page, nothing kept","svg-regions":"drawn: its places by name, pressed and highlighted on the page, nothing kept; its figure is marked (compile 0.2)"};
+const ENGINE_WAY={"grid-select":"drawn: its words press and highlight on the page, nothing kept","svg-regions":"drawn: its figure, and its places by name, pressed and highlighted on the page, nothing kept"};
 /* How each of the renderer's tables is handled: "drawn", or a reason it is marked instead. test/compile-coverage.test.js
    fails when the renderer has a block type, question kind, engine or query view that is in neither. Callout kinds are
    all drawn, each in its own look (CALLOUT_LOOK), and an unknown kind is marked and drawn as the renderer draws it. */
@@ -50,8 +50,8 @@ const COVERAGE={
 /* the things the page leaves off, and why, as the report and the comments word them */
 const MARKED={
   kept:"a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records",
-  mermaid:"a diagram: not compiled yet, shown as its source",
-  regionsFigure:"the body map's figure: not compiled yet; its places are named below it",
+  mermaid:"a diagram shown as its source, not drawn",
+  regionsFigure:"the body map's figure is not drawn, but its places are named below it",
   link:"a link to a booklet not compiled with this one: drawn as its words",
   each:"a question asked for each pick in another: not compiled (the reference renderer does not draw it either, and a page keeps no picks to draw it from)",
   kind:"an unknown callout kind: drawn as a note, with the renderer's line saying the kind is not known",
@@ -101,7 +101,9 @@ function planPages(X,P,name){
 
 /* drawPage(X, parsed, o): the page's article and what the page and the report need.
    o: {name, form: "standalone"|"site", forceScript (tests: say the page needs booklet.js), siblings: Map of the addresses compiled in the same run to their titles, image(rel, ext) ->
-   {ok} | {ok:false, why: a renderer ui string's name, detail}}. A booklet of many pages also gives o.plan (planPages), o.unit
+   {ok, width, height} | {ok:false, why: a renderer ui string's name, detail}, figure(svgText, idPrefix, labelOf) ->
+   {ok, html} | {ok:false, why}, diagram(code, idPrefix, word) -> {ok, html} | {ok:false, why}}. A drawPage without figure or diagram
+   draws neither: a figure is marked and a diagram is its source. A booklet of many pages also gives o.plan (planPages), o.unit
    (the plan's page to draw) and o.xr ({pages: new Map(), later: []}, shared by all the pages of one form). */
 function drawPage(X,P,o){
   const R=X.R,M=X.M,design=P.design;
@@ -110,8 +112,8 @@ function drawPage(X,P,o){
   X.setLang(ui);
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
-    marked:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,images:0,math:0,notes:0,links:0},
-    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[]};
+    marked:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
+    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0,dgSeq:0};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const bookTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
   const U=o.unit||{kind:"whole"},plan=o.plan||null,xr=o.xr||null,KEY=U.key||HOME,deep=U.kind==="activity";
@@ -121,8 +123,8 @@ function drawPage(X,P,o){
   const IDP="bk-"+(String(o.name+(deep?"-"+U.folder:"")).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"page")+"-";
 
   /* ---- marks: what the page leaves off ---- */
-  const mark=(kind,what)=>{st.marked.push({kind,what,where:st.where});
-    return comment("booklet: "+what+" ("+st.where+"): "+MARKED[kind]);};
+  const mark=(kind,what,why)=>{st.marked.push({kind,what,where:st.where,...(why?{why}:{})});
+    return comment("booklet: "+what+" ("+st.where+"): "+MARKED[kind]+(why?": "+why:""));};
 
   /* ---- the renderer's Markdown engine, with this page's hooks ---- */
   const headingLink=(hit,kids)=>{const a=el("a",{class:"bk-link"},...kids);st.pend.push({a,hit,where:st.where});return a;};
@@ -176,7 +178,7 @@ function drawPage(X,P,o){
     const r=o.image(p.rel,p.ext);
     if(!r.ok){st.images.push({src:p.rel,ok:false,where:st.where,why:r.detail||r.why});return box(T("ui")[r.why]||T("ui").imgNotShown);}
     st.images.push({src:p.rel,ok:true});st.counts.images++;
-    return el("img",{src:(deep?"../":"")+p.rel,alt:alt||""});}
+    return el("img",{src:(deep?"../":"")+p.rel,alt:alt||"",width:r.width,height:r.height});}
 
   /* ---- math, as MathML at build time; a formula Temml cannot read is shown as its TeX ---- */
   function math(tex,display){st.counts.math++;let ml=null;
@@ -192,13 +194,33 @@ function drawPage(X,P,o){
     return el("span",{class:cls},trusted(ml));}
   function mathId(id){const base="bk-tml-"+id;let v=base,i=2;while(st.mathIds.has(v)) v=base+"-"+(i++);st.mathIds.add(v);return v;}
 
-  /* ---- figures: a prose embed (![[#^id]]) read by the renderer's figureHooks; a diagram is marked, anything else is code ---- */
+  /* the ids of a figure or a diagram begin with the page's own prefix (IDP: bk-<name>- and, on an activity's page, bk-<name>-<folder>-) and the
+     figure's number on the page (bk-<name>-dg2, bk-<name>-<folder>-f1), the same prefix the questions' ids take, so two pages put into one
+     host page, each numbering from 1, keep their ids apart */
+  /* A name or folder with a character an id cannot hold (or a capital) has it written as "-" in IDP, so "a.b" and "a-b" would share a prefix. A figure's
+     or a diagram's prefix then gets a short hash of the raw name after it, so those two stay two (the questions' ids are the pages lane's own). */
+  const rawKey=String(o.name+(deep?"-"+U.folder:"")),slug=IDP.slice(3,-1),
+    figP=rawKey===slug?IDP:IDP+(()=>{let h=5381;for(const c of rawKey) h=(h*33+c.codePointAt(0))>>>0;return h.toString(36).slice(0,4);})()+"-";
+  const idPrefix=kind=>figP+kind+(++st.svgSeq);
+
+  /* ---- figures: a prose embed (![[#^id]]) read by the renderer's figureHooks; a diagram is drawn or shown as its source, anything else is code ---- */
   function embed(t){const f=R.figureHooks(st.scope).embed(t);
     if(!f||!f.__figure) return null;
     const g=f.__figure;
     if(g.lang==="mermaid") return diagram(g.code,"the figure “"+g.id+"”");
     return el("pre",{},el("code",g.lang?{"data-lang":g.lang}:{},g.code));}
-  const diagram=(code,what)=>frag(mark("mermaid",what),el("pre",{class:"bk-figure-src"},el("code",{"data-lang":"mermaid"},String(code))));
+  /* the ids an SVG carries are kept apart from the page's own: no heading takes one */
+  const ownIds=svg=>{for(const m of String(svg).matchAll(/\sid="([^"]*)"/g)) st.mathIds.add(m[1]);};
+  /* a diagram drawn at build time (o.diagram, compile.js), else its source with the reason in the mark; the source is the
+     fallback, so a page without a browser to draw with still holds every diagram's words */
+  function diagram(code,what){
+    const r=o.diagram?o.diagram(String(code),idPrefix("dg"),W.diagram):{ok:false,why:"this build draws no diagrams"};
+    const nth=++st.dgSeq;
+    if(r&&r.ok){st.counts.diagrams++;ownIds(r.html);return el("figure",{class:"bk-diagram"},trusted(r.html,true));}
+    /* the report names which diagram it is: its place among the booklet's diagrams and the first words of its source */
+    const words=String(code).replace(/[\u0000-\u001f\u007f\u2028\u2029\u201c\u201d]+/g," ").replace(/\s+/g," ").trim();
+    const ord=nth+(nth%100>=11&&nth%100<=13?"th":["th","st","nd","rd"][nth%10]||"th");
+    return frag(mark("mermaid",what+" (its "+ord+" diagram, \u201c"+(words.length>28?words.slice(0,28)+"\u2026":words)+"\u201d)",r&&r.why),el("pre",{class:"bk-figure-src"},el("code",{"data-lang":"mermaid"},String(code))));}
 
   /* ---- links to a whole module (SPEC.md section 3) ---- */
   function moduleLink(target,kids){const id=R.moduleLinkId(target);
@@ -428,13 +450,18 @@ function drawPage(X,P,o){
         axis("right",ax.right),axis("bottom",ax.bottom)));
       if(op.describe&&cells.some(c=>c.note)) box.append(el("dl",{class:"bk-notes-of"},...cells.map((c,i)=>
         el("div",{class:"bk-cell "+tone(c,i)},el("dt",{},tx(c.label,c.id)),el("dd",{},tx(c.note,""))))));},
-    /* the body map: its places named, figure by figure; the figure itself is marked (compile 0.2 draws it) */
+    /* the body map: each figure drawn as the SVG its file holds (checked, and written out again: diagrams.js figure()), with its
+       places named beneath it; a figure that fails the checks is marked, and its places are still named */
     "svg-regions":(box,Wd,op)=>{const figs=Wd.figures||[],labelOf=id=>{const r=(Wd.regions||[]).find(x=>x.id===id);return r?tx(r.label,id):id;};
       const noteOf=id=>{const r=(Wd.regions||[]).find(x=>x.id===id);return r?tx(r.note,""):"";};
       const list=ids=>el("ul",{class:"bk-words"},...ids.map(id=>pickable(op,labelOf(id),noteOf(id),IDP+"w"+(++pickN))));
       if(!figs.length) box.append(list((Wd.regions||[]).map(r=>r.id)));
-      figs.forEach(f=>{box.append(mark("regionsFigure","the figure “"+String(f.id)+"” of the widget “"+String(Wd.id||"")+"”"));
+      figs.forEach(f=>{
         if(figs.length>1) box.append(el("p",{class:"bk-places-h"},tx(f.label,f.id)));
+        if(typeof f.svg==="string"&&f.svg.trim()){
+          const r=o.figure?o.figure(f.svg,idPrefix("f"),id=>plain(labelOf(id))):{ok:false,why:"this build draws no figures"};
+          if(r&&r.ok){st.counts.figures++;ownIds(r.html);box.append(el("div",{class:"bk-svgfig"},trusted(r.html,true)));}
+          else box.append(mark("regionsFigure","the figure “"+String(f.id)+"” of the widget “"+String(Wd.id||"")+"”",r&&r.why));}
         box.append(list(f.regions||[]));});
       if(op.describe&&(Wd.regions||[]).some(r=>r.note)) box.append(el("dl",{class:"bk-notes-of"},...(Wd.regions||[]).filter(r=>r.note).map(r=>
         el("div",{class:"bk-cell bk-c-plain"},el("dt",{},tx(r.label,r.id)),el("dd",{},tx(r.note,""))))));}};

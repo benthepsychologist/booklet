@@ -67,6 +67,10 @@ const NAMES=[
   "calloutLook","CALLOUT_LOOK","registries","pageLine","plainRef","hasVal","longDate",
   /* images */
   "imagePath","imageIs","LINK_BYTES",
+  /* a body map's figure: the renderer's sanitizer rule, element by element (SVG_KEEP), attribute by attribute (svgNameOk,
+     svgValueOk, svgFamily, SVG_STYLE_PROPS) and id by id (SVG_ID); a diagram: the screen its source passes before the library
+     sees it (diagramRisk), the part's pinned digest and its global name (LIB_SRI, LIB_GLOBAL) */
+  "SVG_KEEP","svgNameOk","svgValueOk","svgFamily","SVG_STYLE_PROPS","SVG_ID","diagramRisk","LIB_SRI","LIB_GLOBAL",
   /* a card's picture: the emoji a title may begin with */
   "LEAD_EMOJI",
   /* the short id of an address (an activity's folder on a many-page booklet) */

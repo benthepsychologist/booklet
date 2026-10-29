@@ -20,7 +20,8 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 
 const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures');
 const inputs=[...fs.readdirSync(path.join(ROOT,'examples')).filter(f=>f.endsWith('.booklet.md')).map(f=>({file:path.join(ROOT,'examples',f)})),
-  ...['compile-article','compile-kinds','compile-quiz','figures','charts','data-views','compile-records','compile-pages','compile-pair','compile-pair.es','compile-views','compile-theme'].map(n=>({file:path.join(FIX,n+'.booklet.md')}))];
+  ...['compile-article','compile-kinds','compile-quiz','figures','charts','data-views','compile-records','compile-pages','compile-pair','compile-pair.es','compile-views','compile-theme'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),
+  ...['compile-bodymap','compile-pictures','compile-diagrams'].map(n=>({file:path.join(ROOT,'test','compile-assets',n+'.booklet.md')}))];
 fs.rmSync(OUT,{recursive:true,force:true});
 const run=C.compile(inputs,{form:'both',renderer:HTML});
 C.write(run,OUT,{force:true});

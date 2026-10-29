@@ -7,7 +7,9 @@ own, where people can read it, link to a section of it and share it. Its pick-on
 quiz does ("that's right, and here is why") and forget: nothing is saved, so a reader who wants their answers kept opens
 the booklet itself in `booklet.html`. The one optional script **keeps nothing and sends nothing** (below).
 
-It needs Node and nothing else (CI runs it on Node 20): no `package.json`, nothing to install, nothing fetched.
+It needs Node (CI runs it on Node 20) and installs and fetches nothing: no `package.json`. Drawing a mermaid diagram at build time is the one
+thing that also needs a browser, a Playwright package you already have (below); without one every diagram stays as its source in a code block, and
+every other part of a page is made as before.
 
 ```
 node compile/compile.js examples/how-tides-work.booklet.md
@@ -23,6 +25,7 @@ node compile/compile.js --help
 | `--report <file>` | also write the build report to a file (it is always printed); never a `.md` file |
 | `--force` | overwrite a page or a stylesheet that was changed by hand since it was compiled, or one the compiler did not write |
 | `--renderer <file>` | the `booklet.html` to read the format with (default: the one beside `compile/`); it is run as code, so name only a file you trust (below) |
+| `--no-browser` | draw no diagram: each stays as its source, with the reason in the report (the same as `PLAYWRIGHT` set to nothing) |
 | `--version` | the compiler's version, and the renderer's and format's it reads |
 
 Each file becomes one page, at an address made from its name: `how-tides-work.booklet.md` becomes
@@ -307,7 +310,8 @@ own `--bk-font-text` and `--bk-font-head` never loads them.
 - rows, callouts of every kind in their own colour and icon, groups, and folds as `<details>` that open with no script;
 - footnotes and citations as numbered marks, with the notes at the page's foot (source, edition, page, quote, verified);
 - formulas as MathML, made at build time by the Temml copy inside `booklet.html`, so the browser draws them itself;
-- images (below), tables, code, quotes, highlights, and links to headings on the same page;
+- images (below), each written with the width and height read from its file; diagrams and the body map's figure, drawn
+  at build time as inline SVG (below); tables, code, quotes, highlights, and links to headings on the same page;
 - an "On this page" list when the page has two or more top headings (a plain list: the headings carry any numbers they
   are written with, and the list adds none), an id on every heading, and a small share link on each section heading.
   The ids the page fixes for itself start with `bk-` (`bk-top`, `bk-toc-h`, `bk-notes-h`, `bk-note-1`), and a heading
@@ -319,7 +323,7 @@ own `--bk-font-text` and `--bk-font-head` never loads them.
   offers (a scale's anchors, a matrix's items) with nothing to press, and the build report lists it under "Read-only
   here"; a question's hint and solution are folds;
 - both widget engines: the grid by its axes and cells, in their colour names, with its items; the body map by its places,
-  figure by figure. Each word can be pressed (below), unless the widget line says `readonly`.
+  figure by figure, with the author's figure drawn above them. Each word can be pressed (below), unless the widget line says `readonly`.
 - a query over a data block, as the view it asks for: a table, a list (nested when the rows name their parents), cards or
   tiles as HTML, and bars or a line as a drawing with the table of its numbers after it (under "Queries and themes");
 - a booklet's own `booklet theme` block, as that page's colours, face, spacing and corners (under "Queries and themes").
@@ -329,8 +333,10 @@ list. These are:
 
 - a query over kept entries or answers, which the compiler never reads (it is drawn empty: its `empty:` line if the
   author wrote one, and nothing otherwise, and a `summary: on` query never has rows);
-- diagrams, shown as their mermaid source in a code block;
-- the body map's figure (its places are listed under it);
+- a diagram the compiler could not draw (no browser, or the drawing was refused): shown as its mermaid source in a code
+  block, with the reason in the comment and the report line;
+- a body map's figure that failed the build-time check: its places are still listed, and the comment and the report line
+  say what the check refused;
 - a link to a booklet that is not compiled in the same run (drawn as its words; one that is, links to its page by its
   title);
 - a question asked for each pick in another (`each:`): the reference renderer does not draw it either, and a page keeps no
@@ -339,6 +345,9 @@ list. These are:
   the page has no look for takes the note's look folded or not), a widget engine the compiler does not draw, a widget
   that is missing, a broken citation mark;
 - an image that is not drawn: its alt text and address are shown in its place.
+
+Before 0.2.0 every diagram was marked, and the body map's figure was never drawn. They are drawn now whenever they pass
+the checks under "Figures and diagrams".
 
 **Left off: author comments.** Obsidian hides a `%% … %%` comment, and the renderer would show one as prose, so the
 compiler leaves each one off the page. No HTML comment stands in its place, and the report names its lines only, never
@@ -441,7 +450,8 @@ directly runs whatever it holds. So the compiler copies only an SVG it can read 
 - every `href` and `src` points inside the file (`#id`), no attribute is an event handler, and no animation changes a
   link or a handler;
 - nothing could load or run: no script or `<foreignObject>`, no `javascript:`, `vbscript:`, `data:` or `file:` address
-  (character references are read first), no CSS `url()` that leads outside the file, no `image-set()`, `@import` or
+  (character references are read first; a scheme is a word that begins a value or follows a separator, with something after its colon, so the
+  words “Profile: left” or “Metadata: left” in a label are text, while `javascript:alert(1)`, `1;data:x` and a tab-split `java&#9;script:x` are refused), no CSS `url()` that leads outside the file, no `image-set()`, `@import` or
   `expression()`, and no backslash (CSS can spell a word with one);
 - nothing the reading cannot place: a processing instruction past the XML declaration, a DOCTYPE with entities, an
   unquoted value, a comment that never closes.
@@ -450,6 +460,92 @@ An SVG saved with an editor's own data or metadata carries other namespaces (Ink
 Dublin Core's `dc:` in a `<metadata>` block, Adobe's `x:`), so it is refused until it is saved without them (Inkscape's
 Optimized SVG, or an optimiser such as SVGO, takes them out). `test/compile-browser.js` opens a prefixed-script SVG directly in
 Chromium with scripting on, to show the case is real, and checks the compiler copies no such file.
+
+An image's width and height are read from the file's own bytes (PNG, JPEG, GIF, WebP; for an SVG, its `width` and
+`height`, else its `viewBox`, scaled by powers of ten until it is at least 100 wide) and written on the `<img>`, so the
+page does not jump as it loads. A file whose size cannot be read is written as in 0.1.0, with no size. A JPEG that carries an EXIF orientation of 5 to 8 (a phone
+held sideways) is drawn turned by a browser, so its width and height are swapped; only the first EXIF block counts, and a block that is
+damaged says nothing (`test/compile-figures-browser.js` holds the written size to what Chromium draws, for 27 variants).
+
+## Figures and diagrams
+
+**A body map's figure** is the author's SVG, drawn inline and read-only. The compiler does not copy the author's text
+onto the page: it reads the SVG with a strict reader of its own, and writes the tree it read back out. The figure is
+refused, and the page still compiles with the figure's places listed, when any of these holds:
+
+- the image rules above fail on what would be written (the check runs on the markup, with the words of labels set
+  aside, so a label such as "Profile:" is not read as an address);
+- the renderer's own sanitizer rule would have changed it: the compiler reads the renderer's lists of kept elements,
+  attributes and style properties (`SVG_KEEP`, `svgNameOk`, `svgValueOk`, `svgFamily`, `SVG_STYLE_PROPS`) and refuses where
+  the renderer drops or rewrites. That includes a value that holds `url(` under any name (`data-*` and `aria-*` too), which the
+  renderer drops when it holds a character its value rule does not keep, and a `#name` in such a value that is not one of the figure's
+  ids (a style such as `fill:url(#g);stroke:#abc` is refused: the renderer reads the colour as an id too, so write it as `rgb()` or by name);
+- it holds an entity other than the XML five and numeric references (`&deg;`, `&nbsp;`, `&copy`): the renderer's HTML parser decodes those
+  and the compiler's reader does not, so the two would show different text. Write the character itself, or `&amp;` for an ampersand;
+- it holds a CDATA section inside `<title>` or `<desc>` (a browser reads what is inside those as HTML, where it is a comment);
+- it is too much: nested more than 512 deep (a browser's HTML parser stops there), more than 20,000 elements, or larger than 1 MiB. The reason is
+  in the report and the page still compiles, with the figure's places listed.
+
+A figure the compiler draws is therefore one the renderer draws unchanged, **with one difference on purpose**: the compiler's own scripts and
+styles use `data-bk-*` attributes and `bk-*` class names, so those are taken off an author's figure (a `class` left empty is left off) and a
+figure cannot address them. `test/compile-figures-browser.js` checks the rest in Chromium against the renderer's `sanitizeSvg`: a matrix of
+every kept element, attribute and style property and of hostile changes to them, and a seeded fuzz of made-up figures (two fixed seeds of 600 in
+the test; `BK_FUZZ_SEEDS=3 BK_FUZZ_CASES=3000 node test/compile-figures-browser.js ...` runs a larger one). Whatever it writes is kept unchanged
+by the renderer, and whatever the renderer would change is refused.
+
+Every `id` in the figure is prefixed `bk-<name>-fN-` (and its references with it), where `bk-<name>-` is the page's own id prefix (on an
+activity's page of a many-page booklet, `bk-<name>-<folder>-`, the prefix its questions and words already take) and N counts the page's figures and
+diagrams, so two figures, a figure and a footnote, or two pages put into one host page, never share one. A name or folder with a
+character an id cannot hold has it written as `-` in the prefix and a short hash of the name follows in a figure's or diagram's, so `a.b` and `a-b` stay two. Each place with a `data-r` mark gets `role="img"` and its label.
+
+**A diagram** (a mermaid fence, or a `![[#^id]]` figure) is drawn at build time in headless Chromium by the renderer's
+own `parts/mermaid.js` (the file the renderer pins by hash; the compiler checks the pin before it runs the part, and
+reads the part from beside the renderer, or from a one-file build's `lib-mermaid` block). The browser page is empty, its
+policy allows no script but the part, no connection and no image or font but `data:`, the context is offline with every
+request refused, and a diagram's source goes in as data. The page the compiler writes carries no mermaid script.
+
+The drawing is then read and written back like a figure, and passed through the image rules. It is refused when the
+check fails, and also when it holds a `<foreignObject>` (a diagram type that lays its labels out as HTML, such as the
+journey), a script, an address or an animation. Its `<style>` is kept only as rules whose every selector begins with the
+diagram's own `#id` (`@keyframes` are dropped; a rule that needs a class the drawing does not use is dropped; any other
+at-rule refuses the drawing; the style is read with its strings and comments understood, so a brace inside a string cannot hide a rule, and a rule
+inside a rule, a stray brace, or a string or comment that never closes refuses it). Its ids are `bk-<name>-dgN` (the same page prefix, `bk-<name>-<folder>-dgN` on an activity's page), and an id the drawing points at that is not
+named from that is renamed under it. Its root takes an accessible name from its own title, else from a title text in the
+drawing, else "Diagram" (or the page's language). A refused or undrawn diagram is shown as its source in a code block,
+with the reason in the comment and the report line.
+
+**Dark mode.** A drawn diagram carries one theme, the renderer's Paper theme, and its own paper-coloured background, so it
+reads the same on a light or a dark page and its text keeps its contrast. It does not follow the page into dark.
+
+**A host's own theme.** A theme that styles bare shapes (`svg path { fill: red }`, `svg { stroke-width: 4px }`) would repaint a
+drawing. The stylesheet holds the root of a figure or diagram to the page's ink and a one-pixel line, a figure's shapes are
+painted by the stylesheet, and a diagram carries rules of its own for what it would otherwise inherit or carry as an
+attribute (`fill="none"`), at the weight of its id alone: they beat a host's plain rule, and the library's own rules (which
+name a class or an element as well) still beat them. A host's `!important` rule, or a paint written in a way the compiler
+does not turn into a rule (a value with an unusual character), still reaches. `test/compile-host-browser.js` holds the
+figures and diagrams to their plain look on its hostile host.
+
+**Repeatable.** The library draws a class, ER or git-graph picture with random numbers. The runner replaces `Math.random` with a seeded
+generator, started again from the same seed before every diagram, so the same source gives the same drawing whatever else is drawn
+with it, and two builds give the same page (`test/compile-figures-browser.js` draws the corpus twice, in two orders, and compares the
+bytes). What can still differ is what is not the source's: a gantt chart's “today” marker reads the clock, and a different Chromium
+version or different fonts on the machine can draw the same source a little differently.
+
+**A host's own content policy.** A drawing carries its own `<style>` and some `style` attributes. A host that refuses
+inline styles shows a diagram without them. Wide diagrams shrink to the page's width, so on a phone their text is small.
+
+**Finding the browser.** The compiler uses Playwright, which this repository does not carry and the compiler never
+installs. **The package that is found is run: its code executes in the process that draws**, so it is looked for in named places only and never
+in the folder the compiler is started in. In order: the `PLAYWRIGHT` environment variable (a path to `playwright` or `playwright-core`;
+when it is set at all, only that is tried, so setting it to nothing, or to a place with no package, turns drawing off), else
+`node_modules/playwright` and `node_modules/playwright-core` of this repository and `../.tools/node_modules/playwright-core` beside it
+(all resolved from `compile/`, as `test/run-browser.sh` finds it). With no usable browser every diagram stays as its source, and the report
+says why, including the first line of what the browser said when it would not start (“Executable doesn't exist at ...”). A fallback line
+names the diagram: `a mermaid fence (its 3rd diagram, “graph LR; A…”)`. A slow drawing is cut short: 4 minutes for the whole browser run
+and 60 seconds for one diagram (the diagram then falls back; `compile()` takes `browserTimeout` and `diagramTimeout`, in milliseconds). The
+compiler asks the browser for nothing but the diagrams, in one run for each booklet that has any (a source drawn for one booklet is
+not drawn again for another), and starts none for a booklet with none; `compile()` takes `browser: false`
+to turn it off and `drawer(codes)` to supply drawings in a test.
 
 ## Reading helpers (the optional script)
 
@@ -518,6 +614,8 @@ that would break the compiler is caught here and never on a host's build.
 | File | What it holds |
 | --- | --- |
 | `compile.js` | the command, the two forms, images and the SVG check, the stamp, the pages of a booklet and its translations, writing, the report |
+| `diagrams.js` | the strict SVG reader and writer, the figure and diagram rules, finding Playwright, the one browser run |
+| `diagrams-run.js` | the child process `diagrams.js` starts: draws the diagrams in an offline Chromium page and answers on standard output |
 | `engine.js` | the renderer, loaded in a `vm` context (not a security boundary): the parse, the Markdown engine, Temml, icons and fonts; the records checks; author comments |
 | `draw.js` | a design drawn as a page's markup (the plan for a many-page booklet, its cards and way on); what is drawn and what is marked (`COVERAGE`, `MARKED`) |
 | `script.js` | the assembler and the scan for `booklet.js` (below) |
@@ -534,7 +632,7 @@ All in `test/`, run by `test/run.sh` and CI:
 
 | Test | What it checks |
 | --- | --- |
-| `compile-guard.test.js` | no second reader (no callout, fence, link, heading or other Markdown pattern of its own, as a pattern or a string test; tried first on made-up re-readings); the author-comment mark in one region only; every renderer name it uses exists; no code reaches the records; installs nothing, fetches nothing; writes only its pages |
+| `compile-guard.test.js` | no second reader (no callout, fence, link, heading or other Markdown pattern of its own, as a pattern or a string test; tried first on made-up re-readings); the author-comment mark in one region only; every renderer name it uses exists; no code reaches the records; installs nothing, fetches nothing, and starts one process only (the name `child_process` is written once, `spawnSync` once, no `exec`, `spawn` or `fork`); writes only its pages |
 | `compile-coverage.test.js` | every block type, question kind, widget engine and query view the renderer has is drawn or marked, from the very tables `draw.js` dispatches from; every callout kind in its look; every mark both a comment and a report line |
 | `compile-script.test.js` | the script's scan names every banned word, each tried on a made-up part; the assembler's order, shape and refusals; a page links the script only when it needs it, a site fragment never; the stamp guard; a banned word stops the build and writes nothing |
 | `compile-script-browser.js` | in Chromium over http with scripting on: answers every kind of question and presses every widget, then asserts no localStorage, sessionStorage, cookie, IndexedDB or cache, only GET requests for the page's own files, and a clean reload; the detector is proved by serving the page with its script swapped for ones that break the pledge; with scripting off every question reads as in 0.1.0 and a press still shows its reply, verdict and note |
@@ -547,6 +645,8 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-browser.js` | in Chromium with scripting off, every page of every booklet, and a journey through each many-page booklet served as a host serves a folder (each card opens its page, the contents link goes back, "next" reads every page in order and "back" returns, nothing 404s); at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
 | `compile-reading.test.js` | the reading helpers: five files, each one function called at once, none leaving a global; the pledge (no storage, no network, no navigation, no element that loads, no markup built from a string, no string evaluated), tried on made-up breaking parts first; a rule for every class they add and the print rules |
 | `compile-reading-browser.js` | in Chromium, the reading helpers on the made-up `compile-reading-one` (one page) and `compile-reading` (several pages) fixtures, the views and pages fixtures, and a page of data views: tab bars (roles, keys, links and addresses into a tab, print), citation previews (mouse, keyboard, touch, a short screen), Open all and printing, the copied link, sort and filter (on the compiler's own views fixture, and at 3000 rows); the same parts on a booklet of several pages, on its contents page and one folder deeper; with scripting off, and with a page that has none of their markup, the page is unchanged; no storage, no request but its own files, readable contrast; an axe pass when `AXE` is given |
+| `compile-figures.test.js` | hostile figures and hostile drawings refused with a reason; the style scope (strings and comments read); image sizes read from every format and the fallback, EXIF turns and damaged blocks; the browser lookup (never the working folder); a fake Playwright that hangs, fails or answers wrongly; a build with no browser keeps the source and says why; `--no-browser` and `--help`; ids per page; the mermaid pin; the theme list equals the renderer's |
+| `compile-figures-browser.js` | in Chromium: a compiled figure equals the renderer's own sanitized one (a mutation matrix); real diagrams drawn with no request made; the compiled page at 1280 and 390 px with scripting off, figure and diagram visible; pictures load at the size written; a JPEG's written size equals Chromium's for 27 variants (EXIF); the same drawings twice; a seeded differential fuzz of figures against the renderer's sanitizer; a booklet of many pages with the script on: a figure in the first tab and a diagram in an author's fold in the second (shown and hidden with the tab, the fold and Open all, printed, and with scripting off) |
 | `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards, and `!important` rules of one and two ids, among them `#main .content blockquote *`); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; the check fails with no guard, with the guard as it was before `!important`, and with `!important` but one id's weight |
 
 `examples/mindful-check-in.booklet.md` is compiled by the content and browser tests but has no golden page, since its

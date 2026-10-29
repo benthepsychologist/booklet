@@ -1,0 +1,79 @@
+---
+title: "Four diagrams"
+description: "A made-up page for the compiler's tests: a diagram that is drawn, one with a title of its own, one the renderer will not hand to its library, and one that…"
+---
+<!-- booklet compile 0.1.0 · from compile-diagrams.booklet.md · sha256:d0533813edbdd950af6e122235dcf281ea9c000bff280e759ef4b0e3a8a28b0a -->
+<article class="booklet" lang="en">
+  <p class="bk-lede">A made-up page for the compiler's tests: a diagram that is drawn, one with a title of its own, one the renderer will not hand to its library, and one that cannot be drawn.</p>
+  <nav class="bk-toc" aria-labelledby="bk-toc-h">
+    <p class="bk-toc-h" id="bk-toc-h">On this page</p>
+    <ul>
+      <li><a href="#drawn">Drawn</a></li>
+      <li><a href="#with-a-title-of-its-own">With a title of its own</a></li>
+      <li><a href="#a-diagram-the-renderer-will-not-draw">A diagram the renderer will not draw</a></li>
+      <li><a href="#a-diagram-that-cannot-be-drawn">A diagram that cannot be drawn</a></li>
+    </ul>
+  </nav>
+  <h2 id="drawn">Drawn <a class="bk-anchor" href="#drawn" aria-label="Link to this section">#</a></h2>
+  <figure class="bk-diagram">
+    <svg id="bk-compile-diagrams-dg1" class="flowchart" viewBox="0 0 220 64" width="220" role="graphics-document document" aria-label="Diagram">
+      <rect x="0" y="0" width="220" height="64" fill="#F8F6F1"/>
+      <style>#bk-compile-diagrams-dg1 :where(:not([fill])){fill:inherit}
+    #bk-compile-diagrams-dg1 :where(:not([stroke])){stroke:inherit}
+    #bk-compile-diagrams-dg1 :where(:not([stroke-width])){stroke-width:inherit}
+    #bk-compile-diagrams-dg1 :where(:not([stroke-linecap])){stroke-linecap:inherit}
+    #bk-compile-diagrams-dg1 :where(:not([stroke-linejoin])){stroke-linejoin:inherit}
+    #bk-compile-diagrams-dg1 :where(:not([stroke-dasharray])){stroke-dasharray:inherit}
+    #bk-compile-diagrams-dg1 :where([fill="#F8F6F1"]){fill:#F8F6F1}
+    #bk-compile-diagrams-dg1{font-family:sans-serif;font-size:16px;fill:#24323A;}
+    #bk-compile-diagrams-dg1 .node rect{fill:#EFEBE3;stroke:#1E5E6B;stroke-width:1px;}</style>
+      <g>
+        <marker id="bk-compile-diagrams-dg1_flowchart-v2-pointEnd" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath"/>
+        </marker>
+        <g class="node">
+          <rect x="10" y="10" width="90" height="44"/>
+          <text x="55" y="38" text-anchor="middle">Stand-in 1</text>
+        </g>
+        <path d="M100,32L160,32" class="flowchart-link" marker-end="url(#bk-compile-diagrams-dg1_flowchart-v2-pointEnd)"/>
+      </g>
+    </svg>
+  </figure>
+  <h2 id="with-a-title-of-its-own">With a title of its own <a class="bk-anchor" href="#with-a-title-of-its-own" aria-label="Link to this section">#</a></h2>
+  <figure class="bk-diagram">
+    <svg id="bk-compile-diagrams-dg2" class="flowchart" viewBox="0 0 220 64" width="220" role="graphics-document document" aria-label="Where the water goes">
+      <title>Where the water goes</title>
+      <rect x="0" y="0" width="220" height="64" fill="#F8F6F1"/>
+      <style>#bk-compile-diagrams-dg2 :where(:not([fill])){fill:inherit}
+    #bk-compile-diagrams-dg2 :where(:not([stroke])){stroke:inherit}
+    #bk-compile-diagrams-dg2 :where(:not([stroke-width])){stroke-width:inherit}
+    #bk-compile-diagrams-dg2 :where(:not([stroke-linecap])){stroke-linecap:inherit}
+    #bk-compile-diagrams-dg2 :where(:not([stroke-linejoin])){stroke-linejoin:inherit}
+    #bk-compile-diagrams-dg2 :where(:not([stroke-dasharray])){stroke-dasharray:inherit}
+    #bk-compile-diagrams-dg2 :where([fill="#F8F6F1"]){fill:#F8F6F1}
+    #bk-compile-diagrams-dg2{font-family:sans-serif;font-size:16px;fill:#24323A;}
+    #bk-compile-diagrams-dg2 .node rect{fill:#EFEBE3;stroke:#1E5E6B;stroke-width:1px;}</style>
+      <g>
+        <marker id="bk-compile-diagrams-dg2_flowchart-v2-pointEnd" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath"/>
+        </marker>
+        <g class="node">
+          <rect x="10" y="10" width="90" height="44"/>
+          <text x="55" y="38" text-anchor="middle">Stand-in 2</text>
+        </g>
+        <path d="M100,32L160,32" class="flowchart-link" marker-end="url(#bk-compile-diagrams-dg2_flowchart-v2-pointEnd)"/>
+      </g>
+    </svg>
+  </figure>
+  <h2 id="a-diagram-the-renderer-will-not-draw">A diagram the renderer will not draw <a class="bk-anchor" href="#a-diagram-the-renderer-will-not-draw" aria-label="Link to this section">#</a></h2>
+  <p>Its source holds a directive, which can set a style or a font address, so the renderer never hands it to its library, and nor does the compiler.</p>
+  <!-- booklet: a mermaid fence (its 3rd diagram, “%%{init: {"theme": "dark"}}%…”) (activity “Four diagrams”): a diagram shown as its source, not drawn: the renderer does not hand this source to its diagram library, since it could make a request (directive) -->
+  <pre class="bk-figure-src"><code data-lang="mermaid">%%{init: {"theme": "dark"}}%%
+flowchart LR
+  Rain --&gt; River --&gt; Sea</code></pre>
+  <h2 id="a-diagram-that-cannot-be-drawn">A diagram that cannot be drawn <a class="bk-anchor" href="#a-diagram-that-cannot-be-drawn" aria-label="Link to this section">#</a></h2>
+  <!-- booklet: the figure “broken” (its 4th diagram, “flowchart LR %% the stand-in…”) (activity “Four diagrams”): a diagram shown as its source, not drawn: the diagram library could not draw it -->
+  <pre class="bk-figure-src"><code data-lang="mermaid">flowchart LR
+  %% the stand-in cannot draw this one
+  Rain --&gt; River --&gt; Sea</code></pre>
+</article>

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- booklet compile 0.1.0 · from figures.booklet.md · sha256:6b454794712da67dc7c3478348133a761c16ca142ff33d2a8605297ababbcc3e -->
+<!-- booklet compile 0.1.0 · from figures.booklet.md · sha256:2e45cc2d2e3fe3a60e20a34b352385accd93683822dda8b21158f440dabd64f4 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -19,14 +19,80 @@
 <article class="booklet" lang="en">
   <h1 id="figures-and-math">Figures and math</h1>
   <p class="bk-lede">The cycle, placed by reference:</p>
-  <!-- booklet: the figure “tide-cycle” (activity “Diagrams and formulas”): a diagram: not compiled yet, shown as its source -->
-  <pre class="bk-figure-src"><code data-lang="mermaid">graph LR; New --&gt; Spring --&gt; Quarter --&gt; Neap --&gt; Full</code></pre>
+  <figure class="bk-diagram">
+    <svg id="bk-figures-dg1" class="flowchart" viewBox="0 0 220 64" width="220" role="graphics-document document" aria-label="Diagram">
+      <rect x="0" y="0" width="220" height="64" fill="#F8F6F1"/>
+      <style>#bk-figures-dg1 :where(:not([fill])){fill:inherit}
+    #bk-figures-dg1 :where(:not([stroke])){stroke:inherit}
+    #bk-figures-dg1 :where(:not([stroke-width])){stroke-width:inherit}
+    #bk-figures-dg1 :where(:not([stroke-linecap])){stroke-linecap:inherit}
+    #bk-figures-dg1 :where(:not([stroke-linejoin])){stroke-linejoin:inherit}
+    #bk-figures-dg1 :where(:not([stroke-dasharray])){stroke-dasharray:inherit}
+    #bk-figures-dg1 :where([fill="#F8F6F1"]){fill:#F8F6F1}
+    #bk-figures-dg1{font-family:sans-serif;font-size:16px;fill:#24323A;}
+    #bk-figures-dg1 .node rect{fill:#EFEBE3;stroke:#1E5E6B;stroke-width:1px;}</style>
+      <g>
+        <marker id="bk-figures-dg1_flowchart-v2-pointEnd" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath"/>
+        </marker>
+        <g class="node">
+          <rect x="10" y="10" width="90" height="44"/>
+          <text x="55" y="38" text-anchor="middle">Stand-in 1</text>
+        </g>
+        <path d="M100,32L160,32" class="flowchart-link" marker-end="url(#bk-figures-dg1_flowchart-v2-pointEnd)"/>
+      </g>
+    </svg>
+  </figure>
   <p>A diagram written straight in the prose:</p>
-  <!-- booklet: a mermaid fence (activity “Diagrams and formulas”): a diagram: not compiled yet, shown as its source -->
-  <pre class="bk-figure-src"><code data-lang="mermaid">graph TD; Sun --&gt; Moon --&gt; Sea</code></pre>
+  <figure class="bk-diagram">
+    <svg id="bk-figures-dg2" class="flowchart" viewBox="0 0 220 64" width="220" role="graphics-document document" aria-label="Diagram">
+      <rect x="0" y="0" width="220" height="64" fill="#F8F6F1"/>
+      <style>#bk-figures-dg2 :where(:not([fill])){fill:inherit}
+    #bk-figures-dg2 :where(:not([stroke])){stroke:inherit}
+    #bk-figures-dg2 :where(:not([stroke-width])){stroke-width:inherit}
+    #bk-figures-dg2 :where(:not([stroke-linecap])){stroke-linecap:inherit}
+    #bk-figures-dg2 :where(:not([stroke-linejoin])){stroke-linejoin:inherit}
+    #bk-figures-dg2 :where(:not([stroke-dasharray])){stroke-dasharray:inherit}
+    #bk-figures-dg2 :where([fill="#F8F6F1"]){fill:#F8F6F1}
+    #bk-figures-dg2{font-family:sans-serif;font-size:16px;fill:#24323A;}
+    #bk-figures-dg2 .node rect{fill:#EFEBE3;stroke:#1E5E6B;stroke-width:1px;}</style>
+      <g>
+        <marker id="bk-figures-dg2_flowchart-v2-pointEnd" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath"/>
+        </marker>
+        <g class="node">
+          <rect x="10" y="10" width="90" height="44"/>
+          <text x="55" y="38" text-anchor="middle">Stand-in 2</text>
+        </g>
+        <path d="M100,32L160,32" class="flowchart-link" marker-end="url(#bk-figures-dg2_flowchart-v2-pointEnd)"/>
+      </g>
+    </svg>
+  </figure>
   <p>A broken one, placed by reference:</p>
-  <!-- booklet: the figure “broken-one” (activity “Diagrams and formulas”): a diagram: not compiled yet, shown as its source -->
-  <pre class="bk-figure-src"><code data-lang="mermaid">graph LR; A --&gt;</code></pre>
+  <figure class="bk-diagram">
+    <svg id="bk-figures-dg3" class="flowchart" viewBox="0 0 220 64" width="220" role="graphics-document document" aria-label="Diagram">
+      <rect x="0" y="0" width="220" height="64" fill="#F8F6F1"/>
+      <style>#bk-figures-dg3 :where(:not([fill])){fill:inherit}
+    #bk-figures-dg3 :where(:not([stroke])){stroke:inherit}
+    #bk-figures-dg3 :where(:not([stroke-width])){stroke-width:inherit}
+    #bk-figures-dg3 :where(:not([stroke-linecap])){stroke-linecap:inherit}
+    #bk-figures-dg3 :where(:not([stroke-linejoin])){stroke-linejoin:inherit}
+    #bk-figures-dg3 :where(:not([stroke-dasharray])){stroke-dasharray:inherit}
+    #bk-figures-dg3 :where([fill="#F8F6F1"]){fill:#F8F6F1}
+    #bk-figures-dg3{font-family:sans-serif;font-size:16px;fill:#24323A;}
+    #bk-figures-dg3 .node rect{fill:#EFEBE3;stroke:#1E5E6B;stroke-width:1px;}</style>
+      <g>
+        <marker id="bk-figures-dg3_flowchart-v2-pointEnd" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath"/>
+        </marker>
+        <g class="node">
+          <rect x="10" y="10" width="90" height="44"/>
+          <text x="55" y="38" text-anchor="middle">Stand-in 3</text>
+        </g>
+        <path d="M100,32L160,32" class="flowchart-link" marker-end="url(#bk-figures-dg3_flowchart-v2-pointEnd)"/>
+      </g>
+    </svg>
+  </figure>
   <p>A fence that is not a diagram, placed by reference:</p>
   <pre><code data-lang="python">print("hello")</code></pre>
   <p>Inline math <span class="bk-math"><math><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>+</mo><msup><mi>b</mi><mn>2</mn></msup><mo>=</mo><msup><mi>c</mi><mn class="tml-sml-pad">2</mn></msup></mrow></math></span> and display math:</p>

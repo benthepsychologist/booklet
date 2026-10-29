@@ -10,7 +10,8 @@
    handler (on...), is never written: the engine hands the image box an onerror function, and nothing of the kind may
    reach a page. The only way to write markup as it stands is trusted(text), which the compiler uses for exactly two things
    that come from booklet.html itself, never from a booklet: the MathML Temml writes and the inner drawing of an icon from
-   the renderer's sprite. Temml runs with trust:false, so a formula cannot carry \href, \url or an outside address, but it
+   the renderer's sprite; and a third, the SVG of a body map's figure or a drawn diagram, which diagrams.js has read with its
+   own strict reader and written out again itself (it is never the text the booklet held), as a block on lines of its own. Temml runs with trust:false, so a formula cannot carry \href, \url or an outside address, but it
    does write two things of its own: \label{...} gives a row an id, and \ref / \eqref a link to that id (href="#..."). The
    drawing (draw.js, math) gives both the bk-tml- prefix and keeps the ids unique, and the page's id de-duplication starts
    from them, so a label can never take an id the page or a host uses. comment(text) writes an HTML comment, with anything
@@ -79,7 +80,7 @@ function html(x,depth){depth=depth||0;const pad="  ".repeat(depth);
   if(Array.isArray(x)) return x.map(k=>html(k,depth)).join("");
   if(!isBlock(x)) return pad+inline(x)+"\n";
   if(x instanceof Node&&x.tag==="") return x.kids.map(k=>html(k,depth)).join("");
-  if(x instanceof Trusted) return pad+x.text+"\n";
+  if(x instanceof Trusted) return x.text.split("\n").map(l=>pad+l).join("\n")+"\n";
   if(VOID.has(x.tag)) return pad+openTag(x)+"\n";
   if(x.tag==="pre"||!x.kids.some(isBlock)) return pad+inline(x)+"\n";
   let out=pad+openTag(x)+"\n",run=[];
