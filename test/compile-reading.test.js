@@ -81,6 +81,6 @@ chk("bk-copied has a rule too",/\.bk-anchor\.bk-copied\{/.test(css));
 const printAt=css.indexOf("@media print{"),printBlock=css.slice(printAt,css.indexOf("\n}\n",printAt));
 chk("print: the bars, the switches, the controls, the preview and the status words are left off",/\.bk-tabbar,\.bk-foldsw,\.bk-vctl,\.bk-peek,\.bk-said\)\{display:none!important\}/.test(printBlock));
 chk("print: a tab the script hid is shown",/\.bk-tab\[hidden\]\{display:block!important\}/.test(printBlock));
-chk("a hidden tab, preview and row stay hidden against the stylesheet's own display rules",/\.bk-tab\[hidden\]\{display:none!important\}/.test(css)&&/\.bk-peek\[hidden\]\{display:none!important\}/.test(css)&&/\[data-bk-row\]\[hidden\]\{display:none!important\}/.test(css));
+chk("a hidden tab, preview and row stay hidden against the stylesheet's own display rules (a row, by a rule of one more id than the rest, since a view gives its rows a display of their own)",/\.bk-tab\[hidden\]\{display:none!important\}/.test(css)&&/\.bk-peek\[hidden\]\{display:none!important\}/.test(css)&&/\.booklet:not\(#bk\):not\(#bk\):not\(#bk\):not\(#bk\) \[data-bk-off\]\{display:none!important\}/.test(css));
 
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile reading parts passed");process.exit(fails?1:0);

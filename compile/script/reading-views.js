@@ -10,8 +10,10 @@
 
    Nothing is saved. A reload starts in the order the rows were written, with every row shown (SPEC section 6: "It is saved
    nowhere, and a file never states it"). A line chart keeps its order (SPEC section 6), so it is left alone, and so is a
-   container that has no rows, no values or a single row. Rows are sorted among their own siblings, so a view drawn in
-   groups keeps its groups. The words are the renderer's own for the same control. */
+   container that has no rows, no values or a single row. Rows are sorted among their own group (the rows side by side
+   under one heading), so a view drawn in groups keeps its groups: a heading with no row left to show is hidden with them,
+   and Clear puts every row back exactly where it was. In a nested list a row that matches keeps its branch and opens it,
+   a branch with no match goes, and sorting orders the rows that share a branch among themselves. The words are the renderer's own for the same control. */
 (function () {
   "use strict";
   var d = document, count = 0;
@@ -41,6 +43,14 @@
     return n;
   }
 
+  /* hide or show in place: the attribute is what the stylesheet hides by, the hidden property is for anything that reads it */
+  function setOff(el, off) {
+    if (el.hasAttribute("data-bk-off") === off) return;
+    if (off) el.setAttribute("data-bk-off", "");
+    else el.removeAttribute("data-bk-off");
+    el.hidden = off;
+  }
+
   function setup(view) {
     var rows = [];
     Array.prototype.forEach.call(view.querySelectorAll("[data-bk-row]"), function (r) {
@@ -48,33 +58,71 @@
     });
     if (rows.length < 2) return;
     var cols = [], items = rows.map(function (el, i) {
-      var vals = {};
+      var vals = {}, all = [];
       Array.prototype.forEach.call(el.querySelectorAll("[data-bk-col]"), function (c) {
         var k = c.getAttribute("data-bk-col");
         if (!k || Object.prototype.hasOwnProperty.call(vals, k)) return;
         vals[k] = c.textContent.replace(/\s+/g, " ").trim();
+        all.push(vals[k]);
         if (cols.indexOf(k) < 0) cols.push(k);
       });
-      return { el: el, i: i, vals: vals };
+      /* a row that is the summary of a fold (a nested list) stands for its whole branch: that is what moves and hides */
+      var node = el.tagName === "SUMMARY" ? el.parentNode : null;
+      var unit = node ? (node.parentNode && node.parentNode.tagName === "LI" ? node.parentNode : node) : el;
+      return { el: el, i: i, vals: vals, hay: all.join("\n").toLowerCase(), unit: unit, node: node, up: null, kid: false, show: true };
     });
     if (!cols.length) return;
 
-    /* rows are sorted among their own siblings; the new order goes in before whatever followed the last of them */
-    var groups = [];
+    var byUnit = new Map(), byNode = new Map(), tree = false;
     items.forEach(function (it) {
-      var p = it.el.parentNode, g = null;
-      for (var j = 0; j < groups.length; j++) if (groups[j].parent === p) g = groups[j];
-      if (!g) { g = { parent: p, items: [], end: null }; groups.push(g); }
-      g.items.push(it);
+      byUnit.set(it.unit, it);
+      if (it.node) { byNode.set(it.node, it); tree = true; }
     });
-    groups.forEach(function (g) {
-      var last = g.items[g.items.length - 1].el;
-      g.end = last.nextSibling;
+    /* the row a branch hangs from: the nearest fold above it that is itself a row of this view */
+    items.forEach(function (it) {
+      var p = it.unit.parentNode, f = p && p.closest ? p.closest("details") : null;
+      it.up = f && view.contains(f) ? byNode.get(f) || null : null;
+    });
+
+    /* a run is rows that sit side by side in one parent with nothing between them. Rows are sorted inside their own run, so
+       the rows of a group stay between that group's heading and the next one, and the new order goes in before whatever
+       followed the run. Filtering never moves a row: it hides and shows it where it stands. */
+    function heading(n) { return !!n && !byUnit.has(n) && n.matches("[role=heading],.bk-grouprow"); }
+    var runs = [], seen = new Set();
+    items.forEach(function (it) {
+      var p = it.unit.parentNode;
+      if (seen.has(p)) return;
+      seen.add(p);
+      var run = null;
+      function close() {
+        if (!run) return;
+        run.end = run.items[run.items.length - 1].unit.nextSibling;
+        var prev = run.first.previousElementSibling;
+        if (prev) {
+          if (heading(prev)) run.lead = prev;
+        } else if (p !== view && heading(p.previousElementSibling)) {
+          /* the heading is the parent's own neighbour (a tile group): it and the parent go together, and so does a card
+             that holds only the two */
+          run.lead = p.previousElementSibling;
+          run.hold = p;
+          var g = p.parentNode;
+          if (g && g !== view && g.children.length === 2) run.wrap = g;
+        }
+        runs.push(run);
+        run = null;
+      }
+      Array.prototype.forEach.call(p.children, function (c) {
+        var m = byUnit.get(c);
+        if (!m) { close(); return; }
+        if (!run) run = { parent: p, items: [], first: c, end: null, lead: null, hold: null, wrap: null };
+        run.items.push(m);
+      });
+      close();
     });
 
     var W = WORDS[langOf(view)] || WORDS.en;
     var collator = typeof Intl !== "undefined" && Intl.Collator ? new Intl.Collator(langOf(view), { numeric: true, sensitivity: "base" }) : null;
-    var key = "", dir = 1, query = "";
+    var key = "", dir = 1, query = "", sortedKey = "", sortedDir = 1, num = false, opened = new Map();
 
     var barId = freeId("bk-vbar-" + (++count));
     var ctl = make("div", "bk-vctl");
@@ -133,7 +181,6 @@
     }
     function ordered(list) {
       if (!key) return list.slice().sort(function (a, b) { return a.i - b.i; });
-      var num = numeric(key);
       return list.slice().sort(function (a, b) {
         var x = a.vals[key], y = b.vals[key], ex = x === undefined || x === "", ey = y === undefined || y === "";
         if (ex || ey) return ex && ey ? a.i - b.i : ex ? 1 : -1; /* a row with no value comes last either way */
@@ -141,27 +188,58 @@
         return (c * dir) || a.i - b.i;
       });
     }
-    function matches(it) {
-      if (!query) return true;
-      for (var k in it.vals) if (it.vals[k].toLowerCase().indexOf(query) >= 0) return true;
-      return false;
-    }
     function paint() {
-      var shown = 0;
-      groups.forEach(function (g) {
-        ordered(g.items).forEach(function (it) { g.parent.insertBefore(it.el, g.end); });
-      });
-      items.forEach(function (it) {
-        var ok = matches(it);
-        it.el.hidden = !ok;
-        if (ok) shown++;
+      var n = 0, i, it;
+      if (key !== sortedKey || dir !== sortedDir) {
+        num = key ? numeric(key) : false;
+        runs.forEach(function (r) {
+          ordered(r.items).forEach(function (m) { r.parent.insertBefore(m.unit, r.end); });
+        });
+        sortedKey = key; sortedDir = dir;
+      }
+      for (i = 0; i < items.length; i++) {
+        it = items[i];
+        it.kid = false;
+        it.show = !query || it.hay.indexOf(query) >= 0;
+        if (it.show) n++;
+      }
+      if (tree) {
+        /* a branch with a row that matches stays, and opens so the match can be seen; a branch with none goes. Folds the
+           filter opened go back to how the reader had them once it no longer needs them. */
+        for (i = items.length - 1; i >= 0; i--) {
+          it = items[i];
+          if (it.kid) it.show = true;
+          if (it.show && it.up) it.up.kid = true;
+        }
+        items.forEach(function (m) {
+          if (!m.node) return;
+          var need = !!query && m.kid;
+          if (need && !opened.has(m.node)) { opened.set(m.node, m.node.open); m.node.open = true; }
+          else if (!need && opened.has(m.node)) { m.node.open = opened.get(m.node); opened.delete(m.node); }
+        });
+      }
+      for (i = 0; i < items.length; i++) setOff(items[i].unit, !items[i].show);
+      runs.forEach(function (r) {
+        if (!r.lead) return;
+        var any = false;
+        for (var j = 0; j < r.items.length; j++) if (r.items[j].show) { any = true; break; }
+        setOff(r.lead, !any);
+        if (r.hold) setOff(r.hold, !any);
+        if (r.wrap) setOff(r.wrap, !any);
       });
       var active = !!query;
       clear.hidden = !(active || key);
       dirBtn.disabled = !key;
       dirBtn.textContent = dir < 0 ? "↓" : "↑";
       dirBtn.setAttribute("aria-label", dir < 0 ? W.desc : W.asc);
-      live.textContent = active ? (shown ? W.shown(shown, items.length) : W.nothing) : "";
+      live.textContent = active ? (n ? W.shown(n, items.length) : W.nothing) : "";
+    }
+    /* typing, the search box's own cross, Escape and a committed change all end here */
+    function sync() {
+      var q = input.value.trim().toLowerCase();
+      if (q === query) return;
+      query = q;
+      paint();
     }
 
     btn.addEventListener("click", function () {
@@ -170,7 +248,7 @@
       btn.setAttribute("aria-expanded", on ? "true" : "false");
       if (on) input.focus();
     });
-    input.addEventListener("input", function () { query = input.value.trim().toLowerCase(); paint(); });
+    ["input", "search", "change"].forEach(function (t) { input.addEventListener(t, sync); });
     sel.addEventListener("change", function () { key = sel.value === "" ? "" : cols[Number(sel.value)]; dir = 1; paint(); });
     dirBtn.addEventListener("click", function () { if (key) { dir = -dir; paint(); } });
     clear.addEventListener("click", function () {
@@ -179,7 +257,12 @@
       input.focus();
     });
     bar.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") { bar.hidden = true; btn.setAttribute("aria-expanded", "false"); btn.focus(); }
+      if (e.key !== "Escape") return;
+      /* the first Escape in a search box with words in it empties the box (and so ends the filter); the next closes the bar */
+      if (e.target === input && input.value) { e.preventDefault(); input.value = ""; sync(); return; }
+      bar.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+      btn.focus();
     });
     view.parentNode.insertBefore(ctl, view);
   }

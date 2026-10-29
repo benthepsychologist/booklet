@@ -252,8 +252,14 @@ a page without that markup is left alone. None of it is saved: no storage, no co
   at the top of the page. The switch follows folds opened by hand. Folds also open for printing and close again afterwards.
 - **Sort and filter on a data view.** A container marked `data-bk-view` (rows `data-bk-row`, values `data-bk-col`) gets a quiet
   "Sort and filter" button that opens a bar: a search box that looks in every column, a column to sort by with a direction
-  button, and Clear. Numbers sort as numbers, rows sort among their own group, and a line chart keeps its order, as SPEC section 6
-  says, so it is left alone.
+  button, and Clear. Numbers sort as numbers, and a line chart keeps its order, as SPEC section 6 says, so it is left alone.
+  A group is the rows side by side under one heading (a group of cards, a tile group, a table's body, a list card). Rows sort
+  inside their own group, between its heading and the next, and a search only hides and shows rows where they stand, so Clear
+  puts back exactly the order written; a group heading (and the card or list that holds it) whose rows are all hidden goes
+  with them. In a nested list a row stands for its branch: a match keeps the branches above it and opens their folds, a branch
+  with no match goes, folds the search opened go back as the reader had them, and a sort orders the rows that share a branch.
+  The helper finds a heading by `role="heading"` or `.bk-grouprow`; rows it hides carry `data-bk-off`, which the stylesheet
+  hides with a rule of one more id than the rest, since a view gives its rows a display of their own.
 - **A heading's link.** The share link on a heading also copies the heading's full address, and says "Link copied". Without a
   clipboard it is only a link.
 
@@ -311,7 +317,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |
 | `compile-browser.js` | in Chromium with scripting off, at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
 | `compile-reading.test.js` | the reading helpers: five files, each one function called at once, none leaving a global; the pledge (no storage, no network, no navigation, no element that loads, no markup built from a string, no string evaluated), tried on made-up breaking parts first; a rule for every class they add and the print rules |
-| `compile-reading-browser.js` | in Chromium, the reading helpers on the made-up `compile-reading` fixture and on a page of data views: tab bars (roles, keys, links and addresses into a tab, print), citation previews (mouse, keyboard, touch), Open all and printing, the copied link, sort and filter; with scripting off, and with a page that has none of their markup, the page is unchanged; no storage, no request but its own files, readable contrast; an axe pass when `AXE` is given |
+| `compile-reading-browser.js` | in Chromium, the reading helpers on the made-up `compile-reading` fixture and on a page of data views: tab bars (roles, keys, links and addresses into a tab, print), citation previews (mouse, keyboard, touch, a short screen), Open all and printing, the copied link, sort and filter (also on the views lane's real markup, kept as static fixtures in `fixtures/views-lane/`, and at 3000 rows); with scripting off, and with a page that has none of their markup, the page is unchanged; no storage, no request but its own files, readable contrast; an axe pass when `AXE` is given |
 | `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards, and `!important` rules of one and two ids, among them `#main .content blockquote *`); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; the check fails with no guard, with the guard as it was before `!important`, and with `!important` but one id's weight |
 
 `examples/mindful-check-in.booklet.md` is compiled by the content and browser tests but has no golden page, since its

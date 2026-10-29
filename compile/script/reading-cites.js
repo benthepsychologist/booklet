@@ -22,6 +22,11 @@
     try { id = decodeURIComponent(id); } catch (e) { /* used as written */ }
     return d.getElementById(id);
   }
+  function freeId(base) {
+    var id = base, i = 1;
+    while (d.getElementById(id)) id = base + "-" + (++i);
+    return id;
+  }
   function markOf(n) { return n && n.closest ? n.closest("a.bk-mark-a") : null; }
 
   function place() {
@@ -35,7 +40,10 @@
     var left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), Math.max(8, vw - w - 8));
     var below = r.bottom + 8 + h <= vh || r.top - 8 - h < 0;
     peek.style.setProperty("left", Math.round(left) + "px", "important");
-    peek.style.setProperty("top", Math.round(below ? r.bottom + 8 : r.top - 8 - h) + "px", "important");
+    /* a box taller than the room either side keeps to the screen (the stylesheet caps its height and lets it scroll) */
+    var top = below ? r.bottom + 8 : r.top - 8 - h;
+    top = Math.max(8, Math.min(top, vh - h - 8));
+    peek.style.setProperty("top", Math.round(top) + "px", "important");
   }
 
   function close() {
@@ -53,7 +61,7 @@
     if (!peek) {
       peek = d.createElement("div");
       peek.className = "bk-peek";
-      peek.id = "bk-peek-" + (++count);
+      peek.id = freeId("bk-peek-" + (++count));
       peek.setAttribute("role", "tooltip");
       peek.hidden = true;
     }

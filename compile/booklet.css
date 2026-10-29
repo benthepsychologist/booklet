@@ -467,6 +467,7 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-tab[hidden]{display:none!important}
 
 .booklet:not(#bk):not(#bk):not(#bk) .bk-peek{position:fixed!important;z-index:50!important;box-sizing:border-box!important;width:max-content!important;max-width:min(24rem,calc(100vw - 1rem))!important;
+  max-height:calc(100vh - 1rem)!important;max-height:calc(100dvh - 1rem)!important;overflow-y:auto!important;
   padding:.65rem .85rem!important;background:var(--bk-surface)!important;color:var(--bk-ink)!important;border:var(--bk-border) solid var(--bk-rule)!important;
   border-radius:var(--bk-radius)!important;box-shadow:0 4px 18px rgba(0,0,0,.18)!important;font-size:.92rem!important;line-height:1.45!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-peek[hidden]{display:none!important}
@@ -498,7 +499,8 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-vdir:disabled{opacity:.5!important;cursor:default!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-vlive{margin:0 0 .35rem!important;color:var(--bk-muted)!important;font-size:.85rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-vlive:empty{display:none!important}
-.booklet:not(#bk):not(#bk):not(#bk) [data-bk-row][hidden]{display:none!important}
+/* a fourth :not(#bk) so a row the filter hides stays hidden whatever display a view gives its rows */
+.booklet:not(#bk):not(#bk):not(#bk):not(#bk) [data-bk-off]{display:none!important}
 
 .booklet:not(#bk):not(#bk):not(#bk) .bk-said{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;
   clip:rect(0 0 0 0)!important;white-space:nowrap!important}

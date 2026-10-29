@@ -55,14 +55,27 @@ const viewsPage='<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><m
   +'<link rel="stylesheet" href="booklet/booklet.css"></head><body class="bk-page"><main class="bk-main"><article class="booklet" lang="en">\n<h1 id="views">Views</h1>\n'
   +'<div class="bk-table" id="v-table" data-bk-view="table"><table><thead><tr><th>Crop</th><th>Kilos</th><th>Picked</th></tr></thead><tbody>'+CROPS.map(tr).join('')+'</tbody></table></div>\n'
   +'<ul id="v-list" data-bk-view="list">'+CROPS.map(v=>row('li',v)).join('')+'</ul>\n'
-  +'<div id="v-cards" data-bk-view="cards"><div class="g1">'+CROPS.slice(0,3).map(v=>row('div',v)).join('')+'</div><div class="g2">'+CROPS.slice(3).map(v=>row('div',v)).join('')+'</div></div>\n'
+  +'<div id="v-cards" data-bk-view="cards"><div class="bk-dv-cards"><div class="bk-dv-group" role="heading" aria-level="3">First</div>'+CROPS.slice(0,3).map(v=>row('div',v)).join('')+'<div class="bk-dv-group" role="heading" aria-level="3">Second</div>'+CROPS.slice(3).map(v=>row('div',v)).join('')+'</div></div>\n'
   +'<div id="v-tiles" data-bk-view="tiles">'+CROPS.map(v=>row('div',v)).join('')+'</div>\n'
   +'<div id="v-bars" data-bk-view="bars">'+CROPS.map(v=>row('div',v)).join('')+'</div>\n'
   +'<div id="v-line" data-bk-view="line">'+CROPS.map(v=>row('div',v)).join('')+'</div>\n'
+  +'<ul id="v-one" data-bk-view="list">'+row('li',CROPS[0])+'</ul>\n'
   +'<div id="v-empty" data-bk-view="table"></div>\n'
   +'<div id="v-nocols" data-bk-view="list"><div data-bk-row>First</div><div data-bk-row>Second</div></div>\n'
   +'<p id="v-after">After the views.</p></article></main><script src="booklet/booklet.js" defer></script></body></html>\n';
+/* the views lane's real output (static fixtures: PR #82 at 6726a69): its page, and the rules it gives its views, loaded after ours */
+fs.mkdirSync(path.join(OUT,'views-lane'),{recursive:true});
+fs.copyFileSync(path.join(FIX,'views-lane','views-lane.css'),path.join(OUT,'views-lane','views-lane.css'));
+fs.writeFileSync(path.join(OUT,'views-lane','index.html'),fs.readFileSync(path.join(FIX,'views-lane','compiled.html'),'utf8')
+  .replace('</head>','<link rel="stylesheet" href="views-lane.css">\n</head>').replace('</body>','<script src="../booklet/booklet.js" defer></script>\n</body>'));
+fs.writeFileSync(path.join(OUT,'views-lane','off.html'),fs.readFileSync(path.join(FIX,'views-lane','compiled.html'),'utf8')
+  .replace('</head>','<link rel="stylesheet" href="views-lane.css">\n</head>'));
 fs.writeFileSync(path.join(OUT,'views.html'),viewsPage);
+/* 3000 made-up rows in one list (a keystroke has to stay quick), and a copy of the reading page where the box's usual id is taken */
+const BIG=3000;
+fs.writeFileSync(path.join(OUT,'big.html'),viewsPage.replace(/<div class="bk-table"[\s\S]*<p id="v-after">/,
+  '<ul id="v-big" data-bk-view="list">'+Array.from({length:BIG},(_,i)=>row('li',{name:'Item '+i,code:'c'+((i*7)%1000),note:'word'+(i%13)})).join('')+'</ul>\n<p id="v-after">'));
+fs.writeFileSync(path.join(OUT,'compile-reading','peek-id.html'),fs.readFileSync(path.join(OUT,'compile-reading','with-script.html'),'utf8').replace(/<body([^>]*)>/,'<body$1><span id="bk-peek-1"></span>'));
 fs.writeFileSync(path.join(OUT,'views-off.html'),viewsPage);
 
 const lum=c=>{const m=/rgba?\(([\d.]+), ([\d.]+), ([\d.]+)/.exec(c);if(!m) return null;
@@ -133,6 +146,13 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     const afterLink=await p.evaluate(()=>({sel:[...document.querySelectorAll('[role=tablist][aria-label="Choose a route"] [role=tab]')].map(t=>t.getAttribute('aria-selected')),
       head:(()=>{const h=document.getElementById('hilly-loop');const r=h.getBoundingClientRect();return r.height>0&&r.bottom>0&&r.top<innerHeight;})(),hash:location.hash}));
     ok(afterLink.sel.join()==='false,false,true'&&afterLink.head&&afterLink.hash==='#hilly-loop','a link in the text to a tab not on show shows that tab, and the heading is in view ('+JSON.stringify(afterLink)+')');
+    /* a link to the very heading the address already names: the address does not change, so there is no hashchange and the click alone must show the tab */
+    await p.goto(BASE+'compile-reading/with-script.html#hilly-loop');
+    await p.locator(actTabs).first().click();
+    ok(await p.evaluate(()=>location.hash==='#hilly-loop'&&[...document.querySelectorAll('[role=tablist][aria-label="Choose a route"] [role=tab]')].map(t=>t.getAttribute('aria-selected')).join()==='true,false,false'),'(set up) the reader is on the first tab while the address still names the third');
+    await p.locator('a.bk-link[href="#hilly-loop"]').click();
+    ok(await p.evaluate(()=>[...document.querySelectorAll('[role=tablist][aria-label="Choose a route"] [role=tab]')].map(t=>t.getAttribute('aria-selected')).join()==='false,false,true'&&document.getElementById('hilly-loop').getBoundingClientRect().height>0),'a link to the heading the address already names still shows its tab (no hashchange, only the click)');
+    await p.goto(BASE+'compile-reading/with-script.html');
     /* the module tab: "During" holds "On the path" */
     await p.evaluate(()=>{location.hash='#on-the-path';});await p.waitForTimeout(100);
     const during=await p.evaluate(()=>({sel:[...document.querySelectorAll('[role=tablist][aria-label="A walk in the park"] [role=tab]')].map(t=>t.getAttribute('aria-selected')),
@@ -183,6 +203,14 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     ok(await p.evaluate(()=>!document.querySelector('.bk-peek').hidden),'the box stays while the pointer is on it');
     await p.mouse.move(5,5);await p.waitForTimeout(500);
     ok(await p.evaluate(()=>document.querySelector('.bk-peek').hidden&&!document.querySelector('a.bk-mark-a[aria-describedby]')),'…and goes when the pointer leaves, with the mark no longer described by it');
+    /* mark, then the gap between the mark and the box (the close is then due in 250 ms), then the box: arriving on it cancels the close */
+    await p.hover(mark1);await p.waitForSelector('.bk-peek:not([hidden])');
+    const gap=await p.evaluate(()=>{const m=document.querySelector('a.bk-mark-a[href="#bk-note-1"]').getBoundingClientRect(),b=document.querySelector('.bk-peek').getBoundingClientRect();
+      const x=Math.max(b.left+2,Math.min(b.right-2,m.left+m.width/2));return {x,gapY:b.top>m.top?(m.bottom+b.top)/2:(m.top+b.bottom)/2,gapSize:b.top>m.top?b.top-m.bottom:m.top-b.bottom,boxY:b.top+b.height/2};});
+    ok(gap.gapSize>=4,'(set up) there is a gap between the mark and the box to cross ('+Math.round(gap.gapSize)+'px)');
+    await p.mouse.move(gap.x,gap.gapY);await p.waitForTimeout(60);await p.mouse.move(gap.x,gap.boxY);await p.waitForTimeout(450);
+    ok(await p.evaluate(()=>!document.querySelector('.bk-peek').hidden),'a box the pointer reaches across the gap before its close falls due stays open (and a mark\'s box still goes when the pointer leaves)');
+    await p.mouse.move(5,5);await p.waitForTimeout(500);
     await p.hover(mark1);await p.waitForSelector('.bk-peek:not([hidden])');await p.keyboard.press('Escape');
     ok(await p.evaluate(()=>document.querySelector('.bk-peek').hidden),'Escape dismisses the box');
     await p.hover(mark1);await p.click(mark1);
@@ -250,6 +278,13 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     await p.waitForFunction(()=>document.querySelector('.bk-said').textContent==='',null,{timeout:4000});
     ok(await p.evaluate(()=>document.querySelector('h3#what-to-bring > a.bk-anchor').textContent==='#'&&!document.querySelector('.bk-copied')),'…and the link is itself again after a moment');
     ok(JSON.stringify(await storage(p))==='{"local":0,"session":0,"cookie":"","idb":0}','copying stores nothing');
+    /* a click with a modifier key, or with another button, is the browser's own (a new tab, say): nothing is copied */
+    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.evaluate(async()=>{await navigator.clipboard.writeText('before');window.addEventListener('click',e=>e.preventDefault());});
+    for(const init of [{ctrlKey:true},{metaKey:true},{shiftKey:true},{altKey:true},{button:1}]){
+      await p.evaluate(i=>document.querySelector('h3#what-to-bring > a.bk-anchor').dispatchEvent(new MouseEvent('click',Object.assign({bubbles:true,cancelable:true},i))),init);
+      await p.waitForTimeout(120);
+      ok(await p.evaluate(async()=>(await navigator.clipboard.readText())==='before'&&document.querySelector('.bk-said').textContent===''),'a click with '+Object.keys(init)[0]+' copies nothing');}
     /* no clipboard: only a link */
     const c2=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:true});await serve(c2);
     await c2.addInitScript(()=>{try{Object.defineProperty(navigator,'clipboard',{value:undefined});}catch(e){}});
@@ -317,8 +352,8 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     const ids=['v-table','v-list','v-cards','v-tiles','v-bars'];
     const have=await p.evaluate(()=>[...document.querySelectorAll('.bk-vctl')].map(c=>c.nextElementSibling.id));
     ok(JSON.stringify(have)===JSON.stringify(ids),'controls above a table, list, cards, tiles and bars, in that order ('+have+')');
-    ok(await p.evaluate(()=>['v-line','v-empty','v-nocols','v-after'].every(i=>{const e=document.getElementById(i);return !e.previousElementSibling||!e.previousElementSibling.classList.contains('bk-vctl');})),
-      'a line chart, an empty view and a view with no values are left alone');
+    ok(await p.evaluate(()=>['v-line','v-one','v-empty','v-nocols','v-after'].every(i=>{const e=document.getElementById(i);return !e.previousElementSibling||!e.previousElementSibling.classList.contains('bk-vctl');})),
+      'a line chart, a view of one row, an empty view and a view with no values are left alone');
     ok(await p.evaluate(()=>document.querySelector('#v-line').outerHTML.length>0&&!document.querySelector('#v-line [hidden]')&&!document.querySelector('#v-nocols [hidden]')),'…and their rows are untouched');
     ok(await p.evaluate(()=>document.querySelector('.bk-vbtn').getAttribute('aria-expanded')==='false'&&document.querySelector('.bk-vbar').hidden),'the bar starts closed behind one quiet button');
     const orig=['Beans','Courgette','Apples','Tomatoes','Leeks'];
@@ -350,6 +385,11 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     await inp.fill('pp');
     ok(JSON.stringify(await rowsOf(p,'v-table','crop'))===JSON.stringify(['Apples']),'the search hides the rows that do not hold the words');
     ok((await texts(p,'.bk-vlive'))[0]==='1 of 5 shown','…and says how many are shown ("1 of 5 shown")');
+    await inp.fill('APP');
+    ok(JSON.stringify(await rowsOf(p,'v-table','crop'))===JSON.stringify(['Apples']),'a search is not case-sensitive: "APP" finds "Apples"');
+    await inp.fill('cou');
+    ok(JSON.stringify(await rowsOf(p,'v-table','crop'))===JSON.stringify(['Courgette']),'…and "cou" finds "Courgette" (the value\'s capital letter does not hide it)');
+    await inp.fill('pp');
     await inp.fill('2026-09-0');
     ok(JSON.stringify(await rowsOf(p,'v-table','crop'))===JSON.stringify(['Beans','Tomatoes']),'the search looks in every column (a date here)');
     await inp.fill('zzz');
@@ -361,6 +401,22 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     ok(JSON.stringify(await rowsOf(p,'v-table','crop'))===JSON.stringify(orig)&&await p.evaluate(()=>document.querySelector('.bk-vclear').hidden&&document.querySelector('.bk-vq').value===''&&document.querySelector('.bk-vsel').value===''),'Clear brings back every row in the order written');
     await p.keyboard.press('Escape');
     ok(await p.evaluate(()=>document.querySelector('.bk-vbar').hidden&&document.activeElement===document.querySelector('.bk-vbtn')),'Escape closes the bar and puts the focus back on its button');
+    /* Escape in a search box with words in it ends the filter and leaves the bar open; the next Escape closes the bar */
+    await (await q('v-table','.bk-vbtn')).click();await inp.fill('pp');
+    ok(JSON.stringify(await rowsOf(p,'v-table','crop'))===JSON.stringify(['Apples']),'(set up) a search is on');
+    await p.keyboard.press('Escape');
+    ok(await p.evaluate(()=>document.querySelector('.bk-vq').value===''&&!document.querySelector('.bk-vbar').hidden)&&JSON.stringify(await rowsOf(p,'v-table','crop'))===JSON.stringify(orig)&&(await texts(p,'.bk-vlive'))[0]==='',
+      'Escape in a search box with words in it empties it, shows every row again and leaves the bar open');
+    await p.keyboard.press('Escape');
+    ok(await p.evaluate(()=>document.querySelector('.bk-vbar').hidden&&document.activeElement===document.querySelector('.bk-vbtn')),'…and the next Escape closes the bar');
+    /* the search box's own cross fires "search", and a committed edit fires "change": each ends the filter too */
+    await (await q('v-table','.bk-vbtn')).click();
+    for(const type of ['search','change']){
+      await inp.fill('pp');
+      await inp.evaluate((e,t)=>{e.value='';e.dispatchEvent(new Event(t,{bubbles:true}));},type);
+      ok(JSON.stringify(await rowsOf(p,'v-table','crop'))===JSON.stringify(orig),'a "'+type+'" event on an emptied search box shows every row again');}
+    await inp.fill('');
+    await p.keyboard.press('Escape');
     /* a header row stays where it is */
     ok(await p.evaluate(()=>[...document.querySelectorAll('#v-table thead th')].map(x=>x.textContent).join()==='Crop,Kilos,Picked'&&document.querySelector('#v-table tbody').children.length===5),'a table\'s header stays where it is and the body keeps its five rows');
     /* the others */
@@ -373,8 +429,8 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     ok(JSON.stringify(await rowsOf(p,'v-bars','crop'))===JSON.stringify(['Apples','Courgette','Beans','Tomatoes','Leeks']),'bars sort, largest first');
     /* cards: rows sort within their own group */
     await (await q('v-cards','.bk-vbtn')).click();await sort('v-cards',2);await (await q('v-cards','.bk-vdir')).click();
-    const groups=await p.evaluate(()=>[...document.querySelectorAll('#v-cards > div')].map(g=>[...g.querySelectorAll('[data-bk-row]')].map(r=>r.querySelector('[data-bk-col=crop]').textContent)));
-    ok(JSON.stringify(groups)==='[["Apples","Courgette","Beans"],["Tomatoes","Leeks"]]','cards in groups sort inside each group (largest first here), none crosses to the other ('+JSON.stringify(groups)+')');
+    const groups=await p.evaluate(()=>[...document.querySelectorAll('#v-cards .bk-dv-cards > *')].map(g=>g.matches('[data-bk-row]')?g.querySelector('[data-bk-col=crop]').textContent:'#'+g.textContent));
+    ok(JSON.stringify(groups)==='["#First","Apples","Courgette","Beans","#Second","Tomatoes","Leeks"]','cards in groups (all siblings under one parent, as the views lane writes them) sort inside each group, between its heading and the next (largest first here) ('+JSON.stringify(groups)+')');
     ok(await p.evaluate(()=>document.getElementById('v-after').previousElementSibling.id==='v-nocols'),'nothing else on the page moves');
     /* nothing kept */
     ok(JSON.stringify(await storage(p))==='{"local":0,"session":0,"cookie":"","idb":0}','nothing is stored');
@@ -398,6 +454,188 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     await cf.close();
   }
 
+
+  /* ================= script ON: the views lane's real markup (static fixtures, PR #82 at 6726a69) ================= */
+  {
+    const ctx=await b.newContext({viewport:{width:1000,height:900},javaScriptEnabled:true});await serve(ctx);
+    const errs=[];const p=await ctx.newPage();await open(ctx,p,'views-lane/index.html',errs);
+    const ctlOf=id=>'#'+id+' + .bk-vctl';
+    /* the view after a heading, drawn as tokens in document order: a row by its value in a column, a group heading by its words;
+       a token starts with ~ when it is not shown (itself or something around it is not displayed) */
+    const lay=(id,col)=>p.evaluate(([i,c])=>{let v=document.getElementById(i).nextElementSibling;while(v&&!v.hasAttribute('data-bk-view')) v=v.nextElementSibling;
+      return [...v.querySelectorAll('[data-bk-row],.bk-dv-group,.bk-grouprow')].map(e=>{const t=e.matches('[data-bk-row]')?e.querySelector('[data-bk-col="'+c+'"]').textContent.trim():'#'+e.textContent.trim().replace(/\d+ rows?$/,'').trim();
+        return (e.checkVisibility()?'':'~')+t;});},[id,col]);
+    const bare=a=>a.map(x=>x.replace(/^~/,''));
+    const shown=a=>a.filter(x=>x[0]!=='~');
+    const open_=id=>p.click(ctlOf(id)+' .bk-vbtn');
+    const typ=(id,t)=>p.fill(ctlOf(id)+' .bk-vq',t);
+    const pick=(id,label)=>p.selectOption(ctlOf(id)+' .bk-vsel',{label});
+    const flip=id=>p.click(ctlOf(id)+' .bk-vdir');
+    const live=id=>p.evaluate(i=>document.querySelector('#'+i+' + .bk-vctl .bk-vlive').textContent,id);
+
+    const all=await p.evaluate(()=>[...document.querySelectorAll('h3[id]')].filter(h=>h.nextElementSibling&&h.nextElementSibling.classList.contains('bk-vctl')).map(h=>h.id));
+    ok(JSON.stringify(all)==='["tiles","tiles-grouped","cards","cards-grouped","table","table-grouped-limited","list","list-grouped","nested-list","bars","bars-grouped"]','controls over every real view of two rows or more (tiles, cards, tables, lists, a nested list, bars) and none over a line chart ('+all+')');
+
+    /* the groups: a filter and a sort keep every row with its own group, and Clear puts back exactly what was written */
+    const GROUPED=[['tiles-grouped','what','trays',['#warn','Trays left over']],['cards-grouped','item','sunflower',['#Front','Sunflower seeds']],
+      ['table-grouped-limited','item','yeast',['#Fridge','Yeast']],['list-grouped','item','salt',['#Front','Salt']]];
+    for(const [id,col,query,want] of GROUPED){
+      const orig=await lay(id,col);
+      ok(orig.filter(x=>x[0]==='#').length>=3&&orig.every(x=>x[0]!=='~'),id+': (set up) three or more groups, all shown ('+orig.join(' / ')+')');
+      await open_(id);
+      await typ(id,query);
+      let now=await lay(id,col);
+      ok(JSON.stringify(shown(now))===JSON.stringify(want),id+': a search shows only the matching row and its own group\'s heading ('+now.join(' / ')+')');
+      ok(JSON.stringify(bare(now))===JSON.stringify(orig),id+': …and no row or heading has moved while the search is on');
+      await typ(id,'');
+      now=await lay(id,col);
+      ok(JSON.stringify(now)===JSON.stringify(orig),id+': clearing the search puts every row and heading back exactly as written');
+      /* a search, a sort and Clear, one after the other */
+      await typ(id,'e');await pick(id,col);await flip(id);await typ(id,'');
+      now=await lay(id,col);
+      const kinds=x=>x.map(t=>t.replace(/^~/,'')[0]==='#'?'#':'r').join('');
+      ok(kinds(now)===kinds(orig)&&JSON.stringify(now.filter(t=>t[0]==='#'))===JSON.stringify(orig.filter(t=>t[0]==='#')),id+': after a sort the headings are where they were and the rows still sit between them ('+kinds(now)+')');
+      await p.click(ctlOf(id)+' .bk-vclear');
+      ok(JSON.stringify(await lay(id,col))===JSON.stringify(orig),id+': Clear restores the order written, exactly');
+      await p.keyboard.press('Escape');
+    }
+    /* rows sort among their own group: descending, then the Front group of the cards runs Sunflower seeds before Salt */
+    {
+      const id='cards-grouped';await open_(id);await pick(id,'item');await flip(id);
+      const d=await lay(id,'item');
+      const i=d.indexOf('#Front');
+      ok(JSON.stringify(d.slice(i,i+3))==='["#Front","Sunflower seeds","Salt"]'&&d[0]==='#Back store'&&d.indexOf('#Fridge')===3,id+': Z to A inside each group, none crossing to another ('+d.join(' / ')+')');
+      await flip(id);const a=await lay(id,'item'),j=a.indexOf('#Front');
+      ok(JSON.stringify(a.slice(j,j+3))==='["#Front","Salt","Sunflower seeds"]','…and A to Z the other way');
+      await p.click(ctlOf(id)+' .bk-vclear');await p.keyboard.press('Escape');
+    }
+    /* a heading with no row left to show goes with them, and comes back with the first that matches */
+    {
+      const id='table-grouped-limited';await open_(id);await typ(id,'zzz');
+      const z=await lay(id,'item');
+      ok(z.every(x=>x[0]==='~')&&(await live(id))==='Nothing matches.','a search that matches nothing hides every row and every group heading, and says so ('+z.join(' / ')+')');
+      await typ(id,'salt');const s2=await lay(id,'item');
+      ok(JSON.stringify(shown(s2))==='["#Front","Salt"]','…and a group is back as soon as one of its rows matches');
+      await typ(id,'');await p.keyboard.press('Escape');
+    }
+    /* the plain views keep their order too, and the tile groups hide whole */
+    for(const [id,col,query] of [['tiles','what','trays'],['cards','item','yeast'],['table','item','yeast'],['list','item','yeast'],['bars','day','u']]){
+      const orig=await lay(id,col);await open_(id);await typ(id,query);const mid=await lay(id,col);
+      ok(JSON.stringify(bare(mid))===JSON.stringify(orig)&&mid.some(x=>x[0]==='~')&&mid.some(x=>x[0]!=='~'),id+': a search hides some rows and shows some, in the order written ('+mid.join(' / ')+')');
+      await typ(id,'');ok(JSON.stringify(await lay(id,col))===JSON.stringify(orig),id+': …and clearing it puts every row back');await p.keyboard.press('Escape');}
+    ok(await p.evaluate(()=>{const g=[...document.querySelectorAll('#tiles-grouped ~ .bk-view')][0];return !!g;}),'(set up) the grouped tiles are there');
+    {
+      const id='tiles-grouped';await open_(id);await typ(id,'trays');
+      const r=await p.evaluate(i=>{let v=document.getElementById(i).nextElementSibling;while(!v.hasAttribute('data-bk-view')) v=v.nextElementSibling;
+        return [...v.children].map(e=>e.className.split(' ')[0]+':'+(e.checkVisibility()?'shown':'hidden'));},id);
+      ok(JSON.stringify(r)==='["bk-dv-group:hidden","bk-dv-tiles:hidden","bk-dv-group:shown","bk-dv-tiles:shown","bk-dv-group:hidden","bk-dv-tiles:hidden","bk-dv-group:hidden","bk-dv-tiles:hidden"]','tile groups: a group with no row to show is hidden whole, heading and tiles ('+r.join(' ')+')');
+      await typ(id,'');await p.keyboard.press('Escape');
+    }
+    {
+      /* the list in group cards: the card goes whole, not just its heading */
+      const id='list-grouped';await open_(id);await typ(id,'salt');
+      const r=await p.evaluate(i=>{let v=document.getElementById(i).nextElementSibling;while(!v.hasAttribute('data-bk-view')) v=v.nextElementSibling;
+        return [...v.querySelectorAll('.bk-dv-gcard')].map(e=>e.checkVisibility()?'shown':'hidden');},id);
+      ok(JSON.stringify(r)==='["hidden","hidden","shown"]','list groups: a card whose rows are all hidden is hidden whole ('+r+')');
+      await typ(id,'');await p.keyboard.press('Escape');
+    }
+
+    /* the nested list: a branch stands for its rows */
+    {
+      const id='nested-list',col='label';
+      const orig=await lay(id,col);
+      ok(JSON.stringify(bare(orig))==='["Open the shop","Bake","Rolls","Rye","Hang the sign","Close up"]'&&orig.slice(1,5).every(x=>x[0]==='~')&&orig[0][0]!=='~'&&orig[5][0]!=='~','(set up) the nested list shows its top rows, its folds closed ('+orig.join(' / ')+')');
+      const folds=()=>p.evaluate(i=>{let v=document.getElementById(i).nextElementSibling;while(!v.hasAttribute('data-bk-view')) v=v.nextElementSibling;return [...v.querySelectorAll('details')].map(d=>d.open?'open':'closed').join();},id);
+      await open_(id);
+      await typ(id,'rolls');
+      let n=await lay(id,col);
+      ok(JSON.stringify(n)==='["Open the shop","Bake","Rolls","~Rye","~Hang the sign","~Close up"]','a match inside closed folds opens the folds above it and keeps them: only the match and its branches are shown ('+n.join(' / ')+')');
+      ok((await folds())==='open,open'&&(await live(id))==='1 of 6 shown','…the count is of the rows that match ('+await live(id)+')');
+      await typ(id,'rye');
+      n=await lay(id,col);
+      ok(JSON.stringify(n)==='["Open the shop","Bake","~Rolls","Rye","~Hang the sign","~Close up"]','a branch with no match inside goes ('+n.join(' / ')+')');
+      await typ(id,'close');
+      n=await lay(id,col);
+      ok(JSON.stringify(n)==='["~Open the shop","~Bake","~Rolls","~Rye","~Hang the sign","Close up"]'&&(await folds())==='closed,closed','a search for a row elsewhere hides whole branches and leaves the folds as the reader had them ('+n.join(' / ')+')');
+      await typ(id,'zzz');
+      const vis=await p.evaluate(i=>{let v=document.getElementById(i).nextElementSibling;while(!v.hasAttribute('data-bk-view')) v=v.nextElementSibling;return [...v.querySelectorAll('[data-bk-row]')].filter(r=>r.checkVisibility()).length;},id);
+      ok(vis===0&&(await live(id))==='Nothing matches.','"Nothing matches." with no row left on show, summary rows included ('+vis+' shown)');
+      await typ(id,'');
+      ok(JSON.stringify(await lay(id,col))===JSON.stringify(orig)&&(await folds())==='closed,closed','clearing the search puts the rows back and the folds as the reader had them');
+      /* a fold the reader opened by hand stays open when the search ends */
+      await p.evaluate(i=>{let v=document.getElementById(i).nextElementSibling;while(!v.hasAttribute('data-bk-view')) v=v.nextElementSibling;v.querySelector('details').open=true;},id);
+      await typ(id,'rolls');await typ(id,'');
+      ok((await folds())==='open,closed','a fold opened by hand before the search is still open after it ('+await folds()+')');
+      await p.evaluate(i=>{let v=document.getElementById(i).nextElementSibling;while(!v.hasAttribute('data-bk-view')) v=v.nextElementSibling;v.querySelector('details').open=false;},id);
+      /* sort orders the rows that share a branch, and a branch moves whole */
+      await pick(id,'label');
+      let t=await lay(id,col);
+      ok(JSON.stringify(bare(t))==='["Close up","Open the shop","Bake","Rolls","Rye","Hang the sign"]','sorted A to Z: the top rows among themselves, each branch whole, the rows of a branch among theirs ('+t.join(' / ')+')');
+      await flip(id);
+      t=await lay(id,col);
+      ok(JSON.stringify(bare(t))==='["Open the shop","Hang the sign","Bake","Rye","Rolls","Close up"]','…and Z to A reverses each level ('+t.join(' / ')+')');
+      await p.click(ctlOf(id)+' .bk-vclear');
+      ok(JSON.stringify(await lay(id,col))===JSON.stringify(orig),'Clear puts the nested list back as written');
+      await p.keyboard.press('Escape');
+    }
+    ok(!errs.length,'the real views raise no error'+(errs.length?' ('+errs[0]+')':''));
+    await ctx.close();
+  }
+
+  /* ================= 3000 rows: a keystroke stays quick ================= */
+  {
+    const ctx=await b.newContext({viewport:{width:1000,height:900},javaScriptEnabled:true});await serve(ctx);
+    const errs=[];const p=await ctx.newPage();await open(ctx,p,'big.html',errs);
+    const r=await p.evaluate(()=>{const inp=document.querySelector('.bk-vq'),out=[],counts=[],still=[];
+      const key=(t,into)=>{const t0=performance.now();inp.value=t;inp.dispatchEvent(new Event('input',{bubbles:true}));document.body.getBoundingClientRect();document.getElementById('v-after').offsetTop;into.push(performance.now()-t0);};
+      const shown=()=>[...document.querySelectorAll('#v-big > [data-bk-row]')].filter(x=>!x.hidden).length;
+      /* typing "item" changes which rows show not at all (every row holds it): the page must not be redone */
+      for(const t of ['i','it','ite','item','item ','item 1']) key(t,still);
+      key('',[]);
+      /* words that do change the set, narrowing and widening */
+      for(const t of ['1','12','123','12','1','','word3','wor','']){key(t,out);counts.push(shown());}
+      return {out,counts,still};});
+    const worst=Math.max(...r.out),worstStill=Math.max(...r.still.slice(0,4));
+    ok(r.counts[5]===3000&&r.counts[8]===3000&&r.counts[1]>0&&r.counts[1]<r.counts[0],'at 3000 rows the search shows the right rows ('+r.counts+')');
+    ok(worstStill<200,'at 3000 rows a keystroke that changes no row\'s state costs nothing like a redo of the page (worst '+Math.round(worstStill)+' ms of '+r.still.map(Math.round)+'; redoing every row took about 400)');
+    ok(worst<2000,'at 3000 rows no keystroke that does change the rows takes more than two seconds to filter and lay out (worst '+Math.round(worst)+' ms of '+r.out.map(Math.round)+'; most of it is the browser laying out the rows that come back)');
+    ok(!errs.length,'no error with 3000 rows');
+    await ctx.close();
+  }
+
+  /* ================= a short screen: the citation box keeps to it ================= */
+  for(const [w,h] of [[320,300],[390,260]]){
+    const ctx=await b.newContext({viewport:{width:w,height:h},javaScriptEnabled:true});await serve(ctx);
+    const errs=[];const p=await ctx.newPage();await open(ctx,p,'compile-reading/with-script.html',errs);
+    /* a note longer than the screen is tall (made-up words added to the foot's note before the box is made) */
+    await p.evaluate(()=>{document.querySelector('#bk-note-1').appendChild(document.createTextNode(' '+'More made-up words to make this note long. '.repeat(16)));});
+    /* the pointer goes to the mark by hand: on a screen this short the box may well cover the mark, and hover() would wait for it to clear */
+    await p.evaluate(()=>document.querySelector('a.bk-mark-a[href="#bk-note-1"]').scrollIntoView({block:'center'}));
+    const mb=await p.locator('a.bk-mark-a[href="#bk-note-1"]').boundingBox();await p.mouse.move(mb.x+mb.width/2,mb.y+mb.height/2);
+    await p.waitForSelector('.bk-peek:not([hidden])');
+    const r=await p.evaluate(()=>{const e=document.querySelector('.bk-peek'),b=e.getBoundingClientRect(),cs=getComputedStyle(e);
+      return {top:b.top,bottom:b.bottom,left:b.left,right:b.right,h:innerHeight,w:innerWidth,ov:cs.overflowY,scrolls:e.scrollHeight>e.clientHeight};});
+    ok(r.top>=0&&r.bottom<=r.h+0.5&&r.left>=0&&r.right<=r.w+0.5,w+'x'+h+': the whole box is on the screen ('+JSON.stringify(r)+')');
+    ok(r.ov==='auto'&&r.scrolls,'…and a note longer than the room scrolls inside the box');
+    if(r.scrolls){
+      const end=await p.evaluate(()=>{const e=document.querySelector('.bk-peek');e.scrollTop=e.scrollHeight;const b=e.getBoundingClientRect();return {last:e.lastElementChild?e.lastElementChild.getBoundingClientRect().bottom<=b.bottom+1:true,inside:b.bottom<=innerHeight+0.5};});
+      ok(end.last&&end.inside,w+'x'+h+': scrolled to its foot, the box shows the end of the note');}
+    ok(!errs.length,w+'x'+h+': no error');
+    await ctx.close();
+  }
+
+  /* ================= the box's id is not one the page already has ================= */
+  {
+    const ctx=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:true});await serve(ctx);
+    const errs=[];const p=await ctx.newPage();await open(ctx,p,'compile-reading/peek-id.html',errs);
+    await p.hover('a.bk-mark-a[href="#bk-note-1"]');await p.waitForSelector('.bk-peek:not([hidden])');
+    const r=await p.evaluate(()=>{const e=document.querySelector('.bk-peek'),m=document.querySelector('a.bk-mark-a[href="#bk-note-1"]');
+      return {id:e.id,same:document.querySelectorAll('[id="bk-peek-1"]').length,by:m.getAttribute('aria-describedby'),found:document.getElementById(m.getAttribute('aria-describedby'))===e};});
+    ok(r.id!=='bk-peek-1'&&r.same===1&&r.found,'the box takes an id the page does not have, like the other parts ('+JSON.stringify(r)+')');
+    ok(!errs.length,'no error');
+    await ctx.close();
+  }
+
   /* ================= script OFF, and a page with none of the markup ================= */
   {
     const off=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:false});await serve(off);
@@ -414,6 +652,8 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
       ok(dom.anchors&&dom.folds.every(x=>!x),'…the share links are plain links and every fold is closed as written');}
     const viewsOff=await off.newPage();await viewsOff.goto(BASE+'views-off.html');
     ok(await viewsOff.evaluate(()=>document.querySelectorAll('.bk-vctl').length===0&&document.querySelectorAll('[data-bk-row][hidden]').length===0&&document.querySelectorAll('#v-table tbody tr').length===5),'the views, scripting off: no control, every row shown, in the order written');
+    const lane=await off.newPage();await lane.goto(BASE+'views-lane/off.html');
+    ok(await lane.evaluate(()=>document.querySelectorAll('.bk-vctl,[data-bk-off],[hidden]').length===0&&[...document.querySelectorAll('[data-bk-row]')].every(r=>r.getClientRects().length||r.closest('details:not([open])'))),'the views lane\'s real views, scripting off: no control, nothing hidden, every row in the order written');
     await off.close();
     /* scripting on, a page with none of the markup: byte for byte what scripting off shows */
     const on=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:true});await serve(on);
