@@ -1,9 +1,10 @@
 // Browser check of the compiler's reading helpers (compile/script/reading-*.js, compile 0.2.0, lane "reading"): what the
 // optional script does to a compiled page in Chromium, and that a page without it, or with scripting off, is unchanged.
-// The made-up fixture test/fixtures/compile-reading.booklet.md is compiled; its parts are joined into a booklet.js beside
-// the stylesheet, as the assembler of compile/script/ joins them, and a copy of each page is written that loads it
-// (this test does the joining itself, so it runs whether or not the assembler is there). It asserts:
-//   - tab bar: a bar over the tabs of an activity and over those of a module (a tab bar inside a tab), opening on the first,
+// The made-up fixtures test/fixtures/compile-reading-one.booklet.md (one page) and compile-reading.booklet.md (several pages), with
+// the compiler's own compile-views and compile-pages fixtures, are compiled; the script is joined by the compiler's assembler
+// (compile/script.js: the quiz part and the five reading parts) into a booklet.js beside the stylesheet, and a copy of each page
+// is written that loads it from where its depth puts it. It asserts:
+//   - tab bar: a bar over a page's tabs (and over a contents page's module tabs), opening on the first,
 //     the ARIA tabs roles and names, one tab in the Tab order, Left/Right/Home/End, a link or an address that points into a tab
 //     that is not showing shows it, nothing is kept across a reload, and the page prints with every tab shown;
 //   - citation preview: hover, keyboard focus and a first tap show the note beside the mark, Escape closes, the box can be
@@ -15,6 +16,8 @@
 //   - sort and filter: controls over a table, list, cards, tiles and bars; none over a line chart, an empty view, or one
 //     with no values; numbers sort as numbers, rows sort inside their own group, a filter searches every column, Clear and
 //     a reload restore the order written; nothing is stored;
+//   - a booklet of several pages: the same parts on its contents page and on activity pages one folder deeper (tabs, links,
+//     citation boxes, Open all, copied links, views), the quiz part beside them, the stylesheet's other parts, print;
 //   - scripting off, and a page with none of the markup: nothing added, every tab under its name, every row shown;
 //   - no storage, no cookie, no request but the page's own files, no error; the controls keep a readable contrast, light and dark.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/compile-reading-browser.js <booklet.html> <outdir>
@@ -26,25 +29,27 @@ const OUT=path.resolve(process.argv[3]||'.','compile-reading-pages');
 const C=require('../compile/compile.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 
-const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures'),LANE=path.join(__dirname,'compile-fixtures'),PARTS=path.join(ROOT,'compile','script');
+const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures'),PARTS=path.join(ROOT,'compile','script');
 fs.rmSync(OUT,{recursive:true,force:true});
-/* the parts joined in file-name order, as the assembler does it */
-const parts=fs.readdirSync(PARTS).filter(f=>/^reading-.*\.js$/.test(f)).sort();
-const script=parts.map(f=>fs.readFileSync(path.join(PARTS,f),'utf8')).join('\n');
+/* the whole script as the compiler's assembler joins it (the quiz part and these five), so the parts are tested together */
+const script=require('../compile/script.js').assemble().text;
 
 /* a tiny booklet with none of the markup a part works on: a title and a paragraph */
 const PLAIN_DIR=path.join(OUT,'src');fs.mkdirSync(PLAIN_DIR,{recursive:true});
 const plainFile=path.join(PLAIN_DIR,'plain.booklet.md');
 const run0=C.compile([{file:path.join(FIX,'compile-reading.booklet.md')}],{form:'standalone',renderer:HTML});
 fs.writeFileSync(plainFile,'---\nbooklet: "'+run0.format+'"\nid: test/plain\ntitle: A plain page\nlang: en\n---\n\n# A plain page\n\nOne made-up paragraph and nothing else.\n');
-const run=C.compile([{file:path.join(FIX,'compile-reading.booklet.md')},{file:path.join(FIX,'compile-article.booklet.md')},{file:plainFile}],{form:'standalone',renderer:HTML});
+/* one page of tabs, notes and folds (compile-reading-one), the same made-up walk as a booklet of several pages (compile-reading), the compiler's own
+   fixtures for data views and for many pages, an article with a fold outside any activity, and the plain page */
+const run=C.compile(['compile-reading-one','compile-reading','compile-article','compile-views','compile-pages'].map(n=>({file:path.join(FIX,n+'.booklet.md')})).concat([{file:plainFile}]),{form:'standalone',renderer:HTML});
 C.write(run,OUT,{force:true});
 ok(run.results.every(r=>r.rep.ok),'the fixtures and the plain page compile with '+path.basename(HTML));
 fs.writeFileSync(path.join(OUT,'booklet','booklet.js'),script);
-const withScript=name=>{const src=fs.readFileSync(path.join(OUT,name,'index.html'),'utf8');
-  /* a page the compiler already links the script from is left as it is (the assembler does that for a page that needs a part) */
-  fs.writeFileSync(path.join(OUT,name,'with-script.html'),/booklet\/booklet\.js/.test(src)?src:src.replace('</body>','<script src="../booklet/booklet.js" defer></script>\n</body>'));};
-withScript('compile-reading');withScript('compile-article');withScript('plain');
+/* a copy of a compiled page that loads the script from where its depth puts it ('../' for a page at <name>/, '../../' for one at <name>/<page>/) */
+const withScript=name=>{const src=fs.readFileSync(path.join(OUT,name,'index.html'),'utf8'),up='../'.repeat(name.split('/').length);
+  /* a page the compiler already links the script from is left as it is */
+  fs.writeFileSync(path.join(OUT,name,'with-script.html'),/booklet\/booklet\.js/.test(src)?src:src.replace('</body>','<script src="'+up+'booklet/booklet.js" defer></script>\n</body>'));};
+['compile-reading-one','compile-reading','compile-reading/route','compile-reading/kit','compile-reading/path','compile-article','plain','compile-views/week','compile-views/orders','compile-views','compile-pages/flour','compile-pages'].forEach(withScript);
 
 /* a page of made-up data views, written the way the compiler's views lane writes them (the lane brief's markup contract) */
 const row=(t,vals)=>'<'+t+' data-bk-row>'+Object.entries(vals).map(([k,v])=>'<span data-bk-col="'+k+'">'+v+'</span>').join(' ')+'</'+t+'>';
@@ -63,19 +68,12 @@ const viewsPage='<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><m
   +'<div id="v-empty" data-bk-view="table"></div>\n'
   +'<div id="v-nocols" data-bk-view="list"><div data-bk-row>First</div><div data-bk-row>Second</div></div>\n'
   +'<p id="v-after">After the views.</p></article></main><script src="booklet/booklet.js" defer></script></body></html>\n';
-/* the views lane's real output (static fixtures: PR #82 at 6726a69): its page, and the rules it gives its views, loaded after ours */
-fs.mkdirSync(path.join(OUT,'views-lane'),{recursive:true});
-fs.copyFileSync(path.join(LANE,'views-lane','views-lane.css'),path.join(OUT,'views-lane','views-lane.css'));
-fs.writeFileSync(path.join(OUT,'views-lane','index.html'),fs.readFileSync(path.join(LANE,'views-lane','compiled.html'),'utf8')
-  .replace('</head>','<link rel="stylesheet" href="views-lane.css">\n</head>').replace('</body>','<script src="../booklet/booklet.js" defer></script>\n</body>'));
-fs.writeFileSync(path.join(OUT,'views-lane','off.html'),fs.readFileSync(path.join(LANE,'views-lane','compiled.html'),'utf8')
-  .replace('</head>','<link rel="stylesheet" href="views-lane.css">\n</head>'));
 fs.writeFileSync(path.join(OUT,'views.html'),viewsPage);
 /* 3000 made-up rows in one list (a keystroke has to stay quick), and a copy of the reading page where the box's usual id is taken */
 const BIG=3000;
 fs.writeFileSync(path.join(OUT,'big.html'),viewsPage.replace(/<div class="bk-table"[\s\S]*<p id="v-after">/,
   '<ul id="v-big" data-bk-view="list">'+Array.from({length:BIG},(_,i)=>row('li',{name:'Item '+i,code:'c'+((i*7)%1000),note:'word'+(i%13)})).join('')+'</ul>\n<p id="v-after">'));
-fs.writeFileSync(path.join(OUT,'compile-reading','peek-id.html'),fs.readFileSync(path.join(OUT,'compile-reading','with-script.html'),'utf8').replace(/<body([^>]*)>/,'<body$1><span id="bk-peek-1"></span>'));
+fs.writeFileSync(path.join(OUT,'compile-reading-one','peek-id.html'),fs.readFileSync(path.join(OUT,'compile-reading-one','with-script.html'),'utf8').replace(/<body([^>]*)>/,'<body$1><span id="bk-peek-1"></span>'));
 fs.writeFileSync(path.join(OUT,'views-off.html'),viewsPage);
 
 const lum=c=>{const m=/rgba?\(([\d.]+), ([\d.]+), ([\d.]+)/.exec(c);if(!m) return null;
@@ -109,33 +107,32 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     const ctx=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:true});
     await ctx.grantPermissions(['clipboard-read','clipboard-write'],{origin:'http://localhost'});
     const reqs=[],errs=[];await serve(ctx);
-    const p=await ctx.newPage();p.on('request',r=>reqs.push(r.url()));await open(ctx,p,'compile-reading/with-script.html',errs);
+    const p=await ctx.newPage();p.on('request',r=>reqs.push(r.url()));await open(ctx,p,'compile-reading-one/with-script.html',errs);
 
-    /* ---- the tab bars ---- */
+    /* ---- the tab bar (a booklet of one page: its one set of tabs sits under the title, lede and contents) ---- */
+    const TABS='[role=tablist][aria-label="A walk in the park"] [role=tab]';
+    const sels=()=>p.evaluate(()=>[...document.querySelectorAll('[role=tablist] [role=tab]')].map(t=>t.getAttribute('aria-selected')).join());
     const bars=await p.evaluate(()=>[...document.querySelectorAll('[role=tablist]')].map(bar=>({label:bar.getAttribute('aria-label'),
       tabs:[...bar.children].map(t=>({name:t.textContent,role:t.getAttribute('role'),sel:t.getAttribute('aria-selected'),ti:t.tabIndex,tag:t.tagName,
-        panel:(()=>{const pn=document.getElementById(t.getAttribute('aria-controls'));return pn?{role:pn.getAttribute('role'),by:pn.getAttribute('aria-labelledby')===t.id,hidden:pn.hidden,cls:pn.className,next:bar.nextElementSibling===null}:null;})()}))})));
-    ok(bars.length===2,'two tab bars: the module\'s two tabs, and the activity\'s three ('+bars.length+')');
-    const [modBar,actBar]=[bars.find(x=>x.tabs.length===2),bars.find(x=>x.tabs.length===3)];
-    ok(modBar&&actBar,'one bar of two tabs and one of three');
-    ok(modBar&&modBar.tabs.map(t=>t.name).join('|')==='Plan|During'&&actBar&&actBar.tabs.map(t=>t.name).join('|')==='Short loop|Long loop|Hilly loop','the buttons carry the tabs\' own names, without the share link\'s #');
-    ok(modBar&&modBar.label==='A walk in the park'&&actBar&&actBar.label==='Choose a route','each bar is named for the heading above it ('+(modBar&&modBar.label)+'; '+(actBar&&actBar.label)+')');
-    for(const [n,bar] of [['module',modBar],['activity',actBar]]){if(!bar) continue;
-      ok(bar.tabs.every(t=>t.tag==='BUTTON'&&t.role==='tab')&&bar.tabs.every(t=>t.panel&&t.panel.role==='tabpanel'&&t.panel.by&&/\bbk-tab\b/.test(t.panel.cls)),n+' bar: a button with role tab for each tab, each controlling a tabpanel the button labels');
-      ok(bar.tabs[0].sel==='true'&&bar.tabs.slice(1).every(t=>t.sel==='false'),n+' bar: opens on the first tab');
-      ok(bar.tabs[0].ti===0&&bar.tabs.slice(1).every(t=>t.ti===-1),n+' bar: only the tab on show is in the Tab order');
-      ok(!bar.tabs[0].panel.hidden&&bar.tabs.slice(1).every(t=>t.panel.hidden),n+' bar: only the first tab\'s panel is shown');}
+        panel:(()=>{const pn=document.getElementById(t.getAttribute('aria-controls'));return pn?{role:pn.getAttribute('role'),by:pn.getAttribute('aria-labelledby')===t.id,hidden:pn.hidden,cls:pn.className}:null;})()}))})));
+    ok(bars.length===1&&bars[0].tabs.length===3,'one tab bar, of the three tabs ('+bars.length+')');
+    const bar=bars[0];
+    ok(bar.tabs.map(t=>t.name).join('|')==='Short loop|Long loop|Hilly loop','the buttons carry the tabs\' own names, without the share link\'s #');
+    ok(bar.label==='A walk in the park','the bar is named for the heading above it ('+bar.label+')');
+    ok(bar.tabs.every(t=>t.tag==='BUTTON'&&t.role==='tab')&&bar.tabs.every(t=>t.panel&&t.panel.role==='tabpanel'&&t.panel.by&&/\bbk-tab\b/.test(t.panel.cls)),'a button with role tab for each tab, each controlling a tabpanel the button labels');
+    ok(bar.tabs[0].sel==='true'&&bar.tabs.slice(1).every(t=>t.sel==='false'),'it opens on the first tab');
+    ok(bar.tabs[0].ti===0&&bar.tabs.slice(1).every(t=>t.ti===-1),'only the tab on show is in the Tab order');
+    ok(!bar.tabs[0].panel.hidden&&bar.tabs.slice(1).every(t=>t.panel.hidden),'only the first tab\'s panel is shown');
     /* keyboard */
-    const sel=()=>p.evaluate(()=>[...document.querySelectorAll('[role=tablist]')].map(b=>[...b.children].findIndex(t=>t.getAttribute('aria-selected')==='true')+'/'+[...b.children].findIndex(t=>t===document.activeElement)));
-    const actTabs='[role=tablist][aria-label="Choose a route"] [role=tab]';
-    await p.locator(actTabs).first().focus();
-    await p.keyboard.press('ArrowRight');let s=(await sel()).join(' ');
-    ok(s.endsWith('1/1')||s.includes(' 1/1'),'ArrowRight moves to the next tab, shows it and puts the focus on it ('+s+')');
-    await p.keyboard.press('End');s=(await sel()).join(' ');ok(s.includes('2/2'),'End goes to the last tab ('+s+')');
-    await p.keyboard.press('ArrowRight');s=(await sel()).join(' ');ok(s.includes('0/0'),'ArrowRight on the last tab wraps to the first ('+s+')');
-    await p.keyboard.press('ArrowLeft');s=(await sel()).join(' ');ok(s.includes('2/2'),'ArrowLeft on the first tab wraps to the last ('+s+')');
-    await p.keyboard.press('Home');s=(await sel()).join(' ');ok(s.includes('0/0'),'Home goes to the first tab ('+s+')');
-    const panelShown=await p.evaluate(()=>[...document.querySelectorAll('[role=tablist][aria-label="Choose a route"] ~ section.bk-tab')].map(x=>!x.hidden));
+    const sel=()=>p.evaluate(()=>{const b=document.querySelector('[role=tablist]');return [...b.children].findIndex(t=>t.getAttribute('aria-selected')==='true')+'/'+[...b.children].findIndex(t=>t===document.activeElement);});
+    await p.locator(TABS).first().focus();
+    await p.keyboard.press('ArrowRight');let s=await sel();
+    ok(s==='1/1','ArrowRight moves to the next tab, shows it and puts the focus on it ('+s+')');
+    await p.keyboard.press('End');s=await sel();ok(s==='2/2','End goes to the last tab ('+s+')');
+    await p.keyboard.press('ArrowRight');s=await sel();ok(s==='0/0','ArrowRight on the last tab wraps to the first ('+s+')');
+    await p.keyboard.press('ArrowLeft');s=await sel();ok(s==='2/2','ArrowLeft on the first tab wraps to the last ('+s+')');
+    await p.keyboard.press('Home');s=await sel();ok(s==='0/0','Home goes to the first tab ('+s+')');
+    const panelShown=await p.evaluate(()=>[...document.querySelectorAll('[role=tablist] ~ section.bk-tab')].map(x=>!x.hidden));
     ok(JSON.stringify(panelShown)==='[true,false,false]','…and only that tab\'s section is shown ('+panelShown+')');
     /* focus order: the tab on show, then its panel */
     await p.keyboard.press('Tab');
@@ -143,44 +140,36 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     ok(afterTab.role==='tabpanel'&&!afterTab.hidden,'Tab from the tab on show goes to its panel, so a tab of prose alone can be read from the keyboard');
     /* a link into another tab shows it */
     await p.locator('a.bk-link[href="#hilly-loop"]').click();
-    const afterLink=await p.evaluate(()=>({sel:[...document.querySelectorAll('[role=tablist][aria-label="Choose a route"] [role=tab]')].map(t=>t.getAttribute('aria-selected')),
+    const afterLink=await p.evaluate(()=>({sel:[...document.querySelectorAll('[role=tablist] [role=tab]')].map(t=>t.getAttribute('aria-selected')),
       head:(()=>{const h=document.getElementById('hilly-loop');const r=h.getBoundingClientRect();return r.height>0&&r.bottom>0&&r.top<innerHeight;})(),hash:location.hash}));
     ok(afterLink.sel.join()==='false,false,true'&&afterLink.head&&afterLink.hash==='#hilly-loop','a link in the text to a tab not on show shows that tab, and the heading is in view ('+JSON.stringify(afterLink)+')');
     /* a link to the very heading the address already names: the address does not change, so there is no hashchange and the click alone must show the tab */
-    await p.goto(BASE+'compile-reading/with-script.html#hilly-loop');
-    await p.locator(actTabs).first().click();
-    ok(await p.evaluate(()=>location.hash==='#hilly-loop'&&[...document.querySelectorAll('[role=tablist][aria-label="Choose a route"] [role=tab]')].map(t=>t.getAttribute('aria-selected')).join()==='true,false,false'),'(set up) the reader is on the first tab while the address still names the third');
+    await p.goto(BASE+'compile-reading-one/with-script.html#hilly-loop');
+    await p.locator(TABS).first().click();
+    ok(await p.evaluate(()=>location.hash==='#hilly-loop')&&(await sels())==='true,false,false','(set up) the reader is on the first tab while the address still names the third');
     await p.locator('a.bk-link[href="#hilly-loop"]').click();
-    ok(await p.evaluate(()=>[...document.querySelectorAll('[role=tablist][aria-label="Choose a route"] [role=tab]')].map(t=>t.getAttribute('aria-selected')).join()==='false,false,true'&&document.getElementById('hilly-loop').getBoundingClientRect().height>0),'a link to the heading the address already names still shows its tab (no hashchange, only the click)');
-    await p.goto(BASE+'compile-reading/with-script.html');
-    /* the module tab: "During" holds "On the path" */
-    await p.evaluate(()=>{location.hash='#on-the-path';});await p.waitForTimeout(100);
-    const during=await p.evaluate(()=>({sel:[...document.querySelectorAll('[role=tablist][aria-label="A walk in the park"] [role=tab]')].map(t=>t.getAttribute('aria-selected')),
-      shown:document.getElementById('on-the-path').getBoundingClientRect().height>0}));
-    ok(during.sel.join()==='false,true'&&during.shown,'a #fragment that points into the module\'s second tab shows that tab ('+JSON.stringify(during)+')');
+    ok((await sels())==='false,false,true'&&await p.evaluate(()=>document.getElementById('hilly-loop').getBoundingClientRect().height>0),'a link to the heading the address already names still shows its tab (no hashchange, only the click)');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
+    await p.evaluate(()=>{location.hash='#long-loop';});await p.waitForTimeout(100);
+    ok((await sels())==='false,true,false'&&await p.evaluate(()=>document.getElementById('long-loop').getBoundingClientRect().height>0),'a #fragment that points at a tab\'s heading shows that tab');
     /* nothing kept */
     ok(JSON.stringify(await storage(p))==='{"local":0,"session":0,"cookie":"","idb":0}','nothing is stored: no localStorage, sessionStorage, cookie or database');
-    await p.goto(BASE+'compile-reading/with-script.html');
-    ok((await p.evaluate(()=>[...document.querySelectorAll('[role=tab]')].map(t=>t.getAttribute('aria-selected')).join()))==='true,false,true,false,false','a reload starts on the first tab of each bar again');
-    /* an address that points into a tab inside a hidden tab: both are shown */
-    await p.goto(BASE+'compile-reading/with-script.html#hilly-loop');
-    const deep=await p.evaluate(()=>({mod:[...document.querySelectorAll('[role=tablist][aria-label="A walk in the park"] [role=tab]')].map(t=>t.getAttribute('aria-selected')).join(),
-      act:[...document.querySelectorAll('[role=tablist][aria-label="Choose a route"] [role=tab]')].map(t=>t.getAttribute('aria-selected')).join(),
-      shown:document.getElementById('hilly-loop').getBoundingClientRect().height>0}));
-    ok(deep.act==='false,false,true'&&deep.mod==='true,false'&&deep.shown,'opening the page at #hilly-loop opens on that tab ('+JSON.stringify(deep)+')');
-    await p.goto(BASE+'compile-reading/with-script.html#on-the-path');
-    ok(await p.evaluate(()=>document.getElementById('on-the-path').getBoundingClientRect().height>0&&document.querySelector('[role=tablist][aria-label="A walk in the park"] [aria-selected=true]').textContent==='During'),'opening the page at #on-the-path (inside the second module tab) opens on that tab');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
+    ok((await sels())==='true,false,false','a reload starts on the first tab again');
+    /* an address that points into a tab on opening the page */
+    await p.goto(BASE+'compile-reading-one/with-script.html#hilly-loop');
+    ok((await sels())==='false,false,true'&&await p.evaluate(()=>document.getElementById('hilly-loop').getBoundingClientRect().height>0),'opening the page at #hilly-loop opens on that tab');
     /* print */
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
     await p.emulateMedia({media:'print'});
     const pr=await p.evaluate(()=>({tabs:[...document.querySelectorAll('section.bk-tab')].map(x=>x.getBoundingClientRect().height>0&&getComputedStyle(x).display!=='none'),
       bars:[...document.querySelectorAll('.bk-tabbar')].map(x=>getComputedStyle(x).display)}));
-    ok(pr.tabs.length===5&&pr.tabs.every(Boolean)&&pr.bars.every(x=>x==='none'),'print: all five tabs are shown and the bars are left off ('+JSON.stringify(pr)+')');
+    ok(pr.tabs.length===3&&pr.tabs.every(Boolean)&&pr.bars.every(x=>x==='none'),'print: all three tabs are shown and the bar is left off ('+JSON.stringify(pr)+')');
     await p.emulateMedia({media:'screen'});
 
     /* ---- the citation preview (a mouse) ---- */
     const mark1='a.bk-mark-a[href="#bk-note-1"]';
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
     await p.hover(mark1);
     await p.waitForSelector('.bk-peek:not([hidden])',{timeout:2000});
     const pv=await p.evaluate(()=>{const e=document.querySelector('.bk-peek'),m=document.querySelector('a.bk-mark-a[href="#bk-note-1"]'),r=e.getBoundingClientRect(),mr=m.getBoundingClientRect();
@@ -216,40 +205,36 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     await p.hover(mark1);await p.click(mark1);
     ok(await p.evaluate(()=>location.hash==='#bk-note-1'&&document.querySelector('.bk-peek').hidden),'a mouse click on the mark still goes to the foot\'s note, and the box closes');
     /* the keyboard */
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
     await p.focus('a.bk-mark-a[href="#bk-note-2"]');
     ok(await p.evaluate(()=>!document.querySelector('.bk-peek').hidden&&/Almanac/.test(document.querySelector('.bk-peek').textContent)),'keyboard focus on a mark shows its note');
     await p.keyboard.press('Enter');
     ok(await p.evaluate(()=>location.hash==='#bk-note-2'),'Enter on the focused mark goes to the foot');
     /* a mark inside a tab that is not showing is never shown by hover: it is not there to hover; one in a shown tab works */
-    await p.goto(BASE+'compile-reading/with-script.html');
-    await p.locator(actTabs).nth(1).click();
+    await p.goto(BASE+'compile-reading-one/with-script.html');
+    await p.locator(TABS).nth(1).click();
     await p.hover('a.bk-mark-a[href="#bk-note-3"]');await p.waitForSelector('.bk-peek:not([hidden])');
     ok(await p.evaluate(()=>/pond path/.test(document.querySelector('.bk-peek').textContent)),'a mark inside a tab the reader opened shows its note too');
 
     /* ---- Open all ---- */
-    await p.goto(BASE+'compile-reading/with-script.html');
-    const sw=await p.evaluate(()=>[...document.querySelectorAll('.bk-foldsw')].map(s=>({where:s.parentElement.querySelector(':scope > h3').textContent.replace(/#/,'').trim(),role:s.getAttribute('role'),checked:s.getAttribute('aria-checked'),text:s.textContent,tag:s.tagName,prev:s.previousElementSibling&&s.previousElementSibling.tagName})));
-    ok(sw.length===2&&sw.map(x=>x.where).join('|')==='Choose a route|What to bring','one switch for each activity that has a fold the author made, and none for the others ('+JSON.stringify(sw.map(x=>x.where))+')');
-    ok(sw.every(x=>x.role==='switch'&&x.checked==='false'&&x.text==='Open all'&&x.tag==='BUTTON'&&x.prev==='H3'),'each is a button with role switch, off, named "Open all", under its activity\'s heading');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
+    const sw=await p.evaluate(()=>[...document.querySelectorAll('.bk-foldsw')].map(s=>({role:s.getAttribute('role'),checked:s.getAttribute('aria-checked'),text:s.textContent,tag:s.tagName,prev:s.previousElementSibling&&s.previousElementSibling.className,parent:s.parentElement.tagName})));
+    ok(sw.length===1&&sw[0].parent==='ARTICLE'&&sw[0].prev==='bk-toc','one switch for the page (it has folds, and no activity of its own), after its title, lede and contents ('+JSON.stringify(sw)+')');
+    ok(sw.every(x=>x.role==='switch'&&x.checked==='false'&&x.text==='Open all'&&x.tag==='BUTTON'),'it is a button with role switch, off, named "Open all"');
     const foldState=()=>p.evaluate(()=>{
-      const sec=n=>[...document.querySelectorAll('section.bk-activity')].find(s=>s.querySelector(':scope > h3').textContent.replace(/#/,'').trim()===n);
-      const kinds=n=>[...sec(n).querySelectorAll('details')].map(d=>(/bk-hint|bk-solution/.test(d.className)?'q':'a')+(d.open?'1':'0')).join(' ');
-      return {route:kinds('Choose a route'),bring:kinds('What to bring'),checked:[...document.querySelectorAll('.bk-foldsw')].map(s=>s.getAttribute('aria-checked')).join()};});
-    let fs0=await foldState();ok(fs0.route==='a0 a0'&&fs0.bring==='a0 a0 q0 q0','folds start closed as written ('+JSON.stringify(fs0)+')');
-    await p.locator('.bk-foldsw').nth(1).click();fs0=await foldState();
-    ok(fs0.bring==='a1 a1 q0 q0'&&fs0.route==='a0 a0'&&fs0.checked==='false,true','Open all opens the activity\'s folds only: not a hint or a solution, not another activity\'s ('+JSON.stringify(fs0)+')');
-    await p.locator('.bk-foldsw').nth(1).click();fs0=await foldState();ok(fs0.bring==='a0 a0 q0 q0'&&fs0.checked==='false,false','pressed again it folds them ('+fs0.bring+')');
-    await p.locator('.bk-foldsw').first().click();fs0=await foldState();
-    ok(fs0.route==='a1 a1','the switch of an activity with tabs reaches the folds in tabs that are not showing ('+fs0.route+')');
-    await p.evaluate(()=>{const sec=[...document.querySelectorAll('section.bk-activity')].find(s=>s.querySelector(':scope > h3').textContent.startsWith('What to bring'));
-      sec.querySelectorAll('details:not(.bk-hint):not(.bk-solution)').forEach(d=>{d.open=true;});});
+      const kinds=[...document.querySelectorAll('.booklet details')].map(d=>(/bk-hint|bk-solution/.test(d.className)?'q':'a')+(d.open?'1':'0')).join(' ');
+      return {kinds,checked:[...document.querySelectorAll('.bk-foldsw')].map(s=>s.getAttribute('aria-checked')).join()};});
+    let fs0=await foldState();ok(fs0.kinds==='a0 a0 a0 a0 q0 q0'&&fs0.checked==='false','folds start closed as written: four the author folded (two in tabs that are not showing), a hint and a solution ('+JSON.stringify(fs0)+')');
+    await p.locator('.bk-foldsw').click();fs0=await foldState();
+    ok(fs0.kinds==='a1 a1 a1 a1 q0 q0'&&fs0.checked==='true','Open all opens the author\'s folds, including those in tabs not showing, and not a hint or a solution ('+JSON.stringify(fs0)+')');
+    await p.locator('.bk-foldsw').click();fs0=await foldState();ok(fs0.kinds==='a0 a0 a0 a0 q0 q0'&&fs0.checked==='false','pressed again it folds them ('+fs0.kinds+')');
+    await p.evaluate(()=>{document.querySelectorAll('.booklet details:not(.bk-hint):not(.bk-solution)').forEach(d=>{d.open=true;});});
     await p.waitForTimeout(50);
-    ok((await foldState()).checked==='true,true','folds opened by hand turn the switch on');
+    ok((await foldState()).checked==='true','folds opened by hand turn the switch on');
     await p.evaluate(()=>{const d=[...document.querySelectorAll('details.bk-k-tip')].pop();d.open=false;});await p.waitForTimeout(50);
-    ok((await foldState()).checked==='true,false','…and closing one turns it off');
+    ok((await foldState()).checked==='false','…and closing one turns it off');
     /* printing */
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
     const beforeP=await p.evaluate(()=>{const all=[...document.querySelectorAll('.booklet details')];all[1].open=true;const was=all.map(d=>d.open);
       window.dispatchEvent(new Event('beforeprint'));const during=all.map(d=>d.open);window.dispatchEvent(new Event('afterprint'));return {was,during,after:all.map(d=>d.open)};});
     ok(beforeP.during.every(Boolean)&&beforeP.during.length===6,'before printing every fold is open (four the author folded, a hint and a solution): '+beforeP.during.length);
@@ -262,39 +247,39 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     ok(pg.n===1&&pg.prev==='bk-toc'&&pg.next==='gathering'&&pg.parent==='ARTICLE','a fold outside any activity gets one switch for the page, after its title, lede and contents ('+JSON.stringify(pg)+')');
     await p.click('.bk-foldsw');
     ok(await p.evaluate(()=>document.querySelector('details.bk-fold').open&&document.querySelector('.bk-foldsw').getAttribute('aria-checked')==='true'),'…and it opens that fold');
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
 
     /* ---- copy a heading's link ---- */
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
     await p.evaluate(()=>navigator.clipboard.writeText('before'));
-    const anchor='h3#what-to-bring > a.bk-anchor';
+    const anchor='h2#short-loop > a.bk-anchor';
     await p.click(anchor);
     await p.waitForFunction(()=>document.querySelector('.bk-said').textContent!=='',null,{timeout:2000});
     const cp=await p.evaluate(async()=>({clip:await navigator.clipboard.readText(),live:document.querySelector('.bk-said').textContent,role:document.querySelector('.bk-said').getAttribute('role'),
-      a:document.querySelector('h3#what-to-bring > a.bk-anchor').textContent,hash:location.hash,url:location.href}));
-    ok(cp.clip===cp.url&&/#what-to-bring$/.test(cp.clip),'the heading\'s full address is on the clipboard ('+cp.clip+')');
+      a:document.querySelector('h2#short-loop > a.bk-anchor').textContent,hash:location.hash,url:location.href}));
+    ok(cp.clip===cp.url&&/#short-loop$/.test(cp.clip),'the heading\'s full address is on the clipboard ('+cp.clip+')');
     ok(cp.live==='Link copied'&&cp.role==='status'&&cp.a==='✓','…said in words to a status region, and by a tick in the link ('+cp.live+')');
-    ok(cp.hash==='#what-to-bring','…and the link still goes to the heading');
+    ok(cp.hash==='#short-loop','…and the link still goes to the heading');
     await p.waitForFunction(()=>document.querySelector('.bk-said').textContent==='',null,{timeout:4000});
-    ok(await p.evaluate(()=>document.querySelector('h3#what-to-bring > a.bk-anchor').textContent==='#'&&!document.querySelector('.bk-copied')),'…and the link is itself again after a moment');
+    ok(await p.evaluate(()=>document.querySelector('h2#short-loop > a.bk-anchor').textContent==='#'&&!document.querySelector('.bk-copied')),'…and the link is itself again after a moment');
     ok(JSON.stringify(await storage(p))==='{"local":0,"session":0,"cookie":"","idb":0}','copying stores nothing');
     /* a click with a modifier key, or with another button, is the browser's own (a new tab, say): nothing is copied */
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
     await p.evaluate(async()=>{await navigator.clipboard.writeText('before');window.addEventListener('click',e=>e.preventDefault());});
     for(const init of [{ctrlKey:true},{metaKey:true},{shiftKey:true},{altKey:true},{button:1}]){
-      await p.evaluate(i=>document.querySelector('h3#what-to-bring > a.bk-anchor').dispatchEvent(new MouseEvent('click',Object.assign({bubbles:true,cancelable:true},i))),init);
+      await p.evaluate(i=>document.querySelector('h2#short-loop > a.bk-anchor').dispatchEvent(new MouseEvent('click',Object.assign({bubbles:true,cancelable:true},i))),init);
       await p.waitForTimeout(120);
       ok(await p.evaluate(async()=>(await navigator.clipboard.readText())==='before'&&document.querySelector('.bk-said').textContent===''),'a click with '+Object.keys(init)[0]+' copies nothing');}
     /* no clipboard: only a link */
     const c2=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:true});await serve(c2);
     await c2.addInitScript(()=>{try{Object.defineProperty(navigator,'clipboard',{value:undefined});}catch(e){}});
-    const p2=await c2.newPage();const e2=[];await open(c2,p2,'compile-reading/with-script.html',e2);
-    await p2.click('h3#what-to-bring > a.bk-anchor');await p2.waitForTimeout(200);
-    ok(await p2.evaluate(()=>location.hash==='#what-to-bring'&&document.querySelector('.bk-said').textContent===''&&document.querySelector('h3#what-to-bring > a.bk-anchor').textContent==='#')&&!e2.length,'with no clipboard the link is only a link, and nothing breaks');
+    const p2=await c2.newPage();const e2=[];await open(c2,p2,'compile-reading-one/with-script.html',e2);
+    await p2.click('h2#short-loop > a.bk-anchor');await p2.waitForTimeout(200);
+    ok(await p2.evaluate(()=>location.hash==='#short-loop'&&document.querySelector('.bk-said').textContent===''&&document.querySelector('h2#short-loop > a.bk-anchor').textContent==='#')&&!e2.length,'with no clipboard the link is only a link, and nothing breaks');
     await c2.close();
 
     /* ---- contrast of what the script adds ---- */
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
     await p.hover(mark1);await p.waitForSelector('.bk-peek:not([hidden])');
     for(const scheme of ['light','dark']){
       await p.emulateMedia({colorScheme:scheme});
@@ -310,7 +295,7 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
         if(/with-script/.test(file)){await p.hover(mark1);await p.waitForSelector('.bk-peek:not([hidden])');}
         const res=await p.evaluate(()=>axe.run(document,{runOnly:['wcag2a','wcag2aa']}));
         return {v:res.testEngine.version,found:res.violations.flatMap(x=>x.nodes.map(n=>x.id+' '+n.target.join(' ')))};};
-      const base=await axeOn('compile-reading/index.html'),withJs=await axeOn('compile-reading/with-script.html');
+      const base=await axeOn('compile-reading-one/index.html'),withJs=await axeOn('compile-reading-one/with-script.html');
       const added=withJs.found.filter(x=>!base.found.includes(x));
       ok(added.length===0,'axe '+withJs.v+' (WCAG 2 A and AA) finds nothing with the script that it does not find without it'+(added.length?': '+added.join('; '):'')+' ('+base.found.length+' already on the compiled page)');}
 
@@ -329,7 +314,7 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
   /* ================= touch: the first tap shows the note, the second goes to the foot ================= */
   {
     const ctx=await b.newContext({viewport:{width:390,height:800},hasTouch:true,isMobile:true,javaScriptEnabled:true});await serve(ctx);
-    const p=await ctx.newPage();const errs=[];await open(ctx,p,'compile-reading/with-script.html',errs);
+    const p=await ctx.newPage();const errs=[];await open(ctx,p,'compile-reading-one/with-script.html',errs);
     const mark='a.bk-mark-a[href="#bk-note-1"]';
     await p.tap(mark);
     let st=await p.evaluate(()=>({open:!document.querySelector('.bk-peek').hidden,hash:location.hash,txt:document.querySelector('.bk-peek').textContent.slice(0,30),
@@ -338,7 +323,7 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     await p.tap(mark);
     st=await p.evaluate(()=>({hash:location.hash,open:!document.querySelector('.bk-peek').hidden}));
     ok(st.hash==='#bk-note-1'&&!st.open,'touch: a second tap on the same mark goes to the foot ('+JSON.stringify(st)+')');
-    await p.goto(BASE+'compile-reading/with-script.html');
+    await p.goto(BASE+'compile-reading-one/with-script.html');
     await p.tap(mark);await p.tap('h1');
     ok(await p.evaluate(()=>document.querySelector('.bk-peek').hidden),'touch: a tap elsewhere dismisses the box');
     ok(!errs.length,'touch: no error is logged');
@@ -455,10 +440,10 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
   }
 
 
-  /* ================= script ON: the views lane's real markup (static fixtures, PR #82 at 6726a69) ================= */
+  /* ================= script ON: the compiler's own views, compiled here (the views fixture's page "The week", at <name>/week/) ================= */
   {
     const ctx=await b.newContext({viewport:{width:1000,height:900},javaScriptEnabled:true});await serve(ctx);
-    const errs=[];const p=await ctx.newPage();await open(ctx,p,'views-lane/index.html',errs);
+    const errs=[];const p=await ctx.newPage();await open(ctx,p,'compile-views/week/with-script.html',errs);
     const ctlOf=id=>'#'+id+' + .bk-vctl';
     /* the view after a heading, drawn as tokens in document order: a row by its value in a column, a group heading by its words;
        a token starts with ~ when it is not shown (itself or something around it is not displayed) */
@@ -473,8 +458,8 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     const flip=id=>p.click(ctlOf(id)+' .bk-vdir');
     const live=id=>p.evaluate(i=>document.querySelector('#'+i+' + .bk-vctl .bk-vlive').textContent,id);
 
-    const all=await p.evaluate(()=>[...document.querySelectorAll('h3[id]')].filter(h=>h.nextElementSibling&&h.nextElementSibling.classList.contains('bk-vctl')).map(h=>h.id));
-    ok(JSON.stringify(all)==='["tiles","tiles-grouped","cards","cards-grouped","table","table-grouped-limited","list","list-grouped","nested-list","bars","bars-grouped"]','controls over every real view of two rows or more (tiles, cards, tables, lists, a nested list, bars) and none over a line chart ('+all+')');
+    const all=await p.evaluate(()=>[...document.querySelectorAll('h2[id]')].filter(h=>h.nextElementSibling&&h.nextElementSibling.classList.contains('bk-vctl')).map(h=>h.id));
+    ok(JSON.stringify(all)==='["tiles","tiles-grouped","cards","cards-grouped","table","table-grouped-limited","list","list-grouped","nested-list","bars","bars-grouped","numbers-no-picture-can-use","keys-with-quotes-and-names-an-object-has"]','controls over every view of two rows or more (tiles, cards, tables, lists, a nested list, bars, and the views with odd keys and values) and none over a line chart, a one-row view or an empty one ('+all+')');
 
     /* the groups: a filter and a sort keep every row with its own group, and Clear puts back exactly what was written */
     const GROUPED=[['tiles-grouped','what','trays',['#warn','Trays left over']],['cards-grouped','item','sunflower',['#Front','Sunflower seeds']],
@@ -582,6 +567,78 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
     await ctx.close();
   }
 
+  /* ================= a booklet of many pages: the parts on its contents page and on pages one folder deeper ================= */
+  {
+    const ctx=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:true});
+    await ctx.grantPermissions(['clipboard-read','clipboard-write'],{origin:'http://localhost'});
+    const reqs=[],errs=[],bad=[];await serve(ctx);
+    const p=await ctx.newPage();p.on('request',r=>reqs.push(r.url()));p.on('response',r=>{if(r.status()>=400) bad.push(r.status()+' '+r.url());});
+    const tabsOf=()=>p.evaluate(()=>[...document.querySelectorAll('[role=tablist] [role=tab]')].map(t=>t.textContent+':'+t.getAttribute('aria-selected')).join('|'));
+    /* the contents page (a folder deep): the module's tabs, and a citation's box */
+    await open(ctx,p,'compile-reading/with-script.html',errs);
+    ok((await tabsOf())==='Plan:true|During:false','the contents page: a bar over the module\'s two tabs, the first on show ('+await tabsOf()+')');
+    await p.locator('[role=tab]').nth(1).click();
+    ok(await p.evaluate(()=>!document.getElementById('during').closest('section.bk-tab').hidden&&document.getElementById('plan').closest('section.bk-tab').hidden),'…pressing the second shows its tab and puts the first away');
+    await p.hover('a.bk-mark-a[href="#bk-note-1"]');await p.waitForSelector('.bk-peek:not([hidden])');
+    ok(await p.evaluate(()=>/Park Trail/.test(document.querySelector('.bk-peek').textContent)),'…a citation mark on the contents page shows its note');
+    /* a page one folder deeper: the script is two folders up */
+    await open(ctx,p,'compile-reading/route/with-script.html',errs);
+    ok(await p.evaluate(()=>/\.\.\/\.\.\/booklet\/booklet\.js$/.test(document.querySelector('script[src$="booklet.js"]').getAttribute('src'))),'(set up) this page loads the script from two folders up');
+    ok((await tabsOf())==='Short loop:true|Long loop:false|Hilly loop:false','an activity page: a bar over its three tabs ('+await tabsOf()+')');
+    await p.locator('a.bk-link[href="#hilly-loop"]').click();
+    ok((await tabsOf())==='Short loop:false|Long loop:false|Hilly loop:true','a link in the text to a tab not on show shows it, one folder deep');
+    await p.locator('[role=tab]').nth(1).click();
+    await p.hover('a.bk-mark-a[href="#bk-note-1"]');await p.waitForSelector('.bk-peek:not([hidden])');
+    ok(await p.evaluate(()=>/pond path/.test(document.querySelector('.bk-peek').textContent)&&document.querySelectorAll('.bk-peek [id]').length===0),'a citation in a tab shows its note (the activity page\'s own note 1), with no id of its own');
+    await p.mouse.move(5,5);
+    await p.click('.bk-foldsw');
+    ok(await p.evaluate(()=>[...document.querySelectorAll('.booklet details')].map(d=>d.open).join()+'/'+document.querySelectorAll('.bk-foldsw').length)==='true,true/1','one Open all switch for the page, which opens the folds in the tabs too');
+    await p.evaluate(()=>navigator.clipboard.writeText('before'));
+    await p.locator('[role=tab]').first().click();
+    await p.click('h2#short-loop > a.bk-anchor');
+    await p.waitForFunction(()=>document.querySelector('.bk-said').textContent!=='',null,{timeout:2000});
+    ok(await p.evaluate(async()=>(await navigator.clipboard.readText())===location.href&&/\/compile-reading\/route\/with-script\.html#short-loop$/.test(location.href)),'a heading\'s link copies this deep page\'s own address');
+    /* a page of folds, a hint and a solution */
+    await open(ctx,p,'compile-reading/kit/with-script.html',errs);
+    ok(await p.evaluate(()=>[...document.querySelectorAll('.booklet details')].map(d=>(/bk-hint|bk-solution/.test(d.className)?'q':'a')+(d.open?'1':'0')).join(' '))==='a0 a0 q0 q0','(set up) the kit page: two folds, a hint and a solution, closed');
+    await p.click('.bk-foldsw');
+    ok(await p.evaluate(()=>[...document.querySelectorAll('.booklet details')].map(d=>(/bk-hint|bk-solution/.test(d.className)?'q':'a')+(d.open?'1':'0')).join(' '))==='a1 a1 q0 q0','Open all on the kit page opens the two folds and leaves the hint and the solution shut');
+    /* the quiz part and these parts in one script: pressing an answer on a page that also has Open all leaves both working */
+    await p.check('#bk-compile-reading-kit-q1-o2');
+    ok(await p.evaluate(()=>document.getElementById('bk-compile-reading-kit-q1-o2').checked&&[...document.querySelectorAll('.booklet details')].map(d=>d.open).join()==='true,true,false,false'&&document.querySelector('.bk-foldsw').getAttribute('aria-checked')==='true'),'an answer pressed on the kit page (the quiz part) leaves the folds and the Open all switch as they were');
+    await p.click('.bk-foldsw');
+    ok(await p.evaluate(()=>document.getElementById('bk-compile-reading-kit-q1-o2').checked&&[...document.querySelectorAll('.booklet details')].map(d=>d.open).join()==='false,false,false,false'),'…and Open all folding them leaves the answer as it was');
+    /* the compiler's own pages fixture: tabs on the contents page, cards that lead to the pages, and nothing broken */
+    await open(ctx,p,'compile-pages/with-script.html',errs);
+    ok(await p.evaluate(()=>document.querySelectorAll('[role=tablist]').length===1&&document.querySelectorAll('section.bk-tab[role=tabpanel]').length===2),'the pages fixture\'s contents page: one bar over its two tabs');
+    await p.locator('[role=tab]').nth(1).click();
+    ok(await p.evaluate(()=>[...document.querySelectorAll('a')].filter(a=>a.offsetParent&&/crust/.test(a.getAttribute('href')||'')).length>0),'…its cards for the second tab are there once the tab is shown');
+    await open(ctx,p,'compile-pages/flour/with-script.html',errs);
+    ok(await p.evaluate(()=>document.querySelector('a.bk-anchor')!==null&&document.querySelector('.bk-said')!==null),'an activity page of it: the share links are set up');
+    /* data views on a page one folder deep, and on its contents page (no views there: nothing is added) */
+    await open(ctx,p,'compile-views/week/with-script.html',errs);
+    ok(await p.evaluate(()=>document.querySelectorAll('.bk-vctl').length>=11),'the views fixture\'s week page, one folder deep: the controls are there');
+    await p.click('#numbers-no-picture-can-use + .bk-vctl .bk-vbtn');await p.fill('#numbers-no-picture-can-use + .bk-vctl .bk-vq','zzzz');
+    ok(await p.evaluate(()=>document.querySelector('#numbers-no-picture-can-use + .bk-vctl .bk-vlive').textContent==='Nothing matches.'),'a view of odd values filters on it');
+    await open(ctx,p,'compile-views/with-script.html',errs);
+    ok(await p.evaluate(()=>document.querySelectorAll('.bk-vctl,.bk-tabbar,.bk-foldsw,.bk-peek').length===0),'the views fixture\'s contents page has none of the markup the parts work on: nothing is added');
+    /* the stylesheet's other parts (the pages' chrome, the views, the quiz, print): what the parts add stays readable, light and dark, and print leaves it off */
+    for(const [file,sels] of [['compile-pages/with-script.html',['.bk-tabbtn','.bk-tabbtn[aria-selected=true]']],['compile-views/week/with-script.html',['.bk-vbtn']],['compile-reading/kit/with-script.html',['.bk-foldsw']]]){
+      await open(ctx,p,file,errs);
+      for(const scheme of ['light','dark']){
+        await p.emulateMedia({colorScheme:scheme});
+        const cs=await p.evaluate(ss=>{const bg=e=>{let x=e;while(x){const c=getComputedStyle(x).backgroundColor;if(c&&!/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c;x=x.parentElement;}return 'rgb(255, 255, 255)';};
+          return ss.map(s=>{const e=document.querySelector(s);return e?[s,getComputedStyle(e).color,bg(e)]:[s,null,null];});},sels);
+        for(const [s,fg,bgc] of cs) ok(fg&&ratio(fg,bgc)>=4.5,file+', '+scheme+': '+s+' keeps a readable contrast ('+(fg?ratio(fg,bgc).toFixed(1):'missing')+':1)');}
+      await p.emulateMedia({colorScheme:'light',media:'print'});
+      ok(await p.evaluate(()=>[...document.querySelectorAll('.bk-tabbar,.bk-foldsw,.bk-vctl,.bk-peek,.bk-said')].every(e=>getComputedStyle(e).display==='none')&&[...document.querySelectorAll('section.bk-tab')].every(e=>getComputedStyle(e).display!=='none')),file+', print: what the parts add is left off and every tab is shown');
+      await p.emulateMedia({media:'screen'});}
+    ok(JSON.stringify(await storage(p))==='{"local":0,"session":0,"cookie":"","idb":0}','nothing is stored on any of these pages');
+    ok(!bad.length&&reqs.every(u=>u.startsWith(BASE)||u.startsWith('data:')),'every file asked for was found, and none outside the page\'s own ('+(bad[0]||'')+')');
+    ok(!errs.length,'no error is logged on any of these pages'+(errs.length?' ('+errs[0]+')':''));
+    await ctx.close();
+  }
+
   /* ================= 3000 rows: a keystroke stays quick ================= */
   {
     const ctx=await b.newContext({viewport:{width:1000,height:900},javaScriptEnabled:true});await serve(ctx);
@@ -606,7 +663,7 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
   /* ================= a short screen: the citation box keeps to it ================= */
   for(const [w,h] of [[320,300],[390,260]]){
     const ctx=await b.newContext({viewport:{width:w,height:h},javaScriptEnabled:true});await serve(ctx);
-    const errs=[];const p=await ctx.newPage();await open(ctx,p,'compile-reading/with-script.html',errs);
+    const errs=[];const p=await ctx.newPage();await open(ctx,p,'compile-reading-one/with-script.html',errs);
     /* a note longer than the screen is tall (made-up words added to the foot's note before the box is made) */
     await p.evaluate(()=>{document.querySelector('#bk-note-1').appendChild(document.createTextNode(' '+'More made-up words to make this note long. '.repeat(16)));});
     /* the pointer goes to the mark by hand: on a screen this short the box may well cover the mark, and hover() would wait for it to clear */
@@ -627,7 +684,7 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
   /* ================= the box's id is not one the page already has ================= */
   {
     const ctx=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:true});await serve(ctx);
-    const errs=[];const p=await ctx.newPage();await open(ctx,p,'compile-reading/peek-id.html',errs);
+    const errs=[];const p=await ctx.newPage();await open(ctx,p,'compile-reading-one/peek-id.html',errs);
     await p.hover('a.bk-mark-a[href="#bk-note-1"]');await p.waitForSelector('.bk-peek:not([hidden])');
     const r=await p.evaluate(()=>{const e=document.querySelector('.bk-peek'),m=document.querySelector('a.bk-mark-a[href="#bk-note-1"]');
       return {id:e.id,same:document.querySelectorAll('[id="bk-peek-1"]').length,by:m.getAttribute('aria-describedby'),found:document.getElementById(m.getAttribute('aria-describedby'))===e};});
@@ -640,20 +697,20 @@ const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?awa
   {
     const off=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:false});await serve(off);
     const p=await off.newPage();
-    for(const file of ['compile-reading/with-script.html','compile-reading/index.html']){
+    for(const file of ['compile-reading-one/with-script.html','compile-reading-one/index.html']){
       await p.goto(BASE+file);
       const dom=await p.evaluate(()=>({added:document.querySelectorAll('[role=tab],[role=tablist],[role=tabpanel],[role=tooltip],[role=switch],.bk-tabbar,.bk-peek,.bk-foldsw,.bk-vctl,.bk-said,.bk-tabbtn').length,
         hidden:document.querySelectorAll('.booklet [hidden]').length,tabs:[...document.querySelectorAll('section.bk-tab')].map(x=>x.getBoundingClientRect().height>0),
-        heads:[...document.querySelectorAll('section.bk-tab > h2, section.bk-tab > h3, section.bk-tab > h4')].map(h=>h.textContent.replace(/#/,'').trim()),
+        heads:[...document.querySelectorAll('section.bk-tab > h2')].map(h=>h.textContent.replace(/#/,'').trim()),
         anchors:[...document.querySelectorAll('a.bk-anchor')].map(a=>a.textContent+a.getAttribute('href').charAt(0)).every(x=>x==='##'),
         folds:[...document.querySelectorAll('details')].map(d=>d.open)}));
       ok(dom.added===0&&dom.hidden===0,file+', scripting off: nothing is added and nothing is hidden');
-      ok(dom.tabs.length===5&&dom.tabs.every(Boolean)&&dom.heads.join('|')==='Plan|Short loop|Long loop|Hilly loop|During','…every tab is shown under its name ('+dom.heads.join(', ')+')');
+      ok(dom.tabs.length===3&&dom.tabs.every(Boolean)&&dom.heads.join('|')==='Short loop|Long loop|Hilly loop','…every tab is shown under its name ('+dom.heads.join(', ')+')');
       ok(dom.anchors&&dom.folds.every(x=>!x),'…the share links are plain links and every fold is closed as written');}
     const viewsOff=await off.newPage();await viewsOff.goto(BASE+'views-off.html');
     ok(await viewsOff.evaluate(()=>document.querySelectorAll('.bk-vctl').length===0&&document.querySelectorAll('[data-bk-row][hidden]').length===0&&document.querySelectorAll('#v-table tbody tr').length===5),'the views, scripting off: no control, every row shown, in the order written');
-    const lane=await off.newPage();await lane.goto(BASE+'views-lane/off.html');
-    ok(await lane.evaluate(()=>document.querySelectorAll('.bk-vctl,[data-bk-off],[hidden]').length===0&&[...document.querySelectorAll('[data-bk-row]')].every(r=>r.getClientRects().length||r.closest('details:not([open])'))),'the views lane\'s real views, scripting off: no control, nothing hidden, every row in the order written');
+    const lane=await off.newPage();await lane.goto(BASE+'compile-views/week/index.html');
+    ok(await lane.evaluate(()=>document.querySelectorAll('.bk-vctl,[data-bk-off],[hidden]').length===0&&[...document.querySelectorAll('[data-bk-row]')].every(r=>r.getClientRects().length||r.closest('details:not([open])'))),'the compiler\'s own views, scripting off: no control, nothing hidden, every row in the order written');
     await off.close();
     /* scripting on, a page with none of the markup: byte for byte what scripting off shows */
     const on=await b.newContext({viewport:{width:1000,height:800},javaScriptEnabled:true});await serve(on);

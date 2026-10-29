@@ -56,7 +56,7 @@
       var href = a && a.getAttribute("href");
       if (!root || !href || href.charAt(0) !== "#") return;
       if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") return;
-      var url = window.location.href.split("#")[0] + href;
+      var url = location.href.split("#")[0] + href;
       navigator.clipboard.writeText(url).then(function () { say(a, root); }, function () { /* refused: only a link */ });
     });
   }

@@ -1,4 +1,4 @@
-// What the compiler (compile/, compile 0.1.0) keeps, what it never publishes, and how it behaves as a command.
+// What the compiler (compile/) keeps, what it never publishes, and how it behaves as a command.
 //   1. Nothing lost. For each example and each page-shaped fixture, the design is walked whole by the test's own walk
 //      (not draw.js's, nor the renderer helpers draw.js reads it with): every string of every block, module, activity,
 //      tab, page, citation and source, a prose block's as the renderer's own Markdown engine reads it with its plain
@@ -50,10 +50,10 @@ const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
    renderer does not draw it either, or the compiler marks it (and the coverage test holds the mark), or it is a copy of
    words counted where they stand. A reason no file uses fails the test, so the list cannot grow stale. */
 const SETTINGS=new Set(["id","type","kind","engine","as","from","module","widget","booklet","lang","placement","color","tone","badge",
-  "parent","cell","each","tab","key","keys","fields","svg","group","chips","regions"]);
+  "parent","cell","each","tab","key","keys","fields","svg","group","chips","regions","icon"]);
 const LEFT={
   version:"the booklet's and each module's version (a module's notice, version and all, is drawn)",
-  theme:"the booklet's own look: marked (compile 0.2), and held by the coverage test",
+  theme:"the booklet's own look: variables on the article, not words; held by test/compile-views.test.js",
   figures:"a figure: drawn where its prose places it, and held by the coverage test",
   copy:"a lede or a blurb: the renderer's copy of a paragraph, counted where it stands",
   calloutLabel:"a callout's label: the renderer's name for it, its title or else its kind",
@@ -61,7 +61,7 @@ const LEFT={
   moduleTitle:"a module's title that is the booklet's own: drawn once",
   titleOnce:"a title whose words open a prose block below it (its leading heading): drawn once",
   hidden:"an activity the renderer does not show (home: false)",
-  marked:"a block the compiler marks (a query): the coverage test holds the mark",
+  queryData:"a query's rows, the names of its fields and its view settings: which rows and fields are drawn is the query's own (limit, fields, group, a summary), held by test/compile-views.test.js",
   each:"a question asked for each pick in another: marked",
   widgetMarked:"a widget not in the file, or of an engine the compiler does not draw: marked",
   citation:"a citation's source key and the date it was checked, which the renderer does not draw",
@@ -112,6 +112,7 @@ function designUnits(P){const d=P.design,units=[];
         if(k==="version"&&(where==="design"||key==="modules")){leave("version");continue;}
         if((key==="activities"&&k==="lede")||(key==="modules"&&k==="blurb")){leave("copy");continue;}
         if(v.type==="callout"&&k==="label"){leave("calloutLabel");continue;}
+        if(v.type==="query"&&(k==="view"||k==="data"||k==="summary"||k==="field")){leave("queryData");continue;}
         if(key==="citations"&&(k==="source"||k==="verifiedOn")){leave("citation");continue;}
         if(key==="activities"&&k==="title"&&ctx.oneUnder){leave("oneTitle");continue;}
         if(key==="modules"&&k==="title"&&tokens(x).join(" ")===tokens(d.title||"").join(" ")){leave("moduleTitle");continue;}
@@ -131,16 +132,18 @@ const pageText=html=>{let t=String(html);const fm=/^---\ntitle: (.*)\n/.exec(t),
    block that is dropped fails even when each of its words stands somewhere else on the page. The units a short word is in
    are named. */
 const count=list=>{const m=new Map();for(const t of list) m.set(t,(m.get(t)||0)+1);return m;};
-function shortOf(units,page){const have=count(tokens(pageText(page))),need=count(units.flatMap(u=>u.words));
+function shortOf(units,page){const have=count(tokens(Array.isArray(page)?page.map(pageText).join(" "):pageText(page))),need=count(units.flatMap(u=>u.words));
   const short=[...need].filter(([t,n])=>(have.get(t)||0)<n).map(([t])=>t);
   return {short,need,where:units.filter(u=>u.words.some(w=>short.includes(w))).map(u=>u.where+": "+[...new Set(u.words.filter(w=>short.includes(w)))].join(" "))};}
 const LOST_SET=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWith(".booklet.md")).map(f=>path.join(ROOT,"examples",f)),
-  ...["compile-article","compile-kinds","figures","charts","data-views"].map(n=>path.join(FIX,n+".booklet.md"))];
+  ...["compile-article","compile-kinds","compile-quiz","figures","charts","data-views","compile-pages","compile-pair","compile-pair.es","compile-views","compile-theme"].map(n=>path.join(FIX,n+".booklet.md"))];
 {const run=C.compile(LOST_SET.map(file=>({file})),{form:"both",engine:X});
   run.results.forEach((r,i)=>{const P=X.parse(fs.readFileSync(LOST_SET[i],"utf8")),units=designUnits(P);
-    for(const form of ["standalone","site"]){const page=r.files.get(form+"/"+r.rep.name+"/index.html");
+    /* a booklet that shows two or more activities is a contents page and a page for each: its words are on them together */
+    for(const form of ["standalone","site"]){const page=[...r.files].filter(([k])=>k.startsWith(form+"/"+r.rep.name+"/")&&k.endsWith("/index.html")).map(([,v])=>v);
       const s=shortOf(units,page),n=[...s.need.values()].reduce((a,b)=>a+b,0);
-      chk("nothing lost: "+r.rep.source+" ("+form+", "+units.length+" blocks and parts, "+n+" words, each counted)",page&&n>40&&!s.short.length,s.where.slice(0,8).join(" | "));}});
+      chk("nothing lost: "+r.rep.source+" ("+form+", "+page.length+" page"+(page.length===1?"":"s")+", "+units.length+" blocks and parts, "+n+" words, each counted)",page.length&&n>40&&!s.short.length,s.where.slice(0,8).join(" | "));}});
+  chk("every block the walk meets is one the compiler draws (none is left to the mark list)",Object.values(D.COVERAGE.blocks).every(v=>v==="drawn"),JSON.stringify(D.COVERAGE.blocks));
   const unused=Object.keys(LEFT).filter(k=>!leftUsed.has(k));
   chk("every reason the walk leaves something out is used by some page ("+Object.keys(LEFT).length+")",!unused.length,unused.join(", "));}
 /* the count catches what a look-up misses: a paragraph whose every word is elsewhere on the page, taken out of the page */
@@ -173,7 +176,8 @@ const LOST_SET=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWi
   chk("no marker in any file written ("+files.length+" files), the report or what was printed",!found.length,found.join(", "));
   const P=X.parse(text);
   chk("…nor in the design or the problems the compiler is handed",!/qzxrec/i.test(JSON.stringify(P)),JSON.stringify(P).match(/.{40}qzxrec.{20}/i));
-  const page=fs.readFileSync(path.join(out,"standalone","compile-records","index.html"),"utf8");
+  /* the fixture shows two activities, so its questions are on its activities' pages, not the contents page */
+  const page=tree(path.join(out,"standalone","compile-records")).filter(f=>f.endsWith("index.html")).map(f=>fs.readFileSync(path.join(out,"standalone","compile-records",f),"utf8")).join("\n");
   chk("the design itself is drawn: its questions are on the page",page.includes("What did you sow?")&&page.includes("How much water?")&&page.includes("A pot"));
   chk("the report says the records were not read",/Records: never read\./.test(r.stdout));
   chk("the source file is unchanged",fs.readFileSync(src,"utf8")===text);}

@@ -2,7 +2,7 @@
 title: "Allotment charts"
 description: "A test fixture and a small example: charts drawn from rows a generator wrote. The page only draws them. Everything here is invented."
 ---
-<!-- booklet compile 0.1.0 · from charts.booklet.md · sha256:99f5ed252a344abc3e5b81a6cccdadd6e6dc3e3aaada8cb9bbd79b7085184158 -->
+<!-- booklet compile 0.1.0 · from charts.booklet.md · sha256:5dffa9ab5894304ff2129feab4aedb1fbfc3821416d762a45a9744b4a210f300 -->
 <article class="booklet" lang="en">
   <p class="bk-lede">A test fixture and a small example: charts drawn from rows a generator wrote. The page only draws them. Everything here is invented.</p>
   <nav class="bk-toc" aria-labelledby="bk-toc-h">
@@ -18,20 +18,228 @@ description: "A test fixture and a small example: charts drawn from rows a gener
   </nav>
   <h2 id="harvest-by-crop">Harvest by crop <a class="bk-anchor" href="#harvest-by-crop" aria-label="Link to this section">#</a></h2>
   <p>Bars, one per row, in the order given. A row's <code>tone</code> colours its bar.</p>
-  <!-- booklet: the query over “harvest”, as bars (activity “Charts”): a query view: not compiled yet -->
+  <div class="bk-view bk-panel" data-bk-view="bars" role="group" aria-label="Bar chart, 6 bars, from 3.75 to 30.25">
+    <ul class="bk-ch-list">
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Tomatoes</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar bk-tone-good" x="0" y="1" width="75.63" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">30.25</span><span class="bk-sr">Good</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Courgettes</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar bk-tone-good" x="0" y="1" width="45" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">18</span><span class="bk-sr">Good</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Beans</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar bk-tone-warn" x="0" y="1" width="31.25" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">12.5</span><span class="bk-sr">Needs a look</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Apples from the old tree by the north fence</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar bk-tone-warn" x="0" y="1" width="17.5" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">7</span><span class="bk-sr">Needs a look</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Carrots</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar bk-tone-bad" x="0" y="1" width="9.38" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">3.75</span><span class="bk-sr">Needs action</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Rhubarb</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"></svg><span class="bk-ch-v" data-bk-col="kilos">–</span></li>
+    </ul>
+    <details class="bk-ch-nums">
+      <summary>Show the numbers</summary>
+      <div class="bk-table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Crop</th>
+              <th scope="col">Kilos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tomatoes</td>
+              <td>30.25</td>
+            </tr>
+            <tr>
+              <td>Courgettes</td>
+              <td>18</td>
+            </tr>
+            <tr>
+              <td>Beans</td>
+              <td>12.5</td>
+            </tr>
+            <tr>
+              <td>Apples from the old tree by the north fence</td>
+              <td>7</td>
+            </tr>
+            <tr>
+              <td>Carrots</td>
+              <td>3.75</td>
+            </tr>
+            <tr>
+              <td>Rhubarb</td>
+              <td>none yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
   <h2 id="hours-of-sunshine">Hours of sunshine <a class="bk-anchor" href="#hours-of-sunshine" aria-label="Link to this section">#</a></h2>
   <p>One line, one point per row, in order.</p>
-  <!-- booklet: the query over “sunshine”, as line (activity “Charts”): a query view: not compiled yet -->
+  <div class="bk-view bk-panel" data-bk-view="line">
+    <div class="bk-ch-plot"><svg class="bk-ch-svg" viewBox="0 0 460 200" role="img" aria-label="Line chart of Hours of sun, 12 points, from 2 to 9" focusable="false"><line class="bk-ch-axis" x1="24" x2="437" y1="170" y2="170"></line><text class="bk-ch-tick" x="18" y="174" text-anchor="end">0</text><line class="bk-ch-grid" x1="24" x2="437" y1="91" y2="91"></line><text class="bk-ch-tick" x="18" y="95" text-anchor="end">5</text><line class="bk-ch-grid" x1="24" x2="437" y1="12" y2="12"></line><text class="bk-ch-tick" x="18" y="16" text-anchor="end">10</text><text class="bk-ch-tick" x="32" y="187" text-anchor="middle">Mon 1</text><text class="bk-ch-tick" x="105.3" y="187" text-anchor="middle">Wed 3</text><text class="bk-ch-tick" x="178.5" y="187" text-anchor="middle">Fri 5</text><text class="bk-ch-tick" x="251.8" y="187" text-anchor="middle">Sun 7</text><text class="bk-ch-tick" x="325.1" y="187" text-anchor="middle">Tue 9</text><text class="bk-ch-tick" x="435" y="187" text-anchor="middle">Fri 12</text><polyline class="bk-ch-line bk-s0" points="32,67.3 68.6,59.4 105.3,102.9 141.9,138.4 178.5,83.1 215.2,43.6 251.8,35.7 288.5,59.4 325.1,114.7 361.7,75.2 398.4,63.4 435,27.8"></polyline><circle class="bk-ch-pt bk-s0" cx="32" cy="67.3" r="3.5"><title>Mon 1: 6.5</title></circle><circle class="bk-ch-pt bk-s0" cx="68.6" cy="59.4" r="3.5"><title>Tue 2: 7</title></circle><circle class="bk-ch-pt bk-s0" cx="105.3" cy="102.9" r="3.5"><title>Wed 3: 4.25</title></circle><circle class="bk-ch-pt bk-s0" cx="141.9" cy="138.4" r="3.5"><title>Thu 4: 2</title></circle><circle class="bk-ch-pt bk-s0" cx="178.5" cy="83.1" r="3.5"><title>Fri 5: 5.5</title></circle><circle class="bk-ch-pt bk-s0" cx="215.2" cy="43.6" r="3.5"><title>Sat 6: 8</title></circle><circle class="bk-ch-pt bk-s0" cx="251.8" cy="35.7" r="3.5"><title>Sun 7: 8.5</title></circle><circle class="bk-ch-pt bk-s0" cx="288.5" cy="59.4" r="3.5"><title>Mon 8: 7</title></circle><circle class="bk-ch-pt bk-s0" cx="325.1" cy="114.7" r="3.5"><title>Tue 9: 3.5</title></circle><circle class="bk-ch-pt bk-s0" cx="361.7" cy="75.2" r="3.5"><title>Wed 10: 6</title></circle><circle class="bk-ch-pt bk-s0" cx="398.4" cy="63.4" r="3.5"><title>Thu 11: 6.75</title></circle><circle class="bk-ch-pt bk-s0" cx="435" cy="27.8" r="3.5"><title>Fri 12: 9</title></circle></svg></div>
+    <details class="bk-ch-nums">
+      <summary>Show the numbers</summary>
+      <div class="bk-table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Day</th>
+              <th scope="col" class="bk-num">Hours of sun</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Mon 1</td>
+              <td class="bk-num">6.5</td>
+            </tr>
+            <tr>
+              <td>Tue 2</td>
+              <td class="bk-num">7</td>
+            </tr>
+            <tr>
+              <td>Wed 3</td>
+              <td class="bk-num">4.25</td>
+            </tr>
+            <tr>
+              <td>Thu 4</td>
+              <td class="bk-num">2</td>
+            </tr>
+            <tr>
+              <td>Fri 5</td>
+              <td class="bk-num">5.5</td>
+            </tr>
+            <tr>
+              <td>Sat 6</td>
+              <td class="bk-num">8</td>
+            </tr>
+            <tr>
+              <td>Sun 7</td>
+              <td class="bk-num">8.5</td>
+            </tr>
+            <tr>
+              <td>Mon 8</td>
+              <td class="bk-num">7</td>
+            </tr>
+            <tr>
+              <td>Tue 9</td>
+              <td class="bk-num">3.5</td>
+            </tr>
+            <tr>
+              <td>Wed 10</td>
+              <td class="bk-num">6</td>
+            </tr>
+            <tr>
+              <td>Thu 11</td>
+              <td class="bk-num">6.75</td>
+            </tr>
+            <tr>
+              <td>Fri 12</td>
+              <td class="bk-num">9</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
   <h2 id="water-in-the-butts-two-lines-and-a-gap">Water in the butts, two lines and a gap <a class="bk-anchor" href="#water-in-the-butts-two-lines-and-a-gap" aria-label="Link to this section">#</a></h2>
   <p>Two lines. A reading that was not taken is a gap, not a zero.</p>
-  <!-- booklet: the query over “water”, as line (activity “Charts”): a query view: not compiled yet -->
+  <div class="bk-view bk-panel" data-bk-view="line">
+    <ul class="bk-ch-legend">
+      <li><svg class="bk-ch-sw" viewBox="0 0 28 12" width="28" height="12" aria-hidden="true" focusable="false"><line class="bk-ch-line bk-s0" x1="2" x2="26" y1="6" y2="6"></line><circle class="bk-ch-pt bk-s0" cx="14" cy="6" r="3"></circle></svg><span>North butt (litres)</span></li>
+      <li><svg class="bk-ch-sw" viewBox="0 0 28 12" width="28" height="12" aria-hidden="true" focusable="false"><line class="bk-ch-line bk-s1" x1="2" x2="26" y1="6" y2="6" stroke-dasharray="7 4"></line><rect class="bk-ch-pt bk-s1" x="11" y="3" width="6" height="6"></rect></svg><span>South butt (litres)</span></li>
+    </ul>
+    <div class="bk-ch-plot"><svg class="bk-ch-svg" viewBox="0 0 460 200" role="img" aria-label="Line chart of North butt (litres), South butt (litres), 6 points, from 60 to 200" focusable="false"><line class="bk-ch-axis" x1="31" x2="450" y1="170" y2="170"></line><text class="bk-ch-tick" x="25" y="174" text-anchor="end">0</text><line class="bk-ch-grid" x1="31" x2="450" y1="130.5" y2="130.5"></line><text class="bk-ch-tick" x="25" y="134.5" text-anchor="end">50</text><line class="bk-ch-grid" x1="31" x2="450" y1="91" y2="91"></line><text class="bk-ch-tick" x="25" y="95" text-anchor="end">100</text><line class="bk-ch-grid" x1="31" x2="450" y1="51.5" y2="51.5"></line><text class="bk-ch-tick" x="25" y="55.5" text-anchor="end">150</text><line class="bk-ch-grid" x1="31" x2="450" y1="12" y2="12"></line><text class="bk-ch-tick" x="25" y="16" text-anchor="end">200</text><text class="bk-ch-tick" x="39" y="187" text-anchor="middle">W1</text><text class="bk-ch-tick" x="120.8" y="187" text-anchor="middle">W2</text><text class="bk-ch-tick" x="202.6" y="187" text-anchor="middle">W3</text><text class="bk-ch-tick" x="284.4" y="187" text-anchor="middle">W4</text><text class="bk-ch-tick" x="366.2" y="187" text-anchor="middle">W5</text><text class="bk-ch-tick" x="448" y="187" text-anchor="middle">W6</text><polyline class="bk-ch-line bk-s0" points="39,27.8 120.8,51.5 202.6,98.9 284.4,122.6 366.2,59.4 448,12"></polyline><circle class="bk-ch-pt bk-s0" cx="39" cy="27.8" r="3.5"><title>North butt (litres) – W1: 180</title></circle><circle class="bk-ch-pt bk-s0" cx="120.8" cy="51.5" r="3.5"><title>North butt (litres) – W2: 150</title></circle><circle class="bk-ch-pt bk-s0" cx="202.6" cy="98.9" r="3.5"><title>North butt (litres) – W3: 90</title></circle><circle class="bk-ch-pt bk-s0" cx="284.4" cy="122.6" r="3.5"><title>North butt (litres) – W4: 60</title></circle><circle class="bk-ch-pt bk-s0" cx="366.2" cy="59.4" r="3.5"><title>North butt (litres) – W5: 140</title></circle><circle class="bk-ch-pt bk-s0" cx="448" cy="12" r="3.5"><title>North butt (litres) – W6: 200</title></circle><polyline class="bk-ch-line bk-s1" stroke-dasharray="7 4" points="39,75.2 120.8,59.4"></polyline><polyline class="bk-ch-line bk-s1" stroke-dasharray="7 4" points="284.4,95 366.2,83.1 448,43.6"></polyline><rect class="bk-ch-pt bk-s1" x="35.5" y="71.7" width="7" height="7"><title>South butt (litres) – W1: 120</title></rect><rect class="bk-ch-pt bk-s1" x="117.3" y="55.9" width="7" height="7"><title>South butt (litres) – W2: 140</title></rect><rect class="bk-ch-pt bk-s1" x="280.9" y="91.5" width="7" height="7"><title>South butt (litres) – W4: 95</title></rect><rect class="bk-ch-pt bk-s1" x="362.7" y="79.6" width="7" height="7"><title>South butt (litres) – W5: 110</title></rect><rect class="bk-ch-pt bk-s1" x="444.5" y="40.1" width="7" height="7"><title>South butt (litres) – W6: 160</title></rect></svg></div>
+    <details class="bk-ch-nums">
+      <summary>Show the numbers</summary>
+      <div class="bk-table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Week</th>
+              <th scope="col" class="bk-num">North butt (litres)</th>
+              <th scope="col" class="bk-num">South butt (litres)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>W1</td>
+              <td class="bk-num">180</td>
+              <td class="bk-num">120</td>
+            </tr>
+            <tr>
+              <td>W2</td>
+              <td class="bk-num">150</td>
+              <td class="bk-num">140</td>
+            </tr>
+            <tr>
+              <td>W3</td>
+              <td class="bk-num">90</td>
+              <td class="bk-num"></td>
+            </tr>
+            <tr>
+              <td>W4</td>
+              <td class="bk-num">60</td>
+              <td class="bk-num">95</td>
+            </tr>
+            <tr>
+              <td>W5</td>
+              <td class="bk-num">140</td>
+              <td class="bk-num">110</td>
+            </tr>
+            <tr>
+              <td>W6</td>
+              <td class="bk-num">200</td>
+              <td class="bk-num">160</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
   <h2 id="nothing-to-chart">Nothing to chart <a class="bk-anchor" href="#nothing-to-chart" aria-label="Link to this section">#</a></h2>
-  <!-- booklet: the query over “nothing”, as bars (activity “Charts”): a query view: not compiled yet -->
+  <p class="bk-hint">No harvest recorded yet.</p>
   <h2 id="a-chart-beside-a-table">A chart beside a table <a class="bk-anchor" href="#a-chart-beside-a-table" aria-label="Link to this section">#</a></h2>
   <div class="bk-row">
     <div class="bk-rowcell">
       <h3 id="visitors-by-day">Visitors by day <a class="bk-anchor" href="#visitors-by-day" aria-label="Link to this section">#</a></h3>
-      <!-- booklet: the query over “visitors”, as bars (activity “Charts”): a query view: not compiled yet -->
+      <div class="bk-view bk-panel" data-bk-view="bars" role="group" aria-label="Bar chart, 5 bars, from 0 to 11">
+        <ul class="bk-ch-list">
+          <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="day">Mon</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar" x="0" y="1" width="26.67" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="count">4</span></li>
+          <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="day">Tue</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar" x="0" y="1" width="60" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="count">9</span></li>
+          <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="day">Wed</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar" x="0" y="1" width="13.33" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="count">2</span></li>
+          <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="day">Thu</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"></svg><span class="bk-ch-v" data-bk-col="count">0</span></li>
+          <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="day">Fri</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar" x="0" y="1" width="73.33" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="count">11</span></li>
+        </ul>
+        <details class="bk-ch-nums">
+          <summary>Show the numbers</summary>
+          <div class="bk-table">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">day</th>
+                  <th scope="col" class="bk-num">count</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Mon</td>
+                  <td class="bk-num">4</td>
+                </tr>
+                <tr>
+                  <td>Tue</td>
+                  <td class="bk-num">9</td>
+                </tr>
+                <tr>
+                  <td>Wed</td>
+                  <td class="bk-num">2</td>
+                </tr>
+                <tr>
+                  <td>Thu</td>
+                  <td class="bk-num">0</td>
+                </tr>
+                <tr>
+                  <td>Fri</td>
+                  <td class="bk-num">11</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
     </div>
     <div class="bk-rowcell">
       <h3 id="opening-times">Opening times <a class="bk-anchor" href="#opening-times" aria-label="Link to this section">#</a></h3>
@@ -63,5 +271,43 @@ description: "A test fixture and a small example: charts drawn from rows a gener
   </div>
   <h2 id="change-from-last-month">Change from last month <a class="bk-anchor" href="#change-from-last-month" aria-label="Link to this section">#</a></h2>
   <p>Bars that go both ways: a negative value is drawn leftwards from the zero line.</p>
-  <!-- booklet: the query over “change”, as bars (activity “Charts”): a query view: not compiled yet -->
+  <div class="bk-view bk-panel" data-bk-view="bars" role="group" aria-label="Bar chart, 4 bars, from -30 to 25">
+    <ul class="bk-ch-list">
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="item">Seed spend</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><line class="bk-ch-zero" x1="50" x2="50" y1="0" y2="10"></line><rect class="bk-ch-bar" x="37.5" y="1" width="12.5" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="delta">-12.5</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="item">Water use</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><line class="bk-ch-zero" x1="50" x2="50" y1="0" y2="10"></line><rect class="bk-ch-bar" x="50" y="1" width="8" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="delta">8</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="item">Visitors</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><line class="bk-ch-zero" x1="50" x2="50" y1="0" y2="10"></line><rect class="bk-ch-bar" x="50" y="1" width="25" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="delta">25</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="item">Slugs</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><line class="bk-ch-zero" x1="50" x2="50" y1="0" y2="10"></line><rect class="bk-ch-bar" x="20" y="1" width="30" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="delta">-30</span></li>
+    </ul>
+    <details class="bk-ch-nums">
+      <summary>Show the numbers</summary>
+      <div class="bk-table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">item</th>
+              <th scope="col" class="bk-num">delta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Seed spend</td>
+              <td class="bk-num">-12.5</td>
+            </tr>
+            <tr>
+              <td>Water use</td>
+              <td class="bk-num">8</td>
+            </tr>
+            <tr>
+              <td>Visitors</td>
+              <td class="bk-num">25</td>
+            </tr>
+            <tr>
+              <td>Slugs</td>
+              <td class="bk-num">-30</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
 </article>

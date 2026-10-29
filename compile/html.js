@@ -20,7 +20,7 @@ const VOID=new Set(["area","base","br","col","embed","hr","img","input","link","
 /* elements written on lines of their own, indented; everything else runs inline with the text around it */
 const BLOCK=new Set(["html","head","body","main","article","section","nav","header","footer","aside","div","p","h1","h2","h3",
   "h4","h5","h6","ul","ol","li","dl","dt","dd","table","thead","tbody","tfoot","tr","th","td","blockquote","pre","figure",
-  "figcaption","details","summary","hr","meta","link","title","script","style"]);
+  "figcaption","details","summary","fieldset","hr","meta","link","title","script","style"]);
 const ATTR_NAME=/^[A-Za-z][A-Za-z0-9_:.-]*$/;
 
 class Node{
@@ -100,4 +100,4 @@ function removeFirst(x,test){let done=false;
   if(Array.isArray(x)){for(let i=0;i<x.length&&!done;i++){if(test(x[i])){x.splice(i,1);done=true;}else go(x[i]);}}else go(x);
   return done;}
 
-module.exports={el,frag,trusted,comment,html,inline,textOf,walk,removeFirst,escText,escAttr,Node,Trusted,Comment};
+module.exports={el,frag,trusted,comment,html,inline,textOf,walk,removeFirst,escText,escAttr,openTag,Node,Trusted,Comment};
