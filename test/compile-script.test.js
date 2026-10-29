@@ -34,6 +34,30 @@ chk("a bare function is not a part",SC.shape("function f(){}")!=="");
 chk("an arrow function called at once is a part",SC.shape("(()=>{ var a=1; })();")==="");
 chk("leading comments are let through before the function",SC.shape("/* a part */\n// and more\n"+CLEAN)==="");
 
+/* every alternative of every banned pattern has a sample that only it catches: delete one and the sample escapes the scan */
+const SAMPLES=["localStorage.clear();","sessionStorage.clear();","indexedDB.open('x');","var f=IDBFactory;","document.cookie='a';",
+  "caches.open('x');","var c=CacheStorage;","navigator.serviceWorker.register('x');","new Worker('x');","new SharedWorker('x');",
+  "fetch('/x');","new XMLHttpRequest();","new WebSocket('ws:x');","new EventSource('/e');","navigator.sendBeacon('/x');",
+  "w.postMessage('x');","new BroadcastChannel('x');","new MessageChannel();","var i=new Image;","var i=Image(1);","f.submit();","new FormData();",
+  "eval('1');","[].constructor('1');","var f=Function;","import/**/('./x.js');","importScripts('x');","setTimeout('x',1);","setInterval('x',1);",
+  "el.innerHTML='x';","el.outerHTML='x';","el.insertAdjacentHTML('beforeend','x');","document.write('x');","new DOMParser();",
+  "r.createContextualFragment('x');","f.srcdoc='x';","window['x'];","globalThis.x;","self['x'];","top['x'];","parent['x'];","document['x'];",
+  "navigator['x'];","this['x'];","Reflect.get(a,'b');","var w=window;","var s=self;"];
+{const alts=[];
+  SC.BANNED.forEach(([why,re],ei)=>{let depth=0,cur="";const parts=[];
+    for(let i=0;i<re.source.length;i++){const c=re.source[i];
+      if(c==="\\"){cur+=c+re.source[++i];continue;}
+      if(c==="("||c==="[") depth++;if(c===")"||c==="]") depth--;
+      if(c==="|"&&depth===0){parts.push(cur);cur="";}else cur+=c;}
+    parts.push(cur);parts.forEach(src=>alts.push({ei,src,re:new RegExp(src,re.flags)}));});
+  chk("the banned patterns split into "+alts.length+" alternatives, each of which is tried below",alts.length>=40);
+  for(const a of alts){
+    const only=SAMPLES.filter(t=>a.re.test(t)&&!alts.some(b=>b!==a&&b.re.test(t)));
+    chk("a sample catches only the banned alternative "+a.src,only.length>0);
+    /* the scan with that one alternative removed lets its sample through */
+    const without=SC.BANNED.map(([why,re],ei)=>[why,ei===a.ei?new RegExp(alts.filter(b=>b.ei===ei&&b!==a).map(b=>b.src).join("|")||"(?!)",re.flags):re]);
+    chk("…and without it the scan lets that sample through",only.length>0&&!without.some(([w,re])=>re.test(only[0])),a.src);}}
+
 /* ---- the assembler ---- */
 const dir=mk("parts",{"20-b.js":part("var b=2;"),"10-a.js":part("var a=1;"),"notes.txt":"not a part"});
 const built=SC.assemble(dir);
@@ -83,5 +107,33 @@ kept=C.write(C.compile([{file:book}],{form:"standalone",engine:X,scriptDir:good,
 chk("a script changed by hand is kept back",kept.some(k=>k.rel.endsWith("booklet.js")&&k.state==="changed")&&fs.readFileSync(jsPath,"utf8").endsWith("// tidied by hand\n"));
 kept=C.write(C.compile([{file:book}],{form:"standalone",engine:X,scriptDir:good,forceScript:true}),out,{force:true});
 chk("…and --force writes the compiler's own again",kept.length===0&&C.cssStampState(fs.readFileSync(jsPath,"utf8"))==="compiled");
+
+
+/* ---- the page without its stylesheet: nothing that only a press shows is shown ---- */
+{const QUIZ=path.join(ROOT,"test","fixtures","compile-quiz.booklet.md");
+  const run=C.compile([{file:QUIZ}],{form:"standalone",engine:X,scriptDir:good}),page=String(run.results[0].files.get("compile-quiz/index.html"));
+  const TOKENS=["bk-verdict","bk-reply","bk-say","bk-say-ok","bk-say-no","bk-shows","bk-acts"];
+  const tags=[...page.matchAll(/<(?:span|p)\b[^>]*\bclass="([^"]*)"[^>]*>/g)].filter(m=>m[1].split(/\s+/).some(c=>TOKENS.includes(c)));
+  chk("the page writes each verdict, reply, verdict sentence, widget note and Check with the hidden attribute (the verdict-sentence paragraph too; "+tags.length+" of them)",tags.length>=20&&tags.every(m=>/\shidden[\s>]/.test(m[0])),tags.filter(m=>!/\shidden[\s>]/.test(m[0])).map(m=>m[0].slice(0,80)).join(" | "));
+  chk("the Check box sits after the options, inside the hidden paragraph, and its label is hidden from the accessibility tree (one name)",
+    /<\/ul>\s*<p class="bk-acts" hidden><input type="checkbox" class="bk-check" id="[^"]+" autocomplete="off"><label class="bk-check-btn" for="[^"]+" aria-hidden="true">Check<\/label><\/p>/.test(page)&&!/<input[^>]*class="bk-check"[^>]*>\s*<p class="bk-q-ask"/.test(page)&&(page.match(/class="bk-check"/g)||[]).length===1);
+  const rep=C.reportText(run);
+  chk("the report names a page that carries an answer key in its markup",/Answer key: this page carries its answer key in its markup/.test(rep));
+  chk("…and says nothing of the kind for a page with none",!/Answer key:/.test(C.reportText(C.compile([{text:PLAIN,name:"plain",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}))));
+  chk("a question with no words of its own is still named for a screen reader",/<fieldset[^>]*data-bk-kind="(?:choice|multi)"[^>]*aria-label="[^"]+"/.test(String(C.compile([{text:'---\nbooklet: "0.16"\nid: t/nolabel\ntitle: No label\nlang: en\n---\n\n> [!module|m] No label\n\n> [!activity|a] A\n\n> [!choice|pick] \n- [ ] One\n- [x] Two\n\n> [!module|m end] End\n',name:"nolabel",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}).results[0].files.get("nolabel/index.html"))));
+  /* ids and radio names are the page's own, and a label follows its input when a heading takes the id first */
+  const HEADS=["bk-ids-q1-o1","bk-ids-q1-ask","bk-top","bk-ids-q1-check","bk-ids-w1"];
+  const text='---\nbooklet: "0.16"\nid: t/ids\ntitle: Ids\nlang: en\n---\n\n> [!module|m] Ids\n\n> [!activity|a] A\n\n'+HEADS.map(h=>"## "+h+"\n\nText.\n").join("\n")
+    +'\n> [!multi|p] Pick the right ones\n- [x] One\n- [ ] Two\n\n> [!choice|c] Pick one\n- [x] Yes\n- [ ] No\n\n> [!module|m end] End\n';
+  const pg=String(C.compile([{text,name:"ids",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}).results[0].files.get("ids/index.html"));
+  const ids=[...pg.matchAll(/\sid="([^"]+)"/g)].map(m=>m[1]);
+  chk("no id is used twice on a page whose headings are named like the inputs' ids",new Set(ids).size===ids.length,ids.filter((x,i)=>ids.indexOf(x)!==i).join(", "));
+  const fors=[...pg.matchAll(/<label\b[^>]*\sfor="([^"]+)"/g)].map(m=>m[1]);
+  chk("every label points at an input that exists, and each input has one label ("+fors.length+")",fors.length>=5&&fors.every(f=>new RegExp('<input\\b[^>]*\\sid="'+f.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+'"').test(pg))&&new Set(fors).size===fors.length);
+  const lab=[...pg.matchAll(/<fieldset\b[^>]*aria-labelledby="([^"]+)"/g)].map(m=>m[1]);
+  chk("every fieldset's aria-labelledby names its own ask line",lab.length===2&&lab.every(l=>pg.split('id="'+l+'"').length===2&&new RegExp('<p class="bk-q-ask" id="'+l+'">').test(pg)));
+  const other=String(C.compile([{text:text.replace("id: t/ids","id: t/other"),name:"other",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}).results[0].files.get("other/index.html"));
+  const idsOther=[...other.matchAll(/\sid="([^"]+)"/g)].map(m=>m[1]).filter(i=>/^bk-other-/.test(i));
+  chk("two booklets' inputs and radio names never share an id or a name, so fragments can share a host page",idsOther.length>=6&&!idsOther.some(i=>ids.includes(i))&&!(pg.match(/name="bk-[^"]+"/g)||[]).some(n=>other.includes(n)));}
 
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile script passed");process.exit(fails?1:0);

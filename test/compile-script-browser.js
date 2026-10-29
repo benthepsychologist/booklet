@@ -68,6 +68,21 @@ async function pledge(page,context,origin,label){
   for(const r of inPage.resources) if(!r.startsWith(origin+'/')||!own(r.slice(origin.length).split('?')[0])) bad.push('a resource beyond the page\'s own files: '+r);
   return bad;}
 
+/* what a hostile part would wait for: the page hidden and shown, left, resized, typed on, left alone for two seconds, and a second
+   tab opened and closed (with its own unload). The pledge is read only AFTER all of it, so a part that keeps or sends something
+   only on one of these events is caught. */
+async function provoke(page,context,origin){
+  await page.evaluate(()=>{
+    for(const [t,ev] of [[window,'blur'],[window,'focus'],[document,'visibilitychange'],[window,'resize'],[window,'beforeunload'],[window,'pagehide'],[window,'unload'],[window,'pageshow']]) t.dispatchEvent(new Event(ev));
+    document.dispatchEvent(new KeyboardEvent('keydown',{key:'z',bubbles:true}));});
+  await page.keyboard.press('z');await page.keyboard.press('Z');await page.keyboard.press('Escape');await page.keyboard.press('Enter');
+  await page.setViewportSize({width:640,height:800});await page.setViewportSize({width:900,height:1200});
+  const tab=await context.newPage();await tab.goto(origin+PAGE);await tab.keyboard.press('z');
+  await page.bringToFront();await tab.bringToFront();
+  await page.waitForTimeout(2200);
+  await tab.close({runBeforeUnload:true});
+  await page.bringToFront();await page.waitForTimeout(300);}
+
 (async()=>{
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const origin='http://127.0.0.1:'+server.address().port;
@@ -112,6 +127,59 @@ async function pledge(page,context,origin,label){
     await parts.locator('.bk-check-btn').click();
     ok(await parts.locator('.bk-say-ok').isVisible()&&(await parts.locator('.bk-live').textContent())==='Right.'&&!(await parts.locator('.bk-v-wrong:visible').count()),'Check, all right and none wrong: right');
 
+    /* the verdict line of a pick-any: exactly one of "Right." and "Not quite." ever shows, and the spoken one agrees */
+    const says=async f=>[await f.locator('.bk-say-ok').isVisible(),await f.locator('.bk-say-no').isVisible()];
+    let sy=await says(parts);
+    ok(sy[0]&&!sy[1],'pick-any, every right option and nothing else: only "Right." shows');
+    await parts.locator('label',{hasText:'rudder'}).click();await parts.locator('.bk-check-btn').click();
+    sy=await says(parts);
+    ok(!sy[0]&&sy[1]&&(await parts.locator('.bk-live').textContent()).startsWith('Not quite'),'pick-any, both right and one wrong: only "Not quite." shows, and is spoken');
+    await parts.locator('label',{hasText:'rudder'}).click();await parts.locator('label',{hasText:'gallery'}).click();await parts.locator('.bk-check-btn').click();
+    sy=await says(parts);
+    ok(!sy[0]&&sy[1]&&(await parts.locator('.bk-live').textContent()).startsWith('Not quite. The answer is'),'pick-any, one right option missed: only "Not quite." shows, and is spoken (a missed right option is never right)');
+    await parts.locator('label',{hasText:'gallery'}).click();
+
+    /* the keyboard on a graded pick-any: Check is not a stop until something is ticked, then it is the last stop after the options */
+    const kb=await ctx.newPage();await kb.goto(origin+PAGE);
+    const kq=ASK(kb,'parts of a lighthouse');
+    const stops=async()=>{const out=[];
+      for(let i=0;i<14;i++){await kb.keyboard.press('Tab');
+        const s=await kb.evaluate(()=>{const a=document.activeElement,f=a&&a.closest&&a.closest('fieldset.bk-q');
+          return {inside:!!f&&f.textContent.includes('parts of a lighthouse'),cls:a.className,tag:a.tagName};});
+        if(!s.inside){if(out.length) break;continue;}
+        out.push(s.cls||s.tag);}
+      return out;};
+    await kq.locator('.bk-q-ask').click();
+    let walk=await stops();
+    const nOpts=await kq.locator('.bk-opt').count();
+    ok(walk.length===nOpts&&!walk.some(c=>c.includes('bk-check')),'keyboard: with nothing ticked the stops are the '+nOpts+' options and Check is not one ('+walk.join(', ')+')');
+    ok(!(await kq.locator('.bk-check-btn').isVisible()),'keyboard: with nothing ticked Check is not shown');
+    /* a Space on the first option, then Tab to the end: Check is the last stop, after every option */
+    await kq.locator('.bk-q-ask').click();await kb.keyboard.press('Tab');await kb.keyboard.press('Space');
+    ok(await kq.locator('.bk-opt input:checked').count()===1,'keyboard: Space ticks the first option');
+    ok(await kq.locator('.bk-check-btn').isVisible(),'keyboard: Check appears once an option is ticked');
+    walk=[];for(let i=0;i<nOpts;i++){await kb.keyboard.press('Tab');walk.push(await kb.evaluate(()=>document.activeElement.className||document.activeElement.tagName));}
+    ok(walk.slice(0,nOpts-1).every(c=>!c.includes('bk-check'))&&walk[nOpts-1].includes('bk-check'),'keyboard: Check is the stop after the last option ('+walk.join(', ')+')');
+    const ring=await kq.locator('.bk-check-btn').evaluate(e=>{const c=getComputedStyle(e),r=e.getBoundingClientRect();return {style:c.outlineStyle,width:c.outlineWidth,w:r.width,h:r.height};});
+    ok(ring.style!=='none'&&parseFloat(ring.width)>0&&ring.w>20&&ring.h>10,'keyboard: Check shows a focus ring when it has focus ('+ring.style+' '+ring.width+')');
+    const snap=await kq.ariaSnapshot();
+    ok((snap.match(/Check/g)||[]).length===1,'keyboard: Check has one accessible name, not two ('+(snap.match(/Check/g)||[]).length+' in the tree)');
+    await kb.keyboard.press('Space');
+    ok(await kq.locator('.bk-check:checked').count()===1&&await kq.locator('.bk-v-right:visible').count()===1&&(await kq.locator('.bk-live').textContent()).startsWith('Not quite'),'keyboard: Space on Check marks the question and says so');
+    await kq.locator('.bk-opt input').first().focus();await kb.keyboard.press('Space');
+    ok(await kq.locator('.bk-check:checked').count()===0&&!(await kq.locator('.bk-check-btn').isVisible()),'keyboard: unticking the last option takes Check away and turns it off');
+    /* Check forced on with nothing ticked reveals nothing, on the page and to a screen reader */
+    await kq.locator('.bk-check').evaluate(e=>{e.checked=true;e.dispatchEvent(new Event('change',{bubbles:true}));});
+    ok(await kq.locator('.bk-v-answer:visible,.bk-v-right:visible,.bk-v-wrong:visible,.bk-say-ok:visible,.bk-say-no:visible,.bk-reply:visible').count()===0&&(await kq.locator('.bk-live').textContent())==='','keyboard: Check forced on with nothing ticked reveals no answer, no verdict and says nothing');
+    const lit=(await kq.innerText());
+    ok(!/The answer|Not quite|Right\./.test(lit),'keyboard: …and the question\'s text holds no answer ('+JSON.stringify(lit.slice(0,60))+')');
+    /* a widget chip shows a focus ring by keyboard */
+    const wf=kb.locator('fieldset.bk-widget').first();
+    await wf.locator('.bk-q-ask').first().click();await kb.keyboard.press('Tab');
+    const chip=await wf.locator('.bk-pickable>input').first().evaluate(e=>{const l=e.nextElementSibling,c=getComputedStyle(l);return {focus:document.activeElement===e,style:c.outlineStyle,width:c.outlineWidth};});
+    ok(chip.focus&&chip.style!=='none'&&parseFloat(chip.width)>0,'keyboard: a widget chip shows a focus ring when it has focus ('+chip.style+' '+chip.width+')');
+    await kb.close();
+
     /* a pick-one with replies and no right answer; a pick-any with neither */
     const keeper=ASK(page,'looked after the lamp');
     await keeper.locator('label',{hasText:'The keeper'}).click();
@@ -141,8 +209,9 @@ async function pledge(page,context,origin,label){
     ok(!(await widgets.nth(2).locator('input').count()),'a read-only widget has nothing to press');
     ok(errors.length===0,'no script error is logged'+(errors.length?': '+errors.join(' | '):''));
 
+    await provoke(page,ctx,origin);
     const bad=await pledge(page,ctx,origin);
-    ok(!bad.length,'the pledge holds after every press: nothing kept, nothing sent beyond the page\'s own files'+(bad.length?': '+bad.join('; '):''));
+    ok(!bad.length,'the pledge holds after every press and after every event a hostile part could wait for: nothing kept, nothing sent beyond the page\'s own files'+(bad.length?': '+bad.join('; '):''));
     ok(seen.length>=3&&seen.every(s=>s.method==='GET'),'the page and its files were fetched ('+seen.length+' requests, all GET)');
 
     /* a reload starts clean */
@@ -163,11 +232,20 @@ async function pledge(page,context,origin,label){
       ['a cookie','document["coo"+"kie"]="a=b";','document.cookie is set'],
       ['IndexedDB','window["indexed"+"DB"].open("kept");','IndexedDB has a database'],
       ['a request','new window["Ima"+"ge"]().src="/leak?x=1";','a request beyond'],
-      ['a post','navigator["send"+"Beacon"]("/leak","x");','a request beyond']];
-    for(const [what,code,expect] of BREAKS){
+      ['a post','navigator["send"+"Beacon"]("/leak","x");','a request beyond'],
+      ['a beacon built by name on pagehide','window.addEventListener("pagehide",function(){window["navi"+"gator"]["send"+"Beacon"]("/leak","x");});','a request beyond',true],
+      ['a cookie set on a keydown of z','document.addEventListener("keydown",function(e){if(e.key==="z") document["coo"+"kie"]="a=b";});','document.cookie is set',true],
+      ['storage on visibilitychange','document.addEventListener("visibilitychange",function(){window["local"+"Storage"].setItem("k","v");});','localStorage holds',true],
+      ['storage on resize','window.addEventListener("resize",function(){window["session"+"Storage"].setItem("k","v");});','sessionStorage holds',true],
+      ['storage on beforeunload','window.addEventListener("beforeunload",function(){window["local"+"Storage"].setItem("k","v");});','localStorage holds',true],
+      ['a request after a timer of two seconds','setTimeout(function(){new window["Ima"+"ge"]().src="/leak?t=1";},1500);','a request beyond',true]];
+    for(const [what,code,expect,late] of BREAKS){
       seen.length=0;swap={'/booklet/booklet.js':original+'\n'+code+'\n'};
       const c2=await browser.newContext();const p2=await c2.newPage();
       await p2.goto(origin+PAGE);await p2.waitForTimeout(400);
+      if(late){const quiet=await pledge(p2,c2,origin);
+        ok(!quiet.some(x=>x.includes(expect)),'(a part that waits for an event: '+what+' leaves nothing until the event comes)');
+        await provoke(p2,c2,origin);}
       const b=await pledge(p2,c2,origin);
       ok(b.some(x=>x.includes(expect)),'the detector catches a script that uses '+what+(b.length?' ('+b[0]+')':' (nothing found)'));
       await c2.close();}
@@ -195,7 +273,35 @@ async function pledge(page,context,origin,label){
     const gl=q.locator('fieldset.bk-widget').first().locator('.bk-pickable>label').first();await gl.click();
     ok(await q.locator('fieldset.bk-widget').first().locator('.bk-shows:visible').count()===1,'scripting off: a widget\'s word, pressed, shows its note');
     for(const d of await q.locator('details').all()){await d.locator('summary').first().click();ok(await d.evaluate(e=>e.open),'scripting off: a fold opens');}
+    /* the verdict line of a pick-any, by the stylesheet alone: one of "Right." and "Not quite." at a time */
+    const sy2=async()=>[await pa.locator('.bk-say-ok').isVisible(),await pa.locator('.bk-say-no').isVisible()];
+    const pick=async w=>pa.locator('label',{hasText:w}).click();
+    /* lantern room is ticked and Check is on (no script turns it off) */
+    await pick('gallery');
+    let st=await sy2();
+    ok(st[0]&&!st[1],'scripting off: every right option and nothing else, checked: only "Right." shows');
+    await pick('rudder');
+    st=await sy2();
+    ok(!st[0]&&st[1],'scripting off: both right options and a wrong one, checked: only "Not quite." shows (the stylesheet alone)');
+    await pick('rudder');await pick('gallery');
+    st=await sy2();
+    ok(!st[0]&&st[1],'scripting off: a right option missed, checked: only "Not quite." shows');
     await off.close();
+
+    /* ======== the stylesheet blocked (Reader View, a feed, a text browser): the answer key is not shown ======== */
+    const bare=await browser.newContext({javaScriptEnabled:false,viewport:{width:900,height:1200}});
+    await bare.route('**/booklet.css',r=>r.abort());
+    const bp=await bare.newPage();await bp.goto(origin+PAGE);
+    const hiddenSel='.bk-verdict,.bk-reply,.bk-say,.bk-say-ok,.bk-say-no,.bk-shows,.bk-acts,.bk-check,.bk-check-btn,.bk-live';
+    const nHidden=await bp.locator(hiddenSel).count();
+    ok(nHidden>=20,'no stylesheet: the page carries its verdict, reply, note and Check parts ('+nHidden+')');
+    const shown=await bp.locator(hiddenSel).evaluateAll(es=>es.filter(e=>e.checkVisibility()&&e.textContent.trim()).map(e=>e.className+': '+e.textContent.trim().slice(0,40)));
+    ok(shown.length===0,'no stylesheet: no verdict, reply, note or Check shows'+(shown.length?' ('+shown.slice(0,3).join(' | ')+')':''));
+    const btext=await bp.locator('article').innerText();
+    ok(!/The answer|Not quite|Right\.|Check\b/.test(btext),'no stylesheet: the page text holds no verdict sentence, no answer and no Check');
+    for(const w of ['What colour is the lighthouse','Red','White','The lantern room','The gallery'])
+      ok(btext.includes(w),'no stylesheet: "'+w+'" is still on the page');
+    await bare.close();
   }finally{await browser.close();server.close();}
   console.log(fails.length?'\n'+fails.length+' FAILURES':'\ncompile script pledge: all checks passed');
   process.exit(fails.length?1:0);

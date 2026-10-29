@@ -92,8 +92,11 @@ alone, no script**:
 
 - with a right answer marked `[x]`: pick an option and it is marked right or not quite, and a right option the reader did
   not pick is marked as the answer, with a line saying so ("Right." / "Not quite. The answer is …", in the booklet's
-  language). A pick-any question has a Check (a label over a hidden checkbox) that marks every option at once; ticking
-  again turns it off;
+  language). A pick-any question has a Check, a real checkbox after the options with its label drawn as a button, that
+  appears once something is ticked and marks every option at once; pressing it again takes the marks off. Without the
+  script a Check that is on stays on when a tick changes (the marks follow the ticks); the script turns it off, as the
+  renderer's own question does. Check, the verdict line and the answer mark need `:has()` (every browser since late
+  2023); a browser without it shows such a question as plain options, which still tick;
 - with a reply under an option: the reply shows under the options when the option is picked (a pick-any question with a
   right answer shows replies once it is checked, as the renderer does);
 - with neither: the pick is highlighted and nothing more.
@@ -102,14 +105,20 @@ A question the page cannot answer without keeping something is shown as 0.1.0 sh
 **read-only here**: a `scale`, `matrix`, `number` and `date` (the renderer defines no response for them), a free-text
 prompt (`text`, `lines`: a box would need somewhere to keep what was typed) and a question with `open` (the reader's own
 words). Not built: the count of right answers beside a quiz (the renderer scores nothing, so there is no model to follow)
-and `each:`. The answer key is in the page's markup (a class on each right option), as it is in the booklet file.
+and `each:`. **The answer key is in the page's markup** (a class on each right option, the verdict words and the replies,
+all with the `hidden` attribute until a press shows them), as it is in the booklet file; the build report says which pages
+carry one, and a booklet that must not give its answers away should mark none. Read without its stylesheet (a reader's
+view, a feed, a text browser) a page shows the options alone and none of that text.
 
 A widget's words (a grid's items, a body map's places) are checkboxes drawn as chips: a press highlights the chip and, if
 its cell or place has a `note` and the widget does not already `describe` them, shows the note. Neither the renderer's
 own-word field nor the words a reader wrote before is drawn. The pick is the open page's own and is gone on reload; each
 input carries `autocomplete="off"` so a browser that restores form fields on reload (Firefox does; Chromium was checked and
-does not) does not bring it back. The script (below) adds only what the stylesheet cannot, which is speech: it copies the
-verdict sentence into a live region a screen reader announces, and turns Check off when a tick changes.
+does not, Firefox was not) does not bring it back. Every input's id and every radio group's name carries the page's own
+address (`bk-how-tides-work-q1-o1`), so fragments of different booklets can share one host page; two copies of the same
+booklet on one page, or a fragment inside a host `<form>`, would clash or be submitted with the form. The script (below) adds only what the stylesheet cannot, which is speech: it copies the
+verdict sentence into a live region a screen reader announces, and turns Check off when a tick changes. A question with no
+words of its own is named for a screen reader by its help text, else its id.
 
 ## The optional script
 

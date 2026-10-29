@@ -72,6 +72,8 @@ function drawPage(X,P,o){
     marked:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,images:0,math:0,notes:0,links:0},
     where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[]};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
+  /* the ids and radio names the page's inputs take: the page's own address in them, so two fragments on one host page do not collide */
+  const IDP="bk-"+(String(o.name).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"page")+"-";
   const pageTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
 
   /* ---- marks: what the page leaves off ---- */
@@ -261,7 +263,7 @@ function drawPage(X,P,o){
      in the booklet file: a page that must not give its answers away should not mark any. */
   /* the question's words; returns the ask line, which names the fieldset to a screen reader */
   function qHead(box,n,label,help){let ask=null;
-    const head=tx(label,"");if(R.nonEmpty(head)){ask=el("p",{class:"bk-q-ask",id:"bk-q"+n+"-ask"},...words(head));box.append(ask);st.labelled.push([box,ask]);}
+    const head=tx(label,"");if(R.nonEmpty(head)){ask=el("p",{class:"bk-q-ask",id:IDP+"q"+n+"-ask"},...words(head));box.append(ask);st.labelled.push([box,ask]);}
     const h=tx(help,"");if(R.nonEmpty(h)) box.append(el("p",{class:"bk-q-help"},...words(h)));
     return ask;}
   const readOnly=(b,why)=>st.readOnly.push({kind:b.type,what:"the "+b.type+" question “"+(plain(b.label)||b.id||"?")+"”",where:st.where,why});
@@ -277,7 +279,8 @@ function drawPage(X,P,o){
   function question(b){st.counts.questions++;
     const kind=b.type,pick=kind==="choice"||kind==="multi",quiz=pick&&!b.open?quizOf(b):null;
     const box=el("fieldset",{class:"bk-q bk-q-"+kind+(quiz&&quiz.gated?" bk-gated":""),"data-bk-kind":kind,"data-bk-graded":quiz&&quiz.graded?true:null});
-    const n=++st.qn;qHead(box,n,b.label,b.help);
+    const n=++st.qn;
+    if(!qHead(box,n,b.label,b.help)) box.attrs["aria-label"]=plain(b.help)||String(b.id||kind);
     if(quiz) quizOptions(box,n,b,quiz);
     else if(pick){readOnly(b,READ_ONLY.open);
       const ul=el("ul",{class:"bk-options "+(kind==="multi"?"bk-pick-many":"bk-pick-one")},...(b.options||[]).map(x=>el("li",{},...words(x,true))));
@@ -292,25 +295,29 @@ function drawPage(X,P,o){
     return box;}
   /* the options of a quiz, with their verdicts, replies and (pick-any with a right answer) Check, all in the markup and shown by the stylesheet */
   function quizOptions(box,n,b,Qz){const Q=T("question"),{listed,multi,right,graded,gated}=Qz;
-    const verdict=(cls,text)=>el("span",{class:"bk-verdict bk-v-"+cls},(cls==="wrong"?"✗ ":"✓ ")+text);
-    const cid="bk-q"+n+"-check",cb=gated?el("input",{type:"checkbox",class:"bk-check",id:cid,autocomplete:"off"}):null;
-    if(cb) box.append(cb);
+    /* Everything that only a press shows (a verdict, a reply, the verdict sentences, Check) is written with the hidden
+       attribute, so a page read without its stylesheet (Reader View, a feed, a text browser, a snippet) shows the options
+       alone, as 0.1.0 did, and never an answer. The stylesheet shows each by the state of the inputs. */
+    const verdict=(cls,text)=>el("span",{class:"bk-verdict bk-v-"+cls,hidden:true},(cls==="wrong"?"✗ ":"✓ ")+text);
     const ul=el("ul",{class:"bk-options "+(multi?"bk-pick-many":"bk-pick-one")},...listed.map((o,i)=>{
-      const k=i+1,isRight=right.includes(k),oid="bk-q"+n+"-o"+k;
-      const inp=el("input",{type:multi?"checkbox":"radio",name:multi?null:"bk-q"+n,id:oid,autocomplete:"off"}),lab=el("label",{for:oid},...words(o,true));
+      const k=i+1,isRight=right.includes(k),oid=IDP+"q"+n+"-o"+k;
+      const inp=el("input",{type:multi?"checkbox":"radio",name:multi?null:IDP+"q"+n,id:oid,autocomplete:"off"}),lab=el("label",{for:oid},...words(o,true));
       st.forIds.push([lab,inp]);
       const kids=[inp,lab];
       if(graded) kids.push(...(isRight?[verdict("right",Q.right),verdict("answer",Q.theAnswer)]:[verdict("wrong",Q.notQuite)]));
       const reply=Array.isArray(b.replies)&&typeof b.replies[i]==="string"?b.replies[i]:"";
-      if(R.nonEmpty(reply)) kids.push(el("span",{class:"bk-reply"},...reply.split("\n").map(l=>el("span",{class:"bk-reply-line"},...words(l)))));
+      if(R.nonEmpty(reply)) kids.push(el("span",{class:"bk-reply",hidden:true},...reply.split("\n").map(l=>el("span",{class:"bk-reply-line"},...words(l)))));
       return el("li",{class:"bk-opt"+(isRight?" bk-right":"")},...kids);}));
     box.append(ul);
-    if(gated){const lab=el("label",{class:"bk-check-btn",for:cid},Q.check);st.forIds.push([lab,cb]);
-      box.append(el("p",{class:"bk-acts"},lab));}
+    /* Check follows the options (so it is the last stop after them for the keyboard) and is shown only once something is ticked */
+    if(gated){const cid=IDP+"q"+n+"-check",cb=el("input",{type:"checkbox",class:"bk-check",id:cid,autocomplete:"off"}),
+        lab=el("label",{class:"bk-check-btn",for:cid,"aria-hidden":"true"},Q.check);
+      st.forIds.push([lab,cb]);box.append(el("p",{class:"bk-acts",hidden:true},cb,lab));}
     if(graded){st.needsScript=true;
       const answer=right.map(k=>R.plainText(listed[k-1])).join(", ");
-      box.append(el("p",{class:"bk-say"},el("span",{class:"bk-say-ok"},Q.liveRight),el("span",{class:"bk-say-no"},Q.liveNot(answer))),
-        el("p",{class:"bk-live bk-sr","aria-live":"polite"}));}}
+      box.append(el("p",{class:"bk-say",hidden:true},el("span",{class:"bk-say-ok",hidden:true},Q.liveRight),el("span",{class:"bk-say-no",hidden:true},Q.liveNot(answer))),
+        el("p",{class:"bk-live bk-sr","aria-live":"polite"}));
+      st.keyed=true;}}
 
   /* ---- widgets ----
      Each engine's words are real inputs a reader can press (a checkbox with its label drawn as the word's chip), unless the
@@ -322,14 +329,14 @@ function drawPage(X,P,o){
   const pickable=(op,label,note,id)=>{
     if(op.readonly) return el("li",{},label);
     const inp=el("input",{type:"checkbox",id,autocomplete:"off"}),lab=el("label",{for:id},label);st.forIds.push([lab,inp]);
-    return el("li",{class:"bk-pickable"},inp,lab,R.nonEmpty(note)&&!op.describe?el("span",{class:"bk-shows"},note):null);};
+    return el("li",{class:"bk-pickable"},inp,lab,R.nonEmpty(note)&&!op.describe?el("span",{class:"bk-shows",hidden:true},note):null);};
   function widget(b){st.counts.widgets++;
     const Wd=R.widgetIn(design.widgets||[],b.widget,b.module);
     if(!Wd) return mark("widget","the widget block “"+(b.id||"?")+"” (widget “"+String(b.widget||"?")+"”)");
     const eng=String(Wd.engine||"");
     if(!hasOwn(R.ENGINES,eng)||!hasOwn(ENGINE_WAY,eng)) return mark("engine","the widget “"+String(Wd.id||b.widget)+"” (engine “"+eng+"”)");
     const C=R.wordsOf(Wd.copy),box=el("fieldset",{class:"bk-q bk-widget bk-w-"+eng,"data-bk-kind":"widget"});
-    qHead(box,++st.qn,tx(b.label,C.h),tx(b.help,C.p));
+    if(!qHead(box,++st.qn,tx(b.label,C.h),tx(b.help,C.p))) box.attrs["aria-label"]=String(b.id||Wd.id||"widget");
     [C.stance,C.invite].filter(R.nonEmpty).forEach(x=>box.append(el("p",{class:"bk-q-hint"},x)));
     ENGINE_DRAW[eng](box,Wd,R.engOpts(b));
     return box;}
@@ -341,14 +348,14 @@ function drawPage(X,P,o){
       const axis=(side,v)=>R.nonEmpty(tx(v,""))?el("p",{class:"bk-ax bk-ax-"+side},tx(v,"")):el("span",{class:"bk-ax bk-ax-"+side});
       box.append(el("div",{class:"bk-grid"},axis("top",ax.top),axis("left",ax.left),
         el("div",{class:"bk-cells"},...cells.map((c,i)=>el("div",{class:"bk-cell "+tone(c,i)},el("p",{class:"bk-cell-name"},tx(c.label,c.id)),
-          el("ul",{class:"bk-words"},...(Wd.items||[]).filter(it=>it.cell===c.id).map(it=>pickable(op,tx(it.label,it.id),tx(c.note,""),"bk-w"+(++pickN))))))),
+          el("ul",{class:"bk-words"},...(Wd.items||[]).filter(it=>it.cell===c.id).map(it=>pickable(op,tx(it.label,it.id),tx(c.note,""),IDP+"w"+(++pickN))))))),
         axis("right",ax.right),axis("bottom",ax.bottom)));
       if(op.describe&&cells.some(c=>c.note)) box.append(el("dl",{class:"bk-notes-of"},...cells.map((c,i)=>
         el("div",{class:"bk-cell "+tone(c,i)},el("dt",{},tx(c.label,c.id)),el("dd",{},tx(c.note,""))))));},
     /* the body map: its places named, figure by figure; the figure itself is marked (compile 0.2 draws it) */
     "svg-regions":(box,Wd,op)=>{const figs=Wd.figures||[],labelOf=id=>{const r=(Wd.regions||[]).find(x=>x.id===id);return r?tx(r.label,id):id;};
       const noteOf=id=>{const r=(Wd.regions||[]).find(x=>x.id===id);return r?tx(r.note,""):"";};
-      const list=ids=>el("ul",{class:"bk-words"},...ids.map(id=>pickable(op,labelOf(id),noteOf(id),"bk-w"+(++pickN))));
+      const list=ids=>el("ul",{class:"bk-words"},...ids.map(id=>pickable(op,labelOf(id),noteOf(id),IDP+"w"+(++pickN))));
       if(!figs.length) box.append(list((Wd.regions||[]).map(r=>r.id)));
       figs.forEach(f=>{box.append(mark("regionsFigure","the figure “"+String(f.id)+"” of the widget “"+String(Wd.id||"")+"”"));
         if(figs.length>1) box.append(el("p",{class:"bk-places-h"},tx(f.label,f.id)));
@@ -516,7 +523,7 @@ function drawPage(X,P,o){
     const L=levelOf(x);if(L>1&&L<5&&x.attrs.id&&x.attrs.class!=="bk-notes-h") {x.append(" ",el("a",{class:"bk-anchor",href:"#"+x.attrs.id,"aria-label":W.anchor},"#"));return false;}});
 
   return {article,title:plain(design.title)||pageTitle,description:describe(st.lede?descText(st.lede):firstPara(article)),
-    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript,readOnly:st.readOnly};}
+    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript,keyed:!!st.keyed,readOnly:st.readOnly};}
 
 /* the first paragraph of the page's own text, when it has no lede (not one in a fold, a callout or a question) */
 function firstPara(article){let t="";H.walk(article,x=>{if(t) return false;

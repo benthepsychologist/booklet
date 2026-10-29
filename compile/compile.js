@@ -219,7 +219,7 @@ function compileOne(X,input,o){
   const source=path.basename(input.file||input.name+".booklet.md");
   const name=input.name;
   const rep={source,name,form:o.form,ok:false,refused:[],problems:[],marker:"",pages:[],comments:[],
-    counts:null,marked:[],images:[],links:[],description:"",toc:false,script:false,needsScript:false,readOnly:[]};
+    counts:null,marked:[],images:[],links:[],description:"",toc:false,script:false,needsScript:false,keyed:false,readOnly:[]};
   if(!NAME.test(name)||name==="booklet"){rep.refused.push("its address, “"+name+"”, must be letters, digits, . _ or - (and not “booklet”, the stylesheet's folder): rename the file");return {rep,files:new Map()};}
   const P=o.parsed||parseInput(X,input);
   rep.problems=P.problems;rep.marker=P.marker;rep.comments=P.comments||[];
@@ -240,7 +240,7 @@ function compileOne(X,input,o){
     rep.pages.push(root+name+"/index.html");
     for(const [rel,bytes] of keep) files.set(root+name+"/"+rel,bytes);
     if(!first) first=page;}
-  Object.assign(rep,{ok:true,counts:first.counts,marked:first.marked,images:dedupe(first.images),links:first.links,description:first.description,toc:first.toc,script:first.script,needsScript:first.needs,readOnly:first.readOnly});
+  Object.assign(rep,{ok:true,counts:first.counts,marked:first.marked,images:dedupe(first.images),links:first.links,description:first.description,toc:first.toc,script:first.script,needsScript:first.needs,keyed:first.keyed,readOnly:first.readOnly});
   return {rep,files};}
 const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"));
 /* a page's title, as drawPage takes it: the booklet's title, else its first module's, else its address */
@@ -348,6 +348,7 @@ function reportText(C){const L=[];
       rep.marked.forEach(m=>L.push("    [ ] "+m.what+", in "+m.where+": "+D.MARKED[m.kind]));
       refused.forEach(i=>L.push("    [ ] the image "+JSON.stringify(i.src)+", in "+i.where+", was not copied (its words and address are shown): "+i.why));}
     else L.push("  To tidy: nothing was left off.");
+    if(rep.keyed) L.push("  Answer key: this page carries its answer key in its markup (a class on each option marked [x], its verdict words and its replies, hidden until a press shows them). Anyone who views the page source can read which options are right.");
     if(rep.readOnly&&rep.readOnly.length){L.push("  Read-only here (each is shown as it asks, with nothing to press):");
       rep.readOnly.forEach(r=>L.push("    - "+r.what+", in "+r.where+": "+r.why));}
     if(rep.problems.length){L.push("  The renderer reported:");rep.problems.forEach(p=>L.push("    - "+p));}

@@ -18,10 +18,13 @@
      2. Nothing is sent: no fetch, XMLHttpRequest, WebSocket, EventSource, beacon, worker, image or form that makes a
         request, no postMessage.
      3. A booklet's words never become markup or code at run time: no innerHTML, outerHTML, insertAdjacentHTML,
-        document.write, DOMParser, eval, Function. A part shows only text the compiler already wrote into the page as
-        text, and shows it with textContent or a class, a hidden attribute or an attribute the part itself names.
-     4. A part does not reach for a global by a computed name: no window[…], globalThis, self[…] (a name built from
-        pieces would get round every word in this list).
+        document.write, DOMParser, eval, Function. A part shows only text, set with textContent: either text the compiler
+        already wrote into the page (a verdict sentence, a label) or a fixed word of the part's own ("Open all", "Link
+        copied"), never a booklet's words made into markup. It changes the page with a class, a hidden attribute or an
+        attribute the part itself names.
+     4. A part does not reach for a global by a computed name or an alias: no window[…], document[…], navigator[…],
+        this[…], globalThis, self[…], Reflect, no `x=window` (a name built from pieces would get round every word in this
+        list).
      5. A part only looks at markup it knows by its own class or data-bk- name, and changes nothing outside it.
    The scan is a tripwire, not the proof: it cannot see a name built from pieces by a part that got past rule 4. The proof
    is test/compile-script-browser.js, which answers every question kind on a real page and then looks for anything kept
@@ -50,13 +53,17 @@ const BANNED=[
   ["send something (an image or a form made at run time)",/\bnew\s+Image\b|\bImage\s*\(|\.submit\s*\(|\bFormData\b/],
   ["run text as code (eval)",/\beval\b/],
   ["run text as code (Function)",/\bFunction\b|\bconstructor\b/],
-  ["load code (import)",/\bimport\s*\(|\bimportScripts\b/],
+  ["load code (import)",/\bimport\b|\bimportScripts\b/],
+  ["run text as code (a timer given text)",/\b(?:setTimeout|setInterval)\s*\(\s*["'`]/],
   ["write markup (innerHTML)",/innerHTML/],
   ["write markup (outerHTML)",/outerHTML/],
   ["write markup (insertAdjacentHTML)",/insertAdjacentHTML/],
   ["write markup (document.write)",/document\s*\.\s*write/],
   ["write markup (a parser or fragment)",/DOMParser|createContextualFragment|\bsrcdoc\b/],
-  ["reach a global by a computed name",/\bwindow\s*\[|\bglobalThis\b|\bself\s*\[|\btop\s*\[|\bparent\s*\[/]];
+  ["reach a global by a computed name",/\bwindow\s*\[|\bglobalThis\b|\bself\s*\[|\btop\s*\[|\bparent\s*\[/],
+  ["reach a global by a computed name (document, navigator or this)",/\bdocument\s*\[|\bnavigator\s*\[|\bthis\s*\[/],
+  ["reach a global by reflection",/\bReflect\b/],
+  ["alias the window (a name for it could be indexed)",/=\s*(?:window|self)\b/]];
 /* /BANNED */
 
 /* the scan: what, if anything, the text holds that no part may; [] for a clean text. A hit names the line and the rule, and

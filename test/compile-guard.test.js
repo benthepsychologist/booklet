@@ -21,12 +21,15 @@ let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FA
 
 const files=fs.readdirSync(DIR).filter(f=>f.endsWith(".js")).sort();
 const srcWhole=Object.fromEntries(files.map(f=>[f,fs.readFileSync(path.join(DIR,f),"utf8")]));
-/* script.js's BANNED region names the words 4. forbids, as patterns and nothing else (checked in 6.); it is cut out of the
-   words the checks look for, so the list of banned words is not itself a ban hit */
+/* script.js's BANNED region names the words 4. forbids, as patterns and nothing else (checked in 6.). Only its own string
+   and regular-expression literals are let off the words the checks look for (so the list of banned words is not itself a ban
+   hit): neutral() blanks those literals and keeps everything else, so a call such as a fetch(...) written inside the region is
+   still seen by every check below. */
+const neutral=r=>r.replace(/\/\*[\s\S]*?\*\//g,"").replace(/^\s*\/\/.*$/gm,"").replace(/\/(?:[^\/\\\n]|\\.)+\/[a-z]*/g,"/x/").replace(/"(?:[^"\\]|\\.)*"/g,'""');
 const BAN_A="/* BANNED\n",BAN_B="/* /BANNED */",sj=srcWhole["script.js"]||"";
 const banA=sj.indexOf(BAN_A),banB=sj.indexOf(BAN_B);
 const banRegion=banA>=0&&banB>banA?sj.slice(banA,banB+BAN_B.length):"";
-const src={...srcWhole,...(banRegion?{"script.js":sj.slice(0,banA)+sj.slice(banB+BAN_B.length)}:{})};
+const src={...srcWhole,...(banRegion?{"script.js":sj.slice(0,banA)+neutral(banRegion)+sj.slice(banB+BAN_B.length)}:{})};
 /* the code without its comments: block comments, and line comments that start a line (the compiler writes no other kind) */
 const code=Object.fromEntries(files.map(f=>[f,src[f].replace(/\/\*[\s\S]*?\*\//g,"").replace(/^\s*\/\/.*$/gm,"")]));
 const allCode=files.map(f=>code[f]).join("\n");
@@ -155,6 +158,11 @@ chk("the report may not be a .md file",/--report names a \.md file/.test(code["c
 const SC=require("../compile/script.js");
 chk("script.js holds one BANNED region",banA>=0&&banB>banA&&sj.indexOf(BAN_A,banA+1)<0);
 chk("…which holds patterns and no call (no require, no function call but the pattern literals)",!/require\(|\.exec\(|\.test\(|\bfunction\b|=>/.test(strip(banRegion)));
+chk("…whose only code, once its string and pattern literals are blanked, is the list itself",/^constBANNED=\[(?:\["",\/x\/\],?)+\];$/.test(neutral(banRegion).replace(/\s+/g,"")),neutral(banRegion).replace(/\s+/g,"").slice(0,120));
+/* the exemption is only for literals: a call written inside the region is seen (made-up regions, each tried) */
+for(const poison of ['const BANNED=[["x",(fetch("http://127.0.0.1:1").catch(Object),/x/)]];','const BANNED=[["x",/x/],(new XMLHttpRequest())];','const BANNED=[["x",/x/]]; eval("1");'])
+  chk("a call inside the BANNED region is still seen by the no-network words: "+poison.slice(0,40),/\bfetch\b|XMLHttpRequest|\beval\s*\(/.test(neutral(poison)));
+chk("…while the list's own words are blanked",!/\bfetch\b|XMLHttpRequest|\beval\b|localStorage/.test(neutral(banRegion)));
 const partDir=path.join(DIR,"script"),parts=fs.existsSync(partDir)?fs.readdirSync(partDir).filter(f=>f.endsWith(".js")).sort():[];
 for(const f of parts){const t=fs.readFileSync(path.join(partDir,f),"utf8");
   const hits=SC.scan(t);chk("script/"+f+" holds no banned word (nothing kept, nothing sent, no markup made at run time)",!hits.length,hits.map(h=>"line "+h.line+": "+h.why).join("; "));

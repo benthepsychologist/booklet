@@ -24,16 +24,18 @@ function allRight(q){
     if(input&&input.checked){on++;if(!right) return false;}
     else if(right) return false;}
   return on>0;}
+function anyOn(q){return !!q.querySelector(".bk-opt>input:checked");}
+/* says nothing until something is picked, so the sentence can never be read out with nothing ticked */
 function say(q){
   var live=q.querySelector(".bk-live"),line=q.querySelector(allRight(q)?".bk-say-ok":".bk-say-no");
-  if(live&&line) live.textContent=line.textContent;}
+  if(live&&line&&anyOn(q)) live.textContent=line.textContent;}
 function hush(q){var live=q.querySelector(".bk-live");if(live) live.textContent="";}
 Array.prototype.forEach.call(quizzes,function(q){
   var check=q.querySelector(".bk-check");
   q.addEventListener("change",function(e){
     var t=e.target;
     if(!t||t.tagName!=="INPUT") return;
-    if(t===check){if(check.checked) say(q);else hush(q);return;}
+    if(t===check){if(check.checked&&!anyOn(q)) check.checked=false;if(check.checked) say(q);else hush(q);return;}
     if(check){if(check.checked) check.checked=false;hush(q);return;}
     say(q);});});
 })();
