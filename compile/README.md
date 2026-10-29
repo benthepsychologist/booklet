@@ -83,6 +83,25 @@ address. That is all a host needs, for any site. The stylesheet styles only what
 
 **Both** (`--form both`) writes the two, under `<out>/standalone/` and `<out>/site/`.
 
+## The optional script
+
+A page **reads fully with no script**. Where a part of it can respond when pressed (a quiz answer, a widget), the compiler
+also writes one script, `booklet.js`, beside `booklet.css`, and a standalone page links it with
+`<script src="../booklet/booklet.js" defer></script>` only when something on that page needs it. A site's layout adds the
+line itself, `<script src="/booklet/booklet.js" defer></script>`, next to the stylesheet line, and the build report says
+which pages need it. A host that never loads it still gets every page readable. **The script keeps nothing and sends
+nothing**: no cookie, `localStorage`, `sessionStorage` or IndexedDB, no request of any kind, and no booklet text turned
+into markup at run time. What a reader presses lives in the open page and is gone on reload.
+
+The script is built from the parts in `compile/script/` (one file each, one immediately called function each, joined in
+file-name order, no modules). `script.js` scans the joined text and **fails the build, writing nothing**, when a part holds
+a word that could keep something (`localStorage`, `sessionStorage`, `indexedDB`, a cookie, a cache or worker), send
+something (`fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `postMessage`), run text as code (`eval`, `Function`,
+`import(`), write markup (`innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`) or reach a global by a computed
+name (`window[`, `globalThis`). The words are banned in comments too, and the rules for a part are at the top of
+`script.js`. The scan is a tripwire; the proof is a browser test that uses a page and then looks for anything kept or sent.
+`booklet.js` carries the same stamp as `booklet.css`, so a script tidied by hand is kept back until `--force`.
+
 ## The stylesheet
 
 `compile/booklet.css` is the renderer's reading look, made for a web page: its type (Atkinson Hyperlegible, headings in
@@ -265,6 +284,8 @@ that would break the compiler is caught here and never on a host's build.
 | `compile.js` | the command, the two forms, images and the SVG check, the stamp, writing, the report |
 | `engine.js` | the renderer, loaded in a `vm` context (not a security boundary): the parse, the Markdown engine, Temml, icons and fonts; the records checks; author comments |
 | `draw.js` | a design drawn as one page's markup; what is drawn and what is marked (`COVERAGE`, `MARKED`) |
+| `script.js` | the assembler and the scan for `booklet.js` (below) |
+| `script/` | the script's parts, one file each |
 | `html.js` | the markup as nodes, written out as indented HTML a person can tidy |
 | `booklet.css` | the stylesheet |
 
@@ -276,6 +297,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | --- | --- |
 | `compile-guard.test.js` | no second reader (no callout, fence, link, heading or other Markdown pattern of its own, as a pattern or a string test; tried first on made-up re-readings); the author-comment mark in one region only; every renderer name it uses exists; no code reaches the records; installs nothing, fetches nothing; writes only its pages |
 | `compile-coverage.test.js` | every block type, question kind, widget engine and query view the renderer has is drawn or marked, from the very tables `draw.js` dispatches from; every callout kind in its look; every mark both a comment and a report line |
+| `compile-script.test.js` | the script's scan names every banned word, each tried on a made-up part; the assembler's order, shape and refusals; a page links the script only when it needs it, a site fragment never; the stamp guard; a banned word stops the build and writes nothing |
 | `compile-golden.test.js` | the pages for the examples and page-shaped fixtures equal the committed ones in `test/compile-golden/`; `node test/compile-golden.test.js --write` refreshes them |
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |

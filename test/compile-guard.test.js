@@ -20,7 +20,13 @@ const ROOT=path.join(__dirname,".."),DIR=path.join(ROOT,"compile");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 
 const files=fs.readdirSync(DIR).filter(f=>f.endsWith(".js")).sort();
-const src=Object.fromEntries(files.map(f=>[f,fs.readFileSync(path.join(DIR,f),"utf8")]));
+const srcWhole=Object.fromEntries(files.map(f=>[f,fs.readFileSync(path.join(DIR,f),"utf8")]));
+/* script.js's BANNED region names the words 4. forbids, as patterns and nothing else (checked in 6.); it is cut out of the
+   words the checks look for, so the list of banned words is not itself a ban hit */
+const BAN_A="/* BANNED\n",BAN_B="/* /BANNED */",sj=srcWhole["script.js"]||"";
+const banA=sj.indexOf(BAN_A),banB=sj.indexOf(BAN_B);
+const banRegion=banA>=0&&banB>banA?sj.slice(banA,banB+BAN_B.length):"";
+const src={...srcWhole,...(banRegion?{"script.js":sj.slice(0,banA)+sj.slice(banB+BAN_B.length)}:{})};
 /* the code without its comments: block comments, and line comments that start a line (the compiler writes no other kind) */
 const code=Object.fromEntries(files.map(f=>[f,src[f].replace(/\/\*[\s\S]*?\*\//g,"").replace(/^\s*\/\/.*$/gm,"")]));
 const allCode=files.map(f=>code[f]).join("\n");
@@ -30,7 +36,7 @@ const AC_START="/* AUTHOR COMMENTS\n",AC_END="/* /AUTHOR COMMENTS */",eng=src["e
 const acA=eng.indexOf(AC_START),acB=eng.indexOf(AC_END);
 const acRegion=acA>=0&&acB>acA?strip(eng.slice(acA,acB+AC_END.length)):"";
 const outside=Object.fromEntries(files.map(f=>[f,f==="engine.js"&&acRegion?strip(eng.slice(0,acA)+eng.slice(acB+AC_END.length)):code[f]]));
-chk("compile/ holds the four files the compiler is made of",["compile.js","draw.js","engine.js","html.js"].every(f=>files.includes(f)),files.join(", "));
+chk("compile/ holds the five files the compiler is made of",["compile.js","draw.js","engine.js","html.js","script.js"].every(f=>files.includes(f)),files.join(", "));
 
 /* ---- 1. no second reader ---- */
 const FORBIDDEN=[
@@ -130,9 +136,9 @@ chk("the parse's raw is read in engine.js only, for its source and to leave it b
 const tree=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?[e.name+"/",...tree(path.join(d,e.name)).map(x=>e.name+"/"+x)]:[e.name]);
 const all=tree(DIR);
 chk("no package.json, lock file or node_modules under compile/",!all.some(f=>/(^|\/)(package(-lock)?\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|node_modules\/)/.test(f)),all.join(", "));
-chk("compile/ holds only the compiler's files, its stylesheet and its README",all.every(f=>/^(compile|draw|engine|html)\.js$|^booklet\.css$|^README\.md$/.test(f)),all.join(", "));
+chk("compile/ holds only the compiler's files, its stylesheet, its README and the script's parts",all.every(f=>/^(compile|draw|engine|html|script)\.js$|^booklet\.css$|^README\.md$|^script\/$|^script\/[A-Za-z0-9][A-Za-z0-9._-]*\.js$/.test(f)),all.join(", "));
 const mods=new Set([...allCode.matchAll(/require\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map(m=>m[1]));
-const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./draw.js"]);
+const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./draw.js","./script.js"]);
 chk("it requires only fs, path, vm, crypto and its own files",[...mods].every(m=>allowed.has(m)),[...mods].join(", "));
 chk("every require names its module as a plain string",(allCode.match(/require\(/g)||[]).length===(allCode.match(/require\(\s*["'`][^"'`]+["'`]\s*\)/g)||[]).length);
 for(const [what,re] of [["fetch",/\bfetch\b/],["XMLHttpRequest",/XMLHttpRequest/],["WebSocket",/WebSocket/],["EventSource",/EventSource/],
@@ -144,5 +150,17 @@ for(const [what,re] of [["fetch",/\bfetch\b/],["XMLHttpRequest",/XMLHttpRequest/
 const writes=files.flatMap(f=>[...code[f].matchAll(/fs\.(writeFileSync|writeFile|appendFileSync|appendFile|copyFileSync|renameSync|rmSync|unlinkSync|createWriteStream|symlinkSync|cpSync)\b/g)].map(m=>f+": "+m[1]));
 chk("the only file writes are write()'s one and the report's",writes.length===2&&writes.every(w=>w==="compile.js: writeFileSync"),writes.join("; "));
 chk("the report may not be a .md file",/--report names a \.md file/.test(code["compile.js"]));
+
+/* ---- 6. the script (compile/script.js and compile/script/): the banned words, and the parts held to them ---- */
+const SC=require("../compile/script.js");
+chk("script.js holds one BANNED region",banA>=0&&banB>banA&&sj.indexOf(BAN_A,banA+1)<0);
+chk("…which holds patterns and no call (no require, no function call but the pattern literals)",!/require\(|\.exec\(|\.test\(|\bfunction\b|=>/.test(strip(banRegion)));
+const partDir=path.join(DIR,"script"),parts=fs.existsSync(partDir)?fs.readdirSync(partDir).filter(f=>f.endsWith(".js")).sort():[];
+for(const f of parts){const t=fs.readFileSync(path.join(partDir,f),"utf8");
+  const hits=SC.scan(t);chk("script/"+f+" holds no banned word (nothing kept, nothing sent, no markup made at run time)",!hits.length,hits.map(h=>"line "+h.line+": "+h.why).join("; "));
+  chk("script/"+f+" is one immediately called function",SC.shape(t)==="",SC.shape(t));
+  chk("script/"+f+" reads no booklet text and no records (nothing of the format, no .S, drafts or raw)",!/\.raw\b|\bdrafts\b|\bBOOK\b|parseFile/.test(t));}
+try{const built=SC.assemble();chk("the parts assemble into one script ("+(built?built.parts.length+" parts, "+built.text.length+" characters":"no parts")+")",true);}
+catch(e){chk("the parts assemble into one script",false,e.message);}
 
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile guard passed");process.exit(fails?1:0);

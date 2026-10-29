@@ -59,7 +59,7 @@ const HEAD=/^h([1-6])$/;
 const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 
 /* drawPage(X, parsed, o): the page's article and what the page and the report need.
-   o: {name, form: "standalone"|"site", siblings: Map of the addresses compiled in the same run to their titles, image(rel, ext) ->
+   o: {name, form: "standalone"|"site", forceScript (tests: say the page needs booklet.js), siblings: Map of the addresses compiled in the same run to their titles, image(rel, ext) ->
    {ok} | {ok:false, why: a renderer ui string's name, detail}}. */
 function drawPage(X,P,o){
   const R=X.R,M=X.M,design=P.design;
@@ -68,7 +68,7 @@ function drawPage(X,P,o){
   X.setLang(ui);
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
-    marked:[],images:[],links:[],counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,images:0,math:0,notes:0,links:0},
+    marked:[],images:[],links:[],needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,images:0,math:0,notes:0,links:0},
     where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[]};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const pageTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
@@ -453,7 +453,7 @@ function drawPage(X,P,o){
     const L=levelOf(x);if(L>1&&L<5&&x.attrs.id&&x.attrs.class!=="bk-notes-h") {x.append(" ",el("a",{class:"bk-anchor",href:"#"+x.attrs.id,"aria-label":W.anchor},"#"));return false;}});
 
   return {article,title:plain(design.title)||pageTitle,description:describe(st.lede?descText(st.lede):firstPara(article)),
-    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc};}
+    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript};}
 
 /* the first paragraph of the page's own text, when it has no lede (not one in a fold, a callout or a question) */
 function firstPara(article){let t="";H.walk(article,x=>{if(t) return false;
