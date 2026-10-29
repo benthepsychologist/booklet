@@ -76,6 +76,12 @@ const missed=REREADINGS.filter(t=>!FORBIDDEN.some(([,re])=>re.test(t)));
 chk("the patterns catch every made-up re-reading of the format ("+REREADINGS.length+")",!missed.length,missed.join("  |  "));
 for(const [what,re] of FORBIDDEN){const hits=files.filter(f=>re.test(outside[f]));
   chk("no "+what+" pattern of its own under compile/",!hits.length,hits.join(", "));}
+/* the script parts (compile/script/, the optional booklet.js) read the format no more than the compiler does: they work on the
+   markup the compiler wrote, never on a booklet's text, so none holds a pattern of the format either */
+const scriptDir=path.join(DIR,"script"),scriptFiles=fs.existsSync(scriptDir)?fs.readdirSync(scriptDir).filter(f=>f.endsWith(".js")).sort():[];
+const scriptCode=Object.fromEntries(scriptFiles.map(f=>[f,strip(fs.readFileSync(path.join(scriptDir,f),"utf8"))]));
+for(const [what,re] of FORBIDDEN){const hits=scriptFiles.filter(f=>re.test(scriptCode[f]));
+  chk("no "+what+" pattern of its own under compile/script/",!hits.length,hits.join(", "));}
 /* the author-comments region: there once, the mark once, fenced code from the renderer, and no other pattern */
 chk("engine.js holds one author-comments region",acA>=0&&acB>acA&&eng.indexOf(AC_START,acA+1)<0&&eng.indexOf(AC_END,acB+1)<0);
 chk("…whose only format string is the comment mark, once",(acRegion.match(/%%/g)||[]).length===1&&/const COMMENT_MARK="%%";/.test(acRegion),acRegion.match(/.{0,30}%%.{0,10}/g));
