@@ -55,15 +55,18 @@ chk("a callout folded with - is a closed <details> in its kind's look",/<details
 chk("a question's hint and solution are its own compact folds",/<details class="bk-fold bk-compact bk-hint">/.test(page)&&/<details class="bk-fold bk-compact bk-solution">/.test(page));
 chk("a hint outside its question is drawn plain",/<aside class="bk-callout bk-plain" role="note">\s*<p class="bk-ctitle">A hint drawn outside its question<\/p>/.test(page));
 
-/* every question kind, read-only */
-for(const k of kinds) chk("the "+k+" question is drawn",has("bk-q-"+k,"div"));
-chk("choice and multi show their options, with nothing to press",/<ul class="bk-options bk-pick-one">/.test(page)&&/<ul class="bk-options bk-pick-many">/.test(page)&&!/<(input|button|select|textarea|form)\b/.test(page));
+/* every question kind: a fieldset of its kind (the quiz kinds answer; test/compile-script.test.js and test/compile-script-browser.js hold that) */
+for(const k of kinds) chk("the "+k+" question is drawn",has("bk-q-"+k,"fieldset")&&new RegExp('<fieldset[^>]*class="bk-q bk-q-'+k+'[^"]*" data-bk-kind="'+k+'"').test(page));
+chk("an open choice stays read-only (the reader's own words need somewhere to keep them); a plain multi has inputs",
+  /<ul class="bk-options bk-pick-one">\s*<li>Diamond<\/li>/.test(page)&&/<ul class="bk-options bk-pick-many">\s*<li class="bk-opt"><input type="checkbox"/.test(page));
+chk("no button, select, text box or form stands on the page",!/<(button|select|textarea|form)\b/.test(page)&&!/<input type="(?!checkbox|radio)/.test(page));
+chk("the report lists what is read-only here, with the reason",/Read-only here/.test(report)&&/the scale question “How steady was it\?”[^\n]*renderer defines no response for a scale/.test(report)&&/the choice question “Which shape did you build\?”[^\n]*own words \(open\)/.test(report));
 chk("an open choice offers the renderer's Add your own",page.includes('<li class="bk-own">'+R.strings("question").addOwn+"</li>"));
 chk("a scale shows its anchors, a matrix its items and anchors",/<ul class="bk-scale">\s*<li>Wobbly<\/li>/.test(page)&&/<table class="bk-matrix">[^]*?<th scope="row">A light breeze<\/th>/.test(page));
 /* both engines */
-chk("the grid-select widget is drawn: axes, cells in their colour names, items",has("bk-w-grid-select","div")&&/bk-ax bk-ax-top">higher</.test(page)&&/<div class="bk-cell bk-c-blue">\s*<p class="bk-cell-name">Soaring<\/p>\s*<ul class="bk-words">\s*<li>Glide<\/li>/.test(page));
+chk("the grid-select widget is drawn: axes, cells in their colour names, items",has("bk-w-grid-select","fieldset")&&/bk-ax bk-ax-top">higher</.test(page)&&/<div class="bk-cell bk-c-blue">\s*<p class="bk-cell-name">Soaring<\/p>\s*<ul class="bk-words">\s*<li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-asks-w1" autocomplete="off"><label for="bk-compile-kinds-asks-w1">Glide<\/label><span class="bk-shows" hidden>High and calm\.<\/span><\/li>/.test(page));
 chk("a grid with no colour names takes the quiet ramp by place",/bk-cell bk-c-n0[^]*bk-cell bk-c-n3/.test(page));
-chk("the svg-regions widget is drawn by its places, figure by figure",has("bk-w-svg-regions","div")&&/<p class="bk-places-h">Front<\/p>\s*<ul class="bk-words">\s*<li>Sail<\/li>\s*<li>Tail<\/li>/.test(page));
+chk("the svg-regions widget is drawn by its places, figure by figure",has("bk-w-svg-regions","fieldset")&&/<p class="bk-places-h">Front<\/p>\s*<ul class="bk-words">\s*<li>Sail<\/li>\s*<li>Tail<\/li>/.test(page));
 chk("describe adds each place's note",/<dl class="bk-notes-of">[^]*?<dt>Spar<\/dt>\s*<dd>The stick that holds it open\.<\/dd>/.test(page));
 chk("no figure's SVG reaches the page",!/<svg viewBox="0 0 100 100"/.test(page)&&!/class="rg"/.test(page));
 

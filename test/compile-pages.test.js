@@ -255,5 +255,26 @@ const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\nWords of "+t+".\n\n";
   const m=compileText(booklet("Formulas $h$","> [!activity|a] Area $\\pi r^2$\n\nA.\n\n> [!activity|b] Side $s$\n\nB.\n\n> [!activity|c] Edge $e$\n\nC.\n"),"formulas");
   chk("a formula in a title is counted once, though the crumb, pager and card draw the title again (4: the booklet's and three activities')",m.rep.counts.math===4,String(m.rep.counts.math));}
 
+/* ======================= 10. the script lane on many pages ======================= */
+{const quiz=(id,t)=>"> [!activity|"+id+"] "+t+"\n\nWords of "+t+".\n\n> [!choice|q-"+id+"] Which is right in "+t+"?\n- [x] This one\n- [ ] Not this one\n\n";
+  const r=C.compile([{text:booklet("Quizzes",quiz("a","A")+quiz("b","B")+act("c","C")),name:"quizzes",dir:TMP},fixture("compile-pages")],{form:"both",engine:X});
+  const f=new Map();for(const x of r.results) for(const [k,v] of x.files) f.set(k,v);
+  const inputIds=t=>[...String(t).matchAll(/<input\b[^>]*\sid="([^"]*)"/g)].map(m=>m[1]);
+  const pg=[...f.keys()].filter(k=>k.startsWith("standalone/")&&k.endsWith("/index.html"));
+  const seen=new Map(),clash=[];
+  for(const k of pg) for(const id of inputIds(f.get(k))){if(seen.has(id)) clash.push(id+" on "+seen.get(id)+" and "+k);seen.set(id,k);}
+  chk("the ids of a question's inputs carry the page's own address, so two pages of a booklet (each its own q1) share none ("+seen.size+" inputs)",seen.size>=5&&!clash.length&&inputIds(f.get("standalone/quizzes/a/index.html")).every(i=>i.startsWith("bk-quizzes-a-"))&&inputIds(f.get("standalone/quizzes/b/index.html")).every(i=>i.startsWith("bk-quizzes-b-")),clash.slice(0,3).join(" | ")+" "+inputIds(f.get("standalone/quizzes/a/index.html")));
+  const dangling=[];
+  for(const k of pg){const t=f.get(k),ids=idsOf(t);
+    for(const m of t.matchAll(/\s(?:for|aria-labelledby)="([^"]*)"/g)) for(const w of m[1].split(/\s+/)) if(w&&!ids.has(w)) dangling.push(k+": "+w);}
+  chk("every label and aria-labelledby on every page points at an id on the same page",!dangling.length,dangling.slice(0,3).join(" | "));
+  const tag=k=>(f.get(k).match(/<script src="[^"]*"/)||[""])[0];
+  chk("a page with a graded question links booklet.js two folders up; the contents page and a page without one link none; the site form's fragments link none",
+    tag("standalone/quizzes/a/index.html")==='<script src="../../booklet/booklet.js"'&&tag("standalone/quizzes/b/index.html")===tag("standalone/quizzes/a/index.html")
+    &&!tag("standalone/quizzes/index.html")&&!tag("standalone/quizzes/c/index.html")&&[...f.keys()].filter(k=>k.startsWith("site/")).every(k=>!tag(k)),tag("standalone/quizzes/a/index.html")+"|"+tag("standalone/quizzes/index.html")+"|"+tag("standalone/quizzes/c/index.html"));
+  chk("…the stylesheet link keeps the same depth, and booklet.js is written once for each form, beside the stylesheet",/<link rel="stylesheet" href="\.\.\/\.\.\/booklet\/booklet\.css">/.test(f.get("standalone/quizzes/a/index.html"))&&r.assets.has("standalone/booklet/booklet.js")&&r.assets.has("site/booklet/booklet.js"));
+  const rep=C.reportText(r),q=r.results[0].rep;
+  chk("the report names the script for the booklet that needs it (and the answer key), not for the one that does not",q.script===true&&q.keyed===true&&r.results[1].rep.script===false&&/Script: the page links booklet\.js/.test(rep)&&/Answer key:/.test(rep));}
+
 fs.rmSync(TMP,{recursive:true,force:true});
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile pages passed");process.exit(fails?1:0);

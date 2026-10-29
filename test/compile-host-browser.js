@@ -45,7 +45,7 @@ fs.writeFileSync(path.join(POND,'pond.booklet.md'),'---\nbooklet: "'+C.compile([
   +'### Fish\n\n| Fish | Seen |\n| --- | --- |\n| Carp | 3 |\n\n> [!note]- A folded note\n> Words inside the fold.\n\n***\n\nLast words after a rule.\n\n'
   +'[^pond]: A made-up note about the pond.\n');
 const inputs=[...fs.readdirSync(path.join(ROOT,'examples')).filter(f=>f.endsWith('.booklet.md')).map(f=>({file:path.join(ROOT,'examples',f)})),
-  ...['compile-article','compile-kinds','figures','charts','data-views','compile-pages'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),{file:path.join(POND,'pond.booklet.md')}];
+  ...['compile-article','compile-kinds','compile-quiz','figures','charts','data-views','compile-pages'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),{file:path.join(POND,'pond.booklet.md')}];
 const run=C.compile(inputs,{form:'both',renderer:HTML});
 C.write(run,OUT,{force:true});
 ok(run.results.every(r=>r.rep.ok),'every page compiles ('+run.results.length+' booklets, both forms)');

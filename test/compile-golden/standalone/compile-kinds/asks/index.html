@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- booklet compile 0.1.0 · from compile-kinds.booklet.md · sha256:4c4a9796dc6c34d69475b6a67a975260d68113e2116d2fb198c5bf5d86f0a947 -->
+<!-- booklet compile 0.1.0 · from compile-kinds.booklet.md · sha256:ae46206aca142e77fd529fa2ae07a0ad1d8c3ec4765170fe8bb7139aa6f8d2fe -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -17,21 +17,21 @@
 <article class="booklet" lang="en">
   <p class="bk-crumb"><a href="../">A kite workshop</a></p>
   <h1 id="every-question-kind">Every question kind</h1>
-  <div class="bk-q bk-q-text">
-    <p class="bk-q-ask">What will you call your kite?</p>
+  <fieldset class="bk-q bk-q-text" data-bk-kind="text" aria-labelledby="bk-compile-kinds-asks-q1-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q1-ask">What will you call your kite?</p>
     <p class="bk-q-help">One or two words.</p>
-  </div>
-  <div class="bk-q bk-q-lines">
-    <p class="bk-q-ask">The steps you followed</p>
-  </div>
-  <div class="bk-q bk-q-number">
-    <p class="bk-q-ask">How many spars?</p>
-  </div>
-  <div class="bk-q bk-q-date">
-    <p class="bk-q-ask">When did it first fly?</p>
-  </div>
-  <div class="bk-q bk-q-choice">
-    <p class="bk-q-ask">Which shape did you build?</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-lines" data-bk-kind="lines" aria-labelledby="bk-compile-kinds-asks-q2-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q2-ask">The steps you followed</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-number" data-bk-kind="number" aria-labelledby="bk-compile-kinds-asks-q3-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q3-ask">How many spars?</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-date" data-bk-kind="date" aria-labelledby="bk-compile-kinds-asks-q4-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q4-ask">When did it first fly?</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-choice" data-bk-kind="choice" aria-labelledby="bk-compile-kinds-asks-q5-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q5-ask">Which shape did you build?</p>
     <ul class="bk-options bk-pick-one">
       <li>Diamond</li>
       <li>Box</li>
@@ -50,26 +50,26 @@
         <p>A diamond has four.</p>
       </div>
     </details>
-  </div>
-  <div class="bk-q bk-q-multi">
-    <p class="bk-q-ask">Which tools did you use?</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-multi" data-bk-kind="multi" aria-labelledby="bk-compile-kinds-asks-q6-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q6-ask">Which tools did you use?</p>
     <ul class="bk-options bk-pick-many">
-      <li>Scissors</li>
-      <li>Ruler</li>
-      <li>Glue</li>
+      <li class="bk-opt"><input type="checkbox" id="bk-compile-kinds-asks-q6-o1" autocomplete="off"><label for="bk-compile-kinds-asks-q6-o1">Scissors</label></li>
+      <li class="bk-opt"><input type="checkbox" id="bk-compile-kinds-asks-q6-o2" autocomplete="off"><label for="bk-compile-kinds-asks-q6-o2">Ruler</label></li>
+      <li class="bk-opt"><input type="checkbox" id="bk-compile-kinds-asks-q6-o3" autocomplete="off"><label for="bk-compile-kinds-asks-q6-o3">Glue</label></li>
     </ul>
-  </div>
-  <!-- booklet: the question “Why that tool?” (activity “Every question kind”): a question asked for each pick in another: not compiled -->
-  <div class="bk-q bk-q-scale">
-    <p class="bk-q-ask">How steady was it?</p>
+  </fieldset>
+  <!-- booklet: the question “Why that tool?” (activity “Every question kind”): a question asked for each pick in another: not compiled (the reference renderer does not draw it either, and a page keeps no picks to draw it from) -->
+  <fieldset class="bk-q bk-q-scale" data-bk-kind="scale" aria-labelledby="bk-compile-kinds-asks-q7-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q7-ask">How steady was it?</p>
     <ul class="bk-scale">
       <li>Wobbly</li>
       <li>Fair</li>
       <li>Steady</li>
     </ul>
-  </div>
-  <div class="bk-q bk-q-matrix">
-    <p class="bk-q-ask">How did each wind feel?</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-matrix" data-bk-kind="matrix" aria-labelledby="bk-compile-kinds-asks-q8-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q8-ask">How did each wind feel?</p>
     <div class="bk-table">
       <table class="bk-matrix">
         <thead>
@@ -96,13 +96,13 @@
         </tbody>
       </table>
     </div>
-  </div>
+  </fieldset>
   <aside class="bk-callout bk-plain" role="note">
     <p class="bk-ctitle">A hint drawn outside its question</p>
     <div class="bk-cb"></div>
   </aside>
-  <div class="bk-q bk-widget bk-w-grid-select">
-    <p class="bk-q-ask">The flight</p>
+  <fieldset class="bk-q bk-widget bk-w-grid-select" data-bk-kind="widget" aria-labelledby="bk-compile-kinds-asks-q9-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q9-ask">The flight</p>
     <p class="bk-q-help">Pick what the kite did.</p>
     <div class="bk-grid">
       <p class="bk-ax bk-ax-top">higher</p>
@@ -111,34 +111,34 @@
         <div class="bk-cell bk-c-blue">
           <p class="bk-cell-name">Soaring</p>
           <ul class="bk-words">
-            <li>Glide</li>
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-asks-w1" autocomplete="off"><label for="bk-compile-kinds-asks-w1">Glide</label><span class="bk-shows" hidden>High and calm.</span></li>
           </ul>
         </div>
         <div class="bk-cell bk-c-purple">
           <p class="bk-cell-name">Dancing</p>
           <ul class="bk-words">
-            <li>Loop</li>
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-asks-w2" autocomplete="off"><label for="bk-compile-kinds-asks-w2">Loop</label><span class="bk-shows" hidden>High and gusty.</span></li>
           </ul>
         </div>
         <div class="bk-cell bk-c-slate">
           <p class="bk-cell-name">Dragging</p>
           <ul class="bk-words">
-            <li>Sag</li>
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-asks-w3" autocomplete="off"><label for="bk-compile-kinds-asks-w3">Sag</label><span class="bk-shows" hidden>Low and calm.</span></li>
           </ul>
         </div>
         <div class="bk-cell bk-c-amber">
           <p class="bk-cell-name">Diving</p>
           <ul class="bk-words">
-            <li>Plunge</li>
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-asks-w4" autocomplete="off"><label for="bk-compile-kinds-asks-w4">Plunge</label><span class="bk-shows" hidden>Low and gusty.</span></li>
           </ul>
         </div>
       </div>
       <p class="bk-ax bk-ax-right">gustier</p>
       <p class="bk-ax bk-ax-bottom">lower</p>
     </div>
-  </div>
-  <div class="bk-q bk-widget bk-w-svg-regions">
-    <p class="bk-q-ask">Where it broke</p>
+  </fieldset>
+  <fieldset class="bk-q bk-widget bk-w-svg-regions" data-bk-kind="widget" aria-labelledby="bk-compile-kinds-asks-q10-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q10-ask">Where it broke</p>
     <p class="bk-q-help">Which part gave way?</p>
     <!-- booklet: the figure “front” of the widget “kite-parts” (activity “Every question kind”): the body map's figure: not compiled yet; its places are named below it -->
     <p class="bk-places-h">Front</p>
@@ -165,9 +165,9 @@
         <dd>The stick that holds it open.</dd>
       </div>
     </dl>
-  </div>
-  <div class="bk-q bk-widget bk-w-grid-select">
-    <p class="bk-q-ask">An uncoloured grid</p>
+  </fieldset>
+  <fieldset class="bk-q bk-widget bk-w-grid-select" data-bk-kind="widget" aria-labelledby="bk-compile-kinds-asks-q11-ask">
+    <p class="bk-q-ask" id="bk-compile-kinds-asks-q11-ask">An uncoloured grid</p>
     <p class="bk-q-help">No colour names.</p>
     <div class="bk-grid">
       <span class="bk-ax bk-ax-top"></span><span class="bk-ax bk-ax-left"></span>
@@ -175,7 +175,7 @@
         <div class="bk-cell bk-c-n0">
           <p class="bk-cell-name">First</p>
           <ul class="bk-words">
-            <li>Ex</li>
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-asks-w8" autocomplete="off"><label for="bk-compile-kinds-asks-w8">Ex</label></li>
           </ul>
         </div>
         <div class="bk-cell bk-c-n1">
@@ -193,7 +193,7 @@
       </div>
       <span class="bk-ax bk-ax-right"></span><span class="bk-ax bk-ax-bottom"></span>
     </div>
-  </div>
+  </fieldset>
   <div class="bk-foot">
     <section class="bk-about">
       <p class="bk-about-h">About this module</p>

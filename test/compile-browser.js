@@ -20,7 +20,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 
 const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures');
 const inputs=[...fs.readdirSync(path.join(ROOT,'examples')).filter(f=>f.endsWith('.booklet.md')).map(f=>({file:path.join(ROOT,'examples',f)})),
-  ...['compile-article','compile-kinds','figures','charts','data-views','compile-records','compile-pages','compile-pair','compile-pair.es'].map(n=>({file:path.join(FIX,n+'.booklet.md')}))];
+  ...['compile-article','compile-kinds','compile-quiz','figures','charts','data-views','compile-records','compile-pages','compile-pair','compile-pair.es'].map(n=>({file:path.join(FIX,n+'.booklet.md')}))];
 fs.rmSync(OUT,{recursive:true,force:true});
 const run=C.compile(inputs,{form:'both',renderer:HTML});
 C.write(run,OUT,{force:true});
@@ -110,6 +110,26 @@ async function journey(b){
   ok(books>=5&&!missing.length,'the journeys asked for nothing that is not there ('+books+' booklets'+(missing.length?'; missing: '+missing.slice(0,3).join(', '):'')+')');
   await ctx.close();}
 
+/* the script lane on a many-page booklet: the activity page with a graded question is one folder deeper than a one-page booklet's, so it
+   links booklet.js as ../../booklet/booklet.js; with script on, the file is fetched (200) and the part does its work on that page. */
+async function scriptOnDeepPage(b){
+  const ctx=await b.newContext({viewport:{width:1280,height:900}});
+  const seen=[];
+  await ctx.route('http://host.test/**',route=>{const u=decodeURIComponent(new URL(route.request().url()).pathname);
+    const f=path.join(OUT,u.endsWith('/')?u+'index.html':u);
+    if(!f.startsWith(OUT+path.sep)||!fs.existsSync(f)||!fs.statSync(f).isFile()){seen.push([u,404]);return route.fulfill({status:404,body:'not here'});}
+    seen.push([u,200]);
+    return route.fulfill({status:200,contentType:({'.css':'text/css','.js':'text/javascript','.woff2':'font/woff2','.svg':'image/svg+xml'})[path.extname(f)]||'text/html',body:fs.readFileSync(f)});});
+  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  await p.goto('http://host.test/standalone/how-tides-work/rd-check/');await p.waitForLoadState('load');
+  ok(seen.some(([u,c])=>u==='/standalone/booklet/booklet.js'&&c===200)&&!seen.some(([,c])=>c===404),'a many-page booklet: the activity page with a graded question fetches ../../booklet/booklet.js (200), and nothing 404s'+(seen.filter(([,c])=>c===404).length?' ('+seen.filter(([,c])=>c===404)[0][0]+')':''));
+  await p.click('li.bk-right label');
+  const said=(await p.$eval('.bk-q[data-bk-graded] .bk-live',e=>e.textContent)).trim();
+  ok(said==='Right.'&&!errs.length,'…and the part works there: the right option is spoken as "Right." ('+JSON.stringify(said)+(errs.length?'; '+errs[0]:'')+')');
+  await p.goto('http://host.test/standalone/how-tides-work/');
+  ok(!(await p.$('script[src]')),'…while the contents page, which has no question, links no script');
+  await ctx.close();}
+
 (async()=>{
   const b=await chromium.launch();
   for(const scheme of ['light','dark']) for(const width of [1280,390]){
@@ -161,6 +181,7 @@ async function journey(b){
         ok(after.sw<=after.w,at+': no sideways scroll with every fold open');}}
     await ctx.close();}
   await journey(b);
+  await scriptOnDeepPage(b);
   await svgProof(b);
   await b.close();
   console.log(fails.length?fails.length+' FAILED':'compile pages: all checks passed');
