@@ -65,9 +65,12 @@ const MARKED={
 const HEAD=/^h([1-6])$/;
 const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 
+/* HOME is the contents page's key in a plan (and a booklet's one page). It is a Symbol, not a word, so that no activity id,
+   whatever its author wrote (`index` is a likely one), can be the same key and take the contents page's place. */
+const HOME=Symbol("the contents page");
 /* planPages(X, parsed, name): the pages a booklet makes. {paged: false, pages: [the one page]} for a booklet that shows no
    more than one activity (compile 0.1.0's single page, whole). Otherwise {paged: true, pages}: the contents page (key
-   "index", at the booklet's folder) and one page for each shown activity, in the order the booklet reads (its modules in
+   HOME, at the booklet's folder) and one page for each shown activity, in the order the booklet reads (its modules in
    file order, a module's activities as the renderer keeps them, a page before the ones under it). An activity's page is
    at <name>/<folder>/, the folder being the activity's id made a plain address by the renderer's slugify. The module
    is never in the address, since a booklet is usually one module and the id is what the author wrote; two activities
@@ -79,17 +82,17 @@ function planPages(X,P,name){
   const seen=new Set(),acts=[];
   mods.forEach(m=>m.activities.forEach(a=>{if(R.isShown(a)&&!seen.has(a.id)){seen.add(a.id);acts.push({a,m});}}));
   const bookRaw=R.tx(d.title,"")||R.tx((mods[0]||{}).title,""),bookTitle=R.plainText(bookRaw)||name;
-  if(acts.length<2) return {paged:false,pages:[{key:"index",kind:"whole",folder:"",title:bookTitle}]};
+  if(acts.length<2) return {paged:false,pages:[{key:HOME,kind:"whole",folder:"",title:bookTitle}]};
   const slug=v=>R.slugify(v)||"page",base=acts.map(({a})=>slug(R.shortId(a.id)));
   const dup=new Set(base.filter((b,i)=>base.indexOf(b)!==i)),used=new Set();
   const folders=acts.map(({m},i)=>{const scope=R.scopeOfModule(m),f=dup.has(base[i])&&scope?slug(scope)+"-"+base[i]:base[i];
     let g=f,n=2;while(used.has(g)) g=f+"-"+(n++);used.add(g);return g;});
-  const pages=[{key:"index",kind:"contents",folder:"",title:bookTitle,md:bookRaw}];
+  const pages=[{key:HOME,kind:"contents",folder:"",title:bookTitle,md:bookRaw}];
   acts.forEach(({a,m},i)=>{const single=!R.isMulti(m),raw=(single&&R.tx(m.title,""))||R.tx(a.title,"")||R.shortId(a.id);
     pages.push({key:a.id,kind:"activity",folder:folders[i],a,m,multi:!single,title:R.plainText(raw),md:raw});});
   const byKey=new Map(pages.map(p=>[p.key,p]));
   const modKey=id=>{const m=mods.find(x=>x.id===id&&R.scopeOfModule(x)!=="");
-    const only=m&&!R.isMulti(m)?pages.find(p=>p.m===m):null;return only?only.key:"index";};
+    const only=m&&!R.isMulti(m)?pages.find(p=>p.m===m):null;return only?only.key:HOME;};
   /* the address of page `to` as page `from` writes it */
   const href=(from,to)=>{const f=byKey.get(from),t=byKey.get(to),up=f&&f.kind==="activity"?"../":"";
     return t&&t.kind==="activity"?up+t.folder+"/":up||"./";};
@@ -110,7 +113,7 @@ function drawPage(X,P,o){
     where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[]};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const bookTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
-  const U=o.unit||{kind:"whole"},plan=o.plan||null,xr=o.xr||null,KEY=U.key||"index",deep=U.kind==="activity";
+  const U=o.unit||{kind:"whole"},plan=o.plan||null,xr=o.xr||null,KEY=U.key||HOME,deep=U.kind==="activity";
   const pageTitle=deep?U.title:bookTitle;
 
   /* ---- marks: what the page leaves off ---- */
@@ -135,6 +138,9 @@ function drawPage(X,P,o){
      as its alt text, no citation mark; `flat` (inside a fold's summary, an option) a link as its words */
   const labelOpts=flat=>({...R.PLAIN_OPTS,math:tex=>math(tex,false),anchor:(h,k)=>M.textOf(k),flat:!!flat,...(flat?{}:linkHooks)});
   const words=(s,flat)=>{const t=String(s==null?"":s);return M.renderInline(t,{opts:labelOpts(flat),refs:Object.create(null)});};
+  /* the same words drawn a second time on a page (a title again in a crumb, a pager link or a card, or a card's blurb): a formula
+     in them is not another formula of the booklet, so it is not counted again */
+  const again=s=>{const n=st.counts.math,r=words(s,true);st.counts.math=n;return r;};
   const prose=text=>tidyProse(M.mdNodes(String(text==null?"":text),proseOpts()));
 
   /* the engine's own classes renamed into the compiler's, its tables wrapped so a wide one scrolls on its own, and a
@@ -439,11 +445,11 @@ function drawPage(X,P,o){
   /* ---- the way on from an activity's page: back to the contents, and to the page before and the page after ---- */
   function pager(){
     const acts=plan.pages.filter(p=>p.kind==="activity"),i=acts.findIndex(p=>p.key===KEY),Pg=T("pages");
-    const link=(pg,cls,rel,word,pre,post)=>el("a",{class:cls,rel,href:plan.href(KEY,pg.key),"aria-label":word+": "+pg.title},pre,...words(pg.md,true),post);
+    const link=(pg,cls,rel,word,pre,post)=>el("a",{class:cls,rel,href:plan.href(KEY,pg.key),"aria-label":word+": "+pg.title},pre,...again(pg.md),post);
     const prev=acts[i-1],next=acts[i+1];
     return el("nav",{class:"bk-pager","aria-label":W.contents},
       prev?link(prev,"bk-prev","prev",Pg.back,"← ",""):el("span",{}),
-      el("a",{class:"bk-up",href:plan.href(KEY,"index")},W.contents),
+      el("a",{class:"bk-up",href:plan.href(KEY,HOME)},W.contents),
       next?link(next,"bk-next","next",Pg.next,""," →"):el("span",{}));}
 
   /* ---- cards: the activities of a booklet of many pages, each a link to its page (SPEC.md section 3, "A card's parts") ---- */
@@ -475,10 +481,10 @@ function drawPage(X,P,o){
   function cardItems(list){
     return el("ol",{class:"bk-cards"},...list.map((e,i)=>{const a=e.a,src=e.src||a;
       const c=cardPic(tx(src.title,tx(a.title,R.shortId(a.id))),i+1,src.icon||a.icon);
-      const blurb=tx(src.blurb,tx(a.blurb,tx(a.lede,""))),status=cardStatus(a);
+      const blurb=tx(src.blurb,tx(a.blurb,tx(a.lede,""))),bl=R.nonEmpty(blurb)?again(blurb):[],status=cardStatus(a);
       return el("li",{class:"bk-card"},el("span",{class:"bk-card-pic","aria-hidden":"true"},c.pic),
-        el("div",{class:"bk-card-body"},el("a",{class:"bk-card-title",href:plan.href(KEY,a.id)},...words(c.title,true)),
-          R.nonEmpty(blurb)?el("p",{class:"bk-card-blurb"},...words(blurb,true)):null,
+        el("div",{class:"bk-card-body"},el("a",{class:"bk-card-title",href:plan.href(KEY,a.id)},...again(c.title)),
+          bl.length&&M.textOf(bl).trim()?el("p",{class:"bk-card-blurb"},...bl):null,
           status?el("p",{class:"bk-card-status"},status):null),
         e.kids?cardItems(e.kids):null);}));}
 
@@ -487,7 +493,7 @@ function drawPage(X,P,o){
   const article=el("article",{class:"booklet",lang:P.lang||null});
   st.top=article;
   const kids=[];
-  if(deep) kids.push(el("p",{class:"bk-crumb"},el("a",{href:plan.href(KEY,"index")},...words(plan.pages[0].md,true))));
+  if(deep) kids.push(el("p",{class:"bk-crumb"},el("a",{href:plan.href(KEY,HOME)},...again(plan.pages[0].md))));
   if(o.form==="standalone"){const h1=el("h1",{},...words(deep?U.md:tx(design.title,"")||pageTitle));kids.push(h1);st.top=h1;}
   if(!deep&&design.theme&&typeof design.theme==="object"){st.where="the booklet";kids.push(mark("theme","the theme block"));}
   if(!deep&&Array.isArray(design.opening)&&design.opening.length){st.where="the booklet's opening";st.scope="";st.reg=null;
@@ -530,7 +536,7 @@ function drawPage(X,P,o){
   const findHead=h=>{
     if(h.mtab){const m=st.mtabs.get(h.mod);return m&&m.get(norm(h.heading));}
     const r=st.heads.get(h.act);return r?(h.title?r.title:h.tab?r.tabs.get(norm(h.heading)):r.text.get(norm(h.heading))):null;};
-  for(const p of st.pend){const h=p.hit,to=findHead(h),at=plan?(h.mtab?"index":plan.byKey.has(h.act)?h.act:null):null;
+  for(const p of st.pend){const h=p.hit,to=findHead(h),at=plan?(h.mtab?HOME:plan.byKey.has(h.act)?h.act:null):null;
     const lose=()=>{p.a.tag="";p.a.attrs={};st.marked.push({kind:"heading",what:"the link to “"+h.heading+"”",where:p.where});
       p.a.kids.unshift(comment("booklet: the link to “"+h.heading+"” ("+p.where+"): "+MARKED.heading));};
     if(to){st.refs.push({a:p.a,to:()=>to});st.counts.links++;}
@@ -586,4 +592,4 @@ function describe(text){const t=String(text||"").replace(/\s+/g," ").trim();
   if(cut>=60) return t.slice(0,cut);
   const sp=t.lastIndexOf(" ",157);return t.slice(0,sp>60?sp:157).replace(/[\s,;:]+$/,"")+"…";}
 
-module.exports={drawPage,planPages,settleLinks,describe,COVERAGE,BLOCK_WAY,ENGINE_WAY,MARKED,PAGE_WORDS};
+module.exports={drawPage,planPages,HOME,settleLinks,describe,COVERAGE,BLOCK_WAY,ENGINE_WAY,MARKED,PAGE_WORDS};

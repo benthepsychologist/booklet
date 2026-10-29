@@ -257,7 +257,7 @@ function compileOne(X,input,o){
       const body=form==="standalone"?standalone(page,{name,baseUrl:o.baseUrl}):sitePage(page);
       files.set(root+name+"/"+at+"index.html",stamp(body,source,form));
       rep.pages.push(root+name+"/"+at+"index.html");
-      if(form===forms[0]) rep.pageList.push({path:name+"/"+at+"index.html",title:page.title,kind:unit.kind});});
+      if(form===forms[0]) rep.pageList.push({path:name+"/"+at+"index.html",title:page.title,kind:unit.kind,linked:page.alternates.length>0});});
     for(const [rel,bytes] of keep) files.set(root+name+"/"+rel,bytes);
     if(!first) first=drawn;}
   const sum=()=>Object.fromEntries(Object.keys(first[0].counts).map(c=>[c,first.reduce((n,p)=>n+p.counts[c],0)]));
@@ -336,16 +336,30 @@ function checkBase(u){let x;try{x=new URL(String(u));}catch(e){throw new Error("
    A page tidied by hand is left as it is and the booklet's other pages are written again, so a many-page booklet keeps the
    one page that was tidied and takes the rest from the source. */
 function write(C,out,o){o=o||{};const kept=[];
+  /* nothing is written until every target has been looked at: a path whose folder (or the page itself) is already a file, or the
+     page's place already a folder, would stop the run half way, with some pages written and the rest and the stylesheet not.
+     A booklet with such a path is refused whole, and the others are written; one in the shared assets stops the run before anything. */
+  const blockedBy=rel=>{const parts=rel.split("/");let cur=out,at="";
+    for(let i=0;i<parts.length;i++){cur=path.join(cur,parts[i]);at+=(i?"/":"")+parts[i];
+      let st=null;try{st=fs.statSync(cur);}catch(e){return i<parts.length-1&&e.code==="ENOTDIR"?at:"";}
+      if(i<parts.length-1?!st.isDirectory():st.isDirectory()) return at;}
+    return "";};
+  for(const [rel] of C.assets){const b=blockedBy(rel);
+    if(b) throw new Error("cannot write "+rel+": “"+b+"” in the output folder is "+(b===rel?"a folder":"a file, not a folder")+"; nothing was written");}
+  for(const r of C.results){if(!r.rep.ok) continue;
+    for(const rel of r.files.keys()){const b=blockedBy(rel);
+      if(b){r.rep.ok=false;r.rep.refused=["cannot write "+rel+": “"+b+"” in the output folder is "+(b===rel?"a folder":"a file, not a folder")+", so nothing was written for this booklet (move it, or choose another --out)"];break;}}}
   const put=(rel,data)=>{const p=path.join(out,rel);fs.mkdirSync(path.dirname(p),{recursive:true});
     if(fs.existsSync(p)){const was=fs.readFileSync(p);if(Buffer.isBuffer(data)?was.equals(data):was.toString("utf8")===data) return;}
     fs.writeFileSync(p,data);};
   for(const r of C.results){
+    if(!r.rep.ok) continue;
     const pages=[...r.files.keys()].filter(k=>k.endsWith("/index.html"));
     const held=[];
     for(const rel of pages){const p=path.join(out,rel);
       if(!fs.existsSync(p)||o.force) continue;
       const s=stampState(fs.readFileSync(p,"utf8"));if(s!=="compiled") held.push({rel,state:s});}
-    if(held.length){kept.push(...held.map(h=>({...h,source:r.rep.source})));r.rep.held=held;}
+    if(held.length){kept.push(...held.map(h=>({...h,source:r.rep.source})));r.rep.held=held;r.rep.writtenPages=pages.length-held.length;}
     for(const [rel,data] of r.files) if(!held.some(h=>h.rel===rel)) put(rel,data);}
   /* the stylesheet is guarded like a page: a hand-tidied booklet.css is kept back, and the fonts beside it still written */
   C.heldAssets=[];
@@ -365,14 +379,18 @@ function reportText(C){const L=[];
   for(const {rep} of C.results){
     L.push("","\u2022 "+rep.source+(rep.ok?" \u2192 "+rep.pages.join(", "):""));
     if(!rep.ok){L.push("  REFUSED, nothing written:");rep.refused.forEach(x=>L.push("    - "+x));continue;}
-    if(rep.held) {L.push("  KEPT BACK, not overwritten (the booklet's other pages were written):");rep.held.forEach(h=>L.push("    - "+h.rel+": "+(h.state==="changed"?"changed by hand since it was compiled":"not written by the compiler")+" (--force overwrites it)"));}
+    if(rep.held) {const w=rep.writtenPages;
+      L.push("  KEPT BACK, not overwritten ("+(w?plural(w,"other page of the booklet was","other pages of the booklet were")+" written":"no page of the booklet was written")+"):");rep.held.forEach(h=>L.push("    - "+h.rel+": "+(h.state==="changed"?"changed by hand since it was compiled":"not written by the compiler")+" (--force overwrites it)"));}
     const c=rep.counts;
     L.push("  Drawn: "+[plural(c.modules,"module","modules"),plural(c.activities,"activity","activities"),plural(c.questions,"question","questions"),
       plural(c.widgets,"widget","widgets"),plural(c.callouts,"callout","callouts"),plural(c.folds,"fold","folds"),plural(c.notes,"note","notes"),
       plural(c.math,"formula","formulas"),plural(c.images,"image","images"),plural(c.links,"in-page link","in-page links")].join(", ")+".");
     if(rep.pageList.length>1){L.push("  Pages, in reading order (a site's menu is built from this list, and each page's `weight` is its number here):");
       rep.pageList.forEach((p,i)=>L.push("    "+(i+1)+". "+p.path+(p.kind==="contents"?" (the contents page)":"")+": "+p.title));}
-    if(rep.translations.length) L.push("  Translations, linked with hreflang: "+rep.translations.join(", "));
+    if(rep.translations.length){L.push("  Translations, linked with hreflang: "+rep.translations.join(", "));
+      /* a page is paired with the page of the same module and activity id in each translation: say which were, and which were not */
+      const lk=rep.pageList.filter(p=>p.linked),no=rep.pageList.filter(p=>!p.linked);
+      L.push("    "+lk.length+" of "+rep.pageList.length+" pages linked"+(no.length?"; no page of the same module and activity id in the others, so no link on: "+no.map(p=>p.path).join(", "):"")+".");}
     L.push("  Description: "+(rep.description?"“"+rep.description+"”":"none (the page has no first paragraph)"));
     L.push("  On this page: "+(rep.toc?"listed":"not listed (fewer than two top headings)"));
     if(rep.marker) L.push("  Marker: "+rep.marker);

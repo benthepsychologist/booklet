@@ -15,6 +15,9 @@
 //   6. The site form: each page is a fragment with front matter and a `weight` (its place in the report's list).
 //   7. A page tidied by hand is kept, page by page: the booklet's other pages are written again.
 //   8. An image beside a many-page booklet is copied once and reached from every page.
+//   9. Ids that read like a page (`index`, `page`, one that makes no folder name) beside the contents page; the report's
+//      words about a page held back and about translation pages left unlinked; a file or folder in the way of a page's path
+//      refuses that booklet before anything of it is written; a title's formula counted once.
 // Run: node test/compile-pages.test.js      (Needs node; nothing to install.)
 const fs=require("fs"),path=require("path"),os=require("os"),cp=require("child_process");
 const ROOT=path.join(__dirname,".."),FIX=path.join(__dirname,"fixtures"),CLI=path.join(ROOT,"compile","compile.js");
@@ -175,6 +178,82 @@ chk("the set compiles",run.results.every(r=>r.rep.ok),run.results.filter(r=>!r.r
   const r=C.compile([{text,name:"pics",dir:book}],{form:"both",engine:X}).results[0];
   chk("an image on the contents page is reached as written, and on an activity's page one folder up",/<img src="leaf\.png"/.test(r.files.get("standalone/pics/index.html"))&&/<img src="\.\.\/leaf\.png"/.test(r.files.get("standalone/pics/a/index.html")));
   chk("…and is copied once, beside the contents page, in each form",keysOf(r).filter(k=>k.endsWith("leaf.png")).join()==="site/pics/leaf.png,standalone/pics/leaf.png");}
+
+/* ======================= 9. ids that read like a page, and a path that is in the way ======================= */
+/* the links of one compile result, as in section 2: those that reach no file, or no id, in what the compiler wrote */
+const badLinks=(files)=>{const bad=[];
+  for(const [key,text] of files){if(!key.endsWith("/index.html")) continue;
+    for(const h of linksOf(text)){const t=resolve(key,h);
+      if(!files.has(t.key)){bad.push(key+" → "+h+" (no such file)");continue;}
+      if(t.hash&&!idsOf(files.get(t.key)).has(t.hash)) bad.push(key+" → "+h+" (no such id)");}}
+  return bad;};
+const hrefs=(t,cls)=>[...String(t).matchAll(new RegExp('<a class="'+cls+'"[^>]*\\shref="([^"]*)"','g'))].map(m=>m[1]);
+const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\nWords of "+t+".\n\n";
+{/* an activity called `index` (the contents page's old key) beside others, and the pages still reach one another */
+  const r=compileText(booklet("Idx",act("index","The index one")+act("other","The other one")),"idx");
+  const f=r.files,home=f.get("idx/index.html");
+  chk("an activity called index is a page of its own (idx/index/), beside the contents page (idx/index.html)",JSON.stringify(pagesOf(r))===JSON.stringify(["idx/index.html","idx/index/index.html","idx/other/index.html"]),pagesOf(r).join(", "));
+  chk("…the contents page's cards go down into the activities' folders, not up a folder",JSON.stringify(hrefs(home,"bk-card-title"))===JSON.stringify(["index/","other/"]),hrefs(home,"bk-card-title").join(" "));
+  chk("…each activity's crumb and Contents link return to the contents page, not to itself or to the other",["idx/index/index.html","idx/other/index.html"].every(k=>hrefs(f.get(k),"bk-up").every(h=>h==="../")&&/<p class="bk-crumb"><a href="\.\.\/">/.test(f.get(k))),
+    ["idx/index/index.html","idx/other/index.html"].map(k=>f.get(k).match(/bk-up[^>]*>/)).join());
+  chk("…and every link on every page reaches a file",!badLinks(f).length,badLinks(f).slice(0,4).join(" | "));
+  const three=compileText(booklet("Idx3",act("a","A")+act("index","The index one")+act("b","B")),"idx3","both");
+  chk("an index activity in the middle of three: every link reaches a file, in both forms, and the way on runs a, index, b",!badLinks(three.files).length
+    &&/rel="next" href="\.\.\/index\/"/.test(three.files.get("standalone/idx3/a/index.html"))&&/rel="prev" href="\.\.\/index\/"/.test(three.files.get("standalone/idx3/b/index.html")),badLinks(three.files).slice(0,4).join(" | "));
+  const alone=compileText(booklet("Idx1",act("index","The only one")),"idx1");
+  chk("an index activity alone is the booklet's one page (as 0.1.0), with no way on",JSON.stringify(keysOf(alone))===JSON.stringify(["idx1/index.html"])&&!/bk-pager|bk-crumb/.test(alone.files.get("idx1/index.html")));
+  const mods=compileText(booklet("IdxM","> [!module|a] Module A\n\n"+act("index","A's index")+act("more","More of A")+"> [!module|a end] End\n\n> [!module|b] Module B\n\n"+act("index","B's index")+"> [!module|b end] End\n"),"idxm");
+  chk("an index activity in two modules: a-index and b-index, and every link reaches a file",JSON.stringify(pagesOf(mods))===JSON.stringify(["idxm/a-index/index.html","idxm/b-index/index.html","idxm/index.html","idxm/more/index.html"])&&!badLinks(mods.files).length,pagesOf(mods).join(", ")+" "+badLinks(mods.files).slice(0,3));
+  const lk=compileText(booklet("IdxL","> [!activity|index] First\n\nSee [[#Second]] and [[#First]].\n\n## Part\n\nx\n\n> [!activity|second] Second\n\nBack to [[#Part]].\n"),"idxl");
+  chk("a heading link into and out of an index activity reaches its heading",!badLinks(lk.files).length&&/href="\.\.\/second\/#/.test(lk.files.get("idxl/index/index.html"))&&/href="\.\.\/index\/#/.test(lk.files.get("idxl/second/index.html")),badLinks(lk.files).join(" | "));}
+{/* an id that makes no folder name, and one called `page` (the name the empty one falls back to) */
+  const r=compileText(booklet("Odd",act("___","Underscores")+act("other","The other one")),"odd");
+  chk("an id that makes no folder name gets one (page): its page does not take the contents page's place",JSON.stringify(pagesOf(r))===JSON.stringify(["odd/index.html","odd/other/index.html","odd/page/index.html"])
+    &&/Underscores/.test(r.files.get("odd/page/index.html"))&&/bk-cards/.test(r.files.get("odd/index.html"))&&!badLinks(r.files).length,pagesOf(r).join(", "));
+  const two=compileText(booklet("Odd2",act("___","Underscores")+act("page","A real page")+act("!!!","Bangs")),"odd2");
+  chk("…and with a real id `page` and another empty one: page, page-2, page-3, all different, every link reaching a file",JSON.stringify(pagesOf(two))===JSON.stringify(["odd2/index.html","odd2/page-2/index.html","odd2/page-3/index.html","odd2/page/index.html"])&&!badLinks(two.files).length,pagesOf(two).join(", "));}
+{/* the report's words about a page held back, when there is no other page, or none is left */
+  const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
+  const dir=path.join(TMP,"held");fs.mkdirSync(dir,{recursive:true});
+  const one=path.join(dir,"solo.booklet.md"),outOne=path.join(dir,"o1");
+  fs.writeFileSync(one,booklet("Solo","# Solo\n\nOne page only.\n"));
+  cli(["--out",outOne,one]);fs.appendFileSync(path.join(outOne,"solo","index.html"),"<!-- tidied -->\n");
+  let r=cli(["--out",outOne,one]);
+  chk("a one-page booklet whose page was tidied: kept back, and the report does not claim other pages were written",r.status===1&&/KEPT BACK, not overwritten \(no page of the booklet was written\)/.test(r.stdout)&&!/other pages? of the booklet/.test(r.stdout),r.stdout.slice(0,400));
+  const many=path.join(dir,"many.booklet.md"),outMany=path.join(dir,"o2");
+  fs.writeFileSync(many,booklet("Many",act("a","A")+act("b","B")));
+  cli(["--out",outMany,many]);
+  for(const k of ["index.html","a/index.html","b/index.html"]) fs.appendFileSync(path.join(outMany,"many",k),"<!-- tidied -->\n");
+  r=cli(["--out",outMany,many]);
+  chk("a many-page booklet with every page tidied: all kept back, and the report says no page was written",r.status===1&&/KEPT BACK, not overwritten \(no page of the booklet was written\)/.test(r.stdout)&&(r.stdout.match(/changed by hand/g)||[]).length===3,r.stdout.slice(0,500));
+  fs.writeFileSync(path.join(outMany,"many","a","index.html"),"x");cli(["--force","--out",outMany,many]);
+  fs.appendFileSync(path.join(outMany,"many","b","index.html"),"<!-- tidied -->\n");
+  r=cli(["--out",outMany,many]);
+  chk("…and with one tidied, it says how many others were written (2)",r.status===1&&/KEPT BACK, not overwritten \(2 other pages of the booklet were written\)/.test(r.stdout),r.stdout.slice(0,300));}
+{/* translations: the report says which pages were linked, and which had no counterpart */
+  const en=fs.readFileSync(path.join(FIX,"compile-pair.booklet.md"),"utf8"),es=fs.readFileSync(path.join(FIX,"compile-pair.es.booklet.md"),"utf8");
+  const rep=(a,b)=>C.reportText(C.compile([{text:a,name:"e",dir:TMP},{text:b,name:"e.es",dir:TMP}],{form:"standalone",engine:X}));
+  const same=rep(en,es);
+  chk("the report says how many pages were linked: all three, and names none left out",/3 of 3 pages linked\./.test(same)&&!/no page of the same module and activity id/.test(same),same);
+  const renamed=rep(en,es.replace(/\|eggs/g,"|huevos"));
+  chk("a translation that renamed its module id: the report says only the contents pages were linked, and names the activity pages",/1 of 3 pages linked; no page of the same module and activity id in the others, so no link on: e\/soft\/index\.html, e\/hard\/index\.html\./.test(renamed),renamed);}
+{/* a path in the way: the booklet is refused whole before any of its pages is written; the others are written */
+  const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
+  const out=path.join(TMP,"inway"),pair=path.join(FIX,"compile-pair.booklet.md"),src=path.join(FIX,"compile-pages.booklet.md");
+  fs.mkdirSync(path.join(out,"compile-pages"),{recursive:true});fs.writeFileSync(path.join(out,"compile-pages","crust"),"a file where a folder is wanted");
+  let r=cli(["--out",out,src,pair]);
+  chk("a file where an activity's folder should be: that booklet is refused (exit 1) with the path named, and none of its pages or images is written",r.status===1&&/REFUSED, nothing written[^]*cannot write compile-pages\/crust\/index\.html: “compile-pages\/crust” in the output folder is a file, not a folder/.test(r.stdout)
+    &&!fs.existsSync(path.join(out,"compile-pages","index.html"))&&!fs.existsSync(path.join(out,"compile-pages","flour"))&&fs.readFileSync(path.join(out,"compile-pages","crust"),"utf8")==="a file where a folder is wanted",r.stdout.slice(0,600));
+  chk("…while the other booklet of the run and the stylesheet are written",fs.existsSync(path.join(out,"compile-pair","index.html"))&&fs.existsSync(path.join(out,"compile-pair","soft","index.html"))&&fs.existsSync(path.join(out,"booklet","booklet.css")));
+  const out2=path.join(TMP,"inway2");fs.mkdirSync(path.join(out2,"compile-pages","crust","index.html"),{recursive:true});
+  r=cli(["--out",out2,src]);
+  chk("a folder where a page should be is refused the same way, nothing of the booklet written",r.status===1&&/cannot write compile-pages\/crust\/index\.html: “compile-pages\/crust\/index\.html” in the output folder is a folder/.test(r.stdout)&&!fs.existsSync(path.join(out2,"compile-pages","index.html")),r.stdout.slice(0,400));
+  const out3=path.join(TMP,"inway3");fs.mkdirSync(out3,{recursive:true});fs.writeFileSync(path.join(out3,"booklet"),"a file");
+  r=cli(["--out",out3,src]);
+  chk("a file where the shared stylesheet folder should be stops the run before anything is written, naming it",r.status===1&&/cannot write booklet\/booklet\.css: “booklet” in the output folder is a file, not a folder; nothing was written/.test(r.stderr)&&!fs.existsSync(path.join(out3,"compile-pages")),r.stderr);}
+{/* a formula in a title is counted once */
+  const m=compileText(booklet("Formulas $h$","> [!activity|a] Area $\\pi r^2$\n\nA.\n\n> [!activity|b] Side $s$\n\nB.\n\n> [!activity|c] Edge $e$\n\nC.\n"),"formulas");
+  chk("a formula in a title is counted once, though the crumb, pager and card draw the title again (4: the booklet's and three activities')",m.rep.counts.math===4,String(m.rep.counts.math));}
 
 fs.rmSync(TMP,{recursive:true,force:true});
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile pages passed");process.exit(fails?1:0);

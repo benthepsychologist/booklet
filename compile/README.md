@@ -100,7 +100,7 @@ each activity**, each a page of its own, with its own title, description, "On th
   (SPEC.md section 3, "A module's tabs": each tab's name, its prose and the cards of its activities), and a **card** for
   each activity, drawn from the file's parts (SPEC.md, "A card's parts"): its title, its picture (the line's `icon:`
   when the picture sprite has it, else an emoji the title begins with, which then leaves the title, else its number in
-  its list), its blurb (the first paragraph) and its status line (the `>` lines under the activity line; with none, how
+  its list), its blurb (the first paragraph, as the renderer's own card has it: plain words, so a picture in it is its alt text and a formula its TeX; the page's description leaves both out) and its status line (the `>` lines under the activity line; with none, how
   many questions it holds; `status:off` hides it). An activity written under another with `parent:` is a card inside its
   parent's card. A module of one activity, or a bare activity, is a single card, taking the module's title, blurb and
   picture first (as the renderer does), and its page is that activity's page, with the module's opening above it. There
@@ -133,12 +133,13 @@ many-page booklet through a server (for example `python3 -m http.server` in the 
 
 **Translations.** Booklets compiled in one run that carry **one front matter `id` and each its own `lang`** (SPEC.md section 9:
 `tides.booklet.md` and `tides.es.booklet.md`) are linked to each other, page for page: an activity's page links the page
-of the same activity id in each translation, and the contents page (or the one page of a one-page booklet) the others'.
+with the same **module id and activity id** in each translation (the id as the renderer keeps it, module first: `eggs/soft` pairs with
+`eggs/soft`, not with `huevos/soft`, so a translation that renames its module ids is not paired page by page), and the contents page (or the one page of a one-page booklet) the others'.
 Each page carries `<link rel="alternate" hreflang="es" href="…">` for every translation, itself among them, so search
 engines and readers find the other language. The language is the front matter's `lang`, as the page's own language is read.
 The address is relative (`../../tides.es/rd-tides/`), and whole with `--base-url`, which search engines ask for. A page the
 other translation has no page for, and a group in which two booklets share a language (two versions, or a mistake), is not
-linked, and the report names the translations that were. The files must be compiled in one run; a translation in a run of
+linked; the report names the translations, how many of the booklet's pages were linked, and the pages that were not. The files must be compiled in one run; a translation in a run of
 its own is not found.
 
 **The site form** writes each page as a fragment under front matter, for a site generator's content folder
@@ -176,7 +177,10 @@ card of their parent, the reading order a page before the ones under it), but a 
 and a breadcrumb of the ancestors wait for format 0.17.
 
 **Stamped page by page.** The stamp guard (below) keeps each page apart: a rerun leaves a page tidied by hand as it is and
-writes the booklet's other pages again, and the report says which it kept. The compiler never deletes a file: the page of an
+writes the booklet's other pages again, and the report says which it kept and how many others it wrote ("no page of the booklet
+was written" when its only page, or every page, was tidied). Before it writes anything it looks at every path it will write: a
+booklet whose folder (or page) is already a file, or whose page's place is already a folder, is refused whole with a line saying
+which, and the other booklets are still written. The compiler never deletes a file: the page of an
 activity that was renamed or removed stays in the output folder until it is deleted by hand.
 
 ## The stylesheet
@@ -376,7 +380,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-golden.test.js` | the pages for the examples and page-shaped fixtures equal the committed ones in `test/compile-golden/`; `node test/compile-golden.test.js --write` refreshes them |
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |
-| `compile-pages.test.js` | many pages: the address of each page and of a clash; every relative link on every page of every many-page booklet reaches a file and an id; no page is orphaned; the way on and the reading order; translations (hreflang in the head and in the front matter, relative and whole; a shared language or a missing page is not linked); the site form's `weight`; a page tidied by hand kept page by page; an image reached from every page |
+| `compile-pages.test.js` | many pages: the address of each page and of a clash; every relative link on every page of every many-page booklet reaches a file and an id; no page is orphaned; the way on and the reading order; translations (hreflang in the head and in the front matter, relative and whole; a shared language or a missing page is not linked, and the report names the pages left unlinked); an activity called `index`, one whose id makes no folder name, and one called `page`; the site form's `weight`; a page tidied by hand kept page by page, and the report's words about it; a folder path that is a file refusing the booklet before anything is written; an image reached from every page |
 | `compile-browser.js` | in Chromium with scripting off, every page of every booklet, and a journey through each many-page booklet served as a host serves a folder (each card opens its page, the contents link goes back, "next" reads every page in order and "back" returns, nothing 404s); at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
 | `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards, and `!important` rules of one and two ids, among them `#main .content blockquote *`); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; the check fails with no guard, with the guard as it was before `!important`, and with `!important` but one id's weight |
 
