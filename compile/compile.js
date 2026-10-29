@@ -219,7 +219,7 @@ function compileOne(X,input,o){
   const source=path.basename(input.file||input.name+".booklet.md");
   const name=input.name;
   const rep={source,name,form:o.form,ok:false,refused:[],problems:[],marker:"",pages:[],comments:[],
-    counts:null,marked:[],images:[],links:[],description:"",toc:false,script:false,needsScript:false};
+    counts:null,marked:[],images:[],links:[],description:"",toc:false,script:false,needsScript:false,readOnly:[]};
   if(!NAME.test(name)||name==="booklet"){rep.refused.push("its address, “"+name+"”, must be letters, digits, . _ or - (and not “booklet”, the stylesheet's folder): rename the file");return {rep,files:new Map()};}
   const P=o.parsed||parseInput(X,input);
   rep.problems=P.problems;rep.marker=P.marker;rep.comments=P.comments||[];
@@ -240,7 +240,7 @@ function compileOne(X,input,o){
     rep.pages.push(root+name+"/index.html");
     for(const [rel,bytes] of keep) files.set(root+name+"/"+rel,bytes);
     if(!first) first=page;}
-  Object.assign(rep,{ok:true,counts:first.counts,marked:first.marked,images:dedupe(first.images),links:first.links,description:first.description,toc:first.toc,script:first.script,needsScript:first.needs});
+  Object.assign(rep,{ok:true,counts:first.counts,marked:first.marked,images:dedupe(first.images),links:first.links,description:first.description,toc:first.toc,script:first.script,needsScript:first.needs,readOnly:first.readOnly});
   return {rep,files};}
 const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"));
 /* a page's title, as drawPage takes it: the booklet's title, else its first module's, else its address */
@@ -266,7 +266,7 @@ function compile(inputs,o){o=o||{};
   const X=o.engine||E.load(o.renderer);
   /* the optional script, built from compile/script/ (or o.scriptDir) and scanned before anything is drawn: a part that holds a
      banned word fails the whole run, with nothing written */
-  const S=o.scriptText!=null?{text:o.scriptText,parts:["(given)"]}:SC.assemble(o.scriptDir);
+  const S=SC.assemble(o.scriptDir);
   const list=inputs.map(i=>({...i,name:i.name||nameOf(i.file),dir:i.dir||(i.file?path.dirname(i.file):".")}));
   /* each file is read once, first, so a page knows which of the others it can link to, and by what title */
   /* two addresses that differ only in case are the same folder on a case-insensitive disk, so they clash too */
@@ -348,6 +348,8 @@ function reportText(C){const L=[];
       rep.marked.forEach(m=>L.push("    [ ] "+m.what+", in "+m.where+": "+D.MARKED[m.kind]));
       refused.forEach(i=>L.push("    [ ] the image "+JSON.stringify(i.src)+", in "+i.where+", was not copied (its words and address are shown): "+i.why));}
     else L.push("  To tidy: nothing was left off.");
+    if(rep.readOnly&&rep.readOnly.length){L.push("  Read-only here (each is shown as it asks, with nothing to press):");
+      rep.readOnly.forEach(r=>L.push("    - "+r.what+", in "+r.where+": "+r.why));}
     if(rep.problems.length){L.push("  The renderer reported:");rep.problems.forEach(p=>L.push("    - "+p));}
     /* author comments are left off the page; the report gives their place only, never their words */
     if(rep.comments&&rep.comments.length) L.push("  Author comments left off the page: "+rep.comments.map(c=>(c.to>c.from?"lines "+c.from+"\u2013"+c.to:"line "+c.from)+(c.open?" (never closed, so it runs to the end of the text)":"")).join(", ")+".");

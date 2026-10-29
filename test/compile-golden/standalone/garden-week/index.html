@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- booklet compile 0.1.0 · from garden-week.booklet.md · sha256:158bc106fa8a2256fb27de5d5619d4a9225a00116f02868485a9d828e8dae9df -->
+<!-- booklet compile 0.1.0 · from garden-week.booklet.md · sha256:a1fdacfe46a20cf8d4f1d04c9cd7d83049dbe512a32f4ade2b3296a24a18859e -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -87,24 +87,24 @@
       </div>
       <div class="bk-rowcell">
         <h3 id="how-was-the-garden">How was the garden? <a class="bk-anchor" href="#how-was-the-garden" aria-label="Link to this section">#</a></h3>
-        <div class="bk-q bk-q-scale">
-          <p class="bk-q-ask">How did it feel?</p>
+        <fieldset class="bk-q bk-q-scale" data-bk-kind="scale" aria-labelledby="bk-q1-ask">
+          <p class="bk-q-ask" id="bk-q1-ask">How did it feel?</p>
           <ul class="bk-scale">
             <li>Neglected</li>
             <li>Fine</li>
             <li>Thriving</li>
           </ul>
-        </div>
+        </fieldset>
       </div>
       <div class="bk-rowcell">
         <h3 id="a-note">A note <a class="bk-anchor" href="#a-note" aria-label="Link to this section">#</a></h3>
-        <div class="bk-q bk-q-text">
-          <p class="bk-q-ask">Anything to remember?</p>
-        </div>
+        <fieldset class="bk-q bk-q-text" data-bk-kind="text" aria-labelledby="bk-q2-ask">
+          <p class="bk-q-ask" id="bk-q2-ask">Anything to remember?</p>
+        </fieldset>
       </div>
     </div>
-    <div class="bk-q bk-widget bk-w-grid-select">
-      <p class="bk-q-ask">How are the beds?</p>
+    <fieldset class="bk-q bk-widget bk-w-grid-select" data-bk-kind="widget" aria-labelledby="bk-q3-ask">
+      <p class="bk-q-ask" id="bk-q3-ask">How are the beds?</p>
       <p class="bk-q-help">Select what fits.</p>
       <div class="bk-grid">
         <p class="bk-ax bk-ax-top">more growth</p>
@@ -113,33 +113,33 @@
           <div class="bk-cell bk-c-warm">
             <p class="bk-cell-name">Weedy and growing</p>
             <ul class="bk-words">
-              <li>Kale</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-w1" autocomplete="off"><label for="bk-w1">Kale</label><span class="bk-shows">Lots of growth, lots of weeds.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-green">
             <p class="bk-cell-name">Lush</p>
             <ul class="bk-words">
-              <li>Beans</li>
-              <li>Peas</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-w2" autocomplete="off"><label for="bk-w2">Beans</label><span class="bk-shows">Lots of growth, few weeds.</span></li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-w3" autocomplete="off"><label for="bk-w3">Peas</label><span class="bk-shows">Lots of growth, few weeds.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-amber">
             <p class="bk-cell-name">Tired and weedy</p>
             <ul class="bk-words">
-              <li>Carrots</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-w4" autocomplete="off"><label for="bk-w4">Carrots</label><span class="bk-shows">Little growth, many weeds.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-teal">
             <p class="bk-cell-name">Calm</p>
             <ul class="bk-words">
-              <li>Herbs</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-w5" autocomplete="off"><label for="bk-w5">Herbs</label><span class="bk-shows">Little growth, few weeds.</span></li>
             </ul>
           </div>
         </div>
         <p class="bk-ax bk-ax-right">fewer weeds</p>
         <p class="bk-ax bk-ax-bottom">less growth</p>
       </div>
-    </div>
+    </fieldset>
   </section>
 </article>
 </main>

@@ -1,10 +1,11 @@
 # compile — a booklet file to a plain web page
 
 **compile 0.1.0.** A build step beside the renderer. A `.booklet.md` file goes in and a static web page comes out: plain
-HTML and CSS that a person can read and tidy, that reads fully with no JavaScript, and that a search engine can index.
-The page holds no renderer and runs nothing. It is for publishing what a booklet says (an article, a guide, a report) on
-a site of its own, where people can read it, link to a section of it and share it. To answer a booklet's questions, a
-reader still opens the booklet itself in `booklet.html`.
+HTML and CSS that a person can read and tidy, that **reads fully with no script**, and that a search engine can index.
+The page holds no renderer. It is for publishing what a booklet says (an article, a guide, a report) on a site of its
+own, where people can read it, link to a section of it and share it. Its pick-one and pick-any questions answer the way a
+quiz does ("that's right, and here is why") and forget: nothing is saved, so a reader who wants their answers kept opens
+the booklet itself in `booklet.html`. The one optional script **keeps nothing and sends nothing** (below).
 
 It needs Node and nothing else (CI runs it on Node 20): no `package.json`, nothing to install, nothing fetched.
 
@@ -82,6 +83,33 @@ address. That is all a host needs, for any site. The stylesheet styles only what
 `.bk-page` body), so it leaves the host's own page alone, and the host's own stylesheet does not reach inside it (below).
 
 **Both** (`--form both`) writes the two, under `<out>/standalone/` and `<out>/site/`.
+
+## Questions as a quiz
+
+A pick-one (`choice`) or pick-any (`multi`) question is a `<fieldset class="bk-q" data-bk-kind="…">` whose options are real
+radio buttons or checkboxes. It answers as the renderer's own question does (SPEC.md section 5), **with the stylesheet
+alone, no script**:
+
+- with a right answer marked `[x]`: pick an option and it is marked right or not quite, and a right option the reader did
+  not pick is marked as the answer, with a line saying so ("Right." / "Not quite. The answer is …", in the booklet's
+  language). A pick-any question has a Check (a label over a hidden checkbox) that marks every option at once; ticking
+  again turns it off;
+- with a reply under an option: the reply shows under the options when the option is picked (a pick-any question with a
+  right answer shows replies once it is checked, as the renderer does);
+- with neither: the pick is highlighted and nothing more.
+
+A question the page cannot answer without keeping something is shown as 0.1.0 showed it and listed in the build report as
+**read-only here**: a `scale`, `matrix`, `number` and `date` (the renderer defines no response for them), a free-text
+prompt (`text`, `lines`: a box would need somewhere to keep what was typed) and a question with `open` (the reader's own
+words). Not built: the count of right answers beside a quiz (the renderer scores nothing, so there is no model to follow)
+and `each:`. The answer key is in the page's markup (a class on each right option), as it is in the booklet file.
+
+A widget's words (a grid's items, a body map's places) are checkboxes drawn as chips: a press highlights the chip and, if
+its cell or place has a `note` and the widget does not already `describe` them, shows the note. Neither the renderer's
+own-word field nor the words a reader wrote before is drawn. The pick is the open page's own and is gone on reload; each
+input carries `autocomplete="off"` so a browser that restores form fields on reload (Firefox does; Chromium was checked and
+does not) does not bring it back. The script (below) adds only what the stylesheet cannot, which is speech: it copies the
+verdict sentence into a live region a screen reader announces, and turns Check off when a tick changes.
 
 ## The optional script
 
@@ -174,10 +202,11 @@ own `--bk-font-text` and `--bk-font-head` never loads them.
   `\label` ids and `\ref` / `\eqref` links take the `bk-tml-` prefix the same way;
 - a module's notice (licence, copyright, source, version) at the foot, in a plain box (not a `<footer>`, so a host's
   own footer styles do not reach it);
-- questions read-only: each shows what it asks and offers (options, a scale's anchors, a matrix's items) with nothing to
-  press; a question's hint and solution are folds;
-- both widget engines read-only: the grid by its axes and cells, in their colour names, with its items; the body map by
-  its places, figure by figure.
+- pick-one and pick-any questions as a quiz (below); every other kind of question read-only: it shows what it asks and
+  offers (a scale's anchors, a matrix's items) with nothing to press, and the build report lists it under "Read-only
+  here"; a question's hint and solution are folds;
+- both widget engines: the grid by its axes and cells, in their colour names, with its items; the body map by its places,
+  figure by figure. Each word can be pressed (below), unless the widget line says `readonly`.
 
 **Marked**: an HTML comment where the part stood, saying what it was and why, and a line in the build report's tidy-up
 list. In 0.1.0 these are:
@@ -187,7 +216,8 @@ list. In 0.1.0 these are:
 - the body map's figure (its places are listed under it);
 - a link to a booklet that is not compiled in the same run (drawn as its words; one that is, links to its page by its
   title);
-- a question asked for each pick in another (`each:`);
+- a question asked for each pick in another (`each:`): the reference renderer does not draw it either, and a page keeps no
+  picks to draw it from;
 - an unknown callout kind (drawn as a note, with the renderer's line saying the kind is not known; a callout of a kind
   the page has no look for takes the note's look folded or not), a widget engine the compiler does not draw, a widget
   that is missing, a broken citation mark, a booklet's own theme block;
@@ -298,6 +328,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-guard.test.js` | no second reader (no callout, fence, link, heading or other Markdown pattern of its own, as a pattern or a string test; tried first on made-up re-readings); the author-comment mark in one region only; every renderer name it uses exists; no code reaches the records; installs nothing, fetches nothing; writes only its pages |
 | `compile-coverage.test.js` | every block type, question kind, widget engine and query view the renderer has is drawn or marked, from the very tables `draw.js` dispatches from; every callout kind in its look; every mark both a comment and a report line |
 | `compile-script.test.js` | the script's scan names every banned word, each tried on a made-up part; the assembler's order, shape and refusals; a page links the script only when it needs it, a site fragment never; the stamp guard; a banned word stops the build and writes nothing |
+| `compile-script-browser.js` | in Chromium over http with scripting on: answers every kind of question and presses every widget, then asserts no localStorage, sessionStorage, cookie, IndexedDB or cache, only GET requests for the page's own files, and a clean reload; the detector is proved by serving the page with its script swapped for ones that break the pledge; with scripting off every question reads as in 0.1.0 and a press still shows its reply, verdict and note |
 | `compile-golden.test.js` | the pages for the examples and page-shaped fixtures equal the committed ones in `test/compile-golden/`; `node test/compile-golden.test.js --write` refreshes them |
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |

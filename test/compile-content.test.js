@@ -135,7 +135,7 @@ function shortOf(units,page){const have=count(tokens(pageText(page))),need=count
   const short=[...need].filter(([t,n])=>(have.get(t)||0)<n).map(([t])=>t);
   return {short,need,where:units.filter(u=>u.words.some(w=>short.includes(w))).map(u=>u.where+": "+[...new Set(u.words.filter(w=>short.includes(w)))].join(" "))};}
 const LOST_SET=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWith(".booklet.md")).map(f=>path.join(ROOT,"examples",f)),
-  ...["compile-article","compile-kinds","figures","charts","data-views"].map(n=>path.join(FIX,n+".booklet.md"))];
+  ...["compile-article","compile-kinds","compile-quiz","figures","charts","data-views"].map(n=>path.join(FIX,n+".booklet.md"))];
 {const run=C.compile(LOST_SET.map(file=>({file})),{form:"both",engine:X});
   run.results.forEach((r,i)=>{const P=X.parse(fs.readFileSync(LOST_SET[i],"utf8")),units=designUnits(P);
     for(const form of ["standalone","site"]){const page=r.files.get(form+"/"+r.rep.name+"/index.html");

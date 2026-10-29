@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- booklet compile 0.1.0 · from how-tides-work.booklet.md · sha256:8b82f410316eaf1d74137eeff31b39d8cd369314fa717a328308227a3ca927de -->
+<!-- booklet compile 0.1.0 · from how-tides-work.booklet.md · sha256:001f0917fc5aea9cece66c94bcda67f4f5c45a24399bb7b3657061480610eb9a -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -12,6 +12,7 @@
 <meta property="og:locale" content="en">
 <meta name="generator" content="Booklet compile 0.1.0">
 <link rel="stylesheet" href="../booklet/booklet.css">
+<script src="../booklet/booklet.js" defer></script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"How tides work","description":"A short reading, then a check.","inLanguage":"en"}</script>
 </head>
 <body class="bk-page">
@@ -42,30 +43,32 @@
   </section>
   <section class="bk-activity">
     <h2 id="check-yourself">Check yourself <a class="bk-anchor" href="#check-yourself" aria-label="Link to this section">#</a></h2>
-    <div class="bk-q bk-q-choice">
-      <p class="bk-q-ask">When do the largest tides come?</p>
+    <fieldset class="bk-q bk-q-choice" data-bk-kind="choice" data-bk-graded aria-labelledby="bk-q1-ask">
+      <p class="bk-q-ask" id="bk-q1-ask">When do the largest tides come?</p>
       <ul class="bk-options bk-pick-one">
-        <li>At the quarter moons</li>
-        <li>Near the new and the full moon</li>
+        <li class="bk-opt"><input type="radio" name="bk-q1" id="bk-q1-o1" autocomplete="off"><label for="bk-q1-o1">At the quarter moons</label><span class="bk-verdict bk-v-wrong">✗ Not quite</span></li>
+        <li class="bk-opt bk-right"><input type="radio" name="bk-q1" id="bk-q1-o2" autocomplete="off"><label for="bk-q1-o2">Near the new and the full moon</label><span class="bk-verdict bk-v-right">✓ Right</span><span class="bk-verdict bk-v-answer">✓ The answer</span></li>
       </ul>
+      <p class="bk-say"><span class="bk-say-ok">Right.</span><span class="bk-say-no">Not quite. The answer is Near the new and the full moon.</span></p>
+      <p class="bk-live bk-sr" aria-live="polite"></p>
       <details class="bk-fold bk-compact bk-hint">
         <summary><span class="bk-ci" aria-hidden="true"><svg class="bk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg></span><span class="bk-ftitle">Hint</span></summary>
         <div class="bk-cb">
           <p>Think about when the sun and the moon pull in the same direction.</p>
         </div>
       </details>
-    </div>
-    <div class="bk-q bk-q-scale">
-      <p class="bk-q-ask">How sure were you?</p>
+    </fieldset>
+    <fieldset class="bk-q bk-q-scale" data-bk-kind="scale" aria-labelledby="bk-q2-ask">
+      <p class="bk-q-ask" id="bk-q2-ask">How sure were you?</p>
       <ul class="bk-scale">
         <li>Guessing</li>
         <li>Fairly sure</li>
         <li>Certain</li>
       </ul>
-    </div>
-    <div class="bk-q bk-q-text">
-      <p class="bk-q-ask">What surprised you?</p>
-    </div>
+    </fieldset>
+    <fieldset class="bk-q bk-q-text" data-bk-kind="text" aria-labelledby="bk-q3-ask">
+      <p class="bk-q-ask" id="bk-q3-ask">What surprised you?</p>
+    </fieldset>
   </section>
   <section class="bk-notes" aria-labelledby="bk-notes-h">
     <h2 id="bk-notes-h" class="bk-notes-h">Notes</h2>
