@@ -26,6 +26,8 @@ const names=['compile-views','compile-theme','charts','data-views'];
 const run=C.compile(names.map(n=>({file:path.join(FIX,n+'.booklet.md')})),{form:'standalone',renderer:HTML});
 C.write(run,OUT,{force:true});
 ok(run.results.every(r=>r.rep.ok),'every page compiles ('+run.results.length+' booklets)');
+const PAGES=run.results.flatMap(r=>r.rep.pages.filter(f=>f.endsWith('index.html')).map(f=>({book:r.rep.name,file:f,at:f.replace(/\/index\.html$/,'')}))),rowsSeen={};
+ok(PAGES.filter(x=>x.book==='compile-views').length===4,'the views booklet is a contents page and three activity pages ('+PAGES.filter(x=>x.book==='compile-views').length+')');
 /* a booklet with a dark theme of its own, for the print check */
 const DARK='---\nbooklet: "'+run.format+'"\nid: test/dark\ntitle: A dark page\nlang: en\n---\n\n# A dark page\n\nA made-up paragraph on near-black paper.\n\n```booklet theme\nbase: night\npaper: "#0a0a0a"\nink: "#ffffff"\naccent: "#7cf0ff"\n```\n\n> [!note] A note\n> Words in a note.\n';
 fs.mkdirSync(OUT+'-dark',{recursive:true});
@@ -50,9 +52,10 @@ async function lineLegible(p,at){
     const p=await ctx.newPage();const reqs=[],failed=[],errs=[];
     p.on('request',r=>reqs.push(r.url()));p.on('requestfailed',r=>failed.push(r.url()));
     p.on('console',m=>{if(m.type()==='error') errs.push(m.text());});p.on('pageerror',e=>errs.push(e.message));
-    for(const r of run.results){const name=r.rep.name,at=name+' at '+width;
+    /* a booklet of several activities is a contents page and a page for each: every one of them is looked at, at its own depth */
+    for(const pgx of PAGES){const name=pgx.book,at=pgx.at+' at '+width;
       reqs.length=0;failed.length=0;errs.length=0;
-      await p.goto('file://'+path.join(OUT,name,'index.html'));
+      await p.goto('file://'+path.join(OUT,pgx.file));
       const m=await p.evaluate(()=>{
         const art=document.querySelector('article.booklet'),a=art.getBoundingClientRect();
         const out=[...art.querySelectorAll('.bk-view,.bk-view *')].filter(e=>{const r=e.getBoundingClientRect();if(!r.width) return false;
@@ -65,6 +68,7 @@ async function lineLegible(p,at){
         return {sw:document.documentElement.scrollWidth,w:window.innerWidth,out,rows:rows.length,blank,empty,
           bars:marks.filter(x=>/bk-ch-bar/.test(x.cls)).filter(x=>x.fill==='none'||/rgba\(0, 0, 0, 0\)/.test(x.fill)).length,
           lines:marks.filter(x=>/bk-ch-line/.test(x.cls)).filter(x=>x.stroke==='none'||!(parseFloat(x.sw)>0)).length,nmarks:marks.length};});
+      if(width===1280) rowsSeen[name]=(rowsSeen[name]||0)+m.rows;
       ok(m.sw<=m.w,at+': no sideways scroll ('+m.sw+' <= '+m.w+')');
       ok(!m.out.length,at+': no view or chart pokes out of the article'+(m.out.length?' ('+m.out.join(', ')+')':''));
       ok(m.blank===0,at+': every row in view has a box you can see ('+m.rows+' rows)'+(m.blank?' ('+m.blank+' empty)':''));
@@ -119,8 +123,9 @@ async function lineLegible(p,at){
       await q.close();}
     await ctx.close();}
   {const ctx=await b.newContext({viewport:{width:320,height:800},javaScriptEnabled:false}),p=await ctx.newPage();
-    for(const name of ['compile-views','charts']){await p.goto('file://'+path.join(OUT,name,'index.html'));await lineLegible(p,name+' at 320');}
+    for(const x of PAGES.filter(x=>['compile-views','charts'].includes(x.book))){await p.goto('file://'+path.join(OUT,x.file));await lineLegible(p,x.at+' at 320');}
     await ctx.close();}
   await b.close();
+  ok((rowsSeen['compile-views']||0)>=60,'the views on the deep pages were looked at: '+(rowsSeen['compile-views']||0)+' rows in the views booklet');
   console.log(fails.length?'\n'+fails.length+' FAILED':'\ncompile views pages: all checks passed');process.exit(fails.length?1:0);
 })().catch(e=>{console.error(e);process.exit(2);});

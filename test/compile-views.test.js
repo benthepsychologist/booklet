@@ -22,13 +22,18 @@ const X=E.load();
 const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-views-"));
 const tree=d=>!fs.existsSync(d)?[]:fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?tree(path.join(d,e.name)).map(x=>e.name+"/"+x):[e.name]);
 const compileOne=(file,form)=>{const run=C.compile([{file}],{form:form||"standalone",engine:X}),r=run.results[0];
-  return {run,r,page:r.files.get((form==="site"?"":"")+r.rep.name+"/index.html")||"",report:C.reportText(run)};};
+  /* a booklet that shows several activities is a contents page and a page for each: `page` is all of them, in the order the report lists them */
+  const pages=r.rep.pages.filter(p=>p.endsWith("index.html")).map(p=>r.files.get(p)||"");
+  return {run,r,pages,page:pages.join("\n"),report:C.reportText(run)};};
 const count=(s,re)=>(s.match(re)||[]).length;
 const decode=s=>s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&amp;/g,"&");
 /* the views on a page, each one's markup, in order: from one data-bk-view to the next */
 const viewsOf=page=>{const out=[],re=/<div class="bk-view[^"]*" data-bk-view="([a-z]+)"/g;let m,prev=null;
-  while((m=re.exec(page))){if(prev) prev.html=page.slice(prev.at,m.index);prev={as:m[1],at:m.index};out.push(prev);}
-  if(prev) prev.html=page.slice(prev.at,page.indexOf("</article>"));return out;};
+  const close=()=>{if(prev) prev.html=page.slice(prev.at,page.indexOf("</article>",prev.at));};
+  while((m=re.exec(page))){const e=page.indexOf("</article>",prev?prev.at:0);
+    if(prev&&e>=0&&e<m.index) close(); else if(prev) prev.html=page.slice(prev.at,m.index);
+    prev={as:m[1],at:m.index};out.push(prev);}
+  close();return out;};
 
 /* ======================= 1. the views ======================= */
 const V=compileOne(path.join(FIX,"compile-views.booklet.md"));
@@ -89,7 +94,7 @@ const noLink=w=>!new RegExp("<a [^>]*>"+w+"</a>").test(V.page);
 chk("a javascript: address, a heading that is not there and a module that is not compiled are plain words, never a link",
   !/href="javascript:/i.test(V.page)&&["Salt","Rye flour","&lt;script&gt;qzxhostile\\(\\)&lt;/script&gt;"].every(noLink)&&!/href="week-2/.test(V.page));
 chk("a value that is a script's words is text: escaped, in no element of its own, with no handler anywhere",
-  V.page.includes("&lt;script&gt;qzxhostile()&lt;/script&gt;")&&!/<script/i.test(V.page.replace(/<script type="application\/ld\+json">[^]*?<\/script>/,""))&&!/\son[a-z]+=/i.test(V.page));
+  V.page.includes("&lt;script&gt;qzxhostile()&lt;/script&gt;")&&!/<script/i.test(V.page.replace(/<script type="application\/ld\+json">[^]*?<\/script>/g,""))&&!/\son[a-z]+=/i.test(V.page));
 chk("an icon the sprite has is drawn (a picture before the tile); a name it has not draws nothing, and no word of it reaches the page",
   /<span class="bk-dv-i" aria-hidden="true"><svg class="bk-ic"/.test(views[0].html)&&count(views[0].html,/class="bk-dv-i"/g)===1&&!V.page.includes("not-an-icon-name"));
 chk("the empty: line is drawn, and a query with none says it plainly",V.page.includes('<p class="bk-hint">No orders yet.</p>')&&V.page.includes('<p class="bk-hint">Nothing to show here.</p>'));
@@ -122,16 +127,17 @@ chk("a double quote in a field's name or in an address is &quot; in the attribut
 const keptMarks=V.r.rep.marked.filter(m=>m.kind==="kept");
 chk("each of the five queries over kept entries or answers is marked kept, in the page and in the report",
   keptMarks.length===5&&count(V.page,/<!-- booklet: the query over “bakery\/orders”/g)===5&&count(V.report,/a query over kept entries or answers: drawn empty/g)===5,keptMarks.length);
-const after=V.page.slice(V.page.indexOf('<h2 id="after"'),V.page.indexOf("</article>"));
+/* (the "After" module is a page of its own, now that a booklet of several activities is a page for each) */
+const afterAt=V.page.indexOf('<h1 id="after"'),after=V.page.slice(afterAt,V.page.indexOf("</article>",afterAt));
 chk("…and each mark and report line says which query it is (its view, or a summary, and its place on the page), so the list can be told apart",
   new Set(keptMarks.map(m=>m.what)).size===5&&keptMarks.every(m=>/\(query \d+ on the page\)$/.test(m.what))&&keptMarks.some(m=>/a summary/.test(m.what))&&keptMarks.some(m=>/as cards/.test(m.what)),keptMarks.map(m=>m.what).join(" | "));
 chk("…and they draw no view, no row and no number: only the empty: lines the author wrote (two of five)",
-  !/data-bk-|<table|<ul/.test(after)&&count(after,/<p class="bk-hint">/g)===2&&after.includes("Orders are kept in the app.")&&after.includes("Summaries are not drawn here."));
+  !/data-bk-|<table|<ul/.test(after)&&count(after,/<p class="bk-hint(?: bk-lede)?">/g)===2&&after.includes("Orders are kept in the app.")&&after.includes("Summaries are not drawn here."));
 /* the same, for a summary with no empty: line, as a page of its own */
 const sumText='---\nbooklet: "0.16"\nid: t/sum\ntitle: Summary\nlang: en\n---\n\n# Summary\n\n> [!activity|log repeat] Log\n\n> [!number|n] How many?\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\nsummary: on\n```\n\n```booklet query\nfrom: log\nsummary: on\nas: bars\n```\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|t] Summary\n\n```booklet entries log\n{"items": [{"ts": "2026-10-01T08:00:00Z", "n": 777001}, {"ts": "2026-10-02T08:00:00Z", "n": 777002}]}\n```\n%%\n';
-const S=C.compile([{text:sumText,name:"sum",dir:TMP}],{form:"standalone",engine:X}),sp=S.results[0].files.get("sum/index.html")||"";
+const S=C.compile([{text:sumText,name:"sum",dir:TMP}],{form:"standalone",engine:X}),sp=S.results[0].rep.pages.map(p=>S.results[0].files.get(p)||"").join("\n");
 chk("a summary: on query over kept entries never has rows: nothing at all is drawn where it stood (with its mark)",
-  S.results[0].rep.ok&&!/data-bk-/.test(sp)&&count(sp,/<!-- booklet: the query over/g)===2&&!/777001|777002/.test(sp+C.reportText(S)),sp.slice(sp.indexOf("<h2")));
+  S.results[0].rep.ok&&!/data-bk-(view|row|col)/.test(sp)&&count(sp,/<!-- booklet: the query over/g)===2&&!/777001|777002/.test(sp+C.reportText(S)),sp.slice(sp.indexOf("<h2")));
 /* the records marker test: every marker and every number in the records region is in no file written, the report, or what is printed */
 {const src=path.join(FIX,"compile-views.booklet.md"),text=fs.readFileSync(src,"utf8");
   const markers=[...new Set(text.match(/qzxrec[a-z]+/g))],numbers=["31415","27182"];
@@ -229,6 +235,27 @@ chk("a booklet with no theme block has no data-bk-base, no style attribute, no T
   const D=C.compile([{text,name:"deep",dir:TMP}],{form:"both",engine:X}),p=D.results[0].files.get("standalone/deep/index.html")||D.results[0].files.get("deep/index.html")||"";
   chk("a list 3000 levels deep is drawn, every row of it, and is not refused",D.results[0].rep.ok&&count(p,/ data-bk-row\b/g)===3000&&p.includes("Row 2999"),D.results[0].rep.refused);
   chk("…as at most 40 levels of folds, the rest drawn level",count(p,/<details/g)===40,count(p,/<details/g));}
+
+/* ======================= 5. on a deep page (a booklet of several activities is a page for each) ======================= */
+/* A themed booklet of two activities, each with a view over its own data, a chart and a query over kept entries: every page
+   carries the look, the stylesheet link reaches the stylesheet from its own depth, no id is written twice on a page, and the
+   marks and report lines of the kept queries are told apart from one page to the next. */
+{const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\n```booklet query\nfrom: d"+id+"\nas: tiles\nvalue: n\nlabel: w\n```\n\n```booklet query\nfrom: d"+id+"\nas: bars\nvalue: n\nlabel: w\n```\n\n"
+    +"```booklet data\n{ \"rows\": [ { \"w\": \"A"+id+"\", \"n\": 3 }, { \"w\": \"B"+id+"\", \"n\": 5 } ] }\n```\n^d"+id+"\n\n```booklet query\nfrom: orders\nas: table\n```\n\n";
+  const text='---\nbooklet: "0.16"\nid: t/deep\ntitle: Deep\nlang: en\n---\n\n# Deep\n\n```booklet theme\nbase: daylight\npaper: "#fffbe8"\nink: "#2a2118"\n```\n\n> [!module|bakery] Bakery\n\n> [!activity|orders repeat] Orders\n\n> [!text|loaf] Which loaf?\n\n'+act("one","One")+act("two","Two")+"> [!module|bakery end] End\n";
+  for(const form of ["standalone","site"]){
+    const R=C.compile([{text,name:"deep",dir:TMP}],{form,engine:X}).results[0],pages=R.rep.pages.filter(p=>p.endsWith("index.html")),html=pages.map(p=>R.files.get(p));
+    const deepAt=pages.map((p,i)=>i).filter(i=>/\/(one|two)\//.test(pages[i]));
+    chk("("+form+") a booklet of two activities is a contents page and a page for each (4, with the log)",R.rep.ok&&pages.length===4&&deepAt.length===2,pages.join(" ")+" "+JSON.stringify(R.rep.refused)+JSON.stringify(R.rep.problems).slice(0,300));
+    chk("("+form+") every page, a deep one too, takes the booklet's colours on its article",html.every(h=>/<article class="booklet"[^>]*data-bk-base="daylight"[^>]*style="[^"]*--bk-paper:#fffbe8/.test(h)));
+    if(form==="standalone") chk("(standalone) …and on its body; its stylesheet link reaches the stylesheet from its own depth",
+      html.every(h=>/<body class="bk-page" data-bk-base="daylight"/.test(h))&&deepAt.every(i=>html[i].includes('href="../../booklet/booklet.css"')),deepAt.map(i=>(/<link rel="stylesheet"[^>]*>/.exec(html[i])||[""])[0]).join(" "));
+    chk("("+form+") each deep page draws its own views: a tiles view, a bars chart with the table of its numbers",deepAt.every(i=>count(html[i],/data-bk-view="tiles"/g)===1&&count(html[i],/data-bk-view="bars"/g)===1&&count(html[i],/class="bk-ch-nums"/g)===1));
+    chk("("+form+") no id is written twice on a page",html.every(h=>{const ids=[...h.matchAll(/ id="([^"]+)"/g)].map(m=>m[1]);return new Set(ids).size===ids.length;}));
+    const kept=R.rep.marked.filter(m=>m.kind==="kept"),marks=kept.map(m=>m.what+" "+m.where);
+    const lines=C.reportText({results:[R],problems:[]}).split("\n").filter(l=>/a query over kept entries/.test(l));
+    chk("("+form+") the kept queries of the two pages are told apart: each mark and report line names its page's activity as well as its place on it",
+      kept.length===2&&new Set(marks).size===2&&marks.every(w=>/activity “(One|Two)”/.test(w))&&lines.length===2&&new Set(lines).size===2,JSON.stringify(marks)+JSON.stringify(lines));}}
 
 fs.rmSync(TMP,{recursive:true,force:true});
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile views and theme passed");process.exit(fails?1:0);

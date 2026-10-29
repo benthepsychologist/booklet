@@ -67,6 +67,10 @@ const NAMES=[
   "calloutLook","CALLOUT_LOOK","registries","pageLine","plainRef","hasVal","longDate",
   /* images */
   "imagePath","imageIs","LINK_BYTES",
+  /* a card's picture: the emoji a title may begin with */
+  "LEAD_EMOJI",
+  /* the short id of an address (an activity's folder on a many-page booklet) */
+  "shortId",
   /* widgets */
   "colourOf","COLOUR_NAMES",
   /* the tables a test holds the compiler to: every block, question kind, engine and query view is drawn or marked */
@@ -211,11 +215,12 @@ function fontsOf(page,file){
     +"by the Booklet compiler, unmodified.\n\n"+text+"\n";
   return {faces,licence};}
 
-/* parse(text): {ok, refused: [words], problems: [words], marker: words or "", lang, design, comments}.
+/* parse(text): {ok, refused: [words], problems: [words], marker: words or "", lang, id, design, comments}.
    The words are the renderer's own, in English (the report is the author's), save the compiler's own refusals, which
    say why in words and never quote the file. `design` is the parse's template without its `raw`, copied out of the
    context as JSON. `lang` is the booklet's own language, as its front matter declares it, in the spelling the renderer
-   gives a tag (normTag); English when it declares none, as the renderer takes it. `comments`: the lines of each author
+   gives a tag (normTag); English when it declares none, as the renderer takes it. `id`: its front matter's `id` as written
+   (what its translations share), "" when it has none. `comments`: the lines of each author
    comment left out ({from, to, open}). */
 const REFUSE={
   fence:n=>"the booklet's text ends inside a code fence that never closes"+(n?" (it opens on line "+n+")":"")+", so a records region after it would be read as text and published. Close the fence with a line of the same marks that open it, then compile again.",
@@ -225,7 +230,7 @@ function parse(R,setLang,text){
   setLang("en");
   const t=String(text==null?"":text);
   const whole=R.parseFile(t);
-  const refused=why=>({ok:false,refused:[why],problems:[],marker:"",lang:"",design:null,comments:[]});
+  const refused=why=>({ok:false,refused:[why],problems:[],marker:"",lang:"",id:"",design:null,comments:[]});
   const isOutside=list=>(Array.isArray(list)?list:[]).some(p=>p&&p.code==="recordOutside");
   /* the design's own text, as the renderer keeps it: everything outside the records region (SPEC.md section 8) */
   const own=whole.template&&whole.template.raw&&typeof whole.template.raw.source==="string"?whole.template.raw.source:null;
@@ -247,12 +252,12 @@ function parse(R,setLang,text){
   let design=null;
   if(P.template){const {raw,...rest}=P.template;design=JSON.parse(JSON.stringify(rest));}
   return {ok:!!P.ok,refused:words(P.refused),problems:words((P.unread||[]).filter(p=>p!==P.markerNote)),marker,
-    lang:langOf(R,t),design,comments};}
-/* the booklet's own language: its front matter's `lang`, read by the renderer's frontMatter and kvLine and spelled as
-   the renderer spells a tag (normTag); "en" when it has none, as the renderer takes it */
-function langOf(R,t){const fm=R.frontMatter(t,true);let v="";
-  for(const l of Array.from(fm.head||[])){const kv=R.kvLine(l);if(kv&&kv[0]==="lang") v=String(kv[1]);}
-  return R.normTag(v)||"en";}
+    lang:frontKey(R,t,"lang"),id:frontKey(R,t,"id"),design,comments};}
+/* a front matter key's value, read by the renderer's frontMatter and kvLine ("" when there is none). */
+function frontKey(R,t,key){const fm=R.frontMatter(t,true);let v="";
+  for(const l of Array.from(fm.head||[])){const kv=R.kvLine(l);if(kv&&kv[0]===key) v=String(kv[1]);}
+  /* the booklet's own language is spelled as the renderer spells a tag (normTag); English when it has none, as the renderer takes it */
+  return key==="lang"?R.normTag(v)||"en":v.trim();}
 
 /* AUTHOR COMMENTS
    Every `%%` … `%%` comment in the design's own text, outside the renderer's fenced code (codeMask), taken out: the
