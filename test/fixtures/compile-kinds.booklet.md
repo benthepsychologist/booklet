@@ -148,7 +148,7 @@ A group, folds and a fold of a kind.
 
 > [!activity|left-off] What the compiler leaves off
 
-A query view, a diagram, a figure, a link to a booklet that is not compiled with this one, a broken citation mark, and two widgets it cannot draw.
+A diagram, a figure, a link to a booklet that is not compiled with this one, a broken citation mark, and two widgets it cannot draw.
 
 ```booklet query
 from: flights

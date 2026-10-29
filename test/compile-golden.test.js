@@ -15,7 +15,7 @@ const ROOT=path.join(__dirname,".."),GOLD=path.join(__dirname,"compile-golden");
 const C=require("../compile/compile.js"),E=require("../compile/engine.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const SET=[...["garden-week","how-tides-work","project-board","status-page"].map(n=>path.join(ROOT,"examples",n+".booklet.md")),
-  ...["compile-article","compile-kinds","figures","charts","data-views"].map(n=>path.join(__dirname,"fixtures",n+".booklet.md"))];
+  ...["compile-article","compile-kinds","figures","charts","data-views","compile-views","compile-theme"].map(n=>path.join(__dirname,"fixtures",n+".booklet.md"))];
 const WRITE=process.argv.includes("--write");
 
 const run=C.compile(SET.map(file=>({file})),{form:"both",engine:E.load()});

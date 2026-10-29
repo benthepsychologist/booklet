@@ -45,7 +45,7 @@ fs.writeFileSync(path.join(POND,'pond.booklet.md'),'---\nbooklet: "'+C.compile([
   +'### Fish\n\n| Fish | Seen |\n| --- | --- |\n| Carp | 3 |\n\n> [!note]- A folded note\n> Words inside the fold.\n\n***\n\nLast words after a rule.\n\n'
   +'[^pond]: A made-up note about the pond.\n');
 const inputs=[...fs.readdirSync(path.join(ROOT,'examples')).filter(f=>f.endsWith('.booklet.md')).map(f=>({file:path.join(ROOT,'examples',f)})),
-  ...['compile-article','compile-kinds','figures','charts','data-views'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),{file:path.join(POND,'pond.booklet.md')}];
+  ...['compile-article','compile-kinds','figures','charts','data-views','compile-views','compile-theme'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),{file:path.join(POND,'pond.booklet.md')}];
 const run=C.compile(inputs,{form:'both',renderer:HTML});
 C.write(run,OUT,{force:true});
 ok(run.results.every(r=>r.rep.ok),'every page compiles ('+run.results.length+' booklets, both forms)');
@@ -119,7 +119,7 @@ const hostPage=(frag,hostile,title)=>'<!doctype html>\n<html lang="en" id="site"
   +'<ol class="host-steps"><li>A host\'s own step</li><li>And another</li></ol><p><a class="host-a" href="#top">A host\'s own link</a></p>\n'
   +frag+'</div></main>\n<footer class="host-foot"><p>A host site\'s own footer</p></footer></body></html>\n';
 /* a standalone page as a host would serve it: the same ids and class round the article, and the hostile sheets added */
-const asHosted=(whole,hostile)=>whole.replace(/<html lang="([^"]*)">/,'<html lang="$1" id="site">').replace('<body class="bk-page">','<body class="bk-page" id="main">')
+const asHosted=(whole,hostile)=>whole.replace(/<html lang="([^"]*)">/,'<html lang="$1" id="site">').replace(/<body class="bk-page"/,'<body id="main" class="bk-page"')
   .replace('<main class="bk-main">','<main class="bk-main content">').replace(/(<link rel="stylesheet" href="[^"]*booklet\.css">)/,'$1'+(hostile?SHEETS:''));
 const pages=[];
 for(const r of run.results){const name=r.rep.name;

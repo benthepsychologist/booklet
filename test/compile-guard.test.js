@@ -30,7 +30,7 @@ const AC_START="/* AUTHOR COMMENTS\n",AC_END="/* /AUTHOR COMMENTS */",eng=src["e
 const acA=eng.indexOf(AC_START),acB=eng.indexOf(AC_END);
 const acRegion=acA>=0&&acB>acA?strip(eng.slice(acA,acB+AC_END.length)):"";
 const outside=Object.fromEntries(files.map(f=>[f,f==="engine.js"&&acRegion?strip(eng.slice(0,acA)+eng.slice(acB+AC_END.length)):code[f]]));
-chk("compile/ holds the four files the compiler is made of",["compile.js","draw.js","engine.js","html.js"].every(f=>files.includes(f)),files.join(", "));
+chk("compile/ holds the files the compiler is made of",["compile.js","draw.js","engine.js","html.js","views.js","theme.js"].every(f=>files.includes(f)),files.join(", "));
 
 /* ---- 1. no second reader ---- */
 const FORBIDDEN=[
@@ -130,9 +130,9 @@ chk("the parse's raw is read in engine.js only, for its source and to leave it b
 const tree=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?[e.name+"/",...tree(path.join(d,e.name)).map(x=>e.name+"/"+x)]:[e.name]);
 const all=tree(DIR);
 chk("no package.json, lock file or node_modules under compile/",!all.some(f=>/(^|\/)(package(-lock)?\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|node_modules\/)/.test(f)),all.join(", "));
-chk("compile/ holds only the compiler's files, its stylesheet and its README",all.every(f=>/^(compile|draw|engine|html)\.js$|^booklet\.css$|^README\.md$/.test(f)),all.join(", "));
+chk("compile/ holds only the compiler's files, its stylesheet and its README",all.every(f=>/^(compile|draw|engine|html|views|theme)\.js$|^booklet\.css$|^README\.md$/.test(f)),all.join(", "));
 const mods=new Set([...allCode.matchAll(/require\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map(m=>m[1]));
-const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./draw.js"]);
+const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./draw.js","./views.js","./theme.js"]);
 chk("it requires only fs, path, vm, crypto and its own files",[...mods].every(m=>allowed.has(m)),[...mods].join(", "));
 chk("every require names its module as a plain string",(allCode.match(/require\(/g)||[]).length===(allCode.match(/require\(\s*["'`][^"'`]+["'`]\s*\)/g)||[]).length);
 for(const [what,re] of [["fetch",/\bfetch\b/],["XMLHttpRequest",/XMLHttpRequest/],["WebSocket",/WebSocket/],["EventSource",/EventSource/],

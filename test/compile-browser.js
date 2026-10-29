@@ -20,7 +20,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 
 const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures');
 const inputs=[...fs.readdirSync(path.join(ROOT,'examples')).filter(f=>f.endsWith('.booklet.md')).map(f=>({file:path.join(ROOT,'examples',f)})),
-  ...['compile-article','compile-kinds','figures','charts','data-views','compile-records'].map(n=>({file:path.join(FIX,n+'.booklet.md')}))];
+  ...['compile-article','compile-kinds','figures','charts','data-views','compile-records','compile-views','compile-theme'].map(n=>({file:path.join(FIX,n+'.booklet.md')}))];
 fs.rmSync(OUT,{recursive:true,force:true});
 const run=C.compile(inputs,{form:'both',renderer:HTML});
 C.write(run,OUT,{force:true});
@@ -90,6 +90,9 @@ async function svgProof(b){
           let x=e.parentElement;while(x&&x!==document.body){const s=getComputedStyle(x);if(/auto|scroll|hidden/.test(s.overflowX)) return false;x=x.parentElement;}
           return r.right>window.innerWidth+1;}).slice(0,3).map(e=>e.tagName.toLowerCase()+'.'+e.className)}));
       ok(sw.sw<=sw.w&&!sw.wide.length,at+': no sideways scroll'+(sw.sw>sw.w||sw.wide.length?' (scrollWidth '+sw.sw+' > '+sw.w+'; '+sw.wide.join(', ')+')':''));
+      /* a booklet with a theme block asks for its own look (compile 0.2): its base, and perhaps its face; those pages are held to that look */
+      const page0=fs.readFileSync(pg.form==='site'?path.join(path.dirname(pg.file),'index.html'):pg.file,'utf8'),art0=/<article class="booklet"[^>]*>/.exec(page0)[0];
+      const base=(/data-bk-base="([a-z]+)"/.exec(art0)||[])[1]||'',ownFont=/--bk-font-text:/.test(art0);
       const look=await p.evaluate(async()=>{await document.fonts.ready;
         const art=document.querySelector('article.booklet'),cs=e=>e?getComputedStyle(e):null,para=art.querySelector('p:not([class])')||art,lede=art.querySelector('.bk-lede'),muted=art.querySelector('.bk-ctitle,.bk-q-help,.bk-about dt,.bk-toc-h'),head=art.querySelector('h1,h2');
         const bg=e=>{let x=e;while(x){const c=cs(x).backgroundColor;if(c&&!/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c;x=x.parentElement;}return 'rgb(255, 255, 255)';};
@@ -97,9 +100,11 @@ async function svgProof(b){
           atk:document.fonts.check('16px "Atkinson Hyperlegible"'),lex:document.fonts.check('600 16px Lexend'),
           details:[...document.querySelectorAll('details')].map(d=>d.open),
           toc:[...document.querySelectorAll('nav.bk-toc a')].map(a=>a.getAttribute('href')).filter(h=>!document.getElementById(h.slice(1)))};});
-      ok(/^"?Atkinson Hyperlegible/.test(look.text)&&(!look.head||/^"?Lexend/.test(look.head))&&look.atk&&(!look.head||look.lex),at+': text in Atkinson Hyperlegible, headings in Lexend'+(look.atk?'':' (Atkinson not loaded)')+' ['+look.text.slice(0,40)+' / '+look.head.slice(0,30)+']');
+      if(ownFont) ok(/serif|sans-serif|monospace/.test(look.text)&&!/^"?Atkinson/.test(look.text),at+': the booklet\'s own face is used ('+look.text.slice(0,40)+')');
+      else ok(/^"?Atkinson Hyperlegible/.test(look.text)&&(!look.head||/^"?Lexend/.test(look.head))&&look.atk&&(!look.head||look.lex),at+': text in Atkinson Hyperlegible, headings in Lexend'+(look.atk?'':' (Atkinson not loaded)')+' ['+look.text.slice(0,40)+' / '+look.head.slice(0,30)+']');
       const dark=lum(look.paper)<0.2;
-      ok(pg.form==='site'?!dark:(scheme==='dark')===dark,at+': '+(pg.form==='site'?'the article stays light on its host':'the page follows the device ('+scheme+')')+' ['+look.paper+']');
+      if(base) ok(dark===(base==='night'),at+': a booklet with a theme keeps its own base ('+base+') whatever the device says ['+look.paper+']');
+      else ok(pg.form==='site'?!dark:(scheme==='dark')===dark,at+': '+(pg.form==='site'?'the article stays light on its host':'the page follows the device ('+scheme+')')+' ['+look.paper+']');
       const cr=ratio(look.ink,look.paper);
       ok(cr>=7,at+': the text keeps its contrast ('+cr.toFixed(1)+':1)');
       for(const [what,pair] of [['the lede',look.lede],['quieter text',look.muted]]) if(pair){const r=ratio(pair[0],pair[1]);ok(r>=4.5,at+': '+what+' keeps a readable contrast ('+r.toFixed(1)+':1)');}
@@ -108,7 +113,7 @@ async function svgProof(b){
       const outside=reqs.filter(u=>!u.startsWith(own)&&!u.startsWith('data:'));
       ok(!outside.length&&!failed.length&&!errs.length,at+': asks for nothing but its own files, every one loads, no error'
         +(outside.length?' (outside: '+outside.slice(0,3).join(', ')+')':'')+(failed.length?' (failed: '+failed.slice(0,3).join(', ')+')':'')+(errs.length?' ('+errs[0]+')':''));
-      ok(reqs.some(u=>u.endsWith('/booklet/booklet.css'))&&reqs.some(u=>/\/booklet\/fonts\/.+\.woff2$/.test(u)),at+': the stylesheet and its fonts are loaded');
+      ok(reqs.some(u=>u.endsWith('/booklet/booklet.css'))&&(ownFont||reqs.some(u=>/\/booklet\/fonts\/.+\.woff2$/.test(u))),at+': the stylesheet'+(ownFont?'':' and its fonts')+' loaded');
       /* the folds: only at light, where every one is opened by its summary, in reading order (a fold inside a fold after it) */
       if(scheme!=='light') continue;
       const source=fs.readFileSync(pg.form==='site'?path.join(path.dirname(pg.file),'index.html'):pg.file,'utf8');
