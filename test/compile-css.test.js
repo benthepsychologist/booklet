@@ -71,7 +71,7 @@ chk("it fetches nothing but its own fonts (no @import, no other url())",!/@impor
 
 /* ---- every class the compiler writes has a rule ---- */
 const inputs=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWith(".booklet.md")).map(f=>({file:path.join(ROOT,"examples",f)})),
-  ...["compile-article","compile-kinds","figures"].map(n=>({file:path.join(__dirname,"fixtures",n+".booklet.md")}))];
+  ...["compile-article","compile-kinds","compile-quiz","figures"].map(n=>({file:path.join(__dirname,"fixtures",n+".booklet.md")}))];
 const run=C.compile(inputs,{form:"both",engine:X});
 const classes=new Set();
 for(const r of run.results) for(const [rel,data] of r.files) if(rel.endsWith(".html")) for(const m of String(data).matchAll(/class="([^"]*)"/g)) m[1].split(/\s+/).forEach(c=>c&&classes.add(c));

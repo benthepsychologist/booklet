@@ -2,7 +2,7 @@
 title: "A kite workshop"
 description: "A made-up booklet for the compiler's tests: every callout kind, every question kind, both widget engines, and each thing the compiler marks instead of drawing."
 ---
-<!-- booklet compile 0.1.0 · from compile-kinds.booklet.md · sha256:b21bc05d022c923314af70c5aedd5a522fe394fe15850fa256ed0dea9761b5e8 -->
+<!-- booklet compile 0.1.0 · from compile-kinds.booklet.md · sha256:3ff363dd4887f577b3f22c433cc3a99bf41abb84445474d3f05836fe330415a1 -->
 <article class="booklet" lang="en">
   <p class="bk-lede">A made-up booklet for the compiler's tests: every callout kind, every question kind, both widget engines, and each thing the compiler marks instead of drawing.</p>
   <nav class="bk-toc" aria-labelledby="bk-toc-h">
@@ -158,9 +158,9 @@ description: "A made-up booklet for the compiler's tests: every callout kind, ev
       <p class="bk-gtitle">What to pack</p>
       <div class="bk-cb">
         <p>String, tape, scissors.</p>
-        <div class="bk-q bk-q-text">
-          <p class="bk-q-ask">Anything else to pack?</p>
-        </div>
+        <fieldset class="bk-q bk-q-text" data-bk-kind="text" aria-labelledby="bk-compile-kinds-q1-ask">
+          <p class="bk-q-ask" id="bk-compile-kinds-q1-ask">Anything else to pack?</p>
+        </fieldset>
       </div>
     </section>
     <details class="bk-fold bk-plain">
@@ -178,21 +178,21 @@ description: "A made-up booklet for the compiler's tests: every callout kind, ev
   </section>
   <section class="bk-activity">
     <h2 id="every-question-kind">Every question kind <a class="bk-anchor" href="#every-question-kind" aria-label="Link to this section">#</a></h2>
-    <div class="bk-q bk-q-text">
-      <p class="bk-q-ask">What will you call your kite?</p>
+    <fieldset class="bk-q bk-q-text" data-bk-kind="text" aria-labelledby="bk-compile-kinds-q2-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q2-ask">What will you call your kite?</p>
       <p class="bk-q-help">One or two words.</p>
-    </div>
-    <div class="bk-q bk-q-lines">
-      <p class="bk-q-ask">The steps you followed</p>
-    </div>
-    <div class="bk-q bk-q-number">
-      <p class="bk-q-ask">How many spars?</p>
-    </div>
-    <div class="bk-q bk-q-date">
-      <p class="bk-q-ask">When did it first fly?</p>
-    </div>
-    <div class="bk-q bk-q-choice">
-      <p class="bk-q-ask">Which shape did you build?</p>
+    </fieldset>
+    <fieldset class="bk-q bk-q-lines" data-bk-kind="lines" aria-labelledby="bk-compile-kinds-q3-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q3-ask">The steps you followed</p>
+    </fieldset>
+    <fieldset class="bk-q bk-q-number" data-bk-kind="number" aria-labelledby="bk-compile-kinds-q4-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q4-ask">How many spars?</p>
+    </fieldset>
+    <fieldset class="bk-q bk-q-date" data-bk-kind="date" aria-labelledby="bk-compile-kinds-q5-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q5-ask">When did it first fly?</p>
+    </fieldset>
+    <fieldset class="bk-q bk-q-choice" data-bk-kind="choice" aria-labelledby="bk-compile-kinds-q6-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q6-ask">Which shape did you build?</p>
       <ul class="bk-options bk-pick-one">
         <li>Diamond</li>
         <li>Box</li>
@@ -211,26 +211,26 @@ description: "A made-up booklet for the compiler's tests: every callout kind, ev
           <p>A diamond has four.</p>
         </div>
       </details>
-    </div>
-    <div class="bk-q bk-q-multi">
-      <p class="bk-q-ask">Which tools did you use?</p>
+    </fieldset>
+    <fieldset class="bk-q bk-q-multi" data-bk-kind="multi" aria-labelledby="bk-compile-kinds-q7-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q7-ask">Which tools did you use?</p>
       <ul class="bk-options bk-pick-many">
-        <li>Scissors</li>
-        <li>Ruler</li>
-        <li>Glue</li>
+        <li class="bk-opt"><input type="checkbox" id="bk-compile-kinds-q7-o1" autocomplete="off"><label for="bk-compile-kinds-q7-o1">Scissors</label></li>
+        <li class="bk-opt"><input type="checkbox" id="bk-compile-kinds-q7-o2" autocomplete="off"><label for="bk-compile-kinds-q7-o2">Ruler</label></li>
+        <li class="bk-opt"><input type="checkbox" id="bk-compile-kinds-q7-o3" autocomplete="off"><label for="bk-compile-kinds-q7-o3">Glue</label></li>
       </ul>
-    </div>
-    <!-- booklet: the question “Why that tool?” (activity “Every question kind”): a question asked for each pick in another: not compiled -->
-    <div class="bk-q bk-q-scale">
-      <p class="bk-q-ask">How steady was it?</p>
+    </fieldset>
+    <!-- booklet: the question “Why that tool?” (activity “Every question kind”): a question asked for each pick in another: not compiled (the reference renderer does not draw it either, and a page keeps no picks to draw it from) -->
+    <fieldset class="bk-q bk-q-scale" data-bk-kind="scale" aria-labelledby="bk-compile-kinds-q8-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q8-ask">How steady was it?</p>
       <ul class="bk-scale">
         <li>Wobbly</li>
         <li>Fair</li>
         <li>Steady</li>
       </ul>
-    </div>
-    <div class="bk-q bk-q-matrix">
-      <p class="bk-q-ask">How did each wind feel?</p>
+    </fieldset>
+    <fieldset class="bk-q bk-q-matrix" data-bk-kind="matrix" aria-labelledby="bk-compile-kinds-q9-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q9-ask">How did each wind feel?</p>
       <div class="bk-table">
         <table class="bk-matrix">
           <thead>
@@ -257,13 +257,13 @@ description: "A made-up booklet for the compiler's tests: every callout kind, ev
           </tbody>
         </table>
       </div>
-    </div>
+    </fieldset>
     <aside class="bk-callout bk-plain" role="note">
       <p class="bk-ctitle">A hint drawn outside its question</p>
       <div class="bk-cb"></div>
     </aside>
-    <div class="bk-q bk-widget bk-w-grid-select">
-      <p class="bk-q-ask">The flight</p>
+    <fieldset class="bk-q bk-widget bk-w-grid-select" data-bk-kind="widget" aria-labelledby="bk-compile-kinds-q10-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q10-ask">The flight</p>
       <p class="bk-q-help">Pick what the kite did.</p>
       <div class="bk-grid">
         <p class="bk-ax bk-ax-top">higher</p>
@@ -272,34 +272,34 @@ description: "A made-up booklet for the compiler's tests: every callout kind, ev
           <div class="bk-cell bk-c-blue">
             <p class="bk-cell-name">Soaring</p>
             <ul class="bk-words">
-              <li>Glide</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-w1" autocomplete="off"><label for="bk-compile-kinds-w1">Glide</label><span class="bk-shows" hidden>High and calm.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-purple">
             <p class="bk-cell-name">Dancing</p>
             <ul class="bk-words">
-              <li>Loop</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-w2" autocomplete="off"><label for="bk-compile-kinds-w2">Loop</label><span class="bk-shows" hidden>High and gusty.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-slate">
             <p class="bk-cell-name">Dragging</p>
             <ul class="bk-words">
-              <li>Sag</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-w3" autocomplete="off"><label for="bk-compile-kinds-w3">Sag</label><span class="bk-shows" hidden>Low and calm.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-amber">
             <p class="bk-cell-name">Diving</p>
             <ul class="bk-words">
-              <li>Plunge</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-w4" autocomplete="off"><label for="bk-compile-kinds-w4">Plunge</label><span class="bk-shows" hidden>Low and gusty.</span></li>
             </ul>
           </div>
         </div>
         <p class="bk-ax bk-ax-right">gustier</p>
         <p class="bk-ax bk-ax-bottom">lower</p>
       </div>
-    </div>
-    <div class="bk-q bk-widget bk-w-svg-regions">
-      <p class="bk-q-ask">Where it broke</p>
+    </fieldset>
+    <fieldset class="bk-q bk-widget bk-w-svg-regions" data-bk-kind="widget" aria-labelledby="bk-compile-kinds-q11-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q11-ask">Where it broke</p>
       <p class="bk-q-help">Which part gave way?</p>
       <!-- booklet: the figure “front” of the widget “kite-parts” (activity “Every question kind”): the body map's figure: not compiled yet; its places are named below it -->
       <p class="bk-places-h">Front</p>
@@ -326,9 +326,9 @@ description: "A made-up booklet for the compiler's tests: every callout kind, ev
           <dd>The stick that holds it open.</dd>
         </div>
       </dl>
-    </div>
-    <div class="bk-q bk-widget bk-w-grid-select">
-      <p class="bk-q-ask">An uncoloured grid</p>
+    </fieldset>
+    <fieldset class="bk-q bk-widget bk-w-grid-select" data-bk-kind="widget" aria-labelledby="bk-compile-kinds-q12-ask">
+      <p class="bk-q-ask" id="bk-compile-kinds-q12-ask">An uncoloured grid</p>
       <p class="bk-q-help">No colour names.</p>
       <div class="bk-grid">
         <span class="bk-ax bk-ax-top"></span><span class="bk-ax bk-ax-left"></span>
@@ -336,7 +336,7 @@ description: "A made-up booklet for the compiler's tests: every callout kind, ev
           <div class="bk-cell bk-c-n0">
             <p class="bk-cell-name">First</p>
             <ul class="bk-words">
-              <li>Ex</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-compile-kinds-w8" autocomplete="off"><label for="bk-compile-kinds-w8">Ex</label></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-n1">
@@ -354,7 +354,7 @@ description: "A made-up booklet for the compiler's tests: every callout kind, ev
         </div>
         <span class="bk-ax bk-ax-right"></span><span class="bk-ax bk-ax-bottom"></span>
       </div>
-    </div>
+    </fieldset>
   </section>
   <section class="bk-activity">
     <h2 id="what-the-compiler-leaves-off">What the compiler leaves off <a class="bk-anchor" href="#what-the-compiler-leaves-off" aria-label="Link to this section">#</a></h2>

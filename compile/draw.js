@@ -4,7 +4,8 @@
    The page is the renderer's print view made a web page (SPEC.md section 3, "a renderer with no tab bar"): every shown
    activity in file order, each under its title; its tabs one after another, each under its name; its pages run on with a
    quiet divider; its folds as <details>; its footnotes as numbered marks with the notes at the foot; its questions and
-   widgets read-only, showing what they ask and offer with nothing to press. Prose is drawn by the renderer's own Markdown
+   widgets as a quiz that forgets (a pick-one or pick-any question answers when pressed, a widget's words highlight; the
+   stylesheet does it, nothing is stored) or, where no response is defined, read-only. Prose is drawn by the renderer's own Markdown
    engine (engine.js hands it this file's hooks for images, marks, math, figures and links), and every decision about
    the design (what is shown, a callout's look, a heading link's target, a citation's source) is the renderer's own helper,
    called by name. This file decides only the markup.
@@ -30,7 +31,7 @@ const BLOCK_WAY={markdown:"prose",callout:"callout",row:"row",widget:"widget",
   text:"question",lines:"question",choice:"question",multi:"question",scale:"question",matrix:"question",number:"question",date:"question",
   query:{marked:"query"}};
 /* each widget engine drawn, and how: drawPage's ENGINE_DRAW must hold exactly these */
-const ENGINE_WAY={"grid-select":"drawn","svg-regions":"drawn: its places by name; its figure is marked (compile 0.2)"};
+const ENGINE_WAY={"grid-select":"drawn: its words press and highlight on the page, nothing kept","svg-regions":"drawn: its places by name, pressed and highlighted on the page, nothing kept; its figure is marked (compile 0.2)"};
 /* How each of the renderer's tables is handled: "drawn", or a reason it is marked instead. test/compile-coverage.test.js
    fails when the renderer has a block type, question kind, engine or query view that is in neither. Callout kinds are
    all drawn, each in its own look (CALLOUT_LOOK), and an unknown kind is marked and drawn as the renderer draws it. */
@@ -44,7 +45,7 @@ const MARKED={
   mermaid:"a diagram: not compiled yet, shown as its source",
   regionsFigure:"the body map's figure: not compiled yet; its places are named below it",
   link:"a link to a booklet not compiled with this one: drawn as its words",
-  each:"a question asked for each pick in another: not compiled",
+  each:"a question asked for each pick in another: not compiled (the reference renderer does not draw it either, and a page keeps no picks to draw it from)",
   kind:"an unknown callout kind: drawn as a note, with the renderer's line saying the kind is not known",
   engine:"a widget whose engine this compiler does not draw: left off",
   widget:"a widget block whose widget is not in the file: left off",
@@ -59,7 +60,7 @@ const HEAD=/^h([1-6])$/;
 const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 
 /* drawPage(X, parsed, o): the page's article and what the page and the report need.
-   o: {name, form: "standalone"|"site", siblings: Map of the addresses compiled in the same run to their titles, image(rel, ext) ->
+   o: {name, form: "standalone"|"site", forceScript (tests: say the page needs booklet.js), siblings: Map of the addresses compiled in the same run to their titles, image(rel, ext) ->
    {ok} | {ok:false, why: a renderer ui string's name, detail}}. */
 function drawPage(X,P,o){
   const R=X.R,M=X.M,design=P.design;
@@ -68,9 +69,11 @@ function drawPage(X,P,o){
   X.setLang(ui);
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
-    marked:[],images:[],links:[],counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,images:0,math:0,notes:0,links:0},
+    marked:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,images:0,math:0,notes:0,links:0},
     where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[]};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
+  /* the ids and radio names the page's inputs take: the page's own address in them, so two fragments on one host page do not collide */
+  const IDP="bk-"+(String(o.name).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"page")+"-";
   const pageTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
 
   /* ---- marks: what the page leaves off ---- */
@@ -205,7 +208,7 @@ function drawPage(X,P,o){
     if(typeof way!=="string") return mark(way.marked,MARKED_AS[way.marked](b));
     if(way==="callout") return DRAWERS.callout(b);
     const node=DRAWERS[way](b);
-    if(R.QUESTION_KINDS.has(b.type)&&node instanceof H.Node&&node.tag==="div") R.qParts(b).forEach(p=>node.append(fold(p,true)));
+    if(R.QUESTION_KINDS.has(b.type)&&node instanceof H.Node&&node.tag==="fieldset") R.qParts(b).forEach(p=>node.append(fold(p,true)));
     if(b.type!=="callout"&&R.placeOf(b)==="folded"){st.counts.folds++;
       return el("details",{class:"bk-fold bk-plain"},el("summary",{},el("span",{class:"bk-ftitle"},...words(R.foldName(b),true))),el("div",{class:"bk-cb"},node));}
     return node;}
@@ -245,35 +248,99 @@ function drawPage(X,P,o){
     const cls="bk-fold"+(hs?" bk-compact bk-"+hs:look?" bk-hue-"+look.hue+" bk-k-"+look.label:" bk-plain");
     return el("details",{class:cls},el("summary",{},pic,el("span",{class:"bk-ftitle"},...words(title,true))),el("div",{class:"bk-cb"},...body));}
 
-  /* ---- questions, read-only: what they ask and what they offer, nothing to press ---- */
-  function qHead(box,label,help){
-    const head=tx(label,"");if(R.nonEmpty(head)) box.append(el("p",{class:"bk-q-ask"},...words(head)));
-    const h=tx(help,"");if(R.nonEmpty(h)) box.append(el("p",{class:"bk-q-help"},...words(h)));}
+  /* ---- questions ----
+     A question is a <fieldset class="bk-q" data-bk-kind="…">. A pick-one or pick-any question is a quiz: its options are real
+     inputs and the page answers the way the renderer's own question does (SPEC.md section 5, "[x] marks a correct
+     option"), with the stylesheet alone: the picked option is marked right or not quite, a right one the reader missed is
+     marked as the answer, an option's reply shows under the options, and a pick-any question has a Check that marks every
+     option at once. Nothing is stored: the inputs are the open page's, and autocomplete="off" keeps a browser from
+     restoring them on reload. The one thing the stylesheet cannot do is speak: a graded question has an empty live
+     region, and the script (compile/script/10-quiz.js, which only a graded question asks for) copies into it, as text,
+     the sentence the compiler already wrote beside the question, so a screen reader hears the verdict.
+     Every other kind stays read-only as in 0.1.0 (the renderer defines no response for a scale, a number, a date or a
+     matrix, and a free-text prompt or an "add your own" option would need somewhere to keep what was typed); the build
+     report lists each as "read-only here". The answer key is in the page's markup (a class on each right option), as it is
+     in the booklet file: a page that must not give its answers away should not mark any. */
+  /* the question's words; returns the ask line, which names the fieldset to a screen reader */
+  function qHead(box,n,label,help){let ask=null;
+    const head=tx(label,"");if(R.nonEmpty(head)){ask=el("p",{class:"bk-q-ask",id:IDP+"q"+n+"-ask"},...words(head));box.append(ask);st.labelled.push([box,ask]);}
+    const h=tx(help,"");if(R.nonEmpty(h)) box.append(el("p",{class:"bk-q-help"},...words(h)));
+    return ask;}
+  const readOnly=(b,why)=>st.readOnly.push({kind:b.type,what:"the "+b.type+" question “"+(plain(b.label)||b.id||"?")+"”",where:st.where,why});
+  const READ_ONLY={text:"a free-text prompt is shown as text: a box to type in would need somewhere to keep what was typed",
+    lines:"a list of lines is shown as text: boxes to type in would need somewhere to keep what was typed",
+    scale:"the renderer defines no response for a scale",matrix:"the renderer defines no response for a matrix",
+    number:"the renderer defines no response for a number",date:"the renderer defines no response for a date",
+    open:"the reader's own words (open) would need somewhere to keep them"};
+  /* a pick-one or pick-any question as a quiz: the right options (b.answer, positions from 1), its fieldset's extra classes */
+  const quizOf=b=>{const listed=b.options||[],multi=b.type==="multi";
+    const right=(Array.isArray(b.answer)?b.answer:b.answer?[b.answer]:[]).filter(k=>Number.isInteger(k)&&k>=1&&k<=listed.length);
+    return {listed,multi,right,graded:right.length>0,gated:right.length>0&&multi};};
   function question(b){st.counts.questions++;
-    const box=el("div",{class:"bk-q bk-q-"+b.type});qHead(box,b.label,b.help);
-    if(b.type==="choice"||b.type==="multi"){
-      const ul=el("ul",{class:"bk-options "+(b.type==="multi"?"bk-pick-many":"bk-pick-one")},
-        ...(b.options||[]).map(x=>el("li",{},...words(x,true))));
+    const kind=b.type,pick=kind==="choice"||kind==="multi",quiz=pick&&!b.open?quizOf(b):null;
+    const box=el("fieldset",{class:"bk-q bk-q-"+kind+(quiz&&quiz.gated?" bk-gated":""),"data-bk-kind":kind,"data-bk-graded":quiz&&quiz.graded?true:null});
+    const n=++st.qn;
+    if(!qHead(box,n,b.label,b.help)) box.attrs["aria-label"]=plain(b.help)||String(b.id||kind);
+    if(quiz) quizOptions(box,n,b,quiz);
+    else if(pick){readOnly(b,READ_ONLY.open);
+      const ul=el("ul",{class:"bk-options "+(kind==="multi"?"bk-pick-many":"bk-pick-one")},...(b.options||[]).map(x=>el("li",{},...words(x,true))));
       if(b.open) ul.append(el("li",{class:"bk-own"},T("question").addOwn));
       box.append(ul);}
-    else if(b.type==="scale") box.append(el("ul",{class:"bk-scale"},...(b.anchors||[]).map(a=>el("li",{},...words(a.text,true)))));
-    else if(b.type==="matrix"){const anchors=b.anchors||[];
+    else if(kind==="scale"){readOnly(b,READ_ONLY.scale);box.append(el("ul",{class:"bk-scale"},...(b.anchors||[]).map(a=>el("li",{},...words(a.text,true)))));}
+    else if(kind==="matrix"){readOnly(b,READ_ONLY.matrix);const anchors=b.anchors||[];
       box.append(el("div",{class:"bk-table"},el("table",{class:"bk-matrix"},
         el("thead",{},el("tr",{},el("td",{}),...anchors.map(a=>el("th",{scope:"col"},...words(a.text,true))))),
         el("tbody",{},...(b.items||[]).map(it=>el("tr",{},el("th",{scope:"row"},...words(it)),...anchors.map(()=>el("td",{"aria-hidden":"true"},"○"))))))));}
+    else if(READ_ONLY[kind]) readOnly(b,READ_ONLY[kind]);
     return box;}
+  /* the options of a quiz, with their verdicts, replies and (pick-any with a right answer) Check, all in the markup and shown by the stylesheet */
+  function quizOptions(box,n,b,Qz){const Q=T("question"),{listed,multi,right,graded,gated}=Qz;
+    /* Everything that only a press shows (a verdict, a reply, the verdict sentences, Check) is written with the hidden
+       attribute, so a page read without its stylesheet (Reader View, a feed, a text browser, a snippet) shows the options
+       alone, as 0.1.0 did, and never an answer. The stylesheet shows each by the state of the inputs. */
+    const verdict=(cls,text)=>el("span",{class:"bk-verdict bk-v-"+cls,hidden:true},(cls==="wrong"?"✗ ":"✓ ")+text);
+    const ul=el("ul",{class:"bk-options "+(multi?"bk-pick-many":"bk-pick-one")},...listed.map((o,i)=>{
+      const k=i+1,isRight=right.includes(k),oid=IDP+"q"+n+"-o"+k;
+      const inp=el("input",{type:multi?"checkbox":"radio",name:multi?null:IDP+"q"+n,id:oid,autocomplete:"off"}),lab=el("label",{for:oid},...words(o,true));
+      st.forIds.push([lab,inp]);
+      const kids=[inp,lab];
+      if(graded) kids.push(...(isRight?[verdict("right",Q.right),verdict("answer",Q.theAnswer)]:[verdict("wrong",Q.notQuite)]));
+      const reply=Array.isArray(b.replies)&&typeof b.replies[i]==="string"?b.replies[i]:"";
+      if(R.nonEmpty(reply)) kids.push(el("span",{class:"bk-reply",hidden:true},...reply.split("\n").map(l=>el("span",{class:"bk-reply-line"},...words(l)))));
+      return el("li",{class:"bk-opt"+(isRight?" bk-right":"")},...kids);}));
+    box.append(ul);
+    /* Check follows the options (so it is the last stop after them for the keyboard) and is shown only once something is ticked */
+    if(gated){const cid=IDP+"q"+n+"-check",cb=el("input",{type:"checkbox",class:"bk-check",id:cid,autocomplete:"off"}),
+        lab=el("label",{class:"bk-check-btn",for:cid,"aria-hidden":"true"},Q.check);
+      st.forIds.push([lab,cb]);box.append(el("p",{class:"bk-acts",hidden:true},cb,lab));}
+    if(graded){st.needsScript=true;
+      const answer=right.map(k=>R.plainText(listed[k-1])).join(", ");
+      box.append(el("p",{class:"bk-say",hidden:true},el("span",{class:"bk-say-ok",hidden:true},Q.liveRight),el("span",{class:"bk-say-no",hidden:true},Q.liveNot(answer))),
+        el("p",{class:"bk-live bk-sr","aria-live":"polite"}));
+      st.keyed=true;}}
 
-  /* ---- widgets, read-only, as their engine's `readonly` describes them (SPEC.md section 7) ---- */
+  /* ---- widgets ----
+     Each engine's words are real inputs a reader can press (a checkbox with its label drawn as the word's chip), unless the
+     widget line says `readonly` (SPEC.md section 7), when they are shown as words with nothing to press. A press
+     highlights the word and, when the cell or place has a note and `describe` is not already showing the notes, shows the
+     note beside it. The stylesheet does it all; the pick lives only in the open page (an input's own state) and is gone on
+     reload. The renderer's own field for a word of the reader's, and the words they wrote before, would need somewhere to
+     keep them and are not drawn. */
+  const pickable=(op,label,note,id)=>{
+    if(op.readonly) return el("li",{},label);
+    const inp=el("input",{type:"checkbox",id,autocomplete:"off"}),lab=el("label",{for:id},label);st.forIds.push([lab,inp]);
+    return el("li",{class:"bk-pickable"},inp,lab,R.nonEmpty(note)&&!op.describe?el("span",{class:"bk-shows",hidden:true},note):null);};
   function widget(b){st.counts.widgets++;
     const Wd=R.widgetIn(design.widgets||[],b.widget,b.module);
     if(!Wd) return mark("widget","the widget block “"+(b.id||"?")+"” (widget “"+String(b.widget||"?")+"”)");
     const eng=String(Wd.engine||"");
     if(!hasOwn(R.ENGINES,eng)||!hasOwn(ENGINE_WAY,eng)) return mark("engine","the widget “"+String(Wd.id||b.widget)+"” (engine “"+eng+"”)");
-    const C=R.wordsOf(Wd.copy),box=el("div",{class:"bk-q bk-widget bk-w-"+eng});
-    qHead(box,tx(b.label,C.h),tx(b.help,C.p));
+    const C=R.wordsOf(Wd.copy),box=el("fieldset",{class:"bk-q bk-widget bk-w-"+eng,"data-bk-kind":"widget"});
+    if(!qHead(box,++st.qn,tx(b.label,C.h),tx(b.help,C.p))) box.attrs["aria-label"]=String(b.id||Wd.id||"widget");
     [C.stance,C.invite].filter(R.nonEmpty).forEach(x=>box.append(el("p",{class:"bk-q-hint"},x)));
     ENGINE_DRAW[eng](box,Wd,R.engOpts(b));
     return box;}
+  let pickN=0;
   const ENGINE_DRAW={
     /* the grid: its axes, its cells in their colour names (or a quiet ramp by position), its items as words, and with
        `describe` each cell's note */
@@ -281,13 +348,14 @@ function drawPage(X,P,o){
       const axis=(side,v)=>R.nonEmpty(tx(v,""))?el("p",{class:"bk-ax bk-ax-"+side},tx(v,"")):el("span",{class:"bk-ax bk-ax-"+side});
       box.append(el("div",{class:"bk-grid"},axis("top",ax.top),axis("left",ax.left),
         el("div",{class:"bk-cells"},...cells.map((c,i)=>el("div",{class:"bk-cell "+tone(c,i)},el("p",{class:"bk-cell-name"},tx(c.label,c.id)),
-          el("ul",{class:"bk-words"},...(Wd.items||[]).filter(it=>it.cell===c.id).map(it=>el("li",{},tx(it.label,it.id))))))),
+          el("ul",{class:"bk-words"},...(Wd.items||[]).filter(it=>it.cell===c.id).map(it=>pickable(op,tx(it.label,it.id),tx(c.note,""),IDP+"w"+(++pickN))))))),
         axis("right",ax.right),axis("bottom",ax.bottom)));
       if(op.describe&&cells.some(c=>c.note)) box.append(el("dl",{class:"bk-notes-of"},...cells.map((c,i)=>
         el("div",{class:"bk-cell "+tone(c,i)},el("dt",{},tx(c.label,c.id)),el("dd",{},tx(c.note,""))))));},
     /* the body map: its places named, figure by figure; the figure itself is marked (compile 0.2 draws it) */
     "svg-regions":(box,Wd,op)=>{const figs=Wd.figures||[],labelOf=id=>{const r=(Wd.regions||[]).find(x=>x.id===id);return r?tx(r.label,id):id;};
-      const list=ids=>el("ul",{class:"bk-words"},...ids.map(id=>el("li",{},labelOf(id))));
+      const noteOf=id=>{const r=(Wd.regions||[]).find(x=>x.id===id);return r?tx(r.note,""):"";};
+      const list=ids=>el("ul",{class:"bk-words"},...ids.map(id=>pickable(op,labelOf(id),noteOf(id),IDP+"w"+(++pickN))));
       if(!figs.length) box.append(list((Wd.regions||[]).map(r=>r.id)));
       figs.forEach(f=>{box.append(mark("regionsFigure","the figure “"+String(f.id)+"” of the widget “"+String(Wd.id||"")+"”"));
         if(figs.length>1) box.append(el("p",{class:"bk-places-h"},tx(f.label,f.id)));
@@ -422,6 +490,8 @@ function drawPage(X,P,o){
   const idOf=n=>{if(!n) return null;if(!n.attrs.id) n.attrs.id=uniq(n===article?"bk-top":R.slugify(H.textOf(n)));return n.attrs.id;};
   /* a region named by its heading keeps pointing at it when the heading's id was made unique */
   for(const [sec,h] of st.labelled) sec.attrs["aria-labelledby"]=h.attrs.id;
+  /* a label keeps pointing at its input when the input's id was made unique */
+  for(const [lab,inp] of st.forIds) lab.attrs.for=inp.attrs.id;
   /* heading links: findHeading named the activity (or module tab) and the heading's words; the node is looked up here */
   for(const p of st.pend){const h=p.hit;let to=null;
     if(h.mtab){const m=st.mtabs.get(h.mod);to=m&&m.get(norm(h.heading));}
@@ -453,7 +523,7 @@ function drawPage(X,P,o){
     const L=levelOf(x);if(L>1&&L<5&&x.attrs.id&&x.attrs.class!=="bk-notes-h") {x.append(" ",el("a",{class:"bk-anchor",href:"#"+x.attrs.id,"aria-label":W.anchor},"#"));return false;}});
 
   return {article,title:plain(design.title)||pageTitle,description:describe(st.lede?descText(st.lede):firstPara(article)),
-    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc};}
+    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript,keyed:!!st.keyed,readOnly:st.readOnly};}
 
 /* the first paragraph of the page's own text, when it has no lede (not one in a fold, a callout or a question) */
 function firstPara(article){let t="";H.walk(article,x=>{if(t) return false;

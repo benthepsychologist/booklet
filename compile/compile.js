@@ -38,7 +38,7 @@
 //   - nothing from the network: this folder opens no connection and installs nothing (test/compile-guard.test.js checks it).
 // It never writes to a .booklet.md file.
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
-const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js");
+const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js"),SC=require("./script.js");
 
 const VERSION="0.1.0";
 const STYLESHEET=path.join(__dirname,"booklet.css");
@@ -169,6 +169,7 @@ function headTags(page,o){
   if(url) meta("og:url",url,"property");
   meta("generator","Booklet compile "+VERSION);
   tags.push('<link rel="stylesheet" href="../booklet/booklet.css">');
+  if(o.script) tags.push('<script src="../booklet/booklet.js" defer></script>');
   const ld={"@context":"https://schema.org","@type":"Article",headline:page.title};
   if(page.description) ld.description=page.description;
   if(page.lang) ld.inLanguage=page.lang;
@@ -195,7 +196,7 @@ function sitePage(page){
    compiler: neither is overwritten unless --force is given. The fonts, their licence and the copied images carry no
    stamp: they are always written again from their sources. */
 const STAMP=/^<!-- booklet compile (\S+) \u00b7 from (.*) \u00b7 sha256:([0-9a-f]{64}) -->\n/m;
-const CSS_STAMP=/^\/\* booklet compile (\S+) \u00b7 booklet\.css \u00b7 sha256:([0-9a-f]{64}) \*\/\n/;
+const CSS_STAMP=/^\/\* booklet compile (\S+) \u00b7 booklet\.(?:css|js) \u00b7 sha256:([0-9a-f]{64}) \*\/\n/;
 const sha256=t=>crypto.createHash("sha256").update(t,"utf8").digest("hex");
 /* the stamp goes after the doctype (standalone) or the front matter (site), where the line is free */
 function stamp(text,source,form){
@@ -206,7 +207,7 @@ function stamp(text,source,form){
 function stampState(text){const m=STAMP.exec(text);if(!m) return "foreign";
   const rest=text.slice(0,m.index)+text.slice(m.index+m[0].length);
   return sha256(rest)===m[3]?"compiled":"changed";}
-const cssStamp=css=>"/* booklet compile "+VERSION+" \u00b7 booklet.css \u00b7 sha256:"+sha256(css)+" */\n"+css;
+const cssStamp=(css,file)=>"/* booklet compile "+VERSION+" \u00b7 "+(file||"booklet.css")+" \u00b7 sha256:"+sha256(css)+" */\n"+css;
 function cssStampState(text){const m=CSS_STAMP.exec(text);if(!m) return "foreign";
   return sha256(text.slice(m[0].length))===m[2]?"compiled":"changed";}
 
@@ -218,7 +219,7 @@ function compileOne(X,input,o){
   const source=path.basename(input.file||input.name+".booklet.md");
   const name=input.name;
   const rep={source,name,form:o.form,ok:false,refused:[],problems:[],marker:"",pages:[],comments:[],
-    counts:null,marked:[],images:[],links:[],description:"",toc:false};
+    counts:null,marked:[],images:[],links:[],description:"",toc:false,script:false,needsScript:false,keyed:false,readOnly:[]};
   if(!NAME.test(name)||name==="booklet"){rep.refused.push("its address, “"+name+"”, must be letters, digits, . _ or - (and not “booklet”, the stylesheet's folder): rename the file");return {rep,files:new Map()};}
   const P=o.parsed||parseInput(X,input);
   rep.problems=P.problems;rep.marker=P.marker;rep.comments=P.comments||[];
@@ -227,17 +228,19 @@ function compileOne(X,input,o){
   const forms=o.form==="both"?["standalone","site"]:[o.form];
   let first=null;
   for(const form of forms){
-    const page=D.drawPage(X,P,{name,form,siblings:o.siblings,image:imageReader(input.dir||".",X,keep)});
+    const page=D.drawPage(X,P,{name,form,siblings:o.siblings,image:imageReader(input.dir||".",X,keep),forceScript:!!o.forceScript});
+    /* the page links booklet.js only when something on it needs it, and only when the compiler has a script to write */
+    page.needs=!!(page.needsScript&&o.script);page.script=page.needs&&form==="standalone";
     const mods=P.design.modules||[],withNotice=mods.filter(m=>m.notice&&typeof m.notice==="object");
     const nt=(withNotice[0]||{}).notice||{};
     page.copyright=typeof nt.copyright==="string"?nt.copyright.trim():"";page.license=typeof nt.license==="string"?nt.license.trim():"";
     const root=o.form==="both"?form+"/":"";
-    const body=form==="standalone"?standalone(page,{name,baseUrl:o.baseUrl}):sitePage(page);
+    const body=form==="standalone"?standalone(page,{name,baseUrl:o.baseUrl,script:page.script}):sitePage(page);
     files.set(root+name+"/index.html",stamp(body,source,form));
     rep.pages.push(root+name+"/index.html");
     for(const [rel,bytes] of keep) files.set(root+name+"/"+rel,bytes);
     if(!first) first=page;}
-  Object.assign(rep,{ok:true,counts:first.counts,marked:first.marked,images:dedupe(first.images),links:first.links,description:first.description,toc:first.toc});
+  Object.assign(rep,{ok:true,counts:first.counts,marked:first.marked,images:dedupe(first.images),links:first.links,description:first.description,toc:first.toc,script:first.script,needsScript:first.needs,keyed:first.keyed,readOnly:first.readOnly});
   return {rep,files};}
 const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"));
 /* a page's title, as drawPage takes it: the booklet's title, else its first module's, else its address */
@@ -245,9 +248,11 @@ const titleOf=(X,P,name)=>{const d=P.design,t=v=>X.R.plainText(X.R.tx(v,""));ret
 const dedupe=list=>{const seen=new Set();return list.filter(x=>{const k=x.src+"\u0000"+x.ok+"\u0000"+(x.where||"");if(seen.has(k)) return false;seen.add(k);return true;});};
 
 /* the stylesheet and its fonts, for each form's booklet/ folder */
-function assets(X,form){const F=X.fonts(),out=new Map(),roots=form==="both"?["standalone/","site/"]:[""];
+function assets(X,form,script){const F=X.fonts(),out=new Map(),roots=form==="both"?["standalone/","site/"]:[""];
   const css=cssStamp(fs.readFileSync(STYLESHEET,"utf8"));
+  const js=script?cssStamp(script.text,"booklet.js"):null;
   for(const r of roots){out.set(r+"booklet/booklet.css",css);
+    if(js) out.set(r+"booklet/booklet.js",js);
     for(const f of F.faces) out.set(r+"booklet/fonts/"+f.name,f.bytes);
     out.set(r+"booklet/fonts/OFL.txt",F.licence);}
   return out;}
@@ -259,6 +264,9 @@ function compile(inputs,o){o=o||{};
   if(!["standalone","site","both"].includes(form)) throw new Error("--form must be standalone, site or both");
   const baseUrl=o.baseUrl?checkBase(o.baseUrl):"";
   const X=o.engine||E.load(o.renderer);
+  /* the optional script, built from compile/script/ (or o.scriptDir) and scanned before anything is drawn: a part that holds a
+     banned word fails the whole run, with nothing written */
+  const S=SC.assemble(o.scriptDir);
   const list=inputs.map(i=>({...i,name:i.name||nameOf(i.file),dir:i.dir||(i.file?path.dirname(i.file):".")}));
   /* each file is read once, first, so a page knows which of the others it can link to, and by what title */
   /* two addresses that differ only in case are the same folder on a case-insensitive disk, so they clash too */
@@ -273,9 +281,11 @@ function compile(inputs,o){o=o||{};
   for(const i of list){
     if(i.dup){results.push(refusedResult(i,"another file in this run has the same address, “"+i.dup+"”"+(i.dup===i.name?"":" (addresses that differ only in case clash)")));continue;}
     if(failed.has(i)){results.push(refusedResult(i,failure(failed.get(i))));continue;}
-    try{results.push(compileOne(X,i,{form,baseUrl,siblings,parsed:parsed.get(i)}));}
+    try{results.push(compileOne(X,i,{form,baseUrl,siblings,parsed:parsed.get(i),script:!!S,forceScript:o.forceScript}));}
     catch(e){results.push(refusedResult(i,failure(e)));}}
-  return {results,assets:assets(X,form),form,renderer:X.R.RENDERER_VERSION,format:X.R.FORMAT_VERSION};}
+  /* booklet.js is written when at least one page in the run needs it (a standalone page links it; a site page's layout does) */
+  const used=S&&results.some(r=>r.rep.needsScript);
+  return {results,assets:assets(X,form,used?S:null),script:used?{parts:S.parts,bytes:Buffer.byteLength(S.text,"utf8")}:null,form,renderer:X.R.RENDERER_VERSION,format:X.R.FORMAT_VERSION};}
 const refusedResult=(i,why)=>({rep:{source:path.basename(i.file||i.name),name:i.name,ok:false,refused:[why],problems:[],pages:[],comments:[]},files:new Map()});
 /* one file that throws stops only itself. The report names the kind of error and where in the code it was raised, never
    its message: a message can carry a piece of the file's text, and the report may be published. */
@@ -306,8 +316,8 @@ function write(C,out,o){o=o||{};const kept=[];
   /* the stylesheet is guarded like a page: a hand-tidied booklet.css is kept back, and the fonts beside it still written */
   C.heldAssets=[];
   for(const [rel,data] of C.assets){const p=path.join(out,rel);
-    if(rel.endsWith("/booklet.css")&&fs.existsSync(p)&&!o.force){const s=cssStampState(fs.readFileSync(p,"utf8"));
-      if(s!=="compiled"){C.heldAssets.push({rel,state:s});kept.push({rel,state:s,source:"booklet.css"});continue;}}
+    if(/\/booklet\.(?:css|js)$/.test("/"+rel)&&fs.existsSync(p)&&!o.force){const s=cssStampState(fs.readFileSync(p,"utf8"));
+      if(s!=="compiled"){C.heldAssets.push({rel,state:s});kept.push({rel,state:s,source:path.basename(rel)});continue;}}
     put(rel,data);}
   return kept;}
 
@@ -329,6 +339,8 @@ function reportText(C){const L=[];
     L.push("  Description: "+(rep.description?"“"+rep.description+"”":"none (the page has no first paragraph)"));
     L.push("  On this page: "+(rep.toc?"listed":"not listed (fewer than two top headings)"));
     if(rep.marker) L.push("  Marker: "+rep.marker);
+    if(rep.script) L.push("  Script: the page links booklet.js, which keeps nothing and sends nothing; without it the page reads as it is.");
+    else if(rep.needsScript) L.push("  Script: this page has parts that respond when pressed; add <script src=\"/booklet/booklet.js\" defer></script> to the layout to load them. Without it the page reads as it is.");
     const copied=rep.images.filter(i=>i.ok),refused=rep.images.filter(i=>!i.ok);
     if(copied.length) L.push("  Images copied beside the page: "+copied.map(i=>i.src).join(", "));
     if(rep.links.length) L.push("  Links to booklets compiled with it: "+[...new Set(rep.links.map(l=>l.to))].join(", "));
@@ -336,6 +348,9 @@ function reportText(C){const L=[];
       rep.marked.forEach(m=>L.push("    [ ] "+m.what+", in "+m.where+": "+D.MARKED[m.kind]));
       refused.forEach(i=>L.push("    [ ] the image "+JSON.stringify(i.src)+", in "+i.where+", was not copied (its words and address are shown): "+i.why));}
     else L.push("  To tidy: nothing was left off.");
+    if(rep.keyed) L.push("  Answer key: this page carries its answer key in its markup (a class on each option marked [x], its verdict words and its replies, hidden until a press shows them). Anyone who views the page source can read which options are right.");
+    if(rep.readOnly&&rep.readOnly.length){L.push("  Read-only here (each is shown as it asks, with nothing to press):");
+      rep.readOnly.forEach(r=>L.push("    - "+r.what+", in "+r.where+": "+r.why));}
     if(rep.problems.length){L.push("  The renderer reported:");rep.problems.forEach(p=>L.push("    - "+p));}
     /* author comments are left off the page; the report gives their place only, never their words */
     if(rep.comments&&rep.comments.length) L.push("  Author comments left off the page: "+rep.comments.map(c=>(c.to>c.from?"lines "+c.from+"\u2013"+c.to:"line "+c.from)+(c.open?" (never closed, so it runs to the end of the text)":"")).join(", ")+".");
