@@ -100,4 +100,4 @@ function removeFirst(x,test){let done=false;
   if(Array.isArray(x)){for(let i=0;i<x.length&&!done;i++){if(test(x[i])){x.splice(i,1);done=true;}else go(x[i]);}}else go(x);
   return done;}
 
-module.exports={el,frag,trusted,comment,html,inline,textOf,walk,removeFirst,escText,escAttr,Node,Trusted,Comment};
+module.exports={el,frag,trusted,comment,html,inline,textOf,walk,removeFirst,escText,escAttr,openTag,Node,Trusted,Comment};

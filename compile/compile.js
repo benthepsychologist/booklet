@@ -41,7 +41,7 @@
 //   - nothing from the network: this folder opens no connection and installs nothing (test/compile-guard.test.js checks it).
 // It never writes to a .booklet.md file.
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
-const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js"),SC=require("./script.js");
+const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js"),SC=require("./script.js"),Th=require("./theme.js");
 
 const VERSION="0.1.0";
 const STYLESHEET=path.join(__dirname,"booklet.css");
@@ -186,9 +186,12 @@ function headTags(page,o){
   if(page.license&&/^https?:\/\/\S+$/i.test(page.license)) ld.license=page.license;
   tags.push('<script type="application/ld+json">'+scriptJson(ld)+'</script>');
   return tags;}
+/* a booklet's own look (draw.js's theme): the base theme and variables are on the article, and on a standalone page's body too,
+   so the paper under the article is the booklet's. Both come from theme.js, which writes nothing a booklet said as text. */
+const bodyOpen=page=>H.openTag(H.el("body",{class:"bk-page",...(page.bodyAttrs||{})}));
 function standalone(page,o){
   return "<!doctype html>\n"+'<html'+(page.lang?' lang="'+esc(page.lang)+'"':"")+'>\n<head>\n'+headTags(page,o).join("\n")+"\n</head>\n"
-    +'<body class="bk-page">\n<main class="bk-main">\n'+H.html(page.article,0)+"</main>\n</body>\n</html>\n";}
+    +bodyOpen(page)+'\n<main class="bk-main">\n'+H.html(page.article,0)+"</main>\n</body>\n</html>\n";}
 /* A value a layout prints from the front matter: a layout may print it unescaped (Jekyll's {{ page.title }}, Eleventy's
    Liquid), so it holds no character that could open a tag: < and > are written as the look-alike quotation marks
    \u2039 and \u203A. A layout must still escape it where it prints it inside an attribute (Hugo does so on its own). */
@@ -265,7 +268,7 @@ function compileOne(X,input,o){
     if(!first) first=drawn;}
   const sum=()=>Object.fromEntries(Object.keys(first[0].counts).map(c=>[c,first.reduce((n,p)=>n+p.counts[c],0)]));
   Object.assign(rep,{ok:true,counts:sum(),marked:first.flatMap(p=>p.marked),images:dedupe(first.flatMap(p=>p.images)),links:first.flatMap(p=>p.links),
-    description:first[0].description,toc:first.some(p=>p.toc),translations:o.alt?o.alt.with:[],
+    theme:first[0].theme,description:first[0].description,toc:first.some(p=>p.toc),translations:o.alt?o.alt.with:[],
     script:first.some(p=>p.script),needsScript:first.some(p=>p.needs),keyed:first.some(p=>p.keyed),readOnly:first.flatMap(p=>p.readOnly)});
   return {rep,files};}
 const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"));
@@ -394,8 +397,9 @@ function reportText(C){const L=[];
       L.push("  KEPT BACK, not overwritten ("+(w?plural(w,"other page of the booklet was","other pages of the booklet were")+" written":"no page of the booklet was written")+"):");rep.held.forEach(h=>L.push("    - "+h.rel+": "+(h.state==="changed"?"changed by hand since it was compiled":"not written by the compiler")+" (--force overwrites it)"));}
     const c=rep.counts;
     L.push("  Drawn: "+[plural(c.modules,"module","modules"),plural(c.activities,"activity","activities"),plural(c.questions,"question","questions"),
-      plural(c.widgets,"widget","widgets"),plural(c.callouts,"callout","callouts"),plural(c.folds,"fold","folds"),plural(c.notes,"note","notes"),
+      plural(c.widgets,"widget","widgets"),plural(c.queries,"query","queries"),plural(c.callouts,"callout","callouts"),plural(c.folds,"fold","folds"),plural(c.notes,"note","notes"),
       plural(c.math,"formula","formulas"),plural(c.images,"image","images"),plural(c.links,"in-page link","in-page links")].join(", ")+".");
+    if(rep.theme) L.push(...Th.words(rep.theme));
     if(rep.pageList.length>1){L.push("  Pages, in reading order (a site's menu is built from this list, and each page's `weight` is its number here):");
       rep.pageList.forEach((p,i)=>L.push("    "+(i+1)+". "+p.path+(p.kind==="contents"?" (the contents page)":"")+": "+p.title));}
     if(rep.translations.length){L.push("  Translations, linked with hreflang: "+rep.translations.join(", "));

@@ -45,7 +45,7 @@ fs.writeFileSync(path.join(POND,'pond.booklet.md'),'---\nbooklet: "'+C.compile([
   +'### Fish\n\n| Fish | Seen |\n| --- | --- |\n| Carp | 3 |\n\n> [!note]- A folded note\n> Words inside the fold.\n\n***\n\nLast words after a rule.\n\n'
   +'[^pond]: A made-up note about the pond.\n');
 const inputs=[...fs.readdirSync(path.join(ROOT,'examples')).filter(f=>f.endsWith('.booklet.md')).map(f=>({file:path.join(ROOT,'examples',f)})),
-  ...['compile-article','compile-kinds','compile-quiz','figures','charts','data-views','compile-pages'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),{file:path.join(POND,'pond.booklet.md')}];
+  ...['compile-article','compile-kinds','compile-quiz','figures','charts','data-views','compile-pages','compile-views','compile-theme'].map(n=>({file:path.join(FIX,n+'.booklet.md')})),{file:path.join(POND,'pond.booklet.md')}];
 const run=C.compile(inputs,{form:'both',renderer:HTML});
 C.write(run,OUT,{force:true});
 ok(run.results.every(r=>r.rep.ok),'every page compiles ('+run.results.length+' booklets, both forms)');
@@ -93,6 +93,9 @@ summary{font-family:Lora,serif;color:#c0392b;text-transform:uppercase;list-style
 mark{background:#0b4f4a;color:#fff}
 svg{fill:#c0392b;color:#c0392b;stroke-width:4px}
 svg path,svg circle,svg rect{fill:#c0392b;stroke:#0b4f4a;stroke-width:3px}
+svg{width:1em;height:auto}
+svg:not(:root){display:none}
+svg line,svg polyline{stroke:#c0392b;stroke-width:5px}
 .wrapper ol{counter-reset:step;list-style:none;padding:0}
 .wrapper ol>li{counter-increment:step;position:relative;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.15);
   padding:1rem 1rem 1rem 3.5rem;margin:0 0 1rem}
@@ -121,7 +124,7 @@ const hostPage=(frag,hostile,title,label)=>'<!doctype html>\n<html lang="en" id=
   +'<ol class="host-steps"><li>A host\'s own step</li><li>And another</li></ol><p><a class="host-a" href="#top">A host\'s own link</a></p>\n'
   +frag+'</div></main>\n<footer class="host-foot"><p>A host site\'s own footer</p></footer></body></html>\n';
 /* a standalone page as a host would serve it: the same ids and class round the article, and the hostile sheets added */
-const asHosted=(whole,hostile,label)=>whole.replace(/<html lang="([^"]*)">/,'<html lang="$1" id="site">').replace('<body class="bk-page">','<body class="bk-page" id="main">')
+const asHosted=(whole,hostile,label)=>whole.replace(/<html lang="([^"]*)">/,'<html lang="$1" id="site">').replace(/<body class="bk-page"/,'<body id="main" class="bk-page"')
   .replace('<main class="bk-main">','<main class="bk-main content">').replace(/(<link rel="stylesheet" href="[^"]*booklet\.css">)/,'$1'+(hostile?SHEETS(label):''));
 const pages=[];
 for(const r of run.results) for(const rel of r.rep.pages.filter(p=>p.startsWith('standalone/')&&p.endsWith('/index.html'))){

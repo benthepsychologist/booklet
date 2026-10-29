@@ -277,7 +277,11 @@ without layers (before Chrome 99, Firefox 97 and Safari 15.4) would drop the who
 unstyled. The three ids are written as three `:not(#bk)`, which any browser reads.
 
 **What a host can still change.** The `--bk-*` variables are plain declarations, so a host's own rule setting them wins
-(`.booklet { --bk-accent: #7a1f5c; }`): the colours, the faces, the size, the leading, the measure, the gap and the
+(`.booklet { --bk-accent: #7a1f5c; }`) on a page whose booklet has no theme block. **A themed booklet's colours, face, spacing
+and corners are the booklet's own: they are an inline `style` attribute on the article, which beats any host rule without
+`!important`.** A host that wants to change one writes `!important` on it (`.booklet { --bk-accent: #7a1f5c !important; }`),
+or sets the variable on the article's own `style` after the build. Print is the exception: it is always light, and a
+themed booklet's colours do not reach the printed page (nor does a host's `!important` one). The colours, the faces, the size, the leading, the measure, the gap and the
 corners; and `data-bk-base` picks one of the four bases. The article itself is placed by the host: its margin, width and display are the host's (the article
 sets its own text and paints nothing, so the page around it does not flow in). Anything else inside the article needs a
 rule of the host's own with the same start, `!important` on each declaration, after this file. **What still reaches
@@ -316,11 +320,15 @@ own `--bk-font-text` and `--bk-font-head` never loads them.
   here"; a question's hint and solution are folds;
 - both widget engines: the grid by its axes and cells, in their colour names, with its items; the body map by its places,
   figure by figure. Each word can be pressed (below), unless the widget line says `readonly`.
+- a query over a data block, as the view it asks for: a table, a list (nested when the rows name their parents), cards or
+  tiles as HTML, and bars or a line as a drawing with the table of its numbers after it (under "Queries and themes");
+- a booklet's own `booklet theme` block, as that page's colours, face, spacing and corners (under "Queries and themes").
 
 **Marked**: an HTML comment where the part stood, saying what it was and why, and a line in the build report's tidy-up
-list. In 0.1.0 these are:
+list. These are:
 
-- query views (tables, lists, tiles, bars, lines, cards from data);
+- a query over kept entries or answers, which the compiler never reads (it is drawn empty: its `empty:` line if the
+  author wrote one, and nothing otherwise, and a `summary: on` query never has rows);
 - diagrams, shown as their mermaid source in a code block;
 - the body map's figure (its places are listed under it);
 - a link to a booklet that is not compiled in the same run (drawn as its words; one that is, links to its page by its
@@ -329,7 +337,7 @@ list. In 0.1.0 these are:
   picks to draw it from;
 - an unknown callout kind (drawn as a note, with the renderer's line saying the kind is not known; a callout of a kind
   the page has no look for takes the note's look folded or not), a widget engine the compiler does not draw, a widget
-  that is missing, a broken citation mark, a booklet's own theme block;
+  that is missing, a broken citation mark;
 - an image that is not drawn: its alt text and address are shown in its place.
 
 **Left off: author comments.** Obsidian hides a `%% … %%` comment, and the renderer would show one as prose, so the
@@ -360,6 +368,59 @@ words and never quoting the file:
 The checks use the renderer's own fences (`codeFences`), its callout line (`CALLOUT_LINE`) and its problem for a record
 block out of place, and they run on the file's design text before anything is drawn. `test/compile-content.test.js` compiles a fixture whose records hold unique words and
 fails if any reaches anything written.
+
+## Queries and themes
+
+**A query over a data block** is drawn from the rows the file holds, by the renderer's own query engine at build time:
+the compiler has no reader of its own for a data block or its `booklet query` lines. The engine works out the roles
+(`label`, `value`, `note`, `badge`, `tone`, `link`, `icon`), the columns, the groups, the `limit:`, the nested list's tree
+and the `empty:` line; `engine.js` takes those from it, and `views.js` writes the HTML. Nothing is read at run time: a
+page with a table, a chart or a nested list reads fully with no script, and a fold opens by pressing it.
+
+The markup each view carries, for a script that sorts or filters it (and for a host's own styles):
+
+| Where | What it says |
+| --- | --- |
+| `data-bk-view="table"` (or `list`, `cards`, `tiles`, `bars`, `line`) | on the view's box |
+| `data-bk-row` | on each row's element: a table's `<tr>`, a list's `<li>` (a nested list's branch: its `<summary>`), a card, a tile, a bar's row |
+| `data-bk-col="<field>"` | on each value, where `<field>` is the field's name in the data and the element's text is the value |
+
+A table's head cells carry `data-bk-col` too. A tone is a colour and a word for a reader who does not see colour (in a
+`bk-sr` span beside the value, never inside it), so a value's text stays the value. A chart is followed by the table of
+its numbers in a closed `<details>`, and that table carries no `data-bk-*`: it is an extra, not a row of the view. A line
+chart has no rows: the renderer neither sorts nor filters it, and its table is the way in to the numbers. A table cell for
+a value the row does not have is there and empty, so the columns line up. A field is named once in a row: one that
+plays a role and is also asked for in `fields:` is drawn as the role.
+
+Over a link role the label leads there as in prose: a heading on the page, a module compiled with this one, or a web
+address (opened in a new tab, `rel="noopener noreferrer"`). A target the compiler cannot follow, a `javascript:` address
+among them, is the label as plain text. An icon is a name from the renderer's sprite; any other name draws nothing. A list
+nested more than 40 levels deep is drawn level from there down (every row stays on the page), so a generator's runaway list
+does not take the compiler's stack with it.
+
+**A booklet's `booklet theme` block** is the booklet's own look for that page: the renderer reads it key by key (a value
+that is not exactly `#rrggbb` or one of the listed words is dropped and said so in the report), works every other colour
+out from the few the booklet names, and holds each pair to the 4.5 to 1 contrast the format asks for. A colour that would
+not be is left out, the base theme's own is used, and the build report says which, at what ratio and against what. The
+compiler turns the rest into attributes and nothing more: `data-bk-base` (the base theme the booklet names, or Paper), one
+`style` attribute of `--bk-*` variables the stylesheet reads, each set to a `#rrggbb` the compiler has checked again, a
+length, a number or a `var()` of its own, `font:` and `density:` as the renderer's own two tables (kept equal to them by
+`test/compile-views.test.js`), and `style: briefing` as its corners. They go on the `<article>` and, on a standalone page,
+on the `<body class="bk-page">` too, so the paper under the article is the booklet's. A theme cannot write a declaration
+of its own, load anything or leave the article's box. A page whose theme names a base or a colour keeps that base whatever the device's
+colour scheme says; a page with no theme, or one that sets only a face, spacing or corners, follows the device.
+
+**A line chart on a narrow screen.** A line chart is drawn 460 wide and shown no smaller than 420, so its type stays at about
+11px or more on any screen; a box narrower than that (a phone under about 450 px wide) scrolls the plot inside itself,
+sideways in its own box and never the page. The renderer draws at the page's width instead, which a build step cannot know.
+A drawing with a number in it that no picture can use (1e300, or a scale that is not finite) is not drawn at all: its numbers
+table stays. A bar for such a number is left out and its row, value and table stay.
+
+Not done, and said here so nobody looks for it: `style: briefing`'s solid tiles and spot drawings (a compiled page draws no
+pictures of its own); a query has no sort key, so rows stand in the order the file wrote them, and a reader's sorting
+belongs to the optional script. **A host whose Content-Security-Policy refuses inline styles** shows a themed page with the
+stylesheet's own look (the page reads the same, in the booklet's default colours): the theme is a `style` attribute, and a
+policy of `style-src 'self'` without `'unsafe-inline'` blocks it.
 
 ## Images
 
@@ -426,6 +487,8 @@ that would break the compiler is caught here and never on a host's build.
 | `draw.js` | a design drawn as a page's markup (the plan for a many-page booklet, its cards and way on); what is drawn and what is marked (`COVERAGE`, `MARKED`) |
 | `script.js` | the assembler and the scan for `booklet.js` (below) |
 | `script/` | the script's parts, one file each |
+| `views.js` | a query's rows, as the renderer's engine works them out, drawn as the six views (HTML for four, a drawing and a table of numbers for the two charts) |
+| `theme.js` | a booklet's theme, as the renderer's reading of it turned into the article's attributes (`--bk-*` variables only) and the report's words |
 | `html.js` | the markup as nodes, written out as indented HTML a person can tidy |
 | `booklet.css` | the stylesheet |
 
@@ -441,6 +504,8 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-script-browser.js` | in Chromium over http with scripting on: answers every kind of question and presses every widget, then asserts no localStorage, sessionStorage, cookie, IndexedDB or cache, only GET requests for the page's own files, and a clean reload; the detector is proved by serving the page with its script swapped for ones that break the pledge; with scripting off every question reads as in 0.1.0 and a press still shows its reply, verdict and note |
 | `compile-golden.test.js` | the pages for the examples and page-shaped fixtures equal the committed ones in `test/compile-golden/`; `node test/compile-golden.test.js --write` refreshes them |
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
+| `compile-views.test.js` | the six views, grouped and not, an empty one, a nested list, a limit, links and icons and hostile values; the markup contract (`data-bk-view`, `data-bk-row`, `data-bk-col`); a query over kept entries drawn empty with a summary never having rows, and a records fixture whose markers reach no file; the theme (its variables only, a colour under 4.5 to 1 left out and reported, hostile values written nowhere, the density and font tables the renderer's own); a list 3000 levels deep |
+| `compile-views-browser.js` | in Chromium with scripting off, at 1280 and 390 px: no sideways scroll, every row visible, every chart's numbers table closed and opened by pressing, a nested list's branches open, marks painted; a themed page keeps the booklet's paper and ink |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |
 | `compile-pages.test.js` | many pages: the address of each page and of a clash; every relative link on every page of every many-page booklet reaches a file and an id; no page is orphaned; the way on and the reading order; translations (hreflang in the head and in the front matter, relative and whole; a shared language or a missing page is not linked, and the report names the pages left unlinked); an activity called `index`, one whose id makes no folder name, and one called `page`; the site form's `weight`; a page tidied by hand kept page by page, and the report's words about it; a folder path that is a file refusing the booklet before anything is written; an image reached from every page |
 | `compile-browser.js` | in Chromium with scripting off, every page of every booklet, and a journey through each many-page booklet served as a host serves a folder (each card opens its page, the contents link goes back, "next" reads every page in order and "back" returns, nothing 404s); at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
