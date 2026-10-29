@@ -23,7 +23,8 @@ const {el}=H;
 /* a number as short text: two decimals at most, no exponent */
 const n2=v=>String(Math.round(v*100)/100);
 const n1=v=>String(Math.round(v*10)/10);
-/* a line chart is drawn at one width and scales with the page (the renderer draws it at the width it is given) */
+/* a line chart is drawn at one width, and the stylesheet gives it no more than that (max-width); the renderer draws it at the
+   width the page has, which a build step does not know */
 const LINE_W=460;
 
 /* draw(cap, o): the view `cap` (what engine.js's queryView returns: {as, set, groups, roles, cols, tree}) as one element.
