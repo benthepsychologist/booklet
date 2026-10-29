@@ -139,6 +139,18 @@ const mods=new Set(files.flatMap(f=>[...modsIn(f)]));
 const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./draw.js","./diagrams.js","child_process"]);
 chk("it requires only fs, path, vm, crypto, child_process and its own files",[...mods].every(m=>allowed.has(m)),[...mods].join(", "));
 chk("child_process is required in diagrams.js alone",files.filter(f=>modsIn(f).has("child_process")).join()==="diagrams.js",files.filter(f=>modsIn(f).has("child_process")).join());
+/* the module's name is written once in all of compile/ (const cp=require("child_process") in diagrams.js), so no other spelling can fetch it:
+   require("child_process").execSync(...) and const {execFileSync}=require("child_process") each write the name a second time */
+{const named=files.flatMap(f=>[...code[f].matchAll(/child_process/g)].map(()=>f));
+  chk("the name child_process is written once under compile/, in diagrams.js",named.length===1&&named[0]==="diagrams.js",named.join(", "));
+  /* what the one handle is used for: its declaration and one cp.spawnSync( call, and nothing else. Every other way into the module
+     (exec, execSync, execFile, execFileSync, spawn, fork) is named nowhere. */
+  const handle=files.flatMap(f=>[...code[f].matchAll(/\bcp\b/g)].map(()=>f));
+  chk("the handle on it (cp) is written twice, in diagrams.js: its declaration and the one call",handle.length===2&&handle.every(f=>f==="diagrams.js"),handle.join(", "));
+  const banned=files.flatMap(f=>[...code[f].matchAll(/\b(?:execSync|execFile|execFileSync|spawn|fork)\b|(?<![.\w])exec\b|\bcp\.(?!spawnSync\s*\()\w+/g)].map(m=>f+": "+m[0]));
+  chk("no code under compile/ names exec, execSync, execFile, execFileSync, spawn or fork, nor any cp member but spawnSync",!banned.length,banned.join("; "));
+  const sync=files.flatMap(f=>[...code[f].matchAll(/\bspawnSync\b/g)].map(()=>f));
+  chk("spawnSync is written once under compile/",sync.length===1&&sync[0]==="diagrams.js",sync.join(", "));}
 /* every require is a plain string but one: diagrams-run.js loads Playwright from the path the job names */
 const dynamic=files.flatMap(f=>[...code[f].matchAll(/require\((?!\s*["'`][^"'`]+["'`]\s*\))([^)]*)\)/g)].map(m=>f+": require("+m[1]+")"));
 chk("every require names its module as a plain string, but for the one that loads Playwright from the path it is handed",dynamic.length===1&&dynamic[0]==="diagrams-run.js: require(job.playwright)",dynamic.join("; "));
@@ -155,7 +167,7 @@ for(const [what,re] of [["fetch",/\bfetch\b/],["XMLHttpRequest",/XMLHttpRequest/
   chk("diagrams-run.js runs Chromium offline, refusing every request but the one page it serves itself",/offline:true/.test(run)&&/r\.abort\(\)/.test(run)&&/serviceWorkers:"block"/.test(run));
   chk("…on a page whose policy allows no connection, no frame and no image or font but data:, and no script but the part (by its digest)",
     /default-src 'none'; script-src 'sha256-/.test(run)&&/font-src data:; img-src data:/.test(run));
-  chk("…hands a diagram's source to the library as data, never as script text",/page\.evaluate\(async \(\{g,id,code\}\)=>/.test(run)&&!/addScriptTag\(\{content:[^}]*\bcode\b/.test(run));
+  chk("…hands a diagram's source to the library as data, never as script text",/page\.evaluate\(async \(\{g,id,code,seed\}\)=>/.test(run)&&!/addScriptTag\(\{content:[^}]*\bcode\b/.test(run));
   chk("…closes the browser however it ends",/finally\{\s*await browser\.close\(\)/.test(run));
   chk("…writes nothing to disk",!/fs\.(?:write|append|copy|rename|rm|unlink|mkdir)/.test(run));}
 

@@ -18,7 +18,7 @@
    A diagram is drawn by the renderer's own mermaid part (parts/mermaid.js, pinned by LIB_SRI), in headless Chromium started by
    diagrams-run.js: the network is shut, the page holds no script of the booklet's, and a diagram's source reaches the library as
    data. This file starts that process with spawnSync, so the compiler stays synchronous and installs nothing: Playwright is found
-   where test/run-browser.sh finds it (the PLAYWRIGHT variable, else node_modules/playwright, else ../.tools/node_modules/playwright-core)
+   in named places only, never the folder the compiler is started in, and the package found is run (findPlaywright below)
    and without one every diagram is shown as its source, with the reason in the report. */
 const fs=require("fs"),path=require("path"),crypto=require("crypto"),cp=require("child_process");
 const H=require("./html.js");
@@ -27,9 +27,13 @@ const ROOT=path.join(__dirname,"..");
 const SVG_NS="http://www.w3.org/2000/svg",XLINK_NS="http://www.w3.org/1999/xlink";
 /* a drawn diagram larger than this is shown as its source instead: no page is made fat by one diagram */
 const MAX_DIAGRAM_BYTES=1024*1024;
+/* what a figure or drawing may be: no more nesting than a browser's own HTML parser allows (it stops at 512 levels, so a deeper figure
+   would be read differently there than here), no more than this many elements, and no more bytes than a drawing. A figure over any
+   of them is refused with its reason; the page still compiles. */
+const MAX_DEPTH=512,MAX_ELEMENTS=20000,MAX_FIGURE_BYTES=MAX_DIAGRAM_BYTES;
 /* where the library writes a diagram's own title when its source has one (a pie's, a gantt's, a chart's), for the name */
 const TITLE_CLASSES=new Set(["titleText","pieTitleText","chart-title","title"]),TITLED=new Set(["g","text","tspan"]);
-/* the id the library is asked to draw under; each use rewrites it to the page's own (bk-dg1, bk-dg2 ...) */
+/* the id the library is asked to draw under; each use rewrites it to the page's own (bk-<page>-dg1, bk-<page>-dg2 ...) */
 const RENDER_ID="bkdgrender";
 /* elements whose children are text, written on one line so no space is added between them */
 const TEXTISH=new Set(["text","tspan","textPath","title","desc","style"]);
@@ -47,26 +51,35 @@ function unesc(s){
   let bad=false;
   const out=String(s).replace(/&(?:#x([0-9a-fA-F]+)|#(\d+)|(amp|lt|gt|quot|apos));/g,(m,h,d,n)=>{
     if(n) return NAMED[n];
-    const cp=h?parseInt(h,16):parseInt(d,10);
-    if(!(cp>=1&&cp<=0x10ffff)){bad=true;return "";}
-    return String.fromCodePoint(cp);});
+    const point=h?parseInt(h,16):parseInt(d,10);
+    if(!(point>=1&&point<=0x10ffff)){bad=true;return "";}
+    return String.fromCodePoint(point);});
   return bad||BAD_CHAR.test(out)?null:out;}
 
+/* An entity other than the XML five and numeric references (&deg;, &copy;, &nbsp;, or one with no semicolon) is one the renderer's HTML parser
+   decodes and this reader does not, so the two would show different text: such a figure is refused, and says to write the character. */
+const ENTITY_OTHER=/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)[A-Za-z0-9#]/;
+const ENTITY_WHY="an entity other than the XML five and numeric references (write the character itself, or &amp; for an ampersand)";
+/* text on either side of a comment or a CDATA section is one run of text, as the DOM holds it */
+const addText=(node,t)=>{const k=node.kids;if(k.length&&typeof k[k.length-1]==="string") k[k.length-1]+=t;else k.push(t);};
 function readSvg(raw){
   const text=String(raw==null?"":raw).replace(/^﻿/,"");
-  const stack=[];let root=null,i=0;
+  const stack=[];let root=null,i=0,count=0;
   const at=re=>{re.lastIndex=i;const m=re.exec(text);return m&&m.index===i?m:null;};
   while(i<text.length){
     const lt=text.indexOf("<",i),end=lt<0?text.length:lt,chunk=text.slice(i,end);
     if(chunk){
       if(!stack.length){if(chunk.trim()) return {why:"text outside the <svg> element"};}
-      else{const t=unesc(chunk);if(t===null) return {why:"a control character, or a character reference to one"};stack[stack.length-1].kids.push(t);}}
+      else{if(ENTITY_OTHER.test(chunk)) return {why:ENTITY_WHY};
+        const t=unesc(chunk);if(t===null) return {why:"a control character, or a character reference to one"};addText(stack[stack.length-1],t);}}
     if(lt<0) break;
     i=lt;let m;
     if(text.startsWith("<!--",i)){const e=text.indexOf("-->",i+4);if(e<0) return {why:"a comment that never closes"};i=e+3;continue;}
     if(text.startsWith("<![CDATA[",i)){const e=text.indexOf("]]>",i+9);if(e<0) return {why:"a CDATA section that never closes"};
       if(!stack.length) return {why:"text outside the <svg> element"};
-      stack[stack.length-1].kids.push(text.slice(i+9,e));i=e+3;continue;}
+      /* inside <title> and <desc> a browser reads HTML, where a CDATA section is only a comment: the two would read different text */
+      if(/^(?:title|desc)$/i.test(stack[stack.length-1].name)) return {why:"a CDATA section inside <"+clip(stack[stack.length-1].name)+"> (a browser reads what is inside it as HTML, where it is not text)"};
+      addText(stack[stack.length-1],text.slice(i+9,e));i=e+3;continue;}
     if(text.startsWith("<?",i)){
       if(!root&&!stack.length&&/^\s*$/.test(text.slice(0,i))&&(m=at(/<\?xml\s[^<>?]*\?>/y))){i+=m[0].length;continue;}
       return {why:"a processing instruction"};}
@@ -82,7 +95,9 @@ function readSvg(raw){
       if(!top||top.name!==name) return {why:"an element that is closed out of order (</"+clip(name)+">)"};
       continue;}
     const attrs=[],seen=new Set();
+    if(++count>MAX_ELEMENTS) return {why:"more than "+MAX_ELEMENTS+" elements"};
     for(const a of m[3].matchAll(ATTR)){
+      if(ENTITY_OTHER.test(a[2]!=null?a[2]:a[3])) return {why:ENTITY_WHY};
       const v=unesc(a[2]!=null?a[2]:a[3]);
       if(v===null) return {why:"a control character, or a character reference to one"};
       const key=a[1].toLowerCase();
@@ -94,7 +109,7 @@ function readSvg(raw){
       if(name!=="svg") return {why:"the top element is not <svg>"};
       root=node;}
     else stack[stack.length-1].kids.push(node);
-    if(!m[4]) stack.push(node);}
+    if(!m[4]){stack.push(node);if(stack.length>MAX_DEPTH) return {why:"elements nested more than "+MAX_DEPTH+" deep"};}}
   if(stack.length) return {why:"an element that never closes (<"+clip(stack[stack.length-1].name)+">)"};
   if(!root) return {why:"no <svg> element"};
   /* the namespaces: the only ones are SVG's and xlink's, each with its own address. They are not written: an inline SVG needs none */
@@ -136,10 +151,15 @@ function serialize(root,o){
 
 /* ======================= A BODY MAP'S FIGURE =======================
    figure(text, {R, svgProblem, prefix, labelOf}) -> {ok, html} | {ok:false, why}. `R` is the renderer (engine.js): the rules below
-   are its sanitizer's, read by name. `prefix` scopes the figure's ids (bk-f1-, as the renderer's bf1-); `labelOf(regionId)` is a
+   are its sanitizer's, read by name. `prefix` scopes the figure's ids (bk-<page>-f1-, as the renderer's bf1-); `labelOf(regionId)` is a
    region's label. In reading form every region is a picture with its label for a name, as the renderer's readonly figure is. */
 function figure(text,ctx){
-  const R=ctx.R,r=readSvg(text);
+  try{return figure0(text,ctx);}
+  catch(err){if(err instanceof RangeError) return {ok:false,why:"the figure is nested too deeply for the compiler to read"};throw err;}}
+function figure0(text,ctx){
+  const R=ctx.R;
+  if(String(text).length>MAX_FIGURE_BYTES) return {ok:false,why:"the figure is larger than "+(MAX_FIGURE_BYTES>>10)+" KB"};
+  const r=readSvg(text);
   if(r.why) return {ok:false,why:r.why};
   const tree=r.tree;
   const ids=new Set(),refs=[];
@@ -155,6 +175,8 @@ function figure(text,ctx){
       const name=k.toLowerCase();
       if(name==="xmlns"||name==="xmlns:xlink") continue;
       if(!R.svgNameOk(name)){refuse("an attribute the renderer's figure rule does not keep ("+clip(k)+")");continue;}
+      /* the compiler's own scripts read data-bk-* attributes and bk-* classes: a figure's are left off, so a figure cannot address them */
+      if(name.startsWith("data-bk-")) continue;
       if(name==="id"){if(!R.SVG_ID.test(v)){refuse("an id the renderer's figure rule does not keep ("+clip(v)+")");continue;}ids.add(v);keep.push([k,v,"id"]);continue;}
       if(name==="href"||name==="xlink:href"){
         if(!v.trim().startsWith("#")||!R.SVG_ID.test(v.trim().slice(1))){refuse("a link that does not point inside the figure ("+clip(v)+")");continue;}
@@ -167,8 +189,15 @@ function figure(text,ctx){
         if(!kept.length) continue;
         const nv=kept.join(";");keep.push([k,nv,/url\(/i.test(nv)?"url":""]);continue;}
       if(!/^(class|data-|aria-|xmlns)/.test(name)&&!R.svgValueOk(v)){refuse("a value the renderer's figure rule drops ("+clip(k)+"="+clip(v)+")");continue;}
-      if(name==="class"&&!/^[A-Za-z0-9_ \t\r\n-]*$/.test(v)){refuse("a class with a character other than letters, digits, _ and -");continue;}
-      if(/url\(/i.test(v)){keep.push([k,v,"url"]);continue;}
+      if(name==="class"){
+        if(!/^[A-Za-z0-9_ \t\r\n-]*$/.test(v)){refuse("a class with a character other than letters, digits, _ and -");continue;}
+        const cl=v.split(/\s+/).filter(c=>c&&!c.startsWith("bk-")).join(" ");
+        if(cl) keep.push([k,cl,""]);
+        continue;}
+      if(/url\(/i.test(v)){
+        /* the renderer reads a value with url( as a reference whatever its name (data-*, aria-* too), and drops it when it holds a character its value rule does not keep */
+        if(!R.svgValueOk(v)){refuse("a value the renderer's figure rule drops ("+clip(k)+"="+clip(v)+")");continue;}
+        keep.push([k,v,"url"]);continue;}
       keep.push([k,v,""]);}
     n.attrs=keep.map(a=>[a[0],a[1]]);
     keep.forEach((a,i)=>{if(a[2]) refs.push([n,i,a[2]]);});});
@@ -180,7 +209,7 @@ function figure(text,ctx){
     if(kind==="id"){a[1]=pre+a[1];continue;}
     let ok=true;
     const fixed=a[1].replace(/#([A-Za-z_][A-Za-z0-9_.:-]*)/g,(m,id)=>{if(!ids.has(id)){ok=false;return m;}return "#"+pre+id;});
-    if(!ok) return {ok:false,why:"a reference to an id the figure does not define ("+clip(a[1])+")"};
+    if(!ok) return {ok:false,why:"a reference to an id the figure does not define ("+clip(a[1])+"): the renderer reads every #name in a value that holds url( as an id, a colour such as #abc too, so write the colour another way (rgb(), or its name)"};
     a[1]=fixed;}
   /* in reading form each region is a picture with its label for a name (the renderer's readonly figure) */
   walk(tree,n=>{
@@ -198,6 +227,9 @@ function figure(text,ctx){
    refuses inline styles draws the page the same); the diagram gets its own paper behind it (one theme's colours, README) and a name
    for a screen reader. */
 function diagram(svgText,ctx){
+  try{return diagram0(svgText,ctx);}
+  catch(err){if(err instanceof RangeError) return {ok:false,why:"the drawn SVG is nested too deeply for the compiler to read"};throw err;}}
+function diagram0(svgText,ctx){
   if(String(svgText).length>MAX_DIAGRAM_BYTES) return {ok:false,why:"the drawn diagram is larger than "+(MAX_DIAGRAM_BYTES>>10)+" KB"};
   const r=readSvg(svgText);
   if(r.why) return {ok:false,why:"the drawn SVG could not be read: "+r.why};
@@ -236,6 +268,8 @@ function diagram(svgText,ctx){
     if(!used.has(id)) dropAttr(n,"id");
     else if(!id.startsWith(pre)) rename.set(id,pre+"-"+id);});
   if(rename.size) walk(tree,n=>{
+    /* a url(#name) in the style follows too */
+    if(n.name==="style") n.kids=n.kids.map(k=>typeof k==="string"?k.replace(/#([A-Za-z_][A-Za-z0-9_.:-]*)/g,(m,id)=>rename.has(id)?"#"+rename.get(id):m):k);
     for(const a of n.attrs){
       const name=a[0].toLowerCase();
       if(name==="id"){if(rename.has(a[1])) a[1]=rename.get(a[1]);}
@@ -256,7 +290,9 @@ function diagram(svgText,ctx){
   setAttr(tree,"width",String(width));
   setAttr(tree,"role","graphics-document document");
   setAttr(tree,"aria-label",name);
-  tree.kids.unshift({name:"rect",attrs:[["x",String(vb[0])],["y",String(vb[1])],["width",String(vb[2])],["height",String(vb[3])],["fill",ctx.paper]],kids:[]});
+  /* the paper goes behind everything, but after a leading <title> and <desc> (a browser names an SVG from its first <title> child) */
+  let at=0;while(at<tree.kids.length&&(typeof tree.kids[at]==="string"?!tree.kids[at].trim():tree.kids[at].name==="title"||tree.kids[at].name==="desc")) at++;
+  tree.kids.splice(at,0,{name:"rect",attrs:[["x",String(vb[0])],["y",String(vb[1])],["width",String(vb[2])],["height",String(vb[3])],["fill",ctx.paper]],kids:[]});
   holdPaint(tree,pre);
   const p=ctx.svgProblem(Buffer.from(serialize(tree,{neutral:true})));
   if(p) return {ok:false,why:"the drawn SVG fails the compiler's SVG rules: it holds "+p};
@@ -289,26 +325,59 @@ function holdPaint(tree,pre){
    with no selector goes: the library writes a rule for every class of every diagram type, and most match nothing. A rule on :root goes too. A class inside
    :not(), :is() or :where() is not counted (the selector can match without it). */
 function scopeStyle(css,id,classes){
-  const t=css.replace(/\/\*[\s\S]*?\*\//g,"");
+  /* one scan reads strings and comments, so a brace or a comment mark inside a string is only text: the comments go, the strings stay
+     as they were written, and a brace counts only outside both. An unterminated string or comment is refused. */
+  let t="";
+  for(let i=0;i<css.length;){
+    const ch=css[i];
+    if(ch==="/"&&css[i+1]==="*"){const e=css.indexOf("*/",i+2);if(e<0) return {why:"a style with a comment that never closes"};i=e+2;continue;}
+    if(ch==='"'||ch==="'"){
+      let j=i+1;
+      while(j<css.length&&css[j]!==ch){if(css[j]==="\\") j++;else if(css[j]==="\n") break;j++;}
+      if(j>=css.length||css[j]!==ch) return {why:"a style with a string that never closes"};
+      t+=css.slice(i,j+1);i=j+1;continue;}
+    t+=ch;i++;}
+  /* the end of the block that opens at t[open]: the matching brace, outside strings (a string was checked above and may hold any) */
+  const blockEnd=(open,nested)=>{
+    let depth=1,j=open+1;
+    while(j<t.length&&depth){
+      const ch=t[j];
+      if(ch==='"'||ch==="'"){j++;while(j<t.length&&t[j]!==ch){if(t[j]==="\\") j++;j++;}j++;continue;}
+      if(ch==="{"){if(!nested) return -2;depth++;}else if(ch==="}") depth--;
+      j++;}
+    return depth?-1:j;};
   const kept=[];let i=0;
   while(i<t.length){
     while(i<t.length&&/\s/.test(t[i])) i++;
     if(i>=t.length) break;
-    const open=t.indexOf("{",i);
+    /* the prelude: up to the first brace outside a string */
+    let open=-1;
+    for(let j=i;j<t.length;j++){
+      const ch=t[j];
+      if(ch==='"'||ch==="'"){j++;while(j<t.length&&t[j]!==ch){if(t[j]==="\\") j++;j++;}continue;}
+      if(ch==="{"){open=j;break;}
+      if(ch==="}") return {why:"a style with a stray brace"};}
     if(open<0) return {why:"a style the compiler cannot read"};
-    let depth=1,j=open+1;
-    while(j<t.length&&depth){if(t[j]==="{") depth++;else if(t[j]==="}") depth--;j++;}
-    if(depth) return {why:"a style that never closes"};
     const prelude=t.slice(i,open).trim();
-    if(/^@(?:-webkit-)?keyframes\s/i.test(prelude)){i=j;continue;}
+    const keyframes=/^@(?:-webkit-)?keyframes\s/i.test(prelude);
+    /* a rule holds declarations only: a brace inside one (a nested rule) is refused, a @keyframes block (skipped as a unit) holds rules */
+    const j=blockEnd(open,keyframes);
+    if(j===-2) return {why:"a style with a rule inside a rule"};
+    if(j<0) return {why:"a style that never closes"};
+    if(keyframes){i=j;continue;}
     if(prelude.startsWith("@")) return {why:"a style with an at-rule ("+clip(prelude)+")"};
-    const sels=[];let d=0,cur="";
-    for(const ch of prelude){if(ch==="("||ch==="[") d++;if(ch===")"||ch==="]") d--;if(ch===","&&!d){sels.push(cur.trim());cur="";}else cur+=ch;}
+    const sels=[];let d=0,cur="",q=null;
+    for(let k=0;k<prelude.length;k++){
+      const ch=prelude[k];
+      if(q){cur+=ch;if(ch==="\\"){cur+=prelude[++k]||"";}else if(ch===q) q=null;continue;}
+      if(ch==='"'||ch==="'"){q=ch;cur+=ch;continue;}
+      if(ch==="("||ch==="[") d++;if(ch===")"||ch==="]") d--;
+      if(ch===","&&!d){sels.push(cur.trim());cur="";}else cur+=ch;}
     sels.push(cur.trim());
     for(const s of sels) if(!(s.startsWith("#"+id)&&!/[\w-]/.test(s.charAt(id.length+1)))) return {why:"a style that reaches outside the diagram ("+clip(s)+")"};
     /* a selector with :root can never match inside the diagram (the root is the page's), so it is left out whatever the drawing uses */
     const live=sels.filter(s=>!/:root\b/.test(s)&&(!classes||(()=>{
-      let bare=s;for(let k=0;k<4;k++) bare=bare.replace(/\([^()]*\)/g,"");
+      let bare=s.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g,'""');for(let k=0;k<4;k++) bare=bare.replace(/\([^()]*\)/g,"");
       return [...bare.matchAll(/\.(-?[_A-Za-z][\w-]*)/g)].every(c=>classes.has(c[1]));})()));
     if(live.length) kept.push(live.join(",")+t.slice(open,j).trim());
     i=j;}
@@ -316,14 +385,17 @@ function scopeStyle(css,id,classes){
 
 /* ======================= THE BROWSER =======================
    The part, the browser and the process that draws. None of it is run for a booklet without a diagram. */
-/* the Playwright package: the PLAYWRIGHT variable when it is set (and only that: pointing it at nothing turns drawing off, which the
-   tests use), else the places test/run-browser.sh looks. `want` (the option) is a path, false for none, or undefined. */
-function findPlaywright(want){
+/* The Playwright package. It is a package this repository does not carry, and the one found here is RUN: its code executes in the child
+   process that draws. So it is looked for in named places only, never in the folder the compiler happens to be started in (a booklet's
+   own folder is not a place to trust). In order: the option (a path; false for none), then the PLAYWRIGHT variable when it is set at all
+   (set to nothing, or to a place with no package, it turns drawing off, which the tests use), else node_modules/playwright and
+   node_modules/playwright-core of this repository and ../.tools/node_modules/playwright-core beside it, all resolved from this file. */
+function playwrightPlaces(want){
   const env=process.env.PLAYWRIGHT;
-  const list=want===false?[]:typeof want==="string"?[want]:env?[env]
-    :[path.join(ROOT,"node_modules","playwright"),path.join(ROOT,"node_modules","playwright-core"),path.join(ROOT,"..",".tools","node_modules","playwright-core"),
-      path.join(process.cwd(),"node_modules","playwright"),path.join(process.cwd(),"node_modules","playwright-core")];
-  for(const c of list){try{if(fs.statSync(path.join(c,"package.json")).isFile()) return path.resolve(c);}catch(e){}}
+  return want===false?[]:typeof want==="string"?[want]:env!==undefined?(env?[env]:[])
+    :[path.join(ROOT,"node_modules","playwright"),path.join(ROOT,"node_modules","playwright-core"),path.join(ROOT,"..",".tools","node_modules","playwright-core")];}
+function findPlaywright(want){
+  for(const c of playwrightPlaces(want)){try{if(fs.statSync(path.join(c,"package.json")).isFile()) return path.resolve(c);}catch(e){}}
   return null;}
 
 /* the renderer's mermaid part: parts/mermaid.js beside booklet.html, or the stored block of a one-file build, and in either case the
@@ -370,16 +442,18 @@ function drawBatch(X,codes,o){
   const css=fs.readFileSync(path.join(__dirname,"booklet.css"),"utf8"),colours=paperColours(css),fam=colours["font-text"]||"sans-serif";
   const faces=X.fonts().faces.filter(f=>f.family==="Atkinson Hyperlegible"&&f.range.startsWith("U+0000-00FF")&&f.style==="normal")
     .map(f=>({family:f.family,weight:f.weight,style:f.style,range:f.range,b64:f.bytes.toString("base64")}));
-  const job={playwright:pw,part:part.text,global:X.R.LIB_GLOBAL.mermaid,id:RENDER_ID,codes,faces,config:mermaidConfig(colours,fam.trim())};
+  const job={playwright:pw,part:part.text,global:X.R.LIB_GLOBAL.mermaid,id:RENDER_ID,codes,faces,config:mermaidConfig(colours,fam.trim()),timeout:o.diagramTimeout||60000};
   const r=cp.spawnSync(process.execPath,[path.join(__dirname,"diagrams-run.js")],
     {input:JSON.stringify(job),encoding:"utf8",maxBuffer:1024*1024*1024,timeout:o.timeout||240000,env:process.env});
+  /* what the runner said when it could not start (Playwright's own first line: "Executable doesn't exist at ...") goes into the reason */
+  const said=String(r.stderr||"").split("\n")[0].replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,160);
   let res=null;
   try{res=JSON.parse(r.stdout);}catch(e){res=null;}
   if(!res||!Array.isArray(res.results)||res.results.length!==codes.length)
-    return all(r.error&&r.error.code==="ETIMEDOUT"?"the browser took too long":"the browser could not be started or did not answer");
+    return all(r.error&&r.error.code==="ETIMEDOUT"?"the browser took too long":"the browser could not be started or did not answer"+(said?" ("+said+")":""));
   if(Array.isArray(res.requests)&&res.requests.length) return all("the browser page made a request, so no drawing was kept");
   codes.forEach((c,i)=>{const x=res.results[i];out.set(c,x&&typeof x.svg==="string"?{svg:x.svg}:{why:"the diagram library could not draw it"});});
   return out;}
 
-module.exports={readSvg,serialize,figure,diagram,scopeStyle,findPlaywright,partSource,paperColours,mermaidConfig,drawBatch,
+module.exports={readSvg,serialize,figure,diagram,scopeStyle,findPlaywright,playwrightPlaces,partSource,paperColours,mermaidConfig,drawBatch,
   THEME_TOKENS,RENDER_ID,MAX_DIAGRAM_BYTES};

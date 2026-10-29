@@ -38,7 +38,8 @@ const attrs=[['class','a b-c'],['class','a<b'],['id','one'],['id','1bad'],['id',
   ['style','fill:red'],['style','fill:red;stroke:blue'],['style','fill:red;;'],['style','behavior:url(#t)'],['style','fill:url(#t)'],['style','fill:url(//example.invalid/a)'],['style','position:fixed'],['style','content:"x"'],['style','background:url(x)'],
   ['style','fill:red;position:fixed'],['style','font-family:Georgia'],['style','font-family:expression(1)'],['style','stroke-width:calc(1px+2px)'],['style',''],['style','nonsense'],
   ['clip-path','url(#t)'],['mask','url(#t)'],['filter','url(#t)'],['marker-end','url(#t)'],['xmlns','http://www.w3.org/2000/svg'],['xmlns:xlink','http://www.w3.org/1999/xlink'],['xml:space','preserve'],['xml:lang','en'],['lang','en'],
-  ['font-family','Georgia, serif'],['font-family','"x"; y'],['stroke-dasharray','1 2'],['text-anchor','middle'],['viewBox','0 0 5 5'],['preserveAspectRatio','xMidYMid'],['values','javascript:1'],['attributeName','href'],['begin','1s'],['src','x'],['action','x'],['formaction','x']];
+  ['font-family','Georgia, serif'],['font-family','"x"; y'],['stroke-dasharray','1 2'],['text-anchor','middle'],['viewBox','0 0 5 5'],['preserveAspectRatio','xMidYMid'],['values','javascript:1'],['data-x','url(#t) var(--x)'],['aria-label','url(#t)*'],['data-y','url(https://example.invalid/a)'],['fill','var(--x)'],['x','a*b'],['fill','attr(x)'],['x','10;x'],['x','1;javascript:x'],
+  ['data-bk-r','1'],['data-bk-x','url(#t)'],['class','bk-a keep'],['class','bk-a'],['aria-label','Profile: left'],['data-note','Data: pain'],['data-note','Metadata:left'],['data-v','file:///x'],['data-v','a\\b'],['attributeName','href'],['begin','1s'],['src','x'],['action','x'],['formaction','x']];
 for(const [a,v] of attrs){
   add('the attribute '+a+'="'+v+'" on a rect',wrap('<defs><linearGradient id="t"/></defs><rect '+a+'="'+v+'" width="3" height="3"/>'));
   add('the attribute '+a+'="'+v+'" on the root','<svg viewBox="0 0 10 10" '+a+'="'+v+'"><defs><linearGradient id="t"/></defs><rect width="3" height="3"/></svg>');}
@@ -47,7 +48,7 @@ for(const v of ['url(#t)','url(https://example.invalid/a)','expression(1)','red;
   add('the style value '+v,wrap('<defs><linearGradient id="t"/></defs><rect style="fill:'+v+'" width="3" height="3"/>'));
 for(const h of ['<script>alert(1)</script>','<a href="#t"><rect id="t" width="1" height="1"/></a>','<foreignObject><p>x</p></foreignObject>','<style>rect{fill:red}</style>','<iframe src="x"/>','<image href="x.png"/>','<use href="#t"/><rect id="t" width="1" height="1"/>',
   '<use href="https://example.invalid/a.svg#b"/>','<animate attributeName="href" values="javascript:1"/>','<set attributeName="onclick" to="x"/>','<p:script xmlns:p="http://www.w3.org/2000/svg">x</p:script>','<svg><svg><rect width="1" height="1"/></svg></svg>',
-  '<!-- a comment --><rect width="1" height="1"/>','<![CDATA[x]]>','<text>a &amp; b &lt;script&gt;</text>','<text>caf&#233;</text>','<rect id="a" width="1" height="1"/><rect id="a" width="1" height="1"/>',
+  '<!-- a comment --><rect width="1" height="1"/>','<![CDATA[x]]>','<text>a &amp; b &lt;script&gt;</text>','<text>caf&#233;</text>','<text>20&deg;</text>','<text>a&nbsp;b</text>','<text>&copy 2024</text>','<text aria-label="a&deg;">x</text>','<title><![CDATA[x]]></title>','<text><![CDATA[a & b]]></text>','<circle>a<!-- c -->b</circle>','<g>a<![CDATA[x]]>b</g>','<rect id="a" width="1" height="1"/><rect id="a" width="1" height="1"/>',
   '<text><tspan>a</tspan> <tspan>b</tspan></text>','<g><g><g><g><rect width="1" height="1"/></g></g></g></g>']) add('the markup '+h.slice(0,50),wrap(h));
 add('a figure with no root','<rect width="1" height="1"/>');add('an empty figure','');add('text only','hello');
 
@@ -55,15 +56,66 @@ const SAME=`(function(){
   /* the form two trees are compared in: names, attributes (ids and references with their prefix taken off, the role and name the
      compiler adds to a region left out), and text with its white space collapsed; a white-space-only text node is nothing */
   const strip=s=>String(s).replace(/\\b(?:bf\\d+|bk-f\\d+)-/g,'');
+  /* adjacent text nodes are one run of text (the renderer leaves the two sides of a comment it removed as two nodes, and the source holds the comment between; a page holds one) */
+  const runs=ns=>{const o=[];for(const c of ns){if(c.nodeType===8) continue;if(c.nodeType===3&&o.length&&o[o.length-1].t!==undefined) o[o.length-1].t+=c.nodeValue;else o.push(c.nodeType===3?{t:c.nodeValue,nodeType:3,nodeValue:c.nodeValue}:c);}return o;};
   const canon=(n,norm)=>{
+    if(n.t!==undefined) n={nodeType:3,nodeValue:n.t};
     if(n.nodeType===3){const t=n.nodeValue.replace(/\\s+/g,' ').trim();return t?JSON.stringify(t):'';}
     if(n.nodeType!==1) return '';
     const region=n.hasAttribute('data-r');
-    const val=x=>x.name==='style'&&norm?x.value.split(';').map(d=>d.trim()).filter(Boolean).join(';'):x.value;
-    const a=[...n.attributes].filter(x=>!(region&&(x.name==='role'||x.name==='aria-label'))&&x.name!=='xmlns'&&x.name!=='xmlns:xlink'&&!(norm&&x.name==='style'&&!val(x))).map(x=>x.name+'='+JSON.stringify(strip(val(x)))).sort();
-    return n.localName+'['+a.join(',')+']{'+[...n.childNodes].map(c=>canon(c,norm)).filter(Boolean).join(' ')+'}';};
-  return {canon,fromHtml:(h,norm)=>{const b=new DOMParser().parseFromString(h,'text/html').body;return [...b.childNodes].map(c=>canon(c,norm)).filter(Boolean).join(' ');},
-    fromNodes:(ns,norm)=>ns.map(c=>canon(c,norm)).filter(Boolean).join(' ')};})()`;
+    const val=x=>x.name==='class'?x.value.split(/\\s+/).filter(c=>c&&!c.startsWith('bk-')).join(' '):x.name==='style'&&norm?x.value.split(';').map(d=>d.trim()).filter(Boolean).join(';'):x.value;
+    const a=[...n.attributes].filter(x=>!(region&&(x.name==='role'||x.name==='aria-label'))&&x.name!=='xmlns'&&x.name!=='xmlns:xlink'&&!/^data-bk-/.test(x.name)&&!(x.name==='class'&&!val(x))&&!(norm&&x.name==='style'&&!val(x))).map(x=>x.name+'='+JSON.stringify(strip(val(x)))).sort();
+    return n.localName+'['+a.join(',')+']{'+runs(n.childNodes).map(c=>canon(c,norm)).filter(Boolean).join(' ')+'}';};
+  return {canon,fromHtml:(h,norm)=>{const b=new DOMParser().parseFromString(h,'text/html').body;return runs(b.childNodes).map(c=>canon(c,norm)).filter(Boolean).join(' ');},
+    fromNodes:(ns,norm)=>runs(ns).map(c=>canon(c,norm)).filter(Boolean).join(' ')};})()`;
+
+/* the two compared on a list of cases, in a page that holds the renderer: whatever the compiler writes, the renderer keeps unchanged
+   (differ), and where the renderer would change something the compiler wrote nothing (lost) */
+async function compare(p,cases){
+  const theirs=[],unchanged=[],mineCanon=new Map();
+  const mine=cases.map(c=>{try{return figureOf(c.svg);}catch(e){return {ok:false,why:'threw '+e.message};}});
+  const written=mine.map((m,i)=>m.ok?i:-1).filter(i=>i>=0);
+  for(let at=0;at<cases.length;at+=500){
+    const part=cases.slice(at,at+500);
+    theirs.push(...await p.evaluate(({cases,SAME})=>{const S=eval(SAME);return cases.map(c=>{let n;try{n=sanitizeSvg(c.svg);}catch(e){return {err:String(e)};}return {canon:S.fromNodes(n),canonN:S.fromNodes(n,true)};});},{cases:part,SAME}));
+    unchanged.push(...await p.evaluate(({cases,SAME})=>{const S=eval(SAME);return cases.map(c=>S.fromHtml(c.svg,true));},{cases:part,SAME}));
+    const idx=written.filter(i=>i>=at&&i<at+500);
+    const got=await p.evaluate(({htmls,SAME})=>{const S=eval(SAME);return htmls.map(h=>S.fromHtml(h));},{htmls:idx.map(i=>mine[i].html),SAME});
+    idx.forEach((i,k)=>mineCanon.set(i,got[k]));}
+  const differ=[];written.forEach(i=>{if(mineCanon.get(i)!==theirs[i].canon) differ.push({why:cases[i].why,svg:cases[i].svg.slice(0,2000),mine:mineCanon.get(i).slice(0,160),theirs:theirs[i].canon.slice(0,160)});});
+  const lost=[];cases.forEach((c,i)=>{if(mine[i].ok&&unchanged[i]!==theirs[i].canonN) lost.push(c.why+' | '+c.svg.slice(0,2000));});
+  return {mine,theirs,written,differ,lost};}
+
+/* ======================= 1b. a phone's picture: the size written is the size the browser draws ======================= */
+async function exifCheck(b){
+  const dir=path.join(OUT,'exif');fs.mkdirSync(dir,{recursive:true});
+  const base=fs.readFileSync(path.join(ASSETS,'compile-pictures','tide.jpg'));
+  const be2=n=>Buffer.from([n>>8,n&255]);
+  const tiff=(order,le,o)=>{o=o||{};const w2=n=>le?Buffer.from([n&255,(n>>8)&255]):be2(n),w4=n=>le?Buffer.from([n&255,(n>>8)&255,(n>>16)&255,n>>>24]):Buffer.from([n>>>24,(n>>16)&255,(n>>8)&255,n&255]);
+    return Buffer.concat([Buffer.from(o.bom||(le?'II':'MM')),w2(o.magic||42),w4(o.ifd===undefined?8:o.ifd),w2(o.count===undefined?2:o.count),
+      w2(0x0100),w2(4),w4(1),w4(99),w2(0x0112),w2(o.type||3),w4(o.n===undefined?1:o.n),w2(order),w2(0),w4(0)]);};
+  const seg=(data,marker)=>Buffer.concat([Buffer.from([0xff,marker||0xe1]),be2(data.length+2),data]);
+  const jw=segment=>Buffer.concat([base.subarray(0,2),segment,base.subarray(2)]);
+  const exif=(order,le,o)=>seg(Buffer.concat([Buffer.from('Exif\0\0'),tiff(order,le,o)]));
+  const le2=n=>Buffer.from([n&255,n>>8]),entry=(tag,v)=>Buffer.concat([le2(tag),le2(3),Buffer.from([1,0,0,0]),le2(v),Buffer.alloc(2)]);
+  const variants=[['no EXIF',base]];
+  for(const le of [true,false]) for(let o=1;o<=8;o++) variants.push(['orientation '+o+(le?' little':' big')+'-endian',jw(exif(o,le))]);
+  variants.push(['more entries than the block holds',jw(exif(6,true,{count:500}))],['a cut-off entry',jw(seg(Buffer.concat([Buffer.from('Exif\0\0'),tiff(6,true).subarray(0,32)])))],
+    ['two blocks, the first upright',jw(Buffer.concat([exif(1,true),exif(6,true)]))],['an XMP block before the EXIF',jw(Buffer.concat([seg(Buffer.from('http://ns.adobe.com/xap/1.0/\0<x/>')),exif(8,false)]))],
+    ['an entry past the end of the block',jw(Buffer.concat([seg(Buffer.concat([Buffer.from('Exif\0\0II'),le2(42),Buffer.from([8,0,0,0]),le2(3),entry(0x0100,99),entry(0x0101,98)])),entry(0x0112,6)]))],
+    ['a LONG orientation',jw(exif(6,true,{type:4}))],['a count of 2',jw(exif(6,true,{n:2}))],['an orientation of 9',jw(exif(9,true))],['a bad TIFF magic',jw(exif(6,true,{magic:43}))],['a bad byte order',jw(exif(6,false,{bom:'XX'}))]);
+  const ctx=await b.newContext();const p=await ctx.newPage();const bad=[];
+  for(const [what,buf] of variants){
+    const f=path.join(dir,'v.jpg');fs.writeFileSync(f,buf);
+    await p.goto('file://'+f);
+    const got=await p.evaluate(()=>{const i=document.images[0];return i?i.naturalWidth+'x'+i.naturalHeight:'none';});
+    const s=C.imageSize('jpg',buf),mine=s?s.width+'x'+s.height:'none';
+    if(got!==mine) bad.push(what+': written '+mine+', browser '+got);}
+  ok(bad.length===0,'the size written for a JPEG is the size Chromium draws, for '+variants.length+' pictures (no EXIF, orientation 1 to 8 in both byte orders, and damaged blocks)'+(bad.length?' DIFFERENT: '+bad.join('; '):''));
+  const turned=await (async()=>{fs.writeFileSync(path.join(dir,'t.jpg'),jw(exif(6,true)));await p.goto('file://'+path.join(dir,'t.jpg'));return p.evaluate(()=>document.images[0].naturalWidth+'x'+document.images[0].naturalHeight);})();
+  const plainSize=C.imageSize('jpg',base);
+  ok(turned===plainSize.height+'x'+plainSize.width&&plainSize.width!==plainSize.height,'control: a turned picture really is drawn with its width and height swapped ('+turned+' for a '+plainSize.width+'x'+plainSize.height+' frame)');
+  await ctx.close();}
 
 async function figureCheck(b){
   const ctx=await b.newContext({viewport:{width:900,height:700}});const p=await ctx.newPage();
@@ -73,27 +125,66 @@ async function figureCheck(b){
     r.fulfill({status:404,body:'not here'});});
   await p.goto('https://plain.test/app/');await p.waitForTimeout(500);
   ok(await p.evaluate(()=>typeof sanitizeSvg==='function'),'the renderer\'s sanitizeSvg is there to compare with');
-  const theirs=await p.evaluate(({cases,SAME})=>{const S=eval(SAME);return cases.map(c=>{let n;try{n=sanitizeSvg(c.svg);}catch(e){return {err:String(e)};}return {canon:S.fromNodes(n),canonN:S.fromNodes(n,true)};});},{cases,SAME});
-  const mine=cases.map(c=>{try{return figureOf(c.svg);}catch(e){return {ok:false,why:'threw '+e.message};}});
-  const written=mine.map((m,i)=>m.ok?i:-1).filter(i=>i>=0);
-  const mineCanon=await p.evaluate(({htmls,SAME})=>{const S=eval(SAME);return htmls.map(h=>S.fromHtml(h));},{htmls:written.map(i=>mine[i].html),SAME});
-  const differ=[];written.forEach((i,k)=>{if(mineCanon[k]!==theirs[i].canon) differ.push({why:cases[i].why,mine:mineCanon[k].slice(0,160),theirs:theirs[i].canon.slice(0,160)});});
+  const {mine,written,differ,lost}=await compare(p,cases);
   ok(differ.length===0,'every figure the compiler writes is what the renderer\'s sanitizeSvg keeps, unchanged ('+written.length+' of '+cases.length+' written, '+(cases.length-written.length)+' refused)'
     +(differ.length?' DIFFERENT: '+differ.slice(0,4).map(d=>d.why+' | mine '+d.mine+' | theirs '+d.theirs).join(' || '):''));
   ok(written.length>=100&&cases.length-written.length>=60,'the matrix has both: many figures written and many refused ('+written.length+' / '+(cases.length-written.length)+')');
   const refusedWithReason=mine.filter(m=>!m.ok).every(m=>typeof m.why==='string'&&m.why.length>5);
   ok(refusedWithReason,'every refused figure says why');
-  /* the other way: where the renderer would have changed something, the compiler must not have written the figure */
-  /* what the text itself says, read by the page as it reads any HTML (empty declarations in a style left out of both) */
-  const unchanged=await p.evaluate(({cases,SAME})=>{const S=eval(SAME);return cases.map(c=>S.fromHtml(c.svg,true));},{cases,SAME});
-  const lost=[];cases.forEach((c,i)=>{if(mine[i].ok&&unchanged[i]!==theirs[i].canonN) lost.push(c.why);});
+  /* the other way: where the renderer would have changed something, the compiler must not have written the figure (empty declarations in a style left out of both) */
   ok(lost.length===0,'where the renderer drops or rewrites something the compiler refuses the figure'+(lost.length?' (written anyway: '+lost.slice(0,5).join(', ')+')':''));
   /* a control: the comparison notices a difference (one attribute changed in what the compiler wrote) */
   const ctl=mine[0].html.replace('<rect ','<rect data-extra="1" ');
   const [c1,c2]=await p.evaluate(({a,b,SAME})=>{const S=eval(SAME);return [S.fromHtml(a),S.fromHtml(b)];},{a:mine[0].html,b:ctl,SAME});
   ok(mine[0].ok&&c1!==c2,'control: the comparison notices one attribute added');
+  /* a seeded fuzz of made-up figures: every kept element, hostile ones, plain and hostile attribute values, entities, text, ids and references, with
+     characters flipped now and then. Fixed seeds, so a failure repeats; BK_FUZZ_SEEDS and BK_FUZZ_CASES run a larger one (see README). */
+  const seeds=Number(process.env.BK_FUZZ_SEEDS||2),per=Number(process.env.BK_FUZZ_CASES||600);let total=0,wrote=0,bad=[],lostAll=[];
+  for(let s=1;s<=seeds;s++){
+    const fz=fuzzCases(s,per),r=await compare(p,fz);total+=fz.length;wrote+=r.written.length;bad.push(...r.differ);lostAll.push(...r.lost);}
+  ok(bad.length===0&&lostAll.length===0,'a seeded fuzz of '+total+' made-up figures ('+seeds+' seeds): '+wrote+' written, every one unchanged by the renderer, and none the renderer would change'
+    +(bad.length?' DIFFERENT '+bad.length+': '+bad.slice(0,3).map(d=>d.svg+' | mine '+d.mine+' | theirs '+d.theirs).join(' || '):'')+(lostAll.length?' LOST '+lostAll.length+': '+lostAll.slice(0,3).join(' || '):''));
+  ok(wrote>total/20&&wrote<total*0.95,'the fuzz has both: figures written and figures refused ('+wrote+' of '+total+')');
+  if(process.env.BK_FUZZ_REPORT) console.log('fuzz: '+total+' cases, '+wrote+' written, '+bad.length+' differ, '+lostAll.length+' lost\n'+bad.slice(0,20).map(d=>'  DIFF '+d.svg+'\n     mine   '+d.mine+'\n     theirs '+d.theirs).join('\n')+'\n'+lostAll.slice(0,20).map(l=>'  LOST '+l).join('\n'));
   ok(!errs.length,'no page error in the renderer\'s page'+(errs.length?' ('+errs[0]+')':''));
   await ctx.close();}
+
+/* a small seeded generator (mulberry32) and the figures the fuzz makes from it */
+function mulberry32(a){return ()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function fuzzCases(seed,n){
+  const rnd=mulberry32(seed*7919),pick=a=>a[Math.floor(rnd()*a.length)],chance=p=>rnd()<p;
+  const kept=[...R.SVG_KEEP].filter(e=>e!=='svg');
+  const hostile=['script','foreignObject','a','iframe','style','p:script','image','use','set','animate','title','desc','svg','object','embed','math','br'];
+  const names=['class','id','data-r','data-x','data-bk-r','aria-label','aria-hidden','role','fill','stroke','stroke-width','opacity','style','href','xlink:href','transform','d','x','y','cx','r','width','height','points','viewBox','clip-path','mask','filter','marker-end','font-family',
+    'text-anchor','onclick','onload','tabindex','xmlns','xmlns:xlink','xml:space','lang','values','attributeName','begin','to','fill-opacity','stroke-linecap','marker-mid','fill-rule','src','title','transform-origin','version'];
+  const ids=['a','b','c','one','two','x1'];
+  const vals=()=>pick([()=>pick(['red','none','#abc','#aabbcc','rgb(1,2,3)','currentColor','inherit','0','1','10','3.5','-2','1 2 3','M0 0L5 5','rotate(5)','translate(1 2)','Georgia, serif','middle','img','true','box','top']),
+    ()=>'url(#'+pick(ids)+')',()=>'#'+pick(ids),()=>pick(ids),()=>'url(#'+pick(ids)+') '+pick(['red','none','var(--x)','attr(x)']),()=>'url(https://example.invalid/a)',()=>'url( #'+pick(ids)+' )',
+    ()=>pick(['javascript:alert(1)','data:image/png;base64,AA','file:///x','vbscript:x','Profile: left','Data: pain','Metadata:left','1;javascript:x','java&#9;script:x']),
+    ()=>pick(['var(--x)','a*b','attr(x)','10;x','expression(1)','calc(1px+2px)','red;fill:blue','a\\b','a<b','a&lt;b','a&amp;b','a&deg;b','a&nbsp;b','&copy','&#176;','&#xB0;','&#1;','"x"',"'x'"]),
+    ()=>pick(['fill:red','fill:red;stroke:blue','fill:url(#a);stroke:#abc','fill:url(#a)','stroke-width:2','position:fixed','behavior:url(#a)','font-family:Georgia','fill:var(--x)','fill:red;;','','nonsense','content:"x"','stroke:rgb(1,2,3);opacity:.5']),
+    ()=>pick(['a b','a-b','a.b','a_b c','bk-x','rg','rg bk-y keep','1bad','a b-c'])])();
+  const plainNames=['class','id','data-r','data-x','aria-label','fill','stroke','stroke-width','opacity','style','transform','d','x','y','cx','r','width','height','points','font-family','text-anchor','fill-opacity','stroke-linecap','role'];
+  const plainVals=['red','none','#abc','rgb(1,2,3)','0','1','10','3.5','M0 0L5 5','rotate(5)','Georgia, serif','middle','img','box','top','a b','a-b'];
+  const attrs=()=>{let s='';const k=Math.floor(rnd()*4),have=new Set();for(let i=0;i<k;i++){const bad=chance(0.1),nm=bad?pick(names):pick(plainNames);if(have.has(nm)) continue;have.add(nm);
+    let v=nm==='id'?pick(ids):bad?vals():/^(aria-label|data-x)$/.test(nm)?pick(['Profile: front','Data: pain','a b']):nm==='style'?pick(['fill:red','fill:red;stroke:blue','stroke-width:2','fill:url(#'+pick(ids)+')','opacity:.5']):
+      /^(fill|stroke)$/.test(nm)&&chance(0.3)?'url(#'+pick(ids)+')':pick(plainVals);
+    s+=' '+nm+'="'+v.replace(/"/g,'&quot;')+'"';}return s;};
+  const texts=()=>chance(0.06)?pick(['20&deg;','&nbsp;x','&copy 2024','x &','<![CDATA[x]]>','<!-- c -->','a &amp;&lt; b','&#233;','&#xe9;']):pick(['','words','Profile: front','a &amp; b','&lt;b&gt;','caf&#233;',' ','a\tb','a\nb','\u00e9\u4e2d','more words','words']);
+  const el=(depth)=>{
+    const tag=chance(0.03)?pick(hostile):pick(kept);
+    const a=attrs();
+    if(depth>=3||chance(0.35)) return chance(0.5)?'<'+tag+a+'/>':'<'+tag+a+'>'+texts()+'</'+tag+'>';
+    const k=1+Math.floor(rnd()*3);let inner='';for(let i=0;i<k;i++) inner+=chance(0.2)?texts():el(depth+1);
+    return '<'+tag+a+'>'+inner+'</'+tag+'>';};
+  const flip=s=>{if(!chance(0.12)) return s;const chars='<>&"\'=;:#( )\\/-.';let o=s;for(let i=0;i<1+Math.floor(rnd()*2);i++){const at=Math.floor(rnd()*o.length);o=o.slice(0,at)+(chance(0.5)?pick(chars.split('')):'')+o.slice(at+1);}return o;};
+  const out=[];
+  for(let i=0;i<n;i++){
+    let body='<defs><linearGradient id="a"/><clipPath id="b"><rect width="1" height="1"/></clipPath></defs>';
+    const k=1+Math.floor(rnd()*4);for(let j=0;j<k;j++) body+=el(0);
+    const root='<svg viewBox="0 0 10 10"'+(chance(0.2)?attrs():'')+'>';
+    out.push({why:'fuzz seed '+seed+' #'+i,svg:flip(root+body+'</svg>')});}
+  return out;}
 
 /* ======================= 2. diagrams drawn for real ======================= */
 const CORPUS={
@@ -128,6 +219,7 @@ const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return
   const b=await chromium.launch();
   try{
     await figureCheck(b);
+    await exifCheck(b);
 
     /* 2 and 3: compile for real */
     fs.rmSync(OUT,{recursive:true,force:true});fs.mkdirSync(OUT,{recursive:true});
@@ -141,7 +233,11 @@ const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return
     const drawn=(cpage.match(/<figure class="bk-diagram">/g)||[]).length,kept=corpus.rep.marked.filter(m=>m.kind==='mermaid');
     console.log('corpus: '+drawn+' of '+names.length+' drawn; as source: '+kept.map(m=>m.what+' ('+(m.why||'').slice(0,90)+')').join('; '));
     ok(drawn+kept.length===names.length,'every diagram of the corpus is either drawn or shown as its source with a reason ('+drawn+' + '+kept.length+' of '+names.length+')');
-    ok(drawn>=names.length-3,'most are drawn for real, by the renderer\'s own part ('+drawn+' of '+names.length+')');
+    /* exactly these thirteen are drawn, and exactly this one (the journey diagram, whose drawing holds HTML in an SVG, which the SVG rules refuse) falls back to its source */
+    const DRAWN=['flowchart','flowchart with a subgraph','sequence','class','state','er','gantt','pie','timeline','quadrant','xychart','git','block'],FALLS=['journey'];
+    const fallsAt=kept.map(m=>Number((/its (\d+)\w\w diagram/.exec(m.what)||[])[1]));
+    ok(DRAWN.length===13&&JSON.stringify(names.filter((n,i)=>!fallsAt.includes(i+1)))===JSON.stringify(DRAWN)&&JSON.stringify(names.filter((n,i)=>fallsAt.includes(i+1)))===JSON.stringify(FALLS),
+      'exactly these thirteen are drawn for real, by the renderer\'s own part, and only the journey diagram falls back ('+drawn+' drawn; falls back: '+names.filter((n,i)=>fallsAt.includes(i+1)).join(', ')+')');
     ok(kept.every(m=>m.why&&!/no browser|request/.test(m.why)),'none falls back for want of a browser or for a request the page made');
     ok(!/browser page made a request/.test(report),'the browser page made no request');
     ok(kept.every(m=>/foreignObject|HTML|XHTML/i.test(m.why)||/refuses|rules|SVG|could not/.test(m.why)),'a diagram shown as its source says why');
@@ -150,6 +246,12 @@ const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return
     ok(!/<script(?![^>]*type="application\/ld\+json")/i.test(strip(cpage)),'the compiled page carries no script (the mermaid part is not on it)');
     ok(!/mermaid/i.test(strip(cpage).replace(/data-lang="mermaid"/g,'')),'…and does not name the library');
     ok(!/https?:\/\/(?!www\.w3\.org\/)/i.test(strip(cpage).replace(/<script type="application\/ld\+json">[^]*?<\/script>/,'')),'…and holds no address of its own that a drawing could have added');
+    /* repeatable: the library draws a class, an ER and a git-graph picture with random numbers; the runner seeds them, so the same source gives the same
+       drawing, in the same batch or another, in the same order or another */
+    {const codes=names.map(n=>CORPUS[n]),a1=G.drawBatch(X,codes,{}),a2=G.drawBatch(X,[...codes].reverse(),{}),a3=G.drawBatch(X,[CORPUS.git],{});
+      for(const n of ['class','er','git']) ok(!!a1.get(CORPUS[n]).svg&&a1.get(CORPUS[n]).svg===a2.get(CORPUS[n]).svg,'the '+n+' diagram is drawn identically in two batches (the second in the other order)');
+      ok(a1.get(CORPUS.git).svg===a3.get(CORPUS.git).svg,'…and alone');
+      const diff=names.filter(n=>a1.get(CORPUS[n]).svg!==a2.get(CORPUS[n]).svg);ok(diff.length===0,'every drawing of the corpus is the same in both batches'+(diff.length?' (differ: '+diff.join(', ')+')':''));}
     const sizeNow=Buffer.byteLength(cpage);console.log('corpus page: '+sizeNow+' bytes with '+drawn+' diagrams drawn');
 
     /* 2b. the page is shut. The server is a process of its own: drawBatch blocks this one while the browser runs, and a server here
@@ -192,8 +294,8 @@ const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return
           const vis=e=>{const s=getComputedStyle(e);return s.display!=='none'&&s.visibility!=='hidden';};
           const svgs=[...document.querySelectorAll('.bk-diagram svg')].map(s=>({box:box(s),vis:vis(s),words:[...s.querySelectorAll('text')].filter(t=>t.textContent.trim()&&t.getBoundingClientRect().width>0).length,
             name:s.getAttribute('aria-label'),role:s.getAttribute('role'),
-            paper:s.firstElementChild&&s.firstElementChild.localName==='rect'?getComputedStyle(s.firstElementChild).fill:null,
-            low:(()=>{const rects=[];const paper=s.firstElementChild&&s.firstElementChild.localName==='rect'?getComputedStyle(s.firstElementChild).fill:null;
+            paper:(()=>{const p=[...s.children].find(c=>!/^(title|desc)$/.test(c.localName));return p&&p.localName==='rect'?getComputedStyle(p).fill:null;})(),
+            low:(()=>{const rects=[];const pe=[...s.children].find(c=>!/^(title|desc)$/.test(c.localName)),paper=pe&&pe.localName==='rect'?getComputedStyle(pe).fill:null;
               const solid=c=>c&&c!=='none'&&!/rgba\(\d+, \d+, \d+, 0\)/.test(c);
               for(const t of s.querySelectorAll('text')){if(!t.textContent.trim()) continue;const r=t.getBoundingClientRect();if(!r.width||!r.height) continue;
                 const hit=document.elementsFromPoint(r.left+r.width/2,r.top+r.height/2).filter(e=>s.contains(e)&&e!==t&&e.parentElement!==t&&/^(rect|path|polygon|circle|ellipse)$/.test(e.localName)&&solid(getComputedStyle(e).fill))[0];

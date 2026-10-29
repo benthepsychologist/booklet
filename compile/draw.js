@@ -71,7 +71,7 @@ function drawPage(X,P,o){
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
     marked:[],images:[],links:[],counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
-    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0};
+    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0,dgSeq:0};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const pageTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
 
@@ -144,6 +144,13 @@ function drawPage(X,P,o){
     return el("span",{class:cls},trusted(ml));}
   function mathId(id){const base="bk-tml-"+id;let v=base,i=2;while(st.mathIds.has(v)) v=base+"-"+(i++);st.mathIds.add(v);return v;}
 
+  /* the ids of a figure or a diagram begin with the page's address and the figure's number on the page (bk-<page>-dg2-, bk-<page>-f1-), so
+     two pages put into one host page, each numbering from 1, still keep their ids apart. A name with a character an id cannot hold has it
+     written as "-", and a short hash of the name follows so that "a.b" and "a-b" stay two. */
+  const pageKey=(()=>{const n=String(o.name==null?"":o.name),s=n.replace(/[^A-Za-z0-9_-]/g,"-");
+    if(s===n) return s;let h=5381;for(const c of n) h=(h*33+c.codePointAt(0))>>>0;return s+"-"+h.toString(36).slice(0,4);})();
+  const idPrefix=kind=>"bk-"+pageKey+"-"+kind+(++st.svgSeq);
+
   /* ---- figures: a prose embed (![[#^id]]) read by the renderer's figureHooks; a diagram is drawn or shown as its source, anything else is code ---- */
   function embed(t){const f=R.figureHooks(st.scope).embed(t);
     if(!f||!f.__figure) return null;
@@ -155,9 +162,13 @@ function drawPage(X,P,o){
   /* a diagram drawn at build time (o.diagram, compile.js), else its source with the reason in the mark; the source is the
      fallback, so a page without a browser to draw with still holds every diagram's words */
   function diagram(code,what){
-    const r=o.diagram?o.diagram(String(code),"bk-dg"+(++st.svgSeq),W.diagram):{ok:false,why:"this build draws no diagrams"};
+    const r=o.diagram?o.diagram(String(code),idPrefix("dg"),W.diagram):{ok:false,why:"this build draws no diagrams"};
+    const nth=++st.dgSeq;
     if(r&&r.ok){st.counts.diagrams++;ownIds(r.html);return el("figure",{class:"bk-diagram"},trusted(r.html,true));}
-    return frag(mark("mermaid",what,r&&r.why),el("pre",{class:"bk-figure-src"},el("code",{"data-lang":"mermaid"},String(code))));}
+    /* the report names which diagram it is: its place among the booklet's diagrams and the first words of its source */
+    const words=String(code).replace(/[\u0000-\u001f\u007f\u2028\u2029\u201c\u201d]+/g," ").replace(/\s+/g," ").trim();
+    const ord=nth+(nth%100>=11&&nth%100<=13?"th":["th","st","nd","rd"][nth%10]||"th");
+    return frag(mark("mermaid",what+" (its "+ord+" diagram, \u201c"+(words.length>28?words.slice(0,28)+"\u2026":words)+"\u201d)",r&&r.why),el("pre",{class:"bk-figure-src"},el("code",{"data-lang":"mermaid"},String(code))));}
 
   /* ---- links to a whole module (SPEC.md section 3) ---- */
   function moduleLink(target,kids){const id=R.moduleLinkId(target);
@@ -302,7 +313,7 @@ function drawPage(X,P,o){
       figs.forEach(f=>{
         if(figs.length>1) box.append(el("p",{class:"bk-places-h"},tx(f.label,f.id)));
         if(typeof f.svg==="string"&&f.svg.trim()){
-          const r=o.figure?o.figure(f.svg,"bk-f"+(++st.svgSeq),id=>plain(labelOf(id))):{ok:false,why:"this build draws no figures"};
+          const r=o.figure?o.figure(f.svg,idPrefix("f"),id=>plain(labelOf(id))):{ok:false,why:"this build draws no figures"};
           if(r&&r.ok){st.counts.figures++;ownIds(r.html);box.append(el("div",{class:"bk-svgfig"},trusted(r.html,true)));}
           else box.append(mark("regionsFigure","the figure “"+String(f.id)+"” of the widget “"+String(Wd.id||"")+"”",r&&r.why));}
         box.append(list(f.regions||[]));});

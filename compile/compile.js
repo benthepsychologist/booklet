@@ -17,6 +17,12 @@
 //     --renderer <file>   the booklet.html to read the format with (default: the one beside compile/). Name only a file
 //                         you trust as much as this compiler: its script runs with the compiler's own rights (it is
 //                         evaluated in a Node vm context, which keeps names apart and is not a security boundary)
+//     --no-browser        draw no diagram: each mermaid diagram is shown as its source, with the reason in the report (the same as
+//                         PLAYWRIGHT set to nothing). Without it, a diagram is drawn at build time in headless Chromium when
+//                         a Playwright package is found: the PLAYWRIGHT variable (a path to the package), else node_modules/playwright
+//                         or node_modules/playwright-core beside compile/, else ../.tools/node_modules/playwright-core. Never the folder you
+//                         run it from. The package found is run, so name only one you trust. Without one nothing else changes: a diagram is
+//                         its source, and a body map's figure and a picture are drawn as before
 //     --version           print the compiler's version and the renderer's
 // Each file is compiled on its own; its address is its name before .booklet.md (two files whose names differ only in
 // case are one address). Exit 0 when every file was compiled and written, 1 when one was refused or failed or a page or
@@ -82,14 +88,18 @@ function svgProblem(bytes){
   if(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/.test(raw)) return "an entity other than the XML five";
   const decode=v=>v.replace(/&#x([0-9a-fA-F]+);/g,(m,h)=>safeChar(parseInt(h,16))).replace(/&#(\d+);/g,(m,d)=>safeChar(parseInt(d,10)));
   const t=decode(raw);
-  const low=t.toLowerCase(),squeezed=low.replace(/[\u0000-\u0020\u007f-\u00a0]+/g,"");
+  /* a browser drops tab, line feed and carriage return from inside an address, and reads the other C0 controls as nothing a scheme can hold:
+     all of them are taken out, so java<tab>script: is javascript: */
+  const low=t.toLowerCase(),flat=low.replace(/[\u0000-\u001f\u007f]+/g,"");
   if(/<!doctype[^>]*\[/.test(low)||low.includes("<!entity")) return "a DOCTYPE with entities";
   if(low.includes("<?xml-stylesheet")) return "an outside stylesheet";
   if(/<script\b/.test(low)) return "a script";
   if(/<foreignobject\b/.test(low)) return "<foreignObject>";
   for(const tag of ["iframe","embed","object","handler","listener","base","link","meta"]) if(new RegExp("<"+tag+"\\b").test(low)) return "<"+tag+">";
   if(/[\s"'/]on[a-z]+\s*=/.test(low)) return "an event attribute";
-  if(/(?:javascript|vbscript|data|file):/.test(squeezed)) return "a javascript:, vbscript:, data: or file: address";
+  /* a scheme is a word that begins a value or follows a separator, with something after its colon: "javascript:alert(1)", "1;data:image/png",
+     "url(file:x)". The same letters inside a longer word, or followed by a space ("Profile: left", "Metadata: left", "Data: pain"), are text. */
+  if(/(?:^|[^a-z0-9+.-])(?:javascript|vbscript|data|file):\S/.test(flat)) return "a javascript:, vbscript:, data: or file: address";
   if(low.includes("@import")||/expression\s*\(/.test(low)) return "an outside stylesheet";
   if(t.includes("\\")) return "a backslash (CSS can spell a word with one)";
   if(/image-set\s*\(/.test(low)) return "an image-set() (it loads images by address)";
@@ -131,9 +141,29 @@ function svgMarkup(raw,decode){
 const safeChar=n=>{try{return String.fromCodePoint(n);}catch(e){return "\uFFFD";}};
 const clipWords=s=>{s=String(s).trim();return s.length>40?s.slice(0,40)+"\u2026":s;};
 
+/* The orientation in a JPEG's EXIF block (an APP1 segment whose data begins "Exif\0\0"), from `from` (the first byte of the segment's data) to
+   `to`: null when the segment is not an Exif block (the first Exif block is the only one a browser reads, so a later one is left alone), else 1 when
+   the picture is drawn turned a quarter (orientation 5, 6, 7 or 8) and 0 when it is not. A block that does not read as TIFF, or whose orientation
+   is not there, says 0 and the size is left as the frame header gives it. An entry must lie whole inside the block, as a browser requires. */
+function exifTurn(b,from,to){
+  if(to-from<6||b.toString("latin1",from,from+6)!=="Exif\0\0") return null;
+  if(to-from<14) return 0;
+  const t=from+6,le=b.toString("latin1",t,t+2)==="II";
+  if(!le&&b.toString("latin1",t,t+2)!=="MM") return 0;
+  const u16=i=>le?b[i]|b[i+1]<<8:b[i]<<8|b[i+1],u32=i=>le?(b[i]|b[i+1]<<8|b[i+2]<<16)+b[i+3]*16777216:b[i]*16777216+(b[i+1]<<16|b[i+2]<<8|b[i+3]);
+  if(u16(t+2)!==42) return 0;
+  const ifd=t+u32(t+4);
+  if(!(ifd>=t+8)||ifd+2>to) return 0;
+  const n=u16(ifd);
+  for(let k=0;k<n;k++){const e=ifd+2+k*12;
+    if(e+12>to) return 0;
+    if(u16(e)===0x0112){const type=u16(e+2),count=u32(e+4),v=u16(e+8);
+      return type===3&&count===1&&v>=5&&v<=8?1:0;}}
+  return 0;}
+
 /* The size an image file says it has, so the page can keep room for it before it loads: {width, height} in whole pixels, or null
    when the bytes do not say (a truncated file, a format variant not read here), and the image is then drawn with no size, as it
-   was. PNG: the header chunk. GIF: the logical screen. JPEG: the first frame header (a rotation in EXIF is not applied). WebP: the
+   was. PNG: the header chunk. GIF: the logical screen. JPEG: the first frame header (turned when its EXIF orientation is 5 to 8, as a browser draws it). WebP: the
    lossy, lossless or extended header. SVG: its width and height when both are plain numbers (or px), else its viewBox; a picture
    whose viewBox is small is written at a whole power of ten times it, enough to reach 100 wide, since a viewBox has no pixels. */
 function imageSize(ext,b){
@@ -146,20 +176,24 @@ function imageSize(ext,b){
     else if(kind==="VP8L"&&b.length>=25&&b[20]===0x2f){const bits=(b[21]|b[22]<<8|b[23]<<16|b[24]*16777216)>>>0;w=(bits&0x3fff)+1;h=((bits>>>14)&0x3fff)+1;}
     else if(kind==="VP8X"&&b.length>=30){w=1+(b[24]|b[25]<<8|b[26]<<16);h=1+(b[27]|b[28]<<8|b[29]<<16);}}
   else if(ext==="svg"){
-    const tag=/<svg\b[^>]*>/i.exec(b.toString("utf8"));
+    /* a comment before the root (an editor's, with the word <svg> in it) is not the root; an unclosed one runs to the end, as in a browser */
+    const tag=/<svg\b[^>]*>/i.exec(b.toString("utf8").replace(/<!--[\s\S]*?(?:-->|$)/g,""));
     if(tag){const num=n=>{const m=new RegExp("\\s"+n+"\\s*=\\s*[\"']\\s*([0-9]+(?:\\.[0-9]+)?)\\s*(?:px)?\\s*[\"']","i").exec(tag[0]);return m?Number(m[1]):0;};
       const vb=/\sviewBox\s*=\s*["']\s*([^"']*)["']/i.exec(tag[0]),v=vb?vb[1].trim().split(/[\s,]+/).map(Number):[];
       if(num("width")>0&&num("height")>0){w=num("width");h=num("height");}
       else if(v.length===4&&v.every(Number.isFinite)&&v[2]>0&&v[3]>0){let k=1;while(v[2]*k<100&&k<1e6) k*=10;w=v[2]*k;h=v[3]*k;}}}
   else{ /* jpeg */
-    let i=2;
+    let i=2,turns=0,exifSeen=false;
     while(i+9<b.length){
       if(b[i]!==0xff){i++;continue;}
       const m=b[i+1];
       if(m===0xff){i++;continue;}
       if(m===0xd8||m===0x01||(m>=0xd0&&m<=0xd7)){i+=2;continue;}
       if(m>=0xc0&&m<=0xcf&&m!==0xc4&&m!==0xc8&&m!==0xcc){h=u16(i+5);w=u16(i+7);break;}
-      i+=2+u16(i+2);}}
+      if(m===0xe1&&!exifSeen){const t=exifTurn(b,i+4,Math.min(b.length,i+2+u16(i+2)));if(t!==null){exifSeen=true;turns=t;}}
+      i+=2+u16(i+2);}
+    /* a phone holds its camera sideways and says so in the EXIF block (orientation 5 to 8): a browser draws the picture turned, so the width and height swap */
+    if(turns===1){const t=w;w=h;h=t;}}
   w=Math.round(w);h=Math.round(h);
   return w>=1&&h>=1&&w<=100000&&h<=100000?{width:w,height:h}:null;}
 
@@ -184,7 +218,8 @@ function imageReader(dir,X,keep){
    own sanitizer rule. A diagram is drawn at build time by the renderer's mermaid part in headless Chromium (diagrams.js and
    diagrams-run.js), in one browser run for all the diagrams a booklet needs (a source drawn for one booklet is not drawn again for another), and the SVG that comes back is passed through the same SVG rules before
    it is written. `o.browser` is a path to a Playwright package, false for none, or undefined to look for one (diagrams.js
-   findPlaywright); `o.drawer(codes)`, for tests, stands in for the browser and answers a Map of each code to {svg} or {why}. */
+   findPlaywright); `o.browserTimeout` and `o.diagramTimeout` (milliseconds; 240000 for the browser run, 60000 for one diagram) cut a slow
+   drawing short, and the diagram is then shown as its source; `o.drawer(codes)`, for tests, stands in for the browser and answers a Map of each code to {svg} or {why}. */
 function makeDiagrams(X,o){
   const colours=G.paperColours(fs.readFileSync(STYLESHEET,"utf8"));
   return {cache:new Map(),need:new Set(),colours,
@@ -196,7 +231,7 @@ function makeDiagrams(X,o){
         if(risk) this.cache.set(c,{why:"the renderer does not hand this source to its diagram library, since it could make a request ("+risk+")"});
         else send.push(c);}
       if(!send.length) return;
-      const got=o.drawer?o.drawer(send):G.drawBatch(X,send,{playwright:o.browser});
+      const got=o.drawer?o.drawer(send):G.drawBatch(X,send,{playwright:o.browser,timeout:o.browserTimeout,diagramTimeout:o.diagramTimeout});
       for(const c of send) this.cache.set(c,(got&&got.get(c))||{why:"the diagram library could not draw it"});},
     /* what drawPage is given for a diagram: its markup, or why it is shown as its source. A diagram not drawn yet is noted, and the page is drawn again. */
     draw(code,prefix,word){
@@ -413,6 +448,7 @@ function main(argv){
   const o={form:"standalone",out:"compiled",files:[]};
   for(let i=0;i<argv.length;i++){const a=argv[i],val=()=>{if(i+1>=argv.length) throw usage(a+" needs a value");return argv[++i];};
     if(a==="--out") o.out=val();else if(a==="--form") o.form=val();else if(a==="--base-url") o.baseUrl=val();
+    else if(a==="--no-browser") o.noBrowser=true;
     else if(a==="--report") o.report=val();else if(a==="--renderer") o.renderer=val();else if(a==="--force") o.force=true;
     else if(a==="--version"){const X=E.load(o.renderer);console.log("compile "+VERSION+" (renderer "+X.R.RENDERER_VERSION+", format "+X.R.FORMAT_VERSION+")");return 0;}
     else if(a==="-h"||a==="--help"){console.log(fs.readFileSync(__filename,"utf8").split("\n").filter(l=>l.startsWith("//")).map(l=>l.slice(3)).join("\n"));return 0;}
@@ -422,7 +458,7 @@ function main(argv){
   if(o.report&&/\.md$/i.test(o.report)) throw usage("--report names a .md file: the compiler never writes one");
   for(const f of o.files) if(!/\.md$/i.test(f)) throw usage("not a booklet file (.booklet.md): "+f);
   let C;
-  try{C=compile(o.files.map(file=>({file})),{form:o.form,baseUrl:o.baseUrl,renderer:o.renderer});}
+  try{C=compile(o.files.map(file=>({file})),{form:o.form,baseUrl:o.baseUrl,renderer:o.renderer,...(o.noBrowser?{browser:false}:{})});}
   catch(e){if(/^--/.test(e.message)) throw usage(e.message);throw e;}
   const kept=write(C,o.out,{force:o.force});
   const text=reportText(C);

@@ -97,7 +97,7 @@ chk("a heading link inside the page is a link",/<a class="bk-link" href="#mornin
 
 /* the same fixture with a stand-in for the browser: each diagram is drawn, and none is marked */
 {const rs=C.compile([{file:FIX}],{form:"standalone",engine:X,drawer:STUB.drawer}).results[0],ps=rs.files.get("compile-kinds/index.html")||"";
-  chk("with a browser to draw them, both diagrams are drawn, in the order they stand",rs.rep.counts.diagrams===2&&(ps.match(/<figure class="bk-diagram">/g)||[]).length===2&&/<svg id="bk-dg3"[^]*<svg id="bk-dg4"/.test(ps));
+  chk("with a browser to draw them, both diagrams are drawn, in the order they stand",rs.rep.counts.diagrams===2&&(ps.match(/<figure class="bk-diagram">/g)||[]).length===2&&/<svg id="bk-compile-kinds-dg3"[^]*<svg id="bk-compile-kinds-dg4"/.test(ps));
   chk("…and a drawn diagram is no longer marked, nor shown as its source",!rs.rep.marked.some(m=>m.kind==="mermaid")&&!ps.includes('data-lang="mermaid"'));
   chk("…the report counts them as drawn",/ 2 diagrams, /.test(C.reportText({results:[rs],renderer:"",format:"",form:"standalone"})));}
 

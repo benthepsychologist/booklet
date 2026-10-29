@@ -2,20 +2,26 @@
 /* compile/diagrams-run.js: draws diagrams in headless Chromium. Started by diagrams.js with spawnSync, never by a person.
 
    It reads one JSON job on standard input and writes one JSON answer on standard output:
-     job    {playwright, part, global, id, codes, faces, config}
+     job    {playwright, part, global, id, codes, faces, config, timeout (ms for one diagram, 60000 when absent)}
      answer {results: [{svg} | {error}] in the order of codes, requests: [the address of every request the page made, none but data:]}
    It draws with the renderer's own mermaid part, handed over as text (diagrams.js has checked it is the file the renderer pins). The
    browser page is made here and holds nothing of the booklet's: an empty document with a policy that allows no script of its
    own, no connection and no image or font but data:, and the context is offline with every request refused. A diagram's source reaches the
    library as an argument, as data, and is never part of any script text. The page is thrown away when the last diagram is drawn.
    Playwright is a package this repository does not carry: its path comes in the job (diagrams.js: findPlaywright). Whatever the
-   library says about a diagram that fails is not passed on (the message can quote the source). */
+   library says about a diagram that fails is not passed on (the message can quote the source).
+
+   Repeatable: the library draws a class, ER or git-graph picture with random numbers (the hand-drawn curves, a git commit's id). Each
+   diagram is drawn with Math.random replaced by a seeded generator (below), started again from the same seed before every diagram, so
+   the same source gives the same drawing whatever was drawn before it. What still varies is in the library (a gantt chart's "today"
+   marker reads the clock) or in the machine (the browser's version, its fonts). */
 const fs=require("fs"),crypto=require("crypto");
 
 /* no script but the part itself (allowed by its digest, as the renderer's own policy allows a stored part), no connection, no image or
    font but data: */
 const policy=part=>"default-src 'none'; script-src 'sha256-"+crypto.createHash("sha256").update(part,"utf8").digest("base64")+"'; style-src 'unsafe-inline'; font-src data:; img-src data:";
 const HOME="https://diagrams.invalid/";
+const SEED=0x5eed;
 
 async function main(){
   const job=JSON.parse(fs.readFileSync(0,"utf8"));
@@ -42,8 +48,11 @@ async function main(){
       let timer=null;
       try{
         const svg=await Promise.race([
-          page.evaluate(async ({g,id,code})=>{let lib=globalThis[g].mermaid;lib=lib.default||lib;const r=await lib.render(id,code);return r.svg;},{g:job.global,id:job.id,code:job.codes[i]}),
-          new Promise((_,no)=>{timer=setTimeout(()=>no(new Error("slow")),60000);})]);
+          page.evaluate(async ({g,id,code,seed})=>{
+            /* mulberry32: a small seeded generator, in place of Math.random for this one diagram */
+            let a=seed;Math.random=()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
+            let lib=globalThis[g].mermaid;lib=lib.default||lib;const r=await lib.render(id,code);return r.svg;},{g:job.global,id:job.id,code:job.codes[i],seed:SEED}),
+          new Promise((_,no)=>{timer=setTimeout(()=>no(new Error("slow")),job.timeout||60000);})]);
         answer.results[i]=typeof svg==="string"?{svg}:{error:"no svg"};
       }catch(e){answer.results[i]={error:"could not draw it"};}
       clearTimeout(timer);
