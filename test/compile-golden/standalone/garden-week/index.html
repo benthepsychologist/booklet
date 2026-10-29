@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- booklet compile 0.1.0 · from garden-week.booklet.md · sha256:158bc106fa8a2256fb27de5d5619d4a9225a00116f02868485a9d828e8dae9df -->
+<!-- booklet compile 0.1.0 · from garden-week.booklet.md · sha256:4b3f6003fd0ff391ddce9d1dc718471710b478e0c3e66f3036ec81bd838a9d33 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -14,11 +14,10 @@
 <link rel="stylesheet" href="../booklet/booklet.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"A garden week","description":"A test fixture and a small example: a booklet that asks for its own look (a theme block) and lays things side by side (rows). Everything here is invented.","inLanguage":"en"}</script>
 </head>
-<body class="bk-page">
+<body class="bk-page" data-bk-base="daylight" style="--bk-paper:#eef3f8;--bk-ink:#14202b;--bk-paper-deep:#e3e8ee;--bk-surface:#fafbfd;--bk-rule:#c7cdd3;--bk-muted:#515b64;--bk-mark:#d0c7b2;--bk-sky-soft:#d7e2ec;--bk-rose-soft:#e5dee5;--bk-sage-soft:#d9e3e4;--bk-sun-soft:#e9eced;--bk-lilac-soft:#dde0ee;--bk-petrol-soft:#d4dee4;--bk-slate-soft:#d9dfe5;--bk-accent:#7a1f5c;--bk-accent-soft:#e2dee8;--bk-warn:#a3405b;--bk-warm:#e7e1e9;--bk-green:#e3ecef;--bk-amber:#e8ebeb;--bk-slate:#d5dce2;--bk-teal:#d0dbe0;--bk-blue:#d3dfea;--bk-purple:#dbdded;--bk-font-text:var(--bk-fam-serif);--bk-font-head:var(--bk-fam-serif);--bk-line:1.75;--bk-pgap:1.3rem;--bk-v-fs:1rem;--bk-v-pad:.7rem;--bk-gap:1rem;--bk-tile-v:2.3rem">
 <main class="bk-main">
-<article class="booklet" lang="en">
+<article class="booklet" lang="en" data-bk-base="daylight" style="--bk-paper:#eef3f8;--bk-ink:#14202b;--bk-paper-deep:#e3e8ee;--bk-surface:#fafbfd;--bk-rule:#c7cdd3;--bk-muted:#515b64;--bk-mark:#d0c7b2;--bk-sky-soft:#d7e2ec;--bk-rose-soft:#e5dee5;--bk-sage-soft:#d9e3e4;--bk-sun-soft:#e9eced;--bk-lilac-soft:#dde0ee;--bk-petrol-soft:#d4dee4;--bk-slate-soft:#d9dfe5;--bk-accent:#7a1f5c;--bk-accent-soft:#e2dee8;--bk-warn:#a3405b;--bk-warm:#e7e1e9;--bk-green:#e3ecef;--bk-amber:#e8ebeb;--bk-slate:#d5dce2;--bk-teal:#d0dbe0;--bk-blue:#d3dfea;--bk-purple:#dbdded;--bk-font-text:var(--bk-fam-serif);--bk-font-head:var(--bk-fam-serif);--bk-line:1.75;--bk-pgap:1.3rem;--bk-v-fs:1rem;--bk-v-pad:.7rem;--bk-gap:1rem;--bk-tile-v:2.3rem">
   <h1 id="a-garden-week">A garden week</h1>
-  <!-- booklet: the theme block (the booklet): the booklet's own look: not compiled yet (compile 0.2); the page takes the stylesheet's -->
   <p class="bk-lede">A test fixture and a small example: a booklet that asks for its own look (a theme block) and lays things side by side (rows). Everything here is invented.</p>
   <section class="bk-module">
     <h2 id="the-week">The week <a class="bk-anchor" href="#the-week" aria-label="Link to this section">#</a></h2>
@@ -87,24 +86,24 @@
       </div>
       <div class="bk-rowcell">
         <h3 id="how-was-the-garden">How was the garden? <a class="bk-anchor" href="#how-was-the-garden" aria-label="Link to this section">#</a></h3>
-        <div class="bk-q bk-q-scale">
-          <p class="bk-q-ask">How did it feel?</p>
+        <fieldset class="bk-q bk-q-scale" data-bk-kind="scale" aria-labelledby="bk-garden-week-q1-ask">
+          <p class="bk-q-ask" id="bk-garden-week-q1-ask">How did it feel?</p>
           <ul class="bk-scale">
             <li>Neglected</li>
             <li>Fine</li>
             <li>Thriving</li>
           </ul>
-        </div>
+        </fieldset>
       </div>
       <div class="bk-rowcell">
         <h3 id="a-note">A note <a class="bk-anchor" href="#a-note" aria-label="Link to this section">#</a></h3>
-        <div class="bk-q bk-q-text">
-          <p class="bk-q-ask">Anything to remember?</p>
-        </div>
+        <fieldset class="bk-q bk-q-text" data-bk-kind="text" aria-labelledby="bk-garden-week-q2-ask">
+          <p class="bk-q-ask" id="bk-garden-week-q2-ask">Anything to remember?</p>
+        </fieldset>
       </div>
     </div>
-    <div class="bk-q bk-widget bk-w-grid-select">
-      <p class="bk-q-ask">How are the beds?</p>
+    <fieldset class="bk-q bk-widget bk-w-grid-select" data-bk-kind="widget" aria-labelledby="bk-garden-week-q3-ask">
+      <p class="bk-q-ask" id="bk-garden-week-q3-ask">How are the beds?</p>
       <p class="bk-q-help">Select what fits.</p>
       <div class="bk-grid">
         <p class="bk-ax bk-ax-top">more growth</p>
@@ -113,33 +112,33 @@
           <div class="bk-cell bk-c-warm">
             <p class="bk-cell-name">Weedy and growing</p>
             <ul class="bk-words">
-              <li>Kale</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-garden-week-w1" autocomplete="off"><label for="bk-garden-week-w1">Kale</label><span class="bk-shows" hidden>Lots of growth, lots of weeds.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-green">
             <p class="bk-cell-name">Lush</p>
             <ul class="bk-words">
-              <li>Beans</li>
-              <li>Peas</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-garden-week-w2" autocomplete="off"><label for="bk-garden-week-w2">Beans</label><span class="bk-shows" hidden>Lots of growth, few weeds.</span></li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-garden-week-w3" autocomplete="off"><label for="bk-garden-week-w3">Peas</label><span class="bk-shows" hidden>Lots of growth, few weeds.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-amber">
             <p class="bk-cell-name">Tired and weedy</p>
             <ul class="bk-words">
-              <li>Carrots</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-garden-week-w4" autocomplete="off"><label for="bk-garden-week-w4">Carrots</label><span class="bk-shows" hidden>Little growth, many weeds.</span></li>
             </ul>
           </div>
           <div class="bk-cell bk-c-teal">
             <p class="bk-cell-name">Calm</p>
             <ul class="bk-words">
-              <li>Herbs</li>
+              <li class="bk-pickable"><input type="checkbox" id="bk-garden-week-w5" autocomplete="off"><label for="bk-garden-week-w5">Herbs</label><span class="bk-shows" hidden>Little growth, few weeds.</span></li>
             </ul>
           </div>
         </div>
         <p class="bk-ax bk-ax-right">fewer weeds</p>
         <p class="bk-ax bk-ax-bottom">less growth</p>
       </div>
-    </div>
+    </fieldset>
   </section>
 </article>
 </main>

@@ -13,7 +13,13 @@
 //   3. the compiled pages (a body map, pictures, diagrams, the corpus) opened with scripting OFF, at 1280 and 390 pixels wide, light
 //      and dark: each figure and diagram is on the page with a size, its words are drawn, nothing scrolls sideways, a diagram keeps
 //      its paper and the text on it keeps its contrast on a dark page, a picture loads at the size written on it, and the page asks
-//      for nothing but its own files and makes no script of its own.
+//      for nothing but its own files and makes no script of its own;
+//   4. a booklet of many pages with the optional script on (the assembler's booklet.js beside the stylesheet): a body map's figure in
+//      the first tab of an activity page and a diagram inside a fold the author made in the second tab, and a diagram on a page of
+//      its own. The figure is on show with the first tab, the diagram is not until its tab is shown and its fold is opened (by hand
+//      or by Open all), it then has a size and its words drawn and fits the width, it is gone again when its tab or fold is shut, the
+//      figure and the diagram come back as they were, the printed page shows both, no id is written twice, and nothing asks for
+//      anything but the booklet's own files. The same pages with scripting off have both in view, and the script adds no ids.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/compile-figures-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path'),cp=require('child_process');
@@ -335,6 +341,77 @@ const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return
         const outside=reqs.filter(u=>!u.startsWith(own)&&!u.startsWith('data:'));
         ok(!outside.length&&!failed.length&&!errs.length,at+': asks for nothing but its own files, every one loads, no error'+(outside.length?' (outside: '+outside.slice(0,3).join(', ')+')':'')+(failed.length?' (failed: '+failed.slice(0,3).join(', ')+')':'')+(errs.length?' ('+errs[0]+')':''));}
       await ctx.close();}
+
+    /* 4. many pages, the optional script on: a figure in a tab, a diagram in an author's fold in another tab */
+    {const dir=path.join(OUT,'tabs');
+      const tr=C.compile([{file:path.join(ASSETS,'compile-figure-tabs.booklet.md')}],{form:'standalone',renderer:HTML});
+      C.write(tr,dir,{force:true});
+      ok(tr.results.every(r=>r.rep.ok),'the tabs booklet compiles with '+path.basename(HTML));
+      fs.writeFileSync(path.join(dir,'booklet','booklet.js'),require('../compile/script.js').assemble().text);
+      const withScript=name=>{const src=fs.readFileSync(path.join(dir,name,'index.html'),'utf8'),up='../'.repeat(name.split('/').length);
+        fs.writeFileSync(path.join(dir,name,'with-script.html'),/booklet\/booklet\.js/.test(src)?src:src.replace('</body>','<script src="'+up+'booklet/booklet.js" defer></script>\n</body>'));};
+      ['compile-figure-tabs/where','compile-figure-tabs/after'].forEach(withScript);
+      const plain=fs.readFileSync(path.join(dir,'compile-figure-tabs/where/index.html'),'utf8');
+      const ids=h=>(h.match(/\sid="([^"]*)"/g)||[]).map(x=>x.slice(5,-1));
+      const pageIds=['compile-figure-tabs','compile-figure-tabs/where','compile-figure-tabs/after'].flatMap(n=>ids(fs.readFileSync(path.join(dir,n,'index.html'),'utf8')));
+      ok(pageIds.length===new Set(pageIds).size,'no id is written twice across the three pages of the booklet');
+      ok(/id="bk-compile-figure-tabs-where-f1-/.test(plain)||/bk-compile-figure-tabs-where-f1/.test(plain)||ids(plain).some(x=>x.startsWith('bk-compile-figure-tabs-where-')),'the figure and the diagram on the activity page take its prefix');
+      ok(/<svg id="bk-compile-figure-tabs-where-dg2"/.test(plain)&&/<svg id="bk-compile-figure-tabs-after-dg1"/.test(fs.readFileSync(path.join(dir,'compile-figure-tabs/after/index.html'),'utf8')),'a page numbers its figures and diagrams together from 1 under its own prefix (the figure f1, then the diagram dg2 on one page; dg1 on the other)');
+      const rm=(p,sel)=>p.evaluate(s=>[...document.querySelectorAll(s)].map(e=>{const r=e.getBoundingClientRect();return {w:Math.round(r.width),h:Math.round(r.height),right:Math.round(r.right),
+        shown:r.height>0&&r.width>0&&e.checkVisibility()&&getComputedStyle(e).visibility!=='hidden',words:[...e.querySelectorAll('text')].filter(t=>t.textContent.trim()&&t.getBoundingClientRect().width>0).length};}),sel);
+      for(const width of [1280,390]){
+        const at='tabs page at '+width;
+        const ctx=await b.newContext({viewport:{width,height:900}});const p=await ctx.newPage();
+        const reqs=[],errs=[];p.on('request',r=>reqs.push(r.url()));p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error') errs.push(m.text());});
+        const base='file://'+dir+'/';
+        await p.goto(base+'compile-figure-tabs/where/with-script.html');await p.evaluate(()=>document.fonts.ready);
+        const tabs=await p.evaluate(()=>[...document.querySelectorAll('[role=tab]')].map(t=>t.getAttribute('aria-selected')+':'+t.textContent.trim()));
+        ok(tabs.join()==='true:The map,false:The flow',at+': the script makes a tab bar over the page\'s two tabs, the first on show ('+tabs.join()+')');
+        let fg=(await rm(p,'.bk-svgfig svg'))[0],dg=(await rm(p,'.bk-diagram svg'))[0];
+        ok(fg&&fg.shown&&fg.w>20&&fg.h>20&&fg.right<=width+1,at+': the first tab shows the body map\'s figure with a size ('+JSON.stringify(fg)+')');
+        ok(dg&&!dg.shown,at+': the diagram in the other tab\'s fold is not shown yet ('+JSON.stringify(dg)+')');
+        await p.getByRole('tab',{name:'The flow'}).click();
+        let after=await p.evaluate(()=>({fig:[...document.querySelectorAll('.bk-svgfig svg')].map(e=>e.checkVisibility()&&e.getBoundingClientRect().height>0),open:[...document.querySelectorAll('details.bk-fold')].map(d=>d.open)}));
+        dg=(await rm(p,'.bk-diagram svg'))[0];
+        ok(after.fig.every(v=>!v)&&dg&&!dg.shown&&after.open.every(o=>!o),at+': the second tab is on show, the figure is gone, and the diagram stays hidden in its shut fold');
+        await p.getByRole('switch',{name:'Open all'}).click();
+        dg=(await rm(p,'.bk-diagram svg'))[0];
+        ok(dg&&dg.shown&&dg.w>20&&dg.h>20&&dg.right<=width+1&&dg.words>=3,at+': Open all opens the fold: the diagram has a size, fits the width and its words are drawn ('+JSON.stringify(dg)+')');
+        await p.getByRole('switch',{name:'Open all'}).click();
+        dg=(await rm(p,'.bk-diagram svg'))[0];
+        ok(dg&&!dg.shown,at+': Open all again shuts the fold and the diagram goes with it');
+        await p.getByRole('tab',{name:'The map'}).click();
+        const fg2=(await rm(p,'.bk-svgfig svg'))[0];
+        ok(fg2&&fg2.shown&&fg2.w===fg.w&&fg2.h===fg.h,at+': back on the first tab the figure is the size it was ('+JSON.stringify(fg2)+')');
+        /* a fold opened by hand in the second tab shows the diagram */
+        await p.getByRole('tab',{name:'The flow'}).click();
+        await p.locator('details.bk-fold > summary').first().click();
+        dg=(await rm(p,'.bk-diagram svg'))[0];
+        ok(dg&&dg.shown&&dg.w>20&&dg.words>=3,at+': a fold opened by hand shows the diagram too');
+        /* an address into the second tab shows that tab, and a printed page shows every tab, with the figure and the diagram in view */
+        await p.goto(base+'compile-figure-tabs/where/with-script.html#the-flow');await p.evaluate(()=>document.fonts.ready);
+        ok(await p.evaluate(()=>document.querySelector('[role=tab][aria-selected=true]').textContent.trim())==='The flow',at+': an address that points into the second tab shows it');
+        await p.emulateMedia({media:'print'});
+        await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
+        const pr=await p.evaluate(()=>({fig:[...document.querySelectorAll('.bk-svgfig svg')].map(e=>e.getBoundingClientRect().height>0),dia:[...document.querySelectorAll('.bk-diagram svg')].map(e=>e.checkVisibility()&&e.getBoundingClientRect().height>0),bar:!![...document.querySelectorAll('.bk-tabbar')].find(e=>e.getBoundingClientRect().height>0)}));
+        ok(pr.fig.every(Boolean)&&pr.fig.length===1&&pr.dia.every(Boolean)&&pr.dia.length===1&&!pr.bar,at+': printed, every tab is shown with the figure and the diagram in it, and no bar');
+        await p.emulateMedia({media:'screen'});
+        /* the page of its own: a diagram, no tabs, no folds */
+        await p.goto(base+'compile-figure-tabs/after/with-script.html');await p.evaluate(()=>document.fonts.ready);
+        const d2=(await rm(p,'.bk-diagram svg'))[0];
+        ok(d2&&d2.shown&&d2.w>20&&d2.words>=3&&d2.right<=width+1,at+': the diagram on the second activity\'s page is drawn with the script on');
+        const own='file://'+dir+'/';const outside=reqs.filter(u=>!u.startsWith(own)&&!u.startsWith('data:'));
+        ok(!outside.length&&!errs.length,at+': nothing asked for but the booklet\'s own files, and no error'+(outside.length?' ('+outside.slice(0,3).join(', ')+')':'')+(errs.length?' ('+errs.slice(0,2).join('; ')+')':''));
+        await ctx.close();}
+      /* scripting off: both are in view, nothing hidden by a bar that is not there */
+      {const ctx=await b.newContext({viewport:{width:1280,height:900},javaScriptEnabled:false});const p=await ctx.newPage();
+        await p.goto('file://'+dir+'/compile-figure-tabs/where/index.html');
+        const off=await p.evaluate(()=>({tabs:document.querySelectorAll('[role=tab]').length,fig:[...document.querySelectorAll('.bk-svgfig svg')].map(e=>e.getBoundingClientRect().height>0),
+          dia:[...document.querySelectorAll('.bk-diagram svg')].map(e=>({shown:e.checkVisibility()&&e.getBoundingClientRect().height>0})),folds:document.querySelectorAll('details.bk-fold:not([open])').length}));
+        ok(off.tabs===0&&off.fig.length===1&&off.fig[0]&&off.dia.length===1&&!off.dia[0].shown&&off.folds===2,'scripting off: both tabs are under their names, the figure is in view, and the diagram waits in its fold, which opens by hand');
+        await p.locator('details.bk-fold > summary').first().click();
+        ok(await p.evaluate(()=>document.querySelector('.bk-diagram svg').checkVisibility()&&document.querySelector('.bk-diagram svg').getBoundingClientRect().height>20),'scripting off: opening the fold shows the diagram');
+        await ctx.close();}}
   }finally{await b.close();}
   console.log(fails.length?fails.length+' FAILED':'compile figures: all checks passed');
   process.exit(fails.length?1:0);

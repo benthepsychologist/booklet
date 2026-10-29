@@ -389,6 +389,26 @@ const batch=(pw,codes,o)=>G.drawBatch(X,codes,{playwright:pw,...(o||{})});
   const dstyle=G.diagram(wrap('<style>#bkdgrender .a{fill:url(#other)}</style><g id="other"/><rect class="a" width="3" height="3"/>'),dctx);
   chk("…also when the pointer is in the style",dstyle.ok&&dstyle.html.includes("url(#bk-dg1-other)")&&dstyle.html.includes('id="bk-dg1-other"'),dstyle.why||dstyle.html);}
 
+/* ---- an image on an activity's page, one folder down: the size is still written, and the address is reached from there ---- */
+{const text='---\nbooklet: "0.16"\nid: t/deepimg\ntitle: Deep\nlang: en\n---\n\n> [!module|m] Deep\n\n> [!activity|one] First\n\nWords.\n\n> [!activity|two] Second\n\n![A wave](compile-pictures/wave.png)\n\n> [!module|m end] End\n';
+  const r=C.compile([{text,name:"deepimg",dir:path.join(__dirname,"compile-assets")}],{form:"standalone",engine:X,drawer:STUB.drawer}).results[0];
+  const pg=r.files.get("deepimg/two/index.html")||"";
+  const img=/<img [^>]*>/.exec(pg);
+  chk("an image on an activity's page, a folder down, is reached from there and still carries the size read from its file",!!img&&/src="\.\.\/\.\.\/compile-pictures\/wave\.png"|src="\.\.\/compile-pictures\/wave\.png"/.test(img[0])&&/width="64"/.test(img[0])&&/height="48"/.test(img[0]),img&&img[0]);
+  chk("…and the file is copied to where that address points",[...r.files.keys()].some(k=>/wave\.png$/.test(k)),[...r.files.keys()].join(" "));}
+
+/* ---- a many-page booklet: the ids of a figure and a diagram carry the activity page's own prefix; a drawn diagram needs no script ---- */
+{const kinds=C.compile([{file:path.join(__dirname,"fixtures","compile-kinds.booklet.md")}],{form:"site",engine:X,drawer:STUB.drawer}).results[0];
+  const pages=[...kinds.files].filter(([k])=>k.endsWith("/index.html"));
+  const idsOf=h=>(h.match(/\sid="([^"]*)"/g)||[]).map(s=>s.slice(5,-1));
+  const all=pages.flatMap(([,h])=>idsOf(h)),svgs=pages.flatMap(([k,h])=>[...h.matchAll(/<svg id="([^"]*)"/g)].map(m=>[k,m[1]]));
+  chk("on the pages of a booklet of many pages no id is written twice across the whole booklet (as it would be in one host page)",all.length===new Set(all).size,all.filter((x,i)=>all.indexOf(x)!==i).join(" "));
+  chk("a diagram on an activity's page takes that page's prefix, bk-<name>-<folder>-dgN",
+    svgs.length===2&&svgs.every(([k,id])=>k==="compile-kinds/left-off/index.html"&&/^bk-compile-kinds-left-off-dg[12]$/.test(id)),svgs.join(" "));
+  const dia=C.compile([{file:path.join(__dirname,"compile-assets","compile-diagrams.booklet.md")}],{form:"standalone",engine:X,drawer:STUB.drawer}).results[0];
+  const dpage=dia.files.get("compile-diagrams/index.html")||"";
+  chk("a page with a drawn diagram, and nothing else that responds, needs no script: no booklet.js link, and the report says none",/<figure class="bk-diagram">/.test(dpage)&&!/booklet\.js/.test(dpage)&&!dia.rep.needsScript&&!dia.files.has("booklet.js"),String(dia.rep.needsScript));}
+
 /* ---- a diagram's style text is written escaped; the paper goes after a leading title ---- */
 {const d=G.diagram(wrap('<style>#bkdgrender .a &gt; rect{content:"&amp;lt; x"}</style><g class="a"><rect width="3" height="3"/></g>'),dctx);
   chk("a style's text is written escaped: a > and a & in it are only text, never markup",d.ok&&d.html.includes('.a &gt; rect{content:"&amp;lt; x"}')&&!/content:"&lt;/.test(d.html),d.why||d.html);

@@ -1,0 +1,176 @@
+---
+title: "A lighthouse quiz"
+description: "A made-up booklet for the compiler's tests: every kind of question a compiled page can answer as a quiz, and the ones it leaves read-only."
+---
+<!-- booklet compile 0.1.0 · from compile-quiz.booklet.md · sha256:ee9debc5a5b4f68c914e22383a433456c52434ab1e03812c4e52db9b5e908195 -->
+<article class="booklet" lang="en">
+  <p class="bk-lede">A made-up booklet for the compiler's tests: every kind of question a compiled page can answer as a quiz, and the ones it leaves read-only.</p>
+  <fieldset class="bk-q bk-q-choice" data-bk-kind="choice" data-bk-graded aria-labelledby="bk-compile-quiz-q1-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q1-ask">What colour is the lighthouse lamp's beam at night?</p>
+    <ul class="bk-options bk-pick-one">
+      <li class="bk-opt"><input type="radio" name="bk-compile-quiz-q1" id="bk-compile-quiz-q1-o1" autocomplete="off"><label for="bk-compile-quiz-q1-o1">Red</label><span class="bk-verdict bk-v-wrong" hidden>✗ Not quite</span><span class="bk-reply" hidden><span class="bk-reply-line">Not quite: red is for the harbour mouth, not the tower.</span></span></li>
+      <li class="bk-opt bk-right"><input type="radio" name="bk-compile-quiz-q1" id="bk-compile-quiz-q1-o2" autocomplete="off"><label for="bk-compile-quiz-q1-o2">White</label><span class="bk-verdict bk-v-right" hidden>✓ Right</span><span class="bk-verdict bk-v-answer" hidden>✓ The answer</span><span class="bk-reply" hidden><span class="bk-reply-line">Yes: a white beam carries furthest over water.</span></span></li>
+      <li class="bk-opt"><input type="radio" name="bk-compile-quiz-q1" id="bk-compile-quiz-q1-o3" autocomplete="off"><label for="bk-compile-quiz-q1-o3">Green</label><span class="bk-verdict bk-v-wrong" hidden>✗ Not quite</span><span class="bk-reply" hidden><span class="bk-reply-line">Green marks the starboard side of a channel.</span></span></li>
+    </ul>
+    <p class="bk-say" hidden><span class="bk-say-ok" hidden>Right.</span><span class="bk-say-no" hidden>Not quite. The answer is White.</span></p>
+    <p class="bk-live bk-sr" aria-live="polite"></p>
+    <details class="bk-fold bk-compact bk-hint">
+      <summary><span class="bk-ci" aria-hidden="true"><svg class="bk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg></span><span class="bk-ftitle">Hint</span></summary>
+      <div class="bk-cb">
+        <p>Think about what carries furthest.</p>
+      </div>
+    </details>
+    <details class="bk-fold bk-compact bk-solution">
+      <summary><span class="bk-ci" aria-hidden="true"><svg class="bk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg></span><span class="bk-ftitle">Solution</span></summary>
+      <div class="bk-cb">
+        <p>White, because it is the brightest and easiest to see far off.</p>
+      </div>
+    </details>
+  </fieldset>
+  <fieldset class="bk-q bk-q-multi bk-gated" data-bk-kind="multi" data-bk-graded aria-labelledby="bk-compile-quiz-q2-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q2-ask">Which of these are parts of a lighthouse?</p>
+    <ul class="bk-options bk-pick-many">
+      <li class="bk-opt bk-right"><input type="checkbox" id="bk-compile-quiz-q2-o1" autocomplete="off"><label for="bk-compile-quiz-q2-o1">The lantern room</label><span class="bk-verdict bk-v-right" hidden>✓ Right</span><span class="bk-verdict bk-v-answer" hidden>✓ The answer</span><span class="bk-reply" hidden><span class="bk-reply-line">The lantern room holds the lamp.</span></span></li>
+      <li class="bk-opt"><input type="checkbox" id="bk-compile-quiz-q2-o2" autocomplete="off"><label for="bk-compile-quiz-q2-o2">The rudder</label><span class="bk-verdict bk-v-wrong" hidden>✗ Not quite</span><span class="bk-reply" hidden><span class="bk-reply-line">A rudder belongs to a boat.</span></span></li>
+      <li class="bk-opt bk-right"><input type="checkbox" id="bk-compile-quiz-q2-o3" autocomplete="off"><label for="bk-compile-quiz-q2-o3">The gallery</label><span class="bk-verdict bk-v-right" hidden>✓ Right</span><span class="bk-verdict bk-v-answer" hidden>✓ The answer</span></li>
+      <li class="bk-opt"><input type="checkbox" id="bk-compile-quiz-q2-o4" autocomplete="off"><label for="bk-compile-quiz-q2-o4">The keel</label><span class="bk-verdict bk-v-wrong" hidden>✗ Not quite</span></li>
+    </ul>
+    <p class="bk-acts" hidden><input type="checkbox" class="bk-check" id="bk-compile-quiz-q2-check" autocomplete="off"><label class="bk-check-btn" for="bk-compile-quiz-q2-check" aria-hidden="true">Check</label></p>
+    <p class="bk-say" hidden><span class="bk-say-ok" hidden>Right.</span><span class="bk-say-no" hidden>Not quite. The answer is The lantern room, The gallery.</span></p>
+    <p class="bk-live bk-sr" aria-live="polite"></p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-choice" data-bk-kind="choice" aria-labelledby="bk-compile-quiz-q3-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q3-ask">Who looked after the lamp?</p>
+    <ul class="bk-options bk-pick-one">
+      <li class="bk-opt"><input type="radio" name="bk-compile-quiz-q3" id="bk-compile-quiz-q3-o1" autocomplete="off"><label for="bk-compile-quiz-q3-o1">The harbour master</label><span class="bk-reply" hidden><span class="bk-reply-line">The harbour master ran the port.</span></span></li>
+      <li class="bk-opt"><input type="radio" name="bk-compile-quiz-q3" id="bk-compile-quiz-q3-o2" autocomplete="off"><label for="bk-compile-quiz-q3-o2">The keeper</label><span class="bk-reply" hidden><span class="bk-reply-line">The keeper trimmed the wick and wound the clockwork.</span></span></li>
+      <li class="bk-opt"><input type="radio" name="bk-compile-quiz-q3" id="bk-compile-quiz-q3-o3" autocomplete="off"><label for="bk-compile-quiz-q3-o3">The pilot</label></li>
+    </ul>
+  </fieldset>
+  <fieldset class="bk-q bk-q-multi" data-bk-kind="multi" aria-labelledby="bk-compile-quiz-q4-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q4-ask">What would you look for from the gallery?</p>
+    <ul class="bk-options bk-pick-many">
+      <li class="bk-opt"><input type="checkbox" id="bk-compile-quiz-q4-o1" autocomplete="off"><label for="bk-compile-quiz-q4-o1">Ships</label></li>
+      <li class="bk-opt"><input type="checkbox" id="bk-compile-quiz-q4-o2" autocomplete="off"><label for="bk-compile-quiz-q4-o2">Birds</label></li>
+      <li class="bk-opt"><input type="checkbox" id="bk-compile-quiz-q4-o3" autocomplete="off"><label for="bk-compile-quiz-q4-o3">Weather</label></li>
+    </ul>
+  </fieldset>
+  <fieldset class="bk-q bk-q-choice" data-bk-kind="choice" aria-labelledby="bk-compile-quiz-q5-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q5-ask">Which shape was the oldest tower?</p>
+    <ul class="bk-options bk-pick-one">
+      <li>Round</li>
+      <li>Square</li>
+      <li class="bk-own">Add your own</li>
+    </ul>
+  </fieldset>
+  <fieldset class="bk-q bk-q-scale" data-bk-kind="scale" aria-labelledby="bk-compile-quiz-q6-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q6-ask">How clear was that?</p>
+    <ul class="bk-scale">
+      <li>Not clear</li>
+      <li>Clear</li>
+    </ul>
+  </fieldset>
+  <fieldset class="bk-q bk-q-matrix" data-bk-kind="matrix" aria-labelledby="bk-compile-quiz-q7-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q7-ask">How sure are you of each part?</p>
+    <div class="bk-table">
+      <table class="bk-matrix">
+        <thead>
+          <tr>
+            <td></td>
+            <th scope="col">Not yet</th>
+            <th scope="col">Sure</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">The lamp</th>
+            <td aria-hidden="true">○</td>
+            <td aria-hidden="true">○</td>
+          </tr>
+          <tr>
+            <th scope="row">The gallery</th>
+            <td aria-hidden="true">○</td>
+            <td aria-hidden="true">○</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </fieldset>
+  <fieldset class="bk-q bk-q-number" data-bk-kind="number" aria-labelledby="bk-compile-quiz-q8-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q8-ask">How tall in metres?</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-date" data-bk-kind="date" aria-labelledby="bk-compile-quiz-q9-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q9-ask">When was it built?</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-text" data-bk-kind="text" aria-labelledby="bk-compile-quiz-q10-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q10-ask">What did you notice?</p>
+  </fieldset>
+  <fieldset class="bk-q bk-q-lines" data-bk-kind="lines" aria-labelledby="bk-compile-quiz-q11-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q11-ask">Facts you learned</p>
+  </fieldset>
+  <!-- booklet: the question “Why that part?” (activity “Quick checks”): a question asked for each pick in another: not compiled (the reference renderer does not draw it either, and a page keeps no picks to draw it from) -->
+  <fieldset class="bk-q bk-widget bk-w-grid-select" data-bk-kind="widget" aria-labelledby="bk-compile-quiz-q12-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q12-ask">The lamp</p>
+    <p class="bk-q-help">Press what it did.</p>
+    <div class="bk-grid">
+      <p class="bk-ax bk-ax-top">brighter</p>
+      <p class="bk-ax bk-ax-left">slower</p>
+      <div class="bk-cells">
+        <div class="bk-cell bk-c-blue">
+          <p class="bk-cell-name">Slow sweep</p>
+          <ul class="bk-words">
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-quiz-w1" autocomplete="off"><label for="bk-compile-quiz-w1">Wide beam</label><span class="bk-shows" hidden>A long, patient turn.</span></li>
+          </ul>
+        </div>
+        <div class="bk-cell bk-c-amber">
+          <p class="bk-cell-name">Fast sweep</p>
+          <ul class="bk-words">
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-quiz-w2" autocomplete="off"><label for="bk-compile-quiz-w2">Flash</label><span class="bk-shows" hidden>A quick flash.</span></li>
+          </ul>
+        </div>
+        <div class="bk-cell bk-c-n2">
+          <p class="bk-cell-name">Fixed</p>
+          <ul class="bk-words">
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-quiz-w3" autocomplete="off"><label for="bk-compile-quiz-w3">Steady</label><span class="bk-shows" hidden>No turn at all.</span></li>
+          </ul>
+        </div>
+        <div class="bk-cell bk-c-n3">
+          <p class="bk-cell-name">Dark</p>
+          <ul class="bk-words">
+            <li class="bk-pickable"><input type="checkbox" id="bk-compile-quiz-w4" autocomplete="off"><label for="bk-compile-quiz-w4">Nothing</label></li>
+          </ul>
+        </div>
+      </div>
+      <p class="bk-ax bk-ax-right">faster</p>
+      <p class="bk-ax bk-ax-bottom">dimmer</p>
+    </div>
+  </fieldset>
+  <fieldset class="bk-q bk-widget bk-w-svg-regions" data-bk-kind="widget" aria-labelledby="bk-compile-quiz-q13-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q13-ask">The tower</p>
+    <p class="bk-q-help">Press a part.</p>
+    <div class="bk-svgfig">
+      <svg viewBox="0 0 100 100">
+        <rect class="rg" data-r="lamp" x="40" y="5" width="20" height="15" role="img" aria-label="Lamp"/>
+        <rect class="rg" data-r="base" x="30" y="60" width="40" height="35" role="img" aria-label="Base"/>
+      </svg>
+    </div>
+    <ul class="bk-words">
+      <li class="bk-pickable"><input type="checkbox" id="bk-compile-quiz-w5" autocomplete="off"><label for="bk-compile-quiz-w5">Lamp</label><span class="bk-shows" hidden>Where the light is made.</span></li>
+      <li class="bk-pickable"><input type="checkbox" id="bk-compile-quiz-w6" autocomplete="off"><label for="bk-compile-quiz-w6">Base</label><span class="bk-shows" hidden>Thick walls hold the tower up.</span></li>
+    </ul>
+  </fieldset>
+  <fieldset class="bk-q bk-widget bk-w-svg-regions" data-bk-kind="widget" aria-labelledby="bk-compile-quiz-q14-ask">
+    <p class="bk-q-ask" id="bk-compile-quiz-q14-ask">The tower, read only</p>
+    <p class="bk-q-help">Press a part.</p>
+    <div class="bk-svgfig">
+      <svg viewBox="0 0 100 100">
+        <rect class="rg" data-r="lamp" x="40" y="5" width="20" height="15" role="img" aria-label="Lamp"/>
+        <rect class="rg" data-r="base" x="30" y="60" width="40" height="35" role="img" aria-label="Base"/>
+      </svg>
+    </div>
+    <ul class="bk-words">
+      <li>Lamp</li>
+      <li>Base</li>
+    </ul>
+  </fieldset>
+</article>

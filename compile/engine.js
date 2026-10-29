@@ -71,10 +71,22 @@ const NAMES=[
      svgValueOk, svgFamily, SVG_STYLE_PROPS) and id by id (SVG_ID); a diagram: the screen its source passes before the library
      sees it (diagramRisk), the part's pinned digest and its global name (LIB_SRI, LIB_GLOBAL) */
   "SVG_KEEP","svgNameOk","svgValueOk","svgFamily","SVG_STYLE_PROPS","SVG_ID","diagramRisk","LIB_SRI","LIB_GLOBAL",
+  /* a card's picture: the emoji a title may begin with */
+  "LEAD_EMOJI",
+  /* the short id of an address (an activity's folder on a many-page booklet) */
+  "shortId",
   /* widgets */
   "colourOf","COLOUR_NAMES",
   /* the tables a test holds the compiler to: every block, question kind, engine and query view is drawn or marked */
-  "DRAW_BLOCK","QUESTION_KINDS","ENGINES","QUERY_VIEWS"];
+  "DRAW_BLOCK","QUESTION_KINDS","ENGINES","QUERY_VIEWS",
+  /* the query pipeline over a data block (dataSet, viewNodes: the default view, the empty line, limit, grouping and the nested
+     list's tree are its), its words and its helpers; the view functions are replaced below (VIEW_FNS), and the compiler
+     draws what they are handed */
+  "dataSet","viewNodes","newViewState","VIEW_FNS","leadNodes","cellText","partsOf","rolePart","rowTone",
+  /* a chart's scales and labels, and a number as the reader's locale writes it */
+  "isNum","fmtNum","niceScale","lineDomain","lineSeries","thinLabels","chClip","CH_DASH",
+  /* a booklet's own look: the renderer's work from the theme block to the colours it will use */
+  "themeDerive","TH_BASES"];
 /* what the compiler sets or replaces inside the context: the interface language, the design being drawn, and the two
    functions the renderer's link hooks return their links through */
 const VARS=["lang","BOOK","headingLink","moduleLinkNode"];
@@ -131,6 +143,11 @@ function load(file){
   vm.runInContext("figureFor=(id,scope)=>{const fs=BOOK&&BOOK.figures,f=fs&&((scope&&fs[addrOf(scope,id)])||fs[id]);"
     +"return f?{__figure:{id:String(id),lang:String(f.lang==null?'':f.lang),code:String(f.code==null?'':f.code)}}:null;};",ctx);
   vm.runInContext("headingLink=(hit,kids)=>({__heading:{hit,kids}});moduleLinkNode=(target,kids)=>({__module:{target,kids}});",ctx);
+  /* The six view functions are replaced by ones that keep what the pipeline hands them (the rows in their groups, the roles
+     resolved, the fields to show, a nested list's tree) and draw nothing: the compiler draws that, as plain HTML and SVG.
+     The pipeline that decides it (the default view, limit, grouping, the nesting, the empty line) stays the renderer's. */
+  vm.runInContext("var CAPTURED=null;Object.keys(VIEW_FNS).forEach(k=>{VIEW_FNS[k]=(set,groups,roles,cols,o)=>{"
+    +"CAPTURED={as:k,set,groups,roles,cols,tree:(o&&o.tree)||null};return [];};});",ctx);
   const R=vm.runInContext("({"+NAMES.join(",")+"})",ctx);
   /* the interface language the renderer's words are taken in, and the design its lookups (registries, figureFor) read */
   const setLang=l=>{ctx.__lang=String(l||"en");vm.runInContext("lang=__lang",ctx);};
@@ -142,6 +159,17 @@ function load(file){
   const mctx=vm.createContext({el:H.el,slugify:R.slugify});
   const M=vm.runInContext("(function(){"+page.slice(a,b)+"\nreturn {"+MD_NAMES.join(",")+"};})()",mctx,{filename:"booklet.html (mdNodes)"});
   for(const n of MD_NAMES) if(typeof M[n]!=="function") throw new Error(path.basename(file)+": the Markdown engine no longer gives "+n);
+
+  /* A data block's query, through the renderer's own pipeline: null when it draws no rows (the caller writes the empty line),
+     else {as, set, groups, roles, cols, tree}. `b` is the query block as the design keeps it; `scope` the module its links
+     are looked for in. A kept entry or answer is never read: this takes a block that names a data block only. */
+  const queryView=(b,scope)=>{ctx.__q={data:b.data,v:{...(b.view||{}),fields:b.fields},scope:String(scope||"")};
+    return vm.runInContext("(function(){CAPTURED=null;viewNodes(dataSet(__q.data),__q.v,{state:newViewState(),scope:__q.scope});return CAPTURED;})()",ctx);};
+
+  /* a booklet's own look: the renderer's themeDerive over the four base tables, read from the renderer's own stylesheet
+     (it reads them from the page's style sheets; there is no page here). Returns plain data. */
+  const bases=baseTables(page,Array.from(R.TH_BASES));
+  const themeOf=spec=>JSON.parse(JSON.stringify(R.themeDerive(spec,name=>bases[name]||null)));
 
   /* Temml, woken as the page wakes it (the block is stored with </script and <!-- written <\/script and <\!--) */
   const tm=/<script type="text\/plain" id="lib-temml">([\s\S]*?)<\/script>/.exec(page);
@@ -156,9 +184,20 @@ function load(file){
   const icons=Object.create(null);
   for(const m of body.matchAll(/<symbol id="bi-([a-z0-9-]+)" viewBox="0 0 24 24">([\s\S]*?)<\/symbol>/g)) icons[m[1]]=m[2];
 
-  return {file,R,M,temml,temmlVersion:tver,icons,setLang,setBook,
+  return {file,R,M,temml,temmlVersion:tver,icons,setLang,setBook,queryView,themeOf,
     fonts:()=>fontsOf(page,file),
     parse:text=>parse(R,setLang,text)};}
+
+/* The renderer's four base theme tables, name to {--token: value}, read out of its stylesheet: the rule for
+   [data-theme="<name>"], up to its closing brace. */
+function baseTables(page,names){
+  const css=page.slice(page.indexOf("<style>"),page.indexOf("</style>")),out={};
+  for(const name of names){const open='[data-theme="'+name+'"]{',at=css.indexOf(open);
+    if(at<0) throw new Error("booklet.html: the base theme “"+name+"” has no table where the compiler reads it");
+    const body=css.slice(at+open.length,css.indexOf("}",at)),t={};
+    for(const m of body.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) t[m[1]]=m[2].trim();
+    out[name]=t;}
+  return out;}
 
 /* The fonts the page carries as data: each @font-face rule's family, style, weight, unicode range and bytes, named as
    the compiler writes them (family-subset-weight-style.woff2), and the licence text that comes with them. */
@@ -180,11 +219,12 @@ function fontsOf(page,file){
     +"by the Booklet compiler, unmodified.\n\n"+text+"\n";
   return {faces,licence};}
 
-/* parse(text): {ok, refused: [words], problems: [words], marker: words or "", lang, design, comments}.
+/* parse(text): {ok, refused: [words], problems: [words], marker: words or "", lang, id, design, comments}.
    The words are the renderer's own, in English (the report is the author's), save the compiler's own refusals, which
    say why in words and never quote the file. `design` is the parse's template without its `raw`, copied out of the
    context as JSON. `lang` is the booklet's own language, as its front matter declares it, in the spelling the renderer
-   gives a tag (normTag); English when it declares none, as the renderer takes it. `comments`: the lines of each author
+   gives a tag (normTag); English when it declares none, as the renderer takes it. `id`: its front matter's `id` as written
+   (what its translations share), "" when it has none. `comments`: the lines of each author
    comment left out ({from, to, open}). */
 const REFUSE={
   fence:n=>"the booklet's text ends inside a code fence that never closes"+(n?" (it opens on line "+n+")":"")+", so a records region after it would be read as text and published. Close the fence with a line of the same marks that open it, then compile again.",
@@ -194,7 +234,7 @@ function parse(R,setLang,text){
   setLang("en");
   const t=String(text==null?"":text);
   const whole=R.parseFile(t);
-  const refused=why=>({ok:false,refused:[why],problems:[],marker:"",lang:"",design:null,comments:[]});
+  const refused=why=>({ok:false,refused:[why],problems:[],marker:"",lang:"",id:"",design:null,comments:[]});
   const isOutside=list=>(Array.isArray(list)?list:[]).some(p=>p&&p.code==="recordOutside");
   /* the design's own text, as the renderer keeps it: everything outside the records region (SPEC.md section 8) */
   const own=whole.template&&whole.template.raw&&typeof whole.template.raw.source==="string"?whole.template.raw.source:null;
@@ -216,12 +256,12 @@ function parse(R,setLang,text){
   let design=null;
   if(P.template){const {raw,...rest}=P.template;design=JSON.parse(JSON.stringify(rest));}
   return {ok:!!P.ok,refused:words(P.refused),problems:words((P.unread||[]).filter(p=>p!==P.markerNote)),marker,
-    lang:langOf(R,t),design,comments};}
-/* the booklet's own language: its front matter's `lang`, read by the renderer's frontMatter and kvLine and spelled as
-   the renderer spells a tag (normTag); "en" when it has none, as the renderer takes it */
-function langOf(R,t){const fm=R.frontMatter(t,true);let v="";
-  for(const l of Array.from(fm.head||[])){const kv=R.kvLine(l);if(kv&&kv[0]==="lang") v=String(kv[1]);}
-  return R.normTag(v)||"en";}
+    lang:frontKey(R,t,"lang"),id:frontKey(R,t,"id"),design,comments};}
+/* a front matter key's value, read by the renderer's frontMatter and kvLine ("" when there is none). */
+function frontKey(R,t,key){const fm=R.frontMatter(t,true);let v="";
+  for(const l of Array.from(fm.head||[])){const kv=R.kvLine(l);if(kv&&kv[0]===key) v=String(kv[1]);}
+  /* the booklet's own language is spelled as the renderer spells a tag (normTag); English when it has none, as the renderer takes it */
+  return key==="lang"?R.normTag(v)||"en":v.trim();}
 
 /* AUTHOR COMMENTS
    Every `%%` … `%%` comment in the design's own text, outside the renderer's fenced code (codeMask), taken out: the

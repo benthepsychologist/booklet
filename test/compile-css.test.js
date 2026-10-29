@@ -59,7 +59,18 @@ chk("--bk-font-head is the renderer's heading face (--serif)",def["--bk-font-hea
 chk("--bk-font-code is the renderer's code face (--fam-mono)",def["--bk-font-code"]===shared["--fam-mono"],def["--bk-font-code"]);
 const htmlRule=/\n\s*html\{([^}]*)\}/.exec(rcss)[1];
 chk("--bk-size and --bk-line are the renderer's page text",htmlRule.includes("font-size:"+def["--bk-size"])&&htmlRule.includes("line-height:var(--lh,"+def["--bk-line"]+")"),htmlRule);
-chk("the defaults weigh nothing (every table is inside :where())",[...css.matchAll(/^\s*([^{}@\n][^{}\n]*)\{[^}]*--bk-paper:/gm)].every(m=>/^:where\(/.test(m[1].trim())));
+/* the one table that is not in :where(): print's colours again, !important at the article's weight, because a themed page's
+   colours are a style attribute and would beat a table that weighs nothing (a dark theme printed white ink on white paper) */
+const PRINT_STRONG=".booklet:not(#bk):not(#bk):not(#bk), .bk-page:not(#bk):not(#bk):not(#bk){";
+chk("the defaults weigh nothing (every table is inside :where()), but for print's colours, held below",[...css.matchAll(/^\s*([^{}@\n][^{}\n]*)\{[^}]*--bk-paper:/gm)].every(m=>/^:where\(/.test(m[1].trim())||m[1].trim()+"{"===PRINT_STRONG));
+{const printCss=css.slice(css.indexOf("@media print{")),weak=decls(ruleAt(printCss,":where(.booklet, .bk-page){")||""),strong=ruleAt(printCss,PRINT_STRONG);
+  const dd=strong===null?{}:Object.fromEntries(strong.split(";").map(d=>d.trim()).filter(Boolean).map(d=>{const i=d.indexOf(":");return [d.slice(0,i),d.slice(i+1)];}));
+  const colourKeys=Object.keys(weak).filter(k=>k.startsWith("--bk-")&&!["--bk-border","--bk-focus"].includes(k));
+  chk("print has the colours a booklet's theme can set again, !important at the article's weight, one for one with print's table ("+colourKeys.length+")",
+    strong!==null&&colourKeys.length>40&&colourKeys.every(k=>dd[k]===weak[k]+"!important")&&Object.keys(dd).length===colourKeys.length,
+    strong===null?"no rule":colourKeys.filter(k=>dd[k]!==weak[k]+"!important").join(", "));
+  const themed=require("../compile/theme.js").VAR_OF;
+  chk("…and covers every variable theme.js can write on the article",Object.values(themed).every(v=>v in dd),Object.values(themed).filter(v=>!(v in dd)).join(", "));}
 
 /* ---- the fonts ---- */
 const faces=[...css.matchAll(/@font-face\{font-family:'([^']+)';font-style:([a-z]+);font-weight:(\d+);font-display:swap;\s*src:url\(fonts\/([^)]+)\) format\('woff2'\);\s*unicode-range:([^}]+)\}/g)]
@@ -72,7 +83,7 @@ chk("it fetches nothing but its own fonts (no @import, no other url())",!/@impor
 
 /* ---- every class the compiler writes has a rule ---- */
 const inputs=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWith(".booklet.md")).map(f=>({file:path.join(ROOT,"examples",f)})),
-  ...["compile-article","compile-kinds","figures"].map(n=>({file:path.join(__dirname,"fixtures",n+".booklet.md")})),
+  ...["compile-article","compile-kinds","compile-quiz","figures","data-views","charts","compile-pages","compile-pair","compile-views","compile-theme"].map(n=>({file:path.join(__dirname,"fixtures",n+".booklet.md")})),
   ...["compile-bodymap","compile-pictures","compile-diagrams"].map(n=>({file:path.join(__dirname,"compile-assets",n+".booklet.md")}))];
 const run=C.compile(inputs,{form:"both",engine:X,drawer:STUB.drawer});
 const classes=new Set();

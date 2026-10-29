@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- booklet compile 0.1.0 · from status-page.booklet.md · sha256:6118b7f36e2a44cb43c2ffa3b813493c16905b6c80d61e4f9ac101b00ba43c6f -->
+<!-- booklet compile 0.1.0 · from status-page.booklet.md · sha256:e2a356caf5558e1729c0c047abac4ac737a2a431f02fc65518962fd5ce025a39 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -31,19 +31,127 @@
   </nav>
   <h2 id="at-a-glance">At a glance <a class="bk-anchor" href="#at-a-glance" aria-label="Link to this section">#</a></h2>
   <p>Four tiles, read from one data block that sits inside this module.</p>
-  <!-- booklet: the query over “glance”, as tiles (activity “Status”): a query view: not compiled yet -->
+  <div class="bk-view" data-bk-view="tiles">
+    <ul class="bk-dv-tiles">
+      <li class="bk-dv-tile bk-tone-good" data-bk-row><span class="bk-dv-v" data-bk-col="count">12</span><span class="bk-dv-l" data-bk-col="what">Beds planted</span><span class="bk-dv-n" data-bk-col="since">since March</span><span class="bk-sr">Good</span></li>
+      <li class="bk-dv-tile bk-tone-warn" data-bk-row><span class="bk-dv-v" data-bk-col="count">3</span><span class="bk-dv-l" data-bk-col="what">Beds resting</span><span class="bk-dv-n" data-bk-col="since">until autumn</span><span class="bk-sr">Needs a look</span></li>
+      <li class="bk-dv-tile bk-tone-bad" data-bk-row><span class="bk-dv-v" data-bk-col="count">2</span><span class="bk-dv-l" data-bk-col="what">Water butts empty</span><span class="bk-dv-n" data-bk-col="since">since Friday</span><span class="bk-sr">Needs action</span></li>
+      <li class="bk-dv-tile" data-bk-row><span class="bk-dv-v" data-bk-col="count">7</span><span class="bk-dv-l" data-bk-col="what">Visitors this week</span></li>
+    </ul>
+  </div>
   <h2 id="jobs-by-when">Jobs, by when <a class="bk-anchor" href="#jobs-by-when" aria-label="Link to this section">#</a></h2>
   <p>A list, grouped by the field <code>when</code>, in the order the generator wrote the rows.</p>
-  <!-- booklet: the query over “jobs”, as list (activity “Status”): a query view: not compiled yet -->
+  <div class="bk-view" data-bk-view="list">
+    <div class="bk-dv-groups">
+      <div class="bk-dv-gcard">
+        <div class="bk-dv-group" role="heading" aria-level="3">This week<span class="bk-count">3 rows</span></div>
+        <ul class="bk-dv-list">
+          <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="task">Sow the carrots</span><span class="bk-dv-x"><span title="Where"><span class="bk-sr">Where: </span><span data-bk-col="where">Bed 4</span></span><span title="Effort"><span class="bk-sr">Effort: </span><span data-bk-col="effort">short</span></span></span></li>
+          <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="task">Mend the gate</span><span class="bk-dv-x"><span title="Where"><span class="bk-sr">Where: </span><span data-bk-col="where">North fence</span></span><span title="Effort"><span class="bk-sr">Effort: </span><span data-bk-col="effort">long</span></span></span></li>
+          <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="task">Order seed</span><span class="bk-dv-x"><span title="Where"><span class="bk-sr">Where: </span><span data-bk-col="where">Shed</span></span><span title="Effort"><span class="bk-sr">Effort: </span><span data-bk-col="effort">short</span></span></span></li>
+        </ul>
+      </div>
+      <div class="bk-dv-gcard">
+        <div class="bk-dv-group" role="heading" aria-level="3">Next week<span class="bk-count">2 rows</span></div>
+        <ul class="bk-dv-list">
+          <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="task">Turn the compost</span><span class="bk-dv-x"><span title="Where"><span class="bk-sr">Where: </span><span data-bk-col="where">Heap</span></span><span title="Effort"><span class="bk-sr">Effort: </span><span data-bk-col="effort">long</span></span></span></li>
+          <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="task">Paint the shed</span><span class="bk-dv-x"><span title="Where"><span class="bk-sr">Where: </span><span data-bk-col="where">Shed</span></span><span title="Effort"><span class="bk-sr">Effort: </span><span data-bk-col="effort">long</span></span></span></li>
+        </ul>
+      </div>
+      <div class="bk-dv-gcard">
+        <div class="bk-dv-group" role="heading" aria-level="3">Winter<span class="bk-count">1 row</span></div>
+        <ul class="bk-dv-list">
+          <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="task">Prune the apple</span><span class="bk-dv-x"><span title="Where"><span class="bk-sr">Where: </span><span data-bk-col="where">Orchard</span></span><span title="Effort"><span class="bk-sr">Effort: </span><span data-bk-col="effort">long</span></span></span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
   <h2 id="harvest-log">Harvest log <a class="bk-anchor" href="#harvest-log" aria-label="Link to this section">#</a></h2>
   <p>A table. Click a column's name to sort it on screen; the file is not changed.</p>
-  <!-- booklet: the query over “harvest” (activity “Status”): a query view: not compiled yet -->
+  <div class="bk-view bk-panel" data-bk-view="table">
+    <div class="bk-table">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" data-bk-col="crop">crop</th>
+            <th scope="col" data-bk-col="kilos" class="bk-num">kilos</th>
+            <th scope="col" data-bk-col="picked">picked</th>
+            <th scope="col" data-bk-col="rows">rows</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-bk-row>
+            <td data-bk-col="crop">Beans</td>
+            <td data-bk-col="kilos" class="bk-num">4.5</td>
+            <td data-bk-col="picked">2026-09-02</td>
+            <td data-bk-col="rows">A, B</td>
+          </tr>
+          <tr data-bk-row>
+            <td data-bk-col="crop">Courgette</td>
+            <td data-bk-col="kilos" class="bk-num">12</td>
+            <td data-bk-col="picked">2026-09-10</td>
+            <td data-bk-col="rows">C</td>
+          </tr>
+          <tr data-bk-row>
+            <td data-bk-col="crop">Apples</td>
+            <td data-bk-col="kilos" class="bk-num">30.25</td>
+            <td data-bk-col="picked">2026-09-28</td>
+            <td data-bk-col="rows"></td>
+          </tr>
+          <tr data-bk-row>
+            <td data-bk-col="crop">Tomatoes</td>
+            <td data-bk-col="kilos" class="bk-num">8</td>
+            <td data-bk-col="picked">2026-09-05</td>
+            <td data-bk-col="rows">A</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
   <h2 id="harvest-as-bars">Harvest, as bars <a class="bk-anchor" href="#harvest-as-bars" aria-label="Link to this section">#</a></h2>
   <p>The same rows as bars, one per row, in the order the generator wrote them.</p>
-  <!-- booklet: the query over “harvest”, as bars (activity “Status”): a query view: not compiled yet -->
+  <div class="bk-view bk-panel" data-bk-view="bars" role="group" aria-label="Bar chart, 4 bars, from 4.5 to 30.25">
+    <ul class="bk-ch-list">
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Beans</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar" x="0" y="1" width="11.25" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">4.5</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Courgette</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar" x="0" y="1" width="30" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">12</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Apples</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar" x="0" y="1" width="75.63" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">30.25</span></li>
+      <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="crop">Tomatoes</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="bk-ch-bar" x="0" y="1" width="20" height="8"></rect></svg><span class="bk-ch-v" data-bk-col="kilos">8</span></li>
+    </ul>
+    <details class="bk-ch-nums">
+      <summary>Show the numbers</summary>
+      <div class="bk-table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">crop</th>
+              <th scope="col" class="bk-num">kilos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Beans</td>
+              <td class="bk-num">4.5</td>
+            </tr>
+            <tr>
+              <td>Courgette</td>
+              <td class="bk-num">12</td>
+            </tr>
+            <tr>
+              <td>Apples</td>
+              <td class="bk-num">30.25</td>
+            </tr>
+            <tr>
+              <td>Tomatoes</td>
+              <td class="bk-num">8</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
   <h2 id="nothing-due">Nothing due <a class="bk-anchor" href="#nothing-due" aria-label="Link to this section">#</a></h2>
   <p>An empty data block, with its own line to say so.</p>
-  <!-- booklet: the query over “nothing”, as list (activity “Status”): a query view: not compiled yet -->
+  <p class="bk-hint">Nothing needs you.</p>
 </article>
 </main>
 </body>

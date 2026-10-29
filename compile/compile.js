@@ -25,11 +25,14 @@
 //                         its source, and a body map's figure and a picture are drawn as before
 //     --version           print the compiler's version and the renderer's
 // Each file is compiled on its own; its address is its name before .booklet.md (two files whose names differ only in
-// case are one address). Exit 0 when every file was compiled and written, 1 when one was refused or failed or a page or
-// stylesheet was kept back by the stamp guard, 2 for a mistake in the command.
+// case are one address). A booklet that shows two or more activities is many pages: a contents page at <name>/ and a page
+// for each activity at <name>/<id>/ (draw.js, planPages); booklets of one run with one front matter id and each its own
+// language are linked to each other with hreflang.
+// Exit 0 when every file was compiled and written, 1 when one was refused or failed or a page or stylesheet was kept back
+// by the stamp guard, 2 for a mistake in the command.
 //
 // The stamp guard: a page and the stylesheet carry a stamp, and one changed by hand since it was compiled is kept back
-// (not overwritten) unless --force is given. The fonts, their licence and the images copied beside a page carry none:
+// (not overwritten, page by page: the booklet's other pages are still written) unless --force is given. The fonts, their licence and the images copied beside a page carry none:
 // they are always written again from their sources (booklet.html, and the images beside the booklet), so change an
 // image at its source and the look with --bk-* variables in the site's own stylesheet.
 //
@@ -44,7 +47,7 @@
 //   - nothing from the network: this folder opens no connection and installs nothing (test/compile-guard.test.js checks it).
 // It never writes to a .booklet.md file.
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
-const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js"),G=require("./diagrams.js");
+const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js"),SC=require("./script.js"),Th=require("./theme.js"),G=require("./diagrams.js");
 
 const VERSION="0.1.0";
 const STYLESHEET=path.join(__dirname,"booklet.css");
@@ -251,18 +254,24 @@ const yamlString=s=>'"'+String(s).replace(/\\/g,"\\\\").replace(/"/g,'\\"').repl
    as text */
 const noTemplates=s=>s.replace(/\{\{/g,"&#123;&#123;").replace(/\{(?=[%#])/g,"&#123;");
 
+/* page.folder: the activity's folder on a booklet of many pages ("" on the booklet's own page); page.alternates: the same page
+   in the booklet's translations, [{lang, href}] (itself among them) */
 function headTags(page,o){
   const tags=[],meta=(k,v,attr)=>{if(v) tags.push('<meta '+(attr||"name")+'="'+k+'" content="'+esc(v)+'">');};
-  tags.push('<meta charset="utf-8">','<meta name="viewport" content="width=device-width, initial-scale=1">','<title>'+H.escText(page.title)+'</title>');
+  const deep=!!page.folder,title=deep&&page.bookTitle&&page.bookTitle!==page.title?page.title+" \u2013 "+page.bookTitle:page.title;
+  tags.push('<meta charset="utf-8">','<meta name="viewport" content="width=device-width, initial-scale=1">','<title>'+H.escText(title)+'</title>');
   meta("description",page.description);
-  const url=o.baseUrl?o.baseUrl+o.name+"/":"";
+  const book=o.baseUrl?o.baseUrl+o.name+"/":"",url=book?book+(deep?page.folder+"/":""):"";
   if(url) tags.push('<link rel="canonical" href="'+esc(url)+'">');
-  meta("og:type","article","property");meta("og:title",page.title,"property");meta("og:description",page.description,"property");
+  for(const a of page.alternates||[]) tags.push('<link rel="alternate" hreflang="'+esc(a.lang)+'" href="'+esc(a.href)+'">');
+  meta("og:type","article","property");meta("og:title",title,"property");meta("og:description",page.description,"property");
   if(page.lang) meta("og:locale",page.lang.replace(/-/g,"_"),"property");
   if(url) meta("og:url",url,"property");
   meta("generator","Booklet compile "+VERSION);
-  tags.push('<link rel="stylesheet" href="../booklet/booklet.css">');
+  tags.push('<link rel="stylesheet" href="'+(deep?"../../":"../")+'booklet/booklet.css">');
+  if(o.script) tags.push('<script src="'+(deep?"../../":"../")+'booklet/booklet.js" defer></script>');
   const ld={"@context":"https://schema.org","@type":"Article",headline:page.title};
+  if(deep) ld.isPartOf={"@type":"CreativeWork",name:page.bookTitle,...(book?{url:book}:{})};
   if(page.description) ld.description=page.description;
   if(page.lang) ld.inLanguage=page.lang;
   if(url) ld.url=url;
@@ -270,15 +279,22 @@ function headTags(page,o){
   if(page.license&&/^https?:\/\/\S+$/i.test(page.license)) ld.license=page.license;
   tags.push('<script type="application/ld+json">'+scriptJson(ld)+'</script>');
   return tags;}
+/* a booklet's own look (draw.js's theme): the base theme and variables are on the article, and on a standalone page's body too,
+   so the paper under the article is the booklet's. Both come from theme.js, which writes nothing a booklet said as text. */
+const bodyOpen=page=>H.openTag(H.el("body",{class:"bk-page",...(page.bodyAttrs||{})}));
 function standalone(page,o){
   return "<!doctype html>\n"+'<html'+(page.lang?' lang="'+esc(page.lang)+'"':"")+'>\n<head>\n'+headTags(page,o).join("\n")+"\n</head>\n"
-    +'<body class="bk-page">\n<main class="bk-main">\n'+H.html(page.article,0)+"</main>\n</body>\n</html>\n";}
+    +bodyOpen(page)+'\n<main class="bk-main">\n'+H.html(page.article,0)+"</main>\n</body>\n</html>\n";}
 /* A value a layout prints from the front matter: a layout may print it unescaped (Jekyll's {{ page.title }}, Eleventy's
    Liquid), so it holds no character that could open a tag: < and > are written as the look-alike quotation marks
    \u2039 and \u203A. A layout must still escape it where it prints it inside an attribute (Hugo does so on its own). */
 const noMarkup=s=>String(s).replace(/</g,"\u2039").replace(/>/g,"\u203A");
+/* the keys after the description: `weight`, the page's place in the booklet's reading order (many pages only), and
+   `alternates`, the same page in the booklet's translations, each a language and an address */
 function sitePage(page){
-  return "---\ntitle: "+yamlString(noMarkup(page.title))+"\n"+(page.description?"description: "+yamlString(noMarkup(page.description))+"\n":"")+"---\n"
+  return "---\ntitle: "+yamlString(noMarkup(page.title))+"\n"+(page.description?"description: "+yamlString(noMarkup(page.description))+"\n":"")
+    +(page.weight?"weight: "+page.weight+"\n":"")
+    +(page.alternates&&page.alternates.length?"alternates:\n"+page.alternates.map(a=>"  - hreflang: "+yamlString(a.lang)+"\n    href: "+yamlString(a.href)+"\n").join(""):"")+"---\n"
     +noTemplates(H.html(page.article,0));}
 
 /* ======================= THE STAMP =======================
@@ -288,7 +304,7 @@ function sitePage(page){
    compiler: neither is overwritten unless --force is given. The fonts, their licence and the copied images carry no
    stamp: they are always written again from their sources. */
 const STAMP=/^<!-- booklet compile (\S+) \u00b7 from (.*) \u00b7 sha256:([0-9a-f]{64}) -->\n/m;
-const CSS_STAMP=/^\/\* booklet compile (\S+) \u00b7 booklet\.css \u00b7 sha256:([0-9a-f]{64}) \*\/\n/;
+const CSS_STAMP=/^\/\* booklet compile (\S+) \u00b7 booklet\.(?:css|js) \u00b7 sha256:([0-9a-f]{64}) \*\/\n/;
 const sha256=t=>crypto.createHash("sha256").update(t,"utf8").digest("hex");
 /* the stamp goes after the doctype (standalone) or the front matter (site), where the line is free */
 function stamp(text,source,form){
@@ -299,44 +315,62 @@ function stamp(text,source,form){
 function stampState(text){const m=STAMP.exec(text);if(!m) return "foreign";
   const rest=text.slice(0,m.index)+text.slice(m.index+m[0].length);
   return sha256(rest)===m[3]?"compiled":"changed";}
-const cssStamp=css=>"/* booklet compile "+VERSION+" \u00b7 booklet.css \u00b7 sha256:"+sha256(css)+" */\n"+css;
+const cssStamp=(css,file)=>"/* booklet compile "+VERSION+" \u00b7 "+(file||"booklet.css")+" \u00b7 sha256:"+sha256(css)+" */\n"+css;
 function cssStampState(text){const m=CSS_STAMP.exec(text);if(!m) return "foreign";
   return sha256(text.slice(m[0].length))===m[2]?"compiled":"changed";}
 
 /* ======================= ONE BOOKLET ======================= */
 /* compileOne(X, {file|text, name, dir}, o): what one booklet makes, as files relative to the output folder, and its report.
    o.parsed: the parse, when compile() has already made it; o.siblings: the other booklets of the run, by address, with
-   their titles (a link to one is drawn as a link to its page). */
+   their titles (a link to one is drawn as a link to its page); o.alt: its translations in the run ({pages: Map of a
+   page's key to the same page in each translation, [{lang, name, folder}], with: their names}, or none).
+   A booklet that shows two or more activities is many pages (draw.js, planPages): the contents page at <name>/index.html
+   and each activity's at <name>/<folder>/index.html; rep.pageList names them in reading order. */
 function compileOne(X,input,o){
   const source=path.basename(input.file||input.name+".booklet.md");
   const name=input.name;
   const rep={source,name,form:o.form,ok:false,refused:[],problems:[],marker:"",pages:[],comments:[],
-    counts:null,marked:[],images:[],links:[],description:"",toc:false};
+    counts:null,marked:[],images:[],links:[],description:"",toc:false,pageList:[],translations:[],script:false,needsScript:false,keyed:false,readOnly:[]};
   if(!NAME.test(name)||name==="booklet"){rep.refused.push("its address, “"+name+"”, must be letters, digits, . _ or - (and not “booklet”, the stylesheet's folder): rename the file");return {rep,files:new Map()};}
   const P=o.parsed||parseInput(X,input);
   rep.problems=P.problems;rep.marker=P.marker;rep.comments=P.comments||[];
   if(!P.ok||!P.design){rep.refused=P.refused.length?P.refused:P.problems.length?P.problems:["the renderer could not read it"];return {rep,files:new Map()};}
-  const keep=new Map(),files=new Map();
+  const keep=new Map(),files=new Map(),plan=D.planPages(X,P,name),many=plan.paged;
   const forms=o.form==="both"?["standalone","site"]:[o.form];
+  const mods=P.design.modules||[],withNotice=mods.filter(m=>m.notice&&typeof m.notice==="object");
+  const nt=(withNotice[0]||{}).notice||{};
   let first=null;
   const dg=o.diagrams||makeDiagrams(X,{});
   for(const form of forms){
-    const opts={name,form,siblings:o.siblings,image:imageReader(input.dir||".",X,keep),
-      figure:(text,prefix,labelOf)=>G.figure(text,{R:X.R,svgProblem,prefix,labelOf}),
-      diagram:(code,prefix,word)=>dg.draw(code,prefix,word)};
-    let page=D.drawPage(X,P,opts);
-    /* a diagram the run has not drawn yet is drawn now, with the others of this booklet, and the page is drawn again with them */
-    if(dg.need.size){dg.run();page=D.drawPage(X,P,opts);}
-    const mods=P.design.modules||[],withNotice=mods.filter(m=>m.notice&&typeof m.notice==="object");
-    const nt=(withNotice[0]||{}).notice||{};
-    page.copyright=typeof nt.copyright==="string"?nt.copyright.trim():"";page.license=typeof nt.license==="string"?nt.license.trim():"";
+    const image=imageReader(input.dir||".",X,keep);
+    /* every page of the booklet in this form; a diagram the run has not drawn yet is noted, and the pages are drawn again once the browser has drawn it */
+    const drawAll=()=>{const xr={pages:new Map(),later:[]};
+      const out=plan.pages.map(unit=>D.drawPage(X,P,{name,form,siblings:o.siblings,image,forceScript:!!o.forceScript,
+        figure:(text,prefix,labelOf)=>G.figure(text,{R:X.R,svgProblem,prefix,labelOf}),
+        diagram:(code,prefix,word)=>dg.draw(code,prefix,word),...(many?{unit,plan,xr}:{})}));
+      if(many) D.settleLinks(xr,plan);
+      return out;};
+    let drawn=drawAll();
+    if(dg.need.size){dg.run();drawn=drawAll();}
     const root=o.form==="both"?form+"/":"";
-    const body=form==="standalone"?standalone(page,{name,baseUrl:o.baseUrl}):sitePage(page);
-    files.set(root+name+"/index.html",stamp(body,source,form));
-    rep.pages.push(root+name+"/index.html");
+    drawn.forEach((page,i)=>{const unit=plan.pages[i],at=unit.folder?unit.folder+"/":"";
+      page.copyright=typeof nt.copyright==="string"?nt.copyright.trim():"";page.license=typeof nt.license==="string"?nt.license.trim():"";
+      page.folder=unit.folder;if(many) page.weight=i+1;
+      /* the same page in each translation, written as this page reaches it (or as a visitor from anywhere does, with --base-url) */
+      const up=unit.folder?"../../":"../";
+      page.alternates=((o.alt&&o.alt.pages.get(unit.key))||[]).map(x=>({lang:x.lang,href:(o.baseUrl||up)+x.name+"/"+(x.folder?x.folder+"/":"")}));
+      /* the page links booklet.js only when something on it needs it, and only when the compiler has a script to write */
+      page.needs=!!(page.needsScript&&o.script);page.script=page.needs&&form==="standalone";
+      const body=form==="standalone"?standalone(page,{name,baseUrl:o.baseUrl,script:page.script}):sitePage(page);
+      files.set(root+name+"/"+at+"index.html",stamp(body,source,form));
+      rep.pages.push(root+name+"/"+at+"index.html");
+      if(form===forms[0]) rep.pageList.push({path:name+"/"+at+"index.html",title:page.title,kind:unit.kind,linked:page.alternates.length>0});});
     for(const [rel,bytes] of keep) files.set(root+name+"/"+rel,bytes);
-    if(!first) first=page;}
-  Object.assign(rep,{ok:true,counts:first.counts,marked:first.marked,images:dedupe(first.images),links:first.links,description:first.description,toc:first.toc});
+    if(!first) first=drawn;}
+  const sum=()=>Object.fromEntries(Object.keys(first[0].counts).map(c=>[c,first.reduce((n,p)=>n+p.counts[c],0)]));
+  Object.assign(rep,{ok:true,counts:sum(),marked:first.flatMap(p=>p.marked),images:dedupe(first.flatMap(p=>p.images)),links:first.flatMap(p=>p.links),
+    theme:first[0].theme,description:first[0].description,toc:first.some(p=>p.toc),translations:o.alt?o.alt.with:[],
+    script:first.some(p=>p.script),needsScript:first.some(p=>p.needs),keyed:first.some(p=>p.keyed),readOnly:first.flatMap(p=>p.readOnly)});
   return {rep,files};}
 const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"));
 /* a page's title, as drawPage takes it: the booklet's title, else its first module's, else its address */
@@ -344,9 +378,11 @@ const titleOf=(X,P,name)=>{const d=P.design,t=v=>X.R.plainText(X.R.tx(v,""));ret
 const dedupe=list=>{const seen=new Set();return list.filter(x=>{const k=x.src+"\u0000"+x.ok+"\u0000"+(x.where||"");if(seen.has(k)) return false;seen.add(k);return true;});};
 
 /* the stylesheet and its fonts, for each form's booklet/ folder */
-function assets(X,form){const F=X.fonts(),out=new Map(),roots=form==="both"?["standalone/","site/"]:[""];
+function assets(X,form,script){const F=X.fonts(),out=new Map(),roots=form==="both"?["standalone/","site/"]:[""];
   const css=cssStamp(fs.readFileSync(STYLESHEET,"utf8"));
+  const js=script?cssStamp(script.text,"booklet.js"):null;
   for(const r of roots){out.set(r+"booklet/booklet.css",css);
+    if(js) out.set(r+"booklet/booklet.js",js);
     for(const f of F.faces) out.set(r+"booklet/fonts/"+f.name,f.bytes);
     out.set(r+"booklet/fonts/OFL.txt",F.licence);}
   return out;}
@@ -358,23 +394,45 @@ function compile(inputs,o){o=o||{};
   if(!["standalone","site","both"].includes(form)) throw new Error("--form must be standalone, site or both");
   const baseUrl=o.baseUrl?checkBase(o.baseUrl):"";
   const X=o.engine||E.load(o.renderer);
+  /* the optional script, built from compile/script/ (or o.scriptDir) and scanned before anything is drawn: a part that holds a
+     banned word fails the whole run, with nothing written */
+  const S=SC.assemble(o.scriptDir);
   const list=inputs.map(i=>({...i,name:i.name||nameOf(i.file),dir:i.dir||(i.file?path.dirname(i.file):".")}));
   /* each file is read once, first, so a page knows which of the others it can link to, and by what title */
   /* two addresses that differ only in case are the same folder on a case-insensitive disk, so they clash too */
-  const seen=new Map(),siblings=new Map(),parsed=new Map(),failed=new Map();
+  const seen=new Map(),siblings=new Map(),parsed=new Map(),failed=new Map(),meta=new Map();
   for(const i of list){const key=i.name.toLowerCase();
     if(seen.has(key)){i.dup=seen.get(key);continue;}seen.set(key,i.name);
     if(!NAME.test(i.name)||i.name==="booklet") continue;
     let P;try{P=parseInput(X,i);}catch(e){failed.set(i,e);continue;}
     parsed.set(i,P);
-    if(P.ok&&P.design) siblings.set(i.name,titleOf(X,P,i.name));}
+    if(P.ok&&P.design){siblings.set(i.name,titleOf(X,P,i.name));
+      try{meta.set(i.name,{id:P.id,lang:P.lang,plan:D.planPages(X,P,i.name)});}catch(e){/* compileOne meets it too, and says so */}}}
+  const alts=translations(meta);
   const results=[],diagrams=makeDiagrams(X,o);
   for(const i of list){
     if(i.dup){results.push(refusedResult(i,"another file in this run has the same address, “"+i.dup+"”"+(i.dup===i.name?"":" (addresses that differ only in case clash)")));continue;}
     if(failed.has(i)){results.push(refusedResult(i,failure(failed.get(i))));continue;}
-    try{results.push(compileOne(X,i,{form,baseUrl,siblings,parsed:parsed.get(i),diagrams}));}
+    try{results.push(compileOne(X,i,{form,baseUrl,siblings,diagrams,parsed:parsed.get(i),alt:alts.get(i.name),script:!!S,forceScript:o.forceScript}));}
     catch(e){results.push(refusedResult(i,failure(e)));}}
-  return {results,assets:assets(X,form),form,renderer:X.R.RENDERER_VERSION,format:X.R.FORMAT_VERSION};}
+  /* booklet.js is written when at least one page in the run needs it (a standalone page links it; a site page's layout does) */
+  const used=S&&results.some(r=>r.rep.needsScript);
+  return {results,assets:assets(X,form,used?S:null),script:used?{parts:S.parts,bytes:Buffer.byteLength(S.text,"utf8")}:null,form,renderer:X.R.RENDERER_VERSION,format:X.R.FORMAT_VERSION};}
+/* translations(meta): booklets of one run that are translations of each other (SPEC.md section 9): one front matter `id`,
+   each its own language. For each: {pages: a page's key -> the same page in every translation that has it (itself among
+   them), with: [language (name), …] for the report}. A group in which two booklets share a language is not linked: it is
+   two versions, or a mistake, and a search engine is told nothing either way. */
+function translations(meta){
+  const groups=new Map(),out=new Map();
+  for(const [name,m] of meta) if(m.id){if(!groups.has(m.id)) groups.set(m.id,[]);groups.get(m.id).push(name);}
+  for(const names of groups.values()){
+    if(names.length<2||new Set(names.map(n=>meta.get(n).lang)).size<names.length) continue;
+    for(const n of names){const pages=new Map();
+      for(const pg of meta.get(n).plan.pages){
+        const list=names.map(o=>{const q=meta.get(o).plan.pages.find(x=>x.key===pg.key);return q&&{lang:meta.get(o).lang,name:o,folder:q.folder};}).filter(Boolean);
+        if(list.length>1) pages.set(pg.key,list.sort((a,b)=>a.lang<b.lang?-1:a.lang>b.lang?1:0));}
+      out.set(n,{pages,with:names.filter(o=>o!==n).map(o=>meta.get(o).lang+" ("+o+")")});}}
+  return out;}
 const refusedResult=(i,why)=>({rep:{source:path.basename(i.file||i.name),name:i.name,ok:false,refused:[why],problems:[],pages:[],comments:[]},files:new Map()});
 /* one file that throws stops only itself. The report names the kind of error and where in the code it was raised, never
    its message: a message can carry a piece of the file's text, and the report may be published. */
@@ -389,24 +447,40 @@ function checkBase(u){let x;try{x=new URL(String(u));}catch(e){throw new Error("
   if(x.search||x.hash) throw new Error("--base-url may carry no query and no fragment: "+u);
   return x.href.endsWith("/")?x.href:x.href+"/";}
 
-/* write(result, out, {force}): the files, with the stamp guard; returns the pages (and the stylesheet) kept back */
+/* write(result, out, {force}): the files, with the stamp guard, page by page; returns the pages (and the stylesheet) kept back.
+   A page tidied by hand is left as it is and the booklet's other pages are written again, so a many-page booklet keeps the
+   one page that was tidied and takes the rest from the source. */
 function write(C,out,o){o=o||{};const kept=[];
+  /* nothing is written until every target has been looked at: a path whose folder (or the page itself) is already a file, or the
+     page's place already a folder, would stop the run half way, with some pages written and the rest and the stylesheet not.
+     A booklet with such a path is refused whole, and the others are written; one in the shared assets stops the run before anything. */
+  const blockedBy=rel=>{const parts=rel.split("/");let cur=out,at="";
+    for(let i=0;i<parts.length;i++){cur=path.join(cur,parts[i]);at+=(i?"/":"")+parts[i];
+      let st=null;try{st=fs.statSync(cur);}catch(e){return i<parts.length-1&&e.code==="ENOTDIR"?at:"";}
+      if(i<parts.length-1?!st.isDirectory():st.isDirectory()) return at;}
+    return "";};
+  for(const [rel] of C.assets){const b=blockedBy(rel);
+    if(b) throw new Error("cannot write "+rel+": “"+b+"” in the output folder is "+(b===rel?"a folder":"a file, not a folder")+"; nothing was written");}
+  for(const r of C.results){if(!r.rep.ok) continue;
+    for(const rel of r.files.keys()){const b=blockedBy(rel);
+      if(b){r.rep.ok=false;r.rep.refused=["cannot write "+rel+": “"+b+"” in the output folder is "+(b===rel?"a folder":"a file, not a folder")+", so nothing was written for this booklet (move it, or choose another --out)"];break;}}}
   const put=(rel,data)=>{const p=path.join(out,rel);fs.mkdirSync(path.dirname(p),{recursive:true});
     if(fs.existsSync(p)){const was=fs.readFileSync(p);if(Buffer.isBuffer(data)?was.equals(data):was.toString("utf8")===data) return;}
     fs.writeFileSync(p,data);};
   for(const r of C.results){
+    if(!r.rep.ok) continue;
     const pages=[...r.files.keys()].filter(k=>k.endsWith("/index.html"));
     const held=[];
     for(const rel of pages){const p=path.join(out,rel);
       if(!fs.existsSync(p)||o.force) continue;
       const s=stampState(fs.readFileSync(p,"utf8"));if(s!=="compiled") held.push({rel,state:s});}
-    if(held.length){kept.push(...held.map(h=>({...h,source:r.rep.source})));r.rep.held=held;continue;}
-    for(const [rel,data] of r.files) put(rel,data);}
+    if(held.length){kept.push(...held.map(h=>({...h,source:r.rep.source})));r.rep.held=held;r.rep.writtenPages=pages.length-held.length;}
+    for(const [rel,data] of r.files) if(!held.some(h=>h.rel===rel)) put(rel,data);}
   /* the stylesheet is guarded like a page: a hand-tidied booklet.css is kept back, and the fonts beside it still written */
   C.heldAssets=[];
   for(const [rel,data] of C.assets){const p=path.join(out,rel);
-    if(rel.endsWith("/booklet.css")&&fs.existsSync(p)&&!o.force){const s=cssStampState(fs.readFileSync(p,"utf8"));
-      if(s!=="compiled"){C.heldAssets.push({rel,state:s});kept.push({rel,state:s,source:"booklet.css"});continue;}}
+    if(/\/booklet\.(?:css|js)$/.test("/"+rel)&&fs.existsSync(p)&&!o.force){const s=cssStampState(fs.readFileSync(p,"utf8"));
+      if(s!=="compiled"){C.heldAssets.push({rel,state:s});kept.push({rel,state:s,source:path.basename(rel)});continue;}}
     put(rel,data);}
   return kept;}
 
@@ -420,14 +494,24 @@ function reportText(C){const L=[];
   for(const {rep} of C.results){
     L.push("","\u2022 "+rep.source+(rep.ok?" \u2192 "+rep.pages.join(", "):""));
     if(!rep.ok){L.push("  REFUSED, nothing written:");rep.refused.forEach(x=>L.push("    - "+x));continue;}
-    if(rep.held) {L.push("  KEPT BACK, nothing written for it:");rep.held.forEach(h=>L.push("    - "+h.rel+": "+(h.state==="changed"?"changed by hand since it was compiled":"not written by the compiler")+" (--force overwrites it)"));}
+    if(rep.held) {const w=rep.writtenPages;
+      L.push("  KEPT BACK, not overwritten ("+(w?plural(w,"other page of the booklet was","other pages of the booklet were")+" written":"no page of the booklet was written")+"):");rep.held.forEach(h=>L.push("    - "+h.rel+": "+(h.state==="changed"?"changed by hand since it was compiled":"not written by the compiler")+" (--force overwrites it)"));}
     const c=rep.counts;
     L.push("  Drawn: "+[plural(c.modules,"module","modules"),plural(c.activities,"activity","activities"),plural(c.questions,"question","questions"),
-      plural(c.widgets,"widget","widgets"),plural(c.figures,"figure","figures"),plural(c.diagrams,"diagram","diagrams"),plural(c.callouts,"callout","callouts"),plural(c.folds,"fold","folds"),plural(c.notes,"note","notes"),
+      plural(c.widgets,"widget","widgets"),plural(c.queries,"query","queries"),plural(c.figures,"figure","figures"),plural(c.diagrams,"diagram","diagrams"),plural(c.callouts,"callout","callouts"),plural(c.folds,"fold","folds"),plural(c.notes,"note","notes"),
       plural(c.math,"formula","formulas"),plural(c.images,"image","images"),plural(c.links,"in-page link","in-page links")].join(", ")+".");
+    if(rep.theme) L.push(...Th.words(rep.theme));
+    if(rep.pageList.length>1){L.push("  Pages, in reading order (a site's menu is built from this list, and each page's `weight` is its number here):");
+      rep.pageList.forEach((p,i)=>L.push("    "+(i+1)+". "+p.path+(p.kind==="contents"?" (the contents page)":"")+": "+p.title));}
+    if(rep.translations.length){L.push("  Translations, linked with hreflang: "+rep.translations.join(", "));
+      /* a page is paired with the page of the same module and activity id in each translation: say which were, and which were not */
+      const lk=rep.pageList.filter(p=>p.linked),no=rep.pageList.filter(p=>!p.linked);
+      L.push("    "+lk.length+" of "+rep.pageList.length+" pages linked"+(no.length?"; no page of the same module and activity id in the others, so no link on: "+no.map(p=>p.path).join(", "):"")+".");}
     L.push("  Description: "+(rep.description?"“"+rep.description+"”":"none (the page has no first paragraph)"));
     L.push("  On this page: "+(rep.toc?"listed":"not listed (fewer than two top headings)"));
     if(rep.marker) L.push("  Marker: "+rep.marker);
+    if(rep.script) L.push("  Script: the page links booklet.js, which keeps nothing and sends nothing; without it the page reads as it is.");
+    else if(rep.needsScript) L.push("  Script: this page has parts that respond when pressed; add <script src=\"/booklet/booklet.js\" defer></script> to the layout to load them. Without it the page reads as it is.");
     const copied=rep.images.filter(i=>i.ok),refused=rep.images.filter(i=>!i.ok);
     if(copied.length) L.push("  Images copied beside the page: "+copied.map(i=>i.src).join(", "));
     if(rep.links.length) L.push("  Links to booklets compiled with it: "+[...new Set(rep.links.map(l=>l.to))].join(", "));
@@ -435,6 +519,9 @@ function reportText(C){const L=[];
       rep.marked.forEach(m=>L.push("    [ ] "+m.what+", in "+m.where+": "+D.MARKED[m.kind]+(m.why?": "+m.why:"")));
       refused.forEach(i=>L.push("    [ ] the image "+JSON.stringify(i.src)+", in "+i.where+", was not copied (its words and address are shown): "+i.why));}
     else L.push("  To tidy: nothing was left off.");
+    if(rep.keyed) L.push("  Answer key: this page carries its answer key in its markup (a class on each option marked [x], its verdict words and its replies, hidden until a press shows them). Anyone who views the page source can read which options are right.");
+    if(rep.readOnly&&rep.readOnly.length){L.push("  Read-only here (each is shown as it asks, with nothing to press):");
+      rep.readOnly.forEach(r=>L.push("    - "+r.what+", in "+r.where+": "+r.why));}
     if(rep.problems.length){L.push("  The renderer reported:");rep.problems.forEach(p=>L.push("    - "+p));}
     /* author comments are left off the page; the report gives their place only, never their words */
     if(rep.comments&&rep.comments.length) L.push("  Author comments left off the page: "+rep.comments.map(c=>(c.to>c.from?"lines "+c.from+"\u2013"+c.to:"line "+c.from)+(c.open?" (never closed, so it runs to the end of the text)":"")).join(", ")+".");

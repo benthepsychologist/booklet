@@ -33,6 +33,8 @@
      --bk-font-text, --bk-font-head, --bk-font-code   the three faces    (--sans, --serif, --fam-mono)
      --bk-size, --bk-line, --bk-measure   text size, leading, prose measure (the page's defaults, --measure)
      --bk-gap, --bk-radius, --bk-radius-small   spacing between tiles; corners (--v-gap, --r-md, --r-sm)
+     --bk-pgap, --bk-v-fs, --bk-v-pad, --bk-tile-v   the space after a paragraph; a view's text size and padding; a tile's figure
+                                 (--pgap, --v-fs, --v-pad, --tile-v: what a booklet's density sets)
 
    Light and dark. The defaults are the renderer's Paper theme. A standalone page (body.bk-page) follows the device:
    Paper, or Night when the device asks for dark. A page on a host site stays light, because a dark article inside a
@@ -89,6 +91,10 @@
   --bk-font-code:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --bk-size:1.0625rem; --bk-line:1.6; --bk-measure:70ch;
   --bk-gap:.75rem; --bk-radius:14px; --bk-radius-small:8px;
+  --bk-pgap:1rem; --bk-v-fs:.95rem; --bk-v-pad:.5rem; --bk-tile-v:2rem;
+  --bk-fam-serif:Georgia, 'Times New Roman', serif;
+  --bk-fam-sans:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --bk-fam-read:'Atkinson Hyperlegible', Verdana, Tahoma, sans-serif;
   /* a grid cell with no colour name takes a quiet ramp by its place, the same in every theme, with its own ink and chips */
   --bk-tint-ink:#292421; --bk-chip:rgba(255,255,255,.75); --bk-chip-line:rgba(255,255,255,.9);
   --bk-cell-0:#E8E4DE; --bk-cell-1:#E2E6E0; --bk-cell-2:#DEE2E6; --bk-cell-3:#E0E6E5; --bk-cell-4:#E6E2E6; --bk-cell-5:#E6E5DE;
@@ -223,7 +229,7 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-q.bk-widget{max-width:none!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-widget>:is(p,ul,dl){max-width:var(--bk-measure)!important}
 
-.booklet:not(#bk):not(#bk):not(#bk) p{margin:0 0 1rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) p{margin:0 0 var(--bk-pgap)!important}
 .booklet:not(#bk):not(#bk):not(#bk) a{color:var(--bk-accent)!important;text-underline-offset:.15em!important}
 .booklet:not(#bk):not(#bk):not(#bk) a:hover{text-decoration-thickness:2px!important}
 .booklet:not(#bk):not(#bk):not(#bk) :focus-visible{outline:var(--bk-focus) solid var(--bk-accent)!important;outline-offset:2px!important;border-radius:2px!important}
@@ -253,6 +259,29 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-toc ul{margin:0!important;padding-left:0!important;list-style:none!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-toc li{margin:.2rem 0!important}
 
+/* a many-page booklet: the contents page's cards (a title, a picture, a blurb, a status line; a card's own pages under it),
+   the line above an activity's page, and the way on at its foot */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-cards{list-style:none!important;margin:1rem 0 2rem!important;padding:0!important;display:grid!important;gap:.6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card{display:grid!important;grid-template-columns:2.4rem 1fr!important;gap:.15rem .8rem!important;align-items:start!important;margin:0!important;padding:.8rem .95rem!important;
+  border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important;background:var(--bk-surface)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card>.bk-cards{grid-column:2!important;margin:.5rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-pic{display:flex!important;align-items:center!important;justify-content:center!important;width:2.4rem!important;height:2.4rem!important;border-radius:var(--bk-radius-small)!important;
+  background:var(--bk-accent-soft)!important;color:var(--bk-accent)!important;font-weight:800!important;font-size:1.05rem!important;line-height:1!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-pic .bk-ci{color:inherit!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-body{min-width:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-body>p{margin:.15rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-title{font-family:var(--bk-font-head)!important;font-weight:700!important;font-size:1.1rem!important;line-height:1.3!important;color:var(--bk-ink)!important;text-decoration:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-title:hover{color:var(--bk-accent)!important;text-decoration:underline!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-blurb{color:var(--bk-muted)!important;font-size:.95rem!important;line-height:1.5!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-card-status{color:var(--bk-muted)!important;font-size:.85rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-crumb{margin:0 0 .5rem!important;font-size:.9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pager{display:flex!important;flex-wrap:wrap!important;justify-content:space-between!important;gap:.6rem 1.2rem!important;margin:2.5rem 0 0!important;padding-top:.8rem!important;
+  border-top:var(--bk-border) solid var(--bk-rule)!important;font-size:.95rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pager>:is(a,span):not(.bk-up){flex:1 1 12rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-next{text-align:right!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-prev{text-align:left!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-up{flex:none!important;font-weight:700!important}
+
 /* plain prose */
 .booklet:not(#bk):not(#bk):not(#bk) :is(ul,ol){margin:0 0 1rem!important;padding-left:1.4rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) li{margin:.25rem 0!important}
@@ -272,7 +301,7 @@
 .booklet:not(#bk):not(#bk):not(#bk) sup,.booklet:not(#bk):not(#bk):not(#bk) sub{line-height:0!important}
 
 /* tables: a wide one scrolls inside its own box, never the page */
-.booklet:not(#bk):not(#bk):not(#bk) .bk-table{margin:1.1rem 0!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table{position:relative!important;margin:1.1rem 0!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-table table{border-collapse:collapse!important;min-width:100%!important;font-size:.95rem!important;line-height:1.45!important;font-variant-numeric:tabular-nums!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-table :is(th,td){text-align:left!important;vertical-align:top!important;padding:.5rem .8rem!important;border-bottom:1px solid var(--bk-rule)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-table th{font-weight:700!important;font-size:.85rem!important;letter-spacing:.02em!important;color:var(--bk-ink)!important;
@@ -294,7 +323,7 @@
 /* a diagram drawn at build time: an SVG that carries its own paper and its own style (one theme's colours, so it reads the same on
    a dark page), as wide as it was drawn and no wider than the text */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-diagram{margin:1.1rem 0!important;max-width:100%!important}
-.booklet:not(#bk):not(#bk):not(#bk) .bk-diagram svg{display:block!important;max-width:100%!important;height:auto!important;margin:0 auto!important;border-radius:var(--bk-radius-small)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-diagram svg{display:block!important;width:auto!important;max-width:100%!important;height:auto!important;margin:0 auto!important;border-radius:var(--bk-radius-small)!important}
 
 /* the root of a drawn SVG holds off a host's rules for bare svg (svg{color;fill;stroke-width}): the colour, as the page's ink, which is what
    it inherits on a plain page, and the width of a line, as the browser's own 1. A figure's text is in the page's ink; a diagram sets its own
@@ -367,14 +396,14 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-compact .bk-ci{font-size:1.05rem!important;color:var(--bk-slate-vivid)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-compact>.bk-cb{padding:.2rem .5rem .5rem 2.05rem!important}
 
-/* ---- questions, read-only: what they ask and what they offer ---- */
+/* ---- questions: what they ask and what they offer (the kinds that answer when pressed are the quiz, below) ---- */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-q{margin:1.25rem 0!important;padding:.9rem 1rem 1rem!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;
   border-radius:var(--bk-radius)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-q-ask{margin:0 0 .25rem!important;font-family:var(--bk-font-head)!important;font-weight:600!important;font-size:1.05rem!important;line-height:1.35!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-q-help{margin:0 0 .6rem!important;color:var(--bk-muted)!important;font-size:.95rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-q-hint{margin:0 0 .6rem!important;color:var(--bk-muted)!important;font-size:.88rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-q>:last-child{margin-bottom:0!important}
-/* the options, each with an empty circle (pick one) or square (pick any), nothing to press */
+/* a read-only question's options, each with an empty circle (pick one) or square (pick any), nothing to press (a quiz's options are real inputs, below) */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-options{list-style:none!important;margin:.5rem 0 0!important;padding:0!important;display:flex!important;flex-direction:column!important;gap:.35rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-options li{display:flex!important;align-items:baseline!important;gap:.6rem!important;margin:0!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-options li::before{content:""!important;flex:none!important;width:.95rem!important;height:.95rem!important;border:var(--bk-border) solid var(--bk-muted)!important;
@@ -383,6 +412,49 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-pick-many li::before{border-radius:3px!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-options .bk-own{color:var(--bk-muted)!important;font-style:italic!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-options .bk-own::before{border-style:dashed!important}
+/* ---- the quiz: a pick-one or pick-any question answers when it is pressed, with no script (nothing is stored) ----
+   A question is a fieldset. Each option is a real input, its label, the verdicts it can show and its reply, all in the markup
+   and hidden until the input's own state shows them: the picked option is marked right or not quite, a right one the reader
+   missed is marked as the answer, the reply shows under the options. A pick-any question with a right answer
+   (.bk-gated) shows nothing until its Check (a box after the options, shown once something is ticked, pressed through its label) is on. Rules that need
+   :has() are on their own, so a browser without it still marks each picked option and shows each reply. */
+.booklet:not(#bk):not(#bk):not(#bk) fieldset.bk-q{min-width:0!important;position:relative!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-sr,.bk-check,.bk-live){position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options .bk-opt{flex-wrap:wrap!important;align-items:baseline!important;gap:.15rem .6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-options .bk-opt::before{content:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-opt>input{flex:none!important;width:1.05rem!important;height:1.05rem!important;margin:0!important;accent-color:var(--bk-accent)!important;cursor:pointer!important;transform:translateY(.15em)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-opt>label{flex:1 1 10rem!important;min-width:0!important;cursor:pointer!important;padding-left:.45rem!important;border-left:3px solid transparent!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-opt>input:checked+label{border-left-color:var(--bk-accent)!important;font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-verdict{display:none!important;flex:none!important;padding:.05rem .6rem!important;border-radius:999px!important;font-size:.85rem!important;font-weight:700!important;line-height:1.4!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-v-right,.booklet:not(#bk):not(#bk):not(#bk) .bk-v-answer{background:var(--bk-green)!important;color:var(--bk-green-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-v-wrong{background:var(--bk-warm)!important;color:var(--bk-warm-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-reply{display:none!important;flex:1 0 100%!important;margin:0!important;padding:0 0 0 1.65rem!important;color:var(--bk-muted)!important;font-size:.95rem!important;line-height:1.45!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-reply-line{display:block!important}
+/* a pick shows its reply, and (a question with a right answer) its verdict */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q:not(.bk-gated) .bk-opt>input:checked~.bk-reply{display:block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q[data-bk-graded]:not(.bk-gated) .bk-right>input:checked~.bk-v-right{display:inline-block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q[data-bk-graded]:not(.bk-gated) .bk-opt:not(.bk-right)>input:checked~.bk-v-wrong{display:inline-block!important}
+/* pick-any with a right answer: marks and replies wait for Check, and Check is on only with something ticked (it needs :has();
+   a browser without it shows this question as plain options, and Check never appears) */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-gated:has(.bk-opt>input:checked):has(.bk-check:checked) .bk-opt>input:checked~.bk-reply{display:block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-gated:has(.bk-opt>input:checked):has(.bk-check:checked) .bk-right>input:checked~.bk-v-right{display:inline-block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-gated:has(.bk-opt>input:checked):has(.bk-check:checked) .bk-opt:not(.bk-right)>input:checked~.bk-v-wrong{display:inline-block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-gated:has(.bk-opt>input:checked):has(.bk-check:checked) .bk-right>input:not(:checked)~.bk-v-answer{display:inline-block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-acts{display:none!important;margin:.8rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-check:checked+.bk-check-btn{background:var(--bk-accent)!important;color:var(--bk-paper)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-check:focus-visible+.bk-check-btn{outline:var(--bk-focus) solid var(--bk-accent)!important;outline-offset:2px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-check-btn{display:inline-block!important;padding:.35rem 1.1rem!important;border:var(--bk-border) solid var(--bk-accent)!important;border-radius:999px!important;color:var(--bk-accent)!important;font-weight:700!important;font-size:.92rem!important;cursor:pointer!important}
+/* the verdict line, written by the compiler in both of its forms; one shows */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-say{display:none!important;margin:.7rem 0 0!important;font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-gated:has(.bk-opt>input:checked):has(.bk-check:checked) .bk-say,.booklet:not(#bk):not(#bk):not(#bk) .bk-q[data-bk-kind="choice"]:has(.bk-opt>input:checked) .bk-say{display:block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-say>span{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-gated:has(.bk-opt>input:checked):has(.bk-check:checked):not(:has(.bk-opt:not(.bk-right)>input:checked)):not(:has(.bk-right>input:not(:checked))) .bk-say-ok{display:inline!important;color:var(--bk-green-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-gated:has(.bk-opt>input:checked):has(.bk-check:checked):is(:has(.bk-opt:not(.bk-right)>input:checked),:has(.bk-right>input:not(:checked))) .bk-say-no{display:inline!important;color:var(--bk-warm-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q[data-bk-kind="choice"]:has(.bk-right>input:checked) .bk-say-ok{display:inline!important;color:var(--bk-green-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q[data-bk-kind="choice"]:has(.bk-opt:not(.bk-right)>input:checked) .bk-say-no{display:inline!important;color:var(--bk-warm-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-q[data-bk-kind="choice"]:has(.bk-opt:not(.bk-right)>input:checked) .bk-right>input:not(:checked)~.bk-v-answer{display:inline-block!important}
+/* Check shows only once something is ticked, after the options, so it is the keyboard's last stop in the question */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-gated:has(.bk-opt>input:checked) .bk-acts{display:block!important}
 /* a scale's anchors, in a row that wraps */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-scale{list-style:none!important;margin:.5rem 0 0!important;padding:0!important;display:flex!important;flex-wrap:wrap!important;gap:.4rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-scale li{margin:0!important;padding:.25rem .8rem!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:999px!important;font-size:.92rem!important;line-height:1.35!important}
@@ -392,7 +464,7 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-matrix thead td{border-bottom:var(--bk-border) solid var(--bk-accent)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-matrix tbody th{font-weight:400!important;letter-spacing:0!important;font-size:.95rem!important}
 
-/* ---- widgets, read-only ---- */
+/* ---- widgets: their words, pressable unless the widget is read-only ---- */
 /* the grid: its axes round its cells, the cells in their colour names */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-grid{display:grid!important;grid-template-columns:1.5rem minmax(0,1fr) 1.5rem!important;grid-template-rows:auto 1fr auto!important;gap:.3rem!important;margin:1rem 0 0!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ax{margin:0!important;color:var(--bk-muted)!important;font-size:.8rem!important;font-weight:700!important;line-height:1.3!important;text-align:center!important;align-self:center!important;justify-self:center!important}
@@ -428,6 +500,15 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-words li{display:inline-block!important;max-width:100%!important;margin:0!important;padding:.25rem .7rem!important;border:var(--bk-border) solid var(--bk-rule)!important;
   border-radius:14px!important;background:var(--bk-paper)!important;color:var(--bk-ink)!important;font-size:.9rem!important;font-weight:600!important;line-height:1.3!important}
 .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-c-n0,.bk-c-n1,.bk-c-n2,.bk-c-n3,.bk-c-n4,.bk-c-n5) .bk-words li{background:var(--bk-chip)!important;border-color:var(--bk-chip-line)!important;color:var(--bk-tint-ink)!important}
+/* a word a reader can press: the input is hidden, its label is the chip, the press highlights it and shows the note */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-words .bk-pickable{position:relative!important;padding:0!important;overflow:hidden!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pickable>input{position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;margin:0!important;top:0!important;left:0!important;pointer-events:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pickable>label{display:block!important;padding:.25rem .7rem!important;cursor:pointer!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pickable>input:checked+label{background:var(--bk-accent)!important;color:var(--bk-paper)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pickable>input:focus-visible+label{outline:var(--bk-focus) solid var(--bk-accent)!important;outline-offset:-3px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-shows{display:none!important;padding:.1rem .7rem .35rem!important;font-size:.85rem!important;font-weight:400!important;line-height:1.4!important;white-space:normal!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pickable>input:checked~.bk-shows{display:block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pickable:has(>input:checked~.bk-shows){flex:1 0 100%!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-places-h{margin:.9rem 0 .4rem!important;font-weight:700!important;font-size:.9rem!important;color:var(--bk-muted)!important}
 /* each cell's or place's note, with `describe` */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-notes-of{display:grid!important;grid-template-columns:1fr!important;gap:.6rem!important;margin:1rem 0 0!important}
@@ -469,6 +550,189 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-about dd{margin:0!important;overflow-wrap:anywhere!important}
 @media (max-width:520px){.booklet:not(#bk):not(#bk):not(#bk) .bk-about dl{grid-template-columns:minmax(0,1fr)!important;gap:0!important}.booklet:not(#bk):not(#bk):not(#bk) .bk-about dd{margin-bottom:.4rem!important}}
 
+/* ---- reading helpers: what the optional script (booklet.js) adds, styled here. A page without the script has none of it ----
+   A tab bar over an activity's tabs; a citation's note beside its mark; the "Open all" switch on folds; the sort and filter
+   control over a data view; the words said when a heading's link is copied. Every one is made by a part of the script out
+   of the compiler's own markup, so none of these classes is in a page that does not load it. */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tabbar{display:flex!important;gap:.25rem!important;margin:1rem 0 1.25rem!important;max-width:var(--bk-measure)!important;overflow-x:auto!important;
+  overscroll-behavior-x:contain!important;border-bottom:var(--bk-border) solid var(--bk-rule)!important;scrollbar-width:thin!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tabbtn{flex:none!important;min-height:44px!important;padding:.45rem 1rem!important;border:0!important;border-bottom:3px solid transparent!important;
+  border-radius:8px 8px 0 0!important;background:transparent!important;color:var(--bk-muted)!important;cursor:pointer!important;
+  font-family:var(--bk-font-text)!important;font-size:.95rem!important;font-weight:600!important;line-height:1.25!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tabbtn:hover{color:var(--bk-ink)!important;background:var(--bk-accent-soft)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tabbtn[aria-selected="true"]{border-bottom-color:var(--bk-accent)!important;background:var(--bk-accent-soft)!important;color:var(--bk-ink)!important;font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-tab[hidden]{display:none!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) .bk-peek{position:fixed!important;z-index:50!important;box-sizing:border-box!important;width:max-content!important;max-width:min(24rem,calc(100vw - 1rem))!important;
+  max-height:calc(100vh - 1rem)!important;max-height:calc(100dvh - 1rem)!important;overflow-y:auto!important;
+  padding:.65rem .85rem!important;background:var(--bk-surface)!important;color:var(--bk-ink)!important;border:var(--bk-border) solid var(--bk-rule)!important;
+  border-radius:var(--bk-radius)!important;box-shadow:0 4px 18px rgba(0,0,0,.18)!important;font-size:.92rem!important;line-height:1.45!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-peek[hidden]{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-peek cite{font-style:italic!important;font-weight:600!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldsw{display:inline-flex!important;align-items:center!important;gap:.55rem!important;min-height:44px!important;margin:.25rem 0!important;padding:.2rem .5rem .2rem 0!important;
+  border:0!important;background:none!important;color:var(--bk-muted)!important;cursor:pointer!important;font-family:var(--bk-font-text)!important;font-size:.9rem!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldsw:hover{color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldknob{position:relative!important;flex:none!important;width:2.2rem!important;height:1.25rem!important;border:var(--bk-border) solid var(--bk-muted)!important;border-radius:999px!important;background:var(--bk-surface)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldknob::after{content:""!important;position:absolute!important;top:50%!important;left:.15rem!important;width:.7rem!important;height:.7rem!important;margin-top:-.35rem!important;border-radius:50%!important;background:var(--bk-muted)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldsw[aria-checked="true"] .bk-foldknob{border-color:var(--bk-accent)!important;background:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-foldsw[aria-checked="true"] .bk-foldknob::after{left:auto!important;right:.15rem!important;background:var(--bk-surface)!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vctl{margin:0 0 .35rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vctl-top{display:flex!important;justify-content:flex-end!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vbtn{min-height:2.25rem!important;padding:.2rem .5rem!important;border:0!important;border-radius:8px!important;background:none!important;color:var(--bk-muted)!important;
+  cursor:pointer!important;font-family:var(--bk-font-text)!important;font-size:.85rem!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vbtn:hover,.booklet:not(#bk):not(#bk):not(#bk) .bk-vbtn[aria-expanded="true"]{color:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vbar{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:.4rem .5rem!important;padding:.35rem 0 .55rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vbar[hidden],.booklet:not(#bk):not(#bk):not(#bk) .bk-vclear[hidden]{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-vq,.bk-vsel){box-sizing:border-box!important;min-height:2.25rem!important;padding:.25rem .55rem!important;border:var(--bk-border) solid var(--bk-rule)!important;
+  border-radius:8px!important;background:var(--bk-surface)!important;color:var(--bk-ink)!important;font-family:var(--bk-font-text)!important;font-size:.9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vq{flex:1 1 11rem!important;min-width:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vq::placeholder{color:var(--bk-muted)!important;opacity:1!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vsel{max-width:100%!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-vdir,.bk-vclear){min-height:2.25rem!important;padding:.2rem .65rem!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:8px!important;
+  background:var(--bk-surface)!important;color:var(--bk-ink)!important;cursor:pointer!important;font-family:var(--bk-font-text)!important;font-size:.9rem!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-vdir,.bk-vclear,.bk-vq,.bk-vsel):hover{border-color:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vdir:disabled{opacity:.5!important;cursor:default!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vlive{margin:0 0 .35rem!important;color:var(--bk-muted)!important;font-size:.85rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-vlive:empty{display:none!important}
+/* a fourth :not(#bk) so a row the filter hides stays hidden whatever display a view gives its rows */
+.booklet:not(#bk):not(#bk):not(#bk):not(#bk) [data-bk-off]{display:none!important}
+
+.booklet:not(#bk):not(#bk):not(#bk) .bk-said{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;
+  clip:rect(0 0 0 0)!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-anchor.bk-copied{opacity:1!important;color:var(--bk-green-ink)!important}
+/* ---- query views (SPEC.md section 6): the renderer's views over a data block, as plain HTML and SVG ----
+   Every view sits in .bk-view and carries data-bk-view; a row has data-bk-row and a value data-bk-col (compile/views.js).
+   The sizes come from --bk-v-fs, --bk-v-pad, --bk-tile-v and --bk-gap, which a booklet's density sets (compile/theme.js). */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-sr{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) p.bk-hint{margin:.4rem 0 1rem!important;color:var(--bk-muted)!important;font-size:.95rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-view{margin:0 0 1rem!important;min-width:0!important;max-width:100%!important;font-family:var(--bk-font-text)!important;font-size:var(--bk-v-fs)!important;font-variant-numeric:tabular-nums!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-view :is(ul,ol,dl,p){max-width:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-panel{background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important;padding:.3rem .9rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-panel :is(.bk-table,.bk-ch-list,.bk-dv-list){margin:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-view .bk-table table{font-size:var(--bk-v-fs)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-view .bk-table :is(th,td){padding:var(--bk-v-pad) .8rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-view .bk-table :is(th,td):first-child{padding-left:.2rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-view .bk-table :is(th,td):last-child{padding-right:.2rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-grouprow th{background:var(--bk-paper-deep)!important;border-bottom:1px solid var(--bk-rule)!important;white-space:normal!important;font-size:var(--bk-v-fs)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-count{margin-left:.6rem!important;font-weight:400!important;color:var(--bk-muted)!important;font-size:.85rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-group{margin:1.1rem 0 .4rem!important;font-weight:700!important;font-size:1rem!important;color:var(--bk-ink)!important}
+/* a pill: a short word in a rounded tag, toned by the three tones' colours */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pill{display:inline-block!important;padding:.05rem .6rem!important;border-radius:999px!important;background:var(--bk-paper-deep)!important;color:var(--bk-ink)!important;font-size:.88em!important;font-weight:600!important;line-height:1.5!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pill:not([class*="bk-tone-"]){box-shadow:inset 0 0 0 1px var(--bk-rule)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pill.bk-tone-good{background:var(--bk-green)!important;color:var(--bk-green-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pill.bk-tone-warn{background:var(--bk-amber)!important;color:var(--bk-amber-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-pill.bk-tone-bad{background:var(--bk-warm)!important;color:var(--bk-warm-ink)!important}
+/* a row's picture, and a link that leads its label */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-i{display:inline-flex!important;align-items:center!important;flex:none!important;color:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-i .bk-ic{width:1.15em!important;height:1.15em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table td .bk-dv-i{margin-right:.45rem!important;vertical-align:-.15em!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-l,.bk-dv-t,.bk-dv-k) a,.booklet:not(#bk):not(#bk):not(#bk) .bk-view .bk-table td a{color:inherit!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-n{color:var(--bk-muted)!important;font-size:.88em!important}
+/* list */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-list{list-style:none!important;margin:0 0 1rem!important;padding:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-row{position:relative!important;display:flex!important;flex-wrap:wrap!important;align-items:baseline!important;gap:.15rem .7rem!important;min-width:0!important;margin:0!important;padding:var(--bk-v-pad) .1rem!important;border-bottom:1px solid var(--bk-rule)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-list>li:last-child{border-bottom:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-b{display:inline-flex!important;flex-wrap:wrap!important;gap:.25rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-t{flex:1 1 12rem!important;min-width:0!important;font-weight:700!important;color:var(--bk-ink)!important;overflow-wrap:anywhere!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-x{display:inline-flex!important;flex-wrap:wrap!important;gap:.1rem .9rem!important;margin-left:auto!important;color:var(--bk-muted)!important;font-size:.9em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-val{margin-left:auto!important;font-weight:700!important;color:var(--bk-ink)!important;white-space:nowrap!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-x~.bk-dv-val{margin-left:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-val.bk-tone-good{color:var(--bk-green-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-val.bk-tone-warn{color:var(--bk-amber-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-val.bk-tone-bad{color:var(--bk-warm-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-row>.bk-dv-n{flex:1 0 100%!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-groups{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(28rem,100%),1fr))!important;gap:var(--bk-gap)!important;align-items:start!important;margin:0 0 1rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-gcard{min-width:0!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important;padding:.1rem 1rem .4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-gcard .bk-dv-group{margin:.8rem 0 .3rem!important;font-size:.95rem!important;font-weight:700!important;letter-spacing:.07em!important;font-variant-caps:all-small-caps!important;color:var(--bk-muted)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-gcard .bk-count{font-variant-caps:normal!important;letter-spacing:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-gcard .bk-dv-list{margin:0!important}
+/* a nested list: a native disclosure for a row that has children */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree li.bk-dv-node{border:0!important;padding:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details{margin:0!important;padding:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>summary.bk-dv-row{display:flex!important;align-items:baseline!important;gap:.15rem .7rem!important;padding:var(--bk-v-pad) .1rem!important;cursor:pointer!important;list-style:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>summary.bk-dv-row:hover{background:var(--bk-accent-soft)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>summary::-webkit-details-marker{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>summary::before{content:""!important;flex:none!important;box-sizing:border-box!important;width:.6rem!important;height:.6rem!important;align-self:flex-start!important;margin-top:calc(var(--bk-v-pad) + .22em)!important;border-right:var(--bk-border) solid var(--bk-accent)!important;border-bottom:var(--bk-border) solid var(--bk-accent)!important;transform:rotate(-45deg)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details[open]>summary::before{transform:rotate(45deg)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree li.bk-dv-row{padding-left:1.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree .bk-dv-list{margin:0 0 0 .45rem!important;padding-left:.9rem!important;border-left:1px solid var(--bk-rule)!important}
+/* tiles: a big value over a label; with no value anywhere, a strip of pills */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tiles{list-style:none!important;margin:0 0 1rem!important;padding:0!important;display:grid!important;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))!important;gap:var(--bk-gap)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tile{position:relative!important;display:flex!important;flex-direction:column!important;gap:.15rem!important;min-width:0!important;margin:0!important;padding:calc(var(--bk-v-pad)*1.5) 1rem!important;overflow-wrap:anywhere!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-v{font-size:var(--bk-tile-v)!important;line-height:1.1!important;font-weight:700!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-l{font-weight:600!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tile .bk-dv-i{margin-bottom:.35rem!important;font-size:1.6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tile.bk-dv-lead:hover{border-color:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tile.bk-dv-lead .bk-dv-l a::after{content:""!important;position:absolute!important;inset:0!important;border-radius:inherit!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tile.bk-dv-lead:focus-within{box-shadow:0 0 0 2px var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-tile,.bk-dv-card).bk-tone-good{border-color:var(--bk-green-ink)!important;background:var(--bk-green)!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-tile,.bk-dv-card).bk-tone-warn{border-color:var(--bk-amber-ink)!important;background:var(--bk-amber)!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-tile,.bk-dv-card).bk-tone-bad{border-color:var(--bk-warm-ink)!important;background:var(--bk-warm)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tiles.bk-dv-strip{display:flex!important;flex-wrap:wrap!important;gap:.45rem .5rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-strip .bk-pill{position:relative!important;display:inline-flex!important;flex-wrap:wrap!important;align-items:baseline!important;gap:0 .5rem!important;min-width:0!important;max-width:100%!important;margin:0!important;padding:.2rem .75rem!important;border-radius:1rem!important;font-size:var(--bk-v-fs)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-strip .bk-pill .bk-dv-l{font-weight:700!important;color:inherit!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-strip .bk-pill .bk-dv-n{color:inherit!important;font-weight:400!important;font-size:.9em!important}
+/* cards: one per row, led by its label */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-cards{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(22rem,100%),1fr))!important;gap:0 var(--bk-gap)!important;align-items:start!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-cards .bk-dv-group{grid-column:1/-1!important;margin:.4rem 0 0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card{min-width:0!important;margin:0 0 1rem!important;padding:.8rem 1rem!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card .bk-dv-i{margin-bottom:.35rem!important;font-size:1.6rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-k{margin:0 0 .5rem!important;font-family:var(--bk-font-head)!important;font-size:1.12rem!important;font-weight:600!important;line-height:1.3!important;color:var(--bk-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card .bk-dv-n{margin:0 0 .5rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card .bk-dv-b{margin:0 0 .4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card .bk-dv-v{display:block!important;margin:0 0 .4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card dl{margin:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card dt{margin:.5rem 0 0!important;color:var(--bk-muted)!important;font-size:.82rem!important;font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card dd{margin:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-card).bk-tone-good .bk-pill,.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-card).bk-tone-warn .bk-pill,.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-card).bk-tone-bad .bk-pill{background:var(--bk-surface)!important;box-shadow:inset 0 0 0 1px currentColor!important}
+/* charts: bars and a line, in the stylesheet's colours only; the same rows are always offered as a table */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-list{list-style:none!important;margin:0!important;padding:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-row{display:grid!important;grid-template-columns:minmax(6rem,12rem) minmax(0,1fr) auto!important;align-items:center!important;gap:.15rem .75rem!important;margin:0!important;padding:calc(var(--bk-v-pad)*.8) 0!important;border-bottom:1px solid var(--bk-rule)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-row:last-child{border-bottom:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-l{min-width:0!important;color:var(--bk-ink)!important;font-weight:600!important;overflow-wrap:anywhere!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-v{min-width:2.5rem!important;color:var(--bk-ink)!important;font-weight:700!important;text-align:right!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-track{display:block!important;width:100%!important;height:1.15rem!important;margin:0!important;padding:0!important;overflow:hidden!important;background:var(--bk-paper-deep)!important;border-radius:4px!important;color:var(--bk-ink)!important;fill:none!important;stroke:none!important;stroke-width:1px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-bar{fill:var(--bk-accent)!important;stroke:none!important;stroke-width:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-bar.bk-tone-good{fill:var(--bk-green-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-bar.bk-tone-warn{fill:var(--bk-amber-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-bar.bk-tone-bad{fill:var(--bk-warm-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-zero,.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-axis{fill:none!important;stroke:var(--bk-muted)!important;stroke-width:1px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-zero{vector-effect:non-scaling-stroke!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-grid{fill:none!important;stroke:var(--bk-rule)!important;stroke-width:1px!important}
+/* a line chart is drawn at 460 wide and shown no smaller than 420 (its type 11px at the least): on a narrower box the plot scrolls inside it */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-plot{min-width:0!important;width:100%!important;overflow-x:auto!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-svg{display:block!important;width:100%!important;min-width:420px!important;max-width:460px!important;height:auto!important;margin:0!important;padding:0!important;overflow:visible!important;color:var(--bk-ink)!important;fill:none!important;stroke:none!important;stroke-width:1px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-tick{fill:var(--bk-muted)!important;stroke:none!important;stroke-width:0!important;font-family:var(--bk-font-text)!important;font-size:12px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-line{fill:none!important;stroke-width:2.25px!important;stroke-linejoin:round!important;stroke-linecap:round!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt{stroke:var(--bk-surface)!important;stroke-width:1px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-line.bk-s0{stroke:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-line.bk-s1{stroke:var(--bk-warm-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-line.bk-s2{stroke:var(--bk-amber-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-line.bk-s3{stroke:var(--bk-slate-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-line.bk-s4{stroke:var(--bk-green-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-line.bk-s5{stroke:var(--bk-teal-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt.bk-s0{fill:var(--bk-accent)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt.bk-s1{fill:var(--bk-warm-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt.bk-s2{fill:var(--bk-amber-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt.bk-s3{fill:var(--bk-slate-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt.bk-s4{fill:var(--bk-green-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt.bk-s5{fill:var(--bk-teal-ink)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-legend{list-style:none!important;margin:0 0 .4rem!important;padding:0!important;display:flex!important;flex-wrap:wrap!important;gap:.25rem 1.2rem!important;color:var(--bk-ink)!important;font-size:.92rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-legend li{display:inline-flex!important;align-items:center!important;gap:.4rem!important;margin:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-sw{display:inline-block!important;width:28px!important;height:12px!important;max-width:none!important;flex:none!important;margin:0!important;padding:0!important;color:var(--bk-ink)!important;fill:none!important;stroke:none!important;stroke-width:1px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-nums{margin:.5rem 0 0!important;font-size:.92rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-nums>summary{min-height:1.6rem!important;cursor:pointer!important;color:var(--bk-accent)!important;font-weight:600!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-nums .bk-table{margin:.4rem 0 0!important}
+@media (max-width:30rem){
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-row{grid-template-columns:minmax(0,1fr) auto!important;row-gap:.25rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-row .bk-ch-track{grid-column:1 / -1!important;grid-row:2!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-row .bk-ch-v{grid-column:2!important;grid-row:1!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree .bk-dv-list{margin-left:.2rem!important;padding-left:.45rem!important}
+}
+
+
 /* ---- print: always light, every fold open where the browser can open one for print ---- */
 @media print{
   :where(.booklet, .bk-page){
@@ -486,17 +750,36 @@
     --bk-petrol-soft:#E6F0F0; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
     --bk-slate-soft:#ECEFF1; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
   }
+  /* A booklet's own colours are a style attribute, and an inline declaration beats the table above, so a dark theme would
+     print its light ink on white paper. The same colours again, !important, with the article's weight (and the body's), so
+     print is light whatever the page or a host says. Custom properties, so nothing here weighs on any other declaration. */
+  .booklet:not(#bk):not(#bk):not(#bk), .bk-page:not(#bk):not(#bk):not(#bk){
+    --bk-paper:#FFFFFF!important; --bk-paper-deep:#F3F4F6!important; --bk-ink:#1F2328!important; --bk-muted:#57606A!important;
+    --bk-rule:#D0D7DE!important; --bk-surface:#FFFFFF!important; --bk-accent:#103E46!important; --bk-accent-soft:#E6F0F1!important;
+    --bk-mark:#FFF3B0!important; --bk-warn:#A04E34!important; --bk-warm:#FAE8EC!important; --bk-warm-ink:#A3405B!important;
+    --bk-green:#E1F1E7!important; --bk-green-ink:#2D7751!important; --bk-amber:#F8EBD0!important; --bk-amber-ink:#8B5F10!important;
+    --bk-slate:#ECEFF1!important; --bk-slate-ink:#3E4E59!important; --bk-teal:#E6F0F0!important; --bk-teal-ink:#15464F!important;
+    --bk-blue:#E8F1F9!important; --bk-blue-ink:#2F6596!important; --bk-purple:#EFECF8!important; --bk-purple-ink:#6453A6!important;
+    --bk-sky-soft:#E8F1F9!important; --bk-sky-vivid:#3F7FB5!important; --bk-sky-deep:#2F6596!important; --bk-rose-soft:#FAE8EC!important;
+    --bk-rose-vivid:#BF5470!important; --bk-rose-deep:#A3405B!important; --bk-sage-soft:#E6F2EA!important; --bk-sage-vivid:#4F8C6B!important;
+    --bk-sage-deep:#3B6E52!important; --bk-sun-soft:#FBF2DC!important; --bk-sun-vivid:#B07A0F!important; --bk-sun-deep:#8A5E0B!important;
+    --bk-lilac-soft:#EFECF8!important; --bk-lilac-vivid:#7462B5!important; --bk-lilac-deep:#6453A6!important; --bk-petrol-soft:#E6F0F0!important;
+    --bk-petrol-vivid:#1E5E6B!important; --bk-petrol-deep:#15464F!important; --bk-slate-soft:#ECEFF1!important; --bk-slate-vivid:#5B6B76!important;
+    --bk-slate-deep:#3E4E59!important;
+  }
   .bk-page{background:none}
   .bk-main{max-width:none;padding:0}
-  .booklet:not(#bk):not(#bk):not(#bk) .bk-anchor{display:none!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-anchor,.bk-pager,.bk-crumb){display:none!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::after{display:none!important}
-  .booklet:not(#bk):not(#bk):not(#bk) .bk-fold::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
-  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-cell,pre,figure){break-inside:avoid!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-fold,.bk-ch-nums,.bk-dv-tree details)::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-cell,.bk-dv-card,.bk-dv-tile,.bk-panel,pre,figure){break-inside:avoid!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-table{overflow:visible!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-table tr{break-inside:avoid!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-table thead{display:table-header-group!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-math-display{overflow:visible!important}
   .booklet:not(#bk):not(#bk):not(#bk) :is(h2,h3,h4){break-after:avoid!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-tabbar,.bk-foldsw,.bk-vctl,.bk-peek,.bk-said){display:none!important}
+  .booklet:not(#bk):not(#bk):not(#bk) .bk-tab[hidden]{display:block!important}
 }
 
 @media (prefers-reduced-motion:reduce){.booklet:not(#bk):not(#bk):not(#bk) *{transition:none!important;animation:none!important}}
