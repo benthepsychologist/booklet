@@ -203,6 +203,91 @@ fields: oven
 ```
 ^lonely
 
+## Fields that are also roles
+
+A field named in `fields:` that also plays a role is drawn once, as the role.
+
+```booklet query
+from: stock
+as: cards
+fields: item, left
+```
+
+```booklet query
+from: stock
+as: list
+label: item
+value: left
+fields: item, left, shelf
+```
+
+## Five series
+
+```booklet query
+from: weekly
+as: line
+label: day
+fields: loaves, rolls, rye, buns, tarts
+```
+
+```booklet data
+{ "fields": { "day": "Day", "loaves": "Loaves", "rolls": "Rolls", "rye": "Rye", "buns": "Buns", "tarts": "Tarts" },
+  "rows": [
+    { "day": "Mon", "loaves": 40, "rolls": 30, "rye": 12, "buns": 22, "tarts": 8 },
+    { "day": "Tue", "loaves": 35, "rolls": 28, "rye": 15, "buns": 20, "tarts": 11 },
+    { "day": "Wed", "loaves": 38, "rolls": 33, "rye": 9, "buns": 25, "tarts": 6 },
+    { "day": "Thu", "loaves": 42, "rolls": 29, "rye": 14, "buns": 18, "tarts": 10 } ] }
+```
+^weekly
+
+## Numbers no picture can use
+
+```booklet query
+from: tiny
+as: bars
+label: what
+value: n
+```
+
+```booklet data
+[ { "what": "A", "n": 1e-300 }, { "what": "B", "n": 2e-300 } ]
+```
+^tiny
+
+```booklet query
+from: huge
+as: line
+label: what
+fields: n
+```
+
+```booklet data
+[ { "what": "A", "n": 1e300 }, { "what": "B", "n": -1e300 }, { "what": "C", "n": 5 } ]
+```
+^huge
+
+## Keys with quotes, and names an object has
+
+```booklet query
+from: odd
+as: cards
+label: name
+link: web
+fields: a"b, constructor, toString
+```
+
+```booklet data
+[ { "name": "One", "web": "https://example.org/\"x=\"y", "a\"b": "quoted key", "constructor": "own" },
+  { "name": "Two", "a\"b": "second" } ]
+```
+^odd
+
+```booklet query
+from: odd
+as: table
+fields: name, constructor, toString, a"b
+```
+
 ## Nothing here, with a line of its own
 
 ```booklet query

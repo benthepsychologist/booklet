@@ -2,7 +2,7 @@
 title: "A small bakery's week"
 description: "A made-up booklet for the compiler's views test. Every view is drawn here from a data block, with and without group:, with an empty: line and without, then…"
 ---
-<!-- booklet compile 0.1.0 · from compile-views.booklet.md · sha256:80b431f098277143dd0291d2355bb7b4b0906e7f86f508aca960d3bb052da23a -->
+<!-- booklet compile 0.1.0 · from compile-views.booklet.md · sha256:31cbd025c8c7cad620b74857ae2c40cacd3acd04e425bac447b160b58296041e -->
 <article class="booklet" lang="en">
   <p class="bk-lede">A made-up booklet for the compiler's views test. Every view is drawn here from a data block, with and without <code>group:</code>, with an <code>empty:</code> line and without, then queries over kept entries and answers, which the compiler draws empty. Everything in it is invented.</p>
   <nav class="bk-toc" aria-labelledby="bk-toc-h">
@@ -470,6 +470,229 @@ description: "A made-up booklet for the compiler's views test. Every view is dra
         </div>
       </details>
     </div>
+    <h3 id="fields-that-are-also-roles">Fields that are also roles <a class="bk-anchor" href="#fields-that-are-also-roles" aria-label="Link to this section">#</a></h3>
+    <p>A field named in <code>fields:</code> that also plays a role is drawn once, as the role.</p>
+    <div class="bk-view" data-bk-view="cards">
+      <div class="bk-dv-cards">
+        <div class="bk-dv-card bk-tone-good" data-bk-row>
+          <div class="bk-dv-k" data-bk-col="item">Rye flour</div>
+          <dl>
+            <dt>Left</dt>
+            <dd data-bk-col="left">12</dd>
+          </dl>
+          <span class="bk-sr">Good</span>
+        </div>
+        <div class="bk-dv-card bk-tone-warn" data-bk-row>
+          <div class="bk-dv-k" data-bk-col="item"><a href="https://example.org/yeast?a=1&amp;b=2" target="_blank" rel="noopener noreferrer">Yeast</a></div>
+          <dl>
+            <dt>Left</dt>
+            <dd data-bk-col="left">2</dd>
+          </dl>
+          <span class="bk-sr">Needs a look</span>
+        </div>
+        <div class="bk-dv-card bk-tone-bad" data-bk-row>
+          <div class="bk-dv-k" data-bk-col="item">Salt</div>
+          <dl>
+            <dt>Left</dt>
+            <dd data-bk-col="left">0</dd>
+          </dl>
+          <span class="bk-sr">Needs action</span>
+        </div>
+        <div class="bk-dv-card" data-bk-row>
+          <div class="bk-dv-k" data-bk-col="item"><!-- booklet: the link to “week-2” (activity “The week”): a link to a booklet not compiled with this one: drawn as its words -->&lt;script&gt;qzxhostile()&lt;/script&gt;</div>
+          <dl>
+            <dt>Left</dt>
+            <dd data-bk-col="left">plenty</dd>
+          </dl>
+        </div>
+        <div class="bk-dv-card" data-bk-row>
+          <div class="bk-dv-k" data-bk-col="item">Sunflower seeds</div>
+          <dl>
+            <dt>Left</dt>
+            <dd data-bk-col="left">7</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="bk-view bk-panel" data-bk-view="list">
+      <ul class="bk-dv-list">
+        <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="item">Rye flour</span><span class="bk-dv-x"><span title="Shelf"><span class="bk-sr">Shelf: </span><span data-bk-col="shelf">B2</span></span></span><span class="bk-dv-val bk-tone-good" data-bk-col="left">12</span><span class="bk-sr">Good</span></li>
+        <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="item"><a href="https://example.org/yeast?a=1&amp;b=2" target="_blank" rel="noopener noreferrer">Yeast</a></span><span class="bk-dv-x"><span title="Shelf"><span class="bk-sr">Shelf: </span><span data-bk-col="shelf">F1</span></span></span><span class="bk-dv-val bk-tone-warn" data-bk-col="left">2</span><span class="bk-sr">Needs a look</span></li>
+        <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="item">Salt</span><span class="bk-dv-x"><span title="Shelf"><span class="bk-sr">Shelf: </span><span data-bk-col="shelf">F3</span></span></span><span class="bk-dv-val bk-tone-bad" data-bk-col="left">0</span><span class="bk-sr">Needs action</span></li>
+        <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="item"><!-- booklet: the link to “week-2” (activity “The week”): a link to a booklet not compiled with this one: drawn as its words -->&lt;script&gt;qzxhostile()&lt;/script&gt;</span><span class="bk-dv-x"><span title="Shelf"><span class="bk-sr">Shelf: </span><span data-bk-col="shelf">B9</span></span></span><span class="bk-dv-val" data-bk-col="left">plenty</span></li>
+        <li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="item">Sunflower seeds</span><span class="bk-dv-val" data-bk-col="left">7</span></li>
+      </ul>
+    </div>
+    <h3 id="five-series">Five series <a class="bk-anchor" href="#five-series" aria-label="Link to this section">#</a></h3>
+    <div class="bk-view bk-panel" data-bk-view="line">
+      <ul class="bk-ch-legend">
+        <li><svg class="bk-ch-sw" viewBox="0 0 28 12" width="28" height="12" aria-hidden="true" focusable="false"><line class="bk-ch-line bk-s0" x1="2" x2="26" y1="6" y2="6"></line><circle class="bk-ch-pt bk-s0" cx="14" cy="6" r="3"></circle></svg><span>Loaves</span></li>
+        <li><svg class="bk-ch-sw" viewBox="0 0 28 12" width="28" height="12" aria-hidden="true" focusable="false"><line class="bk-ch-line bk-s1" x1="2" x2="26" y1="6" y2="6" stroke-dasharray="7 4"></line><rect class="bk-ch-pt bk-s1" x="11" y="3" width="6" height="6"></rect></svg><span>Rolls</span></li>
+        <li><svg class="bk-ch-sw" viewBox="0 0 28 12" width="28" height="12" aria-hidden="true" focusable="false"><line class="bk-ch-line bk-s2" x1="2" x2="26" y1="6" y2="6" stroke-dasharray="2 4"></line><path class="bk-ch-pt bk-s2" d="M14 2L18 9L10 9Z"></path></svg><span>Rye</span></li>
+        <li><svg class="bk-ch-sw" viewBox="0 0 28 12" width="28" height="12" aria-hidden="true" focusable="false"><line class="bk-ch-line bk-s3" x1="2" x2="26" y1="6" y2="6" stroke-dasharray="9 3 2 3"></line><path class="bk-ch-pt bk-s3" d="M14 2L18 6L14 10L10 6Z"></path></svg><span>Buns</span></li>
+        <li><svg class="bk-ch-sw" viewBox="0 0 28 12" width="28" height="12" aria-hidden="true" focusable="false"><line class="bk-ch-line bk-s4" x1="2" x2="26" y1="6" y2="6"></line><circle class="bk-ch-pt bk-s4" cx="14" cy="6" r="3"></circle></svg><span>Tarts</span></li>
+      </ul>
+      <div class="bk-ch-plot"><svg class="bk-ch-svg" viewBox="0 0 460 200" role="img" aria-label="Line chart of Loaves, Rolls, Rye, Buns, Tarts, 4 points, from 6 to 42" focusable="false"><line class="bk-ch-axis" x1="24" x2="447" y1="170" y2="170"></line><text class="bk-ch-tick" x="18" y="174" text-anchor="end">0</text><line class="bk-ch-grid" x1="24" x2="447" y1="117.3" y2="117.3"></line><text class="bk-ch-tick" x="18" y="121.3" text-anchor="end">20</text><line class="bk-ch-grid" x1="24" x2="447" y1="64.7" y2="64.7"></line><text class="bk-ch-tick" x="18" y="68.7" text-anchor="end">40</text><line class="bk-ch-grid" x1="24" x2="447" y1="12" y2="12"></line><text class="bk-ch-tick" x="18" y="16" text-anchor="end">60</text><text class="bk-ch-tick" x="32" y="187" text-anchor="middle">Mon</text><text class="bk-ch-tick" x="169.7" y="187" text-anchor="middle">Tue</text><text class="bk-ch-tick" x="307.3" y="187" text-anchor="middle">Wed</text><text class="bk-ch-tick" x="445" y="187" text-anchor="middle">Thu</text><polyline class="bk-ch-line bk-s0" points="32,64.7 169.7,77.8 307.3,69.9 445,59.4"></polyline><circle class="bk-ch-pt bk-s0" cx="32" cy="64.7" r="3.5"><title>Loaves – Mon: 40</title></circle><circle class="bk-ch-pt bk-s0" cx="169.7" cy="77.8" r="3.5"><title>Loaves – Tue: 35</title></circle><circle class="bk-ch-pt bk-s0" cx="307.3" cy="69.9" r="3.5"><title>Loaves – Wed: 38</title></circle><circle class="bk-ch-pt bk-s0" cx="445" cy="59.4" r="3.5"><title>Loaves – Thu: 42</title></circle><polyline class="bk-ch-line bk-s1" stroke-dasharray="7 4" points="32,91 169.7,96.3 307.3,83.1 445,93.6"></polyline><rect class="bk-ch-pt bk-s1" x="28.5" y="87.5" width="7" height="7"><title>Rolls – Mon: 30</title></rect><rect class="bk-ch-pt bk-s1" x="166.2" y="92.8" width="7" height="7"><title>Rolls – Tue: 28</title></rect><rect class="bk-ch-pt bk-s1" x="303.8" y="79.6" width="7" height="7"><title>Rolls – Wed: 33</title></rect><rect class="bk-ch-pt bk-s1" x="441.5" y="90.1" width="7" height="7"><title>Rolls – Thu: 29</title></rect><polyline class="bk-ch-line bk-s2" stroke-dasharray="2 4" points="32,138.4 169.7,130.5 307.3,146.3 445,133.1"></polyline><path class="bk-ch-pt bk-s2" d="M32 133.9L36.5 141.9L27.5 141.9Z"><title>Rye – Mon: 12</title></path><path class="bk-ch-pt bk-s2" d="M169.7 126L174.2 134L165.2 134Z"><title>Rye – Tue: 15</title></path><path class="bk-ch-pt bk-s2" d="M307.3 141.8L311.8 149.8L302.8 149.8Z"><title>Rye – Wed: 9</title></path><path class="bk-ch-pt bk-s2" d="M445 128.6L449.5 136.6L440.5 136.6Z"><title>Rye – Thu: 14</title></path><polyline class="bk-ch-line bk-s3" stroke-dasharray="9 3 2 3" points="32,112.1 169.7,117.3 307.3,104.2 445,122.6"></polyline><path class="bk-ch-pt bk-s3" d="M32 107.6L36.5 112.1L32 116.6L27.5 112.1Z"><title>Buns – Mon: 22</title></path><path class="bk-ch-pt bk-s3" d="M169.7 112.8L174.2 117.3L169.7 121.8L165.2 117.3Z"><title>Buns – Tue: 20</title></path><path class="bk-ch-pt bk-s3" d="M307.3 99.7L311.8 104.2L307.3 108.7L302.8 104.2Z"><title>Buns – Wed: 25</title></path><path class="bk-ch-pt bk-s3" d="M445 118.1L449.5 122.6L445 127.1L440.5 122.6Z"><title>Buns – Thu: 18</title></path><polyline class="bk-ch-line bk-s4" points="32,148.9 169.7,141 307.3,154.2 445,143.7"></polyline><circle class="bk-ch-pt bk-s4" cx="32" cy="148.9" r="3.5"><title>Tarts – Mon: 8</title></circle><circle class="bk-ch-pt bk-s4" cx="169.7" cy="141" r="3.5"><title>Tarts – Tue: 11</title></circle><circle class="bk-ch-pt bk-s4" cx="307.3" cy="154.2" r="3.5"><title>Tarts – Wed: 6</title></circle><circle class="bk-ch-pt bk-s4" cx="445" cy="143.7" r="3.5"><title>Tarts – Thu: 10</title></circle></svg></div>
+      <details class="bk-ch-nums">
+        <summary>Show the numbers</summary>
+        <div class="bk-table">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Day</th>
+                <th scope="col" class="bk-num">Loaves</th>
+                <th scope="col" class="bk-num">Rolls</th>
+                <th scope="col" class="bk-num">Rye</th>
+                <th scope="col" class="bk-num">Buns</th>
+                <th scope="col" class="bk-num">Tarts</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Mon</td>
+                <td class="bk-num">40</td>
+                <td class="bk-num">30</td>
+                <td class="bk-num">12</td>
+                <td class="bk-num">22</td>
+                <td class="bk-num">8</td>
+              </tr>
+              <tr>
+                <td>Tue</td>
+                <td class="bk-num">35</td>
+                <td class="bk-num">28</td>
+                <td class="bk-num">15</td>
+                <td class="bk-num">20</td>
+                <td class="bk-num">11</td>
+              </tr>
+              <tr>
+                <td>Wed</td>
+                <td class="bk-num">38</td>
+                <td class="bk-num">33</td>
+                <td class="bk-num">9</td>
+                <td class="bk-num">25</td>
+                <td class="bk-num">6</td>
+              </tr>
+              <tr>
+                <td>Thu</td>
+                <td class="bk-num">42</td>
+                <td class="bk-num">29</td>
+                <td class="bk-num">14</td>
+                <td class="bk-num">18</td>
+                <td class="bk-num">10</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+    <h3 id="numbers-no-picture-can-use">Numbers no picture can use <a class="bk-anchor" href="#numbers-no-picture-can-use" aria-label="Link to this section">#</a></h3>
+    <div class="bk-view bk-panel" data-bk-view="bars" role="group" aria-label="Bar chart, 2 bars, from 0 to 0">
+      <ul class="bk-ch-list">
+        <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="what">A</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"></svg><span class="bk-ch-v" data-bk-col="n">0</span></li>
+        <li class="bk-ch-row" data-bk-row><span class="bk-ch-l" data-bk-col="what">B</span><svg class="bk-ch-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"></svg><span class="bk-ch-v" data-bk-col="n">0</span></li>
+      </ul>
+      <details class="bk-ch-nums">
+        <summary>Show the numbers</summary>
+        <div class="bk-table">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">what</th>
+                <th scope="col" class="bk-num">n</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>A</td>
+                <td class="bk-num">1e-300</td>
+              </tr>
+              <tr>
+                <td>B</td>
+                <td class="bk-num">2e-300</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+    <div class="bk-view bk-panel" data-bk-view="line">
+      <details class="bk-ch-nums">
+        <summary>Show the numbers</summary>
+        <div class="bk-table">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">what</th>
+                <th scope="col" class="bk-num">n</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>A</td>
+                <td class="bk-num">1e+300</td>
+              </tr>
+              <tr>
+                <td>B</td>
+                <td class="bk-num">-1e+300</td>
+              </tr>
+              <tr>
+                <td>C</td>
+                <td class="bk-num">5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+    <h3 id="keys-with-quotes-and-names-an-object-has">Keys with quotes, and names an object has <a class="bk-anchor" href="#keys-with-quotes-and-names-an-object-has" aria-label="Link to this section">#</a></h3>
+    <div class="bk-view" data-bk-view="cards">
+      <div class="bk-dv-cards">
+        <div class="bk-dv-card" data-bk-row>
+          <div class="bk-dv-k" data-bk-col="name"><a href="https://example.org/&quot;x=&quot;y" target="_blank" rel="noopener noreferrer">One</a></div>
+          <dl>
+            <dt>a"b</dt>
+            <dd data-bk-col="a&quot;b">quoted key</dd>
+            <dt>constructor</dt>
+            <dd data-bk-col="constructor">own</dd>
+          </dl>
+        </div>
+        <div class="bk-dv-card" data-bk-row>
+          <div class="bk-dv-k" data-bk-col="name">Two</div>
+          <dl>
+            <dt>a"b</dt>
+            <dd data-bk-col="a&quot;b">second</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="bk-view bk-panel" data-bk-view="table">
+      <div class="bk-table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col" data-bk-col="name">name</th>
+              <th scope="col" data-bk-col="constructor">constructor</th>
+              <th scope="col" data-bk-col="toString">toString</th>
+              <th scope="col" data-bk-col="a&quot;b">a"b</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-bk-row>
+              <td data-bk-col="name">One</td>
+              <td data-bk-col="constructor">own</td>
+              <td data-bk-col="toString"></td>
+              <td data-bk-col="a&quot;b">quoted key</td>
+            </tr>
+            <tr data-bk-row>
+              <td data-bk-col="name">Two</td>
+              <td data-bk-col="constructor"></td>
+              <td data-bk-col="toString"></td>
+              <td data-bk-col="a&quot;b">second</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     <h3 id="nothing-here-with-a-line-of-its-own">Nothing here, with a line of its own <a class="bk-anchor" href="#nothing-here-with-a-line-of-its-own" aria-label="Link to this section">#</a></h3>
     <p class="bk-hint">No orders yet.</p>
     <h3 id="nothing-here-without">Nothing here, without <a class="bk-anchor" href="#nothing-here-without" aria-label="Link to this section">#</a></h3>
@@ -488,12 +711,12 @@ description: "A made-up booklet for the compiler's views test. Every view is dra
   </section>
   <section class="bk-activity">
     <h2 id="after">After <a class="bk-anchor" href="#after" aria-label="Link to this section">#</a></h2>
-    <!-- booklet: the query over “bakery/orders” (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
+    <!-- booklet: the query over “bakery/orders”, as table (query 23 on the page) (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
     <p class="bk-hint">Orders are kept in the app.</p>
-    <!-- booklet: the query over “bakery/orders” (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
-    <!-- booklet: the query over “bakery/orders” (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
+    <!-- booklet: the query over “bakery/orders”, as cards (query 24 on the page) (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
+    <!-- booklet: the query over “bakery/orders”, a summary (query 25 on the page) (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
     <p class="bk-hint">Summaries are not drawn here.</p>
-    <!-- booklet: the query over “bakery/orders” (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
-    <!-- booklet: the query over “bakery/orders” (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
+    <!-- booklet: the query over “bakery/orders”, a summary (query 26 on the page) (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
+    <!-- booklet: the query over “bakery/orders”, the answers to “loaf”, as list (query 27 on the page) (activity “After”): a query over kept entries or answers: drawn empty, since the compiler never reads a booklet's records -->
   </section>
 </article>

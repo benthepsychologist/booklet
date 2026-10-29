@@ -93,6 +93,9 @@ summary{font-family:Lora,serif;color:#c0392b;text-transform:uppercase;list-style
 mark{background:#0b4f4a;color:#fff}
 svg{fill:#c0392b;color:#c0392b;stroke-width:4px}
 svg path,svg circle,svg rect{fill:#c0392b;stroke:#0b4f4a;stroke-width:3px}
+svg{width:1em;height:auto}
+svg:not(:root){display:none}
+svg line,svg polyline{stroke:#c0392b;stroke-width:5px}
 .wrapper ol{counter-reset:step;list-style:none;padding:0}
 .wrapper ol>li{counter-increment:step;position:relative;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.15);
   padding:1rem 1rem 1rem 3.5rem;margin:0 0 1rem}

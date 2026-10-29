@@ -37,11 +37,18 @@ const views=viewsOf(V.page);
 /* without views.js's drawers there is no container at all */
 chk("all six views are drawn: tiles, cards, table, list, bars and line",["tiles","cards","table","list","bars","line"].every(a=>views.some(v=>v.as===a)),views.map(v=>v.as).join(" "));
 /* the fixture has 13 queries over data: 2 tiles, 2 cards, 2 tables, 3 lists (one nested), 2 bars, 2 lines (a line of one point too) */
-chk("a query over data draws one container each (13), and an empty one draws none",views.length===13,views.map(v=>v.as).join(" "));
+chk("a query over data draws one container each (20), and an empty one draws none",views.length===20,views.map(v=>v.as).join(" "));
 chk("every container says which view it is, once, and every row says it is a row",views.every(v=>count(v.html,/data-bk-view=/g)===1));
-/* a row's count per view, from the fixture: tiles 4, 4 (grouped); cards 5, 5; table 5, 4 (limit: 4); list 5, 5, 6 (nested: every row, inside its folds); bars 5, 5; a line has no rows */
+/* (the last seven: cards and a list whose fields: are also roles, a five-series line, bars of 1e-300, a line of 1e300, cards and a table over odd keys) a row's count per view, from the fixture: tiles 4, 4 (grouped); cards 5, 5; table 5, 4 (limit: 4); list 5, 5, 6 (nested: every row, inside its folds); bars 5, 5; a line has no rows */
 const rowCounts=views.map(v=>count(v.html,/ data-bk-row\b/g)).join(" ");
-chk("each view has the rows its query asks for (with group:, limit: and a nested list's children counted)",rowCounts==="4 4 5 5 5 4 5 5 6 5 5 0 0",rowCounts);
+chk("each view has the rows its query asks for (with group:, limit: and a nested list's children counted)",rowCounts==="4 4 5 5 5 4 5 5 6 5 5 0 0 5 5 0 2 0 2 2",rowCounts);
+/* each field is named once in a row, whatever asks for it: a field in fields: that also plays a role is the role's */
+{const bad=[];views.forEach((v,i)=>v.html.split(/ data-bk-row\b/).slice(1).forEach((chunk,j)=>{
+    const keys=[...chunk.matchAll(/data-bk-col="([^"]*)"/g)].map(m=>m[1]);if(new Set(keys).size!==keys.length) bad.push(v.as+" "+i+" row "+j+": "+keys.join(","));}));
+  chk("no row names a field twice (every view, every row)",!bad.length,bad.slice(0,3).join(" | "));
+  const cardsRoles=views.find(v=>v.as==="cards"&&v.html.includes('data-bk-col="left"')&&!v.html.includes('data-bk-col="shelf"')).html;
+  chk("…and a card whose fields: are item and left, with item as its label, has item once (the label) and left once",
+    count(cardsRoles,/data-bk-col="item"/g)===5&&count(cardsRoles,/data-bk-col="left"/g)===5,count(cardsRoles,/data-bk-col="item"/g)+" "+count(cardsRoles,/data-bk-col="left"/g));}
 /* tiles: the value, the label and the note are each a column, and the text is the value */
 chk("a tile's columns: value, label and note, each with its field's name and its value as text",
   />Beds? planted</.test(V.page)===false&&/<li class="bk-dv-tile bk-tone-good" data-bk-row>[^]*?<span class="bk-dv-v" data-bk-col="count">140<\/span><span class="bk-dv-l" data-bk-col="what">Loaves baked<\/span><span class="bk-dv-n" data-bk-col="since">since Monday<\/span>/.test(V.page));
@@ -90,13 +97,34 @@ chk("nothing is read at run time: no script, no form, no stored or sent word any
   !/<(form|input|button|select|textarea)\b/.test(V.page)&&!/localStorage|sessionStorage|fetch\(|XMLHttpRequest|sendBeacon/.test(V.page));
 /* no row of any view is marked, and nothing was left to tidy but the module link and the kept queries */
 chk("the report counts the queries drawn and says nothing is marked for a view (only the link and the kept queries)",
-  /20 queries/.test(V.report)&&V.r.rep.marked.every(m=>m.kind==="link"||m.kind==="kept"),V.r.rep.marked.map(m=>m.kind).join(","));
+  /27 queries/.test(V.report)&&V.r.rep.marked.every(m=>m.kind==="link"||m.kind==="kept"),V.r.rep.marked.map(m=>m.kind).join(","));
+
+/* a line chart of five series: five lines, five legend swatches, each in its own class, and every marker kind */
+{const five=views.find(v=>v.as==="line"&&v.html.includes("Tarts")).html;
+  chk("a line chart of five series draws five lines, five legend entries and every marker shape",
+    count(five,/<polyline/g)===5&&count(five,/class="bk-ch-sw"/g)===5&&[0,1,2,3,4].every(i=>five.includes('bk-ch-line bk-s'+i))&&/<circle/.test(five)&&/<rect class="bk-ch-pt/.test(five)&&count(five,/<path class="bk-ch-pt/g)>=4,
+    count(five,/<polyline/g)+" lines, "+count(five,/class="bk-ch-sw"/g)+" swatches");
+  chk("…and its numbers table has a column for each of them",count(five.slice(five.indexOf("bk-ch-nums")),/<th scope="col"/g)===6);}
+/* a number no picture can use is left out of the picture and stays in the table */
+{const tiny=views.find(v=>v.as==="bars"&&v.html.includes("1e-300")),huge=views.find(v=>v.as==="line"&&v.html.includes("1e+300"));
+  chk("no NaN or Infinity is written anywhere on the page (bars of 1e-300, a line of 1e300)",!/NaN|Infinity/.test(V.page.replace(/<!--[^]*?-->/g,"")));
+  chk("…bars of 1e-300 have their rows and their numbers, and draw no bar; a line of 1e300 draws no picture, only its numbers",
+    tiny&&count(tiny.html,/ data-bk-row\b/g)===2&&!/<rect/.test(tiny.html)&&tiny.html.includes("2e-300")&&huge&&!/<svg class="bk-ch-svg"/.test(huge.html)&&huge.html.includes("-1e+300")&&/<details class="bk-ch-nums">/.test(huge.html));}
+/* a field named like something an object has is a field, and a row that lacks it has an empty cell */
+chk("a field named constructor or toString is an empty cell where the row lacks it, never an object's text",
+  !/function Object|\[object|native code/.test(V.page)&&/<td data-bk-col="constructor"><\/td>/.test(V.page)&&/<td data-bk-col="toString"><\/td>/.test(V.page));
+/* a double quote in a field's name or an address is written as &quot;, so it cannot end the attribute */
+chk("a double quote in a field's name or in an address is &quot; in the attribute (it cannot close it and add one of its own)",
+  V.page.includes('data-bk-col="a&quot;b"')&&V.page.includes('href="https://example.org/&quot;x=&quot;y"')&&!/="a"b"/.test(V.page)&&!/org\/"x=/.test(V.page),
+  (/org\/[^ ]*/.exec(V.page)||[""])[0]);
 
 /* ======================= 2. kept entries ======================= */
 const keptMarks=V.r.rep.marked.filter(m=>m.kind==="kept");
 chk("each of the five queries over kept entries or answers is marked kept, in the page and in the report",
   keptMarks.length===5&&count(V.page,/<!-- booklet: the query over “bakery\/orders”/g)===5&&count(V.report,/a query over kept entries or answers: drawn empty/g)===5,keptMarks.length);
 const after=V.page.slice(V.page.indexOf('<h2 id="after"'),V.page.indexOf("</article>"));
+chk("…and each mark and report line says which query it is (its view, or a summary, and its place on the page), so the list can be told apart",
+  new Set(keptMarks.map(m=>m.what)).size===5&&keptMarks.every(m=>/\(query \d+ on the page\)$/.test(m.what))&&keptMarks.some(m=>/a summary/.test(m.what))&&keptMarks.some(m=>/as cards/.test(m.what)),keptMarks.map(m=>m.what).join(" | "));
 chk("…and they draw no view, no row and no number: only the empty: lines the author wrote (two of five)",
   !/data-bk-|<table|<ul/.test(after)&&count(after,/<p class="bk-hint">/g)===2&&after.includes("Orders are kept in the app.")&&after.includes("Summaries are not drawn here."));
 /* the same, for a summary with no empty: line, as a page of its own */
@@ -170,10 +198,30 @@ const sample=X.themeOf({base:"daylight",paper:"#fffbe8",ink:"#2a2118"});
 const mapped=Object.keys(sample.tokens).filter(k=>k in Th.VAR_OF);
 chk("every colour the renderer works out from the theme that the page has a variable for is set on the article ("+mapped.length+")",
   mapped.every(k=>vars[Th.VAR_OF[k]]!==undefined)&&mapped.length>20);
+/* theme.js checks again what it is handed: the renderer's reading is the first line of defence and this is the second. A
+   hostile result of it (a value that is not #rrggbb, a name that is not a colour token, a face, density or style that is not in
+   a table, a base that is not one of the four) writes nothing of itself. */
+{const hostileDerived={colours:true,base:'night"><script>x</script>',tokens:{"--ink":"red;background:url(//x)","--paper":"#ffffff","--bogus":"#123456","--accent":"#FFF","--muted":"#12345678","--rule":"#abcdefg"},
+    font:"serif;background:url(x)",density:'roomy"; --bk-ink:#ff0000',style:"briefing;--bk-ink:red",
+    dropped:[{key:"accent",pair:"ink; on}paper",ratio:1.5},{key:"not-a-colour",pair:"x",ratio:1}]};
+  const out=Th.theme({paper:"#ffffff"},hostileDerived),st=out.attrs&&out.attrs.style||"";
+  chk("theme.js writes only #rrggbb values on named colour tokens, from a hostile result of the renderer's reading",
+    out.attrs&&st==="--bk-paper:#ffffff",st);
+  chk("…takes a base that is not one of the four as Paper, and a face, density and style that are not in a table as nothing",
+    out.attrs["data-bk-base"]==="paper"&&!/font|--bk-line|radius/.test(st)&&out.report.font===""&&out.report.density===""&&out.report.style==="",JSON.stringify(out.attrs));
+  chk("…and a dropped colour's words in the report are letters, spaces and a hyphen only, and only for a colour theme.js knows",
+    out.report.dropped.length===1&&out.report.dropped[0].pair==="ink onpaper"&&!/[}<>"]/.test(Th.words(out.report).join("")),JSON.stringify(out.report.dropped));}
+
 /* a page with no theme block has no theme attribute at all */
 const G=compileOne(path.join(FIX,"data-views.booklet.md"));
 chk("a booklet with no theme block has no data-bk-base, no style attribute, no Theme line in its report",
   !/<article class="booklet"[^>]*(data-bk-base| style=)/.test(G.page)&&!/<body[^>]*(data-bk-base| style=)/.test(G.page)&&!/Theme:/.test(G.report));
+
+/* ======================= a table is linear in its rows ======================= */
+{const n=10000,rows=[];for(let i=0;i<n;i++) rows.push({a:"Row "+i,b:i,c:i*2.5,d:"x"+(i%7),e:i%3?i:null,f:"f"+i,g:i%11});
+  const text='---\nbooklet: "0.16"\nid: t/big\ntitle: Big\nlang: en\n---\n\n# Big\n\n```booklet query\nfrom: d\nas: table\n```\n\n```booklet data\n'+JSON.stringify({rows})+'\n```\n^d\n';
+  const t0=Date.now(),B=C.compile([{text,name:"big",dir:TMP}],{form:"standalone",engine:X}),ms=Date.now()-t0,p=B.results[0].files.get("big/index.html")||"";
+  chk("a table of 10,000 rows by 7 columns is drawn in well under the time a rescan for every cell takes ("+ms+" ms; the limit is 9 s)",B.results[0].rep.ok&&count(p,/ data-bk-row\b/g)===n&&ms<9000,ms+" ms");}
 
 /* ======================= 4. a very deep list ======================= */
 {const rows=[];for(let i=0;i<3000;i++) rows.push({id:"r"+i,parent:i?"r"+(i-1):"",label:"Row "+i});

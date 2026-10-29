@@ -271,7 +271,9 @@ function drawPage(X,P,o){
   function query(b){
     const empty=typeof b.empty==="string"?b.empty.trim():"";
     if(!b.data){st.counts.queries++;
-      return frag(mark("kept","the query"+(b.from?" over “"+String(b.from)+"”":"")),empty?el("p",{class:"bk-hint"},empty):null);}
+      /* each of these says which it is: its view (or a summary) and its place among the page's queries, so a list of them can be told apart */
+      const v=b.view||{},which=(b.field?", the answers to “"+String(b.field)+"”":"")+(v.summary?", a summary":v.as?", as "+String(v.as):"");
+      return frag(mark("kept","the query"+(b.from?" over “"+String(b.from)+"”":"")+which+" (query "+st.counts.queries+" on the page)"),empty?el("p",{class:"bk-hint"},empty):null);}
     const cap=X.queryView(b,st.scope);
     st.counts.queries++;
     if(!cap) return el("p",{class:"bk-hint"},empty||T("dv").empty);

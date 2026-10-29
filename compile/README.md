@@ -121,7 +121,11 @@ without layers (before Chrome 99, Firefox 97 and Safari 15.4) would drop the who
 unstyled. The three ids are written as three `:not(#bk)`, which any browser reads.
 
 **What a host can still change.** The `--bk-*` variables are plain declarations, so a host's own rule setting them wins
-(`.booklet { --bk-accent: #7a1f5c; }`): the colours, the faces, the size, the leading, the measure, the gap and the
+(`.booklet { --bk-accent: #7a1f5c; }`) on a page whose booklet has no theme block. **A themed booklet's colours, face, spacing
+and corners are the booklet's own: they are an inline `style` attribute on the article, which beats any host rule without
+`!important`.** A host that wants to change one writes `!important` on it (`.booklet { --bk-accent: #7a1f5c !important; }`),
+or sets the variable on the article's own `style` after the build. Print is the exception: it is always light, and a
+themed booklet's colours do not reach the printed page (nor does a host's `!important` one). The colours, the faces, the size, the leading, the measure, the gap and the
 corners; and `data-bk-base` picks one of the four bases. The article itself is placed by the host: its margin, width and display are the host's (the article
 sets its own text and paints nothing, so the page around it does not flow in). Anything else inside the article needs a
 rule of the host's own with the same start, `!important` on each declaration, after this file. **What still reaches
@@ -227,7 +231,8 @@ A table's head cells carry `data-bk-col` too. A tone is a colour and a word for 
 `bk-sr` span beside the value, never inside it), so a value's text stays the value. A chart is followed by the table of
 its numbers in a closed `<details>`, and that table carries no `data-bk-*`: it is an extra, not a row of the view. A line
 chart has no rows: the renderer neither sorts nor filters it, and its table is the way in to the numbers. A table cell for
-a value the row does not have is there and empty, so the columns line up.
+a value the row does not have is there and empty, so the columns line up. A field is named once in a row: one that
+plays a role and is also asked for in `fields:` is drawn as the role.
 
 Over a link role the label leads there as in prose: a heading on the page, a module compiled with this one, or a web
 address (opened in a new tab, `rel="noopener noreferrer"`). A target the compiler cannot follow, a `javascript:` address
@@ -246,6 +251,12 @@ length, a number or a `var()` of its own, `font:` and `density:` as the renderer
 on the `<body class="bk-page">` too, so the paper under the article is the booklet's. A theme cannot write a declaration
 of its own, load anything or leave the article's box. A page whose theme names a base or a colour keeps that base whatever the device's
 colour scheme says; a page with no theme, or one that sets only a face, spacing or corners, follows the device.
+
+**A line chart on a narrow screen.** A line chart is drawn 460 wide and shown no smaller than 420, so its type stays at about
+11px or more on any screen; a box narrower than that (a phone under about 450 px wide) scrolls the plot inside itself,
+sideways in its own box and never the page. The renderer draws at the page's width instead, which a build step cannot know.
+A drawing with a number in it that no picture can use (1e300, or a scale that is not finite) is not drawn at all: its numbers
+table stays. A bar for such a number is left out and its row, value and table stay.
 
 Not done, and said here so nobody looks for it: `style: briefing`'s solid tiles and spot drawings (a compiled page draws no
 pictures of its own); a query has no sort key, so rows stand in the order the file wrote them, and a reader's sorting

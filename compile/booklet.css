@@ -278,7 +278,7 @@
 .booklet:not(#bk):not(#bk):not(#bk) sup,.booklet:not(#bk):not(#bk):not(#bk) sub{line-height:0!important}
 
 /* tables: a wide one scrolls inside its own box, never the page */
-.booklet:not(#bk):not(#bk):not(#bk) .bk-table{margin:1.1rem 0!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table{position:relative!important;margin:1.1rem 0!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-table table{border-collapse:collapse!important;min-width:100%!important;font-size:.95rem!important;line-height:1.45!important;font-variant-numeric:tabular-nums!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-table :is(th,td){text-align:left!important;vertical-align:top!important;padding:.5rem .8rem!important;border-bottom:1px solid var(--bk-rule)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-table th{font-weight:700!important;font-size:.85rem!important;letter-spacing:.02em!important;color:var(--bk-ink)!important;
@@ -558,8 +558,9 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-zero,.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-axis{fill:none!important;stroke:var(--bk-muted)!important;stroke-width:1px!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-zero{vector-effect:non-scaling-stroke!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-grid{fill:none!important;stroke:var(--bk-rule)!important;stroke-width:1px!important}
-.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-plot{min-width:0!important;width:100%!important}
-.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-svg{display:block!important;width:100%!important;max-width:460px!important;height:auto!important;margin:0!important;padding:0!important;overflow:visible!important;color:var(--bk-ink)!important;fill:none!important;stroke:none!important;stroke-width:1px!important}
+/* a line chart is drawn at 460 wide and shown no smaller than 420 (its type 11px at the least): on a narrower box the plot scrolls inside it */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-plot{min-width:0!important;width:100%!important;overflow-x:auto!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-svg{display:block!important;width:100%!important;min-width:420px!important;max-width:460px!important;height:auto!important;margin:0!important;padding:0!important;overflow:visible!important;color:var(--bk-ink)!important;fill:none!important;stroke:none!important;stroke-width:1px!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-tick{fill:var(--bk-muted)!important;stroke:none!important;stroke-width:0!important;font-family:var(--bk-font-text)!important;font-size:12px!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-line{fill:none!important;stroke-width:2.25px!important;stroke-linejoin:round!important;stroke-linecap:round!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt{stroke:var(--bk-surface)!important;stroke-width:1px!important}
@@ -577,7 +578,7 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-pt.bk-s5{fill:var(--bk-teal-ink)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-legend{list-style:none!important;margin:0 0 .4rem!important;padding:0!important;display:flex!important;flex-wrap:wrap!important;gap:.25rem 1.2rem!important;color:var(--bk-ink)!important;font-size:.92rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-legend li{display:inline-flex!important;align-items:center!important;gap:.4rem!important;margin:0!important}
-.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-sw{flex:none!important;margin:0!important;padding:0!important;color:var(--bk-ink)!important;fill:none!important;stroke:none!important;stroke-width:1px!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-ch-sw{display:inline-block!important;width:28px!important;height:12px!important;max-width:none!important;flex:none!important;margin:0!important;padding:0!important;color:var(--bk-ink)!important;fill:none!important;stroke:none!important;stroke-width:1px!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-nums{margin:.5rem 0 0!important;font-size:.92rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-nums>summary{min-height:1.6rem!important;cursor:pointer!important;color:var(--bk-accent)!important;font-weight:600!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-nums .bk-table{margin:.4rem 0 0!important}
@@ -605,6 +606,23 @@
     --bk-lilac-soft:#EFECF8; --bk-lilac-vivid:#7462B5; --bk-lilac-deep:#6453A6;
     --bk-petrol-soft:#E6F0F0; --bk-petrol-vivid:#1E5E6B; --bk-petrol-deep:#15464F;
     --bk-slate-soft:#ECEFF1; --bk-slate-vivid:#5B6B76; --bk-slate-deep:#3E4E59;
+  }
+  /* A booklet's own colours are a style attribute, and an inline declaration beats the table above, so a dark theme would
+     print its light ink on white paper. The same colours again, !important, with the article's weight (and the body's), so
+     print is light whatever the page or a host says. Custom properties, so nothing here weighs on any other declaration. */
+  .booklet:not(#bk):not(#bk):not(#bk), .bk-page:not(#bk):not(#bk):not(#bk){
+    --bk-paper:#FFFFFF!important; --bk-paper-deep:#F3F4F6!important; --bk-ink:#1F2328!important; --bk-muted:#57606A!important;
+    --bk-rule:#D0D7DE!important; --bk-surface:#FFFFFF!important; --bk-accent:#103E46!important; --bk-accent-soft:#E6F0F1!important;
+    --bk-mark:#FFF3B0!important; --bk-warn:#A04E34!important; --bk-warm:#FAE8EC!important; --bk-warm-ink:#A3405B!important;
+    --bk-green:#E1F1E7!important; --bk-green-ink:#2D7751!important; --bk-amber:#F8EBD0!important; --bk-amber-ink:#8B5F10!important;
+    --bk-slate:#ECEFF1!important; --bk-slate-ink:#3E4E59!important; --bk-teal:#E6F0F0!important; --bk-teal-ink:#15464F!important;
+    --bk-blue:#E8F1F9!important; --bk-blue-ink:#2F6596!important; --bk-purple:#EFECF8!important; --bk-purple-ink:#6453A6!important;
+    --bk-sky-soft:#E8F1F9!important; --bk-sky-vivid:#3F7FB5!important; --bk-sky-deep:#2F6596!important; --bk-rose-soft:#FAE8EC!important;
+    --bk-rose-vivid:#BF5470!important; --bk-rose-deep:#A3405B!important; --bk-sage-soft:#E6F2EA!important; --bk-sage-vivid:#4F8C6B!important;
+    --bk-sage-deep:#3B6E52!important; --bk-sun-soft:#FBF2DC!important; --bk-sun-vivid:#B07A0F!important; --bk-sun-deep:#8A5E0B!important;
+    --bk-lilac-soft:#EFECF8!important; --bk-lilac-vivid:#7462B5!important; --bk-lilac-deep:#6453A6!important; --bk-petrol-soft:#E6F0F0!important;
+    --bk-petrol-vivid:#1E5E6B!important; --bk-petrol-deep:#15464F!important; --bk-slate-soft:#ECEFF1!important; --bk-slate-vivid:#5B6B76!important;
+    --bk-slate-deep:#3E4E59!important;
   }
   .bk-page{background:none}
   .bk-main{max-width:none;padding:0}

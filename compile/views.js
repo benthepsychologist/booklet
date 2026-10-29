@@ -20,6 +20,10 @@
 const H=require("./html.js");
 const {el}=H;
 
+/* A number is drawn only if it is a finite one: data of 1e-300 or 1e300 has no scale a picture can use, and a "NaN" or an
+   "Infinity" in an attribute is never written. What cannot be drawn is left out of the picture; the numbers stay in the table. */
+const fin=Number.isFinite;
+const BIG=1e15;
 /* a number as short text: two decimals at most, no exponent */
 const n2=v=>String(Math.round(v*100)/100);
 const n1=v=>String(Math.round(v*10)/10);
@@ -31,14 +35,24 @@ const LINE_W=460;
    o: {R: the renderer's names, T: its "dv" words, icon(name) -> a node or null, lead(set, row, roles, kids) -> nodes}. */
 function draw(cap,o){
   const R=o.R,T=o.T,{set,groups,roles,cols,tree}=cap,text=R.cellText;
+  /* A field named constructor, toString or __proto__ is read by the renderer as r[k], which for a row that lacks it is
+     the Object function or a method, printed as a cell. A row has no prototype here, so r[k] is its own value or nothing
+     (a row is only read from now on; the tree and the groups hold the same objects, so nothing else changes). */
+  for(const r of set.rows) if(r&&typeof r==="object") Object.setPrototypeOf(r,null);
   const grouped=groups.some(g=>g.name!==null);
   const sr=words=>el("span",{class:"bk-sr"},words);
   const toneWords=t=>t?sr(T.tone[t]):null;
   const pill=(x,t)=>el("span",{class:"bk-pill"+(t?" bk-tone-"+t:"")},x);
   const pills=(vals,t)=>vals.flatMap((x,i)=>i?[" ",pill(x,t)]:[pill(x,t)]);
-  /* a value, in an element that names its field */
-  const col=(k,cls,...kids)=>el("span",{class:cls,"data-bk-col":k},...kids);
+  /* a value, in an element that names its field. A field is named once in a row: when the same field plays two roles, or is
+     asked for in fields: as well as playing one, the first place it is drawn names it (newRow starts the count). */
+  let named=new Set();
+  const newRow=()=>{named=new Set();};
+  const nameOf=k=>{if(k==null||named.has(k)) return null;named.add(k);return k;};
+  const col=(k,cls,...kids)=>el("span",{class:cls,"data-bk-col":nameOf(k)},...kids);
   const row=(cls,...kids)=>el("li",{class:cls,"data-bk-row":true},...kids);
+  /* the fields a row draws as a role (a field asked for in fields: that plays one is not drawn a second time) */
+  const roleKeys=new Set([roles.label,roles.value,roles.note,roles.badge].filter(Boolean));
   /* an `icon` role's picture: the sprite's own drawing of that name, else nothing */
   const pic=r=>{const n=roles.icon?text(r[roles.icon]).trim():"",s=n?o.icon(n):null;
     return s?el("span",{class:"bk-dv-i","aria-hidden":"true"},s):null;};
@@ -47,7 +61,10 @@ function draw(cap,o){
   const box=(cls,...kids)=>el("div",{class:"bk-view"+(cls?" "+cls:""),"data-bk-view":cap.as},...kids);
 
   /* ---- table: one row per row, one column per field ---- */
-  const numeric=k=>set.rows.some(r=>typeof r[k]==="number")&&set.rows.every(r=>r[k]==null||typeof r[k]==="number");
+  /* worked out once for a column (not for each cell: a table of thousands of rows would take quadratic time) */
+  const numCache=new Map();
+  const numeric=k=>{if(!numCache.has(k)) numCache.set(k,set.rows.some(r=>typeof r[k]==="number")&&set.rows.every(r=>r[k]==null||typeof r[k]==="number"));
+    return numCache.get(k);};
   /* `tag` false draws a chart's table of numbers, which is no view of its own: its rows and values are not tagged */
   function tableOf(gs,rl,cs,tag){
     const lead1=(cs.find(c=>!(rl.badge&&c.key===rl.badge))||{}).key;
@@ -60,11 +77,12 @@ function draw(cap,o){
       el("thead",{},el("tr",{},...cs.map(c=>el("th",{scope:"col","data-bk-col":tag?c.key:null,class:numeric(c.key)?"bk-num":null},c.label)))),
       ...gs.map(g=>el("tbody",{},
         g.name!==null?el("tr",{class:"bk-grouprow"},el("th",{scope:"rowgroup",colspan:String(cs.length)},g.name||"–",el("span",{class:"bk-count"},T.rows(g.rows.length)))):null,
-        ...g.rows.map(r=>el("tr",{"data-bk-row":tag?true:null},...cs.map(c=>cell(r,c)))))));}
+        ...g.rows.map(r=>{newRow();return el("tr",{"data-bk-row":tag?true:null},...cs.map(c=>cell(r,c)));}))));}
 
   /* ---- list: one line per row, nested when the rows carry a parent ---- */
   function listParts(r){
-    const t=R.rowTone(r,roles),badges=roles.badge?R.partsOf(r[roles.badge]):[],extras=cols.filter(c=>text(r[c.key])!==""),
+    newRow();
+    const t=R.rowTone(r,roles),badges=roles.badge?R.partsOf(r[roles.badge]):[],extras=cols.filter(c=>!roleKeys.has(c.key)&&text(r[c.key])!==""),
       val=R.rolePart(r,roles.value),lab=R.rolePart(r,roles.label),note=R.rolePart(r,roles.note);
     return [pic(r),
       badges.length?col(roles.badge,"bk-dv-b",...pills(badges,t)):null,
@@ -96,6 +114,7 @@ function draw(cap,o){
   function tiles(){
     const strip=!roles.value||!set.rows.some(r=>text(r[roles.value])!=="");
     const one=g=>el("ul",{class:"bk-dv-tiles"+(strip?" bk-dv-strip":"")},...g.rows.map(r=>{
+      newRow();
       const t=R.rowTone(r,roles),note=R.rolePart(r,roles.note),lab=R.rolePart(r,roles.label),val=R.rolePart(r,roles.value),
         linked=!!roles.link&&text(r[roles.link]).trim()!=="";
       const labNode=lab!==""?col(roles.label,"bk-dv-l",...lead(r,[lab])):null,noteNode=note!==""?col(roles.note,"bk-dv-n",note):null;
@@ -107,14 +126,15 @@ function draw(cap,o){
   /* ---- cards: one per row, led by its label; the fields that play no role are lines ---- */
   function cards(){
     const one=g=>g.rows.map(r=>{
+      newRow();
       const lab=R.rolePart(r,roles.label),note=R.rolePart(r,roles.note),val=R.rolePart(r,roles.value),t=R.rowTone(r,roles),
-        badges=roles.badge?R.partsOf(r[roles.badge]):[],lines=cols.filter(c=>text(r[c.key])!=="");
+        badges=roles.badge?R.partsOf(r[roles.badge]):[],lines=cols.filter(c=>!roleKeys.has(c.key)&&text(r[c.key])!=="");
       return el("div",{class:"bk-dv-card"+(t?" bk-tone-"+t:""),"data-bk-row":true},pic(r),
-        lab!==""?el("div",{class:"bk-dv-k","data-bk-col":roles.label},...lead(r,[lab])):null,
-        note!==""?el("div",{class:"bk-dv-n","data-bk-col":roles.note},note):null,
+        lab!==""?el("div",{class:"bk-dv-k","data-bk-col":nameOf(roles.label)},...lead(r,[lab])):null,
+        note!==""?el("div",{class:"bk-dv-n","data-bk-col":nameOf(roles.note)},note):null,
         badges.length?col(roles.badge,"bk-dv-b",...pills(badges,t)):null,
         val!==""?col(roles.value,"bk-dv-v",val):null,
-        lines.length?el("dl",{},...lines.flatMap(c=>[el("dt",{},c.label),el("dd",{"data-bk-col":c.key},text(r[c.key]))])):null,
+        lines.length?el("dl",{},...lines.flatMap(c=>[el("dt",{},c.label),el("dd",{"data-bk-col":nameOf(c.key)},text(r[c.key]))])):null,
         toneWords(t));});
     return box("",el("div",{class:"bk-dv-cards"},...(grouped?groups.flatMap(g=>[groupHead(g),...one(g)]):one(groups[0]))));}
 
@@ -126,11 +146,11 @@ function draw(cap,o){
     const rows=groups[0].rows,lk=roles.label,vk=roles.value,C=T.chart;
     const vals=vk?rows.map(r=>r[vk]).filter(R.isNum):[];
     const [lo0,hi0]=range(vals),sc=R.niceScale(Math.min(0,lo0),Math.max(0,hi0));
-    const span=sc.max-sc.min,zero=(0-sc.min)/span*100;
-    const items=rows.map(r=>{const x=vk?r[vk]:undefined,tone=R.rowTone(r,roles);
+    const span=sc.max-sc.min,zero=(0-sc.min)/span*100,geo=fin(span)&&span>0&&fin(zero)&&vals.every(v=>Math.abs(v)<BIG);
+    const items=rows.map(r=>{newRow();const x=vk?r[vk]:undefined,tone=R.rowTone(r,roles);
       const track=el("svg",{class:"bk-ch-track",viewBox:"0 0 100 10",preserveAspectRatio:"none","aria-hidden":"true",focusable:"false"},
-        sc.min<0?el("line",{class:"bk-ch-zero",x1:n2(zero),x2:n2(zero),y1:0,y2:10}):null,
-        R.isNum(x)&&x!==0?el("rect",{class:"bk-ch-bar"+(tone?" bk-tone-"+tone:""),x:n2(Math.min(zero,zero+x/span*100)),y:1,
+        geo&&sc.min<0?el("line",{class:"bk-ch-zero",x1:n2(zero),x2:n2(zero),y1:0,y2:10}):null,
+        geo&&R.isNum(x)&&x!==0&&fin(zero+x/span*100)?el("rect",{class:"bk-ch-bar"+(tone?" bk-tone-"+tone:""),x:n2(Math.min(zero,zero+x/span*100)),y:1,
           width:n2(Math.max(Math.abs(x)/span*100,.6)),height:8}):null);
       return row("bk-ch-row",col(lk,"bk-ch-l",R.rolePart(r,lk)),track,col(vk,"bk-ch-v",R.isNum(x)?R.fmtNum(x):"–"),toneWords(tone));});
     const lo=vals.length?R.fmtNum(lo0):"–",hi=vals.length?R.fmtNum(hi0):"–";
@@ -159,7 +179,8 @@ function draw(cap,o){
     const L=Math.max(yw,10),Rt=Math.max(10,Math.ceil(lw/2)),padTop=12,B=30;
     const x0=Math.max(L+8,Math.ceil(lw/2)),x1=W-Rt,pw=Math.max(x1-x0,1),ph=Hh-padTop-B;
     const n=rows.length,X=i=>n===1?(x0+x1)/2:x0+i*pw/(n-1),Y=t=>padTop+ph-(t-sc.min)/(sc.max-sc.min)*ph;
-    const svg=el("svg",{class:"bk-ch-svg",viewBox:"0 0 "+W+" "+Hh,role:"img","aria-label":C.line(n,names.join(", "),lo,hi),focusable:"false"});
+    const svg=!all.every(v=>Math.abs(v)<BIG)||!fin(sc.min)||!fin(sc.max)||!(sc.max>sc.min)?null:el("svg",{class:"bk-ch-svg",viewBox:"0 0 "+W+" "+Hh,role:"img","aria-label":C.line(n,names.join(", "),lo,hi),focusable:"false"});
+    if(svg){
     for(const t of sc.ticks) svg.append(el("line",{class:t===sc.min?"bk-ch-axis":"bk-ch-grid",x1:L,x2:W-Rt+2,y1:n1(Y(t)),y2:n1(Y(t))}),
       el("text",{class:"bk-ch-tick",x:L-6,y:n1(Y(t)+4),"text-anchor":"end"},R.fmtNum(t)));
     for(const i of R.thinLabels(n,pw,lw)) svg.append(el("text",{class:"bk-ch-tick",x:n1(X(i)),y:Hh-B+17,"text-anchor":"middle"},R.chClip(labels[i],14)));
@@ -169,7 +190,10 @@ function draw(cap,o){
       s.forEach((val,i)=>{if(val===null){flush();return;}seg.push([X(i),Y(val)]);});flush();
       s.forEach((val,i)=>{if(val===null) return;
         svg.append(marker(si,X(i),Y(val),3.5).append(el("title",{},(keys.length>1?names[si]+" – ":"")+labels[i]+": "+R.fmtNum(val))));});});
-    return el("div",{class:"bk-view bk-panel","data-bk-view":"line"},legend,el("div",{class:"bk-ch-plot"},svg),numbers([lk,...keys],rows));}
+    }
+    /* a drawing with a number in it that is not finite is not drawn at all: its numbers table is how it is read */
+    let bad=!svg;if(svg) H.walk(svg,x=>{if(x&&x.attrs&&Object.values(x.attrs).some(v=>/NaN|Infinity/.test(v))) bad=true;});
+    return el("div",{class:"bk-view bk-panel","data-bk-view":"line"},legend,bad?null:el("div",{class:"bk-ch-plot"},svg),numbers([lk,...keys],rows));}
 
   switch(cap.as){
     case "table": return box("bk-panel",el("div",{class:"bk-table"},tableOf(groups,roles,cols,true)));
