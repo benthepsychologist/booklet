@@ -26,7 +26,7 @@ const OUT=path.resolve(process.argv[3]||'.','compile-reading-pages');
 const C=require('../compile/compile.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 
-const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures'),PARTS=path.join(ROOT,'compile','script');
+const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures'),LANE=path.join(__dirname,'compile-fixtures'),PARTS=path.join(ROOT,'compile','script');
 fs.rmSync(OUT,{recursive:true,force:true});
 /* the parts joined in file-name order, as the assembler does it */
 const parts=fs.readdirSync(PARTS).filter(f=>/^reading-.*\.js$/.test(f)).sort();
@@ -65,10 +65,10 @@ const viewsPage='<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><m
   +'<p id="v-after">After the views.</p></article></main><script src="booklet/booklet.js" defer></script></body></html>\n';
 /* the views lane's real output (static fixtures: PR #82 at 6726a69): its page, and the rules it gives its views, loaded after ours */
 fs.mkdirSync(path.join(OUT,'views-lane'),{recursive:true});
-fs.copyFileSync(path.join(FIX,'views-lane','views-lane.css'),path.join(OUT,'views-lane','views-lane.css'));
-fs.writeFileSync(path.join(OUT,'views-lane','index.html'),fs.readFileSync(path.join(FIX,'views-lane','compiled.html'),'utf8')
+fs.copyFileSync(path.join(LANE,'views-lane','views-lane.css'),path.join(OUT,'views-lane','views-lane.css'));
+fs.writeFileSync(path.join(OUT,'views-lane','index.html'),fs.readFileSync(path.join(LANE,'views-lane','compiled.html'),'utf8')
   .replace('</head>','<link rel="stylesheet" href="views-lane.css">\n</head>').replace('</body>','<script src="../booklet/booklet.js" defer></script>\n</body>'));
-fs.writeFileSync(path.join(OUT,'views-lane','off.html'),fs.readFileSync(path.join(FIX,'views-lane','compiled.html'),'utf8')
+fs.writeFileSync(path.join(OUT,'views-lane','off.html'),fs.readFileSync(path.join(LANE,'views-lane','compiled.html'),'utf8')
   .replace('</head>','<link rel="stylesheet" href="views-lane.css">\n</head>'));
 fs.writeFileSync(path.join(OUT,'views.html'),viewsPage);
 /* 3000 made-up rows in one list (a keystroke has to stay quick), and a copy of the reading page where the box's usual id is taken */
