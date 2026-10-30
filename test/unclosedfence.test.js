@@ -54,11 +54,14 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
  A.answersIn("").q2="the squash";A.markDirty();A.answersIn("").q2="";A.markDirty();BLOBS.length=0;await A.download();
  chk("an answer given and taken back: the file as it was",BLOBS.length===1&&BLOBS[0]===OPEN,BLOBS.map(show).join());}
 
-/* ---- a fence that never closes in design written after the records: the region would go into it ---- */
+/* ---- a fence that never closes in design written after the records (0.17: that design stays where it is, so the region is not in it) ---- */
 {const REC="%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n%%\n";
  const MOVED=FM+ACT+REC+"\n> [!text|q3] Anything else?\n\n```text\nmulch the beds\n";
  const A=load(MOVED);BLOBS.length=0;await A.download();
- chk("design after the records that ends inside such a fence: a download is refused, even with nothing changed",BLOBS.length===0&&toastText()===say(A,"en")&&A.peekAnswers("").q1==="peas",BLOBS.map(show).join());}
+ chk("design after the records that ends inside such a fence: a download is made, the file byte for byte (0.17 leaves that design where it is, so nothing goes into the fence)",BLOBS.length===1&&BLOBS[0]===MOVED&&A.peekAnswers("").q1==="peas",BLOBS.map(show).join());
+ A.answersIn("").q2="the squash";A.markDirty();BLOBS.length=0;await A.download();
+ chk("and with an answer typed, it is written in the records region before the design, and the design and its open fence after the region are as they were",
+   BLOBS.length===1&&BLOBS[0].includes('"q2": "the squash"')&&BLOBS[0].indexOf('"q2"')<BLOBS[0].indexOf("Anything else")&&BLOBS[0].endsWith("%%\n\n> [!text|q3] Anything else?\n\n```text\nmulch the beds\n"),BLOBS.map(show).join());}
 
 /* ---- the browser's own copy of such a booklet (0.16.1): a reload, a Rename and Remove a module keep the design ----
    The copy is the design's text with the records region kept beside it (bookText, regionOf). Written after this body,
@@ -76,7 +79,7 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
   chk("and the records region is kept beside it: the text the writer would write is byte for byte what it was before the reload",
     t===wrote&&at>0&&t.slice(at).startsWith("%%\n"+HEAD+"\n\n```booklet answers\n{\"q1\": \"peas\"")&&t.includes('"q2": "the squash"'),show(t)+" | before "+show(wrote));}
  BLOBS.length=0;await B.download();
- chk("and a download is still refused",BLOBS.length===0&&toastText()===say(B,"en"));
+ chk("and a download is made, as the file was (the design after the records stays where it is)",BLOBS.length===1&&BLOBS[0]===wrote,BLOBS.map(show).join());
  const named=design.replace("title: Garden notes\n","title: \"Garden notes in May\"\n");
  B.renameBooklet("Garden notes in May");
  chk("a Rename changes the title line and nothing else of the design",named!==design&&B.BOOK.raw.source===named,show(B.BOOK.raw.source));
@@ -288,7 +291,8 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
  for(const f of files){const text=fs.readFileSync(P.R+"/"+f,"utf8");P.wipe();const C=P.boot(),R=C.parseFile(text);
    if(!R.template||!R.ok) continue;
    C.loadText(text);BLOBS.length=0;await C.download();n++;
-   /* a file with design after its records is written with that design above them (section 8), as toMarkdown writes it */
+   /* a file with design after its records is written with that design after them, as it was (SPEC section 8); design between two
+      regions is still written above them */
    const mv=R.unread.some(p=>/moved above/.test(String(p)));if(mv) moved++;
    if(BLOBS.length!==1||BLOBS[0]!==(mv?C.toMarkdown():text)) differ.push(f);
    /* the browser's copy of its design is the writer's text with nothing of the reader's, as before 0.16.1 */

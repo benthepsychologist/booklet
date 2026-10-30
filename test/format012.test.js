@@ -18,8 +18,8 @@ const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
  const acts=R=>mod(R).activities;
 
  /* ---- the settings table ---- */
- chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, icon:, parent:, status: and tab:",
-   JSON.stringify(A.KIND_SETTINGS.module)==='["end","icon:"]'&&JSON.stringify(A.KIND_SETTINGS.activity)==='["repeat","daily","hidden","icon:","parent:","status:","tab:"]');
+ chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, entries:, icon:, status: and tab: (0.17: parent: is a page line's)",
+   JSON.stringify(A.KIND_SETTINGS.module)==='["end","icon:"]'&&JSON.stringify(A.KIND_SETTINGS.activity)==='["repeat","daily","hidden","entries:","icon:","status:","tab:"]'&&JSON.stringify(A.KIND_SETTINGS.page)==='["icon:","parent:"]');
  {const R=A.parseFile(FM+"> [!module|m icon:compass] M\n\n> [!activity|a icon:notebook-pen] A\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
   chk("icon: on a module and on an activity is read, with nothing reported",R.ok&&R.unread.length===0&&mod(R).icon==="compass"&&acts(R)[0].icon==="notebook-pen"&&acts(R)[1].icon===undefined,JSON.stringify(R.unread));}
  {const R=A.parseFile(FM+"> [!module|m icon:no-such-picture] M\n\n> [!activity|a icon:Compass] A\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
@@ -35,7 +35,7 @@ const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
  {const {R,a}=tree([["root"],["x","root"],["y","x"],["z","root"],["w"]]);
   chk("a tree is kept depth first: a parent, its first child and that child's children, then the next sibling",a.map(x=>x.id).join()==="m/root,m/x,m/y,m/z,m/w",a.map(x=>x.id).join());
   chk("each activity keeps its parent's address; the top has none, and the renderer keeps no depth",a.map(x=>x.parent||"-").join()==="-,m/root,m/x,m/root,-"&&a.every(x=>x.depth===undefined),a.map(x=>x.parent).join());
-  chk("a file written parent first reports nothing",R.unread.length===0);}
+  chk("a file written parent first reports one thing, once (0.17: parent: is a page line's setting; an activity line still draws as a wiki)",R.unread.length===1&&/3 activity lines carry `parent:`/.test(R.unread[0]),JSON.stringify(R.unread));}
  {const {a}=tree([["a"],["b","a"],["c"],["d","a"]]);
   chk("children of one parent keep the file's order, even with another activity between them",a.map(x=>x.id).join()==="m/a,m/b,m/d,m/c",a.map(x=>x.id).join());}
  {const {a}=tree([["a","nobody"],["b","a"]]);
