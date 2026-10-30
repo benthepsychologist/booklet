@@ -6,7 +6,7 @@ const P=require("./page.js");
 const fs=require("fs"),path=require("path"),os=require("os"),{spawnSync}=require("child_process");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.17"\ntitle: T\nlang: en\n---\n\n';
 const REC="\n%%\n> [!records] App record — do not edit below this line\n\n";
 const fence=(info,body)=>"```"+info+"\n"+body+"\n```\n\n";
 /* the records a written file holds: [{scope, info, code}] in file order, read the way the format says (a fence after a records line) */
@@ -91,8 +91,8 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const miss=A.parseFile(FM+"> [!activity|a parent:nope] A\n\n> [!activity|b] B\n");
   chk("a parent that is no bare activity leaves the activity at the top, as in a module",miss.template.modules[0].activities[0].parent===undefined&&miss.ok);
   const L=lintOut(bare());
-  chk("the linter accepts parent: between bare activities, and no longer says it places nothing",/0 errors · 0 warnings/.test(L)&&!/places nothing/.test(L),L);
-  chk("the linter warns on a parent that is not among the bare activities, naming the module with no name",/`parent:nope` is not an activity of the module with no name/.test(lintOut(FM+"> [!activity|a parent:nope] A\n")));
+  chk("the linter warns, and refuses nothing, on parent: between bare activities (0.17: it is a page line's setting), naming the move",/0 errors · 2 warnings/.test(L)&&!/places nothing/.test(L)&&/`parent:top` on an activity line/.test(L),L);
+  chk("the linter warns on a parent: that names nothing the same way, as the move to a page line (0.17)",/`parent:nope` on an activity line is a format 0\.16 setting/.test(lintOut(FM+"> [!activity|a parent:nope] A\n")));
   /* a bare activity may have a module's id: no module id is spelled like a bare id's scope */
   const clash=FM+"> [!module|inbox] Inbox\n\n> [!activity|a] A\n\n> [!module|inbox end] End\n\n> [!activity|inbox] Bare\n\n> [!text|q] Q\n";
   chk("the linter accepts a bare activity whose id is a module's id",/0 errors/.test(lintOut(clash)),lintOut(clash));
@@ -155,7 +155,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("the linter keeps it an error",/`from: a` is in another module/.test(lintOut(two))&&lint(two).status===1,lintOut(two));
   chk("a menu: across a module boundary draws no options and the file opens",(r=>r.ok&&r.refused.length===0)(A.parseFile(FM+"> [!module|m1] One\n\n> [!menu|feels]\n- Calm\n\n> [!activity|a] A\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|b] B\n\n> [!choice|c menu:feels] C\n\n> [!module|m2 end] End\n")));}
  /* ---- D9: front-matter keys a reader does not know are kept ---- */
- {const file='---\nbooklet: "0.16"\ntitle: T\nlang: en\nstatus: draft\nauthor: Someone\nfuture-key: "x"\n---\n\n> [!activity|a] A\n\n> [!text|q] Q\n';
+ {const file='---\nbooklet: "0.17"\ntitle: T\nlang: en\nstatus: draft\nauthor: Someone\nfuture-key: "x"\n---\n\n> [!activity|a] A\n\n> [!text|q] Q\n';
   const A=load(file);A.answersIn("").q="hello";
   const out=A.toMarkdown();
   chk("an unknown front-matter key survives a save, as written, and is not reported",out.startsWith(file.replace(/\s+$/,""))&&A.parseFile(file).unread.length===0,out.slice(0,160));}

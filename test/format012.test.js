@@ -11,7 +11,7 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
-const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.17"\ntitle: T\nlang: en\n---\n\n';
 (async()=>{
  const A=P.boot();
  const mod=R=>R.template.modules[0];
@@ -111,14 +111,14 @@ const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
   chk("a chain of 10,000 activities each under the one before opens (no stack overflow) and keeps its order and its parents",R.ok&&a.length===N&&a[N-1].parent==="m/a"+(N-2)&&a[0].id==="m/a0",R.ok+" "+a.length);
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"f012d-")),f=path.join(tmp,"deep.md");
   fs.writeFileSync(f,FM+"> [!module|m] M\n\n"+chain+"> [!module|m end] End\n");
-  const t1=Date.now(),r=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"}),dt=Date.now()-t1;
-  chk("the linter walks that chain in under two seconds, with no warning",r.status===0&&dt<2000&&/0 errors · 0 warnings/.test(r.stdout),dt+"ms "+r.stdout.slice(-120));
+  const t1=Date.now(),r=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8",maxBuffer:1<<28}),dt=Date.now()-t1;
+  chk("the linter walks that chain in under two seconds, one move warning per parent: (0.17)",r.status===0&&dt<2000&&(r.stdout.match(/on an activity line is a format 0\.16 setting/g)||[]).length===N-1&&r.stdout.includes("0 errors · "+(N-1)+" warnings"),dt+"ms "+r.stdout.slice(-120));
   const loopy=FM+"> [!module|m] M\n\n"+Array.from({length:3000},(_,i)=>"> [!activity|a"+i+" parent:a"+((i+1)%3000)+"] A"+i+"\n\n").join("")+"> [!module|m end] End\n";
-  fs.writeFileSync(f,loopy);const t2=Date.now(),r2=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"});
-  chk("a loop 3,000 long is reported once per member, fast",r2.status===0&&(r2.stdout.match(/loops back/g)||[]).length===3000&&Date.now()-t2<3000,String(Date.now()-t2));
+  fs.writeFileSync(f,loopy);const t2=Date.now(),r2=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8",maxBuffer:1<<28});
+  chk("a loop 3,000 long is one move warning per member, fast",r2.status===0&&(r2.stdout.match(/on an activity line is a format 0\.16 setting/g)||[]).length===3000&&Date.now()-t2<3000,String(Date.now()-t2));
   fs.rmSync(tmp,{recursive:true,force:true});}
  {const r=spawnSync("python3",[P.R+"/lint-booklet.py",P.R+"/test/fixtures/lint-parent-bare.md"],{encoding:"utf8"});
-  chk("parent: between activities outside every module fence places among them (0.13), and the linter has nothing to say",r.status===0&&/0 errors · 0 warnings/.test(r.stdout),r.stdout);}
+  chk("parent: between bare activities was 0.13's placing; in 0.17 the linter warns once per parent:, naming the move, and refuses nothing",r.status===0&&/0 errors · \d+ warnings?/.test(r.stdout)&&(r.stdout.match(/on an activity line is a format 0\.16 setting/g)||[]).length>=1,r.stdout);}
 
  /* ---- review round 2 ---- */
  chk("isModuleLink: a target whose path ends .booklet or .booklet.md, with a #… or ?… suffix or a space, is a module link; the reviewer's near misses are not",
@@ -160,21 +160,21 @@ const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
     return {status:r.status,out:r.stdout,errors:r.stdout.split("\n").filter(l=>/^ERROR/.test(l)),warns:r.stdout.split("\n").filter(l=>/^warn/.test(l))};};
   const F=(body)=>FM+"> [!module|m] M\n\n"+body+"> [!module|m end] End\n";
   let l=lint("ok.md",F("Opening prose.\n\n> [!activity|a icon:compass] A\n\n> [!activity|b parent:a icon:sprout] B\n\n"));
-  chk("the linter accepts a module's opening, icon: and parent:",l.status===0&&l.errors.length===0&&l.warns.length===0,l.out);
+  chk("the linter accepts a module's opening and icon:, and a parent: on an activity is one warning that names the move to a page line (0.17)",l.status===0&&l.errors.length===0&&l.warns.length===1&&/`parent:a` on an activity line is a format 0\.16 setting; 0\.17 takes `parent:` on a page line.*`> \[!page\|id parent:a\] Title`/.test(l.warns[0]),l.out);
   l=lint("icon.md",F("> [!activity|a icon:compas] A\n\n"));
   chk("an icon: name outside the list is an error, named",l.status===1&&/line 9: `icon:compas` is not a name in Booklet's icon set/.test(l.errors[0]||""),l.out);
   l=lint("end.md",FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!module|m end icon:compass] End\n");
   chk("icon: on a module's end line is an error",l.status===1&&/end line takes no `icon:`/.test(l.errors[0]||""),l.out);
   l=lint("par.md",F("> [!activity|a parent:nobody] A\n\n"));
-  chk("a parent that is not in the module is a warning",l.status===0&&l.warns.length===1&&/`parent:nobody` is not an activity of the module 'm', so 'a' sits at the top/.test(l.warns[0]),l.out);
+  chk("a parent: on an activity is a warning whether or not it names anything (0.17: it is a page line's setting)",l.status===0&&l.warns.length===1&&/`parent:nobody` on an activity line is a format 0\.16 setting; 0\.17 takes `parent:` on a page line/.test(l.warns[0]),l.out);
   l=lint("loop.md",F("> [!activity|a parent:b] A\n\n> [!activity|b parent:a] B\n\n"));
-  chk("a loop is a warning, one per activity in it",l.status===0&&l.warns.length===2&&l.warns.every(w=>/loops back/.test(w)),l.out);
+  chk("a loop of activities is one move warning per activity (0.17: no tree is built)",l.status===0&&l.warns.length===2&&l.warns.every(w=>/on an activity line is a format 0\.16 setting; 0\.17 takes `parent:` on a page line/.test(w)),l.out);
   l=lint("self.md",F("> [!activity|a parent:a] A\n\n"));
-  chk("an activity under itself is a loop",l.warns.length===1&&/loops back/.test(l.warns[0]),l.out);
+  chk("an activity under itself is the same one move warning",l.warns.length===1&&/on an activity line is a format 0\.16 setting; 0\.17 takes `parent:` on a page line/.test(l.warns[0]),l.out);
   l=lint("par2.md",FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b parent:a] B\n\n> [!module|n end] End\n");
-  chk("a parent in another module is not in this one",l.warns.length===1&&/`parent:a` is not an activity of the module 'n'/.test(l.warns[0]),l.out);
-  l=lint("par3.md",F("> [!activity|a parent:bad id] A\n\n> [!activity|b parent:ok_x] B\n\n"));
-  chk("a parent that is not an id is an error",l.status===1&&/`parent:ok_x` must be an activity id/.test(l.errors.join("|")),l.out);
+  chk("a parent: in another module is the same one move warning",l.warns.length===1&&/`parent:a` on an activity line is a format 0\.16 setting; 0\.17 takes `parent:` on a page line/.test(l.warns[0]),l.out);
+  l=lint("par3.md",F("> [!activity|b parent:ok_x] B\n\n"));
+  chk("a parent: that is not an id is still only the move warning on an activity",l.status===0&&l.errors.length===0&&l.warns.length===1&&/`parent:ok_x` on an activity line is a format 0\.16 setting; 0\.17 takes `parent:` on a page line/.test(l.warns[0]),l.out);
   const DATA='```booklet data\n[{"label":"x","icon":"compass","link":"#A"},{"label":"y","icon":"compas"}]\n```\n^d\n\n```booklet query\nfrom: d\nas: tiles\n```\n\n';
   l=lint("role.md",F("> [!activity|a] A\n\n"+DATA));
   chk("an icon role value outside the list is a warning, named",l.status===0&&l.warns.length===1&&/the rows' `icon` holds 'compas'.*not in Booklet's icon set/.test(l.warns[0]),l.out);

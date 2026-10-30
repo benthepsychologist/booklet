@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.16.0**. It matches SPEC.md's v0.16, the current format.
+**Skill version: 0.17.0**. It matches SPEC.md's v0.17, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -31,10 +31,12 @@ misbehaves:
 3. A module is fenced (`> [!module|id] Title` … `> [!module|id end]`),
    and holds **one activity, or several**, each opened by its own
    `> [!activity|id …] Title` line. Every activity is written the same way.
-4. **Tabs are a tab line, pages a horizontal rule** (`***`). A tab
-   (`> [!tab] Name`) is an area of an activity or a module meant to be very
-   different from the rest; a page is only pagination, for a long form or a
-   long reading. A short activity needs neither.
+4. **Tabs are a tab line, pages a page line, and `***` splits a long page.** A
+   tab (`> [!tab] Name`) is an area of an activity or a module meant to be very
+   different from the rest. A tab holds pages: with no page line it is one page,
+   and page lines (`> [!page|id] Title`) give it more, as a tree. A `***` rule
+   only splits a long page into sections for a long form or a long reading. A
+   short activity needs none of these.
 5. **One language per file.** Nothing here is written per-language; a
    translation, if one is wanted, is a sibling file (section 9).
 6. You write the design only. **Never write answers, kept entries, names or
@@ -46,7 +48,7 @@ misbehaves:
 
 ## 1. What is in the file
 
-Booklet > modules > activities > (tabs, by a tab line) > (pages, by a rule) > booklet lines and prose.
+Booklet > modules > activities > (tabs, by a tab line) > (pages, by a page line) > (sections, by a rule) > booklet lines and prose.
 
 - A **module** is what a person adds or removes as a unit — the whole fence,
   `> [!module|id] Title` to `> [!module|id end]`.
@@ -59,9 +61,16 @@ Booklet > modules > activities > (tabs, by a tab line) > (pages, by a rule) > bo
   tab line or the end of the activity; what comes before the first tab line is the
   activity's opening, shown above the tabs. A module's opening can declare tabs
   too, and its activities join them with `tab:` (section 5).
-- **Pages** paginate a long form or a long reading. Any thematic break inside an
-  activity or a tab is a page break; an activity with no break is one page. A page
-  has no name and no menu: the reader moves through pages with Back and Next.
+- **Pages** are for organizing information, inside a tab. A tab with no page line
+  is one page. A page line, `> [!page|id parent:x icon:name] Title`, starts a named
+  page; `parent:` puts it under another page of the same tab, so a tab can hold a
+  wiki, a tree of pages (section 5). A page keeps no answers, only words and
+  questions that belong to the activity. The reader moves through the pages with
+  Back, Up and Next.
+- **Sections** (`***`) split one long page, for a long form or a long reading.
+  Any thematic break inside an activity, a tab or a page splits it; a page with
+  no break is one section. A section has no name and no menu; the reader turns
+  sections with Back, a counter and Next.
   ⚠️ Write `***` on its own line, not `---`: a bare `---` right under a line of
   text is read by Markdown as that line's heading instead.
 - **Booklet lines** (`> [!kind|id …] Title`) are everything Booklet needs to
@@ -72,14 +81,15 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.16"`, `id`, `title`, `lang`, `version` | you |
-| **Design** (everything above the records) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design |
+| **Front matter** (`---` on line 1) | `booklet: "0.17"`, `id`, `title`, `lang`, `version`, and a `description` if the first paragraph is not the right sentence for a search result | you |
+| **Design** (everything above the records, and anything written after them) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design, and leaves design written after the records where it is |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only; a fresh file has none at all |
 
 **Never invent or edit:** kept entries or answers, a `sync` record, a module's
 `notice` terms nobody gave you, a kind or engine not listed here. When changing
-an existing booklet, edit only the design above the records section, keep every
-id exactly as it was, and never touch anything inside `%% … %%`.
+an existing booklet, edit only the design (above the records section, or below it if the
+file has some there: leave it where it is), keep every id exactly as it was, and
+never touch anything inside `%% … %%`.
 
 ---
 
@@ -138,7 +148,7 @@ pages, then booklet lines.**
 | How many **modules**? | One, unless the parts are independent and a person might want one without the other (a journal and a separate tracker). |
 | How many **activities**? | One per thing done in one sitting and kept as one entry. Parts done at different times (a daily log and a weekly review) are separate activities. |
 | Which **flag**? | `repeat` for anything with a dated history. `repeat daily` for once a day, replacing today's entry on a second finalize. No flag for reading, or for a question with one current answer and no history. |
-| Tabs, pages, or neither? | Neither, for most: one scrolling page, enough for up to about seven lines. Tabs only for areas meant to be very different (a dashboard, a form, a reading). A break (`***`) only to paginate a long form or a long reading, 2 to 4 pages. |
+| Tabs, pages, or neither? | Neither, for most: one scrolling page, enough for up to about seven lines. Tabs only for areas meant to be very different (a dashboard, a form, a reading). Page lines only for a wiki, a tree of pages to read in a tab. A break (`***`) only to split a long form or a long reading, 2 to 4 sections. |
 | Which **lines**? | Open with a line or two of plain prose: what to do, roughly how long, and that anything can be skipped. On a page that asks questions, 3 to 6 of them, mostly `text` (section 6). |
 
 A **quiz** has no scoring, but a `choice` or `multi` may mark its correct
@@ -175,7 +185,7 @@ language are real ones; give them your own.
 
 ````markdown
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: "local/my-booklet"
 title: "My booklet"
 lang: en
@@ -202,7 +212,7 @@ One or two sentences of plain prose: what to do, and that skipping is fine.
 
 Write one booklet line for each question (section 6) where `my-question` stands.
 
-- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.16"`:
+- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.17"`:
   unquoted, a YAML tool reads `0.10` as the number 0.1. A tool that writes
   booklets should ask the linter for the marker (`python3 lint-booklet.py
   --marker` prints the whole line) and not hard-code it. A file marked with
@@ -304,6 +314,11 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   entry), `repeat daily` (one entry per day), `hidden` (kept in the file, not
   offered). With none of these, the activity is answered once and edited in
   place. `daily` needs `repeat`.
+- **Kept entries, folded: `entries:folded`** on a `repeat` activity's line says
+  the list of its kept entries starts folded, closed until the reader opens it:
+  `> [!activity|log repeat entries:folded] Log a moment`. `entries:` takes only
+  `folded`; on an activity that is not `repeat` it does nothing and the linter
+  warns. It changes nothing that is kept, only how the list starts.
 - **A picture for a card: `icon:`** on a module or activity line names a
   picture from Booklet's icon set: `> [!activity|log repeat icon:notebook-pen]
   Log a moment`. Without it a leading emoji in the title is the picture, and
@@ -320,12 +335,11 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   To show none, write `status:off` on the line: `> [!activity|tides status:off]
   Tides`. `status:` takes only `off`, and the `>` lines are not the blurb (the
   blurb is the first paragraph, after a blank line).
-- **An activity under another: `parent:`** names the activity it belongs under,
-  in the same module, for a module that is a tree of pages (a wiki, a
-  portfolio). Write the parent first:
-  `> [!activity|v1-release parent:booklet-dev] Booklet v1.0`. Without `parent`
-  a module is a flat list. A parent that is not in the module, or a loop, puts the
-  activity at the top and the linter warns.
+- **`parent:` is not an activity's setting any more.** In format 0.16 it put an
+  activity under another. In 0.17 it belongs to a page line (below): a wiki is
+  one activity whose pages are page lines. A file with `parent:` on an activity
+  line is not refused, but the linter warns that it is ignored, and names the
+  move.
 - **A link to a whole module**, one that may not be in this booklet, is
   `[[week-2.booklet]]` or `[Week 2](week-2.booklet.md)`: the module's id is the
   file's name before `.booklet`. Add a label after a bar,
@@ -356,40 +370,124 @@ The icon names, all of them:
 `users` `wallet` `waves` `wind` `wrench` `x` `zap`
 <!-- icons:end -->
 
-A small wiki, three pages in a tree and a link to a module the booklet may not
-hold. The renderer draws the top pages as a contents list, the tree in a menu beside the
-pages, a trail of ancestors above each page, the pages under it as a contents list below,
-and a "Mentioned on" list of the pages that link to it:
+**Pages: a wiki inside a tab.** A page line, `> [!page|id parent:x icon:name]
+Title`, starts a named page in the tab it stands in, and runs to the next page,
+tab, activity, module, data or records line. Pages are for organizing
+information; they keep nothing, so a page may hold prose, images and questions
+(the activity keeps the answers, once, whichever page a question is on), but a
+page is never started or finished, and a page needs no `repeat`.
 
-```markdown
+- **A tab with no page line is one page.** The words before a tab's first page
+  line are its **first page**, named by the tab (or by the activity, when it has no
+  tab line); give them the introduction to the tree, or leave them empty and the
+  tab opens on its first named page.
+- **Pages with no `parent:` stand side by side**; `parent:<id>` puts a page under
+  another page of the **same tab** (a page's parent is never in another tab). The
+  reading order goes down each branch before the next one. A parent that is not a
+  page of the tab, or a loop, puts the page at the top and the linter warns.
+- **A page's id is optional.** The id is the one after the bar, else the title made
+  into an id (`Choosing a place` is `choosing-a-place`; a title that is no letters,
+  such as an emoji, gives `page-` and its place). A first word with a colon is a
+  setting, so `> [!page|parent:map] Choosing a place` is a page under `map` with
+  no written id. **Write an id on a page that has children**, so renaming its title
+  does not cut them loose. Two pages of one tab with one id are an error.
+- **A page takes `parent:` and `icon:` only** (no `hidden`, `status:`, `repeat` or
+  `tab:`), and it has no status line: `>` lines straight under a page line are the
+  page's first prose.
+- **A page line goes inside a tab or an activity.** It is an error in the
+  activity's opening when the activity has tabs (that opening is shown above every
+  tab), in a module's opening, outside every activity, in a group, in a row, and
+  it means nothing in a data section.
+- **Links to a page are heading links**: `[[#The two axes]]` opens the page whose
+  title reads those words. A page needs no id for that.
+- **An activity that keeps entries (`repeat`) cannot be a page**: a page keeps
+  nothing. Such activities stay activities; group them with a module's tabs.
+
+A check-in with a wiki tab, a quiz tab and a tab of what was kept. The wiki tab
+opens on its own words, then has two top pages with pages under them; one page is
+in two sections (`***`); the quiz tab is two named pages, with nothing before them,
+so it opens on the first. The activity's opening is shown above every tab:
+
+````markdown
 ---
-booklet: "0.16"
-id: "local/harbour-notes"
-title: Harbour notes
+booklet: "0.17"
+id: "local/check-in"
+title: A short check-in
+description: A few minutes to look over the garden, with notes on what each word means.
 lang: en
 version: "0.1"
 ---
 
-> [!module|harbour icon:anchor] Harbour notes
+> [!module|check-in-m icon:leaf] A short check-in
 
-> [!activity|tides icon:waves] Tides
+> [!activity|check-in repeat daily entries:folded icon:leaf] Check in
 
-How the water moves. The two tidal ranges are in [[#Spring tides]]; a second week of
-the course is in [[week-2.booklet]].
+Look, name, keep. Skip anything you like.
 
-> [!activity|spring parent:tides] Spring tides
+> [!tab|wiki] Learn
 
-The widest range, twice a month. Back to [[#Tides]].
+How the pages of this tab fit together: the garden map first, then the grid. These
+words are the tab's first page.
 
-> [!activity|neap parent:tides] Neap tides
+> [!page|map icon:footprints] The garden map
 
-The narrowest range. Compare [[#Spring tides]].
+Where each bed is and what grows there. See also [[#The two axes]].
 
-> [!module|harbour end]
+> [!page|parent:map] Choosing a place
+
+Pick one bed and stay with it.
+
+> [!page|parent:map] Words for what you see
+
+Dry, damp, shaded, bright.
+
+> [!page|grid icon:layout-grid] The quick-reference grid
+
+A plant can be placed on two lines at once.
+
+> [!page|parent:grid] The two axes
+
+How much sun, and how much water.
+
+***
+
+The second section of the same page.
+
+> [!page|parent:grid] More than one at once
+
+Several ideas can share one row.
+
+> [!tab|quiz] Check in
+
+> [!page] Your beds
+
+> [!scale|dry] How dry does the soil feel?
+
+1. Wet
+2. Damp
+3. Dry
+
+> [!page] Your notes
+
+> [!text|noticed] What did you notice?
+
+> [!tab|kept] Past check-ins
+
+```booklet query
+from: check-in
+limit: 7 days
+as: list
 ```
 
-An activity with pages (pages paginate; the answers of all its pages are
-kept together as one entry):
+> [!module|check-in-m end]
+````
+
+Here "Your beds" and "Your notes" are pages with no written id (`your-beds`,
+`your-notes`), and every `parent:` names a page of its own tab. `entries:folded` starts the kept-entries list closed; `description:` is the
+sentence a search result shows, instead of the first paragraph.
+
+An activity with sections (`***` splits a page; the answers of all its sections
+are kept together as one entry):
 
 ```markdown
 > [!activity|rd-tides repeat] Read and check
@@ -403,11 +501,12 @@ kept together as one entry):
 - [ ] Near the new and the full moon
 ```
 
-Everything from the activity line up to the next `***`, tab line, activity line
-or module-close line is page one; everything after the `***` is page two, and so
-on. A page has no name, no id and no menu: the reader moves through the pages
-with Back, "Page 2 of 3" and Next at the foot, and Next on the last page goes on
-to the next activity. A heading on a page is just a heading.
+Everything from the activity line up to the next `***`, page line, tab line,
+activity line or module-close line is section one; everything after the `***` is
+section two, and so on. A section has no name, no id and no menu: the reader moves
+through the sections with Back, a counter and Next at the foot, and Next on the
+last one goes on to the next page, or the next activity. A heading on a page is
+just a heading.
 
 An activity with tabs, for areas meant to be very different (a tab is
 presentation too: the answers of every tab are kept together as one entry):
@@ -434,7 +533,7 @@ A budget is a plan, not a judgement.
 - **What comes before the first tab line** (here, "Everything here stays…") is the
   activity's opening, shown above the tab bar on every tab.
 - **Use tabs only for areas that differ in kind.** Steps of one task are not
-  tabs; a long form is pages, a short one neither.
+  tabs; a long form is sections, a short one neither.
 - **A module's tabs**: tab lines in the module's opening (before its first
   activity) declare them, and an activity joins one with `tab:<id>` on its line;
   with no `tab:` it is in the first. Prose after a tab line in the opening is
@@ -660,8 +759,8 @@ between paragraphs for a new one. Section 4 says what a heading does.
   > > Count the evenings you were out.
   ```
 
-  A group cannot hold a `module`, `activity`, `tab`, `row`, `data` or `records`
-  line (the linter refuses it), and a `***` in it is a rule, not a page break.
+  A group cannot hold a `module`, `activity`, `tab`, `page`, `row`, `data` or `records`
+  line (the linter refuses it), and a `***` in it is a rule, not a break between sections.
   Outside an activity (in an opening) a group holds Markdown only. A question
   in a folded group is still answered and kept; the fold opens once it holds an
   answer.
@@ -829,8 +928,8 @@ reader may take a `***` section of two or more groups one group at a time.
 
 - **One activity, the questions last.** The answer for every report. The
   booklet opens straight into it and nothing is blank. Split a long one into
-  pages (`***`), which the reader turns with Back and Next; put the questions and
-  the data views together at the end (or on the pages that need them).
+  sections (`***`), which the reader turns with Back and Next; put the questions and
+  the data views together at the end (or in the sections that need them).
 - **Two activities** only when the reader really needs two separate things (a
   report to read and a log to keep with `repeat`, say), never just to split the
   reading. The booklet then opens on the module's screen with a card for each
@@ -998,7 +1097,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.16 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
+| no `lang:` | `front matter has no `lang:` — a v0.17 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`, `each:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -1027,7 +1126,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a query view inside a callout that holds Markdown only (a note, any other kind but a group, or a group outside an activity) | `warn line N: a query view inside a callout (here a `[!note]`) is not yet supported: a renderer draws the `booklet query` block as code …` | put the query in a group in an activity, or in the activity's own text |
 | a question or another Booklet line inside a callout that holds Markdown only (the same callouts) | `warn line N: a `[!text]` line inside a `[!note]` is drawn as text, not read: only a `[!group]` in an activity holds Booklet lines …` | put it in a group in an activity, or outside the callout |
 | a question, a query or another Booklet line in a callout in a data section | `warn line N: this is inside a `[!group]` in a data section, which is not drawn …` | put it in a group in an activity |
-| a `module`, `activity`, `tab`, `row`, `data` or `records` line inside a group | `line N: a `[!tab]` line cannot go inside a group, so a renderer ignores it …` | move it out of the group |
+| a `module`, `activity`, `tab`, `page`, `row`, `data` or `records` line inside a group | `line N: a `[!tab]` line cannot go inside a group, so a renderer ignores it …` | move it out of the group |
 | a `menu:` naming no menu | `` `menu:x` names no menu in this file`` | write the `> [!menu|x]` line and its bulleted list, or fix the id |
 | a `menu:` and a list of its own | `the question 'x' has both `menu:y` and a list of its own` | keep one |
 | a notice with a key it does not have, two in one module, or one outside a fence or after the first activity | `a notice has license, copyright, source, version, not 'x'` / `has two notices` / `a notice belongs inside a module's fence, before the module's first activity` | write only those four keys, one callout, right under the module line |
@@ -1044,6 +1143,16 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a `tab:` naming no tab of the module | `` `tab:x` names no tab of the module 'm' `` | name a tab the module's opening declares, or declare it |
 | tab lines in the opening of a module of one activity | `warn the module 'm' has one activity, so it has no screen of its own to show tabs on …` | put that prose in the module's opening with no tab line, or the tabs inside the activity |
 | a tab line in a data section | `warn a tab line in a data section is not read …` | put the tab in an activity, or in a module's opening |
+| a page line outside an activity, in a module's opening, in a group, or inside a row | `line N: a page line belongs inside an activity …` / `a page line cannot go inside a row …` | put it in a tab, or anywhere in an activity with no tab line |
+| a page line before an activity's first tab line | `a page line before the activity's first tab line stands in the activity's opening …` | put it below a tab line, or move the tab line above it |
+| two pages of one tab with one id, written or made from the titles | `this page's id is 'x', the same as the page on line N …` | give each page its own title, or an id (`> [!page|other-id] Title`) |
+| a page's `parent:` naming no page of its tab, or a loop | `warn `parent:x` is not a page of this tab …` / `loops back to 'y' …` | name a page of the same tab, or none |
+| a setting a page does not take | `a page line takes no `hidden` setting (it takes `icon:`, `parent:`)` | delete it |
+| a fold marker on a page line, or a page with no title | `warn a fold marker … means nothing on a page line` / `this page has no title` | delete the marker, write the title |
+| `parent:` on an activity line (a 0.16 wiki) | `warn `parent:x` on an activity line is a format 0.16 setting …` | make the wiki one activity and the others page lines, `> [!page|id parent:x] Title` |
+| `entries:` with a value other than `folded`, or on an activity that is not `repeat` | `` `entries:open` is not a setting a line takes (only `entries:folded` …) `` / `warn … keeps none` | write `entries:folded` on a `repeat` activity, or delete it |
+| an empty `description:` or one that starts a multi-line value | `warn front matter `description:` is empty or starts a multi-line value …` | write one sentence on the key's own line, or delete the key |
+| text after the records region | `warn line N: this comes after the records region. It is read as design (it holds …)` | a save leaves it there; write it above the records to keep the design in one place |
 | `---` straight under a line of text | `warn `---` straight under text makes that line a heading, not a page break` | write `***`, or leave a blank line above |
 | `---` straight under a line of text in a group | `warn `---` straight under text in a group makes that line a heading …` | for a rule, leave a blank line above (a group has no page break) |
 | a hint or solution not folded, or not directly under its question | `warn a hint that is not folded is drawn open …` / `is not directly under a question` | write `> [!hint]-`, straight under the question, with nothing between |
@@ -1058,7 +1167,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.16"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.17"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has a task list under it; a numbered list that does not start at `1.` has a blank line above it.
@@ -1076,7 +1185,7 @@ Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -1108,11 +1217,11 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 > [!module|after-a-walk end]
 ````
 
-### A module with two activities, one of them in pages
+### A module with two activities, one of them in sections
 
 ````markdown
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -1173,7 +1282,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -1209,7 +1318,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ````markdown
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: "local/reminders-report"
 title: "Reminders: SMS or email?"
 lang: en
@@ -1291,7 +1400,7 @@ flowchart LR
 ## 13. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.16 file, one language, its
+same way as any other booklet above — one v0.17 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

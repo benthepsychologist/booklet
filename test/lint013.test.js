@@ -48,7 +48,7 @@ const ONE=[
  ["lint13-record-outside","an answers block outside the records region","warn",15,/a `booklet answers` block outside the records region is not read/,15,/a “booklet answers” block belongs in the records region/],
  ["lint13-entries-outside","an entries block outside the records region","warn",15,/a `booklet entries` block outside the records region is not read/,15,/a “booklet entries” block belongs in the records region/],
  ["lint13-callout-unreadable","a `> [!` line the callout pattern cannot read (and it ends the notice above it)","warn",13,/this `> \[!` line cannot be read.*it is left as text, and it ends the callout above it/,13,/this “> \[!” line cannot be read/],
- ["lint13-design-after-records","design written after the records region","warn",27,/this comes after the records region, and a save moves it above the records/,null,/The design after the records is moved above them when saved/],
+ ["lint13-design-after-records","design written after the records region","warn",27,/this comes after the records region\. It is read as design \(it holds 2 module lines, 1 activity line\); a save leaves it where it is, after the records/,null],
  ["lint13-list-indented-line","an indented line after an option list","warn",16,/the line after this list is indented, so the list ends there: put each option on one line/,null],
  ["lint13-indented-booklet-line","an indented Booklet line","warn",15,/a Booklet line starts at the left edge; this one is indented/,null],
  // done-when 4: messages
