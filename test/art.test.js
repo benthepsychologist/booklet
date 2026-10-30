@@ -64,5 +64,5 @@ ok(!/fonts\.(?:googleapis|gstatic)|@import|url\((?!data:)/.test(html.slice(html.
 const notice=fs.readFileSync(path.join(R,"NOTICE"),"utf8");
 ok(/SIL Open Font License/.test(html)&&/Braille Institute/.test(html)&&/Lexend Project Authors/.test(html),"the OFL 1.1 notice for both fonts is in booklet.html");
 ok(/SIL Open Font License/.test(notice)&&/Braille Institute/.test(notice)&&/Lexend Project Authors/.test(notice)&&/ISC/.test(notice)&&/Lucide/.test(notice)&&/Apache/.test(notice),"NOTICE carries the OFL, Lucide's ISC and the spots' Apache-2.0");
-ok(/const RENDERER_VERSION="0\.16\.1"/.test(html),"RENDERER_VERSION is 0.16.1");
+ok(/const RENDERER_VERSION="0\.17\.0"/.test(html),"RENDERER_VERSION is 0.17.0");
 console.log(fails?"\n"+fails+" FAILURES":"\nart checks passed");process.exit(fails?1:0);

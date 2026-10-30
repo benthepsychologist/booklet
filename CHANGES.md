@@ -4,7 +4,7 @@ What changed in each version of the format, newest first. `SPEC.md` states the r
 
 ## Changes from v0.16
 
-The format becomes 0.17.
+The format becomes 0.17 and the renderer 0.17.0 (released 2026-10-30).
 
 - **Pages: a tree inside a tab** (section 3, "Pages: a tree inside a tab"; section 4). A page line, `> [!page|id parent:x icon:name] Title`, starts a named page in a tab: an activity holds tabs, a tab holds pages, and a thematic break splits a page into `***` sections (in 0.15 and 0.16 it was called a page break and a page had no name). A tab with no page line is one page, as every activity in use today is. The rules (ids, `parent:`, reading order, where a page line may stand, Back and Next, the counter) are in section 3. A menu of the pages, a search and a list of the pages that link to the one on show are a renderer's, and the format defines no syntax for them. Where the pages design was silent the rules follow what the Obsidian plugin (0.8.0) chose.
 - **A first word that holds `:` is a setting** (section 4). On every kind, so `> [!page|parent:map] Title` is a page with no written id under `map`. Ids never hold `:`, so nothing that was an id is lost; on a kind that needs an id the line gets the report for a missing id in place of the report for an invalid one. (The Obsidian plugin applies it to page lines only; the two differ only on a line that is an error anyway.)
