@@ -55,7 +55,7 @@ const NAMES=[
   /* the parse and its words */
   "parseFile","problemText","tableTag","strings","RENDERER_VERSION","FORMAT_VERSION",
   /* reading the design */
-  "isShown","isMulti","tabsIn","tabPages","tabOpening","blocksIn","blocksAll","qParts","isGroup","hintKind","isQuestion",
+  "isShown","isMulti","tabsIn","tabPages","tabOpening","pageTree","blocksIn","blocksAll","qParts","isGroup","hintKind","isQuestion",
   "placeOf","foldName","widgetIn","wordsOf","scopeOfModule","engOpts","moduleTabOf","fencedModule","NOTICE_KEYS",
   /* words */
   "slugify","plainText","tx","nonEmpty","sameWords","clip","PLAIN_OPTS",

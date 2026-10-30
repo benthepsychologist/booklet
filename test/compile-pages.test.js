@@ -1,4 +1,4 @@
-// Many pages from one booklet, and translation links (compile/, compile 0.2.0).
+// Many pages from one booklet, and translation links (compile/, compile 0.3.0).
 //   1. Addresses. A booklet that shows two or more activities is a contents page at <name>/ and one page for each
 //      activity at <name>/<id>/. One that shows one (or none) is the single page compile 0.1.0 wrote. Two activities of one
 //      id in two modules take their module's id in front; a clash that is left takes a number.

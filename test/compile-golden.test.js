@@ -1,4 +1,4 @@
-// Golden pages for the compiler (compile/, compile 0.2.0): what it writes for the examples and the page-shaped fixtures,
+// Golden pages for the compiler (compile/, compile 0.3.0): what it writes for the examples and the page-shaped fixtures,
 // committed under test/compile-golden/, so a change to what the compiler writes is seen in review, line by line.
 // The set is compiled in one run, in both forms (as `--form both` writes it: standalone/<name>/index.html and
 // site/<name>/index.html), and every file it writes for a booklet must equal its golden copy. The stylesheet and its fonts
