@@ -70,9 +70,9 @@ chk("a refused figure leaves the booklet compiling, with its places listed and a
 {const kept=[...R.SVG_KEEP].filter(e=>e!=="svg"&&e!=="style"&&e!=="script");
   const bad=kept.filter(e=>{const r=fig('<svg viewBox="0 0 10 10"><'+e+"/></svg>");return !r.ok&&!/link|reference/.test(r.why)&&/does not keep/.test(r.why);});
   chk("every element the renderer's figure rule keeps is accepted by name (no element is refused that the renderer would keep)",!bad.length,bad.join(", "));
-  const props=[...R.SVG_STYLE_PROPS].filter(p=>R.svgValueOk("red")).slice(0,40);
-  const badp=props.filter(p=>!fig('<svg viewBox="0 0 10 10"><rect style="'+p+':red"/></svg>').ok);
-  chk("every style property the renderer keeps is accepted",!badp.length,badp.join(", "));
+  const props=[...R.SVG_STYLE_PROPS];
+  const badp=props.filter(p=>{const r=fig('<svg viewBox="0 0 10 10"><rect style="'+p+':red"/></svg>');return !r.ok||!r.html.includes(p+":red");});
+  chk("every style property the renderer keeps ("+props.length+") is accepted, and written out with its value",props.length>0&&!badp.length,badp.join(", "));
   const notp=["behavior","-moz-binding","position","content"].filter(p=>!R.SVG_STYLE_PROPS.has(p)&&!R.svgFamily(p));
   chk("a style property the renderer drops is refused here",notp.length&&notp.every(p=>!fig('<svg viewBox="0 0 10 10"><rect style="'+p+':red"/></svg>').ok));}
 

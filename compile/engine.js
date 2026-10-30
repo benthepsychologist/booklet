@@ -36,7 +36,8 @@
    text before the second reading (authorComments, below, which skips the renderer's own fenced code), so their words reach
    no page, and the report names their lines only.
 
-   Three renderer functions are replaced inside the context. figureFor draws a figure that a prose embed (![[#^id]])
+   Three renderer functions are replaced inside the context to say what they found (the six view functions are replaced too,
+   in load(), where the comment at that replacement says how). figureFor draws a figure that a prose embed (![[#^id]])
    names: the embed's own reading of the target stays the renderer's (figureHooks), and the replacement returns which
    figure was named, with its language and code, so the compiler draws it (or marks it) instead of the page's diagram
    library; its lookup is the original's, the module's own figure first, then the booklet's. headingLink and
@@ -286,4 +287,4 @@ function authorComments(R,lines){
 
 /* pageStub is exported for test/compile-content.test.js alone, which wakes the renderer's own writer in a context of its
    own to make a file the way the renderer writes one; the compiler never calls the writer */
-module.exports={load,pageStub,NAMES,VARS,MD_NAMES,MD_START,MD_END,DEFAULT_RENDERER};
+module.exports={load,pageStub,NAMES,VARS,MD_NAMES,MD_START,MD_END};

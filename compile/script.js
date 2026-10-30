@@ -4,7 +4,7 @@
    The page reads fully with no script. A part of the page that responds when it is pressed (a quiz answer, a widget, a
    sort) is written as one small file in compile/script/, and this file puts them together:
      - every file in compile/script/ ending .js is one part, one IIFE (an immediately called function: its names are its
-       own), and the parts are joined in file-name order (so 10-quiz.js comes before 20-widgets.js); no modules, no imports;
+       own), and the parts are joined in file-name order (so 10-quiz.js comes before reading-cites.js); no modules, no imports;
      - the joined text is scanned (below) and the build fails when it holds a word that could keep something, send
        something, or turn a booklet's words into markup at run time;
      - the result is written beside booklet.css as booklet.js, with the stamp the stylesheet has, and a page links it

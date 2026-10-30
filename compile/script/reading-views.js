@@ -1,6 +1,6 @@
 /* Reading helper: sort and filter on a data view.
 
-   The compiler marks a query view's markup for this part (the contract between the compiler's lanes): the container carries
+   The compiler marks a query view's markup for this part (the markup contract between views.js and this part): the container carries
    data-bk-view="table|list|cards|tiles|bars|line", each row inside carries data-bk-row, and each value inside a row
    carries data-bk-col="<column name>" with the value as its text. For every container that has them, this part puts a
    quiet "Sort and filter" button above it that opens a small bar: a search box (rows whose values do not contain the

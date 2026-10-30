@@ -7,7 +7,7 @@
    Nothing is computed here beyond what a picture needs: a chart's scale comes from the renderer's own niceScale and
    lineDomain, its labels from thinLabels, a number is written as the renderer writes it (fmtNum).
 
-   The markup contract every view keeps, for the script that sorts and filters (lane B of compile 0.2):
+   The markup contract every view keeps, for the script that sorts and filters (the markup contract between views.js and reading-views.js):
      - the view's container carries data-bk-view="table|list|cards|tiles|bars|line";
      - each row inside it carries data-bk-row (a table's <tr>, a list's <li> or, in a nested list, the <summary> of a row
        that has children, a card, a tile, a bar's <li>). A line chart has no row element of its own (it plots its rows in
@@ -193,7 +193,7 @@ function draw(cap,o){
     }
     /* a drawing with a number in it that is not finite is not drawn at all: its numbers table is how it is read */
     let bad=!svg;if(svg) H.walk(svg,x=>{if(x&&x.attrs&&Object.values(x.attrs).some(v=>/NaN|Infinity/.test(v))) bad=true;});
-    return el("div",{class:"bk-view bk-panel","data-bk-view":"line"},legend,bad?null:el("div",{class:"bk-ch-plot"},svg),numbers([lk,...keys],rows));}
+    return box("bk-panel",legend,bad?null:el("div",{class:"bk-ch-plot"},svg),numbers([lk,...keys],rows));}
 
   switch(cap.as){
     case "table": return box("bk-panel",el("div",{class:"bk-table"},tableOf(groups,roles,cols,true)));
@@ -204,4 +204,4 @@ function draw(cap,o){
     case "line": return line();
     default: return null;}}
 
-module.exports={draw,LINE_W};
+module.exports={draw};

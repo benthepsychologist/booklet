@@ -25,6 +25,7 @@ const C=require("../compile/compile.js"),E=require("../compile/engine.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const X=E.load();
 const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-compile-pages-"));
+const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
 const HEAD='---\nbooklet: "0.16"\nid: t/ID\ntitle: TITLE\nlang: LANG\n---\n\n';
 const booklet=(title,body,o)=>HEAD.replace("TITLE",title).replace("ID",(o&&o.id)||"x").replace("LANG",(o&&o.lang)||"en")+body;
 const compileText=(text,name,form,o)=>C.compile([{text,name,dir:TMP}],{form:form||"standalone",engine:X,...o}).results[0];
@@ -158,7 +159,6 @@ chk("the set compiles",run.results.every(r=>r.rep.ok),run.results.filter(r=>!r.r
 
 /* ======================= 7. a page tidied by hand is kept, page by page ======================= */
 {const out=path.join(TMP,"stamp"),src=path.join(FIX,"compile-pages.booklet.md");
-  const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
   let r=cli(["--out",out,src]);chk("a many-page booklet compiles from the command",r.status===0&&fs.existsSync(path.join(out,"compile-pages","crust","index.html")),r.stderr||r.stdout);
   const crust=path.join(out,"compile-pages","crust","index.html"),flour=path.join(out,"compile-pages","flour","index.html"),home=path.join(out,"compile-pages","index.html");
   const tidied=fs.readFileSync(crust,"utf8").replace("A hot oven","A very hot oven");fs.writeFileSync(crust,tidied);
@@ -213,7 +213,6 @@ const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\nWords of "+t+".\n\n";
   const two=compileText(booklet("Odd2",act("___","Underscores")+act("page","A real page")+act("!!!","Bangs")),"odd2");
   chk("…and with a real id `page` and another empty one: page, page-2, page-3, all different, every link reaching a file",JSON.stringify(pagesOf(two))===JSON.stringify(["odd2/index.html","odd2/page-2/index.html","odd2/page-3/index.html","odd2/page/index.html"])&&!badLinks(two.files).length,pagesOf(two).join(", "));}
 {/* the report's words about a page held back, when there is no other page, or none is left */
-  const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
   const dir=path.join(TMP,"held");fs.mkdirSync(dir,{recursive:true});
   const one=path.join(dir,"solo.booklet.md"),outOne=path.join(dir,"o1");
   fs.writeFileSync(one,booklet("Solo","# Solo\n\nOne page only.\n"));
@@ -238,7 +237,6 @@ const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\nWords of "+t+".\n\n";
   const renamed=rep(en,es.replace(/\|eggs/g,"|huevos"));
   chk("a translation that renamed its module id: the report says only the contents pages were linked, and names the activity pages",/1 of 3 pages linked; no page of the same module and activity id in the others, so no link on: e\/soft\/index\.html, e\/hard\/index\.html\./.test(renamed),renamed);}
 {/* a path in the way: the booklet is refused whole before any of its pages is written; the others are written */
-  const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
   const out=path.join(TMP,"inway"),pair=path.join(FIX,"compile-pair.booklet.md"),src=path.join(FIX,"compile-pages.booklet.md");
   fs.mkdirSync(path.join(out,"compile-pages"),{recursive:true});fs.writeFileSync(path.join(out,"compile-pages","crust"),"a file where a folder is wanted");
   let r=cli(["--out",out,src,pair]);
@@ -276,6 +274,31 @@ const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\nWords of "+t+".\n\n";
   const rep=C.reportText(r),q=r.results[0].rep;
   const plain=C.compile([{text:booklet("Plain",act("p","P")),name:"plain",dir:TMP}],{form:"standalone",engine:X});
   chk("the report names the script for the booklet that needs it (and the answer key), not for the one that does not",q.script===true&&q.keyed===true&&plain.results[0].rep.script===false&&/Script: the page links booklet\.js/.test(rep)&&/Answer key:/.test(rep)&&!/Script:/.test(C.reportText(plain)));}
+
+/* ======================= 11. gaps found by the 0.2.0 trim pass (made-up booklets) ======================= */
+/* a module of several activities where only one is shown (the others are `hidden`, which the renderer reads as home: false):
+   one page, the shown activity under its own heading, a hidden parent adding no depth, nothing of the hidden ones on the page */
+{const text=booklet("Garden notes","> [!module|plot] The plot\n\nOpening words of the plot.\n\n> [!activity|plan hidden] Planning the plot\n\nHidden planning words.\n\n"
+    +"> [!activity|sow parent:plan] Sowing the seeds\n\nSow the seeds in rows.\n\n> [!activity|tidy hidden parent:sow] Tidying up\n\nHidden tidying words.\n\n> [!module|plot end] End\n",{id:"garden"});
+  const r=compileText(text,"garden"),page=r.files.get("garden/index.html")||"";
+  chk("a module of three activities with two hidden compiles to the one page, with no contents page",r.rep.ok&&JSON.stringify(keysOf(r))===JSON.stringify(["garden/index.html"])&&!/bk-cards|bk-pager|bk-crumb/.test(page),r.rep.refused||keysOf(r).join(", "));
+  chk("…the shown activity has a heading of its own, one step under the module's (a hidden parent adds no depth)",
+    /<h2 id="the-plot">The plot /.test(page)&&/<section class="bk-activity">\s*<h3 id="sowing-the-seeds">Sowing the seeds /.test(page),(page.match(/<h[1-6][^>]*>[^<]*/g)||[]).join(" | "));
+  chk("…its words and the module's opening are there, and nothing of the two hidden activities (title or words)",
+    /Sow the seeds in rows\./.test(page)&&/Opening words of the plot\./.test(page)&&!/Planning the plot|Hidden planning|Tidying up|Hidden tidying/.test(page),"");
+  chk("…and the report counts the one activity it drew",r.rep.counts.activities===1&&r.rep.counts.modules===1,JSON.stringify(r.rep.counts));}
+
+/* a link written as [words](x.booklet) in prose goes through the renderer's module-link rule as [[x.booklet]] does, but keeps the author's words */
+{const harvest=booklet("Harvest notes","> [!activity|pick] Picking\n\nPick the beans.\n",{id:"harvest"});
+  const garden=booklet("Garden notes","> [!module|plot] The plot\n\n> [!activity|sow] Sowing the seeds\n\nSow in rows. See [the plot again](plot.booklet), [the shed](shed.booklet), [the harvest notes](harvest.booklet), "
+    +"[a lost one](nowhere.booklet), and [the rows](#rows) below.\n\n## Rows\n\nEight to a bed.\n\n> [!module|plot end] End\n\n> [!module|shed] The shed\n\n> [!activity|tools] Tools\n\nSpades.\n\n> [!module|shed end] End\n",{id:"garden"});
+  const run=C.compile([{text:garden,name:"garden",dir:TMP},{text:harvest,name:"harvest",dir:TMP}],{form:"standalone",engine:X}),r=run.results[0];
+  const page=r.files.get("garden/sow/index.html")||"";
+  chk("a prose link to a module on the same page goes to that module's heading, with the author's words",/<a class="bk-link" href="#the-plot">the plot again<\/a>/.test(page),(page.match(/Sow in rows[^\n]*/)||[""])[0]);
+  chk("…to a module on another page of the booklet goes to that page and its heading",/<a class="bk-link" href="\.\.\/tools\/#the-shed">the shed<\/a>/.test(page));
+  chk("…to another booklet compiled in the same run goes to that booklet",/<a class="bk-link" href="\.\.\/\.\.\/harvest\/">the harvest notes<\/a>/.test(page)&&run.results[1].rep.ok);
+  chk("…to a booklet not in the run is drawn as its words, marked in the page and in the report",/a lost one/.test(page)&&!/<a [^>]*>a lost one/.test(page)&&/<!-- booklet: the link to “nowhere”/.test(page)&&r.rep.marked.some(m=>m.kind==="link"&&/nowhere/.test(m.what)),JSON.stringify(r.rep.marked));
+  chk("a prose link to a heading of the same page, [words](#rows), goes to that heading",/<a class="bk-link" href="#rows">the rows<\/a>/.test(page)&&/<h[2-6] id="rows">/.test(page),(page.match(/<a [^>]*>the rows<\/a>/)||[""])[0]);}
 
 fs.rmSync(TMP,{recursive:true,force:true});
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile pages passed");process.exit(fails?1:0);

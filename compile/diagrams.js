@@ -45,6 +45,8 @@ const TEXTISH=new Set(["text","tspan","textPath","title","desc","style"]);
    a second root, text outside the root, a control character, is a reason to refuse. */
 const TAG=/<(\/?)([^\s\/>!?=<"']+)((?:\s+[^\s=\/>"'<]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>/y;
 const ATTR=/([^\s=\/>"'<]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+/* a #name reference inside a value or a style (a url(#name), an href) */
+const REF=/#([A-Za-z_][A-Za-z0-9_.:-]*)/g;
 const NAMED={amp:"&",lt:"<",gt:">",quot:'"',apos:"'"};
 const BAD_CHAR=/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\ud800-\udfff﷐-﷯￾￿]/;
 function unesc(s){
@@ -208,7 +210,7 @@ function figure0(text,ctx){
     const a=n.attrs[i];
     if(kind==="id"){a[1]=pre+a[1];continue;}
     let ok=true;
-    const fixed=a[1].replace(/#([A-Za-z_][A-Za-z0-9_.:-]*)/g,(m,id)=>{if(!ids.has(id)){ok=false;return m;}return "#"+pre+id;});
+    const fixed=a[1].replace(REF,(m,id)=>{if(!ids.has(id)){ok=false;return m;}return "#"+pre+id;});
     if(!ok) return {ok:false,why:"a reference to an id the figure does not define ("+clip(a[1])+"): the renderer reads every #name in a value that holds url( as an id, a colour such as #abc too, so write the colour another way (rgb(), or its name)"};
     a[1]=fixed;}
   /* in reading form each region is a picture with its label for a name (the renderer's readonly figure) */
@@ -254,7 +256,7 @@ function diagram0(svgText,ctx){
      (the title's, which the library names after the root) is renamed under it, and every pointer follows */
   dropAttr(tree,"aria-labelledby");   /* the name is written as aria-label below, from the same title */
   const used=new Set();
-  const note=s=>{for(const m of String(s).matchAll(/#([A-Za-z_][A-Za-z0-9_.:-]*)/g)) used.add(m[1]);};
+  const note=s=>{for(const m of String(s).matchAll(REF)) used.add(m[1]);};
   walk(tree,n=>{
     for(const [k,v] of n.attrs){
       const name=k.toLowerCase();
@@ -262,6 +264,7 @@ function diagram0(svgText,ctx){
       else if(name!=="id") note(v);}
     if(n.name==="style") note(n.kids.join(""));});
   const rename=new Map();
+  const follow=s=>s.replace(REF,(m,id)=>rename.has(id)?"#"+rename.get(id):m);
   walk(tree,n=>{
     const id=attrOf(n,"id");
     if(id===null||n===tree) return;
@@ -269,12 +272,12 @@ function diagram0(svgText,ctx){
     else if(!id.startsWith(pre)) rename.set(id,pre+"-"+id);});
   if(rename.size) walk(tree,n=>{
     /* a url(#name) in the style follows too */
-    if(n.name==="style") n.kids=n.kids.map(k=>typeof k==="string"?k.replace(/#([A-Za-z_][A-Za-z0-9_.:-]*)/g,(m,id)=>rename.has(id)?"#"+rename.get(id):m):k);
+    if(n.name==="style") n.kids=n.kids.map(k=>typeof k==="string"?follow(k):k);
     for(const a of n.attrs){
       const name=a[0].toLowerCase();
       if(name==="id"){if(rename.has(a[1])) a[1]=rename.get(a[1]);}
       else if(name==="aria-labelledby"||name==="aria-describedby") a[1]=a[1].split(/\s+/).map(x=>rename.get(x)||x).join(" ");
-      else a[1]=a[1].replace(/#([A-Za-z_][A-Za-z0-9_.:-]*)/g,(m,id)=>rename.has(id)?"#"+rename.get(id):m);}});
+      else a[1]=follow(a[1]);}});
   /* the root: a width, a viewBox, a name */
   const vb=(attrOf(tree,"viewbox")||"").trim().split(/[\s,]+/).map(Number);
   if(vb.length!==4||!vb.every(Number.isFinite)||!(vb[2]>0)||!(vb[3]>0)) return {ok:false,why:"the drawn SVG has no viewBox"};
@@ -455,5 +458,5 @@ function drawBatch(X,codes,o){
   codes.forEach((c,i)=>{const x=res.results[i];out.set(c,x&&typeof x.svg==="string"?{svg:x.svg}:{why:"the diagram library could not draw it"});});
   return out;}
 
-module.exports={readSvg,serialize,figure,diagram,scopeStyle,findPlaywright,playwrightPlaces,partSource,paperColours,mermaidConfig,drawBatch,
-  THEME_TOKENS,RENDER_ID,MAX_DIAGRAM_BYTES};
+module.exports={readSvg,SVG_NS,XLINK_NS,TAG,ATTR,clip,figure,diagram,scopeStyle,findPlaywright,playwrightPlaces,partSource,paperColours,mermaidConfig,drawBatch,
+  THEME_TOKENS,MAX_DIAGRAM_BYTES};
