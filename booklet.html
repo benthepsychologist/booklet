@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-wqcp1v/LiM5CcCL9vQjkLIo4dyjVEgtEfb86eqca/vg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-g/7z7q5XlcU7V7QNj59ixWvbPkO5vwDRIt6sMpkSXq0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2050,9 +2050,9 @@ const STRINGS_SRC={
       pageMisplaced: w=>`${w} : une ligne de page va dans une activité ; elle a donc été ignorée`,
       pageInOpening: w=>`${w} : une ligne de page placée avant la première ligne d’onglet d’une activité fait partie de l’ouverture, que chaque onglet affiche ; elle n’a donc pas été lue comme une page`,
       pageTwice: (w,id,as)=>`${w} : l’identifiant de page « ${id} » est utilisé deux fois dans cet onglet ; cette page s’appelle donc « ${as} » ; donnez à chaque page son propre titre ou identifiant`,
-      pageParentUnknown: (w,id)=>`${w} : \`parent:${id}\` ne nomme aucune page de cet onglet ; la page est donc en haut`,
-      pageCycle: w=>`${w} : cette page et les pages au-dessus d’elle se nomment mutuellement comme parents ; elle est donc en haut`,
-      entriesBad: (w,v)=>`${w} : \`entries:${v}\` n’est pas une valeur que ce réglage accepte (\`entries:folded\`) ; il a donc été ignoré`,
+      pageParentUnknown: (w,id)=>`${w} : \`parent:${id}\` ne nomme aucune page de cet onglet ; la page est donc au premier niveau`,
+      pageCycle: w=>`${w} : cette page et celles qui la précèdent dans la hiérarchie se désignent mutuellement comme parents ; elle est donc au premier niveau`,
+      entriesBad: (w,v)=>`${w} : \`entries:${v}\` n’est pas une valeur que ce réglage accepte (\`entries:folded\`) ; ce réglage a donc été ignoré`,
       rowRunsSection: k=>`rencontre la section ${k}`,
       rowNeverClosed: "n’est jamais fermée",
       queryOutside: w=>`${w} : une requête doit se trouver dans le texte d’une activité ; elle a donc été refusée`,
@@ -2113,7 +2113,7 @@ const STRINGS_SRC={
       recordNoItems: (w,id)=>`${w} : le registre des entrées de « ${id} » ne contient aucune liste d’éléments ; il est donc conservé tel quel`,
       recordOutside: (w,what)=>`${w} : un bloc « booklet ${what} » doit se trouver dans la zone des registres ; il n’est donc pas lu ici`,
       designMoved: "Le contenu placé entre deux sections de registres est déplacé au-dessus d’elles à l’enregistrement",
-      designAfter: "Le contenu placé après les registres est lu, et reste où il est quand des réponses sont enregistrées (ajouter ou retirer un module l’écrit au-dessus d’eux)",
+      designAfter: "Le contenu placé après les registres est lu, et reste où il est quand des réponses sont enregistrées (ajouter ou retirer un module le place au-dessus d’eux)",
       langMissing: "L’en-tête n’a pas de `lang:` ; cette page a donc supposé que le fichier est en anglais",
       menuMissing: (w,menu,id)=>`${w} : le menu « ${menu} » n’est pas dans ce fichier ; la question « ${id} » n’a donc pas été dessinée`,
       queryRefused: (id,why)=>`une requête dans « ${id} » ${why} ; elle n’est donc pas affichée`,
@@ -2397,12 +2397,12 @@ const STRINGS_SRC={
       tabTwice: (w,id,as)=>`${w}: el identificador de pestaña “${id}” se usa dos veces aquí, así que esta pestaña se llama “${as}”; dale a cada pestaña su propio nombre o identificador`,
       tabUnknown: (w,id)=>`${w}: \`tab:${id}\` no nombra ninguna pestaña de este módulo, así que la actividad está en la primera pestaña`,
       tabMisplaced: w=>`${w}: una línea de pestaña va dentro de una actividad, o en la apertura de un módulo, así que se ignoró`,
-      rowRunsPageLine: "se topa con una línea de página",
+      rowRunsPageLine: "se encuentra con una línea de página",
       pageMisplaced: w=>`${w}: una línea de página va dentro de una actividad, así que se ignoró`,
       pageInOpening: w=>`${w}: una línea de página antes de la primera línea de pestaña de una actividad está en la apertura, que muestra cada pestaña, así que no se leyó como una página`,
       pageTwice: (w,id,as)=>`${w}: el identificador de página “${id}” se usa dos veces en esta pestaña, así que esta página se llama “${as}”; dale a cada página su propio título o identificador`,
-      pageParentUnknown: (w,id)=>`${w}: \`parent:${id}\` no nombra ninguna página de esta pestaña, así que la página está arriba del todo`,
-      pageCycle: w=>`${w}: esta página y las páginas que tiene encima se nombran entre sí como padres, así que está arriba del todo`,
+      pageParentUnknown: (w,id)=>`${w}: \`parent:${id}\` no nombra ninguna página de esta pestaña, así que la página está en el nivel superior`,
+      pageCycle: w=>`${w}: esta página y las páginas superiores se nombran entre sí como padres, así que está en el nivel superior`,
       entriesBad: (w,v)=>`${w}: \`entries:${v}\` no es un valor que acepte este ajuste (\`entries:folded\`), así que se ignoró`,
       rowRunsSection: k=>`se topa con la sección ${k}`,
       rowNeverClosed: "nunca se cierra",
@@ -2464,7 +2464,7 @@ const STRINGS_SRC={
       recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se conserva tal cual`,
       recordOutside: (w,what)=>`${w}: un bloque “booklet ${what}” va en la zona de registros, así que no se lee aquí`,
       designMoved: "El contenido que está entre dos secciones de registros se mueve encima de ellas al guardar",
-      designAfter: "El contenido que está después de los registros se lee y se queda donde está cuando se guardan respuestas (agregar o quitar un módulo lo escribe encima de ellos)",
+      designAfter: "El contenido que está después de los registros se lee y se queda donde está cuando se guardan respuestas (agregar o quitar un módulo lo coloca antes de los registros)",
       langMissing: "El encabezado no tiene `lang:`, así que esta página tomó el archivo como escrito en inglés",
       menuMissing: (w,menu,id)=>`${w}: el menú “${menu}” no está en este archivo, así que la pregunta “${id}” no se dibujó`,
       queryRefused: (id,why)=>`una consulta en “${id}” ${why}, así que no se muestra`,
