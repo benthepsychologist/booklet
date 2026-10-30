@@ -327,7 +327,7 @@ function compileOne(X,input,o){
   const source=path.basename(input.file||input.name+".booklet.md");
   const name=input.name;
   const rep={source,name,form:o.form,ok:false,refused:[],problems:[],marker:"",pages:[],comments:[],
-    counts:null,marked:[],images:[],links:[],description:"",toc:false,pageList:[],translations:[],script:false,needsScript:false,keyed:false,readOnly:[]};
+    counts:null,marked:[],pageLines:0,pageLinks:[],images:[],links:[],description:"",toc:false,pageList:[],translations:[],script:false,needsScript:false,keyed:false,readOnly:[]};
   if(!NAME.test(name)||name==="booklet"){rep.refused.push("its address, “"+name+"”, must be letters, digits, . _ or - (and not “booklet”, the stylesheet's folder): rename the file");return {rep,files:new Map()};}
   const P=o.parsed||parseInput(X,input);
   rep.problems=P.problems;rep.marker=P.marker;rep.comments=P.comments||[];
@@ -365,7 +365,7 @@ function compileOne(X,input,o){
     for(const [rel,bytes] of keep) files.set(root+name+"/"+rel,bytes);
     if(!first) first=drawn;}
   const sum=()=>Object.fromEntries(Object.keys(first[0].counts).map(c=>[c,first.reduce((n,p)=>n+p.counts[c],0)]));
-  Object.assign(rep,{ok:true,counts:sum(),marked:first.flatMap(p=>p.marked),images:dedupe(first.flatMap(p=>p.images)),links:first.flatMap(p=>p.links),
+  Object.assign(rep,{ok:true,counts:sum(),marked:first.flatMap(p=>p.marked),pageLinks:first.flatMap(p=>p.pageLinks),pageLines:mods.reduce((n,m)=>n+m.activities.reduce((k,a)=>k+(a.npages||[]).length,0),0),images:dedupe(first.flatMap(p=>p.images)),links:first.flatMap(p=>p.links),
     theme:first[0].theme,description:first[0].description,toc:first.some(p=>p.toc),translations:o.alt?o.alt.with:[],
     script:first.some(p=>p.script),needsScript:first.some(p=>p.needs),keyed:first.some(p=>p.keyed),readOnly:first.flatMap(p=>p.readOnly)});
   return {rep,files};}
@@ -505,6 +505,9 @@ function reportText(C){const L=[];
     L.push("  Description: "+(rep.description?"“"+rep.description+"”":"none (the page has no first paragraph)"));
     L.push("  On this page: "+(rep.toc?"listed":"not listed (fewer than two top headings)"));
     if(rep.marker) L.push("  Marker: "+rep.marker);
+    /* pages (format 0.17) are not drawn as pages yet: said once for the booklet, so nothing is lost quietly */
+    if(rep.pageLines) L.push("  Pages: page lines are not drawn as pages yet: "+plural(rep.pageLines,"page line reads","page lines read")+" as running text; titles are not drawn"
+      +(rep.pageLinks.length?"; "+plural(rep.pageLinks.length,"link to a page's title is","links to a page's title are")+" drawn as its words":"")+".");
     /* the script: which pages of the booklet need it (a booklet of many pages may need it on some only), and what a site layout must do */
     {const pages=rep.pageList.filter(p=>p.needs).map(p=>p.path),many=rep.pageList.length>1,all=pages.length===rep.pageList.length,
         of=all?"all "+pages.length+" pages":pages.length+" of "+rep.pageList.length+" pages ("+pages.join(", ")+")";

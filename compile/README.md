@@ -176,8 +176,14 @@ folders beside it. **Hugo reads an `index` file as a leaf bundle, which holds no
 fragment must be renamed `_index.html`** (a section page) for the activity folders beside it to be pages of that section. This
 was written from Hugo's documentation and has not been run against a Hugo build here.
 
-**Not built here.** The pages of format 0.17 (`> [!page|id parent:x] Title`). A page line's words are drawn, but the compiler draws no page title, no cards of the pages under a page, no page-tree address
-(`<name>/<parent>/<child>/`) and no breadcrumb of the ancestors.
+**Not built here.** The pages of format 0.17 (`> [!page|id parent:x] Title`). A page line's words are drawn, as running text one after
+another, but the compiler draws no page title, no cards of the pages under a page, no page-tree address
+(`<name>/<parent>/<child>/`) and no breadcrumb of the ancestors. It says so once for the booklet, in the build report: "Pages: page
+lines are not drawn as pages yet: N page lines read as running text; titles are not drawn", with the number of links by a page's
+title, which are drawn as their words (an HTML comment on the page says so where each stood), when there are any. Nothing is
+reported as "a heading that is not on this page" for them. The front matter's `description:` (format 0.17) is not read here yet,
+and nothing in the report says so: the page's description is still the booklet's first paragraph, and a card's blurb the
+activity's.
 
 **Stamped page by page.** The stamp guard (below) keeps each page apart: a rerun leaves a page tidied by hand as it is and
 writes the booklet's other pages again, and the report says which it kept and how many others it wrote ("no page of the booklet

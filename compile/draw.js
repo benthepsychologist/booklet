@@ -116,7 +116,7 @@ function drawPage(X,P,o){
   X.setLang(ui);
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
-    marked:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
+    marked:[],pageLinks:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
     where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0,dgSeq:0};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const bookTitle=titleOf(X,P,o.name);
@@ -650,8 +650,16 @@ function drawPage(X,P,o){
   const findHead=h=>{
     if(h.mtab){const m=st.mtabs.get(h.mod);return m&&m.get(norm(h.heading));}
     const r=st.heads.get(h.act);return r?(h.title?r.title:h.tab?r.tabs.get(norm(h.heading)):r.text.get(norm(h.heading))):null;};
+  const namesPage=h=>{if(h.mtab||h.title||h.tab) return false;
+    const a=design.modules.flatMap(m=>m.activities).find(x=>x.id===h.act);
+    return !!a&&(a.npages||[]).some(n=>norm(plain(n.title))===norm(h.heading));};
   for(const p of st.pend){const h=p.hit,to=findHead(h),at=plan?(h.mtab?HOME:plan.byKey.has(h.act)?h.act:null):null;
-    const lose=()=>{p.a.tag="";p.a.attrs={};st.marked.push({kind:"heading",what:"the link to “"+h.heading+"”",where:p.where});
+    const lose=()=>{p.a.tag="";p.a.attrs={};
+      /* a link by a page's title (format 0.17) finds a page, and pages are not drawn as pages yet: it is drawn as its words and counted
+         in the report's one line about pages, not reported as a heading that is nowhere */
+      if(namesPage(h)){st.pageLinks.push({heading:h.heading,where:p.where});
+        p.a.kids.unshift(comment("booklet: the link to “"+h.heading+"” ("+p.where+"): it names a page, and pages are not drawn as pages yet: drawn as its words"));return;}
+      st.marked.push({kind:"heading",what:"the link to “"+h.heading+"”",where:p.where});
       p.a.kids.unshift(comment("booklet: the link to “"+h.heading+"” ("+p.where+"): "+MARKED.heading));};
     if(to){st.refs.push({a:p.a,to:()=>to});st.counts.links++;}
     else if(at&&at!==KEY) xr.later.push({a:p.a,key:at,from:KEY,find:T=>T.findHead(h),ok:()=>{st.counts.links++;},lose});
@@ -684,7 +692,7 @@ function drawPage(X,P,o){
   if(xr) xr.pages.set(KEY,{findHead,idOf,modHead:st.modHead,top:st.top});
 
   return {article,bookTitle,title:deep?pageTitle:plain(design.title)||pageTitle,description:describe(st.lede?descText(st.lede):firstPara(article)),
-    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript||needsScript(article),keyed:!!st.keyed,readOnly:st.readOnly,theme:look.report,bodyAttrs:look.attrs};}
+    lang:P.lang||"",counts:st.counts,marked:st.marked,pageLinks:st.pageLinks,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript||needsScript(article),keyed:!!st.keyed,readOnly:st.readOnly,theme:look.report,bodyAttrs:look.attrs};}
 
 /* needsScript(article): THE RULE for whether a compiled page links booklet.js. One small function, so it can be read, tested and
    changed in one place. It looks at the finished page (every link resolved, the heading links and the contents list in), and
