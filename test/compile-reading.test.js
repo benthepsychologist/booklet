@@ -1,4 +1,4 @@
-// The compiler's reading helpers (compile/script/reading-*.js, compile 0.2.0, lane "reading"), checked by reading their source.
+// The compiler's reading helpers (compile/script/reading-*.js, compile 0.2.0), checked by reading their source.
 // test/compile-reading-browser.js is the check that they do what they say in Chromium; this is the check of what they may never do.
 //   1. The parts are there and well made: five files, each one self-contained function called at once (an IIFE), in strict
 //      mode, with nothing else outside it (no module, no global of its own), and each one parses.

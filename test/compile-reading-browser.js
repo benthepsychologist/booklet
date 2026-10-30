@@ -27,9 +27,10 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]||path.join(__dirname,'..','booklet.html'));
 const OUT=path.resolve(process.argv[3]||'.','compile-reading-pages');
 const C=require('../compile/compile.js');
+const K=require('./compile-browser-kit.js');   /* set-up shared by the compile Chromium checks (not itself a check) */
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 
-const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures'),PARTS=path.join(ROOT,'compile','script');
+const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures');
 fs.rmSync(OUT,{recursive:true,force:true});
 /* the whole script as the compiler's assembler joins it (the quiz part and these five), so the parts are tested together */
 const script=require('../compile/script.js').assemble().text;
@@ -76,28 +77,14 @@ fs.writeFileSync(path.join(OUT,'big.html'),viewsPage.replace(/<div class="bk-tab
 fs.writeFileSync(path.join(OUT,'compile-reading-one','peek-id.html'),fs.readFileSync(path.join(OUT,'compile-reading-one','with-script.html'),'utf8').replace(/<body([^>]*)>/,'<body$1><span id="bk-peek-1"></span>'));
 fs.writeFileSync(path.join(OUT,'views-off.html'),viewsPage);
 
-const lum=c=>{const m=/rgba?\(([\d.]+), ([\d.]+), ([\d.]+)/.exec(c);if(!m) return null;
-  const f=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return 0.2126*f(+m[1])+0.7152*f(+m[2])+0.0722*f(+m[3]);};
-const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
-
-const BASE='http://localhost/';   /* answered from the disk below; localhost is a secure context, so the clipboard is there */
-function serve(ctx,watch){
-  return ctx.route(BASE+'**',route=>{const u=decodeURIComponent(new URL(route.request().url()).pathname.replace(/^\//,''));
-    const f=path.join(OUT,u);
-    if(watch) watch.push(route.request().url());
-    if(!f.startsWith(OUT)||!fs.existsSync(f)||!fs.statSync(f).isFile()) return route.fulfill({status:404,body:'not here'});
-    const type=f.endsWith('.css')?'text/css':f.endsWith('.js')?'text/javascript':f.endsWith('.woff2')?'font/woff2':'text/html';
-    return route.fulfill({status:200,contentType:type,body:fs.readFileSync(f)});});}
+const {BASE,serve}=K.server(OUT),{storage,ratio}=K;
 
 async function open(ctx,p,file,errs){
   if(errs){p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error') errs.push(m.text());});}
   await p.goto(BASE+file);await p.evaluate(()=>document.fonts.ready);}
-const state=(p,sel)=>p.evaluate(s=>[...document.querySelectorAll(s)].map(e=>({tag:e.tagName.toLowerCase(),hidden:e.hidden,shown:e.getBoundingClientRect().height>0&&getComputedStyle(e).display!=='none'})),sel);
 const texts=(p,sel)=>p.evaluate(s=>[...document.querySelectorAll(s)].map(e=>e.textContent.replace(/\s+/g,' ').trim()),sel);
 const rowsOf=(p,id,col)=>p.evaluate(([i,c])=>[...document.querySelectorAll('#'+i+' [data-bk-row]')].filter(r=>getComputedStyle(r).display!=='none')
   .map(r=>r.querySelector('[data-bk-col="'+c+'"]').textContent.trim()),[id,col]);
-const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?await indexedDB.databases():[];}catch(e){}
-  return {local:localStorage.length,session:sessionStorage.length,cookie:document.cookie,idb:dbs.length};});
 
 (async()=>{
   const b=await chromium.launch();

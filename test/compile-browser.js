@@ -16,6 +16,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]||path.join(__dirname,'..','booklet.html'));
 const OUT=path.resolve(process.argv[3]||'.','compile-pages');
 const C=require('../compile/compile.js');
+const K=require('./compile-browser-kit.js');   /* set-up shared by the compile Chromium checks (not itself a check) */
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 
 const ROOT=path.join(__dirname,'..'),FIX=path.join(__dirname,'fixtures');
@@ -29,7 +30,7 @@ ok(run.results.every(r=>r.rep.ok),'every page compiles with '+path.basename(HTML
 /* a bare host for each site page: the one stylesheet line, and the fragment under the front matter, in its own <main>. A booklet
    of many pages has a contents page and a page for each activity, and each is checked as the booklet's one page is. */
 const pages=[];
-for(const r of run.results){const name=r.rep.name;
+for(const r of run.results){
  for(const rel of r.rep.pages.filter(p=>p.startsWith('standalone/')&&p.endsWith('/index.html'))){
   const label=rel.slice('standalone/'.length,-'/index.html'.length);
   pages.push({name:label,form:'standalone',file:path.join(OUT,rel)});
@@ -41,9 +42,7 @@ for(const r of run.results){const name=r.rep.name;
     +'<style>body{margin:0;font-family:Georgia,serif;background:#fff;color:#111}header,main{max-width:56rem;margin:0 auto;padding:1rem}</style></head>\n'
     +'<body><header><p>A host site\'s own header</p></header><main>\n'+frag+'</main></body></html>\n');
   pages.push({name:label,form:'site',file:host});}}
-const lum=c=>{const m=/rgba?\(([\d.]+), ([\d.]+), ([\d.]+)/.exec(c);if(!m) return null;
-  const f=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return 0.2126*f(+m[1])+0.7152*f(+m[2])+0.0722*f(+m[3]);};
-const ratio=(a,b)=>{const x=lum(a),y=lum(b);if(x==null||y==null) return 0;return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
+const {lum,ratio}=K;
 
 /* the SVG proof. Made-up pictures: a circle, and two ways of hiding a script behind a prefix (one bound to the SVG
    namespace, one to XHTML's). Each source file is served from a made-up host, with the SVG media type a host gives it. */

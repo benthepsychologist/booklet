@@ -20,6 +20,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]||path.join(__dirname,'..','booklet.html'));
 const OUT=path.resolve(process.argv[3]||'.','compile-nested-pages');
 const C=require('../compile/compile.js');
+const K=require('./compile-browser-kit.js');   /* set-up shared by the compile Chromium checks (not itself a check) */
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 
 fs.rmSync(OUT,{recursive:true,force:true});
@@ -32,15 +33,7 @@ ok(/<script src="booklet\/booklet\.js" defer><\/script>/.test(src),'(set up) the
 fs.writeFileSync(path.join(OUT,'nested.html'),src);
 fs.writeFileSync(path.join(OUT,'nested-plain.html'),src.replace(/<script src="booklet\/booklet\.js" defer><\/script>\n?/,''));
 
-const BASE='http://localhost/';
-function serve(ctx,watch){
-  return ctx.route(BASE+'**',route=>{const u=decodeURIComponent(new URL(route.request().url()).pathname.replace(/^\//,''));
-    const f=path.join(OUT,u);if(watch) watch.push(route.request().url());
-    if(!f.startsWith(OUT)||!fs.existsSync(f)||!fs.statSync(f).isFile()) return route.fulfill({status:404,body:'not here'});
-    const type=f.endsWith('.css')?'text/css':f.endsWith('.js')?'text/javascript':f.endsWith('.woff2')?'font/woff2':'text/html';
-    return route.fulfill({status:200,contentType:type,body:fs.readFileSync(f)});});}
-const storage=p=>p.evaluate(async()=>{let dbs=[];try{dbs=indexedDB.databases?await indexedDB.databases():[];}catch(e){}
-  return {local:localStorage.length,session:sessionStorage.length,cookie:document.cookie,idb:dbs.length};});
+const {BASE,serve}=K.server(OUT),{storage}=K;
 
 /* the three bars, by the heading they are named for, each as 'name:selected|name:selected' */
 const bars=p=>p.evaluate(()=>{const o={};document.querySelectorAll('[role=tablist]').forEach(b=>{o[b.getAttribute('aria-label')]=[...b.children].map(t=>t.textContent+':'+t.getAttribute('aria-selected')).join('|');});return o;});
