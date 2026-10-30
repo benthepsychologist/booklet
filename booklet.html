@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-LdyPI3GedT1kyAEfiGmsu8ctqSDReVcz9kpDbUuuTQ8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-lr2in6UIUHZZmPX5dwtE8uZOq4ip+Ryrb7znQ3VagZk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4247,8 +4247,8 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     /* a card's status line (SPEC.md section 3, "A card's parts"): `status:off` hides it; the lines of the callout under the line
        (`> …`) are its words, read as inline Markdown as a blurb is, in place of the line the page works out */
     if(w.set&&w.set.status==="off") a.statusOff=true;
-    /* THE FOLD MARK (format 0.17; the name `entries:folded` is the one thing Ben has yet to confirm, so it is written here and in
-       KIND_SETTINGS and the entriesBad check above, and nowhere else): the activity's list of kept entries starts folded */
+    /* THE FOLD MARK (format 0.17; the name `entries:folded` is the one Ben confirmed, and it is written here and in
+       KIND_SETTINGS and the entriesBad check above, and nowhere else, so a change of name is these three edits): the activity's list of kept entries starts folded */
     if(w.set&&w.set.entries==="folded") a.entriesFolded=true;
     {const st=plainText(((w&&w.body)||[]).join("\n"));if(st) a.status=st;}
     /* the activities outside every module fence are one module with no name (SPEC.md section 4): each is drawn as a card of its own

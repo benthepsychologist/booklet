@@ -1,6 +1,6 @@
 // Format 0.17, the reference renderer's part (SPEC.md sections 2, 3, 4 and 8): pages in a tab's tree, the `description:` key, the
 // kept-entries fold mark, and design written after the records. What this checks is read from the file or drawn with the test
-// page's recording DOM (test/page.js); the drawn geometry is test/pagetree-browser.js. Each check names the line it would fail
+// page's recording DOM (test/page.js); the drawn page in a real browser is test/pagetree-browser.js. Each check names the line it would fail
 // without. Run: node test/pagetree.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
 const fs=require("fs"),path=require("path");
@@ -76,11 +76,18 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
 /* parent: names a page of the same tab; a missing one, itself, a cycle: the page sits at the top, said */
 {const R=A.parseFile(FM+"> [!activity|a] A\n\n> [!page|p] P\n\np\n\n> [!page|c parent:nobody] C\n\nc\n\n> [!page|s parent:s] S\n\ns\n\n> [!page|x parent:y] X\n\nx\n\n> [!page|y parent:x] Y\n\ny\n"),a=acts(R)[0];
  chk("a parent that is no page of the tab, a page its own parent: at the top, each said",a.npages.find(n=>n.id==="c").parent===undefined&&a.npages.find(n=>n.id==="s").parent===undefined&&notice(R).some(x=>/parent:nobody/.test(x))&&notice(R).length===3,JSON.stringify(notice(R)));
+ chk("and the report of a cycle says so (it is not the report of a missing parent)",notice(R).some(x=>/name each other as parents/.test(JSON.stringify(x))||/pageCycle/.test(JSON.stringify(x))),JSON.stringify(notice(R)));
  chk("a cycle is cut at the first page met, which is drawn at the top, and it is said",a.npages.find(n=>n.id==="x").parent===undefined&&a.npages.find(n=>n.id==="y").parent==="x"&&a.pages.map(p=>p.np).join()==="p,c,s,x,y",a.pages.map(p=>p.np).join()+JSON.stringify(a.npages));
  const other=acts(A.parseFile(FM+"> [!activity|a] A\n\n> [!tab] One\n\n> [!page|x] X\n\n1\n\n> [!tab] Two\n\n> [!page|y parent:x] Y\n\n2\n"))[0];
  chk("a parent in another tab is no parent: the tree sits inside one tab",other.npages.find(n=>n.id==="y").parent===undefined);
  const deep=A.parseFile(FM+"> [!activity|a] A\n\n"+Array.from({length:3000},(_,i)=>"> [!page|p"+i+(i?" parent:p"+(i-1):"")+"] P"+i+"\n\nx\n\n").join(""));
  chk("a chain of 3,000 pages, each under the one before, opens in reading order (no depth limit, no stack overflow)",deep.ok&&acts(deep)[0].pages.length===3000&&acts(deep)[0].pages[2999].np==="p2999");
+}
+ /* 0.16 files: parent: on an activity line still draws as a wiki until the seats have moved, and is said once */
+{const R=A.parseFile(FM+"> [!module|m] M\n\n> [!activity|top] Top\n\nt\n\n> [!activity|kid parent:top] Kid\n\nk\n\n> [!activity|kid2 parent:top] Kid 2\n\nk2\n\n> [!module|m end] End\n"),as=acts(R);
+ chk("`parent:` on an activity line is read as it was (the module still draws as a wiki), not as an unknown setting",as.length===3&&as[1].parent&&as[2].parent&&!notice(R).some(x=>/settingUnknown/.test(JSON.stringify(x))),JSON.stringify(notice(R)));
+ chk("and one report for the file names how many lines carry it",notice(R).length===1&&/activityParentLegacy/.test(JSON.stringify(notice(R)[0]))&&/2/.test(JSON.stringify(notice(R)[0])),JSON.stringify(notice(R)));
+ chk("a file whose activities carry no `parent:` has no such report",!notice(A.parseFile(FM+"> [!activity|a] A\n\nx\n")).length);
 }
 /* what a page line takes */
 {const R=A.parseFile(FM+"> [!activity|a] A\n\n> [!page|x hidden status:off tab:t icon:no-such-picture] X\n\nx\n"),a=acts(R)[0];
