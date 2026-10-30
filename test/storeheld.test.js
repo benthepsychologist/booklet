@@ -17,7 +17,7 @@ global.location={href:"http://fleet/app/",protocol:"http:",hostname:"fleet",hash
 let META={};
 global.document.querySelector=sel=>{const m=/meta\[name="([^"]+)"\]/.exec(sel);const v=m&&META[m[1]];return v?{getAttribute:k=>k==="content"?v:null}:null;};
 const STORE="http://fleet/booklets/",LABEL="fleet: store";
-const FM=t=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n---\n\n`;
+const FM=t=>`---\nbooklet: "0.17"\ntitle: ${t}\nlang: en\n---\n\n`;
 const booklet=(title,q)=>FM(title)+`> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] ${q||"A question"}\n\n> [!module|m end] End\n`;
 const TWO=title=>FM(title)+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] A question\n\n> [!activity|b] B\n\n> [!text|r] Another\n\n> [!module|m end] End\n";
 /* a file whose records already hold an answer (saved from another device, or earlier) */

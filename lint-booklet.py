@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.16 format in SPEC.md.
+Lint a booklet file against the v0.17 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: "0.16"`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.17"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.16"`, one `lang:`), fences that are
+What it checks: the front matter (`booklet: "0.17"`, one `lang:`, a one-line `description:` if there is one), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
@@ -19,12 +19,12 @@ module line with no id; a choice or multi with no options and a scale with no or
 records outside `%%`), what it keeps and reports (anything but a record inside the records region, an entry with no `ts`, a record
 block outside the region, a `> [!` line it cannot read), and six slips that draw wrong without a word (`---` straight under text, a hint
 or solution not folded or not under its question, `[x]` in a menu, a price that reads as a formula, tiles with no `value`). Any file whose
-front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.16 (nothing before v1.0 is stable). A block id or a footnote
+front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.17 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [path ...]
-        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.16") and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.17") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
@@ -38,7 +38,7 @@ import difflib, html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 BASE = pathlib.Path(__file__).resolve().parent
 
 # The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
-FORMAT_VERSION = "0.16"
+FORMAT_VERSION = "0.17"
 
 errors, warnings = [], []
 # Every finding, in the order found; main() prints each file's findings in line order. A finding's line is the one its message
@@ -122,7 +122,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.16 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.17 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -134,13 +134,18 @@ ID_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9-]*$')
 # The same table is KIND_SETTINGS in booklet.html and in SPEC.md section 4 (test/guard.test.js pins the three
 # together). A kind in this table is a kind the format defines; any other kind with an id or settings is unknown.
 KIND_SETTINGS = {
-    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "parent:", "status:", "tab:"), "row": ("end",), "text": ("long", "each:"),
+    "module": ("end", "icon:"), "activity": ("repeat", "daily", "hidden", "icon:", "status:", "tab:", "entries:"), "row": ("end",), "text": ("long", "each:"),
     "lines": ("each:", "earlier:"), "scale": ("each:",), "matrix": ("each:",), "date": ("each:",), "menu": (), "hint": (), "solution": (),
     "data": (), "records": (), "manifest": (), "notice": (), "group": (), "diff": (), "law": (), "opinion": (), "tab": (),
+    "page": ("icon:", "parent:"),
     "choice": ("open", "menu:", "each:", "earlier:"), "multi": ("open", "menu:", "each:", "earlier:"),
     "number": ("min:", "max:", "step:", "each:"), "widget": ("readonly", "describe", "each:", "earlier:"),
 }
 NUMBER_SETTINGS = ("min", "max", "step")
+# THE KEPT-ENTRIES FOLD'S MARK (format 0.17; SPEC.md section 3, "Kept entries, folded"): `entries:folded` on an activity line says
+# the activity's kept-entries list starts folded. The name and the one value are proposed, and wait for Ben's word; this constant,
+# the `entries:` cell of KIND_SETTINGS and SPEC.md's "Kept entries, folded" paragraph and table cell are every place that names it.
+FOLD_KEY, FOLD_VALUE = "entries", "folded"
 # `earlier:`'s value: a whole number in digits only (SPEC.md section 4); booklet.html's EARLIER_VALUE is the same, and
 # test/guard.test.js pins the two
 EARLIER_VALUE = r"[0-9]+"
@@ -175,18 +180,19 @@ ICON_NAMES = frozenset((
 ENGINES = ("svg-regions", "grid-select")
 COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal", "blue", "purple")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
-STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab"}
+STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab", "page"}
 # what a module's notice (`> [!notice]`) may say about itself
 NOTICE_KEYS = ("license", "copyright", "source", "version")
 
 
 def callout_words(kind, s):
     """`kind|id words` -> the id, the flags and the key:value settings. For a kind that takes an id (SPEC.md section 4) the
-    first word is the id, whatever it is called, and every word after it is a setting; a kind that takes none has settings only."""
+    first word is the id, whatever it is called, unless it holds a `:`, which makes it a setting and leaves the line with no
+    written id (`> [!page|parent:map] Title`); every word after it is a setting; a kind that takes none has settings only."""
     out = {"id": None, "flags": set(), "set": {}}
     for n, w in enumerate((s or "").split()):
         kv = re.match(r'^([A-Za-z][A-Za-z0-9-]*):(.*)$', w)
-        if n == 0 and kind not in NO_ID_KINDS:
+        if n == 0 and kind not in NO_ID_KINDS and ":" not in w:
             out["id"] = w
         elif kv:
             out["set"][kv.group(1).lower()] = kv.group(2)
@@ -814,7 +820,7 @@ def body_end(lines, i):
 
 # what a Booklet line makes that a callout's body does not (a question, a hint, structure): written in any callout but a
 # group in an activity, it is drawn as text
-BOOKLET_KINDS = QUESTION_KINDS | {"hint", "solution", "activity", "module", "tab", "row", "data", "records", "menu", "manifest", "notice"}
+BOOKLET_KINDS = QUESTION_KINDS | {"hint", "solution", "activity", "module", "tab", "page", "row", "data", "records", "menu", "manifest", "notice"}
 
 
 def quoted_queries(lines, i):
@@ -943,7 +949,14 @@ def check_settings(f, n, kind, w):
     takes = ", ".join(("`" + s + "`") for s in allowed)
     said = f"it takes {takes}" if allowed else "it takes no settings at all"
     for key, val in w["set"].items():
-        if key + ":" not in allowed:
+        if kind == "activity" and key == "parent":
+            # 0.16 put `parent:` on an activity; 0.17 puts it on a page (SPEC.md section 3, "Pages"). A warning, not an error, while the
+            # files that write it are moved: the file is not refused, and the move is named.
+            warn(f, f"line {n}: `parent:{val}` on an activity line is a format 0.16 setting; 0.17 takes `parent:` on a page line and no "
+                    f"longer on an activity, so a reader ignores it and this activity sits on its own. To keep the tree, make the activities "
+                    f"one activity and each of the others a page line, `> [!page|id parent:{val}] Title`, inside one tab (an activity that keeps "
+                    f"entries stays an activity: group it in a module's tab instead)")
+        elif key + ":" not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{key}:` setting ({said})")
         elif key in NUMBER_SETTINGS and not re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", val.strip()):
             err(f, f"line {n}: `{key}:{val}` must be a number")
@@ -956,12 +969,16 @@ def check_settings(f, n, kind, w):
         elif key == "status" and val != "off":
             err(f, f"line {n}: `status:{val}` is not a setting a line takes (only `status:off`, which hides the card's status line); a renderer ignores it")
         elif key == "parent" and not ID_PATTERN.match(val):
-            err(f, f"line {n}: `parent:{val}` must be an activity id (letters, digits and dashes)")
+            err(f, f"line {n}: `parent:{val}` must be a page id (letters, digits and dashes)")
+        elif key == FOLD_KEY and val != FOLD_VALUE:
+            err(f, f"line {n}: `{FOLD_KEY}:{val}` is not a setting a line takes (only `{FOLD_KEY}:{FOLD_VALUE}`, which starts the kept-entries list folded); a renderer ignores it")
     for flag in sorted(w["flags"]):
         if flag not in allowed:
             err(f, f"line {n}: a {kind} line takes no `{flag}` setting ({said})")
     if "daily" in w["flags"] and "repeat" not in w["flags"]:
         err(f, f"line {n}: `daily` needs `repeat` (write `repeat daily`)")
+    if kind == "activity" and w["set"].get(FOLD_KEY) == FOLD_VALUE and "repeat" not in w["flags"]:
+        warn(f, f"line {n}: `{FOLD_KEY}:{FOLD_VALUE}` folds the list of kept entries, and this activity keeps none (it is not `repeat`), so it does nothing")
 
 
 def check_each_earlier(f, q_lines, act_keeps, widget_engines):
@@ -1039,12 +1056,59 @@ def check_notice(f, n, w, lines, i, mod, has_activity, seen, in_content):
         k += 1
 
 
+def check_page_trees(f, page_scopes, tabs_in_act):
+    """The pages of each tab (SPEC.md section 3, "Pages"). `page_scopes` maps (activity number, tab number) to that tab's page lines, in order,
+    each {"id", "parent", "n"}; tab 0 is what comes before an activity's first tab line. A page there, in an activity that has tabs, is in the
+    activity's opening, which is shown above every tab, so it is no page of any tab. Otherwise `parent:` means what it means on a list row: a
+    parent that is not among the tab's pages puts the page at the top of the tab's tree, a page that is its own ancestor is drawn once, at the
+    top, and of two pages with one id the first is the parent."""
+    for (act, tab), pages in page_scopes.items():
+        if tab == 0 and tabs_in_act.get(act, 0) > 0:
+            for pg in pages:
+                err(f, f"line {pg['n']}: a page line before the activity's first tab line stands in the activity's opening, which is shown above "
+                       f"every tab, so it is no page of any tab; put it in a tab (below a tab line), or move the tab line above it")
+            continue
+        known = {}
+        for pg in pages:
+            known.setdefault(pg["id"], pg["n"])
+        elsewhere = {p["id"] for (a2, t2), ps in page_scopes.items() if a2 == act and t2 != tab for p in ps}
+        link, seen = {}, set()
+        for pg in pages:
+            if pg["id"] in seen:
+                continue                                                # of two pages with one id the first is used
+            seen.add(pg["id"])
+            if pg["parent"]:
+                link[pg["id"]] = (pg["parent"], pg["n"])
+        for pid, (par, n) in link.items():
+            if par not in known:
+                why = (" (a page of another tab has that id: a page's parent is a page of its own tab)" if par in elsewhere
+                       else " (the words before a tab's first page line are its first page and have no id, so no page can name it)")
+                warn(f, f"line {n}: `parent:{par}` is not a page of this tab, so {pid!r} sits at the top of the tab's tree" + why)
+        # a loop: walk each chain once, keeping what is already settled, so a chain thousands deep costs one pass
+        settled, loops = set(), set()
+        for start in link:
+            if start in settled:
+                continue
+            path, on_path, cur = [], {}, start
+            while cur is not None and cur in link and cur not in settled and cur not in on_path:
+                on_path[cur] = len(path)
+                path.append(cur)
+                nxt = link[cur][0]
+                cur = nxt if nxt in known else None
+            if cur is not None and cur in on_path:
+                loops.update(path[on_path[cur]:])
+            settled.update(path)
+        for pid in sorted(loops, key=lambda x: link[x][1]):
+            par, n = link[pid]
+            warn(f, f"line {n}: `parent:{par}` loops back to {pid!r} (it is its own ancestor), so it is drawn once, at the top of the tab's tree")
+
+
 def check_format(f, text, fm):
-    """Lint a v0.16 booklet. Every problem names its line."""
+    """Lint a v0.17 booklet. Every problem names its line."""
     fm_title, fm_id = fm.get("title", ""), fm.get("id", "")
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.16 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
+        err(f, "front matter has no `lang:` — a v0.17 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
     else:
         why = lang_problem(lang)
         if why:
@@ -1053,6 +1117,9 @@ def check_format(f, text, fm):
             warn(f, lang_warning(lang))
     if not fm.get("title"):
         warn(f, "front matter has no `title:`")
+    if "description" in fm and (not fm["description"].strip() or fm["description"].strip() in (">", "|", ">-", "|-", ">+", "|+")):
+        warn(f, "front matter `description:` is empty or starts a multi-line value; the description is one line of plain words, written on the "
+                "key's own line (leave the key out to use the first paragraph), so a reader that finds none goes back to the first paragraph")
     if "start" in fm and fm["start"] != "home":
         err(f, f"front matter `start: {fm['start']}`: the only value is `start: home` (a booklet that holds one activity or one module opens "
                "straight into it unless it says `start: home`); the renderer reports it and ignores it")
@@ -1068,7 +1135,8 @@ def check_format(f, text, fm):
     # (blocks and menus outside every fence), which every module may also use.
     ids, block_ids, embeds, entry_refs = {}, {}, [], []
     acts = {}                # scope -> {activity id: line}
-    parents = {}             # scope -> [(activity id, its parent: setting, line)]
+    page_scopes = {}         # (activity number, tab number) -> its page lines, in order (SPEC.md section 3, "Pages"); tab 0 is before the first tab line
+    tabs_in_act = {}         # activity number -> how many tab lines it has
     mod_ids = {}             # module ids -> line
     note_defs = {}           # scope -> {footnote id: line}
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
@@ -1342,7 +1410,7 @@ def check_format(f, text, fm):
             kind, w = mm.group(1).lower(), callout_words(mm.group(1).lower(), mm.group(2))
             where = f"line {n}"
             check_settings(f, n, kind, w)
-            if grp_ends and kind in ("module", "activity", "tab", "row", "data", "records"):
+            if grp_ends and kind in ("module", "activity", "tab", "page", "row", "data", "records"):
                 err(f, f"{where}: a `[!{kind}]` line cannot go inside a group, so a renderer ignores it (a group holds text, questions and "
                        f"callouts); move it out of the group")
                 i = claim_end(kind, lines, i)
@@ -1380,6 +1448,9 @@ def check_format(f, text, fm):
             if section == "data" and kind == "tab":
                 warn(f, f"{where}: a tab line in a data section is not read (a data section holds blocks, menus and footnotes, "
                         f"not an activity's text); put the tab in an activity, or in a module's opening")
+            if section == "data" and kind == "page":
+                warn(f, f"{where}: a page line in a data section is not read (a data section holds blocks, menus and footnotes, "
+                        f"not an activity's text); put the page in a tab of an activity")
             if kind in ("module", "data"):
                 in_act = False
             if kind == "data":
@@ -1436,6 +1507,8 @@ def check_format(f, text, fm):
                     tid = (w["id"] if w["id"] and ID_PATTERN.match(w["id"]) else id_word(mm.group(4).strip())) or f"tab-{place}"
                     if w["id"] and not ID_PATTERN.match(w["id"]):
                         err(f, f"{where}: the tab id {w['id']!r} may hold only letters, digits and dashes")
+                    if place_key == "act":
+                        tabs_in_act[act_seq] = place
                     table = act_tabs if in_act or implicit else mod_tabs.setdefault(open_mod, {}) if open_mod else None
                     if table is None:
                         err(f, f"{where}: a tab line belongs inside an activity, or in a module's opening (before its first activity), "
@@ -1448,6 +1521,33 @@ def check_format(f, text, fm):
                         table[tid] = n
                     if not mm.group(4).strip():
                         warn(f, f"{where}: this tab has no name, so its tab shows its id; write `> [!tab] Name`")
+                elif kind == "page":
+                    # a named page (SPEC.md section 3, "Pages"): in an activity, in one of its tabs or anywhere in an activity with no tab
+                    # line; never in a row, a group, an opening or outside every activity
+                    if rowst["open"]:
+                        err(f, f"{where}: a page line cannot go inside a row (the row opened on line {rowst['open']} is not closed), so a "
+                               f"renderer ignores it; close the row first")
+                    elif not (in_act or implicit):
+                        err(f, f"{where}: a page line belongs inside an activity (in one of its tabs, or anywhere in an activity with no tab "
+                               f"line); this one is " + ("in a module's opening" if open_mod else "outside every activity") + ", so a renderer ignores it")
+                    else:
+                        scope_key = (act_seq, tab_places.get("act", 0))
+                        mates = page_scopes.setdefault(scope_key, [])
+                        title = mm.group(4).strip()
+                        wid = w["id"] if w["id"] and ID_PATTERN.match(w["id"]) else None
+                        if w["id"] and not wid:
+                            err(f, f"{where}: the page id {w['id']!r} may hold only letters, digits and dashes; a renderer makes the id from the title instead")
+                        # the id is the one written, else the title made into an id, else `page-` and the page's place among the tab's pages
+                        pid = wid or id_word(title) or f"page-{len(mates) + 1}"
+                        twin = next((p for p in mates if p["id"] == pid), None)
+                        if twin:
+                            err(f, f"{where}: this page's id is {pid!r}, the same as the page on line {twin['n']} in this tab; give each page its own title, or an id "
+                                   f"(`> [!page|other-id] Title`). A renderer keeps both and numbers this one")
+                        mates.append({"id": pid, "parent": w["set"].get("parent"), "n": n})
+                        if not title:
+                            warn(f, f"{where}: this page has no title, so it shows its id; write `> [!page|{pid}] Title`")
+                        if mm.group(3):
+                            warn(f, f"{where}: a fold marker (`{mm.group(3)}`) means nothing on a page line, since a page is never folded; a renderer ignores it")
                 elif kind == "activity":
                     seen_activity = True
                     mod_has_activity = True
@@ -1477,8 +1577,6 @@ def check_format(f, text, fm):
                                 f"and Obsidian as part of the callout, but a renderer takes it as the activity's own paragraph (its blurb); leave a blank line after the activity line" + (" and its `>` lines" if end > i + 1 else ""))
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
-                        if w["set"].get("parent") is not None:
-                            parents.setdefault(open_mod, []).append((w["id"], w["set"]["parent"], n))
                         act_info.setdefault(open_mod, {})[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
                 elif kind in QUESTION_KINDS:
                     if w["id"] and cur_act:
@@ -1692,34 +1790,7 @@ def check_format(f, text, fm):
             other = ids.get(scope, {})
             if bid in other:
                 err(f, f"line {n}: the data block id ^{bid} is also the id on line {other[bid]}, so a query could not tell them apart")
-    for scope, rows in parents.items():
-        # `parent:` means what it means on a list row (SPEC.md section 3): a parent outside the module puts the activity at the
-        # top, and an activity that is its own ancestor is drawn once, at the top. The first of two activities with one id is used.
-        known = acts.get(scope, {})
-        link = {}
-        for aid, par, n in rows:
-            link.setdefault(aid, (par, n))
-        for aid, (par, n) in link.items():
-            if par not in known:
-                warn(f, f"line {n}: `parent:{par}` is not an activity of " + (f"the module {scope!r}" if scope else "the module with no name (the activities outside every module fence)") + f", so {aid!r} sits at the top")
-                continue
-        # a loop: walk each chain once, keeping what is already settled, so a chain thousands deep costs one pass
-        settled, loops = set(), set()
-        for start in link:
-            if start in settled:
-                continue
-            path, on_path, cur = [], {}, start
-            while cur is not None and cur in link and cur not in settled and cur not in on_path:
-                on_path[cur] = len(path)
-                path.append(cur)
-                nxt = link[cur][0]
-                cur = nxt if nxt in known else None
-            if cur is not None and cur in on_path:
-                loops.update(path[on_path[cur]:])
-            settled.update(path)
-        for aid in sorted(loops, key=lambda x: link[x][1]):
-            par, n = link[aid]
-            warn(f, f"line {n}: `parent:{par}` loops back to {aid!r} (it is its own ancestor), so it is drawn once, at the top")
+    check_page_trees(f, page_scopes, tabs_in_act)
     # a records line is read by the exact id it carries: a module of this file, or an activity outside every module (the
     # activities outside a module are one module with no name). One naming neither is reported by the renderer, which keeps its
     # blocks as written and does not read them. A file with no activity line is one activity, named from its title: not checked.
@@ -1750,15 +1821,29 @@ def check_format(f, text, fm):
             names = " and ".join(("the module " + repr(sc)) if sc else "the data section or the activities outside every module" for sc in scopes)
             mark = f"^{key}" if what == "block" else f"[^{key}]"
             warn(f, f"the {what} id {mark} is used in {names}: Booklet reads each in its own module, but Obsidian and GitHub will show the first one for all of them")
-    # after a records region the file is design again, which a save moves above the records (SPEC.md section 8): said once
+    # after a records region the file is design again, and format 0.17 leaves it where it is when the file is saved (SPEC.md section 8):
+    # said once, with what it holds, since a reader reads it as design but the records sit before it
     if regions:
         inside = set()
         for a, z, _, _, _ in regions:
             inside.update(range(a, z + 1))
         late = next((k for k in range(regions[0][0], len(lines)) if k not in inside and lines[k].strip()), None)
         if late is not None:
-            warn(f, f"line {late + 1}: this comes after the records region, and a save moves it above the records (the records sit at the end of a "
-                    f"file); write it above the records yourself")
+            counts, fence_after = {}, None
+            for k in range(late, len(lines)):
+                if k in inside:
+                    continue
+                fence_after, skip = fence_skip(lines[k], fence_after)
+                cm = None if skip else CALLOUT_LINE.match(lines[k])
+                if cm:
+                    kd = cm.group(1).lower()
+                    kd = "question" if kd in QUESTION_KINDS else kd
+                    counts[kd] = counts.get(kd, 0) + 1
+            holds = ", ".join(f"{c} {kd} line{'' if c == 1 else 's'}" for kd, c in sorted(counts.items(), key=lambda x: (-x[1], x[0])))
+            warn(f, f"line {late + 1}: this comes after the records region. It is read as design"
+                    + (f" (it holds {holds})" if holds else " (it holds no Booklet line)")
+                    + (" and ends inside a code fence that is never closed" if fence_after else "")
+                    + "; a save leaves it where it is, after the records, so the design is in two places. Write it above the records if you want it with the rest")
     check_links(f, lines)
     check_images(f, lines)
     check_prices(f, lines, body_start, regions)

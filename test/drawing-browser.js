@@ -12,7 +12,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const FM=(t,x)=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n${x||''}---\n\n`;
+const FM=(t,x)=>`---\nbooklet: "0.17"\ntitle: ${t}\nlang: en\n${x||''}---\n\n`;
 const MATHS=FM('Fractions','start: home\n')+`# Fractions
 
 A short set of questions about **fractions**, for a reader who has not opened the module yet.

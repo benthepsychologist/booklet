@@ -4,7 +4,7 @@
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM="---\nbooklet: \"0.16\"\ntitle: Scope\nlang: en\n---\n\n";
+const FM="---\nbooklet: \"0.17\"\ntitle: Scope\nlang: en\n---\n\n";
 const tag=(n,t)=>P.find(P.main(),x=>x.tagName===t);
 const shown=()=>P.texts(P.main());
 const typeIn=(A,addr,words)=>{A.screen=addr;A.render();const ta=tag(0,"textarea")[0];ta.value=words;ta._on.input();};

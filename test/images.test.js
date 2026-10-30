@@ -7,7 +7,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const ADDR={remote:"https://tracker.example/p.gif",relative:"images/harbour.jpg",protocolRelative:"//tracker.example/q.gif",data:"data:image/png;base64,AAAA"};
-const FILE=`---\nbooklet: "0.16"\ntitle: Pictures\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\nIntro ![remote alt](${ADDR.remote}) and ![relative alt](${ADDR.relative} "a title") and ![proto alt](${ADDR.protocolRelative}) and ![data alt](${ADDR.data}).\n\nA reference one: ![ref alt][r]\n\n[r]: ${ADDR.remote}?ref=1\n\n> [!text|q] A question ![in a label](${ADDR.remote})\n\n> [!module|m end] End\n`;
+const FILE=`---\nbooklet: "0.17"\ntitle: Pictures\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\nIntro ![remote alt](${ADDR.remote}) and ![relative alt](${ADDR.relative} "a title") and ![proto alt](${ADDR.protocolRelative}) and ![data alt](${ADDR.data}).\n\nA reference one: ![ref alt][r]\n\n[r]: ${ADDR.remote}?ref=1\n\n> [!text|q] A question ![in a label](${ADDR.remote})\n\n> [!module|m end] End\n`;
 const imgs=n=>P.find(n,x=>x.tagName==="img"||(x.attrs&&(x.attrs.src!==undefined||x.attrs.srcset!==undefined)));
 P.wipe();const A=P.boot();A.loadText(FILE);
 const text=P.texts(P.main());

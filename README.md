@@ -6,7 +6,7 @@ Open it in a text editor and you can read everything, top to bottom — question
 
 ```markdown
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: example/daily-note
 title: A daily note
 lang: en
@@ -30,7 +30,7 @@ version: "0.1"
 %%
 ```
 
-This is **v0.16** of the format — see [`SPEC.md`](SPEC.md) for the full
+This is **v0.17** of the format — see [`SPEC.md`](SPEC.md) for the full
 format, and [`docs/why-markdown.md`](docs/why-markdown.md) for how it was
 arrived at: what the wider Markdown-tooling field already does, what Booklet
 needs that nothing else supplies, and why each real choice landed where it
@@ -75,7 +75,7 @@ and it draws those too, as long as they use engines it has.
 | | |
 | --- | --- |
 | [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.16; a file marked with any other 0.x opens as it is, with a notice that some of it may not draw, and a file with no marker, or one not 0.x, is refused |
-| [`SPEC.md`](SPEC.md) | the current format (v0.16), versioned and published separately from anything that implements it |
+| [`SPEC.md`](SPEC.md) | the current format (v0.17), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`submit/`](submit/) | the submit build, never the published file: `node submit/build.js --endpoint <url>` makes `booklet-submit.html`, the one-file renderer with a Submit button that sends a reader's answers to the one address it was built with, on the reader's press (`docs/hosting.md`, "The submit build") |
 | [`compile/`](compile/) | the compiler, a build step and never the published file: `node compile/compile.js <file.booklet.md>` makes a plain web page of a booklet (HTML and one stylesheet that read fully with no script, plus one optional script that keeps nothing and sends nothing and that a page links only when it needs it; a booklet of several activities becomes a contents page and a page each, with links between translations; data views and charts, figures, build-time diagrams (given a browser) and a booklet's theme are drawn; tabs, citation previews, "Open all" and sort and filter are the script's reading helpers; pick-one and pick-any questions answer as a quiz that forgets, the other kinds stay read-only) for publishing an article on a site of its own, standalone or as a fragment for a site generator. It reads the format only through `booklet.html`'s own parse and never reads a file's records (`compile/README.md`) |
@@ -110,12 +110,12 @@ figures use the width and fold to one column on a phone.
 
 **Views.** A `booklet query` draws a data block's rows, or a reader's kept entries, as cards, a table, a list, tiles, bars or a line. Every view draws a row from the same seven **roles** (`label`, `value`, `note`, `badge`, `tone`, `link`, `icon`, each read from the field of that name unless the query names another), so rows written with those names need only `from:` and `as:`. `link` (where the row leads) and `icon` (its picture) are drawn by tables, lists, tiles and cards. Tiles with no value are a strip of pills. One **Sort and filter** control, the same on every view and drawn when there are more than eight rows, lets a reader search, show one value of a field and sort on screen; it is kept in memory only, never in the file. A booklet's `density` sizes the views as well as the prose.
 
-A module file (any v0.16 module, such as those in `booklet-registry`) loads as what it is, one activity: on
+A module file (any v0.17 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it. A module may carry its own notice (licence, copyright, source, version), which Add a module writes into the booklet and the page shows under "About this module". A booklet has one name, its own front matter's `title:`, which a reader can rename on its home screen or in "Your booklets".
 
 A tool that writes booklets should ask the linter for the marker (`python3 lint-booklet.py --marker` prints the front-matter line a file should carry) and not hard-code it. A file marked with another `0.x` version still opens, by the current rules and with a notice, and nothing before v1.0 is promised to keep working; the renderer fetches no address a file names (an image, a diagram's image or style, a font).
 
-A plain Markdown file with booklet front matter (`booklet: "0.16"`, a `title`) and no booklet lines at all is
+A plain Markdown file with booklet front matter (`booklet: "0.17"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
 status or a run's acceptance report, can be read in the renderer. Its headings are drawn as headings, and **nothing is
 folded** that the file does not fold: a long report is split into pages with `***` (Back, "Page 2 of 3" and Next at the
@@ -432,7 +432,7 @@ person. Anyone may publish a separate registry under their own policy; a site ca
 
 ## Status
 
-**v0.16, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
+**v0.17, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
 independent second implementation yet. It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and

@@ -26,7 +26,7 @@ let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FA
 const X=E.load();
 const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-compile-pages-"));
 const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
-const HEAD='---\nbooklet: "0.16"\nid: t/ID\ntitle: TITLE\nlang: LANG\n---\n\n';
+const HEAD='---\nbooklet: "0.17"\nid: t/ID\ntitle: TITLE\nlang: LANG\n---\n\n';
 const booklet=(title,body,o)=>HEAD.replace("TITLE",title).replace("ID",(o&&o.id)||"x").replace("LANG",(o&&o.lang)||"en")+body;
 const compileText=(text,name,form,o)=>C.compile([{text,name,dir:TMP}],{form:form||"standalone",engine:X,...o}).results[0];
 const keysOf=r=>[...r.files.keys()].sort();
