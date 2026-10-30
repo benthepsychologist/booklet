@@ -143,8 +143,8 @@ KIND_SETTINGS = {
 }
 NUMBER_SETTINGS = ("min", "max", "step")
 # THE KEPT-ENTRIES FOLD'S MARK (format 0.17; SPEC.md section 3, "Kept entries, folded"): `entries:folded` on an activity line says
-# the activity's kept-entries list starts folded. The name and the one value are proposed, and wait for Ben's word; this constant,
-# the `entries:` cell of KIND_SETTINGS and SPEC.md's "Kept entries, folded" paragraph and table cell are every place that names it.
+# the activity's kept-entries list starts folded. The name and the one value are fixed; the renderer's KIND_SETTINGS and entriesBad check,
+# SPEC.md's "Kept entries, folded" paragraph and table, this constant and the `entries:` cell of KIND_SETTINGS name them.
 FOLD_KEY, FOLD_VALUE = "entries", "folded"
 # `earlier:`'s value: a whole number in digits only (SPEC.md section 4); booklet.html's EARLIER_VALUE is the same, and
 # test/guard.test.js pins the two
@@ -949,15 +949,9 @@ def check_settings(f, n, kind, w):
     takes = ", ".join(("`" + s + "`") for s in allowed)
     said = f"it takes {takes}" if allowed else "it takes no settings at all"
     for key, val in w["set"].items():
-        if kind == "activity" and key == "parent":
-            # 0.16 put `parent:` on an activity; 0.17 puts it on a page (SPEC.md section 3, "Pages"). A warning, not an error, while the
-            # files that write it are moved: the file is not refused, and the move is named.
-            warn(f, f"line {n}: `parent:{val}` on an activity line is a format 0.16 setting; 0.17 takes `parent:` on a page line and no "
-                    f"longer on an activity, so a reader ignores it and this activity sits on its own. To keep the tree, make the activities "
-                    f"one activity and each of the others a page line, `> [!page|id parent:{val}] Title`, inside one tab (an activity that keeps "
-                    f"entries stays an activity: group it in a module's tab instead)")
-        elif key + ":" not in allowed:
-            err(f, f"line {n}: a {kind} line takes no `{key}:` setting ({said})")
+        if key + ":" not in allowed:
+            # `parent:` on an activity line lands here: it belongs to a page line (SPEC.md section 3, "An activity does not sit under another")
+            err(f, f"line {n}: {'an' if kind[0] in 'aeiou' else 'a'} {kind} line takes no `{key}:` setting ({said})")
         elif key in NUMBER_SETTINGS and not re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", val.strip()):
             err(f, f"line {n}: `{key}:{val}` must be a number")
         elif key == "earlier" and not re.fullmatch(EARLIER_VALUE, val):
@@ -1839,11 +1833,15 @@ def check_format(f, text, fm):
                     kd = cm.group(1).lower()
                     kd = "question" if kd in QUESTION_KINDS else kd
                     counts[kd] = counts.get(kd, 0) + 1
+            # two regions with design between them (two saved booklets pasted together) are the one case the writer moves: all the design
+            # goes above the regions (SPEC.md section 8, "Writing records back")
+            between = len(regions) > 1 and any(k not in inside and lines[k].strip() for k in range(regions[0][0], regions[-1][1]))
             holds = ", ".join(f"{c} {kd} line{'' if c == 1 else 's'}" for kd, c in sorted(counts.items(), key=lambda x: (-x[1], x[0])))
             warn(f, f"line {late + 1}: this comes after the records region. It is read as design"
                     + (f" (it holds {holds})" if holds else " (it holds no Booklet line)")
                     + (" and ends inside a code fence that is never closed" if fence_after else "")
-                    + "; a save leaves it where it is, after the records, so the design is in two places. Write it above the records if you want it with the rest")
+                    + ("; a save moves it, and the design between the regions, above the regions (the file has more than one)" if between else
+                       "; a save leaves it where it is, after the records, so the design is in two places. Write it above the records if you want it with the rest"))
     check_links(f, lines)
     check_images(f, lines)
     check_prices(f, lines, body_start, regions)

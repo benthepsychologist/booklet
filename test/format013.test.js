@@ -91,8 +91,8 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const miss=A.parseFile(FM+"> [!activity|a parent:nope] A\n\n> [!activity|b] B\n");
   chk("a parent that names no bare activity is reported and ignored the same way, and the activity is at the top",miss.template.modules[0].activities[0].parent===undefined&&miss.ok);
   const L=lintOut(bare());
-  chk("the linter warns, and refuses nothing, on parent: between bare activities (0.17: it is a page line's setting), naming the move",/0 errors · 2 warnings/.test(L)&&!/places nothing/.test(L)&&/`parent:top` on an activity line/.test(L),L);
-  chk("the linter warns on a parent: that names nothing the same way, as the move to a page line (0.17)",/`parent:nope` on an activity line is a format 0\.16 setting/.test(lintOut(FM+"> [!activity|a parent:nope] A\n")));
+  chk("the linter refuses parent: between bare activities (an activity line takes none; it is a page line's setting, 0.17): one error per line",/2 errors · 0 warnings/.test(L)&&/an activity line takes no `parent:` setting/.test(L),L);
+  chk("the linter refuses a parent: that names nothing in the same way",/`parent:` setting/.test(lintOut(FM+"> [!activity|a parent:nope] A\n")));
   /* a bare activity may have a module's id: no module id is spelled like a bare id's scope */
   const clash=FM+"> [!module|inbox] Inbox\n\n> [!activity|a] A\n\n> [!module|inbox end] End\n\n> [!activity|inbox] Bare\n\n> [!text|q] Q\n";
   chk("the linter accepts a bare activity whose id is a module's id",/0 errors/.test(lintOut(clash)),lintOut(clash));

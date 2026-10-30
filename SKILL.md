@@ -335,11 +335,10 @@ paragraph large) and nowhere else, and its first paragraph is the module's blurb
   To show none, write `status:off` on the line: `> [!activity|tides status:off]
   Tides`. `status:` takes only `off`, and the `>` lines are not the blurb (the
   blurb is the first paragraph, after a blank line).
-- **`parent:` is not an activity's setting any more.** In format 0.16 it put an
-  activity under another. In 0.17 it belongs to a page line (below): a wiki is
-  one activity whose pages are page lines. A file with `parent:` on an activity
-  line is not refused, but the linter warns that it is ignored, and names the
-  move.
+- **`parent:` belongs to a page line (below), not an activity line.** An
+  activity does not sit under another: a wiki is one activity whose pages are
+  page lines. The linter refuses `parent:` on an activity line, as any setting a
+  kind does not take.
 - **A link to a whole module**, one that may not be in this booklet, is
   `[[week-2.booklet]]` or `[Week 2](week-2.booklet.md)`: the module's id is the
   file's name before `.booklet`. Add a label after a bar,
@@ -1158,7 +1157,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 | a page's `parent:` naming no page of its tab, or a loop | `warn `parent:x` is not a page of this tab …` / `loops back to 'y' …` | name a page of the same tab, or none |
 | a setting a page does not take | `a page line takes no `hidden` setting (it takes `icon:`, `parent:`)` | delete it |
 | a fold marker on a page line, or a page with no title | `warn a fold marker … means nothing on a page line` / `this page has no title` | delete the marker, write the title |
-| `parent:` on an activity line (a 0.16 wiki) | `warn `parent:x` on an activity line is a format 0.16 setting …` | make the wiki one activity and the others page lines, `> [!page|id parent:x] Title` |
+| `parent:` on an activity line | `error: an activity line takes no `parent:` setting …` | make the wiki one activity and the others page lines, `> [!page|id parent:x] Title` |
 | `entries:` with a value other than `folded`, or on an activity that is not `repeat` | `` `entries:open` is not a setting a line takes (only `entries:folded` …) `` / `warn … keeps none` | write `entries:folded` on a `repeat` activity, or delete it |
 | an empty `description:` or one that starts a multi-line value | `warn front matter `description:` is empty or starts a multi-line value …` | write one sentence on the key's own line, or delete the key |
 | text after the records region | `warn line N: this comes after the records region. It is read as design (it holds …)` | a save leaves it there; write it above the records to keep the design in one place |

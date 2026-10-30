@@ -116,6 +116,8 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
  const i=A.parseFile(FM+"> [!page|x] X\n\nonly page lines in a file with no activity line\n\n> [!page|y] Y\n\ny\n"),ia=acts(i)[0];
  chk("a file with no activity line is one activity: its page lines are its pages",ia&&ids(ia)==="x,y"&&notice(i).length===0,JSON.stringify(notice(i)));
  const ts=acts(A.parseFile(FM+"> [!activity|a] A\n\n> [!tab] One\n\n> [!page|home] Home\n\n> [!tab] Two\n\ntwo\n"))[0];
+ const t2=acts(A.parseFile(FM+"> [!activity|a] A\n\n> [!tab] One\n\n> [!page|a1] First\n\nwords\n\n> [!page|home] Home\n\n> [!tab] Two\n\ntwo\n"))[0];
+ chk("a tab line after an empty named page that is not its tab's only page leaves that page in its tab too",t2.pages.map(p=>(p.tab||"-")+":"+(p.np||"-")).join()==="one:a1,one:home,two:-",t2.pages.map(p=>(p.tab||"-")+":"+(p.np||"-")).join());
  chk("a tab line after an empty named page starts the tab on a screen of its own: the page stays in its tab",ts.pages.map(p=>(p.tab||"-")+":"+(p.np||"-")).join()==="one:home,two:-",ts.pages.map(p=>(p.tab||"-")+":"+(p.np||"-")).join());
 }
 /* a file with no page line is what it was in 0.16: no page, no np, nothing added to a screen */
@@ -204,7 +206,7 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
  const file=FM+"> [!activity|j repeat entries:folded] Journal\n\n> [!text|q] Q\n\n%%\n> [!records] App record — do not edit below this line\n\n"+entry("2026-01-02T10:00:00Z","kept")+"\n%%\n";
  A.loadText(file);draw("j");
  const det=find(P.main(),hasClass("earlier-fold"));
- chk("drawn, the kept entries sit in a fold that is closed, under the heading \"Earlier entries\"",det.length===1&&det[0].tagName==="details"&&!det[0].attrs.open&&/Earlier entries/.test(texts(det[0])),det.length+"");
+ chk("drawn, the kept entries sit in a fold that is closed, under the heading \"Earlier entries\"",det.length===1&&det[0].tagName==="details"&&det[0].attrs.open===undefined&&/Earlier entries/.test(texts(det[0])),det.length+"");
  A.loadText(file.replace(" entries:folded",""));draw("j");
  chk("without the mark the heading and the chips are drawn as they were: no fold",find(P.main(),hasClass("earlier-fold")).length===0&&/Earlier entries/.test(texts(P.main())));
  chk("the mark is written back as written",A.toMarkdown()===file.replace(" entries:folded",""));
@@ -268,6 +270,45 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
  const G=P.boot();G.loadText(f);
  const added=G.addModuleText(FM+"> [!module|extra] Extra\n\n> [!activity|e1] Extra one\n\n> [!text|eq] EQ\n\n> [!module|extra end] End\n");
  chk("adding a module is a change to the design: the design after the records is then written above them, once, and nothing is lost",added.ok&&G.toMarkdown().split("Written after the records.").length===2&&G.toMarkdown().indexOf("Written after the records.")<G.toMarkdown().indexOf("%%\n> [!records]")&&G.peekAnswers("").q==="x",added.ok+JSON.stringify(G.toMarkdown().slice(-300)));
+}
+/* 6. review of #91: the ids a file writes win, a first page with no words is none, the print copy and the fold are kept */
+{const pg=(t,id,b)=>"> [!page"+(id?"|"+id:"")+"] "+t+"\n\n"+b+"\n\n";
+ const one=src=>acts(A.parseFile(FM+"> [!activity|a] A\n\n"+src))[0];
+ const g=one(pg("One","g","1")+pg("Two","g","2")+pg("Three","g-2","3")+"> [!page|parent:g-2] Kid\n\nk\n");
+ chk("three pages that write g, g, g-2: the first keeps g, the third keeps the g-2 it wrote, the second takes the next free number",ids(g)==="g,g-3,g-2,kid",ids(g));
+ chk("a parent: that names g-2 names the page that wrote g-2",g.npages.find(n=>n.id==="kid").parent==="g-2"&&g.npages.find(n=>n.id==="g-2").title==="Three",JSON.stringify(g.npages));
+ const d=A.parseFile(FM+"> [!activity|a] A\n\n"+pg("G",null,"1")+pg("Other","g","2"));
+ chk("an id made from a title yields to a later page that wrote it: the written g is kept, the title's becomes g-2, and one is said",ids(acts(d)[0])==="g-2,g"&&notice(d).length===1,ids(acts(d)[0])+JSON.stringify(notice(d)));
+ /* nothing but blanks, comments and a lone *** before the first page line is no first page */
+ const rest=pg("First","a","x")+pg("Second","b","y");
+ for(const [name,lead] of [["blank lines",""],["a comment","<!-- a note -->\n\n"],["a comment over lines","<!--\na note\non lines\n-->\n\n"],["a lone ***","***\n\n"],["a comment and a lone ***","<!-- a note -->\n\n***\n\n"]]){
+   const a=one(lead+rest);
+   const brk=/\*\*\*/.test(lead);
+   chk("before the first page line, "+name+": no empty page of its own"+(brk?"":", the first page is on the first screen"),a.pages.map(p=>p.np).join()==="a,b"&&(brk||a.pages.map(p=>p.id).join()==="p1,p2"),a.pages.map(p=>p.id+":"+p.np).join());}
+ const w=one("Some words.\n\n"+rest);
+ chk("before the first page line, words make a first page of their own",w.pages.map(p=>p.np||"-").join()==="-,a,b",w.pages.map(p=>p.np||"-").join());
+ const c=one("<!-- a note -->\n\n"+rest);
+ chk("and a comment before the first page line is kept in the first page's blocks, not dropped",c.pages[0].np==="a"&&c.pages[0].blocks.some(b=>/a note/.test(b.text||"")),JSON.stringify(c.pages[0].blocks));
+}
+/* printed whole, a named page's title heads its page (the fake page has no real query, so the body is given) */
+{A.loadText(FM+"> [!activity|a] A\n\n> [!page|x] Ex\n\nxx\n\n> [!page|y] Why\n\nyy\n");
+ A.screen="a";A.render();const main=P.main(),bd=find(main,hasClass("ap-body"))[0];
+ bd.parentNode=main;main.querySelector=()=>bd;
+ A.printWhole();
+ const pw=find(main,hasClass("print-whole"));
+ chk("printed whole, each named page's title heads its page in the copy",pw.length===1&&find(pw[0],hasClass("pg-title")).map(texts).join("|")==="Ex|Why",pw.length+find(main,hasClass("pg-title")).map(texts).join("|"));
+ A.printWholeEnd();
+ chk("and the copy is taken away when the print ends: the screen is as it was",!(bd.attrs.class||"").includes("pr-skip"));
+}
+/* the kept-entries fold remembers the reader's choice across a redraw */
+{const entry=(ts,t)=>"```booklet entries j\n{\"items\": [\n{\"ts\":\""+ts+"\",\"q\":\""+t+"\"}\n]}\n```\n";
+ A.loadText(FM+"> [!activity|j repeat entries:folded] Journal\n\n> [!text|q] Q\n\n%%\n> [!records] App record — do not edit below this line\n\n"+entry("2026-01-02T10:00:00Z","kept")+"\n%%\n");
+ draw("j");let det=find(P.main(),hasClass("earlier-fold"))[0];
+ chk("the fold starts closed",!!det&&det.attrs.open===undefined);
+ det.open=true;(det._on.toggle||(()=>{}))();draw("j");det=find(P.main(),hasClass("earlier-fold"))[0];
+ chk("opened by the reader, it is open again after a redraw (the choice is kept)",!!det&&det.attrs.open!==undefined);
+ det.open=false;(det._on.toggle||(()=>{}))();draw("j");det=find(P.main(),hasClass("earlier-fold"))[0];
+ chk("and closed by the reader, it is closed after a redraw",!!det&&det.attrs.open===undefined);
 }
 console.log(fails?"\n"+fails+" FAILURES":"\npage tree checks passed");
 process.exit(fails?1:0);

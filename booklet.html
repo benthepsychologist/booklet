@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-1cTaj6yhaCJfiM/3KOgFJuJZbhiLBuZMt9CUHjxElpg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-Ilad+vux/uG3HqHAdjxxliAj6Z68aiACHCI0DZmKiRw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4348,7 +4348,7 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
      activity is read (settlePages). Text in the line's own body is the page's first prose, as under a tab line. */
   const onPage=inText((it,where)=>{const text=it.body.join("\n").trim();lastQ=null;
     if(!act&&!implicit){problems.push(P.pageMisplaced(where));return;}
-    const cur=page(),reuse=!cur.blocks.length&&(!cur.np||cur.np.first!==cur);
+    const cur=page(),reuse=!hasWords(cur)&&(!cur.np||cur.np.first!==cur);
     const scr=reuse?cur:{id:"p"+(act.pages.length+1),...(cur.tab?{tab:cur.tab}:{}),blocks:[]};
     if(!reuse) act.pages.push(scr);
     const n={id:it.id,title:it.title,icon:it.set.icon,parentWord:it.set.parent,line:it.line,tab:scr.tab||null,first:scr};
@@ -4532,12 +4532,15 @@ function settlePages(a,problems){const P=PROBLEM,ps=a.npages;if(!ps) return;
   const out=[],tabs=new Map();
   live.forEach(n=>{const k=n.tab||"";if(!tabs.has(k)) tabs.set(k,[]);tabs.get(k).push(n);});
   tabs.forEach((list,k)=>{
-    const used=new Set();
-    list.forEach((n,i)=>{const where=P.line(n.line);let id=n.id;
+    /* two passes, so that a written id stays as written (SPEC.md section 3, "Pages"): the first page to write an id keeps it; then, in the
+       file's order, every other page (an id made from its title, or an id written twice) takes the next free number */
+    const used=new Set(),want=list.map((n,i)=>{const where=P.line(n.line);let id=n.id;
       if(id&&!ID_PATTERN.test(id)){problems.push(P.idChars(where,id));id=null;}
-      id=id||idWord(n.title)||"page-"+(i+1);
-      if(used.has(id)){let m=2;while(used.has(id+"-"+m)) m++;problems.push(P.pageTwice(where,id,id+"-"+m));id+="-"+m;}
-      used.add(id);n.key=id;});
+      const written=!!id&&!used.has(id);if(written) used.add(id);
+      return {id:id||idWord(n.title)||"page-"+(i+1),written};});
+    list.forEach((n,i)=>{let id=want[i].id;
+      if(!want[i].written){if(used.has(id)){let m=2;while(used.has(id+"-"+m)) m++;problems.push(P.pageTwice(P.line(n.line),id,id+"-"+m));id+="-"+m;}used.add(id);}
+      n.key=id;});
     const rows=list.map(n=>({id:n.key,parent:n.parentWord||"",n})),t=nestRows(rows,"parent"),named=new Set(rows.map(r=>r.id));
     rows.forEach(r=>{const up=t.up.get(r);r.n.up=up?up.n:null;
       if(r.parent&&!up){const where=P.line(r.n.line);problems.push(named.has(r.parent)?P.pageCycle(where):P.pageParentUnknown(where,r.parent));}});
@@ -4547,12 +4550,15 @@ function settlePages(a,problems){const P=PROBLEM,ps=a.npages;if(!ps) return;
     list.forEach(n=>out.push({id:n.key,title:n.title,...(n.icon?{icon:n.icon}:{}),...(n.up?{parent:n.up.key}:{}),...(n.tab?{tab:n.tab}:{})}));});
   a.pages.forEach(s=>{if(s.np) s.np=s.np.key;});
   if(out.length) a.npages=out;}
+/* a screen with something to read: a block that is not Markdown, or Markdown that is not only blanks and `<!-- -->` comments (SPEC.md
+   section 3, "Pages": the words before a tab's first page line are empty when they are nothing but blank lines, comments and a lone `***`) */
+const hasWords=q=>q.blocks.some(b=>b.type!=="markdown"||/\S/.test(String(b.text==null?"":b.text).replace(/<!--[\s\S]*?-->/g,"")));
 function activityOut(a){const {pages:all,...ra}=a;
   /* an empty screen is no page unless it is its tab's only one; but a named page that is empty (a contents page, which shows its
      pages as cards) is a page, and counts as something on the tab */
   const firstOf=new Set(),seen=new Set();all.forEach(p=>{if(p.np){const k=(p.tab||"")+"/"+p.np;if(!seen.has(k)){seen.add(k);firstOf.add(p);}}});
-  const full=q=>q.blocks.length||firstOf.has(q);
-  const pages=all.filter(p=>p.blocks.length||firstOf.has(p)||(!p.np&&!all.some(q=>q!==p&&q.tab===p.tab&&(full(q)||all.indexOf(q)<all.indexOf(p)))));
+  const full=q=>hasWords(q)||firstOf.has(q);
+  const pages=all.filter(p=>hasWords(p)||firstOf.has(p)||(!p.np&&!all.some(q=>q!==p&&q.tab===p.tab&&(full(q)||all.indexOf(q)<all.indexOf(p)))));
   /* `lede`: the first paragraph under the activity's title, read as a module's blurb is, for the activity's card on its module's screen.
      It is the card's alone (the paragraph is still drawn in the page), so it is not `blurb`, which the activity's own screen draws above the page. */
   {const fp=ra.npages?pages.find(p=>p.blocks.length):pages[0],f=fp&&fp.blocks[0],l=f&&f.type==="markdown"?firstPara(f.text):"";if(l) ra.lede=l;}

@@ -80,7 +80,7 @@ clean("pages in an activity with no tab line lint clean",lint(ACT("> [!page|a] A
  one("`parent:` first on a page line is a setting and the line has no written id",r,"warn",9,/`parent:map` is not a page of this tab, so 'choosing-a-place' sits at the top of the tab's tree/);}
 {const r=lint(ACT("> [!activity|parent:b] B\n"));
  chk("the `:` rule holds for every kind: a first word with a colon on an activity line is a setting, so the line has no id (an error), and the setting is named",
-   r.errors.length===1&&/line 9: an activity line needs an id/.test(r.errors[0])&&r.warns.length===1&&/line 9: `parent:b` on an activity line/.test(r.warns[0]),r.out);}
+   r.errors.length===2&&r.errors.some(e=>/line 9: an activity line needs an id/.test(e))&&r.errors.some(e=>/line 9: an activity line takes no `parent:` setting/.test(e))&&r.warns.length===0,r.out);}
 
 // ---- where a page line may stand
 one("a page line in the booklet's opening",lint(FM+"> [!page|a] A\n\n> [!activity|x] X\n"),"ERROR",7,/a page line belongs inside an activity.*outside every activity, so a renderer ignores it/);
@@ -135,15 +135,13 @@ one("a page line with no title",lint(ACT("> [!page|a]\n")),"warn",9,/this page h
 {const r=lint(ACT("> [!page|a] A\n> The page's first words, as `>` lines.\n\n- a list\n- directly under it\n"));
  clean("`>` lines and a list straight under a page line are its first prose, and read clean",r);}
 
-// ---- `parent:` on an activity (a 0.16 file)
-{const r=lint(FM.replace('"0.17"','"0.16"')+"> [!module|m] M\n\n> [!activity|top] Top\n\n> [!activity|kid parent:top] Kid\n\n> [!module|m end] End\n");
- chk("a 0.16 file with parent: on an activity is not refused: two warnings (the marker, and the parent: with the move named), no error",
-   r.status===0&&r.errors.length===0&&r.warns.length===2&&/booklet: 0\.16/.test(r.warns[0])&&/line 11: `parent:top` on an activity line is a format 0\.16 setting; 0\.17 takes `parent:` on a page line.*`> \[!page\|id parent:top\] Title`/.test(r.warns[1]),r.out);}
+// ---- `parent:` on an activity line: a page line takes it, an activity line does not (an error, as for any setting a kind does not take)
+one("`parent:` on an activity line",lint(ACT("> [!activity|b parent:a repeat] B\n")),"ERROR",9,/an activity line takes no `parent:` setting \(it takes /);
 {const r=lint(ACT("> [!activity|b parent:a repeat] B\n\n> [!activity|c parent:b] C\n"));
- chk("and each activity that has one is named, whatever the parent is (a missing parent or a loop is not checked: the setting is ignored)",
-   r.status===0&&r.warns.length===2&&r.warns.every(w=>/on an activity line is a format 0\.16 setting/.test(w)),r.out);}
+ chk("and each activity line that has one is an error, whatever the parent is (a missing parent or a loop is not checked: the setting is not read)",
+   r.status===1&&r.errors.length===2&&r.errors.every(w=>/an activity line takes no `parent:` setting/.test(w)),r.out);}
 {const r=lint(ACT("> [!activity|b parent:no_way] B\n"));
- chk("an activity's parent: is a warning even when its value is not an id",r.status===0&&r.warns.length===1&&r.errors.length===0,r.out);}
+ chk("an activity's parent: is an error even when its value is not an id (and no second finding for the value)",r.status===1&&r.errors.length===1&&r.warns.length===0,r.out);}
 
 // ---- the fold mark
 clean("`entries:folded` on a repeat activity lints clean",lint(FM+"> [!activity|a repeat daily entries:folded] A\n\n> [!text|q] Q\n"));
@@ -168,6 +166,9 @@ const REC='\n%%\n> [!records] App record\n\n```booklet answers\n{"q": "x"}\n```\
    r.status===1&&r.errors.length===1&&/a fence is opened and never closed/.test(r.errors[0])&&r.warns.length===1&&/ends inside a code fence that is never closed/.test(r.warns[0]),r.out);}
 {const r=lint(FM+"> [!activity|a] A\n"+REC+"\nA note after the records.\n");
  chk("prose after the records is reported as holding no Booklet line",r.warns.length===1&&/\(it holds no Booklet line\)/.test(r.warns[0]),r.out);}
+{const r=lint(FM+"> [!activity|a] A\n"+REC+"\nBetween.\n"+REC+"\nAfter.\n");
+ chk("with two records regions and design between them, the warning says a save moves the design above the regions",
+   r.warns.length===1&&/a save moves it, and the design between the regions, above the regions \(the file has more than one\)/.test(r.warns[0]),r.out);}
 clean("a file with its records last, as a save has always written it, is still clean",lint(FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC));
 
 fs.rmSync(tmp,{recursive:true,force:true});
