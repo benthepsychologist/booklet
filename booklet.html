@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-Ilad+vux/uG3HqHAdjxxliAj6Z68aiACHCI0DZmKiRw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-wqcp1v/LiM5CcCL9vQjkLIo4dyjVEgtEfb86eqca/vg=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1402,7 +1402,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
 const RENDERER_VERSION="0.16.1";
-/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.16"`, and a
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.17"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
 const FORMAT_VERSION="0.17";
@@ -3767,7 +3767,7 @@ const hasKept=()=>Object.values(STATE.entries||{}).some(a=>Array.isArray(a)&&a.l
    reading a booklet file (parseBooklet and its parts, queries, data, theme) and writing it back (toMarkdown). */
 
 /* ======================= THE BOOKLET FORMAT =======================
-   A v0.16 booklet is Markdown that reads as a document anywhere: front
+   A v0.17 booklet is Markdown that reads as a document anywhere: front
    matter, prose, and one kind of line Booklet adds, a callout written
    `> [!kind|id words] Title`. Data sits in fenced blocks, and what a reader
    answered sits in fences after `> [!records]`. SPEC.md is the specification.
@@ -3815,7 +3815,7 @@ const NOTICE_KEYS=["license","copyright","source","version"];
 const FRONT_NOTICE_KEYS=["license","copyright","source"];
 /* the kinds that take no id: their words are settings only */
 const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","diff","law","opinion"]);
-/* A file is read when its front matter says `booklet: "0.16"` (quoted or not, as text); another 0.x marker opens with a notice. */
+/* A file is read when its front matter says `booklet: "0.17"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -3834,7 +3834,7 @@ function kvLine(ln){const m=ln.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);if
   if(/^".*"$/.test(v)){try{v=JSON.parse(v);}catch(e){v=v.slice(1,-1);}}
   else if(/^'.*'$/.test(v)) v=v.slice(1,-1).replace(/''/g,"'");
   return [m[1],v];}
-/* The marker a file's front matter carries, quotes off: "0.16", "1.0", "x", or "" with no `booklet:` line. A 0.x marker makes a booklet
+/* The marker a file's front matter carries, quotes off: "0.17", "1.0", "x", or "" with no `booklet:` line. A 0.x marker makes a booklet
    for this page; any other 0.x version opens by this page's rules with a notice and no promise (SPEC.md section 12). */
 function markerOf(text){const {head}=frontMatter(text);
   for(const l of head||[]){const m=l.match(/^booklet:[ \t]*(.*?)[ \t]*$/);
@@ -4182,12 +4182,11 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     /* a card's status line (SPEC.md section 3, "A card's parts"): `status:off` hides it; the lines of the callout under the line
        (`> …`) are its words, read as inline Markdown as a blurb is, in place of the line the page works out */
     if(w.set&&w.set.status==="off") a.statusOff=true;
-    /* THE FOLD MARK (format 0.17; the name `entries:folded` is the one Ben confirmed, and it is written here and in
-       KIND_SETTINGS and the entriesBad check above, and nowhere else, so a change of name is these three edits): the activity's list of kept entries starts folded */
+    /* THE FOLD MARK (format 0.17; the name `entries:folded` is also in KIND_SETTINGS, the entriesBad check above and its strings): the activity's list of kept entries starts folded */
     if(w.set&&w.set.entries==="folded") a.entriesFolded=true;
     {const st=plainText(((w&&w.body)||[]).join("\n"));if(st) a.status=st;}
     /* the activities outside every module fence are one module with no name (SPEC.md section 4): each is drawn as a card of its own
-       (so each is held by a module of its own here), but its id, its records and its `parent:` are in the one scope, "" */
+       (so each is held by a module of its own here), but its id and its records are in the one scope, "" */
     const holder=mod||newModule(id,title,line);holder.activities.push(a);if(!mod) holder.__bare=true;
     act=a;return a;};
   const page=()=>{if(!act) newActivity({id:null,flags:new Set()},fm.title,0);return act.pages[act.pages.length-1];};
@@ -7279,8 +7278,8 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
    the activity meant to be very different from the rest (SPEC.md section 3):
    `tabs: [{id, title}]`, and each page names the tab it is in. The pages in no
    tab, before the first tab line, are the activity's opening, drawn above the
-   tab bar on every tab. A page is pagination and nothing else: it has no name
-   and no menu; the pager at the activity's foot (activityFooter) moves through
+   tab bar on every tab. A page without a page line has no name and no menu
+   (named pages are pageTree's); the pager at the activity's foot (activityFooter) moves through
    the pages of the activity, or of the tab on show.
 
    Tabs and pages are presentation. The activity keeps one id, one draft and one
@@ -7303,8 +7302,7 @@ const tabOpening=a=>tabsIn(a)?a.pages.filter(p=>!p.tab).flatMap(blocksIn):[];
    tab's pages in reading order: {pages, top, named (does the tab hold a named page), of (screen -> its page)}, each page
    {id, title, icon, parent, kids, parts}. A tab with no named page keeps the 0.16 foot (Back, "Page 2 of 3", Next).
    Not yet supported here, and nothing is lost by it: the page menu and its search, the "Mentioned on" list, a trail that starts at
-   the booklet, an `icon:` drawn at the head of a page (cards show it), and a module's tree of activities (an activity line takes no
-   `parent:` in 0.17). */
+   the booklet, and an `icon:` drawn at the head of a page (cards show it). */
 const PAGE_TREES=new WeakMap();
 function pageTree(a,t){let m=PAGE_TREES.get(a);if(!m) PAGE_TREES.set(a,m=new Map());const k=t||"";
   if(m.has(k)) return m.get(k);
@@ -7322,7 +7320,7 @@ function pageBlurb(pg){const f=pg.parts.flatMap(blocksIn).find(b=>b.type==="mark
 /* the pages above a page, from its top page down, each a link, and the page itself plain (the reference renderer's trail; the screen's own head
    already names the activity and the tab) */
 function pageTrail(id,pg){const K=strings("wiki"),up=[];
-  for(let p=pg.parent;p&&up.length<10000;p=p.parent) up.unshift(p);
+  for(let p=pg.parent;p;p=p.parent) up.unshift(p);
   const crumb=(p,to)=>el("li",{},to?el("button",{type:"button",class:"wk-crumb",onclick:()=>turnPage(id,p.parts[0],false)},...words(p.title,true)):el("span",{"aria-current":"page"},...words(p.title,true)));
   return el("nav",{class:"wk-crumbs","aria-label":K.crumbs},el("ol",{},...up.map(p=>crumb(p,true)),crumb(pg,false)));}
 /* ---- which tab and page are showing: this visit only (the view's) ---- */
@@ -8192,7 +8190,7 @@ function activityFooter(id,dc){const C=strings("cards"),S=strings("steps"),G=str
   /* the step back and the step forward within the tab: [handler, words] or null (the tab's first screen, its last) */
   let before=null,after=null;
   if(pg){
-    const top=T.top.indexOf(pg),b=pg.parent||T.top[top-1],n=T.pages[T.pages.indexOf(pg)+1];
+    const b=pg.parent||T.top[T.top.indexOf(pg)-1],n=T.pages[T.pages.indexOf(pg)+1];
     before=pt>0?[turn(pg.parts[pt-1],true),[G.back]]:pg.parent?[turn(pg.parent.parts[0],false),withName(W2.up,pg.parent.title)]:b?[turn(b.parts[0],false),[G.back]]:null;
     after=pt<pn-1?[turn(pg.parts[pt+1],false),[G.next]]:n?[turn(n.parts[0],false),withName(W2.next,n.title)]:null;}
   else{before=at>0?[turn(ps[at-1],true),[G.back]]:null;after=at>=0&&at<ps.length-1?[turn(ps[at+1],false),[G.next]]:null;}

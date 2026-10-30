@@ -58,7 +58,7 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
 {const R=A.parseFile(FM+"> [!activity|a] A\n\n> [!page|parent:map] Choosing a place\n\nc\n\n> [!page|map] Map\n\nm\n"),a=acts(R)[0];
  chk("a page line with a setting first has no written id: the title makes it, and the parent is kept",a.npages[0].id==="choosing-a-place"&&a.npages[0].parent==="map"&&notice(R).length===0,JSON.stringify(a.npages));
  const w=A.parseFile(FM+"> [!activity|icon:compass] Trouble\n\n> [!text|q] Q\n");
- chk("on a kind that needs an id the same rule gives the report of no id, not of a bad one",notice(w).length>=1&&notice(w).every(x=>!/may hold only letters/.test(x))&&/no id|needs an id|id/.test(notice(w)[0]),JSON.stringify(notice(w)));
+ chk("on a kind that needs an id the same rule gives the report of no id, not of a bad one",notice(w).length>=1&&notice(w).every(x=>!/may hold only letters/.test(x))&&/has no id/.test(notice(w)[0]),JSON.stringify(notice(w)));
  chk("a flag written first is still the id, as before (`repeat` names the activity `repeat`)",acts(A.parseFile(FM+"> [!activity|repeat] A\n\n> [!text|q] Q\n"))[0].id.endsWith("repeat"));
 }
 /* ids: a title that leaves nothing, a clash, a bad written id */
@@ -76,21 +76,14 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
 /* parent: names a page of the same tab; a missing one, itself, a cycle: the page sits at the top, said */
 {const R=A.parseFile(FM+"> [!activity|a] A\n\n> [!page|p] P\n\np\n\n> [!page|c parent:nobody] C\n\nc\n\n> [!page|s parent:s] S\n\ns\n\n> [!page|x parent:y] X\n\nx\n\n> [!page|y parent:x] Y\n\ny\n"),a=acts(R)[0];
  chk("a parent that is no page of the tab, a page its own parent: at the top, each said",a.npages.find(n=>n.id==="c").parent===undefined&&a.npages.find(n=>n.id==="s").parent===undefined&&notice(R).some(x=>/parent:nobody/.test(x))&&notice(R).length===3,JSON.stringify(notice(R)));
- chk("and the report of a cycle says so (it is not the report of a missing parent)",notice(R).some(x=>/name each other as parents/.test(JSON.stringify(x))||/pageCycle/.test(JSON.stringify(x))),JSON.stringify(notice(R)));
+ chk("and the report of a cycle says so (it is not the report of a missing parent)",notice(R).some(x=>/name each other as parents/.test(String(x))),JSON.stringify(notice(R)));
  chk("a cycle is cut at the first page met, which is drawn at the top, and it is said",a.npages.find(n=>n.id==="x").parent===undefined&&a.npages.find(n=>n.id==="y").parent==="x"&&a.pages.map(p=>p.np).join()==="p,c,s,x,y",a.pages.map(p=>p.np).join()+JSON.stringify(a.npages));
  const other=acts(A.parseFile(FM+"> [!activity|a] A\n\n> [!tab] One\n\n> [!page|x] X\n\n1\n\n> [!tab] Two\n\n> [!page|y parent:x] Y\n\n2\n"))[0];
  chk("a parent in another tab is no parent: the tree sits inside one tab",other.npages.find(n=>n.id==="y").parent===undefined);
  const deep=A.parseFile(FM+"> [!activity|a] A\n\n"+Array.from({length:3000},(_,i)=>"> [!page|p"+i+(i?" parent:p"+(i-1):"")+"] P"+i+"\n\nx\n\n").join(""));
  chk("a chain of 3,000 pages, each under the one before, opens in reading order (no depth limit, no stack overflow)",deep.ok&&acts(deep)[0].pages.length===3000&&acts(deep)[0].pages[2999].np==="p2999");
 }
- /* 0.16 files (SPEC.md section 3, "An activity does not sit under another"): `parent:` on an activity line is a setting the kind does not take: reported once for
-   each line and ignored, so the activities are not placed under one another and the module is no wiki */
-{const R=A.parseFile(FM+"> [!module|m] M\n\n> [!activity|top] Top\n\nt\n\n> [!activity|kid parent:top] Kid\n\nk\n\n> [!activity|kid2 parent:top] Kid 2\n\nk2\n\n> [!module|m end] End\n"),as=acts(R);
- chk("`parent:` on an activity line is reported as a setting the kind does not take, and ignored: no activity is under another, in the file's order",as.length===3&&as.every(x=>x.parent===undefined)&&as.map(x=>x.id).join()==="m/top,m/kid,m/kid2",JSON.stringify(as.map(x=>x.id+">"+x.parent)));
- chk("one report for each line, worded as for any setting a kind does not take (and no report of a kept wiki)",notice(R).length===2&&notice(R).every(x=>/settingUnknown/.test(JSON.stringify(x))&&/parent:/.test(JSON.stringify(x)))&&!/activityParentLegacy/.test(JSON.stringify(notice(R))),JSON.stringify(notice(R)));
- chk("a file whose activities carry no `parent:` has no such report",!notice(A.parseFile(FM+"> [!activity|a] A\n\nx\n")).length);
-}
-/* what a page line takes */
+ /* what a page line takes */
 {const R=A.parseFile(FM+"> [!activity|a] A\n\n> [!page|x hidden status:off tab:t icon:no-such-picture] X\n\nx\n"),a=acts(R)[0];
  chk("a page takes icon: and parent: and nothing else: another setting is said and ignored; an icon outside the set is said",notice(R).length===4&&/page line takes no “hidden”/.test(notice(R).join("|"))&&a.npages[0].icon===undefined,JSON.stringify(notice(R)));
  const f=A.parseFile(FM+"> [!activity|a] A\n\n> [!page|x]- X\n\nx\n");
@@ -129,7 +122,7 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
 
 /* 2. drawn: the foot of a tree, the trail, the cards, the counter */
 {A.loadText(HARBOUR);draw(acts(A.parseFile(HARBOUR))[0].id);
- chk("it opens on the first page: no Back to a page, Next names the next page",row()==="cd-back:Back to the overview | pg-next:Next: Spring tides"||/^cd-back:.* \| pg-next:Next: /.test(row()),row());
+ chk("it opens on the first page: no Back to a page, Next names the next page",/^cd-back:.* \| pg-next:Next: /.test(row()),row());
  chk("the first page shows its title, its words and the pages under it as cards, and no trail (it has no parent)",heading()==="Tides"&&/How the water moves/.test(texts(body()))&&cards()==="Spring tides|Neap tides"&&crumbs()==="",heading()+"/"+cards()+"/"+crumbs());
  click(btn("pg-next"));
  chk("Next goes to the next page in reading order, depth first: the first child; Back is Up to the parent",/^pg-back:Up: Tides \| pg-at:1 of 2 \| pg-next:Next$/.test(row()),row());

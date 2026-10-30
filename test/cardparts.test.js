@@ -219,7 +219,7 @@ Kid two blurb.
  chk("a top activity's row shows its status text, and status:off hides it",wr("Top")&&texts(find(wr("Top"),hasClass("c"))[0])==="Top status text"&&wr("Quiet")&&find(wr("Quiet"),hasClass("c")).length===0);
  chk("`parent:` on an activity is ignored: the child lines are rows of the module's own list beside the others, with their status text and status:off",
    find(P.main(),hasClass("mode")).length===4&&wr("Kid")&&texts(find(wr("Kid"),hasClass("c"))[0])==="Kid status text"&&wr("Kid two")&&find(wr("Kid two"),hasClass("c")).length===0);
- chk("and no wiki list is drawn: the rows are one ordered list with list semantics",find(P.main(),n=>hasClass("wk-cards")(n)).length===0&&find(P.main(),n=>n.tagName==="ol"&&n.attrs.role==="list"&&find(n,hasClass("mode")).length===4).length===1);
+ chk("and the rows are one ordered list with list semantics",find(P.main(),n=>n.tagName==="ol"&&n.attrs.role==="list"&&find(n,hasClass("mode")).length===4).length===1);
  chk("and the file reports it once for each line: a setting an activity line does not take",A.parseFile(WK).unread.filter(x=>/activity line takes no “parent:”/.test(x)).length===2,JSON.stringify(A.parseFile(WK).unread));}
 
 /* 10. a module with nothing to show: the message is outside the list */

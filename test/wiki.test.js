@@ -65,7 +65,7 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
  {const A2=P.boot();
   const keys=Object.keys(A2.STRINGS_SRC.en.wiki);
   for(const l of ["en","fr","es","es-AR"]){const g=A2.STRINGS[l].wiki;
-   chk("every wiki word exists in "+l+" ("+keys.length+" keys)",keys.every(k=>typeof g[k]===typeof A2.STRINGS_SRC.en.wiki[k]&&(typeof g[k]!=="string"||g[k].trim()!=="")&&(typeof g[k]!=="function"||String(g[k]("X")).includes("X")||k==="more")),keys.filter(k=>!g[k]).join());}
+   chk("every wiki word exists in "+l+" ("+keys.length+" keys)",keys.every(k=>typeof g[k]===typeof A2.STRINGS_SRC.en.wiki[k]&&(typeof g[k]!=="string"||g[k].trim()!=="")&&(typeof g[k]!=="function"||String(g[k]("X")).includes("X"))),keys.filter(k=>!g[k]).join());}
   chk("fr and es have words of their own",["fr","es"].every(l=>keys.filter(k=>typeof A2.STRINGS_SRC.en.wiki[k]==="string").every(k=>A2.STRINGS[l].wiki[k]!==A2.STRINGS.en.wiki[k])));
   chk("es-AR inherits the whole group from es (no imperative to turn into the voseo)",!A2.STRINGS_SRC["es-AR"].wiki&&JSON.stringify(Object.entries(A2.STRINGS["es-AR"].wiki).map(([k,v])=>[k,typeof v==="function"?v("X"):v]))===JSON.stringify(Object.entries(A2.STRINGS.es.wiki).map(([k,v])=>[k,typeof v==="function"?v("X"):v])));}
  console.log(fails?"\n"+fails+" FAILURES":"\nwiki checks passed");process.exit(fails?1:0);

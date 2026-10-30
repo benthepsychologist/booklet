@@ -106,8 +106,7 @@ each activity**, each a page of its own, with its own title, description, "On th
   each activity, drawn from the file's parts (SPEC.md, "A card's parts"): its title, its picture (the line's `icon:`
   when the picture sprite has it, else an emoji the title begins with, which then leaves the title, else its number in
   its list), its blurb (the first paragraph, as the renderer's own card has it: plain words, so a picture in it is its alt text and a formula its TeX; the page's description leaves both out) and its status line (the `>` lines under the activity line; with none, how
-  many questions it holds; `status:off` hides it). An activity written under another with `parent:` is a card inside its
-  parent's card. A module of one activity, or a bare activity, is a single card, taking the module's title, blurb and
+  many questions it holds; `status:off` hides it). A module of one activity, or a bare activity, is a single card, taking the module's title, blurb and
   picture first (as the renderer does), and its page is that activity's page, with the module's opening above it. There
   is no page for a module of several activities: its section of the contents page is its page.
 - **An activity's page** holds the activity (its tabs one after another, as in 0.1.0), a line above it linking to the
@@ -177,9 +176,8 @@ folders beside it. **Hugo reads an `index` file as a leaf bundle, which holds no
 fragment must be renamed `_index.html`** (a section page) for the activity folders beside it to be pages of that section. This
 was written from Hugo's documentation and has not been run against a Hugo build here.
 
-**Not built here.** A wiki written with `parent:` is pages under their parent where the format states it (cards inside the
-card of their parent, the reading order a page before the ones under it), but a page-tree address (`<name>/<parent>/<child>/`)
-and a breadcrumb of the ancestors wait for format 0.17.
+**Not built here.** The pages of format 0.17 (`> [!page|id parent:x] Title`). A page line's words are drawn, but the compiler draws no page title, no cards of the pages under a page, no page-tree address
+(`<name>/<parent>/<child>/`) and no breadcrumb of the ancestors.
 
 **Stamped page by page.** The stamp guard (below) keeps each page apart: a rerun leaves a page tidied by hand as it is and
 writes the booklet's other pages again, and the report says which it kept and how many others it wrote ("no page of the booklet

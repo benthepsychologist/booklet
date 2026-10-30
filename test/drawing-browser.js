@@ -231,12 +231,10 @@ You arrived by a card's link.
    const v=await view(p);
    ok(/^module:|^@home/.test(v),'the module opens ('+v+')');
    if(v==='@home'){await p.locator('#main button.mode').first().click();await p.waitForTimeout(500);}
-   ok(await p.locator('.wk-frame, .wk-tree, .wk-q').count()===0,'no wiki frame, tree or search is drawn: an activity line takes no parent:');
    const cardsT=await p.evaluate(()=>[...document.querySelectorAll('#main button.mode')].map(c=>{const k=c.querySelector('.k');return {t:k.textContent,strong:k.querySelectorAll('strong').length,em:k.querySelectorAll('em').length,math:k.querySelectorAll('math').length};}));
    ok(cardsT.length===3&&cardsT[0].strong===1&&cardsT[0].t==='The top page'&&cardsT[1].em===1&&cardsT[2].math===1,'the three cards, none under another, draw each title\'s marks ('+JSON.stringify(cardsT)+')');
    await p.locator('#main button.mode').nth(2).click();await p.waitForTimeout(500);
    ok((await p.evaluate(()=>document.querySelector('#main h2').querySelectorAll('math').length))===1,'the page head draws the formula in the title');
-   ok(await p.locator('.wk-crumbs').count()===0,'and no trail of parents is drawn above it');
    await shot(p,'wiki-marked-titles-1280-paper');
    await p.context().close();}
 
