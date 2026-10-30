@@ -4,7 +4,7 @@
 // status line; the rows share one left edge; the page does not scroll sideways; the whole row opens its part on Enter; the link's
 // underline shows on hover and on focus and not at rest; the title reads against the page in all four themes.
 //  - the lists checked: the home screen (a module of several activities is one row, a module of one activity is its activity's row),
-//    a module's screen, a wiki module's top pages, a wiki page's child pages, and "Your booklets";
+//    a module's screen, a module whose activity lines carry parent: (read flat), and "Your booklets";
 //  - a row with `status:off` has no status line, and a row with status text under its line shows that text (test/cardparts.test.js
 //    has the parser and the write-back);
 //  - the picture is the line's icon, a leading emoji, or the row's number, 2.25 rem square.

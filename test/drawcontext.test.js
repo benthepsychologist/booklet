@@ -71,7 +71,7 @@ const allShut=()=>folds().length===2&&folds().every(d=>d.attrs.open===undefined)
   chk("removing a module takes its activities' records with it",r.ok&&!E.VIEW.at.has("steps/read")&&!E.VIEW.at.has("steps/ask"));
   E.loadText(MOD);E.screen="steps/read";E.render();E.viewAt("steps/read").probe=true;const id=E.currentId;
   E.closeBooklet();
-  chk("closing the booklet leaves the list a view of its own, empty",E.VIEW.at.size===0&&E.VIEW.wiki.q==="");
+  chk("closing the booklet leaves the list a view of its own, empty",E.VIEW.at.size===0);
   E.openBooklet(id);
   chk("opening it again in the visit brings back its view: the record itself, as it was",!!E.VIEW.at.get("steps/read")&&E.VIEW.at.get("steps/read").probe===true);}
 
@@ -91,8 +91,8 @@ const allShut=()=>folds().length===2&&folds().every(d=>d.attrs.open===undefined)
   F.closeBooklet();F.openFromList(id);at();
   chk("opened again from Your booklets in the same visit, the booklet is on page two, as it was",page()===1,String(page()));
   at("p1");chk("and page one is on the step the reader left it on",step()===1,String(step()));
-  chk("what an opening starts afresh is the entry open under its chips, the query sorts and the wiki menu",
-    F.viewAt("pg/log").chip===null&&F.viewAt("pg/log").queries.size===0&&F.viewAt("pg/log").branch===false&&F.VIEW.wiki.q==="");
+  chk("what an opening starts afresh is the entry open under its chips and the query sorts",
+    F.viewAt("pg/log").chip===null&&F.viewAt("pg/log").queries.size===0);
   click(P.byId("clearGo"));at();
   chk("Clear everything starts the view afresh: page one, its first step",page()===0&&step()===0,page()+" / "+step());
   at("p1");click(byClass(P.main(),"oat-next")[0]);at("p2");
