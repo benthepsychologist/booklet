@@ -915,10 +915,19 @@ behind a worked figure ("assumes one reminder per visit").
 **A report on the web.** A booklet can also be published as a plain web page
 with the compiler (`node compile/compile.js report.booklet.md`;
 `compile/README.md`). The page shows the prose, callouts, folds, tables,
-formulas, notes and images, and the questions read-only; it leaves out, with a
-note to tidy, the data views and diagrams, which it does not draw yet, and it
-never shows a file's records. So for a booklet meant to be read on a site, put
-the substance in prose and tables, and the views and questions after it.
+formulas, notes and images, and also the data views (table, list, cards, tiles,
+bars and a line chart, the last two drawn with their numbers in a table after
+them), figures, the booklet's theme, and diagrams, which are drawn when the
+machine that builds the page has a browser for Playwright (without one a diagram
+stays as its source in a code block, with a note to tidy). A booklet that shows
+several activities becomes a contents page and a page for each. Pick-one and
+pick-any questions answer like a quiz (right or not quite, the reply under an
+option) and forget the pick: the page saves nothing. Every other kind of
+question (scale, matrix, number, date, text, lines, and one with `open`) is shown
+read-only and listed in the build report. A query over kept entries or answers is
+drawn empty with a note to tidy, since the compiler never reads them. The page
+never shows a file's records. So a report can use views and a quiz-style check;
+leave anything that needs a saved answer for the booklet itself.
 
 ---
 

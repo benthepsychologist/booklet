@@ -1,4 +1,4 @@
-// Browser check of the compiler's stylesheet on a hostile host (compile/booklet.css, compile 0.1.0): the page keeps the
+// Browser check of the compiler's stylesheet on a hostile host (compile/booklet.css, compile 0.2.0): the page keeps the
 // booklet's own look on any site. The examples and the page-shaped fixtures are compiled, and each page is opened twice
 // in Chromium, at 1280 and 390 pixels wide: on a plain host page, and on the same host page (the same markup around the
 // same page) that also loads a hostile stylesheet after booklet.css. The hostile stylesheet is made up, on the pattern

@@ -1,8 +1,7 @@
 "use strict";
 /* compile/script.js: the assembler for booklet.js, the one optional script a compiled page may link.
 
-   The page reads fully with no script. A part of the page that responds when it is pressed (a quiz answer, a widget, a
-   sort) is written as one small file in compile/script/, and this file puts them together:
+   The page reads fully with no script. A part of the page that responds when it is pressed (a quiz answer, a sort) is written as one small file in compile/script/, and this file puts them together:
      - every file in compile/script/ ending .js is one part, one IIFE (an immediately called function: its names are its
        own), and the parts are joined in file-name order (so 10-quiz.js comes before reading-cites.js); no modules, no imports;
      - the joined text is scanned (below) and the build fails when it holds a word that could keep something, send
@@ -17,7 +16,13 @@
      1. Nothing is kept: no localStorage, sessionStorage, IndexedDB, cookie or cache. What a reader presses lives in the
         open page and is gone on reload.
      2. Nothing is sent: no fetch, XMLHttpRequest, WebSocket, EventSource, beacon, worker, image or form that makes a
-        request, no postMessage.
+        request, no postMessage. The scan also bans the routes that send without a call of that name: making an element
+        that loads from a literal name (img, script, iframe, link, audio, video, source, track, form and the like, and
+        createElementNS), giving an element an address (.src, .srcset, .href, .ping, .formAction or setAttribute of one),
+        window.open, a change of location (assign, replace, reload, or an assignment to location or its href, search,
+        pathname, host, port or protocol), a ping, requestSubmit, new Audio, WebTransport, RTCPeerConnection and
+        fetchLater. The scan does not see an element made from a name held in a variable, or a bare open(…) call (a part may have
+        a function of that name of its own); the browser test does.
      3. A booklet's words never become markup or code at run time. The scan bans the ways a string becomes markup or code:
         innerHTML, outerHTML, insertAdjacentHTML, document.write, DOMParser, createContextualFragment, srcdoc, eval,
         Function (and .constructor), a timer given text, import. What a part may add is text it sets with textContent (a
@@ -55,6 +60,10 @@ const BANNED=[
   ["send something (a beacon)",/sendBeacon/],
   ["send something (postMessage or a channel)",/postMessage|BroadcastChannel|MessageChannel/],
   ["send something (an image or a form made at run time)",/\bnew\s+Image\b|\bImage\s*\(|\.submit\s*\(|\bFormData\b/],
+  ["send something (an element that loads, made at run time)",/\bcreateElementNS\b|createElement\s*\(\s*["'`](?:img|image|script|iframe|frame|embed|object|link|audio|video|source|track|form|base)\b/i],
+  ["send something (an address given to an element)",/\.\s*(?:src|srcset|href|ping|formAction)\s*=(?!=)|\bsetAttribute(?:NS)?\s*\(\s*["'`](?:src|srcset|href|xlink:href|ping|formaction|background)\b/i],
+  ["send something (leaving the page: window.open, a change of location)",/\b(?:window|self|top|parent|opener)\s*\.\s*open\b|\blocation\s*\.\s*(?:assign|replace|reload)\b|\blocation\s*(?:\.\s*(?:href|search|pathname|host|hostname|port|protocol)\s*)?=(?!=)/],
+  ["send something (a ping, a form pressed for the reader, media that loads)",/\bping\b|\.requestSubmit\s*\(|\bnew\s+Audio\b|\bWebTransport\b|\bRTCPeerConnection\b|\bfetchLater\b/],
   ["run text as code (eval)",/\beval\b/],
   ["run text as code (Function)",/\bFunction\b|\bconstructor\b/],
   ["load code (import)",/\bimport\b|\bimportScripts\b/],

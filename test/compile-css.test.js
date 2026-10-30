@@ -1,4 +1,4 @@
-// The compiler's stylesheet (compile/booklet.css) held to the renderer it copies (compile 0.1.0).
+// The compiler's stylesheet (compile/booklet.css) held to the renderer it copies (compile 0.2.0).
 //   - Its colours are the renderer's: each of the four base tables (Paper, the default; Daylight; Night; Contrast), the
 //     dark table a standalone page takes on a dark device, and the print table, holds every --bk-* colour, each equal to
 //     the token it names in booklet.html's own theme tables (the header of booklet.css says which token each one copies).
