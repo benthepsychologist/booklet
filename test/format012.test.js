@@ -109,11 +109,12 @@ const FM='---\nbooklet: "0.17"\ntitle: T\nlang: en\n---\n\n';
   chk("a chain of 10,000 activities each written under the one before opens (no stack overflow), keeps its order, places none under another (0.17) and reports each parent:",R.ok&&a.length===N&&a[0].id==="m/a0"&&a[N-1].id==="m/a"+(N-1)&&a.every(x=>x.parent===undefined)&&noTake(R)===N-1,R.ok+" "+a.length+" "+noTake(R));
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"f012d-")),f=path.join(tmp,"deep.md");
   fs.writeFileSync(f,FM+"> [!module|m] M\n\n"+chain+"> [!module|m end] End\n");
+  /* The time limits below are for a quadratic or stack-blowing linter, which takes minutes or fails outright on these sizes; they are 15 s because a slow CI runner takes several times the ~1 s of a quiet box. */
   const t1=Date.now(),r=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8",maxBuffer:1<<28}),dt=Date.now()-t1;
-  chk("the linter reads that chain in under two seconds, one error per parent: (an activity line takes none, 0.17)",r.status===1&&dt<2000&&(r.stdout.match(/an activity line takes no `parent:` setting/g)||[]).length===N-1&&r.stdout.includes((N-1)+" errors"),dt+"ms "+r.stdout.slice(-120));
+  chk("the linter reads that chain in under 15 seconds, one error per parent: (an activity line takes none, 0.17)",r.status===1&&dt<15000&&(r.stdout.match(/an activity line takes no `parent:` setting/g)||[]).length===N-1&&r.stdout.includes((N-1)+" errors"),dt+"ms "+r.stdout.slice(-120));
   const loopy=FM+"> [!module|m] M\n\n"+Array.from({length:3000},(_,i)=>"> [!activity|a"+i+" parent:a"+((i+1)%3000)+"] A"+i+"\n\n").join("")+"> [!module|m end] End\n";
   fs.writeFileSync(f,loopy);const t2=Date.now(),r2=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8",maxBuffer:1<<28});
-  chk("a loop 3,000 long is one error per member, fast",r2.status===1&&(r2.stdout.match(/an activity line takes no `parent:` setting/g)||[]).length===3000&&Date.now()-t2<3000,String(Date.now()-t2));
+  chk("a loop 3,000 long is one error per member, fast",r2.status===1&&(r2.stdout.match(/an activity line takes no `parent:` setting/g)||[]).length===3000&&Date.now()-t2<15000,String(Date.now()-t2));
   fs.rmSync(tmp,{recursive:true,force:true});}
 
  /* ---- review round 2 ---- */

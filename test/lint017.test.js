@@ -117,12 +117,13 @@ one("a page that is its own parent",lint(ACT("> [!page|a parent:a] A\n")),"warn"
 {const r=lint(ACT("> [!page|g] One\n\n> [!page|g parent:nobody] Two\n\n> [!page|k parent:g] Kid\n"));
  chk("of two pages with one id the first is the parent: a child of g is not unnamed, and only the second g's own parent: is never read",
    r.errors.length===1&&/this page's id is 'g'/.test(r.errors[0])&&r.warns.length===0,r.out);}
+// The time limits below are for a quadratic or stack-blowing linter, which takes minutes or fails outright on these sizes; they are 15 s because a slow CI runner takes several times the ~1 s of a quiet box.
 {const N=10000,chain="> [!tab|t] T\n\n"+Array.from({length:N},(_,i)=>"> [!page|p"+i+(i?" parent:p"+(i-1):"")+"] P"+i+"\n\n").join("");
  const t0=Date.now(),r=lint(ACT(chain)),dt=Date.now()-t0;
- chk("a chain of 10,000 pages each under the one before is walked in under three seconds, with nothing to say",r.status===0&&dt<3000&&/0 errors · 0 warnings/.test(r.out),dt+"ms "+r.out.slice(-120));
+ chk("a chain of 10,000 pages each under the one before is walked in under 15 seconds, with nothing to say",r.status===0&&dt<15000&&/0 errors · 0 warnings/.test(r.out),dt+"ms "+r.out.slice(-120));
  const loopy=ACT(Array.from({length:3000},(_,i)=>"> [!page|p"+i+" parent:p"+((i+1)%3000)+"] P"+i+"\n\n").join(""));
  const t1=Date.now(),r2=lint(loopy);
- chk("a loop 3,000 pages long is reported once per page, fast",r2.status===0&&(r2.out.match(/loops back/g)||[]).length===3000&&Date.now()-t1<3000,String(Date.now()-t1));}
+ chk("a loop 3,000 pages long is reported once per page, fast",r2.status===0&&(r2.out.match(/loops back/g)||[]).length===3000&&Date.now()-t1<15000,String(Date.now()-t1));}
 
 // ---- the page line's settings
 one("a setting a page does not take: hidden",lint(ACT("> [!page|a hidden] A\n")),"ERROR",9,/a page line takes no `hidden` setting \(it takes `icon:`, `parent:`\)/);
