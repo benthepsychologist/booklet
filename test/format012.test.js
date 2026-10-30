@@ -44,8 +44,6 @@ const FM='---\nbooklet: "0.17"\ntitle: T\nlang: en\n---\n\n';
   chk("a loop, or an activity under itself, is nothing either: each is drawn once, at the top, in the file's order",a.map(x=>x.id).join()==="m/a,m/b,m/c"&&a.every(x=>x.parent===undefined),JSON.stringify(a.map(x=>[x.id,x.parent])));}
  {const {R,a}=tree([["a"],["b"],["c"]]);
   chk("a module with no parent anywhere is a flat list, as before: no parent, the file's order, nothing reported",a.map(x=>x.id).join()==="m/a,m/b,m/c"&&a.every(x=>x.parent===undefined)&&R.unread.length===0);}
- {const T=A.activityTree([{id:"m/a"},{id:"m/b",parent:"m/a"},{id:"m/a",parent:"m/b"}]);
-  chk("when two activities share an id the first is the one a parent names",T.order.length===3&&T.parent[1]==="m/a");}
  {const R=A.parseFile(FM+"> [!module|p] P\n\n"+act("a")+act("b","a")+"> [!module|p end] End\n\n> [!module|q] Q\n\n"+act("a")+act("b","zzz")+"> [!module|q end] End\n");
   const q=R.template.modules[1].activities;
   chk("in two modules alike (the parent in its own module, or none): every activity is at the top and each parent: is reported",R.template.modules[0].activities[1].parent===undefined&&q[1].parent===undefined&&noTake(R)===2,JSON.stringify(R.unread));}

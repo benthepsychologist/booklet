@@ -10,7 +10,6 @@
 //  - the picture is the line's icon, a leading emoji, or the row's number, 2.25 rem square.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright-core node test/contents-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
-const {WIKI_STAMP}=require('./wikistamp.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
@@ -59,7 +58,7 @@ Its own words.
 
 > [!module|solo end] End
 `;
-const WIKI=head('Notes')+`> [!module|w] Wiki
+const WIKI=head('Notes')+`> [!module|w] Parents
 
 > [!activity|top] Top page
 
@@ -79,7 +78,7 @@ Child two.
 
 > [!module|w end] End
 `;
-const WIKI30=head('Big')+`> [!module|w30] Big wiki\n\n> [!activity|top] Top\n\nTop.\n\n`+Array.from({length:30},(_,i)=>`> [!activity|k${i} parent:top] Child ${i+1}\n\nChild words.\n\n`).join('')+`> [!module|w30 end] End\n`;
+const WIKI30=head('Big')+`> [!module|w30] Big module\n\n> [!activity|top] Top\n\nTop.\n\n`+Array.from({length:30},(_,i)=>`> [!activity|k${i} parent:top] Child ${i+1}\n\nChild words.\n\n`).join('')+`> [!module|w30 end] End\n`;
 const EMPTY=head('Empty')+`> [!module|m] M\n\n> [!activity|a hidden] A\n\nx\n\n> [!activity|b hidden] B\n\ny\n\n> [!module|m end] End\n`;
 const THEMES=['paper','daylight','night','contrast'];
 const lum=c=>{const [r,g,bl]=c.map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*r+.7152*g+.0722*bl;};
@@ -99,9 +98,7 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
     const toList=async()=>{for(let i=0;i<3;i++){if(await p.getByRole('button',{name:'Add a booklet from a file'}).count()) return;await p.locator('#btnHome').click();await wait(300);}};
     const load=async text=>{await toList();await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(250);
       await p.evaluate(t=>{document.getElementById('pasteIn').value=t;},text);
-      await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(800);
-      /* 0.17 reads no wiki from a file: give a booklet written with parent: its parents (test/wikistamp.js) */
-      if(/\|[a-z0-9-]+ parent:/.test(text)){await p.evaluate(WIKI_STAMP,text);await wait(300);}};
+      await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(800);};
     /* what a list of rows looks like to a reader: the rows' boxes, the tiles, the chevrons and the list's own display */
     const rows=sel=>p.evaluate(s=>{const ol=document.querySelector(s);if(!ol) return null;
       const lis=[...ol.children],ctl=lis.map(li=>li.querySelector('.card-go')),r=e=>e.getBoundingClientRect();
@@ -198,25 +195,21 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
        await p.screenshot({path:path.join(OUT,`module-${t}-${W}.png`)});}
      await p.selectOption('#themeSel','paper');await wait(100);}
 
-    /* 3. a wiki: the top pages, and a page's child pages */
+    /* 3. a module whose activity lines carry parent: (0.17 reports and ignores it): one flat list, the lines that named a parent among the rest */
     await load(WIKI);
-    {const R=await rows('#main ol.modes.wk-cards');
-     if(await view()!=='module:w'&&await p.locator('#main ol.modes').count()===0){await p.locator('#main button.mode').first().click();await wait(400);}
-     const R2=await rows('#main ol.modes.wk-cards');isList(R2,'wiki top pages',2);
-     ok(await over()<=0,`${W}px wiki top pages: no sideways scroll`);
-     await p.locator('#main .wk-cards button.mode').first().click();await wait(500);
-     const R3=await rows('#main ol.modes.wk-cards');isList(R3,'wiki child pages',2);
-     ok(await over()<=0,`${W}px wiki child pages: no sideways scroll`);
+    {if(await view()!=='module:w'&&await p.locator('#main ol.modes').count()===0){await p.locator('#main button.mode').first().click();await wait(400);}
+     const R2=await rows('#main ol.modes');isList(R2,'parent: lines, flat',4);
+     ok(await over()<=0,`${W}px parent: lines, flat: no sideways scroll`);
+     ok(await p.locator('#main .wk-cards, #main .wk-frame, #main .wk-tree').count()===0,`${W}px parent: lines, flat: no wiki list, frame or menu`);
      await p.screenshot({path:path.join(OUT,`wiki-${W}.png`)});
-     {const nums=await p.evaluate(()=>[...document.querySelectorAll('#main .wk-cards button.mode')].map(c=>{const n=c.querySelector('.top > .cd-num'),k=c.querySelector('.top > .k'),t=c.querySelector('.cd-tile');return {num:n&&n.textContent,k:Math.round(k.getBoundingClientRect().left),t:Math.round(t.getBoundingClientRect().left),svg:!!t.querySelector('svg'),txt:t.textContent.trim()};}));
-      ok(nums.map(n=>n.num).join()==='1,2'&&nums[0].svg&&nums[1].txt===''&&new Set(nums.map(n=>n.k)).size===1&&new Set(nums.map(n=>n.t)).size===1,`${W}px wiki child pages: a row with a picture and one without both have the number before the title and one left edge (${JSON.stringify(nums)})`);
-      ok(await p.locator('#main ol.wk-cards').getAttribute('role')==='list',`${W}px wiki child pages: the list keeps its list role`);
-      const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:(n.name||{}).value||'',desc:(n.description||{}).value||''}));})();
-      const k1=ax.find(x=>x.name==='First child');ok(!!k1&&/Child one\./.test(k1.desc),`${W}px wiki child pages: a row is named by its title and described by its blurb (${JSON.stringify(k1)})`);}
-     const title=(await p.locator('#main .wk-content h2').first().innerText()).trim();
-     await p.locator('#main .wk-cards button.mode').first().focus();await p.keyboard.press('Enter');await wait(500);
-     const after=(await p.locator('#main .wk-content h2').first().innerText()).trim();
-     ok(title==='Top page'&&after==='First child',`${W}px wiki child pages: Enter on a child opens it ('${title}' -> '${after}')`);}
+     {const nums=await p.evaluate(()=>[...document.querySelectorAll('#main ol.modes button.mode')].map(c=>{const n=c.querySelector('.top > .cd-num'),k=c.querySelector('.top > .k'),t=c.querySelector('.cd-tile');return {num:n&&n.textContent,k:k&&Math.round(k.getBoundingClientRect().left),t:t&&Math.round(t.getBoundingClientRect().width),svg:!!(t&&t.querySelector('svg'))};}));
+      ok(nums.map(n=>n.num).join()==='1,2,3,4'&&nums[2].svg&&!nums[3].svg&&new Set(nums.map(n=>n.k)).size===1,`${W}px parent: lines, flat: a row with a picture and one without both have the number first and their titles on one edge (${JSON.stringify(nums)})`);
+      ok(await p.locator('#main ol.modes').first().getAttribute('role')==='list',`${W}px parent: lines, flat: the list keeps its list role`);
+      const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:n.name&&n.name.value,desc:n.description&&n.description.value}));})();
+      const k1=ax.find(x=>x.name==='First child');ok(!!k1&&/Child one\./.test(k1.desc),`${W}px parent: lines, flat: a row is named by its title and described by its blurb (${JSON.stringify(k1)})`);}
+     await p.locator('#main ol.modes button.mode').nth(2).focus();await p.keyboard.press('Enter');await wait(500);
+     const after=(await p.locator('#main h2').first().innerText()).trim();
+     ok(after==='First child',`${W}px parent: lines, flat: Enter on the row that named a parent opens it ('${after}')`);}
 
     /* 4. Your booklets */
     await toList();await wait(300);
@@ -230,14 +223,10 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
      const ax=await (async()=>{const c=await ctx.newCDPSession(p);const {nodes}=await c.send('Accessibility.getFullAXTree');await c.detach();return nodes.filter(n=>!n.ignored&&n.role&&n.role.value==='button').map(n=>({name:(n.name||{}).value||''}));})();
      ok(ax.some(x=>x.name==='Notes')&&ax.some(x=>x.name==='Harbour')&&['Open','Rename','Remove'].every(v=>ax.some(x=>x.name===v+' “Notes”')&&ax.some(x=>x.name===v+' “Harbour”'))&&await p.locator('#main ol.modes').getAttribute('role')==='list',`${W}px Your booklets: each title is a button named by the booklet's name, and the list keeps its list role`);}
 
-    /* 5. "Show N more" in a wiki sends the focus to the first row it added, not to the first row */
+    /* 5. thirty-one activities, thirty of them written with parent: (reported and ignored): all are rows of one list, with no "Show more" */
     await load(WIKI30);
-    {if(await p.locator('#main .wk-cards').count()===0||await view()!=='module:w30'){await p.locator('#main button.mode').first().click();await wait(400);}
-     await p.locator('#main .wk-cards button.mode').first().click();await wait(500);
-     ok(await p.locator('#main .wk-cards button.mode').count()===24,`${W}px wiki: 30 children show 24 rows and a button for the rest (${await p.locator('#main .wk-cards button.mode').count()})`);
-     await p.locator('#main .wk-morerow button').click();await wait(300);
-     const at=await p.evaluate(()=>{const rs=[...document.querySelectorAll('#main .wk-cards button.mode')];return {n:rs.length,idx:rs.indexOf(document.activeElement)};});
-     ok(at.n===30&&at.idx===24,`${W}px wiki: after Show more the focus is on the first new row, the 25th (${JSON.stringify(at)})`);}
+    {if(await view()!=='module:w30'){await p.locator('#main button.mode').first().click();await wait(400);}
+     ok(await p.locator('#main ol.modes button.mode').count()===31&&await p.locator('#main .wk-morerow, #main .wk-cards').count()===0,`${W}px 31 activities show 31 rows and no button for the rest (${await p.locator('#main ol.modes button.mode').count()})`);}
 
     /* 6. a module with nothing to show says so outside the list */
     await load(EMPTY);
