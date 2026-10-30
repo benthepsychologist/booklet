@@ -1,7 +1,7 @@
 // Browser check for format 0.13 (renderer 0.13.0), in a real page under the hosted Content-Security-Policy:
 //  - an activity can be called `home`: its card opens it, its question can be answered, and the answer is still there when the reader comes back (D3);
 //  - the booklet's own home screen is the view `@home`, which no activity id can be;
-//  - activities outside every module fence draw as a card each, in the order `parent:` gives them (D2);
+//  - activities outside every module fence draw as a card each, in the file's order (D2; 0.17: `parent:` on an activity line is reported and ignored, so it places none);
 //  - `> [!group]- Title` draws as a plain fold that opens on a press (D13);
 //  - `> [!row|end]` closes a row, so two cells draw side by side (D11);
 //  - saving after a record the page does not read keeps it in the file the page downloads (D1).
@@ -70,7 +70,7 @@ Second words.
   const view=()=>p.evaluate(()=>document.body.dataset.view);
   ok(await view()==='@home','three bare activities open on the booklet\'s own home screen, named @home ('+await view()+')');
   const cards=await p.evaluate(()=>[...document.querySelectorAll('#main button.mode')].map(c=>c.querySelector('.k').textContent));
-  ok(cards.join('|')==='The first activity|The second activity|Child of the second','each bare activity is a card, with the child after its parent ('+cards.join('|')+')');
+  ok(cards.join('|')==='The first activity|Child of the second|The second activity','each bare activity is a card, in the file\'s order: the line that names a parent: is not moved after it (0.17) ('+cards.join('|')+')');
   await p.locator('#main button.mode').first().click();await p.waitForTimeout(600);
   ok(await view()==='home','pressing the card of the activity called home opens it ('+await view()+')');
   ok(/Words of the first activity/.test(await p.locator('#main').innerText()),'and it draws that activity, not the home screen');

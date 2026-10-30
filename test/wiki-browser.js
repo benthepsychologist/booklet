@@ -16,6 +16,7 @@ const {kept}=require('./kept.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
+const {WIKI_STAMP}=require('./wikistamp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const WIKI=fs.readFileSync(path.join(__dirname,'fixtures','wiki-scrambled.booklet.md'),'utf8');
 
@@ -38,7 +39,8 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
   const errs=[],cons=[];
-  const openBook=async(text,W,hook)=>{
+  /* plain: leave the file as 0.17 reads it (its `parent:` words reported and ignored); else give the module the parents a 0.16 file's words gave (test/wikistamp.js) */
+  const openBook=async(text,W,hook,plain)=>{
     const ctx=await b.newContext({viewport:{width:W||1280,height:900}});const p=await ctx.newPage();p.reqs=[];
     p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))cons.push(m.text());});p.on('pageerror',e=>errs.push(e.message));
     p.on('request',r=>p.reqs.push(r.url()));
@@ -51,6 +53,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(200);
     await p.evaluate(t=>{document.getElementById('pasteIn').value=t;},text);
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(700);
+    if(!plain){await p.evaluate(WIKI_STAMP,text);await p.waitForTimeout(300);}
     return p;};
   const h2=p=>p.locator('#main .wk-content h2, #main .col h2').first().innerText();
   const cards=p=>p.locator('#main .wk-cards button.mode');
@@ -173,6 +176,13 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   const dd=p.locator('.wk-tree details').first();if(await dd.count()) await dd.locator(':scope > summary').click({position:{x:4,y:6}});
   await p.waitForTimeout(1500);
   ok(await snap(p)===before,'opening pages, searching and moving through the tree leave localStorage, IndexedDB and cookies exactly as they were');
+  await p.context().close();
+
+  /* ---- 0.17: the same file, read as a file is read now ---- */
+  p=await openBook(WIKI,1280,undefined,true);
+  ok(await p.locator('.wk-frame').count()===0&&await p.locator('.wk-tree').count()===0,'0.17: the same file, with no stamp, is no wiki: no frame and no menu (an activity line takes no parent:)');
+  ok(await p.locator('#main button.mode').count()>=Math.min(24,pages.length)&&await cards(p).count()===0,'and its activities are the flat list of cards of any module, none under another');
+  ok(await p.locator('.filenotes li').count()>=1&&/takes no “parent:”/.test(await p.locator('.filenotes').first().textContent()),'and the notice says so: a setting an activity line does not take');
   await p.context().close();
 
   /* ---- a flat module is as it was ---- */

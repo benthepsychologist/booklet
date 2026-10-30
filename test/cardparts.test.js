@@ -189,7 +189,10 @@ Bare two blurb.
  chk("home: a module of one activity with status:off has no status line",row("Off module")&&find(row("Off module"),hasClass("c")).length===0);
  chk("home: a bare activity shows its status text",texts(find(row("Bare"),hasClass("c"))[0])==="Bare status text");
  chk("home: a bare activity with status:off has no status line",row("Bare two")&&find(row("Bare two"),hasClass("c")).length===0);
- const WK=FM+`> [!module|w] Wiki
+ /* 0.17: `parent:` is no setting of an activity line (SPEC.md section 3, "An activity does not sit under another"): it is reported
+    and ignored, so the module is never a wiki and its four activities are four rows of one list, each with the status line it
+    had when it sat in the wiki: its status text, or none with status:off */
+ const WK=FM+`> [!module|w] Flat
 
 > [!activity|top] Top
 > Top status text
@@ -213,10 +216,11 @@ Kid two blurb.
 `;
  A.loadText(WK);A.screen="module:w";A.render();
  const wr=n=>find(P.main(),hasClass("mode")).find(c=>texts(find(c,hasClass("k"))[0])===n);
- chk("wiki: a top page's row shows its status text, and status:off hides it",wr("Top")&&texts(find(wr("Top"),hasClass("c"))[0])==="Top status text"&&wr("Quiet")&&find(wr("Quiet"),hasClass("c")).length===0);
- A.screen="w/top";A.render();
- chk("wiki: a child page's row shows its status text, and status:off hides it",wr("Kid")&&texts(find(wr("Kid"),hasClass("c"))[0])==="Kid status text"&&wr("Kid two")&&find(wr("Kid two"),hasClass("c")).length===0);
- chk("wiki: the rows are an ordered list with list semantics",find(P.main(),n=>n.tagName==="ol"&&hasClass("wk-cards")(n)&&n.attrs.role==="list").length===1);}
+ chk("a top activity's row shows its status text, and status:off hides it",wr("Top")&&texts(find(wr("Top"),hasClass("c"))[0])==="Top status text"&&wr("Quiet")&&find(wr("Quiet"),hasClass("c")).length===0);
+ chk("`parent:` on an activity is ignored: the child lines are rows of the module's own list beside the others, with their status text and status:off",
+   find(P.main(),hasClass("mode")).length===4&&wr("Kid")&&texts(find(wr("Kid"),hasClass("c"))[0])==="Kid status text"&&wr("Kid two")&&find(wr("Kid two"),hasClass("c")).length===0);
+ chk("and no wiki list is drawn: the rows are one ordered list with list semantics",find(P.main(),n=>hasClass("wk-cards")(n)).length===0&&find(P.main(),n=>n.tagName==="ol"&&n.attrs.role==="list"&&find(n,hasClass("mode")).length===4).length===1);
+ chk("and the file reports it once for each line: a setting an activity line does not take",A.parseFile(WK).unread.filter(x=>/activity line takes no “parent:”/.test(x)).length===2,JSON.stringify(A.parseFile(WK).unread));}
 
 /* 10. a module with nothing to show: the message is outside the list */
 {A.loadText(FM+"> [!module|m] M\n\n> [!activity|a hidden] A\n\nx\n\n> [!activity|b hidden] B\n\ny\n\n> [!module|m end] End\n");

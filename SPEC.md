@@ -1213,7 +1213,6 @@ This is a young format, and the reference renderer does not yet do everything th
 
 - **A thematic break inside a `$$` display-math block** (section 3, "Pages"). Whether a `---`, `***` or `___` line alone on a line inside a `$$` block splits a page is open. The reference renderer's scanner knows fences only and reads such a line as a break; the Obsidian plugin's scanner numbers and draws it differently (its own README says so). Until this is settled, a booklet should not put such a line inside a `$$` block.
 - **The kept-entries fold** (`entries:folded`, section 3, "Kept entries, folded"). The Obsidian plugin does not read the mark yet; a reader that does not keeps it as written.
-- **Ignoring `parent:` on an activity** (section 3). A reader ignores it. The reference renderer still draws a tree of activities from it, as 0.16 did, and reports the setting, until the files that write it have moved. The linter warns, and does not refuse the file.
 
 None of this affects what already works: loading, reading, answering, and saving a v0.17 booklet with every question kind above, its widgets, and its citations.
 

@@ -85,11 +85,11 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const bare=(parent)=>FM+"> [!activity|top] Top\n\n> [!activity|kid parent:top] Kid\n\n> [!activity|other] Other\n\n> [!activity|grand parent:kid] Grand\n";
   const R=A.parseFile(bare());
   const acts=R.template.modules.map(m=>m.activities[0]);
-  chk("parent: places among bare activities: depth first, each with its parent's address",
-    acts.map(a=>a.id).join()==="top,kid,grand,other"&&acts.map(a=>a.parent||"-").join()==="-,top,kid,-",acts.map(a=>a.id+":"+a.parent).join());
-  chk("and one thing is reported, once, for the file (0.17: an activity line no longer takes parent:, a page line does; it still draws)",R.unread.length===1&&R.ok&&/2 activity lines carry `parent:`/.test(R.unread[0]),JSON.stringify(R.unread));
+  chk("0.17: parent: places nothing among bare activities: the file's order, no parent on any of them",
+    acts.map(a=>a.id).join()==="top,kid,other,grand"&&acts.every(a=>a.parent===undefined),acts.map(a=>a.id+":"+a.parent).join());
+  chk("and each line is reported: an activity line does not take parent: (a page line does), and it is ignored",R.unread.length===2&&R.ok&&R.unread.every(x=>/an activity line takes no “parent:”, so it was ignored/.test(x)),JSON.stringify(R.unread));
   const miss=A.parseFile(FM+"> [!activity|a parent:nope] A\n\n> [!activity|b] B\n");
-  chk("a parent that is no bare activity leaves the activity at the top, as in a module",miss.template.modules[0].activities[0].parent===undefined&&miss.ok);
+  chk("a parent that names no bare activity is reported and ignored the same way, and the activity is at the top",miss.template.modules[0].activities[0].parent===undefined&&miss.ok);
   const L=lintOut(bare());
   chk("the linter warns, and refuses nothing, on parent: between bare activities (0.17: it is a page line's setting), naming the move",/0 errors · 2 warnings/.test(L)&&!/places nothing/.test(L)&&/`parent:top` on an activity line/.test(L),L);
   chk("the linter warns on a parent: that names nothing the same way, as the move to a page line (0.17)",/`parent:nope` on an activity line is a format 0\.16 setting/.test(lintOut(FM+"> [!activity|a parent:nope] A\n")));

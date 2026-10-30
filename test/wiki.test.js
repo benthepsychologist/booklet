@@ -11,6 +11,17 @@ const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n
 const text=P.texts;
 const FM='---\nbooklet: "0.17"\ntitle: Wiki\nlang: en\n---\n\n';
 const names=l=>l.map(a=>a.id.split("/").pop()).join();
+/* 0.17: an activity line takes no `parent:` (SPEC.md section 3, "An activity does not sit under another"), so the renderer reads no wiki from a file.
+   The wiki engine (the tree, Mentioned on, the search, the pages' cards and menu) is still in the renderer and is still held to what it did:
+   these checks give the activities the address a 0.16 file's `parent:` gave them, after the file is read, and then ask the engine. The
+   check "a file's own parent: is reported and ignored" says what a file now does. */
+const loadWiki=(A,text)=>{A.loadText(text);let mod=null;
+ for(const line of text.split("\n")){const m=/^> \[!(module|activity)\|([^\s\]]+)([^\]]*)\]/.exec(line);if(!m) continue;
+  if(m[1]==="module"){mod=/\bend\b/.test(m[3])?null:m[2];continue;}
+  const p=/\bparent:(\S+)/.exec(m[3]);if(!p||!mod) continue;
+  const M=A.allModules().find(x=>x.id===mod),a=M&&M.activities.find(x=>x.id===mod+"/"+m[2]);if(a) a.parent=mod+"/"+p[1];}
+ /* the engine keeps what it worked out for a module's list of activities: a new list makes it work it out again */
+ A.allModules().forEach(M=>{M.activities=M.activities.slice();});};
 (async()=>{
  const A=P.boot();
  /* ---- the adapter: nestRows' rules over activities ---- */
@@ -23,7 +34,7 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
    "> [!activity|f parent:e] Foxtrot\n\nOther half of the cycle, and [[#Gamma]] and [[#Alpha]].\n\n"+
    "> [!activity|g parent:a] Golf\n\nSecond child of Alpha.\n\n"+
    "> [!module|m end] End\n";
-  A.loadText(book);
+  loadWiki(A,book);
   const mod=A.allModules()[0],W=A.wikiOf(mod);
   chk("a module with parent: is a wiki",!!W);
   chk("a missing parent leaves a page at the top; a cycle draws each page once, at the top; top pages keep the file's order",names(W.roots)==="a,d,e",names(W.roots));
@@ -46,8 +57,12 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
   /* a flat module is not a wiki */
   A.loadText(FM+"> [!module|m] M\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\ny\n\n> [!module|m end] End\n");
   chk("a module with no parent: is not a wiki, and draws as it did",A.wikiOf(A.allModules()[0])===null);
-  /* a booklet that is opened afresh works its lists out afresh */
+  /* what a file now does: its `parent:` words on activity lines are reported and ignored, so the module is no wiki */
   A.loadText(book);
+  chk("a file's own parent: on activity lines is reported and ignored: the module is not a wiki, and one report for each line",A.wikiOf(A.allModules()[0])===null
+    &&A.parseFile(book).unread.filter(x=>/activity line takes no “parent:”/.test(x)).length===6&&A.allModules()[0].activities.every(a=>a.parent===undefined),JSON.stringify(A.parseFile(book).unread));
+  /* a booklet that is opened afresh works its lists out afresh */
+  loadWiki(A,book);
   chk("a booklet opened again has its own lists",A.wikiOf(A.allModules()[0])!==W);}
 
  /* ---- links to a module ---- */
@@ -69,7 +84,7 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
   chk("[[.booklet]] and the like stay plain text",walk({children:out},x=>x.tagName==="button"||x.tagName==="a").length===0&&/\.booklet.*words.*label/.test(out.map(text).join("")),out.map(text).join("|"));}
  /* the search box is emptied when the reader moves to another module */
  {const TWOW=FM+"> [!module|m1] One\n\n> [!activity|a] A\n\nx\n\n> [!activity|b parent:a] B\n\ny\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|c] C\n\nx\n\n> [!activity|d parent:c] D\n\ny\n\n> [!module|m2 end] End\n";
-  A.loadText(TWOW);A.screen=A.moduleScreen("m1");A.render();A.VIEW.wiki.q="typed";A.render();
+  loadWiki(A,TWOW);A.screen=A.moduleScreen("m1");A.render();A.VIEW.wiki.q="typed";A.render();
   chk("the words in the search box stay for the module they were typed in",A.VIEW.wiki.q==="typed");
   A.screen=A.moduleScreen("m2");A.render();
   chk("and are cleared on moving to another module",A.VIEW.wiki.q==="");}

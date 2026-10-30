@@ -10,6 +10,7 @@
 //  - the picture is the line's icon, a leading emoji, or the row's number, 2.25 rem square.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright-core node test/contents-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const {WIKI_STAMP}=require('./wikistamp.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
@@ -98,7 +99,9 @@ const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
     const toList=async()=>{for(let i=0;i<3;i++){if(await p.getByRole('button',{name:'Add a booklet from a file'}).count()) return;await p.locator('#btnHome').click();await wait(300);}};
     const load=async text=>{await toList();await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(250);
       await p.evaluate(t=>{document.getElementById('pasteIn').value=t;},text);
-      await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(800);};
+      await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(800);
+      /* 0.17 reads no wiki from a file: give a booklet written with parent: its parents (test/wikistamp.js) */
+      if(/\|[a-z0-9-]+ parent:/.test(text)){await p.evaluate(WIKI_STAMP,text);await wait(300);}};
     /* what a list of rows looks like to a reader: the rows' boxes, the tiles, the chevrons and the list's own display */
     const rows=sel=>p.evaluate(s=>{const ol=document.querySelector(s);if(!ol) return null;
       const lis=[...ol.children],ctl=lis.map(li=>li.querySelector('.card-go')),r=e=>e.getBoundingClientRect();

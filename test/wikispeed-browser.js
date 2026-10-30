@@ -6,9 +6,12 @@
 //   - a synthetic wiki of about 1 MB (about 780 pages, made here, the same every run), under 3 seconds.
 // Then it walks down the tree and searches the big one, which must stay quick too (the lists are worked out once).
 // On a slow machine (CI) the limits are multiplied by CI_FACTOR below. The numbers are printed either way.
+// 0.17: an activity line takes no parent:, so the wiki is given its parents after the file is read (test/wikistamp.js) and the time is
+// from the press of Load to the second frame after the stamp, which draws the wiki.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/wikispeed-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
+const {WIKI_STAMP}=require('./wikistamp.js');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
@@ -46,12 +49,13 @@ function synthetic(){
     await p.route('https://bookletmd.test/**',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':CSP}}));
     await p.goto('https://bookletmd.test/app/');await p.waitForTimeout(400);
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(300);
+    await p.evaluate('window.__wikiStamp='+WIKI_STAMP.toString());
     return p;};
   /* the press of Load to the second frame after it, in the page's own clock */
   const timeOpen=async(p,text)=>{
     await p.evaluate(t=>{document.getElementById('pasteIn').value=t;},text);
-    return p.evaluate(()=>new Promise(res=>{const t0=performance.now();document.getElementById('loadGo').click();
-      requestAnimationFrame(()=>requestAnimationFrame(()=>res(performance.now()-t0)));}));};
+    return p.evaluate(t=>new Promise(res=>{const t0=performance.now();document.getElementById('loadGo').click();window.__wikiStamp(t);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>res(performance.now()-t0)));}),text);};
   const timed=async(label,fn)=>{const t0=Date.now();await fn();return Date.now()-t0;};
 
   const runs=[['the committed fixture (about 270 KB)',fs.readFileSync(path.join(__dirname,'fixtures','wiki-scrambled.booklet.md'),'utf8'),LIMIT_FIXTURE],
@@ -66,7 +70,8 @@ function synthetic(){
     const med=best.slice().sort((x,y)=>x-y)[1],lim=limit*CI_FACTOR;
     console.log('     '+label+': opened in '+best.join(', ')+' ms (limit '+lim+' ms'+(CI_FACTOR!==1?', factor '+CI_FACTOR:'')+')');
     ok(med<lim,label+': opens in under '+lim+' ms (median '+med+' ms)');
-    const built=await p.evaluate(()=>document.querySelectorAll('#main *').length);
+    const built=await p.evaluate(()=>document.querySelectorAll('#main *:not(.filenotes *)').length);
+    /* (not counting the notice of what the file's parent: words got, which lists one line for each activity line in the closed disclosure: 0.17 reports them one by one) */
     /* drawn in full the 157-page fixture would be about 800 elements and the big wiki thousands; lazily it is a few dozen to a few hundred */
     ok(built<(label.startsWith('a synthetic')?400:200),label+': only what is looked at is built ('+built+' elements on screen)');
     /* going down the tree and searching stay quick */

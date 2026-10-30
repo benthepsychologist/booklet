@@ -8,6 +8,7 @@
 // Screenshots at 1280 and 390 wide, Paper and Night, are written to <outdir> (the look set; see design/look-and-wiki/shots/).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/drawing-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
+const {WIKI_STAMP}=require('./wikistamp.js');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
@@ -133,6 +134,8 @@ You arrived by a card's link.
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(200);
     await p.locator('#fileIn').setInputFiles(file);await p.waitForTimeout(400);
     await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await p.waitForTimeout(1500);
+    /* 0.17 reads no wiki from a file: give the wiki booklet its parents (test/wikistamp.js) */
+    if(/\|[a-z0-9-]+ parent:/.test(text)){await p.evaluate(WIKI_STAMP,text);await p.waitForTimeout(300);}
     return p;};
   const view=p=>p.evaluate(()=>document.body.dataset.view);
   const shot=(p,n)=>p.screenshot({path:path.join(OUT,n+'.png'),fullPage:true});

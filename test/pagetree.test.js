@@ -83,10 +83,12 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
  const deep=A.parseFile(FM+"> [!activity|a] A\n\n"+Array.from({length:3000},(_,i)=>"> [!page|p"+i+(i?" parent:p"+(i-1):"")+"] P"+i+"\n\nx\n\n").join(""));
  chk("a chain of 3,000 pages, each under the one before, opens in reading order (no depth limit, no stack overflow)",deep.ok&&acts(deep)[0].pages.length===3000&&acts(deep)[0].pages[2999].np==="p2999");
 }
- /* 0.16 files: parent: on an activity line still draws as a wiki until the seats have moved, and is said once */
+ /* 0.16 files (SPEC.md section 3, "An activity does not sit under another"): `parent:` on an activity line is a setting the kind does not take: reported once for
+   each line and ignored, so the activities are not placed under one another and the module is no wiki */
 {const R=A.parseFile(FM+"> [!module|m] M\n\n> [!activity|top] Top\n\nt\n\n> [!activity|kid parent:top] Kid\n\nk\n\n> [!activity|kid2 parent:top] Kid 2\n\nk2\n\n> [!module|m end] End\n"),as=acts(R);
- chk("`parent:` on an activity line is read as it was (the module still draws as a wiki), not as an unknown setting",as.length===3&&as[1].parent&&as[2].parent&&!notice(R).some(x=>/settingUnknown/.test(JSON.stringify(x))),JSON.stringify(notice(R)));
- chk("and one report for the file names how many lines carry it",notice(R).length===1&&/activityParentLegacy/.test(JSON.stringify(notice(R)[0]))&&/2/.test(JSON.stringify(notice(R)[0])),JSON.stringify(notice(R)));
+ chk("`parent:` on an activity line is reported as a setting the kind does not take, and ignored: no activity is under another, in the file's order",as.length===3&&as.every(x=>x.parent===undefined)&&as.map(x=>x.id).join()==="m/top,m/kid,m/kid2",JSON.stringify(as.map(x=>x.id+">"+x.parent)));
+ chk("one report for each line, worded as for any setting a kind does not take (and no report of a kept wiki)",notice(R).length===2&&notice(R).every(x=>/settingUnknown/.test(JSON.stringify(x))&&/parent:/.test(JSON.stringify(x)))&&!/activityParentLegacy/.test(JSON.stringify(notice(R))),JSON.stringify(notice(R)));
+ chk("and the module is drawn as the flat list it is, not as a wiki",A.wikiOf(R.template.modules?{activities:as}:null)===null);
  chk("a file whose activities carry no `parent:` has no such report",!notice(A.parseFile(FM+"> [!activity|a] A\n\nx\n")).length);
 }
 /* what a page line takes */

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-IspypCeggzKBKP3I5ZLSzpTfO7MBeV8NohmQIJSIDqk=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-6tXw78Cw0w64OK/dcRxzY8sYW7ChLkvqQILjXEeAiLw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1746,7 +1746,6 @@ const STRINGS_SRC={
       pageParentUnknown: (w,id)=>`${w}: \`parent:${id}\` names no page of this tab, so the page is at the top`,
       pageCycle: w=>`${w}: this page and the pages above it name each other as parents, so it is at the top`,
       entriesBad: (w,v)=>`${w}: \`entries:${v}\` is not a value this setting takes (\`entries:folded\`), so it was ignored`,
-      activityParentLegacy: n=>`${n===1?"One activity line carries":n+" activity lines carry"} \`parent:\`, which a page line takes and an activity line no longer does; this page still draws them as a wiki, and a later release will not`,
       rowRunsSection: k=>`runs into the ${k} section`,
       rowNeverClosed: "is never closed",
       queryOutside: w=>`${w}: a query belongs in an activity's prose, so it was refused`,
@@ -2102,7 +2101,6 @@ const STRINGS_SRC={
       pageParentUnknown: (w,id)=>`${w} : \`parent:${id}\` ne nomme aucune page de cet onglet ; la page est donc en haut`,
       pageCycle: w=>`${w} : cette page et les pages au-dessus d’elle se nomment mutuellement comme parents ; elle est donc en haut`,
       entriesBad: (w,v)=>`${w} : \`entries:${v}\` n’est pas une valeur que ce réglage accepte (\`entries:folded\`) ; il a donc été ignoré`,
-      activityParentLegacy: n=>`${n===1?"Une ligne d’activité porte":n+" lignes d’activité portent"} \`parent:\`, que prend une ligne de page et que ne prend plus une ligne d’activité ; cette page les affiche encore comme un wiki, et une prochaine version ne le fera plus`,
       rowRunsSection: k=>`rencontre la section ${k}`,
       rowNeverClosed: "n’est jamais fermée",
       queryOutside: w=>`${w} : une requête doit se trouver dans le texte d’une activité ; elle a donc été refusée`,
@@ -2459,7 +2457,6 @@ const STRINGS_SRC={
       pageParentUnknown: (w,id)=>`${w}: \`parent:${id}\` no nombra ninguna página de esta pestaña, así que la página está arriba del todo`,
       pageCycle: w=>`${w}: esta página y las páginas que tiene encima se nombran entre sí como padres, así que está arriba del todo`,
       entriesBad: (w,v)=>`${w}: \`entries:${v}\` no es un valor que acepte este ajuste (\`entries:folded\`), así que se ignoró`,
-      activityParentLegacy: n=>`${n===1?"Una línea de actividad lleva":n+" líneas de actividad llevan"} \`parent:\`, que acepta una línea de página y ya no una de actividad; esta página todavía las dibuja como un wiki, y una versión próxima ya no lo hará`,
       rowRunsSection: k=>`se topa con la sección ${k}`,
       rowNeverClosed: "nunca se cierra",
       queryOutside: w=>`${w}: una consulta va en el texto de una actividad, así que se rechazó`,
@@ -4204,7 +4201,6 @@ const helpOf=body=>body.filter(l=>!/^\s*!\[\[/.test(l)).join("\n").trim();
 function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   const modules=[],widgets=[],answers=nullMap(),entries=nullMap(),entryIx=nullMap(),drafts=nullMap(),ids=new Map(),blockIds=new Map(),modIds=new Set();
   const queries=[],menus=[],menuUses=[],eachUses=[],figures=Object.create(null),dataBlocks=[],sharedNotes=[],recordsKept=[];
-  let legacyParents=0;
   let mod=null,act=null,section="content",lastQ=null,lastQAct=null,seq=0,oseq=0,row=null,grp=null,theme=null,recScope="",recForeign=null,dataMod=null;
   /* the booklet's opening: the prose and reading callouts before the file's first module or activity line (SPEC.md section 3), read
      as a module's opening is, and drawn on the home screen. `started` is set when that first line is met. */
@@ -4237,11 +4233,10 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
     claim(id,"line "+line,mod?mod.id:"");
     const a={id:addrOf(mod?mod.id:"",id),kind:w.flags.has("repeat")||w.flags.has("daily")?"entry":"board",title:title||undefined,pages:[{id:"p1",blocks:[]}]};
     if(w.flags.has("daily")) a.upsert="day";if(w.flags.has("hidden")) a.home=false;
-    /* `icon:` is a name from the sprite (checkSettings has said so if not); `parent:` is a page line's setting in 0.17 and no activity
-       line takes it, but a 0.16 file still has it: it is another activity's id in this module, kept as the address it will have
-       (activityTree places it) so that such a wiki draws as it did, until the seats that write it have moved (onLine reports it) */
+    /* `icon:` is a name from the sprite (checkSettings has said so if not). `parent:` is a page line's setting in 0.17 and no activity
+       line takes it: checkSettings reports it as a setting the kind does not take and takes it off the line, so an activity is never
+       placed under another and a module is never a wiki (SPEC.md section 3, "An activity does not sit under another") */
     if(w.set&&w.set.icon) a.icon=w.set.icon;
-    if(w.legacyParent) a.parent=addrOf(mod?mod.id:"",w.legacyParent);
     /* `tab:` puts it in one of its module's tabs (one the module's opening declared, else it is in the first) */
     if(w.set&&w.set.tab!==undefined){if(mod&&(mod.tabs||[]).some(t=>t.id===w.set.tab)) a.tab=w.set.tab;else problems.push(P.tabUnknown(P.line(line),w.set.tab));}
     /* a card's status line (SPEC.md section 3, "A card's parts"): `status:off` hides it; the lines of the callout under the line
@@ -4459,9 +4454,6 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   QUESTION_KINDS.forEach(k=>{LINE_KIND[k]=onQuestion;});
   const onLine=it=>{/* a Booklet line */
     const k=it.kind,where=P.line(it.line);
-    /* `parent:` on an activity line (format 0.15 and 0.16): no longer a setting of the kind (checkSettings would say so on every line and take it
-       off); taken off here instead, kept, and counted, so that the wiki such a file makes still draws; said once for the file (activityParentLegacy) */
-    if(k==="activity"&&it.set.parent!==undefined){it.legacyParent=it.set.parent;delete it.set.parent;legacyParents++;}
     checkSettings(it,where,P,icons).forEach(m=>problems.push(m));
     /* a group holds text, questions and callouts: a line that makes structure is said and left out */
     if(grp&&/^(module|activity|tab|page|row|data|records)$/.test(k)) return void problems.push(P.groupHolds(where,k));
@@ -4477,7 +4469,6 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
   items.filter(x=>!x.rec).forEach(onItem);
   if(row) closeRow(P.rowNeverClosed);
   modules.forEach(m=>m.activities.forEach(a=>settlePages(a,problems)));
-  if(legacyParents) problems.push(P.activityParentLegacy(legacyParents));
   /* the regions are read last: a records line finds a module wherever the file has it */
   items.filter(x=>x.rec).forEach(onRec);
   /* a data block's id is also one a query reads by, so it may not be a question's or an activity's too,

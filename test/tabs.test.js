@@ -110,17 +110,17 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  const R=A.parseFile(MOD);
  chk("cards keep their numbers in the module, whichever tab lists them",(()=>{click(role("tab")[1]);return /2/.test(texts(find(role("tabpanel")[0],hasClass("card"))[0]||{children:[]}));})());}
 
-/* 5b. a wiki module (activities under one another, `parent:`) with tabs: a tab lists the pages at the top that are in it; the
-   ones under them stay under them */
+/* 5b. a module written with `parent:` on an activity line (a 0.16 wiki) with tabs: 0.17 ignores the `parent:` (SPEC.md section 3), so each activity is
+   at the top and is listed in the tab its `tab:` names (the first tab if none), as any activity is */
 {const WK=FM+"> [!module|w] W\n\n> [!tab] Guide\n\n> [!tab] Tools\n\n> [!activity|top] Top\n\nTop words.\n\n> [!activity|kid parent:top tab:tools] Kid\n\nKid words.\n\n"+
    "> [!activity|tool tab:tools] Tool\n\nTool words.\n\n> [!module|w end] End\n";
  A.loadText(WK);draw(A.moduleScreen("w"));
  const cardsIn=()=>["Top","Kid","Tool"].filter(t=>find(role("tabpanel")[0]||{children:[]},hasClass("card")).some(c=>texts(c).includes(t))).join();
- chk("a wiki module with tabs draws its tab bar, and the first tab lists its top page",role("tablist").length===1&&cardsIn()==="Top",cardsIn());
+ chk("a module whose activity lines carry parent: draws its tab bar, and the first tab lists the activity that has no tab:",role("tablist").length===1&&cardsIn()==="Top",cardsIn());
  click(role("tab")[1]);
- chk("the second lists its own top page; a page under another stays under it, whatever its tab:",cardsIn()==="Tool",cardsIn());
+ chk("the second lists the two that name it, in the file's order: the one that had a parent: is not held under another",cardsIn()==="Kid,Tool",cardsIn());
  draw("w/kid");draw(A.moduleScreen("w"));
- chk("opening a page under another puts the overview on its top page's tab",role("tab")[0].attrs["aria-selected"]==="true");}
+ chk("opening the one that had a parent: puts the overview on its own tab (Tools), as any activity's",role("tab")[1].attrs["aria-selected"]==="true");}
 
 /* 5c. a module tab's prose is the module's: a link in it finds a title in its own module, not a bare activity of the same
    title (renderModulePage draws the tab's blocks in the scope of the module's first activity) */
