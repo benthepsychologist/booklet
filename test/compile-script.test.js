@@ -138,4 +138,58 @@ chk("…and --force writes the compiler's own again",kept.length===0&&C.cssStamp
   const idsOther=[...other.matchAll(/\sid="([^"]+)"/g)].map(m=>m[1]).filter(i=>/^bk-other-/.test(i));
   chk("two booklets' inputs and radio names never share an id or a name, so fragments can share a host page",idsOther.length>=6&&!idsOther.some(i=>ids.includes(i))&&!(pg.match(/name="bk-[^"]+"/g)||[]).some(n=>other.includes(n)));}
 
+/* ---- the rule: a page links booklet.js only when something on it is a thing the script acts on (compile/draw.js, needsScript) ----
+   Five things ask for it: (a) a tab bar, (b) a citation mark, (c) a fold the author made, (d) a sortable data view, (e) a graded
+   question. Each is tried on a page that has it and, beside it, a page that has everything but it. A heading's share link,
+   a hint and a solution, a line chart and a one-row table ask for nothing. */
+{const D=require("../compile/draw.js"),H=require("../compile/html.js");
+  const HEADER='---\nbooklet: "0.16"\nid: t/need\ntitle: Need\nlang: en\n---\n\n';
+  const page=(body,name)=>{const r=C.compile([{text:HEADER+"# Need\n\n"+body,name:name||"need",dir:tmp}],{form:"standalone",engine:X,scriptDir:good});
+    const html=String(r.results[0].files.get((name||"need")+"/index.html"));
+    return {html,links:/<script src="\.\.\/booklet\/booklet\.js" defer><\/script>/.test(html),rep:r.results[0].rep,run:r};};
+  const data=(as,rows,extra)=>"```booklet query\nfrom: d\nas: "+as+"\nlabel: what\n"+(extra||"")+"```\n\n```booklet data\n{ \"rows\": [\n"+rows.map(x=>"  { \"what\": \""+x[0]+"\", \"n\": "+x[1]+" }").join(",\n")+" ] }\n```\n^d\n\n";
+  const two=[["Plums",3],["Pears",5]],five=[["Mon",2],["Tue",4],["Wed",3],["Thu",6],["Fri",5]];
+  let nn=0;const T=(name,body,yes)=>{const p=page(body,"n"+(++nn));
+    chk("("+name+") "+(yes?"links booklet.js":"links no script, and the page still holds its words"),p.links===yes&&p.rep.needsScript===yes&&(yes?p.run.script!==null:p.run.script===null),p.links+"/"+p.rep.needsScript);return p;};
+  /* (a) a tab bar */
+  const TABS="> [!activity|t] Two tabs\n\n> [!tab] First\n\nThe first tab's words.\n\n> [!tab] Second\n\nThe second tab's words.\n";
+  const tabs=T("a: two tabs",TABS,true);
+  const one=T("a: one tab",TABS.slice(0,TABS.indexOf("> [!tab] Second")),false);
+  chk("(a) …without the script every tab stays on the page, under its name",/The first tab's words/.test(tabs.html)&&/The second tab's words/.test(tabs.html)&&(tabs.html.match(/<section class="bk-tab"/g)||[]).length===2&&!/\shidden[\s>]/.test(tabs.html));
+  /* (b) a citation mark */
+  T("b: a citation mark","A claim with a note.[^pe]\n\n[^pe]: *A Made-up Source*, 2nd edition (2001), p. 3.\n",true);
+  T("b: a note's words, no mark","A claim with no note on it.\n",false);
+  /* (c) an author's fold, but not a hint or a solution */
+  T("c: an author's fold","> [!note]- Folded away\n> Words inside the fold.\n",true);
+  const hs=T("c: a hint and a solution only","> [!choice|shape] Which shape?\n- [ ] Diamond\n- [ ] Box\n\n> [!hint]- Hint\n> Count the corners.\n\n> [!solution]- Solution\n> A diamond has four.\n",false);
+  chk("(c) …the hint and the solution are plain details that open by pressing them",/<details class="bk-fold bk-compact bk-hint">/.test(hs.html)&&/<details class="bk-fold bk-compact bk-solution">/.test(hs.html));
+  /* (d) a data view other than a line chart, with two rows or more */
+  T("d: a table of two rows",data("table",two),true);
+  T("d: a bars chart of two rows",data("bars",two,"value: n\n"),true);
+  T("d: a table of one row",data("table",two.slice(0,1)),false);
+  T("d: a line chart of five rows",data("line",five,"fields: n\n"),false);
+  /* (e) a graded question */
+  T("e: a graded question","> [!choice|pick] Which is right?\n- [x] This one\n- [ ] Not this one\n",true);
+  T("e: a question with no right answer","> [!choice|pick] Which do you like?\n- [ ] This one\n- [ ] That one\n",false);
+  /* nothing on the page asks for it: headings with their share links, prose, a list */
+  const share=T("none: headings with share links only","Some words.\n\n## A section\n\nWords in it.\n\n### A part of it\n\nMore words.\n\n- one\n- two\n",false);
+  chk("(none) …and the share links are there (they never ask for the script)",(share.html.match(/<a class="bk-anchor"/g)||[]).length===2);
+  /* the rule on trees, where a page is awkward to make: siblings, a lone tab, a tab inside a fold, a line chart, a hint */
+  const el=H.el,tab=t=>el("section",{class:"bk-tab"},el("h3",{},t)),art=(...k)=>el("article",{},...k);
+  const tn=(name,node,yes)=>chk("(tree) "+name,D.needsScript(node)===yes);
+  tn("two tab sections side by side ask",art(el("div",{},tab("A"),tab("B"))),true);
+  tn("two tab sections with a comment and a fragment between them still ask",art(el("div",{},tab("A"),H.comment("x"),H.frag(tab("B")))),true);
+  tn("two tab sections that are not siblings do not ask",art(el("div",{},tab("A")),el("div",{},tab("B"))),false);
+  tn("two tab sections with another element between them do not ask",art(el("div",{},tab("A"),el("p",{},"x"),tab("B"))),false);
+  tn("a heading's share link does not ask",art(el("h2",{id:"s"},"S ",el("a",{class:"bk-anchor",href:"#s"},"#"))),false);
+  tn("a line chart of ten rows does not ask",art(el("div",{"data-bk-view":"line"},...[1,2,3,4,5,6,7,8,9,10].map(n=>el("li",{"data-bk-row":true},el("span",{"data-bk-col":"a"},String(n)))))),false);
+  tn("a list view of two rows with values asks",art(el("ul",{"data-bk-view":"list"},...[1,2].map(n=>el("li",{"data-bk-row":true},el("span",{"data-bk-col":"a"},String(n)))))),true);
+  tn("a view of two rows with no value does not ask (the script leaves it alone)",art(el("ul",{"data-bk-view":"list"},el("li",{"data-bk-row":true}),el("li",{"data-bk-row":true}))),false);
+  tn("a hint and a solution do not ask",art(el("details",{class:"bk-fold bk-compact bk-hint"}),el("details",{class:"bk-fold bk-compact bk-solution"})),false);
+  tn("a fold an author made asks, however deep it sits",art(el("div",{},el("div",{},el("details",{class:"bk-fold bk-plain"})))),true);
+  tn("a details that is not a fold (a chart's table of numbers) does not ask",art(el("details",{class:"bk-ch-nums"})),false);
+  tn("an ungraded question does not ask, a graded one does",art(el("fieldset",{class:"bk-q"})),false);
+  tn("…a graded question",art(el("fieldset",{class:"bk-q","data-bk-graded":true})),true);
+}
+
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile script passed");process.exit(fails?1:0);

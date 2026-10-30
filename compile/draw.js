@@ -386,7 +386,7 @@ function drawPage(X,P,o){
     if(gated){const cid=IDP+"q"+n+"-check",cb=el("input",{type:"checkbox",class:"bk-check",id:cid,autocomplete:"off"}),
         lab=el("label",{class:"bk-check-btn",for:cid,"aria-hidden":"true"},Q.check);
       st.forIds.push([lab,cb]);box.append(el("p",{class:"bk-acts",hidden:true},cb,lab));}
-    if(graded){st.needsScript=true;
+    if(graded){
       const answer=right.map(k=>R.plainText(listed[k-1])).join(", ");
       box.append(el("p",{class:"bk-say",hidden:true},el("span",{class:"bk-say-ok",hidden:true},Q.liveRight),el("span",{class:"bk-say-no",hidden:true},Q.liveNot(answer))),
         el("p",{class:"bk-live bk-sr","aria-live":"polite"}));
@@ -697,7 +697,40 @@ function drawPage(X,P,o){
   if(xr) xr.pages.set(KEY,{findHead,idOf,modHead:st.modHead,top:st.top});
 
   return {article,bookTitle,title:deep?pageTitle:plain(design.title)||pageTitle,description:describe(st.lede?descText(st.lede):firstPara(article)),
-    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript,keyed:!!st.keyed,readOnly:st.readOnly,theme:look.report,bodyAttrs:look.attrs};}
+    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript||needsScript(article),keyed:!!st.keyed,readOnly:st.readOnly,theme:look.report,bodyAttrs:look.attrs};}
+
+/* needsScript(article): THE RULE for whether a compiled page links booklet.js. One small function, so it can be read, tested and
+   changed in one place. It looks at the finished page (every link resolved, the heading links and the contents list in), and
+   it answers yes only when something on the page is a thing the script acts on, because without the script every one of
+   these still reads (tabs one after another under their names, folds closed as written, marks as links to the notes at the
+   foot, a view in the order written, a question answering by the stylesheet alone). The script acts on:
+     (a) a tab bar: two or more section.bk-tab that are siblings (reading-tabs.js);
+     (b) a citation mark, a.bk-mark-a (reading-cites.js shows the note beside it);
+     (c) a fold the author made, details.bk-fold that is not a hint or a solution (reading-folds.js, "Open all"); a hint and a
+         solution are plain details that open by pressing them;
+     (d) a data view that can be sorted and filtered: [data-bk-view] other than "line" (a line chart keeps its order) that holds
+         two or more rows [data-bk-row] and a value [data-bk-col] (reading-views.js leaves a smaller view alone);
+     (e) a graded question, fieldset[data-bk-graded], a quiz question with a right answer (10-quiz.js speaks its verdict).
+   It never asks for the script because of a heading's share link (a.bk-anchor: the page works without the copy), a drawn
+   figure or diagram (drawn at build time), a widget's markup that the stylesheet handles, or a prose page. o.forceScript (tests)
+   is the only other way a page says it needs it. */
+function needsScript(article){
+  const has=(n,c)=>String(n.attrs.class||"").split(/\s+/).includes(c);
+  const kidsOf=n=>n.kids.flatMap(k=>k instanceof H.Node?(k.tag===""?kidsOf(k):[k]):[]);
+  const sortable=v=>{let rows=0,col=false;
+    H.walk(v.kids,x=>{if(!(x instanceof H.Node)) return;if("data-bk-view" in x.attrs) return false;
+      if("data-bk-row" in x.attrs) rows++;if("data-bk-col" in x.attrs) col=true;});
+    return rows>=2&&col;};
+  const tabbed=n=>{let run=0;for(const k of kidsOf(n)){run=k.tag==="section"&&has(k,"bk-tab")?run+1:0;if(run>1) return true;}return false;};
+  let need=false;
+  H.walk(article,x=>{if(need) return false;if(!(x instanceof H.Node)) return;const a=x.attrs;
+    need=(x.tag==="a"&&has(x,"bk-mark-a"))
+      ||(x.tag==="details"&&has(x,"bk-fold")&&!has(x,"bk-hint")&&!has(x,"bk-solution"))
+      ||(x.tag==="fieldset"&&"data-bk-graded" in a)
+      ||("data-bk-view" in a&&a["data-bk-view"]!=="line"&&sortable(x))
+      ||tabbed(x);
+    return need?false:undefined;});
+  return need;}
 
 /* settleLinks(xr, plan): every link that waited for another page's ids (xr.later), pointed now that every page is drawn */
 function settleLinks(xr,plan){
@@ -719,4 +752,4 @@ function describe(text){const t=String(text||"").replace(/\s+/g," ").trim();
   if(cut>=60) return t.slice(0,cut);
   const sp=t.lastIndexOf(" ",157);return t.slice(0,sp>60?sp:157).replace(/[\s,;:]+$/,"")+"…";}
 
-module.exports={drawPage,planPages,HOME,settleLinks,describe,COVERAGE,BLOCK_WAY,ENGINE_WAY,MARKED,PAGE_WORDS};
+module.exports={drawPage,needsScript,planPages,HOME,settleLinks,describe,COVERAGE,BLOCK_WAY,ENGINE_WAY,MARKED,PAGE_WORDS};
