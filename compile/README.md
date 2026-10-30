@@ -1,6 +1,6 @@
 # compile — a booklet file to a plain web page
 
-**compile 0.1.0.** A build step beside the renderer. A `.booklet.md` file goes in and a static web page comes out: plain
+**compile 0.2.0.** A build step beside the renderer. A `.booklet.md` file goes in and a static web page comes out: plain
 HTML and CSS that a person can read and tidy, that **reads fully with no script**, and that a search engine can index. It
 can also write one small optional script, `booklet.js`, which a page links only when something on it needs it (below).
 The page holds no renderer. It is for publishing what a booklet says (an article, a guide, a report) on a site of its
@@ -59,7 +59,7 @@ a double-quoted string), for a site generator's content folder (Hugo, Jekyll, El
 title: "How tides work"
 description: "A short reading, then a check."
 ---
-<!-- booklet compile 0.1.0 · from how-tides-work.booklet.md · sha256:… -->
+<!-- booklet compile 0.2.0 · from how-tides-work.booklet.md · sha256:… -->
 <article class="booklet" lang="en">
   …
 </article>
@@ -243,19 +243,26 @@ needs the script when it holds:
 Nothing else asks for it: a heading's share link, a drawn figure or diagram, a widget, a line chart, a one-row view, a
 question with no right answer. A page that needs none links none and reads in full: every tab under its name, every fold
 closed as written, no content hidden. A site's layout adds the
-line itself, `<script src="/booklet/booklet.js" defer></script>`, next to the stylesheet line, and the build report says
-which pages need it. A host that never loads it still gets every page readable. **The script keeps nothing and sends
+line itself, `<script src="/booklet/booklet.js" defer></script>`, next to the stylesheet line. The build report lists, for
+each booklet, the pages that need it (for a booklet of five pages, "3 of 5 pages" and their paths), and in the site form
+(and in `both`, for its site half) it adds the layout line to add. **`booklet.js` is written only in a run in which some
+page needs it**: a run of pages that need none writes no `booklet/booklet.js`, so a layout that loads it on every page would
+ask for a file that is not there (a 404) until a run that needs it. Keep the copy from an earlier run beside the stylesheet,
+or have the layout load it only on the pages the report names. A host that never loads it still gets every page readable. **The script keeps nothing and sends
 nothing**: no cookie, `localStorage`, `sessionStorage` or IndexedDB, no request of any kind, and no booklet text turned
 into markup at run time. What a reader presses lives in the open page and is gone on reload.
 
 The script is built from the parts in `compile/script/` (one file each, one immediately called function each, joined in
 file-name order, no modules). `script.js` scans the joined text and **fails the build, writing nothing**, when a part holds
 a word that could keep something (`localStorage`, `sessionStorage`, `indexedDB`, a cookie, a cache or worker), send
-something (`fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `postMessage`), run text as code (`eval`, `Function`,
+something (`fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `postMessage`, an `img`, `script`, `iframe`, `link` or
+`form` element made at run time, an address given to an element with `.src`, `.href` or `setAttribute`, `window.open`, a
+change of `location`, a `ping`), run text as code (`eval`, `Function`,
 `import(`), write markup (`innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`) or reach a global by a computed
 name (`window[`, `globalThis`). The words are banned in comments too, and the rules for a part are at the top of
 `script.js`. The scan is a tripwire; the proof is a browser test that uses a page and then looks for anything kept or sent.
-`booklet.js` carries the same stamp as `booklet.css`, so a script tidied by hand is kept back until `--force`.
+A part that makes an element from a name held in a variable, or calls a bare `open(`, is not seen by the scan. `booklet.js`
+carries the same stamp as `booklet.css`, so a script tidied by hand is kept back until `--force`.
 
 ## The stylesheet
 
@@ -579,7 +586,9 @@ a page without that markup is left alone. None of it is saved: no storage, no co
   the foot, and the foot's notes stay. The box is a copy of what the compiler wrote, with its ids and back link left out.
 - **Open all.** An activity that holds a fold the author made (a callout folded with `-`) gets one switch, "Open all", under its
   heading, which opens or folds exactly those folds and never a question's hint or solution. Folds outside any activity get one
-  at the top of the page. The switch follows folds opened by hand. Folds also open for printing and close again afterwards.
+  at the top of the page. The switch follows folds opened by hand. Folds also open for printing and close again afterwards. A page whose only
+  folds are a question's hint or solution links no script (above), so those print open only in a browser that supports the
+  `::details-content` rule the stylesheet prints with.
 - **Sort and filter on a data view.** A container marked `data-bk-view` (rows `data-bk-row`, values `data-bk-col`) gets a quiet
   "Sort and filter" button that opens a bar: a search box that looks in every column, a column to sort by with a direction
   button, and Clear. Numbers sort as numbers, and a line chart keeps its order, as SPEC section 6 says, so it is left alone.
@@ -591,7 +600,8 @@ a page without that markup is left alone. None of it is saved: no storage, no co
   The helper finds a heading by `role="heading"` or `.bk-grouprow`; rows it hides carry `data-bk-off`, which the stylesheet
   hides with a rule of one more id than the rest, since a view gives its rows a display of their own.
 - **A heading's link.** The share link on a heading also copies the heading's full address, and says "Link copied". Without a
-  clipboard it is only a link.
+  clipboard it is only a link. A heading's link alone never makes a page link the script, so this works on a page that links
+  it for another reason (a tab bar, a citation, a fold, a sortable view or a graded question) and is a plain link on one that does not.
 
 The parts write no markup from a string and no text of the booklet's: their own words (in English, French and Spanish, the
 renderer's own for the sort and filter bar and its fold switch) are set as text, and a tab's name is read from its heading.
@@ -649,7 +659,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | --- | --- |
 | `compile-guard.test.js` | no second reader (no callout, fence, link, heading or other Markdown pattern of its own, as a pattern or a string test; tried first on made-up re-readings); the author-comment mark in one region only; every renderer name it uses exists; no code reaches the records; installs nothing, fetches nothing, and starts one process only (the name `child_process` is written once, `spawnSync` once, no `exec`, `spawn` or `fork`); writes only its pages |
 | `compile-coverage.test.js` | every block type, question kind, widget engine and query view the renderer has is drawn or marked, from the very tables `draw.js` dispatches from; every callout kind in its look; every mark both a comment and a report line |
-| `compile-script.test.js` | the script's scan names every banned word, each tried on a made-up part; the assembler's order, shape and refusals; a page links the script only when it needs it (the five-part rule, each part tried on a page that has it and one that lacks it, and on trees for the edges), a site fragment never; the stamp guard; a banned word stops the build and writes nothing |
+| `compile-script.test.js` | the script's scan names every banned word and route (an element made to load, an address given to one, `window.open`, a change of location, a ping), each alternative tried on a made-up part and shown needed; the report names the pages that need the script; the assembler's order, shape and refusals; a page links the script only when it needs it (the five-part rule, each part tried on a page that has it and one that lacks it, and on trees for the edges), a site fragment never; the stamp guard; a banned word stops the build and writes nothing |
 | `compile-script-browser.js` | in Chromium over http with scripting on: answers every kind of question and presses every widget, then asserts no localStorage, sessionStorage, cookie, IndexedDB or cache, only GET requests for the page's own files, and a clean reload; the detector is proved by serving the page with its script swapped for ones that break the pledge; with scripting off every question reads as in 0.1.0 and a press still shows its reply, verdict and note |
 | `compile-golden.test.js` | the pages for the examples and page-shaped fixtures equal the committed ones in `test/compile-golden/`; `node test/compile-golden.test.js --write` refreshes them |
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
@@ -663,6 +673,8 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-figures.test.js` | hostile figures and hostile drawings refused with a reason; the style scope (strings and comments read); image sizes read from every format and the fallback, EXIF turns and damaged blocks; the browser lookup (never the working folder); a fake Playwright that hangs, fails or answers wrongly; a build with no browser keeps the source and says why; `--no-browser` and `--help`; ids per page; the mermaid pin; the theme list equals the renderer's |
 | `compile-figures-browser.js` | in Chromium: a compiled figure equals the renderer's own sanitized one (a mutation matrix); real diagrams drawn with no request made; the compiled page at 1280 and 390 px with scripting off, figure and diagram visible; pictures load at the size written; a JPEG's written size equals Chromium's for 27 variants (EXIF); the same drawings twice; a seeded differential fuzz of figures against the renderer's sanitizer; a booklet of many pages with the script on: a figure in the first tab and a diagram in an author's fold in the second (shown and hidden with the tab, the fold and Open all, printed, and with scripting off) |
 | `compile-host-browser.js` | in Chromium, at 1280 and 390 px: each page on a plain host and on the same host with a hostile theme loaded after `booklet.css` (rules on bare elements, a `*` reset, `.wrapper ol` as numbered cards, and `!important` rules of one and two ids, among them `#main .content blockquote *`); every element inside the article keeps its computed values, its `::before`, `::after` and `::marker`, and its box; the theme is live around the article; the check fails with no guard, with the guard as it was before `!important`, and with `!important` but one id's weight |
+| `compile-needs-browser.js` | in Chromium with scripting on: a made-up page that needs no script links none (the report says none is needed) and reads in full; a hint and a solution open by pressing them, a reply comes up from the stylesheet, a heading's link is a plain link, and the same page with `booklet.js` added changes nothing a reader sees but the link's copy |
+| `compile-browser-kit.js` | not a check (its name does not end in `-browser.js`, so CI does not run it): the set-up the Chromium checks share, a route that answers `http://localhost/` from the output folder, a probe for anything a page stored, and the contrast of two colours, used by `compile-browser.js`, `compile-reading-browser.js` and `compile-nested-browser.js` |
 | `compile-nested-browser.js` | in Chromium, the reading helpers on tabs inside tabs, on the hand-built `test/compile-assets/nested-tabs.html` (made-up words), since the compiler no longer writes a tab bar inside a tab: each bar keeps its own keys and opens on its first tab, an address, a link or a hashchange into a hidden tab shows the outer tab and then the inner one, the page prints with every tab and no bar, "Open all" reaches folds in hidden tabs, and with scripting off nothing is hidden |
 
 `examples/mindful-check-in.booklet.md` is compiled by the content and browser tests but has no golden page, since its

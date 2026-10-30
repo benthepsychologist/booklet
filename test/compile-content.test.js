@@ -24,7 +24,7 @@
 const fs=require("fs"),path=require("path"),os=require("os"),crypto=require("crypto"),cp=require("child_process");
 process.env.PLAYWRIGHT="/nonexistent/playwright-core";
 const ROOT=path.join(__dirname,".."),FIX=path.join(__dirname,"fixtures"),CLI=path.join(ROOT,"compile","compile.js");
-const C=require("../compile/compile.js"),D=require("../compile/draw.js"),E=require("../compile/engine.js"),H=require("../compile/html.js");
+const C=require("../compile/compile.js"),VER=C.VERSION.replace(/\./g,"\\."),D=require("../compile/draw.js"),E=require("../compile/engine.js"),H=require("../compile/html.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const X=E.load(),R=X.R,M=X.M;
 const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-compile-"));
@@ -322,7 +322,7 @@ const WRITER=(()=>{const page=fs.readFileSync(path.join(ROOT,"booklet.html"),"ut
   chk("the title is escaped in <title> and on the page",p.includes("<title>&lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;&lt;!--</title>")&&!p.includes("<script>alert"));}
 {const run=C.compile([{file:path.join(FIX,"compile-article.booklet.md")}],{form:"standalone",baseUrl:"https://example.org/library",engine:X}),p=run.results[0].files.get("compile-article/index.html");
   chk("the standalone head: lang, title, description from the first paragraph, canonical, Open Graph, JSON-LD",
-    /^<!doctype html>\n<!-- booklet compile 0\.1\.0 · from compile-article\.booklet\.md · sha256:[0-9a-f]{64} -->\n<html lang="en">/.test(p)
+    new RegExp("^<!doctype html>\\n<!-- booklet compile "+VER+" · from compile-article\\.booklet\\.md · sha256:[0-9a-f]{64} -->\\n<html lang=\"en\">").test(p)
     &&p.includes("<title>Pressing leaves</title>")
     &&/<meta name="description" content="A made-up article for the compiler's tests: how to press a leaf flat, in three short sections, with a note and a table\.">/.test(p)
     &&p.includes('<link rel="canonical" href="https://example.org/library/compile-article/">')&&p.includes('<meta property="og:url" content="https://example.org/library/compile-article/">')
@@ -398,7 +398,7 @@ const WRITER=(()=>{const page=fs.readFileSync(path.join(ROOT,"booklet.html"),"ut
 /* the stylesheet carries a stamp like a page's: one tidied by hand is kept back, and the fonts beside it are still written */
 {const src=path.join(FIX,"compile-article.booklet.md"),out=path.join(TMP,"css-stamp"),css=path.join(out,"booklet","booklet.css"),font=path.join(out,"booklet","fonts","OFL.txt");
   let r=cli(["--out",out,src]);
-  chk("the stylesheet is written with its stamp on the first line",r.status===0&&/^\/\* booklet compile 0\.1\.0 · booklet\.css · sha256:[0-9a-f]{64} \*\/\n/.test(fs.readFileSync(css,"utf8")));
+  chk("the stylesheet is written with its stamp on the first line",r.status===0&&new RegExp("^\\/\\* booklet compile "+VER+" · booklet\\.css · sha256:[0-9a-f]{64} \\*\\/\\n").test(fs.readFileSync(css,"utf8")));
   const tidied=fs.readFileSync(css,"utf8")+"\n.booklet{max-width:40rem}\n";fs.writeFileSync(css,tidied);fs.rmSync(font);
   r=cli(["--out",out,src]);
   chk("a stylesheet tidied by hand is kept back: exit 1, the report says so, the file is as tidied",r.status===1&&/booklet\/booklet\.css: KEPT BACK, changed by hand since it was compiled \(--force overwrites it\)/.test(r.stdout)&&fs.readFileSync(css,"utf8")===tidied,r.stdout.slice(-300));
@@ -426,7 +426,8 @@ const WRITER=(()=>{const page=fs.readFileSync(path.join(ROOT,"booklet.html"),"ut
 for(const [args,what] of [[["--help"],0],[["--version"],0],[["--frobnicate","x.booklet.md"],2],[["--form","pdf","x.booklet.md"],2],[[],2],
   [["--report","notes.md","x.booklet.md"],2],[["page.html"],2],[["--out"],2],[["--base-url","ftp://example.org/","x.booklet.md"],2]]){
   const r=cli(args);chk("compile "+(args.join(" ")||"(nothing)")+" exits "+what,r.status===what,r.status+" "+r.stderr.trim());}
-chk("--version names the compiler and the renderer it reads",new RegExp("^compile 0\\.1\\.0 \\(renderer "+String(R.RENDERER_VERSION).replace(/\./g,"\\.")+", format ").test(cli(["--version"]).stdout));
+chk("the compiler's version is one plain number, which the three stamp checks above read (they follow it)",/^\d+\.\d+\.\d+$/.test(C.VERSION),C.VERSION);
+chk("--version names the compiler and the renderer it reads",new RegExp("^compile "+VER+" \\(renderer "+String(R.RENDERER_VERSION).replace(/\./g,"\\.")+", format ").test(cli(["--version"]).stdout));
 chk("the report is never a .md file: nothing is written for --report notes.md",!fs.existsSync(path.join(TMP,"notes.md")));
 
 fs.rmSync(TMP,{recursive:true,force:true});

