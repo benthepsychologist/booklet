@@ -7,9 +7,9 @@ const fs=require("fs"),path=require("path");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-/* the marker of 0.17 is the file's; the renderer says "this page reads format 0.16" first until the release brings its own marker forward */
+/* the marker of 0.17 is the one the renderer reads as its own, so a file marked so has nothing said about its marker */
 const FM='---\nbooklet: "0.17"\ntitle: Notes\nlang: en\n---\n\n';
-const notice=R=>R.unread.filter(x=>!/This page reads format/.test(String(x)));
+const notice=R=>R.unread;
 const A=P.boot();
 const acts=R=>R.template.modules.flatMap(m=>m.activities);
 const draw=id=>{A.screen=id;A.render();return P.main();};
