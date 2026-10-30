@@ -13,7 +13,7 @@ const fs=require("fs");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
 const show=s=>JSON.stringify(String(s).slice(-260));
-const FM='---\nbooklet: "0.16"\ntitle: Weather notes\nlang: en\n---\n';
+const FM='---\nbooklet: "0.17"\ntitle: Weather notes\nlang: en\n---\n';
 const BODY=FM+"\n> [!activity|a1] Today's sky\n\n> [!text|q1] What colour was the sky?\n\n> [!text|q2] Which way was the wind?\n\n"+
   "> [!text|q3] Anything else?\n\n> [!activity|d1 repeat] Rain log\n\n> [!text|n] How much rain?\n";
 const HEAD="> [!records] App record — do not edit below this line";

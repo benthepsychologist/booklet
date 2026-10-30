@@ -13,7 +13,7 @@ const fs=require("fs");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const show=s=>JSON.stringify(String(s).slice(-200));
-const FM='---\nbooklet: "0.16"\ntitle: Garden notes\nlang: en\n---\n';
+const FM='---\nbooklet: "0.17"\ntitle: Garden notes\nlang: en\n---\n';
 const ACT="\n> [!activity|a1] This week in the garden\n\n> [!text|q1] What grew this week?\n\n> [!text|q2] What needs water?\n\n";
 /* the body ends inside a fence that never closes: everything after its opening line is that fence's code */
 const OPEN=FM+ACT+"A reminder for the shed:\n\n```text\nwater the beans at dawn\n";
@@ -122,7 +122,7 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
 /* ---- Add a module on a booklet whose body ends inside such a fence (0.16.1) ----
    Where the module would be put after that fence's opening line (at the end of the body), it would be read as the fence's
    code and never as a module: Add a module is refused, says why, and changes nothing. Anywhere else it is added as before. */
-{const MODFILE='---\nbooklet: "0.16"\ntitle: Seed swap\nlang: en\n---\n\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] Which seeds?\n\n> [!module|seeds end]\n';
+{const MODFILE='---\nbooklet: "0.17"\ntitle: Seed swap\nlang: en\n---\n\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] Which seeds?\n\n> [!module|seeds end]\n';
  const FENCE=MODFILE.slice(MODFILE.indexOf("> [!module|"));
  chk("(why) a module written after such a body is read as that fence's code, never as a module",
    !load(OPEN).parseFile(OPEN+"\n"+FENCE).template.modules.some(m=>m.id==="seeds"));
@@ -145,7 +145,7 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
     module whose data section ends inside the fence, updated by its newer file, which closes it. A download, with the answer
     to write after the body, stays refused while the body ends inside the fence. */
  const SEEDS=q=>"\n> [!module|seeds] Seed swap\n\n> [!activity|s1] What to swap\n\n> [!text|which] "+q+"\n\n> [!module|seeds end]\n";
- const SEEDFILE=(q,after)=>'---\nbooklet: "0.16"\ntitle: Seed swap\nlang: en\n---\n'+SEEDS(q)+(after||"");
+ const SEEDFILE=(q,after)=>'---\nbooklet: "0.17"\ntitle: Seed swap\nlang: en\n---\n'+SEEDS(q)+(after||"");
  const asked=A=>((A.BOOK.modules.find(m=>m.id==="seeds")||{}).activities||[]).flatMap(a=>a.pages.flatMap(p=>p.blocks)).filter(b=>b.id==="which").map(b=>b.label).join();
  for(const [name,book,mod,q,open] of [
    ["(a) an update of a module the booklet has, the fence after it",FM+SEEDS("Which seeds?")+"\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n",

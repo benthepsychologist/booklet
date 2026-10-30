@@ -88,7 +88,7 @@ const rep=C.reportText(withScript);
 chk("the report says the page links a script that keeps nothing",/Script: the page links booklet\.js, which keeps nothing and sends nothing/.test(rep));
 const siteOnly=C.compile([{file:book}],{form:"site",engine:X,scriptDir:good,forceScript:true});
 chk("a site-only run still writes the script, and the report tells the layout to load it",siteOnly.assets.has("booklet/booklet.js")&&/add <script src="\/booklet\/booklet\.js" defer><\/script> to the layout/.test(C.reportText(siteOnly)));
-const PLAIN='---\nbooklet: "0.16"\nid: t/plain\ntitle: Plain\nlang: en\n---\n\n# Plain\n\nA made-up page with no question.\n';
+const PLAIN='---\nbooklet: "0.17"\nid: t/plain\ntitle: Plain\nlang: en\n---\n\n# Plain\n\nA made-up page with no question.\n';
 const without=C.compile([{text:PLAIN,name:"plain",dir:tmp}],{form:"both",engine:X,scriptDir:good});
 chk("a page that needs no script links none, and booklet.js is not written",!/<script src/.test(pageOf(without,"standalone/plain/index.html"))&&![...without.assets.keys()].some(k=>k.endsWith(".js"))&&without.script===null);
 const real=C.compile([{file:book}],{form:"standalone",engine:X,scriptDir:good});
@@ -122,10 +122,10 @@ chk("…and --force writes the compiler's own again",kept.length===0&&C.cssStamp
   const rep=C.reportText(run);
   chk("the report names a page that carries an answer key in its markup",/Answer key: this page carries its answer key in its markup/.test(rep));
   chk("…and says nothing of the kind for a page with none",!/Answer key:/.test(C.reportText(C.compile([{text:PLAIN,name:"plain",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}))));
-  chk("a question with no words of its own is still named for a screen reader",/<fieldset[^>]*data-bk-kind="(?:choice|multi)"[^>]*aria-label="[^"]+"/.test(String(C.compile([{text:'---\nbooklet: "0.16"\nid: t/nolabel\ntitle: No label\nlang: en\n---\n\n> [!module|m] No label\n\n> [!activity|a] A\n\n> [!choice|pick] \n- [ ] One\n- [x] Two\n\n> [!module|m end] End\n',name:"nolabel",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}).results[0].files.get("nolabel/index.html"))));
+  chk("a question with no words of its own is still named for a screen reader",/<fieldset[^>]*data-bk-kind="(?:choice|multi)"[^>]*aria-label="[^"]+"/.test(String(C.compile([{text:'---\nbooklet: "0.17"\nid: t/nolabel\ntitle: No label\nlang: en\n---\n\n> [!module|m] No label\n\n> [!activity|a] A\n\n> [!choice|pick] \n- [ ] One\n- [x] Two\n\n> [!module|m end] End\n',name:"nolabel",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}).results[0].files.get("nolabel/index.html"))));
   /* ids and radio names are the page's own, and a label follows its input when a heading takes the id first */
   const HEADS=["bk-ids-q1-o1","bk-ids-q1-ask","bk-top","bk-ids-q1-check","bk-ids-w1"];
-  const text='---\nbooklet: "0.16"\nid: t/ids\ntitle: Ids\nlang: en\n---\n\n> [!module|m] Ids\n\n> [!activity|a] A\n\n'+HEADS.map(h=>"## "+h+"\n\nText.\n").join("\n")
+  const text='---\nbooklet: "0.17"\nid: t/ids\ntitle: Ids\nlang: en\n---\n\n> [!module|m] Ids\n\n> [!activity|a] A\n\n'+HEADS.map(h=>"## "+h+"\n\nText.\n").join("\n")
     +'\n> [!multi|p] Pick the right ones\n- [x] One\n- [ ] Two\n\n> [!choice|c] Pick one\n- [x] Yes\n- [ ] No\n\n> [!module|m end] End\n';
   const pg=String(C.compile([{text,name:"ids",dir:tmp}],{form:"standalone",engine:X,scriptDir:good}).results[0].files.get("ids/index.html"));
   const ids=[...pg.matchAll(/\sid="([^"]+)"/g)].map(m=>m[1]);
@@ -143,7 +143,7 @@ chk("…and --force writes the compiler's own again",kept.length===0&&C.cssStamp
    question. Each is tried on a page that has it and, beside it, a page that has everything but it. A heading's share link,
    a hint and a solution, a line chart and a one-row table ask for nothing. */
 {const D=require("../compile/draw.js"),H=require("../compile/html.js");
-  const HEADER='---\nbooklet: "0.16"\nid: t/need\ntitle: Need\nlang: en\n---\n\n';
+  const HEADER='---\nbooklet: "0.17"\nid: t/need\ntitle: Need\nlang: en\n---\n\n';
   const page=(body,name)=>{const r=C.compile([{text:HEADER+"# Need\n\n"+body,name:name||"need",dir:tmp}],{form:"standalone",engine:X,scriptDir:good});
     const html=String(r.results[0].files.get((name||"need")+"/index.html"));
     return {html,links:/<script src="\.\.\/booklet\/booklet\.js" defer><\/script>/.test(html),rep:r.results[0].rep,run:r};};

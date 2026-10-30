@@ -31,7 +31,7 @@ const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-compile-"));
 const cli=(args,cwd)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:cwd||TMP,encoding:"utf8"});
 const tree=d=>!fs.existsSync(d)?[]:fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?tree(path.join(d,e.name)).map(x=>e.name+"/"+x):[e.name]);
 const sha=f=>crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex");
-const HEAD='---\nbooklet: "0.16"\nid: t/x\ntitle: TITLE\nlang: en\n---\n\n';
+const HEAD='---\nbooklet: "0.17"\nid: t/x\ntitle: TITLE\nlang: en\n---\n\n';
 const booklet=(title,body)=>HEAD.replace("TITLE",title)+body;
 
 /* ======================= 1. nothing lost ======================= */

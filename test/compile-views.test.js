@@ -134,7 +134,7 @@ chk("…and each mark and report line says which query it is (its view, or a sum
 chk("…and they draw no view, no row and no number: only the empty: lines the author wrote (two of five)",
   !/data-bk-|<table|<ul/.test(after)&&count(after,/<p class="bk-hint(?: bk-lede)?">/g)===2&&after.includes("Orders are kept in the app.")&&after.includes("Summaries are not drawn here."));
 /* the same, for a summary with no empty: line, as a page of its own */
-const sumText='---\nbooklet: "0.16"\nid: t/sum\ntitle: Summary\nlang: en\n---\n\n# Summary\n\n> [!activity|log repeat] Log\n\n> [!number|n] How many?\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\nsummary: on\n```\n\n```booklet query\nfrom: log\nsummary: on\nas: bars\n```\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|t] Summary\n\n```booklet entries log\n{"items": [{"ts": "2026-10-01T08:00:00Z", "n": 777001}, {"ts": "2026-10-02T08:00:00Z", "n": 777002}]}\n```\n%%\n';
+const sumText='---\nbooklet: "0.17"\nid: t/sum\ntitle: Summary\nlang: en\n---\n\n# Summary\n\n> [!activity|log repeat] Log\n\n> [!number|n] How many?\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\nsummary: on\n```\n\n```booklet query\nfrom: log\nsummary: on\nas: bars\n```\n\n%%\n> [!records] App record — do not edit below this line\n\n> [!records|t] Summary\n\n```booklet entries log\n{"items": [{"ts": "2026-10-01T08:00:00Z", "n": 777001}, {"ts": "2026-10-02T08:00:00Z", "n": 777002}]}\n```\n%%\n';
 const S=C.compile([{text:sumText,name:"sum",dir:TMP}],{form:"standalone",engine:X}),sp=S.results[0].rep.pages.map(p=>S.results[0].files.get(p)||"").join("\n");
 chk("a summary: on query over kept entries never has rows: nothing at all is drawn where it stood (with its mark)",
   S.results[0].rep.ok&&!/data-bk-(view|row|col)/.test(sp)&&count(sp,/<!-- booklet: the query over/g)===2&&!/777001|777002/.test(sp+C.reportText(S)),sp.slice(sp.indexOf("<h2")));
@@ -206,7 +206,7 @@ chk("every colour the renderer works out from the theme that the page has a vari
   mapped.every(k=>vars[Th.VAR_OF[k]]!==undefined)&&mapped.length>20);
 /* the two words the fixture above gives bad values for, given good ones (made-up booklets): each font and each density the renderer has is
    a declaration on the article, and the build report names it */
-{const themed=(font,density)=>{const text='---\nbooklet: "0.16"\nid: t/words\ntitle: Theme words\nlang: en\n---\n\n# Theme words\n\n```booklet theme\nbase: paper\n'
+{const themed=(font,density)=>{const text='---\nbooklet: "0.17"\nid: t/words\ntitle: Theme words\nlang: en\n---\n\n# Theme words\n\n```booklet theme\nbase: paper\n'
       +(font?"font: "+font+"\n":"")+(density?"density: "+density+"\n":"")+'```\n\n> [!activity|only] The only activity\n\nA paragraph.\n';
     const run=C.compile([{text,name:"words",dir:TMP}],{form:"standalone",engine:X}),page=run.results[0].files.get("words/index.html")||"";
     return {run,page,style:styleOf((/<article class="booklet"[^>]*>/.exec(page)||[""])[0]),report:C.reportText(run)};};
@@ -244,13 +244,13 @@ chk("a booklet with no theme block has no data-bk-base, no style attribute, no T
 
 /* ======================= a table is linear in its rows ======================= */
 {const n=10000,rows=[];for(let i=0;i<n;i++) rows.push({a:"Row "+i,b:i,c:i*2.5,d:"x"+(i%7),e:i%3?i:null,f:"f"+i,g:i%11});
-  const text='---\nbooklet: "0.16"\nid: t/big\ntitle: Big\nlang: en\n---\n\n# Big\n\n```booklet query\nfrom: d\nas: table\n```\n\n```booklet data\n'+JSON.stringify({rows})+'\n```\n^d\n';
+  const text='---\nbooklet: "0.17"\nid: t/big\ntitle: Big\nlang: en\n---\n\n# Big\n\n```booklet query\nfrom: d\nas: table\n```\n\n```booklet data\n'+JSON.stringify({rows})+'\n```\n^d\n';
   const t0=Date.now(),B=C.compile([{text,name:"big",dir:TMP}],{form:"standalone",engine:X}),ms=Date.now()-t0,p=B.results[0].files.get("big/index.html")||"";
   chk("a table of 10,000 rows by 7 columns is drawn in well under the time a rescan for every cell takes ("+ms+" ms; the limit is 9 s)",B.results[0].rep.ok&&count(p,/ data-bk-row\b/g)===n&&ms<9000,ms+" ms");}
 
 /* ======================= 4. a very deep list ======================= */
 {const rows=[];for(let i=0;i<3000;i++) rows.push({id:"r"+i,parent:i?"r"+(i-1):"",label:"Row "+i});
-  const text='---\nbooklet: "0.16"\nid: t/deep\ntitle: Deep\nlang: en\n---\n\n# Deep\n\n```booklet query\nfrom: d\nas: list\n```\n\n```booklet data\n'+JSON.stringify({rows})+'\n```\n^d\n';
+  const text='---\nbooklet: "0.17"\nid: t/deep\ntitle: Deep\nlang: en\n---\n\n# Deep\n\n```booklet query\nfrom: d\nas: list\n```\n\n```booklet data\n'+JSON.stringify({rows})+'\n```\n^d\n';
   const D=C.compile([{text,name:"deep",dir:TMP}],{form:"both",engine:X}),p=D.results[0].files.get("standalone/deep/index.html")||D.results[0].files.get("deep/index.html")||"";
   chk("a list 3000 levels deep is drawn, every row of it, and is not refused",D.results[0].rep.ok&&count(p,/ data-bk-row\b/g)===3000&&p.includes("Row 2999"),D.results[0].rep.refused);
   chk("…as at most 40 levels of folds, the rest drawn level",count(p,/<details/g)===40,count(p,/<details/g));}
@@ -261,7 +261,7 @@ chk("a booklet with no theme block has no data-bk-base, no style attribute, no T
    marks and report lines of the kept queries are told apart from one page to the next. */
 {const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\n```booklet query\nfrom: d"+id+"\nas: tiles\nvalue: n\nlabel: w\n```\n\n```booklet query\nfrom: d"+id+"\nas: bars\nvalue: n\nlabel: w\n```\n\n"
     +"```booklet data\n{ \"rows\": [ { \"w\": \"A"+id+"\", \"n\": 3 }, { \"w\": \"B"+id+"\", \"n\": 5 } ] }\n```\n^d"+id+"\n\n```booklet query\nfrom: orders\nas: table\n```\n\n";
-  const text='---\nbooklet: "0.16"\nid: t/deep\ntitle: Deep\nlang: en\n---\n\n# Deep\n\n```booklet theme\nbase: daylight\npaper: "#fffbe8"\nink: "#2a2118"\n```\n\n> [!module|bakery] Bakery\n\n> [!activity|orders repeat] Orders\n\n> [!text|loaf] Which loaf?\n\n'+act("one","One")+act("two","Two")+"> [!module|bakery end] End\n";
+  const text='---\nbooklet: "0.17"\nid: t/deep\ntitle: Deep\nlang: en\n---\n\n# Deep\n\n```booklet theme\nbase: daylight\npaper: "#fffbe8"\nink: "#2a2118"\n```\n\n> [!module|bakery] Bakery\n\n> [!activity|orders repeat] Orders\n\n> [!text|loaf] Which loaf?\n\n'+act("one","One")+act("two","Two")+"> [!module|bakery end] End\n";
   for(const form of ["standalone","site"]){
     const R=C.compile([{text,name:"deep",dir:TMP}],{form,engine:X}).results[0],pages=R.rep.pages.filter(p=>p.endsWith("index.html")),html=pages.map(p=>R.files.get(p));
     const deepAt=pages.map((p,i)=>i).filter(i=>/\/(one|two)\//.test(pages[i]));

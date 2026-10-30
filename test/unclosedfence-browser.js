@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const FM=t=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n---\n`;
+const FM=t=>`---\nbooklet: "0.17"\ntitle: ${t}\nlang: en\n---\n`;
 const ACT="\n> [!activity|a1] This week in the garden\n\n> [!text|q1] What grew this week?\n\n> [!text|q2] What needs water?\n\n";
 const OPEN=FM('Seed shed')+ACT+"A reminder for the shed:\n\n```text\nwater the beans at dawn\n";
 const REC="%%\n> [!records] App record — do not edit below this line\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n%%\n";

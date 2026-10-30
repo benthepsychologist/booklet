@@ -15,7 +15,7 @@ if(!process.env.SPAN_ZONE){
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const FX_ALL=`---
-booklet: "0.16"
+booklet: "0.17"
 id: fixture/span
 title: A span of days
 lang: en

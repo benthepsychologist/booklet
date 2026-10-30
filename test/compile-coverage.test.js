@@ -106,13 +106,13 @@ chk("a heading link inside the page is a link",/<a class="bk-link" href="#mornin
 
 /* each of the six query views, drawn (compile 0.2): its container says which, and nothing is marked */
 const q=views.map((v,i)=>"```booklet query\nfrom: rows\nas: "+v+"\n```\n").join("\n");
-const text='---\nbooklet: "0.16"\nid: t/views\ntitle: Views\nlang: en\n---\n\n# Views\n\nEvery view.\n\n'+q+'\n```booklet data\n[ { "label": "A", "value": 1 } ]\n```\n^rows\n';
+const text='---\nbooklet: "0.17"\nid: t/views\ntitle: Views\nlang: en\n---\n\n# Views\n\nEvery view.\n\n'+q+'\n```booklet data\n[ { "label": "A", "value": 1 } ]\n```\n^rows\n';
 const rv=C.compile([{text,name:"views",dir:__dirname}],{form:"standalone",engine:X}),pv=rv.results[0].files.get("views/index.html")||"";
 for(const v of views) chk("a query shown as "+v+" is drawn, not marked",new RegExp('data-bk-view="'+v+'"').test(pv)&&!rv.results[0].rep.marked.some(m=>m.kind==="query"));
 chk("the six views are all there is: each COVERAGE.views entry says drawn",views.every(v=>COV.views[v]==="drawn"));
 
 /* a query over kept entries is drawn empty, and marked as the one thing the compiler does not do */
-const rk=C.compile([{text:'---\nbooklet: "0.16"\nid: t/kept\ntitle: Kept\nlang: en\n---\n\n# Kept\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\n```\n',name:"kept",dir:__dirname}],{form:"standalone",engine:X});
+const rk=C.compile([{text:'---\nbooklet: "0.17"\nid: t/kept\ntitle: Kept\nlang: en\n---\n\n# Kept\n\n> [!activity|log repeat] Log\n\n> [!text|what] What?\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\n```\n',name:"kept",dir:__dirname}],{form:"standalone",engine:X});
 chk("a query over kept entries is marked kept, once, and draws no view",rk.results[0].rep.marked.filter(m=>m.kind==="kept").length===1&&!/data-bk-view/.test(rk.results[0].files.get("kept/index.html")));
 
 /* the theme block: drawn as the article's variables (compile 0.2), and no longer marked */

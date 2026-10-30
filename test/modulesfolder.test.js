@@ -17,7 +17,7 @@ global.URL=Object.assign(require("url").URL,{createObjectURL:()=>"blob:x",revoke
 let META={};
 global.document.querySelector=sel=>{const m=/meta\[name="([^"]+)"\]/.exec(sel);const v=m&&META[m[1]];return v?{getAttribute:k=>k==="content"?v:null}:null;};
 const at=href=>{const u=new URL(href);global.location={href,protocol:u.protocol,hostname:u.hostname,hash:""};};
-const booklet=(title,q)=>`---\nbooklet: "0.16"\ntitle: ${title}\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] ${q||"A question"}\n\n> [!module|m end] End\n`;
+const booklet=(title,q)=>`---\nbooklet: "0.17"\ntitle: ${title}\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] ${q||"A question"}\n\n> [!module|m end] End\n`;
 let CALLS=[],ROUTES={};
 const reply=(body,o={})=>({ok:o.ok!==false,status:o.ok===false?404:200,headers:{get:k=>({"content-type":o.type||"text/markdown","content-length":o.len}[k.toLowerCase()])},
   body:{getReader(){const b=Buffer.from(body);let done=false;return {read:async()=>done?{done:true}:(done=true,{done:false,value:new Uint8Array(b)})};}},text:async()=>body});

@@ -7,7 +7,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.17"\ntitle: T\nlang: en\n---\n\n';
 const A=P.boot();
 const END="\n> [!module|m end] End\n";
 const draw=id=>{A.screen=id;A.render();return P.main();};

@@ -6,7 +6,7 @@ const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM="---\nbooklet: \"0.16\"\ntitle: Replies\nlang: en\n---\n\n";
+const FM="---\nbooklet: \"0.17\"\ntitle: Replies\nlang: en\n---\n\n";
 const wrap=body=>FM+"> [!module|rp] Replies\n\n> [!activity|a] A\n\n"+body+"\n> [!module|rp end] End\n";
 const blocksOf=R=>R.template.modules[0].activities[0].pages[0].blocks;
 const q=(body,id)=>{const R=P.boot().parseFile(wrap(body));return {R,b:blocksOf(R).find(x=>x.id===id),all:blocksOf(R)};};

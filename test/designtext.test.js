@@ -47,13 +47,13 @@ function agrees(A,label){A.flushSave();
 
  /* ---- what a file keeps as written travels with the text ---- */
  P.wipe();A=P.boot();
- const KEEP='---\nbooklet: "0.16"\ntitle: Kept\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n\n'+
+ const KEEP='---\nbooklet: "0.17"\ntitle: Kept\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n\n'+
    '%%\n> [!records] App record\n\n```booklet sync\n{"by":"another reader"}\n```\n\n> [!records|later] Later module\n\n```booklet answers\n{"x":"from the file"}\n```\n\n%%\n';
  A.loadText(KEEP);
  chk("a file's records kept as written (a sync record, a records line for a module it does not hold) are written back",/booklet sync/.test(A.toMarkdown())&&/records\|later/.test(A.toMarkdown()));
  A=agrees(A,"a booklet holding kept records");
  chk("and come back after a reload",/booklet sync/.test(A.toMarkdown())&&/"from the file"/.test(A.toMarkdown()));
- const LATER='---\nbooklet: "0.16"\ntitle: Later\nlang: en\n---\n\n> [!module|later] Later module\n\n> [!activity|b] B\n\n> [!text|x] X\n\n> [!module|later end] End\n';
+ const LATER='---\nbooklet: "0.17"\ntitle: Later\nlang: en\n---\n\n> [!module|later] Later module\n\n> [!activity|b] B\n\n> [!text|x] X\n\n> [!module|later end] End\n';
  chk("adding the module those records named",A.addModuleText(LATER).ok);
  chk("its kept answers are now the reader's, as the file read back would have them",A.peekAnswers("later").x==="from the file",json(A.STATE.answers));
  A=agrees(A,"after the module the records named is added");

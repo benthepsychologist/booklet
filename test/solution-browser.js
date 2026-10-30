@@ -7,7 +7,7 @@ const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]);
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const head='---\nbooklet: "0.16"\ntitle: Sorting\nlang: en\n---\n\n';
+const head='---\nbooklet: "0.17"\ntitle: Sorting\nlang: en\n---\n\n';
 const sortItem=i=>`> [!choice|s${i}] Item ${i}\n- [ ] Wrong ${i}\n- [x] Right ${i}\n\n${i===1?'> [!hint]- Nudge\n> HINT-1-SECRET\n\n':''}> [!solution]- Why\n> BECAUSE-${i}-SECRET\n\n`;
 const text=head+'> [!activity|a] Sort it\n\n'+[1,2,3,4,5,6].map(sortItem).join('')+
   '> [!multi|m1] Pick both\n- [x] Alpha\n- [x] Beta\n- [ ] Gamma\n\n> [!solution]- Why\n> MULTI-SECRET\n\n'+

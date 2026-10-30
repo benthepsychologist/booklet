@@ -211,7 +211,7 @@ const CORPUS={
 function corpusBooklet(dir){
   fs.mkdirSync(dir,{recursive:true});
   const names=Object.keys(CORPUS);
-  fs.writeFileSync(path.join(dir,'corpus.booklet.md'),'---\nbooklet: "0.16"\nid: test/corpus\ntitle: A corpus of diagrams\nlang: en\n---\n\n# A corpus of diagrams\n\nMade-up diagrams of the common types.\n\n'
+  fs.writeFileSync(path.join(dir,'corpus.booklet.md'),'---\nbooklet: "0.17"\nid: test/corpus\ntitle: A corpus of diagrams\nlang: en\n---\n\n# A corpus of diagrams\n\nMade-up diagrams of the common types.\n\n'
     +names.map(n=>'## '+n+'\n\n```mermaid\n'+CORPUS[n]+'\n```\n').join('\n'));
   return names;}
 
