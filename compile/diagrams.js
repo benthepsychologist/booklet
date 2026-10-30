@@ -43,6 +43,7 @@ const TEXTISH=new Set(["text","tspan","textPath","title","desc","style"]);
    what compile.js's svgMarkup reads: tags with quoted attributes, the five XML entities and numeric references, comments (dropped),
    one XML declaration and a DOCTYPE without entities (dropped), CDATA (as text). Anything else, an element that is not closed,
    a second root, text outside the root, a control character, is a reason to refuse. */
+/* TAG, ATTR and REF are shared global regexes: pass them only to .replace and matchAll (and set TAG.lastIndex first), never .test or .exec on a second string */
 const TAG=/<(\/?)([^\s\/>!?=<"']+)((?:\s+[^\s=\/>"'<]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>/y;
 const ATTR=/([^\s=\/>"'<]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 /* a #name reference inside a value or a style (a url(#name), an href) */

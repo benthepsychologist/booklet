@@ -1,4 +1,4 @@
-// Browser check of the compiler's pages (compile/, compile 0.1.0): what a reader of a compiled page gets, in Chromium with
+// Browser check of the compiler's pages (compile/, compile 0.2.0): what a reader of a compiled page gets, in Chromium with
 // scripting OFF. The examples and the page-shaped fixtures are compiled with the renderer named on the command line, in both
 // forms; each standalone page, and each site page set in a bare host page that loads the one stylesheet with one line, is
 // opened at 1280 and 390 pixels wide, light and dark. It asserts:

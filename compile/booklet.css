@@ -1,4 +1,4 @@
-/* booklet.css: the look of a page the Booklet compiler wrote (compile 0.1.0).
+/* booklet.css: the look of a page the Booklet compiler wrote (compile 0.2.0).
 
    One stylesheet for every compiled page, standalone or on a host site. A host site loads it with one line in its
    layout's head, from wherever it puts the compiler's booklet/ folder:

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-// compile 0.1.0: a booklet file to a plain web page. It is a build step beside the renderer, never the published booklet.html.
+// compile 0.2.0: a booklet file to a plain web page. It is a build step beside the renderer, never the published booklet.html.
 //   node compile/compile.js [options] <file.booklet.md> ...
 //     --out <dir>         where to write (default compiled/)
 //     --form <form>       standalone (default), site, or both
@@ -49,7 +49,7 @@
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
 const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js"),SC=require("./script.js"),Th=require("./theme.js"),G=require("./diagrams.js");
 
-const VERSION="0.1.0";
+const VERSION="0.2.0";
 const STYLESHEET=path.join(__dirname,"booklet.css");
 const NAME=/^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
@@ -361,7 +361,7 @@ function compileOne(X,input,o){
       const body=form==="standalone"?standalone(page,{name,baseUrl:o.baseUrl,script:page.script}):sitePage(page);
       files.set(root+name+"/"+at+"index.html",stamp(body,source,form));
       rep.pages.push(root+name+"/"+at+"index.html");
-      if(form===forms[0]) rep.pageList.push({path:name+"/"+at+"index.html",title:page.title,kind:unit.kind,linked:page.alternates.length>0});});
+      if(form===forms[0]) rep.pageList.push({path:name+"/"+at+"index.html",title:page.title,kind:unit.kind,linked:page.alternates.length>0,needs:page.needs});});
     for(const [rel,bytes] of keep) files.set(root+name+"/"+rel,bytes);
     if(!first) first=drawn;}
   const sum=()=>Object.fromEntries(Object.keys(first[0].counts).map(c=>[c,first.reduce((n,p)=>n+p.counts[c],0)]));
@@ -505,8 +505,13 @@ function reportText(C){const L=[];
     L.push("  Description: "+(rep.description?"“"+rep.description+"”":"none (the page has no first paragraph)"));
     L.push("  On this page: "+(rep.toc?"listed":"not listed (fewer than two top headings)"));
     if(rep.marker) L.push("  Marker: "+rep.marker);
-    if(rep.script) L.push("  Script: the page links booklet.js, which keeps nothing and sends nothing; without it the page reads as it is.");
-    else if(rep.needsScript) L.push("  Script: this page has parts that respond when pressed; add <script src=\"/booklet/booklet.js\" defer></script> to the layout to load them. Without it the page reads as it is.");
+    /* the script: which pages of the booklet need it (a booklet of many pages may need it on some only), and what a site layout must do */
+    {const pages=rep.pageList.filter(p=>p.needs).map(p=>p.path),many=rep.pageList.length>1,all=pages.length===rep.pageList.length,
+        of=all?"all "+pages.length+" pages":pages.length+" of "+rep.pageList.length+" pages ("+pages.join(", ")+")";
+      if(rep.script) L.push(many?"  Script: booklet.js, which keeps nothing and sends nothing, is linked by "+of+(all?"":"; the other pages need none")+". Without it every page reads as it is."
+        :"  Script: the page links booklet.js, which keeps nothing and sends nothing; without it the page reads as it is.");
+      if(rep.needsScript&&C.form!=="standalone") L.push("  Script"+(rep.script?" (site form)":"")+": "+(many?"parts that respond when pressed are on "+of+(all?"":"; the others need none"):"this page has parts that respond when pressed")
+        +"; add <script src=\"/booklet/booklet.js\" defer></script> to the layout to load them. Without it the page reads as it is.");}
     const copied=rep.images.filter(i=>i.ok),refused=rep.images.filter(i=>!i.ok);
     if(copied.length) L.push("  Images copied beside the page: "+copied.map(i=>i.src).join(", "));
     if(rep.links.length) L.push("  Links to booklets compiled with it: "+[...new Set(rep.links.map(l=>l.to))].join(", "));
