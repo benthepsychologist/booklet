@@ -6,7 +6,7 @@ Open it in a text editor and you can read everything, top to bottom — question
 
 ```markdown
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: example/daily-note
 title: A daily note
 lang: en
@@ -30,7 +30,7 @@ version: "0.1"
 %%
 ```
 
-This is **v0.16** of the format — see [`SPEC.md`](SPEC.md) for the full
+This is **v0.17** of the format — see [`SPEC.md`](SPEC.md) for the full
 format, and [`docs/why-markdown.md`](docs/why-markdown.md) for how it was
 arrived at: what the wider Markdown-tooling field already does, what Booklet
 needs that nothing else supplies, and why each real choice landed where it
@@ -74,8 +74,8 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.16; a file marked with any other 0.x opens as it is, with a notice that some of it may not draw, and a file with no marker, or one not 0.x, is refused |
-| [`SPEC.md`](SPEC.md) | the current format (v0.16), versioned and published separately from anything that implements it |
+| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.17; a file marked with any other 0.x opens as it is, with a notice that some of it may not draw, and a file with no marker, or one not 0.x, is refused |
+| [`SPEC.md`](SPEC.md) | the current format (v0.17), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`submit/`](submit/) | the submit build, never the published file: `node submit/build.js --endpoint <url>` makes `booklet-submit.html`, the one-file renderer with a Submit button that sends a reader's answers to the one address it was built with, on the reader's press (`docs/hosting.md`, "The submit build") |
 | [`compile/`](compile/) | the compiler, a build step and never the published file: `node compile/compile.js <file.booklet.md>` makes a plain web page of a booklet (HTML and one stylesheet that read fully with no script, plus one optional script that keeps nothing and sends nothing and that a page links only when it needs it; a booklet of several activities becomes a contents page and a page each, with links between translations; data views and charts, figures, build-time diagrams (given a browser) and a booklet's theme are drawn; tabs, citation previews, "Open all" and sort and filter are the script's reading helpers; pick-one and pick-any questions answer as a quiz that forgets, the other kinds stay read-only) for publishing an article on a site of its own, standalone or as a fragment for a site generator. It reads the format only through `booklet.html`'s own parse and never reads a file's records (`compile/README.md`) |
@@ -110,12 +110,12 @@ figures use the width and fold to one column on a phone.
 
 **Views.** A `booklet query` draws a data block's rows, or a reader's kept entries, as cards, a table, a list, tiles, bars or a line. Every view draws a row from the same seven **roles** (`label`, `value`, `note`, `badge`, `tone`, `link`, `icon`, each read from the field of that name unless the query names another), so rows written with those names need only `from:` and `as:`. `link` (where the row leads) and `icon` (its picture) are drawn by tables, lists, tiles and cards. Tiles with no value are a strip of pills. One **Sort and filter** control, the same on every view and drawn when there are more than eight rows, lets a reader search, show one value of a field and sort on screen; it is kept in memory only, never in the file. A booklet's `density` sizes the views as well as the prose.
 
-A module file (any v0.16 module, such as those in `booklet-registry`) loads as what it is, one activity: on
+A module file (any v0.17 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it. A module may carry its own notice (licence, copyright, source, version), which Add a module writes into the booklet and the page shows under "About this module". A booklet has one name, its own front matter's `title:`, which a reader can rename on its home screen or in "Your booklets".
 
 A tool that writes booklets should ask the linter for the marker (`python3 lint-booklet.py --marker` prints the front-matter line a file should carry) and not hard-code it. A file marked with another `0.x` version still opens, by the current rules and with a notice, and nothing before v1.0 is promised to keep working; the renderer fetches no address a file names (an image, a diagram's image or style, a font).
 
-A plain Markdown file with booklet front matter (`booklet: "0.16"`, a `title`) and no booklet lines at all is
+A plain Markdown file with booklet front matter (`booklet: "0.17"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
 status or a run's acceptance report, can be read in the renderer. Its headings are drawn as headings, and **nothing is
 folded** that the file does not fold: a long report is split into pages with `***` (Back, "Page 2 of 3" and Next at the
@@ -205,7 +205,7 @@ own questions.
 - **A hint never opens by itself.** A solution opens by itself under the reader's answer: for a `choice`, as soon as an option is picked; for a `multi`, when Check is pressed (only a question with a right answer, an `[x]` option, has Check). With a right answer it takes the good tone when the answer is right, and the warn tone with "Look again" when it is not. A `choice` with no right answer opens in a neutral tone on a pick. A `multi` with no right answer has no Check, so its solution opens only on request, as it does for every other question kind.
 - **A callout folded with `-`** shows the first words of its text under its title. A hint or a solution shows only its name while it is shut, so a closed one gives nothing away.
 - **A folded callout of a kind with no colour of its own** (a `group`, or a kind with no colour of its own) is drawn on plain paper with no tint and no picture of its own. An untitled one is called "Note". Kinds the renderer draws keep their colour and picture.
-- **A list of cards is a contents list**: the modules of a booklet, the activities of a module and the pages under a wiki page are one column, an ordered list with a row to each card, drawn as links (its number, a small picture if it has one, the title, a first line, a status line), never a grid of cards.
+- **A list of cards is a contents list**: the modules of a booklet, the activities of a module and the pages under a page are one column, an ordered list with a row to each card, drawn as links (its number, a small picture if it has one, the title, a first line, a status line), never a grid of cards.
 - **An activity's row** shows the activity's first paragraph under its title, read as inline Markdown as a module's blurb is. An activity with no paragraph shows its title alone. Its status line counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started"). The author may write that line instead, on `>` lines directly under the activity line, or hide it with `status:off` on the line (`SPEC.md` section 3, "A card's parts").
 - **A `group`** is drawn plain under its title, folded or open, with whatever it holds, questions included. A kind with no colour of its own is drawn as a `note` is.
 - **Tabs** are a tab bar at the top of the activity's column, under its title and opening, drawn for two or more tabs; on a narrow screen it scrolls sideways inside itself. A module's tabs are a bar above its list of activities.
@@ -432,7 +432,7 @@ person. Anyone may publish a separate registry under their own policy; a site ca
 
 ## Status
 
-**v0.16, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
+**v0.17, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
 independent second implementation yet. It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and

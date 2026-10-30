@@ -1,5 +1,5 @@
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: test/submit-questionnaire
 title: Submit test questionnaire
 lang: en

@@ -1,6 +1,7 @@
-// Renderer 0.12.0, item E: the wiki. The tree is nestRows' rules over activities; the pages that mention a page are worked out once;
-// the search finds by title and text; a link to a module the booklet holds opens it and one it does not hold is a chip that asks
-// for nothing until pressed; a deep link names a page; the renderer never writes the address bar; the words exist in four languages.
+// Renderer 0.12.0, item E, as 0.17 leaves it: the module wiki is gone (an activity line takes no `parent:`, SPEC.md section 3, "An activity does not sit
+// under another"): a file whose activity lines carry it is read as a flat module and each such word is reported and ignored. What stays is the
+// rest of that item: a link to a module the booklet holds opens it and one it does not hold is a chip that asks for nothing until pressed; a deep
+// link names a page; the renderer never writes the address bar; the words exist in four languages.
 // Run: node test/wiki.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
 const fs=require("fs");
@@ -9,46 +10,27 @@ const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&
 const kids=n=>(n&&n.children)||[];
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const text=P.texts;
-const FM='---\nbooklet: "0.16"\ntitle: Wiki\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.17"\ntitle: Wiki\nlang: en\n---\n\n';
 const names=l=>l.map(a=>a.id.split("/").pop()).join();
 (async()=>{
  const A=P.boot();
- /* ---- the adapter: nestRows' rules over activities ---- */
+ /* ---- 0.17: parent: on an activity line makes no wiki ---- */
  {const book=FM+"> [!module|m] M\n\n"+
    "> [!activity|a] Alpha\n\nAlpha links to [[#Beta]] and to [Gamma](#gamma) and to itself, [[#Alpha]].\n\n"+
-   "> [!activity|d parent:nowhere] Delta\n\nA missing parent leaves it at the top.\n\n"+
+   "> [!activity|d parent:nowhere] Delta\n\nA missing parent.\n\n"+
    "> [!activity|b parent:a] Beta\n\nBeta links to [[#Alpha]].\n\n"+
    "> [!activity|c parent:b] Gamma\n\nDeep.\n\n"+
    "> [!activity|e parent:f] Echo\n\nA cycle.\n\n"+
    "> [!activity|f parent:e] Foxtrot\n\nOther half of the cycle, and [[#Gamma]] and [[#Alpha]].\n\n"+
    "> [!activity|g parent:a] Golf\n\nSecond child of Alpha.\n\n"+
    "> [!module|m end] End\n";
-  A.loadText(book);
-  const mod=A.allModules()[0],W=A.wikiOf(mod);
-  chk("a module with parent: is a wiki",!!W);
-  chk("a missing parent leaves a page at the top; a cycle draws each page once, at the top; top pages keep the file's order",names(W.roots)==="a,d,e",names(W.roots));
-  chk("children keep the file's order, and the tree is depth first",names(W.acts)==="a,b,c,g,d,e,f",names(W.acts));
-  chk("each page knows its parent and its ancestors",W.up.get("m/c").id==="m/b"&&names(A.wikiPath(W,"m/c"))==="a,b"&&names(A.wikiPath(W,"m/a"))==="");
-  chk("the cycle: one page under the other, neither above both",(W.up.get("m/e")===null)!==(W.up.get("m/f")===null)||(W.up.get("m/e")===null&&W.up.get("m/f").id==="m/e"));
-  chk("it is worked out once: the same object comes back",A.wikiOf(mod)===W);
-  /* the adapter is nestRows itself: two rows of one id, the first is the parent */
-  const t=A.activityTree([{id:"m/x"},{id:"m/y",parent:"m/x"},{id:"m/x",parent:"m/y"}]);
-  chk("of two with one id the first is the parent (nestRows' rule)",t.order.length===3&&t.parent[1]==="m/x",JSON.stringify(t));
-  /* ---- mentioned on ---- */
-  const M=A.wikiMentions(W),of=id=>(M.get("m/"+id)||[]).map(a=>a.id.split("/").pop()).join();
-  chk("Mentioned on: pages whose prose links to a page by its heading text or its slug, each once, in the file's order",of("b")==="a"&&of("c")==="a,f",of("b")+" | "+of("c"));
-  chk("a page does not mention itself, and a page nobody links to has none",of("a")==="b,f"&&of("g")==="",of("a")+" | "+of("g"));
-  chk("it is worked out once per open: asking again gives the same lists",A.wikiMentions(W)===M);
-  /* ---- the search ---- */
-  chk("search finds by title and by words in the prose, titles first",names(A.wikiFind(W,"alpha"))==="a,b,g,f",names(A.wikiFind(W,"alpha")));
-  chk("every word typed must be there; case does not matter; nothing typed finds nothing",names(A.wikiFind(W,"SECOND child"))==="g"&&A.wikiFind(W,"  ").length===0&&A.wikiFind(W,"zzzz").length===0);
-  chk("search reads words, not link markup: [[ and ]( find nothing, and a linked word is found by its label",A.wikiFind(W,"[[").length===0&&A.wikiFind(W,"](").length===0&&names(A.wikiFind(W,"second child"))==="g");
-  /* a flat module is not a wiki */
-  A.loadText(FM+"> [!module|m] M\n\n> [!activity|a] A\n\nx\n\n> [!activity|b] B\n\ny\n\n> [!module|m end] End\n");
-  chk("a module with no parent: is not a wiki, and draws as it did",A.wikiOf(A.allModules()[0])===null);
-  /* a booklet that is opened afresh works its lists out afresh */
-  A.loadText(book);
-  chk("a booklet opened again has its own lists",A.wikiOf(A.allModules()[0])!==W);}
+  A.loadText(book);A.screen=A.moduleScreen("m");A.render();
+  const mod=A.allModules()[0],R=A.parseFile(book);
+  chk("a file whose activity lines carry parent: has them in the file's order, none under another",mod.activities.map(a=>a.id.split("/").pop()).join()==="a,d,b,c,e,f,g"&&mod.activities.every(a=>a.parent===undefined));
+  chk("each such word is reported once, as a setting an activity line does not take, and ignored",R.unread.filter(x=>/activity line takes no “parent:”/.test(x)).length===6&&R.ok,JSON.stringify(R.unread));
+  const cards=walk(P.main(),n=>n.tagName==="button"&&/\bmode\b/.test(n.attrs.class||""));
+  chk("the module's screen is the flat list of seven cards of any module: no menu, no search, no frame",cards.length===7&&walk(P.main(),n=>/\b(wk-frame|wk-menu|wk-q|wk-tree)\b/.test((n.attrs||{}).class||"")).length===0,String(cards.length));
+  chk("a page of it has no trail, no cards of pages under it and no Mentioned on",(()=>{A.screen="m/b";A.render();return walk(P.main(),n=>/\b(wk-crumbs|wk-cards|wk-chips)\b/.test((n.attrs||{}).class||"")).length===0;})());}
 
  /* ---- links to a module ---- */
  {let fetched=0;global.fetch=async()=>{fetched++;throw new Error("no network");};
@@ -67,12 +49,6 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
  /* a link that names no module is its words, not a nameless chip */
  {const out=A.mdNodes("[[.booklet]] and [words](.booklet.md) and [[.booklet|label]]",A.linkHooks("m"));
   chk("[[.booklet]] and the like stay plain text",walk({children:out},x=>x.tagName==="button"||x.tagName==="a").length===0&&/\.booklet.*words.*label/.test(out.map(text).join("")),out.map(text).join("|"));}
- /* the search box is emptied when the reader moves to another module */
- {const TWOW=FM+"> [!module|m1] One\n\n> [!activity|a] A\n\nx\n\n> [!activity|b parent:a] B\n\ny\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|c] C\n\nx\n\n> [!activity|d parent:c] D\n\ny\n\n> [!module|m2 end] End\n";
-  A.loadText(TWOW);A.screen=A.moduleScreen("m1");A.render();A.VIEW.wiki.q="typed";A.render();
-  chk("the words in the search box stay for the module they were typed in",A.VIEW.wiki.q==="typed");
-  A.screen=A.moduleScreen("m2");A.render();
-  chk("and are cleared on moving to another module",A.VIEW.wiki.q==="");}
  /* ---- a link may name a page ---- */
  chk("the link's page is what follows the final .md/ (a store name may hold slashes)",
    JSON.stringify(A.linkSplit("a.md/b.md/page-one"))===JSON.stringify({name:"a.md/b.md",act:"page-one"})
@@ -89,7 +65,7 @@ const names=l=>l.map(a=>a.id.split("/").pop()).join();
  {const A2=P.boot();
   const keys=Object.keys(A2.STRINGS_SRC.en.wiki);
   for(const l of ["en","fr","es","es-AR"]){const g=A2.STRINGS[l].wiki;
-   chk("every wiki word exists in "+l+" ("+keys.length+" keys)",keys.every(k=>typeof g[k]===typeof A2.STRINGS_SRC.en.wiki[k]&&(typeof g[k]!=="string"||g[k].trim()!=="")&&(typeof g[k]!=="function"||String(g[k]("X")).includes("X")||k==="more")),keys.filter(k=>!g[k]).join());}
+   chk("every wiki word exists in "+l+" ("+keys.length+" keys)",keys.every(k=>typeof g[k]===typeof A2.STRINGS_SRC.en.wiki[k]&&(typeof g[k]!=="string"||g[k].trim()!=="")&&(typeof g[k]!=="function"||String(g[k]("X")).includes("X"))),keys.filter(k=>!g[k]).join());}
   chk("fr and es have words of their own",["fr","es"].every(l=>keys.filter(k=>typeof A2.STRINGS_SRC.en.wiki[k]==="string").every(k=>A2.STRINGS[l].wiki[k]!==A2.STRINGS.en.wiki[k])));
   chk("es-AR inherits the whole group from es (no imperative to turn into the voseo)",!A2.STRINGS_SRC["es-AR"].wiki&&JSON.stringify(Object.entries(A2.STRINGS["es-AR"].wiki).map(([k,v])=>[k,typeof v==="function"?v("X"):v]))===JSON.stringify(Object.entries(A2.STRINGS.es.wiki).map(([k,v])=>[k,typeof v==="function"?v("X"):v])));}
  console.log(fails?"\n"+fails+" FAILURES":"\nwiki checks passed");process.exit(fails?1:0);

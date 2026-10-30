@@ -5,7 +5,7 @@ const fs=require("fs"),path=require("path"),os=require("os"),{spawnSync}=require
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM="---\nbooklet: \"0.16\"\ntitle: Answers\nlang: en\n---\n\n";
+const FM="---\nbooklet: \"0.17\"\ntitle: Answers\nlang: en\n---\n\n";
 const T=P.texts,find=P.find;
 const blocksIn=a=>a.pages.flatMap(p=>p.blocks);
 /* each part runs on its own: a part that throws is one failure, and the parts after it still run */

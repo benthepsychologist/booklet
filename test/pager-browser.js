@@ -14,7 +14,7 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 const Q=['What went well this week?','What was harder than you expected?','What did you put off?','Who helped?','What did you learn?',
   'What would you do again?','What would you drop?','What is one thing for next week?'];
 const FILE=`---
-booklet: "0.16"
+booklet: "0.17"
 title: Week
 lang: en
 ---

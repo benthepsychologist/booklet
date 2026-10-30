@@ -116,7 +116,7 @@ function drawPage(X,P,o){
   X.setLang(ui);
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
-    marked:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
+    marked:[],pageLinks:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
     where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0,dgSeq:0};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const bookTitle=titleOf(X,P,o.name);
@@ -527,11 +527,6 @@ function drawPage(X,P,o){
     noteHeads(a.id,out,head,tabsDrawn);
     return ownHead?[el("section",{class:"bk-activity"},...out)]:out;}
 
-  /* the depth of an activity in a module whose activities sit under one another (parent:), counting only shown ones */
-  function depthOf(m,a){let d=0,cur=a,seen=new Set();
-    while(cur&&cur.parent&&!seen.has(cur.id)){seen.add(cur.id);const p=m.activities.find(x=>x.id===cur.parent);if(!p) break;if(R.isShown(p)) d++;cur=p;}
-    return d;}
-
   /* ---- a module ---- */
   function module(m,base){
     const acts=m.activities.filter(R.isShown),multi=R.isMulti(m);
@@ -549,13 +544,13 @@ function drawPage(X,P,o){
       const nodes=section(opening,cb,titleText);if(first) lede(nodes);first=false;out.push(...nodes);}
     if(!multi){if(acts[0]) out.push(...activity(acts[0],cb,false,head,titleText,first));}
     else{
-      const mts=R.tabsIn(m),place=a=>{let top=a,seen=new Set();while(top.parent&&!seen.has(top.id)){seen.add(top.id);const p=m.activities.find(x=>x.id===top.parent);if(!p) break;top=p;}return R.moduleTabOf(m,top);};
-      const drawActs=(list,lv)=>U.kind==="contents"?(list.length?[cardList(list.map(a=>({a,src:a})))]:[]):list.flatMap(a=>activity(a,Math.min(6,lv+depthOf(m,a)),true,null,plain(a.title)||a.id,false));
+      const mts=R.tabsIn(m);
+      const drawActs=(list,lv)=>U.kind==="contents"?(list.length?[cardItems(list.map(a=>({a,src:a})))]:[]):list.flatMap(a=>activity(a,Math.min(6,lv),true,null,plain(a.title)||a.id,false));
       if(mts){const tabs=new Map();
         mts.forEach(t=>{st.where="the tab “"+(plain(t.title)||t.id)+"” of the module “"+titleText+"”";
           const h=heading(cb,words(tx(t.title,t.id),true));tabs.set(norm(plain(t.title)||t.id),h);
           const nodes=section(t.blocks||[],cb+1,null);
-          out.push(el("section",{class:"bk-tab"},h,...nodes,...drawActs(acts.filter(a=>place(a)===t.id),cb+1)));});
+          out.push(el("section",{class:"bk-tab"},h,...nodes,...drawActs(acts.filter(a=>R.moduleTabOf(m,a)===t.id),cb+1)));});
         st.mtabs.set(m.id,tabs);}
       else out.push(...drawActs(acts,cb));}
     /* the module's notice is drawn at the page's foot */
@@ -579,16 +574,6 @@ function drawPage(X,P,o){
       next?link(next,"bk-next","next",Pg.next,""," →"):el("span",{}));}
 
   /* ---- cards: the activities of a booklet of many pages, each a link to its page (SPEC.md section 3, "A card's parts") ---- */
-  const allActs=new Map();
-  design.modules.forEach(m=>m.activities.forEach(a=>{if(!allActs.has(a.id)) allActs.set(a.id,a);}));
-  /* cards under the card of the activity they sit under (`parent:`, kept by the renderer as each one's effective parent);
-     an activity whose parent is not in this list, or is not shown, sits under the nearest of its ancestors that is */
-  function nest(list){const by=new Map(list.map(e=>[e.a.id,e])),top=[];
-    for(const e of list){let p=e.a.parent&&allActs.get(e.a.parent),hops=0;
-      while(p&&!by.has(p.id)&&hops++<50) p=p.parent&&allActs.get(p.parent);
-      const host=p&&by.get(p.id);
-      if(host&&host!==e) (host.kids||(host.kids=[])).push(e);else top.push(e);}
-    return top;}
   /* the card's title and picture: the line's `icon:` (when the sprite has it), else an emoji the title begins with (which
      leaves the title), else the card's number in its list, as the renderer's cardPicture does */
   function cardPic(title,n,iconName){
@@ -603,7 +588,6 @@ function drawPage(X,P,o){
     const own=tx(a.status,"");if(R.nonEmpty(own)) return words(own,true);
     const n=R.blocksAll(a.pages.flatMap(p=>R.blocksIn(p))).filter(R.isQuestion).length;
     return n?T("cards").questionsN(n):null;}
-  const cardList=list=>cardItems(nest(list));
   function cardItems(list){
     return el("ol",{class:"bk-cards"},...list.map((e,i)=>{const a=e.a,src=e.src||a;
       const c=cardPic(tx(src.title,tx(a.title,R.shortId(a.id))),i+1,src.icon||a.icon);
@@ -611,8 +595,7 @@ function drawPage(X,P,o){
       return el("li",{class:"bk-card"},el("span",{class:"bk-card-pic","aria-hidden":"true"},c.pic),
         el("div",{class:"bk-card-body"},el("a",{class:"bk-card-title",href:plan.href(KEY,a.id)},...again(c.title)),
           bl.length&&M.textOf(bl).trim()?el("p",{class:"bk-card-blurb"},...bl):null,
-          status?el("p",{class:"bk-card-status"},status):null),
-        e.kids?cardItems(e.kids):null);}));}
+          status?el("p",{class:"bk-card-status"},status):null));}));}
 
   /* ---- the page ---- */
   st.notices=[];
@@ -630,7 +613,7 @@ function drawPage(X,P,o){
   if(deep) kids.push(...(U.multi?lone(U.m,U.a):module(U.m,2)));
   else{
     /* on the contents page a run of modules of one activity (and bare activities) is one list of cards */
-    let run=[];const flush=()=>{if(run.length) kids.push(cardList(run));run=[];};
+    let run=[];const flush=()=>{if(run.length) kids.push(cardItems(run));run=[];};
     (design.modules||[]).forEach(m=>{const a=m.activities.find(R.isShown);
       if(U.kind==="contents"&&!R.isMulti(m)&&a) run.push({a,src:m});
       else{flush();kids.push(...module(m,2));}});
@@ -667,8 +650,16 @@ function drawPage(X,P,o){
   const findHead=h=>{
     if(h.mtab){const m=st.mtabs.get(h.mod);return m&&m.get(norm(h.heading));}
     const r=st.heads.get(h.act);return r?(h.title?r.title:h.tab?r.tabs.get(norm(h.heading)):r.text.get(norm(h.heading))):null;};
+  const namesPage=h=>{if(h.mtab||h.title||h.tab) return false;
+    const a=design.modules.flatMap(m=>m.activities).find(x=>x.id===h.act);
+    return !!a&&(a.npages||[]).some(n=>norm(plain(n.title))===norm(h.heading));};
   for(const p of st.pend){const h=p.hit,to=findHead(h),at=plan?(h.mtab?HOME:plan.byKey.has(h.act)?h.act:null):null;
-    const lose=()=>{p.a.tag="";p.a.attrs={};st.marked.push({kind:"heading",what:"the link to “"+h.heading+"”",where:p.where});
+    const lose=()=>{p.a.tag="";p.a.attrs={};
+      /* a link by a page's title (format 0.17) finds a page, and pages are not drawn as pages yet: it is drawn as its words and counted
+         in the report's one line about pages, not reported as a heading that is nowhere */
+      if(namesPage(h)){st.pageLinks.push({heading:h.heading,where:p.where});
+        p.a.kids.unshift(comment("booklet: the link to “"+h.heading+"” ("+p.where+"): it names a page, and pages are not drawn as pages yet: drawn as its words"));return;}
+      st.marked.push({kind:"heading",what:"the link to “"+h.heading+"”",where:p.where});
       p.a.kids.unshift(comment("booklet: the link to “"+h.heading+"” ("+p.where+"): "+MARKED.heading));};
     if(to){st.refs.push({a:p.a,to:()=>to});st.counts.links++;}
     else if(at&&at!==KEY) xr.later.push({a:p.a,key:at,from:KEY,find:T=>T.findHead(h),ok:()=>{st.counts.links++;},lose});
@@ -701,7 +692,7 @@ function drawPage(X,P,o){
   if(xr) xr.pages.set(KEY,{findHead,idOf,modHead:st.modHead,top:st.top});
 
   return {article,bookTitle,title:deep?pageTitle:plain(design.title)||pageTitle,description:describe(st.lede?descText(st.lede):firstPara(article)),
-    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript||needsScript(article),keyed:!!st.keyed,readOnly:st.readOnly,theme:look.report,bodyAttrs:look.attrs};}
+    lang:P.lang||"",counts:st.counts,marked:st.marked,pageLinks:st.pageLinks,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript||needsScript(article),keyed:!!st.keyed,readOnly:st.readOnly,theme:look.report,bodyAttrs:look.attrs};}
 
 /* needsScript(article): THE RULE for whether a compiled page links booklet.js. One small function, so it can be read, tested and
    changed in one place. It looks at the finished page (every link resolved, the heading links and the contents list in), and

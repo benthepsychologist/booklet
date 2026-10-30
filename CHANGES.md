@@ -2,6 +2,28 @@
 
 What changed in each version of the format, newest first. `SPEC.md` states the rules as they are now and carries no history; this file keeps it. Section numbers are those of `SPEC.md`. A version marked "wording only", "drawing only", "the reference renderer only" or "wording and the reference renderer" changed no file: the marker stayed as it was.
 
+## Changes from v0.16
+
+The format becomes 0.17 and the renderer 0.17.0 (released 2026-10-30).
+
+- **Pages: a tree inside a tab** (section 3, "Pages: a tree inside a tab"; section 4). A page line, `> [!page|id parent:x icon:name] Title`, starts a named page in a tab: an activity holds tabs, a tab holds pages, and a thematic break splits a page into `***` sections (in 0.15 and 0.16 it was called a page break and a page had no name). A tab with no page line is one page, as every activity in use today is. The rules (ids, `parent:`, reading order, where a page line may stand, Back and Next, the counter) are in section 3. A menu of the pages, a search and a list of the pages that link to the one on show are a renderer's, and the format defines no syntax for them. Where the pages design was silent the rules follow what the Obsidian plugin (0.8.0) chose.
+- **A first word that holds `:` is a setting** (section 4). On every kind, so `> [!page|parent:map] Title` is a page with no written id under `map`. Ids never hold `:`, so nothing that was an id is lost; on a kind that needs an id the line gets the report for a missing id in place of the report for an invalid one. (The Obsidian plugin applies it to page lines only; the two differ only on a line that is an error anyway.)
+- **`parent:` leaves the activity line** (section 3, section 4's table). An activity no longer sits under another and a module is never a wiki. `parent:` on an activity line is an error in the linter, and a reader reports it as a setting the kind does not take and ignores it; there is no transition. The wiki of 0.16 becomes one activity whose pages are page lines; an activity that keeps entries cannot become a page and stays an activity, grouped by a module's tabs. This is the old "pages are pagination" rule turned round: in 0.15 and 0.16 a thematic break was called a page break and a page had no name; in 0.17 a thematic break splits a page into `***` sections and "page" means the named thing in the tree. Every file with a `***` keeps its meaning.
+- **A `[!page]` line is a defined kind** (section 4). `> [!page] Title` was a reading callout of the author's own kind in 0.16; it is now a page line.
+- **Design after the records** (section 8). Design written after the records region's closing `%%` is read as design, as it was, but a save now leaves it where it is, after the records, instead of moving it above them: a writer leaves everything it did not change as and where it was. The linter reports it once, with what it holds. A design after the region that ends inside a code fence that is never closed still fails the linter as an unclosed fence, but no longer gives a writer a reason to refuse the file, since nothing is moved into the fence; adding a region after a body that ends in such a fence may still be refused.
+- **`description:`** (section 2). An optional front matter key: one sentence of plain words for whoever shows a description of the file (a search result, a link preview, the blurb of a card); without it a reader uses the first paragraph. The linter warns on an empty one and on one that starts a multi-line value.
+- **`entries:folded`** (section 3, "Kept entries, folded"; section 4's table). A setting on a `repeat` activity's line that says its kept-entries list starts folded. The name is `entries:folded` and the place is the activity's own line; the plugin reads the mark in a later release, and a renderer that has no such fold ignores it and keeps it as written.
+- **The marker is `booklet: "0.17"`** everywhere the format names its version, in the linter, `SKILL.md`, the examples and the test fixtures. The registry's modules are not re-marked here.
+
+**Known, and left as it is in this version:**
+
+- A thematic-break line alone on a line inside a `$$` display-math block: whether it splits a page is open (section 13).
+- The pages design also makes a bare activity read only itself; this version does not change that rule.
+
+**Not yet supported in the reference renderer.** The reference renderer draws a page tree with a trail above a page, Back, Up and Next, and cards for the pages under a page. It does not draw a menu of the pages, a search of the pages, a "Mentioned on" list of the pages that link to the one on show, or "Show N more" for a long row of child pages, and it no longer draws a module as a wiki (a tree of activities): `parent:` on an activity line is reported and ignored. The format defines no syntax for the menu, the search, the list or the button, so no file loses anything by their absence; a wiki written with `parent:` on activity lines loses its tree until its activities are made pages.
+
+The marker is `booklet: "0.17"`. A file marked `"0.16"` opens with a notice; change its marker to `"0.17"`.
+
 ## Changes in v0.16.1: the reference renderer only
 
 Nothing a file may say has changed: the marker stays `booklet: "0.16"`, and no file needs touching. The renderer is 0.16.1.

@@ -264,7 +264,6 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-cards{list-style:none!important;margin:1rem 0 2rem!important;padding:0!important;display:grid!important;gap:.6rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-card{display:grid!important;grid-template-columns:2.4rem 1fr!important;gap:.15rem .8rem!important;align-items:start!important;margin:0!important;padding:.8rem .95rem!important;
   border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important;background:var(--bk-surface)!important}
-.booklet:not(#bk):not(#bk):not(#bk) .bk-card>.bk-cards{grid-column:2!important;margin:.5rem 0 0!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-card-pic{display:flex!important;align-items:center!important;justify-content:center!important;width:2.4rem!important;height:2.4rem!important;border-radius:var(--bk-radius-small)!important;
   background:var(--bk-accent-soft)!important;color:var(--bk-accent)!important;font-weight:800!important;font-size:1.05rem!important;line-height:1!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-card-pic .bk-ci{color:inherit!important}

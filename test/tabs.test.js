@@ -8,7 +8,7 @@ const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-const FM='---\nbooklet: "0.16"\nid: local/tabs\ntitle: "Tabs"\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.17"\nid: local/tabs\ntitle: "Tabs"\nlang: en\n---\n\n';
 const A=P.boot();
 const role=r=>find(P.main(),n=>n.attrs&&n.attrs.role===r);
 const draw=id=>{A.screen=id;A.render();return P.main();};
@@ -109,18 +109,6 @@ const MOD=FM+"> [!module|m] M\n\nThe module's words.\n\n> [!tab|learn] Learn\n\n
  chk("opening an activity puts the overview on its tab: back from Read first, Learn is on show",role("tab")[0].attrs["aria-selected"]==="true"&&listed()==="Read first,More",listed());
  const R=A.parseFile(MOD);
  chk("cards keep their numbers in the module, whichever tab lists them",(()=>{click(role("tab")[1]);return /2/.test(texts(find(role("tabpanel")[0],hasClass("card"))[0]||{children:[]}));})());}
-
-/* 5b. a wiki module (activities under one another, `parent:`) with tabs: a tab lists the pages at the top that are in it; the
-   ones under them stay under them */
-{const WK=FM+"> [!module|w] W\n\n> [!tab] Guide\n\n> [!tab] Tools\n\n> [!activity|top] Top\n\nTop words.\n\n> [!activity|kid parent:top tab:tools] Kid\n\nKid words.\n\n"+
-   "> [!activity|tool tab:tools] Tool\n\nTool words.\n\n> [!module|w end] End\n";
- A.loadText(WK);draw(A.moduleScreen("w"));
- const cardsIn=()=>["Top","Kid","Tool"].filter(t=>find(role("tabpanel")[0]||{children:[]},hasClass("card")).some(c=>texts(c).includes(t))).join();
- chk("a wiki module with tabs draws its tab bar, and the first tab lists its top page",role("tablist").length===1&&cardsIn()==="Top",cardsIn());
- click(role("tab")[1]);
- chk("the second lists its own top page; a page under another stays under it, whatever its tab:",cardsIn()==="Tool",cardsIn());
- draw("w/kid");draw(A.moduleScreen("w"));
- chk("opening a page under another puts the overview on its top page's tab",role("tab")[0].attrs["aria-selected"]==="true");}
 
 /* 5c. a module tab's prose is the module's: a link in it finds a title in its own module, not a bare activity of the same
    title (renderModulePage draws the tab's blocks in the scope of the module's first activity) */

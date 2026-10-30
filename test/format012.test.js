@@ -11,15 +11,15 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
-const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.17"\ntitle: T\nlang: en\n---\n\n';
 (async()=>{
  const A=P.boot();
  const mod=R=>R.template.modules[0];
  const acts=R=>mod(R).activities;
 
  /* ---- the settings table ---- */
- chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, icon:, parent:, status: and tab:",
-   JSON.stringify(A.KIND_SETTINGS.module)==='["end","icon:"]'&&JSON.stringify(A.KIND_SETTINGS.activity)==='["repeat","daily","hidden","icon:","parent:","status:","tab:"]');
+ chk("KIND_SETTINGS: a module takes end and icon:, an activity takes repeat, daily, hidden, entries:, icon:, status: and tab: (0.17: parent: is a page line's)",
+   JSON.stringify(A.KIND_SETTINGS.module)==='["end","icon:"]'&&JSON.stringify(A.KIND_SETTINGS.activity)==='["repeat","daily","hidden","entries:","icon:","status:","tab:"]'&&JSON.stringify(A.KIND_SETTINGS.page)==='["icon:","parent:"]');
  {const R=A.parseFile(FM+"> [!module|m icon:compass] M\n\n> [!activity|a icon:notebook-pen] A\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
   chk("icon: on a module and on an activity is read, with nothing reported",R.ok&&R.unread.length===0&&mod(R).icon==="compass"&&acts(R)[0].icon==="notebook-pen"&&acts(R)[1].icon===undefined,JSON.stringify(R.unread));}
  {const R=A.parseFile(FM+"> [!module|m icon:no-such-picture] M\n\n> [!activity|a icon:Compass] A\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
@@ -29,26 +29,24 @@ const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
  {const R=A.parseFile(FM+"> [!module|m] M\n\n> [!activity|a icon:compass] A\n\n> [!text|q icon:compass] Q\n\n> [!module|m end] End\n");
   chk("icon: on a question is a setting the kind does not take",R.unread.some(x=>/a text line takes no “icon:”/.test(x)),JSON.stringify(R.unread));}
 
- /* ---- parent: a tree of activities ---- */
+ /* ---- parent: on an activity line (0.12 to 0.16 placed activities in a tree; 0.17 reports it and ignores it) ---- */
  const act=(id,parent)=>"> [!activity|"+id+(parent?" parent:"+parent:"")+"] "+id.toUpperCase()+"\n\n";
  const tree=lines=>{const R=A.parseFile(FM+"> [!module|m] M\n\n"+lines.map(([i,p])=>act(i,p)).join("")+"> [!module|m end] End\n");return {R,a:acts(R)};};
+ const noTake=R=>R.unread.filter(x=>/an activity line takes no “parent:”, so it was ignored/.test(x)).length;
  {const {R,a}=tree([["root"],["x","root"],["y","x"],["z","root"],["w"]]);
-  chk("a tree is kept depth first: a parent, its first child and that child's children, then the next sibling",a.map(x=>x.id).join()==="m/root,m/x,m/y,m/z,m/w",a.map(x=>x.id).join());
-  chk("each activity keeps its parent's address; the top has none, and the renderer keeps no depth",a.map(x=>x.parent||"-").join()==="-,m/root,m/x,m/root,-"&&a.every(x=>x.depth===undefined),a.map(x=>x.parent).join());
-  chk("a file written parent first reports nothing",R.unread.length===0);}
+  chk("0.17: activities written with parent: are not placed under one another: the file's order, no parent on any of them, no depth",a.map(x=>x.id).join()==="m/root,m/x,m/y,m/z,m/w"&&a.every(x=>x.parent===undefined&&x.depth===undefined),a.map(x=>x.id+">"+x.parent).join());
+  chk("a file written parent first reports each line: a setting an activity line does not take, ignored (0.17)",R.unread.length===3&&noTake(R)===3,JSON.stringify(R.unread));}
  {const {a}=tree([["a"],["b","a"],["c"],["d","a"]]);
-  chk("children of one parent keep the file's order, even with another activity between them",a.map(x=>x.id).join()==="m/a,m/b,m/d,m/c",a.map(x=>x.id).join());}
- {const {a}=tree([["a","nobody"],["b","a"]]);
-  chk("an activity whose parent is not in its module sits at the top",a[0].id==="m/a"&&a[0].parent===undefined&&a[1].parent==="m/a");}
+  chk("children are not gathered under their parent: another activity between them stays between them, in the file's order",a.map(x=>x.id).join()==="m/a,m/b,m/c,m/d"&&a.every(x=>x.parent===undefined),a.map(x=>x.id).join());}
+ {const {R,a}=tree([["a","nobody"],["b","a"]]);
+  chk("a parent: that names nothing, or something, makes no difference: both are reported and ignored, both at the top",a[0].id==="m/a"&&a[0].parent===undefined&&a[1].parent===undefined&&noTake(R)===2);}
  {const {a}=tree([["a","b"],["b","a"],["c","c"]]);
-  chk("an activity that is its own ancestor is drawn once, at the top",a.length===3&&new Set(a.map(x=>x.id)).size===3&&a.filter(x=>!x.parent).length>=2&&a.every(x=>x.id!==x.parent),JSON.stringify(a.map(x=>[x.id,x.parent])));}
+  chk("a loop, or an activity under itself, is nothing either: each is drawn once, at the top, in the file's order",a.map(x=>x.id).join()==="m/a,m/b,m/c"&&a.every(x=>x.parent===undefined),JSON.stringify(a.map(x=>[x.id,x.parent])));}
  {const {R,a}=tree([["a"],["b"],["c"]]);
-  chk("a module with no parent anywhere is a flat list, as before: no parent, the file's order",a.map(x=>x.id).join()==="m/a,m/b,m/c"&&a.every(x=>x.parent===undefined)&&R.unread.length===0);}
- {const T=A.activityTree([{id:"m/a"},{id:"m/b",parent:"m/a"},{id:"m/a",parent:"m/b"}]);
-  chk("when two activities share an id the first is the one a parent names",T.order.length===3&&T.parent[1]==="m/a");}
+  chk("a module with no parent anywhere is a flat list, as before: no parent, the file's order, nothing reported",a.map(x=>x.id).join()==="m/a,m/b,m/c"&&a.every(x=>x.parent===undefined)&&R.unread.length===0);}
  {const R=A.parseFile(FM+"> [!module|p] P\n\n"+act("a")+act("b","a")+"> [!module|p end] End\n\n> [!module|q] Q\n\n"+act("a")+act("b","zzz")+"> [!module|q end] End\n");
   const q=R.template.modules[1].activities;
-  chk("a parent is looked for in its own module only",R.template.modules[0].activities[1].parent==="p/a"&&q[1].parent===undefined,JSON.stringify(q.map(x=>x.parent)));}
+  chk("in two modules alike (the parent in its own module, or none): every activity is at the top and each parent: is reported",R.template.modules[0].activities[1].parent===undefined&&q[1].parent===undefined&&noTake(R)===2,JSON.stringify(R.unread));}
 
  /* ---- a module's opening ---- */
  {const R=A.parseFile(FM+"> [!module|m] M\n\n> [!notice]\n> license: Free.\n\nFirst paragraph here.\n\nSecond one.\n\n> [!activity|a] A\n\nIn the activity.\n\n> [!activity|b] B\n\n> [!module|m end] End\n");
@@ -108,17 +106,16 @@ const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
  {const N=10000,chain=Array.from({length:N},(_,i)=>"> [!activity|a"+i+(i?" parent:a"+(i-1):"")+"] A"+i+"\n\n").join("");
   const t0=Date.now(),R=A.parseFile(FM+"> [!module|m] M\n\n"+chain+"> [!module|m end] End\n");
   const a=acts(R);
-  chk("a chain of 10,000 activities each under the one before opens (no stack overflow) and keeps its order and its parents",R.ok&&a.length===N&&a[N-1].parent==="m/a"+(N-2)&&a[0].id==="m/a0",R.ok+" "+a.length);
+  chk("a chain of 10,000 activities each written under the one before opens (no stack overflow), keeps its order, places none under another (0.17) and reports each parent:",R.ok&&a.length===N&&a[0].id==="m/a0"&&a[N-1].id==="m/a"+(N-1)&&a.every(x=>x.parent===undefined)&&noTake(R)===N-1,R.ok+" "+a.length+" "+noTake(R));
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"f012d-")),f=path.join(tmp,"deep.md");
   fs.writeFileSync(f,FM+"> [!module|m] M\n\n"+chain+"> [!module|m end] End\n");
-  const t1=Date.now(),r=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"}),dt=Date.now()-t1;
-  chk("the linter walks that chain in under two seconds, with no warning",r.status===0&&dt<2000&&/0 errors · 0 warnings/.test(r.stdout),dt+"ms "+r.stdout.slice(-120));
+  /* The time limits below are for a quadratic or stack-blowing linter, which takes minutes or fails outright on these sizes; they are 15 s because a slow CI runner takes several times the ~1 s of a quiet box. */
+  const t1=Date.now(),r=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8",maxBuffer:1<<28}),dt=Date.now()-t1;
+  chk("the linter reads that chain in under 15 seconds, one error per parent: (an activity line takes none, 0.17)",r.status===1&&dt<15000&&(r.stdout.match(/an activity line takes no `parent:` setting/g)||[]).length===N-1&&r.stdout.includes((N-1)+" errors"),dt+"ms "+r.stdout.slice(-120));
   const loopy=FM+"> [!module|m] M\n\n"+Array.from({length:3000},(_,i)=>"> [!activity|a"+i+" parent:a"+((i+1)%3000)+"] A"+i+"\n\n").join("")+"> [!module|m end] End\n";
-  fs.writeFileSync(f,loopy);const t2=Date.now(),r2=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"});
-  chk("a loop 3,000 long is reported once per member, fast",r2.status===0&&(r2.stdout.match(/loops back/g)||[]).length===3000&&Date.now()-t2<3000,String(Date.now()-t2));
+  fs.writeFileSync(f,loopy);const t2=Date.now(),r2=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8",maxBuffer:1<<28});
+  chk("a loop 3,000 long is one error per member, fast",r2.status===1&&(r2.stdout.match(/an activity line takes no `parent:` setting/g)||[]).length===3000&&Date.now()-t2<15000,String(Date.now()-t2));
   fs.rmSync(tmp,{recursive:true,force:true});}
- {const r=spawnSync("python3",[P.R+"/lint-booklet.py",P.R+"/test/fixtures/lint-parent-bare.md"],{encoding:"utf8"});
-  chk("parent: between activities outside every module fence places among them (0.13), and the linter has nothing to say",r.status===0&&/0 errors · 0 warnings/.test(r.stdout),r.stdout);}
 
  /* ---- review round 2 ---- */
  chk("isModuleLink: a target whose path ends .booklet or .booklet.md, with a #… or ?… suffix or a space, is a module link; the reviewer's near misses are not",
@@ -159,22 +156,22 @@ const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
   const lint=(name,t)=>{const f=path.join(tmp,name);fs.writeFileSync(f,t);const r=spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"});
     return {status:r.status,out:r.stdout,errors:r.stdout.split("\n").filter(l=>/^ERROR/.test(l)),warns:r.stdout.split("\n").filter(l=>/^warn/.test(l))};};
   const F=(body)=>FM+"> [!module|m] M\n\n"+body+"> [!module|m end] End\n";
-  let l=lint("ok.md",F("Opening prose.\n\n> [!activity|a icon:compass] A\n\n> [!activity|b parent:a icon:sprout] B\n\n"));
-  chk("the linter accepts a module's opening, icon: and parent:",l.status===0&&l.errors.length===0&&l.warns.length===0,l.out);
+  let l=lint("ok.md",F("Opening prose.\n\n> [!activity|a icon:compass] A\n\n> [!activity|b icon:sprout] B\n\n"));
+  chk("the linter accepts a module's opening and icon:",l.status===0&&l.errors.length===0&&l.warns.length===0,l.out);
   l=lint("icon.md",F("> [!activity|a icon:compas] A\n\n"));
   chk("an icon: name outside the list is an error, named",l.status===1&&/line 9: `icon:compas` is not a name in Booklet's icon set/.test(l.errors[0]||""),l.out);
   l=lint("end.md",FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!module|m end icon:compass] End\n");
   chk("icon: on a module's end line is an error",l.status===1&&/end line takes no `icon:`/.test(l.errors[0]||""),l.out);
   l=lint("par.md",F("> [!activity|a parent:nobody] A\n\n"));
-  chk("a parent that is not in the module is a warning",l.status===0&&l.warns.length===1&&/`parent:nobody` is not an activity of the module 'm', so 'a' sits at the top/.test(l.warns[0]),l.out);
+  chk("a parent: on an activity is an error whether or not it names anything (0.17: it is a page line's setting; the kind takes none)",l.status===1&&l.errors.length===1&&/line 9: an activity line takes no `parent:` setting \(it takes /.test(l.errors[0]),l.out);
   l=lint("loop.md",F("> [!activity|a parent:b] A\n\n> [!activity|b parent:a] B\n\n"));
-  chk("a loop is a warning, one per activity in it",l.status===0&&l.warns.length===2&&l.warns.every(w=>/loops back/.test(w)),l.out);
+  chk("a loop of activities is one error per activity (no tree is built)",l.status===1&&l.errors.length===2&&l.errors.every(w=>/an activity line takes no `parent:` setting/.test(w)),l.out);
   l=lint("self.md",F("> [!activity|a parent:a] A\n\n"));
-  chk("an activity under itself is a loop",l.warns.length===1&&/loops back/.test(l.warns[0]),l.out);
+  chk("an activity under itself is the same one error",l.errors.length===1&&/an activity line takes no `parent:` setting/.test(l.errors[0]),l.out);
   l=lint("par2.md",FM+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!module|m end] End\n\n> [!module|n] N\n\n> [!activity|b parent:a] B\n\n> [!module|n end] End\n");
-  chk("a parent in another module is not in this one",l.warns.length===1&&/`parent:a` is not an activity of the module 'n'/.test(l.warns[0]),l.out);
-  l=lint("par3.md",F("> [!activity|a parent:bad id] A\n\n> [!activity|b parent:ok_x] B\n\n"));
-  chk("a parent that is not an id is an error",l.status===1&&/`parent:ok_x` must be an activity id/.test(l.errors.join("|")),l.out);
+  chk("a parent: in another module is the same one error",l.errors.length===1&&/an activity line takes no `parent:` setting/.test(l.errors[0]),l.out);
+  l=lint("par3.md",F("> [!activity|b parent:ok_x] B\n\n"));
+  chk("a parent: that is not an id is still only that one error on an activity",l.status===1&&l.errors.length===1&&/an activity line takes no `parent:` setting/.test(l.errors[0]),l.out);
   const DATA='```booklet data\n[{"label":"x","icon":"compass","link":"#A"},{"label":"y","icon":"compas"}]\n```\n^d\n\n```booklet query\nfrom: d\nas: tiles\n```\n\n';
   l=lint("role.md",F("> [!activity|a] A\n\n"+DATA));
   chk("an icon role value outside the list is a warning, named",l.status===0&&l.warns.length===1&&/the rows' `icon` holds 'compas'.*not in Booklet's icon set/.test(l.warns[0]),l.out);

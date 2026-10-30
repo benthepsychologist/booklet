@@ -26,7 +26,7 @@ let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FA
 const X=E.load();
 const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-compile-pages-"));
 const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
-const HEAD='---\nbooklet: "0.16"\nid: t/ID\ntitle: TITLE\nlang: LANG\n---\n\n';
+const HEAD='---\nbooklet: "0.17"\nid: t/ID\ntitle: TITLE\nlang: LANG\n---\n\n';
 const booklet=(title,body,o)=>HEAD.replace("TITLE",title).replace("ID",(o&&o.id)||"x").replace("LANG",(o&&o.lang)||"en")+body;
 const compileText=(text,name,form,o)=>C.compile([{text,name,dir:TMP}],{form:form||"standalone",engine:X,...o}).results[0];
 const keysOf=r=>[...r.files.keys()].sort();
@@ -107,7 +107,11 @@ chk("the set compiles",run.results.every(r=>r.rep.ok),run.results.filter(r=>!r.r
   chk("the first page has no way back and the last none forward",!/rel="prev"/.test(nav("flour/"))&&/rel="next" href="\.\.\/shaping\/"/.test(nav("flour/"))&&!/rel="next"/.test(nav("rye/"))&&/rel="prev" href="\.\.\/crust\/"/.test(nav("rye/")));
   chk("a page in the middle has both, and a link to the contents",/rel="prev" href="\.\.\/flour\/"/.test(nav("shaping/"))&&/rel="next" href="\.\.\/crust\/"/.test(nav("shaping/"))&&/class="bk-up" href="\.\.\/"/.test(nav("shaping/")));
   const c=t("");
-  chk("on the contents page an activity under another is a card inside the card of its parent",/<a class="bk-card-title" href="flour\/">[^]*?<ol class="bk-cards">\s*<li class="bk-card">[^]*?<a class="bk-card-title" href="shaping\/">/.test(c));
+  /* 0.17: the fixture's "shaping" line still carries `parent:flour` (an activity line no longer takes it); it is reported and ignored, so
+     the card is a sibling of the card of the activity it names, in the same list, and no list of cards sits inside a card */
+  chk("on the contents page an activity line's `parent:` is ignored: the activity is a card beside the card of the one it names, not inside it",
+    /<a class="bk-card-title" href="flour\/">[^]*?<\/li>\s*<li class="bk-card">[^]*?<a class="bk-card-title" href="shaping\/">/.test(c)&&!/<li class="bk-card">(?:(?!<\/li>)[^])*<ol class="bk-cards">/.test(c));
+  chk("…and the compile report says the setting was ignored",run.results.find(r=>r.rep.name==="compile-pages").rep.problems.some(x=>/activity line takes no “parent:”/.test(x)));
   chk("a card has its title, its picture (an icon, an emoji or a number), its blurb and its status line",
     /bk-card-pic" aria-hidden="true"><span class="bk-ci"/.test(c)&&/bk-card-pic" aria-hidden="true">🍞</.test(c)&&/bk-card-pic" aria-hidden="true">1</.test(c)
     &&/<a class="bk-card-title" href="shaping\/">Shaping the loaf<\/a>/.test(c)&&/bk-card-blurb">A hot oven/.test(c)&&/bk-card-status">A morning's work</.test(c)&&/bk-card-status">1 question</.test(c));
@@ -277,12 +281,12 @@ const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\nWords of "+t+".\n\n";
 
 /* ======================= 11. gaps found by the 0.2.0 trim pass (made-up booklets) ======================= */
 /* a module of several activities where only one is shown (the others are `hidden`, which the renderer reads as home: false):
-   one page, the shown activity under its own heading, a hidden parent adding no depth, nothing of the hidden ones on the page */
+   one page, the shown activity under its own heading, nothing of the hidden ones on the page (0.17: no activity is under another, so a hidden activity before or after it adds no depth either) */
 {const text=booklet("Garden notes","> [!module|plot] The plot\n\nOpening words of the plot.\n\n> [!activity|plan hidden] Planning the plot\n\nHidden planning words.\n\n"
-    +"> [!activity|sow parent:plan] Sowing the seeds\n\nSow the seeds in rows.\n\n> [!activity|tidy hidden parent:sow] Tidying up\n\nHidden tidying words.\n\n> [!module|plot end] End\n",{id:"garden"});
+    +"> [!activity|sow] Sowing the seeds\n\nSow the seeds in rows.\n\n> [!activity|tidy hidden] Tidying up\n\nHidden tidying words.\n\n> [!module|plot end] End\n",{id:"garden"});
   const r=compileText(text,"garden"),page=r.files.get("garden/index.html")||"";
   chk("a module of three activities with two hidden compiles to the one page, with no contents page",r.rep.ok&&JSON.stringify(keysOf(r))===JSON.stringify(["garden/index.html"])&&!/bk-cards|bk-pager|bk-crumb/.test(page),r.rep.refused||keysOf(r).join(", "));
-  chk("…the shown activity has a heading of its own, one step under the module's (a hidden parent adds no depth)",
+  chk("…the shown activity has a heading of its own, one step under the module's (a hidden activity adds no depth)",
     /<h2 id="the-plot">The plot /.test(page)&&/<section class="bk-activity">\s*<h3 id="sowing-the-seeds">Sowing the seeds /.test(page),(page.match(/<h[1-6][^>]*>[^<]*/g)||[]).join(" | "));
   chk("…its words and the module's opening are there, and nothing of the two hidden activities (title or words)",
     /Sow the seeds in rows\./.test(page)&&/Opening words of the plot\./.test(page)&&!/Planning the plot|Hidden planning|Tidying up|Hidden tidying/.test(page),"");

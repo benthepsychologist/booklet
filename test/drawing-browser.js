@@ -12,7 +12,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const CSP=require('./csp.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const FM=(t,x)=>`---\nbooklet: "0.16"\ntitle: ${t}\nlang: en\n${x||''}---\n\n`;
+const FM=(t,x)=>`---\nbooklet: "0.17"\ntitle: ${t}\nlang: en\n${x||''}---\n\n`;
 const MATHS=FM('Fractions','start: home\n')+`# Fractions
 
 A short set of questions about **fractions**, for a reader who has not opened the module yet.
@@ -76,7 +76,7 @@ Words of the activity.
 
 > [!module|o end] End
 `;
-const WIKI=FM('A wiki')+`> [!module|w] The \`wiki\`
+const WIKI=FM('Parents')+`> [!module|w] The \`flat\` module
 
 > [!activity|top] The **top** page
 
@@ -226,29 +226,15 @@ You arrived by a card's link.
    await shot(p,'home-after-back-1280-paper');
    await p.context().close();}
 
-  /* ---------- D4: the wiki's crumbs, tree, search ---------- */
+  /* ---------- D4: marks in the titles of a module whose activity lines carry parent: (0.17: reported and ignored, so a flat list) ---------- */
   {const p=await open(WIKI,'wiki');
    const v=await view(p);
-   ok(/^\@home|module:/.test(v)||true,'the wiki opens ('+v+')');
-   if(!/w\/|top|kid/.test(v)){await p.locator('#main button.mode').first().click();await p.waitForTimeout(500);}
-   if((await view(p)).startsWith('module')||(await view(p))==='@home'){await p.locator('#main button.mode, #main .wk-cards button').first().click().catch(()=>{});await p.waitForTimeout(500);}
-   /* open the grandchild by the tree */
-   const tree=await p.evaluate(()=>[...document.querySelectorAll('.wk-tree .wk-link')].map(a=>({t:a.textContent,strong:a.querySelectorAll('strong').length,em:a.querySelectorAll('em').length,math:a.querySelectorAll('math').length,a:a.querySelectorAll('a').length})));
-   ok(tree.length>=1&&tree[0].strong===1&&tree[0].t==='The top page','the wiki tree draws a title\'s bold ('+JSON.stringify(tree[0])+')');
-   await p.locator('.wk-tree details > summary').first().click();await p.waitForTimeout(300);
-   await p.locator('.wk-tree .wk-link').filter({hasText:'A child page'}).first().click();await p.waitForTimeout(300);
-   await p.locator('.wk-tree details > summary').nth(1).click().catch(()=>{});await p.waitForTimeout(300);
-   await p.locator('.wk-tree .wk-link').filter({hasText:/Grand/}).first().click();await p.waitForTimeout(500);
-   const crumbs=await p.evaluate(()=>[...document.querySelectorAll('.wk-crumbs li')].map(li=>({t:li.textContent,strong:li.querySelectorAll('strong').length,em:li.querySelectorAll('em').length,math:li.querySelectorAll('math').length,btnLink:li.querySelectorAll('button a').length})));
-   ok(crumbs.length>=3&&crumbs[0].t==='The wiki'&&crumbs.some(c=>c.strong===1)&&crumbs.some(c=>c.em===1)&&crumbs.some(c=>c.math===1)&&crumbs.every(c=>c.btnLink===0),'the breadcrumbs draw each title\'s marks ('+JSON.stringify(crumbs)+')');
+   ok(/^module:|^@home/.test(v),'the module opens ('+v+')');
+   if(v==='@home'){await p.locator('#main button.mode').first().click();await p.waitForTimeout(500);}
+   const cardsT=await p.evaluate(()=>[...document.querySelectorAll('#main button.mode')].map(c=>{const k=c.querySelector('.k');return {t:k.textContent,strong:k.querySelectorAll('strong').length,em:k.querySelectorAll('em').length,math:k.querySelectorAll('math').length};}));
+   ok(cardsT.length===3&&cardsT[0].strong===1&&cardsT[0].t==='The top page'&&cardsT[1].em===1&&cardsT[2].math===1,'the three cards, none under another, draw each title\'s marks ('+JSON.stringify(cardsT)+')');
+   await p.locator('#main button.mode').nth(2).click();await p.waitForTimeout(500);
    ok((await p.evaluate(()=>document.querySelector('#main h2').querySelectorAll('math').length))===1,'the page head draws the formula in the title');
-   /* search: typed words match the plain words, not the marks */
-   await p.locator('.wk-q').fill('child');await p.waitForTimeout(300);
-   const hits=await p.evaluate(()=>[...document.querySelectorAll('.wk-results .wk-hit')].map(h=>({t:h.textContent,em:h.querySelectorAll('em').length,path:(h.querySelector('.wk-path')||{}).textContent||''})));
-   ok(hits.length>=1&&hits[0].em===1&&!/[*_]/.test(hits[0].t+hits[0].path),'a search result draws its title\'s emphasis and its path is plain words ('+JSON.stringify(hits[0])+')');
-   await p.locator('.wk-q').fill('*child*');await p.waitForTimeout(300);
-   ok((await p.evaluate(()=>document.querySelectorAll('.wk-results .wk-hit').length))===0,'the marks are not searched: typing the asterisks finds nothing');
-   await p.locator('.wk-q').fill('');await p.waitForTimeout(200);
    await shot(p,'wiki-marked-titles-1280-paper');
    await p.context().close();}
 

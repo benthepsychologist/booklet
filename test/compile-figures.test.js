@@ -61,7 +61,7 @@ chk("a refused figure leaves the booklet compiling, with its places listed and a
   return r.rep.ok&&!!m&&/figure/.test(m.what+m.why)&&page.includes("<!-- booklet: ")&&C.reportText(run).includes(m.why)&&!/<svg[^>]*>[^]*<script/i.test(page.replace(/<!--[^]*?-->/g,""))&&!runsScript(page.replace(/<!--[^]*?-->/g,""));})());
 /* the reason is written into an HTML comment, and what it quotes of the figure must not be able to end the comment */
 {const evil='--><script>alert(1)</script><!--',svg='<svg viewBox="0 0 10 10"><rect id="'+evil+'" class="rg" data-r="box" width="5" height="5"/></svg>';
-  const text='---\nbooklet: "0.16"\nid: t/evil\ntitle: Evil\nlang: en\n---\n\n# Evil\n\n> [!widget|m readonly] Map\n> ![[#^m]]\n\n```booklet widget\n'
+  const text='---\nbooklet: "0.17"\nid: t/evil\ntitle: Evil\nlang: en\n---\n\n# Evil\n\n> [!widget|m readonly] Map\n> ![[#^m]]\n\n```booklet widget\n'
     +JSON.stringify({engine:"svg-regions",figures:[{id:"f",label:"F",svg,regions:["box"]}],regions:[{id:"box",label:"Box"}],copy:{h:"Map",p:"Here."}})+"\n```\n^m\n";
   const run=C.compile([{text,name:"evil",dir:__dirname}],{form:"standalone",engine:X,drawer:STUB.drawer}),r=run.results[0],page=r.files.get("evil/index.html")||"";
   chk("what a hostile figure quotes in its reason cannot end the comment that carries it",r.rep.ok&&r.rep.marked.some(m=>m.kind==="regionsFigure")&&!runsScript(page.replace(/<!--[^]*?-->/g,""))&&!page.includes(evil)&&!/-->\s*<script/.test(page),r.rep.refused);}
@@ -178,14 +178,14 @@ for(const [name,svg] of Object.entries(hdiag)){
   try{
     fs.writeFileSync(path.join(dir,"a.png"),png(64,48));fs.writeFileSync(path.join(dir,"b.gif"),gif(40,30));
     fs.writeFileSync(path.join(dir,"c.png"),png(1,1).subarray(0,16)); /* a PNG signature, then cut off before its size */
-    const text='---\nbooklet: "0.16"\nid: t/sizes\ntitle: Sizes\nlang: en\n---\n\n# Sizes\n\nImages.\n\n![A wave](a.png)\n\n![A gull](b.gif)\n\n![Cut off](c.png)\n';
+    const text='---\nbooklet: "0.17"\nid: t/sizes\ntitle: Sizes\nlang: en\n---\n\n# Sizes\n\nImages.\n\n![A wave](a.png)\n\n![A gull](b.gif)\n\n![Cut off](c.png)\n';
     const r=C.compile([{text,name:"sizes",dir}],{form:"standalone",engine:X}).results[0],page=r.files.get("sizes/index.html")||"";
     chk("the sizes are written on the images, after the alt text",/<img src="a\.png" alt="A wave" width="64" height="48"\s*\/?>/.test(page)&&/<img src="b\.gif" alt="A gull" width="40" height="30"\s*\/?>/.test(page),page.match(/<img[^>]*>/g));
     chk("an image whose size cannot be read is drawn as before, with no size",/<img src="c\.png" alt="Cut off"\s*\/?>/.test(page)||/Cut off/.test(page)&&!/c\.png" alt="Cut off" width/.test(page));
   }finally{fs.rmSync(dir,{recursive:true,force:true});}}
 
 /* ---- no browser: the source stays, and the reason is given ---- */
-{const text='---\nbooklet: "0.16"\nid: t/nobrowser\ntitle: No browser\nlang: en\n---\n\n# No browser\n\nA diagram.\n\n```mermaid\ngraph LR; A --> B\n```\n\nAfter it.\n';
+{const text='---\nbooklet: "0.17"\nid: t/nobrowser\ntitle: No browser\nlang: en\n---\n\n# No browser\n\nA diagram.\n\n```mermaid\ngraph LR; A --> B\n```\n\nAfter it.\n';
   for(const [label,opts] of [["PLAYWRIGHT names nothing",{}],["browser: false",{browser:false}],["browser: a path with no package",{browser:path.join(os.tmpdir(),"bk-no-such-playwright")}]]){
     const run=C.compile([{text,name:"nb",dir:__dirname}],{form:"standalone",engine:X,...opts}),r=run.results[0],page=r.files.get("nb/index.html")||"";
     chk("with no usable browser ("+label+") the booklet still compiles",r.rep.ok&&page.includes("After it."));
@@ -255,7 +255,7 @@ for(const [name,svg] of Object.entries(hdiag)){
 
 /* ======================= the fix round: what a review found, each held by a check that fails without its fix ======================= */
 const mkdir=p=>fs.mkdtempSync(path.join(os.tmpdir(),p));
-const widgetBooklet=(id,svg,extra)=>'---\nbooklet: "0.16"\nid: t/'+id+'\ntitle: '+id+'\nlang: en\n---\n\n# '+id+'\n\n> [!widget|m readonly] Map\n> ![[#^m]]\n\n```booklet widget\n'
+const widgetBooklet=(id,svg,extra)=>'---\nbooklet: "0.17"\nid: t/'+id+'\ntitle: '+id+'\nlang: en\n---\n\n# '+id+'\n\n> [!widget|m readonly] Map\n> ![[#^m]]\n\n```booklet widget\n'
   +JSON.stringify({engine:"svg-regions",figures:[{id:"f",label:"F",svg,regions:["box"]}],regions:[{id:"box",label:"Box"}],copy:{h:"Map",p:"Here."}})+"\n```\n^m\n"+(extra||"");
 
 /* ---- the Playwright package is looked for in named places only, never in the folder the compiler is started in ---- */
@@ -301,7 +301,7 @@ const batch=(pw,codes,o)=>G.drawBatch(X,codes,{playwright:pw,...(o||{})});
   chk("with no option, the browser run is allowed 240000 ms and one diagram 60000 ms",seen.length===2&&seen[0].opts.timeout===240000&&seen[0].job.timeout===60000,JSON.stringify(seen.map(s=>[s.opts.timeout,s.job.timeout])));
   chk("…and the options set both",seen[1].opts.timeout===1234&&seen[1].job.timeout===777);
   chk("…and compile() passes browserTimeout and diagramTimeout on",(()=>{const got=[];const real2=cp.spawnSync;cp.spawnSync=(c,a,o)=>{got.push([o.timeout,JSON.parse(o.input).timeout]);return {stdout:"",stderr:""};};
-    const d2=fakePw("");try{C.compile([{text:'---\nbooklet: "0.16"\nid: t/x\ntitle: X\nlang: en\n---\n\n# X\n\n```mermaid\ngraph LR; A --> B\n```\n',name:"x",dir:__dirname}],{form:"standalone",engine:X,browser:d2,browserTimeout:4321,diagramTimeout:987});}
+    const d2=fakePw("");try{C.compile([{text:'---\nbooklet: "0.17"\nid: t/x\ntitle: X\nlang: en\n---\n\n# X\n\n```mermaid\ngraph LR; A --> B\n```\n',name:"x",dir:__dirname}],{form:"standalone",engine:X,browser:d2,browserTimeout:4321,diagramTimeout:987});}
     finally{cp.spawnSync=real2;fs.rmSync(d2,{recursive:true,force:true});}return got.length===1&&got[0][0]===4321&&got[0][1]===987;})());}
 /* the answer is checked before it is believed: the wrong number of results, a reply that is not JSON, a request the page made */
 {const real=cp.spawnSync,dir=fakePw("");
@@ -369,7 +369,7 @@ const batch=(pw,codes,o)=>G.drawBatch(X,codes,{playwright:pw,...(o||{})});
   chk("…a class attribute left empty is left off, not written empty",r.ok&&!/class=""/.test(r.html)&&/<rect width="3" height="3"\/>/.test(r.html));}
 
 /* ---- the ids: per page, and not the library's ---- */
-{const text=n=>'---\nbooklet: "0.16"\nid: t/'+n+'\ntitle: Ids\nlang: en\n---\n\n# Ids\n\n## bk-'+n+'-dg1\n\nText.\n\n```mermaid\ngraph LR; A --> B\n```\n';
+{const text=n=>'---\nbooklet: "0.17"\nid: t/'+n+'\ntitle: Ids\nlang: en\n---\n\n# Ids\n\n## bk-'+n+'-dg1\n\nText.\n\n```mermaid\ngraph LR; A --> B\n```\n';
   const ids=h=>(h.match(/\sid="([^"]*)"/g)||[]).map(s=>s.slice(5,-1));
   const run=C.compile([{text:text("pa"),name:"pa",dir:__dirname},{text:text("pb"),name:"pb",dir:__dirname}],{form:"standalone",engine:X,drawer:STUB.drawer});
   const [a,b]=run.results.map((r,i)=>ids(r.files.get(["pa","pb"][i]+"/index.html")));
@@ -390,7 +390,7 @@ const batch=(pw,codes,o)=>G.drawBatch(X,codes,{playwright:pw,...(o||{})});
   chk("…also when the pointer is in the style",dstyle.ok&&dstyle.html.includes("url(#bk-dg1-other)")&&dstyle.html.includes('id="bk-dg1-other"'),dstyle.why||dstyle.html);}
 
 /* ---- an image on an activity's page, one folder down: the size is still written, and the address is reached from there ---- */
-{const text='---\nbooklet: "0.16"\nid: t/deepimg\ntitle: Deep\nlang: en\n---\n\n> [!module|m] Deep\n\n> [!activity|one] First\n\nWords.\n\n> [!activity|two] Second\n\n![A wave](compile-pictures/wave.png)\n\n> [!module|m end] End\n';
+{const text='---\nbooklet: "0.17"\nid: t/deepimg\ntitle: Deep\nlang: en\n---\n\n> [!module|m] Deep\n\n> [!activity|one] First\n\nWords.\n\n> [!activity|two] Second\n\n![A wave](compile-pictures/wave.png)\n\n> [!module|m end] End\n';
   const r=C.compile([{text,name:"deepimg",dir:path.join(__dirname,"compile-assets")}],{form:"standalone",engine:X,drawer:STUB.drawer}).results[0];
   const pg=r.files.get("deepimg/two/index.html")||"";
   const img=/<img [^>]*>/.exec(pg);
@@ -488,16 +488,16 @@ const batch=(pw,codes,o)=>G.drawBatch(X,codes,{playwright:pw,...(o||{})});
 
 /* ---- the report and the command line ---- */
 {const fences=n=>Array.from({length:n},(_,i)=>"```mermaid\ngraph LR; N"+(i+1)+" --> B"+(i%3===0?" with a long source that goes on and on and on":"")+"\n```\n").join("\n");
-  const text='---\nbooklet: "0.16"\nid: t/fences\ntitle: Fences\nlang: en\n---\n\n# Fences\n\n'+fences(23);
+  const text='---\nbooklet: "0.17"\nid: t/fences\ntitle: Fences\nlang: en\n---\n\n# Fences\n\n'+fences(23);
   const run=C.compile([{text,name:"fences",dir:__dirname}],{form:"standalone",engine:X}),lines=C.reportText(run).split("\n").filter(l=>/a mermaid fence/.test(l));
   const ordinals=lines.map(l=>(/its (\d+\w\w) diagram/.exec(l)||[])[1]);
   chk("each diagram that is shown as its source is named by its place among the booklet's diagrams, in every report line",lines.length===23&&ordinals.slice(0,4).join()==="1st,2nd,3rd,4th"&&ordinals.slice(10,13).join()==="11th,12th,13th"&&ordinals.slice(20,23).join()==="21st,22nd,23rd",ordinals.join());
   chk("…and by the first words of its source, clipped, so a reader can find it",/“graph LR; N2 --> B”/.test(lines[1])&&/“graph LR; N1 --> B with a lo…”/.test(lines[0]),lines.slice(0,2).join("\n"));
   chk("…the same name is in the page's comment",/<!-- booklet: a mermaid fence \(its 2nd diagram, “graph LR; N2 - -> B”\)/.test(run.results[0].files.get("fences/index.html")));
-  const emb=C.compile([{text:'---\nbooklet: "0.16"\nid: t/emb\ntitle: Emb\nlang: en\n---\n\n# Emb\n\n```mermaid\ngraph LR; A --> B\n```\n\nSecond:\n\n```mermaid\ngraph TD; C --> D\n```\n',name:"emb",dir:__dirname}],{form:"standalone",engine:X}).results[0];
+  const emb=C.compile([{text:'---\nbooklet: "0.17"\nid: t/emb\ntitle: Emb\nlang: en\n---\n\n# Emb\n\n```mermaid\ngraph LR; A --> B\n```\n\nSecond:\n\n```mermaid\ngraph TD; C --> D\n```\n',name:"emb",dir:__dirname}],{form:"standalone",engine:X}).results[0];
   chk("two fences in one activity are told apart in the report",emb.rep.marked.length===2&&emb.rep.marked[0].what!==emb.rep.marked[1].what&&/1st/.test(emb.rep.marked[0].what)&&/2nd/.test(emb.rep.marked[1].what));}
 {const dir=mkdir("bk-cli-"),fake=fakePw("require('fs').writeFileSync(process.env.BK_FAKE_MARK||'/dev/null','launched');throw new Error('stop here');"),mark=path.join(dir,"launched");
-  const book=path.join(dir,"d.booklet.md");fs.writeFileSync(book,'---\nbooklet: "0.16"\nid: t/d\ntitle: D\nlang: en\n---\n\n# D\n\n```mermaid\ngraph LR; A --> B\n```\n');
+  const book=path.join(dir,"d.booklet.md");fs.writeFileSync(book,'---\nbooklet: "0.17"\nid: t/d\ntitle: D\nlang: en\n---\n\n# D\n\n```mermaid\ngraph LR; A --> B\n```\n');
   const run=args=>cp.spawnSync(process.execPath,[path.join(__dirname,"..","compile","compile.js"),...args],{env:{...process.env,PLAYWRIGHT:fake,BK_FAKE_MARK:mark},encoding:"utf8"});
   try{
     const control=run(["--out",path.join(dir,"o1"),book]);

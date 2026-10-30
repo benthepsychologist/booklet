@@ -1,5 +1,5 @@
 ---
-booklet: "0.16"
+booklet: "0.17"
 id: fixture/compile-figure-tabs
 title: A trail map
 lang: en

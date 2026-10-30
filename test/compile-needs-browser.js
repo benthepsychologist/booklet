@@ -19,7 +19,7 @@ const C=require('../compile/compile.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 
 fs.rmSync(OUT,{recursive:true,force:true});fs.mkdirSync(OUT,{recursive:true});
-const SRC='---\nbooklet: "0.16"\nid: test/quiet\ntitle: A quiet page\nlang: en\n---\n\n# A quiet page\n\n'
+const SRC='---\nbooklet: "0.17"\nid: test/quiet\ntitle: A quiet page\nlang: en\n---\n\n# A quiet page\n\n'
  +'This made-up page has prose, quiet sections and nothing that needs a script.\n\n'
  +'## First section\n\nWords in the first section, qzone-one.\n\n- a list item qzone-two\n- another list item\n\n'
  +'### A part of it\n\nWords in a part of it, qzone-three.\n\n'

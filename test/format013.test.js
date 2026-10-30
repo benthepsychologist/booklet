@@ -6,7 +6,7 @@ const P=require("./page.js");
 const fs=require("fs"),path=require("path"),os=require("os"),{spawnSync}=require("child_process");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM='---\nbooklet: "0.16"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.17"\ntitle: T\nlang: en\n---\n\n';
 const REC="\n%%\n> [!records] App record — do not edit below this line\n\n";
 const fence=(info,body)=>"```"+info+"\n"+body+"\n```\n\n";
 /* the records a written file holds: [{scope, info, code}] in file order, read the way the format says (a fence after a records line) */
@@ -85,14 +85,14 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   const bare=(parent)=>FM+"> [!activity|top] Top\n\n> [!activity|kid parent:top] Kid\n\n> [!activity|other] Other\n\n> [!activity|grand parent:kid] Grand\n";
   const R=A.parseFile(bare());
   const acts=R.template.modules.map(m=>m.activities[0]);
-  chk("parent: places among bare activities: depth first, each with its parent's address",
-    acts.map(a=>a.id).join()==="top,kid,grand,other"&&acts.map(a=>a.parent||"-").join()==="-,top,kid,-",acts.map(a=>a.id+":"+a.parent).join());
-  chk("and nothing is reported",R.unread.length===0&&R.ok,JSON.stringify(R.unread));
+  chk("0.17: parent: places nothing among bare activities: the file's order, no parent on any of them",
+    acts.map(a=>a.id).join()==="top,kid,other,grand"&&acts.every(a=>a.parent===undefined),acts.map(a=>a.id+":"+a.parent).join());
+  chk("and each line is reported: an activity line does not take parent: (a page line does), and it is ignored",R.unread.length===2&&R.ok&&R.unread.every(x=>/an activity line takes no “parent:”, so it was ignored/.test(x)),JSON.stringify(R.unread));
   const miss=A.parseFile(FM+"> [!activity|a parent:nope] A\n\n> [!activity|b] B\n");
-  chk("a parent that is no bare activity leaves the activity at the top, as in a module",miss.template.modules[0].activities[0].parent===undefined&&miss.ok);
+  chk("a parent that names no bare activity is reported and ignored the same way, and the activity is at the top",miss.template.modules[0].activities[0].parent===undefined&&miss.ok);
   const L=lintOut(bare());
-  chk("the linter accepts parent: between bare activities, and no longer says it places nothing",/0 errors · 0 warnings/.test(L)&&!/places nothing/.test(L),L);
-  chk("the linter warns on a parent that is not among the bare activities, naming the module with no name",/`parent:nope` is not an activity of the module with no name/.test(lintOut(FM+"> [!activity|a parent:nope] A\n")));
+  chk("the linter refuses parent: between bare activities (an activity line takes none; it is a page line's setting, 0.17): one error per line",/2 errors · 0 warnings/.test(L)&&/an activity line takes no `parent:` setting/.test(L),L);
+  chk("the linter refuses a parent: that names nothing in the same way",/`parent:` setting/.test(lintOut(FM+"> [!activity|a parent:nope] A\n")));
   /* a bare activity may have a module's id: no module id is spelled like a bare id's scope */
   const clash=FM+"> [!module|inbox] Inbox\n\n> [!activity|a] A\n\n> [!module|inbox end] End\n\n> [!activity|inbox] Bare\n\n> [!text|q] Q\n";
   chk("the linter accepts a bare activity whose id is a module's id",/0 errors/.test(lintOut(clash)),lintOut(clash));
@@ -155,7 +155,7 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("the linter keeps it an error",/`from: a` is in another module/.test(lintOut(two))&&lint(two).status===1,lintOut(two));
   chk("a menu: across a module boundary draws no options and the file opens",(r=>r.ok&&r.refused.length===0)(A.parseFile(FM+"> [!module|m1] One\n\n> [!menu|feels]\n- Calm\n\n> [!activity|a] A\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|b] B\n\n> [!choice|c menu:feels] C\n\n> [!module|m2 end] End\n")));}
  /* ---- D9: front-matter keys a reader does not know are kept ---- */
- {const file='---\nbooklet: "0.16"\ntitle: T\nlang: en\nstatus: draft\nauthor: Someone\nfuture-key: "x"\n---\n\n> [!activity|a] A\n\n> [!text|q] Q\n';
+ {const file='---\nbooklet: "0.17"\ntitle: T\nlang: en\nstatus: draft\nauthor: Someone\nfuture-key: "x"\n---\n\n> [!activity|a] A\n\n> [!text|q] Q\n';
   const A=load(file);A.answersIn("").q="hello";
   const out=A.toMarkdown();
   chk("an unknown front-matter key survives a save, as written, and is not reported",out.startsWith(file.replace(/\s+$/,""))&&A.parseFile(file).unread.length===0,out.slice(0,160));}
@@ -460,10 +460,12 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("region: a `%%` … `%%` comment above the records stays in place with the question after it, and a save keeps both",o.includes("%%\nan author's note\n%%\n\n> [!text|q] Q\n\nProse after the comment.\n")&&A.allModules()[0].activities[0].pages[0].blocks.some(b=>b.type==="text"&&b.id==="q")&&answersOf(o,"").q==="x"&&load(o).toMarkdown()===o,o);}
  {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+fence("booklet answers",'{"q":"x"}')+"%%\n\nProse after the region.\n\n> [!data] A data section\n\n```booklet data\n[{\"label\":\"x\"}]\n```\n^d1\n";
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
-  chk("region: prose and a data section after the closing `%%` are design: read, and reported once as moved",R.unread.length===1&&/after the records is moved above them/.test(R.unread[0])&&R.template.modules[0].activities[0].pages[0].blocks.some(b=>b.type==="markdown"&&/Prose after the region/.test(b.text)),JSON.stringify(R.unread));
-  chk("region: and written above the region on save, once, and the next open reports nothing",o.indexOf("Prose after the region")<o.indexOf("%%\n> [!records]")&&o.indexOf("```booklet data")<o.indexOf("%%\n> [!records]")&&cnt(o,/Prose after the region/g)===1&&cnt(o,/```booklet data/g)===1&&P.boot().parseFile(o).unread.length===0&&load(o).toMarkdown()===o,o);}
+  chk("region: prose and a data section after the closing `%%` are design: read, and reported once (0.17: they stay where they are)",R.unread.length===1&&/after the records is read, and stays where it is/.test(R.unread[0])&&R.template.modules[0].activities[0].pages[0].blocks.some(b=>b.type==="markdown"&&/Prose after the region/.test(b.text)),JSON.stringify(R.unread));
+  chk("region: and written back after the region on save, byte for byte, once, and the next open reports the same one thing",o===f&&o.indexOf("Prose after the region")>o.indexOf("%%\n> [!records]")&&o.indexOf("```booklet data")>o.indexOf("%%\n> [!records]")&&cnt(o,/Prose after the region/g)===1&&cnt(o,/```booklet data/g)===1&&P.boot().parseFile(o).unread.length===1&&load(o).toMarkdown()===o,o);
+  A.answersIn("").q="y";const o2=A.toMarkdown();
+  chk("region: an answer changed is written in the region, and the design after it is as it was",o2.endsWith("%%\n\nProse after the region.\n\n> [!data] A data section\n\n```booklet data\n[{\"label\":\"x\"}]\n```\n^d1\n")&&/\"q\": ?\"y\"/.test(o2.slice(0,o2.indexOf("Prose after the region")))&&load(o2).toMarkdown()===o2,o2);}
  {const f=FM+"> [!activity|a] A\n\n> [!text|q] Q\n"+REC+fence("booklet answers",'{"q":"x"}')+"%%\n\n    indented code line one\n    indented code line two\n";
-  chk("region: only blank lines at the edges of the moved text are trimmed, never a first line's indentation",load(f).toMarkdown().includes("\n    indented code line one\n    indented code line two\n"));}
+  chk("region: the text after the region is written back as it was, an indented first line included",load(f).toMarkdown()===f);}
  {const mod="> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q1] One\n\n> [!widget|w] W\n> ![[#^grid]]\n\n> [!module|m end] End\n";
   const f=FM+mod+REC+rec("m",fence("booklet answers",'{"q1":"x"}'))+"> [!data] Data\n\n```booklet widget\n{\"engine\":\"grid-select\",\"cells\":[]}\n```\n^grid\n\n%%\n";
   const A=load(f),R=A.parseFile(f),o=A.toMarkdown();
@@ -525,11 +527,11 @@ const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
   chk("S4: an entries record with no list is kept, and does not say it was skipped; an unknown kind says only that the page does not read it",out.some(x=>/holds no list of items/.test(x)&&!/skipped/.test(x))&&out.some(x=>/“booklet later-kind” block is not one this page reads/.test(x))&&!out.some(x=>/sync/.test(x)),JSON.stringify(out));
   chk("S4: the French and Spanish words for the changed messages are checked (registre, registro; no draft mark)",["fr","es"].every(l=>{const s=P.html.split("\n").filter(x=>/recordNoItems|recordOutside/.test(x)&&x.includes(l==="fr"?"registre":"registro")).join("");return s.length>0&&!/draft/.test(s);}));}
 
- /* round 3: design after the region is written above it (design first, records last) */
+ /* round 3: design after the region is read wherever the file writes it (0.17: it stays where it is on a save; adding or removing a module writes it above the region) */
  {const M=(id,t,q)=>"> [!module|"+id+"] "+t+"\n\n> [!activity|"+id+"-a] "+t+" A\n\n> [!text|"+q+"] Q "+q+"\n\n> [!module|"+id+" end] End\n";
   const f=FM+M("m","M","q1")+REC+"> [!records|m] M\n\n"+fence("booklet answers",'{"q1":"x"}')+"> [!records|late] Late\n\n"+fence("booklet answers",'{"lq":"late answer"}')+"%%\n\nProse after the records.\n\n"+M("late","Late","lq")+"\nMore prose at the very end.\n";
   const A=load(f),R=A.parseFile(f);
-  chk("R2-B2: a records line finds a module written after the region on the first open: its answer is read, nothing but the move is reported",A.peekAnswers("late").lq==="late answer"&&R.unread.length===1&&/moved above/.test(R.unread[0]),JSON.stringify(R.unread));
+  chk("R2-B2: a records line finds a module written after the region on the first open: its answer is read, nothing but the design after the records is reported",A.peekAnswers("late").lq==="late answer"&&R.unread.length===1&&/after the records is read/.test(R.unread[0]),JSON.stringify(R.unread));
   const r=A.addModuleText(FM.replace("title: T","title: Late")+M("late","Late v2","lq2"));
   A.answersIn("late").lq2="v2 answer";
   const o=A.toMarkdown(),B=load(o),R3=P.boot().parseFile(o);
