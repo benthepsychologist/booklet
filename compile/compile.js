@@ -77,7 +77,7 @@ const NAME=/^[A-Za-z0-9][A-Za-z0-9._-]*$/;
    Numeric character references are decoded first, so an entity cannot hide a word, and any other entity is refused.
    An editor's own data and metadata are in other namespaces (sodipodi:, inkscape:, dc:, Adobe's x:), so such a file is
    refused until it is saved without them. */
-const SVG_NS="http://www.w3.org/2000/svg",XLINK_NS="http://www.w3.org/1999/xlink";
+const {SVG_NS,XLINK_NS,TAG,ATTR,clip:clipWords}=G; /* the names and patterns diagrams.js reads SVG with too */
 const SVG_ELEMENTS=new Set(["svg","g","defs","desc","title","metadata","symbol","use","switch","view","style",
   "path","rect","circle","ellipse","line","polyline","polygon","text","tspan","textPath",
   "marker","pattern","clipPath","mask","linearGradient","radialGradient","stop",
@@ -114,8 +114,6 @@ function svgProblem(bytes){
 /* the tag-by-tag reading: null when every piece of markup is one the compiler knows to be inert, else what it found */
 function svgMarkup(raw,decode){
   const text=raw.replace(/^\uFEFF/,"");
-  const TAG=/<(\/?)([^\s\/>!?=<"']+)((?:\s+[^\s=\/>"'<]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>/y;
-  const ATTR=/([^\s=\/>"'<]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
   let i=0,first=true;
   while(i<text.length){const lt=text.indexOf("<",i);if(lt<0) break;i=lt;
     const at=(re)=>{re.lastIndex=i;const m=re.exec(text);return m&&m.index===i?m:null;};
@@ -142,7 +140,6 @@ function svgMarkup(raw,decode){
       if(/^attributename$/i.test(an)&&(vl.includes("href")||vl.startsWith("on")||vl.includes(":"))) return "an animation that changes a link or a handler";}}
   return null;}
 const safeChar=n=>{try{return String.fromCodePoint(n);}catch(e){return "\uFFFD";}};
-const clipWords=s=>{s=String(s).trim();return s.length>40?s.slice(0,40)+"\u2026":s;};
 
 /* The orientation in a JPEG's EXIF block (an APP1 segment whose data begins "Exif\0\0"), from `from` (the first byte of the segment's data) to
    `to`: null when the segment is not an Exif block (the first Exif block is the only one a browser reads, so a later one is left alone), else 1 when
@@ -373,8 +370,6 @@ function compileOne(X,input,o){
     script:first.some(p=>p.script),needsScript:first.some(p=>p.needs),keyed:first.some(p=>p.keyed),readOnly:first.flatMap(p=>p.readOnly)});
   return {rep,files};}
 const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"));
-/* a page's title, as drawPage takes it: the booklet's title, else its first module's, else its address */
-const titleOf=(X,P,name)=>{const d=P.design,t=v=>X.R.plainText(X.R.tx(v,""));return t(d.title)||t((d.modules[0]||{}).title)||name;};
 const dedupe=list=>{const seen=new Set();return list.filter(x=>{const k=x.src+"\u0000"+x.ok+"\u0000"+(x.where||"");if(seen.has(k)) return false;seen.add(k);return true;});};
 
 /* the stylesheet and its fonts, for each form's booklet/ folder */
@@ -406,7 +401,7 @@ function compile(inputs,o){o=o||{};
     if(!NAME.test(i.name)||i.name==="booklet") continue;
     let P;try{P=parseInput(X,i);}catch(e){failed.set(i,e);continue;}
     parsed.set(i,P);
-    if(P.ok&&P.design){siblings.set(i.name,titleOf(X,P,i.name));
+    if(P.ok&&P.design){siblings.set(i.name,D.titleOf(X,P,i.name));
       try{meta.set(i.name,{id:P.id,lang:P.lang,plan:D.planPages(X,P,i.name)});}catch(e){/* compileOne meets it too, and says so */}}}
   const alts=translations(meta);
   const results=[],diagrams=makeDiagrams(X,o);
@@ -560,4 +555,4 @@ if(require.main===module){
   catch(e){console.error("compile: "+e.message+(e.usage?"\n(node compile/compile.js --help)":""));code=e.usage?2:1;}
   process.exitCode=code;}
 
-module.exports={VERSION,compile,compileOne,write,reportText,stamp,stampState,cssStampState,svgProblem,imageSize,noTemplates,yamlString,scriptJson,main};
+module.exports={VERSION,compile,compileOne,write,reportText,stamp,stampState,cssStampState,svgProblem,imageSize,main};
