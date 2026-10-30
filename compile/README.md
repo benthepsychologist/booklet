@@ -1,6 +1,6 @@
 # compile — a booklet file to a plain web page
 
-**compile 0.2.0.** A build step beside the renderer. A `.booklet.md` file goes in and a static web page comes out: plain
+**compile 0.3.0.** A build step beside the renderer. A `.booklet.md` file goes in and a static web page comes out: plain
 HTML and CSS that a person can read and tidy, that **reads fully with no script**, and that a search engine can index. It
 can also write one small optional script, `booklet.js`, which a page links only when something on it needs it (below).
 The page holds no renderer. It is for publishing what a booklet says (an article, a guide, a report) on a site of its
@@ -59,7 +59,7 @@ a double-quoted string), for a site generator's content folder (Hugo, Jekyll, El
 title: "How tides work"
 description: "A short reading, then a check."
 ---
-<!-- booklet compile 0.2.0 · from how-tides-work.booklet.md · sha256:… -->
+<!-- booklet compile 0.3.0 · from how-tides-work.booklet.md · sha256:… -->
 <article class="booklet" lang="en">
   …
 </article>
@@ -176,14 +176,45 @@ folders beside it. **Hugo reads an `index` file as a leaf bundle, which holds no
 fragment must be renamed `_index.html`** (a section page) for the activity folders beside it to be pages of that section. This
 was written from Hugo's documentation and has not been run against a Hugo build here.
 
-**Not built here.** The pages of format 0.17 (`> [!page|id parent:x] Title`). A page line's words are drawn, as running text one after
-another, but the compiler draws no page title, no cards of the pages under a page, no page-tree address
-(`<name>/<parent>/<child>/`) and no breadcrumb of the ancestors. It says so once for the booklet, in the build report: "Pages: page
-lines are not drawn as pages yet: N page lines read as running text; titles are not drawn", with the number of links by a page's
-title, which are drawn as their words (an HTML comment on the page says so where each stood), when there are any. Nothing is
-reported as "a heading that is not on this page" for them. The front matter's `description:` (format 0.17) is not read here yet,
-and nothing in the report says so: the page's description is still the booklet's first paragraph, and a card's blurb the
-activity's.
+**Pages (format 0.17, compile 0.3.0).** A named page, `> [!page|id parent:x] Title`, is a titled section of its tab, drawn in the
+order the SPEC gives (section 3, "Pages: a tree inside a tab"): depth first, a page and then the pages under it, whatever the
+file's order. The compiler takes the order, the ids and the tree from the renderer's own `pageTree`, as it takes a tab's pages:
+it settles nothing itself. In the markup:
+
+- A page is a `<section class="bk-page">` that begins with its title as a heading (`class="bk-page-title"`). The pages under it are
+  sections inside its section, so the markup is the tree. **The levels:** a top page's title is a heading of the level the tab's
+  own prose headings start at (under a tab's name when the activity has several tabs, else where the activity's prose starts: `h2` on
+  a page of its own), a page under it is one level deeper, and so on to `h6`. A page's own prose headings start one below its
+  title.
+- **The anchor** is the page's id as the renderer settles it (the id written, else the one made from the title, a second page of
+  one id numbered `-2` by the renderer), set as the `id` of the page's heading before any other heading takes an id, so a
+  heading's words can never take it. Page ids are unique within a tab only: a page whose id an earlier page of another tab has is
+  anchored as `<tab id>-<page id>` (and numbered if even that is taken).
+- **A `***` part keeps its page's title.** Each part of a page begins with the title again, after the quiet divider between parts.
+  The first is the page's heading and holds the anchor; a later part's is `class="bk-page-title bk-page-more"`, with an id of its own
+  from the title's words, and neither the "On this page" list nor the share link counts it.
+- **The words before a tab's first page line** are its first page: drawn as the words of a tab always were, before the pages. A tab
+  with no page line is drawn exactly as it was.
+- **A page line the format ignores** is drawn as the SPEC says, and the report's problem list says so in the renderer's words: a page
+  line in an activity's opening (before the first tab line of an activity with tabs) is not a page and its words stay in the
+  opening; one outside every activity is dropped; of two pages with one id both are drawn and the second is numbered; a page
+  with a missing parent, a page that is its own ancestor and the page where a cycle is cut are drawn at the top of their tab.
+- **A link by a page's words** (`[[#Spring tides]]`, `[Spring tides](#spring-tides)`) reaches the page's heading, in the same page
+  or, in a booklet of many pages, on the activity's page, as a link by a heading's words does; nothing is reported for it.
+- **The front matter's `description:`** (format 0.17) is the description of the booklet's own page, the one page or the contents
+  page: the head's `description` and `og:description`, the JSON-LD and a site's front matter carry it as written (its spaces made
+  single, never cut), and the build report's "Description" line shows it. There is no card of the booklet on a compiled page
+  (a booklet's own card exists only in the renderer's list of booklets), so it is not drawn on the page, which the SPEC says it
+  changes nothing about. An activity's page keeps its own first paragraph as its description. Without one, the first paragraph
+  is the description, as before.
+
+**Not built here.** Back, Up and Next between pages, a menu of a tab's pages and its search, a trail of the pages above a page, the
+cards of the pages under a page (they follow it as sections instead), "Mentioned on", and a page-tree address
+(`<name>/<parent>/<child>/`: a tab's pages are one page of the booklet, not one file each). A page's `icon:` is not drawn at its head
+(the renderer's list of cards shows it). The build report says so once for the booklet: "Pages: N pages drawn as titled sections in
+reading order, a page under its parent. Not drawn: Back, Up and Next, a menu of the pages and its search, a trail of the pages above,
+and the cards of the pages under a page." A booklet with no page line has no such line. None of it needs `booklet.js`: a page tree
+is static, and what `needsScript` looks for is unchanged.
 
 **Stamped page by page.** The stamp guard (below) keeps each page apart: a rerun leaves a page tidied by hand as it is and
 writes the booklet's other pages again, and the report says which it kept and how many others it wrote ("no page of the booklet
@@ -332,7 +363,7 @@ own `--bk-font-text` and `--bk-font-head` never loads them.
 
 - the booklet's title (standalone; on a site the layout draws it), its opening and lede, and every shown activity in file
   order, each under its title (a booklet of two or more shown activities draws them on pages of their own, above);
-- an activity's tabs one after another, each under its name, and its pages run on with a quiet divider;
+- an activity's tabs one after another, each under its name, and its pages run on with a quiet divider (a named page is a titled section, above);
 - rows, callouts of every kind in their own colour and icon, groups, and folds as `<details>` that open with no script;
 - footnotes and citations as numbered marks, with the notes at the page's foot (source, edition, page, quote, verified);
 - formulas as MathML, made at build time by the Temml copy inside `booklet.html`, so the browser draws them itself;
@@ -671,6 +702,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-views-browser.js` | in Chromium with scripting off, at 1280 and 390 px: no sideways scroll, every row visible, every chart's numbers table closed and opened by pressing, a nested list's branches open, marks painted; a themed page keeps the booklet's paper and ink |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |
 | `compile-pages.test.js` | many pages: the address of each page and of a clash; every relative link on every page of every many-page booklet reaches a file and an id; no page is orphaned; the way on and the reading order; translations (hreflang in the head and in the front matter, relative and whole; a shared language or a missing page is not linked, and the report names the pages left unlinked); an activity called `index`, one whose id makes no folder name, and one called `page`; the site form's `weight`; a page tidied by hand kept page by page, and the report's words about it; a folder path that is a file refusing the booklet before anything is written; an image reached from every page |
+| `compile-pagelines.test.js` | a booklet's page tree: each named page a titled section at its level, its anchor from its page id (kept when the title changes, a prose heading cannot take it, a second tab's page of one id under its tab), the SPEC's reading order, a `***` part keeping its page's title, the page lines the format ignores drawn as the SPEC says, a link by a page's words reaching it, `description:` on the booklet's own page, the one Pages line of the report, and no script change |
 | `compile-browser.js` | in Chromium with scripting off, every page of every booklet, and a journey through each many-page booklet served as a host serves a folder (each card opens its page, the contents link goes back, "next" reads every page in order and "back" returns, nothing 404s); at 1280 and 390 px, light and dark: no sideways scroll, every fold opens, only its own files load, the renderer's faces, the text's contrast; with scripting on, a prefixed-script SVG runs when opened directly and the compiler copies none |
 | `compile-reading.test.js` | the reading helpers: five files, each one function called at once, none leaving a global; the pledge (no storage, no network, no navigation, no element that loads, no markup built from a string, no string evaluated), tried on made-up breaking parts first; a rule for every class they add and the print rules |
 | `compile-reading-browser.js` | in Chromium, the reading helpers on the made-up `compile-reading-one` (one page) and `compile-reading` (several pages) fixtures, the views and pages fixtures, and a page of data views: tab bars (roles, keys, links and addresses into a tab, print), citation previews (mouse, keyboard, touch, a short screen), Open all and printing, the copied link, sort and filter (on the compiler's own views fixture, and at 3000 rows); the same parts on a booklet of several pages, on its contents page and one folder deeper; with scripting off, and with a page that has none of their markup, the page is unchanged; no storage, no request but its own files, readable contrast; an axe pass when `AXE` is given |

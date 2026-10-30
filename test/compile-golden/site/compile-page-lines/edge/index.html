@@ -1,0 +1,39 @@
+---
+title: "Edge cases"
+description: "Its parent is nowhere, so it sits at the top."
+weight: 4
+---
+<!-- booklet compile 0.3.0 · from compile-page-lines.booklet.md · sha256:33cb0a23b238d5763a0fbffb70e8f121a57e492c18315b4fbfa3817ebd13d106 -->
+<article class="booklet" lang="en">
+  <p class="bk-crumb"><a href="../">Harbour notes</a></p>
+  <nav class="bk-toc" aria-labelledby="bk-toc-h">
+    <p class="bk-toc-h" id="bk-toc-h">On this page</p>
+    <ul>
+      <li><a href="#lost">Lost</a></li>
+      <li><a href="#cycle-a">Cycle A</a></li>
+      <li><a href="#dup">First dup</a></li>
+      <li><a href="#dup-2">Second dup</a></li>
+    </ul>
+  </nav>
+  <section class="bk-page">
+    <h2 class="bk-page-title" id="lost">Lost <a class="bk-anchor" href="#lost" aria-label="Link to this section">#</a></h2>
+    <p>Its parent is nowhere, so it sits at the top.</p>
+  </section>
+  <section class="bk-page">
+    <h2 class="bk-page-title" id="cycle-a">Cycle A <a class="bk-anchor" href="#cycle-a" aria-label="Link to this section">#</a></h2>
+    <p>Its own ancestor, so it sits at the top.</p>
+    <section class="bk-page">
+      <h3 class="bk-page-title" id="cycle-b">Cycle B <a class="bk-anchor" href="#cycle-b" aria-label="Link to this section">#</a></h3>
+      <p>Cut where the cycle closes.</p>
+    </section>
+  </section>
+  <section class="bk-page">
+    <h2 class="bk-page-title" id="dup">First dup <a class="bk-anchor" href="#dup" aria-label="Link to this section">#</a></h2>
+    <p>The first of two pages with one id.</p>
+  </section>
+  <section class="bk-page">
+    <h2 class="bk-page-title" id="dup-2">Second dup <a class="bk-anchor" href="#dup-2" aria-label="Link to this section">#</a></h2>
+    <p>The second is numbered.</p>
+  </section>
+  <nav class="bk-pager" aria-label="Contents"><a class="bk-prev" rel="prev" href="../tabbed/" aria-label="Back: Tabbed notes">← Tabbed notes</a><a class="bk-up" href="../">Contents</a><a class="bk-next" rel="next" href="../after/" aria-label="Next: After the notes">After the notes →</a></nav>
+</article>

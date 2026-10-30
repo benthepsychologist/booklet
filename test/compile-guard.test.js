@@ -1,4 +1,4 @@
-// The compiler's guard (compile/, compile 0.2.0): what it may never do, checked by reading its own source.
+// The compiler's guard (compile/, compile 0.3.0): what it may never do, checked by reading its own source.
 //   1. No second reader. The compiler reads the format only through booklet.html's own parse and Markdown engine, so no
 //      code under compile/ may hold a callout-line, fence, footnote, link, image, heading, list, quote or math pattern of
 //      its own, as a regular expression or as a string test (startsWith("> [!"), "%"+"%", "`".repeat(3)), and the

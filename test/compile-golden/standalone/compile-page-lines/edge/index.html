@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- booklet compile 0.3.0 · from compile-page-lines.booklet.md · sha256:f429a9b02162d025c971a59eae64506d606b3a534aeccc2a5863f54cd6ae9e3f -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edge cases – Harbour notes</title>
+<meta name="description" content="Its parent is nowhere, so it sits at the top.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Edge cases – Harbour notes">
+<meta property="og:description" content="Its parent is nowhere, so it sits at the top.">
+<meta property="og:locale" content="en">
+<meta name="generator" content="Booklet compile 0.3.0">
+<link rel="stylesheet" href="../../booklet/booklet.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Edge cases","isPartOf":{"@type":"CreativeWork","name":"Harbour notes"},"description":"Its parent is nowhere, so it sits at the top.","inLanguage":"en"}</script>
+</head>
+<body class="bk-page">
+<main class="bk-main">
+<article class="booklet" lang="en">
+  <p class="bk-crumb"><a href="../">Harbour notes</a></p>
+  <h1 id="edge-cases">Edge cases</h1>
+  <nav class="bk-toc" aria-labelledby="bk-toc-h">
+    <p class="bk-toc-h" id="bk-toc-h">On this page</p>
+    <ul>
+      <li><a href="#lost">Lost</a></li>
+      <li><a href="#cycle-a">Cycle A</a></li>
+      <li><a href="#dup">First dup</a></li>
+      <li><a href="#dup-2">Second dup</a></li>
+    </ul>
+  </nav>
+  <section class="bk-page">
+    <h2 class="bk-page-title" id="lost">Lost <a class="bk-anchor" href="#lost" aria-label="Link to this section">#</a></h2>
+    <p>Its parent is nowhere, so it sits at the top.</p>
+  </section>
+  <section class="bk-page">
+    <h2 class="bk-page-title" id="cycle-a">Cycle A <a class="bk-anchor" href="#cycle-a" aria-label="Link to this section">#</a></h2>
+    <p>Its own ancestor, so it sits at the top.</p>
+    <section class="bk-page">
+      <h3 class="bk-page-title" id="cycle-b">Cycle B <a class="bk-anchor" href="#cycle-b" aria-label="Link to this section">#</a></h3>
+      <p>Cut where the cycle closes.</p>
+    </section>
+  </section>
+  <section class="bk-page">
+    <h2 class="bk-page-title" id="dup">First dup <a class="bk-anchor" href="#dup" aria-label="Link to this section">#</a></h2>
+    <p>The first of two pages with one id.</p>
+  </section>
+  <section class="bk-page">
+    <h2 class="bk-page-title" id="dup-2">Second dup <a class="bk-anchor" href="#dup-2" aria-label="Link to this section">#</a></h2>
+    <p>The second is numbered.</p>
+  </section>
+  <nav class="bk-pager" aria-label="Contents"><a class="bk-prev" rel="prev" href="../tabbed/" aria-label="Back: Tabbed notes">← Tabbed notes</a><a class="bk-up" href="../">Contents</a><a class="bk-next" rel="next" href="../after/" aria-label="Next: After the notes">After the notes →</a></nav>
+</article>
+</main>
+</body>
+</html>

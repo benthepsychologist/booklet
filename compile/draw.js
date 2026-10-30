@@ -116,7 +116,7 @@ function drawPage(X,P,o){
   X.setLang(ui);
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
-    marked:[],pageLinks:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
+    marked:[],pageHeads:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0,pages:0},
     where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0,dgSeq:0};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const bookTitle=titleOf(X,P,o.name);
@@ -512,18 +512,39 @@ function drawPage(X,P,o){
     if(ownHead){head=heading(base,words(tx(a.title,a.id)));out.push(head);cb=base+1;}
     const ts=R.tabsIn(a),flow=[];
     const pagesOf=ps=>{const nodes=[];ps.forEach((p,i)=>{if(i) nodes.push(el("hr",{class:"bk-next-page"}));nodes.push(...blocks(R.blocksIn(p)));});return nodes;};
+    /* A named page (format 0.17, SPEC.md section 3, "Pages") is a titled section of its tab, and the tab's pages are drawn in the
+       renderer's reading order, which pageTree keeps: depth first, a page, then the pages under it. `base` is the level of the tab's
+       prose headings; a top page's title is a heading of that level, a page under it one deeper, and so on (no further than h6), and
+       a page's own prose headings start one below its title. Each part of a page (a `***` section) keeps its page's title: the
+       first is the page's heading, with the anchor, and a later part's is the same words again, quietly marked (bk-page-more) so the
+       contents list and the share links leave it out. The words before a tab's first page line are its first page, drawn as they
+       always were, so a tab with no page line is drawn exactly as before. A page with no words in its title is called by its id (SPEC.md
+       section 3, the card's parts). The pages under a page follow it as sections of their own,
+       inside its section; Back, Up and Next, a page menu, search and a trail are not drawn (the report says so). */
+    const pageSection=(pg,lv)=>{
+      const raw=R.nonEmpty(tx(pg.title,""))?tx(pg.title,""):pg.id,at=Math.min(6,lv),kids=[];st.counts.pages++;
+      pg.parts.forEach((part,i)=>{
+        const h=heading(at,i?again(raw):words(raw,true),i?"bk-page-title bk-page-more":"bk-page-title");
+        if(!i) st.pageHeads.push({h,id:pg.id,tab:part.tab||""});
+        if(i) kids.push(el("hr",{class:"bk-next-page"}));
+        kids.push(h,...level(blocks(R.blocksIn(part)),Math.min(6,at+1)));});
+      pg.kids.forEach(k=>kids.push(pageSection(k,lv+1)));
+      return el("section",{class:"bk-page"},...kids);};
+    const tabBody=(tab,base)=>{const T=R.pageTree(a,tab);
+      if(!T.named) return {nodes:pagesOf(tab===null?a.pages:R.tabPages(a,tab)),pages:[]};
+      return {nodes:pagesOf(T.pages.filter(pg=>!pg.named).flatMap(pg=>pg.parts)),pages:T.top.filter(pg=>pg.named).map(pg=>pageSection(pg,base))};};
     if(ts&&ts.length>1){
       const op=R.tabOpening(a);
-      if(op.length) flow.push({nodes:blocks(op),base:cb});
+      if(op.length) flow.push({nodes:blocks(op),pages:[],base:cb});
       ts.forEach(t=>{const h=heading(cb,words(tx(t.title,t.id),true));tabsDrawn.push([plain(t.title)||t.id,h]);
-        flow.push({head:h,nodes:pagesOf(R.tabPages(a,t.id)),base:cb+1});});}
-    else flow.push({nodes:[...blocks(R.tabOpening(a)),...pagesOf(ts?R.tabPages(a,ts[0].id):a.pages)],base:cb});
+        flow.push({head:h,...tabBody(t.id,cb+1),base:cb+1});});}
+    else{const op=blocks(R.tabOpening(a)),b=tabBody(ts?ts[0].id:null,cb);flow.push({nodes:[...op,...b.nodes],pages:b.pages,base:cb});}
     /* the title is drawn once: the first heading of the activity's own text that repeats it goes */
     const all=flow.flatMap(f=>f.nodes);
     dropTitle(all,titleText);
     flow.forEach(f=>{f.nodes=f.nodes.filter(n=>all.includes(n));level(f.nodes,f.base);});
     if(first) lede(flow[0]?flow[0].nodes:[]);
-    flow.forEach(f=>{if(f.head) out.push(el("section",{class:"bk-tab"},f.head,...f.nodes));else out.push(...f.nodes);});
+    flow.forEach(f=>{if(f.head) out.push(el("section",{class:"bk-tab"},f.head,...f.nodes,...f.pages));else out.push(...f.nodes,...f.pages);});
     noteHeads(a.id,out,head,tabsDrawn);
     return ownHead?[el("section",{class:"bk-activity"},...out)]:out;}
 
@@ -637,7 +658,12 @@ function drawPage(X,P,o){
   /* ids: every heading gets one from the renderer's slug, made unique on the page; then every in-page link is pointed */
   const used=new Set(st.mathIds);
   const uniq=base=>{let b=String(base||"").slice(0,60)||"bk-section",id=b,i=2;while(used.has(id)) id=b+"-"+(i++);used.add(id);return id;};
-  H.walk(article,x=>{if(!(x instanceof H.Node)) return;
+  /* a named page's anchor is its page id (format 0.17: the id after settlement, a written one kept as written), claimed before any
+     heading's slug so that no heading's words can take it. Page ids are unique within a tab only: a page whose id an earlier page
+     of another tab holds is anchored under its tab's id first, then numbered if it must be. */
+  const settled=new Set();
+  for(const p of st.pageHeads){const want=used.has(p.id)&&p.tab?p.tab+"-"+p.id:p.id;p.h.attrs.id=uniq(want);settled.add(p.h);}
+  H.walk(article,x=>{if(!(x instanceof H.Node)||settled.has(x)) return;
     if(levelOf(x)&&!("id" in x.attrs)) x.attrs.id=R.slugify(H.textOf(x));
     if("id" in x.attrs) x.attrs.id=uniq(x.attrs.id);});
   const idOf=n=>{if(!n) return null;if(!n.attrs.id) n.attrs.id=uniq(n===article?"bk-top":R.slugify(H.textOf(n)));return n.attrs.id;};
@@ -650,15 +676,8 @@ function drawPage(X,P,o){
   const findHead=h=>{
     if(h.mtab){const m=st.mtabs.get(h.mod);return m&&m.get(norm(h.heading));}
     const r=st.heads.get(h.act);return r?(h.title?r.title:h.tab?r.tabs.get(norm(h.heading)):r.text.get(norm(h.heading))):null;};
-  const namesPage=h=>{if(h.mtab||h.title||h.tab) return false;
-    const a=design.modules.flatMap(m=>m.activities).find(x=>x.id===h.act);
-    return !!a&&(a.npages||[]).some(n=>norm(plain(n.title))===norm(h.heading));};
   for(const p of st.pend){const h=p.hit,to=findHead(h),at=plan?(h.mtab?HOME:plan.byKey.has(h.act)?h.act:null):null;
     const lose=()=>{p.a.tag="";p.a.attrs={};
-      /* a link by a page's title (format 0.17) finds a page, and pages are not drawn as pages yet: it is drawn as its words and counted
-         in the report's one line about pages, not reported as a heading that is nowhere */
-      if(namesPage(h)){st.pageLinks.push({heading:h.heading,where:p.where});
-        p.a.kids.unshift(comment("booklet: the link to “"+h.heading+"” ("+p.where+"): it names a page, and pages are not drawn as pages yet: drawn as its words"));return;}
       st.marked.push({kind:"heading",what:"the link to “"+h.heading+"”",where:p.where});
       p.a.kids.unshift(comment("booklet: the link to “"+h.heading+"” ("+p.where+"): "+MARKED.heading));};
     if(to){st.refs.push({a:p.a,to:()=>to});st.counts.links++;}
@@ -670,6 +689,7 @@ function drawPage(X,P,o){
   const tops=[];let topLevel=7;
   H.walk(article,x=>{if(!(x instanceof H.Node)) return;
     if(x.tag==="details"||x.tag==="aside"||x.tag==="nav"||/\bbk-(notes|foot|q|group)\b/.test(String(x.attrs.class||""))) return false;
+    if(/\bbk-page-more\b/.test(String(x.attrs.class||""))) return;
     const L=levelOf(x);if(L>1){if(L<topLevel){topLevel=L;tops.length=0;}if(L===topLevel) tops.push(x);}});
   let toc=null;
   if(tops.length>=2){
@@ -685,14 +705,20 @@ function drawPage(X,P,o){
 
   /* a small link on each heading, so a reader can share a section (it shows on hover and on focus) */
   H.walk(article,x=>{if(!(x instanceof H.Node)) return;if(x.tag==="details"||x.tag==="nav") return false;
-    const L=levelOf(x);if(L>1&&L<5&&x.attrs.id&&x.attrs.class!=="bk-notes-h") {x.append(" ",el("a",{class:"bk-anchor",href:"#"+x.attrs.id,"aria-label":W.anchor},"#"));return false;}});
+    const L=levelOf(x);if(L>1&&L<5&&x.attrs.id&&x.attrs.class!=="bk-notes-h"&&!/\bbk-page-more\b/.test(String(x.attrs.class||""))) {x.append(" ",el("a",{class:"bk-anchor",href:"#"+x.attrs.id,"aria-label":W.anchor},"#"));return false;}});
 
   /* on a booklet of many pages: the way on, and what the other pages need to point at this one */
   if(deep) article.append(pager());
   if(xr) xr.pages.set(KEY,{findHead,idOf,modHead:st.modHead,top:st.top});
 
-  return {article,bookTitle,title:deep?pageTitle:plain(design.title)||pageTitle,description:describe(st.lede?descText(st.lede):firstPara(article)),
-    lang:P.lang||"",counts:st.counts,marked:st.marked,pageLinks:st.pageLinks,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript||needsScript(article),keyed:!!st.keyed,readOnly:st.readOnly,theme:look.report,bodyAttrs:look.attrs};}
+  /* The front matter's `description:` (format 0.17, SPEC.md section 2) is the booklet's own: one sentence of plain words that the file wrote
+     for whatever shows a description of it. A tool that makes a web page may use it as the page's description, so it is the description
+     of the booklet's own page (the one page, or the contents page) and goes into the head, the Open Graph tag, the data for search engines
+     and a site's front matter as written, its spaces and line breaks made single spaces and not cut. An activity's page keeps its own
+     first paragraph, since the file's sentence says what the booklet is. A file without one has the first paragraph, as before. */
+  const written=!deep&&typeof design.description==="string"?design.description.replace(/\s+/g," ").trim():"";
+  return {article,bookTitle,title:deep?pageTitle:plain(design.title)||pageTitle,description:written||describe(st.lede?descText(st.lede):firstPara(article)),
+    lang:P.lang||"",counts:st.counts,marked:st.marked,images:st.images,links:st.links,toc:!!toc,needsScript:st.needsScript||needsScript(article),keyed:!!st.keyed,readOnly:st.readOnly,theme:look.report,bodyAttrs:look.attrs};}
 
 /* needsScript(article): THE RULE for whether a compiled page links booklet.js. One small function, so it can be read, tested and
    changed in one place. It looks at the finished page (every link resolved, the heading links and the contents list in), and
