@@ -1,7 +1,8 @@
 # compile — a booklet file to a plain web page
 
 **compile 0.1.0.** A build step beside the renderer. A `.booklet.md` file goes in and a static web page comes out: plain
-HTML and CSS that a person can read and tidy, that **reads fully with no script**, and that a search engine can index.
+HTML and CSS that a person can read and tidy, that **reads fully with no script**, and that a search engine can index. It
+can also write one small optional script, `booklet.js`, which a page links only when something on it needs it (below).
 The page holds no renderer. It is for publishing what a booklet says (an article, a guide, a report) on a site of its
 own, where people can read it, link to a section of it and share it. Its pick-one and pick-any questions answer the way a
 quiz does ("that's right, and here is why") and forget: nothing is saved, so a reader who wants their answers kept opens
@@ -225,9 +226,23 @@ words of its own is named for a screen reader by its help text, else its id.
 
 ## The optional script
 
-A page **reads fully with no script**. Where a part of it can respond when pressed (a quiz answer, a widget), the compiler
-also writes one script, `booklet.js`, beside `booklet.css`, and a standalone page links it with
-`<script src="../booklet/booklet.js" defer></script>` (`../../booklet/booklet.js` from an activity's page of a many-page booklet) only when something on that page needs it, page by page, so a contents page with no question links none while an activity page that has one does. A site's layout adds the
+A page **reads fully with no script**. Where a part of it can respond when pressed or can be made easier to use, the
+compiler also writes one script, `booklet.js`, beside `booklet.css`, and a standalone page links it with
+`<script src="../booklet/booklet.js" defer></script>` (`../../booklet/booklet.js` from an activity's page of a many-page
+booklet) **only when something on that page needs it**, page by page, so a contents page or a page of plain prose links none
+while a page that has one of the five things below does. The rule is one small function, `needsScript` in `draw.js`. A page
+needs the script when it holds:
+
+- **a tab bar**: two or more tabs side by side (one tab alone makes no bar);
+- **a citation mark** (the script shows the note beside the mark);
+- **a fold the author made** (the script adds "Open all"); a question's hint and solution are plain `<details>` that open by
+  pressing them and ask for nothing;
+- **a data view that can be sorted and filtered**: any view but a line chart, with two or more rows;
+- **a graded question** (a pick-one or pick-any question with a right answer; the script speaks its verdict).
+
+Nothing else asks for it: a heading's share link, a drawn figure or diagram, a widget, a line chart, a one-row view, a
+question with no right answer. A page that needs none links none and reads in full: every tab under its name, every fold
+closed as written, no content hidden. A site's layout adds the
 line itself, `<script src="/booklet/booklet.js" defer></script>`, next to the stylesheet line, and the build report says
 which pages need it. A host that never loads it still gets every page readable. **The script keeps nothing and sends
 nothing**: no cookie, `localStorage`, `sessionStorage` or IndexedDB, no request of any kind, and no booklet text turned
@@ -634,7 +649,7 @@ All in `test/`, run by `test/run.sh` and CI:
 | --- | --- |
 | `compile-guard.test.js` | no second reader (no callout, fence, link, heading or other Markdown pattern of its own, as a pattern or a string test; tried first on made-up re-readings); the author-comment mark in one region only; every renderer name it uses exists; no code reaches the records; installs nothing, fetches nothing, and starts one process only (the name `child_process` is written once, `spawnSync` once, no `exec`, `spawn` or `fork`); writes only its pages |
 | `compile-coverage.test.js` | every block type, question kind, widget engine and query view the renderer has is drawn or marked, from the very tables `draw.js` dispatches from; every callout kind in its look; every mark both a comment and a report line |
-| `compile-script.test.js` | the script's scan names every banned word, each tried on a made-up part; the assembler's order, shape and refusals; a page links the script only when it needs it, a site fragment never; the stamp guard; a banned word stops the build and writes nothing |
+| `compile-script.test.js` | the script's scan names every banned word, each tried on a made-up part; the assembler's order, shape and refusals; a page links the script only when it needs it (the five-part rule, each part tried on a page that has it and one that lacks it, and on trees for the edges), a site fragment never; the stamp guard; a banned word stops the build and writes nothing |
 | `compile-script-browser.js` | in Chromium over http with scripting on: answers every kind of question and presses every widget, then asserts no localStorage, sessionStorage, cookie, IndexedDB or cache, only GET requests for the page's own files, and a clean reload; the detector is proved by serving the page with its script swapped for ones that break the pledge; with scripting off every question reads as in 0.1.0 and a press still shows its reply, verdict and note |
 | `compile-golden.test.js` | the pages for the examples and page-shaped fixtures equal the committed ones in `test/compile-golden/`; `node test/compile-golden.test.js --write` refreshes them |
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |

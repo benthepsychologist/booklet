@@ -274,7 +274,8 @@ const act=(id,t)=>"> [!activity|"+id+"] "+t+"\n\nWords of "+t+".\n\n";
     &&!tag("standalone/quizzes/index.html")&&!tag("standalone/quizzes/c/index.html")&&[...f.keys()].filter(k=>k.startsWith("site/")).every(k=>!tag(k)),tag("standalone/quizzes/a/index.html")+"|"+tag("standalone/quizzes/index.html")+"|"+tag("standalone/quizzes/c/index.html"));
   chk("…the stylesheet link keeps the same depth, and booklet.js is written once for each form, beside the stylesheet",/<link rel="stylesheet" href="\.\.\/\.\.\/booklet\/booklet\.css">/.test(f.get("standalone/quizzes/a/index.html"))&&r.assets.has("standalone/booklet/booklet.js")&&r.assets.has("site/booklet/booklet.js"));
   const rep=C.reportText(r),q=r.results[0].rep;
-  chk("the report names the script for the booklet that needs it (and the answer key), not for the one that does not",q.script===true&&q.keyed===true&&r.results[1].rep.script===false&&/Script: the page links booklet\.js/.test(rep)&&/Answer key:/.test(rep));}
+  const plain=C.compile([{text:booklet("Plain",act("p","P")),name:"plain",dir:TMP}],{form:"standalone",engine:X});
+  chk("the report names the script for the booklet that needs it (and the answer key), not for the one that does not",q.script===true&&q.keyed===true&&plain.results[0].rep.script===false&&/Script: the page links booklet\.js/.test(rep)&&/Answer key:/.test(rep)&&!/Script:/.test(C.reportText(plain)));}
 
 fs.rmSync(TMP,{recursive:true,force:true});
 console.log(fails?"\n"+fails+" FAILURES":"\ncompile pages passed");process.exit(fails?1:0);

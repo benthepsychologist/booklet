@@ -164,7 +164,7 @@ const LOST_SET=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWi
   chk("the mark points to its note and the note back",/<sup class="bk-mark"><a class="bk-mark-a"[^>]*href="#bk-note-1"[^>]*id="bk-ref-1"|<sup class="bk-mark"><a class="bk-mark-a"[^>]*id="bk-ref-1"[^>]*href="#bk-note-1"/.test(p)&&/<a class="bk-back"[^>]*href="#bk-ref-1"/.test(p),
     (p.match(/<sup class="bk-mark">.*?<\/sup>/)||[""])[0]);
   chk("a link to a booklet compiled with it is a link to its page, by its title",p.includes('<a class="bk-link" href="../compile-kinds/">A kite workshop</a>'));
-  chk("a formula is MathML, with no script",/<span class="bk-math"><math>[^]*?<mo>≥<\/mo>[^]*?<\/math><\/span>/.test(p)&&!/<script(?! type="application\/ld\+json")/.test(p));}
+  chk("a formula is MathML, with no script",/<span class="bk-math"><math>[^]*?<mo>≥<\/mo>[^]*?<\/math><\/span>/.test(p)&&!/<script(?! type="application\/ld\+json"| src="(?:\.\.\/)+booklet\/booklet\.js" defer>)/.test(p));}
 
 /* ======================= 2. records are never published ======================= */
 {const src=path.join(FIX,"compile-records.booklet.md"),text=fs.readFileSync(src,"utf8");

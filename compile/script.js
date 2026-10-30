@@ -12,16 +12,20 @@
    A host that never loads it still gets every page readable. A part must also work on a page that holds none of its
    markup, and beside other parts.
 
-   THE RULES FOR A PART (the scan holds a part to the first four; the browser test holds the page to all of them):
+   THE RULES FOR A PART (the scan holds a part to rules 1, 2 and 4 and to the banned routes of rule 3; the browser test holds the
+   page to all of them):
      1. Nothing is kept: no localStorage, sessionStorage, IndexedDB, cookie or cache. What a reader presses lives in the
         open page and is gone on reload.
      2. Nothing is sent: no fetch, XMLHttpRequest, WebSocket, EventSource, beacon, worker, image or form that makes a
         request, no postMessage.
-     3. A booklet's words never become markup or code at run time: no innerHTML, outerHTML, insertAdjacentHTML,
-        document.write, DOMParser, eval, Function. A part shows only text, set with textContent: either text the compiler
-        already wrote into the page (a verdict sentence, a label) or a fixed word of the part's own ("Open all", "Link
-        copied"), never a booklet's words made into markup. It changes the page with a class, a hidden attribute or an
-        attribute the part itself names.
+     3. A booklet's words never become markup or code at run time. The scan bans the ways a string becomes markup or code:
+        innerHTML, outerHTML, insertAdjacentHTML, document.write, DOMParser, createContextualFragment, srcdoc, eval,
+        Function (and .constructor), a timer given text, import. What a part may add is text it sets with textContent (a
+        verdict sentence or a label the compiler already wrote, or a fixed word of its own such as "Open all" or "Link
+        copied"), or a copy of nodes the compiler already wrote (cloneNode, as the citation preview does), and it changes
+        the page with a class, a hidden attribute or an attribute the part itself names. The scan cannot see whether a
+        part keeps to textContent and copies, only that it has no route to markup from a string: that is the browser
+        test's and the reviewer's to check.
      4. A part does not reach for a global by a computed name or an alias: no window[…], document[…], navigator[…],
         this[…], globalThis, self[…], Reflect, no `x=window` (a name built from pieces would get round every word in this
         list).

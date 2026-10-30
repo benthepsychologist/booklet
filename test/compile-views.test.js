@@ -94,7 +94,7 @@ const noLink=w=>!new RegExp("<a [^>]*>"+w+"</a>").test(V.page);
 chk("a javascript: address, a heading that is not there and a module that is not compiled are plain words, never a link",
   !/href="javascript:/i.test(V.page)&&["Salt","Rye flour","&lt;script&gt;qzxhostile\\(\\)&lt;/script&gt;"].every(noLink)&&!/href="week-2/.test(V.page));
 chk("a value that is a script's words is text: escaped, in no element of its own, with no handler anywhere",
-  V.page.includes("&lt;script&gt;qzxhostile()&lt;/script&gt;")&&!/<script/i.test(V.page.replace(/<script type="application\/ld\+json">[^]*?<\/script>/g,""))&&!/\son[a-z]+=/i.test(V.page));
+  V.page.includes("&lt;script&gt;qzxhostile()&lt;/script&gt;")&&!/<script/i.test(V.page.replace(/<script type="application\/ld\+json">[^]*?<\/script>/g,"").replace(/<script src="(?:\.\.\/)+booklet\/booklet\.js" defer><\/script>/g,""))&&!/\son[a-z]+=/i.test(V.page));
 chk("an icon the sprite has is drawn (a picture before the tile); a name it has not draws nothing, and no word of it reaches the page",
   /<span class="bk-dv-i" aria-hidden="true"><svg class="bk-ic"/.test(views[0].html)&&count(views[0].html,/class="bk-dv-i"/g)===1&&!V.page.includes("not-an-icon-name"));
 chk("the empty: line is drawn, and a query with none says it plainly",V.page.includes('<p class="bk-hint">No orders yet.</p>')&&V.page.includes('<p class="bk-hint">Nothing to show here.</p>'));
