@@ -20,13 +20,13 @@ const C=require("../compile/compile.js"),E=require("../compile/engine.js"),Th=re
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const X=E.load();
 const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-views-"));
+const cli=(args)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:TMP,encoding:"utf8"});
 const tree=d=>!fs.existsSync(d)?[]:fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?tree(path.join(d,e.name)).map(x=>e.name+"/"+x):[e.name]);
 const compileOne=(file,form)=>{const run=C.compile([{file}],{form:form||"standalone",engine:X}),r=run.results[0];
   /* a booklet that shows several activities is a contents page and a page for each: `page` is all of them, in the order the report lists them */
   const pages=r.rep.pages.filter(p=>p.endsWith("index.html")).map(p=>r.files.get(p)||"");
   return {run,r,pages,page:pages.join("\n"),report:C.reportText(run)};};
 const count=(s,re)=>(s.match(re)||[]).length;
-const decode=s=>s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&amp;/g,"&");
 /* the views on a page, each one's markup, in order: from one data-bk-view to the next */
 const viewsOf=page=>{const out=[],re=/<div class="bk-view[^"]*" data-bk-view="([a-z]+)"/g;let m,prev=null;
   const close=()=>{if(prev) prev.html=page.slice(prev.at,page.indexOf("</article>",prev.at));};
@@ -143,7 +143,7 @@ chk("a summary: on query over kept entries never has rows: nothing at all is dra
   const markers=[...new Set(text.match(/qzxrec[a-z]+/g))],numbers=["31415","27182"];
   chk("the fixture keeps its markers in the records region only, and has queries over what it keeps",markers.length>=6&&text.indexOf("qzxrec")>text.indexOf("> [!records|")&&numbers.every(n=>text.indexOf(n)>text.indexOf("> [!records|")),markers.length);
   const out=path.join(TMP,"views-out"),rp=path.join(TMP,"views-report.txt");
-  const r=cp.spawnSync(process.execPath,[CLI,"--form","both","--out",out,"--report",rp,src],{cwd:TMP,encoding:"utf8"});
+  const r=cli(["--form","both","--out",out,"--report",rp,src]);
   const files=tree(out),found=[];
   for(const f of files){const t=fs.readFileSync(path.join(out,f)).toString("latin1");if(/qzxrec/i.test(t)||numbers.some(n=>t.includes(n)&&!/\.(woff2?|css)$/.test(f))) found.push(f);}
   const rt=fs.readFileSync(rp,"utf8");if(/qzxrec/i.test(rt)||numbers.some(n=>rt.includes(n))) found.push("the report file");
@@ -170,11 +170,11 @@ chk("…and the build report says which colour was left out, at what ratio, agai
 /* a hostile value cannot get further than the renderer's own reading of it */
 const css=fs.readFileSync(path.join(ROOT,"compile","booklet.css"),"utf8");
 const hostile=["display:none","background:url","example.org","red;","ff0000","--bk-ink:#ff0000"];
-const outT=path.join(TMP,"theme-out"),rT=cp.spawnSync(process.execPath,[CLI,"--form","both","--out",outT,path.join(FIX,"compile-theme.booklet.md")],{cwd:TMP,encoding:"utf8"});
+const outT=path.join(TMP,"theme-out"),rT=cli(["--form","both","--out",outT,path.join(FIX,"compile-theme.booklet.md")]);
 const wrote=tree(outT).filter(f=>/\.html$/.test(f)).map(f=>fs.readFileSync(path.join(outT,f),"utf8")).join("\n")+rT.stdout+rT.stderr;
 chk("a colour that is not #rrggbb and a font or density that is not a listed word write nothing: not in any page, the report or the output",
   rT.status===0&&!hostile.some(h=>wrote.includes(h)),hostile.filter(h=>wrote.includes(h)).join(", "));
-const outG=path.join(TMP,"plain-out");cp.spawnSync(process.execPath,[CLI,"--form","both","--out",outG,path.join(FIX,"data-views.booklet.md")],{cwd:TMP,encoding:"utf8"});
+const outG=path.join(TMP,"plain-out");cli(["--form","both","--out",outG,path.join(FIX,"data-views.booklet.md")]);
 chk("…and the stylesheet written is byte for byte the same for a themed booklet as for one with no theme (a theme writes no CSS)",
   fs.readFileSync(path.join(outT,"standalone","booklet","booklet.css"),"utf8")===fs.readFileSync(path.join(outG,"standalone","booklet","booklet.css"),"utf8"));
 chk("…and the renderer's own words about each are in the report (accent as bad, font, density), without the value",
@@ -204,6 +204,25 @@ const sample=X.themeOf({base:"daylight",paper:"#fffbe8",ink:"#2a2118"});
 const mapped=Object.keys(sample.tokens).filter(k=>k in Th.VAR_OF);
 chk("every colour the renderer works out from the theme that the page has a variable for is set on the article ("+mapped.length+")",
   mapped.every(k=>vars[Th.VAR_OF[k]]!==undefined)&&mapped.length>20);
+/* the two words the fixture above gives bad values for, given good ones (made-up booklets): each font and each density the renderer has is
+   a declaration on the article, and the build report names it */
+{const themed=(font,density)=>{const text='---\nbooklet: "0.16"\nid: t/words\ntitle: Theme words\nlang: en\n---\n\n# Theme words\n\n```booklet theme\nbase: paper\n'
+      +(font?"font: "+font+"\n":"")+(density?"density: "+density+"\n":"")+'```\n\n> [!activity|only] The only activity\n\nA paragraph.\n';
+    const run=C.compile([{text,name:"words",dir:TMP}],{form:"standalone",engine:X}),page=run.results[0].files.get("words/index.html")||"";
+    return {run,page,style:styleOf((/<article class="booklet"[^>]*>/.exec(page)||[""])[0]),report:C.reportText(run)};};
+  const decls=st=>Object.fromEntries(st.split(";").filter(Boolean).map(d=>d.split(/:(.*)/s).slice(0,2)));
+  const badF=[];
+  for(const [name,face] of Object.entries(Th.FONTS)){const t=themed(name,null),d=decls(t.style);
+    if(!(t.run.results[0].rep.ok&&d["--bk-font-text"]===face&&d["--bk-font-head"]===face&&new RegExp("Theme: base paper; font "+name+"\\.").test(t.report))) badF.push(name+" → "+t.style+" | "+(t.report.match(/Theme:[^\n]*/)||[""])[0]);}
+  chk("each font word ("+Object.keys(Th.FONTS).join(", ")+") sets the text and heading faces on the article, and the report says font <word>",Object.keys(Th.FONTS).length===4&&!badF.length,badF.join(" ; "));
+  const badD=[];
+  for(const [name,vals] of Object.entries(Th.DENSITY)){const t=themed(null,name),d=decls(t.style);
+    if(!(t.run.results[0].rep.ok&&Object.entries(vals).every(([k,v])=>d[k]===v)&&new RegExp("Theme: base paper; density "+name+"\\.").test(t.report))) badD.push(name+" → "+t.style+" | "+(t.report.match(/Theme:[^\n]*/)||[""])[0]);}
+  chk("each density word ("+Object.keys(Th.DENSITY).join(", ")+") sets its sizes on the article, and the report says density <word>",Object.keys(Th.DENSITY).length===2&&!badD.length,badD.join(" ; "));
+  const both=themed("readable","compact");
+  chk("a font and a density together are both on the article and both in the report's one Theme line",decls(both.style)["--bk-font-text"]===Th.FONTS.readable&&decls(both.style)["--bk-pgap"]===Th.DENSITY.compact["--bk-pgap"]&&/Theme: base paper; font readable; density compact\./.test(both.report),both.style+" | "+(both.report.match(/Theme:[^\n]*/)||[""])[0]);
+  const none=themed("sepia","tight");
+  chk("a font and a density the renderer does not have are neither on the page nor named as used in the report",!/--bk-font-text|--bk-pgap/.test(none.style)&&!/font sepia|density tight/.test(none.report),none.style);}
 /* theme.js checks again what it is handed: the renderer's reading is the first line of defence and this is the second. A
    hostile result of it (a value that is not #rrggbb, a name that is not a colour token, a face, density or style that is not in
    a table, a base that is not one of the four) writes nothing of itself. */

@@ -79,7 +79,7 @@ const HOME=Symbol("the contents page");
    number, so an address changes only when the author makes two the same. The page's title is the activity's, or, for
    a module of one activity, the module's (that module's card and page stand for it). */
 function planPages(X,P,name){
-  const R=X.R,d=P.design,mods=d.modules||[],plain=v=>R.plainText(R.tx(v,""));
+  const R=X.R,d=P.design,mods=d.modules||[];
   const seen=new Set(),acts=[];
   mods.forEach(m=>m.activities.forEach(a=>{if(R.isShown(a)&&!seen.has(a.id)){seen.add(a.id);acts.push({a,m});}}));
   const bookRaw=R.tx(d.title,"")||R.tx((mods[0]||{}).title,""),bookTitle=R.plainText(bookRaw)||name;
@@ -99,6 +99,10 @@ function planPages(X,P,name){
     return t&&t.kind==="activity"?up+t.folder+"/":up||"./";};
   return {paged:true,pages,byKey,modKey,href};}
 
+/* a page's title, as drawPage takes it and as the other booklets of a run list it: the booklet's title, else its first module's,
+   else its address */
+const titleOf=(X,P,name)=>{const d=P.design,t=v=>X.R.plainText(X.R.tx(v,""));return t(d.title)||t((d.modules[0]||{}).title)||name;};
+
 /* drawPage(X, parsed, o): the page's article and what the page and the report need.
    o: {name, form: "standalone"|"site", forceScript (tests: say the page needs booklet.js), siblings: Map of the addresses compiled in the same run to their titles, image(rel, ext) ->
    {ok, width, height} | {ok:false, why: a renderer ui string's name, detail}, figure(svgText, idPrefix, labelOf) ->
@@ -115,7 +119,7 @@ function drawPage(X,P,o){
     marked:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0},
     where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0,dgSeq:0};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
-  const bookTitle=plain(design.title)||plain((design.modules[0]||{}).title)||o.name;
+  const bookTitle=titleOf(X,P,o.name);
   const U=o.unit||{kind:"whole"},plan=o.plan||null,xr=o.xr||null,KEY=U.key||HOME,deep=U.kind==="activity";
   const pageTitle=deep?U.title:bookTitle;
   /* the ids and radio names the page's inputs take: the page's own address in them, so two fragments on one host page do not collide.
@@ -198,7 +202,7 @@ function drawPage(X,P,o){
      figure's number on the page (bk-<name>-dg2, bk-<name>-<folder>-f1), the same prefix the questions' ids take, so two pages put into one
      host page, each numbering from 1, keep their ids apart */
   /* A name or folder with a character an id cannot hold (or a capital) has it written as "-" in IDP, so "a.b" and "a-b" would share a prefix. A figure's
-     or a diagram's prefix then gets a short hash of the raw name after it, so those two stay two (the questions' ids are the pages lane's own). */
+     or a diagram's prefix then gets a short hash of the raw name after it, so those two stay two (the questions' ids take IDP alone). */
   const rawKey=String(o.name+(deep?"-"+U.folder:"")),slug=IDP.slice(3,-1),
     figP=rawKey===slug?IDP:IDP+(()=>{let h=5381;for(const c of rawKey) h=(h*33+c.codePointAt(0))>>>0;return h.toString(36).slice(0,4);})()+"-";
   const idPrefix=kind=>figP+kind+(++st.svgSeq);
@@ -281,7 +285,7 @@ function drawPage(X,P,o){
     if(typeof way!=="string") return mark(way.marked,MARKED_AS[way.marked](b));
     if(way==="callout") return DRAWERS.callout(b);
     const node=DRAWERS[way](b);
-    if(R.QUESTION_KINDS.has(b.type)&&node instanceof H.Node&&node.tag==="fieldset") R.qParts(b).forEach(p=>node.append(fold(p,true)));
+    if(R.QUESTION_KINDS.has(b.type)&&node instanceof H.Node&&node.tag==="fieldset") R.qParts(b).forEach(p=>node.append(fold(p)));
     if(b.type!=="callout"&&R.placeOf(b)==="folded"){st.counts.folds++;
       return el("details",{class:"bk-fold bk-plain"},el("summary",{},el("span",{class:"bk-ftitle"},...words(R.foldName(b),true))),el("div",{class:"bk-cb"},node));}
     return node;}
@@ -290,7 +294,7 @@ function drawPage(X,P,o){
   function callout(b){
     const grp=R.isGroup(b),unknown=!!b.unknown;
     const flag=unknown?mark("kind","the callout kind “"+String(b.kind)+"”"):null;
-    if(R.placeOf(b)==="folded") return flag?frag(flag,fold(b,false)):fold(b,false);
+    if(R.placeOf(b)==="folded") return flag?frag(flag,fold(b)):fold(b);
     st.counts.callouts++;
     const title=tx(b.title,""),body=el("div",{class:"bk-cb"},...blocks(R.blocksIn(b)));
     if(grp) return el("section",{class:"bk-group"},R.nonEmpty(title)?el("p",{class:"bk-gtitle"},...words(title)):null,body);
@@ -302,8 +306,8 @@ function drawPage(X,P,o){
       R.nonEmpty(title)?el("p",{class:"bk-ctitle"},...words(title)):null,
       unknown?el("p",{class:"bk-unknown"},T("reading").unknownKind(String(b.kind))):null,body);
     return flag?frag(flag,box):box;}
-  /* a callout folded with "-", or a question's own hint or solution (inQ): a <details>, closed, that opens with no script */
-  function fold(b,inQ){st.counts.folds++;
+  /* a callout folded with "-", or a question's own hint or solution: a <details>, closed, that opens with no script */
+  function fold(b){st.counts.folds++;
     const hs=R.hintKind(b);
     /* a kind the page does not know takes the note's look, as it does unfolded (calloutLook's own fallback). The renderer's
        own fold draws such a kind plain, under the word Note; the compiler keeps folded and unfolded alike */
@@ -684,7 +688,7 @@ function drawPage(X,P,o){
       el("ul",{},...tops.map(h=>el("li",{},el("a",{href:"#"+h.attrs.id},H.textOf(h).trim())))));
     /* after the lede when the page opens with one, else after the title */
     let placed=false;
-    if(st.lede) H.walk(article,(x,parent)=>{if(placed||!(x instanceof H.Node)) return;
+    if(st.lede) H.walk(article,x=>{if(placed||!(x instanceof H.Node)) return;
       const i=x.kids.indexOf(st.lede);if(i>=0){x.kids.splice(i+1,0,toc);placed=true;return false;}});
     if(!placed){const i=article.kids.findIndex(k=>levelOf(k)===1);article.kids.splice(i>=0?i+1:deep?1:0,0,toc);}}
 
@@ -752,4 +756,4 @@ function describe(text){const t=String(text||"").replace(/\s+/g," ").trim();
   if(cut>=60) return t.slice(0,cut);
   const sp=t.lastIndexOf(" ",157);return t.slice(0,sp>60?sp:157).replace(/[\s,;:]+$/,"")+"…";}
 
-module.exports={drawPage,needsScript,planPages,HOME,settleLinks,describe,COVERAGE,BLOCK_WAY,ENGINE_WAY,MARKED,PAGE_WORDS};
+module.exports={drawPage,needsScript,titleOf,planPages,HOME,settleLinks,describe,COVERAGE,BLOCK_WAY,ENGINE_WAY,MARKED};

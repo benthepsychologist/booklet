@@ -12,7 +12,7 @@
 // its source with a mark and a reason, and then with a stand-in for the browser (test/diagram-stub.js), where each is drawn and
 // marks nothing. The body map's figure is drawn in both, and marks nothing.
 // Run: node test/compile-coverage.test.js      (Needs node; nothing to install.)
-const fs=require("fs"),path=require("path");
+const path=require("path");
 process.env.PLAYWRIGHT="/nonexistent/playwright-core";
 const C=require("../compile/compile.js"),D=require("../compile/draw.js"),E=require("../compile/engine.js"),STUB=require("./diagram-stub.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
