@@ -87,7 +87,7 @@ const NAME='Ben\'s "spring" plan: #1';
   const dl=async()=>{const [d]=await Promise.all([p.waitForEvent('download'),p.locator('#btnExport').click()]);return {name:d.suggestedFilename(),md:fs.readFileSync(await d.path(),'utf8')};};
   const {name,md}=await dl();
   ok(name==='ben-s-spring-plan-1.booklet.md','the download is named for the booklet: '+name);
-  ok(md.split('\n')[2]==='title: '+JSON.stringify(NAME)&&/^booklet: "0\.16"$/m.test(md),'the file\'s title line is the name, quoted and escaped, and the marker is quoted: '+md.split('\n').slice(0,4).join(' | '));
+  ok(md.split('\n')[2]==='title: '+JSON.stringify(NAME)&&/^booklet: "0\.17"$/m.test(md),'the file\'s title line is the name, quoted and escaped, and the marker is quoted: '+md.split('\n').slice(0,4).join(' | '));
   ok(/> \[!module\|ma\] Garden notes\n\nA short blurb[^\n]*\n\n> \[!notice\]\n> license: Free to copy/.test(md)||/> \[!module\|ma\] Garden notes\n\n> \[!notice\]/.test(md)||md.includes('> [!notice]\n> license: Free to copy and share, unmodified and with this notice intact.\n> copyright: Example Press, 2026\n> source: https://example.org/garden\n> version: 1.2'),'module a\'s notice callout is in the file byte for byte');
   ok(/> \[!module\|mb\] Sleep log\n\n> \[!notice\]\n> license: Shared under a licence given in front matter\.\n> copyright: Front Matter Press, 2025\n> source: javascript:alert\(1\)\n\n> \[!activity/.test(md),'module b\'s notice, which was only in its front matter, was written into its fence as a callout, without the front matter version (0.13)');
   ok(/> \[!data\|ma\] Data for Garden notes\n\n```booklet widget/.test(md),'module a\'s data is under its own data line');
