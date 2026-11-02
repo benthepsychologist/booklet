@@ -2,6 +2,29 @@
 
 What changed in each version of the format, newest first. `SPEC.md` states the rules as they are now and carries no history; this file keeps it. Section numbers are those of `SPEC.md`. A version marked "wording only", "drawing only", "the reference renderer only" or "wording and the reference renderer" changed no file: the marker stayed as it was.
 
+## Changes from v0.17
+
+The format becomes 0.18. The renderer's own release follows separately.
+
+- **Audio and video** (section 6, "Audio and video"). They are embedded with the image syntax, and the extension of the target says whether it is an image, audio or video: `![alt](media/a.mp3)`, `![alt][id]`, and Obsidian's `![[a.mp3]]`. The portable extensions are `.mp3`, `.m4a`, `.ogg`, `.opus` and `.wav` for audio and `.mp4` and `.webm` for video (`.webm` is video); `.flac`, `.3gp`, `.mov`, `.mkv` and `.ogv` are allowed and the linter warns. A local file is a relative path under the rules an image has. A transcript is an ordinary folded callout after the embed; a caption file beside a video is not part of this version. Raw HTML media and frames (`<audio>`, `<video>`, `<source>`, `<track>`, `<iframe>`, `<frame>`, `<object>`, `<embed>`, `<script>`) are not part of the format. A reader loads nothing until the reader presses play.
+- **`![[name.ext]]` file embeds** (section 6). Read, outside Obsidian, as a relative path from the booklet's folder; accepted for images too, so one embed rule covers every file kind. Obsidian's `|300` size suffix is kept as written and means nothing in the format. `![[#^id]]` stays a block embed.
+- **`media-from`** (section 2). A new optional front matter key that declares the origins a booklet's hosted media comes from: `https:` origins only (scheme, host and optional port, no path), as one value or a YAML list. It is a declaration and never a permission. The declared origin is the origin of the address as written, so a redirect does not widen it. A reader's own list may say more than the file (path prefixes). A malformed value is reported in the opening notice and ignored; the linter reports an error.
+- **The rule: the file declares; the reader or the host allows** (section 12; `AGENTS.md`, the renderer's one routing rule). Section 6 and section 12 said that a remote address is never requested and that a reader fetches no address a file names. They now say never requested unasked: a booklet may name a media origin, only the host or the reader allows one, and nothing is requested for it unasked. A remote address on an origin the file does not declare is never requested; a reader shows the alt text and the address as a link. An extensionless remote address written as an embed (a video service's page) is an error in the linter and is drawn as a link. The reference renderer's own behaviour does not change: it loads no remote media and no remote image through v0.18.
+- **The `listen` question** (section 5, "Listen"; section 4's settings table; section 8's table of shapes). A question that owns one audio or video embed (or, for a video service, a link) and remembers where the reader stopped. Its answer is `{ "pos": seconds, "done": true or false }`, and `pos` is optional, so `{ "done": true }` alone is valid. `done` becomes true when playback ends, and when a pause or stop falls within `left:` seconds of the end (default 120, whole seconds) once the position is past half of the media's length; `pos` is reset when playback ends. The reader may set or clear `done` by hand, and a renderer never clears it. It counts as answered when `done` is true. It is not allowed in a `repeat` activity. `pos` and `done` are in the file, so they travel with a booklet that is shared back.
+- **Renderer notes, marked as such** (section 5, "Listen"). How often `pos` is written (kept on the device while the media plays, written to the file on pause, on end, on leaving and on quit) and the words an Allow prompt uses are a renderer's, not the format's. The format keeps only that a renderer never clears a `done`.
+- **Continue** (section 12). A renderer may offer to take the reader to the first `listen` not done, or the first question not answered, worked out from the records; it stores nothing new.
+- **Section 6's account of the reference renderer is marked as a renderer note.** The long paragraph on what the reference renderer does with images is not the format; it says what one renderer does with the rule above it.
+- **Conformance** (section 12). What a conforming reader must, should and may do with a declared origin and with media and `listen`, and what a conforming writer does with a `listen` answer and with `media-from`.
+- **The marker is `booklet: "0.18"`** in this document and wherever it names its version.
+
+**Not in this version.** Publishing a booklet's results, for other tools and other booklets to read, is planned for a later version, and this version has no syntax for it. A caption file beside a video is also later.
+
+**Not yet supported in the reference renderer.** It does not play audio or video, does not read `![[name.ext]]`, does not read `media-from`, does not know the kind `listen` (it draws it as an unknown kind and keeps any answer as written), and does not offer Continue (section 13). It loads no remote media and no remote image, whatever a file declares.
+
+**Not yet measured.** What Obsidian and GitHub do with each form of media embed, remote addresses included, and whether Obsidian asks the network for a remote file when a note is opened, has not been checked; the spec says nothing about it (section 13).
+
+The marker is `booklet: "0.18"`. A file marked `"0.17"` opens with a notice; change its marker to `"0.18"`.
+
 ## Changes from v0.16
 
 The format becomes 0.17 and the renderer 0.17.0 (released 2026-10-30).
