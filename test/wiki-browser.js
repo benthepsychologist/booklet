@@ -15,8 +15,8 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
 const WIKI=fs.readFileSync(path.join(__dirname,'fixtures','wiki-scrambled.booklet.md'),'utf8');
 
 const pages=[...WIKI.matchAll(/^> \[!activity\|(\S+)((?: [^\]]*)?)\] (.*)$/gm)].map(m=>({id:m[1],parent:((/parent:(\S+)/.exec(m[2]))||[])[1]||'',title:m[3].trim()}));
-const FLAT=`---\nbooklet: "0.17"\ntitle: Flat\nlang: en\n---\n\n> [!module|f] Flat module\n\nOpening words.\n\n> [!activity|one] First\n\nOne.\n\n> [!activity|two] Second\n\nTwo.\n\n> [!activity|three] Third\n\nThree.\n\n> [!module|f end] End\n`;
-const CHIP=`---\nbooklet: "0.17"\ntitle: Programme\nlang: en\n---\n\n> [!module|prog] Programme\n\n> [!activity|start] Start here\n\nThe first week: [[week-1.booklet]]. The second: [Week 2](week-2.booklet.md). A row below.\n\n\`\`\`booklet data\n[{"label":"Third week","link":"week-3.booklet"}]\n\`\`\`\n^weeks\n\n\`\`\`booklet query\nfrom: weeks\nas: list\n\`\`\`\n\n> [!activity|more] More\n\nMore.\n\n> [!module|prog end] End\n\n> [!module|week-1] Week 1\n\n> [!activity|w1] Words\n\nWeek one.\n\n> [!activity|w1b] More words\n\nStill week one.\n\n> [!module|week-1 end] End\n`;
+const FLAT=`---\nbooklet: "0.18"\ntitle: Flat\nlang: en\n---\n\n> [!module|f] Flat module\n\nOpening words.\n\n> [!activity|one] First\n\nOne.\n\n> [!activity|two] Second\n\nTwo.\n\n> [!activity|three] Third\n\nThree.\n\n> [!module|f end] End\n`;
+const CHIP=`---\nbooklet: "0.18"\ntitle: Programme\nlang: en\n---\n\n> [!module|prog] Programme\n\n> [!activity|start] Start here\n\nThe first week: [[week-1.booklet]]. The second: [Week 2](week-2.booklet.md). A row below.\n\n\`\`\`booklet data\n[{"label":"Third week","link":"week-3.booklet"}]\n\`\`\`\n^weeks\n\n\`\`\`booklet query\nfrom: weeks\nas: list\n\`\`\`\n\n> [!activity|more] More\n\nMore.\n\n> [!module|prog end] End\n\n> [!module|week-1] Week 1\n\n> [!activity|w1] Words\n\nWeek one.\n\n> [!activity|w1b] More words\n\nStill week one.\n\n> [!module|week-1 end] End\n`;
 const WEEK2=`---\nbooklet: "0.11"\ntitle: Week 2\nlang: en\n---\n\n> [!module|week-2] Week 2\n\n> [!activity|w2] Week two\n\nWeek two reading.\n\n> [!activity|w2b] More\n\nx\n\n> [!module|week-2 end] End\n`;
 const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
 
@@ -81,7 +81,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   await p.context().close();
 
   /* ---- an activity of three pages in a flat module: its pages are pagination (0.15), listed nowhere, turned by the pager ---- */
-  {const MP='---\nbooklet: "0.17"\ntitle: MP\nlang: en\n---\n\n> [!module|mp] MP\n\n> [!activity|one] One\n\nTop.\n\n> [!activity|multi] Multi\n\n## First page\n\nAlpha content.\n\n***\n\n## Second page\n\nBeta content.\n\n***\n\n## Third page\n\nGamma content.\n\n> [!module|mp end] End\n';
+  {const MP='---\nbooklet: "0.18"\ntitle: MP\nlang: en\n---\n\n> [!module|mp] MP\n\n> [!activity|one] One\n\nTop.\n\n> [!activity|multi] Multi\n\n## First page\n\nAlpha content.\n\n***\n\n## Second page\n\nBeta content.\n\n***\n\n## Third page\n\nGamma content.\n\n> [!module|mp end] End\n';
    const pager=q=>q.locator('#main .cd-foot').innerText().then(t=>t.replace(/\s+/g,' ').trim());
    for(const W of [1280,390]){
      p=await openBook(MP,W);await p.locator('#main button.mode').nth(1).click();await p.waitForTimeout(300);
@@ -117,7 +117,7 @@ const REG={modules:[{id:'t/week-2',title:'Week 2',file:'week-2.md'}]};
   ok(asked().length===2&&/registry\.json$/.test(asked()[1])&&await p.locator('.mc-add').count()===1,'pressing it again asks again (the registry list, once more), and now offers "Add it"');
   await p.locator('.mc-add').click();await p.waitForTimeout(900);
   ok(asked().length===3&&/week-2\.md$/.test(asked()[2]),'"Add it" reads that module\'s file, and nothing else');
-  ok(/It says booklet: 0\.11, so it was read as format 0\.17/.test(await p.locator('#toast').innerText()),'a module marked "0.11" added from a chip shows the older-version notice, as Add a module does ('+(await p.locator('#toast').innerText()).slice(0,100)+')');
+  ok(/It says booklet: 0\.11, so it was read as format 0\.18/.test(await p.locator('#toast').innerText()),'a module marked "0.11" added from a chip shows the older-version notice, as Add a module does ('+(await p.locator('#toast').innerText()).slice(0,100)+')');
   await p.locator('#btnHome').click().catch(()=>{});await p.waitForTimeout(300);
   ok(await p.locator('#main button.mode').filter({hasText:'Week 2'}).count()===1,'the module is now in the booklet');
   await p.locator('#main button.mode').filter({hasText:'Programme'}).first().click();await p.waitForTimeout(300);

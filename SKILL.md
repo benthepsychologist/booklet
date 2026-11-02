@@ -1241,14 +1241,23 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 `status: draft` draws no warning. A warning you do get names something real
 (a remote image, a language with no strings, a chart that would draw nothing).
 
-**The linter does not yet know the 0.18 additions** (audio and video embeds,
-`![[name.ext]]`, `media-from`, the `listen` kind and its `left:`), so it will not
-catch a mistake in them, and a clean run says nothing about them. Check them by
-hand with the last six items of the list below.
+**The linter checks the 0.18 additions.** For audio and video it reports a remote address
+with no media extension written as an embed (an error: it is a link), a `data:` or
+`javascript:` address (an error), an `http:` address or one that starts `//` (a warning),
+an extension that may not play everywhere, such as `.flac` or `.mov` (a warning), a local
+path a renderer will not read (a warning), a bare `![[name.ext]]` with no such file beside
+the booklet (a warning), and a local video with no folded `> [!note]- Transcript` straight
+after it (a warning). For `media-from:` it reports any value that is not an `https:` origin
+(scheme, host and optional port, nothing after), as one value, a list or a comma list. For a
+`listen` it reports a `left:` that is not a whole number of seconds in digits, a setting the
+kind does not take, a missing id, a `listen` inside a `repeat` activity, and more than one
+audio or video embed under one `listen` (all errors). It also reports raw `<audio>`,
+`<video>`, `<iframe>` and other media or framing HTML (an error). A clean run still says
+nothing about what only a writer knows, so keep the last six items of the list below.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.17 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
+| no `lang:` | `front matter has no `lang:` — a v0.18 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`, `each:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |

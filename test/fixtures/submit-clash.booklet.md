@@ -1,5 +1,5 @@
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: test/submit-clash
 title: Submit clash test
 lang: en

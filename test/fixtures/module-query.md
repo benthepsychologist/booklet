@@ -1,5 +1,5 @@
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: fixture/query
 title: Log and look back
 lang: en

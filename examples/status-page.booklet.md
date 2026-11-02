@@ -1,5 +1,5 @@
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: example/status-page
 title: Allotment status
 lang: en

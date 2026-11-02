@@ -1,5 +1,5 @@
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: fixture/compile-bodymap
 title: A body map
 lang: en

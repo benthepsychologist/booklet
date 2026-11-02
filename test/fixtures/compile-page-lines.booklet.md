@@ -1,5 +1,5 @@
 ---
-booklet: "0.17"
+booklet: "0.18"
 title: Harbour notes
 lang: en
 description: A made-up set of notes about a harbour.

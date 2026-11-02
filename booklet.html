@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-gBYuPL7x+eHl7rmfzgG+cBRNKR9qiTU1/Q99s3os9lU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-67pwDXQ1jpZ6V7YMQ3xvAR/uCWbln3w59KTUmtOfJfo=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1402,10 +1402,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
 const RENDERER_VERSION="0.17.0";
-/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.17"`, and a
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.18"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
-const FORMAT_VERSION="0.17";
+const FORMAT_VERSION="0.18";
 /* the toggle's languages, each named in itself (es-AR has strings but no button) */
 const LANG_NAMES={en:"English",es:"Español",fr:"Français"};
 const LANG_PREF_KEY="booklet.ui.lang";
@@ -3815,7 +3815,7 @@ const NOTICE_KEYS=["license","copyright","source","version"];
 const FRONT_NOTICE_KEYS=["license","copyright","source"];
 /* the kinds that take no id: their words are settings only */
 const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","diff","law","opinion"]);
-/* A file is read when its front matter says `booklet: "0.17"` (quoted or not, as text); another 0.x marker opens with a notice. */
+/* A file is read when its front matter says `booklet: "0.18"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
