@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.17.0**. It matches SPEC.md's v0.17, the current format.
+**Skill version: 0.18.0**. It matches SPEC.md's v0.18, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -81,7 +81,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.17"`, `id`, `title`, `lang`, `version`, and a `description` if the first paragraph is not the right sentence for a search result | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.18"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, and `media-from` if the booklet names remote audio or video (section 4) | you |
 | **Design** (everything above the records, and anything written after them) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design, and leaves design written after the records where it is |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only; a fresh file has none at all |
 
@@ -185,7 +185,7 @@ language are real ones; give them your own.
 
 ````markdown
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: "local/my-booklet"
 title: "My booklet"
 lang: en
@@ -212,7 +212,7 @@ One or two sentences of plain prose: what to do, and that skipping is fine.
 
 Write one booklet line for each question (section 6) where `my-question` stands.
 
-- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.17"`:
+- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.18"`:
   unquoted, a YAML tool reads `0.10` as the number 0.1. A tool that writes
   booklets should ask the linter for the marker (`python3 lint-booklet.py
   --marker` prints the whole line) and not hard-code it. A file marked with
@@ -238,8 +238,34 @@ Write one booklet line for each question (section 6) where `my-question` stands.
   after `end]` are for whoever edits the file and are never shown.
 - **Notes for whoever edits the file** go in an HTML comment (`<!-- … -->`),
   which is never drawn.
+- **`media-from`** (optional, in the front matter) **declares** the origins a
+  booklet's remote audio and video come from (section 7). It is a declaration,
+  never a permission: the reader, or the reader's host, decides what is allowed,
+  and a booklet with no remote media needs none. Each value is an `https:`
+  **origin** and nothing more: the scheme, the host and, if it is not the usual
+  one, a port. No path, query, fragment, user name or wildcard, and no scheme but
+  `https:`. Write one origin, or a YAML list of them (a list keeps the front
+  matter flat):
+
+  ```yaml
+  media-from: https://media.example.org
+  ```
+
+  ```yaml
+  media-from:
+    - https://media.example.org
+    - https://cdn.example.net:8443
+  ```
+
+  The origin is that of the address **as written**, and a redirect does not widen
+  it: if `https://media.example.org/a.mp3` answers with a redirect to another
+  host, only the first host is declared. So write the address that serves the
+  file directly (a CDN address), not one that redirects. A malformed value is
+  reported when the booklet opens and ignored, and the other origins of a list
+  still count.
 - **Images.** An image is linked, never embedded. A renderer fetches one only
-  from a place its own host declares, never from an address the file names. The
+  from a place its own host declares, or from an origin its host or reader has
+  allowed, never from an address the file names unasked. The
   reference renderer draws an image for a booklet opened from the store its host
   declares, or from its default folder (`modules/` beside the renderer, on a page
   that declares no store); the path is read relative to the booklet's own name
@@ -409,7 +435,7 @@ so it opens on the first. The activity's opening is shown above every tab:
 
 ````markdown
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: "local/check-in"
 title: A short check-in
 description: A few minutes to look over the garden, with notes on what each word means.
@@ -588,6 +614,7 @@ shows it under the prompt.
 | `number` | a number | nothing; `min:`, `max:`, `step:` after the id |
 | `date` | a date | nothing |
 | `widget` | a drawing engine (a body map or a grid) | an embed of the widget's data — section 9, and never invent one |
+| `listen` | one piece of audio or video the reader listens to or watches, and where they stopped | `>` lines directly under the line holding one audio or video embed (or a link); `left:` after the id — see below |
 
 ```markdown
 > [!choice|biggest] When are the biggest tides?
@@ -638,6 +665,53 @@ Only a `choice` or `multi` takes replies, and `[x]` and a following
 ```markdown
 > [!number|sleep min:0 max:24] Hours slept
 ```
+
+**A `listen` asks the reader to listen to, or watch, one piece of media, and
+remembers where they stopped.** The `>` lines directly under the line hold the
+media: one audio or video embed (section 7, "Audio and video"). Any other `>`
+lines are help text. Here is an invented episode of a podcast with one question
+about it, the transcript in a folded note beside it:
+
+```markdown
+> [!listen|ep1] Episode 1: Why the tide turns
+> ![Episode 1, about 20 minutes](media/harbour-notes-ep1.m4a "Harbour Notes, episode 1")
+> Listen at your own pace. You can stop and come back.
+
+> [!note]- Transcript
+> Welcome to Harbour Notes. Today: why the sea rises and falls twice a day…
+
+> [!text|ep1-heard] What one idea from the episode would you tell a friend?
+> A sentence is enough, or skip it.
+```
+
+- **One question, one piece of media.** More than one embed under a `listen` is a
+  mistake. Where the media is a page of a video service (a link, never an embed),
+  put that link under the line in place of the embed: `> [Watch the lecture](https://video.example.org/watch/overview)`.
+  A link keeps only `done`, which the reader ticks.
+- **Its answer** is `{ "pos": 754, "done": true }`, in the records like any
+  once-answered question; you never write it. `pos` is where playback stopped, in
+  whole seconds. `pos` is optional, so `{ "done": true }` alone is valid, and so
+  is a `pos` with no `done`.
+- **`done`** becomes true when playback ends, and when the reader pauses or stops
+  within `left:` seconds of the end. `left:` is a whole number of seconds after
+  the id (`> [!listen|v1 left:60] …`), and the only setting; it defaults to `120`,
+  and any other value is ignored and is a mistake. A pause counts only once the
+  position is past half of the media's length, so a pause at the start of a short
+  clip is not done. When playback ends, `pos` is reset (to `0`, or taken out) and
+  read as the start. The reader may tick or clear `done` by hand, and a renderer
+  never clears it. A `listen` counts as answered when `done` is true.
+- **Not in a `repeat` activity.** A `listen` is answered once, so put it in an
+  activity with no `repeat`; in a `repeat` activity it is a mistake and is drawn
+  as a plain question.
+- **Privacy.** `pos` and `done` are in the file. They say what the reader listened
+  to and how far, and they travel with a booklet that is shared back, to a teacher
+  or a clinician for instance. Anyone who hands out a booklet with a `listen`
+  should say so to the person who answers it.
+- **Continue.** A reader may offer to take the person to the first `listen` not
+  done, or the first question not answered, after their place. A writer does
+  nothing for it.
+- Without a Booklet reader, Obsidian shows a `listen` as a titled callout with the
+  embed inside it.
 
 **A hint and a solution** are callouts that belong to the question straight
 above them. Fold both with `-`, and put them directly under their question, with
@@ -899,11 +973,75 @@ between paragraphs for a new one. Section 4 says what a heading does.
   `[harbour]: images/harbour.jpg`. Use a relative path the requester gave you.
   Never embed the data, never invent an address, and avoid an `https` address:
   the linter warns on one, and a renderer fetches an image only from a place its
-  host declares (section 4). Write the path with only letters, digits, `_`, `.`,
+  host declares, or an origin its host or reader has allowed (section 4). Write the path with only letters, digits, `_`, `.`,
   `/` and `-` (at most 200 characters), no empty part and no part that begins
   with a dot (so no `..` and no `./`), no leading `/`, and an extension of
   `.svg`, `.png`, `.jpg`, `.jpeg`, `.webp` or `.gif`; other paths are never read. An empty alt
   text (`![](images/rule.svg)`) marks a decorative image.
+- **Audio and video** are embedded with the image syntax, and the **extension of
+  the target says the kind**, in any case. The same three forms as an image:
+  inline with an optional caption, reference style, and Obsidian's file embed.
+
+  ```markdown
+  ![Lecture 3, part 1](media/lecture-3a.mp3 "Week 3")
+
+  ![Lecture 3, part 1][lec-3a]
+
+  ![[lecture-3a.mp3]]
+
+  [lec-3a]: media/lecture-3a.mp3
+  ```
+
+  | kind | write these (every reader should play them) | allowed, may not play everywhere |
+  | --- | --- | --- |
+  | audio | `.mp3`, `.m4a`, `.ogg`, `.opus`, `.wav` | `.flac`, `.3gp` |
+  | video | `.mp4`, `.webm` | `.mov`, `.mkv`, `.ogv` |
+
+  `.webm` is **video** (a video player also plays a file with sound only). The alt
+  text names the media for a screen reader and is what shows where the media
+  cannot play; the quoted title is its caption. An embed whose extension is in
+  neither this table nor the image list is not media: a reader shows the alt text
+  and the address as text.
+  - **Keep media beside the booklet and write a relative path**, under the rules
+    an image's path has (letters, digits, `_`, `.`, `/` and `-`; at most 200
+    characters; no leading `/`; no empty part and no part that begins with a dot,
+    so no `..`; an extension from the table). Use a file the requester gave you,
+    and never invent a path or an address.
+  - **`![[name.ext]]`** is read, outside Obsidian, as a relative path from the
+    booklet's folder, so write the path: Obsidian finds a bare name anywhere in its
+    vault, which is Obsidian's behaviour and not the format's. A bare name that
+    does not resolve beside the file is a mistake. `![[picture.png]]` is accepted
+    for an image too. Obsidian's size suffix (`![[x.png|300]]`) is kept as written
+    and means nothing in the format. `![[#^id]]` stays a block embed, never a file.
+  - **A remote (`https:`) address may be written, and nothing is requested for it
+    unasked.** A reader may request it only for an origin its host or the reader
+    has allowed, and only once the reader presses play. Permission is never read
+    from the file: `media-from` (section 4) names where media lives, and only the
+    reader or the host allows. Where the origin is not allowed, the reader shows
+    the alt text and the address as a link in its place. An `http:` address, one
+    starting `//`, `data:` and every other scheme are never used. Prefer the
+    address that serves the file directly over one that redirects.
+  - **An extensionless remote address in image syntax is a mistake**, for
+    instance a video service's page written as `![Lecture](https://video.example.org/watch/overview)`.
+    A reader draws it as a link. Write a plain link, `[Watch the lecture](https://video.example.org/watch/overview)`,
+    and under a `listen` put that link in place of the embed (section 6).
+  - **Nothing plays by itself.** A reader loads no media until the reader presses
+    play, and autoplay, loop, muted and a start time are not part of the format:
+    a file cannot ask for any of them.
+  - **A bare embed stores nothing.** Where the reader's place or completion
+    matters, use a `listen` question (section 6).
+  - **A transcript** is an ordinary folded callout directly after the embed:
+    `> [!note]- Transcript`, then the text. It is what a reader who cannot hear the
+    media reads instead. Write one beside every local video (a local video with no
+    transcript is a mistake worth a warning). A caption file beside a video is not
+    part of this version.
+  - **Raw HTML media and frames are not part of the format:** `<audio>`, `<video>`,
+    `<source>`, `<track>`, `<iframe>`, `<frame>`, `<object>`, `<embed>`, `<script>`.
+    Never write them.
+  - The reference renderer does not yet play audio or video, does not read
+    `![[name.ext]]` or `media-from`, and draws the kind `listen` (section 6) as an
+    unknown kind, keeping any answer as written. What the format says holds
+    regardless.
 
 - **A report** (something written to be read, with numbers and perhaps a few
   questions at the end) has its own section, 8.
@@ -1103,6 +1241,11 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 `status: draft` draws no warning. A warning you do get names something real
 (a remote image, a language with no strings, a chart that would draw nothing).
 
+**The linter does not yet know the 0.18 additions** (audio and video embeds,
+`![[name.ext]]`, `media-from`, the `listen` kind and its `left:`), so it will not
+catch a mistake in them, and a clean run says nothing about them. Check them by
+hand with the last six items of the list below.
+
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
 | no `lang:` | `front matter has no `lang:` — a v0.17 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
@@ -1175,12 +1318,18 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.17"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.18"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has a task list under it; a numbered list that does not start at `1.` has a blank line above it.
 - [ ] No answers, kept entries, names or `sync` values written anywhere; nothing inside `%% … %%` touched.
 - [ ] The tone is kind, skipping is mentioned, and nothing here is a clinical exercise (section 2).
+- [ ] Every audio or video embed has a media extension from the table in section 7 (`.webm` is video), and a relative path beside the booklet: no bare `![[name]]` that does not resolve there, no `|300` that is meant to do anything.
+- [ ] No extensionless remote address in image syntax (a video service's page is a plain link), and no raw `<audio>`, `<video>`, `<iframe>` or other HTML media.
+- [ ] `media-from`, if present, holds `https:` origins only (scheme, host, optional port, no path), as one value or a list, and nothing in the file treats it as a permission.
+- [ ] A `listen` holds one embed or one link, takes only `left:` (whole seconds), sits in an activity with no `repeat`, and no answer for it is written.
+- [ ] Every local video has a folded `> [!note]- Transcript` beside it.
+- [ ] A booklet with a `listen` is handed out with a word that `pos` and `done` travel with it when it is shared back.
 
 ---
 
@@ -1193,7 +1342,7 @@ Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -1229,7 +1378,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -1290,7 +1439,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -1326,7 +1475,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ````markdown
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: "local/reminders-report"
 title: "Reminders: SMS or email?"
 lang: en
@@ -1408,7 +1557,7 @@ flowchart LR
 ## 13. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.17 file, one language, its
+same way as any other booklet above — one v0.18 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 
