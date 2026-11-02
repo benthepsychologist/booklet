@@ -1,5 +1,5 @@
 ---
-booklet: "0.17"
+booklet: "0.18"
 id: fixture/compile-theme
 title: A theme with bad values
 lang: en

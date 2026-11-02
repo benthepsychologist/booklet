@@ -100,9 +100,16 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
    const kinds=[...c[0].matchAll(/`(\w+)`/g)].map(x=>x[1]);
    const sets=c[1]==="none"?[]:[...new Set([...c[1].replace(/\([^)]*\)/g,"").matchAll(/`([^`]+)`/g)].flatMap(x=>x[1].replace(/<[^>]*>/,"").split(/\s+/)))];
    kinds.forEach(k=>{fromSpec[k]=sets;});}
+ // Kinds the format (SPEC.md and the linter) defines that the reference renderer does not read yet (SPEC.md section 13, "Not yet supported
+ // in the reference renderer"): it draws such a line as an unknown kind. A kind listed here is left out of the renderer's side of the
+ // comparisons below, and the first check after the table fails when the renderer gains it, so the entry is taken out then.
+ const notYet={listen:["left:"]};
  must("the renderer's KIND_SETTINGS is found and has kinds",Object.keys(fromRenderer).length>10,JSON.stringify(Object.keys(fromRenderer)));
- must("KIND_SETTINGS is the same in the renderer and the linter",norm(fromRenderer)===norm(fromLinter),norm(fromRenderer)+" vs "+norm(fromLinter));
- must("and the same in SPEC.md's table in section 4",norm(fromRenderer)===norm(fromSpec),norm(fromRenderer)+" vs "+norm(fromSpec));
+ must("a kind the renderer does not read yet is in the linter and in SPEC.md, and not in the renderer's KIND_SETTINGS",
+   Object.keys(notYet).every(k=>!(k in fromRenderer)&&norm({[k]:fromLinter[k]||["?"]})===norm({[k]:notYet[k]})&&norm({[k]:fromSpec[k]||["?"]})===norm({[k]:notYet[k]})));
+ const withNotYet={...fromRenderer,...notYet};
+ must("KIND_SETTINGS is the same in the renderer and the linter",norm(withNotYet)===norm(fromLinter),norm(withNotYet)+" vs "+norm(fromLinter));
+ must("and the same in SPEC.md's table in section 4",norm(withNotYet)===norm(fromSpec),norm(withNotYet)+" vs "+norm(fromSpec));
  // `earlier:` takes a whole number written in digits only (SPEC.md section 4): the renderer's check and the linter's are one pattern
  {const er=html.match(/const EARLIER_VALUE=\/(.+?)\/;/),ep=py.match(/^EARLIER_VALUE = r"([^"]*)"/m),re=er&&new RegExp(er[1]);
   const take=["0","3","12","012"],refuse=["+3","3.0","-1",""," 3","3 ","1e2","0x3","\uff11\uff12"];
@@ -111,7 +118,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  const qk=html.match(/const QUESTION_KINDS=new Set\(\[([^\]]*)\]\)/),pk=py.match(/^QUESTION_KINDS = \{([^}]*)\}/m),ps=py.match(/^STRUCTURE_KINDS = \{([^}]*)\}/m);
  const words=t=>[...t.matchAll(/"(\w+)"/g)].map(x=>x[1]);
  must("its kinds are the question kinds and the structure kinds the linter knows, and no others",
-   !!(qk&&pk&&ps)&&JSON.stringify(Object.keys(fromRenderer).sort())===JSON.stringify([...new Set([...words(qk[1]),...words(ps[1])])].sort())&&JSON.stringify(words(qk[1]).sort())===JSON.stringify(words(pk[1]).sort()));
+   !!(qk&&pk&&ps)&&JSON.stringify(Object.keys(withNotYet).sort())===JSON.stringify([...new Set([...words(pk[1]),...words(ps[1])])].sort())&&JSON.stringify([...words(qk[1]),...Object.keys(notYet)].sort())===JSON.stringify(words(pk[1]).sort()));
  // the kinds that take no id (the first word after the bar is the id for every other kind): the same list in the renderer, the linter and SPEC.md
  {const nr=html.match(/const NO_ID_KINDS=new Set\(\[([^\]]*)\]\)/),np=py.match(/^NO_ID_KINDS = \(([^)]*)\)/m),ns=spec.match(/\*\*Kinds that take no id\*\* are ([^;]*?);/);
   const quoted=t=>t?[...t.matchAll(/"(\w+)"/g)].map(x=>x[1]).sort().join():"";

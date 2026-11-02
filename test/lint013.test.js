@@ -3,13 +3,20 @@
 // kind, its line and its words), then asks the renderer about the same file where it reports the same slip, so the
 // two tools stay in step (a mismatch of line or of meaning fails here). The clean fixtures must stay clean.
 // Run: node test/lint013.test.js   (node and python3; nothing to install.)  LINT_BOOKLET=<path> tries another linter.
-const fs=require("fs"),path=require("path"),{spawnSync}=require("child_process");
+const fs=require("fs"),path=require("path"),os=require("os"),{spawnSync}=require("child_process");
 const R=path.join(__dirname,"..");
 const LINT=process.env.LINT_BOOKLET||path.join(R,"lint-booklet.py");
 const FX=path.join(__dirname,"fixtures");
 const P=require("./page.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a],{encoding:"utf8"});
+// The fixtures, the files these tests write from them and the example booklets were written when the format was 0.17: a file named on the
+// command line that says `booklet: "0.17"` is linted as a copy that says 0.18, the current format, and is the same file but for that digit
+// (every line number holds). A run with no file named (the repository's own files) lints them as they stand.
+const REMARK=fs.mkdtempSync(path.join(os.tmpdir(),"lint013fx-"));let remarked=0;
+const remark=a=>{if(!/\.md$/.test(a)||!fs.existsSync(a))return a;
+  const t=fs.readFileSync(a,"utf8"),u=t.replace(/^(booklet:[ \t]*["']?)0\.17(["']?[ \t]*)$/m,"$10.18$2");
+  if(u===t)return a;const f=path.join(REMARK,(++remarked)+"-"+path.basename(a));fs.writeFileSync(f,u);return f;};
+const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a.map(remark)],{encoding:"utf8"});
   const lines=r.stdout.split("\n");
   return {status:r.status,out:r.stdout,errors:lines.filter(l=>l.startsWith("ERROR")),warns:lines.filter(l=>l.startsWith("warn")),
     all:lines.filter(l=>/^(ERROR|warn)/.test(l))};};
