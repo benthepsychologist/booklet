@@ -11,7 +11,7 @@ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"lint017-"));let k=0;
 const lint=(text,name)=>{const f=path.join(tmp,(name||"f"+(++k))+".md");fs.writeFileSync(f,text);
   const r=spawnSync("python3",[LINT,f],{encoding:"utf8"}),lines=r.stdout.split("\n");
   return {status:r.status,out:r.stdout,errors:lines.filter(l=>l.startsWith("ERROR")),warns:lines.filter(l=>l.startsWith("warn"))};};
-const FM='---\nbooklet: "0.17"\ntitle: Lint fixture\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.18"\ntitle: Lint fixture\nlang: en\n---\n\n';
 // a file of one activity with an optional body; `n` is the line the body starts on (the front matter is 6 lines)
 const ACT=(body,head="> [!activity|a] Notes\n\n")=>FM+head+body;
 const one=(what,r,kind,line,rx)=>{const got=kind==="ERROR"?r.errors:r.warns;
@@ -22,9 +22,9 @@ const clean=(what,r)=>chk(what,r.status===0&&/0 errors · 0 warnings/.test(r.out
 
 // ---- the marker
 {const m=spawnSync("python3",[LINT,"--marker"],{encoding:"utf8"});
- chk("--marker prints the 0.17 marker, quoted",m.status===0&&m.stdout==='booklet: "0.17"\n',JSON.stringify(m.stdout));
- const o=lint(FM.replace('"0.17"','"0.16"')+"> [!activity|a] A\n\n");
- chk("a file marked 0.16 is checked as 0.17, with one warning that says so",o.status===0&&o.warns.length===1&&/this file says booklet: 0\.16; the current format is 0\.17, and it is checked as 0\.17/.test(o.warns[0]),o.out);}
+ chk("--marker prints the 0.18 marker, quoted",m.status===0&&m.stdout==='booklet: "0.18"\n',JSON.stringify(m.stdout));
+ for(const v of ["0.16","0.17"]){const o=lint(FM.replace('"0.18"','"'+v+'"')+"> [!activity|a] A\n\n");
+  chk("a file marked "+v+" is checked as 0.18, with one warning that says so",o.status===0&&o.warns.length===1&&new RegExp("this file says booklet: "+v.replace(".","\\.")+"; the current format is 0\\.18, and it is checked as 0\\.18").test(o.warns[0]),o.out);}}
 
 // ---- point 1: the page line
 const WIKI=`> [!activity|check-in repeat] Check in

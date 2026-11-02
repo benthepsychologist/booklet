@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.17 format in SPEC.md.
+Lint a booklet file against the v0.18 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: "0.17"`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.18"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.17"`, one `lang:`, a one-line `description:` if there is one), fences that are
+What it checks: the front matter (`booklet: "0.18"`, one `lang:`, a one-line `description:` if there is one, `media-from:` if there is one), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
@@ -18,13 +18,16 @@ title, queries and data blocks, and records that name an activity. It reports wh
 module line with no id; a choice or multi with no options and a scale with no or repeated anchors; a records line naming no module;
 records outside `%%`), what it keeps and reports (anything but a record inside the records region, an entry with no `ts`, a record
 block outside the region, a `> [!` line it cannot read), and six slips that draw wrong without a word (`---` straight under text, a hint
-or solution not folded or not under its question, `[x]` in a menu, a price that reads as a formula, tiles with no `value`). Any file whose
-front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.17 (nothing before v1.0 is stable). A block id or a footnote
+or solution not folded or not under its question, `[x]` in a menu, a price that reads as a formula, tiles with no `value`). Format 0.18 adds
+a malformed `media-from:`, a `listen` with a bad `left:`, in a `repeat` activity or holding two pieces of media, audio and video embeds (an address with no
+media extension in the image syntax, one that is not `https:`, an extension that may not play everywhere, a local video with no transcript, a bare
+`![[name]]` that is not beside the file), and raw HTML that plays media or frames a page. Any file whose
+front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.18 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [path ...]
-        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.17") and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.18") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
@@ -38,7 +41,7 @@ import difflib, html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 BASE = pathlib.Path(__file__).resolve().parent
 
 # The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
-FORMAT_VERSION = "0.17"
+FORMAT_VERSION = "0.18"
 
 errors, warnings = [], []
 # Every finding, in the order found; main() prints each file's findings in line order. A finding's line is the one its message
@@ -122,7 +125,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.17 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.18 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -140,6 +143,7 @@ KIND_SETTINGS = {
     "page": ("icon:", "parent:"),
     "choice": ("open", "menu:", "each:", "earlier:"), "multi": ("open", "menu:", "each:", "earlier:"),
     "number": ("min:", "max:", "step:", "each:"), "widget": ("readonly", "describe", "each:", "earlier:"),
+    "listen": ("left:",),
 }
 NUMBER_SETTINGS = ("min", "max", "step")
 # THE KEPT-ENTRIES FOLD'S MARK (format 0.17; SPEC.md section 3, "Kept entries, folded"): `entries:folded` on an activity line says
@@ -149,6 +153,8 @@ FOLD_KEY, FOLD_VALUE = "entries", "folded"
 # `earlier:`'s value: a whole number in digits only (SPEC.md section 4); booklet.html's EARLIER_VALUE is the same, and
 # test/guard.test.js pins the two
 EARLIER_VALUE = r"[0-9]+"
+# `left:`'s value on a `listen` line: a whole number of seconds in digits only (SPEC.md sections 4 and 5, "Listen")
+LEFT_VALUE = r"[0-9]+"
 # the kinds a question asked for each pick (`each:`, SPEC.md section 5) can be asked of
 EACH_SOURCES = ("choice", "multi", "widget")
 # the kinds that take no id: their words are settings only
@@ -179,7 +185,7 @@ ICON_NAMES = frozenset((
 # the widget engines the renderer has
 ENGINES = ("svg-regions", "grid-select")
 COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal", "blue", "purple")
-QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix"}
+QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix", "listen"}
 STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab", "page"}
 # what a module's notice (`> [!notice]`) may say about itself
 NOTICE_KEYS = ("license", "copyright", "source", "version")
@@ -956,6 +962,8 @@ def check_settings(f, n, kind, w):
             err(f, f"line {n}: `{key}:{val}` must be a number")
         elif key == "earlier" and not re.fullmatch(EARLIER_VALUE, val):
             err(f, f"line {n}: `earlier:{val}` must be a whole number written in digits; a renderer ignores it and offers its default")
+        elif key == "left" and not re.fullmatch(LEFT_VALUE, val):
+            err(f, f"line {n}: `left:{val}` must be a whole number of seconds written in digits (`left:60`); a renderer ignores it and uses its default, 120")
         elif key == "icon" and "end" in w["flags"]:
             err(f, f"line {n}: a module's end line takes no `icon:` (write it on the opening line)")
         elif key == "icon" and val not in ICON_NAMES:
@@ -1097,12 +1105,12 @@ def check_page_trees(f, page_scopes, tabs_in_act):
             warn(f, f"line {n}: `parent:{par}` loops back to {pid!r} (it is its own ancestor), so it is drawn once, at the top of the tab's tree")
 
 
-def check_format(f, text, fm):
-    """Lint a v0.17 booklet. Every problem names its line."""
+def check_format(f, text, fm, folder=None):
+    """Lint a v0.18 booklet. Every problem names its line."""
     fm_title, fm_id = fm.get("title", ""), fm.get("id", "")
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.17 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
+        err(f, "front matter has no `lang:` — a v0.18 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
     else:
         why = lang_problem(lang)
         if why:
@@ -1117,6 +1125,7 @@ def check_format(f, text, fm):
     if "start" in fm and fm["start"] != "home":
         err(f, f"front matter `start: {fm['start']}`: the only value is `start: home` (a booklet that holds one activity or one module opens "
                "straight into it unless it says `start: home`); the renderer reports it and ignores it")
+    check_media_from(f, text)
     lines = text.replace("\r\n", "\n").split("\n")
     i = 0
     if lines and lines[0].strip() == "---":
@@ -1160,6 +1169,7 @@ def check_format(f, text, fm):
     theme_seen = False
     rowst = {"open": None, "start": 0}
     noid_line = None         # the line of a module opened without an id, until something closes it
+    listens = []             # (line number, first body index, index past the body) of every listen line, checked with the file's embeds
     last_q = False           # a question is straight above: a hint or solution here folds under it (the renderer's lastQ)
     prev_prose = False       # the line above is prose in the renderer's buffer, so `---` under it makes it a heading
     regions = records_regions(lines, i)
@@ -1573,6 +1583,11 @@ def check_format(f, text, fm):
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         act_info.setdefault(open_mod, {})[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
                 elif kind in QUESTION_KINDS:
+                    if kind == "listen":
+                        if act_keeps.get(act_seq, False):
+                            err(f, f"{where}: a listen is answered once, so it cannot be in a `repeat` activity (a renderer draws it as a plain question); "
+                                   f"put it in an activity that is not `repeat`")
+                        listens.append((n, i + 1, body_end(lines, i)))
                     if w["id"] and cur_act:
                         q_owner.setdefault(open_mod, {})[w["id"]] = cur_act
                     elif w["id"]:
@@ -1815,7 +1830,7 @@ def check_format(f, text, fm):
             names = " and ".join(("the module " + repr(sc)) if sc else "the data section or the activities outside every module" for sc in scopes)
             mark = f"^{key}" if what == "block" else f"[^{key}]"
             warn(f, f"the {what} id {mark} is used in {names}: Booklet reads each in its own module, but Obsidian and GitHub will show the first one for all of them")
-    # after a records region the file is design again, and format 0.17 leaves it where it is when the file is saved (SPEC.md section 8):
+    # after a records region the file is design again, and format 0.18 leaves it where it is when the file is saved (SPEC.md section 8):
     # said once, with what it holds, since a reader reads it as design but the records sit before it
     if regions:
         inside = set()
@@ -1843,7 +1858,9 @@ def check_format(f, text, fm):
                     + ("; a save moves it, and the design between the regions, above the regions (the file has more than one)" if between else
                        "; a save leaves it where it is, after the records, so the design is in two places. Write it above the records if you want it with the rest"))
     check_links(f, lines)
-    check_images(f, lines)
+    embeds_found = check_images(f, lines, folder)
+    check_listens(f, embeds_found, listens)
+    check_raw_html(f, lines, body_start, regions)
     check_prices(f, lines, body_start, regions)
 
 
@@ -1915,19 +1932,46 @@ def check_prices(f, lines, start, regions):
     flush()
 
 
-# a relative image path the renderer will read from the host's store or its default folder (SPEC.md section 6); the part
-# rules are checked beside it
-IMAGE_PATH = re.compile(r'^(?=.{1,200}$)[A-Za-z0-9_./-]+\.(?:svg|png|jpe?g|webp|gif)$', re.I)
+# ---- Images, audio and video: embeds (SPEC.md section 6, "Images" and "Audio and video") ----------------------------------
+# The extension of an embed's target says whether it is an image, audio or video, in any case. A relative path is fine for all
+# three, and a renderer reads it from the host's store or its default folder; the part rules are checked beside it.
+IMAGE_EXTS = ("svg", "png", "jpg", "jpeg", "webp", "gif")
+# audio and video: the extensions every reader should play, and the ones that are allowed and may not play everywhere
+AUDIO_EXTS = ("mp3", "m4a", "ogg", "opus", "wav")
+AUDIO_EXTS_LESS = ("flac", "3gp")
+VIDEO_EXTS = ("mp4", "webm")                      # `.webm` is video: a video player also plays a file with sound only
+VIDEO_EXTS_LESS = ("mov", "mkv", "ogv")
+EMBED_PATH = re.compile(r'^(?=.{1,200}$)[A-Za-z0-9_./-]+\.(?:' + "|".join(IMAGE_EXTS + AUDIO_EXTS + AUDIO_EXTS_LESS + VIDEO_EXTS + VIDEO_EXTS_LESS) + r')$', re.I)
+# the raw HTML that plays media or frames another page (SPEC.md section 6, "Not part of the format"): an error
+RAW_MEDIA_TAGS = ("audio", "video", "source", "track", "iframe", "frame", "object", "embed", "script")
+RAW_MEDIA_TAG = re.compile(r'<(' + "|".join(RAW_MEDIA_TAGS) + r')(?=[\s/>])', re.I)
 
 
-def check_images(f, lines):
-    """An image is linked, never embedded, and a renderer fetches an image only from a store its host declares, or
-    (the reference renderer, on a page that declares none) from its default folder, `modules/` beside it (SPEC.md
-    section 6). A remote address (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does
-    not fetch it. An address with any other scheme (`data:`, `javascript:`, `file:` ...) is an error. A relative path
-    is fine, but a warning when it is one the renderer never reads (a `..`, a leading `/`, a character outside
-    letters, digits and `_ . / -`, or an extension it does not draw). Reference-style
-    images are read through their `[id]: address` definitions; code fences and inline code are not images."""
+def embed_ext(address):
+    """The extension of an address's path, lowercase, or None when its last part has none. A query or fragment is not part of it,
+    and neither is the host of a remote address."""
+    path = re.split(r'[?#]', address, maxsplit=1)[0]
+    path = re.sub(r'^(?:[A-Za-z][A-Za-z0-9+.-]*:)?//[^/]*', '', path)
+    m = re.search(r'\.([A-Za-z0-9]+)$', path.split("/")[-1])
+    return m.group(1).lower() if m else None
+
+
+def embed_kind(ext):
+    """image, audio or video, as the extension says; None for an extension that is none of them (or no extension)."""
+    if ext in IMAGE_EXTS:
+        return "image"
+    if ext in AUDIO_EXTS + AUDIO_EXTS_LESS:
+        return "audio"
+    if ext in VIDEO_EXTS + VIDEO_EXTS_LESS:
+        return "video"
+    return None
+
+
+def collect_embeds(lines):
+    """Every image, audio and video embed in the file as (line number, address as written, how it was written: inline, ref or wiki).
+    Reference-style embeds are read through their `[id]: address` definitions; an Obsidian file embed `![[name.ext|300]]` is its
+    target without the size suffix; a block embed (`![[#^id]]`) is a block, never a file, and is left out. Code fences and inline code
+    are not embeds."""
     fence, defs, found = None, {}, []
     for k, ln in enumerate(lines):
         fence, skip = fence_skip(ln, fence)
@@ -1938,23 +1982,170 @@ def check_images(f, lines):
         if d:
             defs[d.group(1).strip().lower()] = d.group(2).strip("<>")
         for m in re.finditer(r'!\[[^\]]*\]\((<[^>]*>|(?:[^()\s]|\([^()\s]*\))*)(?:\s+"[^"]*"|\s+\'[^\']*\')?\)', bare):
-            found.append((k + 1, m.group(1).strip("<>")))
+            found.append((k + 1, m.group(1).strip("<>"), "inline"))
         for m in re.finditer(r'!\[([^\]]*)\]\[([^\]]*)\]', bare):
-            found.append((k + 1, ("ref", (m.group(2) or m.group(1)).strip().lower())))
-    for n, a in found:
+            found.append((k + 1, ("ref", (m.group(2) or m.group(1)).strip().lower()), "ref"))
+        for m in re.finditer(r'!\[\[([^\]]*)\]\]', bare):
+            target = m.group(1).split("|", 1)[0].strip()
+            if target.startswith("#") or "#^" in target:
+                continue
+            found.append((k + 1, target, "wiki"))
+    out = []
+    for n, a, how in found:
         if isinstance(a, tuple):
             a = defs.get(a[1])
             if a is None:
                 continue
+        out.append((n, a, how))
+    return out
+
+
+def has_transcript(lines, k):
+    """Whether a folded callout stands directly after the embed on index k: the next thing after the embed's own callout (or the
+    embed's line, if it is in none) once blank lines are passed (SPEC.md section 6, "A transcript")."""
+    j = k + 1
+    if lines[k].startswith(">"):
+        while j < len(lines) and lines[j].startswith(">") and not CALLOUT_ANY.match(lines[j]):
+            j += 1
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    return j < len(lines) and re.match(r'^>[ \t]?\[![^\]]*\]-', lines[j]) is not None
+
+
+def check_images(f, lines, folder=None):
+    """An image is linked, never embedded, and a renderer fetches an image only from a store its host declares, or
+    (the reference renderer, on a page that declares none) from its default folder, `modules/` beside it (SPEC.md
+    section 6). A remote address (`http:`, `https:`, or one that starts `//`) is a warning: a renderer does
+    not fetch it. An address with any other scheme (`data:`, `javascript:`, `file:` ...) is an error. A relative path
+    is fine, but a warning when it is one the renderer never reads (a `..`, a leading `/`, a character outside
+    letters, digits and `_ . / -`, or an extension it does not draw). Reference-style
+    images are read through their `[id]: address` definitions; code fences and inline code are not images.
+    Audio and video use the same syntax, and the extension says which an embed is ("Audio and video"): an `https:` address
+    is allowed (a reader asks before it loads anything), an `http:` one or one that starts `//` is a warning, an extension that
+    may not play everywhere is a warning, a local video with no transcript is a warning, an `![[name.ext]]` bare name that
+    does not resolve beside the file (given `folder`, the booklet's own) is a warning, and an address with no media extension
+    written in the image syntax is an error: it is a link. Returns the embeds found, (line number, address, form)."""
+    embeds = collect_embeds(lines)
+    for n, a, how in embeds:
         flat = re.sub(r'[\x00-\x1f\s]', '', a)
         scheme = re.match(r'^([A-Za-z][A-Za-z0-9+.-]*):', flat)
         shown = a if len(a) <= 60 else a[:60] + "..."
-        if flat.startswith("//") or (scheme and scheme.group(1).lower() in ("http", "https")):
-            warn(f, f"line {n}: the image {shown} has a remote address; a renderer does not fetch remote images, so it shows the alt text and the address as text")
+        ext = embed_ext(flat)
+        kind = embed_kind(ext)
+        noun = kind if kind in ("audio", "video") else "image"
+        remote = flat.startswith("//") or (scheme and scheme.group(1).lower() in ("http", "https"))
+        if remote:
+            if ext is None:
+                err(f, f"line {n}: the {noun} {shown} is a remote address with no media extension, so it is a link, never an embed "
+                       f"(a video service's page is one); write it as a link, `[words](address)`, without the `!`")
+            elif kind in ("audio", "video"):
+                if flat.startswith("//") or scheme.group(1).lower() == "http":
+                    warn(f, f"line {n}: the {noun} {shown} has an address that is not `https:`; a renderer never uses an `http:` address or one that starts `//`, "
+                            f"so it shows the alt text and the address as a link")
+                elif ext in AUDIO_EXTS_LESS + VIDEO_EXTS_LESS:
+                    warn(f, f"line {n}: the {noun} {shown} ends in .{ext}, which may not play in every reader; "
+                            + ("write .mp3, .m4a, .ogg, .opus or .wav" if kind == "audio" else "write .mp4 or .webm") + " where you can")
+            else:
+                warn(f, f"line {n}: the image {shown} has a remote address; a renderer does not fetch remote images, so it shows the alt text and the address as text")
         elif scheme:
             err(f, f"line {n}: the image {shown} has an address with the scheme `{scheme.group(1).lower()}:`; an image is linked by a relative path, never embedded or given another scheme")
-        elif not IMAGE_PATH.match(a) or any(p == "" or p.startswith(".") for p in a.split("/")):
-            warn(f, f"line {n}: the image {shown} is not a path the renderer reads from a store or its default folder (letters, digits, _ . / - only, at most 200 characters, no empty part and no part that begins with a dot so no .. and no ./, no leading /, ending .svg, .png, .jpg, .jpeg, .webp or .gif); it shows the alt text and the address as text")
+        else:
+            if not EMBED_PATH.match(a) or any(p == "" or p.startswith(".") for p in a.split("/")):
+                if kind in ("audio", "video"):
+                    warn(f, f"line {n}: the {noun} {shown} is not a path the renderer reads from a store or its default folder (letters, digits, _ . / - only, at most 200 characters, no empty part and no part that begins with a dot so no .. and no ./, no leading /); it shows the alt text and the address as text")
+                else:
+                    warn(f, f"line {n}: the image {shown} is not a path the renderer reads from a store or its default folder (letters, digits, _ . / - only, at most 200 characters, no empty part and no part that begins with a dot so no .. and no ./, no leading /, ending .svg, .png, .jpg, .jpeg, .webp or .gif, or an audio or video extension); it shows the alt text and the address as text")
+            else:
+                if ext in AUDIO_EXTS_LESS + VIDEO_EXTS_LESS:
+                    warn(f, f"line {n}: the {noun} {shown} ends in .{ext}, which may not play in every reader; "
+                            + ("write .mp3, .m4a, .ogg, .opus or .wav" if kind == "audio" else "write .mp4 or .webm") + " where you can")
+                if how == "wiki" and "/" not in a and folder is not None and not (pathlib.Path(folder) / a).exists():
+                    warn(f, f"line {n}: ![[{a}]] is a bare name, and no file of that name is beside this booklet; Obsidian finds a file anywhere in its vault by name, "
+                            f"but any other reader reads it as a path beside the booklet, so put the file there or write its path")
+            if kind == "video" and not has_transcript(lines, n - 1):
+                warn(f, f"line {n}: the video {shown} has no transcript; straight after it add a folded callout, `> [!note]- Transcript`, "
+                        f"with what is said and shown, for a reader who cannot watch it")
+    return embeds
+
+
+def check_listens(f, embeds, listens):
+    """A `listen` holds one piece of media (SPEC.md section 5, "Listen"): more than one audio or video embed under it is an error.
+    `listens` is (the listen line's number, index of its first body line, index past its body)."""
+    for n, lo, hi in listens:
+        media = [e for e in embeds if lo < e[0] <= hi and embed_kind(embed_ext(re.sub(r'[\x00-\x1f\s]', '', e[1]))) in ("audio", "video")]
+        if len(media) > 1:
+            err(f, f"line {n}: this listen holds {len(media)} audio or video embeds (lines {', '.join(str(e[0]) for e in media)}); "
+                   f"a listen plays one piece of media, so keep one and give the other its own listen")
+
+
+def check_raw_html(f, lines, start, regions):
+    """Raw HTML that plays media or frames another page is an error (SPEC.md section 6, "Not part of the format"): `<audio>`, `<video>`,
+    `<source>`, `<track>`, `<iframe>`, `<frame>`, `<object>`, `<embed>` and `<script>`. Code fences, inline code, comments and the
+    records region are not read."""
+    skip = set()
+    for a, z, _, _, _ in regions:
+        skip.update(range(a, z + 1))
+    lines = re.sub(r"<!--.*?-->", lambda m: re.sub(r"[^\n]", " ", m.group()), "\n".join(lines), flags=re.S).split("\n")
+    fence = None
+    for k in range(start, len(lines)):
+        fence, skipped = fence_skip(lines[k], fence)
+        if k in skip or skipped:
+            continue
+        bare = re.sub(r'`[^`]*`', '', lines[k])
+        for tag in sorted({m.group(1).lower() for m in RAW_MEDIA_TAG.finditer(bare)}):
+            err(f, f"line {k + 1}: `<{tag}>` is raw HTML that plays media or frames another page, which a booklet does not use "
+                   f"(nothing in a file runs script or frames a page); embed audio or video with `![words](file.mp3)`, or write a link")
+
+
+def check_media_from(f, text):
+    """The front matter's `media-from:` (SPEC.md section 2): one `https:` origin, a list of them, or several separated by commas. Each
+    is the scheme, the host and, if it is not the usual one, a port, and nothing after. A value that is not an origin is an error; an
+    empty value declares nothing. The front matter's lines are read here because the key may hold a list on the lines under it."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    if not lines or lines[0].strip() != "---":
+        return
+    end = next((k for k in range(1, len(lines)) if lines[k].strip() == "---"), len(lines))
+    values = []
+    for k in range(1, end):
+        m = re.match(r'^media-from:[ \t]*(.*?)[ \t]*$', lines[k])
+        if not m:
+            continue
+        inline = m.group(1)
+        if inline:
+            inline = inline[1:-1] if inline.startswith("[") and inline.endswith("]") else inline
+            values += inline.split(",")
+        else:
+            j = k + 1
+            while j < end and (re.match(r'^[ \t]*-([ \t]+(.*?))?[ \t]*$', lines[j]) or not lines[j].strip()):
+                it = re.match(r'^[ \t]*-([ \t]+(.*?))?[ \t]*$', lines[j])
+                if it:
+                    values.append(it.group(2) or "")
+                j += 1
+        break
+    for raw in values:
+        v = raw.strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+            v = v[1:-1].strip()
+        if not v:
+            continue
+        m = re.fullmatch(r'https://[A-Za-z0-9]+(?:-+[A-Za-z0-9]+)*(?:\.[A-Za-z0-9]+(?:-+[A-Za-z0-9]+)*)*(?::([0-9]{1,5}))?', v, re.I)
+        if m and (m.group(1) is None or 0 < int(m.group(1)) < 65536):
+            continue
+        sc = re.match(r'^([A-Za-z][A-Za-z0-9+.-]*)://(.*)$', v)
+        if not sc:
+            why = "is not an origin"
+        elif sc.group(1).lower() != "https":
+            why = f"has the scheme `{sc.group(1).lower()}:`, and only `https:` is allowed"
+        elif "*" in sc.group(2):
+            why = "has a wildcard, and an origin names one host"
+        elif "@" in re.split(r'[/?#]', sc.group(2), 1)[0]:
+            why = "has a user name in it"
+        elif re.search(r'[/?#]', sc.group(2)):
+            why = "has a path, query or fragment after the host, and nothing may follow it"
+        else:
+            why = "is not a host name and an optional port"
+        err(f, f"front matter `media-from` {v!r} {why}; write each origin as the scheme, host and optional port, such as "
+               f"`https://media.example.org` or `https://cdn.example.net:8443`. A renderer reports it and ignores it")
 
 
 def _plain_heading(s):
@@ -2049,7 +2240,7 @@ def check_file(path):
             warn(f, f'front matter says `booklet: {m}` without quotes; write it in quotes, `booklet: "{m}"`, or a YAML tool will read it as {as_num}')
         if marker != FORMAT_VERSION:
             warn(f, f"this file says booklet: {marker}; the current format is {FORMAT_VERSION}, and it is checked as {FORMAT_VERSION}")
-        check_format(f, text, fm)
+        check_format(f, text, fm, path.parent)
         return
     # A file with no marker, or a marker that is not a 0.x version, is not a booklet for this linter (and the
     # renderer refuses it the same way)
