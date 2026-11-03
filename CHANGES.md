@@ -2,6 +2,15 @@
 
 What changed in each version of the format, newest first. `SPEC.md` states the rules as they are now and carries no history; this file keeps it. Section numbers are those of `SPEC.md`. A version marked "wording only", "drawing only", "the reference renderer only" or "wording and the reference renderer" changed no file: the marker stayed as it was.
 
+## Renderer 0.18.1: a pages menu
+
+Nothing a file may say has changed: the marker stays `booklet: "0.18"`, no file needs touching, and `SPEC.md` is as it was (section 3 already says a menu of a tab's pages is a renderer's to draw, and that a renderer may draw none). The reference renderer now draws one.
+
+- **A menu of a tab's pages.** A tab whose page tree holds two or more named pages gets a navigation landmark, "Pages" ("Pages" in French, "Páginas" in Spanish), that holds the tab's tree nested as the pages are, in reading order. Each page is one entry, and pressing it goes to the page's first section, the move the trail's links make. The page on show is marked (`aria-current="page"`, a bar and bold words), and every page above it is open. A page with pages under it is a native disclosure (`details`), and what the reader opens and closes is kept for the visit and not saved, as in a nested list. The pages above the page on show open when the page changes; a branch the reader shuts stays shut when the screen is drawn again on the same page. A tab with fewer than two named pages draws no menu.
+- **On by default, with no key and no setting.** The format suggests nothing here: the renderer picks the presentation, as the spec says it may. The words before a tab's first page line are its first page and have no name, so they are not listed.
+- **A column on a wide window, a drawer on a narrow one.** From 900 px wide the menu is a column left of the page, sticky under the top bar and scrolling inside itself, with the page on show scrolled into view in it when the page changes. Narrower, a "Pages" button above the page opens the same tree as a drawer over it, with a visible Close and a scrim. Pressing a page, Close, the scrim or Escape closes the drawer; focus goes into the drawer on opening (to the page on show) and stays in it while it is open, and goes back to the button when it is closed without choosing, or to the page when a page is chosen. The drawer's entries, its Close and its branch toggles are at least 44 px high. It is drawn in the renderer's own colours in every theme, and has no slide when the reader asks for reduced motion.
+- **Not drawn.** The menu's search, the "Mentioned on" list, and a trail that starts at the booklet are still not supported here, and nothing is lost by it. The compiler draws no menu.
+
 ## Changes from v0.17
 
 The format becomes 0.18, and the reference renderer is 0.18.0. The renderer reads this format; it draws no audio, video or `listen` yet ("Not yet supported", below).

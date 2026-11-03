@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-kCe8SIpMTFFI5zl/rlGKIUyYCPcrgTg0HvaCi8XpLOI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-c9fXkc9wd5g3zfV5dLDOnmuXzglDdpZUlZmhHet5Ivo=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -742,6 +742,48 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .mchip .ic{width:1em;height:1em;flex:none}
   .mc-ask{display:inline-flex;align-items:center;gap:.5rem;margin-left:.5rem;font-family:var(--sans);font-size:.9em;color:var(--muted)}
   @media print{.wk-crumbs{display:none}}
+  /* ── the pages menu (pageMenu): a column left of the activity on a wide window, a drawer over it on a narrow one ──
+     Only the renderer's tokens: the paper, ink, muted, accent and rule of whichever theme is on. The page on show has a 4px bar in the accent
+     and bold words as well as its wash (the contrast theme's wash is white), and a control's edge is the muted ink, which holds 3:1
+     on the paper in every theme where the rule colour does not. */
+  .pm-wrap{display:block}
+  .pm{margin:0 0 .6rem;font-family:var(--sans)}
+  .pm-open,.pm-close{display:inline-flex;align-items:center;gap:.5rem;min-height:44px;min-width:44px;padding:.3rem .9rem;border:var(--bw) solid var(--muted);border-radius:999px;background:var(--field);color:var(--ink);font-weight:700;font-size:.92rem}
+  .pm-open:hover,.pm-close:hover{border-color:var(--accent);color:var(--accent)}
+  .pm-open::before{content:"";width:1.1em;height:.9em;background:linear-gradient(currentColor 0 0) 0 0/100% 2px,linear-gradient(currentColor 0 0) 0 50%/100% 2px,linear-gradient(currentColor 0 0) 0 100%/100% 2px;background-repeat:no-repeat}
+  .pm-panel{display:none}
+  .pm-scrim{display:none}
+  .pm[data-open] .pm-scrim{display:block;position:fixed;inset:0;z-index:19;background:color-mix(in srgb,var(--shadow) 55%,transparent)}
+  .pm[data-open] .pm-panel{display:block;position:fixed;z-index:20;top:0;bottom:0;left:0;width:min(20rem,88vw);overflow-y:auto;overscroll-behavior:contain;background:var(--paper);border-right:var(--bw) solid var(--muted);
+    padding:0 .4rem calc(1rem + env(safe-area-inset-bottom,0px)) env(safe-area-inset-left,0px);animation:pm-in .18s ease-out}
+  .pm-panel:focus{outline:none}
+  @keyframes pm-in{from{transform:translateX(-100%)}}
+  @media (prefers-reduced-motion:reduce){.pm[data-open] .pm-panel{animation:none}}
+  .pm-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.4rem .2rem .4rem .6rem;background:var(--paper);border-bottom:var(--bw) solid var(--rule)}
+  .pm-title{font-family:var(--serif);font-weight:600;color:var(--ink)}
+  .pm-list{list-style:none;margin:0;padding:0}
+  .pm-list .pm-list{margin-left:.9rem;border-left:var(--bw) solid var(--rule)}
+  .pm-item{position:relative}
+  /* the renderer's plain details (a bordered, rounded box) is drawn flat here, and its summary is only the branch's toggle */
+  .pm-d{border:0;border-radius:0;margin:0;background:transparent}
+  .pm-go{display:block;width:100%;min-height:44px;padding:.35rem .5rem .35rem 2.4rem;border:0;border-left:4px solid transparent;border-radius:0 var(--r-sm) var(--r-sm) 0;background:transparent;color:var(--ink);font:inherit;font-size:.95rem;line-height:1.3;text-align:left;overflow-wrap:anywhere}
+  .pm-go:hover{background:var(--paper-deep)}
+  .pm-go[aria-current="page"]{background:var(--accent-soft);border-left-color:var(--accent);font-weight:700}
+  .pm-tog{position:absolute;top:0;left:0;width:2.4rem;height:44px;padding:0;gap:0;display:flex;align-items:center;justify-content:center;list-style:none;cursor:pointer;color:var(--muted);font-weight:400}
+  .pm-tog::-webkit-details-marker{display:none}
+  .pm-tog::before{content:"";width:.5rem;height:.5rem;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .12s}
+  .pm-d[open]>.pm-tog::before{transform:rotate(45deg)}
+  @media (prefers-reduced-motion:reduce){.pm-tog::before{transition:none}}
+  @media (min-width:900px){
+    .pm-wrap{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);gap:1.5rem;align-items:start}
+    .pm{position:sticky;top:var(--ap-top,4.4rem);margin:0}
+    .pm-open,.pm-close,.pm-scrim,.pm[data-open] .pm-scrim{display:none}
+    .pm-panel,.pm[data-open] .pm-panel{display:block;position:static;width:auto;max-height:calc(100vh - var(--ap-top,4.4rem) - 1rem);overflow-y:auto;padding:.2rem;border:0;background:transparent;animation:none}
+    .pm-head{position:static;padding:.2rem .5rem;border:0;background:transparent}
+    .pm-go{min-height:2.25rem}
+    .pm-tog{height:2.25rem}
+  }
+  @media print{.pm{display:none}.pm-wrap{display:block}}
   /* ── reading material: citation marks, the source panel, callouts, sources ──
      Quiet by default: a mark is a small petrol number that keeps the line's
      rhythm (line-height 0 on the superscript). A callout's kind is told by its
@@ -1824,7 +1866,10 @@ const STRINGS_SRC={
       back: "Back",
       next: "Next",
       of: (n,m)=>`Page ${n} of ${m}`,
-      partOf: (n,m)=>`${n} of ${m}`
+      partOf: (n,m)=>`${n} of ${m}`,
+      menu: "Pages",
+      menuClose: "Close",
+      menuUnder: t=>`Pages under ${t}`
     },
     reading: {
       kind: {
@@ -2173,7 +2218,10 @@ const STRINGS_SRC={
       back: "Précédent",
       next: "Suivant",
       of: (n,m)=>`Page ${n} sur ${m}`,
-      partOf: (n,m)=>`${n} sur ${m}`
+      partOf: (n,m)=>`${n} sur ${m}`,
+      menu: "Pages",
+      menuClose: "Fermer",
+      menuUnder: t=>`Pages sous ${t}`
     },
     reading: {
       kind: {
@@ -2522,7 +2570,10 @@ const STRINGS_SRC={
       back: "Anterior",
       next: "Siguiente",
       of: (n,m)=>`Página ${n} de ${m}`,
-      partOf: (n,m)=>`${n} de ${m}`
+      partOf: (n,m)=>`${n} de ${m}`,
+      menu: "Páginas",
+      menuClose: "Cerrar",
+      menuUnder: t=>`Páginas dentro de ${t}`
     },
     reading: {
       kind: {
@@ -3160,7 +3211,7 @@ let lang="en", screen=HOME_SCREEN, dirty=false, unsavedEntries=0;
 /* ---- the view: what this visit shows of a booklet, never saved ----
    A view has a record per activity address (viewAt): the entry open under its chips (`chip`), the page on show
    (`page`, and so its tab), by tab the page it was left on (`tabs`), by page the step one at a time shows (`steps`),
-   the solutions shut (`shut`), each query's sort and filter (`queries`, see queryView),
+   the solutions shut (`shut`), each query's sort and filter (`queries`, see queryView), the pages menu's open branches, last page and scroll (`pm`, see pageMenu),
    a module's screen has one too, for the tab on show (`tab`). VIEWS keeps one per library entry for the visit; VIEW is the open booklet's.
    A draw may note there what it first shows (an arrival's step, a module's tab), nothing else. */
 const VIEWS=new Map();
@@ -3176,7 +3227,7 @@ function viewReset(id,what){let v=id?VIEWS.get(id):null;
   VIEW=v;}
 viewReset(null);
 const viewAt=addr=>{let v=VIEW.at.get(addr);
-  if(!v) VIEW.at.set(addr,v={chip:null,page:null,tab:null,tabs:Object.create(null),steps:Object.create(null),shut:new Set(),queries:new Map()});
+  if(!v) VIEW.at.set(addr,v={chip:null,page:null,tab:null,tabs:Object.create(null),steps:Object.create(null),shut:new Set(),queries:new Map(),pm:{open:new Set(),at:"",top:0}});
   return v;};
 /* ---- one draw ----
    render() hands a draw context, `dc`, to every part of the screen: `ticks`, what redraws in place when an answer
@@ -7289,8 +7340,8 @@ const tabOpening=a=>tabsIn(a)?a.pages.filter(p=>!p.tab).flatMap(blocksIn):[];
    the tab's first page line are its first page, which has no id and so no title, no parent and no children. pageTree(a, tab) is that
    tab's pages in reading order: {pages, top, named (does the tab hold a named page), of (screen -> its page)}, each page
    {id, title, icon, parent, kids, parts}. A tab with no named page keeps the 0.16 foot (Back, "Page 2 of 3", Next).
-   Not yet supported here, and nothing is lost by it: the page menu and its search, the "Mentioned on" list, a trail that starts at
-   the booklet, and an `icon:` drawn at the head of a page (cards show it). */
+   The menu of a tab's pages is drawn (pageMenu, below). Not yet supported here, and nothing is lost by it: the menu's search, the
+   "Mentioned on" list, a trail that starts at the booklet, and an `icon:` drawn at the head of a page (cards show it). */
 const PAGE_TREES=new WeakMap();
 function pageTree(a,t){let m=PAGE_TREES.get(a);if(!m) PAGE_TREES.set(a,m=new Map());const k=t||"";
   if(m.has(k)) return m.get(k);
@@ -7311,6 +7362,80 @@ function pageTrail(id,pg){const K=strings("wiki"),up=[];
   for(let p=pg.parent;p;p=p.parent) up.unshift(p);
   const crumb=(p,to)=>el("li",{},to?el("button",{type:"button",class:"wk-crumb",onclick:()=>turnPage(id,p.parts[0],false)},...words(p.title,true)):el("span",{"aria-current":"page"},...words(p.title,true)));
   return el("nav",{class:"wk-crumbs","aria-label":K.crumbs},el("ol",{},...up.map(p=>crumb(p,true)),crumb(pg,false)));}
+/* ---- THE PAGES MENU (renderer 0.18.1) ----
+   SPEC.md section 3 leaves a menu of a tab's pages to the renderer, and this one draws it: no key, no setting, nothing in the file. A tab
+   whose tree holds two or more named pages (pageTree) gets a nav landmark, "Pages", holding the tree nested as the pages are (reading order,
+   depth first); an unnamed page, the words before the first page line, is not listed. A page is one entry that goes to its first part,
+   the move the trail's links make (turnPage). The page on show is aria-current="page" and marked; every branch is a native details, open
+   along the path to the page on show, and the reader's choices are kept for this visit in the view (`pm`, like a nested list's `opens`):
+   the ancestors of a page are opened once, when the page changes (pm.at), so a branch the reader then closes stays closed as the screen is
+   drawn again. A wide window (900px, where the Sources panel also moves in) draws it as a column left of the activity, sticky under the
+   bar and scrolling inside itself; a narrower one draws a "Pages" button that opens the same tree as a drawer over the page. The drawer is
+   a modal dialog while it is open (role, aria-modal): focus goes to the page on show in it (else Close), Tab and Shift+Tab stay inside it,
+   Escape, Close and the scrim close it and give the focus back to the button, and choosing a page turns the page as every entry does, so
+   the focus is the page's (turnPage) and the drawer, drawn afresh with the screen, is shut. Arrow keys are not used; every control is in
+   the Tab order, the tree's entries after Close, in reading order. The column's scroll is kept across a redraw (pm.top) and, when the page
+   on show has changed, the entry is scrolled into view inside the column (pageMenuShow, once the screen is laid out). */
+const PM_WIDE="(min-width:900px)";
+let PM_CLOSE=null,PM_WATCH=false;
+function pageMenu(id,cur,T){
+  if(T.pages.filter(p=>p.named).length<2) return null;
+  const W=strings("pages"),tab=cur.tab||"",key=p=>tab+"/"+p.id,pm=viewAt(id).pm,here=T.of.get(cur),now=here&&here.named?here:null,at=now?key(now):"";
+  pm.moved=pm.at!==at;pm.at=at;
+  if(pm.moved) for(let p=now&&now.parent;p;p=p.parent) pm.open.add(key(p));
+  const list=pages=>el("ul",{class:"pm-list"},...pages.map(item));
+  function item(p){const on=p===now,li=el("li",{class:"pm-item"},
+      el("button",{type:"button",class:"pm-go","aria-current":on?"page":null,onclick:()=>turnPage(id,p.parts[0],false)},...words(p.title,true)));
+    if(p.kids.length) li.append(el("details",{class:"pm-d",open:pm.open.has(key(p)),"data-id":key(p)},
+      el("summary",{class:"pm-tog","aria-label":W.menuUnder(plainText(tx(p.title,null)))}),list(p.kids)));
+    return li;}
+  const close=el("button",{type:"button",class:"pm-close"},W.menuClose),
+    panel=el("div",{class:"pm-panel",id:"pm-panel",tabindex:"-1"},el("div",{class:"pm-head"},el("span",{class:"pm-title"},W.menu),close),list(T.top.filter(p=>p.named))),
+    btn=el("button",{type:"button",class:"pm-open","aria-expanded":"false","aria-controls":"pm-panel"},W.menu),
+    scrim=el("div",{class:"pm-scrim","aria-hidden":"true"}),nav=el("nav",{class:"pm","aria-label":W.menu},btn,scrim,panel);
+  const shut=back=>{nav.removeAttribute("data-open");btn.setAttribute("aria-expanded","false");
+    ["role","aria-modal","aria-label"].forEach(a=>panel.removeAttribute(a));
+    if(PM_CLOSE===shutQuiet) PM_CLOSE=null;
+    if(back) btn.focus();};
+  const shutQuiet=()=>shut(false);
+  const open=()=>{nav.setAttribute("data-open","");btn.setAttribute("aria-expanded","true");
+    panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-label",W.menu);
+    PM_CLOSE=shutQuiet;reveal(panel,true);
+    const on=panel.querySelector&&panel.querySelector(".pm-go[aria-current]");(on||close).focus();};
+  btn.addEventListener("click",()=>{if(nav.hasAttribute("data-open")) shut(true);else open();});
+  close.addEventListener("click",()=>shut(true));scrim.addEventListener("click",()=>shut(true));
+  nav.addEventListener("keydown",e=>{if(!nav.hasAttribute("data-open")) return;
+    if(e.key==="Escape"){e.preventDefault();e.stopPropagation();shut(true);return;}
+    if(e.key!=="Tab") return;
+    /* focus stays inside while the drawer is open: from the last control to the first, and back */
+    const f=[...panel.querySelectorAll("button,summary")].filter(seen),a=document.activeElement;
+    if(!f.length) return;
+    if(e.shiftKey&&(a===f[0]||a===panel)){e.preventDefault();f[f.length-1].focus();}
+    else if(!e.shiftKey&&a===f[f.length-1]){e.preventDefault();f[0].focus();}});
+  /* a toggle does not bubble: this listens on the way down. What the reader opens and closes is kept with the view. */
+  nav.addEventListener("toggle",e=>{const d=e&&e.target;
+    if(!d||String(d.tagName).toLowerCase()!=="details") return;
+    const k=d.getAttribute("data-id");if(k===null) return;
+    if(d.open) pm.open.add(k);else pm.open.delete(k);},true);
+  panel.addEventListener("scroll",()=>{if(panel.getClientRects().length) pm.top=panel.scrollTop;},{passive:true});
+  /* the window widening past the breakpoint turns the drawer into the column: it is shut, and the focus is left where it is */
+  if(!PM_WATCH&&typeof window.matchMedia==="function"){PM_WATCH=true;
+    window.matchMedia(PM_WIDE).addEventListener("change",e=>{if(e.matches&&PM_CLOSE) PM_CLOSE();});}
+  return nav;}
+/* a control the keyboard can reach: laid out, and in no branch that is shut (a shut branch's entries keep their boxes, but are skipped) */
+function seen(n){if(!n.getClientRects().length) return false;
+  for(let d=(n.tagName==="SUMMARY"?n.parentNode.parentNode:n.parentNode).closest("details");d;d=d.parentNode.closest("details")) if(!d.open) return false;
+  return true;}
+/* the entry of the page on show, scrolled into view inside the menu's own scroll when it is not in sight (centred) */
+function reveal(panel,force){const on=panel.querySelector&&panel.querySelector(".pm-go[aria-current]");
+  if(!on||!panel.getClientRects||!panel.getClientRects().length) return;
+  const a=on.getBoundingClientRect(),b=panel.getBoundingClientRect(),head=panel.querySelector(".pm-head"),h=head&&head.offsetHeight||0;
+  if(force||a.top<b.top+h||a.bottom>b.bottom) panel.scrollTop+=a.top-b.top-h-Math.max(0,(b.height-h-a.height)/2);}
+/* after the screen is on the page: the column keeps the scroll the reader left it at, and, when the page has changed, shows its entry */
+function pageMenuShow(id){const pm=viewAt(id).pm,panel=document.getElementById("pm-panel");
+  if(!panel||!panel.getClientRects||!panel.getClientRects().length) return;
+  panel.scrollTop=pm.top;
+  if(pm.moved) reveal(panel,false);}
 /* ---- which tab and page are showing: this visit only (the view's) ---- */
 const showPage=(id,pid)=>{viewAt(id).page=pid;};
 function currentPage(id){const a=activityOf(id),at=viewAt(id).page,ps=tabsIn(a)?a.pages.filter(p=>p.tab):a.pages;
@@ -7325,9 +7450,10 @@ function turnPage(id,p,last){const steps=viewAt(id).steps;
   if(last&&oatPref()==="one") steps[p.id]=Infinity;else delete steps[p.id];
   showPage(id,p.id);render();
   /* what comes next just under the bar, so the new section is read from its start: the activity's top (its column: title, tab
-     bar), or, past an opening drawn above it (`ap-open`: the activity's above its tabs, the module's above a one-activity
+     bar; with a pages menu, the menu's wrapper, so a narrow screen's Pages button stays in sight), or, past an opening drawn above it (`ap-open`: the activity's above its tabs, the module's above a one-activity
      module), what follows that opening; the focus on the section's body: a screen reader says which it is (pageBody names it) */
-  const n=document.querySelector("#main .ap-body"),c=n&&n.closest(".col"),o=c&&[...c.querySelectorAll(":scope>.ap-open")].pop(),t=o?o.nextElementSibling:c;
+  const n=document.querySelector("#main .ap-body"),c=n&&n.closest(".col"),o=c&&[...c.querySelectorAll(":scope>.ap-open")].pop(),
+    w=c&&c.parentNode&&c.parentNode.classList&&c.parentNode.classList.contains("pm-wrap")?c.parentNode:c,t=o?o.nextElementSibling:w;
   if(t&&t.getBoundingClientRect) window.scrollTo({top:Math.max(0,window.scrollY+t.getBoundingClientRect().top-(parseFloat(document.documentElement.style.getPropertyValue("--ap-top"))||0))});
   if(n&&n.focus) n.focus({preventScroll:true});}
 /* after a redraw, put the focus back where the reader was working */
@@ -8151,7 +8277,10 @@ function renderActivity(main,id,dc){const u=strings("ui");const m=activityOf(id)
   {const holder=holderOf(id),single=holder&&!isMulti(holder),about=single?noticeNode(holder):null;
     if(about) col.append(about);
     const rm=single?removeModuleControl(holder):null;if(rm) col.append(rm);}
-  main.append(col);}
+  /* a tab with two or more named pages: its menu, a column left of the activity (a drawer on a narrow screen) */
+  const menu=pageMenu(id,cur,pageTree(m,cur.tab||null));
+  main.append(menu?el("div",{class:"pm-wrap"},menu,col):col);
+  if(menu) pageMenuShow(id);}
 /* The head of an activity's page: its title, and, when its line names an `icon:`, the picture its card shows (cardPicture decides: the spot of
    that name in teaching, the line icon in briefing) in the card's own tile and colour, to the left of the title. No `icon:`: the title alone. */
 function pageHead(id,m,titleText){
