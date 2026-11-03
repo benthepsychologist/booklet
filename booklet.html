@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-c9fXkc9wd5g3zfV5dLDOnmuXzglDdpZUlZmhHet5Ivo=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-2qUUNChxdpKB2YFWyd5JFwRdI5KQAGpxAxCQ+my8uM0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7401,7 +7401,7 @@ function pageMenu(id,cur,T){
   const open=()=>{nav.setAttribute("data-open","");btn.setAttribute("aria-expanded","true");
     panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-label",W.menu);
     PM_CLOSE=shutQuiet;reveal(panel,true);
-    const on=panel.querySelector&&panel.querySelector(".pm-go[aria-current]");(on||close).focus();};
+    const on=panel.querySelector&&panel.querySelector(".pm-go[aria-current]");((on&&seen(on))?on:close).focus();};
   btn.addEventListener("click",()=>{if(nav.hasAttribute("data-open")) shut(true);else open();});
   close.addEventListener("click",()=>shut(true));scrim.addEventListener("click",()=>shut(true));
   nav.addEventListener("keydown",e=>{if(!nav.hasAttribute("data-open")) return;

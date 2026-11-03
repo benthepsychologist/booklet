@@ -156,6 +156,14 @@ const CONTRAST=`(()=>{
    await p.locator('#pm-panel .pm-go',{hasText:pick.title}).first().click();await p.waitForTimeout(200);s=await st();
    ok(!s.open&&s.panel==='none'&&(await p.locator('#main .pg-title').first().textContent()).trim()===pick.title,'390: choosing a page shuts the drawer and turns to that page');
    ok(s.onBody,'390: and the focus is on the page (as every move to a page puts it)');
+   /* the page on show sits in a branch the reader shut: the focus still goes into the drawer, onto Close */
+   await p.locator('button.pm-open').click();await p.waitForTimeout(200);
+   await p.locator('#pm-panel details[data-id="/'+TREE[0].id+'"] > summary').click();await p.waitForTimeout(100);
+   const shutBr=await p.evaluate(id=>!document.querySelector('#pm-panel details[data-id="/'+id+'"]').open,TREE[0].id);
+   await p.keyboard.press('Escape');await p.waitForTimeout(100);
+   await p.locator('button.pm-open').click();await p.waitForTimeout(250);s=await st();
+   ok(shutBr&&s.open&&s.inPanel,'390: the page on show is in a shut branch: reopening the drawer still puts the focus inside it ('+s.focus+')');
+   await p.keyboard.press('Escape');await p.waitForTimeout(100);
    /* the Pages button is in sight after a turn of the page (the page scrolls to the menu's wrapper, not past the button), the page being scrolled down first */
    await p.evaluate(()=>scrollTo(0,400));await p.locator('#main .cd-foot .pg-next').click();await p.waitForTimeout(250);
    const inSight=await p.evaluate(()=>{const r=document.querySelector('button.pm-open').getBoundingClientRect(),bar=document.querySelector('.bar').getBoundingClientRect();return {top:r.top,barBottom:bar.bottom,bottom:r.bottom,vh:innerHeight};});
