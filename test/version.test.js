@@ -1,5 +1,5 @@
 // Format v0.18: a version is two whole numbers, never one decimal number (0.10 is later than 0.9), and a file marked
-// with another 0.x version opens with a notice.
+// with another 0.x version opens by the current rules and says nothing about its marker.
 // Run: node test/version.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
 const fs=require("fs");
@@ -11,10 +11,14 @@ chk("the format version is the text 0.18",A.FORMAT_VERSION==="0.18"&&typeof A.FO
 chk("versionOf reads text into [major, minor], and a number is no version (a version is text)",JSON.stringify([A.versionOf("0.10"),A.versionOf(" 0.8 "),A.versionOf(""),A.versionOf(0.9),A.versionOf("0.9.1")])==="[[0,10],[0,8],null,null,null]");
 /* the marker, read as text */
 for(const m of ['"0.18"',"'0.18'","0.18"]){const r=A.parseFile(file(m));chk("a file marked booklet: "+m+" loads, with no notice",r.ok&&r.refused.length===0&&r.unread.length===0&&r.template.booklet==="0.18",JSON.stringify(r.unread));}
-for(const m of ['"0.10"',"0.1","0.9",'"0.11"','"0.12"','"0.13"','"0.15"','"0.16"','"0.17"',"0.100"]){const r=A.parseFile(file(m)),v=m.replace(/"/g,"");
- chk("a file marked booklet: "+m+" opens by the current rules, and its first problem is the notice",r.ok&&r.refused.length===0&&String(r.unread[0])===`This file says booklet: ${v}. This page reads format 0.18 and has opened it as it is; some of it may not draw.`&&r.template.booklet==="0.18"&&/^booklet: /m.test(r.template.raw.source)&&r.template.raw.source.includes("booklet: "+m),JSON.stringify(r.unread));}
+for(const m of ['"0.10"',"0.1","0.9",'"0.11"','"0.12"','"0.13"','"0.15"','"0.16"','"0.17"','"0.19"','"0.99"',"0.100"]){const r=A.parseFile(file(m));
+ chk("a file marked booklet: "+m+" opens by the current rules, and says nothing about its marker",r.ok&&r.refused.length===0&&r.unread.length===0&&r.template.booklet==="0.18"&&/^booklet: /m.test(r.template.raw.source)&&r.template.raw.source.includes("booklet: "+m),JSON.stringify(r.unread));}
+/* the renderer lags the format: no sentence about a marker, in any language, and no string left to say one */
+for(const m of ["0.9","0.17","0.18","0.19","0.99"]) for(const l of ["en","fr","es"]){const r=A.parseFile(file(m).replace("lang: en","lang: "+l));
+ chk(l+": a file marked "+m+" opens with no problem at all, so no marker sentence",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
+chk("no string, function or field is left for a marker sentence",["en","fr","es"].every(l=>A.STRINGS[l].problem.otherMarker===undefined&&A.STRINGS[l].booklet.addedOtherMarker===undefined)&&A.parseFile(file("0.9")).markerNote===undefined&&typeof A.otherMarker==="undefined");
 chk("a marker that is no 0.x version (1.0, 2, 0.9.1, words, none) is refused",["1.0","2","0.9.1","latest",""].every(m=>{const r=A.parseFile(file(m).replace(/booklet: \n/,""));return !r.ok&&!r.template;}));
-chk("a module marked 0.9 can be added to a booklet, and the page says so in the toast words",A.moduleTextProblems(file("0.9")).length===0&&/booklet: 0\.9/.test(A.STRINGS.en.booklet.addedOtherMarker("0.9")));
+chk("a module marked 0.9, 0.17, 0.19 or 0.99 can be added to a booklet",["0.9","0.17","0.19","0.99"].every(m=>A.moduleTextProblems(file(m)).length===0));
 /* what the renderer writes */
 (async()=>{
  await A.createBooklet();

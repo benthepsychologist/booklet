@@ -9,6 +9,10 @@ This repository holds the format spec (`SPEC.md`), the reference renderer
 authoring skill (`SKILL.md`) and five examples. Modules live in their own
 repo, `booklet-registry`.
 
+## Renderer lags the format (branch `renderer-lags-format`, not yet merged; wording and renderer only, the marker stays `"0.18"`)
+
+A file or module marked with any other `0.x` version opens or is added by the renderer's own rules and the renderer says nothing about its marker; it reports only what it cannot read (`SPEC.md` sections 2 and 12; `CHANGES.md`, "Changes in v0.18.1"). The marker sentence, the add-module toast's suffix, their French and Spanish strings, `otherMarker`, `markerNote`, the marker line of the file notice and the compiler report's `marker` field are removed. The linter's one warning for another marker is unchanged. `test/marker-lag.test.js` and `test/marker-lag-browser.js` pin it with a made-up `"0.99"` file (`test/fixtures/marker-later.booklet.md`). `RENDERER_VERSION` and `FORMAT_VERSION` are not changed here; the release number is settled at release.
+
 ## Current state — format 0.18, renderer still 0.17.0 (pull request #95, branch `feat/v018-spec`, not yet merged)
 
 Format 0.18 adds audio and video embeds, `![[name.ext]]` file embeds, the front matter key `media-from:`, the `listen` question and Continue (`CHANGES.md`, "Changes from v0.17"; `SPEC.md` v0.18.0). The renderer's own release is separate: `RENDERER_VERSION` stays `0.17.0`.

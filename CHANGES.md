@@ -2,6 +2,14 @@
 
 What changed in each version of the format, newest first. `SPEC.md` states the rules as they are now and carries no history; this file keeps it. Section numbers are those of `SPEC.md`. A version marked "wording only", "drawing only", "the reference renderer only" or "wording and the reference renderer" changed no file: the marker stayed as it was.
 
+## Changes in v0.18.1: wording and the reference renderer
+
+Nothing a file may say has changed: the marker stays `booklet: "0.18"`, and no file needs touching. The number is a third number because the spec's wording and the reference renderer change and no file does (`AGENTS.md`, format discipline 8); the release settles it.
+
+- **A reader lags the format by design** (section 2, "Another marker"; section 12, conformance). A file or module marked with any other `0.x` version, earlier or later, opens or is added by the reader's own rules and the reader says nothing about the marker. It reports only what it cannot read, one thing at a time, as before: an unknown kind, a setting a kind does not take, a query key it does not have, a block it does not define. In 0.18.0 the reader said, first among the file's problems, "This file says booklet: 0.9. This page reads format 0.18 and has opened it as it is; some of it may not draw.", and the reference renderer needed a patch for every release that moved the number. A file with no marker, or one that is not a `0.x` version, is still not a booklet; a rule that refuses a file still refuses it whatever the marker; a reader still saves a file back with the marker it came with.
+- **The reference renderer** no longer says it. The sentence, the add-module toast's suffix ("It says booklet: 0.9, so it was read as format 0.18, as it is.") and their French and Spanish versions are gone, with the code that carried them (`otherMarker`, the marker note on a parse, the marker line of the notice at the top of a file, and the `marker` field of the compiler's report). Nothing else about opening a file changed.
+- **The linter is unchanged.** `lint-booklet.py` still gives one warning for a file with another `0.x` marker and checks it as the current format.
+
 ## Changes from v0.17
 
 The format becomes 0.18. The renderer's own release follows separately.

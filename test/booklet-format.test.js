@@ -86,16 +86,16 @@ chk("a module opened and never closed refuses the file, and says why",R3.ok===fa
 chk("an earlier-format file is not read at all — no compat, no exceptions",
   A.parseFile('---\nbooklet: 1\n---\n\n```json\n{"block":"module"}\n```\n').ok===false);
 
-/* a file marked with another 0.x version opens by the current rules, with a notice first in its problems; a
+/* a file marked with another 0.x version opens by the current rules and says nothing about its marker; a
    condition that refuses a file still refuses it, whatever the marker */
 {const FILE=m=>'---\nbooklet: '+m+'\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n';
- for(const v of ["0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","0.12","0.13","0.14","0.15","0.16","0.17"]){
+ for(const v of ["0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","0.12","0.13","0.14","0.15","0.16","0.17","0.19","0.20","0.99"]){
   const r=A.parseFile(FILE(v));
-  chk(`a booklet: ${v} file opens, and its first problem says which marker it carries and what this page did`,r.ok===true&&r.refused.length===0&&String(r.unread[0])===`This file says booklet: ${v}. This page reads format 0.18 and has opened it as it is; some of it may not draw.`,JSON.stringify(r.unread));
+  chk(`a booklet: ${v} file opens, and says nothing about its marker`,r.ok===true&&r.refused.length===0&&r.unread.length===0,JSON.stringify(r.unread));
   chk(`  it is saved back with the marker it came with (${v})`,new RegExp("^booklet: "+v.replace(".","\\.")+"$","m").test(r.template.raw.source)&&r.template.booklet==="0.18");}
  const bad=A.parseFile('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
- chk("a module opened and never closed still refuses a 0.3 file, whatever the marker",bad.ok===false&&bad.refused.length===1&&/never closed/.test(bad.refused[0])&&/booklet: 0\.3/.test(bad.unread[0]),JSON.stringify(bad.unread));
- chk("the notice is worded in every language, naming the marker and this page's format",["en","fr","es","es-AR"].every(l=>/booklet: 0\.3/.test(A.STRINGS[l].problem.otherMarker("0.3"))&&/0\.18/.test(A.STRINGS[l].problem.otherMarker("0.3"))));
+ chk("a module opened and never closed still refuses a 0.3 file, whatever the marker",bad.ok===false&&bad.refused.length===1&&/never closed/.test(bad.refused[0])&&!bad.unread.some(p=>/booklet: 0\.3/.test(String(p))),JSON.stringify(bad.unread));
+ chk("no language holds a marker notice",["en","fr","es","es-AR"].every(l=>A.STRINGS[l].problem.otherMarker===undefined));
  chk("a file with no marker, or a marker that is not a 0.x version, is not a booklet for this page",["",'booklet: "1.0"\n',"booklet: 2\n","booklet: latest\n","booklet: 0.9.1\n"].every(m=>{const r=A.parseFile('---\n'+m+'title: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n');return r.ok===false&&!r.template;}));
  chk("a 0.3 module can be added to a booklet",A.moduleTextProblems(FILE("0.3")).length===0);
  chk("a module with no marker cannot",A.moduleTextProblems(FILE("0.3").replace("booklet: 0.3\n","")).length===1);
@@ -103,8 +103,8 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
   const r=old.addModuleText(FILE("0.4").replace(/\|m\b/g,"|n"));
   chk("a booklet read from a 0.6 file takes a module marked 0.4, and still says 0.6",r.ok&&/^booklet: 0\.6$/m.test(old.toMarkdown()),JSON.stringify(r));}
  {const used=P.boot();used.parseFile(FILE("0.6"));
-  chk("a 0.6 file that uses the removed query key `title:` opens with that key reported",(()=>{const q=P.boot().parseFile('---\nbooklet: 0.6\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!text|q] Q\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\ntitle: Things\n```\n\n> [!module|m end] End\n');
-   return q.ok&&q.unread.length>=2&&/booklet: 0\.6/.test(q.unread[0])&&q.unread.slice(1).some(x=>/title/.test(x));})());}
+  chk("a 0.6 file that uses the removed query key `title:` opens with that key reported, and nothing about its marker",(()=>{const q=P.boot().parseFile('---\nbooklet: 0.6\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!text|q] Q\n\n> [!activity|look] Look\n\n```booklet query\nfrom: log\ntitle: Things\n```\n\n> [!module|m end] End\n');
+   return q.ok&&q.unread.length===1&&/title/.test(q.unread[0])&&!/booklet: 0\.6/.test(q.unread[0]);})());}
 }
 
 /* 7. settings on a callout line are written key:value */

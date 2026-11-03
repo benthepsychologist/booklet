@@ -1,8 +1,8 @@
 // Browser check for renderer 0.13.1: the interface language follows SPEC.md section 9 (review D17), and a file's notices
 // follow a language switch (review R2: a problem is a code, worded when it is drawn). A real page at 1280 px: the EN / ES /
 // FR toggle shows on "Your booklets" and inside every booklet; a reader who chose French opens how-tides-work (lang: en)
-// with French controls; a file opened with problems shows them in English, and pressing FR re-words them in French, the
-// marker sentence too; a reload keeps the choice.
+// with French controls; a file opened with problems shows them in English, and pressing FR re-words them in French,
+// and nothing is said about the file's marker; a reload keeps the choice.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/language-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
@@ -25,7 +25,7 @@ const NOTED='---\nbooklet: 0.9\ntitle: Harbour notes\nlang: en\n---\n\n> [!activ
   const load=async text=>{await toList();await p.locator('#main .addrow button').nth(1).click();await wait(250);
     await p.locator('#pasteIn').fill(text);await p.locator('#loadGo').click();await wait(800);};
   const notes=()=>p.evaluate(()=>{const n=document.querySelector('#main .filenotes');if(!n) return null;
-    return {marker:(n.querySelector(':scope > p')||{}).textContent||'',items:[...n.querySelectorAll('li')].map(li=>li.textContent)};});
+    return {items:[...n.querySelectorAll('li')].map(li=>li.textContent)};});
 
   await p.goto('https://bookletmd.test/app/');await wait(500);
   ok(await shown()==='en,es,fr'&&await pressed()==='en',"Your booklets shows the whole toggle, EN pressed, for a reader who chose nothing");
@@ -34,12 +34,11 @@ const NOTED='---\nbooklet: 0.9\ntitle: Harbour notes\nlang: en\n---\n\n> [!activ
   await load(NOTED);
   ok(await shown()==='en,es,fr',"inside a booklet the toggle still shows EN, ES and FR");
   const en=await notes();
-  ok(!!en&&/This file says booklet: 0\.9/.test(en.marker)&&en.items.length===2&&en.items.some(x=>/“daily” needs “repeat”/.test(x)),"the file's notices are in English: the marker sentence and two problems"+" "+JSON.stringify(en));
+  ok(!!en&&en.items.length===2&&en.items.some(x=>/“daily” needs “repeat”/.test(x))&&!en.items.some(x=>/booklet: 0\.9/.test(x)),"the file's notices are in English: two problems, and none about its 0.9 marker"+" "+JSON.stringify(en));
   await press('fr');
   const fr=await notes();
   ok(await p.evaluate(()=>document.documentElement.lang)==='fr'&&await pressed()==='fr',"pressing FR puts the booklet's page in French");
   ok(!!fr&&fr.items.length===2&&fr.items.every((x,i)=>x!==en.items[i])&&fr.items.some(x=>/“daily” nécessite “repeat”/.test(x)),"and the same notices, drawn again, are in French"+" "+JSON.stringify(fr));
-  ok(!!fr&&fr.marker!==en.marker&&/0\.9/.test(fr.marker),"the marker sentence too",fr&&fr.marker);
   await p.screenshot({path:path.join(OUT,'language-notices-fr.png')});
   await press('en');
   ok(JSON.stringify(await notes())===JSON.stringify(en),"and EN puts them back, word for word");

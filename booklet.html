@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-67pwDXQ1jpZ6V7YMQ3xvAR/uCWbln3w59KTUmtOfJfo=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-mNLef15zL5lMViGYs/JBM56thAIcmZ7mBa0QaoRNR+U=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1584,7 +1584,6 @@ const STRINGS_SRC={
     booklet: {
       noActivities: "Nothing here yet. Add an activity to begin — or open a file you saved before.",
       added: n=>n+" added.",
-      addedOtherMarker: m=>`It says booklet: ${m}, so it was read as format ${FORMAT_VERSION}, as it is.`,
       renamed: r=>(r.length===1?"One id was renamed so it does not clash: ":r.length+" ids were renamed so they do not clash: ")+renamesList(r," is now ",n=>" and "+n+" more")+".",
       noShelf: "The module list could not be loaded. Check your connection and try again.",
       addFailed: "That activity could not be fetched — it may have moved, or you may be offline.",
@@ -1777,7 +1776,6 @@ const STRINGS_SRC={
       queryNothing: from=>`names “${from}”, which is nothing in this module`,
       queryNoEntries: from=>`names “${from}”, which keeps no entries (only a repeat activity does)`,
       startBad: v=>`front matter says \`start: ${v}\`; the only value is \`start: home\`, so the page left it out`,
-      otherMarker: m=>`This file says booklet: ${m}. This page reads format ${FORMAT_VERSION} and has opened it as it is; some of it may not draw.`,
       notReadable: `This is not a booklet file this page can read — its front matter needs a \`booklet:\` line with a 0.x version, such as \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Not a booklet file this page can read (it needs a \`booklet:\` line with a 0.x version).`,
       noModule: "This file holds no module.",
@@ -1938,7 +1936,6 @@ const STRINGS_SRC={
     booklet: {
       noActivities: "Rien ici pour l’instant. Ajoutez une activité pour commencer — ou ouvrez un fichier déjà enregistré.",
       added: n=>n+" ajoutée.",
-      addedOtherMarker: m=>`Elle indique booklet: ${m} ; elle a donc été lue comme le format ${FORMAT_VERSION}, telle quelle.`,
       renamed: r=>(r.length===1?"Un identifiant a été renommé pour éviter un conflit : ":r.length+" identifiants ont été renommés pour éviter un conflit : ")+renamesList(r," devient ",n=>" et "+n+" de plus")+".",
       noShelf: "La liste des modules n’a pas pu être chargée. Vérifiez votre connexion et réessayez.",
       addFailed: "Cette activité n’a pas pu être récupérée — elle a peut-être changé d’adresse, ou vous êtes hors ligne.",
@@ -2128,7 +2125,6 @@ const STRINGS_SRC={
       queryNothing: from=>`nomme « ${from} », qui n’existe pas dans ce module`,
       queryNoEntries: from=>`nomme « ${from} », qui ne garde aucune entrée (seule une activité répétée le fait)`,
       startBad: v=>`l’en-tête indique \`start: ${v}\` ; la seule valeur possible est \`start: home\`, la page l’a donc ignoré`,
-      otherMarker: m=>`Ce fichier indique booklet: ${m}. Cette page lit le format ${FORMAT_VERSION} et l’a ouvert tel quel ; certaines parties peuvent ne pas s’afficher.`,
       notReadable: `Ce fichier n’est pas un carnet que cette page peut lire — son en-tête doit contenir une ligne \`booklet:\` avec une version 0.x, par exemple \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Ce n’est pas un fichier de carnet que cette page peut lire (il faut une ligne \`booklet:\` avec une version 0.x).`,
       noModule: "Ce fichier ne contient aucun module.",
@@ -2289,7 +2285,6 @@ const STRINGS_SRC={
     booklet: {
       noActivities: "Aquí todavía no hay nada. Agrega una actividad para empezar — o abre un archivo que guardaste antes.",
       added: n=>n+" agregada.",
-      addedOtherMarker: m=>`Dice booklet: ${m}, así que se leyó como formato ${FORMAT_VERSION}, tal como está.`,
       renamed: r=>(r.length===1?"Se renombró un identificador para que no choque: ":"Se renombraron "+r.length+" identificadores para que no choquen: ")+renamesList(r," ahora es ",n=>" y "+n+" más")+".",
       noShelf: "No se pudo cargar la lista de módulos. Revisa tu conexión e inténtalo de nuevo.",
       addFailed: "No se pudo obtener esa actividad — puede que se haya movido, o que no tengas conexión.",
@@ -2479,7 +2474,6 @@ const STRINGS_SRC={
       queryNothing: from=>`nombra “${from}”, que no existe en este módulo`,
       queryNoEntries: from=>`nombra “${from}”, que no guarda entradas (solo una actividad repetible lo hace)`,
       startBad: v=>`el encabezado dice \`start: ${v}\`; el único valor es \`start: home\`, así que la página lo dejó de lado`,
-      otherMarker: m=>`Este archivo dice booklet: ${m}. Esta página lee el formato ${FORMAT_VERSION} y lo abrió tal como está; es posible que algo no se muestre.`,
       notReadable: `Este no es un archivo de cuadernillo que esta página pueda leer: su encabezado necesita una línea \`booklet:\` con una versión 0.x, por ejemplo \`booklet: "${FORMAT_VERSION}"\`.`,
       notBooklet: `Este no es un archivo de cuadernillo que esta página pueda leer (necesita una línea \`booklet:\` con una versión 0.x).`,
       noModule: "Este archivo no contiene ningún módulo.",
@@ -3841,8 +3835,6 @@ function markerOf(text){const {head}=frontMatter(text);
     if(m) return m[1].replace(/^(["'])(.*)\1$/,"$2");}
   return "";}
 function isBooklet(text){const v=versionOf(markerOf(text));return !!v&&v[0]===0&&/^\d+\.\d+$/.test(markerOf(text));}
-/* the marker of a booklet that is not this page's own version ("" for its own, or for a file that is no booklet) */
-function otherMarker(text){return isBooklet(text)&&markerOf(text)!==FORMAT_VERSION?markerOf(text):"";}
 /* `kind|id words` → the id, the flags and the key:value settings. For a kind that takes an id (SPEC.md section 4) the first word is
    the id, whatever it is called (unless it holds `:`, which makes it a setting), and every word after it is a setting; a kind that takes none has settings only. */
 function calloutWords(kind,s){const out={id:null,flags:new Set(),set:{}},noId=NO_ID_KINDS.has(kind);
@@ -3978,9 +3970,6 @@ function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),
   const fm={},problems=[];problems.dupIds=[];
   for(const l of head||[]){const kv=kvLine(l);if(kv) fm[kv[0]]=kv[1];}
   const L=tableTag(fm.lang)||"en";
-  /* a file marked with another 0.x version opens by these rules, and the first thing it says is so */
-  const other=otherMarker(text),markerNote=other?PROBLEM.otherMarker(other):null;
-  if(markerNote){problems.push(markerNote);problems.markerNote=markerNote;}
   /* `start: home` is the one value; anything else is said and left out */
   if(fm.start!==undefined&&fm.start!=="home") problems.push(PROBLEM.startBad(String(fm.start).slice(0,40)));
   if(!fm.lang) problems.push(PROBLEM.langMissing);
@@ -4596,7 +4585,7 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
      booklet started here and not yet given a module downloads as); a module that holds no activity is still refused */
   const empty=!modules.length;
   const refused=problems.filter(p=>p.refuses);
-  return {ok:(out.length>0||empty)&&!refused.length,empty:empty||undefined,unread:problems,refused,dupIds:problems.dupIds,markerNote:problems.markerNote,drafts:{activities:drafts},template:book,lang:L,S:st};}
+  return {ok:(out.length>0||empty)&&!refused.length,empty:empty||undefined,unread:problems,refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st};}
 /* ---- writing a booklet back (SPEC.md section 8) ----
    A file is written back as it was read. Its body, everything before the records region, comes back byte for byte, its
    trailing blank lines and line endings with it, and so does every line and block of the region. Only what the reader
@@ -5036,8 +5025,7 @@ const fencedSpans=(lines,from,to)=>codeFences(lines).filter(F=>F.start>=from&&F.
 function moduleTextProblems(text,R){
   if(!isBooklet(text)) return [PROBLEM.notReadable];
   R=R||parseFile(text);
-  /* another 0.x marker is no reason to refuse: it is said when the module is added */
-  if(R.unread.filter(m=>m!==R.markerNote).length) return R.unread.filter(m=>m!==R.markerNote);
+  if(R.unread.length) return R.unread;
   if(!(R.template.modules||[]).length) return [PROBLEM.noModule];
   return [];}
 /* ---- RENAME ON A CLASH (SPEC.md section 10) ----
@@ -7893,17 +7881,14 @@ function render(){
   return dc;}
 /* "Opening <name>…": a file is being read for a link, or for a store booklet opened from the list */
 const loadingNotice=()=>el("div",{class:"notice col",role:"status"},strings("booklet").linkLoading(LINK_LOADING.label));
-/* the notices at the top of an opened file's first screen. A file marked with another 0.x version says so in a
-   sentence of its own, above and apart from the count: the page read it, so that is not a thing it could not read.
-   Under it, how many things the page could not read (nothing is shown when there are none), the list inside a
-   disclosure, and a way to dismiss it for the session */
+/* the notices at the top of an opened file's first screen: how many things the page could not read (nothing is shown
+   when there are none), the list inside a disclosure, and a way to dismiss it for the session */
 function fileNotesNode(){const u=strings("ui");
-  if(!FILE_NOTES||FILE_NOTES.dismissed||!(FILE_NOTES.list.length||FILE_NOTES.marker)) return null;
+  if(!FILE_NOTES||FILE_NOTES.dismissed||!FILE_NOTES.list.length) return null;
   /* on the home screen, and on the screen the file opened into when that is not the home screen */
   if(screen!==HOME_SCREEN&&FILE_NOTES.at!==screen) return null;
   const box=el("div",{class:"notice col filenotes",role:"status"});
-  if(FILE_NOTES.marker) box.append(el("p",{style:"margin:0 0 .4rem"},problemWords([FILE_NOTES.marker])));
-  if(FILE_NOTES.list.length) box.append(el("p",{style:"margin:0 0 .4rem"},u.fileNotes(FILE_NOTES.list.length)),
+  box.append(el("p",{style:"margin:0 0 .4rem"},u.fileNotes(FILE_NOTES.list.length)),
     el("details",{},el("summary",{},u.fileNotesShow),el("ul",{class:"plain"},...FILE_NOTES.list.map(x=>el("li",{},problemWords([x]))))));
   box.append(el("button",{type:"button",class:"small",onclick:()=>{FILE_NOTES.dismissed=true;render();}},u.fileNotesDismiss));
   return box;}
@@ -8487,7 +8472,7 @@ function addModuleFromText(text,say){say=say||addDialogSay;
     if(!r.ok){say(problemWords(r.problems));return false;}
     renamed=r.renamed||[];}
   veilAddModule.removeAttribute("open");saveLocal();render();
-  toast(strings("booklet").added(plainText(tx((R.template.modules[0]||{}).title,"")))+(renamed.length?" "+strings("booklet").renamed(renamed):"")+(otherMarker(text)?" "+strings("booklet").addedOtherMarker(otherMarker(text)):""));
+  toast(strings("booklet").added(plainText(tx((R.template.modules[0]||{}).title,"")))+(renamed.length?" "+strings("booklet").renamed(renamed):""));
   return true;}
 /* the module a registry entry names, read (with the size limit and the words for a slow or missing file) and added */
 async function addFromRegistry(id,say){const gen=bookletGen,got=await registryRead(id),B=strings("booklet");
@@ -8536,9 +8521,9 @@ function loadText(text){
   /* a file is always a booklet of its own; it never merges into another one */
   const e=addEntry();openBooklet(e.id);finishLoad(R);}
 /* `page`: the page a link names (startScreen) */
-/* a parse's notices, for the screen `at` it opens into: the other-marker sentence stands apart; only problems are counted */
-function fileNotesOf(R,at){const marker=R.markerNote||null,list=(R.unread||[]).filter(m=>m!==R.markerNote);
-  return list.length||marker?{marker,list,dismissed:false,at}:null;}
+/* a parse's notices, for the screen `at` it opens into */
+function fileNotesOf(R,at){const list=R.unread||[];
+  return list.length?{list,dismissed:false,at}:null;}
 /* `o.via`: where a view came from (openAsView); `o.page`: the page a link names (startScreen); `o.view`: "open" for a
    booklet that keeps the view it had in this visit (applyParsed) */
 function finishLoad(R,o){o=o||{};const via=o.via||null,keep=o.keep||null;
@@ -8841,10 +8826,10 @@ function hostOpen(text,o){const raw=o&&o.name!=null&&o.name!==""?o.name:null,nm=
   /* handed over before the page has read its store (a host's script runs right after this one): it opens as soon as the
      store is read, and the answer is the text's own notices */
   if(!KEEP.ready){KEEP.later.push(()=>hostOpen(text,o));const N=fileNotesOf(R,null);
-    return {ok:true,problems:N?[...(N.marker?[N.marker]:[]),...N.list].map(p=>problemWords([p])):[]};}
+    return {ok:true,problems:N?N.list.map(p=>problemWords([p])):[]};}
   if(nm) openLinked(text,{store:true,host:true,label:nm,from:storeFrom(nm)});
   else{const e=addEntry();openBooklet(e.id);finishLoad(R);}
-  return {ok:true,problems:FILE_NOTES?[...(FILE_NOTES.marker?[FILE_NOTES.marker]:[]),...FILE_NOTES.list].map(p=>problemWords([p])):[]};}
+  return {ok:true,problems:FILE_NOTES?FILE_NOTES.list.map(p=>problemWords([p])):[]};}
 
 /* ---- OPENING BY LINK ----
    A host may name a folder of booklets it serves, in a `booklet-store` meta tag of its own copy of this file (the shipped
