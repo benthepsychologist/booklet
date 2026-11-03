@@ -326,11 +326,11 @@ function cssStampState(text){const m=CSS_STAMP.exec(text);if(!m) return "foreign
 function compileOne(X,input,o){
   const source=path.basename(input.file||input.name+".booklet.md");
   const name=input.name;
-  const rep={source,name,form:o.form,ok:false,refused:[],problems:[],marker:"",pages:[],comments:[],
+  const rep={source,name,form:o.form,ok:false,refused:[],problems:[],pages:[],comments:[],
     counts:null,marked:[],images:[],links:[],description:"",toc:false,pageList:[],translations:[],script:false,needsScript:false,keyed:false,readOnly:[]};
   if(!NAME.test(name)||name==="booklet"){rep.refused.push("its address, “"+name+"”, must be letters, digits, . _ or - (and not “booklet”, the stylesheet's folder): rename the file");return {rep,files:new Map()};}
   const P=o.parsed||parseInput(X,input);
-  rep.problems=P.problems;rep.marker=P.marker;rep.comments=P.comments||[];
+  rep.problems=P.problems;rep.comments=P.comments||[];
   if(!P.ok||!P.design){rep.refused=P.refused.length?P.refused:P.problems.length?P.problems:["the renderer could not read it"];return {rep,files:new Map()};}
   const keep=new Map(),files=new Map(),plan=D.planPages(X,P,name),many=plan.paged;
   const forms=o.form==="both"?["standalone","site"]:[o.form];
@@ -504,7 +504,6 @@ function reportText(C){const L=[];
       L.push("    "+lk.length+" of "+rep.pageList.length+" pages linked"+(no.length?"; no page of the same module and activity id in the others, so no link on: "+no.map(p=>p.path).join(", "):"")+".");}
     L.push("  Description: "+(rep.description?"“"+rep.description+"”":"none (the page has no first paragraph)"));
     L.push("  On this page: "+(rep.toc?"listed":"not listed (fewer than two top headings)"));
-    if(rep.marker) L.push("  Marker: "+rep.marker);
     /* pages (format 0.17) are drawn as titled sections in reading order: said once for the booklet, with what is still not drawn */
     if(rep.counts.pages) L.push("  Pages: "+plural(rep.counts.pages,"page","pages")+" drawn as titled sections in reading order, a page under its parent. Not drawn: Back, Up and Next, a menu of the pages and its search, a trail of the pages above, and the cards of the pages under a page.");
     /* the script: which pages of the booklet need it (a booklet of many pages may need it on some only), and what a site layout must do */

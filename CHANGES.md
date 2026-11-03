@@ -4,7 +4,7 @@ What changed in each version of the format, newest first. `SPEC.md` states the r
 
 ## Changes from v0.17
 
-The format becomes 0.18. The renderer's own release follows separately.
+The format becomes 0.18, and the reference renderer is 0.18.0. The renderer reads this format; it draws no audio, video or `listen` yet ("Not yet supported", below).
 
 - **Audio and video** (section 6, "Audio and video"). They are embedded with the image syntax, and the extension of the target says whether it is an image, audio or video: `![alt](media/a.mp3)`, `![alt][id]`, and Obsidian's `![[a.mp3]]`. The portable extensions are `.mp3`, `.m4a`, `.ogg`, `.opus` and `.wav` for audio and `.mp4` and `.webm` for video (`.webm` is video); `.flac`, `.3gp`, `.mov`, `.mkv` and `.ogv` are allowed and the linter warns. A local file is a relative path under the rules an image has. A transcript is an ordinary folded callout after the embed; a caption file beside a video is not part of this version. Raw HTML media and frames (`<audio>`, `<video>`, `<source>`, `<track>`, `<iframe>`, `<frame>`, `<object>`, `<embed>`, `<script>`) are not part of the format. A reader loads nothing until the reader presses play.
 - **`![[name.ext]]` file embeds** (section 6). Read, outside Obsidian, as a relative path from the booklet's folder; accepted for images too, so one embed rule covers every file kind. Obsidian's `|300` size suffix is kept as written and means nothing in the format. `![[#^id]]` stays a block embed.
@@ -16,6 +16,10 @@ The format becomes 0.18. The renderer's own release follows separately.
 - **Section 6's account of the reference renderer is marked as a renderer note.** The long paragraph on what the reference renderer does with images is not the format; it says what one renderer does with the rule above it.
 - **Conformance** (section 12). What a conforming reader must, should and may do with a declared origin and with media and `listen`, and what a conforming writer does with a `listen` answer and with `media-from`.
 - **The marker is `booklet: "0.18"`** in this document and wherever it names its version.
+
+- **A reader lags the format by design** (section 2, "Another marker"; section 12, conformance). A file or module marked with any other `0.x` version, earlier or later, opens or is added by the reader's own rules and the reader says nothing about the marker. It reports only what it cannot read, one thing at a time, as before: an unknown kind, a setting a kind does not take, a query key it does not have, a block it does not define. Before this, the reader said, first among the file's problems, "This file says booklet: 0.9. This page reads format 0.18 and has opened it as it is; some of it may not draw.", so the reference renderer needed a patch for every release that moved the number. A file with no marker, or one that is not a `0.x` version, is still not a booklet; a rule that refuses a file still refuses it whatever the marker; a reader still saves a file back with the marker it came with.
+- **The reference renderer** no longer says it. The sentence, the add-module toast's suffix ("It says booklet: 0.9, so it was read as format 0.18, as it is.") and their French and Spanish versions are gone, with the code that carried them (`otherMarker`, the marker note on a parse, the marker line of the notice at the top of a file, and the `marker` field of the compiler's report). Nothing else about opening a file changed.
+- **The linter is unchanged.** `lint-booklet.py` still gives one warning for a file with another `0.x` marker and checks it as the current format.
 
 **Not in this version.** Publishing a booklet's results, for other tools and other booklets to read, is planned for a later version, and this version has no syntax for it. A caption file beside a video is also later.
 

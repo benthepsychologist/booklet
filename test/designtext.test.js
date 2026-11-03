@@ -97,7 +97,7 @@ function agrees(A,label){A.flushSave();
   const B=P.boot();B.openBooklet(id);B.screen="m/a";B.render();
   const box=P.find(P.main(),P.hasClass("filenotes"))[0],items=P.find(box||{},n=>n.tagName==="li").map(P.texts);
   chk("a 0.12 booklet this release reads with a problem opens by this release's parse, its answer there",P.find(P.main(),n=>n.tagName==="textarea").map(n=>n.value).join()==="Low water");
-  chk("and, the first time, says what a file opened afresh would: the 0.12 marker and the problem",!!box&&/This file says booklet: 0\.12/.test(P.texts(box))&&items.some(x=>/a row is closed that was never opened/.test(x)),box&&P.texts(box));
+  chk("and, the first time, says what a file opened afresh would: the problem, and nothing about the 0.12 marker",!!box&&!/booklet: 0\.12/.test(P.texts(box))&&items.some(x=>/a row is closed that was never opened/.test(x)),box&&P.texts(box));
   chk("opening it rewrote its snapshot as text, with no save: the old design is gone, its changed mark and the list's last-updated time are as they were",
     (()=>{const o=JSON.parse(LS[key]),e=entry();return typeof o.text==="string"&&!("TPL" in o)&&o.dirty===d0&&e.updatedAt===e0.updatedAt&&e.dirty===e0.dirty;})());
   P.closePages();const C=P.boot();C.openBooklet(id);C.screen="m/a";C.render();

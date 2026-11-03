@@ -74,10 +74,10 @@ license: CC-BY-4.0
   - A tool that writes booklets writes the current marker. `lint-booklet.py --marker` prints the line.
   - A reader never changes a file's marker. It saves a file back with the marker the file came with, and a booklet it makes itself says `"0.18"`.
 - **Another marker.** A file with no marker, or one that is not a `0.x` version (`1.0`, `2`, words), is not a booklet for this version. A file marked with another `0.x` version, earlier or later, is opened by this version's rules.
-  - A reader says so first among the file's problems: "This file says booklet: 0.9. This page reads format 0.18 and has opened it as it is; some of it may not draw."
-  - It makes no promise about what such a file draws. What its rules do not understand is reported like any other problem.
+  - A reader lags the format by design. It opens any `0.x` file by its own rules and says nothing about the marker. It reports only what it cannot read, one thing at a time, like any other problem: an unknown kind, a setting a kind does not take, a query key it does not have, a block it does not define.
+  - It makes no promise about what such a file draws.
   - A rule that refuses a file (a module opened and not closed, an id used twice in a module) refuses it whatever the marker.
-  - A module file with another `0.x` marker may be added to a booklet, with the same notice.
+  - A module file with another `0.x` marker may be added to a booklet, and says nothing about its marker either.
   - A third number (v0.18.1) is a patch to this wording or to the renderer. It changes no file, and files go on saying `"0.18"`.
 - `start` is optional and has one value, `start: home`. Any other value is an error in the linter, and a renderer reports it and ignores it.
   - Without `start`, a booklet that holds exactly one activity opens straight into that activity. A booklet that holds exactly one module, with several activities, opens on that module's own screen. Any other booklet opens on its home screen.
@@ -1276,7 +1276,7 @@ A conforming reader must: read a file whose front matter declares `booklet: "0.1
 
 **Media and `listen`.** A conforming reader must also: load no media, local or remote, before the reader presses play; never clear a `done` itself, and show `done` as a box the reader can tick when it cannot play the media (section 5); and keep a `listen` answer as section 8 says. A conforming reader should start playback at `pos` when it has one. A conforming reader may offer a click-to-load player for a link to a video service, and may offer Continue (below). How and when a reader writes `pos` while media plays, and the words it asks in, are its own (section 5, "Renderer notes").
 
-A conforming reader should open a file marked with another `0.x` version, earlier or later, by its own rules and with the notice that section 2 describes. A reader saves such a file back with the marker it came with.
+A conforming reader should open a file marked with another `0.x` version, earlier or later, by its own rules, as a reader that lags the format by design: it says nothing about the marker and reports only what it cannot read (section 2). A reader saves such a file back with the marker it came with.
 
 A reader may also offer conveniences that this document does not define and that conformance does not test. The reference renderer has the first six of the seven below, and a conforming reader needs none:
 

@@ -273,13 +273,13 @@ reset();{const A=P.boot();
  const ok=await A.openLink("#/module/t%2Fdaily");
  chk("a module link on a page with no registry is refused and requests nothing",ok===false&&CALLS.length===0);}
 
-/* ---- the marker notice: its own sentence, not counted ---- */
+/* ---- a file marked with another 0.x opened by link: no sentence about its marker ---- */
 reset();{const A=P.boot();META["booklet-store"]=STORE;
  ROUTES[STORE+"old.md"]=WEEK.replace('booklet: "0.18"','booklet: "0.9"');
  await A.openLink("#/open/old.md");
  const n=P.find(P.main(),P.hasClass("filenotes"))[0];
- chk("a file marked 0.9 opened by link shows the marker sentence by itself",!!n&&/^This file says booklet: 0\.9\. This page reads format 0\.18 and has opened it as it is/.test(text(n))&&!/could not read/.test(text(n)),n?text(n):"none");
- chk("...and the provenance line is a separate box above it",P.find(P.main(),P.hasClass("openedby")).length===1);}
+ chk("a file marked 0.9 opened by link shows no notice about its marker",!n&&!/booklet: 0\.9/.test(text(P.main())),n?text(n):"none");
+ chk("...and the provenance line is still there",P.find(P.main(),P.hasClass("openedby")).length===1);}
 
 /* ---- the three languages ---- */
 reset();{const A=P.boot();

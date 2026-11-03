@@ -220,7 +220,7 @@ function fontsOf(page,file){
     +"by the Booklet compiler, unmodified.\n\n"+text+"\n";
   return {faces,licence};}
 
-/* parse(text): {ok, refused: [words], problems: [words], marker: words or "", lang, id, design, comments}.
+/* parse(text): {ok, refused: [words], problems: [words], lang, id, design, comments}.
    The words are the renderer's own, in English (the report is the author's), save the compiler's own refusals, which
    say why in words and never quote the file. `design` is the parse's template without its `raw`, copied out of the
    context as JSON. `lang` is the booklet's own language, as its front matter declares it, in the spelling the renderer
@@ -235,7 +235,7 @@ function parse(R,setLang,text){
   setLang("en");
   const t=String(text==null?"":text);
   const whole=R.parseFile(t);
-  const refused=why=>({ok:false,refused:[why],problems:[],marker:"",lang:"",id:"",design:null,comments:[]});
+  const refused=why=>({ok:false,refused:[why],problems:[],lang:"",id:"",design:null,comments:[]});
   const isOutside=list=>(Array.isArray(list)?list:[]).some(p=>p&&p.code==="recordOutside");
   /* the design's own text, as the renderer keeps it: everything outside the records region (SPEC.md section 8) */
   const own=whole.template&&whole.template.raw&&typeof whole.template.raw.source==="string"?whole.template.raw.source:null;
@@ -253,10 +253,9 @@ function parse(R,setLang,text){
     P=R.parseFile(c.lines.join("\n"));
     if(isOutside(P.unread)) return refused(REFUSE.recordBlock);}
   const words=list=>(Array.isArray(list)?list:[]).map(p=>R.problemText(p));
-  const marker=P.markerNote?R.problemText(P.markerNote):"";
   let design=null;
   if(P.template){const {raw,...rest}=P.template;design=JSON.parse(JSON.stringify(rest));}
-  return {ok:!!P.ok,refused:words(P.refused),problems:words((P.unread||[]).filter(p=>p!==P.markerNote)),marker,
+  return {ok:!!P.ok,refused:words(P.refused),problems:words(P.unread),
     lang:frontKey(R,t,"lang"),id:frontKey(R,t,"id"),design,comments};}
 /* a front matter key's value, read by the renderer's frontMatter and kvLine ("" when there is none). */
 function frontKey(R,t,key){const fm=R.frontMatter(t,true);let v="";

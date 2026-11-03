@@ -216,8 +216,9 @@ Write one booklet line for each question (section 6) where `my-question` stands.
   unquoted, a YAML tool reads `0.10` as the number 0.1. A tool that writes
   booklets should ask the linter for the marker (`python3 lint-booklet.py
   --marker` prints the whole line) and not hard-code it. A file marked with
-  another `0.x` version still opens, with a notice and no promise, but write the
-  current marker.
+  another `0.x` version still opens, by the renderer's rules and with no word
+  about the marker (it reports only what it cannot read), but write the current
+  marker.
 - **`start: home`** (optional, in the front matter). A booklet that is one
   activity or one module opens straight into it. Add `start: home` to keep the
   home screen.

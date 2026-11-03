@@ -81,7 +81,8 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
    Read the marker as text, compare versions as two whole numbers (major, minor)
    with `versionOf` in the renderer (it reads "0.10" as [0, 10]) and never `+FORMAT_VERSION`, and write it
    quoted (`booklet: "0.18"`) so a YAML tool does not turn it into 0.1. A file
-   marked with another `0.x` version opens by the current rules with a notice (v0.18);
+   marked with another `0.x` version opens by the current rules and says nothing about its marker (the renderer lags the format by design:
+   no patch each release, and nothing in it names a marker to say);
    the renderer never changes the marker a file came with.
 8. **A wording-only change to `SPEC.md` is a patch.** When the spec's words change
    and nothing a file may say does, the spec's title, the renderer and the skill take

@@ -50,9 +50,8 @@ const F={
     ok(await view()==='@home'&&await p.locator('#main button.mode').count()===1,`${W}px: start: home keeps the home screen`);
     await load(F.oneOld);
     const note=p.locator('#main .filenotes');
-    ok(await view()==='m/a'&&await note.count()===1&&!(await note.innerText()).includes("could not read"),`${W}px: a file marked 0.9 opens into its activity, with the notice at the top of that screen`);
-    ok(await note.locator('summary').count()===0,`${W}px: the marker notice stands alone: no count, no list to open`);
-    ok((await note.innerText()).includes('This file says booklet: 0.9. This page reads format 0.18 and has opened it as it is'),`${W}px: and the notice says which marker the file carries and what the page did`);
+    ok(await view()==='m/a'&&await note.count()===0,`${W}px: a file marked 0.9 opens into its activity, with no notice at all`);
+    ok(!(await p.locator('#main').innerText()).includes('booklet: 0.9'),`${W}px: and nothing on the screen says which marker the file carries`);
     await p.screenshot({path:path.join(OUT,`start-old-${W}.png`)});
     ok(errs.length===0,`${W}px: zero page errors ${errs.join('|')}`);
     await ctx.close();}
