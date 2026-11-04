@@ -2,7 +2,7 @@
 
 **A booklet is one Markdown file that holds a person's work *and* the design of the activities they did it in.**
 
-Open it in a text editor and you can read everything, top to bottom — questions declared in plain lines, prose free to use every heading level, the reader's own answers set apart at the end. There is no account, no server, no database. You can email a booklet to yourself, drop it in a Dropbox or an Obsidian vault, print it, or hand it to a language model and say *"help me add an activity to this."*
+Open it in a text editor and you can read everything, top to bottom — questions declared in plain lines, prose free to use every heading level, the reader's own answers set apart at the end. There is no account, no server, no database. You can email a booklet to yourself, drop it in a Dropbox or an Obsidian vault, print it, or hand it to a language model and say *"help me add an activity to this."* In Obsidian, the [Booklet plugin](https://community.obsidian.md/plugins/booklet) opens a booklet and saves the answers into it.
 
 ```markdown
 ---
@@ -44,7 +44,7 @@ This is the distinction the whole design rests on, and it is easy to get backwar
 
 | | what it is | where it lives |
 | --- | --- | --- |
-| **The renderer** | a core, `booklet.html`, plus `parts/` beside it (or the one-file build, which holds both in one static HTML file). It holds **engines** — the ability to make an SVG's regions clickable, to lay out a grid of selectable words, to open cards one at a time — and its own interface strings. **It holds no activities and no content.** | this repo |
+| **The renderer** | a core, `booklet.html`, plus `parts/` beside it (or the one-file build, which holds both in one static HTML file). It holds **engines** — the ability to make an SVG's regions clickable, to lay out a grid of selectable words, to open cards one at a time — and its own interface strings. **It holds no activities and no content.** The Obsidian plugin (below) is a second reader and writer for part of the format. | this repo |
 | **The booklet** | the file above. Every activity, every question, every word a reader sees, and everything they wrote. **All state lives here.** | the reader's device |
 | **The registry** | the one place the renderer fetches modules from: [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry), a separate repo. The renderer stores no module and starts with none. | a separate repo |
 
@@ -74,7 +74,7 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.18; a file marked with any other 0.x opens as it is, with a notice that some of it may not draw, and a file with no marker, or one not 0.x, is refused |
+| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.18; a file marked with any other 0.x opens by the current rules, with no word about its marker, and a file with no marker, or one not 0.x, is refused |
 | [`SPEC.md`](SPEC.md) | the current format (v0.18), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`submit/`](submit/) | the submit build, never the published file: `node submit/build.js --endpoint <url>` makes `booklet-submit.html`, the one-file renderer with a Submit button that sends a reader's answers to the one address it was built with, on the reader's press (`docs/hosting.md`, "The submit build") |
@@ -88,6 +88,7 @@ and it draws those too, as long as they use engines it has.
 | [`art/`](art/) | the pictures the renderer carries: a pinned Lucide subset and Booklet's own spot drawings, with their licences; `node test/art-sprite.js --write booklet.html` turns them into the renderer's hidden sprite |
 | [`test/`](test/) | the suite, run with `test/run.sh` |
 | [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry) | a separate repo: the modules on offer and the `registry.json` that lists them |
+| [`booklet-obsidian`](https://github.com/benthepsychologist/booklet-obsidian) | a separate repo: the Booklet plugin for Obsidian (1.0.3; reads format 0.18; free, Apache-2.0; needs Obsidian 1.11.7 or later; [in the community plugin directory](https://community.obsidian.md/plugins/booklet)). It opens a note whose front matter says `booklet: "0.18"` in a view of its own and writes the answers into the note's records section. It draws part of what `booklet.html` draws |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
 
 If you serve the renderer yourself and want a reader's work saved somewhere other than their browser, read [`docs/hosting.md`](docs/hosting.md). The published `booklet.html` never sends anything (a host that needs a reader's answers sent to one address builds a separate file for it, the submit build in `submit/`); a host adds one script of its own and talks to the renderer through `window.Booklet`, and the renderer hands a booklet to a host only when the page is on the reader's own machine or private network and only after the reader presses Allow.
@@ -97,6 +98,8 @@ If you serve the renderer yourself and want a reader's work saved somewhere othe
 Download `booklet.html` with its `parts/` folder beside it and `examples/how-tides-work.booklet.md`, open the HTML file in a browser —
 **straight off your disk, `file://` is fine** — and press *Add a booklet from a file*
 on "Your booklets" to open the markdown file. No server, no install, no network beyond the renderer's own `parts/mermaid.js`, and only for a booklet with a diagram; without `parts/` a diagram shows its source.
+
+To open a booklet in Obsidian instead, install the Booklet plugin from [the community plugin directory](https://community.obsidian.md/plugins/booklet) (Obsidian 1.11.7 or later) and open a note whose front matter says `booklet: "0.18"`.
 
 To have the renderer as one file instead, with every part inside it, make the one-file build: in a clone of this
 repository, `node test/one-file.js` writes it to `build/booklet.html` (it needs only node). From v0.13.1 each [GitHub release](https://github.com/benthepsychologist/booklet/releases) attaches the one-file build as an asset, and `node test/one-file.js` still makes it from a clone.
@@ -118,8 +121,8 @@ A tool that writes booklets should ask the linter for the marker (`python3 lint-
 A plain Markdown file with booklet front matter (`booklet: "0.18"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
 status or a run's acceptance report, can be read in the renderer. Its headings are drawn as headings, and **nothing is
-folded** that the file does not fold: a long report is split into pages with `***` (Back, "Page 2 of 3" and Next at the
-foot), or into tabs for parts that differ in kind, and a callout written folded (`> [!note]-`) stays folded, with one
+folded** that the file does not fold: a long report is split into sections with `***` (Back, "Page 2 of 3" and Next at the
+foot of a tab with no page line), or into tabs for parts that differ in kind, or into named pages in a tree (`> [!page]`), and a callout written folded (`> [!note]-`) stays folded, with one
 Open all switch on a screen that has any (see "What the renderer draws that a file does not say", below). HTML comments (`<!-- … -->`) are not
 drawn, and tables are styled.
 
@@ -209,7 +212,9 @@ own questions.
 - **An activity's row** shows the activity's first paragraph under its title, read as inline Markdown as a module's blurb is. An activity with no paragraph shows its title alone. Its status line counts what is inside: its folded reads, its questions, and where the reader is ("3 reads · 6 questions · Not started"). The author may write that line instead, on `>` lines directly under the activity line, or hide it with `status:off` on the line (`SPEC.md` section 3, "A card's parts").
 - **A `group`** is drawn plain under its title, folded or open, with whatever it holds, questions included. A kind with no colour of its own is drawn as a `note` is.
 - **Tabs** are a tab bar at the top of the activity's column, under its title and opening, drawn for two or more tabs; on a narrow screen it scrolls sideways inside itself. A module's tabs are a bar above its list of activities.
-- **Pages** are turned at the foot: Back, "Page N of M" and Next, in the one row that one at a time's Back and Next also use. That row and the tab bar start at the column's left edge and keep the prose's measure. Next and Back land at the start of the part now on show, under the top bar, past an opening drawn above it.
+- **Sections** (the pieces a `***` makes) are turned at the foot: Back, "Page N of M" and Next, in the one row that one at a time's Back and Next also use. That row and the tab bar start at the column's left edge and keep the prose's measure. Next and Back land at the start of the part now on show, under the top bar, past an opening drawn above it.
+- **A page tree** (named pages, `> [!page]`) is drawn with a trail of the pages above the one on show, Back, Up and Next, "N of M" for the sections of a page that has two or more, and the pages under a page as cards after its own words.
+- **A menu of the pages** is drawn for a tab with two or more named pages: a column left of the page on a wide window, a "Pages" button and a drawer on a phone. It is on main since pull request #97 and not yet in a tagged release.
 - **One at a time** steps through the groups (`> [!group]` callouts) of the part on show (an activity, a tab, or one `***` section of either), offered when it holds two or more; a question in no group is never a step. What comes before the first group (prose, a heading, a callout, a picture, a table, a question in no group) is drawn whole above every step, whatever its length. All at once, the part on show is drawn as written and nothing is held in view. A box the keyboard moves to is scrolled clear of the top bar.
 - **A matrix drawn as separate questions** (on a phone, or in a narrow window) keeps its own words, the stem, held under the top bar while its items are answered, until its last item scrolls past (on a window 360 px tall or less, a phone on its side, it scrolls with them); an item the keyboard moves to, its words and its answer, is scrolled clear of it, and a press or a tap never moves the page. A matrix with no words has no stem. Drawn as a grid, it is not held.
 - **Fonts.** Headings are set in Lexend and body text in Atkinson Hyperlegible, unless the theme's `font` says otherwise.
@@ -432,8 +437,7 @@ person. Anyone may publish a separate registry under their own policy; a site ca
 
 ## Status
 
-**v0.18, draft.** `SPEC.md` (Markdown-native) is the whole format. There is no
-independent second implementation yet. It is not stable: draft compatible
+**v0.18, draft.** `SPEC.md` (Markdown-native) is the whole format. The reference renderer is the only reader of all of it; the Obsidian plugin is a second reader and writer of part of it. The Booklet plugin for Obsidian is released (1.0.3), reads format 0.18, is free and Apache-2.0, and is in [Obsidian's community plugin directory](https://community.obsidian.md/plugins/booklet). It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and
 known gaps, and `docs/why-markdown.md` for how v0.3 came to be.
