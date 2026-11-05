@@ -1,9 +1,9 @@
 # STATUS — Booklet
 
-*As of 2026-10-30*
+*As of 2026-11-04*
 
 Booklet is public at `github.com/benthepsychologist/booklet` under Apache-2.0,
-**format v0.18 (pull request #95, branch `feat/v018-spec`; files say `booklet: "0.18"`, in quotes), renderer 0.18.0**; the release before it is project v0.17, renderer 0.17.0: format v0.17 (files said `booklet: "0.17"`, in quotes) and renderer 0.17.0, from the specification pull request (#90, branch `feat/v017-spec`) and the renderer pull request (#91, branch `feat/v017-renderer`), to be tagged `v0.17.0` once they are merged; all of it is below. The release before it is v0.16.0, with renderer 0.16.1 after it on main (#79; below): format v0.16 (files say `booklet: "0.16"`, in quotes) and renderer 0.16.0, from the release pull request (#77, branch `feat/v016-unclosed-fence`), merged at `e9ef186` and tagged `v0.16.0`; all of it is below. The release before it is v0.15.0: format v0.15 (no 0.14 was released) and renderer 0.15.0, from the release pull request (#69, branch `release/v0.15.0`), merged at `2f21a36` and tagged `v0.15.0`. The release before it is v0.13.1: renderer 0.13.1, tagged `v0.13.1` on 2026-10-15, live on the box and on bookletmd.org, with the format marker `"0.13"`. It carries the renderer's structure (#51), a core and its parts (#50), consolidations (#55), storage in IndexedDB (#54), the clean-up (#56), and the save status and auto-save (#57), all below. Before it, v0.13.0 (format v0.13 and renderer 0.13.0, tagged `v0.13.0` at `c808ad7`, live on the box and on bookletmd.org). The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
+**format v0.18 (pull request #95, branch `feat/v018-spec`; files say `booklet: "0.18"`, in quotes), renderer 0.18.0**, merged and tagged `v0.18.0` (2026-11-03) and live on bookletmd.org; the release before it is project v0.17, renderer 0.17.0: format v0.17 (files said `booklet: "0.17"`, in quotes) and renderer 0.17.0, from the specification pull request (#90, branch `feat/v017-spec`) and the renderer pull request (#91, branch `feat/v017-renderer`), merged and tagged `v0.17.0`; all of it is below. The release before it is v0.16.0, with renderer 0.16.1 after it on main (#79; below): format v0.16 (files say `booklet: "0.16"`, in quotes) and renderer 0.16.0, from the release pull request (#77, branch `feat/v016-unclosed-fence`), merged at `e9ef186` and tagged `v0.16.0`; all of it is below. The release before it is v0.15.0: format v0.15 (no 0.14 was released) and renderer 0.15.0, from the release pull request (#69, branch `release/v0.15.0`), merged at `2f21a36` and tagged `v0.15.0`. The release before it is v0.13.1: renderer 0.13.1, tagged `v0.13.1` on 2026-10-15, live on the box and on bookletmd.org, with the format marker `"0.13"`. It carries the renderer's structure (#51), a core and its parts (#50), consolidations (#55), storage in IndexedDB (#54), the clean-up (#56), and the save status and auto-save (#57), all below. Before it, v0.13.0 (format v0.13 and renderer 0.13.0, tagged `v0.13.0` at `c808ad7`, live on the box and on bookletmd.org). The v0.12 line before it: format v0.12 and renderer 0.12.0 (items D and E of the 0.12 update; see below).
 This repository holds the format spec (`SPEC.md`), the reference renderer
 (`booklet.html`, a core, and its parts in `parts/`; a build makes one static file of them), the linter (`lint-booklet.py`), the
 authoring skill (`SKILL.md`) and five examples. Modules live in their own
@@ -13,14 +13,14 @@ repo, `booklet-registry`.
 
 A file or module marked with any other `0.x` version opens or is added by the renderer's own rules and the renderer says nothing about its marker; it reports only what it cannot read (`SPEC.md` sections 2 and 12; `CHANGES.md`, "Changes from v0.17"). The marker sentence, the add-module toast's suffix, their French and Spanish strings, `otherMarker`, `markerNote`, the marker line of the file notice and the compiler report's `marker` field are removed. The linter's one warning for another marker is unchanged. `test/marker-lag.test.js` and `test/marker-lag-browser.js` pin it with a made-up `"0.99"` file (`test/fixtures/marker-later.booklet.md`). `RENDERER_VERSION` is `0.18.0` with this release (it reads format 0.18 and draws no media yet); `FORMAT_VERSION` is unchanged.
 
-## Pages menu (branch `renderer-pages-menu`; renderer only, the marker stays `"0.18"`, `RENDERER_VERSION` and `FORMAT_VERSION` untouched)
+## Pages menu (merged as #97 at `14dbbf9`, after the `v0.18.0` tag and not in it; renderer only, the marker stays `"0.18"`, `RENDERER_VERSION` and `FORMAT_VERSION` untouched)
 
-The reference renderer draws a menu of a tab's pages: a nav landmark, "Pages", holding the tree nested as the pages are, when the tab has two or more named pages (`pageMenu`, `pageMenuShow`, `reveal`, `seen` in `booklet.html`; the `pm-*` rules of the stylesheet; `pages.menu`, `pages.menuClose` and `pages.menuUnder` in the three string tables). A column left of the page from 900 px wide (sticky, scrolling inside itself, the page on show scrolled into view), a "Pages" button and a drawer below that. On by default with no key and no setting; nothing in a file, the spec, the linter or the registry changed. The reader's open and closed branches are kept for the visit in the view (`viewAt(...).pm`), never saved. `CHANGES.md` has its renderer note, "Renderer 0.18.1: a pages menu".
+The reference renderer draws a menu of a tab's pages: a nav landmark, "Pages", holding the tree nested as the pages are, when the tab has two or more named pages (`pageMenu`, `pageMenuShow`, `reveal`, `seen` in `booklet.html`; the `pm-*` rules of the stylesheet; `pages.menu`, `pages.menuClose` and `pages.menuUnder` in the three string tables). A column left of the page from 900 px wide (sticky, scrolling inside itself, the page on show scrolled into view), a "Pages" button and a drawer below that. On by default with no key and no setting; nothing in a file, the spec, the linter or the registry changed. The reader's open and closed branches are kept for the visit in the view (`viewAt(...).pm`), never saved. `CHANGES.md` has its renderer note, "Renderer 0.18.1: a pages menu". It was merged as #97 (`14dbbf9`) after the `v0.18.0` tag, no tag has been made for it, and the box's Booklet server and branch main carry it.
 
 - **Checks.** `test/pagesmenu.test.js` (structure on a made-up 157-page, three-level booklet from `test/pmenu-fixture.js`: entries, nesting, `aria-current`, open ancestors, kept choices, fewer than two named pages, the three languages) and `test/pagesmenu-browser.js` (Chromium at 1280 and 390: the column, sticky and scrolling inside itself, the page on show in view after Next 30 times and after a deep entry, the drawer, focus, Escape, the scrim, 200% text with no sideways scroll, reduced motion, contrast in light and dark, the accessibility tree, and the time to turn a page against origin/main's).
 - **Not yet supported in the reference renderer:** the menu's search, the "Mentioned on" list and a trail that starts at the booklet. The words before a tab's first page line (its unnamed first page) are not listed in the menu.
 
-## Current state — format 0.18, renderer 0.18.0 (pull requests #95 (the format, merged) and #96 (the renderer), not yet tagged)
+## Current state — format 0.18, renderer 0.18.0 (pull requests #95 (the format) and #96 (the renderer), both merged; renderer 0.18.0 is tagged `v0.18.0` at `ff9cccf`, 2026-11-03, and live on bookletmd.org)
 
 Format 0.18 adds audio and video embeds, `![[name.ext]]` file embeds, the front matter key `media-from:`, the `listen` question and Continue (`CHANGES.md`, "Changes from v0.17"; `SPEC.md` v0.18.0). `RENDERER_VERSION` is `0.18.0` (pull request #96): the renderer reads this format and says nothing about a marker that differs from it, and it draws none of the media features below yet.
 
@@ -44,7 +44,7 @@ Format 0.17 adds pages as a tree inside a tab, takes `parent:` off the activity 
 - **Reviews and trims:** the cold review's fixes (a two-pass settle of page ids, an empty first screen, the print title of a named page) and the trim pass are in; the node tests now catch the mutations the review listed.
 - **Size:** `booklet.html` (the core) 1,097,256 bytes, 1,852 fewer than 0.16.1's (1,099,108); the one-file build 3,908,385 bytes, 1,852 fewer than 0.16.1's (3,910,237); `parts/mermaid.js` is unchanged (2,811,019). `SPEC.md` 140,310 bytes (+15,981 over 0.16.0's 124,329), `lint-booklet.py` 127,728 (+7,455), `SKILL.md` 76,720 (+6,675 over 0.16.0's 70,045).
 
-**Not yet supported in the reference renderer** (as CHANGES.md says; the menu of the pages has since been drawn, see "Pages menu" above): a menu of the pages, a search of the pages, a "Mentioned on" list of the pages that link to the one on show, and "Show N more" for a long row of child pages. It no longer draws a module as a wiki. The compiler (0.3.0) draws no cards of pages, page-tree address, Back, Up and Next, menu, search or breadcrumb.
+**Not yet supported in the reference renderer** (as CHANGES.md says; the menu of the pages has since been drawn, see "Pages menu" above): a search of the pages, a "Mentioned on" list of the pages that link to the one on show, and "Show N more" for a long row of child pages. It no longer draws a module as a wiki. The compiler (0.3.0) draws no cards of pages, page-tree address, Back, Up and Next, menu, search or breadcrumb.
 
 **Known, and left as it is in 0.17:**
 
@@ -460,17 +460,17 @@ with a message saying so.
 
 ## Specified but not drawn
 
-- Showing images (`SPEC.md` sections 6 and 13): the renderer shows an image's alt text and address as text and fetches nothing; a later version will read images from a place the renderer's host declares.
-- Editing a booklet's design in the browser, and an Obsidian plugin
-  (`SPEC.md` section 13).
+- Showing images to a booklet that was not opened from the host's store or the default folder (`SPEC.md` sections 6 and 13): the renderer shows the alt text, with the address as text beneath. A way to give it its images is not built.
+- Editing a booklet's design in the browser (`SPEC.md` section 13).
 - The manifest and parts in other files, `sync`, and `readonly` and `describe`
   on an `svg-regions` widget (each marked in `SPEC.md` and listed in its section 13).
 
 ## Open
 
 - Build or drop each item in "Specified but not drawn".
-- The reference renderer is the only implementation, so format changes are
-  still possible; a compatibility-breaking change takes a new format version.
+- The reference renderer is the only reader of all of the format; the Obsidian
+  plugin is a second reader and writer of part of it. Format changes are still
+  possible; a compatibility-breaking change takes a new format version.
 - The French, Spanish and Argentine Spanish interface strings added since v0.2
   have not had a native speaker's review.
 - Module content and its licences belong to `booklet-registry`; a listing there

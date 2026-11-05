@@ -13,7 +13,7 @@ ordinary Markdown that a person reads and edits in any text editor. What the
 person answered is kept in a records section at the end of the same file, which
 a renderer writes and a person leaves alone. A renderer (the Booklet page,
 `booklet.html`) draws the activities from the file, and saves the person's
-answers back into it. This skill turns a plain request into such a file with
+answers back into it. A booklet can also be opened in Obsidian with the Booklet plugin. This skill turns a plain request into such a file with
 nothing else to hand. `SPEC.md` in the Booklet repository is the full format.
 You should not need it, but section 13 points at it for anything this skill does
 not cover.
@@ -174,7 +174,8 @@ hyphens, accents dropped: `registro-de-agua`).
 
 **Step 5. Reply** with: the file path; the structure in a line (modules,
 activities, pages); the assumptions you made; the lint result; and how to
-open it (load the file in the Booklet renderer, `booklet.html`).
+open it (load the file in the Booklet renderer, `booklet.html`, or open it in Obsidian with the
+Booklet plugin, https://community.obsidian.md/plugins/booklet).
 
 ---
 
