@@ -471,16 +471,19 @@ once, when it builds (`data.js`), by the rules images are read by: a name of let
 (a link out of it is not followed), a plain file of at most 5 MB, and JSON. What it finds at the key path (keys of letters,
 digits, `_` and `-`, joined by dots; a key names a member of an object and never an item of a list) is a list of rows or an
 object with `rows` and, optionally, `fields`, and it must be rows and labels by the renderer's own rules (`readData` and
-`readFields`: a row is an object, a list is all values or all rows, a label is text or an object with a text `label`); a fence
-that holds `fields` and nothing else gives the labels, which win, and its labels are held to the same rule. It then writes the rows into the fence, so the renderer's own parse reads the booklet as though
+`readFields`: a row is an object, a list is all values or all rows, a label is text or an object with a text `label`); a fence's
+`fields` give the labels, which win, and are held to the same rule; any other key in a fence is ignored, and `rows` in it are not
+read and are said in the report, with the renderer's own words, as the renderer says them. It then writes the rows into the fence, so the renderer's own parse reads the booklet as though
 they had been there from the start: the page of such a booklet is the page of the same booklet with the rows in its fences
 (`test/compile-dashboard.test.js` checks it). A line number the renderer reports after such a fence counts the rows as one line.
 A file that cannot be read (missing, not JSON, nothing at the path, a refused name, a link out of the folder, too big) gives
-its block no rows. The page says "The data file “x.json” could not be read." where a query over the block would have been
+its block no rows: its fence is left as written, so the parse reads a block that names a file, in the module whose block it is
+(two modules may use one block id, and one module's failure is not the other's). The page says "The data file “x.json” could not be read." where a query over the block would have been
 (English, French or Spanish), and the report says why; the rest of the page is drawn. The same goes for a file whose rows or labels
 are not rows or labels (the report gives the renderer's own words for what is wrong), and for rows nested too deeply to be written
 into the fence (about two thousand levels of rows): a block that is not handed over is a quiet box, never a gap and never a
-refused booklet. A booklet given to the compiler as text with no folder (`compile([{text}])` with no `dir` and no `file`) reads
+refused booklet. A fence whose own body is not JSON, not an object or has bad `fields` is left as written too, and the renderer's
+own problem for it is in the report (the parse refuses the block, and the query over it, as the renderer does). A booklet given to the compiler as text with no folder (`compile([{text}])` with no `dir` and no `file`) reads
 no data file at all, and its quiet boxes say in the report that no folder was given: the process's own folder is not the
 booklet's. The note where a file could not be read is the page's words and not the author's: it is never the lede, nor the
 page's description. Records are never read: only the design's own text is rewritten.

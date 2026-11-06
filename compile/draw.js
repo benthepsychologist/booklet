@@ -408,8 +408,9 @@ function drawPage(X,P,o){
       /* each of these says which it is: its view (or a summary) and its place among the page's queries, so a list of them can be told apart */
       const v=b.view||{},which=(b.field?", the answers to “"+String(b.field)+"”":"")+(v.summary?", a summary":v.as?", as "+String(v.as):"");
       return frag(mark("kept","the query"+(b.from?" over “"+String(b.from)+"”":"")+which+" (query "+st.counts.queries+" on the page)"),empty?el("p",{class:"bk-hint"},empty):null);}
-    /* a data block whose file could not be read has no rows: the quiet box names the file (the reason is in the report) */
-    const gone=(P.dataFiles||[]).find(f=>!f.ok&&f.id&&f.id===b.from);
+    /* a data block whose file could not be read is still a block that names a file (compile/data.js leaves its fence as written), so it
+       is found in its own module by the parse; its quiet box names the file (the reason is in the report) */
+    const nf=b.data.file,gone=nf?{...((P.dataFiles||[]).find(f=>!f.ok&&f.src===nf.name&&f.key===nf.path)||{why:""}),src:nf.name,id:b.from}:null;
     if(gone){st.counts.queries++;const note=el("p",{class:"bk-hint"},W.dataMissing(gone.src));st.notRead.add(note);
       return frag(mark("data","the data file “"+gone.src+"” (block “"+gone.id+"”)",gone.why),note);}
     const cap=X.queryView(b,st.scope);

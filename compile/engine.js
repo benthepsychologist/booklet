@@ -54,7 +54,7 @@ const DEFAULT_RENDERER=path.join(__dirname,"..","booklet.html");
    still defined in booklet.html, so a rename in the renderer fails in booklet's own CI, not on a host's build. */
 const NAMES=[
   /* the parse and its words */
-  "parseFile","problemText","tableTag","strings","RENDERER_VERSION","FORMAT_VERSION",
+  "parseFile","problemText","PROBLEM","tableTag","strings","RENDERER_VERSION","FORMAT_VERSION",
   /* reading the design */
   "isShown","isMulti","tabsIn","tabPages","tabOpening","pageTree","blocksIn","blocksAll","qParts","isGroup","hintKind","isQuestion",
   "placeOf","foldName","widgetIn","wordsOf","scopeOfModule","engOpts","moduleTabOf","fencedModule","NOTICE_KEYS",
@@ -242,7 +242,7 @@ function parse(R,setLang,text,opts){
   const isOutside=list=>(Array.isArray(list)?list:[]).some(p=>p&&p.code==="recordOutside");
   /* the design's own text, as the renderer keeps it: everything outside the records region (SPEC.md section 8) */
   const own=whole.template&&whole.template.raw&&typeof whole.template.raw.source==="string"?whole.template.raw.source:null;
-  let comments=[],P=whole,dataFiles=[];
+  let comments=[],P=whole,dataFiles=[],rowsNotes=[];
   if(own!==null){
     const lines=own.split("\n"),fileLines=t.split(/\r?\n/);
     /* a line number is said only where the design's text and the file still agree up to it */
@@ -256,11 +256,14 @@ function parse(R,setLang,text,opts){
     /* a data fence that names a file is written out with the file's rows (data.js), so the parse reads the booklet as if they were in it */
     const inl=DATA.inline(R,c.lines,opts&&opts.dir!=null?opts.dir:null);dataFiles=inl.files;
     P=R.parseFile(inl.lines.join("\n"));
-    if(isOutside(P.unread)) return refused(REFUSE.recordBlock);}
+    if(isOutside(P.unread)) return refused(REFUSE.recordBlock);
+    /* a fence that names a file and also holds `rows` is written out with the file's rows, so the parse never sees the rows: the
+       renderer's own notice is made here, for the line the fence stood on */
+    rowsNotes=dataFiles.filter(f=>f.rowsKey&&f.id).map(f=>R.PROBLEM.dataFileFence(R.PROBLEM.line(lineOf(f.at)||f.at+1),f.id,R.PROBLEM.dataFileRows));}
   const words=list=>(Array.isArray(list)?list:[]).map(p=>R.problemText(p));
   let design=null;
   if(P.template){const {raw,...rest}=P.template;design=JSON.parse(JSON.stringify(rest));}
-  return {ok:!!P.ok,refused:words(P.refused),problems:words(P.unread),
+  return {ok:!!P.ok,refused:words(P.refused),problems:words([...(P.unread||[]),...rowsNotes]),
     lang:frontKey(R,t,"lang"),id:frontKey(R,t,"id"),design,comments,dataFiles};}
 /* a front matter key's value, read by the renderer's frontMatter and kvLine ("" when there is none). */
 function frontKey(R,t,key){const fm=R.frontMatter(t,true);let v="";

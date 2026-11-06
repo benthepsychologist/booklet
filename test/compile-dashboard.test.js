@@ -24,7 +24,7 @@ const count=(s,re)=>(s.match(re)||[]).length;
 const r=build({file:FIX});
 const html=page(r);
 chk("the fixture compiles",r.rep.ok,(r.rep.refused||[]).join("; "));
-chk("no problem is reported for the data files, and the three named in the fixture that can be read are read",!r.rep.problems.length,r.rep.problems.join("; "));
+chk("the only problem reported is the renderer's own, for the one name it never reads; the data files that can be read are read",r.rep.problems.length===1&&/\^odd names the file “..\/compile-dashboard.json”.*never read/.test(r.rep.problems[0]),r.rep.problems.join("; "));
 chk("a table whose rows hold rows is drawn nested: its headings on one grid and a list of rows",html.includes('class="bk-table bk-dv-ttable"')&&html.includes('class="bk-dv-thead"'));
 chk("a row with something more to show is a native disclosure that opens with no script",count(html,/<details>\s*<summary class="bk-dv-row bk-dv-trow" data-bk-row>/g)===4);
 chk("a row with nothing more to show is a plain row",/<li class="bk-dv-row" data-bk-row><span class="bk-dv-b" data-bk-col="stage">/.test(html)&&/<li class="bk-dv-row" data-bk-row><span class="bk-dv-t" data-bk-col="title">Label the drawers/.test(html));
@@ -76,7 +76,10 @@ chk("a key path may name one level or none",one("rows.json list").rows===2&&one(
 chk("an object with rows and fields: the file's fields are kept, and the fence's own fields win",(()=>{
   const x=run(["```booklet data rows.json c",'{ "fields": { "t": "Name" } }',"```","^b"]);return /"fields":\{"t":"Name"\}/.test(x.lines.join("\n"));})());
 chk("the fence is written out as a one-line fence of the same marks",(()=>{const x=run(["~~~~booklet data rows.json list","~~~~","^b"]);return x.lines[2]==="~~~~ booklet data"&&x.lines[3]==='{"rows":[{"t":1},{"t":2}]}'&&x.lines[4]==="~~~~"&&x.lines[5]==="^b";})());
-chk("a fence that holds more than `fields` is not read",!one("rows.json list",'{ "rows": [] }').ok&&/more than/.test(one("rows.json list",'{ "rows": [] }').why));
+chk("a fence that holds a key besides `fields` is read, as the renderer reads it: the key is ignored",(f=>f.ok&&f.rows===2&&!f.rowsKey)(one("rows.json list",'{ "extra": 1, "fields": { "t": "Name" } }'))
+  &&/"fields":\{"t":"Name"\}/.test(run(["```booklet data rows.json list",'{ "extra": 1, "fields": { "t": "Name" } }',"```","^b"]).lines.join("\n"))&&!/extra/.test(run(["```booklet data rows.json list",'{ "extra": 1 }',"```","^b"]).lines.join("\n")));
+chk("…and `rows` in it are said and not read: the file's rows are written out, and the record says so",(f=>f.ok&&f.rows===2&&f.rowsKey===true&&f.at===2)(one("rows.json list",'{ "rows": [{"t":"fence row"}] }'))&&!/fence row/.test(run(["```booklet data rows.json list",'{ "rows": [{"t":"fence row"}] }',"```","^b"]).lines.join("\n")));
+chk("a fence body that is not JSON, or not an object, is not read: its fence stays as written",(f=>!f.ok&&/not JSON/.test(f.why))(one("rows.json list","{nope"))&&(f=>!f.ok&&/not a JSON object/.test(f.why))(one("rows.json list","[1]")));
 chk("nothing at the key path, a key that is not letters, digits, _ and - (an empty one too), and what is neither rows nor an object with rows",/nothing at/.test(one("rows.json a.zzz").why)&&/not keys of letters/.test(one("rows.json a..b").why)&&/not keys of letters/.test(one("rows.json a.b!c").why)&&!one("rows.json a.b!c").ok&&/holds no list of rows/.test(one("rows.json c.fields").why));
 chk("a key path walks the members of objects and never steps into a list (the renderer's rule): a number names no item",!one("rows.json arr.1").ok&&/nothing at/.test(one("rows.json arr.1").why)&&!one("rows.json arr.0").ok&&/nothing at/.test(one("rows.json arr.0").why)&&one("rows.json obj.inner").ok);
 chk("…and the whole file as a list of lists is not rows",!one("rows.json arr").ok&&/row that is not an object/.test(one("rows.json arr").why));
@@ -86,8 +89,8 @@ chk("labels that are not text or an object with a text label are not handed over
   ["labels5","labelsList","labelBad"].every(k=>{const f=one("rows.json "+k);return !f.ok&&/fields/.test(f.why);})
   &&(f=>!f.ok&&/^the fence has `fields`/.test(f.why))(one("rows.json list",'{ "fields": { "t": 5 } }'))
   &&!one("rows.json list",'{ "fields": [] }').ok);
-chk("…and a block that is not handed over is written out with no rows, never left out",(()=>{
-  const x=run(["```booklet data rows.json notrows","```","^b"]);return x.lines[3]==='{"rows":[]}'&&x.files.length===1&&!x.files[0].ok&&!!x.files[0].why;})());
+chk("…and a block that is not handed over keeps its fence as written (the parse reads a block that names a file, which draws the quiet box where it stands), never left out",(()=>{
+  const x=run(["```booklet data rows.json notrows","```","^b"]);return x.lines.join("\n")==="# T\n\n```booklet data rows.json notrows\n```\n^b"&&x.files.length===1&&!x.files[0].ok&&!!x.files[0].why;})());
 chk("labels as an object with a label, and rows that hold rows several levels down, are handed over",one("rows.json labelObj").ok&&one("rows.json kids").ok);
 chk("a key path never reads an inherited key",/nothing at/.test(one("rows.json constructor").why)&&/nothing at/.test(one("rows.json __proto__").why));
 chk("names the renderer does not read: .., a leading /, a dot part, no .json, a space, 201 characters, a backslash",["../rows.json","/rows.json",".hid.json","sub/.x.json","rows.txt","rows json","x".repeat(196)+".json","a\\b.json","sub//more.json","rows.JSON"].every(n=>!DATA.fileName(n)));
@@ -132,13 +135,32 @@ chk("a rows file is not read through the records: a fence in the records region 
   chk("text with no folder given: the file in the process's own folder is not read; the quiet box, and the report names why",res.rep.ok&&page(res).includes("The data file “there.json” could not be read.")&&!page(res).includes("here</")&&res.rep.marked.some(m=>m.kind==="data"&&/no folder was given/.test(m.why)),res.rep.marked.map(m=>m.why).join("|"));
   chk("…and with a folder given, the same text reads it",res3.rep.ok&&!page(res3).includes("could not be read")&&page(res3).includes("here"));
   chk("DATA.inline with no folder (null) reads nothing; it never falls back to the process's folder",(()=>{const prev=process.cwd();try{process.chdir(path.join(tmp,"book"));
-    const x=DATA.inline(X.R,lines(["# T","","```booklet data there.json","```","^b"]),null);return !x.files[0].ok&&/no folder was given/.test(x.files[0].why)&&x.lines[3]==='{"rows":[]}';}finally{process.chdir(prev);}})());
+    const x=DATA.inline(X.R,lines(["# T","","```booklet data there.json","```","^b"]),null);return !x.files[0].ok&&/no folder was given/.test(x.files[0].why)&&x.lines.join("\n")==="# T\n\n```booklet data there.json\n```\n^b";}finally{process.chdir(prev);}})());
   chk("a file given with its own path has a folder (its directory), as before",build({file:FIX}).rep.ok&&!page(build({file:FIX})).includes("data file “compile-dashboard.json”"));
   const descr=h=>(/<meta name="description" content="([^"]*)">/.exec(h)||[])[1];
   chk("a booklet whose first paragraph is its own keeps it as the description, quiet box or not",descr(page(res))==="A sentence."&&descr(page(res3))==="A sentence.");
   chk("a booklet with no first paragraph does not take the quiet box's sentence as its description or its lede (the report says there is none)",
     page(res2).includes("The data file “nothere.json” could not be read.")&&!/could not be read/.test(res2.rep.description)&&res2.rep.description===""&&!/could not be read/.test(descr(page(res2))||"")&&!/bk-lede/.test(page(res2).replace(/<style[\s\S]*?<\/style>/g,"")));
   chk("…and with the file read, no first paragraph means none, as for any booklet",res4.rep.ok&&res4.rep.description==="");
+}
+/* ---- a data block is read in its own module; a fence's extra keys are the renderer's business, not a reason to blank it ---- */
+{
+  w("book/good.json",{rows:[{title:"Good row"}]});
+  const mod=(id,file,fence)=>"> [!module|"+id+"] Module "+id.toUpperCase()+"\n\n> [!activity|"+id+"a] Activity "+id.toUpperCase()+"\n\n```booklet query\nfrom: rows\nas: table\n```\n\n```booklet data "+file+" rows\n"+(fence||"")+"```\n^rows\n\n> [!module|"+id+" end]\n\n";
+  const head="---\nbooklet: \"0.19\"\nlang: en\nid: t\ntitle: T\n---\n\n";
+  const res=build({text:head+mod("ma","good.json")+mod("mb","missing.json"),name:"t",dir:path.join(tmp,"book")});
+  const pa=String(res.files.get("t/maa/index.html")||""),pb=String(res.files.get("t/mba/index.html")||"");
+  chk("(set up) a booklet of two modules that name the same block id compiles to a page for each",res.rep.ok&&!!pa&&!!pb,[...res.files.keys()].join(","));
+  chk("module A, whose file is there, draws its rows although module B's block of the same id has no file",pa.includes("Good row")&&!pa.includes("could not be read"));
+  chk("module B draws the quiet box, and the report names that one block once",pb.includes("The data file “missing.json” could not be read.")&&!pb.includes("Good row")&&res.rep.marked.filter(m=>m.kind==="data").length===1&&/missing\.json/.test(res.rep.marked.find(m=>m.kind==="data").what));
+  const rev=build({text:head+mod("ma","missing.json")+mod("mb","good.json"),name:"t",dir:path.join(tmp,"book")});
+  chk("…whichever module the failed one is in",String(rev.files.get("t/maa/index.html")).includes("could not be read")&&String(rev.files.get("t/mba/index.html")).includes("Good row")&&!String(rev.files.get("t/mba/index.html")).includes("could not be read"));
+  const ex=build({text:head+mod("ma","good.json",'{"fields":{"title":"Name"},"extra":1}\n'),name:"t",dir:path.join(tmp,"book")});
+  const px=String(ex.files.get("t/maa/index.html")||[...ex.files.values()][0]);
+  chk("a fence with a key besides `fields` draws the file's rows under its labels, and says nothing (as the renderer)",ex.rep.ok&&px.includes("Good row")&&px.includes("Name")&&!px.includes("could not be read")&&ex.rep.problems.length===0,ex.rep.problems.join("; "));
+  const rw=build({text:head+mod("ma","good.json",'{"rows":[{"title":"fence row"}]}\n'),name:"t",dir:path.join(tmp,"book")});
+  const pr=String(rw.files.get("t/maa/index.html")||[...rw.files.values()][0]);
+  chk("a fence with `rows` draws the file's rows, not the fence's, and the renderer's own notice is in the report with the fence's line",rw.rep.ok&&pr.includes("Good row")&&!pr.includes("fence row")&&rw.rep.problems.length===1&&/line 17: the data block \^rows names a file.*its rows were not read/.test(rw.rep.problems[0]),rw.rep.problems.join("; "));
 }
 fs.rmSync(tmp,{recursive:true,force:true});
 

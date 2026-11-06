@@ -11,9 +11,10 @@
    plain file of at most the renderer's LINK_BYTES. What is found at the key path (keys of letters, digits, _ and -, joined
    with dots, each the name of an object's own key; a key path never steps into a list) is a list of rows, or an object with
    `rows` and, optionally, `fields`, and it must be rows and labels by the renderer's own rules (readData, readFields: a list
-   is all values or all rows, a label is text or an object with a `label`). A fence that also holds `fields` (and only that)
-   gives the labels, which win over the file's. A file that cannot be read, or whose rows are not rows, or that is too deep to
-   be written out, gives the block no rows, and the page says why where the block is drawn (the quiet box); the build goes on.
+   is all values or all rows, a label is text or an object with a `label`). A fence's `fields` give the labels, which win over the file's; any other key in a fence is ignored, and `rows` in it are
+   said (the renderer's own notice) and not read, as the renderer does. A file that cannot be read, or whose rows are not rows, or
+   that is too deep to be written out, leaves its fence as written: the parse then reads a block that names a file, and the page
+   says why where the block is drawn (the quiet box, in the module whose block it is); the build goes on.
    A booklet given as text with no folder reads no data file at all: the process's own folder is never a booklet's.
 
    Only the booklet's own design text is read: the caller hands the lines outside the records region. A line number the
@@ -41,13 +42,12 @@ function at(root,keyPath){
     v=v[k];}
   return {ok:true,value:v};}
 
-/* the fence's own body: {} when blank, {fields} when it holds only `fields`, else null */
-function fenceFields(body){
-  const t=body.trim();if(!t) return {};
-  let o;try{o=JSON.parse(t);}catch(e){return null;}
-  if(!o||typeof o!=="object"||Array.isArray(o)) return null;
-  const ks=Object.keys(o);
-  return ks.length===1&&ks[0]==="fields"&&o.fields&&typeof o.fields==="object"&&!Array.isArray(o.fields)?{fields:o.fields}:null;}
+/* the fence's own body, read as the renderer reads it (a blank body is {}): {o} the JSON object, or {bad} the words for why it is none */
+function fenceBody(body){
+  const t=body.trim();if(!t) return {o:{}};
+  let o;try{o=JSON.parse(t);}catch(e){return {bad:"the fence is not JSON"};}
+  if(!o||typeof o!=="object"||Array.isArray(o)) return {bad:"the fence is not a JSON object"};
+  return {o};}
 
 /* One file, read once for the whole booklet (cached by name): {ok, json} or {ok:false, why}. */
 function reader(dir,maxBytes){
@@ -66,8 +66,12 @@ function reader(dir,maxBytes){
     cache.set(rel,got);
     return got;};}
 
-/* inline(R, lines, dir): the design's lines with each file-backed data fence written out, and what happened to each.
-   Returns {lines, files: [{src, key, id, ok, why?, rows?}]}. `R` is the renderer's own names (codeFences, LINK_BYTES). */
+/* inline(R, lines, dir): the design's lines with each file-backed data fence that could be read written out, and what happened to each.
+   A fence that could not be read (the file, the key path, the rows, or the fence's own body) is left as it was written, so the
+   parse reads it as the renderer does: a block that names a file draws the quiet box where it is, in its own module, and a
+   fence the renderer refuses is refused with the renderer's own words. Returns {lines, files: [{src, key, id, ok, why?, rows?,
+   at, rowsKey?}]}: `at` is the fence's line (counted from 0) in the lines given, `rowsKey` that its body also holds `rows`, which
+   the renderer says are not read. `R` is the renderer's own names (codeFences, LINK_BYTES). */
 function inline(R,lines,dir){
   const fences=Array.from(R.codeFences(lines)).filter(F=>{
     const w=F.info.split(/\s+/);return /^booklet$/i.test(w[0])&&/^data$/i.test(w[1]||"")&&w[2]&&F.end<lines.length;});
@@ -77,7 +81,7 @@ function inline(R,lines,dir){
   for(const F of fences){
     const w=F.info.split(/\s+/),src=w[2],key=w[3]||"";
     const body=lines.slice(F.start+1,F.end).join("\n");
-    const rec={src,key,id:F.id||null,ok:false};
+    const rec={src,key,id:F.id||null,ok:false,at:F.start};
     let data=null;
     const fail=why=>{rec.why=why;};
     const rel=fileName(src);
@@ -95,15 +99,20 @@ function inline(R,lines,dir){
           if(d.bad) fail("what it finds there "+d.bad);
           else data=Array.isArray(v)?{rows:v}:{...(v.fields!==undefined?{fields:v.fields}:{}),rows:v.rows};}
         if(data){
-          const fm=fenceFields(body),bad=fm&&fm.fields?R.readFields(fm.fields).bad:null;
-          if(fm===null){data=null;fail("the fence holds more than `fields`");}
+          /* the fence's body as the renderer reads it: `fields` label the file's keys and win over the file's; `rows` are said and not read;
+             any other key is ignored */
+          const fm=fenceBody(body),bad=fm.o&&fm.o.fields!==undefined?R.readFields(fm.o.fields).bad:null;
+          if(fm.bad){data=null;fail(fm.bad);}
           else if(bad){data=null;fail("the fence "+bad);}
-          else if(fm.fields) data.fields={...(data.fields||{}),...fm.fields};}}}
+          else{
+            if(fm.o.fields!==undefined) data.fields={...(data.fields||{}),...fm.o.fields};
+            if(fm.o.rows!==undefined) rec.rowsKey=true;}}}}
     /* the rows are written into the fence on one line; a list nested past what the serializer holds cannot be, and is a block with no rows */
     let text=null;
     if(data){try{text=JSON.stringify(data);}catch(e){data=null;fail("it is nested too deeply to be written into the booklet");}}
-    if(data){rec.ok=true;rec.rows=data.rows.length;}
-    out.push(...lines.slice(from,F.start),F.mark+" booklet data",text||JSON.stringify({rows:[]}),F.mark);
+    if(data){rec.ok=true;rec.rows=data.rows.length;
+      out.push(...lines.slice(from,F.start),F.mark+" booklet data",text,F.mark);}
+    else{delete rec.rowsKey;out.push(...lines.slice(from,F.end+1));}
     from=F.end+1;
     files.push(rec);}
   out.push(...lines.slice(from));
