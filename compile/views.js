@@ -104,7 +104,7 @@ function draw(cap,o){
      either (tree.has) is a native disclosure, which opens with no script; a row with neither is a plain row. Nothing here
      decides which rows are whose children or what opens: the pipeline does, and the renderer draws the same. */
   const restNode=items=>items.length?el("dl",{class:"bk-dv-rest"},...items.flatMap(x=>[el("dt",{},x.label),el("dd",{class:"bk-dv-text"},x.text)])):null;
-  const kidHead=g=>el("div",{class:"bk-dv-group",role:"heading","aria-level":"4"},g.label,el("span",{class:"bk-count"},T.rows(g.rows.length)));
+  const kidHead=g=>el("div",{class:"bk-dv-group",role:"heading","aria-level":"4"},g.label);
   /* A branch more than MAXD levels down is drawn flat: its rows, in order, one after another at that level. The page
      keeps every row, and a file whose list is thousands of levels deep (made by a generator gone wrong) does not take
      the compiler's stack with it. A fold inside a fold is not read below a few levels anyway. */

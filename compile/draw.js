@@ -119,7 +119,7 @@ function drawPage(X,P,o){
   const T=g=>R.strings(g),W=PAGE_WORDS[ui.split("-")[0]]||PAGE_WORDS.en;
   const st={refs:[],pend:[],notes:[],noteBy:new Map(),heads:new Map(),mtabs:new Map(),modHead:new Map(),
     marked:[],pageHeads:[],images:[],links:[],readOnly:[],forIds:[],qn:0,needsScript:!!o.forceScript,counts:{modules:0,activities:0,callouts:0,folds:0,questions:0,widgets:0,queries:0,figures:0,diagrams:0,images:0,math:0,notes:0,links:0,pages:0},
-    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,mathIds:new Set(),labelled:[],svgSeq:0,dgSeq:0};
+    where:"",scope:"",reg:null,regKey:null,act:null,lede:null,ledeAt:null,notRead:new Set(),mathIds:new Set(),labelled:[],svgSeq:0,dgSeq:0};
   const tx=(v,f)=>R.tx(v,f),plain=v=>R.plainText(tx(v,""));
   const bookTitle=titleOf(X,P,o.name);
   const U=o.unit||{kind:"whole"},plan=o.plan||null,xr=o.xr||null,KEY=U.key||HOME,deep=U.kind==="activity";
@@ -410,7 +410,8 @@ function drawPage(X,P,o){
       return frag(mark("kept","the query"+(b.from?" over “"+String(b.from)+"”":"")+which+" (query "+st.counts.queries+" on the page)"),empty?el("p",{class:"bk-hint"},empty):null);}
     /* a data block whose file could not be read has no rows: the quiet box names the file (the reason is in the report) */
     const gone=(P.dataFiles||[]).find(f=>!f.ok&&f.id&&f.id===b.from);
-    if(gone){st.counts.queries++;return frag(mark("data","the data file “"+gone.src+"” (block “"+gone.id+"”)",gone.why),el("p",{class:"bk-hint"},W.dataMissing(gone.src)));}
+    if(gone){st.counts.queries++;const note=el("p",{class:"bk-hint"},W.dataMissing(gone.src));st.notRead.add(note);
+      return frag(mark("data","the data file “"+gone.src+"” (block “"+gone.id+"”)",gone.why),note);}
     const cap=X.queryView(b,st.scope);
     st.counts.queries++;
     if(!cap) return el("p",{class:"bk-hint"},empty||T("dv").empty);
@@ -495,10 +496,11 @@ function drawPage(X,P,o){
   function dropTitle(nodes,title){let first=null;
     H.walk(nodes,x=>{if(first) return false;if(levelOf(x)){first=x;return false;}});
     if(first&&R.sameWords(H.textOf(first).replace(/\s+/g," "),String(title).replace(/\s+/g," "))) H.removeFirst(nodes,x=>x===first);}
-  /* the first paragraph under a title, drawn larger in place (the lede); the page's first one is its description */
+  /* the first paragraph under a title, drawn larger in place (the lede); the page's first one is its description. The note where a
+     data file could not be read (st.notRead) is the page's words, not the author's, and is neither. */
   function lede(nodes){const f=nodes.find(n=>!(n instanceof H.Comment)&&!(typeof n==="string"&&!n.trim()));
     let p=f;if(p instanceof H.Node&&p.tag==="") p=p.kids.find(k=>!(typeof k==="string"&&!k.trim()));
-    if(p instanceof H.Node&&p.tag==="p"){p.attrs.class=(p.attrs.class?p.attrs.class+" ":"")+"bk-lede";if(!st.lede) st.lede=p;}}
+    if(p instanceof H.Node&&p.tag==="p"&&!st.notRead.has(p)){p.attrs.class=(p.attrs.class?p.attrs.class+" ":"")+"bk-lede";if(!st.lede) st.lede=p;}}
 
   /* ---- an activity's headings, for links to them (findHeading says which activity; this finds the node) ---- */
   const norm=s=>R.linkNorm(s);

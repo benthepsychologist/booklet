@@ -1,4 +1,4 @@
-// Browser check of a compiled dashboard page (compile 0.3.0; format 0.19): rows that open, from a data file, in a real Chromium.
+// Browser check of a compiled dashboard page (compile 0.4.0; format 0.19): rows that open, from a data file, in a real Chromium.
 // The made-up booklet test/compile-assets/compile-dashboard.booklet.md is compiled with its JSON file and opened from a folder on
 // disk. It asserts:
 //   - with scripting off, a row opens when its summary is pressed and shows its rest and its children (a native disclosure); a

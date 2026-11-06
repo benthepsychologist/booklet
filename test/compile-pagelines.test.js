@@ -1,4 +1,4 @@
-// Pages in the compiler (compile/, compile 0.3.0): the static half of format 0.17's page tree, drawn.
+// Pages in the compiler (compile/, compile 0.4.0): the static half of format 0.17's page tree, drawn.
 //   1. A named page is a titled section: its title as a heading, a top page at the level the tab's prose starts at, a page under it
 //      one deeper, a page's own prose one below its title, the words before a tab's first page line drawn as they always were.
 //   2. Its anchor is the page's id as the renderer settles it (a written id kept when the title changes, an id made from the
@@ -148,7 +148,7 @@ chk("the booklet compiles",rep.ok);
    !/Pages: /.test(t00)&&/before an activity's first tab line is in the opening/.test(t00),t00);
  const src=["draw.js","compile.js"].map(f=>fs.readFileSync(path.join(__dirname,"..","compile",f),"utf8")).join("\n");
  chk("the 0.17 release's “not drawn as pages yet” line and its link special case are gone",!/not drawn as pages yet|namesPage|pageLinks|pageLines/.test(src));
- chk("the version is 0.3.0",C.VERSION==="0.3.0",C.VERSION);}
+ chk("the version is 0.4.0",C.VERSION==="0.4.0",C.VERSION);}
 
 /* ---- 9. no script ---- */
 {chk("a page of pages with no tab bar links no script",!/booklet\.js/.test(get(r,"harbour/notes/index.html"))&&!/booklet\.js/.test(get(r,"harbour/edge/index.html")));

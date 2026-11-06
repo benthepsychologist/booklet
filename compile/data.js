@@ -8,10 +8,13 @@
 
    The file is read by the rules the renderer reads images by: a name of letters, digits, _ . / and - (at most 200
    characters, no part empty or starting with a dot, ending .json), a real path that stays inside the booklet's own folder, a
-   plain file of at most the renderer's LINK_BYTES. What is found at the key path (keys joined with dots, each the name of an
-   object's own key) is a list of rows, or an object with `rows` and, optionally, `fields`. A fence that also holds `fields`
-   (and only that) gives the labels, which win over the file's. A file that cannot be read gives the block no rows, and the
-   page says why where the block is drawn (the quiet box); the build goes on.
+   plain file of at most the renderer's LINK_BYTES. What is found at the key path (keys of letters, digits, _ and -, joined
+   with dots, each the name of an object's own key; a key path never steps into a list) is a list of rows, or an object with
+   `rows` and, optionally, `fields`, and it must be rows and labels by the renderer's own rules (readData, readFields: a list
+   is all values or all rows, a label is text or an object with a `label`). A fence that also holds `fields` (and only that)
+   gives the labels, which win over the file's. A file that cannot be read, or whose rows are not rows, or that is too deep to
+   be written out, gives the block no rows, and the page says why where the block is drawn (the quiet box); the build goes on.
+   A booklet given as text with no folder reads no data file at all: the process's own folder is never a booklet's.
 
    Only the booklet's own design text is read: the caller hands the lines outside the records region. A line number the
    renderer reports after a rewritten fence counts the rows as one line, three lines for the fence in place of two. */
@@ -27,7 +30,10 @@ function fileName(raw){
   if(p.split("/").some(x=>x===""||x.charAt(0)===".")) return null;
   return p;}
 
-/* the value at a path of keys: {ok, value} or {ok:false, why} */
+/* a key path's keys, as the renderer reads them (dataKeyPathOk): letters, digits, _ and - */
+const keyOk=k=>/^[A-Za-z0-9_-]+$/.test(k);
+
+/* the value at a path of keys: {ok, value} or {ok:false, why}. A key names a member of an object, never an item of a list. */
 function at(root,keyPath){
   let v=root;
   for(const k of keyPath){
@@ -45,11 +51,12 @@ function fenceFields(body){
 
 /* One file, read once for the whole booklet (cached by name): {ok, json} or {ok:false, why}. */
 function reader(dir,maxBytes){
-  let root=null;try{root=fs.realpathSync(dir);}catch(e){root=null;}
+  let root=null;try{if(dir!=null) root=fs.realpathSync(dir);}catch(e){root=null;}
   const cache=new Map();
   return rel=>{
     if(cache.has(rel)) return cache.get(rel);
     const got=(()=>{
+      if(dir==null) return {ok:false,why:"no folder was given for the booklet, so no file beside it is read"};
       if(!root) return {ok:false,why:"the booklet's folder could not be read"};
       let real;try{real=fs.realpathSync(path.join(root,rel));}catch(e){return {ok:false,why:"no such file beside the booklet"};}
       if(!real.startsWith(root+path.sep)) return {ok:false,why:"the path leads outside the booklet's folder"};
@@ -78,19 +85,25 @@ function inline(R,lines,dir){
     else{
       const f=read(rel),keys=key?key.split("."):[];
       if(!f.ok) fail(f.why);
-      else if(keys.some(k=>k==="")) fail("the key path “"+key+"” has an empty key");
+      else if(!keys.every(keyOk)) fail("the key path “"+key+"” is not keys of letters, digits, _ and - joined by dots");
       else{
-        const hit=at(f.json,keys),v=hit.value;
+        const hit=at(f.json,keys);
         if(!hit.ok) fail(hit.why);
-        else if(Array.isArray(v)) data={rows:v};
-        else if(v&&typeof v==="object"&&Array.isArray(v.rows)) data={...(v.fields&&typeof v.fields==="object"&&!Array.isArray(v.fields)?{fields:v.fields}:{}),rows:v.rows};
-        else fail("what it finds is neither a list of rows nor an object with rows");
+        else{
+          /* rows and labels by the renderer's own rules: what it would refuse is not handed over */
+          const d=R.readData(hit.value),v=hit.value;
+          if(d.bad) fail("what it finds there "+d.bad);
+          else data=Array.isArray(v)?{rows:v}:{...(v.fields!==undefined?{fields:v.fields}:{}),rows:v.rows};}
         if(data){
-          const fm=fenceFields(body);
+          const fm=fenceFields(body),bad=fm&&fm.fields?R.readFields(fm.fields).bad:null;
           if(fm===null){data=null;fail("the fence holds more than `fields`");}
+          else if(bad){data=null;fail("the fence "+bad);}
           else if(fm.fields) data.fields={...(data.fields||{}),...fm.fields};}}}
+    /* the rows are written into the fence on one line; a list nested past what the serializer holds cannot be, and is a block with no rows */
+    let text=null;
+    if(data){try{text=JSON.stringify(data);}catch(e){data=null;fail("it is nested too deeply to be written into the booklet");}}
     if(data){rec.ok=true;rec.rows=data.rows.length;}
-    out.push(...lines.slice(from,F.start),F.mark+" booklet data",JSON.stringify(data||{rows:[]}),F.mark);
+    out.push(...lines.slice(from,F.start),F.mark+" booklet data",text||JSON.stringify({rows:[]}),F.mark);
     from=F.end+1;
     files.push(rec);}
   out.push(...lines.slice(from));

@@ -69,6 +69,8 @@ const NAMES=[
   "calloutLook","CALLOUT_LOOK","registries","pageLine","plainRef","hasVal","longDate",
   /* images */
   "imagePath","imageIs","LINK_BYTES",
+  /* a data block's rows and labels: what the renderer reads as rows (a data file's, compile/data.js) */
+  "readData","readFields",
   /* a body map's figure: the renderer's sanitizer rule, element by element (SVG_KEEP), attribute by attribute (svgNameOk,
      svgValueOk, svgFamily, SVG_STYLE_PROPS) and id by id (SVG_ID); a diagram: the screen its source passes before the library
      sees it (diagramRisk), the part's pinned digest and its global name (LIB_SRI, LIB_GLOBAL) */
@@ -252,7 +254,7 @@ function parse(R,setLang,text,opts){
     if(isOutside(whole.unread)) return refused(REFUSE.recordBlock);
     const c=authorComments(R,lines);comments=c.comments.map(x=>({from:lineOf(x.from)||x.from+1,to:lineOf(x.to)||x.to+1,open:x.open}));
     /* a data fence that names a file is written out with the file's rows (data.js), so the parse reads the booklet as if they were in it */
-    const inl=DATA.inline(R,c.lines,opts&&opts.dir!=null?opts.dir:".");dataFiles=inl.files;
+    const inl=DATA.inline(R,c.lines,opts&&opts.dir!=null?opts.dir:null);dataFiles=inl.files;
     P=R.parseFile(inl.lines.join("\n"));
     if(isOutside(P.unread)) return refused(REFUSE.recordBlock);}
   const words=list=>(Array.isArray(list)?list:[]).map(p=>R.problemText(p));
