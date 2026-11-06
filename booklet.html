@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-cU/HcZ/NsbD/fe7O2BZ98WboQMkye0FrOzsnfPUPKIU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-w/v9wMQLIHaruc9QZBiOdOF+NID5PeyJa5a1WtFEIII=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7633,7 +7633,7 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   const openKeys=r=>{if(set.kind!=="data") return [];
     const out=[];for(const k of new Set([...set.own,...Object.keys(r)])) if(!lineKeys.has(k)&&!skipKeys.has(k)&&!set.kidKeys.has(k)) out.push(k);
     return out;};
-  const moreOf=r=>openKeys(r).map(k=>({label:set.lab(k),text:cellText(r[k])})).filter(f=>f.text!=="");
+  const moreOf=r=>openKeys(r).map(k=>({label:set.lab(k),text:hasOwn(r,k)?cellText(r[k]):""})).filter(f=>f.text!=="");   /* an own read: a row without a field named constructor or toString has no such field */
   /* a flat row with more to show than its line opens too: it is drawn by the same tree, with no children */
   if(!nests&&drawn.includes("parent")&&rows.some(r=>moreOf(r).length)){tree=nestData(set,pk,v.limit);rows=tree.rows;}
   const body=el("div",{class:"dv-body"+(as==="cards"?" dv-cards":"")});

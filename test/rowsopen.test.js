@@ -202,6 +202,15 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
     !!n&&text(n).includes("A word of reply")&&byClass(n,"hint").length===1&&/does not draw/.test(text(byClass(n,"hint")[0]))&&tag(n,"textarea").length===0&&tag(n,"input").length===0,n&&text(n));
   chk("an `each:` that names nothing in its activity or in reach is still said and taken off",mk("nothere").unread.length===1);}
 
+ /* ---- a field named like a function on every object ---- */
+ {ST.clear();const F2={title:"Name",constructor:"Ctor",toString:"Text"};
+  const rows=[{id:"a",title:"Plain"},{id:"b",title:"Has it",constructor:"made by hand",toString:"also by hand"}];
+  const b=draw("list",{label:"title",fields:["title"]},"Proto",{fields:F2,rows});
+  chk("a row lacking a field named `constructor` or `toString` has no open part: it is a plain row, not a details",tag(b,"details").length===1&&tag(b,"details")[0].attrs["data-id"]==="b",tag(b,"details").map(d=>d.attrs["data-id"]).join());
+  press(b,tag(b,"details")[0]);
+  const t=text(byClass(b,"dv-more")[0]||"");
+  chk("a row that has them shows its own values, and no function's text appears anywhere",/made by hand/.test(t)&&/also by hand/.test(t)&&!/native code|function/.test(text(b)),t);}
+
  /* ---- the made-up dashboard of about 450 rows ---- */
  {ST.clear();const data=F.make(),n=F.count(data);
   const t0=Date.now();const b=A.viewNodes(A.dataSet({fields:F.FIELDS,rows:data.programmes}),{as:"table",fields:["title", "kind", "stage"]},{state:st("big")})[0];const ms=Date.now()-t0;
