@@ -16,18 +16,23 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
  /* a query's state is handed to viewNodes by whatever draws it (the page keeps it in the view, queryView); here, one per key */
  const ST=new Map(),st=k=>{if(k==null) return undefined;if(!ST.has(k)) ST.set(k,A.newViewState());return ST.get(k);};
  const nest=(rows,view={},key=null)=>A.viewNodes(A.dataSet({rows}),{as:"list",...view},{empty:"EMPTY",state:st(key)})[0];
+ /* a row's open part is drawn when the row opens (0.19), so a test that reads what is inside opens the rows first, as a reader's click does:
+    the details' toggle reaches the box's one listener, which draws the row's children (and remembers the row) */
+ const openAll=b=>{for(let i=0;i<60;i++){const ds=tag(b,"details").filter(d=>!d._opened);if(!ds.length) break;
+   ds.forEach(d=>{d._opened=true;d.open=true;b._on.toggle({target:d});});}};
+ const nestO=(rows,view={},key=null)=>{const b=nest(rows,view,key);openAll(b);return b;};
  /* the labels of the rows directly under a ul, in order */
  const under=ul=>kids(ul).map(li=>cls(li).includes("dv-node")?kids(li)[0]:li);
  const labelOf=r=>text(byClass(r,"dv-t")[0]);
  const top=b=>under(byClass(b,"dv-tree")[0]).map(r=>cls(r).includes("dv-row")?labelOf(r):labelOf(kids(r)[0]));
  const R=[{id:"a",label:"A"},{id:"a1",parent:"a",label:"A1"},{id:"a2",parent:"a",label:"A2"},{id:"a1x",parent:"a1",label:"A1x"},{id:"b",label:"B"}];
 
- {const b=nest(R);
+ {const b0=nest(R);
+  chk("a row with children is closed, and draws nothing inside until it opens (0.19)",tag(b0,"details").length===1&&tag(b0,"details").every(d=>d.attrs.open===undefined)&&tag(b0,"ul").length===1&&tag(b0,"details").every(d=>kids(d).length===1),tag(b0,"ul").length+"");
+  const b=nestO(R);
   chk("rows with id and parent nest with no key at all: one tree list",byClass(b,"dv-tree").length===1&&tag(b,"ul").length===3);
-  chk("top-level rows are the ones with no parent, in the file's order",top(b).join()==="A,B",top(b).join());
   chk("a row with children is a li.dv-node holding one details: a summary row and a list",
     tag(b,"details").length===2&&tag(b,"summary").length===2&&tag(b,"summary").every(s=>cls(s).includes("dv-row"))&&byClass(b,"dv-node").length===2);
-  chk("every details starts closed",tag(b,"details").every(d=>d.attrs.open===undefined));
   chk("each details carries its row's id in a data attribute",tag(b,"details").map(d=>d.attrs["data-id"]).join()==="a,a1",tag(b,"details").map(d=>d.attrs["data-id"]).join());
   const a=tag(b,"details")[0],cl=kids(a)[1];
   chk("children keep the file's order, and sit in a list inside the details",under(cl).map(r=>labelOf(cls(r).includes("dv-row")?r:kids(r)[0])).join()==="A1,A2");
@@ -36,7 +41,7 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
   chk("no tree row or list carries a style attribute or a handler of its own",walk(b,x=>x.attrs&&x.attrs.style!==undefined).length===0&&tag(b,"details").every(d=>!d._on.toggle&&!d._on.click)&&tag(b,"summary").every(s=>!s._on.click&&!s._on.keydown));}
 
  {const rows=[{id:"1",under:"",label:"One"},{id:"2",under:"1",label:"Two"},{id:"3",under:"2",label:"Three"}];
-  const b=nest(rows,{parent:"under"});
+  const b=nestO(rows,{parent:"under"});
   chk("an explicit `parent: under` key names the field",tag(b,"details").length===2&&top(b).join()==="One",top(b).join());
   const c=nest(rows,{});
   chk("without the key that field is not the parent field: the list is flat",byClass(c,"dv-tree").length===0&&tag(c,"details").length===0);}
@@ -44,16 +49,16 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
  {const b=nest([{id:"a",label:"A"},{id:"x",parent:"nowhere",label:"Lost"},{id:"y",parent:"",label:"Blank"},{id:"z",parent:"a",label:"Z"}]);
   chk("a row whose parent is not among the rows, or is empty, is drawn at the top",top(b).join()==="A,Lost,Blank",top(b).join());}
 
- {const b=nest([{id:"p",parent:"q",label:"P"},{id:"q",parent:"p",label:"Q"},{id:"s",parent:"s",label:"Self"},{id:"t",parent:"p",label:"T"}]);
+ {const b=nestO([{id:"p",parent:"q",label:"P"},{id:"q",parent:"p",label:"Q"},{id:"s",parent:"s",label:"Self"},{id:"t",parent:"p",label:"T"}]);
   const all=walk(b,x=>x.tagName==="li"&&(cls(x).includes("dv-row")||cls(x).includes("dv-node")));
   chk("a cycle is cut: every row is drawn once and nothing loops",top(b).join()==="P,Self"&&text(b).split("T").length===2&&text(b).split("Q").length===2,top(b).join());
   chk("a row that is its own parent is a top row",top(b).includes("Self"));}
 
- {const b=nest([{id:"a",label:"First"},{id:"a",label:"Second"},{id:"c",parent:"a",label:"Child"}]);
+ {const b=nestO([{id:"a",label:"First"},{id:"a",label:"Second"},{id:"c",parent:"a",label:"Child"}]);
   chk("when two rows share an id the first one is used: the child goes under it",top(b).join()==="First,Second"&&tag(b,"details").length===1&&text(tag(b,"details")[0]).includes("Child"),top(b).join());}
 
  {const rows=[{id:"a",label:"A"},{id:"a1",parent:"a",label:"A1"},{id:"b",label:"B"},{id:"b1",parent:"b",label:"B1"},{id:"b2",parent:"b",label:"B2"},{id:"c",label:"C"}];
-  const b=nest(rows,{limit:2});
+  const b=nestO(rows,{limit:2});
   chk("`limit` counts top-level rows, and their descendants come with them",top(b).join()==="A,B"&&byClass(b,"dv-t").length===5,top(b).join()+" / "+byClass(b,"dv-t").length);}
 
  {const b=nest([{id:"a",label:"A",g:"x"},{id:"b",parent:"a",label:"B",g:"y"}],{group:"g"});
@@ -99,16 +104,17 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
   const d=tag(b,"details")[0];d.open=false;b._on.toggle({target:d});
   chk("a toggle while the filter is on is not remembered",st("K-f").opens.size===0);
   input.value="";press(input,"input");
-  chk("clearing the filter draws the tree closed again",tag(b,"details").every(d=>d.attrs.open===undefined)&&lab().length===12);}
+  chk("clearing the filter draws the tree closed again",tag(b,"details").every(d=>d.attrs.open===undefined)&&lab().join()==="Root one,Root two",lab().join());}
  {ST.clear();
   const b=nest(BIG,{},"K-s");
   const sel=byClass(b,"dv-sel").find(s=>s.attrs["aria-label"]==="Sort by");sel.value="value";press(sel,"change");
   const roots=()=>kids(byClass(b,"dv-tree")[0]).map(li=>labelOf(cls(li).includes("dv-node")?kids(kids(li)[0])[0]:li));
   chk("sorting orders the siblings at the top",roots().join()==="Root two,Root one",roots().join());
+  openAll(b);
   const d0=tag(b,"details").find(d=>d.attrs["data-id"]==="r1"),kidsOf=under(kids(d0)[1]).map(labelOf);
   chk("and the siblings at every level (Root one's children, smallest value first)",kidsOf.join()==="Dogwood,Birch,Elm,Ash,Cedar",kidsOf.join());}
  {ST.clear();
-  const b=nest(BIG,{limit:1},"K-l");
+  const b=nestO(BIG,{limit:1},"K-l");
   chk("`limit` with a control: one top row, its descendants with it",byClass(b,"dv-t").length===1+5+2&&top(b).join()==="Root one",byClass(b,"dv-t").length+"");}
 
  /* ---- the fixture, and the file ---- */
@@ -117,12 +123,12 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
   const FX=fs.readFileSync(P.R+"/test/fixtures/roles.booklet.md","utf8");
   C.loadText(FX);const md0=C.toMarkdown();C.screen="board/overview";C.render();
   const main=P.main(),tree=byClass(main,"dv-tree");
+  {const bx=byClass(main,"dv-box").find(x=>byClass(x,"dv-tree").length);openAll(bx);}
   chk("the fixture's house is a tree three levels deep: two top rows, and the others under them",tree.length===1&&tag(tree[0],"details").length===5&&under(tree[0]).length===2,tag(tree[0],"details").length+"");
   const house=tag(tree[0],"details")[0];
   const depthOf=(n,d=0)=>Math.max(d,...kids(n).map(k=>depthOf(k,d+(k.tagName==="ul"?1:0))));
   chk("with lists three deep (the root list, a room's jobs)",depthOf(tree[0],1)>=3,String(depthOf(tree[0],1)));
   const box=byClass(main,"dv-box").find(x=>byClass(x,"dv-tree").length);
-  tag(box,"details").forEach(d=>{d.open=true;box._on.toggle({target:d});});
   C.render();
   const box2=byClass(P.main(),"dv-box").find(x=>byClass(x,"dv-tree").length);
   chk("what was opened is still open after the page is drawn again",tag(box2,"details").every(d=>d.attrs.open!==undefined)&&tag(box2,"details").length===5);

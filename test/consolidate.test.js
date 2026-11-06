@@ -186,10 +186,10 @@ function REST(){
  const set=A.dataSet({rows}),seen=[];
  for(const as of ["table","list","tiles","cards","bars","line"]){const f=A.VIEW_FNS[as];
    A.VIEW_FNS[as]=(...x)=>{seen.push(as+(x[1].some(g=>g.name!==null)?":grouped":"")+(x[4]&&x[4].tree?":tree":""));return f(...x);};}
- [["list",{}],["list",{group:"kind",parent:"none"}],["tiles",{group:"kind"}],["cards",{group:"kind",label:"name"}],["table",{group:"kind"}],["bars",{label:"name",value:"n"}],["line",{label:"name",value:"n"}]]
+ [["list",{}],["list",{group:"kind",parent:"none"}],["tiles",{group:"kind"}],["cards",{group:"kind",label:"name",parent:"none"}],["table",{group:"kind",parent:"none"}],["cards",{label:"name"}],["table",{}],["bars",{label:"name",value:"n"}],["line",{label:"name",value:"n"}]]
    .forEach(([as,v])=>A.viewNodes(set,{as,...v},{}));
- chk("the pipeline draws every view by VIEW_FNS[as]: a nested list, a grouped list, grouped tiles and cards, a table and the charts",
-   json(seen)===json(["list:tree","list:grouped","tiles:grouped","cards:grouped","table:grouped","bars","line"]),json(seen));
+ chk("the pipeline draws every view by VIEW_FNS[as]: a nested list, table and cards, a grouped list, grouped tiles, cards and table, and the charts",
+   json(seen)===json(["list:tree","list:grouped","tiles:grouped","cards:grouped","table:grouped","cards:tree","table:tree","bars","line"]),json(seen));
  const n=A.viewNodes(set,{as:"tiles",group:"kind"},{});
  chk("and a view draws its groups' headings itself",P.find(n[0],P.hasClass("dv-group")).map(P.texts).join("|")==="x 2 rows|y 1 row",P.find(n[0],P.hasClass("dv-group")).map(P.texts).join("|"));}
 

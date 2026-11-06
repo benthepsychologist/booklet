@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-GTBuaAa/4uFmxIHbAER7MEqxwY39bvtB0C9MA6g6abU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-dIW38Hc9yY4fm5KdUUlyXL1d50/CGeNRLsd7q+yK2/4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -961,6 +961,33 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .dv-tree li.dv-row{padding-left:1.4rem}
   .dv-tree .dv-list{margin:0 0 0 .45rem;padding-left:.9rem;border-left:1px solid var(--rule)}
   @container (max-width:30rem){.dv-tree .dv-list{margin-left:.2rem;padding-left:.45rem}}
+  /* what a row shows when it opens (0.19, for table, list and cards): its other fields as plain text with the line breaks kept, then its children
+     in groups headed by the field they came from */
+  .dv-more{margin:0;min-width:0}
+  .dv-more dt{font-family:var(--sans);font-weight:700;font-size:.82rem;color:var(--muted);margin:.4rem 0 .1rem}
+  .dv-more dd{margin:0 0 .4rem;max-width:var(--measure);font-size:var(--v-fs);overflow-wrap:anywhere}
+  .dv-text{white-space:pre-wrap}
+  .dv-ghead{font-family:var(--sans);font-weight:700;font-size:.85rem;color:var(--muted);margin:.7rem 0 .15rem}
+  .dv-tree details>.dv-more,.dv-tree details>.dv-ghead{margin-left:1.4rem}
+  .dv-sub{display:block;margin-top:.4rem}
+  .dv-sub>.entry{margin:.5rem 0}
+  .entry-row.card-fold dl,.entry-row.card-fold .dv-more{display:block}
+  .entry-row.card-fold dt{padding-top:0}
+  .entry-row.card-fold>summary .cd-main{min-width:0}
+  /* a nested table: the lead cell holds the row's disclosure, a child row is one spacer further in for each level, and what an open
+     row shows is a few rows after it in the same columns */
+  .dv-table .dv-lead{display:flex;align-items:baseline;min-width:0}
+  .dv-table .dv-ind{flex:none;align-self:stretch;width:1rem;margin-left:.3rem;border-left:1px solid var(--rule)}
+  .dv-table .dv-nocaret{flex:none;width:.6rem;margin-right:.7rem}
+  .dv-table .dv-leadtext{min-width:0}
+  .dv-table details{flex:1 1 auto;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:none}
+  .dv-table details>summary{display:flex;align-items:baseline;gap:.7rem;padding:0;font:inherit;cursor:pointer;list-style:none}
+  .dv-table details>summary:hover{color:var(--accent)}
+  .dv-table details>summary::-webkit-details-marker{display:none}
+  .dv-table details>summary::before{content:"";flex:none;box-sizing:border-box;width:.6rem;height:.6rem;align-self:flex-start;margin-top:.3em;border-right:var(--bw) solid var(--accent);border-bottom:var(--bw) solid var(--accent);transform:rotate(-45deg);transition:transform .15s}
+  .dv-table details[open]>summary::before{transform:rotate(45deg)}
+  .dv-table .dv-trmore td{border-bottom:0}
+  .dv-table .dv-grouprow .dv-lead{font-weight:700;color:var(--muted)}
   .dv-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(22rem,100%),1fr));gap:0 var(--v-gap);align-items:start}
   .dv-cards>.entry{margin:0 0 1rem;min-width:0}
   /* a data block's row as a card: a small picture and the label as its title above its lines */
@@ -1515,10 +1542,11 @@ const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
    the parser keeps a module's ids apart from it: no module id can be spelled like it. */
 const ADDR_SEP="/";
 const SHARED="*";
-/* A query's fifteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views). */
-const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary"];
+/* A query's sixteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views).
+   `readonly` (0.19) is read by every view, so it is in no view's list; the reference renderer reads it and does nothing with it yet. */
+const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary","readonly"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
-const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","link","icon"],table:["fields","group","limit","badge","tone","link","icon"],
+const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],table:["fields","group","limit","parent","badge","tone","link","icon"],
   list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
   tiles:["label","value","note","tone","group","limit","link","icon"],bars:["label","value","tone","limit"],line:["label","value","fields","limit"]};
 
@@ -1718,6 +1746,7 @@ const STRINGS_SRC={
       ctl: {
         open: "Sort and filter", search: "Search", show: "Show", all: "All", sortBy: "Sort by",
         original: "Original order", asc: "Ascending", desc: "Descending", clear: "Clear",
+        openAll: "Open all", closeAll: "Close all",
         shown: (n,m)=>`${n} of ${m} shown`, nothing: "Nothing matches."
       },
       chart: {
@@ -1725,7 +1754,18 @@ const STRINGS_SRC={
         bars: (n,lo,hi)=>`Bar chart, ${n===1?"1 bar":n+" bars"}, from ${lo} to ${hi}`,
         line: (n,names,lo,hi)=>`Line chart of ${names}, ${n===1?"1 point":n+" points"}, from ${lo} to ${hi}`
       },
-      eachNotYet: "This view does not draw a question asked for each pick yet; a table, a list or cards show it."
+      eachNotYet: "This view does not draw a question asked for each pick yet; a table, a list or cards show it.",
+      data: {
+        loading: f=>`Loading ${f}…`,
+        notStore: f=>`Data not shown: this booklet was not opened from a store, so the file ${f} is not read.`,
+        refused: f=>`Data not shown: “${f}” is not a name this page reads (a .json file beside the booklet).`,
+        missing: f=>`Data not shown: the file ${f} was not found.`,
+        big: f=>`Data not shown: the file ${f} is too big (the limit is 5 MB).`,
+        wrong: f=>`Data not shown: the file ${f} is not JSON.`,
+        failed: f=>`Data not shown: the file ${f} could not be fetched.`,
+        nopath: (f,k)=>`Data not shown: the file ${f} has nothing at “${k}”.`,
+        bad: (f,why)=>`Data not shown: what the file ${f} holds ${why}.`
+      }
     },
     /* what the file parser says is wrong with a file, and the messages that
        load and add-a-module refuse with. `w` is a place, "line 12" (see `line`);
@@ -1772,8 +1812,12 @@ const STRINGS_SRC={
       dataBad: (w,id,why)=>`${w}: the data block ^${id} ${why}, so it was skipped`,
       dataNoRows: "holds no list of rows (an object with `rows`, or the list itself)",
       dataRowNotObject: "has a row that is not an object",
-      dataNestsDeep: "has a value that nests deeper than a list",
-      dataFieldsBad: "has `fields` that is not an object of labels",
+      dataMixed: "has a list that mixes values and rows (a list is all values or all rows)",
+      dataFieldsBad: "has `fields` that is not an object of labels (each label a string, or an object with a `label`)",
+      dataFileName: (w,id,f)=>`${w}: the data block ^${id} names the file “${f}”, which is not a plain name of a .json file beside the booklet (letters, digits, _ . / and -, no part that starts with a dot), so it is never read`,
+      dataFilePath: (w,id,k)=>`${w}: the data block ^${id} names the key path “${k}”, which has an empty part, so it is never read`,
+      dataFileRows: "its rows were not read, since the rows come from the file",
+      dataFileFence: (w,id,why)=>`${w}: the data block ^${id} names a file, so its fence may hold only \`fields\`; ${why}`,
       blockUnknown: (w,what)=>`${w}: a “booklet ${what}” block is not one this page reads`,
       rowEndStray: w=>`${w}: a row is closed that was never opened`,
       rowNested: w=>`${w}: a row opens inside a row, so it was ignored (rows do not nest)`,
@@ -2086,6 +2130,7 @@ const STRINGS_SRC={
       ctl: {
         open: "Trier et filtrer", search: "Rechercher", show: "Afficher", all: "Tout", sortBy: "Trier par",
         original: "Ordre d’origine", asc: "Croissant", desc: "Décroissant", clear: "Effacer",
+        openAll: "Tout ouvrir", closeAll: "Tout fermer",
         shown: (n,m)=>`${n} sur ${m} affichés`, nothing: "Aucun résultat."
       },
       chart: {
@@ -2093,7 +2138,18 @@ const STRINGS_SRC={
         bars: (n,lo,hi)=>`Diagramme à barres, ${n===1?"1 barre":n+" barres"}, de ${lo} à ${hi}`,
         line: (n,names,lo,hi)=>`Graphique linéaire de ${names}, ${n===1?"1 point":n+" points"}, de ${lo} à ${hi}`
       },
-      eachNotYet: "Cette vue n’affiche pas encore une question posée pour chaque choix ; un tableau, une liste ou des cartes l’affichent."
+      eachNotYet: "Cette vue n’affiche pas encore une question posée pour chaque choix ; un tableau, une liste ou des cartes l’affichent.",
+      data: {
+        loading: f=>`Chargement de ${f}…`,
+        notStore: f=>`Données non affichées : ce carnet n’a pas été ouvert depuis un dépôt, donc le fichier ${f} n’est pas lu.`,
+        refused: f=>`Données non affichées : « ${f} » n’est pas un nom que cette page lit (un fichier .json à côté du carnet).`,
+        missing: f=>`Données non affichées : le fichier ${f} est introuvable.`,
+        big: f=>`Données non affichées : le fichier ${f} est trop gros (la limite est de 5 Mo).`,
+        wrong: f=>`Données non affichées : le fichier ${f} n’est pas du JSON.`,
+        failed: f=>`Données non affichées : le fichier ${f} n’a pas pu être récupéré.`,
+        nopath: (f,k)=>`Données non affichées : le fichier ${f} ne contient rien à « ${k} ».`,
+        bad: (f,why)=>`Données non affichées : le contenu du fichier ${f} ${why}.`
+      }
     },
     problem: {
       line: n=>`ligne ${n}`,
@@ -2136,8 +2192,12 @@ const STRINGS_SRC={
       dataBad: (w,id,why)=>`${w} : le bloc de données ^${id} ${why} ; il a donc été ignoré`,
       dataNoRows: "ne contient aucune liste de lignes (un objet avec `rows`, ou la liste elle-même)",
       dataRowNotObject: "a une ligne qui n’est pas un objet",
-      dataNestsDeep: "a une valeur imbriquée plus profondément qu’une liste",
-      dataFieldsBad: "a un `fields` qui n’est pas un objet d’étiquettes",
+      dataMixed: "a une liste qui mêle des valeurs et des lignes (une liste est faite uniquement de valeurs ou uniquement de lignes)",
+      dataFieldsBad: "a un `fields` qui n’est pas un objet d’étiquettes (chaque étiquette est un texte, ou un objet avec un `label`)",
+      dataFileName: (w,id,f)=>`${w} : le bloc de données ^${id} nomme le fichier « ${f} », qui n’est pas un simple nom de fichier .json à côté du carnet (lettres, chiffres, _ . / et -, aucune partie qui commence par un point) ; il n’est donc jamais lu`,
+      dataFilePath: (w,id,k)=>`${w} : le bloc de données ^${id} nomme le chemin de clés « ${k} », qui a une partie vide ; il n’est donc jamais lu`,
+      dataFileRows: "ses lignes n’ont pas été lues, puisque les lignes viennent du fichier",
+      dataFileFence: (w,id,why)=>`${w} : le bloc de données ^${id} nomme un fichier, donc son bloc ne peut contenir que \`fields\` ; ${why}`,
       blockUnknown: (w,what)=>`${w} : un bloc « booklet ${what} » n’est pas un bloc que cette page lit`,
       rowEndStray: w=>`${w} : une rangée est fermée sans avoir été ouverte`,
       rowNested: w=>`${w} : une rangée s’ouvre dans une rangée ; elle a été ignorée (les rangées ne s’imbriquent pas)`,
@@ -2451,6 +2511,7 @@ const STRINGS_SRC={
       ctl: {
         open: "Ordenar y filtrar", search: "Buscar", show: "Mostrar", all: "Todo", sortBy: "Ordenar por",
         original: "Orden original", asc: "Ascendente", desc: "Descendente", clear: "Borrar",
+        openAll: "Abrir todo", closeAll: "Cerrar todo",
         shown: (n,m)=>`${n} de ${m} mostrados`, nothing: "No hay coincidencias."
       },
       chart: {
@@ -2458,7 +2519,18 @@ const STRINGS_SRC={
         bars: (n,lo,hi)=>`Gráfico de barras, ${n===1?"1 barra":n+" barras"}, de ${lo} a ${hi}`,
         line: (n,names,lo,hi)=>`Gráfico de líneas de ${names}, ${n===1?"1 punto":n+" puntos"}, de ${lo} a ${hi}`
       },
-      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada opción elegida; una tabla, una lista o unas tarjetas sí la muestran."
+      eachNotYet: "Esta vista todavía no muestra una pregunta que se hace por cada opción elegida; una tabla, una lista o unas tarjetas sí la muestran.",
+      data: {
+        loading: f=>`Cargando ${f}…`,
+        notStore: f=>`Datos no mostrados: este cuaderno no se abrió desde un almacén, así que el archivo ${f} no se lee.`,
+        refused: f=>`Datos no mostrados: “${f}” no es un nombre que esta página lea (un archivo .json junto al cuaderno).`,
+        missing: f=>`Datos no mostrados: no se encontró el archivo ${f}.`,
+        big: f=>`Datos no mostrados: el archivo ${f} es demasiado grande (el límite es de 5 MB).`,
+        wrong: f=>`Datos no mostrados: el archivo ${f} no es JSON.`,
+        failed: f=>`Datos no mostrados: no se pudo obtener el archivo ${f}.`,
+        nopath: (f,k)=>`Datos no mostrados: el archivo ${f} no tiene nada en “${k}”.`,
+        bad: (f,why)=>`Datos no mostrados: lo que contiene el archivo ${f} ${why}.`
+      }
     },
     problem: {
       line: n=>`línea ${n}`,
@@ -2501,8 +2573,12 @@ const STRINGS_SRC={
       dataBad: (w,id,why)=>`${w}: el bloque de datos ^${id} ${why}, así que se omitió`,
       dataNoRows: "no contiene una lista de filas (un objeto con `rows`, o la lista misma)",
       dataRowNotObject: "tiene una fila que no es un objeto",
-      dataNestsDeep: "tiene un valor anidado a más profundidad que una lista",
-      dataFieldsBad: "tiene un `fields` que no es un objeto de etiquetas",
+      dataMixed: "tiene una lista que mezcla valores y filas (una lista es solo de valores o solo de filas)",
+      dataFieldsBad: "tiene un `fields` que no es un objeto de etiquetas (cada etiqueta es un texto, o un objeto con un `label`)",
+      dataFileName: (w,id,f)=>`${w}: el bloque de datos ^${id} nombra el archivo “${f}”, que no es un nombre simple de un archivo .json junto al cuaderno (letras, dígitos, _ . / y -, sin ninguna parte que empiece con un punto), así que nunca se lee`,
+      dataFilePath: (w,id,k)=>`${w}: el bloque de datos ^${id} nombra la ruta de claves “${k}”, que tiene una parte vacía, así que nunca se lee`,
+      dataFileRows: "sus filas no se leyeron, porque las filas vienen del archivo",
+      dataFileFence: (w,id,why)=>`${w}: el bloque de datos ^${id} nombra un archivo, así que su bloque solo puede contener \`fields\`; ${why}`,
       blockUnknown: (w,what)=>`${w}: un bloque “booklet ${what}” no es uno que esta página lea`,
       rowEndStray: w=>`${w}: se cierra una fila que nunca se abrió`,
       rowNested: w=>`${w}: una fila se abre dentro de otra fila, así que se ignoró (las filas no se anidan)`,
@@ -4024,33 +4100,54 @@ function optionsUnder(lines,i){let j=i,blanks=0;
    that is not `on` (all three are ignored). A span of days is `view.days`; a count is `view.limit`. */
 function readQuery(code){const o={};
   for(const raw of String(code||"").split("\n")){const ln=raw.trim();if(!ln) continue;
-    const kv=kvLine(ln);if(!kv) return {bad:ln};
+    /* `readonly` on a line by itself is a key with no value (0.19): every field the view draws is read-only */
+    const kv=/^readonly$/i.test(ln)?["readonly",""]:kvLine(ln);if(!kv) return {bad:ln};
     o[kv[0].toLowerCase()]=kv[1];}
   const unknown=Object.keys(o).filter(k=>!QUERY_KEYS.includes(k));
   const lm=o.limit===undefined?null:/^([1-9]\d*)([ \t]+days?)?$/.exec(o.limit),limitBad=o.limit!==undefined&&!lm?o.limit:undefined;
   const summaryBad=o.summary!==undefined&&o.summary!=="on"?o.summary:undefined;
   /* how a view draws: the view, and the names of the fields it reads */
-  const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit","summary"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
+  const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit","summary","readonly"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
+  /* `readonly` (0.19, slice 2 acts on it): bare, every field of the view; with names, those fields. The reference renderer keeps it and draws nothing from it. */
+  if(o.readonly!==undefined) view.readonly=o.readonly===""?true:o.readonly.split(",").map(x=>x.trim()).filter(Boolean);
   if(lm) view[lm[2]?"days":"limit"]=Number(lm[1]);
   if(o.summary==="on") view.summary="on";
   return {from:o.from||"",fields:o.fields?o.fields.split(",").map(x=>x.trim()).filter(Boolean):undefined,
     empty:o.empty||undefined,view,unknown,limitBad,summaryBad};}
 /* A `booklet data` block: rows a generator wrote. JSON: an object with
    `rows` (and optionally `fields`, each key's label and the default order), or
-   the list of rows itself. A value is a string, a number, true, false, null, or
-   a list of those; nothing nests deeper. Returns {rows,fields} or `bad`. */
+   the list of rows itself. A value is a string, a number, true, false, null, a list of those, a list of rows
+   (objects) or one row (an object): a row that holds rows has children (0.19). A list is all values or all rows; a
+   list that mixes them is refused. A field's label in `fields` is a string, or an object `{label, edit, options}`
+   (0.19): the label is read, `edit` and `options` are kept for a renderer that edits (this one does not yet).
+   Rows are walked with a stack of their own, so a chain thousands deep is a file that opens. Returns {rows,fields,edits} or `bad`. */
+const isRowObj=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
+function readFields(f){const P=PROBLEM;
+  if(!isRowObj(f)) return {bad:P.dataFieldsBad};
+  const labels={},edits={};
+  for(const [k,v] of Object.entries(f)){
+    if(typeof v==="string"){labels[k]=v;continue;}
+    if(isRowObj(v)&&(v.label===undefined||typeof v.label==="string")){labels[k]=v.label===undefined?k:v.label;
+      if(v.edit!==undefined||v.options!==undefined) edits[k]={edit:v.edit,options:v.options};continue;}
+    return {bad:P.dataFieldsBad};}
+  return {fields:labels,edits};}
 function readData(o){const P=PROBLEM;
   const rows=Array.isArray(o)?o:(o&&typeof o==="object"?o.rows:null);
   if(!Array.isArray(rows)) return {bad:P.dataNoRows};
   const flat=v=>v===null||["string","number","boolean"].includes(typeof v);
-  for(const r of rows){
-    if(!r||typeof r!=="object"||Array.isArray(r)) return {bad:P.dataRowNotObject};
-    for(const v of Object.values(r)) if(!flat(v)&&!(Array.isArray(v)&&v.every(flat))) return {bad:P.dataNestsDeep};}
-  let fields;
-  if(!Array.isArray(o)&&o.fields!==undefined){const f=o.fields;
-    if(!f||typeof f!=="object"||Array.isArray(f)||!Object.values(f).every(x=>typeof x==="string")) return {bad:P.dataFieldsBad};
-    fields=f;}
-  return {rows,fields};}
+  const todo=rows.slice().reverse();
+  while(todo.length){const r=todo.pop();
+    if(!isRowObj(r)) return {bad:P.dataRowNotObject};
+    for(const v of Object.values(r)){
+      if(flat(v)) continue;
+      if(isRowObj(v)){todo.push(v);continue;}
+      if(!Array.isArray(v)) return {bad:P.dataMixed};
+      if(v.every(flat)) continue;
+      if(!v.every(isRowObj)) return {bad:P.dataMixed};
+      v.forEach(x=>todo.push(x));}}
+  let fields,edits;
+  if(!Array.isArray(o)&&o.fields!==undefined){const f=readFields(o.fields);if(f.bad) return f;fields=f.fields;edits=f.edits;}
+  return {rows,fields,edits};}
 /* Reading a booklet file takes five parts, each handing the next what it needs:
    splitItems cuts the lines into fences, Booklet lines, page breaks and prose;
    readBlocks walks those building modules, activities, pages and blocks, and
@@ -4311,14 +4408,36 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       claimIn(blockIds,blockScope(),it.id,P.line(it.line));
       const w={...o,id:it.id};{const sm=scopeMod();if(sm) w.module=sm.id;}
       widgets.push(w);}),
-    data:withJson((it,o)=>{
-      if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
-      const here=scopeMod();
-      if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
-      const d=readData(o);
-      if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
-      /* it lives where a widget's data lives: inside its module's fence or in its data section, or in the shared data section */
-      dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,line:it.line});})};
+    data:(it,what)=>{
+      const words=it.info.split(/\s+/),file=words[2]||"",keys=words[3]||"";
+      /* `booklet data <file.json> [key.path]` (0.19): the rows come from a file beside the booklet, read by the renderer for a booklet
+         opened from the store or the default folder (readDataFile, region 12). The fence is empty, or holds only `fields`. */
+      if(file){
+        let o={};
+        if(it.code.trim()){
+          try{o=JSON.parse(it.code);}catch(e){problems.push(P.blockBadJson(P.line(it.line),"data"));return;}
+          if(!isRowObj(o)){problems.push(P.blockNoObject(P.line(it.line),"data"));return;}}
+        if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
+        const here=scopeMod();
+        if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
+        let fields,edits;
+        if(o.fields!==undefined){const f=readFields(o.fields);
+          if(f.bad){problems.push(P.dataBad(P.line(it.line),it.id,f.bad));return;}
+          fields=f.fields;edits=f.edits;}
+        if(o.rows!==undefined) problems.push(P.dataFileFence(P.line(it.line),it.id,PROBLEM.dataFileRows));
+        const bad=dataFilePath(file)===null||keys.split(".").some(x=>x==="")&&keys!=="";
+        if(dataFilePath(file)===null) problems.push(P.dataFileName(P.line(it.line),it.id,file.slice(0,80)));
+        else if(keys!==""&&keys.split(".").some(x=>x==="")) problems.push(P.dataFilePath(P.line(it.line),it.id,keys.slice(0,80)));
+        dataBlocks.push({id:it.id,mod:here,rows:[],fields,edits,file:{name:file,path:keys,bad},line:it.line});
+        return;}
+      withJson((it,o)=>{
+        if(!it.id){problems.push(P.dataNeedsId(P.line(it.line)));return;}
+        const here=scopeMod();
+        if(dataBlocks.some(d=>d.id===it.id&&d.mod===here)){dup(P.line(it.line),it.id);return;}
+        const d=readData(o);
+        if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
+        /* it lives where a widget's data lives: inside its module's fence or in its data section, or in the shared data section */
+        dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,edits:d.edits,line:it.line});})(it,what);}};
   const onFigure=(it,info)=>{if(!it.id) return;
     claimIn(blockIds,blockScope(),it.id,P.line(it.line));
     const key=addrOf(blockScope()===SHARED?"":blockScope(),it.id);
@@ -4621,7 +4740,7 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
      if(as!==undefined&&!QUERY_VIEWS.has(as)){drop(P.queryViewBad(as,[...QUERY_VIEWS]));continue;}
      if(!src){const d=q.from&&(dataBlocks.find(z=>z.id===q.from&&z.mod===here)||dataBlocks.find(z=>z.id===q.from&&z.mod===null));
        if(d){
-         block.data={rows:d.rows,fields:d.fields};entriesOnly(x);continue;}
+         block.data={rows:d.rows,fields:d.fields,...(d.edits?{edits:d.edits}:{}),...(d.file?{file:{...d.file,scope:d.mod?scopeOf(d.mod):""}}:{})};entriesOnly(x);continue;}
        if(elsewhere()){drop(P.queryOtherModule(q.from));continue;}
        drop(P.queryNothing(q.from||""));continue;}
      if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};if(src.a.kind!=="entry") entriesOnly(x);}
@@ -6521,6 +6640,8 @@ function drawRow(b,draft,activityId,dc){const box=el("div",{class:"pblock row"})
 function drawQuery(b,draft,activityId){const box=el("div",{class:"pblock query"});
   const v={...(b.view||{}),fields:b.fields},state=queryView(activityId,b);
   const scope=scopeOfAddr(activityId);
+  /* a data block that names a file (0.19) draws from it once it is read, and again when it changes (drawFileQuery, region 12) */
+  if(b.data&&b.data.file){drawFileQuery(box,b.data,v,state,scope,b.empty||strings("dv").empty);return box;}
   if(b.data){box.append(...viewNodes(dataSet(b.data),v,{empty:b.empty||strings("dv").empty,state,scope}));return box;}
   /* a summary (SPEC.md section 6) is not drawn yet: the line says so, in place of the view, never the plain entries as if the key were not there */
   if(v.summary==="on"){box.append(el("p",{class:"hint"},strings("query").summaryLater));return box;}
@@ -7027,10 +7148,19 @@ const nodeText=n=>typeof n==="string"?n:(n&&typeof n.plain==="string"?n.plain:n&
    `own` is the source's own fields in order, and `first` is the first of them,
    whatever the query's `fields:` says. */
 function dataSet(d){
-  const keys=new Set(Object.keys(d.fields||{}));d.rows.forEach(r=>Object.keys(r).forEach(k=>keys.add(k)));
-  const own=d.fields?Object.keys(d.fields):Object.keys(d.rows[0]||{});
+  /* every row at every depth (0.19: a field that holds rows, or one row, makes child rows; `kidKeys` are those fields). Walked
+     with a stack of its own and in the file's order, so the order of `all` is a row's turn before its children's. */
+  const kidKeys=new Set(),all=[],groupsOf=new Map(),todo=d.rows.slice().reverse();
+  while(todo.length){const r=todo.pop();all.push(r);
+    const gs=[];
+    for(const [k,v] of Object.entries(r)){
+      const rs=Array.isArray(v)?(v.length&&isRowObj(v[0])?v:null):isRowObj(v)?[v]:null;
+      if(rs){kidKeys.add(k);gs.push({key:k,rows:rs});}}
+    if(gs.length){groupsOf.set(r,gs);for(let i=gs.length-1;i>=0;i--) for(let j=gs[i].rows.length-1;j>=0;j--) todo.push(gs[i].rows[j]);}}
+  const keys=new Set(Object.keys(d.fields||{}));all.forEach(r=>Object.keys(r).forEach(k=>keys.add(k)));
+  const own=(d.fields?Object.keys(d.fields):Object.keys(d.rows[0]||{})).filter(k=>!kidKeys.has(k));
   const lab=k=>hasOwn(d.fields,k)?d.fields[k]:k;
-  return {kind:"data",rows:d.rows,keys,own,first:own[0],lab,sortVal:(r,k)=>r[k]};}
+  return {kind:"data",rows:d.rows,all,groupsOf,kidKeys,keys,own,first:own[0],lab,sortVal:(r,k)=>r[k]};}
 /* kept entries as rows: each question is a field and the date is the field `date`.
    A chart has them oldest-first (the pipeline's `limit` then keeps the newest N). A row is
    kept when it answers at least one of the questions `fields:` names (or any). */
@@ -7107,8 +7237,13 @@ const iconOf=(r,roles)=>{const n=roles.icon?cellText(r[roles.icon]).trim():"";re
    table's sort headings (`sort`). A view draws its groups' headings itself (groupHead). */
 const isGrouped=groups=>groups.some(g=>g.name!==null);
 const groupHead=g=>el("div",{class:"dv-group",role:"heading","aria-level":"3"},g.name||"–",el("span",{class:"dv-count"},strings("dv").rows(g.rows.length)));
-function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.sort;
-  const numeric=k=>set.rows.some(r=>typeof r[k]==="number")&&set.rows.every(r=>r[k]==null||typeof r[k]==="number");
+/* What a row shows when it opens (0.19), for table, list and cards: the rest of its fields, each under its label as plain text with
+   its line breaks kept (`more`, a list of {label,text}), then its children, in groups headed by the field they came from. */
+const moreNode=m=>el("dl",{class:"dv-more"},...m.flatMap(f=>[el("dt",{},f.label),el("dd",{class:"dv-text"},f.text)]));
+const groupHeadRow=label=>el("div",{class:"dv-ghead",role:"heading","aria-level":"4"},label);
+function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.sort,tree=o&&o.tree;
+  const nums=new Map();
+  const numeric=k=>{if(!nums.has(k)){const rs=set.all||set.rows;nums.set(k,rs.some(r=>typeof r[k]==="number")&&rs.every(r=>r[k]==null||typeof r[k]==="number"));}return nums.get(k);};
   const table=el("table",{class:"dv-table"});
   const on=k=>ctl&&ctl.state.sk===k&&ctl.state.dir!==0;
   const heads=cols.map(c=>{
@@ -7121,12 +7256,47 @@ function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.
   table.append(el("thead",{},el("tr",{},...heads)));
   /* the first column that is not the badge leads the row: it carries the row's picture and its link */
   const lead=(cols.find(c=>!(roles.badge&&c.key===roles.badge))||{}).key;
-  const cell=(r,c)=>{
+  /* `wrap` (a nested table's lead cell) gets the cell's contents and returns what the cell holds instead */
+  const cell=(r,c,wrap)=>{const w=wrap||(x=>x);
     if(roles.badge&&c.key===roles.badge){const t=rowTone(r,roles);
-      return el("td",{},...partsOf(r[c.key]).map(x=>pill(x,t)),toneWords(t));}
+      return el("td",{},...w([...partsOf(r[c.key]).map(x=>pill(x,t)),toneWords(t)]));}
     if(c.key===lead&&(roles.link||roles.icon)){const pic=iconOf(r,roles);
-      return el("td",{class:numeric(c.key)?"num":null},pic?el("span",{class:"dv-i"},pic):null,...leadNodes(set,r,roles,[cellText(r[c.key])]));}
-    return el("td",{class:numeric(c.key)?"num":null},cellNode(set,r,c.key));};
+      return el("td",{class:numeric(c.key)?"num":null},...w([pic?el("span",{class:"dv-i"},pic):null,...leadNodes(set,r,roles,[cellText(r[c.key])])]));}
+    return el("td",{class:numeric(c.key)?"num":null},...w([cellNode(set,r,c.key)]));};
+  if(tree){
+    /* A nested table: one body, every row a row of the same columns, a child one step in from its parent. A row that opens carries a
+       native disclosure in its lead cell; what it opens to is a few rows after it, drawn when it opens (the pipeline's toggle
+       listener calls the hook registered here) and taken away when it shuts. `data-depth` says how far in a row is. */
+    const body=el("tbody",{}),span=String(cols.length||1);
+    const indent=depth=>Array.from({length:depth},()=>el("span",{class:"dv-ind","aria-hidden":"true"}));
+    const rowsFor=(r,depth)=>{
+      const key=tree.keyOf(r),has=tree.has(r);
+      let d=null;
+      const wrap=kids=>{
+        const ind=indent(depth);
+        if(!has) return [el("div",{class:"dv-lead"},...ind,el("span",{class:"dv-nocaret","aria-hidden":"true"}),el("span",{class:"dv-leadtext"},...kids))];
+        d=el("details",{"data-id":key,open:tree.open(r)},el("summary",{},...kids));
+        return [el("div",{class:"dv-lead"},...ind,d)];};
+      const tr=el("tr",{class:"dv-trow","data-depth":String(depth)},...cols.map(c=>cell(r,c,c.key===lead?wrap:undefined)));
+      const out=[tr];
+      if(has){
+        let drawn=tree.open(r);
+        const below=()=>belowRows(r,depth);
+        if(drawn) out.push(...below());
+        if(d) tree.hooks.set(d,{
+          open(){if(drawn) return;drawn=true;tr.after(...below());},
+          close(){if(!drawn) return;drawn=false;let n=tr.nextElementSibling;
+            while(n&&Number(n.getAttribute("data-depth"))>depth){const x=n;n=n.nextElementSibling;x.remove();}}});}
+      return out;};
+    const belowRows=(r,depth)=>{const out=[],m=tree.more(r);
+      if(m.length) out.push(el("tr",{class:"dv-trmore","data-depth":String(depth+1)},el("td",{colspan:span},el("div",{class:"dv-lead"},...indent(depth+1),moreNode(m)))));
+      (tree.groups.get(r)||[]).forEach(g=>{
+        if(g.key!==null) out.push(el("tr",{class:"dv-grouprow","data-depth":String(depth+1)},el("th",{scope:"rowgroup",colspan:span},el("div",{class:"dv-lead"},...indent(depth+1),g.label))));
+        g.rows.forEach(c=>out.push(...rowsFor(c,depth+1)));});
+      return out;};
+    tree.roots.forEach(r=>body.append(...rowsFor(r,0)));
+    table.append(body);
+    return [el("div",{class:"md-table dv-wrap"},table)];}
   groups.forEach(g=>{const body=el("tbody",{});
     if(g.name!==null) body.append(el("tr",{class:"dv-grouprow"},el("th",{scope:"rowgroup",colspan:String(cols.length)},
       g.name||"–",el("span",{class:"dv-count"},dvText.rows(g.rows.length)))));
@@ -7149,10 +7319,17 @@ function viewList(set,groups,roles,cols,o){const tree=o&&o.tree;
       note!==""?el("span",{class:"dv-n"},note):null,
       toneWords(t)];};
   const row=r=>el("li",{class:"dv-row"},...parts(r));
-  /* nested (see nestRows): a row with children is a native disclosure, a row without is a plain row */
-  const node=r=>{const kids=tree.kids.get(r);if(!kids) return row(r);
-    return el("li",{class:"dv-node"},el("details",{"data-id":cellText(r.id).trim(),open:tree.open(r)},
-      el("summary",{class:"dv-row"},...parts(r)),el("ul",{class:"dv-list"},...kids.map(node))));};
+  /* nested (see nestRows): a row with more to show (its other fields, its children) is a native disclosure, a row without is a plain
+     row. What it opens to is drawn when it opens (the pipeline's toggle listener calls the hook), or at once if it was kept open. */
+  const node=r=>{if(!tree.has(r)) return row(r);
+    const d=el("details",{"data-id":tree.keyOf(r),open:tree.open(r)},el("summary",{class:"dv-row"},...parts(r)));
+    let drawn=false;
+    const draw=()=>{if(drawn) return;drawn=true;const m=tree.more(r);
+      if(m.length) d.append(moreNode(m));
+      (tree.groups.get(r)||[]).forEach(g=>{if(g.key!==null) d.append(groupHeadRow(g.label));d.append(el("ul",{class:"dv-list"},...g.rows.map(node)));});};
+    tree.hooks.set(d,{open:draw,close(){}});
+    if(tree.open(r)) draw();
+    return el("li",{class:"dv-node"},d);};
   if(tree) return [el("ul",{class:"dv-list dv-tree"},...tree.roots.map(node))];
   const list=g=>el("ul",{class:"dv-list"},...g.rows.map(row));
   /* a grouped list: each group a card, the cards in a row of columns when there is room */
@@ -7174,15 +7351,32 @@ function viewTiles(set,groups,roles){
 /* cards: one card per row. A kept entry is a dated card, drawn by queryCard. A data block's row reads the shared roles as the other
    views do: the label leads (and is the row's link), the note is the line under it, the badge is pills, the value is the figure (as a
    tile's), the tone colours the card, the icon is the picture; every field that plays no role is a line, as on a kept entry's card. */
-function viewCards(set,groups,roles,cols){
-  const cards=g=>g.rows.map(r=>{const pic=iconOf(r,roles),picture=pic?{icon:pic}:null;
+function viewCards(set,groups,roles,cols,o){const tree=o&&o.tree;
+  const one=r=>{const pic=iconOf(r,roles),picture=pic?{icon:pic}:null;
     if(set.kind==="entries") return queryCard(set.entryOf(r),set.from,cols.map(c=>c.key),{picture,lead:kids=>leadNodes(set,r,roles,kids)});
     const lab=rolePart(r,roles.label),note=rolePart(r,roles.note),val=rolePart(r,roles.value),t=rowTone(r,roles),
       badges=roles.badge?partsOf(r[roles.badge]):[],lines=cols.filter(c=>cellText(r[c.key])!==""),dl=el("dl",{});
     lines.forEach(c=>dl.append(el("dt",{},c.label),el("dd",{},cellText(r[c.key]))));
+    const titleNode=lab!==""?el("div",{class:"k"},...leadNodes(set,r,roles,[lab])):null;
+    if(tree&&tree.has(r)){
+      /* a card that opens (0.19) is a fold card: its note stays in sight (a fold hides its teaser when open), and its body is
+         drawn when it opens (the pipeline's toggle listener calls the hook), or at once if it was kept open */
+      const d=cardNode({mode:"fold",open:tree.open(r),cls:"entry entry-row"+(t?" tone-"+t:""),picture,titleNode,
+        pills:badges.map(x=>pill(x,t)),foot:[note!==""?el("div",{class:"dv-n"},note):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)].filter(Boolean)});
+      d.setAttribute("data-id",tree.keyOf(r));
+      const body=d.children[d.children.length-1];
+      let drawn=false;
+      const draw=()=>{if(drawn) return;drawn=true;const m=tree.more(r);
+        if(m.length) body.append(moreNode(m));
+        (tree.groups.get(r)||[]).forEach(g=>{if(g.key!==null) body.append(groupHeadRow(g.label));body.append(el("div",{class:"dv-cards dv-sub"},...g.rows.map(one)));});};
+      tree.hooks.set(d,{open:draw,close(){}});
+      if(tree.open(r)) draw();
+      return d;}
     return cardNode({mode:"item",cls:"entry entry-row"+(t?" tone-"+t:""),picture,teaser:note,teaserCls:"dv-n",
-      titleNode:lab!==""?el("div",{class:"k"},...leadNodes(set,r,roles,[lab])):null,
-      kids:[badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});}).filter(Boolean);
+      titleNode,
+      kids:[badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});};
+  if(tree) return tree.roots.map(one);
+  const cards=g=>g.rows.map(one).filter(Boolean);
   return isGrouped(groups)?groups.flatMap(g=>[groupHead(g),...cards(g)]):cards(groups[0]);}
 /* ---- chart views: `as: bars` and `as: line`. Plain SVG from numbers and
    text nodes, coloured only through the theme's tokens (the CSS classes ch-*).
@@ -7303,15 +7497,16 @@ const newViewState=()=>({open:false,q:"",fk:"",fv:"",sk:"",dir:0,opens:new Set()
    module's text changes the numbers the parser gives blocks) */
 function queryView(activityId,b){const q=viewAt(activityId).queries,n=allBlocksOf(activityOf(activityId)).filter(x=>x.type==="query").indexOf(b);
   if(!q.has(n)) q.set(n,newViewState());return q.get(n);}
-/* A list whose rows carry a parent is nested. The tree is built in one pass over a
+/* A view whose rows carry a parent is nested (0.19: list, table and cards). The tree is built in one pass over a
    Map keyed by the rows' ids (the first row with an id wins). A row whose parent is
    empty or not among the rows is a top row; a cycle is cut at the first row met, which
-   is then drawn at the top. Children keep the file's order. `limit` counts top rows. */
-function nestRows(rows,pk,limit){
+   is then drawn at the top. Children keep the file's order. `limit` counts top rows.
+   `given` (optional): a Map from a row to the row it is nested in as data (a field that holds rows), which wins over the row's `parent`. */
+function nestRows(rows,pk,limit,given){
   const idOf=r=>cellText(r.id).trim(),byId=new Map();
   rows.forEach(r=>{const i=idOf(r);if(i&&!byId.has(i)) byId.set(i,r);});
   const up=new Map();
-  rows.forEach(r=>{const p=byId.get(cellText(r[pk]).trim());up.set(r,p&&p!==r?p:null);});
+  rows.forEach(r=>{const p=given&&given.has(r)?given.get(r):byId.get(cellText(r[pk]).trim());up.set(r,p&&p!==r?p:null);});
   const done=new Set();
   rows.forEach(r=>{const path=new Set();let x=r;
     while(x&&!done.has(x)){if(path.has(x)){up.set(x,null);break;}path.add(x);x=up.get(x);}
@@ -7323,11 +7518,31 @@ function nestRows(rows,pk,limit){
   const walk=r=>{const st=[r];while(st.length){const x=st.pop();flat.push(x);const k=kids.get(x);if(k) for(let i=k.length-1;i>=0;i--) st.push(k[i]);}};
   top.forEach(walk);
   return {roots:top,kids,up,rows:flat};}
+/* A data block's tree, by the one rule for both ways to nest (a row's `parent`, and a field that holds rows): every row at every depth goes
+   through nestRows. The result adds `groups`, a row's children in groups (rows nested by `parent` first, then one group for each field
+   that held rows, headed by that field), and `keyOf`, the key that remembers a row is open: its `id`, else its place. */
+function nestData(set,pk,limit){
+  const all=set.all||set.rows,groupsOf=set.groupsOf||new Map(),given=new Map(),via=new Map();
+  groupsOf.forEach((gs,p)=>gs.forEach(g=>g.rows.forEach(c=>{given.set(c,p);via.set(c,g.key);})));
+  const t=nestRows(all,pk,limit,given),groups=new Map();
+  t.kids.forEach((a,p)=>{const by=new Map();
+    a.forEach(c=>{const k=given.get(c)===p?via.get(c):null;if(!by.has(k)) by.set(k,[]);by.get(k).push(c);});
+    const out=[];if(by.has(null)) out.push({key:null,rows:by.get(null)});
+    (groupsOf.get(p)||[]).forEach(g=>{if(by.has(g.key)) out.push({key:g.key,rows:by.get(g.key)});});
+    groups.set(p,out);});
+  const keyOf=new Map(),used=new Set(),st=t.roots.map((r,i)=>[r,"\u0001"+i]).reverse();
+  while(st.length){const [r,path]=st.pop(),id=cellText(r.id).trim();
+    if(id&&!used.has(id)){used.add(id);keyOf.set(r,id);}else keyOf.set(r,path);
+    const gs=groups.get(r)||[];
+    for(let i=gs.length-1;i>=0;i--) for(let j=gs[i].rows.length-1;j>=0;j--) st.push([gs[i].rows[j],path+"\u0001"+i+"."+j]);}
+  return {...t,groups,keyOf};}
 const uniq=a=>a.filter((x,i)=>x&&a.indexOf(x)===i);
 /* the other fields a view shows: a table's columns, a list row's extras, a chart's series, a card's questions */
 function colsOf(as,set,v,roles){
   /* `fields:` naming a question asked for each pick names its every pick's field (entrySet's expand); a card shows the question */
-  const named=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,fields=named&&as!=="cards"&&set.expand?named.flatMap(set.expand):named,
+  const named0=VIEW_DRAWS[as].includes("fields")?v.fields:undefined,
+    named=named0&&set.kidKeys?named0.filter(k=>!set.kidKeys.has(k)):named0,   /* a field that holds rows is not a column: its rows are drawn as children */
+    fields=named&&as!=="cards"&&set.expand?named.flatMap(set.expand):named,
     mk=ks=>ks.map(k=>({key:k,label:set.lab(k),raw:set.labw&&set.labw(k)}));
   /* the fields that play no role: a list's extras and a data block's card lines (never `id`, the group or the parent) */
   const rest=()=>{const d=VIEW_DRAWS[as],skip=new Set([...ROLE_NAMES.map(n=>roles[n]),d.includes("group")?v.group:null,d.includes("parent")?v.parent||"parent":null,"id"]);return set.own.filter(k=>!skip.has(k));};
@@ -7362,7 +7577,8 @@ function viewControls(state,info,redraw){const K=strings("dv").ctl;
   const dir=info.canSort?el("button",{type:"button",class:"dv-dir"},"↑"):null;
   const clear=el("button",{type:"button",class:"dv-clear"},K.clear);
   const live=el("p",{class:"dv-live","aria-live":"polite"});
-  const bar=el("div",{class:"dv-bar",role:"group","aria-label":K.open},input,picks.length?show:null,by,dir,clear);
+  const all=info.nest?el("button",{type:"button",class:"dv-clear dv-openall"},K.openAll):null,none=info.nest?el("button",{type:"button",class:"dv-clear dv-closeall"},K.closeAll):null;
+  const bar=el("div",{class:"dv-bar",role:"group","aria-label":K.open},input,picks.length?show:null,by,dir,all,none,clear);
   let total=info.rows.length,count=total;
   const active=()=>!!(state.q.trim()||(state.fk&&state.fv!==""));
   const sync=n=>{if(typeof n==="number") count=n;
@@ -7382,6 +7598,7 @@ function viewControls(state,info,redraw){const K=strings("dv").ctl;
   if(by){by.addEventListener("change",()=>{state.sk=by.value;state.dir=by.value?1:0;redraw();});
     dir.addEventListener("click",()=>{if(!state.sk) return;state.dir=state.dir===-1?1:-1;redraw();});}
   clear.addEventListener("click",()=>{doClear();input.focus();});
+  if(all){all.addEventListener("click",()=>info.nest.openAll());none.addEventListener("click",()=>info.nest.closeAll());}
   bar.addEventListener("keydown",e=>{if(e&&e.key==="Escape"){state.open=false;sync();btn.focus();}});
   const node=el("div",{class:"dv-ctl"},el("div",{class:"dv-ctl-top"},btn),bar,live);
   return {node,sync,clear:doClear,active};}
@@ -7390,7 +7607,7 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   const as=v.as||(set.kind==="entries"?"cards":"table"),drawn=VIEW_DRAWS[as];
   let rows=set.rows,tree=null;
   const pk=v.parent||"parent";
-  if(as==="list"&&rows.some(r=>cellText(r[pk]).trim()!=="")){tree=nestRows(rows,pk,v.limit);rows=tree.rows;}
+  if(drawn.includes("parent")&&(set.groupsOf&&set.groupsOf.size>0||rows.some(r=>cellText(r[pk]).trim()!==""))){tree=nestData(set,pk,v.limit);rows=tree.rows;}
   else if(v.limit&&drawn.includes("limit")) rows=set.kind==="entries"&&(as==="bars"||as==="line")?rows.slice(-v.limit):rows.slice(0,v.limit);
   if(!rows.length) return [el("p",{class:"hint"},opts.empty||dvText.empty)];
   const roles=rolesOf({...set,rows},v,as),cols=colsOf(as,set,v,roles);
@@ -7400,8 +7617,12 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   const sortKeys=canSort?uniq([...(set.kind==="entries"?["date"]:[]),roles.label,roles.value,...cols.map(c=>c.key)]):[];
   const state=opts.state||newViewState();
   if(state.sk&&!sortKeys.includes(state.sk)){state.sk="";state.dir=0;}
+  /* what a row of a nested view shows when it opens (0.19): the fields of the source that the line does not show and that play no role */
+  const lineKeys=new Set(cols.map(c=>c.key)),skipKeys=new Set([...ROLE_NAMES.map(n=>roles[n]).filter(Boolean),"id",pk,gk]);
+  const openKeys=tree?set.own.filter(k=>!lineKeys.has(k)&&!skipKeys.has(k)):[];
+  const moreOf=r=>openKeys.map(k=>({label:set.lab(k),text:cellText(r[k])})).filter(f=>f.text!=="");
   const body=el("div",{class:"dv-body"+(as==="cards"?" dv-cards":"")});
-  let ctl=null;
+  let ctl=null,cur=null;
   const paint=focusKey=>{
     const filtering=!!ctl&&ctl.active();
     const kept=filtering?rows.filter(r=>passes(r,state,shown)):rows;
@@ -7411,8 +7632,14 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
       const keep=filtering?new Set(kept):null,force=new Set();
       if(filtering) kept.forEach(r=>{for(let p=tree.up.get(r);p&&!force.has(p);p=tree.up.get(p)){force.add(p);keep.add(p);}});
       const order=a=>{const b=keep?a.filter(x=>keep.has(x)):a;return state.sk&&state.dir?sortRows(b,set,state):b;};
-      const kids=new Map();tree.kids.forEach((a,p)=>{const b=order(a);if(b.length) kids.set(p,b);});
-      shape={roots:order(tree.roots),kids,open:r=>force.has(r)||state.opens.has(cellText(r.id).trim())};}
+      const groups=new Map();
+      tree.groups.forEach((gs,p)=>{const out=gs.map(g=>({key:g.key,label:g.key===null?null:set.lab(g.key),rows:order(g.rows)})).filter(g=>g.rows.length);if(out.length) groups.set(p,out);});
+      const more=new Map(),moreFor=r=>{if(!more.has(r)) more.set(r,moreOf(r));return more.get(r);};
+      /* `kids`: a row's children as one list (the compiler draws a nested list from it, compile/views.js) */
+      const kids=new Map();groups.forEach((gs,p)=>kids.set(p,gs.flatMap(g=>g.rows)));
+      shape={roots:order(tree.roots),groups,kids,more:moreFor,has:r=>groups.has(r)||moreFor(r).length>0,
+        open:r=>force.has(r)||state.opens.has(tree.keyOf.get(r)),keyOf:r=>tree.keyOf.get(r),hooks:new WeakMap()};}
+    cur=shape;
     let groups=[{name:null,rows:kept}];
     if(gk){groups=[];const at=new Map();
       kept.forEach(r=>{const n=cellText(r[gk]);if(!at.has(n)){at.set(n,{name:n,rows:[]});groups.push(at.get(n));}at.get(n).rows.push(r);});}
@@ -7427,14 +7654,20 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   const tctl={state,sortBy:k=>{
     if(state.sk!==k){state.sk=k;state.dir=1;}else if(state.dir===1) state.dir=-1;else{state.sk="";state.dir=0;}
     paint(k);}};
-  if(rows.length>=CONTROLS_MIN) ctl=viewControls(state,{rows,shown,sortKeys,canSort,lab:set.lab},()=>paint());
+  /* Open all and Close all on a nested view: every row that has more to show (not only the ones a filter keeps) */
+  const nest=tree?{openAll:()=>{state.opens.clear();tree.rows.forEach(r=>{if((tree.groups.get(r)||[]).length||moreOf(r).length) state.opens.add(tree.keyOf.get(r));});paint();},
+    closeAll:()=>{state.opens.clear();paint();}}:null;
+  if(rows.length>=CONTROLS_MIN) ctl=viewControls(state,{rows,shown,sortKeys,canSort,lab:set.lab,nest},()=>paint());
   paint();
   const panel=as==="table"||as==="bars"||as==="line"||(as==="list"&&!gk);
   const box=el("div",{class:"dv-box"+(panel?" dv-panel":"")},ctl?ctl.node:null,body);
-  /* what the reader opens in a nested list is kept with the rest of the query's state. A toggle does not
-     bubble, so this listens on the way down; while a filter is on, the ancestors it opened are not remembered. */
+  /* What the reader opens in a nested view is kept with the rest of the query's state, and what a row opens to is drawn here, when it
+     opens (or taken away when it shuts, in a table, whose rows are not inside the disclosure). A toggle does not bubble, so this
+     listens on the way down; while a filter is on, the ancestors it opened are not remembered. */
   if(tree) box.addEventListener("toggle",e=>{const d=e&&e.target;
-    if(!d||String(d.tagName).toLowerCase()!=="details"||(ctl&&ctl.active())) return;
+    if(!d||String(d.tagName).toLowerCase()!=="details") return;
+    const h=cur&&cur.hooks.get(d);if(h) (d.open?h.open:h.close)();
+    if(ctl&&ctl.active()) return;
     const id=d.getAttribute("data-id");if(id===null) return;
     if(d.open) state.opens.add(id);else state.opens.delete(id);},true);
   return [box];}
@@ -9272,7 +9505,9 @@ function imageLoad(at,ext){const slot=IMG_SEEN[at]={wait:[]};
   return slot;}
 /* the browser could not draw bytes that passed the check: the address is kept as a failure, and its blob goes */
 function imageBroken(at){const r=IMG_SEEN[at];if(r&&r.url){URL.revokeObjectURL(r.url);IMG_SEEN[at]={err:"imgBroken"};}}
-function imagesRelease(){STORE_SRC="";Object.keys(IMG_SEEN).forEach(k=>{if(IMG_SEEN[k].url) URL.revokeObjectURL(IMG_SEEN[k].url);delete IMG_SEEN[k];});}
+function imagesRelease(){STORE_SRC="";Object.keys(IMG_SEEN).forEach(k=>{if(IMG_SEEN[k].url) URL.revokeObjectURL(IMG_SEEN[k].url);delete IMG_SEEN[k];});
+  /* the data files go with the images: what a booklet's blocks read is forgotten when it closes, another opens or the store's file is read again */
+  Object.keys(DATA_SEEN).forEach(k=>delete DATA_SEEN[k]);DATA_LIVE.clear();}
 /* What mkImg draws for the image a booklet writes at `src`, in the module `scope`: null when this booklet gets no images there (the quiet box as ever);
    else {url} (draw it), or {note} (the quiet box, with these words in place of "Image not shown"). While the read is
    still going the note is "Loading image…" and `done` is called later with the final {url} or {note}. */
@@ -9282,6 +9517,94 @@ function storeImage(src,done,scope){const folder=imageFolder(scope);if(folder===
   const rec=IMG_SEEN[at]||imageLoad(at,p.ext);
   if(rec.wait){rec.wait.push(done);return {note:strings("ui").imgLoading};}
   return imageRecord(rec,at);}
+/* ---- DATA FILES BESIDE A BOOKLET (format 0.19, SPEC.md sections 7 and 12) ----
+   A `booklet data <file.json> [key.path]` block takes its rows from a JSON file beside the booklet. It is read by the rule images
+   follow, and by no other: only for a booklet opened from the host's declared store or from the default folder, only where the
+   part of the booklet the block is in is still the store's own text (imageFolder says so), at one address made from the booklet's
+   own folder and a checked name (dataFilePath: [A-Za-z0-9_./-], at most 200 characters, no part that begins with a dot, no leading
+   / and no empty part, and an extension of .json), through the same linkFetch (no method, no body, no credentials, no redirect,
+   LINK_BYTES, LINK_MS). A booklet opened from the reader's disk, pasted, handed over without a name or from the registry makes no
+   request: its block draws the quiet box naming the file. The file is read once however many blocks name it (DATA_SEEN, by address),
+   read again when the page comes back into view and when an active host calls handle.dataChanged(), and forgotten with the images
+   (imagesRelease). A new answer that holds the same text changes nothing; one that differs is drawn in place, by the boxes that show
+   it (DATA_LIVE), with their open rows, sort and filter (the view's state) and the scroll kept. It reads nothing the reader wrote and
+   sends nothing: a data file is the generator's, never the reader's work. */
+const DATA_SEEN=Object.create(null);   /* address -> {wait:[fn]} while it is first read, then {text,json,blocks} or {err} */
+const DATA_LIVE=new Set();              /* {box, at, redraw}: the boxes now on a screen, each drawn from one address */
+function dataFilePath(raw){const p=String(raw==null?"":raw);
+  if(!p||p.length>IMG_PATH_MAX||p.charAt(0)==="/"||!/^[A-Za-z0-9_.\/-]+$/.test(p)) return null;
+  if(p.split("/").some(x=>x===""||x.charAt(0)===".")) return null;
+  return /\.json$/.test(p)&&p.length>5?p:null;}
+/* the rows of a data block from what its file holds: {data:{rows,fields}} or {note} (the words for the quiet box) */
+function dataFromJson(file,json,fence){const D=strings("dv").data;let at=json;
+  const path=file.path===""?[]:file.path.split(".");
+  for(const k of path){if(!isRowObj(at)&&!Array.isArray(at)||!hasOwn(at,k)) return {note:D.nopath(file.name,file.path)};at=at[k];}
+  const d=readData(at);
+  if(d.bad) return {note:D.bad(file.name,d.bad)};
+  const f=fence&&(fence.fields||d.fields)?{...(d.fields||{}),...(fence.fields||{})}:undefined;
+  return {data:{rows:d.rows,fields:f,edits:{...(d.edits||{}),...(fence&&fence.edits||{})}}};}
+/* what one answer of linkFetch makes of a data file: {text,json,blocks} (blocks: each block's rows by key path, made once) or {err} */
+function dataRecord(got){
+  if(got.err) return {err:got.err==="missing"?"missing":got.err==="big"?"big":got.err==="notText"?"wrong":"failed"};
+  let json;try{json=JSON.parse(got.text);}catch(e){return {err:"wrong"};}
+  return {text:got.text,json,blocks:new Map()};}
+/* the first read of one address; boxes waiting are told when it ends. A booklet closed meanwhile has released the slot (imagesRelease),
+   and the late answer is dropped. */
+function dataLoad(at){const slot=DATA_SEEN[at]={wait:[]};
+  linkFetch(at,{json:true}).then(got=>{
+    if(DATA_SEEN[at]!==slot) return;
+    DATA_SEEN[at]=dataRecord(got);
+    slot.wait.forEach(f=>{try{f();}catch(e){}});});
+  return slot;}
+/* a later read of an address already read. An answer that fails leaves good data as it is (the data is not the reader's work, and a
+   flicker of the network is not news; a file that was missing or wrong is tried again, and drawn if it now reads), and one that holds the same text changes nothing; otherwise the boxes that show it draw again in place. */
+function dataReload(at,rec){rec.busy=true;
+  linkFetch(at,{json:true}).then(got=>{
+    rec.busy=false;
+    if(DATA_SEEN[at]!==rec||(got.err&&!rec.err)) return;
+    const next=dataRecord(got);
+    if(rec.err?next.err===rec.err:(next.err||got.text===rec.text)) return;
+    DATA_SEEN[at]=next;
+    DATA_LIVE.forEach(x=>{if(x.box.isConnected===false){DATA_LIVE.delete(x);return;}if(x.at===at){try{x.redraw();}catch(e){}}});});}
+/* What a block's views draw from: {data} (rows, fields), or {note} (the quiet box's words). `redraw` is called later when a first read ends. */
+function dataBlockRows(block,scope,redraw){const D=strings("dv").data,file=block.file;
+  if(file.bad) return {note:D.refused(file.name)};
+  /* the part the query is in and the part the block is in must both be the store's own text */
+  const folder=imageFolder(scope)===""?"":imageFolder(file.scope!==undefined?file.scope:scope);
+  if(folder==="") return {note:D.notStore(file.name)};
+  const p=dataFilePath(file.name),at=p===null?null:imageAddress(p,folder);
+  if(at===null) return {note:D.refused(file.name)};
+  const rec=DATA_SEEN[at]||dataLoad(at);
+  if(rec.wait){rec.wait.push(redraw);return {note:D.loading(file.name),at};}
+  if(rec.err) return {note:D[rec.err](file.name),at};
+  const key=file.path;let got=rec.blocks.get(key);
+  if(!got){got=dataFromJson(file,rec.json,block);rec.blocks.set(key,got);}
+  return {...got,at};}
+/* every file the boxes now on screen read, once more: a changed answer is drawn in place (dataLoad) */
+function dataRefresh(){const seen=new Set();
+  DATA_LIVE.forEach(x=>{if(x.box.isConnected===false){DATA_LIVE.delete(x);return;}
+    const rec=DATA_SEEN[x.at];if(!x.at||seen.has(x.at)||!rec||rec.wait||rec.busy) return;
+    seen.add(x.at);dataReload(x.at,rec);});}
+/* The views of one data block that reads a file, drawn into `box`; drawn again by the same function when the file changes. The
+   scroll, the focus and the view's own state (open rows, sort, filter: `state`) are kept. */
+function drawFileQuery(box,block,v,state,scope,empty){
+  let live=null;
+  const make=()=>{const r=dataBlockRows(block,scope,()=>paint(true));
+    if(live) live.at=r.at;
+    else if(r.at){live={box,at:r.at,redraw:()=>paint(true)};DATA_LIVE.add(live);}
+    return r.data?viewNodes(dataSet(r.data),v,{empty,state,scope}):[el("p",{class:"hint dv-quiet"},r.note)];};
+  function paint(keep){
+    const nodes=make();
+    if(!keep){box.textContent="";box.append(...nodes);return;}
+    /* drawn again in place: scroll and focus stay where they were */
+    const y=window.scrollY||0,x=window.scrollX||0,a=document.activeElement,inBox=a&&box.contains&&box.contains(a),
+      ctls=inBox?Array.from(box.querySelectorAll("input,select,button,summary")):[],at=inBox?ctls.indexOf(a):-1,
+      wraps=Array.from(box.querySelectorAll(".dv-wrap")).map(n=>n.scrollLeft);
+    box.textContent="";box.append(...nodes);
+    Array.from(box.querySelectorAll(".dv-wrap")).forEach((n,i)=>{if(wraps[i]) n.scrollLeft=wraps[i];});
+    if(at>=0){const n=Array.from(box.querySelectorAll("input,select,button,summary"))[at];if(n&&n.focus) n.focus({preventScroll:true});}
+    if((window.scrollY||0)!==y||(window.scrollX||0)!==x) window.scrollTo(x,y);}
+  paint(false);}
 /* Open text as a view: the same parser, the same refusals, the same notices and the same start screen as a file picked
    by hand; but nothing is saved until the reader changes something, and no entry is added to the list then except a
    store booklet's pointer (finishLoad). `via` says where it came from: {store:true,label,from} or {store:false,label,from}.
@@ -9391,7 +9714,7 @@ async function openLink(hash,o){const L=linkOf(hash);if(!L) return false;
    the code that does it (docs/hosting.md), and the pledge tests check that nothing here can. No request, no message to
    another window, nothing stored for another page. Nothing in a booklet can reach this object: a booklet is data, the
    renderer runs no code from one, and these members are only ever called by script the host's page loaded.
-   Members: version; host({label}) returning {saved, failed, fileChanged, leave, state}; onChange(fn); open(text,{name}); text().
+   Members: version; host({label}) returning {saved, failed, fileChanged, dataChanged, leave, state}; onChange(fn); open(text,{name}); text().
    The hook only ever serves the reader's own machine or private network, and only after the reader says yes: on a public
    address host() returns a handle that does nothing ("refused"), and elsewhere the host waits until the reader presses
    Allow in the renderer's own notice (see ownPlace, region 4, and hostAsk, region 12). A host that is not active is as if
@@ -9400,7 +9723,7 @@ if(typeof window!=="undefined"){
   const noop=()=>{};
   const hostFn=function host(o){
     /* on a public address nothing is handed over, nothing is shown, and nothing is said: the handle does nothing */
-    if(!HOST_OWN) return Object.freeze({saved:noop,failed:noop,fileChanged:noop,leave:noop,state:()=>"refused"});
+    if(!HOST_OWN) return Object.freeze({saved:noop,failed:noop,fileChanged:noop,dataChanged:noop,leave:noop,state:()=>"refused"});
     /* `early`: registered before the page had read its store (keepStart), so the reader's yes was read from its mirror and
        is read again from the store once the store is read */
     const mine={label:hookText(o&&o.label,80),status:"idle",message:"",at:null,prev:"idle",pending:null,state:"waiting",dismissed:false,early:!KEEP.ready};
@@ -9415,6 +9738,9 @@ if(typeof window!=="undefined"){
       saved:live(c=>hostSet("saved","",false,c)),
       failed:live((m,c)=>hostSet("failed",hookText(m,200),false,c)),
       fileChanged:live(t=>{if(typeof t!=="string"||!hookBook()||mine.state!=="active") return;mine.pending=t;render();}),
+      /* a data file beside the booklet changed (0.19): the renderer reads the files its blocks name once more and draws a changed one in
+         place, with open rows, sort, filter and scroll kept. Nothing is asked of the reader: data is the generator's, not the reader's work. */
+      dataChanged:live(()=>{if(!hookBook()||mine.state!=="active") return;dataRefresh();}),
       state:()=>HOST===mine?mine.state:"refused",
       leave:live(()=>{hookStopWait();const was=mine.pending!=null||mine.state==="waiting";HOST=null;drawSaveState();if(was) render();})});};
   const onChangeFn=function onChange(fn){if(typeof fn!=="function") return noop;
@@ -9429,6 +9755,8 @@ if(typeof window!=="undefined"){
     writable:false,configurable:false,enumerable:true});}catch(e){}}
 /* a host that sets the style while a page is showing: draw it again (not while the page is drawing itself, which is when a booklet's own style arrives) */
 window.addEventListener("booklet-style",()=>{if(RENDERING) return;drawKeepingFocus();});
+/* the page comes back into view: the data files its blocks read are read once more (dataRefresh, region 12) */
+if(typeof document.addEventListener==="function") document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible") dataRefresh();});
 /* drawing again drops the focused control: find it again by its id, or by its place among the page's controls, and give back its caret */
 function drawKeepingFocus(){
   const CTL="#main input,#main textarea,#main select,#main button,#main summary,#main a[href]",a=document.activeElement,
