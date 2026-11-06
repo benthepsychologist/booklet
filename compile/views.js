@@ -79,7 +79,50 @@ function draw(cap,o){
         g.name!==null?el("tr",{class:"bk-grouprow"},el("th",{scope:"rowgroup",colspan:String(cs.length)},g.name||"–",el("span",{class:"bk-count"},T.rows(g.rows.length)))):null,
         ...g.rows.map(r=>{newRow();return el("tr",{"data-bk-row":tag?true:null},...cs.map(c=>cell(r,c)));}))));}
 
-  /* ---- list: one line per row, nested when the rows carry a parent ---- */
+  /* ---- a nested table: the columns as a grid, a row that opens as a disclosure whose summary is the row ----
+     A <tr> cannot hold a disclosure, so a table of rows that open is a list of rows laid out on the same grid as its headings
+     (the stylesheet): each cell is a span named by its field, the first is indented by the row's depth. */
+  function treeCell(r,c,i,d){
+    const num=numeric(c.key)?"bk-num":"",lead1=cols.find(x=>!(roles.badge&&x.key===roles.badge));
+    if(roles.badge&&c.key===roles.badge){const t=R.rowTone(r,roles);
+      return el("span",{class:"bk-dv-c"+(num?" "+num:"")},col(c.key,"bk-dv-b",...pills(R.partsOf(r[c.key]),t)),toneWords(t));}
+    const first=lead1&&c.key===lead1.key,depth=first?(d>0?" bk-dv-d"+Math.min(d,8):"")+" bk-dv-first":"";
+    const words=first&&(roles.link||roles.icon)?[pic(r),...lead(r,[text(r[c.key])])]:[text(r[c.key])];
+    return el("span",{class:"bk-dv-c"+(num?" "+num:"")+depth,"data-bk-col":nameOf(c.key)},first?null:sr(c.label+": "),...words);}
+  const treeCells=(r,d)=>{newRow();return cols.map((c,i)=>treeCell(r,c,i,d));};
+  const treeHead=()=>el("div",{class:"bk-dv-thead","aria-hidden":"true"},...cols.map(c=>el("span",{class:"bk-dv-c"+(numeric(c.key)?" bk-num":"")},c.label)));
+  const tableV={plain:(r,d)=>el("li",{class:"bk-dv-row bk-dv-trow","data-bk-row":true},...treeCells(r,d)),
+    sum:(r,d)=>el("summary",{class:"bk-dv-row bk-dv-trow","data-bk-row":true},...treeCells(r,d)),
+    shell:(r,sum,body,d)=>el("li",{class:"bk-dv-node"},el("details",{open:tree.open(r)},sum,el("div",{class:"bk-dv-open"+(d>0?" bk-dv-d"+Math.min(d,8):"")},...body))),
+    holder:(rows,d)=>el("ul",{class:"bk-dv-list"},...rows.map(k=>node(tableV,k,d)))};
+
+  /* ---- nested rows (format 0.19; SPEC.md section 6) ----
+     A table, a list and a card view draw a tree when the renderer's pipeline hands one over (`tree`, from nestData): the rows
+     that are no row's child, each row's children in groups (tree.groups: the rows that name it as their parent first, then one
+     group for each field that holds rows, headed by the field's label), and what a row shows when it opens beyond its
+     children (tree.more: the fields that play no role and are not on the line, each with its label and its text). A row with
+     either (tree.has) is a native disclosure, which opens with no script; a row with neither is a plain row. Nothing here
+     decides which rows are whose children or what opens: the pipeline does, and the renderer draws the same. */
+  const restNode=items=>items.length?el("dl",{class:"bk-dv-rest"},...items.flatMap(x=>[el("dt",{},x.label),el("dd",{class:"bk-dv-text"},x.text)])):null;
+  const kidHead=g=>el("div",{class:"bk-dv-group",role:"heading","aria-level":"4"},g.label,el("span",{class:"bk-count"},T.rows(g.rows.length)));
+  /* A branch more than MAXD levels down is drawn flat: its rows, in order, one after another at that level. The page
+     keeps every row, and a file whose list is thousands of levels deep (made by a generator gone wrong) does not take
+     the compiler's stack with it. A fold inside a fold is not read below a few levels anyway. */
+  const MAXD=40;
+  const below=(r,plain)=>{const out=[],todo=[r];
+    while(todo.length){const x=todo.pop();out.push(x);const gs=tree.groups.get(x)||[];for(let i=gs.length-1;i>=0;i--) for(let j=gs[i].rows.length-1;j>=0;j--) todo.push(gs[i].rows[j]);}
+    return out.map(plain);};
+  /* One row of a nested view. `V` says how the view draws it: plain(r), sum(r, d) (what the summary holds), shell(r, summary,
+     body) and holder(rows, d) (the element that holds child rows). */
+  function node(V,r,d){
+    if(!tree.has(r)) return V.plain(r,d);
+    const rest=restNode(tree.more(r)),gs=tree.groups.get(r)||[];
+    if(d>=MAXD) return below(r,x=>V.plain(x,d));
+    const body=[rest,...gs.map(g=>g.label===null?V.holder(g.rows,d+1):el("div",{class:"bk-dv-kg"},kidHead(g),V.holder(g.rows,d+1)))];
+    return V.shell(r,V.sum(r,d),body.filter(Boolean),d);}
+  const treeOf=V=>Array.from(tree.roots,r=>node(V,r,0));
+
+  /* ---- list: one line per row, nested when the rows carry a parent or hold rows ---- */
   function listParts(r){
     newRow();
     const t=R.rowTone(r,roles),badges=roles.badge?R.partsOf(r[roles.badge]):[],extras=cols.filter(c=>!roleKeys.has(c.key)&&text(r[c.key])!==""),
@@ -92,21 +135,14 @@ function draw(cap,o){
       note!==""?col(roles.note,"bk-dv-n",note):null,
       toneWords(t)];}
   const listRow=r=>row("bk-dv-row",...listParts(r));
-  /* a row with children is a native disclosure (closed, as the renderer opens it; it opens with no script) */
-  /* A branch more than MAXD levels down is drawn flat: its rows, in order, one after another at that level. The page
-     keeps every row, and a file whose list is thousands of levels deep (made by a generator gone wrong) does not take
-     the compiler's stack with it. A fold inside a fold is not read below a few levels anyway. */
-  const MAXD=40;
-  const below=r=>{const out=[],todo=[r];
-    while(todo.length){const x=todo.pop();out.push(x);const k=tree.kids.get(x);if(k) for(let i=k.length-1;i>=0;i--) todo.push(k[i]);}
-    return out;};
-  const treeNode=(r,d)=>{const kids=tree.kids.get(r);if(!kids) return listRow(r);
-    if(d>=MAXD) return below(r).map(listRow);
-    return el("li",{class:"bk-dv-node"},el("details",{open:tree.open(r)},
-      el("summary",{class:"bk-dv-row","data-bk-row":true},...listParts(r)),el("ul",{class:"bk-dv-list"},...Array.from(kids,k=>treeNode(k,d+1)))));};
+  const listV={plain:r=>listRow(r),sum:r=>el("summary",{class:"bk-dv-row","data-bk-row":true},...listParts(r)),
+    /* a row whose open part is only its children as one list is the 0.18 shape: the summary, then the list */
+    shell:(r,sum,body)=>el("li",{class:"bk-dv-node"},el("details",{open:tree.open(r)},sum,
+      ...(body.length===1&&body[0].tag==="ul"?body:[el("div",{class:"bk-dv-open"},...body)]))),
+    holder:(rows,d)=>el("ul",{class:"bk-dv-list"},...rows.map(k=>node(listV,k,d)))};
   function list(){
     const ul=g=>el("ul",{class:"bk-dv-list"},...g.rows.map(listRow));
-    if(tree) return box("bk-panel",el("ul",{class:"bk-dv-list bk-dv-tree"},...Array.from(tree.roots,r=>treeNode(r,0))));
+    if(tree) return box("bk-panel",el("ul",{class:"bk-dv-list bk-dv-tree"},...treeOf(listV)));
     if(grouped) return box("",el("div",{class:"bk-dv-groups"},...groups.map(g=>el("div",{class:"bk-dv-gcard"},groupHead(g),ul(g)))));
     return box("bk-panel",...groups.map(ul));}
 
@@ -123,19 +159,27 @@ function draw(cap,o){
         val!==""?col(roles.value,"bk-dv-v",val):null,labNode,noteNode,toneWords(t));}));
     return box("",...(grouped?groups.flatMap(g=>[groupHead(g),one(g)]):groups.map(one)));}
 
-  /* ---- cards: one per row, led by its label; the fields that play no role are lines ---- */
+  /* ---- cards: one per row, led by its label; the fields that play no role are lines; nested when the rows are ---- */
+  function cardParts(r){
+    newRow();
+    const lab=R.rolePart(r,roles.label),note=R.rolePart(r,roles.note),val=R.rolePart(r,roles.value),t=R.rowTone(r,roles),
+      badges=roles.badge?R.partsOf(r[roles.badge]):[],lines=cols.filter(c=>!roleKeys.has(c.key)&&text(r[c.key])!=="");
+    return {t,kids:[pic(r),
+      lab!==""?el("div",{class:"bk-dv-k","data-bk-col":nameOf(roles.label)},...lead(r,[lab])):null,
+      note!==""?el("div",{class:"bk-dv-n","data-bk-col":nameOf(roles.note)},note):null,
+      badges.length?col(roles.badge,"bk-dv-b",...pills(badges,t)):null,
+      val!==""?col(roles.value,"bk-dv-v",val):null,
+      lines.length?el("dl",{},...lines.flatMap(c=>[el("dt",{},c.label),el("dd",{"data-bk-col":nameOf(c.key)},text(r[c.key]))])):null,
+      toneWords(t)]};}
+  const cardCls=t=>"bk-dv-card"+(t?" bk-tone-"+t:"");
+  const plainCard=r=>{const c=cardParts(r);return el("div",{class:cardCls(c.t),"data-bk-row":true},...c.kids);};
+  const cardV={plain:r=>plainCard(r),
+    sum:r=>{const c=cardParts(r);return {t:c.t,node:el("summary",{class:"bk-dv-csum","data-bk-row":true},...c.kids)};},
+    shell:(r,sum,body)=>el("details",{class:cardCls(sum.t)+" bk-dv-ncard",open:tree.open(r)},sum.node,el("div",{class:"bk-dv-open"},...body)),
+    holder:(rows,d)=>el("div",{class:"bk-dv-cards"},...rows.map(k=>node(cardV,k,d)))};
   function cards(){
-    const one=g=>g.rows.map(r=>{
-      newRow();
-      const lab=R.rolePart(r,roles.label),note=R.rolePart(r,roles.note),val=R.rolePart(r,roles.value),t=R.rowTone(r,roles),
-        badges=roles.badge?R.partsOf(r[roles.badge]):[],lines=cols.filter(c=>!roleKeys.has(c.key)&&text(r[c.key])!=="");
-      return el("div",{class:"bk-dv-card"+(t?" bk-tone-"+t:""),"data-bk-row":true},pic(r),
-        lab!==""?el("div",{class:"bk-dv-k","data-bk-col":nameOf(roles.label)},...lead(r,[lab])):null,
-        note!==""?el("div",{class:"bk-dv-n","data-bk-col":nameOf(roles.note)},note):null,
-        badges.length?col(roles.badge,"bk-dv-b",...pills(badges,t)):null,
-        val!==""?col(roles.value,"bk-dv-v",val):null,
-        lines.length?el("dl",{},...lines.flatMap(c=>[el("dt",{},c.label),el("dd",{"data-bk-col":nameOf(c.key)},text(r[c.key]))])):null,
-        toneWords(t));});
+    const one=g=>g.rows.map(plainCard);
+    if(tree) return box("",el("div",{class:"bk-dv-cards"},...treeOf(cardV)));
     return box("",el("div",{class:"bk-dv-cards"},...(grouped?groups.flatMap(g=>[groupHead(g),...one(g)]):one(groups[0]))));}
 
   /* ---- charts: the same rows are always offered as a table, so nothing is shown only as a picture ---- */
@@ -196,7 +240,8 @@ function draw(cap,o){
     return box("bk-panel",legend,bad?null:el("div",{class:"bk-ch-plot"},svg),numbers([lk,...keys],rows));}
 
   switch(cap.as){
-    case "table": return box("bk-panel",el("div",{class:"bk-table"},tableOf(groups,roles,cols,true)));
+    case "table": return tree?box("bk-panel",el("div",{class:"bk-table bk-dv-ttable"},treeHead(),el("ul",{class:"bk-dv-list bk-dv-tree"},...treeOf(tableV))))
+      :box("bk-panel",el("div",{class:"bk-table"},tableOf(groups,roles,cols,true)));
     case "list": return list();
     case "tiles": return tiles();
     case "cards": return cards();

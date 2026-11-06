@@ -657,6 +657,44 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details[open]>summary::before{transform:rotate(45deg)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree li.bk-dv-row{padding-left:1.4rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree .bk-dv-list{margin:0 0 0 .45rem!important;padding-left:.9rem!important;border-left:1px solid var(--bk-rule)!important}
+/* nested rows (format 0.19): the open part of a row (its rest, then its children), in a list, a table and a card */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-open{margin:0!important;padding:.1rem .1rem .5rem 1.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-rest{display:grid!important;grid-template-columns:minmax(6rem,max-content) minmax(0,1fr)!important;gap:.15rem .9rem!important;margin:.1rem 0 .5rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-rest dt{margin:0!important;color:var(--bk-muted)!important;font-size:.88em!important;font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-rest dd{margin:0!important;min-width:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-text{white-space:pre-line!important;overflow-wrap:anywhere!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-open>.bk-dv-kg>.bk-dv-group{margin:.6rem 0 .2rem!important;font-size:.9em!important;color:var(--bk-muted)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-open .bk-dv-list{margin:0 0 .3rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>.bk-dv-open{border-left:1px solid var(--bk-rule)!important;margin-left:.45rem!important}
+/* a nested table: the headings and every row share one grid, the first column wider; the row's depth indents its first cell */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ttable{overflow:visible!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-thead,.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-trow{display:grid!important;grid-template-columns:minmax(0,2fr)!important;grid-auto-flow:column!important;grid-auto-columns:minmax(0,1fr)!important;gap:.15rem .8rem!important;align-items:baseline!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-thead{padding:var(--bk-v-pad) .1rem var(--bk-v-pad) 1.4rem!important;border-bottom:1px solid var(--bk-rule)!important;color:var(--bk-muted)!important;font-weight:700!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-trow{padding-left:1.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-c{min-width:0!important;overflow-wrap:anywhere!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-c.bk-num{text-align:right!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>summary.bk-dv-trow{display:grid!important;padding-left:1.4rem!important;position:relative!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>summary.bk-dv-trow::before{position:absolute!important;left:.1rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ttable .bk-dv-tree .bk-dv-list{margin:0!important;padding-left:0!important;border-left:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ttable .bk-dv-tree details>.bk-dv-open{margin-left:0!important;padding-left:0!important;border-left:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ttable .bk-dv-open>.bk-dv-rest,.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ttable .bk-dv-open>.bk-dv-kg>.bk-dv-group{margin-left:calc(1.4rem + var(--bk-ind,0rem))!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-c.bk-dv-first{padding-left:var(--bk-ind,0rem)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-d1{--bk-ind:1.2rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-d2{--bk-ind:2.4rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-d3{--bk-ind:3.6rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-d4{--bk-ind:4.8rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-d5{--bk-ind:6.0rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-d6{--bk-ind:7.2rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-d7{--bk-ind:8.4rem}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-d8{--bk-ind:9.6rem}
+/* a nested card: a card that opens, with its children as cards inside it */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ncard{display:block!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-csum{display:block!important;position:relative!important;cursor:pointer!important;list-style:none!important;padding-left:1.4rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-csum::-webkit-details-marker{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-csum::before{content:""!important;box-sizing:border-box!important;position:absolute!important;left:.1rem!important;top:.35rem!important;width:.6rem!important;height:.6rem!important;border-right:var(--bk-border) solid var(--bk-accent)!important;border-bottom:var(--bk-border) solid var(--bk-accent)!important;transform:rotate(-45deg)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ncard[open]>.bk-dv-csum::before{transform:rotate(45deg)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ncard>.bk-dv-open{margin-top:.6rem!important;padding:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ncard .bk-dv-cards{margin:.3rem 0 0!important}
 /* tiles: a big value over a label; with no value anywhere, a strip of pills */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tiles{list-style:none!important;margin:0 0 1rem!important;padding:0!important;display:grid!important;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))!important;gap:var(--bk-gap)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tile{position:relative!important;display:flex!important;flex-direction:column!important;gap:.15rem!important;min-width:0!important;margin:0!important;padding:calc(var(--bk-v-pad)*1.5) 1rem!important;overflow-wrap:anywhere!important;background:var(--bk-surface)!important;border:var(--bk-border) solid var(--bk-rule)!important;border-radius:var(--bk-radius)!important}
@@ -685,6 +723,9 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card dl{margin:0!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card dt{margin:.5rem 0 0!important;color:var(--bk-muted)!important;font-size:.82rem!important;font-weight:700!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card dd{margin:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card .bk-dv-rest{margin:.1rem 0 .5rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card .bk-dv-rest dt{margin:0!important;font-size:.88em!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-card .bk-dv-rest dd{margin:0!important}
 .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-card).bk-tone-good .bk-pill,.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-card).bk-tone-warn .bk-pill,.booklet:not(#bk):not(#bk):not(#bk) :is(.bk-dv-card).bk-tone-bad .bk-pill{background:var(--bk-surface)!important;box-shadow:inset 0 0 0 1px currentColor!important}
 /* charts: bars and a line, in the stylesheet's colours only; the same rows are always offered as a table */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-list{list-style:none!important;margin:0!important;padding:0!important}
@@ -725,6 +766,9 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-nums>summary{min-height:1.6rem!important;cursor:pointer!important;color:var(--bk-accent)!important;font-weight:600!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-nums .bk-table{margin:.4rem 0 0!important}
 @media (max-width:30rem){
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-thead{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>summary.bk-dv-trow,.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-trow{display:flex!important;flex-wrap:wrap!important;gap:.1rem .8rem!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-trow>.bk-dv-first{flex:1 0 100%!important;font-weight:700!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-row{grid-template-columns:minmax(0,1fr) auto!important;row-gap:.25rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-row .bk-ch-track{grid-column:1 / -1!important;grid-row:2!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-ch-row .bk-ch-v{grid-column:2!important;grid-row:1!important}
@@ -770,7 +814,7 @@
   .bk-main{max-width:none;padding:0}
   .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-anchor,.bk-pager,.bk-crumb){display:none!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-fold>summary::after{display:none!important}
-  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-fold,.bk-ch-nums,.bk-dv-tree details)::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
+  .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-fold,.bk-ch-nums,.bk-dv-tree details,.bk-dv-ncard)::details-content{content-visibility:visible!important;display:block!important;height:auto!important}
   .booklet:not(#bk):not(#bk):not(#bk) :is(.bk-callout,.bk-group,.bk-fold,.bk-q,.bk-cell,.bk-dv-card,.bk-dv-tile,.bk-panel,pre,figure){break-inside:avoid!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-table{overflow:visible!important}
   .booklet:not(#bk):not(#bk):not(#bk) .bk-table tr{break-inside:avoid!important}

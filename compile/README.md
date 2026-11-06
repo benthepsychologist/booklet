@@ -464,6 +464,29 @@ among them, is the label as plain text. An icon is a name from the renderer's sp
 nested more than 40 levels deep is drawn level from there down (every row stays on the page), so a generator's runaway list
 does not take the compiler's stack with it.
 
+**Data files and rows that open (format 0.19).** A fence `booklet data <file.json> [key.path]` takes its rows from a JSON file
+beside the booklet, and a data row may hold a list of rows (or one row), which are its children. The compiler reads the file
+once, when it builds (`data.js`), by the rules images are read by: a name of letters, digits, `_`, `.`, `/` and `-` (at most
+200 characters, no part empty or starting with a dot, ending `.json`), a real path that stays inside the booklet's own folder
+(a link out of it is not followed), a plain file of at most 5 MB, and JSON. What it finds at the key path (dot-separated keys
+of objects) is a list of rows or an object with `rows` and, optionally, `fields`; a fence that holds `fields` and nothing else
+gives the labels, which win. It then writes the rows into the fence, so the renderer's own parse reads the booklet as though
+they had been there from the start: the page of such a booklet is the page of the same booklet with the rows in its fences
+(`test/compile-dashboard.test.js` checks it). A line number the renderer reports after such a fence counts the rows as one line.
+A file that cannot be read (missing, not JSON, nothing at the path, a refused name, a link out of the folder, too big) gives
+its block no rows. The page says "The data file “x.json” could not be read." where a query over the block would have been
+(English, French or Spanish), and the report says why; the rest of the page is drawn. Records are never read: only the design's
+own text is rewritten.
+
+A table, a list and cards draw a nested view when the renderer's pipeline hands over a tree: a row that has more to show
+(the fields that play no role and are not on its line, then its children) is a native `<details>` that opens with no script,
+and a row with nothing more is a plain row. Children are in groups headed by the field that holds them (`bk-dv-kg`), those
+that name a parent first. Long text keeps its line breaks and paragraphs, as text (`white-space: pre-line`). A table that nests
+is drawn as a grid of rows (a `<tr>` cannot hold a disclosure): its headings and every row share one set of columns, the first
+cell is indented by depth, and on a phone each row is a line of its values. Sorting and filtering by the optional script work on
+it as on a nested list (siblings sort among themselves, a match keeps its rows above it). Editable fields, placed questions and
+`readonly` are drawn read-only: the compiler draws no control and keeps nothing.
+
 **A booklet's `booklet theme` block** is the booklet's own look for that page: the renderer reads it key by key (a value
 that is not exactly `#rrggbb` or one of the listed words is dropped and said so in the report), works every other colour
 out from the few the booklet names, and holds each pair to the 4.5 to 1 contrast the format asks for. A colour that would
@@ -678,6 +701,7 @@ that would break the compiler is caught here and never on a host's build.
 | File | What it holds |
 | --- | --- |
 | `compile.js` | the command, the two forms, images and the SVG check, the stamp, the pages of a booklet and its translations, writing, the report |
+| `data.js` | the data files a booklet's fences name, read at build time and written into the fences (format 0.19) |
 | `diagrams.js` | the strict SVG reader and writer, the figure and diagram rules, finding Playwright, the one browser run |
 | `diagrams-run.js` | the child process `diagrams.js` starts: draws the diagrams in an offline Chromium page and answers on standard output |
 | `engine.js` | the renderer, loaded in a `vm` context (not a security boundary): the parse, the Markdown engine, Temml, icons and fonts; the records checks; author comments |
@@ -702,6 +726,8 @@ All in `test/`, run by `test/run.sh` and CI:
 | `compile-script-browser.js` | in Chromium over http with scripting on: answers every kind of question and presses every widget, then asserts no localStorage, sessionStorage, cookie, IndexedDB or cache, only GET requests for the page's own files, and a clean reload; the detector is proved by serving the page with its script swapped for ones that break the pledge; with scripting off every question reads as in 0.1.0 and a press still shows its reply, verdict and note |
 | `compile-golden.test.js` | the pages for the examples and page-shaped fixtures equal the committed ones in `test/compile-golden/`; `node test/compile-golden.test.js --write` refreshes them |
 | `compile-content.test.js` | nothing lost (the design walked whole, every word counted on its page); records never published, and the records shapes refused; author comments left off; the image and SVG rules; the two forms' escaping and language; the page's ids; the stamp guard for pages and the stylesheet; the command's exits |
+| `compile-dashboard.test.js` | data files and rows that open: the reading rules (a checked name, a path that stays in the folder, the size cap, a key path, `fields` from the fence), the quiet box and the report line for a file that cannot be read, the page equal to the page with the rows in the fence, the nested table, list and cards |
+| `compile-dashboard-browser.js` | in Chromium, scripting off: a row opens by pressing it, a plain row has no disclosure, a nested table's columns line up at every depth; scripting on: sort keeps each row under its parent, a filter keeps a match with its rows above and opens them, Clear puts it back; 360 px wide, no sideways scroll; nothing stored, no request, no error |
 | `compile-views.test.js` | the six views, grouped and not, an empty one, a nested list, a limit, links and icons and hostile values; the markup contract (`data-bk-view`, `data-bk-row`, `data-bk-col`); a query over kept entries drawn empty with a summary never having rows, and a records fixture whose markers reach no file; the theme (its variables only, a colour under 4.5 to 1 left out and reported, hostile values written nowhere, the density and font tables the renderer's own); a list 3000 levels deep |
 | `compile-views-browser.js` | in Chromium with scripting off, at 1280 and 390 px: no sideways scroll, every row visible, every chart's numbers table closed and opened by pressing, a nested list's branches open, marks painted; a themed page keeps the booklet's paper and ink |
 | `compile-css.test.js` | every colour and shared value is the renderer's; the fonts are booklet.html's faces; every class written has a rule |

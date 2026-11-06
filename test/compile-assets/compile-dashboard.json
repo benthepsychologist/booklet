@@ -1,0 +1,29 @@
+{
+  "plots": {
+    "fields": { "title": "Name", "kind": "Kind", "stage": "Stage", "open": "Open jobs", "due": "Due", "about": "What it is", "jobs": "Jobs", "steps": "Steps" },
+    "rows": [
+      { "id": "p-orchard", "title": "Orchard", "kind": "Orchard", "stage": "growing", "open": 3, "due": "2026-11-20",
+        "about": "Eight apple trees and two pear trees.\n\nThe pears were planted last spring and still need stakes.",
+        "jobs": [
+          { "id": "j-prune", "title": "Prune the apple trees", "kind": "Job", "stage": "growing", "due": "2026-11-20",
+            "about": "Cut out crossing branches.\nOpen the middle of each tree.",
+            "steps": [
+              { "id": "s-ladder", "title": "Borrow the tall ladder", "kind": "Step", "stage": "planning", "due": "2026-11-15" },
+              { "id": "s-burn", "title": "Burn or chip the cuttings", "kind": "Step", "stage": "planning", "due": "2026-11-22" } ] },
+          { "id": "j-stakes", "title": "Stake the young pears", "kind": "Job", "stage": "planning", "due": "2026-12-01", "about": "Two stakes per tree, tied loosely." },
+          { "id": "j-mulch", "title": "Mulch under every tree", "kind": "Job", "stage": "done", "due": "2026-10-30" } ] },
+      { "id": "p-veg", "title": "Vegetable beds", "kind": "Garden", "stage": "resting", "open": 2, "due": "2026-12-10",
+        "about": "Four raised beds beside the shed. <b>Garlic</b> goes in before the first hard frost.",
+        "jobs": [
+          { "id": "j-garlic", "title": "Plant the garlic", "kind": "Job", "stage": "doing", "due": "2026-11-12" },
+          { "id": "j-compost", "title": "Spread the compost", "kind": "Job", "stage": "planning", "due": "2026-12-10" } ] },
+      { "id": "p-shed", "title": "Tool shed", "kind": "Building", "stage": "done", "open": 0, "due": "2026-09-30" } ] },
+  "inbox": {
+    "requests": [
+      { "id": "r-shed", "title": "Which shed?", "headline": "Pick one of two sheds", "gate": "design", "asked": "2026-11-05" },
+      { "id": "r-bees", "title": "Keep bees?", "headline": "Two hives by the pears", "gate": "go", "asked": "2026-11-04", "parent": "r-shed" } ] },
+  "harvest": [
+    { "fruit": "Apples", "kilos": 30.25 },
+    { "fruit": "Pears", "kilos": 8 },
+    { "fruit": "Plums", "kilos": 12.5 } ]
+}
