@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-w/v9wMQLIHaruc9QZBiOdOF+NID5PeyJa5a1WtFEIII=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-S+8e2nKeqqToGor5Zsg1KkV7IqnE8D54SxWKbTwktJc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7679,12 +7679,20 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   /* What the reader opens in a nested view is kept with the rest of the query's state, and what a row opens to is drawn here, when it
      opens (or taken away when it shuts, in a table, whose rows are not inside the disclosure). A toggle does not bubble, so this
      listens on the way down; while a filter is on, the ancestors it opened are not remembered. */
+  const lent=new Set();
   if(tree) box.addEventListener("toggle",e=>{const d=e&&e.target;
     if(!d||String(d.tagName).toLowerCase()!=="details") return;
     const h=cur&&cur.hooks.get(d);if(h) (d.open?h.open:h.close)();
-    if(ctl&&ctl.active()) return;
+    if(lent.has(d)||ctl&&ctl.active()) return;
     const id=d.getAttribute("data-id");if(id===null) return;
     if(d.open) state.opens.add(id);else state.opens.delete(id);},true);
+  /* Printing prints everything: the page's beforeprint handler calls box.printRows(true) and its afterprint handler box.printRows(false). Every
+     closed row is opened for the paper and drawn at once (a toggle event comes too late to draw anything for the print), and the ones opened
+     here fold back after it. Which rows the reader has open (state.opens) is not touched: `lent` keeps the toggles this makes out of it. */
+  if(tree) box.printRows=on=>{
+    if(on){for(let more=true;more;){more=false;
+      box.querySelectorAll("details").forEach(d=>{const h=cur&&cur.hooks.get(d);if(!h||d.open) return;lent.add(d);d.open=true;h.open();more=true;});}}
+    else{[...lent].reverse().forEach(d=>{d.open=false;const h=cur&&cur.hooks.get(d);if(h) h.close();});lent.clear();}};
   return [box];}
 
 /* ======================= 11. TABS AND PAGES, LINKS, READING MATERIAL =======================
@@ -9792,11 +9800,13 @@ window.addEventListener("booklet-theme",()=>{const s=document.getElementById("th
   if(!bar||typeof ResizeObserver!=="function") return;
   const set=()=>document.documentElement.style.setProperty("--ap-top",Math.ceil(bar.getBoundingClientRect().height+12)+"px");
   new ResizeObserver(set).observe(bar);set();})();
-/* Printing prints everything: the folded callouts open for the print and fold back after */
+/* Printing prints everything: the folded callouts and the closed rows of a view open for the print and fold back after */
 if(typeof window!=="undefined"&&window.addEventListener){let printed=[];
+  const rows=on=>document.querySelectorAll(".dv-box").forEach(b=>{if(b.printRows) b.printRows(on);});
   window.addEventListener("beforeprint",()=>{try{printWhole();}catch(e){printWholeEnd();}
+    rows(true);
     printed=[...document.querySelectorAll("details.card-fold")].filter(d=>!d.open);printed.forEach(d=>{d.open=true;});});
-  window.addEventListener("afterprint",()=>{printWholeEnd();printed.forEach(d=>{d.open=false;});printed=[];});}
+  window.addEventListener("afterprint",()=>{rows(false);printWholeEnd();printed.forEach(d=>{d.open=false;});printed=[];});}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&citeOpen()) closeCite();});
 window.addEventListener("scroll",hideTip,{passive:true});
 document.getElementById("btnHome").addEventListener("click",homeButton);
