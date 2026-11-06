@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-dIW38Hc9yY4fm5KdUUlyXL1d50/CGeNRLsd7q+yK2/4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-53y+ZnQr8Ee/CqG3CdehIhTtceF8/UDQnQFlDyrBO5A=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1543,12 +1543,12 @@ const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
 const ADDR_SEP="/";
 const SHARED="*";
 /* A query's sixteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views).
-   `readonly` (0.19) is read by every view, so it is in no view's list; the reference renderer reads it and does nothing with it yet. */
+   `readonly` (0.19) is read by every view, so it is last in every view's list; the reference renderer reads it and does nothing with it yet. */
 const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary","readonly"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
-const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],table:["fields","group","limit","parent","badge","tone","link","icon"],
-  list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon"],
-  tiles:["label","value","note","tone","group","limit","link","icon"],bars:["label","value","tone","limit"],line:["label","value","fields","limit"]};
+const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly"],table:["fields","group","limit","parent","badge","tone","link","icon","readonly"],
+  list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly"],
+  tiles:["label","value","note","tone","group","limit","link","icon","readonly"],bars:["label","value","tone","limit","readonly"],line:["label","value","fields","limit","readonly"]};
 
 /* ======================= 2. INTERFACE STRINGS =======================
    every word the renderer itself says, in four languages, and strings(group). */
@@ -1764,7 +1764,7 @@ const STRINGS_SRC={
         wrong: f=>`Data not shown: the file ${f} is not JSON.`,
         failed: f=>`Data not shown: the file ${f} could not be fetched.`,
         nopath: (f,k)=>`Data not shown: the file ${f} has nothing at “${k}”.`,
-        bad: (f,why)=>`Data not shown: what the file ${f} holds ${why}.`
+        bad: (f,why)=>`Data not shown: the file ${f} ${why}.`
       }
     },
     /* what the file parser says is wrong with a file, and the messages that
@@ -1815,7 +1815,7 @@ const STRINGS_SRC={
       dataMixed: "has a list that mixes values and rows (a list is all values or all rows)",
       dataFieldsBad: "has `fields` that is not an object of labels (each label a string, or an object with a `label`)",
       dataFileName: (w,id,f)=>`${w}: the data block ^${id} names the file “${f}”, which is not a plain name of a .json file beside the booklet (letters, digits, _ . / and -, no part that starts with a dot), so it is never read`,
-      dataFilePath: (w,id,k)=>`${w}: the data block ^${id} names the key path “${k}”, which has an empty part, so it is never read`,
+      dataFilePath: (w,id,k)=>`${w}: the data block ^${id} names the key path “${k}”, which is not keys of letters, digits, _ and - joined by dots, so it is never read`,
       dataFileRows: "its rows were not read, since the rows come from the file",
       dataFileFence: (w,id,why)=>`${w}: the data block ^${id} names a file, so its fence may hold only \`fields\`; ${why}`,
       blockUnknown: (w,what)=>`${w}: a “booklet ${what}” block is not one this page reads`,
@@ -2148,7 +2148,7 @@ const STRINGS_SRC={
         wrong: f=>`Données non affichées : le fichier ${f} n’est pas du JSON.`,
         failed: f=>`Données non affichées : le fichier ${f} n’a pas pu être récupéré.`,
         nopath: (f,k)=>`Données non affichées : le fichier ${f} ne contient rien à « ${k} ».`,
-        bad: (f,why)=>`Données non affichées : le contenu du fichier ${f} ${why}.`
+        bad: (f,why)=>`Données non affichées : le fichier ${f} ${why}.`
       }
     },
     problem: {
@@ -2195,7 +2195,7 @@ const STRINGS_SRC={
       dataMixed: "a une liste qui mêle des valeurs et des lignes (une liste est faite uniquement de valeurs ou uniquement de lignes)",
       dataFieldsBad: "a un `fields` qui n’est pas un objet d’étiquettes (chaque étiquette est un texte, ou un objet avec un `label`)",
       dataFileName: (w,id,f)=>`${w} : le bloc de données ^${id} nomme le fichier « ${f} », qui n’est pas un simple nom de fichier .json à côté du carnet (lettres, chiffres, _ . / et -, aucune partie qui commence par un point) ; il n’est donc jamais lu`,
-      dataFilePath: (w,id,k)=>`${w} : le bloc de données ^${id} nomme le chemin de clés « ${k} », qui a une partie vide ; il n’est donc jamais lu`,
+      dataFilePath: (w,id,k)=>`${w} : le bloc de données ^${id} nomme le chemin de clés « ${k} », qui n’est pas faite de clés composées de lettres, de chiffres, de _ et de - et jointes par des points ; il n’est donc jamais lu`,
       dataFileRows: "ses lignes n’ont pas été lues, puisque les lignes viennent du fichier",
       dataFileFence: (w,id,why)=>`${w} : le bloc de données ^${id} nomme un fichier, donc son bloc ne peut contenir que \`fields\` ; ${why}`,
       blockUnknown: (w,what)=>`${w} : un bloc « booklet ${what} » n’est pas un bloc que cette page lit`,
@@ -2529,7 +2529,7 @@ const STRINGS_SRC={
         wrong: f=>`Datos no mostrados: el archivo ${f} no es JSON.`,
         failed: f=>`Datos no mostrados: no se pudo obtener el archivo ${f}.`,
         nopath: (f,k)=>`Datos no mostrados: el archivo ${f} no tiene nada en “${k}”.`,
-        bad: (f,why)=>`Datos no mostrados: lo que contiene el archivo ${f} ${why}.`
+        bad: (f,why)=>`Datos no mostrados: el archivo ${f} ${why}.`
       }
     },
     problem: {
@@ -2576,7 +2576,7 @@ const STRINGS_SRC={
       dataMixed: "tiene una lista que mezcla valores y filas (una lista es solo de valores o solo de filas)",
       dataFieldsBad: "tiene un `fields` que no es un objeto de etiquetas (cada etiqueta es un texto, o un objeto con un `label`)",
       dataFileName: (w,id,f)=>`${w}: el bloque de datos ^${id} nombra el archivo “${f}”, que no es un nombre simple de un archivo .json junto al cuaderno (letras, dígitos, _ . / y -, sin ninguna parte que empiece con un punto), así que nunca se lee`,
-      dataFilePath: (w,id,k)=>`${w}: el bloque de datos ^${id} nombra la ruta de claves “${k}”, que tiene una parte vacía, así que nunca se lee`,
+      dataFilePath: (w,id,k)=>`${w}: el bloque de datos ^${id} nombra la ruta de claves “${k}”, que no está hecha de claves formadas por letras, dígitos, _ y - unidas por puntos, así que nunca se lee`,
       dataFileRows: "sus filas no se leyeron, porque las filas vienen del archivo",
       dataFileFence: (w,id,why)=>`${w}: el bloque de datos ^${id} nombra un archivo, así que su bloque solo puede contener \`fields\`; ${why}`,
       blockUnknown: (w,what)=>`${w}: un bloque “booklet ${what}” no es uno que esta página lea`,
@@ -4425,9 +4425,9 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
           if(f.bad){problems.push(P.dataBad(P.line(it.line),it.id,f.bad));return;}
           fields=f.fields;edits=f.edits;}
         if(o.rows!==undefined) problems.push(P.dataFileFence(P.line(it.line),it.id,PROBLEM.dataFileRows));
-        const bad=dataFilePath(file)===null||keys.split(".").some(x=>x==="")&&keys!=="";
+        const bad=dataFilePath(file)===null||!dataKeyPathOk(keys);
         if(dataFilePath(file)===null) problems.push(P.dataFileName(P.line(it.line),it.id,file.slice(0,80)));
-        else if(keys!==""&&keys.split(".").some(x=>x==="")) problems.push(P.dataFilePath(P.line(it.line),it.id,keys.slice(0,80)));
+        else if(!dataKeyPathOk(keys)) problems.push(P.dataFilePath(P.line(it.line),it.id,keys.slice(0,80)));
         dataBlocks.push({id:it.id,mod:here,rows:[],fields,edits,file:{name:file,path:keys,bad},line:it.line});
         return;}
       withJson((it,o)=>{
@@ -4674,10 +4674,13 @@ const pairFor=(v,p)=>pairsOf(v).find(x=>x.pick===p);
 /* `each:<id>` holds when it names a choice, a multi or a widget in the question's own activity, not the question itself, and one
    level only: the source has no `each:` of its own. One that does not hold is said and taken off, and the question is its kind. */
 const EACH_SOURCES=new Set(["choice","multi","widget"]);
-function resolveEach({eachUses},problems){const P=PROBLEM,named=new Set(eachUses.map(u=>u.block));
+function resolveEach({eachUses,modules,dataBlocks},problems){const P=PROBLEM,named=new Set(eachUses.map(u=>u.block));
   for(const {block:q,act,where} of eachUses){const s=String(q.each).trim();
     const src=s&&act?blocksAll(activityBlocks(act)).find(b=>QUESTION_KINDS.has(b.type)&&b.id===s):null;
-    const why=!s?P.eachNone(where,q.id):s===q.id?P.eachSelf(where,q.id):!src?P.eachMissing(where,q.id,s)
+    /* a data block in reach (the activity's own module, or the shared data section) is a source too, one this page does not draw yet (SPEC.md section 5) */
+    const here=act?moduleHolding(modules,act):null,
+      rows=!src&&s&&act&&s!==q.id&&dataBlocks.some(z=>z.id===s&&(z.mod===null||z.mod===here));
+    const why=!s?P.eachNone(where,q.id):s===q.id?P.eachSelf(where,q.id):rows?null:!src?P.eachMissing(where,q.id,s)
       :!EACH_SOURCES.has(src.type)?P.eachKind(where,q.id,s,src.type):named.has(src)?P.eachChain(where,q.id,s):null;
     if(why){problems.push(why);delete q.each;}else q.each=s;}}
 /* A copy line's `of:` (SPEC.md section 6, "Copy"), read once the file is: each word is a question of the line's own activity (its words and
@@ -7294,7 +7297,11 @@ function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.
         if(g.key!==null) out.push(el("tr",{class:"dv-grouprow","data-depth":String(depth+1)},el("th",{scope:"rowgroup",colspan:span},el("div",{class:"dv-lead"},...indent(depth+1),g.label))));
         g.rows.forEach(c=>out.push(...rowsFor(c,depth+1)));});
       return out;};
-    tree.roots.forEach(r=>body.append(...rowsFor(r,0)));
+    /* rows that do not nest may still be grouped, and then each group is headed as in a flat table */
+    if(isGrouped(groups)) groups.forEach(g=>{
+      body.append(el("tr",{class:"dv-grouprow"},el("th",{scope:"rowgroup",colspan:span},g.name||"–",el("span",{class:"dv-count"},dvText.rows(g.rows.length)))));
+      g.rows.forEach(r=>body.append(...rowsFor(r,0)));});
+    else tree.roots.forEach(r=>body.append(...rowsFor(r,0)));
     table.append(body);
     return [el("div",{class:"md-table dv-wrap"},table)];}
   groups.forEach(g=>{const body=el("tbody",{});
@@ -7330,8 +7337,8 @@ function viewList(set,groups,roles,cols,o){const tree=o&&o.tree;
     tree.hooks.set(d,{open:draw,close(){}});
     if(tree.open(r)) draw();
     return el("li",{class:"dv-node"},d);};
-  if(tree) return [el("ul",{class:"dv-list dv-tree"},...tree.roots.map(node))];
-  const list=g=>el("ul",{class:"dv-list"},...g.rows.map(row));
+  const list=g=>el("ul",{class:"dv-list"+(tree?" dv-tree":"")},...g.rows.map(tree?node:row));
+  if(tree&&!isGrouped(groups)) return [list({rows:tree.roots})];
   /* a grouped list: each group a card, the cards in a row of columns when there is room */
   if(isGrouped(groups)) return [el("div",{class:"dv-groups"},...groups.map(g=>el("div",{class:"dv-gcard"},groupHead(g),list(g))))];
   return groups.map(list);}
@@ -7375,7 +7382,7 @@ function viewCards(set,groups,roles,cols,o){const tree=o&&o.tree;
     return cardNode({mode:"item",cls:"entry entry-row"+(t?" tone-"+t:""),picture,teaser:note,teaserCls:"dv-n",
       titleNode,
       kids:[badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});};
-  if(tree) return tree.roots.map(one);
+  if(tree&&!isGrouped(groups)) return tree.roots.map(one);
   const cards=g=>g.rows.map(one).filter(Boolean);
   return isGrouped(groups)?groups.flatMap(g=>[groupHead(g),...cards(g)]):cards(groups[0]);}
 /* ---- chart views: `as: bars` and `as: line`. Plain SVG from numbers and
@@ -7607,20 +7614,28 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   const as=v.as||(set.kind==="entries"?"cards":"table"),drawn=VIEW_DRAWS[as];
   let rows=set.rows,tree=null;
   const pk=v.parent||"parent";
-  if(drawn.includes("parent")&&(set.groupsOf&&set.groupsOf.size>0||rows.some(r=>cellText(r[pk]).trim()!==""))){tree=nestData(set,pk,v.limit);rows=tree.rows;}
+  /* rows that nest: a `parent` or a field that holds rows (a flat view that has such a row is a tree) */
+  const nests=drawn.includes("parent")&&(set.groupsOf&&set.groupsOf.size>0||rows.some(r=>cellText(r[pk]).trim()!==""));
+  if(nests){tree=nestData(set,pk,v.limit);rows=tree.rows;}
   else if(v.limit&&drawn.includes("limit")) rows=set.kind==="entries"&&(as==="bars"||as==="line")?rows.slice(-v.limit):rows.slice(0,v.limit);
   if(!rows.length) return [el("p",{class:"hint"},opts.empty||dvText.empty)];
-  const roles=rolesOf({...set,rows},v,as),cols=colsOf(as,set,v,roles);
+  let roles=rolesOf({...set,rows},v,as),cols=colsOf(as,set,v,roles);
   if(as==="table"&&!(roles.badge&&cols.some(c=>c.key===roles.badge))){roles.badge=null;roles.tone=null;}
-  const gk=drawn.includes("group")&&v.group&&!tree?v.group:null,canSort=as!=="line";
+  const gk=drawn.includes("group")&&v.group&&!nests?v.group:null,canSort=as!=="line";
   const shown=uniq([...(as==="cards"&&set.kind==="entries"?["date"]:[]),roles.badge,roles.label,roles.value,roles.note,roles.tone,...cols.map(c=>c.key)]);
   const sortKeys=canSort?uniq([...(set.kind==="entries"?["date"]:[]),roles.label,roles.value,...cols.map(c=>c.key)]):[];
   const state=opts.state||newViewState();
   if(state.sk&&!sortKeys.includes(state.sk)){state.sk="";state.dir=0;}
-  /* what a row of a nested view shows when it opens (0.19): the fields of the source that the line does not show and that play no role */
+  /* what a row shows when it opens (0.19, SPEC.md section 6, "What opens"): every field of that row that plays no role, is not one of the
+     line's fields, is not `id`, the group or the `parent` field, and does not hold child rows, each under its label. The row's own keys
+     count, whether or not `fields` was declared, at every depth; the source's own fields come first, in their order. */
   const lineKeys=new Set(cols.map(c=>c.key)),skipKeys=new Set([...ROLE_NAMES.map(n=>roles[n]).filter(Boolean),"id",pk,gk]);
-  const openKeys=tree?set.own.filter(k=>!lineKeys.has(k)&&!skipKeys.has(k)):[];
-  const moreOf=r=>openKeys.map(k=>({label:set.lab(k),text:cellText(r[k])})).filter(f=>f.text!=="");
+  const openKeys=r=>{if(set.kind!=="data") return [];
+    const out=[];for(const k of new Set([...set.own,...Object.keys(r)])) if(!lineKeys.has(k)&&!skipKeys.has(k)&&!set.kidKeys.has(k)) out.push(k);
+    return out;};
+  const moreOf=r=>openKeys(r).map(k=>({label:set.lab(k),text:cellText(r[k])})).filter(f=>f.text!=="");
+  /* a flat row with more to show than its line opens too: it is drawn by the same tree, with no children */
+  if(!nests&&drawn.includes("parent")&&rows.some(r=>moreOf(r).length)){tree=nestData(set,pk,v.limit);rows=tree.rows;}
   const body=el("div",{class:"dv-body"+(as==="cards"?" dv-cards":"")});
   let ctl=null,cur=null;
   const paint=focusKey=>{
@@ -9531,6 +9546,8 @@ function storeImage(src,done,scope){const folder=imageFolder(scope);if(folder===
    sends nothing: a data file is the generator's, never the reader's work. */
 const DATA_SEEN=Object.create(null);   /* address -> {wait:[fn]} while it is first read, then {text,json,blocks} or {err} */
 const DATA_LIVE=new Set();              /* {box, at, redraw}: the boxes now on a screen, each drawn from one address */
+/* a data fence's key path (SPEC.md section 7): none, or keys joined by dots, each of letters, digits, _ and - */
+function dataKeyPathOk(k){return k===""||k.split(".").every(x=>/^[A-Za-z0-9_-]+$/.test(x));}
 function dataFilePath(raw){const p=String(raw==null?"":raw);
   if(!p||p.length>IMG_PATH_MAX||p.charAt(0)==="/"||!/^[A-Za-z0-9_.\/-]+$/.test(p)) return null;
   if(p.split("/").some(x=>x===""||x.charAt(0)===".")) return null;
@@ -9538,7 +9555,7 @@ function dataFilePath(raw){const p=String(raw==null?"":raw);
 /* the rows of a data block from what its file holds: {data:{rows,fields}} or {note} (the words for the quiet box) */
 function dataFromJson(file,json,fence){const D=strings("dv").data;let at=json;
   const path=file.path===""?[]:file.path.split(".");
-  for(const k of path){if(!isRowObj(at)&&!Array.isArray(at)||!hasOwn(at,k)) return {note:D.nopath(file.name,file.path)};at=at[k];}
+  for(const k of path){if(!isRowObj(at)||!hasOwn(at,k)) return {note:D.nopath(file.name,file.path)};at=at[k];}
   const d=readData(at);
   if(d.bad) return {note:D.bad(file.name,d.bad)};
   const f=fence&&(fence.fields||d.fields)?{...(d.fields||{}),...(fence.fields||{})}:undefined;

@@ -60,7 +60,14 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
    chk("rows in the body of a fence that names a file are said and not read",r.unread.some(p=>/its rows were not read/.test(p))&&block(r).data.rows.length===0);}
   for(const bad of ["../x.json","/x.json","a//b.json",".hidden.json","x.txt","a:b.json","x.json?q=1"]){const r=mk(bad);
    chk("the name “"+bad+"” is said and never read (the block keeps its place, marked refused)",r.unread.some(p=>/never read/.test(p))&&block(r).data.file.bad===true,JSON.stringify(r.unread));}
-  {const r=mk("dash.json a..b");chk("a key path with an empty part is said and never read",r.unread.some(p=>/empty part/.test(p))&&block(r).data.file.bad===true,JSON.stringify(r.unread));}
+  {const r=mk("dash.json a..b");chk("a key path with an empty part is said and never read",r.unread.some(p=>/not keys of letters, digits, _ and -/.test(p))&&block(r).data.file.bad===true,JSON.stringify(r.unread));}
+  for(const bad of ["a b.c".replace(" ","$"),"a+b","a:b","a/b","a.","é.x"]){const r=mk("dash.json "+bad);
+   chk("a key path of “"+bad+"”, which is not keys of letters, digits, _ and - joined by dots, is said and never read",r.unread.some(p=>/not keys of letters, digits, _ and -/.test(p))&&block(r).data.file.bad===true,JSON.stringify(r.unread));}
+  for(const ok of ["a","a.b","plots_1.in-box.Requests2"]){const r=mk("dash.json "+ok);
+   chk("a key path of “"+ok+"” is read",r.unread.length===0&&block(r).data.file.bad===false,JSON.stringify(r.unread));}
+  {const D=A.dataFromJson,json={a:[{id:"x"},{id:"y"}],o:{rows:[{id:"r"}]}};
+   chk("a key path walks object members only: through an array it finds nothing, and the quiet box says so",!!D({name:"d.json",path:"a.1"},json).note&&!D({name:"d.json",path:"a.1"},json).data&&!!D({name:"d.json",path:"a.0.id"},json).note);
+   chk("a key path through objects reads the list or the object with `rows` at its end",D({name:"d.json",path:"a"},json).data.rows.length===2&&D({name:"d.json",path:"o"},json).data.rows[0].id==="r");}
   chk("a file name of 201 characters is refused",mk("a".repeat(196)+".json").unread.some(p=>/never read/.test(p)));}
 
  /* ---- a nested list ---- */
@@ -141,6 +148,59 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
   chk("a table, a list and cards over flat rows draw as before: no tree, no disclosure",["table","list","cards"].every(as=>{const b=draw(as,{label:"title"},"flat-"+as,{rows:flat});return tag(b,"details").length===0&&byClass(b,"dv-tree").length===0;}));
   const nested=draw("tiles",{label:"title"},"tiles");
   chk("tiles, bars and a line draw the top rows only when the rows hold rows",byClass(nested,"dv-tile").length+byClass(nested,"pill").length===3,byClass(nested,"pill").length+"");}
+
+ /* ---- a flat row with more to show than its line opens (SPEC.md section 6, "What opens") ---- */
+ {const flat={fields:{title:"Name",kind:"Kind",about:"What it says"},rows:[{id:"a",title:"A",kind:"x",about:"Extra\n\nlines"},{id:"b",title:"B"}]};
+  for(const as of ["table","list","cards"]){ST.clear();
+   const b=draw(as,{label:"title",fields:["title"]},"F-"+as,flat);
+   chk("flat rows on "+as+": the row with a field left over is a disclosure, the row with none is plain, and no tree of children is drawn",
+     tag(b,"details").length===1&&(as==="cards"?byClass(b,"card-item").length===1:true),tag(b,"details").length+"");
+   /* a table's open rows are drawn by the page as it draws, so its row is kept open in the view's state and drawn again */
+   let o=b;if(as==="table"){st("F-table").opens.add("a");o=draw("table",{label:"title",fields:["title"]},"F-table",flat);}
+   else press(b,tag(b,"details")[0]);
+   const rowsEl=as==="table"?byClass(o,"dv-trmore"):byClass(tag(b,"details")[0],"dv-more");
+   const labels=tag(rowsEl[0],"dt").map(text).join(),vals=tag(rowsEl[0],"dd").map(text).join();
+   chk("flat rows on "+as+": it opens to the fields the line does not show (Kind, What it says), each under its label, text kept as written",
+     labels==="Kind,What it says"&&vals==="x,Extra\n\nlines",labels+" / "+vals);
+   chk("flat rows on "+as+": with no `fields:` the line shows every plain field, so no row opens",
+     tag(draw(as,{label:"title"},"F0-"+as,flat),"details").length===0);}
+  {ST.clear();const b=draw("list",{label:"title",fields:["title"],group:"kind"},"FG",flat);
+   chk("flat rows that open may still be grouped: each group is headed, and the group field is not shown again",
+     byClass(b,"dv-group").length===2&&tag(b,"details").length===1&&!tag(b,"dt").map(text).includes("Kind"));
+   const t=draw("table",{fields:["title"],group:"kind"},"FGT",flat);
+   chk("and so are a table's rows",tag(t,"tr").filter(tr=>cls(tr).includes("dv-grouprow")).length===2&&tag(t,"details").length===1);}
+ }
+
+ /* ---- the open part shows every field that plays no role, at every depth, declared or not ---- */
+ /* every row open: a table draws an open row itself, from the view's state; list and cards draw it when its disclosure is pressed */
+ const drawOpen=(as,view,key,data,ids)=>{if(as==="table"){ids.forEach(i=>st(key).opens.add(i));return draw(as,view,key,data);}const b=draw(as,view,key,data);openAll(b);return b;};
+ {const nodecl=[{id:"a",title:"A",kids:[{id:"b",title:"B",secret:"only in child"}]},{id:"c",title:"C",late:"only in a later row"}];
+  for(const as of ["table","list","cards"]){ST.clear();
+   const b=draw(as,{label:"title",fields:["title"]},"K-"+as,{rows:nodecl});
+   chk("no `fields` declared, "+as+": the row with children opens, and the later row with a key the first lacks opens",tag(b,"details").length===2,tag(b,"details").length+"");
+   const o=drawOpen(as,{label:"title",fields:["title"]},"K-"+as,{rows:nodecl},["a","b","c"]);
+   const all=tag(o,"dt").map(text).concat(tag(o,"dd").map(text));
+   chk("and the open part holds the child row's own field and the later row's field, under their names",
+     all.includes("secret")&&all.includes("only in child")&&all.includes("late")&&all.includes("only in a later row"),all.join("|"));}
+  ST.clear();
+  const b=drawOpen("list",{label:"title",fields:["title"]},"K2",{fields:{title:"Name"},rows:nodecl});
+  chk("declared `fields` do not hide a key a row has beyond them",tag(b,"dt").map(text).includes("secret")&&tag(b,"dt").map(text).includes("late"));
+  ST.clear();
+  const r=drawOpen("list",{label:"title",fields:["title"],value:"n"},"K3",{rows:[{id:"a",title:"A",n:3,parent:"",hid:"h"}]});
+  chk("a field that plays a role (value), `id` and the `parent` field are not in the open part",tag(r,"dt").map(text).join()==="hid",tag(r,"dt").map(text).join());}
+
+ /* ---- readonly is last in every view's list of keys it draws ---- */
+ chk("`readonly` is the last key of every view's list",Object.values(A.VIEW_DRAWS).every(l=>l[l.length-1]==="readonly")&&Object.keys(A.VIEW_DRAWS).length===6);
+
+ /* ---- a question asked for each row (`each:` over a data block) is drawn as its title and a line, and kept as written ---- */
+ {const mk=each=>A.parseFile('---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: reqs\nas: list\n```\n\n> [!text|reply each:'+each+'] A word of reply\n\n```booklet data\n[{"id":"r1","title":"One"}]\n```\n^reqs\n');
+  const r=mk("reqs"),act=r.template.activities?r.template.activities[0]:r.template.modules[0].activities[0];
+  const q=act.pages[0].blocks.find(b=>b.type==="text");
+  chk("an `each:` over a data block in reach reads clean, with no 'could not read' notice, and keeps its `each`",r.unread.length===0&&q&&q.each==="reqs",JSON.stringify(r.unread));
+  const n=A.keptQuestion(q,{reply:[{pick:"r1",a:"hello"}]});
+  chk("it is drawn as its title and a line saying this page does not draw it yet, with nothing to type in",
+    !!n&&text(n).includes("A word of reply")&&byClass(n,"hint").length===1&&/does not draw/.test(text(byClass(n,"hint")[0]))&&tag(n,"textarea").length===0&&tag(n,"input").length===0,n&&text(n));
+  chk("an `each:` that names nothing in its activity or in reach is still said and taken off",mk("nothere").unread.length===1);}
 
  /* ---- the made-up dashboard of about 450 rows ---- */
  {ST.clear();const data=F.make(),n=F.count(data);

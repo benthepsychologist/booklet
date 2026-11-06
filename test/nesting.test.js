@@ -98,7 +98,8 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
   const input=byClass(b,"dv-q")[0];input.value="juniper";press(input,"input");
   const lab=()=>byClass(b,"dv-t").map(text);
   chk("a filter keeps a match with its ancestors and drops everything else",lab().join()==="Root one,Ash,Juniper",lab().join());
-  chk("while the filter is on the ancestors of a match are open",tag(b,"details").every(d=>d.attrs.open!==undefined)&&tag(b,"details").length===2,tag(b,"details").map(d=>d.attrs["data-id"]+":"+d.attrs.open).join());
+  /* the match itself (w9) has a field the line does not show (`kind`, which the first row lacks), so it opens too, but it is not an ancestor and stays shut */
+  chk("while the filter is on the ancestors of a match are open",tag(b,"details").filter(d=>d.attrs.open!==undefined).map(d=>d.attrs["data-id"]).join()==="r1,w0"&&tag(b,"details").length===3,tag(b,"details").map(d=>d.attrs["data-id"]+":"+d.attrs.open).join());
   chk("N of M counts the matching rows",byClass(b,"dv-live").map(text).join()==="1 of 12 shown",byClass(b,"dv-live").map(text).join());
   chk("the remembered open set is unchanged by the filter's own opening",st("K-f").opens.size===0);
   const d=tag(b,"details")[0];d.open=false;b._on.toggle({target:d});
