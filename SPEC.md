@@ -437,8 +437,9 @@ from: due-soon
 | `number` | `min:`, `max:`, `step:` (numbers), `each:<id>` |
 | `widget` | `readonly`, `describe`, `each:<id>`, `earlier:<n>` |
 | `listen` | `left:<seconds>` |
+| `copy` | `of:<ids>` |
 
-`icon:` takes an icon name, `parent:` the id of another page in the same tab (section 3), `status:` the one value `off`, `entries:` the one value `folded`, and `tab:` the id of one of its module's tabs (section 3). None is written on a module's end line.
+`icon:` takes an icon name, `parent:` the id of another page in the same tab (section 3), `status:` the one value `off`, `entries:` the one value `folded`, `tab:` the id of one of its module's tabs (section 3), and `of:` the words a copy line copies, separated by commas with no spaces (section 6, "Copy"). None is written on a module's end line.
 
 `each:` names a question or widget in the same activity, whose picks the question is asked for (section 5, "A question asked for each pick"). `earlier:` takes a whole number, written in digits only (`[0-9]+`): how many earlier words a question offers (section 5, "Words the reader wrote before"). Any other value of `earlier:` is ignored and reported, and the question offers its default. `left:` takes a whole number of seconds, written in digits only, and a `left:` of any other value is ignored and reported in the same way, and the question uses its default (section 5, "Listen").
 
@@ -704,6 +705,83 @@ A `hint` or `solution` callout directly after a question belongs to it. A hint h
 > [!solution]- Solution
 > At the new and the full moon the sun and the moon line up, so their pulls add together.
 ```
+
+### Copy
+
+A `copy` line draws one button. Pressing it puts one piece of text on the reader's clipboard: a lead-in the author wrote, then the questions the author names with what the reader typed or picked, and any text block the author wants beside them. The reader can paste it where they like, such as a chat with an AI model that will mark an answer, or a message to a tutor. It copies and nothing else. It writes nothing to the file or to the records, and sends nothing anywhere.
+
+```markdown
+> [!text|why-twice long] Why does the tide come in twice a day?
+
+> [!solution]- Model answer
+> The moon pulls on the water on the side of the earth facing it, and a little less on the far side, so there are two bulges.
+
+> [!copy|ask-tutor of:why-twice,why-twice/solution] Copy for my tutor
+> Please mark my answer against the model answer. Say what I got right and what I missed.
+```
+
+The line is `> [!copy|id of:a,b,c] Button label`.
+
+- **The title is the button's label.** With no title a renderer uses its own word for "Copy".
+- **The lines under it are the lead-in**: the first piece of the copied text. Blank lines at either end are left off; the rest is copied as written. A copy line with no lines under it has no lead-in.
+- **The id is optional.** A copy line stores nothing and nothing refers to it, so `> [!copy|of:a,b] Label` is allowed (a first word that holds `:` is a setting, section 4). A written id is an ordinary id: letters, digits and dashes, unique in its module (section 4).
+- **`of:` is required.** It lists, in the order they are to be copied, the words below, separated by commas with no spaces. A copy line without `of:`, or with an empty place between two commas, is an error. A word may be written twice and is then copied twice.
+- **Where it stands.** In an activity, wherever a question may stand (its text, a tab, a page, a row, a group). Not in a module's opening, not before the file's first module or activity line, not in a data section (it is not read there) and not in the records section (an error: that section holds records only).
+
+Each word in `of:` is one of three things:
+
+| word | what it names | what is copied |
+| --- | --- | --- |
+| `id` | a question of the same activity | the question's words, then the answer |
+| `id/solution`, `id/hint` | the question `id`'s own solution or hint | the callout's text |
+| `id` | a fenced block with a `^id` | the block's text |
+
+- **A question** is a `text`, `lines`, `choice`, `multi`, `scale`, `number` or `date` question in the copy line's own activity, found by the id it carries. Its place in the file does not matter, so a copy line may stand above or below the question. A `matrix`, a `widget`, a `listen` and a question asked for each pick of another (`each:`, section 5) cannot be copied. A question of another activity cannot be copied either: a copy line copies from its own activity.
+- **A solution or a hint** is named by the question's id, a slash, and `solution` or `hint` (in lower case). It means the question's own folded callout of that kind (the first one folded with `-` straight under the question, as "Hints and solutions" above says), which takes no id of its own. A question with no such callout has nothing to copy under that word.
+- **A block** is a fenced block with a block id on the line after it (section 7), of any language. It is found in the copy line's own module first (its fence and its data section), then in the shared data section, as every reference is (section 4). Its text is what is written between the fences.
+- A word that names none of these, or names something that cannot be copied, is an error in the linter. A renderer leaves that word out of the copy and reports it, and leaves the line out if nothing is left.
+
+**The copied text** is the pieces in this order: the lead-in, then each word's pieces in the order `of:` lists them. Every piece is separated from the next by one blank line, and the text has no blank line or space at its start or end. A piece is:
+
+| from | the piece |
+| --- | --- |
+| the lead-in | the lead-in, as written |
+| a question `id` | `Question: ` and the question's words, as written; then, as a piece of its own, `My answer: ` and the answer |
+| `id/solution` | `Model answer: ` and the callout's text, as written |
+| `id/hint` | `Hint: ` and the callout's text, as written |
+| a block `id` | the id and a colon, a line break, and the block's text without the blank lines at its end |
+
+The callout's title is not copied. The labels are these fixed English words in every booklet, whatever its language, so the text reads the same whichever reader made it. Text that spans lines keeps its line breaks, and carries on under its label.
+
+For the example above, with an answer typed, the clipboard gets:
+
+```
+Please mark my answer against the model answer. Say what I got right and what I missed.
+
+Question: Why does the tide come in twice a day?
+
+My answer: Because the moon pulls the sea towards it, and the sea on the far side is left behind.
+
+Model answer: The moon pulls on the water on the side of the earth facing it, and a little less on the far side, so there are two bulges.
+```
+
+**The answer** is what the reader has typed or picked at the moment of the press, in the activity's current answers (in a `repeat` activity, the entry being written, not the entries kept):
+
+| kind | the answer |
+| --- | --- |
+| `text`, `date` | as typed |
+| `number` | the number, written as a number is (`12`, `3.5`) |
+| `lines` | each line the reader typed, on a line of its own; a blank line is left out |
+| `choice` | the picked option's words, as written in the file; the reader's own option as they typed it (`open`, section 5) |
+| `multi` | each picked option's words on a line of its own, in the order the answer holds them (section 8) |
+| `scale` | the picked anchor's words |
+
+- **An empty answer is copied all the same.** When the reader has typed or picked nothing (a text that is only spaces is nothing), the question and its model answer are still copied, and the answer reads `My answer: (no answer typed)`. Those words are fixed, as the labels are, and are the same for every kind. A copy line therefore never refuses to copy and never changes what it copies by what the reader has done, except for the answer.
+- **An answer whose shape is not its kind's** (section 8) is copied as the JSON the file holds it as. A position or an anchor the question does not list is copied as its number.
+
+A reader that does not know `copy` shows the line as it shows any kind it does not know (section 4): a titled callout, with the lead-in as its text, and nothing is copied. A reader that does may draw its button as it likes, so long as pressing it copies the text above, writes nothing to the file or the records, and sends nothing.
+
+**The reference renderer** draws the title as one button and nothing else of the line: the lead-in and the pieces are not shown on the page. Pressing it asks the browser to put the text on the clipboard, and, if the browser refuses, copies from a text selection made for the purpose. It then says "Copied" in a line beside the button that a screen reader announces, or says that the copy did not work. The status line clears itself after a few seconds. The button is left out when a page is printed.
 
 ### Citations
 

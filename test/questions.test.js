@@ -37,8 +37,8 @@ const blocks=R=>acts(R).pages[0].blocks;
 {const A=P.boot(),kinds=[...A.QUESTION_KINDS].sort(),keys=o=>Object.keys(o).sort();
  chk("the parser has a builder for exactly the question kinds",JSON.stringify(keys(A.QUESTION_BLOCK))===JSON.stringify(kinds),keys(A.QUESTION_BLOCK).join());
  chk("a kept answer has a summary reader for exactly the question kinds",JSON.stringify(keys(A.SUMMARY))===JSON.stringify(kinds),keys(A.SUMMARY).join());
- chk("every question kind is drawn, beside the four blocks that are not questions",
-   JSON.stringify(keys(A.DRAW_BLOCK).filter(k=>!kinds.includes(k)))===JSON.stringify(["callout","markdown","query","row"])&&kinds.every(k=>k in A.DRAW_BLOCK),keys(A.DRAW_BLOCK).join());}
+ chk("every question kind is drawn, beside the five blocks that are not questions",
+   JSON.stringify(keys(A.DRAW_BLOCK).filter(k=>!kinds.includes(k)))===JSON.stringify(["callout","copy","markdown","query","row"])&&kinds.every(k=>k in A.DRAW_BLOCK),keys(A.DRAW_BLOCK).join());}
 
 /* ---- parsing ---- */
 {const A=P.boot();const R=A.parseFile(BOOK);

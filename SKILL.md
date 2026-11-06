@@ -739,6 +739,29 @@ no prose in between.
 > At the new and the full moon the sun and the moon line up, so their pulls add together.
 ```
 
+**A copy button** puts text on the reader's clipboard: a lead-in you write, then
+the questions you name with what the reader typed or picked, in the order you list
+them. It is how a reader takes a written answer and its model answer to a tool of
+their own, such as a chat that will mark it. Write `> [!copy|id of:a,b,c] Button
+label`, with the lead-in on the `>` lines under it. Each word in `of:` is a question
+id in the same activity (its words, then the reader's answer), a question id and
+`/solution` or `/hint` (that question's folded solution or hint), or the id of a fenced
+block with a `^id` (its text). Write the words with no spaces after the commas. The
+copy button copies and nothing else: it writes nothing to the file and sends
+nothing. If the reader has typed nothing, it still copies, and the answer reads
+`(no answer typed)`. Only `text`, `lines`, `choice`, `multi`, `scale`, `number` and
+`date` questions can be copied. Put the line inside an activity, never in the records.
+
+```markdown
+> [!text|why-twice long] Why does the tide come in twice a day?
+
+> [!solution]- Model answer
+> The moon pulls on the water on both sides of the earth, so the sea bulges twice.
+
+> [!copy|ask-tutor of:why-twice,why-twice/solution] Copy for my tutor
+> Please mark my answer against the model answer. Say what I got right.
+```
+
 **A list used by several questions is written once, as a menu.** Put a
 `menu` line and its bulleted list inside the module whose questions use it, or
 under a `> [!data]` line for every module to use, and name it on each question
@@ -1318,6 +1341,9 @@ nothing about what only a writer knows, so keep the last six items of the list b
 | `---` straight under a line of text | `warn `---` straight under text makes that line a heading, not a page break` | write `***`, or leave a blank line above |
 | `---` straight under a line of text in a group | `warn `---` straight under text in a group makes that line a heading …` | for a rule, leave a blank line above (a group has no page break) |
 | a hint or solution not folded, or not directly under its question | `warn a hint that is not folded is drawn open …` / `is not directly under a question` | write `> [!hint]-`, straight under the question, with nothing between |
+| a copy line with no `of:`, or an empty place between commas | `a copy line needs `of:` with the ids it copies` / `has an empty place between two commas` | write `of:` with the ids, separated by commas with no spaces |
+| a word in a copy line's `of:` that names nothing, or something that cannot be copied | `` `x` in `of:` names no question of this activity and no block of this module `` / `is a matrix question …` / `has no solution folded …` / `is a question of another activity …` | name a text, lines, choice, multi, scale, number or date question of the same activity, its folded `/solution` or `/hint`, or a fenced block with a `^id` |
+| a copy line outside an activity, or in the records section | `a copy line belongs inside an activity …` / `a `> [!copy]` line cannot go in the records section` | put it inside an activity |
 | `[x]` in a menu | `warn a menu cannot mark a right answer` | give the question its own task list (`- [x] Mars`) in place of `menu:`, or drop the `[x]` |
 | a price in prose that reads as a formula | `warn `$5 a month ($` reads as a formula` | write `\$5` |
 | tiles over a data block with no `value:` | `warn the query's `as: tiles` has no `value:` …` | add `value: count` (the field that holds the number) |
@@ -1338,6 +1364,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 - [ ] Every audio or video embed has a media extension from the table in section 7 (`.webm` is video), and a relative path beside the booklet: no bare `![[name]]` that does not resolve there, no `|300` that is meant to do anything.
 - [ ] No extensionless remote address in image syntax (a video service's page is a plain link), and no raw `<audio>`, `<video>`, `<iframe>` or other HTML media.
 - [ ] `media-from`, if present, holds `https:` origins only (scheme, host, optional port, no path), as one value or a list, and nothing in the file treats it as a permission.
+- [ ] Every word in a copy line's `of:` is a question of the same activity, a `question/solution` or `question/hint` that is folded straight under its question, or a block with a `^id`; the line sits in an activity.
 - [ ] A `listen` holds one embed or one link, takes only `left:` (whole seconds), sits in an activity with no `repeat`, and no answer for it is written.
 - [ ] Every local video has a folded `> [!note]- Transcript` beside it.
 - [ ] A booklet with a `listen` is handed out with a word that `pos` and `done` travel with it when it is shared back.

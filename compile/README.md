@@ -651,6 +651,10 @@ list, one `[ ]` line per marked part, which is also an HTML comment at that spot
 list: open the page, find each comment, and replace it by hand with what the site should show there (a table written
 out, a picture of the diagram), or delete it.
 
+**A copy line is marked, not drawn** (format 0.19, `SPEC.md` section 6, "Copy"). Its button puts a reader's answers on the clipboard,
+and a compiled page keeps no answers and holds no clipboard code, so the line is left off the page, with a mark in the To tidy list
+and a comment at its place like any other mark. A site that wants the button links to the booklet itself.
+
 **The stamp guard keeps a tidied page, and a tidied stylesheet.** Each page carries one comment line naming the
 compiler's version, the source file and the sha256 of the page as written, and `booklet/booklet.css` carries the same as
 a CSS comment on its first line. On the next run, a file whose text no longer matches its stamp was changed by hand, and
