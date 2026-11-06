@@ -749,9 +749,9 @@ Each word in `of:` is one of three things:
 | a question `id` | `Question: ` and the question's words, as written; then, as a piece of its own, `My answer: ` and the answer |
 | `id/solution` | `Model answer: ` and the callout's text, as written |
 | `id/hint` | `Hint: ` and the callout's text, as written |
-| a block `id` | the id and a colon, a line break, and the block's text without the blank lines at its end |
+| a block `id` | the id and a colon, a line break, and the block's text as written, without the blank lines at its start and end |
 
-The callout's title is not copied. The labels are these fixed English words in every booklet, whatever its language, so the text reads the same whichever reader made it. Text that spans lines keeps its line breaks, and carries on under its label.
+The callout's title is not copied, and neither are a question's help lines (the lines under its title): of a question only its title is copied. A solution or a hint whose body is empty is copied as its label with nothing after it (`Model answer:`). A question with no title is `Question:` and nothing after it. The labels are these fixed English words in every booklet, whatever its language, so the text reads the same whichever reader made it. Text that spans lines keeps its line breaks, and carries on under its label. A piece has no space or blank line at its end, which is what makes the separator exactly one blank line.
 
 For the example above, with an answer typed, the clipboard gets:
 
@@ -769,9 +769,9 @@ Model answer: The moon pulls on the water on the side of the earth facing it, an
 
 | kind | the answer |
 | --- | --- |
-| `text`, `date` | as typed |
+| `text`, `date` | as typed, less the blank lines and spaces at its start and end; inside it is left exactly as typed |
 | `number` | the number, written as a number is (`12`, `3.5`) |
-| `lines` | each line the reader typed, on a line of its own; a blank line is left out |
+| `lines` | each line as the reader typed it, on a line of its own, a blank line inside kept; less the blank lines and spaces at the start and end of the whole answer |
 | `choice` | the picked option's words, as written in the file; the reader's own option as they typed it (`open`, section 5) |
 | `multi` | each picked option's words on a line of its own, in the order the answer holds them (section 8) |
 | `scale` | the picked anchor's words |

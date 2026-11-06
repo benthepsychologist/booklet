@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-xtg09VzJaBQoVvvMBVX3gnACHP/Bm+UVZCcbFsYeT1E=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-GTBuaAa/4uFmxIHbAER7MEqxwY39bvtB0C9MA6g6abU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2166,7 +2166,7 @@ const STRINGS_SRC={
       copyUnknown: (w,x)=>`${w} : « ${x} » dans \`of:\` ne désigne aucune question de cette activité ni aucun bloc de ce module ; il a donc été laissé hors de la copie`,
       copyKind: (w,x,k)=>`${w} : « ${x} » est une question de type ${k} ; seules les questions text, lines, choice, multi, scale, number et date peuvent être copiées, il a donc été laissé hors de la copie`,
       copyEach: (w,x)=>`${w} : « ${x} » est posée pour chaque choix d’une autre question, et une telle question ne peut pas être copiée ; elle a donc été laissée hors de la copie`,
-      copyNoPart: (w,x,k)=>`${w} : « ${x} » n’a pas de ${k} replié (\`> [!${k}]-\`) juste sous la question ; il a donc été laissé hors de la copie`,
+      copyNoPart: (w,x,k)=>`${w} : « ${x} » n’a pas ${k==='solution'?'de solution repliée':'d’indice replié'} (\`> [!${k}]-\`) juste sous la question ; il a donc été laissé hors de la copie`,
       copyNotCopyable: (w,x)=>`${w} : « ${x} » n’est ni une question ni un bloc, il ne peut pas être copié et a été laissé hors de la copie`,
       copyElsewhere: (w,x)=>`${w} : « ${x} » est une question d’une autre activité ; une ligne copy copie depuis sa propre activité, il a donc été laissé hors de la copie`,
       copyNothing: w=>`${w} : rien dans cette ligne copy ne peut être copié ; la ligne a donc été laissée de côté`,
@@ -2531,7 +2531,7 @@ const STRINGS_SRC={
       copyUnknown: (w,x)=>`${w}: “${x}” en \`of:\` no nombra ninguna pregunta de esta actividad ni ningún bloque de este módulo, así que se dejó fuera de la copia`,
       copyKind: (w,x,k)=>`${w}: “${x}” es una pregunta de tipo ${k}; solo se pueden copiar las preguntas text, lines, choice, multi, scale, number y date, así que se dejó fuera de la copia`,
       copyEach: (w,x)=>`${w}: “${x}” se hace por cada opción elegida en otra pregunta, y una pregunta así no se puede copiar, así que se dejó fuera de la copia`,
-      copyNoPart: (w,x,k)=>`${w}: “${x}” no tiene un ${k} plegado (\`> [!${k}]-\`) justo debajo de la pregunta, así que se dejó fuera de la copia`,
+      copyNoPart: (w,x,k)=>`${w}: “${x}” no tiene ${k==='solution'?'una solución plegada':'una pista plegada'} (\`> [!${k}]-\`) justo debajo de la pregunta, así que se dejó fuera de la copia`,
       copyNotCopyable: (w,x)=>`${w}: “${x}” no es una pregunta ni un bloque, así que no se puede copiar y se dejó fuera de la copia`,
       copyElsewhere: (w,x)=>`${w}: “${x}” es una pregunta de otra actividad; una línea copy copia desde su propia actividad, así que se dejó fuera de la copia`,
       copyNothing: w=>`${w}: nada de esta línea copy se puede copiar, así que la línea se dejó fuera`,
@@ -6849,29 +6849,30 @@ function qControls(q,draft,activityId,dc){const sol=ownPart(q,"solution")?soluti
 const COPY_WORDS={question:"Question:",answer:"My answer:",none:"(no answer typed)",model:"Model answer:",hint:"Hint:"};
 /* what the reader answered, as words: nothing answered is "(no answer typed)"; an answer not in its kind's shape is the JSON the file holds;
    a position or an anchor the question does not list is its number; a choice, a multi or a scale gives the words of what was picked,
-   a multi and a lines answer one to a line */
+   a multi and a lines answer one to a line; a lines answer keeps each line as typed, and every answer is trimmed at its ends */
 function copyAnswerOf(q,v){
   if(!holdsSomething(v)) return COPY_WORDS.none;
   if(wrongShape(q,v,null)) return JSON.stringify(v);
   const listed=n=>{const o=(q.options||[])[n-1];return isStr(o)?o:String(n);},pick=p=>typeof p==="number"?listed(p):String(p);
-  if(q.type==="lines") return v.filter(x=>x.trim()).join("\n");
-  if(q.type==="multi") return v.filter(holdsSomething).map(pick).join("\n");
-  if(q.type==="choice") return pick(v);
+  if(q.type==="lines") return v.join("\n").trim();
+  if(q.type==="multi") return v.filter(holdsSomething).map(pick).join("\n").trim();
+  if(q.type==="choice") return pick(v).trim();
   if(q.type==="scale"){const a=(q.anchors||[]).find(x=>x.n===v);return a&&isStr(a.text)?a.text:String(v);}
-  return String(v);}
+  return String(v).trim();}
 /* the text of a question's own hint or solution: its body, as written */
 const partText=c=>blocksIn(c).filter(x=>x&&x.type==="markdown").map(x=>String(x.text||"").trim()).join("\n\n");
-/* the whole text one copy button puts on the clipboard: the lead-in, then its pieces in the order written, a blank line between them */
+/* the whole text one copy button puts on the clipboard: the lead-in, then its pieces in the order written, a blank line between them, each piece
+   and the whole with no blank line or space at its end (the start too, for the whole) */
 function copyTextOf(b,draft,activityId){
-  const W=COPY_WORDS,qs=allBlocksOf(activityOf(activityId)).filter(isQuestion),out=[];
-  if(nonEmpty(b.lead)) out.push(b.lead);
+  const W=COPY_WORDS,qs=allBlocksOf(activityOf(activityId)).filter(isQuestion),out=[],add=s=>out.push(s.replace(/\s+$/,""));
+  if(nonEmpty(b.lead)) add(b.lead);
   for(const p of b.pieces||[]){
-    if(p.block!==undefined){out.push(p.block+":\n"+String(p.text).replace(/\s+$/,""));continue;}
+    if(p.block!==undefined){add(p.block+":\n"+String(p.text).replace(/^(?:[ \t]*\r?\n)+/,""));continue;}
     const q=qs.find(x=>x.id===p.q);if(!q) continue;
-    if(p.part){const c=ownPart(q,p.part);if(c) out.push((p.part==="hint"?W.hint:W.model)+" "+partText(c));continue;}
-    out.push((W.question+" "+tx(q.label,"")).trimEnd());
-    out.push(W.answer+" "+copyAnswerOf(q,draft[keysOf(q)[0]]));}
-  return out.join("\n\n");}
+    if(p.part){const c=ownPart(q,p.part);if(c) add((p.part==="hint"?W.hint:W.model)+" "+partText(c));continue;}
+    add(W.question+" "+tx(q.label,""));
+    add(W.answer+" "+copyAnswerOf(q,draft[keysOf(q)[0]]));}
+  return out.join("\n\n").trim();}
 /* the text onto the clipboard: the browser's clipboard call first, then (if it is missing or refuses) a text selection copied by hand. */
 function copyToClipboard(text){
   const fallback=()=>{const was=document.activeElement,ta=el("textarea",{class:"copy-ghost","aria-hidden":"true",tabindex:"-1",readonly:true});let ok=false;

@@ -85,9 +85,12 @@ const KINDS=FM+`> [!activity|a] Kinds
  chk("a choice's own option gives what the reader typed",/My answer: Green/.test(a({pick:"Green"})));
  chk("a multi gives each picked option on a line of its own, in the order the answer holds them, the reader's own among them",full.includes("My answer: Cumin\nSalt\nThyme"),full);
  chk("a scale gives the picked anchor's words",full.includes("My answer: High"));
+ chk("a date answer has the blank lines and spaces at its ends trimmed",a({da:"\n 2026-11-06 \n\n"}).includes("Question: A date\n\nMy answer: 2026-11-06\n\n"));
  chk("a number is written as a number is",full.includes("My answer: 12.5")&&a({nu:0}).includes("My answer: 0"));
  chk("a date is as typed",full.includes("My answer: 2026-11-06"));
- chk("lines go one to a line and a blank one is left out",full.includes("My answer: one\ntwo"),full);
+ chk("lines go one to a line, each as typed, and a blank one inside is kept",full.includes("My answer: one\n\ntwo"),full);
+ {const t=a({li:["","  a ","","  b  ",""]});
+  chk("a lines answer is trimmed at the ends of the whole, never line by line",t.endsWith("My answer: a \n\n  b"),JSON.stringify(t));}
  chk("each question gives its words and then its answer, six questions in the order listed",(full.match(/^Question: /gm)||[]).length===6&&(full.match(/^My answer: /gm)||[]).length===6
    &&full.indexOf("Question: A choice")<full.indexOf("Question: A multi")&&full.indexOf("Question: A multi")<full.indexOf("Question: A scale")&&full.indexOf("Question: A date")<full.indexOf("Question: Some lines"));
  chk("a copy with no lead-in starts at the first question",full.startsWith("Question: A choice"));
@@ -95,6 +98,30 @@ const KINDS=FM+`> [!activity|a] Kinds
  chk("a position the question does not list is copied as its number",a({pick:9}).includes("My answer: 9")&&a({sc:7}).includes("My answer: 7"));
  chk("an answer not in its kind's shape is copied as the JSON the file holds",a({nu:"twelve"}).includes('My answer: "twelve"')&&a({sc:1.5}).includes("My answer: 1.5")&&a({li:"one"}).includes('My answer: "one"'));
  chk("an answer of 0 is an answer, not an empty one",a({nu:0}).split("\n\n").some(x=>x==="My answer: 0")&&a({nu:0}).includes("Question: A number\n\nMy answer: 0"));}
+
+// ---- whitespace: the text has no blank line or space at its ends, and exactly one blank line between pieces (SPEC "Copy")
+{const src=FM+"> [!activity|a] A\n\n> [!text|t] T\n> A help line under the title.\n\n> [!solution]- S\n> \n\n> [!copy|c of:t,t/solution,t] C\n";
+ const r=read(src),T=A.copyTextOf(copyOf(r),{t:"\n  abc\n\n  def  \n \n"},actId(r));
+ chk("a typed answer is trimmed at its ends, left as typed inside; the pieces have one blank line between and none at the ends",
+   T==="Question: T\n\nMy answer: abc\n\n  def\n\nModel answer:\n\nQuestion: T\n\nMy answer: abc\n\n  def",JSON.stringify(T));
+ chk("a question's help lines are not copied; only its title",!T.includes("help line"));
+ chk("a folded solution with an empty body is its label with nothing after it, and is said nowhere",T.includes("Model answer:\n\n")&&r.unread.length===0,r.unread.map(A.problemText).join(" | "));
+ chk("no piece or end of the text has a space or a blank line at its end, whatever was typed",!/[ \t]\n|\n\n\n|^\s|\s$/.test(T));}
+{const src=FM+"> [!activity|a] A\n\n> [!text|t]\n\n> [!copy|c of:t,b] C\n\n```text\n\n\n  lead\n\n\n```\n^b\n\n```text\n```\n^e\n\n> [!copy|d of:e,t] D\n";
+ const r=read(src),cs=blocks(r).filter(b=>b.type==="copy");
+ chk("a question with no title is `Question:` and nothing after it, with no id in its place",A.copyTextOf(cs[0],{t:"x"},actId(r)).startsWith("Question:\n\nMy answer: x"),A.copyTextOf(cs[0],{t:"x"},actId(r)));
+ chk("a block's leading blank lines are dropped, its first line's indent kept, and its trailing ones trimmed",A.copyTextOf(cs[0],{t:"x"},actId(r)).endsWith("b:\n  lead"),JSON.stringify(A.copyTextOf(cs[0],{t:"x"},actId(r))));
+ chk("an empty block is its id and a colon, with no line break after",A.copyTextOf(cs[1],{},actId(r)).startsWith("e:\n\nQuestion:"),JSON.stringify(A.copyTextOf(cs[1],{},actId(r))));}
+
+// ---- an empty item in `of:` is an error and the whole line is left out
+for(const of of ["q,,q",",q","q,","q, q"]){
+ const r=read(FM+"> [!activity|a] A\n\n> [!text|q] Q\n\n> [!copy|c of:"+of+"] C\n");
+ chk("`of:"+of+"` is said and the whole copy line is not drawn",r.unread.some(x=>/in `of:`/.test(A.problemText(x)))&&blocks(r).every(b=>b.type!=="copy"),r.unread.map(A.problemText).join(" | "));}
+// ---- the messages name the word in every language, and agree in gender
+{const P=A.STRINGS_SRC;
+ chk("the fr and es messages for a missing solution or hint write the word and agree in gender",
+   P.fr.problem.copyNoPart("l","x","solution").includes("n’a pas de solution repliée")&&P.fr.problem.copyNoPart("l","x","hint").includes("n’a pas d’indice replié")
+   &&P.es.problem.copyNoPart("l","x","solution").includes("no tiene una solución plegada")&&P.es.problem.copyNoPart("l","x","hint").includes("no tiene una pista plegada"));}
 
 // ---- hint and solution: named by the question's id and a slash; the question's own folded callout
 const HS=FM+`> [!activity|a] Parts

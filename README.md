@@ -438,7 +438,7 @@ person. Anyone may publish a separate registry under their own policy; a site ca
 
 ## Status
 
-**v0.18, draft.** `SPEC.md` (Markdown-native) is the whole format. The reference renderer is the only reader of all of it; the Obsidian plugin is a second reader and writer of part of it. The Booklet plugin for Obsidian is released (1.0.3), reads format 0.18, is free and Apache-2.0, and is in [Obsidian's community plugin directory](https://community.obsidian.md/plugins/booklet). It is not stable: draft compatible
+**v0.19, draft.** `SPEC.md` (Markdown-native) is the whole format. The reference renderer is the only reader of all of it; the Obsidian plugin is a second reader and writer of part of it. The Booklet plugin for Obsidian is released (1.0.3), reads format 0.18, is free and Apache-2.0, and is in [Obsidian's community plugin directory](https://community.obsidian.md/plugins/booklet). It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and
 known gaps, and `docs/why-markdown.md` for how v0.3 came to be.
