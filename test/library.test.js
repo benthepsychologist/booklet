@@ -228,7 +228,7 @@ A.loadText(exampleText);
 let L1=A.readLib();
 chk("loading a file on the list adds it as a new booklet and opens it",
   L1.entries.length===1&&A.currentId===L1.entries[0].id
-  &&A.allModules().map(m=>m.id).join(",")==="mensio-check-in");
+  &&A.allModules().map(m=>m.id).join(",")==="btp-check-in");
 A.homeButton();A.loadText(exampleText);
 chk("the same file loaded again is a second booklet, deliberately",A.readLib().entries.length===2);
 

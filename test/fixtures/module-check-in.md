@@ -1,6 +1,6 @@
 ---
 booklet: "0.18"
-id: mensio/check-in
+id: btp/check-in
 title: A mindful check-in
 lang: en
 version: "0.1"
@@ -24,7 +24,7 @@ with this id, this one replaces it in place, which is how you take an update.
 **Your entries stay either way** — they live in their own records, keyed by
 the activity, so putting the module back brings them back with it.
 
-> [!module|mensio-check-in] A mindful check-in
+> [!module|btp-check-in] A mindful check-in
 
 Body, feelings, thoughts — noticed, named, kept.
 
@@ -107,4 +107,4 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
 > [!lines|thoughts] Mind is thinking about
 > Notice, name, keep.
 
-> [!module|mensio-check-in end] End of A mindful check-in
+> [!module|btp-check-in end] End of A mindful check-in

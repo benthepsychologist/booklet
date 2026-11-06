@@ -30,7 +30,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - Modules are not kept in this repo; they live in `booklet-registry`, and a
-  change to one is a pull request there. (The `mensio-*` modules were once
+  change to one is a pull request there. (The `btp-*` modules were once
   generated from `benthepsychologist-corpus`; that publisher has been off since
   2026-09-14, and the registry copies are now the ones maintained.)
 - Namespace owners control their own ids. Never replace another contributor's

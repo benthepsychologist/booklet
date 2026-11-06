@@ -1,16 +1,16 @@
 ---
 booklet: "0.18"
-id: mensio/check-in
+id: btp/check-in
 title: A mindful check-in
 lang: en
 version: "0.1"
 ---
 
 > [!manifest] A mindful check-in
-> - module mensio-check-in: inline
+> - module btp-check-in: inline
 > - data: inline
 
-> [!module|mensio-check-in] A mindful check-in
+> [!module|btp-check-in] A mindful check-in
 
 > [!notice]
 > license: Free to copy and share, unmodified and with this notice intact. Not licensed for modification or for redistribution in altered form. This grant covers this version; later versions may differ.
@@ -36,9 +36,9 @@ Notice, name, keep. Nothing here needs to be explained or fixed.
 > [!lines|thoughts] Mind is thinking about
 > Noun or noun-phrase headlines, with no explanation. As many lines as you need.
 
-> [!module|mensio-check-in end] End of A mindful check-in
+> [!module|btp-check-in end] End of A mindful check-in
 
-> [!data|mensio-check-in] Data for A mindful check-in
+> [!data|btp-check-in] Data for A mindful check-in
 
 ```booklet widget
 {
