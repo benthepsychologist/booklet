@@ -16,7 +16,7 @@ const lint=(text,files)=>{const dir=path.join(tmp,"c"+(++k));fs.mkdirSync(dir);
   const f=path.join(dir,"f.md");fs.writeFileSync(f,text);
   const r=spawnSync("python3",[LINT,f],{encoding:"utf8"}),lines=r.stdout.split("\n");
   return {status:r.status,out:r.stdout,errors:lines.filter(l=>l.startsWith("ERROR")),warns:lines.filter(l=>l.startsWith("warn"))};};
-const FM='---\nbooklet: "0.18"\ntitle: Lint fixture\nlang: en\n---\n\n';       // 6 lines: the body starts on line 7
+const FM='---\nbooklet: "0.19"\ntitle: Lint fixture\nlang: en\n---\n\n';       // 6 lines: the body starts on line 7
 // one repeat activity on line 7, then the body from line 9
 const ACT=(body,head="> [!activity|desk repeat] Desk\n\n")=>FM+head+body;
 const one=(what,r,kind,line,rx)=>{const got=kind==="ERROR"?r.errors:r.warns;
