@@ -7,7 +7,7 @@
 //     or an icon (a table's cell for a value a row does not have is empty, and is there, so its columns line up);
 //   - every chart has the table of its numbers after it: closed, and opened by pressing its summary with no script, then
 //     showing the same numbers; a chart's marks have a paint of their own (a bar is not transparent, a line has a width);
-//   - a nested list's branch opens by pressing it with no script and shows the rows under it;
+//   - a nested list's branch opens by pressing it with no script and shows what is under it;
 //   - a page whose booklet names dark colours (night, white ink on near-black paper) shows them on screen and prints light:
 //     dark ink, white paper, whatever a host's own --bk-* rule says (print emulation);
 //   - the page asks for nothing but its own files, every one of which loads, and logs no error;
@@ -92,7 +92,7 @@ async function lineLegible(p,at){
       if(branches.length){let shown=0;
         for(const s of branches){if(await s.evaluate(x=>x.parentElement.open)){shown++;continue;}
           await s.click({timeout:2000});
-          if(await s.evaluate(x=>{const ul=x.parentElement.querySelector('ul');return x.parentElement.open&&ul.getBoundingClientRect().height>0;})) shown++;}
+          if(await s.evaluate(x=>{const body=x.parentElement.querySelector(':scope > :not(summary)');return x.parentElement.open&&!!body&&body.getBoundingClientRect().height>0;})) shown++;}
         ok(shown===branches.length,at+': each branch of a nested list opens by pressing and shows its rows ('+shown+'/'+branches.length+')');}
       const own='file://'+OUT+'/',outside=reqs.filter(u=>!u.startsWith(own)&&!u.startsWith('data:'));
       ok(!outside.length&&!failed.length&&!errs.length,at+': asks for nothing but its own files, every one loads, no error'+(outside.length?' (outside: '+outside[0]+')':'')+(errs.length?' ('+errs[0]+')':''));

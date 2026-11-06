@@ -101,8 +101,10 @@ function draw(cap,o){
      that are no row's child, each row's children in groups (tree.groups: the rows that name it as their parent first, then one
      group for each field that holds rows, headed by the field's label), and what a row shows when it opens beyond its
      children (tree.more: the fields that play no role and are not on the line, each with its label and its text). A row with
-     either (tree.has) is a native disclosure, which opens with no script; a row with neither is a plain row. Nothing here
-     decides which rows are whose children or what opens: the pipeline does, and the renderer draws the same. */
+     either (tree.has) is a native disclosure, which opens with no script; a row with neither is a plain row. That is true of a
+     flat row too (a row whose line does not show all it has): the pipeline hands over a tree of roots with no children, and
+     the groups of a query that groups stay (see treeBlocks). Nothing here decides which rows are whose children or what
+     opens: the pipeline does, and the renderer draws the same. */
   const restNode=items=>items.length?el("dl",{class:"bk-dv-rest"},...items.flatMap(x=>[el("dt",{},x.label),el("dd",{class:"bk-dv-text"},x.text)])):null;
   const kidHead=g=>el("div",{class:"bk-dv-group",role:"heading","aria-level":"4"},g.label);
   /* A branch more than MAXD levels down is drawn flat: its rows, in order, one after another at that level. The page
@@ -120,7 +122,11 @@ function draw(cap,o){
     if(d>=MAXD) return below(r,x=>V.plain(x,d));
     const body=[rest,...gs.map(g=>g.label===null?V.holder(g.rows,d+1):el("div",{class:"bk-dv-kg"},kidHead(g),V.holder(g.rows,d+1)))];
     return V.shell(r,V.sum(r,d),body.filter(Boolean),d);}
-  const treeOf=V=>Array.from(tree.roots,r=>node(V,r,0));
+  /* The rows a nested view draws at its top, in the blocks the renderer draws them in: one block holding the roots, or, when the
+     query groups (a flat view whose rows open, never a truly nested one: the pipeline leaves `group:` out there), one block for
+     each group, headed as a flat view's groups are, each group's rows nested as they are in the tree. */
+  const treeBlocks=()=>grouped?groups:[{name:null,rows:tree.roots}];
+  const treeOf=(V,rows)=>Array.from(rows,r=>node(V,r,0));
 
   /* ---- list: one line per row, nested when the rows carry a parent or hold rows ---- */
   function listParts(r){
@@ -142,8 +148,9 @@ function draw(cap,o){
     holder:(rows,d)=>el("ul",{class:"bk-dv-list"},...rows.map(k=>node(listV,k,d)))};
   function list(){
     const ul=g=>el("ul",{class:"bk-dv-list"},...g.rows.map(listRow));
-    if(tree) return box("bk-panel",el("ul",{class:"bk-dv-list bk-dv-tree"},...treeOf(listV)));
-    if(grouped) return box("",el("div",{class:"bk-dv-groups"},...groups.map(g=>el("div",{class:"bk-dv-gcard"},groupHead(g),ul(g)))));
+    const tul=g=>el("ul",{class:"bk-dv-list bk-dv-tree"},...treeOf(listV,g.rows));
+    if(tree&&!grouped) return box("bk-panel",tul(treeBlocks()[0]));
+    if(grouped) return box("",el("div",{class:"bk-dv-groups"},...groups.map(g=>el("div",{class:"bk-dv-gcard"},groupHead(g),tree?tul(g):ul(g)))));
     return box("bk-panel",...groups.map(ul));}
 
   /* ---- tiles: a big value over a label; with no value anywhere, a strip of pills ---- */
@@ -179,7 +186,7 @@ function draw(cap,o){
     holder:(rows,d)=>el("div",{class:"bk-dv-cards"},...rows.map(k=>node(cardV,k,d)))};
   function cards(){
     const one=g=>g.rows.map(plainCard);
-    if(tree) return box("",el("div",{class:"bk-dv-cards"},...treeOf(cardV)));
+    if(tree) return box("",el("div",{class:"bk-dv-cards"},...treeBlocks().flatMap(g=>[g.name!==null?groupHead(g):null,...treeOf(cardV,g.rows)])));
     return box("",el("div",{class:"bk-dv-cards"},...(grouped?groups.flatMap(g=>[groupHead(g),...one(g)]):one(groups[0]))));}
 
   /* ---- charts: the same rows are always offered as a table, so nothing is shown only as a picture ---- */
@@ -240,7 +247,8 @@ function draw(cap,o){
     return box("bk-panel",legend,bad?null:el("div",{class:"bk-ch-plot"},svg),numbers([lk,...keys],rows));}
 
   switch(cap.as){
-    case "table": return tree?box("bk-panel",el("div",{class:"bk-table bk-dv-ttable"},treeHead(),el("ul",{class:"bk-dv-list bk-dv-tree"},...treeOf(tableV))))
+    case "table": return tree?box("bk-panel",el("div",{class:"bk-table bk-dv-ttable"},treeHead(),
+      ...treeBlocks().flatMap(g=>[g.name!==null?groupHead(g):null,el("ul",{class:"bk-dv-list bk-dv-tree"},...treeOf(tableV,g.rows))])))
       :box("bk-panel",el("div",{class:"bk-table"},tableOf(groups,roles,cols,true)));
     case "list": return list();
     case "tiles": return tiles();
