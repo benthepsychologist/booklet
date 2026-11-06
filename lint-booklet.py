@@ -1175,7 +1175,7 @@ def check_copies(f, copies, q_lines, block_ids, acts, menus):
                 if q["kind"] not in COPY_KINDS:
                     err(f, f"line {n}: `{word}` in `of:` is a {q['kind']} question, and only {', '.join(COPY_KINDS[:-1])} and {COPY_KINDS[-1]} questions can be copied")
                 elif "each" in q["set"]:
-                    err(f, f"line {n}: `{word}` in `of:` is asked for each pick of another question, and such a question cannot be copied")
+                    err(f, f"line {n}: `{word}` in `of:` is asked for each pick of another question, or for each row of a data block, and such a question cannot be copied")
                 elif part and part not in q["parts"]:
                     err(f, f"line {n}: `{word}` in `of:` has no {part} folded (`> [!{part}]-`) straight under the question, so there is nothing to copy")
                 continue

@@ -243,7 +243,7 @@ const BAD=FM+`> [!activity|a] A
  chk("a solution that is not folded is not the question's own, and is said",said(r,/“q\/solution” has no solution folded/));
  chk("a hint the question does not have is said",said(r,/“q\/hint” has no hint folded/));
  chk("a matrix is said, with the kinds that can be copied",said(r,/“mx” is a matrix question, and only text, lines, choice, multi, scale, number and date/));
- chk("a question asked for each pick is said",said(r,/“each-q” is asked for each pick of another question/));
+ chk("a question asked for each pick is said",said(r,/“each-q” is asked for each pick of another question, or for each row of a data block, and such a question cannot be copied/));
  chk("an activity's id is said to be neither a question nor a block",said(r,/“a” is not a question or a block/));
  chk("an id that names nothing is said",said(r,/“nobody” in `of:` names no question of this activity and no block of this module/));
  chk("a word that is no id is said",said(r,/“Bad_Id” in `of:` is not an id/));

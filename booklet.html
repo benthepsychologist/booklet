@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-kkRg5KwVgKMAUci3kj+FmsaleGPd5WE0FuacDY8UeoU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-7IFswGA/evh5aM9GpSryoLRH/mQjVpFpd8e1KBvqFJ8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1845,7 +1845,7 @@ const STRINGS_SRC={
       copyBadId: (w,x)=>`${w}: “${x}” in \`of:\` is not an id (or an id with /solution or /hint after it), so it was left out of the copy`,
       copyUnknown: (w,x)=>`${w}: “${x}” in \`of:\` names no question of this activity and no block of this module, so it was left out of the copy`,
       copyKind: (w,x,k)=>`${w}: “${x}” is a ${k} question, and only text, lines, choice, multi, scale, number and date questions can be copied, so it was left out of the copy`,
-      copyEach: (w,x)=>`${w}: “${x}” is asked for each pick of another question, and such a question cannot be copied, so it was left out of the copy`,
+      copyEach: (w,x)=>`${w}: “${x}” is asked for each pick of another question, or for each row of a data block, and such a question cannot be copied, so it was left out of the copy`,
       copyNoPart: (w,x,k)=>`${w}: “${x}” has no ${k} folded (\`> [!${k}]-\`) straight under the question, so it was left out of the copy`,
       copyNotCopyable: (w,x)=>`${w}: “${x}” is not a question or a block, so it cannot be copied and was left out of the copy`,
       copyElsewhere: (w,x)=>`${w}: “${x}” is a question of another activity; a copy line copies from its own activity, so it was left out of the copy`,
@@ -2225,7 +2225,7 @@ const STRINGS_SRC={
       copyBadId: (w,x)=>`${w} : « ${x} » dans \`of:\` n’est pas un identifiant (ni un identifiant suivi de /solution ou /hint) ; il a donc été laissé hors de la copie`,
       copyUnknown: (w,x)=>`${w} : « ${x} » dans \`of:\` ne désigne aucune question de cette activité ni aucun bloc de ce module ; il a donc été laissé hors de la copie`,
       copyKind: (w,x,k)=>`${w} : « ${x} » est une question de type ${k} ; seules les questions text, lines, choice, multi, scale, number et date peuvent être copiées, il a donc été laissé hors de la copie`,
-      copyEach: (w,x)=>`${w} : « ${x} » est posée pour chaque choix d’une autre question, et une telle question ne peut pas être copiée ; elle a donc été laissée hors de la copie`,
+      copyEach: (w,x)=>`${w} : « ${x} » est posée pour chaque choix d’une autre question, ou pour chaque ligne d’un bloc de données, et une telle question ne peut pas être copiée ; elle a donc été laissée hors de la copie`,
       copyNoPart: (w,x,k)=>`${w} : « ${x} » n’a pas ${k==='solution'?'de solution repliée':'d’indice replié'} (\`> [!${k}]-\`) juste sous la question ; il a donc été laissé hors de la copie`,
       copyNotCopyable: (w,x)=>`${w} : « ${x} » n’est ni une question ni un bloc, il ne peut pas être copié et a été laissé hors de la copie`,
       copyElsewhere: (w,x)=>`${w} : « ${x} » est une question d’une autre activité ; une ligne copy copie depuis sa propre activité, il a donc été laissé hors de la copie`,
@@ -2606,7 +2606,7 @@ const STRINGS_SRC={
       copyBadId: (w,x)=>`${w}: “${x}” en \`of:\` no es un id (ni un id seguido de /solution o /hint), así que se dejó fuera de la copia`,
       copyUnknown: (w,x)=>`${w}: “${x}” en \`of:\` no nombra ninguna pregunta de esta actividad ni ningún bloque de este módulo, así que se dejó fuera de la copia`,
       copyKind: (w,x,k)=>`${w}: “${x}” es una pregunta de tipo ${k}; solo se pueden copiar las preguntas text, lines, choice, multi, scale, number y date, así que se dejó fuera de la copia`,
-      copyEach: (w,x)=>`${w}: “${x}” se hace por cada opción elegida en otra pregunta, y una pregunta así no se puede copiar, así que se dejó fuera de la copia`,
+      copyEach: (w,x)=>`${w}: “${x}” se hace por cada opción elegida en otra pregunta, o por cada fila de un bloque de datos, y una pregunta así no se puede copiar, así que se dejó fuera de la copia`,
       copyNoPart: (w,x,k)=>`${w}: “${x}” no tiene ${k==='solution'?'una solución plegada':'una pista plegada'} (\`> [!${k}]-\`) justo debajo de la pregunta, así que se dejó fuera de la copia`,
       copyNotCopyable: (w,x)=>`${w}: “${x}” no es una pregunta ni un bloque, así que no se puede copiar y se dejó fuera de la copia`,
       copyElsewhere: (w,x)=>`${w}: “${x}” es una pregunta de otra actividad; una línea copy copia desde su propia actividad, así que se dejó fuera de la copia`,
