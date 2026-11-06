@@ -127,6 +127,7 @@ const DATA=(info="",fence="")=>"```booklet data"+info+"\n"+fence+"\n```\n^plots\
  one("a question asked of every row, because no row carries a field of its id, is a warning that says so",lint(ACT(Q+"> [!text|word each:plots] A word\n\n"+D())),"warn",13,/asks the question 'word' of every row, because no row of \^plots carries a field named 'word'/);
  clean("an `each:` over a file's rows lints clean",lint(ACT(Q+QA+DATA(" dash.json plots")),{"dash.json":{plots:[{id:"a",decision:[]},{id:"b",decision:[]}]}}));
  clean("`each:` over a question still works as before",lint(ACT("> [!multi|tools] Tools\n- [ ] Saw\n- [ ] Drill\n\n> [!text|where each:tools] Where?\n\n")));
+ clean("`each:` over a data block drawn by a query lints clean in a file with no activity line (one implicit activity)",lint(FM+Q+QA+D()));
  one("`each:` over a data block that nothing in the activity draws",lint(ACT(QA+D())),"warn",9,/`each:plots` is drawn in the rows of a view of \^plots, and no query in this activity draws \^plots/);
  one("`each:` over rows that carry no `id`",lint(ACT(Q+QA+DATA("",JSON.stringify({rows:[{decision:[]},{id:"b",decision:[]}]})))),"warn",13,/a row is named by its `id`: 1 row\(s\) carry none/);
  one("`each:` over rows that share an `id`",lint(ACT(Q+QA+DATA("",JSON.stringify({rows:[{id:"a",decision:[]},{id:"a",decision:[]}]})))),"warn",13,/2 rows of \^plots have the `id` 'a'/);

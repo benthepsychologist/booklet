@@ -2037,7 +2037,7 @@ def check_format(f, text, fm, folder=None):
     for _, qc, qm, qa in queries:
         fm_from = re.search(r'^[ \t]*from:[ \t]*(\S+)', qc, re.M)
         if fm_from:
-            seen_queries.add((qm, qa, fm_from.group(1).strip("\"'")))
+            seen_queries.add((qm, qa or IMPLICIT_ACTIVITY, fm_from.group(1).strip("\"'")))
     check_each_earlier(f, q_lines, act_keeps, widget_engines, data_blocks, seen_queries)
     check_copies(f, copies, q_lines, block_ids, acts, menus)
     # A file with no activity line and no module line is one activity (SPEC section 3),
