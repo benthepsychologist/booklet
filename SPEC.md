@@ -1288,7 +1288,7 @@ The fence line is `booklet data`, then the file's name, then optionally a **key 
 
 - **The fence** is empty, or holds only `fields`. A key the fence's `fields` declares takes the fence's label over the file's.
 - **The file name** follows the rule an image's does (section 6): letters, digits, `_`, `.`, `/` and `-`, at most 200 characters, relative to the booklet's own folder, with no part that is empty or begins with a dot (so no `..`, no `./` and no leading `/`), and ending `.json`. A name that does not follow it is not read, and the linter reports an error.
-- **The key path** is keys joined by dots, each of letters, digits, `_` and `-`. With none, the whole file is read.
+- **The key path** is object keys joined by dots, each key of letters, digits, `_` and `-`. A path only ever steps into an object's keys, never into a list (no index, no position). With none, the whole file is read.
 - **What is found** is a list of rows, or an object with `rows` and optionally `fields`: what a fence holds. The rows follow the rules of this section, nested rows included.
 - **Every other rule of a data block stays.** A reader never changes it, it is not a record, nothing is computed from it, and a renderer writes the fence back exactly as it found it.
 - **When the file cannot be read** (it is missing, is not JSON, holds nothing at the path, is larger than a reader reads, or the booklet was not opened in a way that lets the reader read it, below), a view of the block draws a quiet box that names the file and says why, as an image that is not shown does (section 6). The rest of the booklet works.

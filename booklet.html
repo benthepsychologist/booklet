@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-53y+ZnQr8Ee/CqG3CdehIhTtceF8/UDQnQFlDyrBO5A=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-cU/HcZ/NsbD/fe7O2BZ98WboQMkye0FrOzsnfPUPKIU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1836,7 +1836,7 @@ const STRINGS_SRC={
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` is not a number, so it was ignored`,
       earlierBad: (w,v)=>`${w}: \`earlier:${v}\` is not a whole number written in digits, so it was ignored and the question offers its default`,
       eachNone: (w,id)=>`${w}: “${id}” is to be asked for each pick, and its each: names nothing, so it was ignored`,
-      eachMissing: (w,id,s)=>`${w}: “${id}” is to be asked for each pick of “${s}”, which is no question or widget in its activity, so its each: was ignored`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” is to be asked for each pick of “${s}”, which is no question or widget in its activity and no data block in reach, so its each: was ignored`,
       eachSelf: (w,id)=>`${w}: “${id}” is to be asked for each pick of itself, so its each: was ignored`,
       eachKind: (w,id,s,k)=>`${w}: “${id}” is to be asked for each pick of “${s}”, a ${k} question: only a choice, a multi or a widget can be a source, so its each: was ignored`,
       eachChain: (w,id,s)=>`${w}: “${id}” is to be asked for each pick of “${s}”, which is itself asked for each pick of another (one level only), so its each: was ignored`,
@@ -2216,7 +2216,7 @@ const STRINGS_SRC={
       numberBad: (w,key,v)=>`${w} : \`${key}:${v}\` n’est pas un nombre ; il a donc été ignoré`,
       earlierBad: (w,v)=>`${w} : \`earlier:${v}\` n’est pas un nombre entier écrit en chiffres ; il a donc été ignoré et la question propose son nombre par défaut`,
       eachNone: (w,id)=>`${w} : « ${id} » doit être posée pour chaque choix, et son each: ne nomme rien ; il a donc été ignoré`,
-      eachMissing: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui n’est ni une question ni un élément de son activité ; son each: a donc été ignoré`,
+      eachMissing: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui n’est ni une question ni un élément de son activité, ni un bloc de données à portée ; son each: a donc été ignoré`,
       eachSelf: (w,id)=>`${w} : « ${id} » doit être posée pour chacun de ses propres choix ; son each: a donc été ignoré`,
       eachKind: (w,id,s,k)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », une question ${k} : seule une question choice ou multi, ou un élément, peut en être la source ; son each: a donc été ignoré`,
       eachChain: (w,id,s)=>`${w} : « ${id} » doit être posée pour chaque choix de « ${s} », qui est elle-même posée pour chaque choix d’une autre (un seul niveau) ; son each: a donc été ignoré`,
@@ -2597,7 +2597,7 @@ const STRINGS_SRC={
       numberBad: (w,key,v)=>`${w}: \`${key}:${v}\` no es un número, así que se ignoró`,
       earlierBad: (w,v)=>`${w}: \`earlier:${v}\` no es un número entero escrito con cifras, así que se ignoró y la pregunta ofrece su valor por defecto`,
       eachNone: (w,id)=>`${w}: “${id}” debe hacerse por cada opción elegida, y su each: no nombra nada, así que se ignoró`,
-      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, que no es una pregunta ni un elemento de su actividad, así que su each: se ignoró`,
+      eachMissing: (w,id,s)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, que no es una pregunta ni un elemento de su actividad, ni un bloque de datos al alcance, así que su each: se ignoró`,
       eachSelf: (w,id)=>`${w}: “${id}” debe hacerse por cada una de sus propias opciones elegidas, así que su each: se ignoró`,
       eachKind: (w,id,s,k)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, una pregunta ${k}: solo una pregunta choice o multi, o un elemento, puede ser la fuente, así que su each: se ignoró`,
       eachChain: (w,id,s)=>`${w}: “${id}” debe hacerse por cada opción elegida en “${s}”, que a su vez se hace por cada opción elegida en otra (un solo nivel), así que su each: se ignoró`,
