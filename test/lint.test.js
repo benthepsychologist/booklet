@@ -60,7 +60,7 @@ const CASES=[
  ["lint-query-other-module","a query whose `from:` is in another module",/line 23: the query's `from: elsewhere` is in another module/],
  ["lint-query-no-entries","a query of an activity that keeps no entries",/line 23: the query's `from: once` keeps no entries/],
  ["lint-query-bad-field","a query whose `fields:` names a question not in the activity",/line 23: the query's `fields: far` is not a question of 'log'/],
- ["lint-query-bad-newest","a query still using `newest:` (it became `limit:` in 0.7)",/line 25: a query has no setting 'newest' \(it takes from, as, fields, group, limit, parent, empty, label, value, note, badge, tone, link, icon, summary\)/],
+ ["lint-query-bad-newest","a query still using `newest:` (it became `limit:` in 0.7)",/line 25: a query has no setting 'newest' \(it takes from, as, fields, group, limit, parent, empty, label, value, note, badge, tone, link, icon, summary, readonly\)/],
  ["lint-query-old-title","a query still using `title:` (it became `label:` in 0.7)",/line 28: a query has no setting 'title'/],
  ["lint-query-bad-key","a query with a setting it does not take",/line 25: a query has no setting 'sort'/],
  ["lint-query-not-kv","a query body line that is not `key: value`",/line 25: a query line is written `key: value` \(found 'limit 3'\)/],
@@ -73,7 +73,7 @@ const CASES=[
  ["lint-data-no-id","a data block with no ^id",/line 19: a data block needs a \^id/],
  ["lint-data-bad-json","a data block that is not JSON",/line 19: the `booklet data` block is not valid JSON/],
  ["lint-data-no-rows","a data block with no list of rows",/line 19: the data block \^short-list holds no list of rows/],
- ["lint-data-nested","a data block with a nested value",/line 19: the data block \^short-list has a nested value in 'a'/],
+ ["lint-data-nested","a data block with a value a row cannot hold (a list inside a list)",/line 19: the data block \^short-list has a value in 'a' that a row cannot hold/],
  ["lint-data-bad-fields","a data block whose `fields` are not labels",/line 19: the data block \^short-list has `fields` that is not an object of labels/],
  ["lint-data-id-clash","a data block id that is also a question's id",/line 19: the data block id \^situation is also the id on line 13/],
  ["lint-query-bad-as","a query whose `as:` is not a view",/line 25: the query's `as: chart` is not one of cards, table, list, tiles/],
@@ -136,7 +136,7 @@ for(const [name,what,rx] of CASES){
   chk("cards over kept entries: each of label, value, note, badge and tone is its own warning, naming the fix",r.status===0&&r.errors.length===0&&r.warns.length===5&&["label","value","note","badge","tone"].every(k=>r.warns.some(w=>w.includes("`"+k+":` is not drawn on cards over kept entries")&&/use `as: list` or `as: table`/.test(w))),r.out);}
  {const r=lint(path.join(FX,"lint-price-lines.md"));
   chk("a `$` on a booklet line's title does not pair with one on its help line, nor one option's with the next option's (no false price warning)",r.status===0&&r.warns.length===0&&r.errors.length===0,r.out);}
- W("lint-query-ignored-cards",/line 23: the query's default view, `cards`, does not draw `parent`/,"a key the default view does not draw");
+ W("lint-query-ignored-cards",/line 28: the query's default view, `table`, does not draw `value`/,"a key the default view does not draw");
  W("lint-query-badge-field",/line 25: the query's `badge: nope` names a field the rows never carry/,"a `badge:` naming a field the rows never carry");
  W("lint-query-parent-field",/line 25: the query's `parent: nope` names a field the rows never carry/,"a `parent:` naming a field the rows never carry");
  W("lint-query-parent-no-id",/line 25: the query's `parent: due` needs rows with an `id` field/,"a `parent:` over rows with no `id`");

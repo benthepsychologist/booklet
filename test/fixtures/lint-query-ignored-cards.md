@@ -20,19 +20,14 @@ lang: en
 
 > [!activity|look] Look back
 
+```booklet data
+{ "rows": [ { "title": "A", "n": 3 } ] }
+```
+^counts
+
 ```booklet query
-from: log
-fields: ease, situation
-parent: situation
-empty: Nothing logged yet.
+from: counts
+value: n
 ```
 
 > [!module|fixture-mod end]
-
-> [!module|fixture-other] Another module
-
-> [!activity|elsewhere repeat] Elsewhere
-
-> [!text|far] Far away
-
-> [!module|fixture-other end]

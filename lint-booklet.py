@@ -22,7 +22,10 @@ or solution not folded or not under its question, `[x]` in a menu, a price that 
 a malformed `media-from:`, a `listen` with a bad `left:`, in a `repeat` activity or holding two pieces of media, audio and video embeds (an address with no
 media extension in the image syntax, one that is not `https:`, an extension that may not play everywhere, a local video with no transcript, a bare
 `![[name]]` that is not beside the file), and raw HTML that plays media or frames a page. Format 0.19 adds `copy` lines (a missing or empty `of:`, an id that names nothing or cannot be
-copied, a copy outside an activity or in a records section). Any file whose
+copied, a copy outside an activity or in a records section), and the dashboard text: a `booklet data` fence line that names a JSON file and a key
+path (the name and path rules; given the file beside the booklet, that it exists, parses and has rows at the path), rows that
+hold child rows, a field's label as an object (`edit`, `options`), `parent:` on `table` and `cards`, the `readonly` key, a
+`fields:` name that is a question asked for each row, and `each:` over a data block. Any file whose
 front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.19 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
@@ -213,18 +216,21 @@ def callout_words(kind, s):
     return out
 
 
-# A query's fifteen keys, the six views, and which keys each view draws. A new key or view needs two
-# real pages that need it (SPEC.md, design rules for views). `from`, `as` and `empty` apply to every view.
-QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon", "summary")
+# A query's sixteen keys, the six views, and which keys each view draws. A new key or view needs two
+# real pages that need it (SPEC.md, design rules for views). `from`, `as` and `empty` apply to every view. `parent` (0.19) is
+# read by `table` and `cards` as well as `list`, and `readonly` (0.19) by every view, as `parent` is by the three that nest.
+QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon", "summary", "readonly")
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 VIEW_DRAWS = {
-    "cards": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "link", "icon"),
-    "table": ("fields", "group", "limit", "badge", "tone", "link", "icon"),
-    "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon"),
-    "tiles": ("label", "value", "note", "tone", "group", "limit", "link", "icon"),
-    "bars": ("label", "value", "tone", "limit"),
-    "line": ("label", "value", "fields", "limit"),
+    "cards": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon", "readonly"),
+    "table": ("fields", "group", "limit", "parent", "badge", "tone", "link", "icon", "readonly"),
+    "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon", "readonly"),
+    "tiles": ("label", "value", "note", "tone", "group", "limit", "link", "icon", "readonly"),
+    "bars": ("label", "value", "tone", "limit", "readonly"),
+    "line": ("label", "value", "fields", "limit", "readonly"),
 }
+# the views that nest their rows (SPEC.md section 6): they read `parent` and open a row to its other fields and its children
+NESTING_VIEWS = ("table", "list", "cards")
 QUERY_EVERY_VIEW = ("from", "as", "empty", "summary")
 # the fields a summary's rows carry (SPEC.md section 6), and the two roles that default to one of them
 SUMMARY_FIELDS = ("label", "count", "days", "average", "lowest", "highest", "total", "most", "value", "note")
@@ -236,36 +242,176 @@ def _flat(v):
     return v is None or isinstance(v, (str, int, float, bool))
 
 
+# ---- Data blocks (SPEC.md section 7). Format 0.19 lets a data block take its rows from a JSON file beside the booklet, lets a row
+# hold child rows, and lets a field's label be an object that makes the field editable.
+EDIT_KINDS = ("text", "long", "number", "date", "choice")
+FIELD_OBJECT_KEYS = ("label", "edit", "options")
+# the file name rule is the images' (section 6), with the extension `.json`: no part empty or begun with a dot (so no `..`)
+DATA_FILE_NAME = re.compile(r'^(?=.{1,200}$)[A-Za-z0-9_./-]+\.json$')
+DATA_KEY_NAME = re.compile(r'^[A-Za-z0-9_-]+$')
+DATA_FILE_BYTES = 5 * 1024 * 1024        # the most a renderer reads of one file (the renderer's LINK_BYTES)
+
+
+class _AnyFields(frozenset):
+    """The fields of a data block whose file was not read (not beside the booklet, or not given a path): any name may be one of
+    them, so nothing is said about a name the rows might not carry."""
+    def __contains__(self, x):
+        return True
+
+
+def child_rows(v):
+    """The rows a value holds as children: an object is one row, a non-empty list of objects is several. None for any other value."""
+    if isinstance(v, dict):
+        return [v]
+    if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+        return v
+    return None
+
+
+def walk_rows(rows):
+    """Every row of a data block's rows, at every depth, each row before its children."""
+    for r in rows:
+        yield r
+        for v in r.values():
+            kids = child_rows(v)
+            if kids:
+                yield from walk_rows(kids)
+
+
+def _rows_problem(rows):
+    for r in rows:
+        if not isinstance(r, dict):
+            return "has a row that is not an object"
+        for k, v in r.items():
+            if _flat(v) or (isinstance(v, list) and all(_flat(x) for x in v)):
+                continue
+            kids = child_rows(v)
+            if kids is None:
+                return (f"has a value in {k!r} that a row cannot hold (a value is a string, number, true, false, nothing, a list of those, "
+                        "a list of rows, or one row; not a list inside a list, or a list that mixes rows with plain values)")
+            why = _rows_problem(kids)
+            if why:
+                return why
+    return None
+
+
 def data_problem(obj):
     """Why a `booklet data` object is not rows a generator wrote, or None. JSON
     only: this linter reads no YAML. Returns (problem, rows, fields)."""
     rows = obj.get("rows") if isinstance(obj, dict) else obj
     if not isinstance(rows, list):
         return "holds no list of rows (an object with `rows`, or the list itself)", [], {}
-    for r in rows:
-        if not isinstance(r, dict):
-            return "has a row that is not an object", [], {}
-        for k, v in r.items():
-            if not (_flat(v) or (isinstance(v, list) and all(_flat(x) for x in v))):
-                return f"has a nested value in {k!r} (a value is a string, number, true, false, nothing, or a list of those)", [], {}
+    why = _rows_problem(rows)
+    if why:
+        return why, [], {}
     fields = {}
     if isinstance(obj, dict) and "fields" in obj:
         fields = obj["fields"]
-        if not isinstance(fields, dict) or not all(isinstance(x, str) for x in fields.values()):
-            return "has `fields` that is not an object of labels", [], {}
+        if not isinstance(fields, dict) or not all(isinstance(x, (str, dict)) for x in fields.values()):
+            return "has `fields` that is not an object of labels (each a string, or an object with `label`, `edit` and `options`)", [], {}
     return None, rows, fields
+
+
+def check_field_objects(f, n, bid, fields):
+    """A field's label may be an object (SPEC.md section 7): `label`, and optionally `edit` (one of five kinds) and `options`
+    (the choices of an `edit: choice`)."""
+    for name, v in fields.items():
+        if not isinstance(v, dict):
+            continue
+        where = f"line {n}: the data block ^{bid}, field {name!r}"
+        for k in v:
+            if k not in FIELD_OBJECT_KEYS:
+                err(f, f"{where}: a field's object takes {', '.join(FIELD_OBJECT_KEYS)}, and not {k!r}")
+        if not isinstance(v.get("label"), str):
+            err(f, f"{where}: a field written as an object needs a `label` (a string)")
+        edit = v.get("edit")
+        if "edit" in v and edit not in EDIT_KINDS:
+            err(f, f"{where}: `edit` must be one of {', '.join(EDIT_KINDS)} (found {edit!r})")
+        opts = v.get("options")
+        if edit == "choice":
+            if not (isinstance(opts, list) and opts and all(isinstance(o, str) and o.strip() for o in opts)):
+                err(f, f"{where}: `edit: choice` needs `options`, a list of the words to pick from")
+        elif "options" in v:
+            warn(f, f"{where}: `options` belongs to `edit: choice`, so it is ignored here")
+
+
+def read_data_file(f, n, bid, target, fence, folder):
+    """A `booklet data <file> [<key.path>]` block (SPEC.md section 7): check the name and the path, the fence (empty, or only
+    `fields`), and, when the file is beside the booklet, that it exists, parses and has rows at the path. Returns
+    (keys, nums, rows, edits), with every name allowed (`_AnyFields`) when the file could not be read; `edits` is the names of
+    the fields marked editable."""
+    fence_edits = lambda fl: {k for k, v in fl.items() if isinstance(v, dict) and v.get("edit") in EDIT_KINDS}
+    unknown = (_AnyFields(), set(), [], set())
+    where = f"line {n}: the data block ^{bid}" if bid else f"line {n}: the data block"
+    if len(target) > 2:
+        err(f, f"line {n}: a data block's first line is `booklet data`, then a file name and a key path (found {len(target)} words after `booklet data`)")
+        return unknown
+    name, path = target[0], (target[1] if len(target) > 1 else None)
+    bad = False
+    if not DATA_FILE_NAME.match(name) or any(p == "" or p.startswith(".") for p in name.split("/")):
+        err(f, f"line {n}: the data file name {name!r} is not one a renderer reads (letters, digits, _ . / - only, at most 200 characters, "
+               "no empty part and no part that begins with a dot so no .. and no ./, no leading /, ending .json)")
+        bad = True
+    if path is not None and not all(DATA_KEY_NAME.match(k) for k in path.split(".")):
+        err(f, f"line {n}: the key path {path!r} is keys joined by dots (each of letters, digits, _ and -)")
+        bad = True
+    if isinstance(fence, dict) and set(fence) - {"fields"}:
+        err(f, f"{where} names a file, so its fence is empty or holds only `fields` (found {', '.join(repr(k) for k in sorted(set(fence) - {'fields'}))}); the rows come from {name}")
+    elif not isinstance(fence, dict):
+        err(f, f"{where} names a file, so its fence is empty or holds only `fields`")
+    fence_fields = fence.get("fields", {}) if isinstance(fence, dict) else {}
+    if not isinstance(fence_fields, dict) or not all(isinstance(x, (str, dict)) for x in fence_fields.values()):
+        err(f, f"{where} has `fields` that is not an object of labels (each a string, or an object with `label`, `edit` and `options`)")
+        fence_fields = {}
+    check_field_objects(f, n, bid, fence_fields)
+    unknown = (_AnyFields(), set(), [], fence_edits(fence_fields))
+    if bad or folder is None:
+        return unknown
+    fp = pathlib.Path(folder) / name
+    if not fp.is_file():
+        warn(f, f"line {n}: no file named {name} is beside this booklet, so the block's rows are not checked "
+                "(a renderer draws a quiet box where a file cannot be read)")
+        return unknown
+    try:
+        if fp.stat().st_size > DATA_FILE_BYTES:
+            warn(f, f"line {n}: {name} is larger than the 5 MB a renderer reads of one file")
+        cur = json.loads(fp.read_text(encoding="utf-8"))
+    except (ValueError, OSError) as e:
+        err(f, f"line {n}: {name} is not valid JSON ({getattr(e, 'msg', None) or e})")
+        return unknown
+    seen = []
+    for k in (path.split(".") if path else []):
+        seen.append(k)
+        if not isinstance(cur, dict) or k not in cur:
+            err(f, f"line {n}: {name} holds nothing at the key path {'.'.join(seen)!r}" + (f" (the path is {path!r})" if path != '.'.join(seen) else ""))
+            return unknown
+        cur = cur[k]
+    why, rows, flds = data_problem(cur)
+    if why:
+        err(f, f"line {n}: what {name} holds {('at ' + repr(path)) if path else 'at its top'} {why}")
+        return unknown
+    check_field_objects(f, n, bid, flds)
+    flds = {**flds, **fence_fields}
+    keys = set(flds) | {k for r in walk_rows(rows) for k in r}
+    nums = {k for r in rows for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    return keys, nums, rows, fence_edits(flds)
 
 
 IMPLICIT_ACTIVITY = "(the file)"
 
 
-def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_blocks=None):
-    """A `booklet query` block: `key: value` lines, read within its own module."""
+def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_blocks=None, placed=None):
+    """A `booklet query` block: `key: value` lines, read within its own module. `placed` maps the id of each question of this
+    module that is asked for each row of a data block (`each:`, section 5) to that block's id."""
     data_blocks = data_blocks or {}
+    placed = placed or {}
     s = {}
     for off, raw in enumerate(code.split("\n")):
         ln = raw.strip()
         if not ln:
+            continue
+        if ln.lower() == "readonly":              # the one key that may stand bare: every field the view draws is read-only
+            s["readonly"] = ""
             continue
         m = re.match(r'^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$', ln)
         if not m:
@@ -287,7 +433,7 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     if "summary" in s and not summing:
         err(f, f"line {n}: the query's `summary: {s['summary']}` must be `on`")
     src_id = s.get("from", "")
-    src_act, src_q, src_data, src_nums, src_rows = None, None, None, set(), []
+    src_act, src_q, src_data, src_nums, src_rows, src_edits = None, None, None, set(), [], set()
     if not src_id:
         err(f, f"line {n}: a query needs `from:`, the activity, question or data block it shows")
     elif src_id in act_info:
@@ -295,11 +441,11 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
     elif src_id in q_owner:
         src_act, src_q = q_owner[src_id], src_id
     elif src_id in data_blocks:
-        d_mod, d_keys, d_nums, d_rows = data_blocks[src_id]
+        d_mod, d_keys, d_nums, d_rows, d_edits = data_blocks[src_id]
         if any_module and d_mod is not None and d_mod != mod:
             err(f, f"line {n}: the query's `from: {src_id}` is a data block in another module (a query reads within its own module, or the data section)")
         else:
-            src_data, src_nums, src_rows = d_keys, d_nums, d_rows
+            src_data, src_nums, src_rows, src_edits = d_keys, d_nums, d_rows, d_edits
     else:
         err(f, f"line {n}: the query's `from: {src_id}` names no activity, question or data block in this file")
     # the view in force: the one named, else the default for what is read (cards for kept entries, a table for a data block)
@@ -339,9 +485,29 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
             if key in s and key not in ignored and s[key] not in names:
                 warn(f, f"line {n}: the query's `{key}: {s[key]}` names a field the rows never carry")
         if src_data is not None and "fields" in s and "fields" not in ignored:
+            mod_questions = {q for q, a in q_owner.items() if "/" not in a}
             for name in [x.strip() for x in s["fields"].split(",") if x.strip()]:
-                if name not in names:
+                if name in placed:
+                    # a question asked for each row (section 5) is drawn in the column that names its id
+                    if placed[name] != src_id:
+                        warn(f, f"line {n}: the query's `fields: {name}` names a question that is asked for each row of ^{placed[name]}, not of ^{src_id}, so no column is drawn for it")
+                elif name in mod_questions and name not in names:
+                    warn(f, f"line {n}: the query's `fields: {name}` names a question that is not asked for each row (it has no `each:{src_id}`), so no column is drawn for it")
+                elif name not in names:
                     warn(f, f"line {n}: the query's `fields: {name}` names a field the rows never carry")
+        # an editable field is kept as an act in an activity's entries (section 5, "Editing a field in place"): with none, it is read-only
+        locked = [x.strip() for x in s.get("readonly", "").split(",") if x.strip()]
+        loose = sorted(src_edits - set(locked)) if "readonly" not in s or locked else []
+        if loose and here in act_info and not act_info[here][1]:
+            warn(f, f"line {n}: the field(s) {', '.join(repr(x) for x in loose)} of ^{src_id} can be edited, and this activity keeps no entries (it is not `repeat`) to keep an edit in, so a renderer draws them read-only")
+        # `readonly` (section 6): bare, or the fields it locks
+        if "readonly" in s:
+            if src_data is None:
+                warn(f, f"line {n}: the query's `readonly` does nothing here: nothing in kept entries can be edited")
+            else:
+                for name in [x.strip() for x in s["readonly"].split(",") if x.strip()]:
+                    if name not in names and name not in placed:
+                        warn(f, f"line {n}: the query's `readonly: {name}` names a field the rows never carry")
         # an `icon` role value is a name from Booklet's icon set (section 6); one that is not is not drawn
         if src_data is not None and "icon" in drawn:
             ikey = s.get("icon", "icon")
@@ -354,14 +520,16 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
         if src_data is not None and "parent" in s and "parent" not in ignored and "id" not in names:
             warn(f, f"line {n}: the query's `parent: {s['parent']}` needs rows with an `id` field, and these carry none")
         pkey = s.get("parent", "parent")
-        if src_data is not None and "id" in names and view == "list" and any(str(r.get(pkey, "")).strip() for r in src_rows):
+        if src_data is not None and "id" in names and view in NESTING_VIEWS and any(str(r.get(pkey, "")).strip() for r in src_rows):
             ids = [str(r.get("id", "")).strip() for r in src_rows]
             if not all(ids):
-                warn(f, f"line {n}: the nested list has {ids.count('')} row(s) with no `id`; nothing can sit under a row that has none")
+                warn(f, f"line {n}: the nested {view} has {ids.count('')} row(s) with no `id`; nothing can sit under a row that has none")
             for dup in sorted({x for x in ids if x and ids.count(x) > 1}):
-                warn(f, f"line {n}: the nested list has {ids.count(dup)} rows with the `id` {dup!r}; the first one is used")
-        if "parent" in s and "group" in s and view == "list":
-            warn(f, f"line {n}: a nested list is not grouped, so `group: {s['group']}` is not drawn")
+                warn(f, f"line {n}: the nested {view} has {ids.count(dup)} rows with the `id` {dup!r}; the first one is used")
+        # a row that holds child rows (section 7) is nested too, and a nested view is not grouped
+        has_kids = src_data is not None and any(child_rows(v) for r in walk_rows(src_rows) for v in r.values())
+        if ("parent" in s or has_kids) and "group" in s and view in NESTING_VIEWS:
+            warn(f, f"line {n}: a nested {view} is not grouped, so `group: {s['group']}` is not drawn")
         # tiles draw the field `value`: with none, and a number in some other field, each tile is a pill with no number
         if src_data is not None and view == "tiles" and "value" not in s and "value" not in names and src_nums:
             num = next(k for r in src_rows for k in r if k in src_nums)
@@ -1027,9 +1195,12 @@ def check_copies(f, copies, q_lines, block_ids, acts, menus):
                 err(f, f"line {n}: `{word}` in `of:` names no question of this activity and no block of this module")
 
 
-def check_each_earlier(f, q_lines, act_keeps, widget_engines):
-    """`each:` (SPEC.md section 5, "A question asked for each pick") and where `earlier:` can offer nothing (section 5, "Words the
-    reader wrote before"). A question's source is a question or widget in its own activity."""
+def check_each_earlier(f, q_lines, act_keeps, widget_engines, data_blocks=None, queries=None):
+    """`each:` (SPEC.md section 5, "A question asked for each pick" and "A question asked for each row") and where `earlier:` can
+    offer nothing (section 5, "Words the reader wrote before"). A question's source is a question or widget in its own activity,
+    or a data block in reach. `queries` is (module, activity, `from:`) of every query, to tell whether anything draws a data block's
+    rows in the question's activity."""
+    data_blocks, queries = data_blocks or {}, queries or set()
     def engine(q):
         if q["kind"] != "widget" or not q["ref"]:
             return None
@@ -1045,7 +1216,25 @@ def check_each_earlier(f, q_lines, act_keeps, widget_engines):
             continue
         s, qid, where = s.strip(), q["id"] or "?", f"line {q['n']}"
         src = by_act.get(q["seq"], {}).get(s) if s else None
-        if not s:
+        block = (data_blocks.get(q["mod"], {}).get(s) or data_blocks.get(None, {}).get(s)) if (s and src is None) else None
+        if block is not None:
+            # a data block in reach is a source too: the question is asked once for each of its rows, named by the row's `id`
+            keys, bn, _, rows, _ = block
+            if q["id"] and q["id"] == s:
+                err(f, f"{where}: `each:{s}` names this question itself")
+            elif not isinstance(keys, _AnyFields):
+                allrows = list(walk_rows(rows))
+                if any(not str(r.get("id", "")).strip() for r in allrows):
+                    warn(f, f"{where}: `each:{s}` asks the question once for each row of ^{s}, and a row is named by its `id`: {sum(1 for r in allrows if not str(r.get('id', '')).strip())} row(s) carry none")
+                ids = [str(r.get("id", "")).strip() for r in allrows if str(r.get("id", "")).strip()]
+                for dup in sorted({x for x in ids if ids.count(x) > 1}):
+                    warn(f, f"{where}: `each:{s}`: {ids.count(dup)} rows of ^{s} have the `id` {dup!r}; a row's answer is named by its `id`, so they share one")
+                if q["id"] and allrows and not any(q["id"] in r for r in allrows):
+                    warn(f, f"{where}: `each:{s}` asks the question {q['id']!r} of every row, because no row of ^{s} carries a field named {q['id']!r} "
+                            f"(a row that carries one is the only kind asked; check the field's name if you meant only some rows)")
+            if (q["mod"], q["act"] or IMPLICIT_ACTIVITY, s) not in queries:
+                warn(f, f"{where}: `each:{s}` is drawn in the rows of a view of ^{s}, and no query in this activity draws ^{s}, so the question is shown nowhere")
+        elif not s:
             err(f, f"{where}: `each:` names nothing; write the id of a choice, a multi or a widget in this activity")
         elif s == qid:
             err(f, f"{where}: `each:{s}` names this question itself; a question is asked for each pick of another")
@@ -1404,7 +1593,8 @@ def check_format(f, text, fm, folder=None):
                     i = (m if bid else k) + 1
                     continue
                 try:
-                    obj = json.loads(code)
+                    # a data block that names a file (`booklet data file.json key.path`) may have an empty fence
+                    obj = {} if (what == "data" and len(words) > 2 and not code.strip()) else json.loads(code)
                 except ValueError as e:
                     err(f, f"line {n}: the `booklet {what}` block is not valid JSON ({e.msg}, its line {e.lineno})")
                     obj = None
@@ -1430,14 +1620,19 @@ def check_format(f, text, fm, folder=None):
                 elif what == "data":
                     if not bid:
                         err(f, f"line {n}: a data block needs a ^id on the line after it")
+                    elif obj is not None and len(words) > 2:
+                        keys, nums, rows, edits = read_data_file(f, n, bid, words[2:], obj, folder)
+                        data_blocks.setdefault(scope_mod(), {})[bid] = (keys, n, nums, rows, edits)
                     elif obj is not None:
                         why, rows, flds = data_problem(obj)
                         if why:
                             err(f, f"line {n}: the data block ^{bid} {why}")
                         else:
-                            keys = set(flds) | {k for r in rows for k in r}
+                            check_field_objects(f, n, bid, flds)
+                            keys = set(flds) | {k for r in walk_rows(rows) for k in r}
                             nums = {k for r in rows for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
-                            data_blocks.setdefault(scope_mod(), {})[bid] = (keys, n, nums, rows)
+                            edits = {k for k, v in flds.items() if isinstance(v, dict) and v.get("edit") in EDIT_KINDS}
+                            data_blocks.setdefault(scope_mod(), {})[bid] = (keys, n, nums, rows, edits)
                 elif what != "sync":
                     warn(f, f"line {n}: `booklet {what}` is not a block this format defines")
             i = (m if bid else k) + 1
@@ -1657,7 +1852,7 @@ def check_format(f, text, fm, folder=None):
                         else:
                             err(f, f"{where}: the widget {w['id']!r} names no data block (write ![[#^its-id]] under the line)")
                     ql = {"n": n, "id": w["id"], "kind": kind, "set": w["set"], "flags": w["flags"], "mod": open_mod, "seq": act_seq,
-                          "ref": e.group(1) if e else None, "bad": False, "parts": {}}
+                          "ref": e.group(1) if e else None, "bad": False, "parts": {}, "act": cur_act}
                     q_lines.append(ql)
                     after_body = body_end(lines, i)        # a list is read from here: the renderer takes the body first
                     if kind == "matrix" and w["id"]:
@@ -1838,7 +2033,12 @@ def check_format(f, text, fm, folder=None):
             err(f, f"line {n}: ![[#^{ref}]] points at no block in this file")
         elif not found.lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
-    check_each_earlier(f, q_lines, act_keeps, widget_engines)
+    seen_queries = set()
+    for _, qc, qm, qa in queries:
+        fm_from = re.search(r'^[ \t]*from:[ \t]*(\S+)', qc, re.M)
+        if fm_from:
+            seen_queries.add((qm, qa, fm_from.group(1).strip("\"'")))
+    check_each_earlier(f, q_lines, act_keeps, widget_engines, data_blocks, seen_queries)
     check_copies(f, copies, q_lines, block_ids, acts, menus)
     # A file with no activity line and no module line is one activity (SPEC section 3),
     # so its queries and questions belong to that one activity.
@@ -1862,12 +2062,13 @@ def check_format(f, text, fm, folder=None):
                 if sc != mod:
                     a_view.setdefault(f"{sc}/{aid}", act_info.get(sc, {}).get(aid, (sc, False)))
         for sc in [k for k in data_blocks if k not in (mod, None)] + [None, mod]:
-            for bid, (keys, ln, nums, rows) in data_blocks.get(sc, {}).items():
-                d_view[bid] = (sc, keys, nums, rows)
-        check_query(f, n, code, mod, here, a_view, q_view, any_module, d_view)
+            for bid, (keys, ln, nums, rows, edits) in data_blocks.get(sc, {}).items():
+                d_view[bid] = (sc, keys, nums, rows, edits)
+        asked = {q["id"]: q["set"]["each"].strip() for q in q_lines if q["id"] and q["mod"] == mod and q["set"].get("each") and q["set"]["each"].strip() in d_view}
+        check_query(f, n, code, mod, here, a_view, q_view, any_module, d_view, asked)
     for scope, table in data_blocks.items():
         # a data block's id may not also be a question's or an activity's within its module (outside every fence: the module with no name)
-        for bid, (_, n, _, _) in table.items():
+        for bid, (_, n, _, _, _) in table.items():
             other = ids.get(scope, {})
             if bid in other:
                 err(f, f"line {n}: the data block id ^{bid} is also the id on line {other[bid]}, so a query could not tell them apart")
