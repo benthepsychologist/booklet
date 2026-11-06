@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-S+8e2nKeqqToGor5Zsg1KkV7IqnE8D54SxWKbTwktJc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-kkRg5KwVgKMAUci3kj+FmsaleGPd5WE0FuacDY8UeoU=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -9560,15 +9560,22 @@ function dataFilePath(raw){const p=String(raw==null?"":raw);
   if(!p||p.length>IMG_PATH_MAX||p.charAt(0)==="/"||!/^[A-Za-z0-9_.\/-]+$/.test(p)) return null;
   if(p.split("/").some(x=>x===""||x.charAt(0)===".")) return null;
   return /\.json$/.test(p)&&p.length>5?p:null;}
-/* the rows of a data block from what its file holds: {data:{rows,fields}} or {note} (the words for the quiet box) */
-function dataFromJson(file,json,fence){const D=strings("dv").data;let at=json;
+/* what a file holds at a block's key path: {note} (the words for the quiet box) or {d} (readData's rows, fields and edits). It
+   does not depend on the block, so it is made once for every block that names the file and the key path. */
+function dataRead(file,json){const D=strings("dv").data;let at=json;
   const path=file.path===""?[]:file.path.split(".");
   for(const k of path){if(!isRowObj(at)||!hasOwn(at,k)) return {note:D.nopath(file.name,file.path)};at=at[k];}
   const d=readData(at);
   if(d.bad) return {note:D.bad(file.name,d.bad)};
-  const f=fence&&(fence.fields||d.fields)?{...(d.fields||{}),...(fence.fields||{})}:undefined;
+  return {d};}
+/* the rows of one block from what dataRead made: the block's own fence labels and edits are laid over the file's, block by block */
+function dataMerge(read,fence){
+  if(read.note!==undefined) return read;
+  const d=read.d,f=fence&&(fence.fields||d.fields)?{...(d.fields||{}),...(fence.fields||{})}:undefined;
   return {data:{rows:d.rows,fields:f,edits:{...(d.edits||{}),...(fence&&fence.edits||{})}}};}
-/* what one answer of linkFetch makes of a data file: {text,json,blocks} (blocks: each block's rows by key path, made once) or {err} */
+/* the rows of a data block from what its file holds: {data:{rows,fields}} or {note} (the words for the quiet box) */
+function dataFromJson(file,json,fence){return dataMerge(dataRead(file,json),fence);}
+/* what one answer of linkFetch makes of a data file: {text,json,blocks} (blocks: what the file holds at each key path, made once: dataRead) or {err} */
 function dataRecord(got){
   if(got.err) return {err:got.err==="missing"?"missing":got.err==="big"?"big":got.err==="notText"?"wrong":"failed"};
   let json;try{json=JSON.parse(got.text);}catch(e){return {err:"wrong"};}
@@ -9603,8 +9610,8 @@ function dataBlockRows(block,scope,redraw){const D=strings("dv").data,file=block
   if(rec.wait){rec.wait.push(redraw);return {note:D.loading(file.name),at};}
   if(rec.err) return {note:D[rec.err](file.name),at};
   const key=file.path;let got=rec.blocks.get(key);
-  if(!got){got=dataFromJson(file,rec.json,block);rec.blocks.set(key,got);}
-  return {...got,at};}
+  if(!got){got=dataRead(file,rec.json);rec.blocks.set(key,got);}
+  return {...dataMerge(got,block),at};}
 /* every file the boxes now on screen read, once more: a changed answer is drawn in place (dataLoad) */
 function dataRefresh(){const seen=new Set();
   DATA_LIVE.forEach(x=>{if(x.box.isConnected===false){DATA_LIVE.delete(x);return;}

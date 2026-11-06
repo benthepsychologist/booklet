@@ -24,6 +24,8 @@ let DATA=F.make(),DATA_VERSION=1;
 const BOOK=F.bookletText('garden.json');
 /* the same file named by two blocks, a missing one, a refused name and a key path with nothing at it, on pages of one booklet */
 const MANY=`---\nbooklet: "0.19"\ntitle: Many\nlang: en\n---\n\n> [!activity|a] Many\n\n> [!page|one] One\n\n\`\`\`booklet query\nfrom: first\nas: list\nlabel: title\n\`\`\`\n\n\`\`\`booklet query\nfrom: second\nas: table\nfields: title\n\`\`\`\n\n> [!page|two] Two\n\n\`\`\`booklet query\nfrom: gone\nas: table\n\`\`\`\n\n\`\`\`booklet query\nfrom: bad\nas: table\n\`\`\`\n\n\`\`\`booklet query\nfrom: nokey\nas: table\n\`\`\`\n\n\`\`\`booklet query\nfrom: notjson\nas: table\n\`\`\`\n\nStill here: prose after the quiet boxes.\n\n\`\`\`booklet data garden.json programmes\n\`\`\`\n^first\n\n\`\`\`booklet data garden.json programmes\n\`\`\`\n^second\n\n\`\`\`booklet data nothing-here.json rows\n\`\`\`\n^gone\n\n\`\`\`booklet data ../secret.json rows\n\`\`\`\n^bad\n\n\`\`\`booklet data garden.json no.such.key\n\`\`\`\n^nokey\n\n\`\`\`booklet data plain.json rows\n\`\`\`\n^notjson\n`;
+/* two blocks naming the same file and key path with labels of their own (each must be drawn with its own) */
+const TWIN=`---\nbooklet: "0.19"\ntitle: Twin\nlang: en\n---\n\n> [!activity|a] Twin\n\n\`\`\`booklet query\nfrom: x\nas: table\nfields: title\n\`\`\`\n\n\`\`\`booklet query\nfrom: y\nas: table\nfields: title\n\`\`\`\n\n\`\`\`booklet data garden.json programmes\n{"fields":{"title":"AAA-title"}}\n\`\`\`\n^x\n\n\`\`\`booklet data garden.json programmes\n{"fields":{"title":"BBB-title"}}\n\`\`\`\n^y\n`;
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
@@ -35,7 +37,7 @@ const MANY=`---\nbooklet: "0.19"\ntitle: Many\nlang: en\n---\n\n> [!activity|a] 
   const ctx=await b.newContext({viewport:{width:1200,height:900}});
   const serve=async()=>{
     await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname,md={'content-type':'text/markdown'},js={'content-type':'application/json'};
-      const FILES={'/garden.booklet.md':BOOK,'/many.booklet.md':MANY};
+      const FILES={'/garden.booklet.md':BOOK,'/many.booklet.md':MANY,'/twin.booklet.md':TWIN};
       for(const root of ['/folder/modules','/pub']){
         if(FILES[u.slice(root.length)]&&u.startsWith(root+'/')) return r.fulfill({status:200,body:FILES[u.slice(root.length)],headers:md});
         if(u===root+'/garden.json') return r.fulfill({status:200,body:JSON.stringify(DATA),headers:js});
@@ -233,6 +235,14 @@ const MANY=`---\nbooklet: "0.19"\ntitle: Many\nlang: en\n---\n\n> [!activity|a] 
    ok(await p.evaluate(()=>[...document.querySelectorAll('table.dv-table details[open]')].map(d=>d.getAttribute('data-id')).join())===open&&await p.evaluate(()=>document.querySelector('.dv-box').parentElement===window.__box),'with the open rows kept and the block holding the view the same node');
    ok(await p.evaluate(()=>typeof window.__h.dataChanged==='function'&&Object.isFrozen(window.__h)),'the handle has dataChanged and is frozen');
    await hctx.close();}
+
+  // 7. two blocks naming one file and key path each keep the labels of their own fence
+  {const p=await newPage(ctx);
+   await p.goto(PAGE+'/folder/');await wait(p,500);
+   await p.evaluate(()=>{location.hash='#/open/twin.booklet.md';});await wait(p,1500);
+   const heads=await p.evaluate(()=>[...document.querySelectorAll('table.dv-table')].map(t=>[...t.querySelectorAll('thead th')].map(h=>h.textContent.trim()).join()));
+   ok(heads.join('|')==='AAA-title|BBB-title','two blocks on one file and key path keep their own labels, not the first one\'s ('+heads.join('|')+')');
+   await p.close();}
 
   ok(errs.length===0,'zero page errors '+errs.join('|'));
   ok(csp.length===0,'zero CSP violations '+csp.join('|'));
