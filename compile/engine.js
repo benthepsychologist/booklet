@@ -46,6 +46,7 @@
    which heading a link finds) stays the renderer's and only the element is the compiler's. */
 const fs=require("fs"),path=require("path"),vm=require("vm");
 const H=require("./html.js");
+const DATA=require("./data.js");
 
 const DEFAULT_RENDERER=path.join(__dirname,"..","booklet.html");
 
@@ -187,7 +188,7 @@ function load(file){
 
   return {file,R,M,temml,temmlVersion:tver,icons,setLang,setBook,queryView,themeOf,
     fonts:()=>fontsOf(page,file),
-    parse:text=>parse(R,setLang,text)};}
+    parse:(text,opts)=>parse(R,setLang,text,opts)};}
 
 /* The renderer's four base theme tables, name to {--token: value}, read out of its stylesheet: the rule for
    [data-theme="<name>"], up to its closing brace. */
@@ -231,15 +232,15 @@ const REFUSE={
   fence:n=>"the booklet's text ends inside a code fence that never closes"+(n?" (it opens on line "+n+")":"")+", so a records region after it would be read as text and published. Close the fence with a line of the same marks that open it, then compile again.",
   recordsLine:n=>"a records line stands in the booklet's own text"+(n?" (line "+n+")":"")+", outside the records region: inside a code block, or after something that swallowed the region's start. Its records would be read as text and published. Take it out of the text, or put the records region back in its place, then compile again.",
   recordBlock:"a record block (answers, kept entries or a draft) stands in the booklet's own text, outside the records region, so it would be read as text and published. Move it into the records region or take it out, then compile again."};
-function parse(R,setLang,text){
+function parse(R,setLang,text,opts){
   setLang("en");
   const t=String(text==null?"":text);
   const whole=R.parseFile(t);
-  const refused=why=>({ok:false,refused:[why],problems:[],lang:"",id:"",design:null,comments:[]});
+  const refused=why=>({ok:false,refused:[why],problems:[],lang:"",id:"",design:null,comments:[],dataFiles:[]});
   const isOutside=list=>(Array.isArray(list)?list:[]).some(p=>p&&p.code==="recordOutside");
   /* the design's own text, as the renderer keeps it: everything outside the records region (SPEC.md section 8) */
   const own=whole.template&&whole.template.raw&&typeof whole.template.raw.source==="string"?whole.template.raw.source:null;
-  let comments=[],P=whole;
+  let comments=[],P=whole,dataFiles=[];
   if(own!==null){
     const lines=own.split("\n"),fileLines=t.split(/\r?\n/);
     /* a line number is said only where the design's text and the file still agree up to it */
@@ -250,13 +251,15 @@ function parse(R,setLang,text){
     if(rec>=0) return refused(REFUSE.recordsLine(lineOf(rec)));
     if(isOutside(whole.unread)) return refused(REFUSE.recordBlock);
     const c=authorComments(R,lines);comments=c.comments.map(x=>({from:lineOf(x.from)||x.from+1,to:lineOf(x.to)||x.to+1,open:x.open}));
-    P=R.parseFile(c.lines.join("\n"));
+    /* a data fence that names a file is written out with the file's rows (data.js), so the parse reads the booklet as if they were in it */
+    const inl=DATA.inline(R,c.lines,opts&&opts.dir!=null?opts.dir:".");dataFiles=inl.files;
+    P=R.parseFile(inl.lines.join("\n"));
     if(isOutside(P.unread)) return refused(REFUSE.recordBlock);}
   const words=list=>(Array.isArray(list)?list:[]).map(p=>R.problemText(p));
   let design=null;
   if(P.template){const {raw,...rest}=P.template;design=JSON.parse(JSON.stringify(rest));}
   return {ok:!!P.ok,refused:words(P.refused),problems:words(P.unread),
-    lang:frontKey(R,t,"lang"),id:frontKey(R,t,"id"),design,comments};}
+    lang:frontKey(R,t,"lang"),id:frontKey(R,t,"id"),design,comments,dataFiles};}
 /* a front matter key's value, read by the renderer's frontMatter and kvLine ("" when there is none). */
 function frontKey(R,t,key){const fm=R.frontMatter(t,true);let v="";
   for(const l of Array.from(fm.head||[])){const kv=R.kvLine(l);if(kv&&kv[0]===key) v=String(kv[1]);}

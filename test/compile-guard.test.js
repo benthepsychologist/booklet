@@ -97,7 +97,7 @@ chk("draw.js takes where a link goes from the renderer's linkHooks",/R\.linkHook
    only job is to hand the text to X.parse */
 const reads=(code["compile.js"].match(/readFileSync\(input\.file/g)||[]).length;
 chk("compile.js reads a booklet file in exactly one place",reads===1,reads);
-chk("…and that place hands the text straight to the renderer's parse",/const parseInput=\(X,input\)=>X\.parse\(input\.text!=null\?input\.text:fs\.readFileSync\(input\.file,"utf8"\)\);/.test(code["compile.js"]));
+chk("…and that place hands the text straight to the renderer's parse, with the booklet's own folder (where its data files are)",/const parseInput=\(X,input\)=>X\.parse\(input\.text!=null\?input\.text:fs\.readFileSync\(input\.file,"utf8"\),\{dir:input\.dir\|\|\(input\.file\?path\.dirname\(input\.file\):"\."\)\}\);/.test(code["compile.js"]));
 chk("no code under compile/ but engine.js calls the renderer's parse",files.filter(f=>f!=="engine.js"&&/\.parseFile\(/.test(code[f])).length===0);
 chk("draw.js and html.js read no file at all",!/\bfs\b|readFileSync/.test(code["draw.js"]+code["html.js"]));
 
@@ -148,10 +148,10 @@ chk("the parse's raw is read in engine.js only, for its source and to leave it b
 const tree=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?[e.name+"/",...tree(path.join(d,e.name)).map(x=>e.name+"/"+x)]:[e.name]);
 const all=tree(DIR);
 chk("no package.json, lock file or node_modules under compile/",!all.some(f=>/(^|\/)(package(-lock)?\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|node_modules\/)/.test(f)),all.join(", "));
-chk("compile/ holds only the compiler's files, its stylesheet, its README and the script's parts",all.every(f=>/^(compile|diagrams|diagrams-run|draw|engine|html|script|views|theme)\.js$|^booklet\.css$|^README\.md$|^script\/$|^script\/[A-Za-z0-9][A-Za-z0-9._-]*\.js$/.test(f)),all.join(", "));
+chk("compile/ holds only the compiler's files, its stylesheet, its README and the script's parts",all.every(f=>/^(compile|data|diagrams|diagrams-run|draw|engine|html|script|views|theme)\.js$|^booklet\.css$|^README\.md$|^script\/$|^script\/[A-Za-z0-9][A-Za-z0-9._-]*\.js$/.test(f)),all.join(", "));
 const modsIn=f=>new Set([...code[f].matchAll(/require\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map(m=>m[1]));
 const mods=new Set(files.flatMap(f=>[...modsIn(f)]));
-const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./draw.js","./diagrams.js","./script.js","./views.js","./theme.js","child_process"]);
+const allowed=new Set(["fs","path","vm","crypto","./html.js","./engine.js","./data.js","./draw.js","./diagrams.js","./script.js","./views.js","./theme.js","child_process"]);
 chk("it requires only fs, path, vm, crypto, child_process and its own files",[...mods].every(m=>allowed.has(m)),[...mods].join(", "));
 chk("child_process is required in diagrams.js alone",files.filter(f=>modsIn(f).has("child_process")).join()==="diagrams.js",files.filter(f=>modsIn(f).has("child_process")).join());
 /* the module's name is written once in all of compile/ (const cp=require("child_process") in diagrams.js), so no other spelling can fetch it:

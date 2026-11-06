@@ -369,7 +369,7 @@ function compileOne(X,input,o){
     theme:first[0].theme,description:first[0].description,toc:first.some(p=>p.toc),translations:o.alt?o.alt.with:[],
     script:first.some(p=>p.script),needsScript:first.some(p=>p.needs),keyed:first.some(p=>p.keyed),readOnly:first.flatMap(p=>p.readOnly)});
   return {rep,files};}
-const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"));
+const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"),{dir:input.dir||(input.file?path.dirname(input.file):".")});
 const dedupe=list=>{const seen=new Set();return list.filter(x=>{const k=x.src+"\u0000"+x.ok+"\u0000"+(x.where||"");if(seen.has(k)) return false;seen.add(k);return true;});};
 
 /* the stylesheet and its fonts, for each form's booklet/ folder */
