@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-X/vs6/sCMJPeZlgNNUC40q2O2YSlWqoGiwDJd4cP0a4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-9DuIG/vSEalfi33JxmfTDOBLEYFBkaa3cmo7K9l7u0g=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1443,7 +1443,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.18.1";
+const RENDERER_VERSION="0.18.2";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.18"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
@@ -3386,7 +3386,7 @@ const moduleScreen=id=>MODULE_SCREEN+id;
 const moduleForScreen=v=>isModuleScreen(v)?fencedModule(v.slice(MODULE_SCREEN.length)):null;
 /* where a module's card leads: its one activity, or its own page */
 const entryScreenOf=m=>isMulti(m)?moduleScreen(m.id):((m.activities[0]||{}).id||HOME_SCREEN);
-const activityOf=id=>bookActivities().find(m=>m.id===id)||{id,kind:"entry",pages:[{id:"p1",blocks:[]}]};
+const activityOf=id=>{for(const m of allModules()){const a=m.activities.find(x=>x.id===id);if(a) return a;}return {id,kind:"entry",pages:[{id:"p1",blocks:[]}]};};
 const keysOf=b=>READING_BLOCKS.has(b.type)?[]:(b.keys||[b.id]);
 /* what a block asks of the engine drawing it — a page explaining a widget
    wants the real one, shown but not operable */
