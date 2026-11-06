@@ -3,7 +3,6 @@ booklet: "0.18"
 id: example/orchard-dashboard
 title: Orchard and garden desk
 lang: en
-description: A made-up dashboard whose rows come from a JSON file beside it, open to show their jobs, and can be answered.
 ---
 
 # Orchard and garden desk
