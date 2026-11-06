@@ -2,6 +2,10 @@
 
 What changed in each version of the format, newest first. `SPEC.md` states the rules as they are now and carries no history; this file keeps it. Section numbers are those of `SPEC.md`. A version marked "wording only", "drawing only", "the reference renderer only" or "wording and the reference renderer" changed no file: the marker stayed as it was.
 
+## Renderer 0.18.2: a faster lookup of an activity
+
+Nothing a file may say has changed: the marker stays `booklet: "0.18"`, no file needs touching, and `SPEC.md` is as it was. The reference renderer only: finding an activity by its address (`activityOf`, called on every click and redraw) no longer builds a copy of every activity in the booklet and removes the repeats before looking for one. It searches each module's activities in module order and returns the first match, as before, so a booklet with a large number of activities no longer slows a click in proportion to its size squared. The result is the activity itself, not a copy, and a missing address still gives an empty entry. `test/activityof.test.js` pins the first match, the empty entry and the cost.
+
 ## Renderer 0.18.1: a pages menu, and the spec's wording about the plugin
 
 Nothing a file may say has changed: the marker stays `booklet: "0.18"` and no file needs touching. `SPEC.md` takes the third number (v0.18.1) for three wording corrections about the Obsidian plugin, and nothing else (section 3 already says a menu of a tab's pages is a renderer's to draw, and that a renderer may draw none): the plugin is released and in Obsidian's community directory, not "in pre-release" (sections 7 and 13), and it reads the kept-entries fold mark `entries:folded` (section 13; it did not when the sentence was written). The reference renderer now draws a pages menu.
