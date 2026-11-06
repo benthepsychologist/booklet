@@ -31,6 +31,7 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
   chk("a row with children is closed, and draws nothing inside until it opens (0.19)",tag(b0,"details").length===1&&tag(b0,"details").every(d=>d.attrs.open===undefined)&&tag(b0,"ul").length===1&&tag(b0,"details").every(d=>kids(d).length===1),tag(b0,"ul").length+"");
   const b=nestO(R);
   chk("rows with id and parent nest with no key at all: one tree list",byClass(b,"dv-tree").length===1&&tag(b,"ul").length===3);
+  chk("top-level rows are the ones with no parent, in the file's order",top(b).join()==="A,B",top(b).join());
   chk("a row with children is a li.dv-node holding one details: a summary row and a list",
     tag(b,"details").length===2&&tag(b,"summary").length===2&&tag(b,"summary").every(s=>cls(s).includes("dv-row"))&&byClass(b,"dv-node").length===2);
   chk("each details carries its row's id in a data attribute",tag(b,"details").map(d=>d.attrs["data-id"]).join()==="a,a1",tag(b,"details").map(d=>d.attrs["data-id"]).join());
