@@ -1,5 +1,5 @@
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: fixture/compile-views
 title: A small bakery's week
 lang: en

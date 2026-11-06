@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.18.1**. It matches SPEC.md's v0.18, the current format.
+**Skill version: 0.19.0**. It matches SPEC.md's v0.19, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -81,7 +81,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.18"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, and `media-from` if the booklet names remote audio or video (section 4) | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.19"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, and `media-from` if the booklet names remote audio or video (section 4) | you |
 | **Design** (everything above the records, and anything written after them) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design, and leaves design written after the records where it is |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only; a fresh file has none at all |
 
@@ -186,7 +186,7 @@ language are real ones; give them your own.
 
 ````markdown
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: "local/my-booklet"
 title: "My booklet"
 lang: en
@@ -213,7 +213,7 @@ One or two sentences of plain prose: what to do, and that skipping is fine.
 
 Write one booklet line for each question (section 6) where `my-question` stands.
 
-- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.18"`:
+- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.19"`:
   unquoted, a YAML tool reads `0.10` as the number 0.1. A tool that writes
   booklets should ask the linter for the marker (`python3 lint-booklet.py
   --marker` prints the whole line) and not hard-code it. A file marked with
@@ -437,7 +437,7 @@ so it opens on the first. The activity's opening is shown above every tab:
 
 ````markdown
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: "local/check-in"
 title: A short check-in
 description: A few minutes to look over the garden, with notes on what each word means.
@@ -1282,7 +1282,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.18 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
+| no `lang:` | `front matter has no `lang:` — a v0.19 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`, `each:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -1355,7 +1355,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.18"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.19"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has a task list under it; a numbered list that does not start at `1.` has a blank line above it.
@@ -1380,7 +1380,7 @@ Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -1416,7 +1416,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -1477,7 +1477,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -1513,7 +1513,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ````markdown
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: "local/reminders-report"
 title: "Reminders: SMS or email?"
 lang: en
@@ -1595,7 +1595,7 @@ flowchart LR
 ## 13. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.18 file, one language, its
+same way as any other booklet above — one v0.19 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

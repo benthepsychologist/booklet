@@ -14,7 +14,7 @@ const lint=(text,files)=>{const dir=path.join(tmp,"c"+(++k));fs.mkdirSync(dir);
   const f=path.join(dir,"f.md");fs.writeFileSync(f,text);
   const r=spawnSync("python3",[LINT,f],{encoding:"utf8"}),lines=r.stdout.split("\n");
   return {status:r.status,out:r.stdout,errors:lines.filter(l=>l.startsWith("ERROR")),warns:lines.filter(l=>l.startsWith("warn"))};};
-const HEAD='---\nbooklet: "0.18"\ntitle: Lint fixture\nlang: en\n';
+const HEAD='---\nbooklet: "0.19"\ntitle: Lint fixture\nlang: en\n';
 const FM=HEAD+'---\n\n';
 // a file of one activity with a body; the front matter is 6 lines, the activity line is line 7 and the body starts on line 9
 const ACT=(body,head="> [!activity|a] Notes\n\n")=>FM+head+body;
@@ -24,13 +24,13 @@ const one=(what,r,kind,line,rx)=>{const got=kind==="ERROR"?r.errors:r.warns;
   chk(`${what}: ${kind==="ERROR"?"the file fails":"the build does not fail"}`,(r.status===1)===(kind==="ERROR"),String(r.status));};
 const clean=(what,r)=>chk(what,r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);
 
-// ---- the marker: 0.18 is the current format
+// ---- the marker: 0.19 is the current format
 {const m=spawnSync("python3",[LINT,"--marker"],{encoding:"utf8"});
- chk("--marker prints the 0.18 marker, quoted",m.status===0&&m.stdout==='booklet: "0.18"\n',JSON.stringify(m.stdout));
- clean("a file marked 0.18 lints with no marker notice",lint(ACT("A line.\n")));
- one("a file marked 0.17 gets the other-marker notice",lint(ACT("A line.\n").replace('"0.18"','"0.17"')),"warn",0,/this file says booklet: 0\.17; the current format is 0\.18, and it is checked as 0\.18/);
- const e=lint(ACT("A line.\n").replace('booklet: "0.18"','title: x'));
- chk("a file with no marker is an error that names 0.18",e.status===1&&/front matter must say `booklet: "0\.18"`/.test(e.errors[0]||""),e.out);}
+ chk("--marker prints the 0.19 marker, quoted",m.status===0&&m.stdout==='booklet: "0.19"\n',JSON.stringify(m.stdout));
+ clean("a file marked 0.19 lints with no marker notice",lint(ACT("A line.\n")));
+ one("a file marked 0.17 gets the other-marker notice",lint(ACT("A line.\n").replace('"0.19"','"0.17"')),"warn",0,/this file says booklet: 0\.17; the current format is 0\.19, and it is checked as 0\.19/);
+ const e=lint(ACT("A line.\n").replace('booklet: "0.19"','title: x'));
+ chk("a file with no marker is an error that names 0.19",e.status===1&&/front matter must say `booklet: "0\.19"`/.test(e.errors[0]||""),e.out);}
 
 // ---- section 2: `media-from:` is one https origin, a list of them, or several separated by commas
 {const MF=v=>lint(HEAD+v+"---\n\n> [!activity|a] Notes\n\nA line.\n");
@@ -139,4 +139,4 @@ const LISTEN=(settings,media)=>`> [!listen|u01${settings}] Episode 1\n${media===
  clean("a raw tag in an HTML comment is not read",lint(ACT("<!-- <iframe src=\"x\"></iframe> -->\n")));
  clean("other HTML, and a word that only starts like a tag, is not reported",lint(ACT("<details><summary>More</summary>Text</details>\n\nThe <objective> is clear and the <embedded> kind is fine.\n")));}
 
-console.log(fails?"\n"+fails+" FAILURES":"\nlint 0.18 checks passed");process.exit(fails?1:0);
+console.log(fails?"\n"+fails+" FAILURES":"\nlint 0.19 checks passed");process.exit(fails?1:0);
