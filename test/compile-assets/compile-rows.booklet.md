@@ -1,5 +1,5 @@
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: fixture/compile-rows
 title: Garden beds and their rows
 lang: en

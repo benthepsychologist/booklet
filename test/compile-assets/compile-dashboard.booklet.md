@@ -1,5 +1,5 @@
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: fixture/compile-dashboard
 title: Orchard and garden desk
 lang: en

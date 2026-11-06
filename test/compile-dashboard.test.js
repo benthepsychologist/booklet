@@ -103,7 +103,7 @@ chk("a fence that never closes, an ordinary fence and a fence of another kind ar
   const x=DATA.inline(X.R,src,path.join(tmp,"book"));return x.files.length===0&&x.lines===src;})());
 chk("a booklet with no data file is given back as it is (the same lines)",(()=>{const src=["# T","","```booklet data","{\"rows\":[]}","```","^z"];return DATA.inline(X.R,src,tmp).lines===src;})());
 chk("a rows file is not read through the records: a fence in the records region is never rewritten",(()=>{
-  const t="---\nbooklet: \"0.18\"\n---\n\n# T\n\n> [!module|m] M\n\n> [!activity|a] A\n\n%%\n> [!records]\n\n```booklet data rows.json list\n```\n%%\n";
+  const t="---\nbooklet: \"0.19\"\n---\n\n# T\n\n> [!module|m] M\n\n> [!activity|a] A\n\n%%\n> [!records]\n\n```booklet data rows.json list\n```\n%%\n";
   const res=build({text:t,name:"t",dir:path.join(tmp,"book")});return !res.rep.ok||!/\"t\":1/.test(page(res));})());
 /* ---- rows nested too deeply to be written give the block's quiet box, never a refused booklet ---- */
 {
