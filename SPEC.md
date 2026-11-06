@@ -607,9 +607,9 @@ A `listen` asks the reader to listen to, or watch, one piece of media, remembers
 
 With Saw and Drill picked, the reader sees the question once, then its rooms under each tool.
 
-- **A source is a `choice`, a `multi` or a widget.** Their picks are identities that are added and taken away but never edited. The picks: a `choice`'s one answer; each member of a `multi`'s answer, an option's position or the reader's own option; each id in a `grid-select`'s answer, an item id or the reader's own `x|cell|word`; each region an `svg-regions` marked, by its `id`.
+- **A source is a `choice`, a `multi`, a widget, or a data block ("A question asked for each row", below).** Their picks are identities that are added and taken away but never edited. The picks: a `choice`'s one answer; each member of a `multi`'s answer, an option's position or the reader's own option; each id in a `grid-select`'s answer, an item id or the reader's own `x|cell|word`; each region an `svg-regions` marked, by its `id`.
 - **One level only.** A question with `each:` cannot be a source.
-- **What does not hold.** An `each:` that names nothing in its activity, names the question itself, names a question of another kind, or names a question that has `each:` of its own, is an error in the linter, and a renderer ignores the setting and reports it, as for any setting a line cannot take (section 4), and draws the question as its kind.
+- **What does not hold.** An `each:` that names nothing in its activity (or, for a data block, in reach), names the question itself, names a question of another kind, or names a question that has `each:` of its own, is an error in the linter, and a renderer ignores the setting and reports it, as for any setting a line cannot take (section 4), and draws the question as its kind.
 - **Where it is drawn:** where it is written, one copy per pick, in the order the source's answer holds them (the order they were picked), so a new pick adds a copy at the end and nothing already on screen moves. Nothing is drawn while nothing is picked.
 - **The heading.** The question's title, help text, hint and solution once, then each pick as a subheading in its own words: the option's words, the item's or region's label, or the reader's own words (for `x|cell|word`, the word).
 - **Everything else the question takes applies to every copy:** its options, its marks (`[x]`), `open`, `menu:`, `min:`, `max:`, `step:`, `earlier:`. The reader's own options added under one pick are offered under every pick, and again in later entries (below).
@@ -625,6 +625,70 @@ With Saw and Drill picked, the reader sees the question once, then its rooms und
 - **A pick taken back.** Nothing is dropped. If the reader unpicks a tool, its pair stays as written and is not drawn; it comes back if the tool is picked again. A kept entry keeps it too. Every view shows and counts only the pairs whose pick the source holds in the same record (section 6), and a draft whose only answers are pairs for picks taken back counts as empty. A pick whose option or item the design has since removed keeps its pair; its copy is headed as the source shows that pick.
 
 **The reference renderer does not do this yet:** it draws a question with `each:` as its title and a line saying it is not yet supported, and keeps its answer as written through opening, saving and Finalize. Its views show the pairs as section 6 says.
+
+### A question asked for each row
+
+`each:<id>` may also name a **data block** (section 7) in reach of the question, in place of another question. The block is then the question's **source**, its picks are its rows, and a pick is named by the row's `id`, at every depth of nested rows (section 6, "Rows that open"). The question is asked once for each row, and the answer holds one answer per row.
+
+````markdown
+> [!activity|desk repeat] Orchard desk
+
+```booklet query
+from: requests
+as: list
+label: title
+fields: asked
+```
+
+> [!choice|decision each:requests] Your call
+- [ ] Yes
+- [ ] No
+
+> [!text|reply each:requests long] A word of reply
+````
+
+With a data block `requests` (a list of rows with an `id` and a `title`), each request opens to the choice and the box, and each answer is kept against that request.
+
+- **Where it is drawn.** In the open part of each row it is asked of (section 6, "Rows that open"), in every view of the source in the activity. Naming its id in a query's `fields:` draws it in that column instead, and then not in the open part: `fields: asked, decision` puts the `decision` question in a column of that name. A name in `fields:` that is a question's id is the question, not a field of the rows. The question is drawn only where a view of its source is drawn in its activity; with none, it is drawn nowhere, and the linter warns.
+- **Which rows it is asked of.** A row that carries a field with the question's id is asked the question. When no row of the source, at any depth, carries one, it is asked of every row, so "write a sentence for each of these words" needs no field at all. The field is read on its own row: a child row is asked only if it carries the field.
+- **What the answer starts from, and whether it replaces or adds.** The field's shape tells. A **value** (a string, a number, `true`, `false` or nothing) is edited **in place**: the question starts from that value, and what the reader keeps is the value the field should have. A **list** is added to: the list is what the source already holds, drawn under the question as its history; the question starts empty, and each thing the reader keeps is one more item to add. A field that is a list of rows is not a value and not an answer: it is the row's children, and a question cannot be asked about it.
+- **A choice starts from the option whose words match the field's value,** compared as an own option is compared (ignoring case, and spaces at either end); a value that matches no option starts with nothing picked.
+- **A field named by a question is drawn as that question** in the open part, not again as a line. It may still play a role on the row's line: `title` can be the row's label and also a question.
+- **What is stored: a list of pairs,** as for `each:` over picks, `{ "pick": the row's id, "a": the answer its kind stores }`, in an ordinary activity's `answers` and in a `repeat` activity's kept entries. For an in-place question a pair has one more key, `was`: the row's value of the field when the reader began to change it (a key the format already allows in a pair, section 8).
+
+  ```json
+  { "ts": "2026-11-06T10:42:00Z", "title": [ { "pick": "j-prune", "a": "Prune the apple trees early", "was": "Prune the apple trees" } ] }
+  ```
+
+- **In an ordinary activity** each row's answer is kept as it is typed, in `answers`, as any `each:` answer is. A pair has no `was` there, and Finalize and the display states below do not apply.
+- **In a `repeat` activity,** what the reader types is a draft, and nothing is final until it is kept. A renderer may draw Finalize inside each row as well as at the foot of the page. A row's Finalize keeps one entry that holds that row's answers only, and leaves the rest of the draft as it was. A dashboard uses a `repeat` activity, so that the host that applies the entries has a moment that says the act is final. An entry is never removed by being applied: a host that applies entries leaves them in the file.
+- **A row the data no longer holds** keeps its pairs, undrawn, as a pick taken back does.
+
+**The display states of an in-place question.** The renderer shows the newest kept answer against the value the data holds now:
+
+| the data's value now | the question shows |
+| --- | --- |
+| equals what was sent | the value, with nothing marked |
+| equals `was` | what was sent, marked as waiting |
+| anything else | the value now, with what was sent beneath |
+
+A draft being typed shows over all three, as drafts do. On a question that adds, the row's kept answers are listed under it, newest first, with their times. The third state is also what a refused act looks like: the data changed after the page was drawn, so `was` no longer matches, whatever applies the entries refuses, and nothing the reader wrote is removed. A renderer may draw an in-place question as its plain value until the reader chooses to change it.
+
+**What applies an entry is outside the format.** The format says what is kept and what it means. Applying it is a host's work: it applies each entry once, an in-place act only when the data's value still equals `was`, an adding act as a new item, and lets the outcome reach the reader through the data. `docs/hosting.md` says how.
+
+**The reference renderer does not do this yet:** it draws a question that names a data block as its title and a line saying it is not yet supported, and keeps any answer as written.
+
+### Editing a field in place
+
+A field of a data block can be marked editable (section 7, "Data: rows a generator wrote"), so that a reader changes a value where it is drawn, without a question.
+
+- **How it works.** A field marked editable draws in the row's line, and in its open part, as its plain value. Pressing it turns the cell into a box that holds the value (a line, a larger box, a number, a date, or a list of options, by the field's `edit` kind). Enter, or leaving the cell, keeps the change as one act. Esc cancels. There is no Finalize to press.
+- **What is kept.** One pair in a kept entry, keyed by the field's name: `{ "pick": the row's id, "a": the new value, "was": the value before }`, as for an in-place question above. The entry is that of the activity that holds the query drawing the field, and that activity must keep entries (`repeat`); in any other activity the field is drawn read-only, and the linter warns.
+- **A field with no `edit` is read-only.** The data block is never changed by the reader. A query's `readonly` key (section 6) makes fields read-only in one view that other views leave editable.
+- **A field that a question also names is the question.** When a question asked for each row has the field's id, the question is drawn and `edit` is not used.
+- The display states above hold for an edited field as for an in-place question.
+
+**The reference renderer does not do this yet:** it reads the object form of a field's label and draws the field as plain, read-only text.
 
 ### Words the reader wrote before
 
@@ -945,28 +1009,30 @@ So rows whose fields are already called `label`, `value` and so on need only `fr
 
 | `as:` | draws | reads |
 | --- | --- | --- |
-| `cards` | one card per row: a kept entry is a dated card; a data block's row is a card led by its label, its other fields as lines | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `link`, `icon` |
-| `table` | one row per row, one column per field | `fields`, `group`, `limit`, `badge`, `tone`, `link`, `icon` |
-| `list` | one line per row: badge, label, the other fields, value; the note beneath | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent`, `link`, `icon` |
-| `tiles` | one tile per row: a big value over a label | `label`, `value`, `note`, `tone`, `group`, `limit`, `link`, `icon` |
-| `bars` | one bar per row: a label and a length | `label`, `value`, `tone`, `limit` |
-| `line` | one line per field, across the rows in order | `label`, `value`, `fields`, `limit` |
+| `cards` | one card per row: a kept entry is a dated card; a data block's row is a card led by its label, its other fields as lines; a row with children opens to cards inside it | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent`, `link`, `icon`, `readonly` |
+| `table` | one row per row, one column per field; a row with children opens to indented rows in the same columns | `fields`, `group`, `limit`, `parent`, `badge`, `tone`, `link`, `icon`, `readonly` |
+| `list` | one line per row: badge, label, the other fields, value; the note beneath | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent`, `link`, `icon`, `readonly` |
+| `tiles` | one tile per row: a big value over a label | `label`, `value`, `note`, `tone`, `group`, `limit`, `link`, `icon`, `readonly` |
+| `bars` | one bar per row: a label and a length | `label`, `value`, `tone`, `limit`, `readonly` |
+| `line` | one line per field, across the rows in order | `label`, `value`, `fields`, `limit`, `readonly` |
 
-- `fields:` **picks** among the fields the rows have, and names the **other fields to show**, in order: a table's columns, a list row's quieter extras, a line chart's lines, a card's questions. (A data block's own `fields`, section 7, **declares** them: each key, its label and their order.) Without `fields:` a table shows every field, a list shows every field that plays no role, and a line draws the `value`.
-- A table shows the fields its data block declares, or else the keys of the first row. A list's extras, without `fields:`, never include the `id` field, the `group` field or the `parent` field.
+- `fields:` **picks** among the fields the rows have, and names the **other fields to show**, in order: a table's columns, a list row's quieter extras, a line chart's lines, a card's questions. (It may also name a question asked for each row, below.) (A data block's own `fields`, section 7, **declares** them: each key, its label and their order.) Without `fields:` a table shows every field, a list shows every field that plays no role, and a line draws the `value`.
+- A table shows the fields its data block declares, or else the keys of the first row, leaving out a field that holds child rows ("Rows that open", below). A list's extras, without `fields:`, never include the `id` field, the `group` field or the `parent` field.
 - `label:` falls back to the first field only when the query gives no `label:` at all. A `label:` that names a field no row carries draws no label (the linter warns).
 - `group:` names a field; rows that share its value are drawn together under that value, in the order the values first appear, with a count.
 - `limit:` is a positive whole number, or a positive whole number of days such as `7 days` (anything else is ignored and reported; the linter reports an error). A number draws only the first rows, that many, and it is applied before grouping and before anything the reader filters. For kept entries those are the newest. A number of days keeps the entries of a span instead ("A span of days, and summaries", below).
 - `from:` naming a single question makes that question the value.
 - With `fields:` on kept entries, an entry that answers none of the named questions is not shown.
-- `parent:` names the field that holds the `id` of the row this row sits under. A list whose rows carry it is drawn nested: each row under its parent, opened and closed by the reader. The default field is `parent`, so rows with `id` and `parent` fields nest with no key at all. A row whose parent is not among the rows is drawn at the top. A row that is its own ancestor (a cycle) is drawn once, at the top. When two rows share an `id`, the first is used. `limit` counts top-level rows; `group` is not drawn on a nested list.
+- `parent:` names the field that holds the `id` of the row this row sits under. `table`, `list` and `cards` read it: a view whose rows carry it is drawn nested, each row under its parent, opened and closed by the reader ("Rows that open", below). The default field is `parent`, so rows with `id` and `parent` fields nest with no key at all. A row whose parent is not among the rows is drawn at the top. A row that is its own ancestor (a cycle) is drawn once, at the top. When two rows share an `id`, the first is used. `limit` counts top-level rows; `group` is not drawn on a nested view. Rows that hold child rows (section 7) nest by the same rule, with no key.
 - A `tone` of `good`, `warn` or `bad` colours the row's badge, or its value when it has no badge; a tile; a bar. Anything else is plain. A table's `tone` colours its badge column; a table with no badge column ignores `tone`. Tone is always also said in words to a screen reader.
 - A `badge` that is a list is drawn as several pills.
 - **Tiles with no value are pills.** When no row has a value, there is no big figure to draw, and each tile is a short pill holding its label: a strip of them reads as a status line.
 - Every view also works on kept entries (`from:` an activity): each kept entry is a row, its questions are the fields, and its date is the field `date`. Over a data block, `cards` draws one card per row and reads the roles as every other view does: the `label` is its title (and where the row's `link` leads), the `note` the line under it, the `badge` pills, the `value` its figure, the `tone` its colour, the `icon` its picture, and every field that plays no role is a line under it, named by its label, as on a kept entry's card (`fields:` picks them and their order; the `id` and group fields are never lines). `group:` draws the cards under group headings. Over kept entries a card is titled by its date and its lines are the questions: of the roles, kept-entry cards draw `link` and `icon`, and the view takes `fields`, `limit` and `group`. **The reference renderer does not do this yet:** `label`, `value`, `note`, `badge` and `tone` on kept-entry cards are not drawn (the linter warns; `list` and `table` draw them).
 - **A question asked for each pick** (`each:`, section 5) is one field per pick, labelled "<title> · <pick's words>", in the source's order, for the picks its rows hold. That one rule covers a card's lines, a kept entry's card, a table's columns, a list's extras, a `line` view's lines and a summary's rows (below). `fields: tool-where` names all of those fields at once. A pair whose pick the source does not hold in the same record is not shown. A follow-up named alone in `from:` gives one row per pick and value. **The reference renderer does not do this yet:** for a follow-up named alone in `from:`, `table`, `list` and `cards` give one row per entry, with one field per pick, and `tiles`, `bars` and `line` draw only a line saying the view does not draw it yet.
 - **An answer whose shape is not its kind's** (section 8) is left out of its row.
-- Values are plain text: nothing in a data block is read as Markdown or HTML.
+- **A question asked for each row** (`each:` over a data block, section 5, "A question asked for each row") is drawn in the row's open part. Naming its id in a query's `fields:` draws it in that column (a table's column, a list's extra, a card's line) instead. A name in `fields:` that is a question's id is the question, and a question is asked only of rows that carry a field with its id (of every row when none does). **The reference renderer does not do this yet.**
+- `readonly` makes what a view draws read-only. Written bare (`readonly` alone on its line, or `readonly:` with nothing after it), every field the view draws is read-only. Written `readonly: title, due`, just those fields are. Every view reads it, as the three that nest read `parent:`, and it is off by default. It lives on the query and not in the data, so two views of the same rows can differ: a table whose fields can be edited and a roundup beside it that cannot. It changes nothing in the file. **The reference renderer does not do this yet:** it reads the key and ignores it, and draws every field read-only.
+- Values are plain text: nothing in a data block is read as Markdown or HTML. A line break and a blank line in a value are kept, so a long text is drawn in its paragraphs.
 - A query that sets a key its view does not read is not an error; the linter says so.
 
 ```booklet query
@@ -989,7 +1055,7 @@ fields: hours
 - On kept entries a `number` or `scale` question is a number field, and the label is the entry's date. A reader's own answers over time are a line.
 - A renderer chooses the scale, the ticks and the size, and fits the chart to the space it has, including inside a row.
 
-**Sorting and filtering are the reader's.** A renderer may let the reader sort and filter the rows of any view on screen, and should offer the same control on every view. A renderer may offer it only on longer views, and a line chart keeps its order. It is saved nowhere, and a file never states it: a page always opens in the order its rows were written.
+**Sorting and filtering are the reader's.** A renderer may let the reader sort and filter the rows of any view on screen, and should offer the same control on every view. A renderer may offer it only on longer views, and a line chart keeps its order. It is never put in the file, and a file never states it: a page always opens in the order its rows were written. A renderer may remember which rows the reader opened, and a sort and a filter, for the visit or on the device; the reference renderer remembers them for the visit.
 
 A query that names a data block in another module, or an `as:` that is not one of the six views, is not drawn, and is reported, like any other query that cannot be drawn. A query key this section does not list is ignored, and a renderer reports it; the linter reports an error.
 
@@ -998,7 +1064,48 @@ A query that names a data block in another module, or an `as:` that is not one o
 1. A view is a way to draw rows. It reads the shared roles and takes no key of its own.
 2. A new role must mean the same thing in every view that draws it, and two real pages must need it.
 3. A look that styling, density, or the shaping of rows by whatever wrote the file can give is never a new view or key.
-4. A reader may open, close, sort and filter what is on screen, and none of it is saved. Anything that changes the file or sends something elsewhere is not a view's business.
+4. A reader may open, close, sort and filter what is on screen, and none of it is ever put in the file. Anything that changes the file or sends something elsewhere is not a view's business.
+
+### Rows that open
+
+`table`, `list` and `cards` can nest their rows, and any row of one of them can open in place. The nested `list` of `parent:` is made general, with one rule for what an open row shows. A table nests as an indented tree in the same columns; cards nest as cards inside an opened card.
+
+**Where children come from.** There are two ways, and they draw the same tree:
+
+- **Flat rows.** A row sits under the row whose `id` its `parent` field names (`parent:`, above). `parent` is read among the rows of the data block itself; a `parent` field of a child row is an ordinary field.
+- **Child rows.** A field of a row that holds a list of rows, or one row, makes those rows the row's children (section 7, "Data: rows a generator wrote"), to any depth.
+
+Both may be used in one data block. The roles read the field of the same name at every depth, and a query's role keys (`label: title`) apply at every depth. A generator that wants one column to mean the same thing at every level gives that field the same name at every level.
+
+**What a row's line shows** is what a row of that view shows without children: the roles and the fields the query's `fields:` names (a table's columns, a list's extras, a card's lines). A field that holds child rows is never a column or a line. A table's first column is its first field.
+
+**What opens.** A row opens when it has more to show than its line. What it shows, in this order:
+
+1. **The rest of the row:** every field that plays no role, is not among the line's fields, is not `id` or the `parent` field, and does not hold child rows, each under its label. A value that is text keeps its line breaks and its paragraphs and stays plain text.
+2. **The questions asked of this row** (section 5, "A question asked for each row"), except those the query placed in a column.
+3. **Its children,** drawn by the same view with the same roles. Children by `parent:` come first, with no heading. Then each field that holds child rows, in the order the row writes its fields, is a group headed by that field's label (section 7).
+
+A row with nothing more to show does not open. With no `fields:`, a table and a list still show every plain field on the line, as above, so a row opens only for its children and its questions.
+
+```booklet query
+from: plots
+as: table
+fields: title, kind, stage, open, due
+```
+
+This draws a table of five columns, led by the title. A plot row opens to its other fields (a text called "What it is", say), then the questions asked of it, then its jobs as indented rows in the same five columns, and each job opens the same way.
+
+**The rules the reader's control already follows hold for every nested view:**
+
+- A filter keeps each match with its ancestors and opens them while it is on.
+- Sorting reorders the rows within each set of siblings, and the shape of the tree stays.
+- `limit:` counts top-level rows. `group:` is not drawn on a nested view, and the linter warns.
+- Opening and shutting a row is the reader's. A renderer keeps which rows are open through a sort, a filter and a refresh of the data (section 7, "Rows from a file"), and never puts it in the file. A renderer may offer Open all and Close all on a nested view.
+- A row that opens can be opened and shut from the keyboard and is named for a screen reader as a control that is open or shut.
+- A renderer should draw a row's open part when the row opens, and not before.
+- `tiles`, `bars` and `line` draw the top-level rows only, one figure for each; a source with child rows is not an error there.
+
+**The reference renderer does not do this yet** for the second item of "What opens" (it asks no questions of a row, section 5).
 
 ### A span of days, and summaries
 
@@ -1135,12 +1242,59 @@ A report or a dashboard page carries its numbers as a data block: a fenced block
 ^short-list
 ````
 
-- The fence holds JSON: an object with `rows` (a list of flat objects) and, optionally, `fields`, or just the list of rows. `fields` **declares** the block's fields: each key, its label, and their order (it is also the default order). A query's `fields:` (section 6) **picks** among them.
-- A value is a string, a number, `true`, `false` or nothing. A list of those is shown comma-separated. Nothing nests deeper.
+- The fence holds JSON: an object with `rows` (a list of objects) and, optionally, `fields`, or just the list of rows. `fields` **declares** the block's fields: each key, its label, and their order (it is also the default order). A query's `fields:` (section 6) **picks** among them. A declared key may name a field at any depth of nested rows (below).
+- A value is a string, a number, `true`, `false` or nothing. A list of those is shown comma-separated. A value may also be **a list of objects, or one object: those are the row's child rows**, and nest to any depth (section 6, "Rows that open"). Nothing else is a value: a list inside a list, or a list that mixes objects with plain values, makes the block unreadable.
+- **A field's label is a string, or an object** with `label` and, optionally, `edit` and `options`:
+
+  ```json
+  { "fields": { "title": { "label": "Name", "edit": "text" },
+                "stage": { "label": "Stage", "edit": "choice", "options": ["planning", "growing", "done"] },
+                "due":   { "label": "Due", "edit": "date" },
+                "kind":  "Kind" },
+    "rows": [ { "id": "j-prune", "title": "Prune the apple trees", "stage": "growing", "due": "2026-11-20", "kind": "Job" } ] }
+  ```
+
+  | `edit` | the reader changes the value in | `options` |
+  | --- | --- | --- |
+  | `text` | a one-line box | not used |
+  | `long` | a larger box | not used |
+  | `number` | a box that takes a number | not used |
+  | `date` | a date box (`YYYY-MM-DD`) | not used |
+  | `choice` | a list of the options | the words to pick from, required |
+
+  A field with a string for a label, or an object with no `edit`, is read-only. `edit` marks a field the reader may change in place (section 5, "Editing a field in place"); it adds nothing to a query, and a query's `readonly` (section 6) can lock it in one view. The data block is never changed by the reader, whatever `edit` says.
 - It lives where a widget's data lives: inside its module's fence (and is that module's), or in the data section at the end (shared by every module).
 - Its id may not also be the id of an activity or a question in the same module, because a query reads by id and could not tell them apart.
 - A data block belongs to whoever wrote the file. A reader never changes it, it is not a record, and a renderer writes it back exactly as it found it.
 - Nothing is computed from it. Whatever wrote the file has already ordered, counted and filtered the rows; a renderer draws them. Draw them with a `booklet query` (section 6). The one exception is a summary of kept entries (`summary: on`, section 6), which is for kept entries only and never for a data block.
+- **A row's `id`** names it where something has to be said about one row: a row's place in a tree (`parent:`), and a question asked for each row (section 5). It is unique among the rows of a block, at every depth; when two share one, the first is used.
+
+### Rows from a file
+
+A data block may take its rows from a JSON file beside the booklet, in place of its fence. The booklet says how to draw them; the file holds what a generator wrote and rewrites.
+
+````markdown
+```booklet data dashboard.json plots
+```
+^plots
+
+```booklet data dashboard.json inbox.requests
+{ "fields": { "title": "Request", "asked": "Asked" } }
+```
+^requests
+````
+
+The fence line is `booklet data`, then the file's name, then optionally a **key path**. The first block's rows are the list found at the key `plots` of `dashboard.json`. The second's are found at `inbox`, then `requests`, and its labels are declared in the booklet. Several blocks may name one file, which is read once.
+
+- **The fence** is empty, or holds only `fields`. A key the fence's `fields` declares takes the fence's label over the file's.
+- **The file name** follows the rule an image's does (section 6): letters, digits, `_`, `.`, `/` and `-`, at most 200 characters, relative to the booklet's own folder, with no part that is empty or begins with a dot (so no `..`, no `./` and no leading `/`), and ending `.json`. A name that does not follow it is not read, and the linter reports an error.
+- **The key path** is keys joined by dots, each of letters, digits, `_` and `-`. With none, the whole file is read.
+- **What is found** is a list of rows, or an object with `rows` and optionally `fields`: what a fence holds. The rows follow the rules of this section, nested rows included.
+- **Every other rule of a data block stays.** A reader never changes it, it is not a record, nothing is computed from it, and a renderer writes the fence back exactly as it found it.
+- **When the file cannot be read** (it is missing, is not JSON, holds nothing at the path, is larger than a reader reads, or the booklet was not opened in a way that lets the reader read it, below), a view of the block draws a quiet box that names the file and says why, as an image that is not shown does (section 6). The rest of the booklet works.
+- **Which booklets read a file.** A reader reads the file of a booklet only where it holds the booklet's own folder or store. The reference renderer reads it for a booklet it opened from its host's store, or from its default folder on a page that declares no store, and never for a booklet opened from a file on the reader's disk (section 12). A reader that holds the note's folder, such as the Obsidian plugin reading its vault, reads it from there (the plugin's own repository lists what it draws so far).
+- **Reading it again.** A reader may read the file again when the page comes back into view, and when a host says it changed (`docs/hosting.md`). It keeps the rows the reader has opened, the sort and the filter, and the place on the page across the refresh. Data is not the reader's work, so there is nothing to merge.
+- **In Obsidian without the plugin,** and on GitHub, the block is an empty code block whose first line names the file.
 
 ### A theme: how the booklet would like to look
 
@@ -1219,7 +1373,7 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
   | `grid-select` widget | a list of strings |
   | `svg-regions` widget | a list of `{ "id": a string, "s": a list of strings }` |
   | `listen` | an object: `pos`, if present, a whole number from 0 (seconds); `done`, if present, `true` or `false` |
-  | a question with `each:` | a list of pairs, `{ "pick": a number or a string, "a": its kind's shape }` |
+  | a question with `each:` | a list of pairs, `{ "pick": a number or a string, "a": its kind's shape }`; over a data block the pick is the row's `id`, and an in-place pair also has `was` (section 5) |
 
   Other keys in a pair, a region's row or a `listen` answer are kept and allowed. A `listen` answer with neither key is `{}`, which holds nothing, and so is no answer. A widget whose engine a reader does not have is not checked. This holds in `answers`, in drafts and in kept entries. No press, Finalize or save changes such an answer: it is written back as it was read. A view leaves it out of its row (section 6), and a reader says once, among the file's problems, that answers are kept as written. Such an answer comes from a hand edit, or from a reader that did not know a setting: a reader without `each:` draws an ordinary question over a list of pairs.
 
@@ -1348,7 +1502,7 @@ Two activities, the first in two `***` sections, one figure placed by reference,
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: "0.19"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; keep an answer whose shape is not its kind's as written, and draw its question read-only, with a notice saying so (section 8); open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names unasked (no remote image, no diagram image or style, no font, no remote media: a file may name where its media lives, and only the host or the reader allows, as the next paragraphs say), and draw a link to a module it does not hold without fetching anything. Opening a file therefore asks the network for nothing but the renderer's own parts, from where the renderer came, and only when a booklet needs one, with one exception: a reader whose host declares a store, or a reader on a page served over http or https that declares none (which reads the default folder, `modules/` beside the renderer), may read the images of a booklet it opened from that store or folder, only where the booklet still holds that store's or folder's own text for the part the image is in (section 6), as a plain read of the store's or folder's own address plus a checked relative path (section 6). That is an address the reader builds from the host's store, or from the page's own address, and a path, never an address a file spells out; a booklet opened any other way asks for no image at all. (The reference renderer is a core and its parts. Its one part loaded this way today is the diagram library, `parts/mermaid.js`: the page asks for it with an ordinary GET of the file beside itself, only when a booklet has a diagram. A booklet with no diagram and no image to read from a store or the default folder makes no request at all. A build can always put every part inside one file. A link the reader follows, `#/open/<name>`, is not a file naming an address: it asks for that one booklet, by a name it checks, from the store the page's host declares or, on a page served over http or https that declares none, from `modules/` beside the renderer, and nothing is asked for until it is followed.)
+A conforming reader must: read a file whose front matter declares `booklet: "0.19"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; keep an answer whose shape is not its kind's as written, and draw its question read-only, with a notice saying so (section 8); open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names unasked (no remote image, no diagram image or style, no font, no remote media: a file may name where its media lives, and only the host or the reader allows, as the next paragraphs say), and draw a link to a module it does not hold without fetching anything. Opening a file therefore asks the network for nothing but the renderer's own parts, from where the renderer came, and only when a booklet needs one, with one exception, which covers every file a booklet names beside itself: a reader whose host declares a store, or a reader on a page served over http or https that declares none (which reads the default folder, `modules/` beside the renderer), may read the images of a booklet it opened from that store or folder, and the data files its data blocks name (section 7, "Rows from a file"), only where the booklet still holds that store's or folder's own text for the part the image or the data block is in (section 6), as a plain read of the store's or folder's own address plus a checked relative path (section 6; section 7 for a data file's name). That is an address the reader builds from the host's store, or from the page's own address, and a path, never an address a file spells out; a booklet opened any other way asks for no image and no data file at all. Any other file a booklet names beside itself, which a later part of the format may define (a sidecar of published results, a captions file), is read by this same exception and by no other. A reader that holds the booklet's own folder, such as the Obsidian plugin reading its vault, reads those files from that folder. (The reference renderer is a core and its parts. Its one part loaded this way today is the diagram library, `parts/mermaid.js`: the page asks for it with an ordinary GET of the file beside itself, only when a booklet has a diagram. A booklet with no diagram, no image to read from a store or the default folder and no data block that names a file makes no request at all. A build can always put every part inside one file. A link the reader follows, `#/open/<name>`, is not a file naming an address: it asks for that one booklet, by a name it checks, from the store the page's host declares or, on a page served over http or https that declares none, from `modules/` beside the renderer, and nothing is asked for until it is followed.)
 
 **The file declares; the reader or the host allows.** A booklet may name the origins its media is hosted on (`media-from`, section 2), and that is all a file can do about the network: a declaration is not a permission. Only the host or the reader allows an origin, and nothing is requested for one unasked. A conforming reader must therefore: request no remote image and no remote media from an origin the host or the reader has not allowed, whether or not the file declares it; request nothing for a piece of media until the reader presses play on it; take no permission from a file, so that a booklet someone sent can change what the reader is asked and nothing else; count an address as on an origin only as the address is written, so that a redirect adds no origin; and show the alt text and the address as a link for any remote media it does not load, and draw an extensionless remote address written as an embed as a link. A conforming reader should, when it asks, name the origin in plain words and ask once for it. A conforming reader may keep a list of allowed origins of its own, which whoever sets the reader up may fill ahead of time and which may carry path prefixes; an origin on that list loads in any booklet, declared or not. It may also keep an allow for one booklet, or for one piece of media, apart from that list, and it keeps none of these in a booklet file. A conforming reader may open a request for the declared origins the list does not hold when a booklet is opened, and for any other origin when the reader presses media on it. The reference renderer does not do this yet: through v0.19 it loads no remote media and no remote image, whatever a file declares (section 6, section 13).
 
@@ -1387,6 +1541,7 @@ This is a young format, and the reference renderer does not yet do everything th
 - **Footnotes in the booklet's opening and in a title** (sections 3 and 4). The reference renderer leaves a mark there out and draws no note.
 - **A query view or a Booklet line inside a callout that holds Markdown only** (section 6): in a note, a tip or any other kind but a group, or in a group outside an activity, the reference renderer draws a `booklet query` block as code and a Booklet line as text, not as a view or a question; the linter warns. A group in an activity reads both.
 - **A question asked for each pick** (`each:`; section 5, "A question asked for each pick", and section 6 for a follow-up named alone in `from:`).
+- **A question asked for each row, and editing a field in place** (section 5, "A question asked for each row" and "Editing a field in place"; section 6, the `readonly` key and a question placed in a column by `fields:`; section 7, a field's `edit` and `options`). The reference renderer does not ask the question, keeps no `was`, draws no Finalize in a row and none of the display states, and draws an editable field as plain read-only text. It reads the object form of a field's label and the `readonly` key, and ignores what they ask. The data block it reads is never changed.
 - **A body widget's earlier words and a `lines` question's earlier lines** (section 5, "Words the reader wrote before").
 - **A thematic break inside a `$$` display-math block** (section 3, "Pages"). Whether a `---`, `***` or `___` line alone on a line inside a `$$` block splits a page is open. The reference renderer's scanner knows fences only and reads such a line as a break; the Obsidian plugin's scanner numbers and draws it differently (its own README says so). Until this is settled, a booklet should not put such a line inside a `$$` block.
 - **The kept-entries fold** (`entries:folded`, section 3, "Kept entries, folded"). The Obsidian plugin reads the mark (1.0.3); a reader that does not keeps it as written.
@@ -1416,6 +1571,6 @@ These are described so that nothing is lost, and they are not part of the format
 
 It would be required when anything lives in another file, and recommended always, as the table of contents an editor sees first. A linter would check it against the file and report a part it names that is missing, or a part in the file it does not name. A manifest line that names a path would settle which module a link to a whole module (section 3) means; otherwise a module's file is named by its id. A whole-note embed, `![[week-2.booklet]]`, could stand in a manifest line where the module should render inline in Obsidian. `manifest` stays a kind the format knows (section 4): it takes no settings, and the reference renderer skips it and the reference linter does not check it.
 
-**Draft: parts in other files.** A part of a booklet, a module or a data block, could live in another file. Paths follow Obsidian's conventions: `[[week-2.booklet]]` (Obsidian resolves a note by name anywhere in the vault) or an ordinary Markdown link, `[Week 2](modules/week-2.booklet.md)`, relative to the booklet's own folder; a block in another file is `![[week-2.booklet#^body-map]]`. Absolute machine paths such as `~/notes/…` are outside what Obsidian (vault-relative) or a browser (no file system) can read, so they would not be supported; an unresolved link is shown as one and breaks nothing. A reference would be looked up in the module's fence, its data section, the shared data section, and then the files the manifest names. The reference renderer reads one file: a part that lives in another file is not read.
+**Draft: parts in other files.** A part of a booklet, a module or a data block, could live in another file. (This is not the data file of section 7: that file holds the rows of a block whose fence stays in the booklet, and is part of the format.) Paths follow Obsidian's conventions: `[[week-2.booklet]]` (Obsidian resolves a note by name anywhere in the vault) or an ordinary Markdown link, `[Week 2](modules/week-2.booklet.md)`, relative to the booklet's own folder; a block in another file is `![[week-2.booklet#^body-map]]`. Absolute machine paths such as `~/notes/…` are outside what Obsidian (vault-relative) or a browser (no file system) can read, so they would not be supported; an unresolved link is shown as one and breaks nothing. A reference would be looked up in the module's fence, its data section, the shared data section, and then the files the manifest names. The reference renderer reads one file: a part that lives in another file is not read.
 
 **Draft: a check of translation siblings.** A translation is a sibling file (section 9). A linter, given the siblings, would check that ids match and lists have equal length. `lint-booklet.py` has no such check, and no translation exists yet.
