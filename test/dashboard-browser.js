@@ -100,6 +100,14 @@ const MANY=`---\nbooklet: "0.19"\ntitle: Many\nlang: en\n---\n\n> [!activity|a] 
    ok(all>=F.count(DATA)-1-1000&&all>400,'Open all draws every row ('+all+' rows)');
    await p.locator('.dv-closeall').click();await wait(p,200);
    ok(await trs().count()===6&&(await openIds()).length===0,'Close all shuts every row');
+   // print: every closed row opens and is drawn when the print begins (a toggle event would come too late), and folds back after it
+   const printed=async(shutSel,doneSel)=>{
+     await p.emulateMedia({media:'print'});await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
+     const r=await p.evaluate(([a,b])=>({shut:document.querySelectorAll(a).length,seen:[...document.querySelectorAll(b)].filter(e=>e.getBoundingClientRect().height>0).length}),[shutSel,doneSel]);
+     await p.evaluate(()=>window.dispatchEvent(new Event('afterprint')));await p.emulateMedia({media:'screen'});await wait(p,250);return r;};
+   {const r=await printed('table.dv-table details:not([open])','table.dv-table tr.dv-trow');
+    ok(r.shut===0&&r.seen>400,'print: a closed table prints every row at every depth ('+r.seen+' rows laid out, '+r.shut+' disclosures still shut)');
+    ok(await trs().count()===6&&(await openIds()).length===0,'and after the print every row is shut again, as the reader left them');}
    // timings
    const tAll=await p.evaluate(async()=>{const t=performance.now();document.querySelector('.dv-openall').click();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return performance.now()-t;});
    console.log('INFO table: '+F.count(DATA)+' rows, Open all (every row drawn): '+Math.round(tAll)+' ms; one row opened: '+Math.round(t0)+' ms');
@@ -110,6 +118,10 @@ const MANY=`---\nbooklet: "0.19"\ntitle: Many\nlang: en\n---\n\n> [!activity|a] 
    const tL=await p.evaluate(async()=>{const s=document.querySelectorAll('.dv-tree > li > details > summary')[1];const t=performance.now();s.click();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return performance.now()-t;});
    ok(await p.locator('.dv-tree details[open]').count()===1&&await p.locator('.dv-tree .dv-more').count()===1&&await p.locator('.dv-tree .dv-ghead').count()===1,'a list row opens to its open part and its group heading');
    console.log('INFO list: one row opened: '+Math.round(tL)+' ms');
+   {const before=await p.evaluate(()=>[...document.querySelectorAll('.dv-tree details')].map(d=>d.getAttribute('data-id')+(d.open?':1':':0')).join());
+    const r=await printed('.dv-tree details:not([open])','.dv-tree .dv-t');
+    ok(r.shut===0&&r.seen>400,'print: a closed list prints every row at every depth ('+r.seen+' rows laid out, '+r.shut+' disclosures still shut)');
+    ok(await p.evaluate(()=>[...document.querySelectorAll('.dv-tree details')].filter(d=>d.open).map(d=>d.getAttribute('data-id')).join())===before.split(',').filter(x=>/:1$/.test(x)).map(x=>x.slice(0,-2)).join(),'and after the print only the row the reader opened is open');}
    ok(jsonReqs().length===1,'going to other pages asked for no data file again ('+jsonReqs().length+' request)');
    // cards
    await pageLink(p,'Cards').click();await wait(p,600);
@@ -117,6 +129,11 @@ const MANY=`---\nbooklet: "0.19"\ntitle: Many\nlang: en\n---\n\n> [!activity|a] 
    ok(await p.locator('details.card-fold .cd-body .dv-more').count()===1&&await p.locator('details.card-fold .dv-sub .card').count()===4,'a card opens to its open part and its child cards ('+await p.locator('details.card-fold .dv-sub .card').count()+')');
    await p.locator('details.card-fold .dv-sub details.card-fold > summary').first().click();await wait(p,200);
    ok(await p.locator('details.card-fold details.card-fold .dv-sub .card').count()===3,'a child card opens the same way');
+   {const open=()=>p.evaluate(()=>[...document.querySelectorAll('details.card-fold[open]')].map(d=>d.getAttribute('data-id')).join());
+    const before=await open();
+    const r=await printed('details.card-fold:not([open])','.dv-cards .entry-row');
+    ok(r.shut===0&&r.seen>400,'print: closed cards print every card at every depth ('+r.seen+' cards laid out, '+r.shut+' still shut)');
+    ok(await open()===before,'and after the print the cards the reader had open are open and the rest shut ('+before+')');}
    await p.screenshot({path:path.join(OUT,'dashboard-cards.png'),fullPage:false});
    // 2. a refresh of the data file keeps open rows, scroll and the screen
    await pageLink(p,'Table').click();await wait(p,600);
