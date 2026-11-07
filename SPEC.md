@@ -1326,7 +1326,58 @@ density: roomy
 - **A colour that would be hard to read is not used.** If text on its background falls below a contrast of 4.5 to 1, the renderer keeps the base theme's colour for that pair, and the linter says which.
 - A theme names a family, never a font file. A renderer may carry a family inside itself; nothing is fetched.
 - **The reader has the last word on colour.** A reader who picks a theme of their own gets its colours, whatever the booklet asks for. The booklet's `font`, `density` and `style` still apply: they are the page's layout, not its colours.
-- Printing is always light.
+- Printing is always light, and has rules of its own, below ("Printing").
+
+### Printing
+
+A reader may print a booklet, with the browser's print command or any other way a renderer offers. Printing reads what the reader has on screen. It writes nothing to the file or the records, sends nothing, and leaves every choice the reader made as it was. These are the rules for what goes on the paper.
+
+**Always light.** Whatever theme the reader picked, and whatever the booklet's theme block asks for, paper is white with dark ink, in the colours of the `daylight` base, tones and tints included. The booklet's `paper`, `ink`, `accent`, `good`, `warn` and `bad` do not reach the paper. Its `font`, `density` and `style` do. The reference renderer asks the browser to print a figure or diagram in its own colours, and asks nothing of the kind for any other background.
+
+**What is left off the paper.** Parts of the screen that only help the reader work with it:
+
+- The bar at the top of the window: the Home button, the export button, the save status, the language buttons, the theme menu and the renderer's version.
+- The tab bar, the pager at the foot of an activity (Back, Next and "Page N of M"), the pages menu of a tab and the trail of page names above a named page. A page that has a pages menu prints at the full width, without the menu's column.
+- The line of tools above a page: the switch between one group at a time and all at once, the Open all switch for folds, and, when groups are taken one at a time, the progress line and its dots.
+- A view's sort and filter button and the bar it opens, with its search box, its menus and its Open all, Close all and Clear buttons; the Clear button beside "Nothing matches."; and the arrow on a table heading that shows the sort.
+- The button of a `copy` line, and the line that says "Copied" beside it. Nothing else of a copy line is drawn on screen either, so it leaves nothing on paper (section 6, "Copy").
+- The arrow that opens and closes a fold card, the source panel and the small preview that appears over a citation mark, and the brief message that appears at the foot of the window.
+
+Everything else prints as it is drawn on screen, including a question and what the reader typed or picked in it. Images print (section 6, "Images").
+
+**An activity prints whole.** The screen draws one tab and one page of an activity at a time. Paper gets all of them:
+
+- Every tab, in order, each under its name (the name only when the activity has two or more tabs), and under it every page of that tab, in the order the file writes them. A named page is headed by its title, once, at its first part, and a page under another page is printed in that order at the same level, not indented.
+- The activity's own heading and its opening print once, at the top, as the screen has them, since the opening is shown above every tab and belongs to none. Pages that belong to no tab are that opening and are not printed a second time.
+- When groups are taken one at a time, every group prints, one after another.
+- The questions print with the reader's answers in them, and a view prints the sort and the filter the reader has set.
+- The screen's own tab or page is left out of the print, so nothing prints twice.
+- When the print ends, the screen is as it was: the same tab and page, the same place in the window, the same focus, the same words in every field. Nothing is drawn again. A print that never reports that it ended is closed first when the next print begins, so each print starts from the screen the reader has.
+- An activity of one page and no tabs prints as the screen shows it. If the whole activity cannot be drawn for the print, the print is the screen as it is.
+
+**The reference renderer does not do this yet** for a module's own screen (section 3, "A module's tabs"): it prints the tab on show only. It prints every tab and page for an activity's screen alone (section 13).
+
+**Citations.** A citation mark prints as a plain number in the text's ink, with no colour or highlight. The notes print as a list headed "Notes" in the reader's language, at the end of what is printed: the foot of the page on show, or, for an activity printed whole, the foot of the activity. Each note carries the number its mark has on screen (an activity printed whole numbers its marks as the whole activity does), and holds the source's title and edition, the place in it (a page, for example) and the quote. Only the notes of the marks that are printed appear, in the order of their numbers. The note list is not drawn on screen.
+
+**Folds.** Printing prints everything a fold hides. These open for the print and fold again afterwards, whether or not the reader has opened them: a callout folded with `-` (including a group), a hint, a solution, and every fold drawn as a card. A solution prints open whether or not the reader has answered the question, so a printed page carries its model answers. A fold the reader had open stays open, and the reader's Open all switch is not changed. The reference renderer leaves three folds as the reader has them, closed or open: the "Show the numbers" table under a chart, the fold of kept entries (`entries:folded`, section 3) and a module's "About this module" notice.
+
+**Rows that open.** Section 6 ("Rows that open") asks a renderer to draw a row's open part when the row opens and not before. Such a renderer has to draw every open part for the paper before the page is printed, and follows these rules:
+
+- When the print begins, every row that is closed and has more to show is opened and its open part drawn at once, without waiting for the row's own opening event, which comes too late to draw anything for the print. A row that opens shows rows of its own that may be closed, and those open as well, until none is left closed.
+- When the print ends, exactly the rows the print opened close again. The rows the reader had open stay open, and the reader's remembered set of open rows, filter and sort are not touched.
+- The opening event of a row the print opened is the print's, and is not the reader's. It is ignored once. Any later opening or closing of that row is the reader's: it takes the row over, so the row is no longer one the print will close. This is what keeps a print that never reports its end from swallowing the reader's next click on a row.
+- If a print begins while rows from an earlier print that never ended are still open, those rows close first, so each print starts from the reader's own rows.
+- A view with a filter on prints only the rows the filter keeps (a match with its ancestors), in the order the sort gives, and prints the line "N of M shown" above them, the same line the screen shows. With no filter on, the line is empty and prints nothing. When nothing matches, "Nothing matches." prints without its Clear button.
+
+**Layout for paper.**
+
+- Things drawn side by side on screen print one under another: the lines of a `row` (section 3, "Rows: things side by side") and the groups and cards of a view.
+- A callout, a view's tile, row, group or group card, a figure, a formula, an image and a table row are not split across two pages. A table's heading row is repeated at the top of each page the table runs onto.
+- A callout loses its shadow. A fold card, a view's panel and a step lose their border and background, and a group card in a view loses its border, so the page looks like the text it holds.
+- A heading that stays at the top of the window while the reader scrolls (the item heading of a matrix drawn as a stack) is not fixed on paper.
+- A table heading that sorts is printed bold.
+
+**The Obsidian plugin** follows the rules for rows that open and adds no other print rule of its own. What Obsidian's own print command does with the rest of a note was not tried.
 
 ---
 
@@ -1544,6 +1595,7 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A question asked for each row, and editing a field in place** (section 5, "A question asked for each row" and "Editing a field in place"; section 6, the `readonly` key and a question placed in a column by `fields:`; section 7, a field's `edit` and `options`). The reference renderer does not ask the question, keeps no `was`, draws no Finalize in a row and none of the display states, and draws an editable field as plain read-only text. It reads the object form of a field's label and the `readonly` key, and ignores what they ask. The data block it reads is never changed.
 - **A body widget's earlier words and a `lines` question's earlier lines** (section 5, "Words the reader wrote before").
 - **A thematic break inside a `$$` display-math block** (section 3, "Pages"). Whether a `---`, `***` or `___` line alone on a line inside a `$$` block splits a page is open. The reference renderer's scanner knows fences only and reads such a line as a break; the Obsidian plugin's scanner numbers and draws it differently (its own README says so). Until this is settled, a booklet should not put such a line inside a `$$` block.
+- **Printing every tab and page of a module's own screen** (section 7, "Printing"). The reference renderer prints the tab on show of a module's screen. It prints every tab and every page of an activity's screen.
 - **The kept-entries fold** (`entries:folded`, section 3, "Kept entries, folded"). The Obsidian plugin reads the mark (1.0.3); a reader that does not keeps it as written.
 - **Audio and video** (section 6, "Audio and video"). The reference renderer does not play audio or video, local or remote, and does not read `![[name.ext]]`, for images either. Through v0.19 it never loads remote media or a remote image, whatever a file declares (section 12): what it draws in place of the media is the box that section 6 describes for an image it will not draw, with the alt text and the address.
 - **`media-from`** (section 2). The reference renderer does not read the key. It keeps it as written, like any key it does not know.
