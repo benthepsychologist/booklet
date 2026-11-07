@@ -64,7 +64,7 @@ part("each: problems",()=>{const A=P.boot();
  chk("and each is said among the file's problems",said(/“t1”.*names nothing/)&&said(/“t2”.*of itself/)&&said(/“t3”.*“nowhere”, which is no question/)
    &&said(/“t4”.*“t1”, a text question/)&&said(/“t6”.*“t5”, which is itself asked for each pick/)&&said(/“t7”.*“tools”, which is no question/),R.unread.map(String).join(" | "));});
 
-/* ---- 2. `each:` is drawn as not yet supported, and its answer is kept through opening, saving and Finalize ---- */
+/* ---- 2. `each:` is drawn once for each pick, and its answer is kept through opening, saving and Finalize ---- */
 const EACH=FM+`> [!module|fu] Follow-ups
 
 > [!activity|log repeat] Log
@@ -107,9 +107,11 @@ as: cards
 const PAIRS=[{pick:2,a:"cutting"},{pick:3,a:"holes"},{pick:1,a:"an old answer, its pick taken back"},{pick:"Glue gun",a:"sticking",note:"a key of its own"}];
 part("each: kept",()=>{let A=P.boot();A.loadText(EACH);
  A.screen="fu/log";A.render();
- const box=find(P.main(),x=>/q-kept/.test((x.attrs||{}).class||"")&&/What was it for\?/.test(T(x)))[0];
- chk("a question with `each:` is drawn as its title and a line saying this page does not draw it yet",!!box&&/does not draw yet/.test(T(box)),T(P.main()).slice(0,400));
- chk("and with nothing to press",!!box&&pressable(box).length===0);
+ chk("a question with `each:` draws nothing while nothing is picked",!/What was it for\?/.test(T(P.main())),T(P.main()).slice(0,300));
+ {const d0=A.draftFor("fu/log");d0.tools=[2,3];A.render();
+  const t=T(P.main());
+  chk("and once picks are made, the title once and each pick as a subheading in its own words, in the source's order, only for the picks held",/What was it for\? Saw Drill/.test(t)&&(t.match(/What was it for\?/g)||[]).length===1,t.slice(0,500));
+  d0.tools=null;A.render();}
  const d=A.draftFor("fu/log");d.tools=[2,3,"Glue gun"];d.why=JSON.parse(JSON.stringify(PAIRS));
  const out=A.toMarkdown();
  chk("saving writes the pairs as they were",out.includes(JSON.stringify(PAIRS)),out.slice(-500));
@@ -436,7 +438,7 @@ part("answers that hold nothing",()=>{
 
 /* ---- 11. the new strings are in French and Spanish (provisional until the release's /localize pass) ---- */
 part("the new strings in fr and es",()=>{
- const A=P.boot(),S=A.STRINGS_SRC,keys={question:["eachNotYet","keptAsWritten"],dv:["eachNotYet"],problem:["earlierBad","eachNone","eachMissing","eachSelf","eachKind","eachChain","shapesKept"]};
+ const A=P.boot(),S=A.STRINGS_SRC,keys={question:["keptAsWritten"],dv:["eachNotYet"],problem:["earlierBad","eachNone","eachMissing","eachSelf","eachKind","eachChain","shapesKept"]};
  const missing=[];
  for(const lang of ["fr","es"]) for(const [g,ks] of Object.entries(keys)) for(const k of ks){const x=((S[lang]||{})[g]||{})[k],en=S.en[g][k];
    if(x===undefined||typeof x!==typeof en||(typeof x==="string"&&x===en)) missing.push(lang+"."+g+"."+k);}

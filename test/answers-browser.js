@@ -1,5 +1,5 @@
-// Browser check for format 0.16's answers lane: a question asked for each pick (`each:`) is drawn as not yet supported and its
-// pairs survive Finalize; an answer of the wrong shape is drawn read-only, with its notice and the file's value, and fits a phone's
+// Browser check for format 0.16's answers lane: a question asked for each pick (`each:`) is drawn once for each pick, with its
+// pairs in its boxes, and they survive Finalize; an answer of the wrong shape is drawn read-only, with its notice and the file's value, and fits a phone's
 // width; the kept entry's card shows a follow-up as one line per pick. At 1280 and 390 px.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/answers-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
@@ -42,11 +42,14 @@ lang: en
     await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(250);
     await p.locator('#pasteIn').fill(text);await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(900);
     const kept=p.locator('#main .q-kept');
-    ok(await kept.count()===2,`${W}px: two questions are drawn as kept: the follow-up and the note of the wrong shape (${await kept.count()})`);
-    const fu=await kept.nth(0).innerText(),note=await kept.nth(1).innerText();
-    ok(/What was it for\?/.test(fu)&&/does not draw yet/.test(fu),`${W}px: the follow-up says this page does not draw it yet`);
+    ok(await kept.count()===1,`${W}px: one question is drawn as kept, the note of the wrong shape (${await kept.count()})`);
+    const note=await kept.nth(0).innerText();
+    const each=p.locator('#main .q-each');
+    ok(await each.count()===1&&/What was it for\?/.test(await each.innerText()),`${W}px: the follow-up is drawn, its title once`);
+    ok(await each.locator('textarea, input[type=text]').count()===2,`${W}px: with one box for each pick held (Saw and Drill), and none for the pick taken back (${await each.locator('textarea, input[type=text]').count()})`);
+    ok((await each.locator('textarea, input[type=text]').evaluateAll(l=>l.map(x=>x.value))).join()==='cutting,holes',`${W}px: holding the answers the file has for them, in the source's order`);
     ok(/A note/.test(note)&&/Kept as written/.test(note)&&/a note kept as a list/.test(note),`${W}px: the note shows its notice and the file's value`);
-    ok(await kept.locator('button,input,textarea,select').count()===0,`${W}px: neither has anything to press or type in`);
+    ok(await kept.locator('button,input,textarea,select').count()===0,`${W}px: the note has nothing to press or type in`);
     ok(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),`${W}px: the page does not scroll sideways`);
     await p.locator('#main button.finalize').click();await wait(400);
     const card=await p.locator('#main .entry').first().innerText();
