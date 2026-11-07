@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-0H0vuU/9XewycPBqLZ95YRmSYWWwTiOkMXDF0Lx/nPI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-RRFlVPtC4YtwyCfGCn+sHn/xPcuX2dlFD+VCY/ONcbM=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7681,20 +7681,27 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   /* What the reader opens in a nested view is kept with the rest of the query's state, and what a row opens to is drawn here, when it
      opens (or taken away when it shuts, in a table, whose rows are not inside the disclosure). A toggle does not bubble, so this
      listens on the way down; while a filter is on, the ancestors it opened are not remembered. */
-  const lent=new Set();
+  /* `lent`: the rows a print opened, each with whether the toggle event of that opening is still to come (true) or has come. That one
+     event is the print's own and is not the reader's; any later toggle of a lent row is the reader's, and takes the row over (it is
+     no longer lent, so a print that never ends with afterprint cannot swallow what the reader does next). */
+  const lent=new Map();
   if(tree) box.addEventListener("toggle",e=>{const d=e&&e.target;
     if(!d||String(d.tagName).toLowerCase()!=="details") return;
     const h=cur&&cur.hooks.get(d);if(h) (d.open?h.open:h.close)();
-    if(lent.has(d)||ctl&&ctl.active()) return;
+    const mine=lent.get(d);
+    if(mine!==undefined){if(mine&&d.open){lent.set(d,false);return;}lent.delete(d);}
+    if(ctl&&ctl.active()) return;
     const id=d.getAttribute("data-id");if(id===null) return;
     if(d.open) state.opens.add(id);else state.opens.delete(id);},true);
   /* Printing prints everything: the page's beforeprint handler calls box.printRows(true) and its afterprint handler box.printRows(false). Every
      closed row is opened for the paper and drawn at once (a toggle event comes too late to draw anything for the print), and the ones opened
-     here fold back after it. Which rows the reader has open (state.opens) is not touched: `lent` keeps the toggles this makes out of it. */
-  if(tree) box.printRows=on=>{
-    if(on){for(let more=true;more;){more=false;
-      box.querySelectorAll("details").forEach(d=>{const h=cur&&cur.hooks.get(d);if(!h||d.open) return;lent.add(d);d.open=true;h.open();more=true;});}}
-    else{[...lent].reverse().forEach(d=>{d.open=false;const h=cur&&cur.hooks.get(d);if(h) h.close();});lent.clear();}};
+     here fold back after it. Which rows the reader has open (state.opens) is not touched: `lent` keeps the toggles this makes out of it. A
+     print that began and never ended (afterprint is not always sent) is folded back first, so each print starts from the reader's own rows. */
+  if(tree){const fold=()=>{[...lent.keys()].reverse().forEach(d=>{d.open=false;const h=cur&&cur.hooks.get(d);if(h) h.close();});lent.clear();};
+    box.printRows=on=>{
+      if(on){fold();for(let more=true;more;){more=false;
+        box.querySelectorAll("details").forEach(d=>{const h=cur&&cur.hooks.get(d);if(!h||d.open) return;lent.set(d,true);d.open=true;h.open();more=true;});}}
+      else fold();};}
   return [box];}
 
 /* ======================= 11. TABS AND PAGES, LINKS, READING MATERIAL =======================

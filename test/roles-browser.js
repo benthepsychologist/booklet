@@ -266,6 +266,24 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    ok(t.csp.length===0&&t.errs.length===0,'print: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));
    await t.ctx.close();}
 
+  // print with no afterprint (a browser may not send it): a row the print opened, which the reader then shuts and opens again, is the reader's
+  // own open row from then on, and a repaint (a filter on and off) keeps it; and the next beforeprint starts from the rows the reader has
+  {const t=await open(fixture,1280);const p=t.p;
+   const tree=p.locator('.dv-box:has(.dv-tree)');
+   const shape=()=>p.evaluate(()=>[...document.querySelectorAll('.dv-tree details')].map(d=>d.getAttribute('data-id')+':'+(d.open?1:0)).join());
+   await tree.locator('summary').first().click();await p.waitForTimeout(150);
+   await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));await p.waitForTimeout(250);   // the toggles the print's own opening makes arrive and are ignored
+   const g=tree.locator('details[data-id="garden"] > summary');
+   await g.click();await p.waitForTimeout(150);await g.click();await p.waitForTimeout(150);          // the reader shuts the garden row and opens it again
+   await tree.locator('.dv-ctl-btn').click();await tree.locator('.dv-q').fill('fan');await p.waitForTimeout(150);await tree.locator('.dv-q').fill('');await p.waitForTimeout(250);
+   const s1=await shape();
+   ok(/(^|,)garden:1(,|$)/.test(s1)&&/^house:1,/.test(s1),'no afterprint: a row the print opened, shut and opened again by the reader, is still open after a repaint ('+s1+')');
+   await p.evaluate(()=>window.dispatchEvent(new Event('afterprint')));await p.waitForTimeout(250);
+   const s2=await shape();
+   ok(/(^|,)garden:1(,|$)/.test(s2),'…and a late afterprint does not shut a row the reader took over ('+s2+')');
+   ok(t.csp.length===0&&t.errs.length===0,'print without afterprint: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));
+   await t.ctx.close();}
+
   // 9 grouped lists: at most two cards across on a wide page
   {const t=await open(fixture,1280);const p=t.p;
    const xs=await p.evaluate(()=>new Set([...document.querySelectorAll('.dv-groups .dv-gcard')].map(c=>Math.round(c.getBoundingClientRect().left))).size);
