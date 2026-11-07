@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-RRFlVPtC4YtwyCfGCn+sHn/xPcuX2dlFD+VCY/ONcbM=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-KDRRUEl+4xVJEPk2/oASmsvD11UekaNqQPyzseeBYNw=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -4124,11 +4124,13 @@ function readQuery(code){const o={};
 const isRowObj=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
 function readFields(f){const P=PROBLEM;
   if(!isRowObj(f)) return {bad:P.dataFieldsBad};
-  const labels={},edits={};
+  /* a field is named by its key whatever the key is, `__proto__` among them: it is set as an own entry (`labels[k]=` on that key would set
+     the object's prototype and drop the label, and an edit object there would make `edits` inherit `edit` and `options`) */
+  const labels={},edits={},put=(o,k,v)=>Object.defineProperty(o,k,{value:v,writable:true,enumerable:true,configurable:true});
   for(const [k,v] of Object.entries(f)){
-    if(typeof v==="string"){labels[k]=v;continue;}
-    if(isRowObj(v)&&(v.label===undefined||typeof v.label==="string")){labels[k]=v.label===undefined?k:v.label;
-      if(v.edit!==undefined||v.options!==undefined) edits[k]={edit:v.edit,options:v.options};continue;}
+    if(typeof v==="string"){put(labels,k,v);continue;}
+    if(isRowObj(v)&&(v.label===undefined||typeof v.label==="string")){put(labels,k,v.label===undefined?k:v.label);
+      if(v.edit!==undefined||v.options!==undefined) put(edits,k,{edit:v.edit,options:v.options});continue;}
     return {bad:P.dataFieldsBad};}
   return {fields:labels,edits};}
 function readData(o){const P=PROBLEM;
@@ -7099,6 +7101,7 @@ const PICK_SEP="\u0001";
    it out of its row). A question asked for each pick has one field per pick its source holds in the same record, in the source's
    order, labelled "<title> · <pick's words>" (section 6). */
 function entryFields(q,e){const k=keysOf(q)[0];if(k===undefined||!e) return [];
+  e=bare(e);   /* a kept entry lacking the field a question is named for has no such field, whatever the name */
   if(wrongShape(q,e[k],widgetFor(q))) return [];
   if(!q.each){const r=fieldSummary(q,e);return r?[{key:q.id,parts:[r[0]],node:r[1],v:e[k]}]:[];}
   const one={...q};delete one.each;const src=eachSource(q);
@@ -7125,7 +7128,7 @@ function inSpan(ents,days){if(!days) return ents;
 /* A kept entry as a card: a `.when` line holding `whenKids` (none when null),
    then what each question in `qs` recorded, as a `dl`. Returns the card and how
    many questions had an answer to show. */
-function entryBody(e,qs,whenKids,extra){extra=extra||{};
+function entryBody(e,qs,whenKids,extra){extra=extra||{};e=bare(e);
   const dl=el("dl",{});let rows=0;
   for(const q of qs){const k=keysOf(q)[0],W=widgetFor(q);
     /* a kept entry's own card shows an answer not in its kind's shape as written, with the notice; a view leaves it out */
@@ -7144,6 +7147,11 @@ function queryCard(e,from,fields,extra){
    first `limit` of them, optionally gathered under a field's value. A value is
    plain text, never Markdown or HTML (`el` sets text, never markup). */
 const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
+/* A row, or a kept entry, as a shallow copy with no prototype, so that reading a field it lacks gives nothing, whatever the field is
+   called: `r.constructor`, `r.toString` and `r.__proto__` on an ordinary object are the Object function, a method and the prototype.
+   The values are the same ones. A copy is made where rows are taken for a view (dataSet, entrySet, entryFields, entryBody), so every
+   read of a cell after it, here and in the compiler, is an own read. */
+const bare=o=>Object.getPrototypeOf(o)===null?o:Object.assign(Object.create(null),o);
 const cellText=v=>v==null?"":Array.isArray(v)?v.map(x=>x==null?"":String(x)).join(", "):String(v);
 /* the text of a drawn cell, parts joined by "; " (textOf, further down, joins with nothing: it reads headings and paragraphs) */
 const nodeText=n=>typeof n==="string"?n:(n&&typeof n.plain==="string"?n.plain:n&&n.nodeType===3?n.textContent:Array.from((n&&(n.childNodes||n.children))||[]).map(nodeText).join("; "));
@@ -7153,17 +7161,18 @@ const nodeText=n=>typeof n==="string"?n:(n&&typeof n.plain==="string"?n.plain:n&
 function dataSet(d){
   /* every row at every depth (0.19: a field that holds rows, or one row, makes child rows; `kidKeys` are those fields). Walked
      with a stack of its own and in the file's order, so the order of `all` is a row's turn before its children's. */
-  const kidKeys=new Set(),all=[],groupsOf=new Map(),todo=d.rows.slice().reverse();
+  const kidKeys=new Set(),all=[],groupsOf=new Map(),copies=new Map(),mine=r=>{if(!copies.has(r)) copies.set(r,bare(r));return copies.get(r);},
+    top=d.rows.map(mine),todo=top.slice().reverse();
   while(todo.length){const r=todo.pop();all.push(r);
     const gs=[];
     for(const [k,v] of Object.entries(r)){
       const rs=Array.isArray(v)?(v.length&&isRowObj(v[0])?v:null):isRowObj(v)?[v]:null;
-      if(rs){kidKeys.add(k);gs.push({key:k,rows:rs});}}
+      if(rs){kidKeys.add(k);gs.push({key:k,rows:rs.map(mine)});}}
     if(gs.length){groupsOf.set(r,gs);for(let i=gs.length-1;i>=0;i--) for(let j=gs[i].rows.length-1;j>=0;j--) todo.push(gs[i].rows[j]);}}
   const keys=new Set(Object.keys(d.fields||{}));all.forEach(r=>Object.keys(r).forEach(k=>keys.add(k)));
   const own=(d.fields?Object.keys(d.fields):Object.keys(d.rows[0]||{})).filter(k=>!kidKeys.has(k));
   const lab=k=>hasOwn(d.fields,k)?d.fields[k]:k;
-  return {kind:"data",rows:d.rows,all,groupsOf,kidKeys,keys,own,first:own[0],lab,sortVal:(r,k)=>r[k]};}
+  return {kind:"data",rows:top,all,groupsOf,kidKeys,keys,own,first:own[0],lab,sortVal:(r,k)=>r[k]};}
 /* kept entries as rows: each question is a field and the date is the field `date`.
    A chart has them oldest-first (the pipeline's `limit` then keeps the newest N). A row is
    kept when it answers at least one of the questions `fields:` names (or any). */
@@ -7177,14 +7186,14 @@ function entrySet(b,activityId,as){
   const raw=new Map(),ent=new Map(),mk=new Map();
   /* a question asked for each pick is one field per pick (entryFields): its fields, in the order rows first show them */
   const picks=new Map(qs.filter(q=>q.each).map(q=>[q.id,new Map()]));
-  let rows=ents.map(e=>{const r={},w={};
+  let rows=ents.map(e=>{const r=Object.create(null),w=Object.create(null);
     if(e.ts){r.date=numeric?dayMonth(e.ts):fmtWhen(e.ts);
       const t=Date.parse(e.ts);w.date=Number.isFinite(t)?t:String(e.ts);}
     let any=false;
     for(const q of qs) for(const f of entryFields(q,e)){
       const n=(q.type==="number"||q.type==="scale")&&isFinite(parseFloat(f.v))?Number(f.v):null;
       r[f.key]=numeric&&n!==null?n:nodeText(f.node);
-      if(f.node&&f.node.parts) mk.set(r,{...mk.get(r),[f.key]:f.node.parts});
+      if(f.node&&f.node.parts) mk.set(r,Object.assign(Object.create(null),mk.get(r),{[f.key]:f.node.parts}));
       if(n!==null) w[f.key]=n;
       if(picks.has(q.id)&&!picks.get(q.id).has(f.key)) picks.get(q.id).set(f.key,f.parts);
       if(need.includes(q)) any=true;}

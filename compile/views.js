@@ -35,10 +35,9 @@ const LINE_W=460;
    o: {R: the renderer's names, T: its "dv" words, icon(name) -> a node or null, lead(set, row, roles, kids) -> nodes}. */
 function draw(cap,o){
   const R=o.R,T=o.T,{set,groups,roles,cols,tree}=cap,text=R.cellText;
-  /* A field named constructor, toString or __proto__ is read by the renderer as r[k], which for a row that lacks it is
-     the Object function or a method, printed as a cell. A row has no prototype here, so r[k] is its own value or nothing
-     (a row is only read from now on; the tree and the groups hold the same objects, so nothing else changes). */
-  for(const r of set.rows) if(r&&typeof r==="object") Object.setPrototypeOf(r,null);
+  /* A field named constructor, toString or __proto__ is read as r[k] here, and a row lacking it must give nothing, not the Object
+     function or a method. The renderer's dataSet and entrySet hand over rows with no prototype, at every depth (a child of a row
+     too), so every cell read below is an own read. */
   const grouped=groups.some(g=>g.name!==null);
   const sr=words=>el("span",{class:"bk-sr"},words);
   const toneWords=t=>t?sr(T.tone[t]):null;
