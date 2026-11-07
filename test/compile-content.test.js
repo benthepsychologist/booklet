@@ -31,7 +31,7 @@ const TMP=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-compile-"));
 const cli=(args,cwd)=>cp.spawnSync(process.execPath,[CLI,...args],{cwd:cwd||TMP,encoding:"utf8"});
 const tree=d=>!fs.existsSync(d)?[]:fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?tree(path.join(d,e.name)).map(x=>e.name+"/"+x):[e.name]);
 const sha=f=>crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex");
-const HEAD='---\nbooklet: "0.18"\nid: t/x\ntitle: TITLE\nlang: en\n---\n\n';
+const HEAD='---\nbooklet: "0.19"\nid: t/x\ntitle: TITLE\nlang: en\n---\n\n';
 const booklet=(title,body)=>HEAD.replace("TITLE",title)+body;
 
 /* ======================= 1. nothing lost ======================= */
@@ -147,7 +147,7 @@ const LOST_SET=[...fs.readdirSync(path.join(ROOT,"examples")).filter(f=>f.endsWi
     for(const form of ["standalone","site"]){const page=[...r.files].filter(([k])=>k.startsWith(form+"/"+r.rep.name+"/")&&k.endsWith("/index.html")).map(([,v])=>v);
       const s=shortOf(units,page),n=[...s.need.values()].reduce((a,b)=>a+b,0);
       chk("nothing lost: "+r.rep.source+" ("+form+", "+page.length+" page"+(page.length===1?"":"s")+", "+units.length+" blocks and parts, "+n+" words, each counted)",page.length&&n>40&&!s.short.length,s.where.slice(0,8).join(" | "));}});
-  chk("every block the walk meets is one the compiler draws (none is left to the mark list)",Object.values(D.COVERAGE.blocks).every(v=>v==="drawn"),JSON.stringify(D.COVERAGE.blocks));
+  chk("every block the walk meets is one the compiler draws (none is left to the mark list but the copy button, which a compiled page has no clipboard code for)",Object.entries(D.COVERAGE.blocks).every(([k,v])=>v==="drawn"||(k==="copy"&&v==="marked: copy")),JSON.stringify(D.COVERAGE.blocks));
   const unused=Object.keys(LEFT).filter(k=>!leftUsed.has(k));
   chk("every reason the walk leaves something out is used by some page ("+Object.keys(LEFT).length+")",!unused.length,unused.join(", "));}
 /* the count catches what a look-up misses: a paragraph whose every word is elsewhere on the page, taken out of the page */

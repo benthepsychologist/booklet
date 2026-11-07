@@ -6,7 +6,7 @@ Open it in a text editor and you can read everything, top to bottom — question
 
 ```markdown
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: example/daily-note
 title: A daily note
 lang: en
@@ -30,7 +30,7 @@ version: "0.1"
 %%
 ```
 
-This is **v0.18** of the format — see [`SPEC.md`](SPEC.md) for the full
+This is **v0.19** of the format — see [`SPEC.md`](SPEC.md) for the full
 format, and [`docs/why-markdown.md`](docs/why-markdown.md) for how it was
 arrived at: what the wider Markdown-tooling field already does, what Booklet
 needs that nothing else supplies, and why each real choice landed where it
@@ -74,8 +74,8 @@ and it draws those too, as long as they use engines it has.
 
 | | |
 | --- | --- |
-| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.18; a file marked with any other 0.x opens by the current rules, with no word about its marker, and a file with no marker, or one not 0.x, is refused |
-| [`SPEC.md`](SPEC.md) | the current format (v0.18), versioned and published separately from anything that implements it |
+| [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.19; a file marked with any other 0.x opens by the current rules, with no word about its marker, and a file with no marker, or one not 0.x, is refused |
+| [`SPEC.md`](SPEC.md) | the current format (v0.19), versioned and published separately from anything that implements it |
 | [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
 | [`submit/`](submit/) | the submit build, never the published file: `node submit/build.js --endpoint <url>` makes `booklet-submit.html`, the one-file renderer with a Submit button that sends a reader's answers to the one address it was built with, on the reader's press (`docs/hosting.md`, "The submit build") |
 | [`compile/`](compile/) | the compiler, a build step and never the published file: `node compile/compile.js <file.booklet.md>` makes a plain web page of a booklet (HTML and one stylesheet that read fully with no script, plus one optional script that keeps nothing and sends nothing and that a page links only when it needs it; a booklet of several activities becomes a contents page and a page each, with links between translations; data views and charts, figures, build-time diagrams (given a browser), a booklet's theme and a tab's pages (format 0.17, titled sections in reading order) are drawn; tabs, citation previews, "Open all" and sort and filter are the script's reading helpers; pick-one and pick-any questions answer as a quiz that forgets, the other kinds stay read-only) for publishing an article on a site of its own, standalone or as a fragment for a site generator. It reads the format only through `booklet.html`'s own parse and never reads a file's records (`compile/README.md`) |
@@ -84,7 +84,7 @@ and it draws those too, as long as they use engines it has.
 | [`SKILL.md`](SKILL.md) | instructions to hand an AI agent so it can make a valid booklet from a plain request; `test/skill.test.js` keeps its examples true |
 | [`lint-booklet.py`](lint-booklet.py) | the reference validator — "is this file valid" |
 | [`tools/verify-renderer.py`](tools/verify-renderer.py) | checks a copy of the renderer, a file or an address, against a release's `sha256` ("Checking a copy against a release") |
-| [`examples/`](examples/) | complete booklets you can open: `how-tides-work` (reading, a citation, a quiz that says right or not), `mindful-check-in` (widgets, a module's notice and its own data section), `garden-week` (a theme and rows), `status-page` (tiles, a grouped list, tables and charts from data), `project-board` (row roles, a nested list, a question a reader can add to) |
+| [`examples/`](examples/) | complete booklets you can open: `how-tides-work` (reading, a citation, a quiz that says right or not), `mindful-check-in` (widgets, a module's notice and its own data section), `garden-week` (a theme and rows), `status-page` (tiles, a grouped list, tables and charts from data), `project-board` (row roles, a nested list, a question a reader can add to), `tide-notes` (a written answer, a model answer, and a copy button) |
 | [`art/`](art/) | the pictures the renderer carries: a pinned Lucide subset and Booklet's own spot drawings, with their licences; `node test/art-sprite.js --write booklet.html` turns them into the renderer's hidden sprite |
 | [`test/`](test/) | the suite, run with `test/run.sh` |
 | [`booklet-registry`](https://github.com/benthepsychologist/booklet-registry) | a separate repo: the modules on offer and the `registry.json` that lists them |
@@ -99,7 +99,7 @@ Download `booklet.html` with its `parts/` folder beside it and `examples/how-tid
 **straight off your disk, `file://` is fine** — and press *Add a booklet from a file*
 on "Your booklets" to open the markdown file. No server, no install, no network beyond the renderer's own `parts/mermaid.js`, and only for a booklet with a diagram; without `parts/` a diagram shows its source.
 
-To open a booklet in Obsidian instead, install the Booklet plugin from [the community plugin directory](https://community.obsidian.md/plugins/booklet) (Obsidian 1.11.7 or later) and open a note whose front matter says `booklet: "0.18"`.
+To open a booklet in Obsidian instead, install the Booklet plugin from [the community plugin directory](https://community.obsidian.md/plugins/booklet) (Obsidian 1.11.7 or later) and open a note whose front matter says `booklet: "0.19"`.
 
 To have the renderer as one file instead, with every part inside it, make the one-file build: in a clone of this
 repository, `node test/one-file.js` writes it to `build/booklet.html` (it needs only node). From v0.13.1 each [GitHub release](https://github.com/benthepsychologist/booklet/releases) attaches the one-file build as an asset, and `node test/one-file.js` still makes it from a clone.
@@ -113,12 +113,12 @@ figures use the width and fold to one column on a phone.
 
 **Views.** A `booklet query` draws a data block's rows, or a reader's kept entries, as cards, a table, a list, tiles, bars or a line. Every view draws a row from the same seven **roles** (`label`, `value`, `note`, `badge`, `tone`, `link`, `icon`, each read from the field of that name unless the query names another), so rows written with those names need only `from:` and `as:`. `link` (where the row leads) and `icon` (its picture) are drawn by tables, lists, tiles and cards. Tiles with no value are a strip of pills. One **Sort and filter** control, the same on every view and drawn when there are more than eight rows, lets a reader search, show one value of a field and sort on screen; it is kept in memory only, never in the file. A booklet's `density` sizes the views as well as the prose.
 
-A module file (any v0.18 module, such as those in `booklet-registry`) loads as what it is, one activity: on
+A module file (any v0.19 module, such as those in `booklet-registry`) loads as what it is, one activity: on
 "Your booklets" it starts a new booklet holding it. A module may carry its own notice (licence, copyright, source, version), which Add a module writes into the booklet and the page shows under "About this module". A booklet has one name, its own front matter's `title:`, which a reader can rename on its home screen or in "Your booklets".
 
 A tool that writes booklets should ask the linter for the marker (`python3 lint-booklet.py --marker` prints the front-matter line a file should carry) and not hard-code it. A file marked with another `0.x` version still opens, by the current rules and with no word about its marker (the renderer reports only what it cannot read), and nothing before v1.0 is promised to keep working; the renderer fetches no address a file names (an image, a diagram's image or style, a font).
 
-A plain Markdown file with booklet front matter (`booklet: "0.18"`, a `title`) and no booklet lines at all is
+A plain Markdown file with booklet front matter (`booklet: "0.19"`, a `title`) and no booklet lines at all is
 already a readable booklet: it is one activity, named by the title. This is how a generated report, a weekly
 status or a run's acceptance report, can be read in the renderer. Its headings are drawn as headings, and **nothing is
 folded** that the file does not fold: a long report is split into sections with `***` (Back, "Page 2 of 3" and Next at the
@@ -206,6 +206,7 @@ own questions.
 
 - **A hint or a solution** that is folded with `-` and sits right after a question is drawn inside that question's own block, as a small control each, the hint first, as the author wrote them. Shut, they give nothing away. One that is not folded stays a row of its own.
 - **A hint never opens by itself.** A solution opens by itself under the reader's answer: for a `choice`, as soon as an option is picked; for a `multi`, when Check is pressed (only a question with a right answer, an `[x]` option, has Check). With a right answer it takes the good tone when the answer is right, and the warn tone with "Look again" when it is not. A `choice` with no right answer opens in a neutral tone on a pick. A `multi` with no right answer has no Check, so its solution opens only on request, as it does for every other question kind.
+- **A copy line is one button** (format 0.19, `SPEC.md` section 6, "Copy"). Its title is the button's words, and nothing else of the line is drawn: the lead-in and the pieces it copies are not shown. Pressing it puts the text on the reader's clipboard (the browser's clipboard call, then a text selection copied by hand if that is refused) and a status line beside it, which a screen reader announces, says "Copied", or that the copy did not work, and clears itself after a few seconds. It copies what the reader has typed and picked at that moment and writes nothing: no answer, no record, no file, and no request. The button is left out when the page is printed.
 - **A callout folded with `-`** shows the first words of its text under its title. A hint or a solution shows only its name while it is shut, so a closed one gives nothing away.
 - **A folded callout of a kind with no colour of its own** (a `group`, or a kind with no colour of its own) is drawn on plain paper with no tint and no picture of its own. An untitled one is called "Note". Kinds the renderer draws keep their colour and picture.
 - **A list of cards is a contents list**: the modules of a booklet, the activities of a module and the pages under a page are one column, an ordered list with a row to each card, drawn as links (its number, a small picture if it has one, the title, a first line, a status line), never a grid of cards.
@@ -437,7 +438,7 @@ person. Anyone may publish a separate registry under their own policy; a site ca
 
 ## Status
 
-**v0.18, draft.** `SPEC.md` (Markdown-native) is the whole format. The reference renderer is the only reader of all of it; the Obsidian plugin is a second reader and writer of part of it. The Booklet plugin for Obsidian is released (1.0.3), reads format 0.18, is free and Apache-2.0, and is in [Obsidian's community plugin directory](https://community.obsidian.md/plugins/booklet). It is not stable: draft compatible
+**v0.19, draft.** `SPEC.md` (Markdown-native) is the whole format. The reference renderer is the only reader of all of it; the Obsidian plugin is a second reader and writer of part of it. The Booklet plugin for Obsidian is released (1.0.3), reads format 0.18, is free and Apache-2.0, and is in [Obsidian's community plugin directory](https://community.obsidian.md/plugins/booklet). It is not stable: draft compatible
 additions may extend it without changing its own number, and a breaking
 change gets a new one. See `STATUS.md` for the detailed current state and
 known gaps, and `docs/why-markdown.md` for how v0.3 came to be.

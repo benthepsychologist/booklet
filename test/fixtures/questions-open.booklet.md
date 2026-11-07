@@ -1,5 +1,5 @@
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: test/questions-open
 title: Garden notes and a quiz
 lang: en

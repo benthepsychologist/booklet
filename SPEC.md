@@ -1,10 +1,10 @@
-# The booklet format, v0.18.1
+# The booklet format, v0.19.0
 
 **A booklet is one Markdown file that a person can read and edit in any text editor, that Obsidian shows as a normal note, and that the Booklet renderer, or a Booklet plugin inside Obsidian, turns into activities with questions, widgets and reading.** The prose is the document. Booklet's own elements are single callout lines. Data, and anything a reader answers, lives in fenced blocks. Before anyone has answered, the only JSON in a booklet is the data of its widgets and data blocks.
 
-> **Status: v0.18, draft.** This format is young and will change. Nothing before v1.0 is stable, and
+> **Status: v0.19, draft.** This format is young and will change. Nothing before v1.0 is stable, and
 > nobody keeps older files working. This spec, the renderer, the skill, the tests and the file marker
-> are all v0.18. Section 2 says how the marker works.
+> are all v0.19. Section 2 says how the marker works.
 >
 > **This document may describe things the reference renderer does not do yet.** Each one is marked where
 > it is described, in the words "The reference renderer does not do this yet", and all of them are
@@ -52,7 +52,7 @@ The rule that decides every detail below: **a booklet is answerable only in Book
 
 ```yaml
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: example/tides
 title: How tides work
 description: Why the sea rises twice a day, and a short check.
@@ -63,22 +63,22 @@ license: CC-BY-4.0
 ---
 ```
 
-- `booklet` is the format version the file uses: `0.18` for this document. The marker rule is below.
+- `booklet` is the format version the file uses: `0.19` for this document. The marker rule is below.
 - `id` names this booklet across its translations and versions.
 - `lang` is the language of the page around the content: the renderer's own words and defaults. In a module's own file it is also the language the module is written in (section 9).
 - **The front matter's `id` is the booklet's own name, not an id in the sense of section 4.** It may hold slashes (`example/tides`), and it is not one of the ids a question, an activity or a module carries, so the rule for those (letters, digits and dashes, unique in the file) does not apply to it.
 - `title` is the booklet's own name: the one name its home screen, its row in a list of booklets and the name of the file a renderer saves all show. A module file's own `title` names the module and never the booklet, so adding a module leaves the booklet's name alone. A renderer may let a reader rename the booklet, which rewrites this one line, with the new name as a quoted string.
 - `description` is optional: one sentence of plain words (never Markdown) that says what the booklet is, for whoever or whatever shows a description of the file: a search result, a link preview, the blurb of the booklet's card in a list. Without it, a reader uses the booklet's first paragraph, the one drawn larger in its opening (section 3), or, where the booklet has no opening, the first paragraph of its first activity (the activity's blurb, section 3). Write it for a booklet whose description should differ from its first paragraph. It is written on the key's own line, since front matter keys are flat (above); a quoted string is fine. It is the file's, not an activity's or a module's, and it changes nothing about how the booklet is drawn or answered. A tool that makes a web page from a booklet may use it as the page's description. A reader that shows no description ignores it. The linter warns on an empty `description:` and on one that starts a multi-line value.
-- **The marker is written in quotes: `booklet: "0.18"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way, so the linter warns on any unquoted marker whose minor ends in 0.
-  - A reader reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9. `booklet: 0.18`, `"0.18"` and `'0.18'` are all this format. `booklet: 0.1` is the earlier version 0.1, not 0.10.
+- **The marker is written in quotes: `booklet: "0.19"`.** Unquoted, a YAML reader (Obsidian's properties panel, GitHub) takes `0.10` for the number 0.1 and may write it back that way, so the linter warns on any unquoted marker whose minor ends in 0.
+  - A reader reads the marker as text and compares versions as two whole numbers, major and minor, so 0.10 is later than 0.9. `booklet: 0.19`, `"0.19"` and `'0.19'` are all this format. `booklet: 0.1` is the earlier version 0.1, not 0.10.
   - A tool that writes booklets writes the current marker. `lint-booklet.py --marker` prints the line.
-  - A reader never changes a file's marker. It saves a file back with the marker the file came with, and a booklet it makes itself says `"0.18"`.
+  - A reader never changes a file's marker. It saves a file back with the marker the file came with, and a booklet it makes itself says `"0.19"`.
 - **Another marker.** A file with no marker, or one that is not a `0.x` version (`1.0`, `2`, words), is not a booklet for this version. A file marked with another `0.x` version, earlier or later, is opened by this version's rules.
   - A reader lags the format by design. It opens any `0.x` file by its own rules and says nothing about the marker. It reports only what it cannot read, one thing at a time, like any other problem: an unknown kind, a setting a kind does not take, a query key it does not have, a block it does not define.
   - It makes no promise about what such a file draws.
   - A rule that refuses a file (a module opened and not closed, an id used twice in a module) refuses it whatever the marker.
   - A module file with another `0.x` marker may be added to a booklet, and says nothing about its marker either.
-  - A third number (v0.18.1) is a patch to this wording or to the renderer. It changes no file, and files go on saying `"0.18"`.
+  - A third number (v0.19.1) is a patch to this wording or to the renderer. It changes no file, and files go on saying `"0.19"`.
 - `start` is optional and has one value, `start: home`. Any other value is an error in the linter, and a renderer reports it and ignores it.
   - Without `start`, a booklet that holds exactly one activity opens straight into that activity. A booklet that holds exactly one module, with several activities, opens on that module's own screen. Any other booklet opens on its home screen.
   - `start: home` keeps the home screen. Use it for a booklet still being built, or one whose home screen says something a reader should see first.
@@ -437,8 +437,9 @@ from: due-soon
 | `number` | `min:`, `max:`, `step:` (numbers), `each:<id>` |
 | `widget` | `readonly`, `describe`, `each:<id>`, `earlier:<n>` |
 | `listen` | `left:<seconds>` |
+| `copy` | `of:<ids>` |
 
-`icon:` takes an icon name, `parent:` the id of another page in the same tab (section 3), `status:` the one value `off`, `entries:` the one value `folded`, and `tab:` the id of one of its module's tabs (section 3). None is written on a module's end line.
+`icon:` takes an icon name, `parent:` the id of another page in the same tab (section 3), `status:` the one value `off`, `entries:` the one value `folded`, `tab:` the id of one of its module's tabs (section 3), and `of:` the words a copy line copies, separated by commas with no spaces (section 6, "Copy"). None is written on a module's end line.
 
 `each:` names a question or widget in the same activity, whose picks the question is asked for (section 5, "A question asked for each pick"). `earlier:` takes a whole number, written in digits only (`[0-9]+`): how many earlier words a question offers (section 5, "Words the reader wrote before"). Any other value of `earlier:` is ignored and reported, and the question offers its default. `left:` takes a whole number of seconds, written in digits only, and a `left:` of any other value is ignored and reported in the same way, and the question uses its default (section 5, "Listen").
 
@@ -705,6 +706,83 @@ A `hint` or `solution` callout directly after a question belongs to it. A hint h
 > At the new and the full moon the sun and the moon line up, so their pulls add together.
 ```
 
+### Copy
+
+A `copy` line draws one button. Pressing it puts one piece of text on the reader's clipboard: a lead-in the author wrote, then the questions the author names with what the reader typed or picked, and any text block the author wants beside them. The reader can paste it where they like, such as a chat with an AI model that will mark an answer, or a message to a tutor. It copies and nothing else. It writes nothing to the file or to the records, and sends nothing anywhere.
+
+```markdown
+> [!text|why-twice long] Why does the tide come in twice a day?
+
+> [!solution]- Model answer
+> The moon pulls on the water on the side of the earth facing it, and a little less on the far side, so there are two bulges.
+
+> [!copy|ask-tutor of:why-twice,why-twice/solution] Copy for my tutor
+> Please mark my answer against the model answer. Say what I got right and what I missed.
+```
+
+The line is `> [!copy|id of:a,b,c] Button label`.
+
+- **The title is the button's label.** With no title a renderer uses its own word for "Copy".
+- **The lines under it are the lead-in**: the first piece of the copied text. Blank lines at either end are left off; the rest is copied as written. A copy line with no lines under it has no lead-in.
+- **The id is optional.** A copy line stores nothing and nothing refers to it, so `> [!copy|of:a,b] Label` is allowed (a first word that holds `:` is a setting, section 4). A written id is an ordinary id: letters, digits and dashes, unique in its module (section 4).
+- **`of:` is required.** It lists, in the order they are to be copied, the words below, separated by commas with no spaces. A copy line without `of:`, or with an empty place between two commas, is an error. A word may be written twice and is then copied twice.
+- **Where it stands.** In an activity, wherever a question may stand (its text, a tab, a page, a row, a group). Not in a module's opening, not before the file's first module or activity line, not in a data section (it is not read there) and not in the records section (an error: that section holds records only).
+
+Each word in `of:` is one of three things:
+
+| word | what it names | what is copied |
+| --- | --- | --- |
+| `id` | a question of the same activity | the question's words, then the answer |
+| `id/solution`, `id/hint` | the question `id`'s own solution or hint | the callout's text |
+| `id` | a fenced block with a `^id` | the block's text |
+
+- **A question** is a `text`, `lines`, `choice`, `multi`, `scale`, `number` or `date` question in the copy line's own activity, found by the id it carries. Its place in the file does not matter, so a copy line may stand above or below the question. A `matrix`, a `widget`, a `listen` and a question asked for each pick of another (`each:`, section 5) cannot be copied. A question of another activity cannot be copied either: a copy line copies from its own activity.
+- **A solution or a hint** is named by the question's id, a slash, and `solution` or `hint` (in lower case). It means the question's own folded callout of that kind (the first one folded with `-` straight under the question, as "Hints and solutions" above says), which takes no id of its own. A question with no such callout has nothing to copy under that word.
+- **A block** is a fenced block with a block id on the line after it (section 7), of any language. It is found in the copy line's own module first (its fence and its data section), then in the shared data section, as every reference is (section 4). Its text is what is written between the fences.
+- A word that names none of these, or names something that cannot be copied, is an error in the linter. A renderer leaves that word out of the copy and reports it, and leaves the line out if nothing is left.
+
+**The copied text** is the pieces in this order: the lead-in, then each word's pieces in the order `of:` lists them. Every piece is separated from the next by one blank line, and the text has no blank line or space at its start or end. A piece is:
+
+| from | the piece |
+| --- | --- |
+| the lead-in | the lead-in, as written |
+| a question `id` | `Question: ` and the question's words, as written; then, as a piece of its own, `My answer: ` and the answer |
+| `id/solution` | `Model answer: ` and the callout's text, as written |
+| `id/hint` | `Hint: ` and the callout's text, as written |
+| a block `id` | the id and a colon, a line break, and the block's text as written, without the blank lines at its start and end |
+
+The callout's title is not copied, and neither are a question's help lines (the lines under its title): of a question only its title is copied. A solution or a hint whose body is empty is copied as its label with nothing after it (`Model answer:`). A question with no title is `Question:` and nothing after it. The labels are these fixed English words in every booklet, whatever its language, so the text reads the same whichever reader made it. Text that spans lines keeps its line breaks, and carries on under its label. A piece has no space or blank line at its end, which is what makes the separator exactly one blank line.
+
+For the example above, with an answer typed, the clipboard gets:
+
+```
+Please mark my answer against the model answer. Say what I got right and what I missed.
+
+Question: Why does the tide come in twice a day?
+
+My answer: Because the moon pulls the sea towards it, and the sea on the far side is left behind.
+
+Model answer: The moon pulls on the water on the side of the earth facing it, and a little less on the far side, so there are two bulges.
+```
+
+**The answer** is what the reader has typed or picked at the moment of the press, in the activity's current answers (in a `repeat` activity, the entry being written, not the entries kept):
+
+| kind | the answer |
+| --- | --- |
+| `text`, `date` | as typed, less the blank lines and spaces at its start and end; inside it is left exactly as typed |
+| `number` | the number, written as a number is (`12`, `3.5`) |
+| `lines` | each line as the reader typed it, on a line of its own, a blank line inside kept; less the blank lines and spaces at the start and end of the whole answer |
+| `choice` | the picked option's words, as written in the file; the reader's own option as they typed it (`open`, section 5) |
+| `multi` | each picked option's words on a line of its own, in the order the answer holds them (section 8) |
+| `scale` | the picked anchor's words |
+
+- **An empty answer is copied all the same.** When the reader has typed or picked nothing (a text that is only spaces is nothing), the question and its model answer are still copied, and the answer reads `My answer: (no answer typed)`. Those words are fixed, as the labels are, and are the same for every kind. A copy line therefore never refuses to copy and never changes what it copies by what the reader has done, except for the answer.
+- **An answer whose shape is not its kind's** (section 8) is copied as the JSON the file holds it as. A position or an anchor the question does not list is copied as its number.
+
+A reader that does not know `copy` shows the line as it shows any kind it does not know (section 4): a titled callout, with the lead-in as its text, and nothing is copied. A reader that does may draw its button as it likes, so long as pressing it copies the text above, writes nothing to the file or the records, and sends nothing.
+
+**The reference renderer** draws the title as one button and nothing else of the line: the lead-in and the pieces are not shown on the page. Pressing it asks the browser to put the text on the clipboard, and, if the browser refuses, copies from a text selection made for the purpose. It then says "Copied" in a line beside the button that a screen reader announces, or says that the copy did not work. The status line clears itself after a few seconds. The button is left out when a page is printed.
+
 ### Citations
 
 A citation is an ordinary CommonMark footnote — the mark `[^id]` in the text, and its definition, `[^id]: …`, anywhere in the file. There is no separate sources registry: a source cited at two places is two footnotes.
@@ -791,7 +869,7 @@ Audio and video are embedded with the image syntax. The extension of the target 
 - **Raw HTML media and frames:** `<audio>`, `<video>`, `<source>`, `<track>`, `<iframe>`, `<frame>`, `<object>`, `<embed>` and `<script>`. The linter reports an error. Nothing in a file runs script or frames another page. The reference renderer draws raw HTML as text (section 10); what Obsidian does with HTML is Obsidian's business.
 - **A video service's page** (a video site's address). An address with no media extension is a link, never an embed. An extensionless remote address written in the image syntax is an error in the linter, and a reader draws it as a link. A renderer may offer a click-to-load player for such a link; the file cannot ask for one.
 
-**The reference renderer does not do this yet:** it does not play audio or video, and it does not read `![[name.ext]]`. Through v0.18 it never loads remote media or a remote image, whatever a file declares: what it draws in place of the media is the box that section 6 describes for an image it will not draw, with the alt text and the address.
+**The reference renderer does not do this yet:** it does not play audio or video, and it does not read `![[name.ext]]`. Through v0.19 it never loads remote media or a remote image, whatever a file declares: what it draws in place of the media is the box that section 6 describes for an image it will not draw, with the alt text and the address.
 
 ### Figures: diagrams placed by reference
 
@@ -1210,7 +1288,7 @@ A regional variant (`es-AR`) is its own sibling file.
 
 ````markdown
 ---
-booklet: "0.18"
+booklet: "0.19"
 id: example/tides
 title: How tides work
 lang: en
@@ -1270,9 +1348,9 @@ Two activities, the first in two `***` sections, one figure placed by reference,
 
 ## 12. Conformance
 
-A conforming reader must: read a file whose front matter declares `booklet: "0.18"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; keep an answer whose shape is not its kind's as written, and draw its question read-only, with a notice saying so (section 8); open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names unasked (no remote image, no diagram image or style, no font, no remote media: a file may name where its media lives, and only the host or the reader allows, as the next paragraphs say), and draw a link to a module it does not hold without fetching anything. Opening a file therefore asks the network for nothing but the renderer's own parts, from where the renderer came, and only when a booklet needs one, with one exception: a reader whose host declares a store, or a reader on a page served over http or https that declares none (which reads the default folder, `modules/` beside the renderer), may read the images of a booklet it opened from that store or folder, only where the booklet still holds that store's or folder's own text for the part the image is in (section 6), as a plain read of the store's or folder's own address plus a checked relative path (section 6). That is an address the reader builds from the host's store, or from the page's own address, and a path, never an address a file spells out; a booklet opened any other way asks for no image at all. (The reference renderer is a core and its parts. Its one part loaded this way today is the diagram library, `parts/mermaid.js`: the page asks for it with an ordinary GET of the file beside itself, only when a booklet has a diagram. A booklet with no diagram and no image to read from a store or the default folder makes no request at all. A build can always put every part inside one file. A link the reader follows, `#/open/<name>`, is not a file naming an address: it asks for that one booklet, by a name it checks, from the store the page's host declares or, on a page served over http or https that declares none, from `modules/` beside the renderer, and nothing is asked for until it is followed.)
+A conforming reader must: read a file whose front matter declares `booklet: "0.19"` by this document (the marker read as text: `0.10` is not the number 0.1); refuse a file with no `booklet:` marker, or one that is not a `0.x` version (`1.0`, `2`, words); refuse a module opened and not closed, or closed and not opened, or whose fence overlaps another's; refuse an id used twice in one module (a menu's, a block's, a question's, an activity's; a module's fence and its own data section are one scope), and a module id used twice in one file; parse each fenced record independently and skip, count and report any it cannot read, rather than abandoning the file; keep an answer whose shape is not its kind's as written, and draw its question read-only, with a notice saying so (section 8); open a file with any other problem, ignoring the part it could not read, and say so when it opens, with a notice that gives how many things it could not read and lists them (a setting a kind does not take, an unknown kind, a query key it does not have, a block it does not define, a reference across a module boundary); and treat every string a person wrote, a booklet's name and a module's notice among them, as content, never as instruction; fetch no address a file names unasked (no remote image, no diagram image or style, no font, no remote media: a file may name where its media lives, and only the host or the reader allows, as the next paragraphs say), and draw a link to a module it does not hold without fetching anything. Opening a file therefore asks the network for nothing but the renderer's own parts, from where the renderer came, and only when a booklet needs one, with one exception: a reader whose host declares a store, or a reader on a page served over http or https that declares none (which reads the default folder, `modules/` beside the renderer), may read the images of a booklet it opened from that store or folder, only where the booklet still holds that store's or folder's own text for the part the image is in (section 6), as a plain read of the store's or folder's own address plus a checked relative path (section 6). That is an address the reader builds from the host's store, or from the page's own address, and a path, never an address a file spells out; a booklet opened any other way asks for no image at all. (The reference renderer is a core and its parts. Its one part loaded this way today is the diagram library, `parts/mermaid.js`: the page asks for it with an ordinary GET of the file beside itself, only when a booklet has a diagram. A booklet with no diagram and no image to read from a store or the default folder makes no request at all. A build can always put every part inside one file. A link the reader follows, `#/open/<name>`, is not a file naming an address: it asks for that one booklet, by a name it checks, from the store the page's host declares or, on a page served over http or https that declares none, from `modules/` beside the renderer, and nothing is asked for until it is followed.)
 
-**The file declares; the reader or the host allows.** A booklet may name the origins its media is hosted on (`media-from`, section 2), and that is all a file can do about the network: a declaration is not a permission. Only the host or the reader allows an origin, and nothing is requested for one unasked. A conforming reader must therefore: request no remote image and no remote media from an origin the host or the reader has not allowed, whether or not the file declares it; request nothing for a piece of media until the reader presses play on it; take no permission from a file, so that a booklet someone sent can change what the reader is asked and nothing else; count an address as on an origin only as the address is written, so that a redirect adds no origin; and show the alt text and the address as a link for any remote media it does not load, and draw an extensionless remote address written as an embed as a link. A conforming reader should, when it asks, name the origin in plain words and ask once for it. A conforming reader may keep a list of allowed origins of its own, which whoever sets the reader up may fill ahead of time and which may carry path prefixes; an origin on that list loads in any booklet, declared or not. It may also keep an allow for one booklet, or for one piece of media, apart from that list, and it keeps none of these in a booklet file. A conforming reader may open a request for the declared origins the list does not hold when a booklet is opened, and for any other origin when the reader presses media on it. The reference renderer does not do this yet: through v0.18 it loads no remote media and no remote image, whatever a file declares (section 6, section 13).
+**The file declares; the reader or the host allows.** A booklet may name the origins its media is hosted on (`media-from`, section 2), and that is all a file can do about the network: a declaration is not a permission. Only the host or the reader allows an origin, and nothing is requested for one unasked. A conforming reader must therefore: request no remote image and no remote media from an origin the host or the reader has not allowed, whether or not the file declares it; request nothing for a piece of media until the reader presses play on it; take no permission from a file, so that a booklet someone sent can change what the reader is asked and nothing else; count an address as on an origin only as the address is written, so that a redirect adds no origin; and show the alt text and the address as a link for any remote media it does not load, and draw an extensionless remote address written as an embed as a link. A conforming reader should, when it asks, name the origin in plain words and ask once for it. A conforming reader may keep a list of allowed origins of its own, which whoever sets the reader up may fill ahead of time and which may carry path prefixes; an origin on that list loads in any booklet, declared or not. It may also keep an allow for one booklet, or for one piece of media, apart from that list, and it keeps none of these in a booklet file. A conforming reader may open a request for the declared origins the list does not hold when a booklet is opened, and for any other origin when the reader presses media on it. The reference renderer does not do this yet: through v0.19 it loads no remote media and no remote image, whatever a file declares (section 6, section 13).
 
 **Media and `listen`.** A conforming reader must also: load no media, local or remote, before the reader presses play; never clear a `done` itself, and show `done` as a box the reader can tick when it cannot play the media (section 5); and keep a `listen` answer as section 8 says. A conforming reader should start playback at `pos` when it has one. A conforming reader may offer a click-to-load player for a link to a video service, and may offer Continue (below). How and when a reader writes `pos` while media plays, and the words it asks in, are its own (section 5, "Renderer notes").
 
@@ -1288,9 +1366,9 @@ A reader may also offer conveniences that this document does not define and that
 - "draw the title once", which leaves out an activity's first heading when it repeats the activity's title above it;
 - **Continue**, which offers to take the reader to the first `listen` not done or the first question not answered that comes after her place, whichever the booklet reaches first. Her place is the furthest page she has reached, where the renderer remembers that on the device, and otherwise the last `listen` done or question answered in booklet order. Nothing before her place is offered, so a question she passed over is never offered again and Continue never holds her back; with nothing left after her place it offers nothing. Without a remembered place it is worked out from the records, so it works on every device and stores nothing new. **The reference renderer does not do this yet.**
 
-A conforming writer must: emit front matter with the current marker, `booklet: "0.18"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read exactly as written, nothing re-sorted and nothing respaced, unless the reader changed it, and change only what the reader changed, leaving design written after the records region where it is (section 8); write a `listen` answer back as it read it, changing `pos` only when the reader's playing moved it and `done` only as section 5 says or when the reader changed it, and writing `pos` in whole seconds; keep `media-from` as it found it; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with the current marker, `booklet: "0.19"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read exactly as written, nothing re-sorted and nothing respaced, unless the reader changed it, and change only what the reader changed, leaving design written after the records region where it is (section 8); write a `listen` answer back as it read it, changing `pos` only when the reader's playing moved it and `done` only as section 5 says or when the reader changed it, and writing `pos` in whole seconds; keep `media-from` as it found it; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
 
-`lint-booklet.py` in this repository checks `booklet: "0.18"` files, and is the reference implementation of "is this file valid." A file with another `0.x` marker is checked as 0.18 and gets one warning ("this file says booklet: 0.9; the current format is 0.18, and it is checked as 0.18"); a file with no marker, or a marker that is not a `0.x` version, is an error.
+`lint-booklet.py` in this repository checks `booklet: "0.19"` files, and is the reference implementation of "is this file valid." A file with another `0.x` marker is checked as 0.19 and gets one warning ("this file says booklet: 0.9; the current format is 0.19, and it is checked as 0.19"); a file with no marker, or a marker that is not a `0.x` version, is an error.
 
 ---
 
@@ -1312,14 +1390,14 @@ This is a young format, and the reference renderer does not yet do everything th
 - **A body widget's earlier words and a `lines` question's earlier lines** (section 5, "Words the reader wrote before").
 - **A thematic break inside a `$$` display-math block** (section 3, "Pages"). Whether a `---`, `***` or `___` line alone on a line inside a `$$` block splits a page is open. The reference renderer's scanner knows fences only and reads such a line as a break; the Obsidian plugin's scanner numbers and draws it differently (its own README says so). Until this is settled, a booklet should not put such a line inside a `$$` block.
 - **The kept-entries fold** (`entries:folded`, section 3, "Kept entries, folded"). The Obsidian plugin reads the mark (1.0.3); a reader that does not keeps it as written.
-- **Audio and video** (section 6, "Audio and video"). The reference renderer does not play audio or video, local or remote, and does not read `![[name.ext]]`, for images either. Through v0.18 it never loads remote media or a remote image, whatever a file declares (section 12): what it draws in place of the media is the box that section 6 describes for an image it will not draw, with the alt text and the address.
+- **Audio and video** (section 6, "Audio and video"). The reference renderer does not play audio or video, local or remote, and does not read `![[name.ext]]`, for images either. Through v0.19 it never loads remote media or a remote image, whatever a file declares (section 12): what it draws in place of the media is the box that section 6 describes for an image it will not draw, with the alt text and the address.
 - **`media-from`** (section 2). The reference renderer does not read the key. It keeps it as written, like any key it does not know.
 - **The `listen` question** (section 5, "Listen"). The reference renderer does not know the kind: it draws the line as an unknown kind and keeps any answer as written. It does not count a `listen` as done, play its media or offer to resume at `pos`.
 - **Continue** (section 12). The reference renderer does not offer it.
 - **Publishing results.** Letting a booklet publish its results, for other tools and other booklets to read, is planned for a later version. This version has no syntax for it and reserves none.
 - **Not yet measured.** These are things about Obsidian and GitHub that nobody has checked, so this document says nothing about them (section 10): what Obsidian does with `![](https://media.example.org/x.m4a)`; what it does with `![[x.mp3]]`; what it does with the address of a video service written in the image syntax; whether Obsidian asks the network for a remote file when a note is opened or an embed is written; and what GitHub shows for an audio or video embed.
 
-None of this affects what already works: loading, reading, answering, and saving a v0.18 booklet with every question kind above but `listen`, its widgets, and its citations.
+None of this affects what already works: loading, reading, answering, and saving a v0.19 booklet with every question kind above but `listen`, its widgets, and its citations.
 
 ### Drafts
 

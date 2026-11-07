@@ -37,7 +37,7 @@ const PAGE_WORDS={
    tables. So a type marked drawn here is drawn, by a drawer that exists. */
 const BLOCK_WAY={markdown:"prose",callout:"callout",row:"row",widget:"widget",
   text:"question",lines:"question",choice:"question",multi:"question",scale:"question",matrix:"question",number:"question",date:"question",
-  query:"query"};
+  query:"query",copy:{marked:"copy"}};
 /* each widget engine drawn, and how: drawPage's ENGINE_DRAW must hold exactly these */
 const ENGINE_WAY={"grid-select":"drawn: its words press and highlight on the page, nothing kept","svg-regions":"drawn: its figure, and its places by name, pressed and highlighted on the page, nothing kept"};
 /* How each of the renderer's tables is handled: "drawn", or a reason it is marked instead. test/compile-coverage.test.js
@@ -61,7 +61,8 @@ const MARKED={
   heading:"a link to a heading that is not on this page: drawn as its words",
   brokenMark:"a citation mark that names no note in its module: drawn as [?id]",
   openingMark:"a citation mark in the booklet's opening, where the renderer draws none: left off",
-  image:"an image that is not drawn: its words and address are shown instead"};
+  image:"an image that is not drawn: its words and address are shown instead",
+  copy:"a copy button: a compiled page keeps no answers and holds no clipboard code, so the button is left off"};
 
 const HEAD=/^h([1-6])$/;
 const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
@@ -274,7 +275,7 @@ function drawPage(X,P,o){
   /* the drawers BLOCK_WAY names, and the words each kind of marked block is named by */
   const DRAWERS={prose:b=>frag(...prose(b.text)),callout:b=>callout(b),widget:b=>widget(b),question:b=>question(b),query:b=>query(b),
     row:b=>el("div",{class:"bk-row"},...R.blocksIn(b).map(c=>el("div",{class:"bk-rowcell"},...blocks(R.blocksIn(c)))))};
-  const MARKED_AS={};
+  const MARKED_AS={copy:b=>"the copy button “"+(plain(b.label)||b.id||"?")+"”"};
   for(const way of Object.values(BLOCK_WAY)) if(typeof way==="string"?!hasOwn(DRAWERS,way):!hasOwn(MARKED_AS,way.marked)||!hasOwn(MARKED,way.marked))
     throw new Error("draw.js: BLOCK_WAY names a way to draw that drawPage does not have: "+JSON.stringify(way));
   function block(b){

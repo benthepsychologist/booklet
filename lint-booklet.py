@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.18 format in SPEC.md.
+Lint a booklet file against the v0.19 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: "0.18"`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.19"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.18"`, one `lang:`, a one-line `description:` if there is one, `media-from:` if there is one), fences that are
+What it checks: the front matter (`booklet: "0.19"`, one `lang:`, a one-line `description:` if there is one, `media-from:` if there is one), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
@@ -21,13 +21,14 @@ block outside the region, a `> [!` line it cannot read), and six slips that draw
 or solution not folded or not under its question, `[x]` in a menu, a price that reads as a formula, tiles with no `value`). Format 0.18 adds
 a malformed `media-from:`, a `listen` with a bad `left:`, in a `repeat` activity or holding two pieces of media, audio and video embeds (an address with no
 media extension in the image syntax, one that is not `https:`, an extension that may not play everywhere, a local video with no transcript, a bare
-`![[name]]` that is not beside the file), and raw HTML that plays media or frames a page. Any file whose
-front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.18 (nothing before v1.0 is stable). A block id or a footnote
+`![[name]]` that is not beside the file), and raw HTML that plays media or frames a page. Format 0.19 adds `copy` lines (a missing or empty `of:`, an id that names nothing or cannot be
+copied, a copy outside an activity or in a records section). Any file whose
+front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.19 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [path ...]
-        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.18") and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.19") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
@@ -41,7 +42,7 @@ import difflib, html, json, math, pathlib, re, sys, unicodedata, urllib.parse
 BASE = pathlib.Path(__file__).resolve().parent
 
 # The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
-FORMAT_VERSION = "0.18"
+FORMAT_VERSION = "0.19"
 
 errors, warnings = [], []
 # Every finding, in the order found; main() prints each file's findings in line order. A finding's line is the one its message
@@ -125,7 +126,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.18 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.19 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -144,6 +145,7 @@ KIND_SETTINGS = {
     "choice": ("open", "menu:", "each:", "earlier:"), "multi": ("open", "menu:", "each:", "earlier:"),
     "number": ("min:", "max:", "step:", "each:"), "widget": ("readonly", "describe", "each:", "earlier:"),
     "listen": ("left:",),
+    "copy": ("of:",),
 }
 NUMBER_SETTINGS = ("min", "max", "step")
 # THE KEPT-ENTRIES FOLD'S MARK (format 0.17; SPEC.md section 3, "Kept entries, folded"): `entries:folded` on an activity line says
@@ -186,7 +188,11 @@ ICON_NAMES = frozenset((
 ENGINES = ("svg-regions", "grid-select")
 COLOUR_NAMES = ("warm", "green", "amber", "slate", "teal", "blue", "purple")
 QUESTION_KINDS = {"text", "lines", "widget", "choice", "multi", "scale", "number", "date", "matrix", "listen"}
-STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab", "page"}
+STRUCTURE_KINDS = {"module", "activity", "data", "records", "manifest", "menu", "hint", "solution", "row", "notice", "group", "diff", "law", "opinion", "tab", "page", "copy"}
+# the question kinds a `copy` line can copy (SPEC.md section 6, "Copy"): the ones whose answer is words, a number or a date
+COPY_KINDS = ("text", "lines", "choice", "multi", "scale", "number", "date")
+# one word of a copy line's `of:`: an id, or an id and `/solution` or `/hint`
+COPY_WORD = re.compile(r'^([A-Za-z0-9][A-Za-z0-9-]*)(?:/(solution|hint))?$')
 # what a module's notice (`> [!notice]`) may say about itself
 NOTICE_KEYS = ("license", "copyright", "source", "version")
 
@@ -826,7 +832,7 @@ def body_end(lines, i):
 
 # what a Booklet line makes that a callout's body does not (a question, a hint, structure): written in any callout but a
 # group in an activity, it is drawn as text
-BOOKLET_KINDS = QUESTION_KINDS | {"hint", "solution", "activity", "module", "tab", "page", "row", "data", "records", "menu", "manifest", "notice"}
+BOOKLET_KINDS = QUESTION_KINDS | {"hint", "solution", "activity", "module", "tab", "page", "row", "data", "records", "menu", "manifest", "notice", "copy"}
 
 
 def quoted_queries(lines, i):
@@ -983,6 +989,44 @@ def check_settings(f, n, kind, w):
         warn(f, f"line {n}: `{FOLD_KEY}:{FOLD_VALUE}` folds the list of kept entries, and this activity keeps none (it is not `repeat`), so it does nothing")
 
 
+def check_copies(f, copies, q_lines, block_ids, acts, menus):
+    """What each copy line's `of:` names (SPEC.md section 6, "Copy"): a question of the line's own activity (a text, lines, choice, multi, scale,
+    number or date question not asked for each pick of another), that question's `/solution` or `/hint` (the folded one straight under it),
+    or a fenced block with a `^id` in the line's module (its fence and data section, then the shared data section)."""
+    for c in copies:
+        n, mod, seq = c["n"], c["mod"], c["seq"]
+        mine = {q["id"]: q for q in q_lines if q["id"] and q["mod"] == mod and q["seq"] == seq and not q["bad"]}
+        for word in c["words"]:
+            m = COPY_WORD.match(word)
+            if not m:
+                err(f, f"line {n}: `{word}` in `of:` is not an id, or an id with `/solution` or `/hint` after it (letters, digits and dashes)")
+                continue
+            qid, part = m.group(1), m.group(2)
+            q = mine.get(qid)
+            if q:
+                if q["kind"] not in COPY_KINDS:
+                    err(f, f"line {n}: `{word}` in `of:` is a {q['kind']} question, and only {', '.join(COPY_KINDS[:-1])} and {COPY_KINDS[-1]} questions can be copied")
+                elif "each" in q["set"]:
+                    err(f, f"line {n}: `{word}` in `of:` is asked for each pick of another question, and such a question cannot be copied")
+                elif part and part not in q["parts"]:
+                    err(f, f"line {n}: `{word}` in `of:` has no {part} folded (`> [!{part}]-`) straight under the question, so there is nothing to copy")
+                continue
+            if any(x["id"] == qid and x["mod"] == mod and not x["bad"] for x in q_lines):
+                err(f, f"line {n}: `{word}` in `of:` is a question of another activity, and a copy line copies from its own")
+                continue
+            if part:
+                err(f, f"line {n}: `{word}` in `of:` names no question of this activity")
+                continue
+            if qid in block_ids.get(mod, {}) or qid in block_ids.get(None, {}):
+                continue
+            if qid in acts.get(mod, {}) or (qid in menus and (mod in menus[qid] or None in menus[qid])):
+                err(f, f"line {n}: `{word}` in `of:` is neither a question nor a block, so it cannot be copied")
+            elif any(qid in t for k, t in block_ids.items() if k != mod):
+                err(f, f"line {n}: `{word}` in `of:` is a block in another module only (a module reads its own blocks, or the data section's)")
+            else:
+                err(f, f"line {n}: `{word}` in `of:` names no question of this activity and no block of this module")
+
+
 def check_each_earlier(f, q_lines, act_keeps, widget_engines):
     """`each:` (SPEC.md section 5, "A question asked for each pick") and where `earlier:` can offer nothing (section 5, "Words the
     reader wrote before"). A question's source is a question or widget in its own activity."""
@@ -1106,11 +1150,11 @@ def check_page_trees(f, page_scopes, tabs_in_act):
 
 
 def check_format(f, text, fm, folder=None):
-    """Lint a v0.18 booklet. Every problem names its line."""
+    """Lint a v0.19 booklet. Every problem names its line."""
     fm_title, fm_id = fm.get("title", ""), fm.get("id", "")
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.18 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
+        err(f, "front matter has no `lang:` — a v0.19 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
     else:
         why = lang_problem(lang)
         if why:
@@ -1171,6 +1215,8 @@ def check_format(f, text, fm, folder=None):
     noid_line = None         # the line of a module opened without an id, until something closes it
     listens = []             # (line number, first body index, index past the body) of every listen line, checked with the file's embeds
     last_q = False           # a question is straight above: a hint or solution here folds under it (the renderer's lastQ)
+    cur_q = None             # that question's line in q_lines, with the folded hint or solution that are its own (`parts`)
+    copies = []              # every copy line (SPEC.md section 6, "Copy"), checked once the file is read
     prev_prose = False       # the line above is prose in the renderer's buffer, so `---` under it makes it a heading
     regions = records_regions(lines, i)
     reg_at = {r[0]: r for r in regions}
@@ -1276,6 +1322,9 @@ def check_format(f, text, fm, folder=None):
                         rec_id = w["id"]
                         if w["id"]:
                             rec_lines.append((n, w["id"]))
+                    elif kind == "copy":
+                        err(f, f"line {n}: a `> [!copy]` line cannot go in the records section (it holds records only, and a renderer keeps this line as "
+                               f"written and draws no button); move it above the records")
                     else:
                         warn(f, f"line {n}: a `> [!{kind}]` line inside the records region is not a record, so it is kept as written and not read; "
                                 f"move it above the records, or delete it")
@@ -1455,6 +1504,9 @@ def check_format(f, text, fm, folder=None):
             if section == "data" and kind == "page":
                 warn(f, f"{where}: a page line in a data section is not read (a data section holds blocks, menus and footnotes, "
                         f"not an activity's text); put the page in a tab of an activity")
+            if section == "data" and kind == "copy":
+                warn(f, f"{where}: a copy line in a data section is not read (a data section holds blocks, menus and footnotes, "
+                        f"not an activity's text); put it in an activity")
             if kind in ("module", "data"):
                 in_act = False
             if kind == "data":
@@ -1604,8 +1656,9 @@ def check_format(f, text, fm, folder=None):
                             embeds.append((n, e.group(1), open_mod))
                         else:
                             err(f, f"{where}: the widget {w['id']!r} names no data block (write ![[#^its-id]] under the line)")
-                    q_lines.append({"n": n, "id": w["id"], "kind": kind, "set": w["set"], "flags": w["flags"], "mod": open_mod, "seq": act_seq,
-                                    "ref": e.group(1) if e else None})
+                    ql = {"n": n, "id": w["id"], "kind": kind, "set": w["set"], "flags": w["flags"], "mod": open_mod, "seq": act_seq,
+                          "ref": e.group(1) if e else None, "bad": False, "parts": {}}
+                    q_lines.append(ql)
                     after_body = body_end(lines, i)        # a list is read from here: the renderer takes the body first
                     if kind == "matrix" and w["id"]:
                         items, after = list_below(lines, after_body, BULLET)
@@ -1671,6 +1724,8 @@ def check_format(f, text, fm, folder=None):
                                         f"(with raw checkboxes), not as part of this question: remove the blank line")
                     if w["id"] and not bad_q:
                         last_q = True
+                        cur_q = ql
+                    ql["bad"] = bad_q
                     # Markdown lets only a list starting at 1 interrupt a paragraph:
                     # a list starting at 0 (or 2…) straight under the line joins its title
                     nxt = lines[i + 1] if i + 1 < len(lines) else ""
@@ -1683,6 +1738,22 @@ def check_format(f, text, fm, folder=None):
                     if not last_q:
                         warn(f, f"{where}: this {kind} is not directly under a question, so it is drawn on its own; put it straight under the question "
                                 f"it belongs to, with nothing between (no text, no other callout)")
+                    elif mm.group(3) == "-" and cur_q is not None and kind not in cur_q["parts"]:
+                        cur_q["parts"][kind] = n          # the first folded one of each kind is the question's own (the renderer's q[k])
+                elif kind == "copy":
+                    # SPEC.md section 6, "Copy": `> [!copy|id of:a,b,c] Button label`; what it names is checked once the file is read
+                    if not (in_act or implicit):
+                        err(f, f"{where}: a copy line belongs inside an activity, so a renderer ignores it" +
+                               (" (this one is in a module's opening)" if open_mod else " (this one is outside every activity)"))
+                    elif "of" not in w["set"] or not w["set"]["of"].strip():
+                        err(f, f"{where}: a copy line needs `of:` with the ids it copies, written with no spaces (`> [!copy|my-copy of:essay,essay/solution] Copy`); "
+                               f"a renderer ignores a copy line without it")
+                    else:
+                        words = w["set"]["of"].split(",")
+                        if "" in words:
+                            err(f, f"{where}: `of:{w['set']['of']}` has an empty place between two commas; a renderer ignores the line")
+                        else:
+                            copies.append({"n": n, "words": words, "mod": open_mod, "seq": act_seq})
             if kind == "menu":
                 items, after_menu = list_below(lines, body_end(lines, i), BULLET)
                 if not items:
@@ -1696,7 +1767,7 @@ def check_format(f, text, fm, folder=None):
                                 f"own task list (`- [x] Mars`) in place of `menu:`, or drop the `[x]`")
                 if w["id"]:
                     menus.setdefault(w["id"], []).append(scope_mod())
-            for key in (w["id"],) if kind in QUESTION_KINDS | {"module", "activity", "menu"} and w["id"] else ():
+            for key in (w["id"],) if kind in QUESTION_KINDS | {"module", "activity", "menu", "copy"} and w["id"] else ():
                 if not ID_PATTERN.match(key):
                     err(f, f"line {n}: the id {key!r} may hold only letters, digits and dashes")
                 if kind == "module":
@@ -1768,6 +1839,7 @@ def check_format(f, text, fm, folder=None):
         elif not found.lower().startswith("booklet widget"):
             err(f, f"line {n}: ^{ref} is not a widget block")
     check_each_earlier(f, q_lines, act_keeps, widget_engines)
+    check_copies(f, copies, q_lines, block_ids, acts, menus)
     # A file with no activity line and no module line is one activity (SPEC section 3),
     # so its queries and questions belong to that one activity.
     if seen_activity or any_module:
@@ -1830,7 +1902,7 @@ def check_format(f, text, fm, folder=None):
             names = " and ".join(("the module " + repr(sc)) if sc else "the data section or the activities outside every module" for sc in scopes)
             mark = f"^{key}" if what == "block" else f"[^{key}]"
             warn(f, f"the {what} id {mark} is used in {names}: Booklet reads each in its own module, but Obsidian and GitHub will show the first one for all of them")
-    # after a records region the file is design again, and format 0.18 leaves it where it is when the file is saved (SPEC.md section 8):
+    # after a records region the file is design again, and format 0.19 leaves it where it is when the file is saved (SPEC.md section 8):
     # said once, with what it holds, since a reader reads it as design but the records sit before it
     if regions:
         inside = set()

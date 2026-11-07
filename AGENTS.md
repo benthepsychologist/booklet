@@ -26,7 +26,7 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 - The renderer, format, validator, and modules without a
   `copyright`/`license`/`source` declaration are Apache-2.0.
 - A module's own front matter (`copyright`, `license`, `source`) controls that
-  module's prose and travels with the file (a one-module file's `copyright`, `license` and `source` are its notice, or a `> [!notice]` callout in its fence), since a v0.18 module is the
+  module's prose and travels with the file (a one-module file's `copyright`, `license` and `source` are its notice, or a `> [!notice]` callout in its fence), since a v0.19 module is the
   unit that travels whole (`SPEC.md` §2, `CONTRIBUTING.md`). Do not remove or
   relocate it.
 - Modules are not kept in this repo; they live in `booklet-registry`, and a
@@ -80,15 +80,15 @@ and `NOTICE`; `test/figures.test.js` checks the hash. Search the file with
 7. **A format version is text, never a number.** `0.10` is not the number 0.1.
    Read the marker as text, compare versions as two whole numbers (major, minor)
    with `versionOf` in the renderer (it reads "0.10" as [0, 10]) and never `+FORMAT_VERSION`, and write it
-   quoted (`booklet: "0.18"`) so a YAML tool does not turn it into 0.1. A file
+   quoted (`booklet: "0.19"`) so a YAML tool does not turn it into 0.1. A file
    marked with another `0.x` version opens by the current rules and says nothing about its marker (the renderer lags the format by design:
    no patch each release, and nothing in it names a marker to say);
    the renderer never changes the marker a file came with.
 8. **A wording-only change to `SPEC.md` is a patch.** When the spec's words change
    and nothing a file may say does, the spec's title, the renderer and the skill take
-   a third number (v0.18.1). The marker and `FORMAT_VERSION` stay as they are, no file
+   a third number (v0.19.1). The marker and `FORMAT_VERSION` stay as they are, no file
    is re-marked, and the registry needs no release. Any change to what a file may say
-   bumps the minor (v0.18) and re-marks every file this repository holds that carries the current marker (not the fixtures that exist to carry another).
+   bumps the minor (v0.19) and re-marks every file this repository holds that carries the current marker (not the fixtures that exist to carry another).
 
 ## Code that sends a reader's work never goes in `booklet.html`
 
@@ -105,6 +105,6 @@ These bind anyone extending the format or the renderer's views.
 
 ## The renderer's one routing rule
 
-A link carries a name from what the host declared, never an address. `#/open/<name>` is the page's `booklet-store` meta tag plus a name that passed `linkName()` (with no tag, on a page served over http or https, `modules/` beside the renderer plus that name: `defaultStore()`, 0.15), and `#/module/<id>` is an id the registry's own list holds. Nothing in a link, a booklet or the browser's storage may declare a store, or name a host as one the renderer trusts. The one thing of this kind a booklet may declare is the origin its media is hosted on (`media-from`, `SPEC.md` section 2), and the rule for it is that **the file declares; the reader or the host allows**: a declaration is not a permission and is not needed, only the host or the reader allows an origin (on its own list, for one booklet, or for one piece of media, and never in the file), and nothing is requested for one unasked. The reference renderer loads no remote media and no remote image through v0.18, whatever a file declares. A booklet from the default folder is only read: it is never the host's (`hostName()`), so the submit build never offers Submit for it (`test/submit-browser.js`), and it draws its images from that folder by the declared store's rule (`imageFolder()`; `test/storeimages-browser.js`). Opening is a read through the ordinary parser: it adds no write, sends nothing, and never replaces a booklet the reader keeps. `test/openlink.test.js`, `test/openlink-browser.js` and, for the default folder, `test/modulesfolder.test.js` and `test/modulesfolder-browser.js` pin it.
+A link carries a name from what the host declared, never an address. `#/open/<name>` is the page's `booklet-store` meta tag plus a name that passed `linkName()` (with no tag, on a page served over http or https, `modules/` beside the renderer plus that name: `defaultStore()`, 0.15), and `#/module/<id>` is an id the registry's own list holds. Nothing in a link, a booklet or the browser's storage may declare a store, or name a host as one the renderer trusts. The one thing of this kind a booklet may declare is the origin its media is hosted on (`media-from`, `SPEC.md` section 2), and the rule for it is that **the file declares; the reader or the host allows**: a declaration is not a permission and is not needed, only the host or the reader allows an origin (on its own list, for one booklet, or for one piece of media, and never in the file), and nothing is requested for one unasked. The reference renderer loads no remote media and no remote image through v0.19, whatever a file declares. A booklet from the default folder is only read: it is never the host's (`hostName()`), so the submit build never offers Submit for it (`test/submit-browser.js`), and it draws its images from that folder by the declared store's rule (`imageFolder()`; `test/storeimages-browser.js`). Opening is a read through the ordinary parser: it adds no write, sends nothing, and never replaces a booklet the reader keeps. `test/openlink.test.js`, `test/openlink-browser.js` and, for the default folder, `test/modulesfolder.test.js` and `test/modulesfolder-browser.js` pin it.
 
 `test/guard.test.js` pins the key list and the view list, so adding either is a deliberate change made in the renderer, the linter and the spec table together.
