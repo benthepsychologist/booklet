@@ -200,14 +200,14 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  /* ---- readonly is last in every view's list of keys it draws ---- */
  chk("`readonly` is the last key of every view's list",Object.values(A.VIEW_DRAWS).every(l=>l[l.length-1]==="readonly")&&Object.keys(A.VIEW_DRAWS).length===6);
 
- /* ---- a question asked for each row (`each:` over a data block) is drawn as its title and a line, and kept as written ---- */
+ /* ---- a question asked for each row (`each:` over a data block) is read, and drawn in the rows (test/dashedit.test.js) ---- */
  {const mk=each=>A.parseFile('---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: reqs\nas: list\n```\n\n> [!text|reply each:'+each+'] A word of reply\n\n```booklet data\n[{"id":"r1","title":"One"}]\n```\n^reqs\n');
   const r=mk("reqs"),act=r.template.activities?r.template.activities[0]:r.template.modules[0].activities[0];
   const q=act.pages[0].blocks.find(b=>b.type==="text");
   chk("an `each:` over a data block in reach reads clean, with no 'could not read' notice, and keeps its `each`",r.unread.length===0&&q&&q.each==="reqs",JSON.stringify(r.unread));
-  const n=A.keptQuestion(q,{reply:[{pick:"r1",a:"hello"}]});
-  chk("it is drawn as its title and a line saying this page does not draw it yet, with nothing to type in",
-    !!n&&text(n).includes("A word of reply")&&byClass(n,"hint").length===1&&/does not draw/.test(text(byClass(n,"hint")[0]))&&tag(n,"textarea").length===0&&tag(n,"input").length===0,n&&text(n));
+  chk("an answer of its shape (pairs) is not set apart as written: the rows draw it",A.keptQuestion(q,{reply:[{pick:"r1",a:"hello"}]})===null);
+  const n=A.keptQuestion(q,{reply:"hello"});
+  chk("an answer of another shape is still shown as written, with the notice",!!n&&byClass(n,"hint").length===1&&text(n).includes("A word of reply"),n&&text(n));
   chk("an `each:` that names nothing in its activity or in reach is still said and taken off",mk("nothere").unread.length===1);}
 
  /* ---- a field named like a function on every object ---- */

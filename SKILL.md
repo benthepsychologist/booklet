@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.19.0**. It matches SPEC.md's v0.19, the current format.
+**Skill version: 0.19.1**. It matches SPEC.md's v0.19, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -815,8 +815,8 @@ itself is never shown.
   activity, and write the follow-up after it
   (`> [!text|tool-why each:tools] What was it for?`). One level only: a
   follow-up is never itself a source. The reference renderer, `booklet.html`,
-  does not draw a follow-up yet (it shows its title and a line saying so), so
-  write `each:` only when it was asked for.
+  draws the follow-up once for each pick, its title once and each pick as a
+  subheading, and keeps its answers as pairs.
 - **A reader's own words can come back.** In an activity that keeps entries
   (`repeat`), a `choice` or `multi` with `open` offers the reader's own options
   from earlier entries again. `earlier:<n>` after the id sets how many, written
@@ -1023,10 +1023,9 @@ between paragraphs for a new one. Section 4 says what a heading does.
   `> [!choice|decision each:requests] Your call` (`each:` then a data block's id):
   it is drawn in each row's open part, or in a column when a query's `fields:`
   names its id, and is asked of the rows that carry a field of that name. Edits and
-  these questions are kept as entries, so the activity is `repeat`. **The reference
-  renderer draws nested rows, the file and the open part, but not yet the editing,
-  the questions or `readonly`; write them only when they were asked for.** A host
-  applies the kept entries (`docs/hosting.md`); a booklet never does.
+  these questions are kept as entries, so the activity is `repeat`. The reference
+  renderer draws the editing, the questions and `readonly` as they are written here.
+  A host applies the kept entries (`docs/hosting.md`); a booklet never does.
 
   ````markdown
   > [!module|desk] Garden desk

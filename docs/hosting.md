@@ -109,7 +109,7 @@ Every other booklet is **the reader's alone**: one picked from the reader's own 
 
 `fn({ text, name, title, change })` is called every few seconds while the reader works, as a cloud editor saves, never on every key (0.13.1; earlier releases called it about every half second):
 
-- **after a change**, once the reader has paused for 2 seconds (an answer typed, a choice made, a kept entry, a rename, a module added or removed), and at most 5 seconds after the first change not yet told while changes go on, so a reader who types steadily is saved every 5 seconds;
+- **after a change**, once the reader has paused for 2 seconds (an answer typed, a choice made, a kept entry, a rename, a module added or removed; an act kept in a row goes at once, see "Applying a reader's acts"), and at most 5 seconds after the first change not yet told while changes go on, so a reader who types steadily is saved every 5 seconds;
 - **at once** for a change still waiting, when the page is hidden or left, when the reader downloads a copy, opens another booklet or goes home, and **after** "Read the newer file": the merged booklet (the newer file's body, with the reader's work and any change that was waiting) goes at once. Nothing goes before the read, so a store that keeps its own body is never sent the old one, and has no cause to offer the file again. While an offer that opening by a link found is waiting, nothing is sent: see "The store contract";
 - **at once when a booklet is opened**, and when a host the reader allowed registers, or is allowed, while one of its booklets is open;
 - **again, at once, when the page comes back from the browser's page cache** (`pageshow` with `persisted`) with a change you have not confirmed: the one sent as the page went may never have arrived.
@@ -204,15 +204,25 @@ A host that keeps booklets in a store follows these rules, so a link, a save and
 
 A booklet can ask a question for each row of a data block, and can mark a data field editable (`SPEC.md` section 5, "A question asked for each row" and "Editing a field in place"). The renderer only keeps what the reader did, as entries of a `repeat` activity, in the booklet's records. Applying an act (changing a hub's file, running a command) is the host's work, never the renderer's and never the format's. These are the rules a host or an agent that applies acts follows.
 
-**The reference renderer does not keep these acts yet** (`SPEC.md` section 13). The rules are written so a host can be built against the format now.
+**The reference renderer keeps these acts** (0.19.1). An act is one pair in an entry of the activity that holds the view, and the renderer calls `onChange` at once after it (see below). It writes nothing else: the data block and the data file are never changed by the reader. The rules below are the ones a host or an agent that applies acts follows.
+
+**What an act looks like in the file.** Each act is one new entry, `{ "<field or question id>": [ { "pick": "<row id>", "a": <the answer>, "was": <the value before> } ], "ts": "<time>" }`, inside the activity's `booklet entries` block (`SPEC.md` section 8). Pressing Enter in an edited field keeps one entry with one pair. A row's Finalize keeps one entry holding that row's pairs, under as many keys as the row has answers (a note and a decision of one row travel together). The `ts` of an act is to the whole second, and two acts never share one (the later moves to the next free second). A number field emptied and kept is `"a": null`. For a made-up orchard:
+
+```json
+{"title":[{"pick":"p-orchard","a":"Old orchard","was":"Orchard"}],"ts":"2026-11-07T10:42:00Z"}
+{"stage":[{"pick":"p-orchard","a":"resting","was":"growing"}],"ts":"2026-11-07T10:42:05Z"}
+{"about":[{"pick":"p-orchard","a":"Eight apple trees.\n\nStakes arrive Friday.","was":"Eight apple trees."}],"ts":"2026-11-07T10:42:09Z"}
+{"decision":[{"pick":"b-ladder","a":1}],"reply":[{"pick":"b-ladder","a":"Borrow it first"}],"ts":"2026-11-07T10:43:30Z"}
+```
 
 - **Apply each entry once.** An entry is named by its `ts` and the pick of each pair in it (a row's `id`). Remember what you applied; the entry stays in the file, and the renderer never removes it.
-- **In place:** an entry whose pair has `was` sets a field the row already had. Set the field to `a` only if the data's value now equals `was`; otherwise refuse, and record the refusal. This is the stale-page check a dashboard needs, and nothing the reader wrote is lost by it: the kept entry stays, and the reader sees the value now with what was sent beneath it.
-- **Append:** a pair with no `was` adds something (a note, a decision, a new item). Add `a` as a new thing.
-- **A `choice` is a position.** The answer `1` is the first option of the question as the booklet's own text lists it, which you have in the file you were given.
-- **Say what happened through the data.** The renderer shows the outcome from the data it reads: the field's new value, the list's new item, or a row of your own that says "refused: changed since you edited it". Then call `handle.dataChanged()`.
+- **In place:** an entry whose pair has `was` sets a field the row already had. Set the field to `a` only if the data's value now equals `was`; otherwise refuse, and record the refusal. This is the stale-page check a dashboard needs, and nothing the reader wrote is lost by it: the kept entry stays, and the reader sees the value now with what was sent beneath it. The renderer compares the data's value and `was` as written, and a choice question's value with its options ignoring case and spaces at either end.
+- **Append:** a pair with no `was` adds something (a note, a decision, a new item). Add `a` as a new thing. The renderer lists what the data holds under the question as history, then the kept answers newest first with their times, so it shows an added item twice when the host adds it and leaves the entry in the file; a host that prunes applied entries avoids that.
+- **A choice question is a position; an edited `choice` field is words.** For a question (`> [!choice|decision each:requests]`) the answer `1` is the first option of the question as the booklet's own text lists it, which you have in the file you were given. For a field marked `edit: choice` the pair holds the option's own words (`"resting"`), which is the value the field should have.
+- **Say what happened through the data.** The renderer shows the outcome from the data it reads: the field's new value, the list's new item, or a row of your own that says "refused: changed since you edited it". Then call `handle.dataChanged()`. What the reader sees after it follows the display states (`SPEC.md` section 5): the value alone when it equals what was sent; what was sent, marked waiting, while it still equals `was`; the value now with what was sent beneath it otherwise.
 - **Pruning is yours.** The renderer keeps every act and removes none. A host that publishes the booklet and its data file may prune the acts it has applied, or keep a log of them (one line of JSON for each act, in a file beside the booklet, is enough), as it likes, and says so on its own page.
-- **Prompt delivery.** A renderer that keeps a row's Finalize calls `onChange` at once after it, not after the usual pause, so an act reaches the host promptly. (Not built yet.)
+- **Prompt delivery, the Finalize cadence.** An ordinary activity saves on the usual pause (2 seconds after a change, at most 5 seconds while changes go on). An act the reader keeps in a row (an edited field, or a row's Finalize) calls `onChange` at once, because it is the moment that says the act is final. The activity's own Finalize, at the foot of the page, is sent on the usual pause as it always was. A draft being typed (a half-typed edit or answer) is not an act: it is sent on the usual pause, as an answer is, and is never applied.
+- **When the data file changes, call `handle.dataChanged()`.** The renderer draws a changed file in place and keeps the reader's half-typed edit, the open rows, the sort and filter and the scroll.
 
 ## The submit build: sending a reader's answers to one address
 
