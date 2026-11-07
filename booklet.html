@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-FmzMsTJ/r1XrdKk3r2lk+w/2Mz6MyGVRO4bFQzIhuYI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-QyhF2DIBS7JUBmIv3EQLw6mEpvwqUIXO8MlpW86FJWc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7120,20 +7120,31 @@ const pickPlain=(src,p)=>{const x=pickPart(src,p);return plainText(typeof x==="o
 function drawEach(b,draft,activityId,dc){const src=eachSource(b);
   /* asked for each row: drawn in the rows of a view of its data block (rowActs), and nowhere else */
   if(!src) return el("div",{class:"pblock q-rows",hidden:""});
-  const K=keysOf(b)[0],W=widgetFor(src),box=el("div",{class:"pblock q-each"});
-  const picks=sourcePicks(src,draft[keysOf(src)[0]],W);
-  /* nothing is drawn while nothing is picked */
-  if(!picks.length) return box;
-  const title=plainText(tx(b.label,"")),held=new Set(picks.map(pickKey));
-  questionHead(box,b);
+  const K=keysOf(b)[0],SK=keysOf(src)[0],W=widgetFor(src),box=el("div",{class:"pblock q-each"});
+  const title=plainText(tx(b.label,"")),held=new Set();
   const one={...b,each:undefined,label:"",help:"",perPick:{q:b,W:widgetFor(b),rec:draft,held}};
-  picks.forEach(p=>{const hid=newId("ep_"),copy=el("div",{class:"q-pick",role:"group","aria-labelledby":hid});
+  const copies=new Map();let head=null,shown=null;
+  const copyOf=p=>{const hid=newId("ep_"),copy=el("div",{class:"q-pick",role:"group","aria-labelledby":hid});
     copy.append(el("h4",{class:"q-pickhead",id:hid},wordsNode(pickPart(src,p))));
     const node=DRAW_BLOCK[b.type](one,pairRecord(draft,K,p),activityId,dc,null);
     /* a box with no words of its own is named for its question and pick */
     const f=node.querySelector&&node.querySelector("textarea,input[type=text],input[type=number],input[type=date]");
     if(f&&!f.getAttribute("aria-label")&&!(f.labels&&Array.from(f.labels).some(l=>String(l.textContent||"").trim()))) f.setAttribute("aria-label",(title?title+" · ":"")+pickPlain(src,p));
-    copy.append(node);box.append(copy);});
+    copy.append(node);return copy;};
+  /* the copies follow the source's picks as the reader makes them: a new pick adds a copy at the end, a pick taken back takes its drawing
+     away (its pair stays in the draft) and a pick made again brings it back. Nothing is drawn while nothing is picked. A copy already
+     on the screen is the same node, so a box being typed in is not drawn again. */
+  const sync=()=>{const picks=sourcePicks(src,draft[SK],W),keys=picks.map(pickKey),sig=keys.join("\u0002");
+    if(sig===shown) return;shown=sig;
+    held.clear();keys.forEach(k=>held.add(k));
+    const next=new Map();picks.forEach((p,i)=>{const k=keys[i];next.set(k,copies.has(k)?copies.get(k):copyOf(p));});
+    copies.clear();next.forEach((v,k)=>copies.set(k,v));
+    box.textContent="";
+    if(!picks.length) return;
+    if(!head){const h=el("div",{});questionHead(h,b);head=Array.from(h.children);}
+    box.append(...head,...next.values());};
+  sync();
+  if(dc&&dc.ticks) dc.ticks.push(sync);
   return box;}
 
 /* ======================= ACTS ON ROWS =======================
