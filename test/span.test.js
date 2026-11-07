@@ -99,7 +99,7 @@ const blocks=(R,id)=>R.template.modules.find(m=>m.id==="span").activities.find(a
  for(const bad of ["limit: week","limit: 0 days","limit: -3 days","limit: 3 weeks","limit: 3days","limit: 2.5 days","limit: days"]){
    const R2=A.parseFile(FX_ALL.replace("limit: 3 days",bad)),v=R2.template.modules[0].activities.find(a=>a.id==="span/look").pages[0].blocks.find(b=>b.type==="query").view;
    chk("`"+bad+"` is reported and ignored (no count, no span)",R2.unread.some(p=>/not a positive whole number or a number of days/.test(p))&&v.limit===undefined&&v.days===undefined,JSON.stringify([R2.unread,v]));}
- chk("the query has fifteen keys, `summary` among them",A.QUERY_KEYS.length===15&&A.QUERY_KEYS.includes("summary"));
+ chk("the query has sixteen keys, `summary` among them",A.QUERY_KEYS.length===16&&A.QUERY_KEYS.includes("summary"));
 
  /* ---- the span of days: the entries of today and the days before it, by the reader's own date ---- */
  await A.createBooklet();

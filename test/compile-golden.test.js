@@ -1,4 +1,4 @@
-// Golden pages for the compiler (compile/, compile 0.3.0): what it writes for the examples and the page-shaped fixtures,
+// Golden pages for the compiler (compile/, compile 0.4.0): what it writes for the examples and the page-shaped fixtures,
 // committed under test/compile-golden/, so a change to what the compiler writes is seen in review, line by line.
 // The set is compiled in one run, in both forms (as `--form both` writes it: standalone/<name>/index.html and
 // site/<name>/index.html), and every file it writes for a booklet must equal its golden copy. The stylesheet and its fonts
@@ -22,7 +22,7 @@ const C=require("../compile/compile.js"),E=require("../compile/engine.js"),STUB=
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const SET=[...["garden-week","how-tides-work","project-board","status-page"].map(n=>path.join(ROOT,"examples",n+".booklet.md")),
   ...["compile-article","compile-kinds","compile-quiz","figures","charts","data-views","compile-pages","compile-page-lines","compile-pair","compile-pair.es","compile-views","compile-theme"].map(n=>path.join(__dirname,"fixtures",n+".booklet.md")),
-  ...["compile-bodymap","compile-pictures","compile-diagrams"].map(n=>path.join(__dirname,"compile-assets",n+".booklet.md"))];
+  ...["compile-bodymap","compile-pictures","compile-diagrams","compile-dashboard"].map(n=>path.join(__dirname,"compile-assets",n+".booklet.md"))];
 const WRITE=process.argv.includes("--write");
 
 const run=C.compile(SET.map(file=>({file})),{form:"both",engine:E.load(),drawer:STUB.drawer});

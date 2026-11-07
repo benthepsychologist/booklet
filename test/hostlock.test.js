@@ -49,7 +49,7 @@ const listen=A=>{const calls=[];A.BookletApi.onChange(x=>calls.push(x));return c
 {const A=boot("https:","bookletmd.org",""),B=A.BookletApi;
  chk("a public address is not the reader's own place",A.HOST_OWN===false);
  const h=B.host({label:"site: store"});
- chk("host() returns a frozen handle with the same members, and state() says refused",Object.keys(h).sort().join()==="failed,fileChanged,leave,saved,state"&&Object.isFrozen(h)&&h.state()==="refused");
+ chk("host() returns a frozen handle with the same members, and state() says refused",Object.keys(h).sort().join()==="dataChanged,failed,fileChanged,leave,saved,state"&&Object.isFrozen(h)&&h.state()==="refused");
  chk("no host is registered and no notice is shown",A.HOST===null&&!/wants to save/.test(shown())&&P.find(P.main(),n=>(n.attrs||{}).class&&/hostask/.test(n.attrs.class)).length===0);
  chk("the bar says Kept in this browser only",barText()==="Kept in this browser only",barText());
  const calls=listen(A);B.open(BOOK,{name:NAME});typeIn(A,"ma/act","private words");await sleep(900);

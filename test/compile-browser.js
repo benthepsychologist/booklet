@@ -1,4 +1,4 @@
-// Browser check of the compiler's pages (compile/, compile 0.3.0): what a reader of a compiled page gets, in Chromium with
+// Browser check of the compiler's pages (compile/, compile 0.4.0): what a reader of a compiled page gets, in Chromium with
 // scripting OFF. The examples and the page-shaped fixtures are compiled with the renderer named on the command line, in both
 // forms; each standalone page, and each site page set in a bare host page that loads the one stylesheet with one line, is
 // opened at 1280 and 390 pixels wide, light and dark. It asserts:
@@ -178,7 +178,8 @@ async function scriptOnDeepPage(b){
       const sums=await p.$$('details > summary');let opened=0;const stuck=[];
       for(const s of sums){const was=await s.evaluate(x=>x.parentElement.open);if(was){opened++;continue;}
         try{await s.click({timeout:2000});}catch(e){stuck.push((await s.innerText()).slice(0,40)+' (could not be pressed)');continue;}
-        const st=await s.evaluate(x=>{const d=x.parentElement,body=[...d.children].filter(c=>c!==x);
+        /* a table row that opens holds its rest in the row after it (the renderer's own shape: a <tr> cannot be inside a disclosure) */
+        const st=await s.evaluate(x=>{const d=x.parentElement,body=x.classList.contains('bk-dv-sum')?[...x.closest('tbody').querySelectorAll('.bk-dv-trmore')]:[...d.children].filter(c=>c!==x);
           return {open:d.open,shown:body.length>0&&body.every(c=>c.getBoundingClientRect().height>0&&getComputedStyle(c).visibility!=='hidden')};});
         if(st.open&&st.shown) opened++;else stuck.push((await s.innerText()).slice(0,40));}
       ok(opened===sums.length&&!stuck.length,at+': every fold opens and shows what it holds ('+opened+'/'+sums.length+')'+(stuck.length?' stuck: '+stuck.join(' | '):''));

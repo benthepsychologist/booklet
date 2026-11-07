@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-// compile 0.3.0: a booklet file to a plain web page. It is a build step beside the renderer, never the published booklet.html.
+// compile 0.4.0: a booklet file to a plain web page. It is a build step beside the renderer, never the published booklet.html.
 //   node compile/compile.js [options] <file.booklet.md> ...
 //     --out <dir>         where to write (default compiled/)
 //     --form <form>       standalone (default), site, or both
@@ -49,7 +49,7 @@
 const fs=require("fs"),path=require("path"),crypto=require("crypto");
 const E=require("./engine.js"),D=require("./draw.js"),H=require("./html.js"),SC=require("./script.js"),Th=require("./theme.js"),G=require("./diagrams.js");
 
-const VERSION="0.3.0";
+const VERSION="0.4.0";
 const STYLESHEET=path.join(__dirname,"booklet.css");
 const NAME=/^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
@@ -369,7 +369,7 @@ function compileOne(X,input,o){
     theme:first[0].theme,description:first[0].description,toc:first.some(p=>p.toc),translations:o.alt?o.alt.with:[],
     script:first.some(p=>p.script),needsScript:first.some(p=>p.needs),keyed:first.some(p=>p.keyed),readOnly:first.flatMap(p=>p.readOnly)});
   return {rep,files};}
-const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"));
+const parseInput=(X,input)=>X.parse(input.text!=null?input.text:fs.readFileSync(input.file,"utf8"),{dir:input.dir||(input.file?path.dirname(input.file):null)});
 const dedupe=list=>{const seen=new Set();return list.filter(x=>{const k=x.src+"\u0000"+x.ok+"\u0000"+(x.where||"");if(seen.has(k)) return false;seen.add(k);return true;});};
 
 /* the stylesheet and its fonts, for each form's booklet/ folder */
@@ -392,7 +392,7 @@ function compile(inputs,o){o=o||{};
   /* the optional script, built from compile/script/ (or o.scriptDir) and scanned before anything is drawn: a part that holds a
      banned word fails the whole run, with nothing written */
   const S=SC.assemble(o.scriptDir);
-  const list=inputs.map(i=>({...i,name:i.name||nameOf(i.file),dir:i.dir||(i.file?path.dirname(i.file):".")}));
+  const list=inputs.map(i=>({...i,name:i.name||nameOf(i.file),dir:i.dir||(i.file?path.dirname(i.file):null)}));
   /* each file is read once, first, so a page knows which of the others it can link to, and by what title */
   /* two addresses that differ only in case are the same folder on a case-insensitive disk, so they clash too */
   const seen=new Map(),siblings=new Map(),parsed=new Map(),failed=new Map(),meta=new Map();

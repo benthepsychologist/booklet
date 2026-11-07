@@ -60,8 +60,10 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    ok(/tabular/.test(num),'list: values use tabular numbers ('+num+')');
    const face=await p.evaluate(()=>[['.dv-v'],['.dv-t'],['.ch-v']].map(([s])=>{const e=document.querySelector(s);return e?getComputedStyle(e).fontFamily:'';}));
    ok(face.every(f=>/Atkinson|sans-serif|Helvetica|Segoe/i.test(f)&&!/Lora|Georgia/.test(f)),'the tile figure, the list label and the bars value are in the sans face ('+face.join(' | ')+')');
-   const ctl=await p.evaluate(()=>[...document.querySelectorAll('.dv-box')].map(b=>({btn:!!b.querySelector('.dv-ctl-btn'),rows:b.querySelectorAll('li.dv-row,tbody tr,.ch-row').length})));
-   ok(ctl.filter(c=>c.btn).length===3&&ctl.filter(c=>c.btn).every(c=>c.rows>=9)&&ctl.filter(c=>!c.btn).every(c=>c.rows<=8),'the control button is on the three long views only ('+JSON.stringify(ctl)+')');
+   // a nested list draws a row's children when the row opens (SPEC.md, "Rows that open"), so its fifteen rows are not all on the page at first:
+   // only its two top rows are, and the control still counts all fifteen. A top row that opens is a summary.dv-row, a plain one an li.dv-row.
+   const ctl=await p.evaluate(()=>[...document.querySelectorAll('.dv-box')].map(b=>({btn:!!b.querySelector('.dv-ctl-btn'),tree:!!b.querySelector('.dv-tree'),rows:b.querySelectorAll('li.dv-row,summary.dv-row,tbody tr,.ch-row').length})));
+   ok(ctl.filter(c=>c.btn).length===3&&ctl.filter(c=>c.btn&&!c.tree).every(c=>c.rows>=9)&&ctl.filter(c=>c.btn&&c.tree).length===1&&ctl.filter(c=>!c.btn).every(c=>c.rows<=8),'the control button is on the three long views only ('+JSON.stringify(ctl)+')');
    const panels=await p.evaluate(()=>[...document.querySelectorAll('.dv-box')].map(b=>({panel:b.classList.contains('dv-panel'),bg:getComputedStyle(b).backgroundColor,bw:getComputedStyle(b).borderTopWidth})));
    ok(panels.filter(x=>x.panel).length>=3&&panels.filter(x=>x.panel).every(x=>x.bw!=='0px'),'lists, tables and bars sit in a surface card ('+JSON.stringify(panels.slice(0,3))+')');
    ok(await p.evaluate(()=>!document.querySelector('.dv-tiles').closest('.dv-panel')&&!document.querySelector('.dv-groups').closest('.dv-panel')),'tiles and grouped lists get no outer card');
@@ -195,7 +197,8 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    const tree=p.locator('.dv-box:has(.dv-tree)');
    const vis=()=>tree.locator('.dv-t:visible').allInnerTexts();
    ok(JSON.stringify(await vis())===JSON.stringify(['Whole house','Garden']),'the nested list shows only its two top-level rows at first ('+(await vis()).join(' | ')+')');
-   ok(await tree.locator('details').count()===5&&await tree.locator('details[open]').count()===0,'five rows have children and all start closed');
+   // a row's open part is drawn when it opens, so only the two top rows are disclosures at first; the other three appear as their parents open
+   ok(await tree.locator('details').count()===2&&await tree.locator('details[open]').count()===0,'two top rows have children and both start closed, drawn so far ('+await tree.locator('details').count()+')');
    // a click on a summary opens it
    await tree.locator('summary').first().click();await p.waitForTimeout(150);
    ok(JSON.stringify(await vis())===JSON.stringify(['Whole house','Kitchen','Hall','Bathroom','Garden']),'clicking a summary opens it and shows its children ('+(await vis()).join(' | ')+')');
@@ -232,18 +235,53 @@ const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.p
    await t.ctx.close();}
   {const t=await open(fixture,400);const p=t.p;await theme(p,'paper');
    const tree=p.locator('.dv-box:has(.dv-tree)');
-   await tree.locator('details').evaluateAll(ds=>ds.forEach(d=>{d.open=true;}));await p.waitForTimeout(200);
-   ok(await p.locator('.dv-tree .dv-t:visible').count()===15,'with every row open all fifteen show at 400px');
+   // a row's children are drawn when it opens, so each round opens the disclosures drawn so far, and the next level appears (three levels)
+   for(let i=0;i<4;i++){await tree.locator('details:not([open])').evaluateAll(ds=>ds.forEach(d=>{d.open=true;}));await p.waitForTimeout(200);}
+   ok(await tree.locator('details').count()===5&&await tree.locator('details:not([open])').count()===0&&await p.locator('.dv-tree .dv-t:visible').count()===15,'with every row open all fifteen show at 400px ('+await p.locator('.dv-tree .dv-t:visible').count()+')');
    const ov=await p.evaluate(()=>[document.documentElement.scrollWidth-document.documentElement.clientWidth,[...document.querySelectorAll('.dv-tree .dv-row')].every(r=>r.scrollWidth<=r.clientWidth+1)]);
    ok(ov[0]<=0&&ov[1],'no horizontal overflow at 400px three levels deep ('+ov.join()+')');
    await tree.scrollIntoViewIfNeeded();
    await tree.screenshot({path:path.join(OUT,'nested-paper-400.png')});
    ok(t.csp.length===0&&t.errs.length===0,'nested 400: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));
    await t.ctx.close();}
-  // print: closed rows print their children
-  {const t=await open(fixture,1280);const p=t.p;await p.emulateMedia({media:'print'});
-   const n=await p.evaluate(()=>[...document.querySelectorAll('.dv-tree .dv-t')].filter(e=>e.getBoundingClientRect().height>0).length);
-   ok(n===15,'print: closed nodes still print their children ('+n+' of 15 rows laid out)');
+  // print: closed rows print their children. The print media does not send beforeprint, so the test sends it (and afterprint), as the browser does:
+  // the rows are drawn when the print begins, not on a toggle, which comes too late; and what the reader had open is as it was after
+  {const t=await open(fixture,1280);const p=t.p;
+   const tree=p.locator('.dv-box:has(.dv-tree)');
+   const laid=()=>p.evaluate(()=>[...document.querySelectorAll('.dv-tree .dv-t')].filter(e=>e.getBoundingClientRect().height>0).length);
+   const shape=()=>p.evaluate(()=>[...document.querySelectorAll('.dv-tree details')].map(d=>d.getAttribute('data-id')+':'+(d.open?1:0)).join());
+   await tree.locator('summary').first().click();await p.waitForTimeout(150);   // the reader opens the first top row; the garden stays shut
+   const before=await shape(),beforeVis=await tree.locator('.dv-t:visible').allInnerTexts();
+   await p.emulateMedia({media:'print'});
+   await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
+   const n=await laid(),shut=await p.evaluate(()=>document.querySelectorAll('.dv-tree details:not([open])').length);
+   ok(n===15&&shut===0,'print: closed nodes still print their children ('+n+' of 15 rows laid out, '+shut+' disclosures still shut)');
+   await p.evaluate(()=>window.dispatchEvent(new Event('afterprint')));await p.emulateMedia({media:'screen'});await p.waitForTimeout(250);
+   const after=await shape(),afterVis=await tree.locator('.dv-t:visible').allInnerTexts();
+   ok(JSON.stringify(afterVis)===JSON.stringify(beforeVis)&&after===before&&/^house:1,/.test(after)&&/garden:0$/.test(after),'after the print the rows the reader had shut are shut again, and the one open is open ('+before+' -> '+after+')');
+   // the reader's own open set is unchanged: a filter on and off gives back exactly what was open before the print
+   await tree.locator('.dv-ctl-btn').click();await tree.locator('.dv-q').fill('fan');await p.waitForTimeout(150);await tree.locator('.dv-q').fill('');await p.waitForTimeout(200);
+   const back=await tree.locator('.dv-t:visible').allInnerTexts();
+   ok(JSON.stringify(back)===JSON.stringify(beforeVis),'the reader\'s open rows are the same after a print as before it ('+back.join('|')+')');
+   ok(t.csp.length===0&&t.errs.length===0,'print: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));
+   await t.ctx.close();}
+
+  // print with no afterprint (a browser may not send it): a row the print opened, which the reader then shuts and opens again, is the reader's
+  // own open row from then on, and a repaint (a filter on and off) keeps it; and the next beforeprint starts from the rows the reader has
+  {const t=await open(fixture,1280);const p=t.p;
+   const tree=p.locator('.dv-box:has(.dv-tree)');
+   const shape=()=>p.evaluate(()=>[...document.querySelectorAll('.dv-tree details')].map(d=>d.getAttribute('data-id')+':'+(d.open?1:0)).join());
+   await tree.locator('summary').first().click();await p.waitForTimeout(150);
+   await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));await p.waitForTimeout(250);   // the toggles the print's own opening makes arrive and are ignored
+   const g=tree.locator('details[data-id="garden"] > summary');
+   await g.click();await p.waitForTimeout(150);await g.click();await p.waitForTimeout(150);          // the reader shuts the garden row and opens it again
+   await tree.locator('.dv-ctl-btn').click();await tree.locator('.dv-q').fill('fan');await p.waitForTimeout(150);await tree.locator('.dv-q').fill('');await p.waitForTimeout(250);
+   const s1=await shape();
+   ok(/(^|,)garden:1(,|$)/.test(s1)&&/^house:1,/.test(s1),'no afterprint: a row the print opened, shut and opened again by the reader, is still open after a repaint ('+s1+')');
+   await p.evaluate(()=>window.dispatchEvent(new Event('afterprint')));await p.waitForTimeout(250);
+   const s2=await shape();
+   ok(/(^|,)garden:1(,|$)/.test(s2),'…and a late afterprint does not shut a row the reader took over ('+s2+')');
+   ok(t.csp.length===0&&t.errs.length===0,'print without afterprint: zero CSP violations and page errors '+t.csp.concat(t.errs).join('|'));
    await t.ctx.close();}
 
   // 9 grouped lists: at most two cards across on a wide page

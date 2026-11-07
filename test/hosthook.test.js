@@ -37,7 +37,7 @@ const listen=A=>{const calls=[];const stop=A.BookletApi.onChange(x=>calls.push(x
  chk("with no host, the bar says so: Kept in this browser only",barText()==="Kept in this browser only",barText());
  chk("text() is empty when no booklet is open",B.text()==="");
  const h=B.host({label:"fleet: booklets/reports"});
- chk("a handle has exactly saved, failed, fileChanged, leave, state and is frozen",Object.keys(h).sort().join()==="failed,fileChanged,leave,saved,state"&&Object.isFrozen(h)&&h.state()==="active");
+ chk("a handle has exactly saved, failed, fileChanged, dataChanged, leave, state and is frozen",Object.keys(h).sort().join()==="dataChanged,failed,fileChanged,leave,saved,state"&&Object.isFrozen(h)&&h.state()==="active");
  chk("with a host, the bar says where saves go",/^Saves go to: fleet: booklets\/reports$/.test(barText()),barText());
  h.leave();chk("leave() restores the no-host line",barText()==="Kept in this browser only"&&A.HOST===null);}
 

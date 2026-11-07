@@ -30,6 +30,14 @@
 // request under any modules/ folder (on /app/, whose header leaves its own origin out, or on the /linked/ copy that declares a
 // store, which never reads its own), a second read of either, one before the link is followed, a method other than GET, a body,
 // a query string, and any word the reader typed into what it opened.
+// CHANGED, 0.19 (booklet-hub item dashboards-slice-1, lane DB-B; Ben, 2026-11-06: the web renderer may read a data file beside a
+// booklet, "only for a booklet opened from the store or the default folder, only the store's own text, a checked relative name, the
+// same pinned fetch the images rule uses; never for a booklet opened from disk"). A `booklet data <file.json> <key.path>` fence takes
+// its rows from a file beside the booklet. This test now allows exactly ONE more request than before: on the /linked/ copy that
+// declares a store, after the reader follows that link, a plain GET of the one data file the store booklet names, beside it
+// (/pub/pledge/linked.json), made once however many blocks name it. It still fails any other request for a data file: one before the
+// link is followed, a second read, a method other than GET, a body, a query string, any word the reader typed, and any request at all
+// for a data file named by a booklet that was loaded from disk or pasted (step 8b names one and must make none).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pledge-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const {kept}=require('./kept.js');
@@ -43,6 +51,8 @@ const PAGE_ORIGIN='https://bookletmd.test';
 const S={own:'QZXownoption4417',name:'QZXrenamedbooklet5528',keep:'QZXkeptentry6639',kit:'QZXkitchenanswer7741',link:'QZXlinkanswer8852',folder:'QZXfolderanswer9963'};
 /* the one booklet in the default folder (0.15), and the one image it writes, beside it: their allowed addresses */
 const FOLDER_FILE='/folder/modules/pledge/folder.booklet.md',FOLDER_IMG='/folder/modules/pledge/images/map.svg';
+/* the one data file the store booklet names (0.19), beside it: its allowed address and its made-up rows */
+const STORE_DATA='/pub/pledge/linked.json',STORE_ROWS={rows:[{title:'A made-up row'}]};
 const FOLDER_SVG='<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><rect width="40" height="20" fill="#2a6"/></svg>';
 /* the renderer carries its own policy (0.11.6): it may read only the page's own origin and the registry's host, so the store is on the page's own origin, under /pub/ */
 const STORE_ORIGIN=PAGE_ORIGIN;
@@ -107,7 +117,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   const HOST_CSP=CSP.replace('connect-src https://raw.githubusercontent.com','connect-src https://raw.githubusercontent.com '+STORE_ORIGIN);
   ok(HOST_CSP!==CSP,'the hosted header names the registry origin in connect-src (the store step adds its own origin to a copy of it)');
   await p.route(PAGE_ORIGIN+'/linked/',r=>r.fulfill({status:200,body:fs.readFileSync(HTML,'utf8').replace('<meta name="theme-color"','<meta name="booklet-store" content="'+STORE_ORIGIN+'/pub/">\n<meta name="theme-color"'),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}}));
-  await p.route(STORE_ORIGIN+'/pub/**',r=>r.fulfill({status:200,body:mod('linked','Linked booklet','> [!activity|l-act] Linked\n\n> [!text|l-text long] A linked answer\n\n'),headers:{'content-type':'text/markdown','access-control-allow-origin':'*'}}));
+  await p.route(STORE_ORIGIN+'/pub/**',r=>new URL(r.request().url()).pathname===STORE_DATA?r.fulfill({status:200,body:JSON.stringify(STORE_ROWS),headers:{'content-type':'application/json','access-control-allow-origin':'*'}}):r.fulfill({status:200,body:mod('linked','Linked booklet','> [!activity|l-act] Linked\n\n```booklet data linked.json rows\n```\n^filerows\n\n```booklet query\nfrom: filerows\nas: list\nlabel: title\n```\n\n> [!text|l-text long] A linked answer\n\n'),headers:{'content-type':'text/markdown','access-control-allow-origin':'*'}}));
   /* 0.15: a host that serves the renderer unchanged (no tag), under a header that allows its own origin, and its modules/ folder */
   await p.route(PAGE_ORIGIN+'/folder/',r=>r.fulfill({status:200,body:fs.readFileSync(HTML),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HOST_CSP}}));
   await p.route(PAGE_ORIGIN+'/folder/modules/**',r=>{const u=new URL(r.request().url()).pathname;
@@ -201,7 +211,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   await toList();
   {const before=reqs.length;
    await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(300);
-   await p.locator('#pasteIn').fill(mod('linkdemo','Link demo','> [!activity|ld-a] Links\n\nThe next week is [[week-9.booklet]], and the one after is [Week 10](modules/week-10.booklet.md).\n\n```booklet data\n[{"label":"Week 11","link":"week-11.booklet"}]\n```\n^rows\n\n```booklet query\nfrom: rows\nas: list\n```\n\n'));
+   await p.locator('#pasteIn').fill(mod('linkdemo','Link demo','> [!activity|ld-a] Links\n\nThe next week is [[week-9.booklet]], and the one after is [Week 10](modules/week-10.booklet.md).\n\n```booklet data\n[{"label":"Week 11","link":"week-11.booklet"}]\n```\n^rows\n\n```booklet query\nfrom: rows\nas: list\n```\n\n```booklet data linked.json rows\n```\n^filerows\n\n```booklet query\nfrom: filerows\nas: list\nlabel: title\n```\n\n'));
    await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();await wait(900);
    if(await p.evaluate(()=>document.body.dataset.view)!=='linkdemo/ld-a'){await p.locator('button.mode').first().click().catch(()=>{});await wait(500);}
    ok(await p.locator('.mchip').count()===3,'links to modules the booklet does not hold draw as chips ('+await p.locator('.mchip').count()+')');
@@ -210,6 +220,7 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
    ok(fresh.length===0,'drawing those chips made no request at all ('+fresh.map(r=>r.url).join(', ')+')');
    await harvest();}
   // 9 a booklet opened by link: read from the declared store, answered, nothing sent
+  const storeAt=reqs.length;
   await p.goto(PAGE_ORIGIN+'/linked/#/open/pledge/linked.booklet.md');await wait(1200);
   ok(await p.evaluate(()=>document.body.dataset.view)==='linked/l-act','a booklet opened by link opens into its content');
   ok((await p.locator('#main .openedby').innerText()).includes('pledge/linked.booklet.md'),'with the line saying where it came from');
@@ -249,7 +260,11 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   ok(local.every(r=>/^(data|blob|about):/.test(r.url)),'anything not over the network is data:, blob: or about: (local to the browser): '+[...new Set(local.map(r=>r.url.split(':')[0]))].join(','));
   ok(net.filter(r=>new URL(r.url).origin===registryOrigin).every(r=>/registry\.json$|\/(kitchen|garden)\.md$/.test(new URL(r.url).pathname)),'the registry origin was asked only for the registry list and the two module files');
   ok(net.every(r=>!r.body),'no request has a body');
-  ok(net.filter(r=>r.url.startsWith(STORE_ORIGIN+'/pub/')).map(r=>r.url).join()===STORE_ORIGIN+'/pub/pledge/linked.booklet.md','the store was asked for the one checked name and nothing else: '+net.filter(r=>r.url.startsWith(STORE_ORIGIN+'/pub/')).map(r=>r.url).join());
+  ok(net.filter(r=>r.url.startsWith(STORE_ORIGIN+'/pub/')).map(r=>r.url).join()===STORE_ORIGIN+'/pub/pledge/linked.booklet.md,'+STORE_ORIGIN+STORE_DATA,'the store was asked for the one checked name and then for the one data file that booklet names, and nothing else: '+net.filter(r=>r.url.startsWith(STORE_ORIGIN+'/pub/')).map(r=>r.url).join());
+  /* 0.19: every request for a data file on the page's own origin (the registry list is another origin's), over the whole run: exactly one, after the store link was followed, a plain GET; the booklet
+     pasted at step 8b names one too and made none */
+  {const jr=reqs.map((r,i)=>({r,i})).filter(x=>/\.json(\?|$)/.test(x.r.url)&&x.r.url.startsWith(PAGE_ORIGIN));
+   ok(jr.length===1&&jr[0].r.method==='GET'&&!jr[0].r.body&&jr[0].i>=storeAt&&jr[0].r.url===PAGE_ORIGIN+STORE_DATA,'a data file was asked for once over the whole run, by the booklet opened from the store, after its link was followed, and by none loaded from disk or pasted: '+jr.map(x=>x.r.method+' '+x.r.url).join(', '));}
   const words=[];for(const w of Object.values(S)){words.push(w,encodeURIComponent(w),w.toLowerCase());}
   words.push(S.kit+'0',S.keep+'0','4242');
   const all=[];for(const r of reqs) all.push(r.url,JSON.stringify(r.headers),r.body);

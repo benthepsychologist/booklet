@@ -55,7 +55,7 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
    ["filter by text 'e', in the order written",{q:"e"},ROWS.filter(r=>/e/i.test(r.label+r.area+r.value+r.note+r.tone+r.tags)).map(r=>r.label).join()],
    ["filter to the good rows, sorted by name descending",{fk:"tone",fv:"good",sk:"label",dir:-1},ROWS.filter(r=>r.tone==="good").map(r=>r.label).sort().reverse().join()],
  ]){
-   const out=AS.map(as=>{ST.clear();ST.set("K-"+as,{open:false,q:"",fk:"",fv:"",sk:"",dir:0,...state});
+   const out=AS.map(as=>{ST.clear();ST.set("K-"+as,{open:false,q:"",fk:"",fv:"",sk:"",dir:0,opens:new Set(),...state});
      return order(as,box(as,ROWS,{},"K-"+as,as==="table"?["label","value","tone"]:undefined));});
    if(name.startsWith("filter by text")){/* the text matches what the view shows, which differs between views: only table, list and tiles share it */}
    else chk(`${name}: table, list, tiles and bars show the same order`,out.every(x=>x===expect),out.join(" | ")+" vs "+expect);}
@@ -108,7 +108,7 @@ const pick=(box,label)=>{const sel=byClass(box,"dv-sel").find(s=>tag(s,"option")
   by.value="label";press(by,"change");
   chk("the select sorts the table: the heading shows it",heads()[0].attrs["aria-sort"]==="ascending"&&order("table",t)===[...WORDS].sort().join());
   press(dir);chk("the direction button reverses it",heads()[0].attrs["aria-sort"]==="descending"&&order("table",t)===[...WORDS].sort().reverse().join());
-  press(byClass(t,"dv-clear")[0]);
+  press(byClass(t,"dv-clear").find(x=>!cls(x).includes("dv-openall")&&!cls(x).includes("dv-closeall")));   /* Open all and Close all share the class, and come first on a table whose rows open */
   chk("Clear returns to the file's order",order("table",t)===WORDS.join()&&heads().every(h=>h.attrs["aria-sort"]==="none"));}
  {ST.clear();const t=box("table",ROWS.slice(0,5),{},"K6",["label","value"]);
   const b=tag(tag(t,"th")[1],"button")[0];press(b);

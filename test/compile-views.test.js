@@ -120,7 +120,7 @@ chk("a field named constructor or toString is an empty cell where the row lacks 
   !/function Object|\[object|native code/.test(V.page)&&/<td data-bk-col="constructor"><\/td>/.test(V.page)&&/<td data-bk-col="toString"><\/td>/.test(V.page));
 /* a double quote in a field's name or an address is written as &quot;, so it cannot end the attribute */
 chk("a double quote in a field's name or in an address is &quot; in the attribute (it cannot close it and add one of its own)",
-  V.page.includes('data-bk-col="a&quot;b"')&&V.page.includes('href="https://example.org/&quot;x=&quot;y"')&&!/="a"b"/.test(V.page)&&!/org\/"x=/.test(V.page),
+  V.page.includes('data-bk-col="a&quot;b"')&&V.page.includes('href="https://example.org/&quot;x=&quot;y"')&&!/="a"b"/.test(V.page)&&!/href="https:\/\/example\.org\/"x=/.test(V.page),
   (/org\/[^ ]*/.exec(V.page)||[""])[0]);
 
 /* ======================= 2. kept entries ======================= */

@@ -36,8 +36,8 @@ const queries=R=>blocksOf(R,"allotment","status").filter(b=>b.type==="query");
  {const r=mk("from: d",ROWS);chk("a data block and a query in one module read clean",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
  {const r=mk("from: d\nas: cards",ROWS);chk("`as: cards` on a data block reads clean, like every other view (0.13; test/drawing.test.js draws it)",r.ok&&r.unread.length===0&&r.template.modules[0].activities[0].pages[0].blocks.some(b=>b.type==="query"&&b.view.as==="cards"&&b.data),JSON.stringify(r.unread));}
  {const r=mk("from: d\nas: chart",ROWS);chk("an unknown `as:` is refused, with a reason",r.unread.some(p=>/as: chart.*not cards, table, list, tiles, bars or line/.test(p)),JSON.stringify(r.unread));}
- {const r=mk("from: d",'```booklet data\n[{"x":{"deep":1}}]\n```\n^d\n\n');chk("a nested value is refused: the block is skipped and the query then names nothing",
-    r.unread.some(p=>/data block \^d has a value that nests deeper/.test(p))&&r.unread.some(p=>/names “d”/.test(p)),JSON.stringify(r.unread));}
+ {const r=mk("from: d",'```booklet data\n[{"x":[1,{"deep":1}]}]\n```\n^d\n\n');chk("a list that mixes values and rows is refused: the block is skipped and the query then names nothing",
+    r.unread.some(p=>/data block \^d has a list that mixes values and rows/.test(p))&&r.unread.some(p=>/names “d”/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",'```booklet data\nrows:\n  - x: 1\n```\n^d\n\n');chk("YAML is not read (JSON only): the block is skipped with a reason",r.unread.some(p=>/not valid JSON/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",'```booklet data\n[{"x":1}]\n```\n\n');chk("a data block with no ^id is refused",r.unread.some(p=>/needs a \^id/.test(p)),JSON.stringify(r.unread));}
  {const r=mk("from: d",ROWS+ROWS);chk("a data id used twice is refused",r.unread.some(p=>/“d” is used twice/.test(p)),JSON.stringify(r.unread));}

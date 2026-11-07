@@ -46,6 +46,7 @@
    which heading a link finds) stays the renderer's and only the element is the compiler's. */
 const fs=require("fs"),path=require("path"),vm=require("vm");
 const H=require("./html.js");
+const DATA=require("./data.js");
 
 const DEFAULT_RENDERER=path.join(__dirname,"..","booklet.html");
 
@@ -53,7 +54,7 @@ const DEFAULT_RENDERER=path.join(__dirname,"..","booklet.html");
    still defined in booklet.html, so a rename in the renderer fails in booklet's own CI, not on a host's build. */
 const NAMES=[
   /* the parse and its words */
-  "parseFile","problemText","tableTag","strings","RENDERER_VERSION","FORMAT_VERSION",
+  "parseFile","problemText","PROBLEM","tableTag","strings","RENDERER_VERSION","FORMAT_VERSION",
   /* reading the design */
   "isShown","isMulti","tabsIn","tabPages","tabOpening","pageTree","blocksIn","blocksAll","qParts","isGroup","hintKind","isQuestion",
   "placeOf","foldName","widgetIn","wordsOf","scopeOfModule","engOpts","moduleTabOf","fencedModule","NOTICE_KEYS",
@@ -68,6 +69,8 @@ const NAMES=[
   "calloutLook","CALLOUT_LOOK","registries","pageLine","plainRef","hasVal","longDate",
   /* images */
   "imagePath","imageIs","LINK_BYTES",
+  /* a data block's rows and labels: what the renderer reads as rows (a data file's, compile/data.js) */
+  "readData","readFields",
   /* a body map's figure: the renderer's sanitizer rule, element by element (SVG_KEEP), attribute by attribute (svgNameOk,
      svgValueOk, svgFamily, SVG_STYLE_PROPS) and id by id (SVG_ID); a diagram: the screen its source passes before the library
      sees it (diagramRisk), the part's pinned digest and its global name (LIB_SRI, LIB_GLOBAL) */
@@ -187,7 +190,7 @@ function load(file){
 
   return {file,R,M,temml,temmlVersion:tver,icons,setLang,setBook,queryView,themeOf,
     fonts:()=>fontsOf(page,file),
-    parse:text=>parse(R,setLang,text)};}
+    parse:(text,opts)=>parse(R,setLang,text,opts)};}
 
 /* The renderer's four base theme tables, name to {--token: value}, read out of its stylesheet: the rule for
    [data-theme="<name>"], up to its closing brace. */
@@ -231,15 +234,15 @@ const REFUSE={
   fence:n=>"the booklet's text ends inside a code fence that never closes"+(n?" (it opens on line "+n+")":"")+", so a records region after it would be read as text and published. Close the fence with a line of the same marks that open it, then compile again.",
   recordsLine:n=>"a records line stands in the booklet's own text"+(n?" (line "+n+")":"")+", outside the records region: inside a code block, or after something that swallowed the region's start. Its records would be read as text and published. Take it out of the text, or put the records region back in its place, then compile again.",
   recordBlock:"a record block (answers, kept entries or a draft) stands in the booklet's own text, outside the records region, so it would be read as text and published. Move it into the records region or take it out, then compile again."};
-function parse(R,setLang,text){
+function parse(R,setLang,text,opts){
   setLang("en");
   const t=String(text==null?"":text);
   const whole=R.parseFile(t);
-  const refused=why=>({ok:false,refused:[why],problems:[],lang:"",id:"",design:null,comments:[]});
+  const refused=why=>({ok:false,refused:[why],problems:[],lang:"",id:"",design:null,comments:[],dataFiles:[]});
   const isOutside=list=>(Array.isArray(list)?list:[]).some(p=>p&&p.code==="recordOutside");
   /* the design's own text, as the renderer keeps it: everything outside the records region (SPEC.md section 8) */
   const own=whole.template&&whole.template.raw&&typeof whole.template.raw.source==="string"?whole.template.raw.source:null;
-  let comments=[],P=whole;
+  let comments=[],P=whole,dataFiles=[],rowsNotes=[];
   if(own!==null){
     const lines=own.split("\n"),fileLines=t.split(/\r?\n/);
     /* a line number is said only where the design's text and the file still agree up to it */
@@ -250,13 +253,18 @@ function parse(R,setLang,text){
     if(rec>=0) return refused(REFUSE.recordsLine(lineOf(rec)));
     if(isOutside(whole.unread)) return refused(REFUSE.recordBlock);
     const c=authorComments(R,lines);comments=c.comments.map(x=>({from:lineOf(x.from)||x.from+1,to:lineOf(x.to)||x.to+1,open:x.open}));
-    P=R.parseFile(c.lines.join("\n"));
-    if(isOutside(P.unread)) return refused(REFUSE.recordBlock);}
+    /* a data fence that names a file is written out with the file's rows (data.js), so the parse reads the booklet as if they were in it */
+    const inl=DATA.inline(R,c.lines,opts&&opts.dir!=null?opts.dir:null);dataFiles=inl.files;
+    P=R.parseFile(inl.lines.join("\n"));
+    if(isOutside(P.unread)) return refused(REFUSE.recordBlock);
+    /* a fence that names a file and also holds `rows` is written out with the file's rows, so the parse never sees the rows: the
+       renderer's own notice is made here, for the line the fence stood on */
+    rowsNotes=dataFiles.filter(f=>f.rowsKey&&f.id).map(f=>R.PROBLEM.dataFileFence(R.PROBLEM.line(lineOf(f.at)||f.at+1),f.id,R.PROBLEM.dataFileRows));}
   const words=list=>(Array.isArray(list)?list:[]).map(p=>R.problemText(p));
   let design=null;
   if(P.template){const {raw,...rest}=P.template;design=JSON.parse(JSON.stringify(rest));}
-  return {ok:!!P.ok,refused:words(P.refused),problems:words(P.unread),
-    lang:frontKey(R,t,"lang"),id:frontKey(R,t,"id"),design,comments};}
+  return {ok:!!P.ok,refused:words(P.refused),problems:words([...(P.unread||[]),...rowsNotes]),
+    lang:frontKey(R,t,"lang"),id:frontKey(R,t,"id"),design,comments,dataFiles};}
 /* a front matter key's value, read by the renderer's frontMatter and kvLine ("" when there is none). */
 function frontKey(R,t,key){const fm=R.frontMatter(t,true);let v="";
   for(const l of Array.from(fm.head||[])){const kv=R.kvLine(l);if(kv&&kv[0]===key) v=String(kv[1]);}

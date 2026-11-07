@@ -17,7 +17,7 @@ lang: en
 > [!activity|look] Look back
 
 ```booklet data
-[ { "a": { "b": 1 } } ]
+[ { "a": [ [1] ] } ]
 ```
 ^short-list
 

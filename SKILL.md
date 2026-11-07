@@ -910,8 +910,8 @@ between paragraphs for a new one. Section 4 says what a heading does.
   will show.
 - **A report page from data** — numbers that something else already worked out
   (counts, due dates, a status per item) go in a `booklet data` block: JSON,
-  an object with `rows` (flat objects: a string, number, `true`, `false`, or a
-  list of those) and optionally `fields` (each key's label, which is also the
+  an object with `rows` (objects whose values are a string, number, `true`, `false`, a
+  list of those, or child rows, see the dashboard bullet below) and optionally `fields` (each key's label, which is also the
   column order), or just the list of rows, with a `^id` on the line after the
   fence. Put it inside the
   module, in the module's own data section at the end (`> [!data|<module-slug>]`,
@@ -993,6 +993,95 @@ between paragraphs for a new one. Section 4 says what a heading does.
   fields: hours
   ```
   ````
+- **A dashboard: rows from a file, rows that open** — when another program or
+  agent writes the numbers and rewrites them often, keep them in a JSON file
+  beside the booklet and let the booklet say how to draw them. The booklet stays a
+  few kilobytes of Markdown; the file is the generator's. Three things make it work.
+
+  **1. A data block that names a file.** The fence line is `booklet data`, then the
+  file's name, then optionally a **key path** (keys joined by dots) to the list of
+  rows inside it. The fence is left empty, or holds only `fields` (labels for the
+  columns). Several blocks may name one file, which is read once. The file name
+  follows the image-path rule: letters, digits, `_`, `.`, `/` and `-`, at most 200
+  characters, relative, no part that begins with a dot (so no `..`), ending
+  `.json`.
+
+  **2. Rows that hold rows.** A row's value may be a list of objects, or one object.
+  Those are its **child rows**. `table`, `list` and `cards` draw them nested, and any
+  row with more to show than its line opens in place: first the rest of its fields
+  (long text keeps its line breaks), then its children. The roles (`label`, `value`
+  and the rest) read the field of the same name at every depth, so give a column the
+  same field name at every level. Flat rows still nest with `id` and `parent`.
+  Every row that something is said about needs an `id`, unique in the block.
+
+  **3. Locking and editing.** A field's label in `fields` may be an object,
+  `{ "label": "Stage", "edit": "choice", "options": ["todo", "done"] }`, where
+  `edit` is `text`, `long`, `number`, `date` or `choice` (and `choice` needs
+  `options`). A field with no `edit` is read-only. A query's `readonly` line (bare,
+  or `readonly: title, due`) locks what that view draws, so a roundup can read the
+  same fields a working table edits. A question asked for each row is written
+  `> [!choice|decision each:requests] Your call` (`each:` then a data block's id):
+  it is drawn in each row's open part, or in a column when a query's `fields:`
+  names its id, and is asked of the rows that carry a field of that name. Edits and
+  these questions are kept as entries, so the activity is `repeat`. **The reference
+  renderer draws nested rows, the file and the open part, but not yet the editing,
+  the questions or `readonly`; write them only when they were asked for.** A host
+  applies the kept entries (`docs/hosting.md`); a booklet never does.
+
+  ````markdown
+  > [!module|desk] Garden desk
+
+  > [!activity|work repeat] The beds
+
+  ```booklet query
+  from: beds
+  as: table
+  fields: title, stage, due
+  ```
+
+  ```booklet query
+  from: orders
+  as: list
+  label: title
+  note: headline
+  fields: asked
+  ```
+
+  > [!choice|decision each:orders] Your call
+  - [ ] Order it
+  - [ ] Leave it
+
+  ```booklet data garden-desk.json beds
+  { "fields": { "title": { "label": "Bed", "edit": "text" }, "stage": "Stage", "due": "Due" } }
+  ```
+  ^beds
+
+  ```booklet data garden-desk.json shop.orders
+  ```
+  ^orders
+
+  > [!module|desk end]
+  ````
+
+  ```json garden-desk.json
+  { "beds": [
+      { "id": "b-north", "title": "North bed", "stage": "sown", "due": "2026-11-20",
+        "about": "Carrots and leeks.\n\nThe soil was turned in October.",
+        "tasks": [
+          { "id": "t-thin", "title": "Thin the carrots", "stage": "todo", "due": "2026-11-20" },
+          { "id": "t-cover", "title": "Cover with fleece", "stage": "done", "due": "2026-11-12" } ] },
+      { "id": "b-south", "title": "South bed", "stage": "resting", "due": "" } ],
+    "shop": { "orders": [
+      { "id": "o-seed", "title": "Garlic bulbs", "headline": "Two bags, about twelve pounds", "asked": "2026-11-05", "decision": [] } ] } }
+  ```
+
+  The linter reads the file when it sits beside the booklet: a name it will not
+  read, a path with nothing at it, a file that is not JSON, an `edit` that is not one
+  of the five, a `choice` with no `options` are errors; a missing file, a
+  `fields:` name no row carries, rows with no `id` and a question nothing draws are
+  warnings. A booklet opened from a file on disk draws a quiet box where each file
+  block's rows would be, because a renderer reads the file only for a booklet it
+  opened from its host's store or default folder. It nests, but never groups: `group:` is not drawn on a nested view.
 - **An image** is reference style, with its address at the end of the file:
   `![The harbour at low water][harbour]` and, near the other data,
   `[harbour]: images/harbour.jpg`. Use a relative path the requester gave you.
@@ -1304,7 +1393,13 @@ nothing about what only a writer knows, so keep the last six items of the list b
 | a numbered list not starting at 1 | `a numbered list that does not start at 1 needs a blank line above it, or Markdown reads it as part of the question's title` | add the blank line |
 | a `>` embed pointing at nothing | `![[#^x]] points at no block in this file` | fix the id, or add the fenced block |
 | an embed pointing at the wrong fence | `^x is not a widget block` | point the embed at the actual `booklet widget` fence |
-| a data block with no `^id`, a nested value, or no rows | `a data block needs a ^id` / `has a nested value in 'x'` / `holds no list of rows` | add the id; flatten the value; write `rows` |
+| a data block with no `^id`, a value a row cannot hold, or no rows | `a data block needs a ^id` / `has a value in 'x' that a row cannot hold` / `holds no list of rows` | add the id; a value is a string, number, `true`, `false`, a list of those, a list of rows or one row (not a list inside a list, nor a list that mixes rows with plain values); write `rows` |
+| a data file name or key path a renderer will not read, or a file that cannot be used | `the data file name 'x' is not one a renderer reads …` / `the key path 'x' is keys joined by dots …` / `x.json is not valid JSON` / `x.json holds nothing at the key path 'a.b'` / `warn no file named x.json is beside this booklet` | follow the image-path rule and end in `.json`; join keys with dots; fix the file or the path; a missing file is only a warning |
+| a data block that names a file, with rows in its fence | `names a file, so its fence is empty or holds only `fields`` | move the rows into the file |
+| a field object with a bad `edit`, no `label`, or `choice` with no `options` | `` `edit` must be one of text, long, number, date, choice `` / `a field written as an object needs a `label`` / `` `edit: choice` needs `options` `` | write one of the five kinds, a `label`, and the words to pick from |
+| `readonly` or `fields:` naming something that is not there | `warn the query's `readonly: x` names a field the rows never carry` / `warn the query's `fields: x` names a question that is not asked for each row` | fix the name, or give the question `each:` and the block's id |
+| a question asked for each row that is not wired up | `warn each:x asks the question … of every row, because no row carries a field named …` / `warn … no query in this activity draws ^x` | name the field in the rows, or add a query over the block in the same activity |
+| an editable field in an activity that keeps no entries | `warn the field(s) 'x' of ^y can be edited, and this activity keeps no entries …` | make the activity `repeat`, or lock the field with `readonly` |
 | a query with a bad `as:`, `limit:` or `summary:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number, or a number of days` / `must be `on`` | use one of the six views; a whole number from 1 or `7 days`; `summary: on` |
 | a query with a setting it does not take | `a query has no setting 'x' (it takes from, as, fields, …)` | use the listed keys; a warning `does not draw` means the view ignores that key |
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
