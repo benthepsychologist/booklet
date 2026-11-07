@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- booklet compile 0.4.0 · from compile-views.booklet.md · sha256:201d19139258429ca9eb05b47ab3154ebfd6d59f9bbd1309fcf401c63fe3055e -->
+<!-- booklet compile 0.4.0 · from compile-views.booklet.md · sha256:d76c68b329067eabca653aad5c4da85ce2c9802e358bdb23b8495261f1633a18 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -216,65 +216,117 @@
   </div>
   <h2 id="table">Table <a class="bk-anchor" href="#table" aria-label="Link to this section">#</a></h2>
   <div class="bk-view bk-panel" data-bk-view="table">
-    <div class="bk-table bk-dv-ttable">
-      <div class="bk-dv-thead" aria-hidden="true"><span class="bk-dv-c">Item</span><span class="bk-dv-c">Left</span><span class="bk-dv-c">Kind</span><span class="bk-dv-c">Shelf</span></div>
-      <ul class="bk-dv-list bk-dv-tree">
-        <li class="bk-dv-node">
-          <details>
-            <summary class="bk-dv-row bk-dv-trow" data-bk-row><span class="bk-dv-c bk-dv-first" data-bk-col="item">Rye flour</span><span class="bk-dv-c" data-bk-col="left"><span class="bk-sr">Left: </span>12</span><span class="bk-dv-c"><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill bk-tone-good">flour</span></span><span class="bk-sr">Good</span></span><span class="bk-dv-c" data-bk-col="shelf"><span class="bk-sr">Shelf: </span>B2</span></summary>
-            <div class="bk-dv-open">
+    <div class="bk-table">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" data-bk-col="item">Item</th>
+            <th scope="col" data-bk-col="left">Left</th>
+            <th scope="col" data-bk-col="kind">Kind</th>
+            <th scope="col" data-bk-col="shelf">Shelf</th>
+          </tr>
+        </thead>
+        <tbody data-bk-row>
+          <tr>
+            <td>
+              <details>
+                <summary class="bk-dv-sum"><span data-bk-col="item">Rye flour</span></summary>
+              </details>
+            </td>
+            <td data-bk-col="left">12</td>
+            <td><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill bk-tone-good">flour</span></span><span class="bk-sr">Good</span></td>
+            <td data-bk-col="shelf">B2</td>
+          </tr>
+          <tr class="bk-dv-trmore">
+            <td colspan="4">
               <dl class="bk-dv-rest">
                 <dt>Where</dt>
                 <dd class="bk-dv-text">Back store</dd>
               </dl>
-            </div>
-          </details>
-        </li>
-        <li class="bk-dv-node">
-          <details>
-            <summary class="bk-dv-row bk-dv-trow" data-bk-row><span class="bk-dv-c bk-dv-first" data-bk-col="item"><a href="https://example.org/yeast?a=1&amp;b=2" target="_blank" rel="noopener noreferrer">Yeast</a></span><span class="bk-dv-c" data-bk-col="left"><span class="bk-sr">Left: </span>2</span><span class="bk-dv-c"><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill bk-tone-warn">culture</span></span><span class="bk-sr">Needs a look</span></span><span class="bk-dv-c" data-bk-col="shelf"><span class="bk-sr">Shelf: </span>F1</span></summary>
-            <div class="bk-dv-open">
+            </td>
+          </tr>
+        </tbody>
+        <tbody data-bk-row>
+          <tr>
+            <td>
+              <details>
+                <summary class="bk-dv-sum"><span data-bk-col="item"><a href="https://example.org/yeast?a=1&amp;b=2" target="_blank" rel="noopener noreferrer">Yeast</a></span></summary>
+              </details>
+            </td>
+            <td data-bk-col="left">2</td>
+            <td><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill bk-tone-warn">culture</span></span><span class="bk-sr">Needs a look</span></td>
+            <td data-bk-col="shelf">F1</td>
+          </tr>
+          <tr class="bk-dv-trmore">
+            <td colspan="4">
               <dl class="bk-dv-rest">
                 <dt>Where</dt>
                 <dd class="bk-dv-text">Fridge</dd>
               </dl>
-            </div>
-          </details>
-        </li>
-        <li class="bk-dv-node">
-          <details>
-            <summary class="bk-dv-row bk-dv-trow" data-bk-row><span class="bk-dv-c bk-dv-first" data-bk-col="item">Salt</span><span class="bk-dv-c" data-bk-col="left"><span class="bk-sr">Left: </span>0</span><span class="bk-dv-c"><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill bk-tone-bad">seasoning</span></span><span class="bk-sr">Needs action</span></span><span class="bk-dv-c" data-bk-col="shelf"><span class="bk-sr">Shelf: </span>F3</span></summary>
-            <div class="bk-dv-open">
+            </td>
+          </tr>
+        </tbody>
+        <tbody data-bk-row>
+          <tr>
+            <td>
+              <details>
+                <summary class="bk-dv-sum"><span data-bk-col="item">Salt</span></summary>
+              </details>
+            </td>
+            <td data-bk-col="left">0</td>
+            <td><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill bk-tone-bad">seasoning</span></span><span class="bk-sr">Needs action</span></td>
+            <td data-bk-col="shelf">F3</td>
+          </tr>
+          <tr class="bk-dv-trmore">
+            <td colspan="4">
               <dl class="bk-dv-rest">
                 <dt>Where</dt>
                 <dd class="bk-dv-text">Front</dd>
               </dl>
-            </div>
-          </details>
-        </li>
-        <li class="bk-dv-node">
-          <details>
-            <summary class="bk-dv-row bk-dv-trow" data-bk-row><span class="bk-dv-c bk-dv-first" data-bk-col="item"><!-- booklet: the link to “week-2” (activity “The week”): a link to a booklet not compiled with this one: drawn as its words -->&lt;script&gt;qzxhostile()&lt;/script&gt;</span><span class="bk-dv-c" data-bk-col="left"><span class="bk-sr">Left: </span>plenty</span><span class="bk-dv-c"><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill">&lt;b&gt;bold&lt;/b&gt;</span></span></span><span class="bk-dv-c" data-bk-col="shelf"><span class="bk-sr">Shelf: </span>B9</span></summary>
-            <div class="bk-dv-open">
+            </td>
+          </tr>
+        </tbody>
+        <tbody data-bk-row>
+          <tr>
+            <td>
+              <details>
+                <summary class="bk-dv-sum"><span data-bk-col="item"><!-- booklet: the link to “week-2” (activity “The week”): a link to a booklet not compiled with this one: drawn as its words -->&lt;script&gt;qzxhostile()&lt;/script&gt;</span></summary>
+              </details>
+            </td>
+            <td data-bk-col="left">plenty</td>
+            <td><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill">&lt;b&gt;bold&lt;/b&gt;</span></span></td>
+            <td data-bk-col="shelf">B9</td>
+          </tr>
+          <tr class="bk-dv-trmore">
+            <td colspan="4">
               <dl class="bk-dv-rest">
                 <dt>Where</dt>
                 <dd class="bk-dv-text">Back store</dd>
               </dl>
-            </div>
-          </details>
-        </li>
-        <li class="bk-dv-node">
-          <details>
-            <summary class="bk-dv-row bk-dv-trow" data-bk-row><span class="bk-dv-c bk-dv-first" data-bk-col="item">Sunflower seeds</span><span class="bk-dv-c" data-bk-col="left"><span class="bk-sr">Left: </span>7</span><span class="bk-dv-c"><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill">seed</span></span></span><span class="bk-dv-c" data-bk-col="shelf"><span class="bk-sr">Shelf: </span></span></summary>
-            <div class="bk-dv-open">
+            </td>
+          </tr>
+        </tbody>
+        <tbody data-bk-row>
+          <tr>
+            <td>
+              <details>
+                <summary class="bk-dv-sum"><span data-bk-col="item">Sunflower seeds</span></summary>
+              </details>
+            </td>
+            <td data-bk-col="left">7</td>
+            <td><span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill">seed</span></span></td>
+            <td data-bk-col="shelf"></td>
+          </tr>
+          <tr class="bk-dv-trmore">
+            <td colspan="4">
               <dl class="bk-dv-rest">
                 <dt>Where</dt>
                 <dd class="bk-dv-text">Front</dd>
               </dl>
-            </div>
-          </details>
-        </li>
-      </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
   <h2 id="table-grouped-limited">Table, grouped, limited <a class="bk-anchor" href="#table-grouped-limited" aria-label="Link to this section">#</a></h2>
@@ -880,22 +932,45 @@
     </div>
   </div>
   <div class="bk-view bk-panel" data-bk-view="table">
-    <div class="bk-table bk-dv-ttable">
-      <div class="bk-dv-thead" aria-hidden="true"><span class="bk-dv-c">name</span><span class="bk-dv-c">constructor</span><span class="bk-dv-c">toString</span><span class="bk-dv-c">a"b</span></div>
-      <ul class="bk-dv-list bk-dv-tree">
-        <li class="bk-dv-node">
-          <details>
-            <summary class="bk-dv-row bk-dv-trow" data-bk-row><span class="bk-dv-c bk-dv-first" data-bk-col="name">One</span><span class="bk-dv-c" data-bk-col="constructor"><span class="bk-sr">constructor: </span>own</span><span class="bk-dv-c" data-bk-col="toString"><span class="bk-sr">toString: </span></span><span class="bk-dv-c" data-bk-col="a&quot;b"><span class="bk-sr">a"b: </span>quoted key</span></summary>
-            <div class="bk-dv-open">
+    <div class="bk-table">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" data-bk-col="name">name</th>
+            <th scope="col" data-bk-col="constructor">constructor</th>
+            <th scope="col" data-bk-col="toString">toString</th>
+            <th scope="col" data-bk-col="a&quot;b">a"b</th>
+          </tr>
+        </thead>
+        <tbody data-bk-row>
+          <tr>
+            <td>
+              <details>
+                <summary class="bk-dv-sum"><span data-bk-col="name">One</span></summary>
+              </details>
+            </td>
+            <td data-bk-col="constructor">own</td>
+            <td data-bk-col="toString"></td>
+            <td data-bk-col="a&quot;b">quoted key</td>
+          </tr>
+          <tr class="bk-dv-trmore">
+            <td colspan="4">
               <dl class="bk-dv-rest">
                 <dt>web</dt>
                 <dd class="bk-dv-text">https://example.org/"x="y</dd>
               </dl>
-            </div>
-          </details>
-        </li>
-        <li class="bk-dv-row bk-dv-trow" data-bk-row><span class="bk-dv-c bk-dv-first" data-bk-col="name">Two</span><span class="bk-dv-c" data-bk-col="constructor"><span class="bk-sr">constructor: </span></span><span class="bk-dv-c" data-bk-col="toString"><span class="bk-sr">toString: </span></span><span class="bk-dv-c" data-bk-col="a&quot;b"><span class="bk-sr">a"b: </span>second</span></li>
-      </ul>
+            </td>
+          </tr>
+        </tbody>
+        <tbody data-bk-row>
+          <tr>
+            <td data-bk-col="name">Two</td>
+            <td data-bk-col="constructor"></td>
+            <td data-bk-col="toString"></td>
+            <td data-bk-col="a&quot;b">second</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
   <h2 id="nothing-here-with-a-line-of-its-own">Nothing here, with a line of its own <a class="bk-anchor" href="#nothing-here-with-a-line-of-its-own" aria-label="Link to this section">#</a></h2>

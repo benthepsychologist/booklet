@@ -45,7 +45,14 @@ for(const [i,as] of [[1,"table"],[2,"list"],[3,"cards"]]){
     labels(h)[1]==="Place,Owner,Crop"&&labels(h).every(l=>!/\b(id|Bed|Size)\b/.test(l))&&rests(h).every(s=>!/=(\||$)/.test(s)),labels(h).join(" / "));
 }
 chk("a table's rows keep the line's columns and a long note keeps its line break, as text",
-  V(1).includes("Line one\nLine two")&&V(1).includes('<span class="bk-dv-c bk-dv-first" data-bk-col="bed">North bed</span>'));
+  V(1).includes("Line one\nLine two")&&V(1).includes('<span data-bk-col="bed">North bed</span>'));
+/* a flat table whose rows open stays a table: real headings, a real row for each row, the disclosure in its lead cell */
+{const h=V(1),th=[...h.matchAll(/<th scope="col" data-bk-col="([a-z]+)"[^>]*>([^<]*)<\/th>/g)].map(m=>m[1]+"="+m[2]);
+ chk("a flat table whose rows open is a <table> with a real <th scope=\"col\"> for each column, named by its field, and no hidden grid heading",
+   count(h,/<table>/g)===1&&th.join()==="bed=Bed,size=Size"&&!/bk-dv-thead|aria-hidden="true"/.test(h)&&!/bk-dv-ttable/.test(h),th.join()+" "+h.slice(0,300));
+ chk("…each row is a <tbody> that is the row (data-bk-row) holding its <tr> of <td> cells; the lead cell holds the disclosure and the rest of the row is a <tr> of its own after it",
+   count(h,/<tbody data-bk-row>/g)===4&&count(h,/<tr class="bk-dv-trmore">/g)===4&&/<tbody data-bk-row>\s*<tr>\s*<td>\s*<details>\s*<summary class="bk-dv-sum">\s*<span data-bk-col="bed">North bed<\/span>/.test(h)&&/<td data-bk-col="size"[^>]*>12<\/td>/.test(h),h.slice(0,900));
+ chk("…and the table's cells are not a grid of spans: a column's value is the <td>, with no label read before it",!/bk-sr">Size: /.test(h));}
 
 /* ---- a view that declares no fields: the rows' own keys decide, row by row ---- */
 for(const [i,as] of [[4,"table"],[5,"list"],[6,"cards"]]){
@@ -69,7 +76,7 @@ for(const [i,as] of [[12,"table"],[13,"list"],[14,"cards"]]){
 const heads=h=>[...h.matchAll(/class="bk-dv-group" role="heading" aria-level="3">([^<]*)<span class="bk-count">([^<]*)<\/span>/g)].map(m=>m[1]+" "+m[2]);
 const gheads=h=>[...h.matchAll(/<th scope="rowgroup"[^>]*>([^<]*)<span class="bk-count">([^<]*)<\/span>/g)].map(m=>m[1]+" "+m[2]);
 for(const [i,as] of [[7,"table"],[8,"list"],[9,"cards"]]){
-  const h=V(i),hs=heads(h);
+  const h=V(i),hs=as==="table"?gheads(h):heads(h);
   chk(as+": a grouped view keeps its group heads, with counts, first seen first (Orchard 2 rows, Yard 2 rows)",
     views[i-1].as===as&&hs.join(",")==="Orchard 2 rows,Yard 2 rows",hs.join(","));
   chk(as+": …and each group's rows still open, in the group, in the file's order",
@@ -78,9 +85,9 @@ for(const [i,as] of [[7,"table"],[8,"list"],[9,"cards"]]){
 chk("grouped cards under a limit: the limit counts rows before they are grouped (3 rows: Orchard 2, Yard 1)",
   heads(V(10)).join(",")==="Orchard 2 rows,Yard 1 row"&&count(V(10),/ data-bk-row\b/g)===3,heads(V(10)).join(","));
 chk("a grouped table with a badge: the heads, and the badge is a pill in the line, not in the open part",
-  heads(V(11)).join(",")==="Orchard 2 rows,Yard 2 rows"&&count(V(11),/class="bk-pill/g)===4&&!rests(V(11)).some(s=>/Crop=/.test(s)),rests(V(11)).join(" / "));
+  gheads(V(11)).join(",")==="Orchard 2 rows,Yard 2 rows"&&count(V(11),/class="bk-pill/g)===4&&!rests(V(11)).some(s=>/Crop=/.test(s)),rests(V(11)).join(" / "));
 chk("a flat grouped view is not drawn as one flat list: its groups are separate blocks",
-  count(V(8),/class="bk-dv-gcard"/g)===2&&count(V(7),/<ul class="bk-dv-list bk-dv-tree">/g)===2&&count(V(9),/bk-dv-ncard/g)>=4);
+  count(V(8),/class="bk-dv-gcard"/g)===2&&count(V(7),/<tbody class="bk-grouprow">/g)===2&&count(V(9),/bk-dv-ncard/g)>=4);
 
 /* ---- a truly nested view does not draw group: ---- */
 chk("rows that hold rows, with group: set, draw no group head (the renderer draws none)",heads(V(15)).length===0&&!/aria-level="3"/.test(V(15))&&count(V(15),/ data-bk-row\b/g)===6);
@@ -97,7 +104,7 @@ chk("odd values: a list is its items, true is true, 0 is shown, null and \"\" ar
 chk("every disclosure is native and shut: no script, no handler, no open row anywhere",
   !/<details[^>]*\sopen/.test(page)&&!/\son[a-z]+=/i.test(page)&&!/<script/i.test(page.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g,"").replace(/<script src="(?:\.\.\/)*booklet\/booklet\.js" defer><\/script>/g,"")));
 chk("a row's summary is the row: it carries data-bk-row and a disclosure has exactly one summary",
-  count(page,/<details/g)===count(page,/<summary/g)&&count(page,/<summary[^>]*data-bk-row/g)===count(page,/<summary/g));
+  count(page,/<details/g)===count(page,/<summary/g)&&count(page,/<summary[^>]*data-bk-row/g)+count(page,/<tbody data-bk-row>\s*<tr>\s*<td[^>]*>\s*<details[^>]*>\s*<summary class="bk-dv-sum"/g)===count(page,/<summary/g));
 
 /* ---- "does not hold child rows" is a row's own: a field that holds rows in one row is a plain value in another ---- */
 {const rows=[{id:"a",title:"Has kids",items:[{id:"a1",title:"Kid"}]},{id:"b",title:"Plain note",items:"n/a for this one",extra:"x"}];

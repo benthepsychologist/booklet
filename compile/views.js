@@ -65,19 +65,32 @@ function draw(cap,o){
   const numCache=new Map();
   const numeric=k=>{if(!numCache.has(k)) numCache.set(k,set.rows.some(r=>typeof r[k]==="number")&&set.rows.every(r=>r[k]==null||typeof r[k]==="number"));
     return numCache.get(k);};
-  /* `tag` false draws a chart's table of numbers, which is no view of its own: its rows and values are not tagged */
-  function tableOf(gs,rl,cs,tag){
+  /* `tag` false draws a chart's table of numbers, which is no view of its own: its rows and values are not tagged.
+     `opens`: the rows that have more to show than their line open (a flat table whose rows carry fields the line does not show, with no
+     child among them). The table stays a table, with real headings and a real row for each row, as the renderer draws it: the lead
+     cell holds a native disclosure whose summary is the lead value, and the rest of the row is a row of its own after it. Each row is
+     a <tbody> of its own (it carries data-bk-row, so a sort or a filter moves a row and its rest together), and a group's heading has
+     one too. The stylesheet hides the rest while its disclosure is shut; a browser that cannot tell (no :has) shows it always. */
+  function tableOf(gs,rl,cs,tag,opens){
     const lead1=(cs.find(c=>!(rl.badge&&c.key===rl.badge))||{}).key;
     const cell=(r,c)=>{const num=numeric(c.key)?"bk-num":null,a={"data-bk-col":tag?c.key:null,class:num};
       if(rl.badge&&c.key===rl.badge){const t=R.rowTone(r,rl);
         return el("td",{},tag?col(c.key,"bk-dv-b",...pills(R.partsOf(r[c.key]),t)):pills(R.partsOf(r[c.key]),t),toneWords(t));}
+      if(opens&&c.key===lead1&&tree.has(r)){
+        const words=rl.link||rl.icon?[pic(r),...lead(r,[text(r[c.key])])]:[text(r[c.key])];
+        return el("td",{class:num},el("details",{open:tree.open(r)},el("summary",{class:"bk-dv-sum"},el("span",{"data-bk-col":c.key},...words))));}
       if(c.key===lead1&&(rl.link||rl.icon)) return el("td",a,pic(r),...lead(r,[text(r[c.key])]));
       return el("td",a,text(r[c.key]));};
+    const span=String(cs.length);
+    const head=g=>el("tr",{class:"bk-grouprow"},el("th",{scope:"rowgroup",colspan:span},g.name||"–",el("span",{class:"bk-count"},T.rows(g.rows.length))));
+    const one=r=>{newRow();const tr=el("tr",{"data-bk-row":tag&&!opens?true:null},...cs.map(c=>cell(r,c)));
+      if(!opens) return tr;
+      const rest=tree.has(r)?restNode(tree.more(r)):null;
+      return el("tbody",{"data-bk-row":true},tr,rest?el("tr",{class:"bk-dv-trmore"},el("td",{colspan:span},rest)):null);};
     return el("table",{},
       el("thead",{},el("tr",{},...cs.map(c=>el("th",{scope:"col","data-bk-col":tag?c.key:null,class:numeric(c.key)?"bk-num":null},c.label)))),
-      ...gs.map(g=>el("tbody",{},
-        g.name!==null?el("tr",{class:"bk-grouprow"},el("th",{scope:"rowgroup",colspan:String(cs.length)},g.name||"–",el("span",{class:"bk-count"},T.rows(g.rows.length)))):null,
-        ...g.rows.map(r=>{newRow();return el("tr",{"data-bk-row":tag?true:null},...cs.map(c=>cell(r,c)));}))));}
+      ...(opens?gs.flatMap(g=>[g.name!==null?el("tbody",{class:"bk-grouprow"},head(g)):null,...g.rows.map(one)])
+        :gs.map(g=>el("tbody",{},g.name!==null?head(g):null,...g.rows.map(one)))));}
 
   /* ---- a nested table: the columns as a grid, a row that opens as a disclosure whose summary is the row ----
      A <tr> cannot hold a disclosure, so a table of rows that open is a list of rows laid out on the same grid as its headings
@@ -246,8 +259,11 @@ function draw(cap,o){
     let bad=!svg;if(svg) H.walk(svg,x=>{if(x&&x.attrs&&Object.values(x.attrs).some(v=>/NaN|Infinity/.test(v))) bad=true;});
     return box("bk-panel",legend,bad?null:el("div",{class:"bk-ch-plot"},svg),numbers([lk,...keys],rows));}
 
+  /* a table whose rows open but none has a child draws as a table (tableOf); one with children is the grid below */
+  const flatOpen=!!tree&&tree.roots.every(r=>!(tree.groups.get(r)||[]).length);
   switch(cap.as){
-    case "table": return tree?box("bk-panel",el("div",{class:"bk-table bk-dv-ttable"},treeHead(),
+    case "table": return tree&&flatOpen?box("bk-panel",el("div",{class:"bk-table"},tableOf(treeBlocks(),roles,cols,true,true)))
+      :tree?box("bk-panel",el("div",{class:"bk-table bk-dv-ttable"},treeHead(),
       ...treeBlocks().flatMap(g=>[g.name!==null?groupHead(g):null,el("ul",{class:"bk-dv-list bk-dv-tree"},...treeOf(tableV,g.rows))])))
       :box("bk-panel",el("div",{class:"bk-table"},tableOf(groups,roles,cols,true)));
     case "list": return list();

@@ -666,6 +666,17 @@
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-open>.bk-dv-kg>.bk-dv-group{margin:.6rem 0 .2rem!important;font-size:.9em!important;color:var(--bk-muted)!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-open .bk-dv-list{margin:0 0 .3rem!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-tree details>.bk-dv-open{border-left:1px solid var(--bk-rule)!important;margin-left:.45rem!important}
+/* a table whose rows open and none has a child: a real table; the lead cell holds a native disclosure, and the rest of the row is a row after it, hidden while the disclosure is shut (a browser that cannot tell, with no :has, shows it always) */
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table .bk-dv-sum{display:flex!important;align-items:baseline!important;gap:.5rem!important;cursor:pointer!important;list-style:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table .bk-dv-sum::-webkit-details-marker{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table .bk-dv-sum::before{content:""!important;flex:none!important;box-sizing:border-box!important;width:.6rem!important;height:.6rem!important;border-right:var(--bk-border) solid var(--bk-accent)!important;border-bottom:var(--bk-border) solid var(--bk-accent)!important;transform:rotate(-45deg)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table details[open]>.bk-dv-sum::before{transform:rotate(45deg)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table .bk-dv-sum:hover{background:var(--bk-accent-soft)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table tbody:has(details:not([open]))>.bk-dv-trmore{display:none!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table .bk-dv-trmore td{padding-top:0!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table tbody.bk-grouprow tr:last-child :is(td,th){border-bottom:1px solid var(--bk-rule)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table tbody[data-bk-row] tr:last-child :is(td,th){border-bottom:1px solid var(--bk-rule)!important}
+.booklet:not(#bk):not(#bk):not(#bk) .bk-table tbody[data-bk-row]:last-of-type tr:last-child :is(td,th){border-bottom:var(--bk-border) solid var(--bk-rule)!important}
 /* a nested table: the headings and every row share one grid, the first column wider; the row's depth indents its first cell */
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-ttable{overflow:visible!important}
 .booklet:not(#bk):not(#bk):not(#bk) .bk-dv-thead,.booklet:not(#bk):not(#bk):not(#bk) .bk-dv-trow{display:grid!important;grid-template-columns:minmax(0,2fr)!important;grid-auto-flow:column!important;grid-auto-columns:minmax(0,1fr)!important;gap:.15rem .8rem!important;align-items:baseline!important}

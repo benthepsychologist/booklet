@@ -59,11 +59,8 @@ chk("a tile's columns: value, label and note, each with its field's name and its
   />Beds? planted</.test(V.page)===false&&/<li class="bk-dv-tile bk-tone-good" data-bk-row>[^]*?<span class="bk-dv-v" data-bk-col="count">140<\/span><span class="bk-dv-l" data-bk-col="what">Loaves baked<\/span><span class="bk-dv-n" data-bk-col="since">since Monday<\/span>/.test(V.page));
 /* a table: head cells and cells carry the field's name, and a number is its own text */
 const tab=views.find(v=>v.as==="table").html;
-/* (this table asks for four fields of rows that have more, so each row opens, and the table is drawn as a grid of rows: its headings
-   carry no name, each cell does, and a cell for a field after the first starts with its label for a screen reader) */
-chk("a table's cells carry the field's name; a cell's text is the value (12, 2, 0, plenty); its headings name the columns",
-  /<div class="bk-dv-thead" aria-hidden="true"><span class="bk-dv-c">Item<\/span>/.test(tab)&&
-  ["12","2","0","plenty","7"].every(t=>tab.includes('data-bk-col="left"><span class="bk-sr">Left: </span>'+t+"</span>")),tab.slice(0,600));
+chk("a table's head and cells carry the field's name; a cell's text is the value (12, 2, 0, plenty)",
+  /<th scope="col" data-bk-col="item">Item<\/th>/.test(tab)&&["12","2","0","plenty","7"].every(t=>tab.includes('<td data-bk-col="left">'+t+"</td>")),tab.slice(0,600));
 chk("a table row's pill is a column too (a badge's text is the value), and the tone's word sits beside it, never in it",
   /<span class="bk-dv-b" data-bk-col="kind"><span class="bk-pill bk-tone-good">flour<\/span><\/span><span class="bk-sr">Good<\/span>/.test(tab));
 chk("a table grouped by a field has a heading row for each group, with its count, and the fixture's limit: 4 keeps 4 rows",
@@ -120,7 +117,7 @@ chk("the report counts the queries drawn and says nothing is marked for a view (
     tiny&&count(tiny.html,/ data-bk-row\b/g)===2&&!/<rect/.test(tiny.html)&&tiny.html.includes("2e-300")&&huge&&!/<svg class="bk-ch-svg"/.test(huge.html)&&huge.html.includes("-1e+300")&&/<details class="bk-ch-nums">/.test(huge.html));}
 /* a field named like something an object has is a field, and a row that lacks it has an empty cell */
 chk("a field named constructor or toString is an empty cell where the row lacks it, never an object's text",
-  !/function Object|\[object|native code/.test(V.page)&&/data-bk-col="constructor"><span class="bk-sr">constructor: <\/span><\/span>/.test(V.page)&&/data-bk-col="toString"><span class="bk-sr">toString: <\/span><\/span>/.test(V.page));
+  !/function Object|\[object|native code/.test(V.page)&&/<td data-bk-col="constructor"><\/td>/.test(V.page)&&/<td data-bk-col="toString"><\/td>/.test(V.page));
 /* a double quote in a field's name or an address is written as &quot;, so it cannot end the attribute */
 chk("a double quote in a field's name or in an address is &quot; in the attribute (it cannot close it and add one of its own)",
   V.page.includes('data-bk-col="a&quot;b"')&&V.page.includes('href="https://example.org/&quot;x=&quot;y"')&&!/="a"b"/.test(V.page)&&!/href="https:\/\/example\.org\/"x=/.test(V.page),
