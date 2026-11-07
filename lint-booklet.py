@@ -1229,6 +1229,10 @@ def check_each_earlier(f, q_lines, act_keeps, widget_engines, data_blocks=None, 
                 ids = [str(r.get("id", "")).strip() for r in allrows if str(r.get("id", "")).strip()]
                 for dup in sorted({x for x in ids if ids.count(x) > 1}):
                     warn(f, f"{where}: `each:{s}`: {ids.count(dup)} rows of ^{s} have the `id` {dup!r}; a row's answer is named by its `id`, so they share one")
+                # a field that holds rows is the row's children, not a value or an answer: a renderer never asks a question about it (section 5)
+                holders = [r for r in allrows if q["id"] and child_rows(r.get(q["id"])) is not None]
+                if holders:
+                    warn(f, f"{where}: `each:{s}`: the field {q['id']!r} holds rows (children) in {len(holders)} row(s) of ^{s}, and a field that holds rows is not an answer, so a renderer does not ask the question {q['id']!r} of those rows")
                 if q["id"] and allrows and not any(q["id"] in r for r in allrows):
                     warn(f, f"{where}: `each:{s}` asks the question {q['id']!r} of every row, because no row of ^{s} carries a field named {q['id']!r} "
                             f"(a row that carries one is the only kind asked; check the field's name if you meant only some rows)")
