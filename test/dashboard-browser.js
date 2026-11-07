@@ -26,6 +26,8 @@ const BOOK=F.bookletText('garden.json');
 const MANY=`---\nbooklet: "0.19"\ntitle: Many\nlang: en\n---\n\n> [!activity|a] Many\n\n> [!page|one] One\n\n\`\`\`booklet query\nfrom: first\nas: list\nlabel: title\n\`\`\`\n\n\`\`\`booklet query\nfrom: second\nas: table\nfields: title\n\`\`\`\n\n> [!page|two] Two\n\n\`\`\`booklet query\nfrom: gone\nas: table\n\`\`\`\n\n\`\`\`booklet query\nfrom: bad\nas: table\n\`\`\`\n\n\`\`\`booklet query\nfrom: nokey\nas: table\n\`\`\`\n\n\`\`\`booklet query\nfrom: notjson\nas: table\n\`\`\`\n\nStill here: prose after the quiet boxes.\n\n\`\`\`booklet data garden.json programmes\n\`\`\`\n^first\n\n\`\`\`booklet data garden.json programmes\n\`\`\`\n^second\n\n\`\`\`booklet data nothing-here.json rows\n\`\`\`\n^gone\n\n\`\`\`booklet data ../secret.json rows\n\`\`\`\n^bad\n\n\`\`\`booklet data garden.json no.such.key\n\`\`\`\n^nokey\n\n\`\`\`booklet data plain.json rows\n\`\`\`\n^notjson\n`;
 /* two blocks naming the same file and key path with labels of their own (each must be drawn with its own) */
 const TWIN=`---\nbooklet: "0.19"\ntitle: Twin\nlang: en\n---\n\n> [!activity|a] Twin\n\n\`\`\`booklet query\nfrom: x\nas: table\nfields: title\n\`\`\`\n\n\`\`\`booklet query\nfrom: y\nas: table\nfields: title\n\`\`\`\n\n\`\`\`booklet data garden.json programmes\n{"fields":{"title":"AAA-title"}}\n\`\`\`\n^x\n\n\`\`\`booklet data garden.json programmes\n{"fields":{"title":"BBB-title"}}\n\`\`\`\n^y\n`;
+/* a field that holds rows in one row and a plain value in another */
+const MIXED=`---\nbooklet: "0.19"\ntitle: Mixed\nlang: en\n---\n\n> [!activity|a] Mixed\n\n\`\`\`booklet query\nfrom: x\nas: table\n\`\`\`\n\n\`\`\`booklet data\n`+JSON.stringify({fields:{title:'Name',items:'Items',extra:'Extra'},rows:[{id:'a',title:'Has kids',items:[{id:'a1',title:'Kid'}]},{id:'b',title:'Plain note',items:'n/a for this one',extra:'x'}]})+`\n\`\`\`\n^x\n`;
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const b=await chromium.launch();
@@ -37,7 +39,7 @@ const TWIN=`---\nbooklet: "0.19"\ntitle: Twin\nlang: en\n---\n\n> [!activity|a] 
   const ctx=await b.newContext({viewport:{width:1200,height:900}});
   const serve=async()=>{
     await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname,md={'content-type':'text/markdown'},js={'content-type':'application/json'};
-      const FILES={'/garden.booklet.md':BOOK,'/many.booklet.md':MANY,'/twin.booklet.md':TWIN};
+      const FILES={'/garden.booklet.md':BOOK,'/many.booklet.md':MANY,'/twin.booklet.md':TWIN,'/mixed.booklet.md':MIXED};
       for(const root of ['/folder/modules','/pub']){
         if(FILES[u.slice(root.length)]&&u.startsWith(root+'/')) return r.fulfill({status:200,body:FILES[u.slice(root.length)],headers:md});
         if(u===root+'/garden.json') return r.fulfill({status:200,body:JSON.stringify(DATA),headers:js});
@@ -242,6 +244,16 @@ const TWIN=`---\nbooklet: "0.19"\ntitle: Twin\nlang: en\n---\n\n> [!activity|a] 
    await p.evaluate(()=>{location.hash='#/open/twin.booklet.md';});await wait(p,1500);
    const heads=await p.evaluate(()=>[...document.querySelectorAll('table.dv-table')].map(t=>[...t.querySelectorAll('thead th')].map(h=>h.textContent.trim()).join()));
    ok(heads.join('|')==='AAA-title|BBB-title','two blocks on one file and key path keep their own labels, not the first one\'s ('+heads.join('|')+')');
+   await p.close();}
+
+  // 8. a field that holds rows in one row is a plain value in a row whose value is not rows
+  {const p=await newPage(ctx);
+   await p.goto(PAGE+'/folder/');await wait(p,500);
+   await p.evaluate(()=>{location.hash='#/open/mixed.booklet.md';});await wait(p,1500);
+   for(let i=0;i<4;i++){await p.evaluate(()=>document.querySelectorAll('table.dv-table details:not([open]) > summary').forEach(s=>s.click()));await wait(p,150);}
+   const t=await p.locator('table.dv-table').innerText();
+   ok(/Items\s+n\/a for this one/.test(t.replace(/\s+/g,' '))||t.includes('n/a for this one'),'a table row whose value in a field is plain shows it when it opens, though another row holds rows in that field ('+t.replace(/\s+/g,' ').slice(0,100)+')');
+   ok(t.includes('Kid')&&!t.includes('[object Object]'),'and the row that holds rows draws them as children');
    await p.close();}
 
   ok(errs.length===0,'zero page errors '+errs.join('|'));

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-7IFswGA/evh5aM9GpSryoLRH/mQjVpFpd8e1KBvqFJ8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-0H0vuU/9XewycPBqLZ95YRmSYWWwTiOkMXDF0Lx/nPI=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7631,7 +7631,9 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
      count, whether or not `fields` was declared, at every depth; the source's own fields come first, in their order. */
   const lineKeys=new Set(cols.map(c=>c.key)),skipKeys=new Set([...ROLE_NAMES.map(n=>roles[n]).filter(Boolean),"id",pk,gk]);
   const openKeys=r=>{if(set.kind!=="data") return [];
-    const out=[];for(const k of new Set([...set.own,...Object.keys(r)])) if(!lineKeys.has(k)&&!skipKeys.has(k)&&!set.kidKeys.has(k)) out.push(k);
+    /* "does not hold child rows" is the row's own: a field that holds rows in one row is a plain value in a row whose value is not rows */
+    const held=new Set((set.groupsOf.get(r)||[]).map(g=>g.key));
+    const out=[];for(const k of new Set([...set.own,...Object.keys(r)])) if(!lineKeys.has(k)&&!skipKeys.has(k)&&!held.has(k)) out.push(k);
     return out;};
   const moreOf=r=>openKeys(r).map(k=>({label:set.lab(k),text:hasOwn(r,k)?cellText(r[k]):""})).filter(f=>f.text!=="");   /* an own read: a row without a field named constructor or toString has no such field */
   /* a flat row with more to show than its line opens too: it is drawn by the same tree, with no children */

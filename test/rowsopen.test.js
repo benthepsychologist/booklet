@@ -49,6 +49,14 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
   chk("every row at every depth is in `all`, in the file's order, and the fields that hold rows are not the source's own fields",
     T.all.map(r=>r.id).join()==="p1,j1,r1,r2,j2,p2,p3"&&!T.own.includes("projects")&&!T.own.includes("items")&&T.own.join()==="title,kind,about,notes",T.all.map(r=>r.id).join()+" / "+T.own.join());}
 
+ /* ---- a field holds child rows in the rows that have them, and is a plain value in the rows that do not ---- */
+ {const MIX={fields:{title:"Name",items:"Items",extra:"Extra"},rows:[{id:"a",title:"Has kids",items:[{id:"a1",title:"Kid"}]},{id:"b",title:"Plain note",items:"n/a for this one",extra:"x"}]};
+  for(const [as,view] of [["list",{label:"title"}],["cards",{label:"title"}]]){   /* a table is held to the same rule in test/dashboard-browser.js, where rows can be added after it */
+   ST.clear();const b=draw(as,view,"mix-"+as,MIX);openAll(b);const t=text(b);
+   chk("("+as+") a row whose field is a plain value shows it in its open part, though another row holds child rows in that field",/Items/.test(t)&&t.includes("n/a for this one"),t.replace(/\s+/g," "));
+   chk("("+as+") the row that holds child rows in it draws them as children, not as a value",t.includes("Kid")&&!t.includes("[object Object]"),t.replace(/\s+/g," "));}
+  chk("a field that holds child rows in some row is still not one of the source's own fields (so never a column or a line)",!A.dataSet(MIX).own.includes("items"));}
+
  /* ---- the file's own fence: a name and a key path ---- */
  {const mk=(info,code)=>A.parseFile('---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: d\n```\n\n```booklet data '+info+'\n'+(code||"")+'\n```\n^d\n');
   const block=r=>{const a=r.template.activities?r.template.activities[0]:r.template.modules[0].activities[0];return a.pages[0].blocks.find(b=>b.type==="query");};
