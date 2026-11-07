@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-QyhF2DIBS7JUBmIv3EQLw6mEpvwqUIXO8MlpW86FJWc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-Q8f8r68+SrCGiTwUs+AfZRiGZDKLoTjCMlG2dSWnzS0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1785,6 +1785,11 @@ const STRINGS_SRC={
         box: (f,r)=>`${f} · ${r}`,
         waiting: " · sent, waiting",
         sent: "You sent:",
+        was: v=>`(was ${v})`,
+        empty: "empty",
+        nan: "That is not a number, so nothing is kept. Correct the number to keep it.",
+        nanLeft: "Nothing was kept: a number box held text that is not a number.",
+        changeKept: "Change kept.",
         history: "Kept for this row"
       },
       data: {
@@ -2175,6 +2180,11 @@ const STRINGS_SRC={
         box: (f,r)=>`${f} · ${r}`,
         waiting: " · envoyé, en attente",
         sent: "Vous avez envoyé :",
+        was: v=>`(avant : ${v})`,
+        empty: "vide",
+        nan: "Ce n’est pas un nombre, donc rien n’est gardé. Corrigez le nombre pour le garder.",
+        nanLeft: "Rien n’a été gardé : une case de nombre contenait du texte qui n’est pas un nombre.",
+        changeKept: "Changement gardé.",
         history: "Gardé pour cette ligne"
       },
       data: {
@@ -2562,6 +2572,11 @@ const STRINGS_SRC={
         box: (f,r)=>`${f} · ${r}`,
         waiting: " · enviado, en espera",
         sent: "Enviaste:",
+        was: v=>`(antes: ${v})`,
+        empty: "vacío",
+        nan: "Eso no es un número, así que no se guarda nada. Corrige el número para guardarlo.",
+        nanLeft: "No se guardó nada: una casilla de número tenía texto que no es un número.",
+        changeKept: "Cambio guardado.",
         history: "Guardado para esta fila"
       },
       data: {
@@ -7186,13 +7201,17 @@ function keptIndex(activityId,keys){const idx=new Map(),ents=[...(((STATE.entrie
       const k=K+"\u0000"+p.pick;if(!idx.has(k)) idx.set(k,[]);idx.get(k).push({e,p});}}
   return idx;}
 /* the boxes now on a screen that draw rows with acts, each with the function that draws it again in place; and the kept-entries strip of an activity */
-const ROW_LIVE=new Set(),STRIPS=new Map();let ACT_REDRAW=0;
+const ROW_LIVE=new Set(),STRIPS=new Map(),BAD_NUMS=new Map();let ACT_REDRAW=0;
+/* a number box left holding text that is not a number when its screen went away: nothing was kept, and a notice says so */
+function badNumsCheck(){BAD_NUMS.forEach((r,key)=>{if(r.c.isConnected!==false) return;
+  BAD_NUMS.delete(key);const w=viewAt(r.activityId);if(w.editing) w.editing.delete(key);
+  toast(strings("dv").act.nanLeft);});}
 function actsRefresh(){ACT_REDRAW++;
   try{ROW_LIVE.forEach(x=>{if(x.box.isConnected===false){ROW_LIVE.delete(x);return;}try{x.redraw();}catch(e){}});}finally{ACT_REDRAW--;}}
 function stripRefresh(id){const w=STRIPS.get(id);if(w&&w.isConnected!==false&&w.parentNode){const n=chipStrip(id);w.replaceWith(n);}}
 /* one new entry holding the pairs `sel` ([[key, row id], …]) take out of the draft of an activity that keeps entries: it adds exactly one
    entry, and nothing else in the file moves. False when the draft holds none of them. */
-function keepPairs(id,sel){const draft=draftFor(id),e=nullMap();
+function keepPairs(id,sel,msg){const draft=draftFor(id),e=nullMap();
   for(const [K,pick] of sel){const list=Array.isArray(draft[K])?draft[K]:null;if(!list) continue;
     const i=list.findIndex(x=>isPair(x)&&x.pick===pick);if(i<0) continue;
     e[K]=[...(e[K]||[]),clone(list[i])];
@@ -7201,7 +7220,7 @@ function keepPairs(id,sel){const draft=draftFor(id),e=nullMap();
   /* a kept act's time is written to the whole second (as section 8's examples are), moved to the next free second when an entry has it */
   const kept=keptFor(id),taken=new Set(kept.map(x=>x.ts)),sec=n=>new Date(n).toISOString().replace(/\.\d{3}Z$/,"Z");let at=Math.floor(Date.now()/1000)*1000;while(taken.has(sec(at))) at+=1000;
   e.ts=sec(at);kept.push(e);
-  unsavedEntries++;dirty=true;hookChanged("typed");saveLocal();hookFlush();toast(strings("ui").kept);stripRefresh(id);
+  unsavedEntries++;dirty=true;hookChanged("typed");saveLocal();hookFlush();toast(msg||strings("ui").kept);stripRefresh(id);
   return true;}
 const dropPair=(rec,K,pick)=>{const l=Array.isArray(rec[K])?rec[K]:[],r=l.filter(x=>!(isPair(x)&&x.pick===pick));if(r.length!==l.length) rec[K]=r.length?r:null;};
 /* the questions a query of data block `b.from` asks of its rows in activity `activityId`, and where its answers go (null: none) */
@@ -7243,6 +7262,9 @@ function rowActs(cfg,set,v){
     const p=l[0].p;
     if(same(V,p.a)) return {n:1,p};
     return hasOwn(p,"was")&&sameVal(V,p.was,ci)?{n:2,p}:{n:3,p};};
+  const finHolder=r=>{const q=qs.find(x=>placed.has(x.id)&&!locked(x.id)&&asked(x,r));return q?q.id:null;};
+  /* what the reader sent, as one line: the same words for a question and for a field */
+  const sentNode=(tagName,content)=>el(tagName,{class:"dv-sent"},D.sent+" ",content);
   const answerNode=(q,a)=>{const one={...q};delete one.each;const r=holdsSomething(a)?fieldSummary(one,{[q.id]:a}):null;return r?r[1]:null;};
   /* a question asked of a row, drawn by its kind's drawer over the row's one pair; `place` is "open" (the row's open part) or "cell" (a column) */
   function askNode(q,r,place){
@@ -7257,14 +7279,15 @@ function rowActs(cfg,set,v){
       const qq={...q,each:undefined,perPick:{q,W:widgetFor(q),rec:rec(),held:null}};
       box.append(DRAW_BLOCK[q.type](qq,pr,cfg.activityId,cfg.dc,null));}
     if(st.n===2) box.append(el("p",{class:"dv-wait"},D.waiting));
-    if(st.n===3){const n=answerNode(q,st.p.a);box.append(el("p",{class:"dv-sent"},D.sent,n!==null?n:cellText(st.p.a)));}
+    if(st.n===3){const n=answerNode(q,st.p.a);box.append(sentNode("p",n!==null?n:cellText(st.p.a)));}
     if(!inPlace){
       /* a list is what the data holds, drawn under the question; then the row's kept answers, newest first with their times */
       const items=[];
       if(list) V.forEach(x=>{const t=cellText(x);if(t!=="") items.push(el("li",{},t));});
       sentList(K,id).forEach(({e,p})=>{const n=answerNode(q,p.a);if(n!==null) items.push(el("li",{class:"dv-kept"},el("span",{class:"dv-when"},fmtWhen(e.ts)),el("span",{class:"dv-sr"}," · "),n));});
       if(items.length) box.append(el("ul",{class:"dv-hist","aria-label":D.history},...items));}
-    if(place==="cell"&&cfg.keeps&&!ro) box.append(fin(r));
+    /* a row has one Finalize: in the first of its question columns that can be answered, else in its open part */
+    if(place==="cell"&&cfg.keeps&&!ro&&finHolder(r)===q.id) box.append(fin(r));
     if(place==="cell") shield(box);
     return box;}
   /* a box inside a row's heading must not toggle the row: Space typed in it, or a press on it, stays with the box */
@@ -7279,9 +7302,9 @@ function rowActs(cfg,set,v){
     const view=()=>{const shown=st.n===2?st.p.a:cur,t=valText(shown);
       const b=el("button",{type:"button",class:"dv-ed-btn","aria-label":D.edit(nm,rn,t)},t!==""?cellText(shown):el("span",{class:"dv-ed-none","aria-hidden":"true"},"–"));
       b.addEventListener("click",()=>begin());
-      const out=[b];
-      if(st.n===2) out.push(el("span",{class:"dv-wait"},D.waiting));
-      if(st.n===3) out.push(el("span",{class:"dv-sent"},D.sent+" "+cellText(st.p.a)));
+      const out=[b],note=st.n===2?el("span",{class:"dv-wait"},D.waiting):st.n===3?sentNode("span",cellText(st.p.a)):null;
+      /* the mark that says what became of the last act is the button's description, so a screen reader reads it with the value */
+      if(note){const nid=newId("edn_");note.setAttribute("id",nid);b.setAttribute("aria-describedby",nid);out.push(note);}
       return out;};
     const box=()=>{const mine=pairFor(rec()[k],id),state=ev().get(key)||(ev().set(key,{was:mine&&hasOwn(mine,"was")?mine.was:cur}),ev().get(key)),was=state.was;
       const startVal=mine?mine.a:(st.n===2?st.p.a:cur),sv=startVal===null||startVal===undefined?"":startVal;
@@ -7300,19 +7323,25 @@ function rowActs(cfg,set,v){
       const read=()=>spec.edit==="number"?((c.validity&&c.validity.badInput)||(c.value!==""&&!Number.isFinite(Number(c.value)))?undefined:c.value===""?null:Number(c.value)):c.value;
       const val=el("span",{class:"dv-ed-val"},cellText(startVal));
       let done=false;
-      const put=()=>{if(done||!ev().has(key)) return;const v=read();if(v===undefined){dropPair(rec(),k,id);val.textContent=cellText(startVal);markDirty();return;}
-        pr[k]=v;val.textContent=cellText(v);markDirty();};
+      /* a number box holding text that is not a number says so in an alert and stays open: nothing is kept until it is corrected or Escape is pressed */
+      const err=el("p",{class:"dv-ed-err",role:"alert",id:newId("ede_")},D.nan);let errShown=false;
+      const badOn=()=>{state.bad=true;c.setAttribute("aria-invalid","true");c.setAttribute("aria-describedby",err.getAttribute("id"));if(!errShown){errShown=true;wrap.append(err);}BAD_NUMS.set(key,{c,activityId:cfg.activityId,key});};
+      const badOff=()=>{if(!state.bad) return;delete state.bad;c.removeAttribute("aria-invalid");c.removeAttribute("aria-describedby");if(errShown){errShown=false;err.remove();}BAD_NUMS.delete(key);};
+      const put=()=>{if(done||!ev().has(key)) return;const v=read();
+        if(v===undefined){dropPair(rec(),k,id);val.textContent=cellText(startVal);badOn();markDirty();return;}
+        badOff();pr[k]=v;val.textContent=cellText(v);markDirty();};
       c.addEventListener("input",put);c.addEventListener("change",put);
-      const finish=keep=>{if(done) return;done=true;
-        if(keep) keepPairs(cfg.activityId,[[k,id]]);else dropPair(rec(),k,id);
+      const finish=keep=>{if(done) return;done=true;BAD_NUMS.delete(key);
+        if(keep) keepPairs(cfg.activityId,[[k,id]],D.changeKept);else dropPair(rec(),k,id);
         ev().delete(key);afterPress(actsRefresh);};
       c.addEventListener("keydown",e=>{
-        if(e.key==="Enter"&&!(spec.edit==="long"&&e.shiftKey)){e.preventDefault();e.stopPropagation();put();finish(true);}
+        if(e.key==="Enter"&&!(spec.edit==="long"&&e.shiftKey)){e.preventDefault();e.stopPropagation();put();if(!state.bad) finish(true);}
         else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();finish(false);}});
       c.addEventListener("blur",()=>{if(done||!ev().has(key)||RENDERING||ACT_REDRAW) return;   /* a box whose held state was cleared (its row left the data) keeps nothing more */
-       
         if(typeof document.hasFocus==="function"&&!document.hasFocus()) return;
-        put();finish(true);});
+        put();if(!state.bad) finish(true);});
+      /* drawn again while it held text that is not a number: the box is as empty as the browser leaves it, and the alert stays */
+      if(state.bad){c.value="";c.setAttribute("aria-invalid","true");c.setAttribute("aria-describedby",err.getAttribute("id"));BAD_NUMS.set(key,{c,activityId:cfg.activityId,key});errShown=true;return [c,val,err];}
       return [c,val];};
     const begin=()=>{ev().set(key,{was:cur});wrap.textContent="";wrap.append(...box());const c=wrap.querySelector(".dv-ed-in");
       if(c&&c.focus){c.focus();if(c.select&&spec.edit!=="choice") c.select();}};
@@ -7332,7 +7361,7 @@ function rowActs(cfg,set,v){
     openPart(r){const out=[];let live=false;
       qs.forEach(q=>{if(placed.has(q.id)||!asked(q,r)) return;
         out.push(el("div",{class:"dv-ask-open"},askNode(q,r,"open")));if(!locked(q.id)) live=true;});
-      if(live&&cfg.keeps) out.push(el("div",{class:"dv-rowfinrow"},fin(r)));
+      if(live&&cfg.keeps&&finHolder(r)===null) out.push(el("div",{class:"dv-rowfinrow"},fin(r)));
       return out;},};}
 /* the Finalize buttons of a box follow the draft: enabled while the row has an answer to keep */
 function finSync(box){if(!box.querySelectorAll) return;
@@ -7430,6 +7459,10 @@ function entryBody(e,qs,whenKids,extra){extra=extra||{};e=bare(e);
     if(extra.asWritten&&k!==undefined&&wrongShape(q,e[k],W)){rows++;
       dl.append(el("dt",{},wordsNode(fieldLabel(q))),el("dd",{},...keptNote(q,W,e[k])));continue;}
     for(const f of entryFields(q,e)){rows++;dl.append(el("dt",{},wordsNode(...f.parts)),el("dd",{},f.node));}}
+  /* an act on a field of a row (a data field edited in place) has no question: its key, then each pair as "<row id>: <new value> (was <old>)" */
+  if(extra.asWritten){const own=new Set(qs.map(q=>keysOf(q)[0])),D=strings("dv").act;
+    for(const k of Object.keys(e)){if(k==="ts"||own.has(k)||!pairsOf(e[k]).length) continue;rows++;
+      dl.append(el("dt",{},k),el("dd",{},el("ul",{class:"plain"},...pairsOf(e[k]).map(x=>el("li",{},cellText(x.pick)+": "+valText(x.a)+(hasOwn(x,"was")?" "+D.was(valText(x.was)||D.empty):""))))));}}
   return {card:cardNode({mode:"item",cls:"entry",picture:extra.picture||null,kids:[whenKids?el("div",{class:"when"},...(extra.lead?extra.lead(whenKids):whenKids)):null,dl]}),rows};}
 function queryCard(e,from,fields,extra){
   /* `fields` names the questions, and their order is the order shown */
@@ -8714,6 +8747,7 @@ function render(){
   hostNoticeShow(main);
   /* a link is being read while a booklet is on screen: its notice goes at the top (the list says it in its own place) */
   if(LINK_LOADING!==null&&screen!==LIB_SCREEN) main.prepend(loadingNotice());}finally{RENDERING=false;}
+  badNumsCheck();
   return dc;}
 /* "Opening <name>…": a file is being read for a link, or for a store booklet opened from the list */
 const loadingNotice=()=>el("div",{class:"notice col",role:"status"},strings("booklet").linkLoading(LINK_LOADING.label));

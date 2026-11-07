@@ -103,6 +103,38 @@ part("readonly",async()=>{
  const A=load(" repeat","as: table\nfields: title, stage\nreadonly");
  chk("and the values still show",/growing/.test(text(main())));});
 
+part("a kept act's card, the waiting mark's description, and the words of a kept change",async()=>{
+ const A=load(" repeat","as: table\nfields: title, stage");
+ await edit(A,"Name","Orchard","Old orchard");
+ chk("a kept change is announced in the polite status line",text(P.byId("toast"))==="Change kept.",text(P.byId("toast")));
+ const wait=byClass(main(),"dv-wait")[0],b=editBtn(A,"Name","Orchard");
+ chk("the waiting mark is the edit button's description (aria-describedby names it)",!!wait&&b.attrs["aria-describedby"]===wait.attrs.id&&/sent, waiting/.test(text(wait)),JSON.stringify(b.attrs));
+ await edit(A,"Stage","Beds","growing");
+ const card=A.entryCard(entriesOf(A)[0],"d/a");
+ chk("an entry card shows the act: the field's name, then `<row id>: <new value> (was <old value>)`",/title/.test(text(card))&&/a: Old orchard \(was Orchard\)/.test(text(card)),text(card));
+ await edit(A,"Name","Shed","Shed 2");
+ const emptied=A.entryCard({title:[{pick:"c",a:"x",was:""}],ts:"2026-11-07T10:00:00Z"},"d/a");
+ chk("a value that was empty reads `(was empty)`",/c: x \(was empty\)/.test(text(emptied)),text(emptied));
+ const B=load(" repeat","as: list\nlabel: title\nfields: stage");
+ B.keptFor("d/a").push({ts:"2026-11-06T10:00:00Z",stage:[{pick:"a",a:"resting",was:"planning"}]});B.render();
+ chk("the third state's line has a space: 'You sent: resting'",/You sent: resting/.test(text(main())),text(main()).slice(0,200));
+ const sent=byClass(main(),"dv-sent")[0],bb=editBtn(B,"Stage","Orchard");
+ chk("and the sent line describes its button too",!!sent&&bb.attrs["aria-describedby"]===sent.attrs.id);
+ const C=load(" repeat","as: table\nfields: title, notes",Q);
+ C.keptFor("d/a").push({ts:"2026-11-06T10:00:00Z",notes:[{pick:"a",a:"Stakes",}]});
+ chk("a row-question pair keeps its `title · row id` label on the card",/A note · a/.test(text(C.entryCard(C.keptFor("d/a")[0],"d/a"))),text(C.entryCard(C.keptFor("d/a")[0],"d/a")));});
+part("a row that lacks the field is not edited",async()=>{
+ const A=load(" repeat","as: table\nfields: title, stage",null,{fields:{title:{label:"Name",edit:"text"},stage:{label:"Stage",edit:"text"}},rows:[{id:"a",title:"Orchard",stage:"growing"},{id:"b",title:"Beds"}]});
+ chk("an `edit` mark applies in the rows that carry the field: the row without it has a plain cell, no button",!!editBtn(A,"Stage","Orchard")&&!editBtn(A,"Stage","Beds")&&!!editBtn(A,"Name","Beds"));});
+part("one Finalize for each row, whatever the number of question columns",async()=>{
+ const QQ=Q+"> [!text|memo each:rows] A memo\n\n";
+ const A=load(" repeat","as: table\nfields: title, notes, stage, memo",QQ);
+ const rows=walk(main(),x=>x.tagName==="tr"&&cls(x).includes("dv-trow"));
+ const names=r=>walk(r,x=>x.tagName==="button").map(b=>b.attrs["aria-label"]||text(b));
+ chk("a row with several question columns has one Finalize, and no two buttons in it share a name",rows.length>0&&rows.every(r=>walk(r,x=>cls(x).includes("dv-rowfin")).length===1&&new Set(names(r)).size===names(r).length),JSON.stringify(rows.map(names)));
+ const B=load(" repeat","as: table\nfields: title, notes",Q+"> [!text|memo each:rows] A memo\n\n");
+ chk("a row with a question in a column and others in its open part keeps its one Finalize in the column (the rows that carry the column's field)",walk(main(),x=>cls(x).includes("dv-rowfin")).length===2,String(walk(main(),x=>cls(x).includes("dv-rowfin")).length));});
+
 part("repeat daily: no act of a row is kept",async()=>{
  const A=load(" repeat daily","as: table\nfields: title, notes",Q);
  chk("an `edit` field in an activity that keeps one entry a day is drawn as its plain value",walk(main(),x=>cls(x).includes("dv-ed-btn")).length===0&&/Orchard/.test(text(main())));
@@ -115,7 +147,12 @@ part("repeat daily: no act of a row is kept",async()=>{
 part("a number box and a list in an edit field",async()=>{
  const A=load(" repeat","as: table\nfields: title, count, tags",null,{fields:{title:"Name",count:{label:"Trees",edit:"number"},tags:{label:"Tags",edit:"text"}},rows:[{id:"a",title:"Orchard",count:8,tags:["old","north"]},{id:"b",title:"Beds",count:4,tags:"one"}]});
  chk("an `edit` field whose row value is a list is drawn as a list is drawn elsewhere (comma separated) and is read-only",!editBtn(A,"Tags","Orchard")&&/old, north/.test(text(main()))&&!!editBtn(A,"Tags","Beds"));
- chk("a number box whose text is not a finite number keeps nothing",await edit(A,"Trees","Orchard","3e")&&entriesOf(A).length===0&&!A.draftFor("d/a").count,JSON.stringify(A.draftFor("d/a"))+JSON.stringify(entriesOf(A)));
+ {const b=editBtn(A,"Trees","Orchard");press(b);const c=boxOf();c.value="3e";c._on.input({target:c});key(c,"Enter");await tick();
+  const alerts=walk(main(),x=>x.attrs&&x.attrs.role==="alert");
+  chk("a number box whose text is not a finite number keeps nothing and stays open, with an alert that says why",!!boxOf()&&alerts.length===1&&/not a number, so nothing is kept\. Correct the number to keep it\./.test(text(alerts[0]))&&entriesOf(A).length===0&&!A.draftFor("d/a").count,JSON.stringify(A.draftFor("d/a"))+text(main()).slice(0,100));
+  chk("the box is marked invalid and described by the alert",boxOf().attrs["aria-invalid"]==="true"&&boxOf().attrs["aria-describedby"]===alerts[0].attrs.id);
+  key(boxOf(),"Escape");await tick();
+  chk("Escape leaves the value as it was, the box and the alert gone, nothing kept",!boxOf()&&!walk(main(),x=>x.attrs&&x.attrs.role==="alert").length&&text(editBtn(A,"Trees","Orchard"))==="8"&&entriesOf(A).length===0);}
  chk("a number box that was typed in and then holds text that is not a number takes its draft back",await(async()=>{press(editBtn(A,"Trees","Orchard"));const c=boxOf();c.value="5";c._on.input({target:c});const had=!!A.draftFor("d/a").count;c.value="5e";c._on.input({target:c});const gone=!A.draftFor("d/a").count;key(c,"Escape");await tick();return had&&gone;})());
  chk("only an empty number box keeps `a: null`",await edit(A,"Trees","Orchard","")&&JSON.stringify(entriesOf(A)[0].count)==='[{"pick":"a","a":null,"was":8}]',JSON.stringify(entriesOf(A)));});
 
@@ -173,6 +210,7 @@ part("a row taken out of the data, and a stale `was`",async()=>{
  const t=text(main());
  chk("a row the data no longer holds is not drawn, with its words nowhere on the screen",!/row that left/.test(t));
  chk("and its pairs are still in the entry as written",A.keptFor("d/a")[0].reply[0].a==="words for a row that left"&&A.toMarkdown().includes("words for a row that left"));
+ chk("the question's third-state line has a space after the colon: 'You sent: No'",/You sent: No/.test(text(main())),text(main()).slice(0,200));
  chk("a stale `was` (the data's value is neither what was sent nor `was`): the value now, with what was sent beneath",byClass(main(),"dv-sent").length===1&&/No/.test(text(byClass(main(),"dv-sent")[0]))&&walk(main(),x=>x.tagName==="button"&&x.attrs["aria-pressed"]==="true").map(text).join()==="Yes,No",t.slice(0,300));});
 part("a question in a column",async()=>{
  const A=load(" repeat","as: table\nfields: title, notes",Q);

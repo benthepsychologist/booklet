@@ -201,7 +201,7 @@ const rowOf=(id,rows)=>{rows=rows||DATA.plots.rows;for(const r of rows){if(r.id=
    const reply=p.locator('.dv-list textarea.field');
    ok(await reply.count()===1,'the reply question is in the open part of the one row that is open, and not in the other');
    await reply.fill('Borrow it, then decide');await wait(p,150);
-   await p.locator('.dv-list .dv-rowfinrow button.dv-rowfin').click();await wait(p,300);
+   await p.locator('.dv-list button.dv-rowfin').first().click();await wait(p,300);
    es=entries(await saved(p));
    ok(es.length===2,'the row\'s Finalize in its open part keeps one more entry ('+es.length+')');
    ok(JSON.stringify(es[1].decision)==='[{"pick":"b-ladder","a":1}]'&&JSON.stringify(es[1].reply)==='[{"pick":"b-ladder","a":"Borrow it, then decide"}]','holding the call and the reply of that row together: '+JSON.stringify([es[1].decision,es[1].reply]));
@@ -255,6 +255,33 @@ const rowOf=(id,rows)=>{rows=rows||DATA.plots.rows;for(const r of rows){if(r.id=
    ok(es.length===1&&JSON.stringify(es[0].title)==='[{"pick":"p-shed","a":"Shed (new)","was":"Tool shed"}]','and the words are kept as one act, with `was`: '+JSON.stringify(es[0]&&es[0].title));
    DATA.plots.rows.push(gone);await refresh(p);
    ok(/Shed \(new\)/.test(await tableText(p))&&/waiting/.test(await tableText(p)),'back in the data, the act shows as waiting');
+   await p.close();}
+
+  // 9c. the waiting mark describes its button; a kept act's card; a number box with text that is not a number
+  {const p=await open();
+   await btn(p,'Name','Orchard').click();await p.keyboard.type('Orchard Z');await p.keyboard.press('Enter');await wait(p,300);
+   const d=await p.evaluate(()=>{const b=document.querySelector('button.dv-ed-btn');const id=b.getAttribute('aria-describedby');const t=id&&document.getElementById(id);return {id,text:t&&t.textContent};});
+   ok(d.id&&/sent, waiting/.test(d.text||''),'the waiting mark is the button\'s accessible description: '+JSON.stringify(d));
+   ok(/Change kept\./.test(await p.locator('#toast').innerText())&&await p.locator('#toast').getAttribute('role')==='status','a kept change is announced in the polite status line');
+   await p.locator('.chip, .chips button, .chips a').first().click().catch(()=>{});await wait(p,300);
+   const card=await p.locator('#main .entry').first().innerText().catch(()=>'');
+   ok(/title/.test(card)&&/p-orchard: Orchard Z \(was Orchard\)/.test(card),'the kept act\'s card in the earlier entries names the field and the pair: '+card.replace(/\s+/g,' ').slice(0,120));
+   await p.close();}
+  {const NUM=MD.replace('"due": {"label": "Due", "edit": "date"}','x');
+   const p=await open();
+   await p.evaluate(()=>{});
+   // the orchard has no number field: use the plain page's own table by turning Open jobs into a number edit in the data
+   DATA.plots.fields.open={label:'Open jobs',edit:'number'};await refresh(p);
+   await btn(p,'Open jobs','Orchard').click();await p.keyboard.type('3e');await p.keyboard.press('Enter');await wait(p,250);
+   const st=await p.evaluate(()=>({box:!!document.querySelector('input.dv-ed-in'),alert:(document.querySelector('[role=alert]')||{}).textContent,invalid:document.querySelector('input.dv-ed-in')&&document.querySelector('input.dv-ed-in').getAttribute('aria-invalid')}));
+   ok(st.box&&/That is not a number, so nothing is kept\. Correct the number to keep it\./.test(st.alert||'')&&st.invalid==='true','a number box holding `3e` stays open with an alert, and Enter keeps nothing: '+JSON.stringify(st));
+   ok(/No earlier entries yet/.test(await p.locator('#main').innerText()),'no entry was made');
+   await p.locator('input.dv-ed-in').fill('');await p.keyboard.press('Enter');await wait(p,300);
+   const es=entries(await saved(p));
+   ok(es.length===1&&JSON.stringify(es[0].open)==='[{"pick":"p-orchard","a":null,"was":3}]','an empty number box keeps `a: null`: '+JSON.stringify(es[0]&&es[0].open));
+   await btn(p,'Open jobs','Vegetable beds').click();await p.keyboard.type('4e');await p.keyboard.press('Enter');await wait(p,200);
+   await p.evaluate(()=>document.getElementById('btnHome').click());await wait(p,500);
+   ok(/Nothing was kept: a number box held text that is not a number\./.test(await p.locator('#toast').innerText()),'leaving the screen with that box open keeps nothing and says so');
    await p.close();}
 
   // 10. print shows values, not boxes
