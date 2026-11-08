@@ -101,7 +101,7 @@ These bind anyone extending the format or the renderer's views.
 1. A view is a way to draw rows. It reads the shared roles and takes no key of its own.
 2. A new role must mean the same thing in every view that draws it, and two real pages must need it.
 3. A look that styling, density, or the shaping of rows by whatever wrote the file can give is never a new view or key.
-4. A reader may open, close, sort and filter what is on screen, and none of it is ever put in the file. Anything that changes the file or sends something elsewhere is not a view's business.
+4. A reader may open, close, sort and filter what is on screen, and none of it is ever put in the file. Anything that changes the file or sends something elsewhere is not a view's business. A view may offer the reader an act (`edit`, `add`, `delete`); the act is kept as an entry, and what changes the data is whatever applies the entry.
 
 ## The renderer's one routing rule
 

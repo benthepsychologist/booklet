@@ -97,6 +97,7 @@ clean("a pattern that uses a named group, as JavaScript writes it, lints clean",
 const REC=(items)=>"\n%%\n> [!records] App record — do not edit below this line\n\n```booklet entries desk\n"+JSON.stringify({items})+"\n```\n%%\n";
 const WITH=(items)=>ACT(Q("as: table\nadd\ndelete")+DATA())+REC(items);
 const TS="2026-11-08T10:42:00Z";
+const WITH_DATA=(q,d,items)=>ACT(q+"\n```booklet data\n"+d+"\n```\n^plots\n")+REC(items);
 const ADD={pick:"j-weed-20261108104200",under:"p1",row:{title:"Weed the beds",stage:"planning"}};
 const DEL={pick:"j1",was:{id:"j1",title:"Prune",stage:"planning"}};
 clean("an `$add` entry lints clean",lint(WITH([{$add:[ADD],ts:TS}])));
@@ -125,6 +126,26 @@ for(const [what,e,rx] of [
  one("an `$add` in a draft",r,"ERROR",at(r,"```booklet draft"),/`\$add` is kept only in an entry of a `booklet entries` block, and not in a draft/);}
 {const r=lint(ACT(Q("as: table")+DATA())+"\n%%\n> [!records] App record — do not edit below this line\n\n```booklet answers\n"+JSON.stringify({$delete:[DEL]})+"\n```\n%%\n");
  one("a `$delete` in the answers",r,"ERROR",at(r,"```booklet answers"),/`\$delete` is kept only in an entry of a `booklet entries` block, and not in answers/);}
+
+
+// ---- the examples in the spec lint
+{const spec=fs.readFileSync(path.join(R,"SPEC.md"),"utf8");
+ const block=(heading,lang,ticks)=>{const i=spec.indexOf(heading);if(i<0)return null;
+   const m=new RegExp("^( *)("+"`".repeat(ticks)+")"+lang+"[^\\n]*\\n([\\s\\S]*?)\\n\\1\\2 *$","m").exec(spec.slice(i));
+   return m?m[3].split("\n").map(l=>l.startsWith(m[1])?l.slice(m[1].length):l).join("\n"):null;};
+ const data=block("- **A field's label is a string, or an object**","json",3);
+ const mdq=block("### The id of a new row","markdown",4);
+ const acts=block("With the data block of the example in","json",3);
+ const addEx=block("### Adding a row","json",3),delEx=block("### Removing a row","json",3);
+ chk("SPEC.md has the data example with an idFormat, and the query that offers add and delete",!!(data&&/"idFormat"/.test(data)&&mdq&&/\nadd\ndelete\n/.test(mdq)));
+ if(data&&mdq) clean("the spec's data example and its add and delete query lint clean in a repeat activity",lint(ACT(mdq.replace("from: plots","from: plots")+"\n```booklet data\n"+data+"\n```\n^plots\n")));
+ chk("the spec's two example entries are one JSON object a line",!!acts&&acts.split("\n").every(l=>{try{JSON.parse(l);return true;}catch(e){return false;}}));
+ if(data&&mdq&&acts){const items=acts.split("\n").map(l=>JSON.parse(l));
+   clean("and they lint clean as entries of the activity that holds the query",lint(WITH_DATA(mdq,data,items)));}
+ for(const [what,ex] of [["Adding a row",addEx],["Removing a row",delEx]]){
+   let o=null;try{o=JSON.parse(ex);}catch(e){}
+   chk(`the spec's example under "${what}" is one entry as JSON`,!!o);
+   if(o) clean(`and it lints clean as an entry (${what})`,lint(WITH_DATA(mdq,data,[o])));}}
 
 console.log(fails?`\n${fails} lint rows check(s) FAILED`:"\nlint rows checks passed");
 fs.rmSync(tmp,{recursive:true,force:true});

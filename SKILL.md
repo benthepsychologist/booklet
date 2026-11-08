@@ -996,12 +996,12 @@ between paragraphs for a new one. Section 4 says what a heading does.
 - **A dashboard: rows from a file, rows that open** — when another program or
   agent writes the numbers and rewrites them often, keep them in a JSON file
   beside the booklet and let the booklet say how to draw them. The booklet stays a
-  few kilobytes of Markdown; the file is the generator's. Three things make it work.
+  few kilobytes of Markdown; the file is the generator's. Four things make it work.
 
   **1. A data block that names a file.** The fence line is `booklet data`, then the
   file's name, then optionally a **key path** (keys joined by dots) to the list of
   rows inside it. The fence is left empty, or holds only `fields` (labels for the
-  columns). Several blocks may name one file, which is read once. The file name
+  columns), `idFormat` and `idPattern` (point 4). Several blocks may name one file, which is read once. The file name
   follows the image-path rule: letters, digits, `_`, `.`, `/` and `-`, at most 200
   characters, relative, no part that begins with a dot (so no `..`), ending
   `.json`.
@@ -1026,6 +1026,19 @@ between paragraphs for a new one. Section 4 says what a heading does.
   these questions are kept as entries, so the activity is `repeat`. The reference
   renderer draws the editing, the questions and `readonly` as they are written here.
   A host applies the kept entries (`docs/hosting.md`); a booklet never does.
+
+  **4. Adding and removing rows (format 0.20).** Write `add` and `delete`, each alone
+  on a line, in a query over a data block (`table`, `cards` or `list`, in a `repeat`
+  activity): `add` offers **Add a row** (and **Add under this row** inside a row that
+  opens) with a box for each field marked `edit`, and `delete` offers **Remove** with
+  a confirmation. A bare `readonly` locks both. The block says how a new row's id is
+  made with `"idFormat": "j-{field:title}-{time}"` beside `fields` (parts: `{n}`,
+  `{n:3}`, `{time}`, `{date}`, `{epoch}`, `{uuid}`, `{field:NAME}`, `{parent}`, at
+  most one number part), or with `"idPattern": "^[a-z0-9-]+$"` for an id the reader
+  types. Each act is kept first as an entry, `{"$add":[{"pick": id, "under": parent id,
+  "row": values}],"ts": …}` or `{"$delete":[{"pick": id, "was": the whole row}],"ts": …}`,
+  and a host applies it. The reference renderer does not build the controls: it draws
+  the view with one quiet line saying so, and keeps those entries as written.
 
   ````markdown
   > [!module|desk] Garden desk

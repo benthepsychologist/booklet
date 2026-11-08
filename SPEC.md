@@ -672,7 +672,7 @@ With a data block `requests` (a list of rows with an `id` and a `title`), each r
 
 A draft being typed shows over all three, as drafts do. On a question that adds, the row's kept answers are listed under it, newest first, with their times. The third state is also what a refused act looks like: the data changed after the page was drawn, so `was` no longer matches, whatever applies the entries refuses, and nothing the reader wrote is removed. A renderer may draw an in-place question as its plain value until the reader chooses to change it.
 
-**What applies an entry is outside the format.** The format says what is kept and what it means. Applying it is a host's work: it applies each entry once, an in-place act only when the data's value still equals `was`, an adding act as a new item, and lets the outcome reach the reader through the data. `docs/hosting.md` says how.
+**What applies an entry is outside the format.** The format says what is kept and what it means. Applying it is a host's work: it applies each entry once, an in-place act only when the data's value still equals `was`, an adding act as a new item, a `$add` act as a new row and a `$delete` act as a removed row (below, "Adding a row" and "Removing a row"), and lets the outcome reach the reader through the data. `docs/hosting.md` says how.
 
 ### Editing a field in place
 
@@ -682,9 +682,45 @@ A field of a data block can be marked editable (section 7, "Data: rows a generat
 - **What is kept.** One pair in a kept entry, keyed by the field's name: `{ "pick": the row's id, "a": the new value, "was": the value before }`, as for an in-place question above. The entry is that of the activity that holds the query drawing the field, and that activity must keep entries (`repeat`); in any other activity the field is drawn read-only, and the linter warns. The entry's `ts` is written to the whole second, as in the example above, and moved to the next second no entry of the activity has taken. A box left with the value it began with keeps nothing, and a `number` box emptied and kept is `"a": null`, with `was` the old value. A `number` box whose text is not a finite number keeps nothing: it stays open with the reader's text and says so in an alert ("That is not a number, so nothing is kept. Correct the number to keep it."), Esc leaves the value as it was, and leaving the screen with the box in that state keeps nothing and says so in a short notice. A kept change is announced politely ("Change kept."), and the mark that says an act is waiting is the button's description.
 - **Where a field is drawn read-only.** An `edit` field is also drawn read-only in an activity that keeps one entry a day (`repeat daily`), because an act never merges into a day's entry and the page's Finalize never re-times or adds to an entry that holds acts. A field whose row value is a list is drawn as any view draws a list (comma separated) and is read-only: a list is added to, not edited in place. If a row leaves the data while its box is open, the reader's words are kept as an act at once, so nothing stays pending unseen.
 - **An `edit` mark applies in the rows that carry the field,** as a question is asked only of the rows that carry its field: a row with no such key draws a plain cell.
-- **A field with no `edit` is read-only.** The data block is never changed by the reader. A query's `readonly` key (section 6) makes fields read-only in one view that other views leave editable.
+- **A field with no `edit` is read-only.** Only a field the data block marks `edit` is changed in place. A query's `readonly` key (section 6) makes fields read-only in one view that other views leave editable.
 - **A field that a question also names is the question.** When a question asked for each row has the field's id, the question is drawn and `edit` is not used.
 - The display states above hold for an edited field as for an in-place question.
+
+### Adding a row
+
+A reader can add a row to a data block (section 7, "Data: rows a generator wrote"), and a query offers it with the key `add` (section 6). The row is a new act, kept like the others as an entry of the activity; the data is changed afterwards, by whatever applies the entry.
+
+- **How it is offered.** A view whose query says `add` draws an **Add a row** button under the view, which adds a top row, and **Add under this row** inside a row that opens (section 6, "Rows that open"), which adds a child row of that row. A bare `readonly` on the query locks both, as it locks every field the view draws. Like an edited field, `add` needs the query's activity to keep entries (`repeat`); in any other activity, and in `repeat daily`, it is not drawn, and the linter warns.
+- **The form.** Pressing the button opens a form: inline under the view, or inside the row for Add under this row. It has one box for each field the data block marks `edit` (the same boxes, by kind, as editing in place: a line, a larger box, a number, a date, or a list of the options), an id box only when the block declares no `idFormat` (section 7, "The id of a new row"), **Add** and **Cancel**. A field not marked `edit` is not asked for and is left out of the new row. Esc cancels. A `number` box whose text is not a finite number keeps nothing and says so in an alert, as editing does. A form with every box empty still adds a row if the id can be made: a row may be added with only an id.
+- **The id is made when the reader presses Add,** by the block's `idFormat`, or is the text typed in the id box. If it cannot be made or typed, nothing is kept and the form says why in words: a part of the id that comes from a field whose box is empty ("Give it a name first.", with the field's label in place of "name"), an id that clashes with a row of the block or with an add still waiting ("A row with that id exists. Add a part to the id format that tells rows apart (a number, a time or a UUID)."), an id typed that does not follow the block's `idPattern`, an `idFormat` that is not valid. An id never changes after it is made.
+- **What is kept.** One entry of the activity that holds the query, written first, under the reserved key `$add`: a list with one pair, `{ "pick": the new row's id, "under": the parent row's id, "row": the values }`.
+
+  ```json
+  {"$add":[{"pick":"j-weed-the-beds-20261108104200","under":"p-orchard","row":{"title":"Weed the beds","stage":"planning"}}],"ts":"2026-11-08T10:42:00Z"}
+  ```
+
+  `pick` is the id as a string (as a number when the block's `idFormat` is a bare `{n}`). `under` is the id of the parent row, and is left out for a top row. `row` holds the values of the fields the form asked for, keyed by field name, in the order the data block declares its fields; the `id` is not in it. A box left empty is left out of `row`, so an empty form keeps `"row": {}`; a `number` box is kept as a number, a choice as its option's words. Exactly one pair, one entry for each Add. The `ts` is to the whole second and moved to the next free second, as for an edit. The entry is never removed, and the page's Finalize never re-times or adds to an entry that holds it.
+- **What is drawn while it waits.** From the entries and the data: an add whose id the data does not hold yet is drawn from its entry, where it will land (after the last of its parent's rows, or of the top rows), with the fields it was given, and marked "sent, waiting". Once the data holds a row with that id it is drawn from the data, plain, and never twice, whether or not the host pruned the entry. A pending add under a parent the data no longer holds is not drawn.
+- **A row that has left the data keeps its pairs, undrawn,** as a pick taken back does (section 5, "A question asked for each pick").
+- **What a host does.** It applies each `$add` entry once. If the data already holds a row with the `pick` as its `id`, at any depth, it adds nothing and says nothing: the entry has been applied. Otherwise it adds `row`, with `"id": pick` first, at the end of the list of rows it belongs to: the block's own list for a top row, or, under a parent, the list of the row whose `id` is `under`. The parent is found at any depth; none ("That row is gone."), or more than one ("More than one row has that id."), refuses. The parent's list is its only field that holds a list of rows; none or several refuses ("Cannot tell where the new row goes under this one."). So a parent that has no rows yet cannot take its first child in this release, whatever applies the entry. The new row is written in the layout of the row before it, and everything else in the data stays as it was. A refusal writes nothing, says why in words and leaves the entry. `docs/hosting.md` says how.
+- **A refusal is told once.** The data is not changed by a refused act, and the outcome is not stored in the file: after the booklet is opened again, an add that was refused is drawn as "sent, waiting".
+
+### Removing a row
+
+A reader can remove a row from a data block, and a query offers it with the key `delete` (section 6). Removing is the reader's choice, kept in the entries like every other act; nothing is lost, because the entry holds the whole row.
+
+- **How it is offered.** A view whose query says `delete` draws a **Remove** button on each row. A bare `readonly` locks it. Like `add`, it needs the query's activity to keep entries (`repeat`); in any other activity, and in `repeat daily`, it is not drawn, and the linter warns.
+- **A confirmation first.** The first press changes the button to a question, "Remove this row and the N rows under it?" (or "Remove this row?" for a row with nothing under it), with **Remove** and **Cancel**. Esc cancels. Nothing is kept on the first press. The question is read out politely, as other alerts are.
+- **What is kept.** One entry, written first, under the reserved key `$delete`: a list with one pair, `{ "pick": the row's id, "was": the whole row }`. `was` is the row as it was in the data when the reader pressed Remove: its own fields, `id` included, and the rows under it, as parsed JSON.
+
+  ```json
+  {"$delete":[{"pick":"j-prune","was":{"id":"j-prune","title":"Prune the apple trees","stage":"growing","jobs":[{"id":"j-prune-1","title":"Buy shears"}]}}],"ts":"2026-11-08T10:43:10Z"}
+  ```
+
+  The entry is a complete record of what was removed, so a removed row can be added back from it. The rows under a row go with it. The entry is never removed, and the page's Finalize never re-times or adds to it. The `ts` is as for `$add`.
+- **What is drawn while it waits.** The row stays, marked "removing, waiting", until the data no longer holds it, and then it is gone. A removal the host refused leaves the row drawn with "You asked to remove this; it changed since." A refusal is told once, as for an add: after the booklet is opened again a refused removal is drawn as "removing, waiting".
+- **A row that has left the data keeps its pairs, undrawn.** A `$delete` entry for a row is also the record that it was removed.
+- **What a host does.** It applies each `$delete` entry once. It finds the row whose `id` is `pick`, at any depth. None: the row is already gone, nothing is removed and nothing is said (applied already). More than one: it refuses. If the row, as parsed JSON, is deeply equal to `was` (key order ignored, values and their types exact) it removes the row, its comma and its own line or lines, and nothing else. If it is not equal it refuses, "Changed since you drew it.", so that a removal never loses a change made after the reader drew the row. Removing the only row of a list leaves an empty list. A refusal writes nothing, says why in words and leaves the entry. `docs/hosting.md` says how.
 
 ### Words the reader wrote before
 
@@ -955,7 +991,7 @@ Obsidian draws the diagram natively at the embed. On GitHub the embed line shows
 
 ### Queries: showing kept entries and data
 
-A `booklet query` block, placed in an activity's prose, shows what the reader has kept elsewhere in the same module, or the rows of a data block (section 7). It is read-only and takes no answer.
+A `booklet query` block, placed in an activity's prose, shows what the reader has kept elsewhere in the same module, or the rows of a data block (section 7). It takes no answer; the acts its keys `readonly`, `add` and `delete` offer on a data block are kept as entries (section 5), and the query itself changes nothing.
 
 ```booklet query
 from: log
@@ -1005,9 +1041,9 @@ So rows whose fields are already called `label`, `value` and so on need only `fr
 
 | `as:` | draws | reads |
 | --- | --- | --- |
-| `cards` | one card per row: a kept entry is a dated card; a data block's row is a card led by its label, its other fields as lines; a row with children opens to cards inside it | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent`, `link`, `icon`, `readonly` |
-| `table` | one row per row, one column per field; a row with children opens to indented rows in the same columns | `fields`, `group`, `limit`, `parent`, `badge`, `tone`, `link`, `icon`, `readonly` |
-| `list` | one line per row: badge, label, the other fields, value; the note beneath | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent`, `link`, `icon`, `readonly` |
+| `cards` | one card per row: a kept entry is a dated card; a data block's row is a card led by its label, its other fields as lines; a row with children opens to cards inside it | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent`, `link`, `icon`, `readonly`, `add`, `delete` |
+| `table` | one row per row, one column per field; a row with children opens to indented rows in the same columns | `fields`, `group`, `limit`, `parent`, `badge`, `tone`, `link`, `icon`, `readonly`, `add`, `delete` |
+| `list` | one line per row: badge, label, the other fields, value; the note beneath | `label`, `value`, `note`, `badge`, `tone`, `fields`, `group`, `limit`, `parent`, `link`, `icon`, `readonly`, `add`, `delete` |
 | `tiles` | one tile per row: a big value over a label | `label`, `value`, `note`, `tone`, `group`, `limit`, `link`, `icon`, `readonly` |
 | `bars` | one bar per row: a label and a length | `label`, `value`, `tone`, `limit`, `readonly` |
 | `line` | one line per field, across the rows in order | `label`, `value`, `fields`, `limit`, `readonly` |
@@ -1028,6 +1064,7 @@ So rows whose fields are already called `label`, `value` and so on need only `fr
 - **An answer whose shape is not its kind's** (section 8) is left out of its row.
 - **A question asked for each row** (`each:` over a data block, section 5, "A question asked for each row") is drawn in the row's open part. Naming its id in a query's `fields:` draws it in that column (a table's column, a list's extra, a card's line) instead. A name in `fields:` that is a question's id is the question, and a question is asked only of rows that carry a field with its id (of every row when none does).
 - `readonly` makes what a view draws read-only. Written bare (`readonly` alone on its line, or `readonly:` with nothing after it), every field the view draws is read-only. Written `readonly: title, due`, just those fields are. Every view reads it, as the three that nest read `parent:`, and it is off by default. It lives on the query and not in the data, so two views of the same rows can differ: a table whose fields can be edited and a roundup beside it that cannot. It changes nothing in the file.
+- `add` and `delete` offer the reader a row to add and a row to remove (section 5, "Adding a row" and "Removing a row"). Each is written bare: `add` alone on its line, or `add:` with nothing after it, like a bare `readonly`; anything written after the key is ignored and reported, and the linter reports an error. `table`, `cards` and `list` read them, the three views that draw rows that open; on `tiles`, `bars` and `line` they do nothing, and the linter warns. `add` draws an **Add a row** button under the view and **Add under this row** inside a row that opens; `delete` draws **Remove** on each row. A bare `readonly` locks both, as it locks every field the view draws; `readonly: a, b`, a list of fields, does not. Like an edited field, both need the query's activity to keep entries (`repeat`); in any other activity, and in `repeat daily`, they are not drawn, and the linter warns. They are off by default and live on the query, so two views of the same rows can differ. Over kept entries they do nothing (the linter warns): they act on the rows of a data block. The data is changed by whatever applies the entries they keep, never by the view.
 - Values are plain text: nothing in a data block is read as Markdown or HTML. A line break and a blank line in a value are kept, so a long text is drawn in its paragraphs.
 - A query that sets a key its view does not read is not an error; the linter says so.
 
@@ -1060,7 +1097,7 @@ A query that names a data block in another module, or an `as:` that is not one o
 1. A view is a way to draw rows. It reads the shared roles and takes no key of its own.
 2. A new role must mean the same thing in every view that draws it, and two real pages must need it.
 3. A look that styling, density, or the shaping of rows by whatever wrote the file can give is never a new view or key.
-4. A reader may open, close, sort and filter what is on screen, and none of it is ever put in the file. Anything that changes the file or sends something elsewhere is not a view's business.
+4. A reader may open, close, sort and filter what is on screen, and none of it is ever put in the file. Anything that changes the file or sends something elsewhere is not a view's business. A view may offer the reader an act (`edit`, `add`, `delete`); the act is kept as an entry (section 5), and what changes the data is whatever applies the entry.
 
 ### Rows that open
 
@@ -1241,7 +1278,8 @@ A report or a dashboard page carries its numbers as a data block: a fenced block
 - **A field's label is a string, or an object** with `label` and, optionally, `edit` and `options`:
 
   ```json
-  { "fields": { "title": { "label": "Name", "edit": "text" },
+  { "idFormat": "j-{field:title}-{time}",
+    "fields": { "title": { "label": "Name", "edit": "text" },
                 "stage": { "label": "Stage", "edit": "choice", "options": ["planning", "growing", "done"] },
                 "due":   { "label": "Due", "edit": "date" },
                 "kind":  "Kind" },
@@ -1256,16 +1294,60 @@ A report or a dashboard page carries its numbers as a data block: a fenced block
   | `date` | a date box (`YYYY-MM-DD`) | not used |
   | `choice` | a list of the options | the words to pick from, required |
 
-  A field with a string for a label, or an object with no `edit`, is read-only. `edit` marks a field the reader may change in place (section 5, "Editing a field in place"); it adds nothing to a query, and a query's `readonly` (section 6) can lock it in one view. The data block is never changed by the reader, whatever `edit` says.
+  A field with a string for a label, or an object with no `edit`, is read-only. `edit` marks a field the reader may change in place (section 5, "Editing a field in place"); it adds nothing to a query, and a query's `readonly` (section 6) can lock it in one view.
 - It lives where a widget's data lives: inside its module's fence (and is that module's), or in the data section at the end (shared by every module).
 - Its id may not also be the id of an activity or a question in the same module, because a query reads by id and could not tell them apart.
-- A data block belongs to whoever wrote the file. A reader never changes it, it is not a record, and a renderer writes it back exactly as it found it.
+- **What the reader may change.** A reader changes a data block only where the booklet says so: a field marked `edit` (changed in place), a query with `add` (a new row), a query with `delete` (a removed row). A data block that marks nothing is read-only, and there is no mark on the block itself: what a reader may change is decided where it is drawn, by `edit` on a field and by `readonly` on a query. This holds for a block in its fence and for one read from a file alike. The block is not the reader's record. The record is the entries (section 8), which stay: each change is kept there first, and the data is changed afterwards, by whatever applies the entry (section 5). A renderer that saves the booklet writes a data block back exactly as it found it, unless it is applying one of the reader's acts to it.
 - Nothing is computed from it. Whatever wrote the file has already ordered, counted and filtered the rows; a renderer draws them. Draw them with a `booklet query` (section 6). The one exception is a summary of kept entries (`summary: on`, section 6), which is for kept entries only and never for a data block.
 - **A row's `id`** names it where something has to be said about one row: a row's place in a tree (`parent:`), and a question asked for each row (section 5). It is unique among the rows of a block, at every depth; when two share one, the first is used.
 
+### The id of a new row
+
+A data block can say how the id of a row the reader adds is made, with two optional keys beside `fields`, in the fence or, for a block that names a file ("Rows from a file", below), in the file's object. The fence's value wins, as it does for `fields`. A file whose found value is a plain list can hold them only in the fence.
+
+````markdown
+```booklet query
+from: plots
+as: table
+fields: title, stage
+add
+delete
+```
+````
+
+With the data block of the example in "Data: rows a generator wrote", above (its `idFormat` is `j-{field:title}-{time}`), the two acts the reader can keep are an Add and a Remove:
+
+```json
+{"$add":[{"pick":"j-weed-the-beds-20261108104200","row":{"title":"Weed the beds","stage":"planning"}}],"ts":"2026-11-08T10:42:00Z"}
+{"$delete":[{"pick":"j-prune","was":{"id":"j-prune","title":"Prune the apple trees","stage":"growing","due":"2026-11-20","kind":"Job"}}],"ts":"2026-11-08T10:43:10Z"}
+```
+
+- **`idFormat`** is a string of literal text and parts in braces: `"ID-{field:title}-{uuid}-{time}"`. `{{` and `}}` are a literal brace. The parts, in any order:
+
+  | part | makes |
+  | --- | --- |
+  | `{n}` | the next whole number |
+  | `{n:3}` | the next whole number, zero-padded to 3 digits (any width from 1 to 9) |
+  | `{time}` | UTC time, `YYYYMMDDhhmmss` |
+  | `{date}` | UTC date, `YYYYMMDD` |
+  | `{epoch}` | seconds since 1970, as digits |
+  | `{uuid}` | a random version-4 UUID, in lowercase |
+  | `{field:NAME}` | the slug of the new row's value in the field NAME |
+  | `{parent}` | the parent row's id; empty for a top row |
+
+- **The slug** of a value is the value in lowercase, with every run of characters other than letters (a to z, once lowercased, with no accents kept), digits and hyphens made one hyphen, and the hyphens at either end dropped. A slug that is empty refuses the add: "Give it a name first." (the field's label in place of "name").
+- **`{n}` counts** over every id in the block, at every depth, and over the ids of adds still waiting in the entries. An id matches the format when the format, turned into a matcher, fits the whole id: a literal is itself; `{n}` and `{n:W}` are digits; `{time}`, `{date}` and `{epoch}` are digits of their length (an epoch, one or more); `{uuid}` is a UUID; `{field:NAME}` and `{parent}` are any text. The next number is the highest number found in a matching id, plus one; with none, 1. `{n:3}` pads to 3 digits and a larger number is written in full.
+- **One number part at most.** A format has at most one `{n}` or `{n:W}`; with two, which would have to be the same number written twice, the format is not valid (below).
+- **A format that is only `{n}`** makes ids that are JSON numbers, in the rows and in `pick`; every other format makes ids that are JSON strings (`{n:3}` among them, which has zeros). A row already in the block may write its id as a number or as a string: an id is read as text, for counting and for clashes.
+- **`{time}`, `{date}` and `{epoch}`** are taken at the moment the reader presses Add. If the id made already exists, the add is refused with the clash message; except that `{time}` and `{epoch}` first try the next second, up to 60 seconds on, so two adds in one second both succeed.
+- **A clash** (the id made equals one in the block or one waiting) refuses the add: "A row with that id exists. Add a part to the id format that tells rows apart (a number, a time or a UUID)."
+- **A format that is not valid** (a part it does not know, a `{` with no `}`, a `}` that closes nothing, a width that is not a whole number from 1 to 9, `{field:}` with no name, two number parts, or an empty format) is an error in the linter, and a view draws no Add control and one quiet line saying the id format is not valid. A `{field:NAME}` that names a field the block does not declare is a warning: the part is always empty, so every add is refused.
+- **`idPattern`** is a regular expression, written as the host's language reads one (a JavaScript `RegExp` for the reference writers), for example `"^[a-z0-9-]+$"`. It is used only when the block declares no `idFormat`: the form then has an id box, and the id typed must match the pattern if the block declares one, and must not clash. With neither an `idFormat` nor an `idPattern`, the id box takes any text that is not empty and has no line break. A pattern that is not a regular expression is an error in the linter; a pattern beside an `idFormat` is a warning, because it is not used.
+- **An id never changes** after it is made.
+
 ### Rows from a file
 
-A data block may take its rows from a JSON file beside the booklet, in place of its fence. The booklet says how to draw them; the file holds what a generator wrote and rewrites.
+A data block may take its rows from a JSON file beside the booklet, in place of its fence. The booklet says how to draw them and what the reader may change; the file holds what a generator wrote and rewrites, and what the reader's acts are applied to.
 
 ````markdown
 ```booklet data dashboard.json plots
@@ -1280,14 +1362,14 @@ A data block may take its rows from a JSON file beside the booklet, in place of 
 
 The fence line is `booklet data`, then the file's name, then optionally a **key path**. The first block's rows are the list found at the key `plots` of `dashboard.json`. The second's are found at `inbox`, then `requests`, and its labels are declared in the booklet. Several blocks may name one file, which is read once.
 
-- **The fence** is empty, or holds only `fields`. A key the fence's `fields` declares takes the fence's label over the file's.
+- **The fence** is empty, or holds only `fields`, `idFormat` and `idPattern`. A key the fence's `fields` declares takes the fence's label over the file's, and the fence's `idFormat` and `idPattern` win over the file's ("The id of a new row", above).
 - **The file name** follows the rule an image's does (section 6): letters, digits, `_`, `.`, `/` and `-`, at most 200 characters, relative to the booklet's own folder, with no part that is empty or begins with a dot (so no `..`, no `./` and no leading `/`), and ending `.json`. A name that does not follow it is not read, and the linter reports an error.
 - **The key path** is object keys joined by dots, each key of letters, digits, `_` and `-`. A path only ever steps into an object's keys, never into a list (no index, no position). With none, the whole file is read.
 - **What is found** is a list of rows, or an object with `rows` and optionally `fields`: what a fence holds. The rows follow the rules of this section, nested rows included.
-- **Every other rule of a data block stays.** A reader never changes it, it is not a record, nothing is computed from it, and a renderer writes the fence back exactly as it found it.
+- **Every other rule of a data block stays.** The reader changes it only where the booklet says so ("What the reader may change", above), the file as much as the fence; it is not a record; nothing is computed from it; and a renderer that saves the booklet writes the fence back exactly as it found it. Whatever changes the file keeps every other byte of it as it was.
 - **When the file cannot be read** (it is missing, is not JSON, holds nothing at the path, is larger than a reader reads, or the booklet was not opened in a way that lets the reader read it, below), a view of the block draws a quiet box that names the file and says why, as an image that is not shown does (section 6). The rest of the booklet works.
 - **Which booklets read a file.** A reader reads the file of a booklet only where it holds the booklet's own folder or store. The reference renderer reads it for a booklet it opened from its host's store, or from its default folder on a page that declares no store, and never for a booklet opened from a file on the reader's disk (section 12). A reader that holds the note's folder, such as the Obsidian plugin reading its vault, reads it from there (the plugin's own repository lists what it draws so far).
-- **Reading it again.** A reader may read the file again when the page comes back into view, and when a host says it changed (`docs/hosting.md`). It keeps the rows the reader has opened, the sort and the filter, and the place on the page across the refresh. Data is not the reader's work, so there is nothing to merge.
+- **Reading it again.** A reader may read the file again when the page comes back into view, and when a host says it changed (`docs/hosting.md`). It keeps the rows the reader has opened, the sort and the filter, and the place on the page across the refresh. What the reader changed is in the entries, which a refresh never touches, and the display states say what is still waiting (section 5), so there is nothing to merge.
 - **In Obsidian without the plugin,** and on GitHub, the block is an empty code block whose first line names the file.
 
 ### A theme: how the booklet would like to look
@@ -1401,6 +1483,7 @@ Records are JSON, written by the app, one fence per record, each parsed on its o
 
 - `answers` holds once-answered questions (a `listen` among them, section 5), keyed by question id within the module whose records line it sits under, so no activity prefix is needed. Records sit in the records section at the end, grouped by module under `> [!records|<module>]` lines, never inside a module's fence (section 3).
 - `entries <activity>` holds a `repeat` activity's kept entries, each with a `ts`, identified by timestamp. `draft <activity>` holds what is typed and not yet kept. Each names the activity by the id the file gives it, in the module whose records line it sits under.
+- **Acts that change a data block** are entries too. An entry may hold `$add` or `$delete`, each a list with one pair (section 5, "Adding a row" and "Removing a row"): `{ "$add": [ { "pick": the new row's id, "under": the parent's id, "row": the values } ], "ts": … }` and `{ "$delete": [ { "pick": the removed row's id, "was": the whole row } ], "ts": … }`. The two keys are reserved. A `$` cannot begin a question's or an activity's id (section 4), so they cannot clash with an answer, and a data field with such a name is not supported. They are allowed as keys of an entry and nowhere else: not in `answers`, not in a `draft` (the linter reports an error), and an entry holds one of them. The page's Finalize never re-times or adds to an entry that holds one. A writer keeps them as written, like any record the reader did not change; an entry with a `$add` or `$delete` that does not have this shape is kept as written and not applied.
 - **A day** is the calendar date of an entry's `ts` in the reader's own time zone, and "today" is the reader's date at the moment the page is drawn. `repeat daily` (section 3) keeps one entry a day by this day, and a span of days, `limit: 7 days` (section 6), is counted in these days.
 - A choice is stored as the option's position from 1, a scale as the anchor's number. Words are shown by the renderer from the file's own lists. A string in a choice or multi answer is the reader's own option (`open`, section 5): it is shown as it was written.
 
@@ -1565,7 +1648,7 @@ A reader may also offer conveniences that this document does not define and that
 - "draw the title once", which leaves out an activity's first heading when it repeats the activity's title above it;
 - **Continue**, which offers to take the reader to the first `listen` not done or the first question not answered that comes after her place, whichever the booklet reaches first. Her place is the furthest page she has reached, where the renderer remembers that on the device, and otherwise the last `listen` done or question answered in booklet order. Nothing before her place is offered, so a question she passed over is never offered again and Continue never holds her back; with nothing left after her place it offers nothing. Without a remembered place it is worked out from the records, so it works on every device and stores nothing new. **The reference renderer does not do this yet.**
 
-A conforming writer must: emit front matter with the current marker, `booklet: "0.19"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read exactly as written, nothing re-sorted and nothing respaced, unless the reader changed it, and change only what the reader changed, leaving design written after the records region where it is (section 8); write a `listen` answer back as it read it, changing `pos` only when the reader's playing moved it and `done` only as section 5 says or when the reader changed it, and writing `pos` in whole seconds; keep `media-from` as it found it; write a `booklet data` block back exactly as it found it; and never put a data block a `![[…]]` embed points to inside `%%`.
+A conforming writer must: emit front matter with the current marker, `booklet: "0.19"` (section 2); keep module ids, activity ids and question ids stable; write the whole records section inside `%%` … `%%`; write back every record it read exactly as written, nothing re-sorted and nothing respaced, unless the reader changed it, and change only what the reader changed, leaving design written after the records region where it is (section 8); write a `listen` answer back as it read it, changing `pos` only when the reader's playing moved it and `done` only as section 5 says or when the reader changed it, and writing `pos` in whole seconds; keep `media-from` as it found it; write a `booklet data` block back exactly as it found it, except where it is applying one of the reader's acts to it (section 5), and then change only that row and keep every other byte; and never put a data block a `![[…]]` embed points to inside `%%`.
 
 `lint-booklet.py` in this repository checks `booklet: "0.19"` files, and is the reference implementation of "is this file valid." A file with another `0.x` marker is checked as 0.19 and gets one warning ("this file says booklet: 0.9; the current format is 0.19, and it is checked as 0.19"); a file with no marker, or a marker that is not a `0.x` version, is an error.
 
@@ -1581,6 +1664,7 @@ This is a young format, and the reference renderer does not yet do everything th
 - **Reading `sync`**, the record of where a file is kept (section 8). A reader keeps the block as written; it does not read it.
 - **Showing images to a booklet that was not opened from the host's store or the default folder** (section 6). The reference renderer reads images only from the store its host declares, or from its default folder on a page that declares none, and only for a booklet opened from it. For any other booklet (one from a file, one from the registry, or one a host handed over on a page with no store) it draws the alt text in a quiet box that says the image is not shown, with the address as text beneath. A way to give such a booklet its images, such as a folder of images picked by hand, is not built.
 - **Summaries** (`summary: on`, section 6). The reference renderer reads the key and shows a line saying summaries are not yet supported in place of the view; it does not work out the rows.
+- **Adding a row and removing one** (section 5, "Adding a row" and "Removing a row"; section 6, `add` and `delete`; section 7, "The id of a new row"). The reference renderer reads the two bare keys, draws the view as it always did with one quiet line beneath it that says adding and removing rows is not yet supported by this reader, and offers no Add or Remove, no form and no confirmation; it makes no id. It keeps the `$add` and `$delete` entries it finds in a booklet's records exactly as written, and a save adds nothing to them. A reader that holds the data (the Obsidian plugin reading its vault, a host with a script) is what builds them (its own repository lists what it draws so far).
 - **Roles on kept-entry cards** (section 6): `label`, `value`, `note`, `badge` and `tone` are not drawn on cards over kept entries.
 - **Heading links in the booklet's opening** (section 3). The opening belongs to no module, so a `[[#Heading]]` link there leads only to a heading among the activities outside every module fence, and is otherwise drawn as plain words.
 - **Footnotes in the booklet's opening and in a title** (sections 3 and 4). The reference renderer leaves a mark there out and draws no note.
