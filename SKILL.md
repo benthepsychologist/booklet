@@ -1034,11 +1034,13 @@ between paragraphs for a new one. Section 4 says what a heading does.
   a confirmation. A bare `readonly` locks both. The block says how a new row's id is
   made with `"idFormat": "j-{field:title}-{time}"` beside `fields` (parts: `{n}`,
   `{n:3}`, `{time}`, `{date}`, `{epoch}`, `{uuid}`, `{field:NAME}`, `{parent}`, at
-  most one number part), or with `"idPattern": "^[a-z0-9-]+$"` for an id the reader
-  types. Each act is kept first as an entry, `{"$add":[{"pick": id, "under": parent id,
-  "row": values}],"ts": …}` or `{"$delete":[{"pick": id, "was": the whole row}],"ts": …}`,
+  most one number part, and a number part beside a hyphen or a letter, never
+  touching a text part or digits), or with `"idPattern": "^[a-z0-9-]+$"` for an id the reader
+  types. Each act is kept first as an entry, `{"$add":[{"in": data block id, "pick": id, "under": parent id,
+  "row": values}],"ts": …}` or `{"$delete":[{"in": data block id, "pick": id, "was": the whole row}],"ts": …}`,
   and a host applies it. The reference renderer does not build the controls: it draws
-  the view with one quiet line saying so, and keeps those entries as written.
+  the view with one quiet line saying so, where the controls would be, and keeps
+  those entries as written.
 
   ````markdown
   > [!module|desk] Garden desk
