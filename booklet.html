@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-WHT5f670m1HieYbhNvYrHIN0rfd7vGa3eaInZjXxcaQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-/Jr/w4PG/J+RuyTC8KljkpmEpfmgG3qXXrNSXPnb2NE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -6663,7 +6663,7 @@ function entryCard(e,type,onDelete){const u=strings("ui");
       el("button",{type:"button",class:"small danger",onclick:onDelete},u.yes),el("button",{type:"button",class:"small",onclick:()=>{foot.innerHTML="";foot.append(btn);}},u.no)));});
     foot.append(btn);card.append(foot);}
   return card;}
-function chipStrip(id){const u=strings("ui");const list=[...keptFor(id)].sort((a,b)=>b.ts.localeCompare(a.ts));
+function chipStrip(id){const u=strings("ui");const list=keptFor(id).filter(e=>!isActEntry(e)).sort((a,b)=>b.ts.localeCompare(a.ts));
   const wrap=el("div",{});
   STRIPS.set(id,wrap);
   if(!list.length){wrap.append(el("p",{class:"chips-empty"},u.noEarlier));return wrap;}
@@ -6683,6 +6683,8 @@ const anyFilled=(e,id)=>{const fu=new Map(id?blocksOf(id).filter(q=>q.each).map(
     return !q||wrongShape(q,e[k],widgetFor(q))||heldPairs(q,e).some(p=>holdsSomething(p.a));});};
 const draftFor=id=>{DRAFTS.custom=DRAFTS.custom||nullMap();return hasOwn(DRAFTS.custom,id)?DRAFTS.custom[id]:(DRAFTS.custom[id]=nullMap());};
 const keptFor=id=>{STATE.entries=STATE.entries||{};STATE.entries[id]=STATE.entries[id]||[];return STATE.entries[id];};
+/* an entry that keeps an act on a data block (`$add` or `$delete`, SPEC.md section 8): it is the record of the act, and no view over kept entries draws it */
+const isActEntry=e=>!!e&&typeof e==="object"&&(Object.prototype.hasOwnProperty.call(e,"$add")||Object.prototype.hasOwnProperty.call(e,"$delete"));
 /* where an activity's answers live: a repeating one keeps a draft, any other the
    booklet's answers, keyed by question id as the file's own `answers` record is */
 const answersFor=id=>activityOf(id).kind==="entry"?draftFor(id):answersIn(scopeOfAddr(id));
@@ -6715,8 +6717,11 @@ function drawRow(b,draft,activityId,dc){const box=el("div",{class:"pblock row"})
     box.append(cell);});
   return box;}
 /* A query that says `add` or `delete` (0.20) offers the reader a row to add and a row to remove. The reference renderer builds neither (SPEC.md section 13):
-   the view is drawn as it always was, with this one quiet line beneath it, and nothing is kept or changed. */
-const addDeleteNote=v=>v&&(v.add||v.delete)?[el("p",{class:"hint dv-quiet dv-add-delete"},strings("query").addDeleteLater)]:[];
+   the view is drawn as it always was, with this one quiet line beneath it, and nothing is kept or changed. The line stands only where the controls
+   would be drawn: beneath a table, cards or list over a data block, in a `repeat` activity that is not daily, when a bare `readonly` does not lock them.
+   `acts` is the activity's actsConfig (its `keeps` is true for `repeat` and false for `repeat daily` and for an activity that keeps nothing). */
+const addDeleteNote=(v,acts)=>v&&(v.add||v.delete)&&acts&&acts.keeps&&v.readonly!==true&&["table","cards","list"].includes(v.as||"table")
+  ?[el("p",{class:"hint dv-quiet dv-add-delete"},strings("query").addDeleteLater)]:[];
 /* read-only: what was kept elsewhere in this module; owns no answer key */
 function drawQuery(b,draft,activityId,dc){const box=el("div",{class:"pblock query"});
   const v={...(b.view||{}),fields:b.fields},state=queryView(activityId,b);
@@ -6731,7 +6736,7 @@ function drawQuery(b,draft,activityId,dc){const box=el("div",{class:"pblock quer
   /* a question asked for each pick, named alone in `from:`, has no one value for tiles, bars or a line (SPEC.md section 6) */
   if(b.field&&["tiles","bars","line"].includes(v.as)&&blocksOf(b.from).some(q=>q.id===b.field&&q.each)){
     box.append(el("p",{class:"hint"},strings("dv").eachNotYet));return box;}
-  box.append(...viewNodes(queryReads(b,activityId)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}),...addDeleteNote(v));
+  box.append(...viewNodes(queryReads(b,activityId)?entrySet(b,activityId,v.as||"cards"):none,v,{empty:b.empty||strings("query").empty,state,scope}));
   return box;}
 /* A widget block names a widget; the widget names an engine. The renderer
    knows engines and nothing else, so an activity can carry a body map it
@@ -7456,7 +7461,7 @@ const sameModule=(from,activityId)=>!!holderOf(from)&&scopeOfAddr(from)===scopeO
 const queryReads=(b,activityId)=>sameModule(b.from,activityId)&&(!b.field||blocksOf(b.from).some(x=>x.id===b.field));
 function queryEntries(from,activityId,days){
   if(!sameModule(from,activityId)) return [];
-  return inSpan([...keptFor(from)],days).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
+  return inSpan(keptFor(from).filter(e=>!isActEntry(e)),days).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
 /* `limit: N days` (SPEC.md section 6, a day as section 8 defines it): the entries whose own calendar date, in the reader's time zone,
    is today or one of the N-1 dates before it. Today is taken now, when the page is drawn. An entry whose `ts` will not parse, or
    is later than that moment (even later today), is in no span. No `days` is every entry. */
@@ -9998,7 +10003,7 @@ function drawDataQuery(box,block,v,state,scope,empty,acts){
   const make=()=>{const r=block.file?dataBlockRows(block,scope,()=>paint(true)):{data:block};
     if(block.file){if(live) live.at=r.at;
       else if(r.at){live={box,at:r.at,redraw:()=>paint(true)};DATA_LIVE.add(live);}}
-    return r.data?[...viewNodes(dataSet(r.data),v,{empty,state,scope,acts}),...addDeleteNote(v)]:[el("p",{class:"hint dv-quiet"},r.note)];};
+    return r.data?[...viewNodes(dataSet(r.data),v,{empty,state,scope,acts}),...addDeleteNote(v,acts)]:[el("p",{class:"hint dv-quiet"},r.note)];};
   const FOCUS="input,select,button,summary,textarea";
   function paint(keep){
     if(!keep){box.textContent="";box.append(...make());if(acts) finSync(box);return;}
