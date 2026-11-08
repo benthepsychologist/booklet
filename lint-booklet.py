@@ -216,15 +216,17 @@ def callout_words(kind, s):
     return out
 
 
-# A query's sixteen keys, the six views, and which keys each view draws. A new key or view needs two
+# A query's eighteen keys, the six views, and which keys each view draws. A new key or view needs two
 # real pages that need it (SPEC.md, design rules for views). `from`, `as` and `empty` apply to every view. `parent` (0.19) is
-# read by `table` and `cards` as well as `list`, and `readonly` (0.19) by every view, as `parent` is by the three that nest.
-QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon", "summary", "readonly")
+# read by `table` and `cards` as well as `list`, and `readonly` (0.19) by every view, as `parent` is by the three that nest. `add` and `delete`
+# (0.20) are written bare, like `readonly`, and are read by the three views that draw rows that open.
+QUERY_KEYS = ("from", "as", "fields", "group", "limit", "parent", "empty", "label", "value", "note", "badge", "tone", "link", "icon", "summary", "readonly", "add", "delete")
+BARE_KEYS = ("readonly", "add", "delete")       # the keys that may stand alone on a line
 QUERY_VIEWS = ("cards", "table", "list", "tiles", "bars", "line")
 VIEW_DRAWS = {
-    "cards": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon", "readonly"),
-    "table": ("fields", "group", "limit", "parent", "badge", "tone", "link", "icon", "readonly"),
-    "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon", "readonly"),
+    "cards": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon", "readonly", "add", "delete"),
+    "table": ("fields", "group", "limit", "parent", "badge", "tone", "link", "icon", "readonly", "add", "delete"),
+    "list": ("label", "value", "note", "badge", "tone", "fields", "group", "limit", "parent", "link", "icon", "readonly", "add", "delete"),
     "tiles": ("label", "value", "note", "tone", "group", "limit", "link", "icon", "readonly"),
     "bars": ("label", "value", "tone", "limit", "readonly"),
     "line": ("label", "value", "fields", "limit", "readonly"),
@@ -249,6 +251,7 @@ FIELD_OBJECT_KEYS = ("label", "edit", "options")
 # the file name rule is the images' (section 6), with the extension `.json`: no part empty or begun with a dot (so no `..`)
 DATA_FILE_NAME = re.compile(r'^(?=.{1,200}$)[A-Za-z0-9_./-]+\.json$')
 DATA_KEY_NAME = re.compile(r'^[A-Za-z0-9_-]+$')
+FILE_FENCE_KEYS = {"fields", "idFormat", "idPattern"}     # what the fence of a block that names a file may hold (0.20 added the last two)
 DATA_FILE_BYTES = 5 * 1024 * 1024        # the most a renderer reads of one file (the renderer's LINK_BYTES)
 
 
@@ -335,11 +338,91 @@ def check_field_objects(f, n, bid, fields):
             warn(f, f"{where}: `options` belongs to `edit: choice`, so it is ignored here")
 
 
-def read_data_file(f, n, bid, target, fence, folder):
+# ---- The id format of a data block (SPEC.md section 7, format 0.20): `idFormat` and `idPattern` beside `fields`.
+ID_PLAIN_PARTS = ("time", "date", "epoch", "uuid", "parent")
+
+
+def id_format_problems(fmt):
+    """What is wrong with an `idFormat` string, as a list of phrases that finish "the id format ... ", and the names its `{field:NAME}`
+    parts use. A part is `{n}`, `{n:W}` (W a whole number from 1 to 9), `{time}`, `{date}`, `{epoch}`, `{uuid}`, `{parent}` or
+    `{field:NAME}`; `{{` and `}}` are a literal brace; a format has one number part at most."""
+    bad, fields, numbers, i = [], [], 0, 0
+    while i < len(fmt):
+        c = fmt[i]
+        if c == "{" and fmt[i + 1:i + 2] == "{" or c == "}" and fmt[i + 1:i + 2] == "}":
+            i += 2
+        elif c == "}":
+            bad.append("has a `}` that closes nothing (write `}}` for a literal brace)")
+            i += 1
+        elif c == "{":
+            j = fmt.find("}", i + 1)
+            if j < 0:
+                bad.append("has a `{` with no `}` after it (write `{{` for a literal brace)")
+                break
+            part = fmt[i + 1:j]
+            if part == "n":
+                numbers += 1
+            elif part.startswith("n:"):
+                numbers += 1
+                if not re.fullmatch(r"[1-9]", part[2:]):
+                    bad.append(f"has `{{{part}}}`, but the width of `{{n:W}}` is a whole number from 1 to 9")
+            elif part.startswith("field:"):
+                if part[6:] == "":
+                    bad.append("has `{field:}`, which names no field")
+                else:
+                    fields.append(part[6:])
+            elif part not in ID_PLAIN_PARTS:
+                bad.append(f"has a part `{{{part}}}` it does not know (the parts are n, n:W, time, date, epoch, uuid, field:NAME and parent)")
+            i = j + 1
+        else:
+            i += 1
+    if numbers > 1:
+        bad.append("has more than one number part, `{n}` or `{n:W}`; a format counts with one")
+    return bad, fields
+
+
+def check_id_keys(f, n, bid, fence, found, keys):
+    """`idFormat` and `idPattern` of a data block (SPEC.md section 7). They sit beside `fields`, in the fence or in the found file's object;
+    the fence's value wins, as `fields` does. `fence` is the fence's JSON, `found` the object a file holds at the key path (None for a
+    fence that holds the rows, and for a file that was not read or is a plain list), `keys` the names a field part may use."""
+    where = f"line {n}: the data block ^{bid}" if bid else f"line {n}: the data block"
+    has = lambda k: (isinstance(fence, dict) and k in fence) or (isinstance(found, dict) and k in found)
+    get = lambda k: fence[k] if isinstance(fence, dict) and k in fence else found[k]
+    fmt = pat = None
+    if has("idFormat"):
+        fmt = get("idFormat")
+        if not isinstance(fmt, str):
+            err(f, f"{where}: `idFormat` is a string of literal text and parts in braces (found {json.dumps(fmt)})")
+            fmt = None
+        elif fmt == "":
+            err(f, f"{where}: the id format is empty (write literal text and parts such as `{{n}}`, `{{uuid}}` or `{{field:title}}`)")
+        else:
+            bad, fields = id_format_problems(fmt)
+            for why in bad:
+                err(f, f"{where}: the id format {json.dumps(fmt)} {why}")
+            for name in dict.fromkeys(fields):
+                if name not in keys:
+                    warn(f, f"{where}: the id format {json.dumps(fmt)} uses `{{field:{name}}}`, and the block has no field `{name}`")
+    if has("idPattern"):
+        pat = get("idPattern")
+        if not isinstance(pat, str):
+            err(f, f"{where}: `idPattern` is a string, a regular expression (found {json.dumps(pat)})")
+        else:
+            try:
+                # a JavaScript pattern, which a host reads with RegExp; Python's `re` is the nearest check here, so the one spelling that differs
+                # (a named group, `(?<name>`) is turned into Python's before it is tried
+                re.compile(re.sub(r"\(\?<([A-Za-z_]\w*)>", r"(?P<\1>", pat))
+            except re.error as e:
+                err(f, f"{where}: the `idPattern` {json.dumps(pat)} is not a regular expression ({e})")
+        if fmt is not None or has("idFormat"):
+            warn(f, f"{where}: `idPattern` is not used when an `idFormat` is declared (the id is made from the format, and the form has no id box)")
+
+
+def read_data_file(f, n, bid, target, fence, folder, found=None):
     """A `booklet data <file> [<key.path>]` block (SPEC.md section 7): check the name and the path, the fence (empty, or only
     `fields`), and, when the file is beside the booklet, that it exists, parses and has rows at the path. Returns
     (keys, nums, rows, edits), with every name allowed (`_AnyFields`) when the file could not be read; `edits` is the names of
-    the fields marked editable."""
+    the fields marked editable. `found`, if given, is a dict that gets `obj` (what the file holds at the path) and `keys` when it was read."""
     fence_edits = lambda fl: {k for k, v in fl.items() if isinstance(v, dict) and v.get("edit") in EDIT_KINDS}
     unknown = (_AnyFields(), set(), [], set())
     where = f"line {n}: the data block ^{bid}" if bid else f"line {n}: the data block"
@@ -355,10 +438,10 @@ def read_data_file(f, n, bid, target, fence, folder):
     if path is not None and not all(DATA_KEY_NAME.match(k) for k in path.split(".")):
         err(f, f"line {n}: the key path {path!r} is keys joined by dots (each of letters, digits, _ and -)")
         bad = True
-    if isinstance(fence, dict) and set(fence) - {"fields"}:
-        err(f, f"{where} names a file, so its fence is empty or holds only `fields` (found {', '.join(repr(k) for k in sorted(set(fence) - {'fields'}))}); the rows come from {name}")
+    if isinstance(fence, dict) and set(fence) - FILE_FENCE_KEYS:
+        err(f, f"{where} names a file, so its fence is empty or holds only `fields`, `idFormat` and `idPattern` (found {', '.join(repr(k) for k in sorted(set(fence) - FILE_FENCE_KEYS))}); the rows come from {name}")
     elif not isinstance(fence, dict):
-        err(f, f"{where} names a file, so its fence is empty or holds only `fields`")
+        err(f, f"{where} names a file, so its fence is empty or holds only `fields`, `idFormat` and `idPattern`")
     fence_fields = fence.get("fields", {}) if isinstance(fence, dict) else {}
     if not isinstance(fence_fields, dict) or not all(isinstance(x, (str, dict)) for x in fence_fields.values()):
         err(f, f"{where} has `fields` that is not an object of labels (each a string, or an object with `label`, `edit` and `options`)")
@@ -393,16 +476,62 @@ def read_data_file(f, n, bid, target, fence, folder):
     check_field_objects(f, n, bid, flds)
     flds = {**flds, **fence_fields}
     keys = set(flds) | {k for r in walk_rows(rows) for k in r}
+    if found is not None:
+        found["obj"], found["keys"] = cur, keys
     nums = {k for r in rows for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
     return keys, nums, rows, fence_edits(flds)
+
+
+def act_problems(entry):
+    """What is wrong with the `$add` and `$delete` acts an entry keeps (SPEC.md section 8, format 0.20), as a list of phrases. Each is a
+    list with one pair: `$add` `{pick, under?, row}`, `$delete` `{pick, was}`; `pick` and `under` are a row's id, a string or a number."""
+    bad = []
+    is_id = lambda v: (isinstance(v, str) and v != "") or (isinstance(v, (int, float)) and not isinstance(v, bool))
+    both = "$add" in entry and "$delete" in entry
+    if both:
+        bad.append("an entry keeps one act, `$add` or `$delete`, and this one holds both")
+    for key in ("$add", "$delete"):
+        if key not in entry:
+            continue
+        pairs = entry[key]
+        if not isinstance(pairs, list):
+            bad.append(f"an entry's `{key}` must hold a list with one pair")
+            continue
+        if len(pairs) != 1:
+            bad.append(f"an entry keeps one `{key}` pair, and this one holds {len(pairs)}")
+            continue
+        pair = pairs[0]
+        if not isinstance(pair, dict):
+            bad.append(f"the `{key}` pair must be an object")
+            continue
+        what = "the new row's id" if key == "$add" else "the removed row's id"
+        if "pick" not in pair:
+            bad.append(f"the `{key}` pair has no `pick`, {what}")
+        elif not is_id(pair["pick"]):
+            bad.append(f"the `{key}` pair's `pick` must be {what}, a string or a number, and not empty")
+        if key == "$add":
+            if "under" in pair and not is_id(pair["under"]):
+                bad.append("the `$add` pair's `under` must be the parent row's id, a string or a number")
+            if "row" not in pair:
+                bad.append("the `$add` pair has no `row`, the values of the fields the form asked for")
+            elif not isinstance(pair["row"], dict):
+                bad.append("the `$add` pair's `row` must be an object")
+            elif "id" in pair["row"]:
+                bad.append("the `$add` pair's `row` must not hold the `id`; the `pick` is the id")
+        elif "was" not in pair:
+            bad.append("the `$delete` pair has no `was`, the whole row as it was when the reader pressed Remove")
+        elif not isinstance(pair["was"], dict):
+            bad.append("the `$delete` pair's `was` must be an object")
+    return bad
 
 
 IMPLICIT_ACTIVITY = "(the file)"
 
 
-def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_blocks=None, placed=None):
+def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_blocks=None, placed=None, daily=frozenset()):
     """A `booklet query` block: `key: value` lines, read within its own module. `placed` maps the id of each question of this
-    module that is asked for each row of a data block (`each:`, section 5) to that block's id."""
+    module that is asked for each row of a data block (`each:`, section 5) to that block's id. `daily` is the ids of the `repeat daily`
+    activities in reach."""
     data_blocks = data_blocks or {}
     placed = placed or {}
     s = {}
@@ -410,8 +539,8 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
         ln = raw.strip()
         if not ln:
             continue
-        if ln.lower() == "readonly":              # the one key that may stand bare: every field the view draws is read-only
-            s["readonly"] = ""
+        if ln.lower() in BARE_KEYS:               # a key that stands bare: `readonly` locks every field the view draws; `add` and `delete` offer the acts
+            s[ln.lower()] = ""
             continue
         m = re.match(r'^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$', ln)
         if not m:
@@ -420,6 +549,8 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
         key = m.group(1).lower()
         if key not in QUERY_KEYS:
             err(f, f"line {n + 1 + off}: a query has no setting {key!r} (it takes {', '.join(QUERY_KEYS)})")
+        elif key in ("add", "delete") and m.group(2).strip():
+            err(f, f"line {n + 1 + off}: the query's `{key}` is written bare (`{key}` alone on its line), and not `{key}: {m.group(2).strip()}`; the value is ignored")
         s[key] = m.group(2).strip().strip('"\'')
     if here is None:
         err(f, f"line {n}: a query belongs in an activity's prose")
@@ -546,6 +677,21 @@ def check_query(f, n, code, mod, here, act_info, q_owner, any_module, data_block
                     warn(f, f"line {n}: the query's `as: {view}` has no number in the field {name!r}, so it draws nothing")
                 elif names and name not in names and name == "value" and "value" not in s and "fields" not in s:
                     warn(f, f"line {n}: the query's `as: {view}` reads the field 'value', which the rows never carry (name the field with `value:`)")
+    # `add` and `delete` (section 6) offer a row to add and a row to remove: they act on a data block, and like an edited field they are kept as an
+    # act in an activity's entries, so an activity that keeps none, or keeps one a day, does not draw them (a bare `readonly` locks them too)
+    for key, does in (("add", "adds a row to"), ("delete", "removes a row from")):
+        if key not in s or key in ignored:
+            continue
+        keep = "an added row" if key == "add" else "a removal"
+        if src_data is None:
+            if src_id:
+                warn(f, f"line {n}: the query's `{key}` does nothing here: it {does} a data block, and `from: {src_id}` is kept entries")
+        elif s.get("readonly") == "" or here not in act_info:
+            continue
+        elif not act_info[here][1]:
+            warn(f, f"line {n}: the query's `{key}` is not drawn: this activity keeps no entries (it is not `repeat`) to keep {keep} in, so a renderer does not offer it")
+        elif here in daily:
+            warn(f, f"line {n}: the query's `{key}` is not drawn: this activity is `repeat daily`, and an act never merges into a day's entry, so a renderer does not offer it")
     # a span of days and a summary read kept entries: on a data block, or on one question of an activity that keeps none, they are ignored
     spanning = bool(lim and lim.group(2))
     if (spanning or summing) and (src_data is not None or (src_q is not None and not act_info[src_act][1])):
@@ -1380,6 +1526,7 @@ def check_format(f, text, fm, folder=None):
     mod_ids = {}             # module ids -> line
     note_defs = {}           # scope -> {footnote id: line}
     act_info, q_owner, cur_act, queries, any_module = {}, {}, None, [], False
+    daily_acts = {}                              # module -> the ids of its `repeat daily` activities
     # every question line, for `each:` and `earlier:` (checked once the file is read); `act_seq` numbers the activity lines,
     # so two modules' activities with one id stay apart; `act_keeps` says whether each keeps entries
     q_lines, act_seq, act_keeps, widget_engines = [], 0, {0: False}, {}
@@ -1459,6 +1606,10 @@ def check_format(f, text, fm, folder=None):
             if not isinstance(obj, dict):
                 warn(f, f"line {n}: the `{info}` block holds no object, so it is kept as written and not read; write a JSON object, `{{ ... }}`")
                 return
+            if what != "entries":
+                for key in ("$add", "$delete"):
+                    if key in obj:
+                        err(f, f"line {n}: `{key}` is kept only in an entry of a `booklet entries` block, and not in {'a draft' if what == 'draft' else 'answers'}")
             if what == "entries":
                 items = obj.get("items")
                 if not isinstance(items, list):
@@ -1467,6 +1618,11 @@ def check_format(f, text, fm, folder=None):
                 elif not all(isinstance(e, dict) and e.get("ts") for e in items):
                     warn(f, f"line {n}: an entry in the `booklet entries {words[2]}` block has no `ts`, so the block is kept as written and not read; "
                             f"give every entry a `ts`, the time it was kept (`\"ts\": \"2026-09-27T14:02:00Z\"`)")
+                if isinstance(items, list):
+                    for e in items:
+                        if isinstance(e, dict):
+                            for why in act_problems(e):
+                                err(f, f"line {n}: in the `booklet entries {words[2]}` block, {why}")
             if what != "answers":
                 entry_refs.append((n, words[2], rec_id))
 
@@ -1625,7 +1781,9 @@ def check_format(f, text, fm, folder=None):
                     if not bid:
                         err(f, f"line {n}: a data block needs a ^id on the line after it")
                     elif obj is not None and len(words) > 2:
-                        keys, nums, rows, edits = read_data_file(f, n, bid, words[2:], obj, folder)
+                        found = {}
+                        keys, nums, rows, edits = read_data_file(f, n, bid, words[2:], obj, folder, found)
+                        check_id_keys(f, n, bid, obj, found.get("obj"), found.get("keys", keys))
                         data_blocks.setdefault(scope_mod(), {})[bid] = (keys, n, nums, rows, edits)
                     elif obj is not None:
                         why, rows, flds = data_problem(obj)
@@ -1634,6 +1792,7 @@ def check_format(f, text, fm, folder=None):
                         else:
                             check_field_objects(f, n, bid, flds)
                             keys = set(flds) | {k for r in walk_rows(rows) for k in r}
+                            check_id_keys(f, n, bid, obj, None, keys)
                             nums = {k for r in rows for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
                             edits = {k for k, v in flds.items() if isinstance(v, dict) and v.get("edit") in EDIT_KINDS}
                             data_blocks.setdefault(scope_mod(), {})[bid] = (keys, n, nums, rows, edits)
@@ -1833,6 +1992,8 @@ def check_format(f, text, fm, folder=None):
                     if w["id"]:
                         acts.setdefault(open_mod, {})[w["id"]] = n
                         act_info.setdefault(open_mod, {})[w["id"]] = (open_mod, "repeat" in w["flags"] or "daily" in w["flags"])
+                        if "daily" in w["flags"]:
+                            daily_acts.setdefault(open_mod, set()).add(w["id"])
                 elif kind in QUESTION_KINDS:
                     if kind == "listen":
                         if act_keeps.get(act_seq, False):
@@ -2069,7 +2230,7 @@ def check_format(f, text, fm, folder=None):
             for bid, (keys, ln, nums, rows, edits) in data_blocks.get(sc, {}).items():
                 d_view[bid] = (sc, keys, nums, rows, edits)
         asked = {q["id"]: q["set"]["each"].strip() for q in q_lines if q["id"] and q["mod"] == mod and q["set"].get("each") and q["set"]["each"].strip() in d_view}
-        check_query(f, n, code, mod, here, a_view, q_view, any_module, d_view, asked)
+        check_query(f, n, code, mod, here, a_view, q_view, any_module, d_view, asked, daily_acts.get(mod, set()) | daily_acts.get(None, set()))
     for scope, table in data_blocks.items():
         # a data block's id may not also be a question's or an activity's within its module (outside every fence: the module with no name)
         for bid, (_, n, _, _, _) in table.items():
