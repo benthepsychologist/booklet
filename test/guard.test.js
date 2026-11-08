@@ -42,10 +42,10 @@ if(!html.includes('el("div",{class:"svgfig"})')){fails++;console.log("  FAIL  sv
 if(/\.bodyfig/.test(html)){fails++;console.log("  FAIL  booklet.html styles a module's own class (.bodyfig)");}
 // The query's keys and views are pinned, and a view reads only the roles it is handed. Adding a key or a view means
 // changing this list on purpose, in the same change as SPEC.md's table and the linter's list.
-const FROZEN_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary","readonly"];
+const FROZEN_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary","readonly","add","delete"];
 const FROZEN_VIEWS=["cards","table","list","tiles","bars","line"];
-const FROZEN_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly"],table:["fields","group","limit","parent","badge","tone","link","icon","readonly"],
-  list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly"],
+const FROZEN_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly","add","delete"],table:["fields","group","limit","parent","badge","tone","link","icon","readonly","add","delete"],
+  list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly","add","delete"],
   tiles:["label","value","note","tone","group","limit","link","icon","readonly"],bars:["label","value","tone","limit","readonly"],line:["label","value","fields","limit","readonly"]};
 const WHY=" A new key or view needs two real pages that need it (SPEC.md, design rules for views).";
 {const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -68,7 +68,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
  const sd={};rows.forEach(c=>{sd[c[0].replace(/`/g,"")]=[...c[2].matchAll(/`(\w+)`/g)].map(m=>m[1]);});
  check("the keys SPEC.md's views table says each view reads",sd,FROZEN_DRAWS);
  const named=[...new Set([...Object.values(sd).flat(),"from","as","empty","summary"])].sort();
- check("every key SPEC.md's table names is one of the sixteen",named,[...FROZEN_KEYS].sort());
+ check("every key SPEC.md's table names is one of the eighteen",named,[...FROZEN_KEYS].sort());
  // a view reads the roles it is handed; the one control is drawn in one place; no view styles anything from a file's value
  const a=html.indexOf("const toneWords="),b=html.indexOf("/* ---- the pipeline");
  const views=a>0&&b>a?html.slice(a,b):"";

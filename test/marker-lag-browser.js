@@ -31,7 +31,7 @@ const REG={modules:[{id:'t/later',title:'Later module',file:'later.md'}]};
   await p.locator('#pasteIn').fill(LATER);await p.locator('#loadGo').click();await p.waitForTimeout(900);
   const notes=await p.evaluate(()=>{const n=document.querySelector('#main .filenotes');return n?{text:n.innerText,items:[...n.querySelectorAll('li')].map(li=>li.textContent)}:null;});
   ok(!!notes&&notes.items.length===3,'a file marked 0.99 opens and lists the three things the page cannot read: '+JSON.stringify(notes));
-  ok(!!notes&&!/0\.99|format 0\.19|booklet:/.test(notes.text),'and nothing in the notice is about its marker');
+  ok(!!notes&&!/0\.99|format 0\.20|booklet:/.test(notes.text),'and nothing in the notice is about its marker');
   /* add a module marked 0.99 */
   if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await p.waitForTimeout(400);}
   const tabs=()=>p.locator('button.mode').count();

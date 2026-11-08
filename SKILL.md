@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.19.1**. It matches SPEC.md's v0.19, the current format.
+**Skill version: 0.20.0**. It matches SPEC.md's v0.20, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -81,7 +81,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.19"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, and `media-from` if the booklet names remote audio or video (section 4) | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.20"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, and `media-from` if the booklet names remote audio or video (section 4) | you |
 | **Design** (everything above the records, and anything written after them) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design, and leaves design written after the records where it is |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only; a fresh file has none at all |
 
@@ -186,7 +186,7 @@ language are real ones; give them your own.
 
 ````markdown
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: "local/my-booklet"
 title: "My booklet"
 lang: en
@@ -213,7 +213,7 @@ One or two sentences of plain prose: what to do, and that skipping is fine.
 
 Write one booklet line for each question (section 6) where `my-question` stands.
 
-- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.19"`:
+- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.20"`:
   unquoted, a YAML tool reads `0.10` as the number 0.1. A tool that writes
   booklets should ask the linter for the marker (`python3 lint-booklet.py
   --marker` prints the whole line) and not hard-code it. A file marked with
@@ -437,7 +437,7 @@ so it opens on the first. The activity's opening is shown above every tab:
 
 ````markdown
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: "local/check-in"
 title: A short check-in
 description: A few minutes to look over the garden, with notes on what each word means.
@@ -996,12 +996,12 @@ between paragraphs for a new one. Section 4 says what a heading does.
 - **A dashboard: rows from a file, rows that open** — when another program or
   agent writes the numbers and rewrites them often, keep them in a JSON file
   beside the booklet and let the booklet say how to draw them. The booklet stays a
-  few kilobytes of Markdown; the file is the generator's. Three things make it work.
+  few kilobytes of Markdown; the file is the generator's. Four things make it work.
 
   **1. A data block that names a file.** The fence line is `booklet data`, then the
   file's name, then optionally a **key path** (keys joined by dots) to the list of
   rows inside it. The fence is left empty, or holds only `fields` (labels for the
-  columns). Several blocks may name one file, which is read once. The file name
+  columns), `idFormat` and `idPattern` (point 4). Several blocks may name one file, which is read once. The file name
   follows the image-path rule: letters, digits, `_`, `.`, `/` and `-`, at most 200
   characters, relative, no part that begins with a dot (so no `..`), ending
   `.json`.
@@ -1026,6 +1026,21 @@ between paragraphs for a new one. Section 4 says what a heading does.
   these questions are kept as entries, so the activity is `repeat`. The reference
   renderer draws the editing, the questions and `readonly` as they are written here.
   A host applies the kept entries (`docs/hosting.md`); a booklet never does.
+
+  **4. Adding and removing rows (format 0.20).** Write `add` and `delete`, each alone
+  on a line, in a query over a data block (`table`, `cards` or `list`, in a `repeat`
+  activity): `add` offers **Add a row** (and **Add under this row** inside a row that
+  opens) with a box for each field marked `edit`, and `delete` offers **Remove** with
+  a confirmation. A bare `readonly` locks both. The block says how a new row's id is
+  made with `"idFormat": "j-{field:title}-{time}"` beside `fields` (parts: `{n}`,
+  `{n:3}`, `{time}`, `{date}`, `{epoch}`, `{uuid}`, `{field:NAME}`, `{parent}`, at
+  most one number part, and a number part beside a hyphen or a letter, never
+  touching a text part or digits), or with `"idPattern": "^[a-z0-9-]+$"` for an id the reader
+  types. Each act is kept first as an entry, `{"$add":[{"in": data block id, "pick": id, "under": parent id,
+  "row": values}],"ts": …}` or `{"$delete":[{"in": data block id, "pick": id, "was": the whole row}],"ts": …}`,
+  and a host applies it. The reference renderer does not build the controls: it draws
+  the view with one quiet line saying so, where the controls would be, and keeps
+  those entries as written.
 
   ````markdown
   > [!module|desk] Garden desk
@@ -1370,7 +1385,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.19 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
+| no `lang:` | `front matter has no `lang:` — a v0.20 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`, `each:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -1449,7 +1464,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.19"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.20"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has a task list under it; a numbered list that does not start at `1.` has a blank line above it.
@@ -1474,7 +1489,7 @@ Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -1510,7 +1525,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -1571,7 +1586,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -1607,7 +1622,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ````markdown
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: "local/reminders-report"
 title: "Reminders: SMS or email?"
 lang: en
@@ -1689,7 +1704,7 @@ flowchart LR
 ## 13. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.19 file, one language, its
+same way as any other booklet above — one v0.20 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 

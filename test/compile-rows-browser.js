@@ -1,4 +1,4 @@
-// Browser check that a compiled page draws rows that open as the renderer does (compile/views.js; format 0.19), in a real Chromium.
+// Browser check that a compiled page draws rows that open as the renderer does (compile/views.js; format 0.20), in a real Chromium.
 // test/compile-assets/compile-rows.booklet.md (eighteen queries over inline data, made up) is opened twice:
 //   - in the renderer (booklet.html, the hosted app), with every row opened;
 //   - as a compiled page, with scripting OFF, every disclosure opened by pressing its summary (native, no script).

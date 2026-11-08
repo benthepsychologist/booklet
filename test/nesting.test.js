@@ -16,7 +16,7 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
  /* a query's state is handed to viewNodes by whatever draws it (the page keeps it in the view, queryView); here, one per key */
  const ST=new Map(),st=k=>{if(k==null) return undefined;if(!ST.has(k)) ST.set(k,A.newViewState());return ST.get(k);};
  const nest=(rows,view={},key=null)=>A.viewNodes(A.dataSet({rows}),{as:"list",...view},{empty:"EMPTY",state:st(key)})[0];
- /* a row's open part is drawn when the row opens (0.19), so a test that reads what is inside opens the rows first, as a reader's click does:
+ /* a row's open part is drawn when the row opens (0.20), so a test that reads what is inside opens the rows first, as a reader's click does:
     the details' toggle reaches the box's one listener, which draws the row's children (and remembers the row) */
  const openAll=b=>{for(let i=0;i<60;i++){const ds=tag(b,"details").filter(d=>!d._opened);if(!ds.length) break;
    ds.forEach(d=>{d._opened=true;d.open=true;b._on.toggle({target:d});});}};
@@ -28,7 +28,7 @@ const press=(n,ev="click")=>n._on[ev]({target:n,key:"x"});
  const R=[{id:"a",label:"A"},{id:"a1",parent:"a",label:"A1"},{id:"a2",parent:"a",label:"A2"},{id:"a1x",parent:"a1",label:"A1x"},{id:"b",label:"B"}];
 
  {const b0=nest(R);
-  chk("a row with children is closed, and draws nothing inside until it opens (0.19)",tag(b0,"details").length===1&&tag(b0,"details").every(d=>d.attrs.open===undefined)&&tag(b0,"ul").length===1&&tag(b0,"details").every(d=>kids(d).length===1),tag(b0,"ul").length+"");
+  chk("a row with children is closed, and draws nothing inside until it opens (0.20)",tag(b0,"details").length===1&&tag(b0,"details").every(d=>d.attrs.open===undefined)&&tag(b0,"ul").length===1&&tag(b0,"details").every(d=>kids(d).length===1),tag(b0,"ul").length+"");
   const b=nestO(R);
   chk("rows with id and parent nest with no key at all: one tree list",byClass(b,"dv-tree").length===1&&tag(b,"ul").length===3);
   chk("top-level rows are the ones with no parent, in the file's order",top(b).join()==="A,B",top(b).join());

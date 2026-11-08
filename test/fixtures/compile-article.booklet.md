@@ -1,5 +1,5 @@
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: fixture/compile-article
 title: Pressing leaves
 lang: en

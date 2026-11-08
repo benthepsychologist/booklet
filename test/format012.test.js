@@ -11,7 +11,7 @@ const cls=n=>String((n&&n.attrs&&n.attrs.class)||"").split(/\s+/);
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
-const FM='---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.20"\ntitle: T\nlang: en\n---\n\n';
 (async()=>{
  const A=P.boot();
  const mod=R=>R.template.modules[0];
@@ -58,7 +58,7 @@ const FM='---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n';
   chk("the card's blurb is still its first paragraph",mod(R).blurb==="First paragraph here.");}
 
  /* ---- the roles ---- */
- chk("seven roles and sixteen query keys",A.ROLE_NAMES.join()==="label,value,note,badge,tone,link,icon"&&A.QUERY_KEYS.length===16&&A.QUERY_KEYS.includes("link")&&A.QUERY_KEYS.includes("icon"));
+ chk("seven roles and eighteen query keys",A.ROLE_NAMES.join()==="label,value,note,badge,tone,link,icon"&&A.QUERY_KEYS.length===18&&A.QUERY_KEYS.includes("link")&&A.QUERY_KEYS.includes("icon"));
  chk("table, list, tiles and cards draw link and icon; bars and line do not",["table","list","tiles","cards"].every(v=>A.VIEW_DRAWS[v].includes("link")&&A.VIEW_DRAWS[v].includes("icon"))&&["bars","line"].every(v=>!A.VIEW_DRAWS[v].includes("link")&&!A.VIEW_DRAWS[v].includes("icon")));
  /* a booklet whose headings a link can lead to */
  const book=FM+"> [!module|m] M\n\n> [!activity|a] Home\n\n## Spring tides\n\nProse.\n\n> [!activity|b] Elsewhere\n\n## Neap tides\n\nMore.\n\n> [!module|m end] End\n";

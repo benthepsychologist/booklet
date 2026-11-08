@@ -1,5 +1,5 @@
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: btp/check-in
 title: A mindful check-in
 lang: en

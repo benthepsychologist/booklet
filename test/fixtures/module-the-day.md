@@ -1,5 +1,5 @@
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: btp/the-day
 title: Have a good day
 lang: en

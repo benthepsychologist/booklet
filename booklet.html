@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-Q8f8r68+SrCGiTwUs+AfZRiGZDKLoTjCMlG2dSWnzS0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-/Jr/w4PG/J+RuyTC8KljkpmEpfmgG3qXXrNSXPnb2NE=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1499,11 +1499,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.19.1";
-/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.19"`, and a
+const RENDERER_VERSION="0.20.0";
+/* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.20"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
-const FORMAT_VERSION="0.19";
+const FORMAT_VERSION="0.20";
 /* the toggle's languages, each named in itself (es-AR has strings but no button) */
 const LANG_NAMES={en:"English",es:"Español",fr:"Français"};
 const LANG_PREF_KEY="booklet.ui.lang";
@@ -1568,12 +1568,13 @@ const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9-]*$/;
    the parser keeps a module's ids apart from it: no module id can be spelled like it. */
 const ADDR_SEP="/";
 const SHARED="*";
-/* A query's sixteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views).
-   `readonly` (0.19) is read by every view, so it is last in every view's list; the reference renderer reads it and does nothing with it yet. */
-const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary","readonly"];
+/* A query's eighteen keys, the six views, and which keys each view draws. A new key or view needs two real pages that need it (SPEC.md, design rules for views).
+   `readonly` (0.19) is read by every view, so it is last in every view's list; `add` and `delete` (0.20) are written bare and read by the three views that
+   draw rows that open. The reference renderer reads all three and does nothing with them (`add` and `delete` draw one quiet line, SPEC.md section 13). */
+const QUERY_KEYS=["from","as","fields","group","limit","parent","empty","label","value","note","badge","tone","link","icon","summary","readonly","add","delete"];
 const QUERY_VIEWS=new Set(["cards","table","list","tiles","bars","line"]);
-const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly"],table:["fields","group","limit","parent","badge","tone","link","icon","readonly"],
-  list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly"],
+const VIEW_DRAWS={cards:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly","add","delete"],table:["fields","group","limit","parent","badge","tone","link","icon","readonly","add","delete"],
+  list:["label","value","note","badge","tone","fields","group","limit","parent","link","icon","readonly","add","delete"],
   tiles:["label","value","note","tone","group","limit","link","icon","readonly"],bars:["label","value","tone","limit","readonly"],line:["label","value","fields","limit","readonly"]};
 
 /* ======================= 2. INTERFACE STRINGS =======================
@@ -1760,7 +1761,8 @@ const STRINGS_SRC={
     },
     query: {
       empty: "Nothing kept here yet.",
-      summaryLater: "Summaries (summary: on) are not yet supported here, so this view is not drawn."
+      summaryLater: "Summaries (summary: on) are not yet supported here, so this view is not drawn.",
+      addDeleteLater: "Adding and removing rows is not yet supported by this reader."
     },
     dv: {
       empty: "Nothing to show here.",
@@ -1896,6 +1898,7 @@ const STRINGS_SRC={
       queryKeyUnknown: (w,key)=>`${w}: a query has no setting “${key}”, so it was ignored`,
       queryLimitBad: (w,v)=>`${w}: the query's \`limit: ${v}\` is not a positive whole number or a number of days (such as \`7 days\`), so it was ignored`,
       querySummaryBad: (w,v)=>`${w}: the query's \`summary: ${v}\` is not \`on\`, so it was ignored`,
+      queryFlagBad: (w,k,v)=>`${w}: the query's \`${k}\` is written bare (\`${k}\` alone on its line), so \`${k}: ${v}\` was ignored`,
       queryEntriesOnly: (w,keys,n)=>`${w}: the query's ${keys} ${n>1?"read":"reads"} kept entries only, so ${n>1?"they were":"it was"} ignored`,
       queryInData: w=>`${w}: a query belongs in an activity's prose, not in the data section, so it was ignored`,
       recordNoItems: (w,id)=>`${w}: the entries record for “${id}” holds no list of items, so it is kept as written`,
@@ -2155,7 +2158,8 @@ const STRINGS_SRC={
     },
     query: {
       empty: "Rien n’est encore enregistré ici.",
-      summaryLater: "Les résumés (summary: on) ne sont pas encore pris en charge ici ; cette vue n’est donc pas affichée."
+      summaryLater: "Les résumés (summary: on) ne sont pas encore pris en charge ici ; cette vue n’est donc pas affichée.",
+      addDeleteLater: "Ce lecteur ne permet pas encore d’ajouter ni de supprimer des lignes."
     },
     dv: {
       empty: "Rien à afficher ici.",
@@ -2288,6 +2292,7 @@ const STRINGS_SRC={
       queryKeyUnknown: (w,key)=>`${w} : une requête n’a pas de réglage « ${key} » ; il a donc été ignoré`,
       queryLimitBad: (w,v)=>`${w} : \`limit: ${v}\` dans la requête n’est ni un nombre entier positif ni un nombre de jours (comme \`7 days\`) ; il a donc été ignoré`,
       querySummaryBad: (w,v)=>`${w} : \`summary: ${v}\` dans la requête n’est pas \`on\` ; il a donc été ignoré`,
+      queryFlagBad: (w,k,v)=>`${w} : \`${k}\` s’écrit seul sur sa ligne dans la requête ; \`${k}: ${v}\` a donc été ignoré`,
       queryEntriesOnly: (w,keys,n)=>`${w} : ${keys} dans la requête ${n>1?"ne lisent":"ne lit"} que des entrées enregistrées ; ${n>1?"ils ont donc été ignorés":"il a donc été ignoré"}`,
       queryInData: w=>`${w} : une requête doit se trouver dans le texte d’une activité, pas dans la section des données ; elle a donc été ignorée`,
       recordNoItems: (w,id)=>`${w} : le registre des entrées de « ${id} » ne contient aucune liste d’éléments ; il est donc conservé tel quel`,
@@ -2547,7 +2552,8 @@ const STRINGS_SRC={
     },
     query: {
       empty: "Todavía no hay nada guardado aquí.",
-      summaryLater: "Los resúmenes (summary: on) aún no se admiten aquí, así que esta vista no se muestra."
+      summaryLater: "Los resúmenes (summary: on) aún no se admiten aquí, así que esta vista no se muestra.",
+      addDeleteLater: "Este lector aún no permite añadir ni quitar filas."
     },
     dv: {
       empty: "Nada que mostrar aquí.",
@@ -2680,6 +2686,7 @@ const STRINGS_SRC={
       queryKeyUnknown: (w,key)=>`${w}: una consulta no tiene el ajuste “${key}”, así que se ignoró`,
       queryLimitBad: (w,v)=>`${w}: el \`limit: ${v}\` de la consulta no es un número entero positivo ni un número de días (como \`7 days\`), así que se ignoró`,
       querySummaryBad: (w,v)=>`${w}: el \`summary: ${v}\` de la consulta no es \`on\`, así que se ignoró`,
+      queryFlagBad: (w,k,v)=>`${w}: \`${k}\` se escribe solo en su línea en la consulta, así que \`${k}: ${v}\` se ignoró`,
       queryEntriesOnly: (w,keys,n)=>`${w}: ${n>1?"los":"el"} ${keys} de la consulta solo ${n>1?"leen":"lee"} entradas guardadas, así que ${n>1?"se ignoraron":"se ignoró"}`,
       queryInData: w=>`${w}: una consulta va en el texto de una actividad, no en la sección de datos, así que se ignoró`,
       recordNoItems: (w,id)=>`${w}: el registro de entradas de “${id}” no contiene una lista de elementos, así que se conserva tal cual`,
@@ -4038,7 +4045,7 @@ const NOTICE_KEYS=["license","copyright","source","version"];
 const FRONT_NOTICE_KEYS=["license","copyright","source"];
 /* the kinds that take no id: their words are settings only */
 const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","diff","law","opinion"]);
-/* A file is read when its front matter says `booklet: "0.19"` (quoted or not, as text); another 0.x marker opens with a notice. */
+/* A file is read when its front matter says `booklet: "0.20"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
    does not open with `---`. With `loneCR`, a bare carriage return ends a line
@@ -4156,23 +4163,28 @@ function optionsUnder(lines,i){let j=i,blanks=0;
 /* A query block's body: `key: value` lines (YAML's plainest form). Returns
    its settings, or `bad` with the first line that is not one; `unknown` names the keys a query does not
    have, `limitBad` a `limit` that is neither a positive whole number nor that many days (`7 days`), and `summaryBad` a `summary`
-   that is not `on` (all three are ignored). A span of days is `view.days`; a count is `view.limit`. */
+   that is not `on`, and `flagBad` an `add` or `delete` that was written with a value (all four are ignored). A span of days is `view.days`;
+   a count is `view.limit`. */
 function readQuery(code){const o={};
   for(const raw of String(code||"").split("\n")){const ln=raw.trim();if(!ln) continue;
-    /* `readonly` on a line by itself is a key with no value (0.19): every field the view draws is read-only */
-    const kv=/^readonly$/i.test(ln)?["readonly",""]:kvLine(ln);if(!kv) return {bad:ln};
+    /* `readonly` (0.19), `add` and `delete` (0.20) may stand on a line by themselves, as keys with no value */
+    const kv=/^(readonly|add|delete)$/i.test(ln)?[ln.toLowerCase(),""]:kvLine(ln);if(!kv) return {bad:ln};
     o[kv[0].toLowerCase()]=kv[1];}
   const unknown=Object.keys(o).filter(k=>!QUERY_KEYS.includes(k));
   const lm=o.limit===undefined?null:/^([1-9]\d*)([ \t]+days?)?$/.exec(o.limit),limitBad=o.limit!==undefined&&!lm?o.limit:undefined;
   const summaryBad=o.summary!==undefined&&o.summary!=="on"?o.summary:undefined;
   /* how a view draws: the view, and the names of the fields it reads */
-  const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit","summary","readonly"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
+  const view={};QUERY_KEYS.forEach(k=>{if(["from","fields","empty","limit","summary","readonly","add","delete"].includes(k)||!o[k]) return;view[k]=k==="as"?o[k].toLowerCase():o[k];});
   /* `readonly` (0.19, slice 2 acts on it): bare, every field of the view; with names, those fields. The reference renderer keeps it and draws nothing from it. */
   if(o.readonly!==undefined) view.readonly=o.readonly===""?true:o.readonly.split(",").map(x=>x.trim()).filter(Boolean);
+  /* `add` and `delete` (0.20): written bare. A value after the key is ignored and reported (`flagBad`: [key, value]); the reference renderer draws a
+     quiet line beneath the view for the key (SPEC.md section 13) and does nothing else with it. */
+  const flagBad=[];
+  for(const k of ["add","delete"]){if(o[k]===undefined) continue;if(o[k]!=="") flagBad.push([k,o[k]]);else view[k]=true;}
   if(lm) view[lm[2]?"days":"limit"]=Number(lm[1]);
   if(o.summary==="on") view.summary="on";
   return {from:o.from||"",fields:o.fields?o.fields.split(",").map(x=>x.trim()).filter(Boolean):undefined,
-    empty:o.empty||undefined,view,unknown,limitBad,summaryBad};}
+    empty:o.empty||undefined,view,unknown,limitBad,summaryBad,flagBad};}
 /* A `booklet data` block: rows a generator wrote. JSON: an object with
    `rows` (and optionally `fields`, each key's label and the default order), or
    the list of rows itself. A value is a string, a number, true, false, null, a list of those, a list of rows
@@ -4457,6 +4469,7 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
       q.unknown.forEach(k=>problems.push(P.queryKeyUnknown(P.line(it.line),k)));
       if(q.limitBad!==undefined) problems.push(P.queryLimitBad(P.line(it.line),q.limitBad));
       if(q.summaryBad!==undefined) problems.push(P.querySummaryBad(P.line(it.line),q.summaryBad));
+      q.flagBad.forEach(([k,v])=>problems.push(P.queryFlagBad(P.line(it.line),k,v)));
       queries.push({line:it.line,act,q,block:put({id:"query"+(++seq),type:"query",from:q.from,fields:q.fields,empty:q.empty,view:q.view})});lastQ=null;},
     /* the booklet's own look: data, validated key by key, never drawn where it sits (see readTheme) */
     theme:it=>{
@@ -6650,7 +6663,7 @@ function entryCard(e,type,onDelete){const u=strings("ui");
       el("button",{type:"button",class:"small danger",onclick:onDelete},u.yes),el("button",{type:"button",class:"small",onclick:()=>{foot.innerHTML="";foot.append(btn);}},u.no)));});
     foot.append(btn);card.append(foot);}
   return card;}
-function chipStrip(id){const u=strings("ui");const list=[...keptFor(id)].sort((a,b)=>b.ts.localeCompare(a.ts));
+function chipStrip(id){const u=strings("ui");const list=keptFor(id).filter(e=>!isActEntry(e)).sort((a,b)=>b.ts.localeCompare(a.ts));
   const wrap=el("div",{});
   STRIPS.set(id,wrap);
   if(!list.length){wrap.append(el("p",{class:"chips-empty"},u.noEarlier));return wrap;}
@@ -6670,6 +6683,8 @@ const anyFilled=(e,id)=>{const fu=new Map(id?blocksOf(id).filter(q=>q.each).map(
     return !q||wrongShape(q,e[k],widgetFor(q))||heldPairs(q,e).some(p=>holdsSomething(p.a));});};
 const draftFor=id=>{DRAFTS.custom=DRAFTS.custom||nullMap();return hasOwn(DRAFTS.custom,id)?DRAFTS.custom[id]:(DRAFTS.custom[id]=nullMap());};
 const keptFor=id=>{STATE.entries=STATE.entries||{};STATE.entries[id]=STATE.entries[id]||[];return STATE.entries[id];};
+/* an entry that keeps an act on a data block (`$add` or `$delete`, SPEC.md section 8): it is the record of the act, and no view over kept entries draws it */
+const isActEntry=e=>!!e&&typeof e==="object"&&(Object.prototype.hasOwnProperty.call(e,"$add")||Object.prototype.hasOwnProperty.call(e,"$delete"));
 /* where an activity's answers live: a repeating one keeps a draft, any other the
    booklet's answers, keyed by question id as the file's own `answers` record is */
 const answersFor=id=>activityOf(id).kind==="entry"?draftFor(id):answersIn(scopeOfAddr(id));
@@ -6701,6 +6716,12 @@ function drawRow(b,draft,activityId,dc){const box=el("div",{class:"pblock row"})
     blocksIn(c).forEach(x=>{if(x&&typeof x==="object") cell.append(renderBlock(x,draft,activityId,dc));});
     box.append(cell);});
   return box;}
+/* A query that says `add` or `delete` (0.20) offers the reader a row to add and a row to remove. The reference renderer builds neither (SPEC.md section 13):
+   the view is drawn as it always was, with this one quiet line beneath it, and nothing is kept or changed. The line stands only where the controls
+   would be drawn: beneath a table, cards or list over a data block, in a `repeat` activity that is not daily, when a bare `readonly` does not lock them.
+   `acts` is the activity's actsConfig (its `keeps` is true for `repeat` and false for `repeat daily` and for an activity that keeps nothing). */
+const addDeleteNote=(v,acts)=>v&&(v.add||v.delete)&&acts&&acts.keeps&&v.readonly!==true&&["table","cards","list"].includes(v.as||"table")
+  ?[el("p",{class:"hint dv-quiet dv-add-delete"},strings("query").addDeleteLater)]:[];
 /* read-only: what was kept elsewhere in this module; owns no answer key */
 function drawQuery(b,draft,activityId,dc){const box=el("div",{class:"pblock query"});
   const v={...(b.view||{}),fields:b.fields},state=queryView(activityId,b);
@@ -7440,7 +7461,7 @@ const sameModule=(from,activityId)=>!!holderOf(from)&&scopeOfAddr(from)===scopeO
 const queryReads=(b,activityId)=>sameModule(b.from,activityId)&&(!b.field||blocksOf(b.from).some(x=>x.id===b.field));
 function queryEntries(from,activityId,days){
   if(!sameModule(from,activityId)) return [];
-  return inSpan([...keptFor(from)],days).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
+  return inSpan(keptFor(from).filter(e=>!isActEntry(e)),days).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));}
 /* `limit: N days` (SPEC.md section 6, a day as section 8 defines it): the entries whose own calendar date, in the reader's time zone,
    is today or one of the N-1 dates before it. Today is taken now, when the page is drawn. An entry whose `ts` will not parse, or
    is later than that moment (even later today), is in no span. No `days` is every entry. */
@@ -9982,7 +10003,7 @@ function drawDataQuery(box,block,v,state,scope,empty,acts){
   const make=()=>{const r=block.file?dataBlockRows(block,scope,()=>paint(true)):{data:block};
     if(block.file){if(live) live.at=r.at;
       else if(r.at){live={box,at:r.at,redraw:()=>paint(true)};DATA_LIVE.add(live);}}
-    return r.data?viewNodes(dataSet(r.data),v,{empty,state,scope,acts}):[el("p",{class:"hint dv-quiet"},r.note)];};
+    return r.data?[...viewNodes(dataSet(r.data),v,{empty,state,scope,acts}),...addDeleteNote(v,acts)]:[el("p",{class:"hint dv-quiet"},r.note)];};
   const FOCUS="input,select,button,summary,textarea";
   function paint(keep){
     if(!keep){box.textContent="";box.append(...make());if(acts) finSync(box);return;}

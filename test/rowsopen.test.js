@@ -1,4 +1,4 @@
-// Format 0.19, rows that open: table, list and cards nest by `parent` and by a field that holds rows; a row opens to its other
+// Format 0.20, rows that open: table, list and cards nest by `parent` and by a field that holds rows; a row opens to its other
 // fields (plain text, line breaks kept) and then its children, in groups headed by the field they came from; the open part is
 // drawn when the row opens; a filter, a sort and `limit` follow the one rule for every nested view; a data fence may name a file.
 // Run: node test/rowsopen.test.js      (Needs node; nothing to install.)
@@ -28,11 +28,11 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
  const openAll=b=>{for(let i=0;i<60;i++){const ds=tag(b,"details").filter(d=>!d._opened);if(!ds.length) break;ds.forEach(d=>press(b,d));}};
 
  /* ---- reading the rows ---- */
- {const r=A.parseFile('---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: d\nas: table\nreadonly\n```\n\n```booklet data\n'+JSON.stringify(DATA)+'\n```\n^d\n');
+ {const r=A.parseFile('---\nbooklet: "0.20"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: d\nas: table\nreadonly\n```\n\n```booklet data\n'+JSON.stringify(DATA)+'\n```\n^d\n');
   chk("a data block whose rows hold rows reads clean (a list of rows, and a row that is one row)",r.ok&&r.unread.length===0,JSON.stringify(r.unread));
   const q=r.template.activities?r.template.activities[0].pages[0].blocks.find(b=>b.type==="query"):null;
   chk("a bare `readonly` line is a key with no value, kept on the view and drawn as nothing",!q||q.view.readonly===true,JSON.stringify(q&&q.view));}
- {const mk=rows=>A.parseFile('---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: d\n```\n\n```booklet data\n'+rows+'\n```\n^d\n');
+ {const mk=rows=>A.parseFile('---\nbooklet: "0.20"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: d\n```\n\n```booklet data\n'+rows+'\n```\n^d\n');
   chk("a row that is one row (an object) reads clean",mk('[{"id":"a","one":{"id":"b"}}]').unread.length===0);
   chk("a list that mixes values and rows is refused with its reason",mk('[{"x":[1,{"id":"b"}]}]').unread.some(p=>/mixes values and rows/.test(p)));
   chk("a row that is not an object is refused at any depth",mk('[{"x":[{"id":"b"},3]}]').unread.some(p=>/mixes values and rows/.test(p))&&mk('[{"x":[{"y":[1,{"z":1}]}]}]').unread.some(p=>/mixes/.test(p)));
@@ -58,7 +58,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
   chk("a field that holds child rows in some row is still not one of the source's own fields (so never a column or a line)",!A.dataSet(MIX).own.includes("items"));}
 
  /* ---- the file's own fence: a name and a key path ---- */
- {const mk=(info,code)=>A.parseFile('---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: d\n```\n\n```booklet data '+info+'\n'+(code||"")+'\n```\n^d\n');
+ {const mk=(info,code)=>A.parseFile('---\nbooklet: "0.20"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: d\n```\n\n```booklet data '+info+'\n'+(code||"")+'\n```\n^d\n');
   const block=r=>{const a=r.template.activities?r.template.activities[0]:r.template.modules[0].activities[0];return a.pages[0].blocks.find(b=>b.type==="query");};
   {const r=mk("dash.json programmes");const b=block(r);
    chk("a fence that names a file reads clean with an empty body, and the query carries the file name and key path",r.ok&&r.unread.length===0&&b.data&&b.data.file.name==="dash.json"&&b.data.file.path==="programmes"&&b.data.rows.length===0,JSON.stringify(r.unread));}
@@ -198,10 +198,10 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
   chk("a field that plays a role (value), `id` and the `parent` field are not in the open part",tag(r,"dt").map(text).join()==="hid",tag(r,"dt").map(text).join());}
 
  /* ---- readonly is last in every view's list of keys it draws ---- */
- chk("`readonly` is the last key of every view's list",Object.values(A.VIEW_DRAWS).every(l=>l[l.length-1]==="readonly")&&Object.keys(A.VIEW_DRAWS).length===6);
+ chk("`readonly` ends the list of tiles, bars and line, and is followed only by `add` and `delete` in the three views that nest (0.20)",Object.entries(A.VIEW_DRAWS).every(([v,l])=>{const tail=["table","list","cards"].includes(v)?["readonly","add","delete"]:["readonly"];return l.slice(-tail.length).join()===tail.join();})&&Object.keys(A.VIEW_DRAWS).length===6);
 
  /* ---- a question asked for each row (`each:` over a data block) is read, and drawn in the rows (test/dashedit.test.js) ---- */
- {const mk=each=>A.parseFile('---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: reqs\nas: list\n```\n\n> [!text|reply each:'+each+'] A word of reply\n\n```booklet data\n[{"id":"r1","title":"One"}]\n```\n^reqs\n');
+ {const mk=each=>A.parseFile('---\nbooklet: "0.20"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: reqs\nas: list\n```\n\n> [!text|reply each:'+each+'] A word of reply\n\n```booklet data\n[{"id":"r1","title":"One"}]\n```\n^reqs\n');
   const r=mk("reqs"),act=r.template.activities?r.template.activities[0]:r.template.modules[0].activities[0];
   const q=act.pages[0].blocks.find(b=>b.type==="text");
   chk("an `each:` over a data block in reach reads clean, with no 'could not read' notice, and keeps its `each`",r.unread.length===0&&q&&q.each==="reqs",JSON.stringify(r.unread));

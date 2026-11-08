@@ -7,7 +7,7 @@ const fx=require("./pmenu-fixture.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-const FM='---\nbooklet: "0.19"\ntitle: Notes\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.20"\ntitle: Notes\nlang: en\n---\n\n';
 const A=P.boot();
 const acts=R=>R.template.modules.flatMap(m=>m.activities);
 const draw=id=>{A.screen=id;A.render();return P.main();};

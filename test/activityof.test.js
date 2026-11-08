@@ -12,7 +12,7 @@ const A=P.boot();
 const act=(id,title)=>({id,kind:"entry",title,pages:[{id:"p1",blocks:[]}]});
 
 /* a booklet read from a file: found by its address, module by module */
-const file=`---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!module|m1] One\n\n> [!activity|a] First\n\n> [!text|q] Q\n\n> [!activity|b] Second\n\n> [!text|r] R\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|a] Other\n\n> [!text|q] Q\n\n> [!module|m2 end] End\n`;
+const file=`---\nbooklet: "0.20"\ntitle: T\nlang: en\n---\n\n> [!module|m1] One\n\n> [!activity|a] First\n\n> [!text|q] Q\n\n> [!activity|b] Second\n\n> [!text|r] R\n\n> [!module|m1 end] End\n\n> [!module|m2] Two\n\n> [!activity|a] Other\n\n> [!text|q] Q\n\n> [!module|m2 end] End\n`;
 A.loadText(file);
 chk("the booklet reads",A.allModules().map(m=>m.id).join()==="m1,m2",A.allModules().map(m=>m.id).join());
 chk("m1/a is the first module's activity",A.activityOf("m1/a").title==="First",JSON.stringify(A.activityOf("m1/a").title));
