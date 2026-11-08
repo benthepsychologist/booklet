@@ -1,4 +1,4 @@
-// Format 0.19, linter lane: the linter checks the copy line (SPEC.md section 4, the `copy` row; section 6, "Copy"). Each case is a small file made
+// Format 0.20, linter lane: the linter checks the copy line (SPEC.md section 4, the `copy` row; section 6, "Copy"). Each case is a small file made
 // here with ONE slip, linted, and the finding is checked by its kind (error or warning), its line and its words; the clean files must stay clean,
 // so a new check cannot buy its catch with a false alarm, and a booklet that does not use the copy line is untouched. Nothing here is real.
 // Run: node test/lint019.test.js   (node and python3; nothing to install.)  LINT_BOOKLET=<path> tries another linter.
@@ -11,7 +11,7 @@ const lint=text=>{const dir=path.join(tmp,"c"+(++k));fs.mkdirSync(dir);
   const f=path.join(dir,"f.md");fs.writeFileSync(f,text);
   const r=spawnSync("python3",[LINT,f],{encoding:"utf8"}),lines=r.stdout.split("\n");
   return {status:r.status,out:r.stdout,errors:lines.filter(l=>l.startsWith("ERROR")),warns:lines.filter(l=>l.startsWith("warn"))};};
-const FM='---\nbooklet: "0.19"\ntitle: Lint fixture\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.20"\ntitle: Lint fixture\nlang: en\n---\n\n';
 const one=(what,r,kind,line,rx)=>{const got=kind==="ERROR"?r.errors:r.warns;
   chk(`${what}: exactly one finding, ${kind==="ERROR"?"an error":"a warning"}`,got.length===1&&r.errors.length+r.warns.length===1,r.out);
   chk(`${what}: it names line ${line} and says the fix`,new RegExp(": line "+line+": ").test(got[0]||"")&&rx.test(got[0]||""),got[0]);

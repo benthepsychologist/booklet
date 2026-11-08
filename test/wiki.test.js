@@ -10,7 +10,7 @@ const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&
 const kids=n=>(n&&n.children)||[];
 const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n).forEach(k=>walk(k,f,out));}return out;};
 const text=P.texts;
-const FM='---\nbooklet: "0.19"\ntitle: Wiki\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.20"\ntitle: Wiki\nlang: en\n---\n\n';
 const names=l=>l.map(a=>a.id.split("/").pop()).join();
 (async()=>{
  const A=P.boot();

@@ -1,4 +1,4 @@
-// What the compiler draws for rows that open (compile/views.js; format 0.19, SPEC.md "Rows from a file" and sections 5 and 6),
+// What the compiler draws for rows that open (compile/views.js; format 0.20, SPEC.md "Rows from a file" and sections 5 and 6),
 // held to what the renderer draws: the same rows, the same open parts, the same group heads, in the same order.
 // test/compile-assets/compile-rows.booklet.md has eighteen queries over inline data (a garden's beds and plots; nothing real):
 //   - a flat row with fields its line does not show opens, on a table, a list and cards; its open part lists each such field
@@ -108,7 +108,7 @@ chk("a row's summary is the row: it carries data-bk-row and a disclosure has exa
 
 /* ---- "does not hold child rows" is a row's own: a field that holds rows in one row is a plain value in another ---- */
 {const rows=[{id:"a",title:"Has kids",items:[{id:"a1",title:"Kid"}]},{id:"b",title:"Plain note",items:"n/a for this one",extra:"x"}];
- const bk='---\nbooklet: "0.19"\ntitle: T\nlang: en\nid: t\n---\n\n> [!activity|a] A\n\n'+["table","list","cards"].map(v=>"```booklet query\nfrom: x\nas: "+v+"\nlabel: title\n```\n").join("\n")+"\n```booklet data\n"+JSON.stringify({fields:{title:"Name",items:"Items",extra:"Extra"},rows})+"\n```\n^x\n";
+ const bk='---\nbooklet: "0.20"\ntitle: T\nlang: en\nid: t\n---\n\n> [!activity|a] A\n\n'+["table","list","cards"].map(v=>"```booklet query\nfrom: x\nas: "+v+"\nlabel: title\n```\n").join("\n")+"\n```booklet data\n"+JSON.stringify({fields:{title:"Name",items:"Items",extra:"Extra"},rows})+"\n```\n^x\n";
  const res=C.compile([{text:bk,name:"t"}],{form:"standalone",engine:X,browser:false}).results[0],h=String([...res.files.values()][0]);
  chk("a row whose value in a field is plain text shows it in its open part, on a table, a list and cards, though another row holds rows in that field",res.rep.ok&&count(h,/<dt>Items<\/dt>\s*<dd[^>]*>n\/a for this one<\/dd>/g)===3,String(count(h,/n\/a for this one/g)));
  chk("…and the row that holds rows draws them as children",count(h,/Kid/g)>=3&&!h.includes("[object Object]"));}

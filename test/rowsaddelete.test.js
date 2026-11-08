@@ -8,7 +8,7 @@
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-const FM=lang=>`---\nbooklet: "0.19"\ntitle: Desk\nlang: ${lang||"en"}\n---\n\n`;
+const FM=lang=>`---\nbooklet: "0.20"\ntitle: Desk\nlang: ${lang||"en"}\n---\n\n`;
 const ROWS={fields:{title:{label:"Name",edit:"text"},stage:"Stage"},rows:[{id:"a",title:"Orchard",stage:"growing",jobs:[{id:"a1",title:"Prune",stage:"planning"}]},{id:"b",title:"Beds",stage:"resting"}]};
 const body=(query,act,lang)=>FM(lang)+`> [!module|d] Desk\n\n> [!activity|a${act||" repeat"}] Work\n\n\`\`\`booklet query\nfrom: rows\n${query}\n\`\`\`\n\n\`\`\`booklet data\n${JSON.stringify(ROWS)}\n\`\`\`\n^rows\n\n> [!module|d end] End\n`;
 const load=(text)=>{P.wipe();const A=P.boot();A.loadText(text);A.screen="d/a";A.render();return A;};

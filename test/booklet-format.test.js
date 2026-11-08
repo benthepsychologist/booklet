@@ -23,7 +23,7 @@ const R=A.parseFile(EX);
 chk("the example parses",R.ok,JSON.stringify(R.unread));
 chk("nothing in the example is reported as wrong",R.unread.length===0,JSON.stringify(R.unread));
 const t=R.template||{};
-chk("it is marked v0.19",t.booklet==="0.19");
+chk("it is marked v0.20",t.booklet==="0.20");
 chk("its one language is its own, from its front matter, and the design names no others",t.raw.lang==="en"&&!("languages" in t));
 chk("one module, from the module fence",(t.modules||[]).length===1&&t.modules[0].id==="btp-check-in",JSON.stringify((t.modules||[]).map(m=>m.id)));
 const m=(t.modules||[])[0]||{};
@@ -46,7 +46,7 @@ chk("the body map block points at its data",a.pages[0].blocks[1].widget==="body-
 /* 3. load it the way a reader does, and draw the activity */
 A.createBooklet&&0;
 A.loadText(EX);
-chk("the page adopts it as the booklet",A.BOOK.booklet==="0.19"&&A.allModules().length===1,JSON.stringify({b:A.BOOK.booklet,n:A.allModules().length}));
+chk("the page adopts it as the booklet",A.BOOK.booklet==="0.20"&&A.allModules().length===1,JSON.stringify({b:A.BOOK.booklet,n:A.allModules().length}));
 A.screen="btp-check-in/check-in";A.render();
 const seen=P.texts(P.main());
 ["A mindful check-in","Body","Feelings","Something else","In your own words.","Mind is thinking about","Notice, name, keep."].forEach(w=>
@@ -89,10 +89,10 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
 /* a file marked with another 0.x version opens by the current rules and says nothing about its marker; a
    condition that refuses a file still refuses it, whatever the marker */
 {const FILE=m=>'---\nbooklet: '+m+'\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n';
- for(const v of ["0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","0.12","0.13","0.14","0.15","0.16","0.17","0.19","0.20","0.99"]){
+ for(const v of ["0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","0.12","0.13","0.14","0.15","0.16","0.17","0.19","0.20","0.21","0.99"]){
   const r=A.parseFile(FILE(v));
   chk(`a booklet: ${v} file opens, and says nothing about its marker`,r.ok===true&&r.refused.length===0&&r.unread.length===0,JSON.stringify(r.unread));
-  chk(`  it is saved back with the marker it came with (${v})`,new RegExp("^booklet: "+v.replace(".","\\.")+"$","m").test(r.template.raw.source)&&r.template.booklet==="0.19");}
+  chk(`  it is saved back with the marker it came with (${v})`,new RegExp("^booklet: "+v.replace(".","\\.")+"$","m").test(r.template.raw.source)&&r.template.booklet==="0.20");}
  const bad=A.parseFile('---\nbooklet: 0.3\ntitle: Old\nlang: en\n---\n\n> [!module|m] M\n');
  chk("a module opened and never closed still refuses a 0.3 file, whatever the marker",bad.ok===false&&bad.refused.length===1&&/never closed/.test(bad.refused[0])&&!bad.unread.some(p=>/booklet: 0\.3/.test(String(p))),JSON.stringify(bad.unread));
  chk("no language holds a marker notice",["en","fr","es","es-AR"].every(l=>A.STRINGS[l].problem.otherMarker===undefined));
@@ -108,7 +108,7 @@ chk("an earlier-format file is not read at all — no compat, no exceptions",
 }
 
 /* 7. settings on a callout line are written key:value */
-{const SET=`---\nbooklet: "0.19"\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
+{const SET=`---\nbooklet: "0.20"\ntitle: Settings\nlang: en\n---\n\n> [!module|set-mod] Settings\n\n> [!activity|set-act repeat] Settings\n\n> [!number|sleep min:0 max:24 step:0.5] Hours slept\n\n> [!multi|morning menu:feelings] This morning I felt\n- [ ] calm\n- [ ] tense\n\n> [!module|set-mod end] End\n`;
  const RS=P.boot().parseFile(SET);
  const bl=RS.template.modules[0].activities[0];
  const num=bl.pages.flatMap(p=>p.blocks).find(b=>b.id==="sleep")||{};

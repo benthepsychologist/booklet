@@ -1,4 +1,4 @@
-// The compiler's data files and nested rows (compile/data.js, compile/views.js; format 0.19, SPEC.md sections 6 and 7).
+// The compiler's data files and nested rows (compile/data.js, compile/views.js; format 0.20, SPEC.md sections 6 and 7).
 //   - a `booklet data <file.json> [key.path]` fence is read at build time, by the rules images are read by: a checked name,
 //     a real path inside the booklet's folder, at most LINK_BYTES, JSON; what it finds is a list of rows or an object with rows;
 //     the fence's own `fields` give the labels; a file that cannot be read gives a quiet box and a line in the report
@@ -106,12 +106,12 @@ chk("a fence that never closes, an ordinary fence and a fence of another kind ar
   const x=DATA.inline(X.R,src,path.join(tmp,"book"));return x.files.length===0&&x.lines===src;})());
 chk("a booklet with no data file is given back as it is (the same lines)",(()=>{const src=["# T","","```booklet data","{\"rows\":[]}","```","^z"];return DATA.inline(X.R,src,tmp).lines===src;})());
 chk("a rows file is not read through the records: a fence in the records region is never rewritten",(()=>{
-  const t="---\nbooklet: \"0.19\"\n---\n\n# T\n\n> [!module|m] M\n\n> [!activity|a] A\n\n%%\n> [!records]\n\n```booklet data rows.json list\n```\n%%\n";
+  const t="---\nbooklet: \"0.20\"\n---\n\n# T\n\n> [!module|m] M\n\n> [!activity|a] A\n\n%%\n> [!records]\n\n```booklet data rows.json list\n```\n%%\n";
   const res=build({text:t,name:"t",dir:path.join(tmp,"book")});return !res.rep.ok||!/\"t\":1/.test(page(res));})());
 /* ---- rows nested too deeply to be written give the block's quiet box, never a refused booklet ---- */
 {
   const deep=n=>'{"rows":'+'[{"t":"x","kids":'.repeat(n)+'[]'+'}]'.repeat(n)+'}';
-  const book=(f)=>"---\nbooklet: \"0.19\"\nlang: en\nid: t\n---\n\n# T\n\nIt opens with a sentence of its own.\n\n```booklet data "+f+"\n```\n^d\n\n```booklet query\nfrom: d\n```\n";
+  const book=(f)=>"---\nbooklet: \"0.20\"\nlang: en\nid: t\n---\n\n# T\n\nIt opens with a sentence of its own.\n\n```booklet data "+f+"\n```\n^d\n\n```booklet query\nfrom: d\n```\n";
   for(const n of [300,1500,3000,100000]){
     w("book/deep"+n+".json",deep(n));
     const res=build({text:book("deep"+n+".json"),name:"t",dir:path.join(tmp,"book")});
@@ -126,7 +126,7 @@ chk("a rows file is not read through the records: a fence in the records region 
 /* ---- a booklet given as text with no folder reads no data file; its description is not the quiet box's sentence ---- */
 {
   w("book/there.json",[{t:"here"}]);
-  const bk=(para,file)=>"---\nbooklet: \"0.19\"\nlang: en\nid: t\n---\n\n# T\n\n"+(para?para+"\n\n":"")+"```booklet data "+(file||"there.json")+"\n```\n^d\n\n```booklet query\nfrom: d\n```\n";
+  const bk=(para,file)=>"---\nbooklet: \"0.20\"\nlang: en\nid: t\n---\n\n# T\n\n"+(para?para+"\n\n":"")+"```booklet data "+(file||"there.json")+"\n```\n^d\n\n```booklet query\nfrom: d\n```\n";
   const was=process.cwd();let res,res2,res3,res4;
   try{process.chdir(path.join(tmp,"book"));   /* the process's own folder holds the file: it must not be read */
     res=build({text:bk("A sentence."),name:"t"});res2=build({text:bk("","nothere.json"),name:"t",dir:path.join(tmp,"book")});
@@ -147,7 +147,7 @@ chk("a rows file is not read through the records: a fence in the records region 
 {
   w("book/good.json",{rows:[{title:"Good row"}]});
   const mod=(id,file,fence)=>"> [!module|"+id+"] Module "+id.toUpperCase()+"\n\n> [!activity|"+id+"a] Activity "+id.toUpperCase()+"\n\n```booklet query\nfrom: rows\nas: table\n```\n\n```booklet data "+file+" rows\n"+(fence||"")+"```\n^rows\n\n> [!module|"+id+" end]\n\n";
-  const head="---\nbooklet: \"0.19\"\nlang: en\nid: t\ntitle: T\n---\n\n";
+  const head="---\nbooklet: \"0.20\"\nlang: en\nid: t\ntitle: T\n---\n\n";
   const res=build({text:head+mod("ma","good.json")+mod("mb","missing.json"),name:"t",dir:path.join(tmp,"book")});
   const pa=String(res.files.get("t/maa/index.html")||""),pb=String(res.files.get("t/mba/index.html")||"");
   chk("(set up) a booklet of two modules that name the same block id compiles to a page for each",res.rep.ok&&!!pa&&!!pb,[...res.files.keys()].join(","));

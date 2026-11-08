@@ -15,7 +15,7 @@ const lint=(text,files)=>{const dir=path.join(tmp,"c"+(++k));fs.mkdirSync(dir);
   const f=path.join(dir,"f.md");fs.writeFileSync(f,text);
   const r=spawnSync("python3",[LINT,f],{encoding:"utf8"}),lines=r.stdout.split("\n");
   return {status:r.status,out:r.stdout,text,errors:lines.filter(l=>l.startsWith("ERROR")),warns:lines.filter(l=>l.startsWith("warn"))};};
-const FM='---\nbooklet: "0.19"\ntitle: Lint fixture\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.20"\ntitle: Lint fixture\nlang: en\n---\n\n';
 const ACT=(body,head="> [!activity|desk repeat] Desk\n\n")=>FM+head+body;
 // the line a needle first stands on in the file, so a case says where the finding is without counting
 const at=(r,needle)=>r.text.split("\n").findIndex(l=>l.includes(needle))+1;

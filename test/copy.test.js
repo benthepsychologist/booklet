@@ -1,4 +1,4 @@
-// Format 0.19, the copy line (SPEC.md section 6, "Copy"): `> [!copy|id of:a,b,c] Button label` puts a lead-in, the questions it names with what the
+// Format 0.20, the copy line (SPEC.md section 6, "Copy"): `> [!copy|id of:a,b,c] Button label` puts a lead-in, the questions it names with what the
 // reader answered, a question's own folded solution or hint, and fenced text blocks on the clipboard, in the order `of:` lists them.
 // This reads booklets made here (made-up tides and kitchen words, nothing real) and checks the text a press would copy, exactly; that an
 // empty answer is copied all the same with the fixed words; each kind's answer; the three kinds of word and what each does when it names
@@ -9,7 +9,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const A=P.boot();
-const FM='---\nbooklet: "0.19"\ntitle: Copy\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.20"\ntitle: Copy\nlang: en\n---\n\n';
 const read=t=>{A.loadText(t);return A.parseFile(t);};
 const blocks=(r,n)=>{const a=r.template.modules.flatMap(m=>m.activities)[n||0];return a.pages.flatMap(p=>p.blocks);};
 const copyOf=(r,id,n)=>blocks(r,n).find(b=>b.type==="copy"&&(id===undefined||b.id===id));

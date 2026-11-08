@@ -1,4 +1,4 @@
-// A made-up dashboard for the tests of rows that open and rows read from a data file (format 0.19). Not a test (the runners take
+// A made-up dashboard for the tests of rows that open and rows read from a data file (format 0.20). Not a test (the runners take
 // *.test.js and *-browser.js); the browser tests and the node tests require it.
 //
 // Everything in it is invented: a garden and an orchard, with programmes that hold projects, projects that hold work items, and work
@@ -48,7 +48,7 @@ function count(data){let n=0;const todo=[...data.programmes];
 const FIELDS={title:"Name",kind:"Kind",stage:"Stage",open:"Open",due:"Due",moved:"Moved",about:"What it says",projects:"Projects",items:"Work items",steps:"Steps"};
 
 /* the booklet: one activity, three pages, each drawing the same rows another way (a table, a list, cards) */
-function bookletText(file,o){o=o||{};const f=file||"garden.json",marker=o.marker||"0.19";
+function bookletText(file,o){o=o||{};const f=file||"garden.json",marker=o.marker||"0.20";
   return `---
 booklet: "${marker}"
 title: Garden dashboard

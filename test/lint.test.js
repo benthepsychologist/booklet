@@ -11,12 +11,12 @@ const R=path.join(__dirname,"..");
 const LINT=process.env.LINT_BOOKLET||path.join(R,"lint-booklet.py");
 const FX=path.join(__dirname,"fixtures");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
-// The fixtures were written when the format was 0.17. A fixture that says `booklet: "0.17"` is linted as a copy that says 0.19, the current
+// The fixtures were written when the format was 0.17. A fixture that says `booklet: "0.17"` is linted as a copy that says 0.20, the current
 // format, so each stays the one-slip file it was (the copy is the same file but for that digit, so every line number holds). A fixture
 // that says anything else (a marker test) is linted as it is.
 const REMARK=fs.mkdtempSync(path.join(os.tmpdir(),"lintfx-"));
 const remark=a=>{if(!/\.md$/.test(a)||!path.resolve(a).startsWith(FX+path.sep)||!fs.existsSync(a))return a;
-  const t=fs.readFileSync(a,"utf8"),u=t.replace(/^(booklet:[ \t]*["']?)0\.17(["']?[ \t]*)$/m,"$10.19$2");
+  const t=fs.readFileSync(a,"utf8"),u=t.replace(/^(booklet:[ \t]*["']?)0\.17(["']?[ \t]*)$/m,"$10.20$2");
   if(u===t)return a;const f=path.join(REMARK,path.basename(a));fs.writeFileSync(f,u);return f;};
 const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a.map(remark)],{encoding:"utf8"});
   return {status:r.status,out:r.stdout,
@@ -39,7 +39,7 @@ const lint=(...a)=>{const r=spawnSync("python3",[LINT,...a.map(remark)],{encodin
 
 // ---- each fixture breaks one rule: exactly one error, naming the rule and the place
 const CASES=[
- ["lint-not-v02","front matter without booklet: 0.19 (an old `module:` file)",/front matter must say `booklet: "0\.19"` \(found None\); a marker is a 0\.x version/],
+ ["lint-not-v02","front matter without booklet: 0.20 (an old `module:` file)",/front matter must say `booklet: "0\.20"` \(found None\); a marker is a 0\.x version/],
  ["lint-no-lang","front matter with no lang",/front matter has no `lang:`/],
  ["lint-bad-lang","a lang that is not a language tag",/`lang: klingon`: 'klingon' is not a language tag/],
  ["lint-dup-question-id","a question id reused",/line 13: the id 'walk' is also used on line 11/],
@@ -234,9 +234,9 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
 {// the registry's modules, copied, re-marked and linted: the colour names stay valid
  const reg=process.env.BOOKLET_REGISTRY||"/workspace/booklet-registry/modules";
  if(fs.existsSync(reg)){const tmp=fs.mkdtempSync(path.join(require("os").tmpdir(),"reg05-"));
-   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/m,"booklet: \"0.19\""));
+   for(const n of fs.readdirSync(reg).filter(x=>/\.md$/.test(x)&&!/^readme/i.test(x))) fs.writeFileSync(path.join(tmp,n),fs.readFileSync(path.join(reg,n),"utf8").replace(/^booklet:[ \t]*["']?0\.\d+["']?[ \t]*$/m,"booklet: \"0.20\""));
    const r=lint(...fs.readdirSync(tmp).map(n=>path.join(tmp,n)));
-   chk("the registry's modules, copied and re-marked to 0.19, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
+   chk("the registry's modules, copied and re-marked to 0.20, lint at 0 errors",r.status===0&&/ 0 errors · /.test(r.out),r.out.slice(-400));}}
 
 {// v0.9: an id belongs to its module (SPEC.md section 4)
  const ok=lint(path.join(FX,"lint-data-section-shared-ok.md"));
@@ -277,7 +277,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
  {const r=lint(path.join(FX,"lint-notice-with-id.md"));
   chk("a notice with a word after the bar: an error naming it as a setting it does not take",r.status===1&&r.errors.some(l=>/line 11: a notice line takes no `legal` setting \(it takes no settings at all\)/.test(l)),r.out);}
  {const r=lint(path.join(FX,"lint-marker-unquoted.md"));
-  chk("an unquoted `booklet: 0.10` says to write it in quotes (a YAML tool reads it as 0.1), besides the other-marker warning, and is no error",r.status===0&&r.errors.length===0&&r.warns.length===2&&r.warns.some(w=>/without quotes; write it in quotes.*YAML tool will read it as 0\.1$/.test(w))&&r.warns.some(w=>/booklet: 0\.10; the current format is 0\.19/.test(w)),r.out);}
+  chk("an unquoted `booklet: 0.10` says to write it in quotes (a YAML tool reads it as 0.1), besides the other-marker warning, and is no error",r.status===0&&r.errors.length===0&&r.warns.length===2&&r.warns.some(w=>/without quotes; write it in quotes.*YAML tool will read it as 0\.1$/.test(w))&&r.warns.some(w=>/booklet: 0\.10; the current format is 0\.20/.test(w)),r.out);}
  const dm=lint(path.join(FX,"lint-data-module-ok.md"));
  chk("a module's own data section: two modules each with their own ^picker, and a shared section, no error; one warning for the block id Obsidian reads across the file",
    dm.status===0&&dm.errors.length===0&&dm.warns.length===1&&/the block id \^picker is used in the module 'mod-1' and the module 'mod-2'/.test(dm.warns[0]||""),dm.out);
@@ -288,18 +288,18 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
 
 {// v0.11: another 0.x marker is a warning, and the file is then checked by the current rules
  for(const n of ["0-2","0-3","0-4","0-5","0-6","0-7","0-8","0-9","0-11","0-12","0-13","0-15"]){const v=n.replace("-","."),r=lint(path.join(FX,"lint-old-format-"+n+".md"));
-  chk(`a file still saying booklet: ${v} is one warning and no error, and is checked as 0.19`,r.status===0&&r.errors.length===0&&r.warns.length===1&&new RegExp(`this file says booklet: ${v.replace(".","\\.")}; the current format is 0\\.19, and it is checked as 0\\.19`).test(r.warns[0]||""),r.out);}
- {const later=path.join(REMARK,"lint-marker-later.md");   // the fixture says 0.19, which is now the current format: a copy that says 0.20 is the later marker
-  fs.writeFileSync(later,fs.readFileSync(path.join(FX,"lint-marker-later.md"),"utf8").replace(/^booklet: "0\.19"$/m,'booklet: "0.20"'));
+  chk(`a file still saying booklet: ${v} is one warning and no error, and is checked as 0.20`,r.status===0&&r.errors.length===0&&r.warns.length===1&&new RegExp(`this file says booklet: ${v.replace(".","\\.")}; the current format is 0\\.20, and it is checked as 0\\.20`).test(r.warns[0]||""),r.out);}
+ {const later=path.join(REMARK,"lint-marker-later.md");   // the fixture says 0.20, which is now the current format: a copy that says 0.21 is the later marker
+  fs.writeFileSync(later,fs.readFileSync(path.join(FX,"lint-marker-later.md"),"utf8").replace(/^booklet: "0\.20"$/m,'booklet: "0.21"'));
   const r=lint(later);
-  chk("a later marker (0.20) is the same one warning",r.status===0&&r.errors.length===0&&r.warns.length===1&&/this file says booklet: 0\.20; the current format is 0\.19/.test(r.warns[0]||""),r.out);
+  chk("a later marker (0.21) is the same one warning",r.status===0&&r.errors.length===0&&r.warns.length===1&&/this file says booklet: 0\.21; the current format is 0\.20/.test(r.warns[0]||""),r.out);
   const cur=lint(path.join(FX,"lint-marker-later.md"));
-  chk("a file that says 0.19 is the current format: no marker notice at all",cur.status===0&&/0 errors · 0 warnings/.test(cur.out),cur.out);}
+  chk("a file that says 0.20 is the current format: no marker notice at all",cur.status===0&&/0 errors · 0 warnings/.test(cur.out),cur.out);}
  {const r=lint(path.join(FX,"lint-marker-old-and-broken.md"));
   chk("an old marker does not excuse a broken file: the warning, and the current rules' error",r.status===1&&r.errors.length===1&&/never closed/.test(r.errors[0]||"")&&r.warns.length===1,r.out);}
  for(const [n,what] of [["lint-marker-1-0","a marker that is not a 0.x version (1.0)"],["lint-marker-words","a marker that is words"]]){
   const r=lint(path.join(FX,n+".md"));
-  chk(`${what}: one error, as no marker`,r.status===1&&r.errors.length===1&&/front matter must say `booklet: "0\.19"`.*a marker is a 0\.x version/.test(r.errors[0]||"")&&r.warns.length===0,r.out);}
+  chk(`${what}: one error, as no marker`,r.status===1&&r.errors.length===1&&/front matter must say `booklet: "0\.20"`.*a marker is a 0\.x version/.test(r.errors[0]||"")&&r.warns.length===0,r.out);}
 }
 
 {// 0.15: a group in an activity holds blocks, read as the file is with one `>` less: a query view there is read as one, and
@@ -307,7 +307,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
  // supported: a renderer draws the block as code, so the linter warns, naming the block's line; one in the activity's own
  // text, or one shown as an example in a fence inside a callout, is no warning
  const Q="```booklet query\nfrom: log\nfields: hours\n```";
- const file=fold=>`---\nbooklet: "0.19"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|log repeat] Log\n\n`+
+ const file=fold=>`---\nbooklet: "0.20"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|log repeat] Log\n\n`+
    `> [!number|hours min:0 max:24] Hours slept\n\n> [!activity|look] Look\n\n${Q}\n\n${fold}\n\n> [!module|m end] End\n`;
  const quote=(head,body)=>head+"\n"+body.split("\n").map(l=>"> "+l).join("\n");
  const run=t=>{const f=path.join(require("os").tmpdir(),"lint-qfold-"+process.pid+".md");fs.writeFileSync(f,t);const r=lint(f);fs.unlinkSync(f);
@@ -321,7 +321,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
    n.status===0&&n.errors.length===0&&n.warns.length===1&&new RegExp(`line ${n.at}: a query view inside a callout \\(here a \`\\[!note\\]\`\\) is not yet supported: a renderer draws the \`booklet query\` block as code`).test(n.warns[0]||""),n.out);
  const deep=run(file(quote("> [!group] Outer","> [!tip] Inner\n"+Q.split("\n").map(l=>"> "+l).join("\n"))));
  chk("...and in a callout inside a group",deep.errors.length===0&&deep.warns.length===1&&new RegExp(`line ${deep.at}: .*here a \`\\[!tip\\]\``).test(deep.warns[0]||""),deep.out);
- const open=run(`---\nbooklet: "0.19"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n${quote("> [!group]- In the opening",Q)}\n\n> [!activity|log repeat] Log\n\n> [!number|hours] Hours\n\n> [!module|m end] End\n`);
+ const open=run(`---\nbooklet: "0.20"\ntitle: Q\nlang: en\n---\n\n> [!module|m] M\n\n${quote("> [!group]- In the opening",Q)}\n\n> [!activity|log repeat] Log\n\n> [!number|hours] Hours\n\n> [!module|m end] End\n`);
  chk("...and in a group in a module's opening, which holds text",open.errors.length===0&&open.warns.length===1&&new RegExp(`line ${open.at}: .*here a \`\\[!group\\]\``).test(open.warns[0]||""),open.out);
  const shown=run(file(quote("> [!note]- How to write one","````markdown\n"+Q+"\n````")));
  chk("a query shown as an example, in a markdown fence inside a callout, is no warning",shown.status===0&&/0 errors · 0 warnings/.test(shown.out),shown.out);
@@ -331,7 +331,7 @@ for(const name of ["lint-theme-ok","lint-row-ok","lint-tone-ok","theme-and-rows.
 {// 0.15: a group in an activity holds Booklet lines, written with one more `>`; they are linted as any others. Structure
  // (a module, activity, tab, row, data or records line) cannot go in a group. A Booklet line in any other callout is drawn
  // as text, and warned of
- const head=`---\nbooklet: "0.19"\ntitle: G\nlang: en\n---\n\n> [!activity|a] A\n\n`;
+ const head=`---\nbooklet: "0.20"\ntitle: G\nlang: en\n---\n\n> [!activity|a] A\n\n`;
  const run=t=>{const f=path.join(require("os").tmpdir(),"lint-group-"+process.pid+".md");fs.writeFileSync(f,head+t);const r=lint(f);fs.unlinkSync(f);return r;};
  const ok=run("> [!group] Step one\n> Some words.\n>\n> > [!choice|q1] Pick?\n> - [ ] A\n> - [ ] B\n>\n> > [!hint]- A hint\n> > Think.\n\n> [!group]- Step two\n> > [!scale|q2] How much?\n>\n> 1. Little\n> 2. Lots\n");
  chk("questions, their options and a hint inside groups: no error, no warning",ok.status===0&&/0 errors · 0 warnings/.test(ok.out),ok.out);

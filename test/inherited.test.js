@@ -118,7 +118,7 @@ const bodyRows=b=>tag(b,"tr").filter(tr=>tr.children.some(c=>c.tagName==="td"));
   chk("a table headed by a field named `__proto__` carries its label and its value",/Proto label/.test(text(b))&&/v1/.test(text(b)),text(b));}
 
  /* ---- kept entries: a question named like a member, and entries that lack it ---- */
- {const KEEP=(as,fields)=>`---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!number|constructor min:0 max:99] Ctor count\n\n> [!text|toString] Words\n\n> [!text|note] Note\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\nas: ${as}\nfields: ${fields}\n\`\`\`\n\n> [!module|m end] End\n`;
+ {const KEEP=(as,fields)=>`---\nbooklet: "0.20"\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|log repeat] Log\n\n> [!number|constructor min:0 max:99] Ctor count\n\n> [!text|toString] Words\n\n> [!text|note] Note\n\n> [!activity|look] Look\n\n\`\`\`booklet query\nfrom: log\nas: ${as}\nfields: ${fields}\n\`\`\`\n\n> [!module|m end] End\n`;
   const R=A.parseFile(KEEP("table","constructor, toString, note"));
   chk("a booklet with questions whose ids are `constructor` and `toString` reads clean",R.ok&&R.unread.length===0,JSON.stringify(R.unread));
   for(const as of ["table","list","cards"]){

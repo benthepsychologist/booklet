@@ -14,7 +14,7 @@ const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const byTag=(n,t)=>walk(n,x=>x.tagName===t);
 const text=n=>typeof n==="string"?n:(n&&n._text||"")+kids(n).map(text).join("");
-const FM=(t,extra)=>`---\nbooklet: "0.19"\ntitle: ${t}\nlang: en\n${extra||""}---\n\n`;
+const FM=(t,extra)=>`---\nbooklet: "0.20"\ntitle: ${t}\nlang: en\n${extra||""}---\n\n`;
 
 (async()=>{
  /* ---------------- D4: the words on a booklet line are inline Markdown ---------------- */
@@ -303,7 +303,7 @@ group: when
   B.screen="m/look";B.render();const lk=P.main();
   chk("a table over kept entries draws a chosen option's formula, as the card does",byTag(lk,"td").some(td=>byClass(td,"math").length===1),byTag(lk,"td").map(text).join("|"));
   const gc=byClass(byClass(lk,"dv-box")[1]||lk,"card")[0];
-  chk("on cards over a data block the group field is not a line (cards group), and the parent field is not a line either: cards nest by it as a list does (0.19), a card that has children opens",!!gc&&gc.tagName==="details"&&byTag(gc,"dt").map(text).join()==="",gc&&gc.tagName+" "+byTag(gc,"dt").map(text).join());}
+  chk("on cards over a data block the group field is not a line (cards group), and the parent field is not a line either: cards nest by it as a list does (0.20), a card that has children opens",!!gc&&gc.tagName==="details"&&byTag(gc,"dt").map(text).join()==="",gc&&gc.tagName+" "+byTag(gc,"dt").map(text).join());}
 
  /* ---------------- D18: a word typed into the feelings grid ---------------- */
  {P.wipe();const B=P.boot();await B.createBooklet();

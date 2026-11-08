@@ -1,5 +1,5 @@
 ---
-booklet: "0.19"
+booklet: "0.20"
 id: fixture/compile-pages
 title: A pocket guide to bread
 lang: en

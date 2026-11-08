@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]);
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const book=kind=>`---
-booklet: "0.19"
+booklet: "0.20"
 title: Workshop log
 lang: en
 ---
