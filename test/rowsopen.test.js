@@ -198,7 +198,7 @@ const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
   chk("a field that plays a role (value), `id` and the `parent` field are not in the open part",tag(r,"dt").map(text).join()==="hid",tag(r,"dt").map(text).join());}
 
  /* ---- readonly is last in every view's list of keys it draws ---- */
- chk("`readonly` is the last key of every view's list",Object.values(A.VIEW_DRAWS).every(l=>l[l.length-1]==="readonly")&&Object.keys(A.VIEW_DRAWS).length===6);
+ chk("`readonly` ends the list of tiles, bars and line, and is followed only by `add` and `delete` in the three views that nest (0.20)",Object.entries(A.VIEW_DRAWS).every(([v,l])=>{const tail=["table","list","cards"].includes(v)?["readonly","add","delete"]:["readonly"];return l.slice(-tail.length).join()===tail.join();})&&Object.keys(A.VIEW_DRAWS).length===6);
 
  /* ---- a question asked for each row (`each:` over a data block) is read, and drawn in the rows (test/dashedit.test.js) ---- */
  {const mk=each=>A.parseFile('---\nbooklet: "0.19"\ntitle: T\nlang: en\n---\n\n> [!activity|a] A\n\n```booklet query\nfrom: reqs\nas: list\n```\n\n> [!text|reply each:'+each+'] A word of reply\n\n```booklet data\n[{"id":"r1","title":"One"}]\n```\n^reqs\n');

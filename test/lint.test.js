@@ -60,7 +60,7 @@ const CASES=[
  ["lint-query-other-module","a query whose `from:` is in another module",/line 23: the query's `from: elsewhere` is in another module/],
  ["lint-query-no-entries","a query of an activity that keeps no entries",/line 23: the query's `from: once` keeps no entries/],
  ["lint-query-bad-field","a query whose `fields:` names a question not in the activity",/line 23: the query's `fields: far` is not a question of 'log'/],
- ["lint-query-bad-newest","a query still using `newest:` (it became `limit:` in 0.7)",/line 25: a query has no setting 'newest' \(it takes from, as, fields, group, limit, parent, empty, label, value, note, badge, tone, link, icon, summary, readonly\)/],
+ ["lint-query-bad-newest","a query still using `newest:` (it became `limit:` in 0.7)",/line 25: a query has no setting 'newest' \(it takes from, as, fields, group, limit, parent, empty, label, value, note, badge, tone, link, icon, summary, readonly, add, delete\)/],
  ["lint-query-old-title","a query still using `title:` (it became `label:` in 0.7)",/line 28: a query has no setting 'title'/],
  ["lint-query-bad-key","a query with a setting it does not take",/line 25: a query has no setting 'sort'/],
  ["lint-query-not-kv","a query body line that is not `key: value`",/line 25: a query line is written `key: value` \(found 'limit 3'\)/],
