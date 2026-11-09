@@ -1,5 +1,5 @@
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: fixture/compile-inherited
 title: Fields named like members
 lang: en

@@ -1,5 +1,5 @@
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: example/tide-notes
 title: Tide notes
 lang: en

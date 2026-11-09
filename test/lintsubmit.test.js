@@ -13,7 +13,7 @@ const lint=text=>{const dir=path.join(tmp,"c"+(++k));fs.mkdirSync(dir);
   const r=spawnSync("python3",[LINT,f],{encoding:"utf8"}),lines=r.stdout.split("\n");
   return {status:r.status,out:r.stdout,errors:lines.filter(l=>l.startsWith("ERROR")),warns:lines.filter(l=>l.startsWith("warn"))};};
 // the submit line is line 5 of the file
-const file=(line,body)=>'---\nbooklet: "0.20"\ntitle: Lint fixture\nlang: en\n'+(line===null?'':line+'\n')+'---\n\n> [!activity|a] A\n\n> [!text|q] Q\n'+(body||'');
+const file=(line,body)=>'---\nbooklet: "0.21"\ntitle: Lint fixture\nlang: en\n'+(line===null?'':line+'\n')+'---\n\n> [!activity|a] A\n\n> [!text|q] Q\n'+(body||'');
 const clean=(what,r)=>chk(what,r.status===0&&/0 errors · 0 warnings/.test(r.out),r.out);
 const bad=(what,line,rx)=>{const r=lint(file(line));
   chk(`${what}: exactly one finding, an error`,r.errors.length===1&&r.errors.length+r.warns.length===1&&r.status===1,r.out);
@@ -46,6 +46,6 @@ bad("a space inside the name","submit: class feedback",/has a character other th
 bad("an accented letter","submit: clásico",/has a character other than a-z, 0-9 and `-`/);
 {const r=lint(file("submit: https://example.org/"+"x".repeat(80)));
  chk("a long value is shown shortened in the message, not repeated whole",r.errors.length===1&&/\.\.\.` looks like an address/.test(r.errors[0])&&r.errors[0].length<420,r.errors[0]);}
-{const r=lint('---\nbooklet: "0.20"\ntitle: Lint fixture\nlang: en\nsubmit: Bad\nsubmit: also bad!\n---\n\n> [!activity|a] A\n\n> [!text|q] Q\n');
+{const r=lint('---\nbooklet: "0.21"\ntitle: Lint fixture\nlang: en\nsubmit: Bad\nsubmit: also bad!\n---\n\n> [!activity|a] A\n\n> [!text|q] Q\n');
  chk("two submit lines are each checked, by their own lines",r.errors.length===2&&/: line 5: /.test(r.errors[0])&&/: line 6: /.test(r.errors[1]),r.out);}
 console.log(fails?"\n"+fails+" FAILURES":"\nlintsubmit checks passed");process.exit(fails?1:0);
