@@ -3,6 +3,7 @@ booklet: "0.20"
 id: test/submit-seen
 title: Seen test
 lang: en
+submit: test-endpoint
 version: "0.7"
 ---
 

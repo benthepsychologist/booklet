@@ -3,6 +3,7 @@ booklet: "0.20"
 id: test/submit-questionnaire
 title: Submit test questionnaire
 lang: en
+submit: test-endpoint
 ---
 
 # Submit test questionnaire

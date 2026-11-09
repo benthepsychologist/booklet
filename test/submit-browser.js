@@ -1,27 +1,34 @@
 // Browser check for the submit build (submit/submit.js, put into booklet-submit.html by submit/build.js). The page is the
 // submit build as a host would serve it: https://forms.example.com/app/, with the host's own script at /host.js (it names the
-// recipe). A booklet with a host name is one the page reads from its store (a copy of the page at /host/ declares the store
-// /store/, the test's own routed files); one without is added from a file on /app/, which declares none. The file's own <meta> policy is the whole policy: the test
-// sends no policy header. The address Submit sends to is https://api.example.org/submit, answered here by a route standing in for
-// recepture (POST only, application/json, the schema rules of its payload contract, 201 {"status":"accepted","response_id"}, and
-// the CORS headers recepture sends for the one origin it is set to allow). The published booklet.html is the file named on the
-// command line; the test only hashes it, before and after, to show it ran nothing against it.
-// Checks, in the order a reader meets them: the page loads clean and BookletSubmit is frozen; Submit is hidden on "Your
-// booklets", on a booklet without a host name and on one opened by link from the default folder (0.15: modules/ beside a page
-// that declares no store, never the host's; answered, it still shows none, a press on the button forced into view opens
-// nothing, and nothing goes to the endpoint), shown on one with a name; the questionnaire fixture is answered through the
-// screens, as a reader does; nothing has gone anywhere up to the press of Send; the confirm screen lists the answers as the
-// reader gave them, by module, with the exact JSON folded under them, and Cancel/Escape close it; an untrusted click opens
-// nothing and sends nothing; Send sends one POST whose body is the folded text, with no cookie and no referrer; after the 201
-// the booklet stays open with every answer, kept in this browser (also after a reload) and downloadable, and Submit reads Sent
-// until an answer changes; across the run no other request has a body and nothing but the POSTs carries the typed address; a
-// refusal (400) and an unreachable address keep every answer and let the reader retry; two modules answering one id stop the
-// send; the screen speaks French with the French interface, es-AR reads es, and an answer no question names is listed by
-// its id; and at 400px nothing overflows. Screenshots (confirm, its exact text, Sent, refusal, French; 1280px and 400px) are
-// written to <outdir>.
-// Live mode: with SUBMIT_ENDPOINT set (a real recepture started with CORS_ORIGIN=http://forms.example.com), the page is served
-// at http://forms.example.com (or SUBMIT_PAGE_ORIGIN) and the success path's request is NOT routed: it goes to the real server,
-// and the response_id it returns is printed on a line of its own. The refusal and unreachable cases are still answered by routes.
+// recipe), built from a registry of two endpoints (format 0.21: a booklet's `submit: <name>` picks one by name). A booklet is
+// one the page reads from its store (a copy of the page at /host/ declares the store /store/, the test's own routed files), or
+// added from a file on /app/, or opened from the default folder /app/modules/: the way it came in changes nothing, only its front
+// matter does. The file's own <meta> policy is the whole policy: the test sends no policy header. The first address is
+// https://api.example.org/submit, answered here by a route standing in for recepture (POST only, application/json, the schema
+// rules of its payload contract, 201 {"status":"accepted","response_id"}, and the CORS headers recepture sends for the one origin
+// it is set to allow); the second is another origin, answered by the same stand-in. The published booklet.html is the file named
+// on the command line; the test only hashes it, before and after, to show it ran nothing against it.
+// Checks, in the order a reader meets them: the page loads clean, its policy names the two endpoints' origins and no other, and
+// BookletSubmit is frozen and lists them; Submit is hidden on "Your booklets" and on a booklet with no `submit` line (nothing is
+// said), on one that names an endpoint the registry does not list, on one whose `submit` holds an address, and on one whose name
+// is not a name (each says why in one line in the bar, in the reader's language, and nothing goes to any endpoint, a press forced
+// into view opens nothing); it is shown, however the booklet came in (from the store, from a file, from the default folder), on one
+// that names a listed endpoint, also when its name is quoted, and a booklet that carries other front matter keys holding addresses
+// still sends to the registry's address only; the questionnaire fixture is answered through the screens, as a reader does; nothing
+// has gone anywhere up to the press of Send; the confirm screen names the registry's endpoint (its name, owner and address, as the
+// registry writes them), lists the answers as the reader gave them, by module, with the exact JSON folded under them, and
+// Cancel/Escape close it; an untrusted click opens nothing and sends nothing; Send sends one POST whose body is the folded text,
+// with no cookie and no referrer, to the address of the endpoint the booklet names (the second endpoint's booklet goes to the
+// second address); after the 201 the booklet stays open with every answer, kept in this browser (also after a reload) and
+// downloadable, and Submit reads Sent until an answer changes; across the run no other request has a body and nothing but the POSTs
+// carries the typed address; a refusal (400) and an unreachable address keep every answer and let the reader retry; two modules
+// answering one id stop the send; the screen speaks French with the French interface, es-AR reads es, and an answer no question
+// names is listed by its id; and at 400px nothing overflows. Screenshots (confirm, its exact text, Sent, refusal, French;
+// 1280px and 400px) are written to <outdir>.
+// Live mode: with SUBMIT_ENDPOINT set (a real recepture started with CORS_ORIGIN=http://forms.example.com), the first endpoint is
+// that address, the page is served at http://forms.example.com (or SUBMIT_PAGE_ORIGIN) and the success path's request to it is NOT
+// routed: it goes to the real server, and the response_id it returns is printed on a line of its own. The refusal and unreachable
+// cases are still answered by routes, and the second endpoint is always the stand-in.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright-core node test/submit-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),http=require('http');
@@ -31,18 +38,35 @@ const LIVE=!!process.env.SUBMIT_ENDPOINT;
 const ENDPOINT=LIVE?process.env.SUBMIT_ENDPOINT:'https://api.example.org/submit';
 const PAGE=LIVE?(process.env.SUBMIT_PAGE_ORIGIN||'http://forms.example.com'):'https://forms.example.com';
 const API=new URL(ENDPOINT).origin;
+/* the registry the page is built from: two endpoints on two origins; a booklet names one by its `name` */
+const ENDPOINT2='https://other.example.net:8443/collect',API2=new URL(ENDPOINT2).origin;
+const REGISTRY={format:1,endpoints:[
+  {name:'test-endpoint',address:ENDPOINT,owner:'Test Owner One',description:'The first test endpoint'},
+  {name:'second-endpoint',address:ENDPOINT2,owner:'Second Owner, Ltd.',description:'The second test endpoint'}]};
+/* an address a booklet might carry, which no page may send to */
+const EVIL='https://evil.example/collect',EVIL_ORIGIN=new URL(EVIL).origin;
 const RECIPE='recipes/test-battery.yaml';
 const NAME='test/submit-questionnaire.md',CLASH_NAME='test/submit-clash.md';
-/* 0.15: the questionnaire again, in the default folder beside the page (/app/modules/), opened by a link */
-const FOLDER_NAME='test/submit-folder.md';
+/* the questionnaire again, in the default folder beside the page (/app/modules/), opened by a link: one with no `submit` line and one with it */
+const FOLDER_NAME='test/submit-folder.md',FOLDER_KEY_NAME='test/submit-folder-key.md';
 /* a name per run below, so each starts blank: a booklet sent is kept, and the same name opens the kept copy again */
 const NAME_B='test/submit-questionnaire-b.md',NAME_C='test/submit-questionnaire-c.md',NAME_D='test/submit-questionnaire-d.md';
 const EMAIL='client@example.test';
 const FIX=f=>fs.readFileSync(path.join(__dirname,'fixtures',f),'utf8');
 const QUESTIONNAIRE=FIX('submit-questionnaire.booklet.md'),CLASH=FIX('submit-clash.booklet.md');
+/* the questionnaire with its `submit` line changed (null takes it out), and with more front matter lines added */
+const withSubmit=(text,line,more)=>{if(!/^submit: test-endpoint\n/m.test(text)) throw new Error('the fixture has no submit line to change');
+  return text.replace(/^submit: test-endpoint\n/m,(line===null?'':line+'\n')+(more||[]).map(l=>l+'\n').join(''));};
+/* the one that is added from a file as well as the questionnaire itself has an id of its own, so the two are two booklets in the library */
+const NO_KEY=withSubmit(QUESTIONNAIRE,null).replace('id: test/submit-questionnaire\n','id: test/submit-no-key\n'),SECOND=withSubmit(QUESTIONNAIRE,'submit: second-endpoint'),UNLISTED=withSubmit(QUESTIONNAIRE,'submit: not-registered'),
+  QUOTED=withSubmit(QUESTIONNAIRE,'submit: "test-endpoint"'),UPPER=withSubmit(QUESTIONNAIRE,'submit: Test-Endpoint'),
+  ADDRESS=withSubmit(QUESTIONNAIRE,'submit: '+EVIL),ADDRESS_AFTER=withSubmit(QUESTIONNAIRE,'submit: test-endpoint '+EVIL),
+  /* the registry's endpoint is named; every other key that could look like an address is a booklet's own words, kept as written and never read */
+  SNEAKY=withSubmit(QUESTIONNAIRE,'submit: test-endpoint',['endpoint: '+EVIL,'address: '+EVIL,'url: '+EVIL,'submit-to: '+EVIL,'owner: Somebody Else','name: second-endpoint']);
 const HOSTJS='window.BookletSubmit.recipe("'+RECIPE+'");';
-/* the test's store: name -> text */
+/* the test's store: name -> text; and the default folder's files */
 const STORE={};
+const FOLDER={[FOLDER_NAME]:NO_KEY,[FOLDER_KEY_NAME]:QUESTIONNAIRE};
 const sha=f=>crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
 /* the answers the test gives: made up. The options are positions in the fixture's menu (1 = Not at all ... 4 = Nearly every day) */
 const PHQ=[1,2,3,4,1,2,3,4,1],GAD=[2,3];
@@ -73,7 +97,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const before=sha(HTML);
-  const BUILD=require('../submit/build.js').build({endpoint:ENDPOINT,script:'/host.js'});
+  const BUILD=require('../submit/build.js').build({registry:REGISTRY,script:'/host.js'});
   /* the same build with a store declared (a meta tag; the policy is unchanged, it already lets the page read its own origin) */
   const BUILD_STORE=BUILD.replace('<meta name="theme-color"','<meta name="booklet-store" content="/store/">\n<meta name="theme-color"');
   if(BUILD_STORE===BUILD) throw new Error('no theme-color meta tag to put the store tag before: update this test');
@@ -90,7 +114,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
       if(u==='/host/'){s.writeHead(200,{'content-type':'text/html; charset=utf-8'});return s.end(BUILD_STORE);}
       if(u.startsWith('/store/')){const t=storeBody(u);if(t===null){s.writeHead(404);return s.end('nf');}s.writeHead(200,{'content-type':'text/markdown; charset=utf-8'});return s.end(t);}
       if(u==='/host.js'){s.writeHead(200,{'content-type':'text/javascript'});return s.end(HOSTJS);}
-      if(u==='/app/modules/'+FOLDER_NAME){s.writeHead(200,{'content-type':'text/markdown; charset=utf-8'});return s.end(QUESTIONNAIRE);}
+      if(u.startsWith('/app/modules/')&&decodeURIComponent(u.slice(13)) in FOLDER){s.writeHead(200,{'content-type':'text/markdown; charset=utf-8'});return s.end(FOLDER[decodeURIComponent(u.slice(13))]);}
       s.writeHead(404);s.end('nf');});
     await new Promise(r=>server.listen(0,'127.0.0.1',r));
     args.push('--host-resolver-rules=MAP '+new URL(PAGE).hostname+' 127.0.0.1:'+server.address().port);}
@@ -109,22 +133,24 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   const CORS={'access-control-allow-origin':PAGE,'vary':'Origin'};
   ctx.on('request',r=>{const rec={url:r.url(),method:r.method(),body:r.postData()||'',headers:r.headers(),all:null};reqs.push(rec);
     pending.push(r.allHeaders().then(h=>{rec.all=h;},()=>{}));});
-  ctx.on('response',r=>{if(r.request().method()==='POST'&&r.url()===ENDPOINT)
-    answered.push(r.json().then(j=>({status:r.status(),json:j}),()=>({status:r.status(),json:null})));});
+  ctx.on('response',r=>{if(r.request().method()==='POST'&&(r.url()===ENDPOINT||r.url()===ENDPOINT2))
+    answered.push(r.json().then(j=>({url:r.url(),status:r.status(),json:j}),()=>({url:r.url(),status:r.status(),json:null})));});
   if(!LIVE) await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(u==='/app/')return r.fulfill({status:200,body:BUILD,headers:{'content-type':'text/html; charset=utf-8'}});
     if(u==='/host/')return r.fulfill({status:200,body:BUILD_STORE,headers:{'content-type':'text/html; charset=utf-8'}});
     if(u.startsWith('/store/')){const t=storeBody(u);return t===null?r.fulfill({status:404,body:'nf'}):r.fulfill({status:200,body:t,headers:{'content-type':'text/markdown; charset=utf-8'}});}
     if(u==='/host.js')return r.fulfill({status:200,body:HOSTJS,headers:{'content-type':'text/javascript'}});
-    if(u==='/app/modules/'+FOLDER_NAME)return r.fulfill({status:200,body:QUESTIONNAIRE,headers:{'content-type':'text/markdown; charset=utf-8'}});
+    if(u.startsWith('/app/modules/')&&decodeURIComponent(u.slice(13)) in FOLDER)return r.fulfill({status:200,body:FOLDER[decodeURIComponent(u.slice(13))],headers:{'content-type':'text/markdown; charset=utf-8'}});
     r.fulfill({status:404,body:'nf'});});
   const apiRoute=async r=>{const q=r.request();
+    /* the second endpoint is the stand-in in every mode: only the first one is ever the real server, or refuses, or is unreachable */
+    const md=q.url().startsWith(API2)?'standin':mode;
     if(q.method()==='OPTIONS'){preflights++;
       return r.fulfill({status:204,headers:{...CORS,'access-control-allow-methods':'POST','access-control-allow-headers':'Content-Type'}});}
-    if(mode==='real') return r.continue();
-    if(mode==='abort') return r.abort('failed');
+    if(md==='real') return r.continue();
+    if(md==='abort') return r.abort('failed');
     const err=(s,code,message)=>r.fulfill({status:s,headers:{...CORS,'content-type':'application/json'},body:JSON.stringify({error:{code,message}})});
-    if(mode==='refuse') return err(400,'missing_recipe','x');
+    if(md==='refuse') return err(400,'missing_recipe','x');
     if(q.method()!=='POST') return err(405,'method_not_allowed','POST only');
     const h=await q.allHeaders();
     if(!/^application\/json\b/i.test(h['content-type']||'')) return err(415,'unsupported_media_type','application/json only');
@@ -132,6 +158,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
     standinPosts++;
     r.fulfill({status:201,headers:{...CORS,'content-type':'application/json'},body:JSON.stringify({status:'accepted',response_id:crypto.randomUUID()})});};
   if(!LIVE) await ctx.route(API+'/**',apiRoute);
+  await ctx.route(API2+'/**',apiRoute);
   /* live mode: route the endpoint on one page for a failure case, and take the route off again for a success */
   const routeOn=async p=>{if(LIVE) await p.route(API+'/**',apiRoute);};
   const routeOff=async p=>{if(LIVE) await p.unroute(API+'/**',apiRoute);};
@@ -154,11 +181,19 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
       await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();}
     await wait(p,600);return {ok:await p.evaluate(()=>bookOpen())};};
   const submitHidden=p=>p.evaluate(()=>document.getElementById('btnSubmit').hidden);
+  /* the one line in the bar that says why a booklet that asks for Submit has none */
+  const whyHidden=p=>p.evaluate(()=>document.getElementById('submitWhy').hidden);
+  const whyText=p=>p.evaluate(()=>{const w=document.getElementById('submitWhy');return w.hidden?'':w.textContent;});
   const dialogOpen=p=>p.evaluate(()=>document.getElementById('veilSubmit').hasAttribute('open'));
   const text=(p,sel)=>p.locator(sel).textContent();
   const noScroll=p=>p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   const toEndpoint=()=>reqs.filter(r=>r.url===ENDPOINT&&r.method==='POST');
+  const toEndpoint2=()=>reqs.filter(r=>r.url===ENDPOINT2&&r.method==='POST');
   const toApiOrigin=()=>reqs.filter(r=>/^https?:/i.test(r.url)&&new URL(r.url).origin===API);
+  /* any request at all to the second endpoint's origin, and to the origin a booklet's own words name */
+  const toApi2Origin=()=>reqs.filter(r=>/^https?:/i.test(r.url)&&new URL(r.url).origin===API2);
+  const toEvil=()=>reqs.filter(r=>/^https?:/i.test(r.url)&&new URL(r.url).origin===EVIL_ORIGIN);
+  const anyApi=()=>toApiOrigin().length+toApi2Origin().length+toEvil().length;
   const shot=(p,n)=>p.screenshot({path:path.join(OUT,n)});
   /* the screens, as a reader meets them: the overview's cards, then a module's questions (choices are pills, text is a field) */
   const toOverview=async p=>{if(await p.evaluate(()=>document.body.dataset.view)!=='@home'){await p.locator('#btnHome').click();await wait(p,300);}};
@@ -176,35 +211,47 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   /* the confirm screen's list, as the reader sees it: each module's card, its title and its question/answer pairs */
   const listed=p=>p.evaluate(()=>Array.from(document.querySelectorAll('#submitList .entry')).map(c=>({title:c.querySelector('h4').textContent,
     rows:Array.from(c.querySelectorAll('dt')).map(dt=>[dt.textContent,dt.nextElementSibling?dt.nextElementSibling.textContent:null])})));
+  /* the confirm screen's destination, as the reader sees it: each label and its value */
+  const destOf=p=>p.evaluate(()=>Array.from(document.querySelectorAll('#submitTo dt')).map(dt=>[dt.textContent,dt.nextElementSibling?dt.nextElementSibling.textContent:null]));
   const button=p=>p.evaluate(()=>{const b=document.getElementById('btnSubmit');return {hidden:b.hidden,label:b.textContent.trim(),aria:b.getAttribute('aria-disabled'),disabled:b.disabled};});
 
   // 2 the page loads; BookletSubmit
   let p=await newPage();
-  const bs=await p.evaluate(()=>({t:typeof window.BookletSubmit,frozen:Object.isFrozen(window.BookletSubmit),ep:window.BookletSubmit.endpoint,keys:Object.keys(window.BookletSubmit).sort().join()}));
-  ok(bs.t==='object'&&bs.frozen&&bs.ep===ENDPOINT&&bs.keys==='endpoint,recipe,version','window.BookletSubmit is frozen, has endpoint, recipe and version, and its endpoint is the built one: '+JSON.stringify(bs));
+  const bs=await p.evaluate(()=>({t:typeof window.BookletSubmit,frozen:Object.isFrozen(window.BookletSubmit),eps:window.BookletSubmit.endpoints,epsFrozen:Object.isFrozen(window.BookletSubmit.endpoints)&&window.BookletSubmit.endpoints.every(e=>Object.isFrozen(e)),keys:Object.keys(window.BookletSubmit).sort().join(),v:window.BookletSubmit.version}));
+  ok(bs.t==='object'&&bs.frozen&&bs.keys==='endpoints,recipe,version'&&bs.v==='0.4.0','window.BookletSubmit is frozen, has endpoints, recipe and version (0.4.0): '+JSON.stringify(bs));
+  ok(sameJSON(bs.eps,REGISTRY.endpoints)&&bs.epsFrozen,'its endpoints are the built registry\'s two, as written, frozen: '+JSON.stringify(bs.eps));
+  const pol=await p.evaluate(()=>{const m=document.querySelector('meta[http-equiv="Content-Security-Policy"]');return m?m.getAttribute('content'):'';});
+  const connect=(/(?:^|; )connect-src ([^;]*)/.exec(pol)||[])[1]||'';
+  ok(connect.split(' ').filter(x=>/:\/\//.test(x)).filter(x=>x!==API&&x!==API2).join()==='https://raw.githubusercontent.com'&&connect.includes(API)&&connect.includes(API2)&&!connect.includes(EVIL_ORIGIN),'the file\'s own policy names the two endpoints\' origins in connect-src and no other beyond the renderer\'s own: '+connect);
   ok(csp.length===0&&errs.length===0,'the submit page loaded with no page error and no policy message (the file\'s own meta policy is the only one): '+csp.concat(errs).join('|'));
   ok(toApiOrigin().length===0,'loading the page made no request to the endpoint\'s origin');
 
   // 3 "Your booklets"
   ok(await p.evaluate(()=>screen)==='@booklets'&&await submitHidden(p),'on "Your booklets" (nothing open) the Submit button is hidden');
 
-  // 4 a booklet without a name
-  let r=await openBook(p,QUESTIONNAIRE,null);
-  ok(r.ok===true&&await p.evaluate(()=>bookOpen()),'the booklet was added from a file without a host name: '+JSON.stringify(r));
-  ok(await submitHidden(p),'a booklet opened without a name (the reader\'s own) shows no Submit button');
+  // 4 a booklet with no `submit` line, added from a file: no button, and nothing is said
+  let r=await openBook(p,NO_KEY,null);
+  ok(r.ok===true&&await p.evaluate(()=>bookOpen()),'a booklet with no submit line was added from a file: '+JSON.stringify(r));
+  ok(await submitHidden(p)&&await whyHidden(p),'it shows no Submit button, and the bar says nothing about it (most booklets name no endpoint)');
   await grabViol(p);await p.close();
 
-  // 4b (0.15) a booklet opened by link from the default folder: the page declares no store, so a link reads modules/ beside it,
-  //    and what opens from there is never the host's. No Submit button, answered or not, and nothing goes to the endpoint.
+  // 4a the old gate is gone: the same booklet WITH the line, added from a file the reader holds (the page was never given it by a host)
   p=await newPage();
-  {const a0=toApiOrigin().length,f0=reqs.length;
+  r=await openBook(p,QUESTIONNAIRE,null);
+  ok(r.ok===true&&!await submitHidden(p)&&await whyHidden(p)&&(await button(p)).label==='Submit','a booklet added from a file that says submit: test-endpoint shows Submit: whoever gave the file, what the front matter names decides, and nothing is said in the bar: '+JSON.stringify(await button(p)));
+  await grabViol(p);await p.close();
+
+  // 4b a booklet opened by link from the default folder: the page declares no store, so a link reads modules/ beside it. With no `submit`
+  //    line it has no Submit button, answered or not, a press forced into view opens nothing, and nothing goes to any endpoint.
+  p=await newPage();
+  {const a0=anyApi(),f0=reqs.length;
    await p.evaluate(n=>{location.hash='#/open/'+n;},FOLDER_NAME);
    await p.waitForFunction(()=>typeof BOOK!=='undefined'&&BOOK!==EMPTY_BOOKLET,null,{timeout:8000}).catch(()=>{});await wait(p,600);
    const fr=reqs.slice(f0).filter(q=>/\/modules\//.test(q.url)).map(q=>q.method+' '+new URL(q.url).pathname);
    ok(fr.join()==='GET /app/modules/'+FOLDER_NAME,'a link on the submit page (no store tag) read the booklet from modules/ beside it: '+fr.join(' '));
    const from=await p.evaluate(()=>(currentEntry||{}).from||'');
    ok(from==='modules:/app/modules/#'+FOLDER_NAME,'...and opened it as a booklet from the default folder: '+from);
-   ok(await submitHidden(p),'a booklet from the default folder shows no Submit button');
+   ok(await submitHidden(p)&&await whyHidden(p),'a booklet from the default folder with no submit line shows no Submit button and says nothing');
    await answerAll(p);
    ok(sameJSON(sortKeys(await answers(p)),sortKeys(EXPECT)),'it was answered through the screens, as the named one is below');
    ok(await submitHidden(p),'answered, it still shows no Submit button');
@@ -212,15 +259,92 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
    await p.evaluate(()=>{document.getElementById('btnSubmit').hidden=false;});
    await p.locator('#btnSubmit').click({timeout:2000}).catch(()=>{});await wait(p,2500);
    ok(!await dialogOpen(p),'a press on the button forced into view opens no confirm screen');
-   ok(toApiOrigin().length===a0,'nothing went to the endpoint\'s origin while it was open, answered and pressed ('+(toApiOrigin().length-a0)+' requests)');}
+   ok(anyApi()===a0,'nothing went to any endpoint\'s origin while it was open, answered and pressed ('+(anyApi()-a0)+' requests)');}
   await grabViol(p);await p.close();
 
-  // 5 with a name
+  // 4c the same file in the default folder WITH the line: Submit shows (the folder is not special; the line is what counts)
+  p=await newPage();
+  await p.evaluate(n=>{location.hash='#/open/'+n;},FOLDER_KEY_NAME);
+  await p.waitForFunction(()=>typeof BOOK!=='undefined'&&BOOK!==EMPTY_BOOKLET,null,{timeout:8000}).catch(()=>{});await wait(p,600);
+  ok((await p.evaluate(()=>(currentEntry||{}).from||''))==='modules:/app/modules/#'+FOLDER_KEY_NAME&&!await submitHidden(p),'a booklet from the default folder that says submit: test-endpoint shows Submit');
+  await grabViol(p);await p.close();
+
+  // 4d a name the registry does not list: no Submit, one line that says why, nothing sent, and a forced press opens nothing
+  p=await newPage();
+  {const a0=anyApi();
+   r=await openBook(p,UNLISTED,'test/submit-unlisted.md');
+   const w=await whyText(p);
+   ok(r.ok===true&&await submitHidden(p),'a booklet that names an endpoint the registry does not list shows no Submit button');
+   ok(/Submit is not available/.test(w)&&w.includes('not-registered')&&!w.includes('\n')&&w.length<140,'...and the bar says why in one line, with the name it asked for: '+w);
+   await answerAll(p);
+   ok(await submitHidden(p)&&/not-registered/.test(await whyText(p)),'answered, it still has no Submit, and the line stays');
+   await p.evaluate(()=>{document.getElementById('btnSubmit').hidden=false;});
+   await p.locator('#btnSubmit').click({timeout:2000}).catch(()=>{});await wait(p,1500);
+   ok(!await dialogOpen(p)&&anyApi()===a0,'a press forced into view opens no confirm screen, and nothing went to any endpoint\'s origin ('+(anyApi()-a0)+')');
+   await p.locator('#langGroup [data-lang="fr"]').click();await wait(p,300);
+   const wf=await whyText(p);
+   ok(/Envoyer n’est pas disponible/.test(wf)&&wf.includes('not-registered'),'with the French interface the line is in French: '+wf);
+   await p.locator('#langGroup [data-lang="es"]').click();await wait(p,300);
+   ok(/Enviar no está disponible/.test(await whyText(p)),'and in Spanish: '+await whyText(p));
+   await p.locator('#langGroup [data-lang="en"]').click();await wait(p,300);
+   await shot(p,'submit-unlisted-1280.png');}
+  await grabViol(p);await p.close();
+
+  // 4e a booklet whose text carries an address instead of a name sends nothing: no button, a line, and no request to that address or any endpoint
+  for(const [what,text,n] of [['an address in place of the name',ADDRESS,'test/submit-address.md'],['a name followed by an address',ADDRESS_AFTER,'test/submit-address-after.md'],['a name in capitals',UPPER,'test/submit-upper.md']]){
+    p=await newPage();
+    const a0=anyApi();
+    r=await openBook(p,text,n);
+    const w=await whyText(p);
+    ok(r.ok===true&&await submitHidden(p)&&/Submit is not available/.test(w)&&!w.includes('evil')&&!w.includes('://'),what+': no Submit button, and the line says the submit line is not an endpoint name, without repeating what the booklet wrote: '+w);
+    await answerAll(p);
+    await p.evaluate(()=>{document.getElementById('btnSubmit').hidden=false;});
+    await p.locator('#btnSubmit').click({timeout:2000}).catch(()=>{});await wait(p,1200);
+    ok(!await dialogOpen(p),what+': a press forced into view opens no confirm screen');
+    ok(anyApi()===a0&&!(await p.evaluate(()=>document.body.innerText)).includes(EVIL),what+': nothing went to the address or to any endpoint ('+(anyApi()-a0)+' requests), and the address is not shown anywhere');
+    await grabViol(p);await p.close();}
+
+  // 4f the second endpoint: the booklet that names it goes to its address, and the screen shows its name, owner and address
+  p=await newPage();
+  {const n1=toEndpoint().length,n2=toEndpoint2().length;
+   r=await openBook(p,SECOND,'test/submit-second.md');
+   ok(r.ok===true&&!await submitHidden(p)&&await whyHidden(p),'a booklet that names the second endpoint shows Submit');
+   await answerAll(p);await pressSubmit(p);
+   ok(sameJSON(await destOf(p),[['Name','second-endpoint'],['Owner','Second Owner, Ltd.'],['Address',ENDPOINT2]]),'its confirm screen shows the registry\'s name, owner and address for the second endpoint: '+JSON.stringify(await destOf(p)));
+   ok(toEndpoint2().length===n2&&anyApi()===toApiOrigin().length,'nothing has been sent to the second origin by showing it');
+   const shown2=await text(p,'#submitBody');
+   await pressSend(p);await waitSent(p);await Promise.all(pending);
+   const q2=toEndpoint2();
+   ok(q2.length===n2+1&&toEndpoint().length===n1,'Send makes one POST, to the second address, and none to the first ('+(q2.length-n2)+', '+(toEndpoint().length-n1)+')');
+   const a2=(q2[n2]||{}).all||(q2[n2]||{}).headers||{};
+   ok(!!q2[n2]&&q2[n2].body===shown2&&!('cookie' in a2)&&!('referer' in a2)&&receptureRules(q2[n2].body)==='','its body is the folded text of the screen, with no cookie and no referrer, and is the same payload (recipe, answers, booklet, seen): '+Object.keys(JSON.parse(shown2)).sort().join());
+   ok(await text(p,'#submitTitle')==='Sent','and the screen says Sent');}
+  await grabViol(p);await p.close();
+
+  // 4g the registry decides, not the booklet: a quoted name works, and every other front matter key that looks like an address, a name or an owner is only the booklet's own words
+  p=await newPage();
+  r=await openBook(p,QUOTED,'test/submit-quoted.md');
+  ok(r.ok===true&&!await submitHidden(p)&&await whyHidden(p),'a name in quotes (submit: "test-endpoint") shows Submit, as the renderer reads every other quoted front matter value');
+  await grabViol(p);await p.close();
+  p=await newPage();
+  {const n1=toEndpoint().length,e0=toEvil().length,n2=toEndpoint2().length;
+   r=await openBook(p,SNEAKY,'test/submit-sneaky.md');
+   ok(r.ok===true&&!await submitHidden(p),'a booklet that names a listed endpoint and also carries endpoint, address, url, owner and name keys in its front matter shows Submit');
+   await answerAll(p);await pressSubmit(p);
+   ok(sameJSON(await destOf(p),[['Name','test-endpoint'],['Owner','Test Owner One'],['Address',ENDPOINT]]),'its confirm screen shows the registry\'s name, owner and address, and nothing the booklet wrote but the name: '+JSON.stringify(await destOf(p)));
+   const pg=await p.evaluate(()=>document.getElementById('veilSubmit').innerText);
+   ok(!pg.includes('evil')&&!pg.includes('Somebody Else'),'and the screen shows no word of the booklet\'s other keys');
+   await pressSend(p);await waitSent(p);await Promise.all(pending);
+   ok(toEndpoint().length===n1+1&&toEndpoint2().length===n2&&toEvil().length===e0,'Send makes one POST, to the registry\'s address; none to the booklet\'s other addresses, and none to the second endpoint');}
+  await grabViol(p);await p.close();
+
+  // 5 a booklet that names a listed endpoint, from the store. From here the counts are taken from what the sections above sent.
+  const B0=toApiOrigin().length,P0=toEndpoint().length,SP0=standinPosts;
   p=await newPage();
   r=await openBook(p,QUESTIONNAIRE,NAME);
   ok(r.ok===true,'the questionnaire was opened from the store with the name '+NAME+': '+JSON.stringify(r));
   const sb=await p.evaluate(()=>{const b=document.getElementById('btnSubmit');return {hidden:b.hidden,label:b.textContent.trim(),inTools:!!b.closest('.bar .tools')};});
-  ok(!sb.hidden&&sb.label==='Submit'&&sb.inTools,'a booklet opened with a name shows the Submit button in the bar, labelled "Submit": '+JSON.stringify(sb));
+  ok(!sb.hidden&&sb.label==='Submit'&&sb.inTools,'a booklet that names a listed endpoint shows the Submit button in the bar, labelled "Submit": '+JSON.stringify(sb));
   const bookId=await p.evaluate(()=>currentId);
 
   // 6 answered through the screens
@@ -229,7 +353,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   ok(sameJSON(sortKeys(got),sortKeys(EXPECT)),'answered through the screens: the email and the 9+2 choices are in the booklet: '+JSON.stringify(got));
 
   // 7 nothing sent yet
-  ok(toApiOrigin().length===0,'up to the press of Submit, no request has gone to the endpoint\'s origin ('+toApiOrigin().length+')');
+  ok(toApiOrigin().length===B0,'up to the press of Submit, no request from this booklet has gone to the endpoint\'s origin ('+(toApiOrigin().length-B0)+')');
 
   // 8 the confirm screen
   await pressSubmit(p);
@@ -245,37 +369,40 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   ok(!!parsed&&sameJSON(sortKeys(parsed.seen||{}),sortKeys(SEEN)),'and for each answered question it says what the reader was shown: the question\'s words, the options in the order shown and the words picked: '+JSON.stringify(parsed&&parsed.seen).slice(0,300));
   ok(!!parsed&&Object.keys(parsed.seen||{}).every(k=>hasOwnKey(parsed.answers,k)),'every seen entry is for a question that is in answers, under the same id');
   const helpT=await text(p,'#submitHelp');
-  ok(/Send your answers\?/.test(await text(p,'#submitTitle'))&&helpT.includes(new URL(ENDPOINT).host)&&helpT.includes('Nothing has been sent yet'),'the screen says who it sends to and that nothing has been sent: '+helpT);
-  ok(toApiOrigin().length===0,'with the confirm screen open, still nothing sent');
+  ok(/Send your answers\?/.test(await text(p,'#submitTitle'))&&helpT.includes('the address shown here')&&helpT.includes('Nothing has been sent yet'),'the screen says it sends to the address shown and that nothing has been sent: '+helpT);
+  const dest=await destOf(p);
+  ok(sameJSON(dest,[['Name','test-endpoint'],['Owner','Test Owner One'],['Address',ENDPOINT]]),'the screen shows where the answers go as the registry writes it: the endpoint\'s name, its owner and its address: '+JSON.stringify(dest));
+  ok(await p.evaluate(()=>{const t=document.getElementById('submitTo').getBoundingClientRect(),l=document.getElementById('submitList').getBoundingClientRect();return t.height>0&&t.bottom<=l.top+1;}),'and it is drawn above the answers, so the reader meets the destination first');
+  ok(toApiOrigin().length===B0,'with the confirm screen open, still nothing sent');
   await shot(p,'submit-confirm-1280.png');
   await p.locator('#submitExact summary').click();await wait(p,150);
   ok(await p.locator('#submitBody').isVisible(),'one tap on it shows the exact text');
   await shot(p,'submit-exact-1280.png');
   await p.locator('#submitExact summary').click();await wait(p,150);
   await p.locator('#submitCancel').click();await wait(p,200);
-  ok(!await dialogOpen(p)&&toApiOrigin().length===0,'Cancel closes the confirm screen; nothing sent');
+  ok(!await dialogOpen(p)&&toApiOrigin().length===B0,'Cancel closes the confirm screen; nothing sent');
   await pressSubmit(p);await p.keyboard.press('Escape');await wait(p,200);
-  ok(!await dialogOpen(p)&&toApiOrigin().length===0,'Escape closes the confirm screen; nothing sent');
+  ok(!await dialogOpen(p)&&toApiOrigin().length===B0,'Escape closes the confirm screen; nothing sent');
 
   // 9 untrusted clicks
   await p.evaluate(()=>document.getElementById('btnSubmit').click());await wait(p,300);
   ok(!await dialogOpen(p),'an untrusted click (from page script) on Submit does not open the confirm screen');
   await pressSubmit(p);
   await p.evaluate(()=>document.getElementById('submitSend').click());await wait(p,600);
-  ok(toApiOrigin().length===0&&await dialogOpen(p)&&await text(p,'#submitTitle')!=='Sent','an untrusted click on Send (screen open) sends nothing and changes nothing');
+  ok(toApiOrigin().length===B0&&await dialogOpen(p)&&await text(p,'#submitTitle')!=='Sent','an untrusted click on Send (screen open) sends nothing and changes nothing');
 
   // 10 Send
   const shownNow=await text(p,'#submitBody');
   await pressSend(p);await waitSent(p);
   await Promise.all(pending);
-  const posts=toEndpoint(),responses=await Promise.all(answered);
-  ok(posts.length===1&&toApiOrigin().filter(q=>q.method==='POST').length===1,'pressing Send sent exactly one POST, to the endpoint ('+posts.length+')');
+  const posts=toEndpoint().slice(P0),responses=(await Promise.all(answered)).filter(x=>x.url===ENDPOINT).slice(P0);
+  ok(posts.length===1&&toApiOrigin().filter(q=>q.method==='POST').length===P0+1,'pressing Send sent exactly one POST, to the first endpoint\'s address ('+posts.length+')');
   const po=posts[0]||{body:'',headers:{},all:null};const all=po.all||po.headers;
   ok(po.body===shownNow,'its body is byte for byte the folded text of the confirm screen ('+po.body.length+' bytes)');
   ok(/^application\/json/i.test(all['content-type']||''),'content-type is application/json: '+all['content-type']);
   ok(!('cookie' in all)&&!('referer' in all),'no cookie header and no referer header: '+Object.keys(all).sort().join(','));
   ok(receptureRules(po.body)==='','the body passes recepture\'s payload rules: '+(receptureRules(po.body)||'ok'));
-  if(!LIVE) ok(standinPosts===1,'the stand-in for recepture accepted it ('+standinPosts+')');
+  if(!LIVE) ok(standinPosts===SP0+1,'the stand-in for recepture accepted it ('+(standinPosts-SP0)+')');
   else ok(responses.length>=1&&responses[0].status===201,'the real server answered 201: '+JSON.stringify(responses[0]));
   const rid=responses.length&&responses[0].json&&responses[0].json.response_id;
   ok(typeof rid==='string'&&/^[0-9a-f-]{36}$/i.test(rid),'the answer carries a response_id (a uuid): '+rid);
@@ -293,7 +420,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   await p.locator('#submitCancel').click();await wait(p,200);
   ok(!await dialogOpen(p),'Close closes the Sent screen');
   await p.locator('#btnSubmit').click({force:true});await wait(p,400);
-  ok(!await dialogOpen(p)&&toEndpoint().length===1,'pressing Sent opens nothing and sends nothing');
+  ok(!await dialogOpen(p)&&toEndpoint().length===P0+1,'pressing Sent opens nothing and sends nothing');
   const [dl]=await Promise.all([p.waitForEvent('download',{timeout:5000}),p.locator('#btnExport').click()]);
   const dlText=fs.readFileSync(await dl.path(),'utf8');
   ok(/\.booklet\.md$/.test(dl.suggestedFilename())&&dlText.includes('"phq9-item1"')&&dlText.includes(EMAIL),'the booklet downloads as any booklet does, with its answers: '+dl.suggestedFilename());
@@ -303,7 +430,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   bt=await button(p);
   ok(!bt.hidden&&bt.label==='Submit'&&bt.aria==='false','after an answer changes, the button reads Submit again: '+JSON.stringify(bt));
   await pressSubmit(p);
-  ok((await listed(p))[1].rows[0][1]==='Several days'&&toEndpoint().length===1,'and the confirm screen lists the changed answer; nothing sent');
+  ok((await listed(p))[1].rows[0][1]==='Several days'&&toEndpoint().length===P0+1,'and the confirm screen lists the changed answer; nothing sent');
   await p.locator('#submitCancel').click();await wait(p,200);
   await p.locator('#main .q-inline').nth(0).locator('.pill-btn').nth(PHQ[0]-1).click();await wait(p,300);
   bt=await button(p);
@@ -397,6 +524,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   ok(await text(p,'#submitTitle')==='Envoyer vos réponses ?'&&await text(p,'#submitExact summary')==='Afficher exactement ce qui est envoyé'&&/Rien n’a encore été envoyé/.test(await text(p,'#submitHelp')),'the screen speaks French: '+await text(p,'#submitTitle'));
   const other=fr[fr.length-1]||{rows:[]};
   ok(other.title==='Autres réponses de ce carnet'&&sameJSON(other.rows,[['loose-note','kept from an older version']])&&frBody.answers['loose-note']==='kept from an older version','an answer no question names is listed by its id under "other answers", as it is sent: '+JSON.stringify(other));
+  ok(sameJSON(await destOf(p),[['Nom','test-endpoint'],['Responsable','Test Owner One'],['Adresse',ENDPOINT]])&&/l’adresse indiquée ici/.test(await text(p,'#submitHelp')),'the destination is labelled in French and is still the registry\'s: '+JSON.stringify(await destOf(p)));
   await shot(p,'submit-confirm-fr-1280.png');
   await p.locator('#submitCancel').click();await wait(p,200);
   const esAR=await p.evaluate(()=>{lang="es-AR";renderBar();const l=document.getElementById('btnSubmit').textContent.trim();render();return l;});
@@ -433,13 +561,14 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   // 12 across the whole run
   await Promise.all(pending);
   const net=reqs.filter(q=>/^https?:/i.test(q.url));
-  const isPost=q=>q.method==='POST'&&q.url===ENDPOINT;
+  const isPost=q=>q.method==='POST'&&(q.url===ENDPOINT||q.url===ENDPOINT2);
   const apiPosts=net.filter(q=>q.method==='POST');
-  ok(apiPosts.length>0&&apiPosts.every(isPost),'across the run every POST went to the endpoint ('+apiPosts.length+' of them)');
+  ok(apiPosts.length>0&&apiPosts.every(isPost),'across the run every POST went to one of the two registered addresses ('+apiPosts.length+' of them)');
+  ok(toEvil().length===0,'no request, of any kind, ever went to the address a booklet wrote ('+toEvil().length+')');
   ok(net.filter(q=>q.body&&!isPost(q)).length===0,'no request other than the endpoint\'s POST carried a body');
   ok(net.filter(q=>!isPost(q)&&(q.url+q.body+JSON.stringify(q.all||q.headers)).includes(EMAIL)).length===0,'the typed address appears in no request but the endpoint\'s POST (not in any URL, header or other body)');
-  ok(net.every(q=>[PAGE,API].includes(new URL(q.url).origin)),'every request was to the page\'s origin or the endpoint\'s: '+[...new Set(net.map(q=>new URL(q.url).origin))].join(' '));
-  ok(net.filter(q=>q.method!=='GET'&&q.method!=='POST'&&q.method!=='OPTIONS').length===0&&net.filter(q=>q.method==='GET'&&new URL(q.url).origin===API).length===0,'no method but GET (page only), POST and OPTIONS, and no GET to the endpoint');
+  ok(net.every(q=>[PAGE,API,API2].includes(new URL(q.url).origin)),'every request was to the page\'s origin or one of the two endpoints\': '+[...new Set(net.map(q=>new URL(q.url).origin))].join(' '));
+  ok(net.filter(q=>q.method!=='GET'&&q.method!=='POST'&&q.method!=='OPTIONS').length===0&&net.filter(q=>q.method==='GET'&&[API,API2].includes(new URL(q.url).origin)).length===0,'no method but GET (page only), POST and OPTIONS, and no GET to an endpoint');
   ok((await ctx.cookies()).length===0,'no cookies in the browser');
   ok(viol.length===0&&csp.length===0,'zero policy violations in the whole run: '+viol.concat(csp).join('|'));
   ok(errs.length===0,'zero page errors '+errs.join('|'));
@@ -447,7 +576,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   // 1 the published file
   ok(sha(HTML)===before,'the published booklet.html has the same sha256 at the end as at the start ('+before.slice(0,12)+')');
   const replies=await Promise.all(answered);
-  if(LIVE) ok(replies.filter(x=>x.status===201).length===3,'live: the real server answered 201 to each of the three sends that were not routed ('+replies.map(x=>x.status).join(',')+')');
+  if(LIVE) ok(replies.filter(x=>x.url===ENDPOINT&&x.status===201).length===4,'live: the real server answered 201 to each of the four sends to the first endpoint that were not routed ('+replies.filter(x=>x.url===ENDPOINT).map(x=>x.status).join(',')+')');
   console.log('note: CORS preflights that reached the route: '+preflights+'; mode: '+(LIVE?'live ('+ENDPOINT+')':'stand-in'));
   await b.close();if(server) server.close();
   console.log(fails.length?'FAILED '+fails.length:'ALL PASSED');process.exit(fails.length?1:0);
