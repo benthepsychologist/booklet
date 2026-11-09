@@ -11,7 +11,7 @@ const lint=text=>{const dir=path.join(tmp,"c"+(++k));fs.mkdirSync(dir);
   const f=path.join(dir,"f.md");fs.writeFileSync(f,text);
   const r=spawnSync("python3",[LINT,f],{encoding:"utf8"}),lines=r.stdout.split("\n");
   return {status:r.status,out:r.stdout,errors:lines.filter(l=>l.startsWith("ERROR")),warns:lines.filter(l=>l.startsWith("warn"))};};
-const FM='---\nbooklet: "0.20"\ntitle: Lint fixture\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.21"\ntitle: Lint fixture\nlang: en\n---\n\n';
 const one=(what,r,kind,line,rx)=>{const got=kind==="ERROR"?r.errors:r.warns;
   chk(`${what}: exactly one finding, ${kind==="ERROR"?"an error":"a warning"}`,got.length===1&&r.errors.length+r.warns.length===1,r.out);
   chk(`${what}: it names line ${line} and says the fix`,new RegExp(": line "+line+": ").test(got[0]||"")&&rx.test(got[0]||""),got[0]);

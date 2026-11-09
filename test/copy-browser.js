@@ -8,7 +8,7 @@ const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]);
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const text='---\nbooklet: "0.20"\ntitle: Tide notes\nlang: en\n---\n\n> [!activity|a] Tide notes\n\n'
+const text='---\nbooklet: "0.21"\ntitle: Tide notes\nlang: en\n---\n\n> [!activity|a] Tide notes\n\n'
  +'> [!text|why-twice long] Why does the tide come in twice a day?\n\n> [!solution]- Model answer\n> The moon pulls on both sides of the earth.\n\n'
  +'> [!choice|which] When is the range widest?\n- [ ] At the quarter moons\n- [x] Near the new and the full moon\n\n'
  +'> [!copy|ask-tutor of:why-twice,why-twice/solution,which] Copy for my tutor\n> Please mark my answer against the model answer. LEADIN-SECRET\n';

@@ -1,8 +1,9 @@
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: test/submit-questionnaire
 title: Submit test questionnaire
 lang: en
+submit: test-endpoint
 ---
 
 # Submit test questionnaire

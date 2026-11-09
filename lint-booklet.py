@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Ben Armstrong
 """
-Lint a booklet file against the v0.20 format in SPEC.md.
+Lint a booklet file against the v0.21 format in SPEC.md.
 
-A booklet is one portable Markdown file: front matter that says `booklet: "0.20"`,
+A booklet is one portable Markdown file: front matter that says `booklet: "0.21"`,
 prose, Booklet lines written `> [!kind|id words] Title`, and data in fenced
 blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.20"`, one `lang:`, a one-line `description:` if there is one, `media-from:` if there is one), fences that are
+What it checks: the front matter (`booklet: "0.21"`, one `lang:`, a one-line `description:` if there is one, `media-from:` if there is one, `submit:` if there is one), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
@@ -26,12 +26,12 @@ copied, a copy outside an activity or in a records section), and the dashboard t
 path (the name and path rules; given the file beside the booklet, that it exists, parses and has rows at the path), rows that
 hold child rows, a field's label as an object (`edit`, `options`), `parent:` on `table` and `cards`, the `readonly` key, a
 `fields:` name that is a question asked for each row, and `each:` over a data block. Any file whose
-front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.20 (nothing before v1.0 is stable). A block id or a footnote
+front matter has no `booklet:` marker, or one that is not a 0.x version, is rejected; another 0.x marker is a warning and the file is checked as 0.21 (nothing before v1.0 is stable). A block id or a footnote
 id that two modules both use is a warning, not an error: Booklet reads each in its own module, while
 Obsidian and GitHub read those two across the whole file.
 
 Usage:  python3 lint-booklet.py [path ...]
-        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.20") and exits 0
+        python3 lint-booklet.py --marker             prints the front-matter line a file should carry (booklet: "0.21") and exits 0
         python3 lint-booklet.py --help               prints this text
 A tool that writes booklets should ask for the marker with --marker, not hard-code it.
 Default (no arguments): every *.md file in modules/, widgets/, and
@@ -45,7 +45,7 @@ import difflib, html, json, math, pathlib, re, shutil, subprocess, sys, unicoded
 BASE = pathlib.Path(__file__).resolve().parent
 
 # The format this linter reads, as TEXT: `0.10` is not the number 0.1, and a version is never turned into a number
-FORMAT_VERSION = "0.20"
+FORMAT_VERSION = "0.21"
 
 errors, warnings = [], []
 # Every finding, in the order found; main() prints each file's findings in line order. A finding's line is the one its message
@@ -129,7 +129,7 @@ def front_matter(text):
     return fm, text[end + 4:]
 
 
-# A v0.20 booklet is Markdown: front matter, prose, and Booklet lines
+# A v0.21 booklet is Markdown: front matter, prose, and Booklet lines
 # written `> [!kind|id words] Title`, with data in fenced blocks. These checks
 # mirror parseBooklet() in booklet.html, so the linter and the page agree on what is
 # wrong with a file. See SPEC.md for the format.
@@ -1592,11 +1592,11 @@ def check_page_trees(f, page_scopes, tabs_in_act):
 
 
 def check_format(f, text, fm, folder=None):
-    """Lint a v0.20 booklet. Every problem names its line."""
+    """Lint a v0.21 booklet. Every problem names its line."""
     fm_title, fm_id = fm.get("title", ""), fm.get("id", "")
     lang = fm.get("lang", "")
     if not lang:
-        err(f, "front matter has no `lang:` — a v0.20 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
+        err(f, "front matter has no `lang:` — a v0.21 file is written in one language; add `lang: en` (or es, es-AR, fr, or any other language tag)")
     else:
         why = lang_problem(lang)
         if why:
@@ -1612,6 +1612,7 @@ def check_format(f, text, fm, folder=None):
         err(f, f"front matter `start: {fm['start']}`: the only value is `start: home` (a booklet that holds one activity or one module opens "
                "straight into it unless it says `start: home`); the renderer reports it and ignores it")
     check_media_from(f, text)
+    check_submit(f, text)
     lines = text.replace("\r\n", "\n").split("\n")
     i = 0
     if lines and lines[0].strip() == "---":
@@ -2701,6 +2702,42 @@ def check_media_from(f, text):
             why = "is not a host name and an optional port"
         err(f, f"front matter `media-from` {v!r} {why}; write each origin as the scheme, host and optional port, such as "
                f"`https://media.example.org` or `https://cdn.example.net:8443`. A renderer reports it and ignores it")
+
+
+SUBMIT_NAME = re.compile(r"^[a-z0-9-]{1,40}$")
+
+
+def check_submit(f, text):
+    """The front matter's `submit: <name>` (SPEC.md section 2, "Submit"): the name of a submit endpoint, 1 to 40 characters from a-z, 0-9
+    and `-`, lower case, written on the key's own line (quotes are taken off, as the renderer reads every front matter value). A booklet
+    never carries an address, so an address, an empty value or any other text is an error. Which names a host's registry lists is the
+    host's own, and this linter has no registry: a name that is well formed is never a finding, listed or not."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    if not lines or lines[0].strip() != "---":
+        return
+    end = next((k for k in range(1, len(lines)) if lines[k].strip() == "---"), len(lines))
+    for k in range(1, end):
+        m = re.match(r'^submit:[ \t]*(.*?)[ \t]*$', lines[k])
+        if not m:
+            continue
+        v = m.group(1)
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+            v = v[1:-1]
+        if SUBMIT_NAME.match(v):
+            continue
+        if not v.strip():
+            why = "is empty"
+        elif re.search(r'[:/@?#\\]|\.[a-z]', v):
+            why = "looks like an address, and a booklet never carries an address"
+        elif len(v) > 40:
+            why = f"is {len(v)} characters long, and a name is at most 40"
+        elif v != v.lower():
+            why = "has capital letters, and a name is lower case"
+        else:
+            why = "has a character other than a-z, 0-9 and `-`"
+        shown = v if len(v) <= 60 else v[:57] + "..."
+        err(f, f"line {k + 1}: front matter `submit: {shown}` {why}; write the name of a submit endpoint your host lists, 1 to 40 characters "
+               f"from a-z, 0-9 and `-`, such as `submit: class-feedback`, or take the line out")
 
 
 def _plain_heading(s):

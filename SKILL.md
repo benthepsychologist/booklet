@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.20.1**. It matches SPEC.md's v0.20, the current format.
+**Skill version: 0.21.0**. It matches SPEC.md's v0.21, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -81,7 +81,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.20"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, and `media-from` if the booklet names remote audio or video (section 4) | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.21"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, `media-from` if the booklet names remote audio or video, and `submit` if the booklet's answers are to be sent somewhere (section 4) | you |
 | **Design** (everything above the records, and anything written after them) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design, and leaves design written after the records where it is |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only; a fresh file has none at all |
 
@@ -186,7 +186,7 @@ language are real ones; give them your own.
 
 ````markdown
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: "local/my-booklet"
 title: "My booklet"
 lang: en
@@ -213,7 +213,7 @@ One or two sentences of plain prose: what to do, and that skipping is fine.
 
 Write one booklet line for each question (section 6) where `my-question` stands.
 
-- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.20"`:
+- **`booklet`** is the format marker. Write it in quotes, `booklet: "0.21"`:
   unquoted, a YAML tool reads `0.10` as the number 0.1. A tool that writes
   booklets should ask the linter for the marker (`python3 lint-booklet.py
   --marker` prints the whole line) and not hard-code it. A file marked with
@@ -265,6 +265,24 @@ Write one booklet line for each question (section 6) where `my-question` stands.
   file directly (a CDN address), not one that redirects. A malformed value is
   reported when the booklet opens and ignored, and the other origins of a list
   still count.
+- **`submit`** (optional, in the front matter, format 0.21) **names** the submit
+  endpoint a host may send the reader's answers to. It holds a **name** and
+  never an address: 1 to 40 characters from `a-z`, `0-9` and `-`, lower case.
+  Write it only when someone has told you the name of an endpoint their host
+  lists; never make a name up, and never write a URL, an email address or any
+  other text there. Nothing in the booklet changes when it is present, and a
+  renderer that sends nothing ignores it.
+
+  ```yaml
+  submit: class-feedback
+  ```
+
+  The name means nothing in the file by itself: the host's registry decides
+  which names exist and where each leads, and a page built for it shows a
+  Submit button only for a name it lists. The reader is shown the endpoint's own
+  name, owner and address (from the registry, not from the booklet) before
+  anything is sent. The linter reports a malformed name as an error, and cannot
+  say whether a host lists it.
 - **Images.** An image is linked, never embedded. A renderer fetches one only
   from a place its own host declares, or from an origin its host or reader has
   allowed, never from an address the file names unasked. The
@@ -437,7 +455,7 @@ so it opens on the first. The activity's opening is shown above every tab:
 
 ````markdown
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: "local/check-in"
 title: A short check-in
 description: A few minutes to look over the garden, with notes on what each word means.
@@ -1376,7 +1394,9 @@ an extension that may not play everywhere, such as `.flac` or `.mov` (a warning)
 path a renderer will not read (a warning), a bare `![[name.ext]]` with no such file beside
 the booklet (a warning), and a local video with no folded `> [!note]- Transcript` straight
 after it (a warning). For `media-from:` it reports any value that is not an `https:` origin
-(scheme, host and optional port, nothing after), as one value, a list or a comma list. For a
+(scheme, host and optional port, nothing after), as one value, a list or a comma list. For `submit:`
+it reports any value that is not a name (an address, an empty value, capital letters, more than 40
+characters, any character but `a-z`, `0-9` and `-`) as an error, and a name no host lists is not a finding. For a
 `listen` it reports a `left:` that is not a whole number of seconds in digits, a setting the
 kind does not take, a missing id, a `listen` inside a `repeat` activity, and more than one
 audio or video embed under one `listen` (all errors). It also reports raw `<audio>`,
@@ -1385,7 +1405,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
-| no `lang:` | `front matter has no `lang:` — a v0.20 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
+| no `lang:` | `front matter has no `lang:` — a v0.21 file is written in one language; add `lang: en` (or es, es-AR, fr …)` | add it, such as `lang: en` |
 | a language with no interface strings | `warn front matter `lang: de`: the renderer's interface has no strings for this language …` | fine if intended; the renderer's buttons are then in English |
 | a setting a kind does not take | `a number line takes no `mx:` setting (it takes `min:`, `max:`, `step:`, `each:`)` | write the setting the kind takes (`max:5`); `open` is only for `choice` and `multi` |
 | `daily` alone, or a `min:` that is not a number | `` `daily` needs `repeat` `` / `` `min:abc` must be a number `` | write `repeat daily`; use a number |
@@ -1464,7 +1484,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 
 **Without the linter**, also check by hand:
 
-- [ ] Front matter opens on line 1 with `booklet: "0.20"`, `id`, `title`, `lang`, `version`.
+- [ ] Front matter opens on line 1 with `booklet: "0.21"`, `id`, `title`, `lang`, `version`.
 - [ ] Every module fence opened is closed, once, by the same id.
 - [ ] Module ids are unique across the file; activity, question, menu and block ids are unique within their module; all hold only letters, digits and dashes.
 - [ ] Every question has an id; every `choice`/`multi` has a task list under it; a numbered list that does not start at `1.` has a blank line above it.
@@ -1474,6 +1494,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 - [ ] No extensionless remote address in image syntax (a video service's page is a plain link), and no raw `<audio>`, `<video>`, `<iframe>` or other HTML media.
 - [ ] `media-from`, if present, holds `https:` origins only (scheme, host, optional port, no path), as one value or a list, and nothing in the file treats it as a permission.
 - [ ] Every word in a copy line's `of:` is a question of the same activity, a `question/solution` or `question/hint` that is folded straight under its question, or a block with a `^id`; the line sits in an activity.
+- [ ] `submit`, if present, holds a name (1 to 40 of `a-z`, `0-9` and `-`) that someone gave you, never an address, and nothing else in the file names where answers go.
 - [ ] A `listen` holds one embed or one link, takes only `left:` (whole seconds), sits in an activity with no `repeat`, and no answer for it is written.
 - [ ] Every local video has a folded `> [!note]- Transcript` beside it.
 - [ ] A booklet with a `listen` is handed out with a word that `pos` and `done` travel with it when it is shared back.
@@ -1489,7 +1510,7 @@ Imitate their shape.
 
 ````markdown
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: "local/after-a-walk"
 title: "After a walk"
 lang: en
@@ -1525,7 +1546,7 @@ Write while it is fresh. Short answers are fine, and skipping any of these is fi
 
 ````markdown
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: "local/tides-study-week"
 title: "Tides: a study week"
 lang: en
@@ -1586,7 +1607,7 @@ Two questions, once the week is done.
 
 ````markdown
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: "local/mi-rato-de-lectura"
 title: "Mi rato de lectura"
 lang: es
@@ -1622,7 +1643,7 @@ Escribe poco: una línea por pregunta alcanza. Si vuelves más tarde hoy, retoma
 
 ````markdown
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: "local/reminders-report"
 title: "Reminders: SMS or email?"
 lang: en
@@ -1704,7 +1725,7 @@ flowchart LR
 ## 13. If you have the booklet-registry repository
 
 A module offered from the `booklet-registry` repository is written exactly the
-same way as any other booklet above — one v0.20 file, one language, its
+same way as any other booklet above — one v0.21 file, one language, its
 widgets embedded inline — the only difference is that a person there decides
 whether to publish it. Lint it the same way:
 
