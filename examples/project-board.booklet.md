@@ -1,5 +1,5 @@
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: example/project-board
 title: Studio project board
 lang: en

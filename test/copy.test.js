@@ -9,7 +9,7 @@ const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const A=P.boot();
-const FM='---\nbooklet: "0.20"\ntitle: Copy\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.21"\ntitle: Copy\nlang: en\n---\n\n';
 const read=t=>{A.loadText(t);return A.parseFile(t);};
 const blocks=(r,n)=>{const a=r.template.modules.flatMap(m=>m.activities)[n||0];return a.pages.flatMap(p=>p.blocks);};
 const copyOf=(r,id,n)=>blocks(r,n).find(b=>b.type==="copy"&&(id===undefined||b.id===id));

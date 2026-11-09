@@ -1,5 +1,5 @@
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: fixture/compile-pair
 title: Two ways to boil an egg
 lang: en

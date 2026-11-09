@@ -1,4 +1,4 @@
-// Format v0.20: a version is two whole numbers, never one decimal number (0.10 is later than 0.9), and a file marked
+// Format v0.21: a version is two whole numbers, never one decimal number (0.10 is later than 0.9), and a file marked
 // with another 0.x version opens by the current rules and says nothing about its marker.
 // Run: node test/version.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
@@ -7,12 +7,12 @@ let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const A=P.boot();
 const file=(marker,extra="")=>`---\nbooklet: ${marker}\ntitle: T\nlang: en\n---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n${extra}`;
-chk("the format version is the text 0.20",A.FORMAT_VERSION==="0.20"&&typeof A.FORMAT_VERSION==="string");
+chk("the format version is the text 0.21",A.FORMAT_VERSION==="0.21"&&typeof A.FORMAT_VERSION==="string");
 chk("versionOf reads text into [major, minor], and a number is no version (a version is text)",JSON.stringify([A.versionOf("0.10"),A.versionOf(" 0.8 "),A.versionOf(""),A.versionOf(0.9),A.versionOf("0.9.1")])==="[[0,10],[0,8],null,null,null]");
 /* the marker, read as text */
-for(const m of ['"0.20"',"'0.20'","0.20"]){const r=A.parseFile(file(m));chk("a file marked booklet: "+m+" loads, with no notice",r.ok&&r.refused.length===0&&r.unread.length===0&&r.template.booklet==="0.20",JSON.stringify(r.unread));}
+for(const m of ['"0.21"',"'0.21'","0.21"]){const r=A.parseFile(file(m));chk("a file marked booklet: "+m+" loads, with no notice",r.ok&&r.refused.length===0&&r.unread.length===0&&r.template.booklet==="0.21",JSON.stringify(r.unread));}
 for(const m of ['"0.10"',"0.1","0.9",'"0.11"','"0.12"','"0.13"','"0.15"','"0.16"','"0.17"','"0.19"','"0.20"','"0.99"',"0.100"]){const r=A.parseFile(file(m));
- chk("a file marked booklet: "+m+" opens by the current rules, and says nothing about its marker",r.ok&&r.refused.length===0&&r.unread.length===0&&r.template.booklet==="0.20"&&/^booklet: /m.test(r.template.raw.source)&&r.template.raw.source.includes("booklet: "+m),JSON.stringify(r.unread));}
+ chk("a file marked booklet: "+m+" opens by the current rules, and says nothing about its marker",r.ok&&r.refused.length===0&&r.unread.length===0&&r.template.booklet==="0.21"&&/^booklet: /m.test(r.template.raw.source)&&r.template.raw.source.includes("booklet: "+m),JSON.stringify(r.unread));}
 /* the renderer lags the format: no sentence about a marker, in any language, and no string left to say one */
 for(const m of ["0.9","0.17","0.18","0.19","0.20","0.99"]) for(const l of ["en","fr","es"]){const r=A.parseFile(file(m).replace("lang: en","lang: "+l));
  chk(l+": a file marked "+m+" opens with no problem at all, so no marker sentence",r.ok&&r.unread.length===0,JSON.stringify(r.unread));}
@@ -22,9 +22,9 @@ chk("a module marked 0.9, 0.17, 0.19, 0.20 or 0.99 can be added to a booklet",["
 /* what the renderer writes */
 (async()=>{
  await A.createBooklet();
- chk("a new booklet's file says booklet: \"0.20\", quoted",/^booklet: "0\.20"$/m.test(A.BOOK.raw.source)&&A.BOOK.booklet==="0.20",A.BOOK.raw.source);
- A.addModuleText(file('"0.20"'));
- chk("and so does the file it writes after a module is added",/^booklet: "0\.20"$/m.test(A.toMarkdown())&&A.parseFile(A.toMarkdown()).ok);
+ chk("a new booklet's file says booklet: \"0.21\", quoted",/^booklet: "0\.21"$/m.test(A.BOOK.raw.source)&&A.BOOK.booklet==="0.21",A.BOOK.raw.source);
+ A.addModuleText(file('"0.21"'));
+ chk("and so does the file it writes after a module is added",/^booklet: "0\.21"$/m.test(A.toMarkdown())&&A.parseFile(A.toMarkdown()).ok);
  /* a booklet kept in the browser whose own text says another 0.x version opens from that text, its marker as it was */
  const old=P.boot();
  const text=fs.readFileSync(P.R+"/test/fixtures/module-check-in.md","utf8");
@@ -36,14 +36,14 @@ chk("a module marked 0.9, 0.17, 0.19, 0.20 or 0.99 can be added to a booklet",["
  global.__ls[key]=JSON.stringify(snap);
  P.closePages();
  const B=P.boot();B.openBooklet(id);
- chk("a booklet kept with booklet: \"0.10\" in its text opens, read by the current rules, its text untouched",B.allModules().length===1&&B.BOOK.booklet==="0.20"&&/^booklet: "0\.10"$/m.test(B.toMarkdown()),String(B.BOOK.booklet));
+ chk("a booklet kept with booklet: \"0.10\" in its text opens, read by the current rules, its text untouched",B.allModules().length===1&&B.BOOK.booklet==="0.21"&&/^booklet: "0\.10"$/m.test(B.toMarkdown()),String(B.BOOK.booklet));
  chk("its answers are where they were",JSON.stringify(B.STATE.answers)===JSON.stringify({ma:{keep:"x"}}));
  chk("a module can be added to it",B.addModuleText(fs.readFileSync(P.R+"/test/fixtures/module-daily-journal.md","utf8")).ok);
  chk("what it downloads opens again",B.parseFile(B.toMarkdown()).ok);
  /* a file opened with another marker is kept with the marker it came with, whatever renderer reads it next */
  {P.wipe();const W=P.boot();W.loadText(file("0.6"));W.flushSave();const wid=W.currentId;P.closePages();
   const W2=P.boot();W2.openBooklet(wid);
-  chk("a 0.6 file kept in this browser and opened again still says booklet: 0.6 in its own text, and is read as 0.20",/^booklet: 0\.6$/m.test(W2.BOOK.raw.source)&&W2.BOOK.booklet==="0.20"&&/^booklet: 0\.6$/m.test(W2.toMarkdown()),W2.BOOK.raw.source.slice(0,40));
+  chk("a 0.6 file kept in this browser and opened again still says booklet: 0.6 in its own text, and is read as 0.21",/^booklet: 0\.6$/m.test(W2.BOOK.raw.source)&&W2.BOOK.booklet==="0.21"&&/^booklet: 0\.6$/m.test(W2.toMarkdown()),W2.BOOK.raw.source.slice(0,40));
  }
  /* the linter's flags print what generators outside this repo should write */
  {const run=a=>require("child_process").spawnSync("python3",[P.R+"/lint-booklet.py",a],{encoding:"utf8"});
@@ -54,9 +54,9 @@ chk("a module marked 0.9, 0.17, 0.19, 0.20 or 0.99 can be added to a booklet",["
  /* the linter */
  const tmp=require("path").join(require("os").tmpdir(),"ver-"+process.pid);fs.mkdirSync(tmp,{recursive:true});
  const lint=(name,t)=>{const f=require("path").join(tmp,name);fs.writeFileSync(f,t);return require("child_process").spawnSync("python3",[P.R+"/lint-booklet.py",f],{encoding:"utf8"});};
- let l=lint("a.md",file('"0.20"'));chk("the linter reads a quoted 0.20 with no warning",l.status===0&&/0 errors · 0 warnings/.test(l.stdout),l.stdout);
+ let l=lint("a.md",file('"0.21"'));chk("the linter reads a quoted 0.21 with no warning",l.status===0&&/0 errors · 0 warnings/.test(l.stdout),l.stdout);
  l=lint("b.md",file("0.10"));chk("and warns on an unquoted 0.10, saying to write it in quotes, besides the other-marker warning",l.status===0&&/2 warnings/.test(l.stdout)&&/write it in quotes.*YAML tool will read it as 0\.1\b/.test(l.stdout),l.stdout);
- l=lint("c.md",file("0.9"));chk("and warns, not refuses, on 0.9 and 0.1 (checked as 0.20)",l.status===0&&/booklet: 0\.9; the current format is 0\.20, and it is checked as 0\.20/.test(l.stdout)&&lint("d.md",file("0.1")).status===0&&/booklet: 0\.1; the current format is 0\.20/.test(lint("d.md",file("0.1")).stdout));
+ l=lint("c.md",file("0.9"));chk("and warns, not refuses, on 0.9 and 0.1 (checked as 0.21)",l.status===0&&/booklet: 0\.9; the current format is 0\.21, and it is checked as 0\.21/.test(l.stdout)&&lint("d.md",file("0.1")).status===0&&/booklet: 0\.1; the current format is 0\.21/.test(lint("d.md",file("0.1")).stdout));
  l=lint("e.md",file('"1.0"'));chk("and refuses a marker that is not a 0.x version",l.status!==0&&/a marker is a 0\.x version/.test(l.stdout),l.stdout);
  fs.rmSync(tmp,{recursive:true,force:true});
  P.closePages();

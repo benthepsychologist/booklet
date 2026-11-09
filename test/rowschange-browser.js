@@ -16,7 +16,7 @@ const fs=require('fs'),path=require('path');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
 const PAGE='https://bookletmd.test';
-const head='---\nbooklet: "0.20"\ntitle: Desk\nlang: en\n---\n\n';
+const head='---\nbooklet: "0.21"\ntitle: Desk\nlang: en\n---\n\n';
 const DATA={fields:{title:{label:'Name',edit:'text'},stage:{label:'Stage',edit:'choice',options:['planning','growing','resting']},count:{label:'Trees',edit:'number'}},
   idFormat:'r{n}',rows:[{id:'r1',title:'Orchard',stage:'growing',count:8,jobs:[{id:'r2',title:'Prune',stage:'planning'},{id:'r4',title:'Spray',stage:'planning'}]},
     {id:'r3',title:'Beds',stage:'resting',count:4},{id:'r5',title:'Shed',stage:'resting',jobs:[]}]};

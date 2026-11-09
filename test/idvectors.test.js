@@ -82,7 +82,7 @@ chk("a case is the bare {n}, whose id is a number",V.cases.some(c=>c.format==="{
 // ---- 2. the linter agrees on which formats are valid
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"idvec-"));
 {const blocks=V.cases.map((c,i)=>"```booklet query\nfrom: b"+i+"\nas: table\nadd\n```\n\n```booklet data\n"+JSON.stringify({fields:{title:{label:"Name",edit:"text"}},idFormat:c.format,rows:[{id:"x",title:"X"}]})+"\n```\n^b"+i+"\n");
- const head='---\nbooklet: "0.20"\ntitle: Vectors\nlang: en\n---\n\n> [!activity|desk repeat] Desk\n\n';
+ const head='---\nbooklet: "0.21"\ntitle: Vectors\nlang: en\n---\n\n> [!activity|desk repeat] Desk\n\n';
  const text=head+blocks.join("\n"),f=path.join(tmp,"v.md");fs.writeFileSync(f,text);
  const r=spawnSync("python3",[LINT,f],{encoding:"utf8"}),errs=r.stdout.split("\n").filter(l=>l.startsWith("ERROR"));
  const lines=text.split("\n");

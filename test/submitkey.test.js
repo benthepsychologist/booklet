@@ -6,7 +6,7 @@
 const P=require("./page.js");
 const fs=require("fs");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
-const file=lines=>`---\nbooklet: "0.20"\nid: t/key\ntitle: T\nlang: en\n${lines}---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n`;
+const file=lines=>`---\nbooklet: "0.21"\nid: t/key\ntitle: T\nlang: en\n${lines}---\n\n> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n`;
 const A=P.boot();
 
 /* read as any unknown key: no problem, and nowhere in what the parse hands on */

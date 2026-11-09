@@ -10,7 +10,7 @@ const FX=path.join(__dirname,"fixtures");
 const P=require("./page.js");
 let fails=0;const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d&&!ok?"   → "+d:""));};
 // The fixtures, the files these tests write from them and the example booklets were written when the format was 0.17: a file named on the
-// command line that says `booklet: "0.17"` is linted as a copy that says 0.20, the current format, and is the same file but for that digit
+// command line that says `booklet: "0.17"` is linted as a copy that says 0.21, the current format, and is the same file but for that digit
 // (every line number holds). A run with no file named (the repository's own files) lints them as they stand.
 const REMARK=fs.mkdtempSync(path.join(os.tmpdir(),"lint013fx-"));let remarked=0;
 const remark=a=>{if(!/\.md$/.test(a)||!fs.existsSync(a))return a;

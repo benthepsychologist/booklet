@@ -7,8 +7,8 @@ const fs=require("fs"),path=require("path");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
 const {find,hasClass,texts}=P;
-/* the marker of 0.20 is the one the renderer reads as its own, so a file marked so has nothing said about its marker */
-const FM='---\nbooklet: "0.20"\ntitle: Notes\nlang: en\n---\n\n';
+/* the marker of 0.21 is the one the renderer reads as its own, so a file marked so has nothing said about its marker */
+const FM='---\nbooklet: "0.21"\ntitle: Notes\nlang: en\n---\n\n';
 const notice=R=>R.unread;
 const A=P.boot();
 const acts=R=>R.template.modules.flatMap(m=>m.activities);
@@ -207,11 +207,11 @@ const HARBOUR=FM+"> [!module|m] Harbour\n\n> [!activity|harbour] Harbour notes\n
 }
 
 /* 5. the description: key */
-{const R=A.parseFile('---\nbooklet: "0.20"\ntitle: Notes\ndescription: "Why the sea rises twice a day."\nlang: en\n---\n\n> [!activity|a] A\n\nWords.\n');
+{const R=A.parseFile('---\nbooklet: "0.21"\ntitle: Notes\ndescription: "Why the sea rises twice a day."\nlang: en\n---\n\n> [!activity|a] A\n\nWords.\n');
  chk("`description:` in the front matter is read, its quotes off, into the booklet's own description",R.template.description==="Why the sea rises twice a day."&&notice(R).length===0,JSON.stringify(R.template.description));
  chk("a booklet without one has none",A.parseFile(FM+"> [!activity|a] A\n\nWords.\n").template.description===undefined);
- chk("an empty one is no description",A.parseFile('---\nbooklet: "0.20"\ntitle: Notes\ndescription:\nlang: en\n---\n\n> [!activity|a] A\n\nWords.\n').template.description===undefined);
- const withD='---\nbooklet: "0.20"\ntitle: Notes\ndescription: Why the sea rises twice a day.\nlang: en\n---\n\n> [!module|m] Tide tables\n\n> [!activity|a] A\n\nWords.\n\n> [!module|m end] End\n';
+ chk("an empty one is no description",A.parseFile('---\nbooklet: "0.21"\ntitle: Notes\ndescription:\nlang: en\n---\n\n> [!activity|a] A\n\nWords.\n').template.description===undefined);
+ const withD='---\nbooklet: "0.21"\ntitle: Notes\ndescription: Why the sea rises twice a day.\nlang: en\n---\n\n> [!module|m] Tide tables\n\n> [!activity|a] A\n\nWords.\n\n> [!module|m end] End\n';
  A.loadText(withD);A.flushSave();
  const e=A.readLib().entries.find(x=>x.id===A.currentId);
  chk("the booklet's entry in \"Your booklets\" keeps it",e&&e.description==="Why the sea rises twice a day."&&e.title==="Notes",JSON.stringify(e));
