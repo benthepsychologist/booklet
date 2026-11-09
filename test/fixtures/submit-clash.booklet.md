@@ -3,6 +3,7 @@ booklet: "0.20"
 id: test/submit-clash
 title: Submit clash test
 lang: en
+submit: test-endpoint
 ---
 
 # Submit clash test
