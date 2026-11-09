@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.20.0**. It matches SPEC.md's v0.20, the current format.
+**Skill version: 0.20.1**. It matches SPEC.md's v0.20, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is

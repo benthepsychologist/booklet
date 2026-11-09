@@ -7,7 +7,7 @@
 //   - a data file is read for a booklet opened from the default folder and for one opened from a declared store, once however many
 //     blocks name it, and is NOT read for a booklet opened from the reader's disk, nor for a refused name;
 //   - a file that is missing, one that is not JSON and a key path with nothing at it each draw the quiet box, and the rest of the booklet works;
-//   - the page coming back into view, and a host's handle.dataChanged(), read the file again and draw a changed one in place; the same
+//   - the page coming back into view reads the file again and draws a changed one in place; the same
 //     text changes nothing;
 //   - it measures, and prints, the time to draw about 450 rows all open and the time to open one row (no threshold).
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/dashboard-browser.js <booklet.html> <outdir>
@@ -210,33 +210,6 @@ const MIXED=`---\nbooklet: "0.20"\ntitle: Mixed\nlang: en\n---\n\n> [!activity|a
    ok(mine.length===0,'a booklet loaded from disk on '+label+' asks for no data file ('+mine.length+')');
    ok(quiet.length===1&&/not opened from a store/.test(quiet[0])&&/garden\.json/.test(quiet[0]),'and its block draws the quiet box naming the file: '+quiet.join('|').slice(0,90));
    await p.close();}
-
-  // 6. a host: handle.dataChanged() reads the files again and draws a changed one in place
-  {const HOSTP='http://fleet',HCSP=CSP.replace('connect-src https://raw.githubusercontent.com','connect-src https://raw.githubusercontent.com '+HOSTP);
-   const hctx=await b.newContext({viewport:{width:1200,height:900}});
-   await hctx.route(HOSTP+'/**',r=>{const u=new URL(r.request().url()).pathname;
-     if(u==='/host/'){let h=fs.readFileSync(HTML,'utf8').replace('<meta name="theme-color"','<meta name="booklet-store" content="'+HOSTP+'/pub/">\n<meta name="theme-color"');
-       h=require('./csp-hash.js').write(h);const i=h.lastIndexOf('</body>');
-       return r.fulfill({status:200,body:h.slice(0,i)+'<script src="/hs.js"></script>'+h.slice(i),headers:{'content-type':'text/html; charset=utf-8','content-security-policy':HCSP}});}
-     if(u==='/hs.js') return r.fulfill({status:200,headers:{'content-type':'text/javascript'},body:'window.__h=window.Booklet.host({label:"fleet: dash"});window.Booklet.onChange(function(){});window.__open=function(t,o){return window.Booklet.open(t,o);};'});
-     if(u==='/pub/garden.json') return r.fulfill({status:200,body:JSON.stringify(DATA),headers:{'content-type':'application/json'}});
-     r.fulfill({status:404,body:'nf'});});
-   const p=await hctx.newPage();const hreq=[];p.on('request',r=>hreq.push(r.url()));p.on('pageerror',e=>errs.push(e.message));
-   await p.addInitScript(()=>{try{localStorage.setItem('booklet.host.allowed','fleet: dash');}catch(e){}});
-   await p.goto(HOSTP+'/host/');await wait(p,500);
-   await p.evaluate(t=>window.__open(t,{name:'garden.booklet.md'}),BOOK);await wait(p,1500);
-   ok(await p.locator('table.dv-table tr.dv-trow').count()===6,'a booklet the host opened by name draws its data file');
-   await p.locator('table.dv-table summary').nth(1).click();await wait(p,200);
-   await p.evaluate(()=>{window.__box=document.querySelector('.dv-box').parentElement;});
-   const open=await p.evaluate(()=>[...document.querySelectorAll('table.dv-table details[open]')].map(d=>d.getAttribute('data-id')).join());
-   const n=hreq.filter(u=>/garden\.json/.test(u)).length;
-   DATA.programmes[1].title='Orchard programme (host)';
-   await p.evaluate(()=>window.__h.dataChanged());await wait(p,600);
-   ok(hreq.filter(u=>/garden\.json/.test(u)).length===n+1,'handle.dataChanged() reads the file once more');
-   ok(/Orchard programme \(host\)/.test(await p.locator('table.dv-table').innerText()),'and the changed row is drawn');
-   ok(await p.evaluate(()=>[...document.querySelectorAll('table.dv-table details[open]')].map(d=>d.getAttribute('data-id')).join())===open&&await p.evaluate(()=>document.querySelector('.dv-box').parentElement===window.__box),'with the open rows kept and the block holding the view the same node');
-   ok(await p.evaluate(()=>typeof window.__h.dataChanged==='function'&&Object.isFrozen(window.__h)),'the handle has dataChanged and is frozen');
-   await hctx.close();}
 
   // 7. two blocks naming one file and key path each keep the labels of their own fence
   {const p=await newPage(ctx);

@@ -4,8 +4,8 @@
 // both read /app/modules/); that it is the same reader with the same name rule and the same refusals as a declared store; that
 // a declared store always wins, even one the page cannot use; that a page opened from disk is unchanged; that nothing is asked
 // for until a link is followed; that a missing file says what a declared store's missing file says; and that the folder is
-// only read: what opens from it is never the host's (a registered, allowed host hears nothing of it, and the bar says it is
-// kept in this browser only), while it is listed, renamed and read again from the list as a store booklet is; and that two
+// only read: what opens from it is never the declared store's (it keeps no base, and the bar says it is kept in this browser
+// only), while it is listed, renamed and read again from the list as a store booklet is; and that two
 // renderers on one site (/app/ and /other/), each with its own modules/a.md, never share the reader's work for that name, and
 // a pointer from one is neither listed nor read on the other.
 // The network is a stub: nothing here reaches one.
@@ -25,7 +25,7 @@ const installFetch=()=>{global.fetch=async(url,opts)=>{CALLS.push({url:String(ur
   const r=ROUTES[String(url)];if(r===undefined) return reply("nf",{ok:false});if(r instanceof Error) throw r;return typeof r==="function"?r():reply(r);};};
 /* a fresh page at `href`: storage wiped unless `keep` (a reload, or another page of the same site) */
 const boot=(href,o={})=>{if(o.keep) P.closePages();else{P.wipe();ROUTES={};}
-  CALLS=[];META=o.meta||{};at(href);if(o.allowed) global.__ls["booklet.host.allowed"]=o.allowed;installFetch();return P.boot();};
+  CALLS=[];META=o.meta||{};at(href);installFetch();return P.boot();};
 const text=n=>P.texts(n);
 const toast=()=>text(P.byId("toast"));
 const lib=()=>JSON.parse(global.__ls["booklet.library.v1"]||'{"entries":[]}').entries;
@@ -33,7 +33,7 @@ const urls=()=>CALLS.map(c=>c.url);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const typeIn=(A,addr,words)=>{A.screen=addr;A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea"||n.tagName==="input")[0];ta.value=words;ta._on.input();};
 const ans=A=>((A.STATE.answers||{}).m||{}).q;
-const APP="http://fleet/app/",MODS=APP+"modules/";
+const APP="http://myhost/app/",MODS=APP+"modules/";
 
 (async()=>{
 /* ---- where the folder is: beside the renderer ---- */
@@ -76,9 +76,9 @@ for(const [href,want,why] of [
  await tryit(()=>reply("just words, not a booklet"),"text the parser refuses is refused with its own message",/\S/);}
 
 /* ---- a declared store always wins ---- */
-{const A=boot(APP,{meta:{"booklet-store":"http://fleet/pub/"}});ROUTES["http://fleet/pub/x.md"]=booklet("From the store");ROUTES[MODS+"x.md"]=booklet("From the folder");
+{const A=boot(APP,{meta:{"booklet-store":"http://myhost/pub/"}});ROUTES["http://myhost/pub/x.md"]=booklet("From the store");ROUTES[MODS+"x.md"]=booklet("From the folder");
  await A.openLink("#/open/x.md");
- chk("with a store tag, the store is read and modules/ never is",urls().join()==="http://fleet/pub/x.md"&&/From the store/.test(JSON.stringify(A.BOOK.title)),JSON.stringify(urls()));
+ chk("with a store tag, the store is read and modules/ never is",urls().join()==="http://myhost/pub/x.md"&&/From the store/.test(JSON.stringify(A.BOOK.title)),JSON.stringify(urls()));
  chk("...and the booklet is the store's (store:<name>), as before",lib().length===1&&lib()[0].from==="store:x.md",JSON.stringify(lib().map(e=>e.from)));}
 {const A=boot(APP,{meta:{"booklet-store":"javascript:alert(1)"}});ROUTES[MODS+"x.md"]=booklet("From the folder");
  const ok=await A.openLink("#/open/x.md");
@@ -91,7 +91,7 @@ for(const [href,want,why] of [
 {P.wipe();CALLS=[];META={};delete global.location;installFetch();const A=P.boot();
  const ok=await A.openLink("#/open/x.md");
  chk("with no address at all, nothing is requested",ok===false&&CALLS.length===0);
- global.location={href:APP,protocol:"http:",hostname:"fleet",hash:""};}
+ global.location={href:APP,protocol:"http:",hostname:"myhost",hash:""};}
 
 /* ---- nothing is asked for until a link is followed ---- */
 {const A=boot(APP);ROUTES[MODS+"x.md"]=booklet("Ex");
@@ -99,49 +99,38 @@ for(const [href,want,why] of [
  chk("a page with a default folder asks for nothing at start, on its list, or for a booklet opened by hand",CALLS.length===0,JSON.stringify(urls()));
  await A.openLink("#/open/x.md");
  chk("following the link asks for that one file",urls().join()===MODS+"x.md",JSON.stringify(urls()));}
-{global.location={href:APP+"#/open/x.md",protocol:"http:",hostname:"fleet",hash:"#/open/x.md"};P.wipe();ROUTES={};CALLS=[];META={};installFetch();
+{global.location={href:APP+"#/open/x.md",protocol:"http:",hostname:"myhost",hash:"#/open/x.md"};P.wipe();ROUTES={};CALLS=[];META={};installFetch();
  ROUTES[MODS+"x.md"]=booklet("From the address bar");const A=P.boot();await sleep(50);
  chk("a link already in the address when the page loads is followed, and asks for that one file",urls().join()===MODS+"x.md"&&/From the address bar/.test(JSON.stringify(A.BOOK.title)),JSON.stringify(urls()));}
 
-/* ---- read only: a booklet from the default folder is never the host's ---- */
-{const LABEL="fleet: store";
- const A=boot(APP,{allowed:LABEL});ROUTES[MODS+"x.md"]=booklet("Folder booklet");
- const log=[];const me=A.BookletApi.host({label:LABEL});A.BookletApi.onChange(c=>log.push(c));
- chk("the host on this private page is active (the reader allowed it)",me.state()==="active",me.state());
+/* ---- read only: a booklet from the default folder is never the declared store's ---- */
+{const A=boot(APP);ROUTES[MODS+"x.md"]=booklet("Folder booklet");
  await A.openLink("#/open/x.md");await sleep(200);
  typeIn(A,"m/a","QZXfolderanswer");await sleep(700);A.flushSave();
  chk("the reader's answer is kept in this browser",ans(A)==="QZXfolderanswer"&&Object.keys(global.__ls).some(k=>/^booklet\.b\./.test(k)&&/QZXfolderanswer/.test(global.__ls[k])));
- chk("a registered, allowed host hears nothing of a booklet from the default folder",log.length===0,JSON.stringify(log.map(c=>c.name)));
- chk("...cannot read it",A.BookletApi.text()==="");
- chk("...and the bar says it is kept in this browser only",A.hostLineText(A.STRINGS.en.ui)===A.STRINGS.en.ui.hostKept,A.hostLineText(A.STRINGS.en.ui));
+ chk("the bar says it is kept in this browser only",A.saveLineText(A.STRINGS.en.ui)===A.STRINGS.en.ui.keptHere,A.saveLineText(A.STRINGS.en.ui));
  const id=A.currentId;
- chk("no base is kept for it (a base is what a host's saves are measured against)",!(("booklet.base."+id) in global.__ls));
- // the newer file: the body is the folder's, the reader's work stays, and still nothing goes to the host
+ chk("no base is kept for it (a base is what a store booklet's changes are measured against)",!(("booklet.base."+id) in global.__ls));
+ // the newer file: the body is the folder's, and the reader's work stays
  A.closeBooklet();ROUTES[MODS+"x.md"]=booklet("Folder booklet","A newer question");
  await A.openLink("#/open/x.md");
- const offer=P.find(P.main(),P.hasClass("hostnote")).filter(n=>/changed where it is kept/.test(text(n)))[0];
+ const offer=P.find(P.main(),P.hasClass("newernote")).filter(n=>/changed where it is kept/.test(text(n)))[0];
  chk("opened again with a changed file: the kept booklet opens with the offer, the reader's answer in it",A.currentId===id&&!!offer&&ans(A)==="QZXfolderanswer");
  const b=offer&&P.find(offer,n=>n.tagName==="button"&&/Read the newer file/.test(text(n)))[0];if(b) b._on.click({isTrusted:true,target:b});
  await sleep(700);A.flushSave();
  chk("reading it takes the new body and keeps the reader's answer",/A newer question/.test(JSON.stringify(A.BOOK))&&ans(A)==="QZXfolderanswer",JSON.stringify(A.STATE.answers));
- chk("...and the host still hears nothing",log.length===0,log.length);
- // a control: on the same page the host's own booklet (Booklet.open with a name) is still the host's
- A.closeBooklet();const r=A.BookletApi.open(booklet("Host booklet"),{name:"x.md"});await sleep(50);
- typeIn(A,"m/a","QZXhostanswer");await sleep(700);A.flushSave();
- chk("control: a booklet the host hands over with a name is the host's, and the host hears of it",r.ok===true&&log.length>0&&log.every(c=>c.name==="x.md")&&/QZXhostanswer/.test(log[log.length-1].text),log.length);
- chk("...as a booklet of its own: the folder's x.md and the host's x.md are two entries",lib().map(e=>e.from).sort().join()==="modules:/app/modules/#x.md,store:x.md",JSON.stringify(lib().map(e=>e.from)));
- chk("no word of the folder booklet ever reached the host",!log.some(c=>/QZXfolderanswer|Folder booklet/.test(c.text)));}
+ chk("the entry is the folder's, and only that one",lib().map(e=>e.from).join()==="modules:/app/modules/#x.md",JSON.stringify(lib().map(e=>e.from)));}
 
 /* ---- two renderers on one site, /app/ and /other/, each with its own modules/a.md: the same module and question ids,
    different text. The reader's work on one is never the other's, and a pointer from one is not listed on the other. ---- */
-{const OTHER="http://fleet/other/",OM=OTHER+"modules/";
+{const OTHER="http://myhost/other/",OM=OTHER+"modules/";
  const A=boot(APP);ROUTES[MODS+"a.md"]=booklet("App file","The app's question");ROUTES[MODS+"p.md"]=booklet("App pointer");
  await A.openLink("#/open/a.md");typeIn(A,"m/a","QZXappanswer");await sleep(700);A.flushSave();const aid=A.currentId;A.closeBooklet();
  await A.openLink("#/open/p.md");const pid=A.currentId;A.closeBooklet();
  chk("each entry names the folder it came from, /app/modules/",lib().map(e=>e.from).sort().join()==="modules:/app/modules/#a.md,modules:/app/modules/#p.md",JSON.stringify(lib().map(e=>e.from)));
  const B=boot(OTHER,{keep:true});ROUTES[OM+"a.md"]=booklet("Other file","The other's question");CALLS=[];
  await B.openLink("#/open/a.md");
- const offer=P.find(P.main(),P.hasClass("hostnote")).filter(n=>/changed where it is kept/.test(text(n)))[0];
+ const offer=P.find(P.main(),P.hasClass("newernote")).filter(n=>/changed where it is kept/.test(text(n)))[0];
  chk("on /other/, its own a.md opens as a booklet of its own: read from /other/modules/, a new entry, no offer of a newer file",urls().join()===OM+"a.md"&&B.currentId!==aid&&!offer&&/The other's question/.test(JSON.stringify(B.BOOK)),JSON.stringify(urls())+" same entry: "+(B.currentId===aid)+" offer: "+!!offer);
  chk("...and the answer typed on /app/ is nowhere in it",ans(B)===undefined&&!/QZXappanswer/.test(JSON.stringify(B.STATE)),JSON.stringify(B.STATE.answers));
  const oid=B.currentId;B.closeBooklet();B.screen="@booklets";B.render();
@@ -173,10 +162,10 @@ for(const [href,want,why] of [
  A.closeBooklet();
  chk("renaming it in the list names it there only, and keeps no copy",A.renameStored(id,"My weekly")===true&&lib()[0].named==="My weekly"&&!(("booklet.b."+id) in global.__ls),JSON.stringify(lib()[0]));
  // the same site's other page, which declares a store: the folder's pointer is not read from that store
- const B=boot(APP+"other.html",{keep:true,meta:{"booklet-store":"http://fleet/pub/"}});CALLS=[];
+ const B=boot(APP+"other.html",{keep:true,meta:{"booklet-store":"http://myhost/pub/"}});CALLS=[];
  B.openFromList(id);await sleep(30);
  chk("on a page with a store tag, a pointer from the default folder is not read from that store, and the page says so",CALLS.length===0&&/no store/.test(toast()),JSON.stringify(urls())+" "+toast());}
-{const A=boot(APP+"other.html",{meta:{"booklet-store":"http://fleet/pub/"}});ROUTES["http://fleet/pub/s.md"]=booklet("Stored");
+{const A=boot(APP+"other.html",{meta:{"booklet-store":"http://myhost/pub/"}});ROUTES["http://myhost/pub/s.md"]=booklet("Stored");
  await A.openLink("#/open/s.md");const id=A.currentId;A.closeBooklet();
  const B=boot(APP,{keep:true});CALLS=[];
  B.openFromList(id);await sleep(30);

@@ -408,42 +408,22 @@ section("a first read that ends after the visit fell back is not loaded");
  chk("and when the read ends, nothing of it is loaded into the page",B.KEEP.cache.size===0,B.KEEP.cache.size);
  global.setTimeout=realST;IDB.ctl.slowRead=0;}
 
-section("a host waiting when \"Your booklets\" is first drawn, on a page with no navigator.storage");
-/* the store's first draw comes after a host's script has registered; with no navigator.storage (an http: page that is
-   not localhost, and Node) the first list asks checkPersisted, which used to draw again inside that draw */
-{fresh();P.place("http:","fleet");const A=P.boot();await started(A);A.loadText(BARE("Listed once"));await idle(A);
+section("\"Your booklets\" is drawn once at the first draw, on a page with no navigator.storage");
+/* with no navigator.storage (an http: page that is not localhost, and Node) the first list asks checkPersisted, which used
+   to draw again inside that draw */
+{fresh();P.place("http:","myhost");const A=P.boot();await started(A);A.loadText(BARE("Listed once"));await idle(A);
  P.closePages();IDB.ctl.kill();
- const B=P.boot();const h=B.BookletApi.host({label:"a label not allowed"});await started(B);
- const asks=P.find(P.main(),P.hasClass("hostask")).length,cards=(P.texts(P.main()).match(/Listed once/g)||[]).length;
- chk("the list is drawn once: one host notice, one card for the booklet",h.state()==="waiting"&&asks===1&&cards===1,asks+" notices, "+cards+" cards");
+ const B=P.boot();await started(B);
+ const cards=(P.texts(P.main()).match(/Listed once/g)||[]).length;
+ chk("the list is drawn once: one card for the booklet",cards===1,cards+" cards");
  delete global.location;}
 
-section("a host before the store is read; the mirrors");
-{fresh();P.place("http:","fleet");LS["booklet.host.allowed"]="fleet: store";
- const A=P.boot();
- const h=A.BookletApi.host({label:"fleet: store"});
- chk("a host the reader allowed is active at once, before the store is read (its mirror in local storage)",A.KEEP.mode==="wait"&&h.state()==="active",A.KEEP.mode+" "+h.state());
- const r=A.BookletApi.open(BARE("Handed over early"),{});
- chk("Booklet.open before the store is read answers at once",r.ok===true&&Array.isArray(r.problems),JSON.stringify(r));
- chk("and the page has still drawn nothing",P.main().children.length===0);
- await started(A);
- chk("the booklet opens once the store is read",!!A.currentId&&/Handed over early/.test(JSON.stringify(A.BOOK.head||A.BOOK.title)),A.currentId);
- chk("the host is still active: the store, read, agrees",h.state()==="active");
- await idle(A);
- chk("the reader's yes is in the store, and stays mirrored",IDB.kv("booklet.host.allowed")==="fleet: store"&&LS["booklet.host.allowed"]==="fleet: store");
- LS["booklet.host.allowed"]="another label";
- const B=reload();const h2=B.BookletApi.host({label:"fleet: store"});
- chk("a mirror that disagrees decides only until the store is read",h2.state()==="waiting");
- await started(B);await idle(B);
- chk("the reader's yes is kept only where the store and its mirror agree: here it is forgotten, and the host asks again",h2.state()==="waiting"&&LS["booklet.host.allowed"]===undefined&&IDB.kv("booklet.host.allowed")===undefined,h2.state());
- B.lsSet(B.HOST_KEY,"fleet: store");await idle(B);delete LS["booklet.host.allowed"];
- const B2=reload();const h3=B2.BookletApi.host({label:"fleet: store"});await started(B2);await idle(B2);
- chk("a Stop made where only local storage was written (its mirror gone) is not undone by the store",h3.state()==="waiting"&&IDB.kv("booklet.host.allowed")===undefined,h3.state());
- B2.lsSet(B2.THEME_KEY,"night");await idle(B2);
+section("the theme's mirror");
+{fresh();const A=P.boot();await started(A);
+ A.lsSet(A.THEME_KEY,"night");await idle(A);
  chk("the theme is kept in the store and in its mirror",IDB.kv("booklet.ui.theme")==="night"&&LS["booklet.ui.theme"]==="night");
  delete LS["booklet.ui.theme"];reload();await sleep(30);
- chk("a mirror local storage lost is written again from the store",LS["booklet.ui.theme"]==="night");
- delete global.location;}
+ chk("a mirror local storage lost is written again from the store",LS["booklet.ui.theme"]==="night");}
 
 section("leaving the page: what is still queued is handed over as the page goes");
 {fresh();

@@ -1,16 +1,14 @@
 // Browser check for the default folder (renderer 0.15, booklet-hub item v015-host-modules-and-checksum). The renderer is served
 // exactly as given, byte for byte, with no `booklet-store` tag: at a public address with no header of its own (as GitHub Pages
 // serves the portal: the renderer's own policy is the only one) and at a private name under the box server's header
-// (test/csp-box.js), where a host's script may register. Checks:
+// (test/csp-box.js). Checks:
 //   - before a link is followed the page asks for nothing but itself (and a favicon);
 //   - `#/open/<name>` on a page at /app/ and at /app/booklet.html reads /app/modules/<name>, once, as a plain GET, and the
 //     booklet opens into its content with the quiet line saying where it came from;
 //   - a missing file says "That booklet could not be found." and opens nothing;
 //   - a copy that declares a store reads the store, and never its own modules/ folder;
 //   - a page opened from disk is unchanged: no request, "no store" said, even with a modules/ folder beside it on disk;
-//   - read only: with a host registered and allowed, a booklet from the folder is never handed to it (nothing heard after the
-//     reader types and the host's cadence has passed; the bar says "Kept in this browser only"), while a booklet the host
-//     itself hands over on the same page is (the control);
+//   - read only: a booklet from the folder, typed into, makes no request (the bar says "Kept in this browser only");
 //   - "Your booklets" lists it, and Open from the list reads the folder's file again;
 //   - two renderers on one site (/app/ and /other/), each with its own modules/a.md with the same ids and different text: on
 //     /other/ the link reads /other/modules/a.md as a booklet of its own, with no offer to "Read the newer file" and none of the
@@ -23,7 +21,7 @@ const fs=require('fs'),path=require('path'),crypto=require('crypto');
 const HTML=path.resolve(process.argv[2]),OUT=process.argv[3]||'.';
 const BOXCSP=require('./csp-box.js'),PARTS=require('./parts.js');
 const fails=[];const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails.push(m);};
-const PUBLIC='https://booklet.test',PRIVATE='http://fleet';
+const PUBLIC='https://booklet.test',PRIVATE='http://myhost';
 const RAW=fs.readFileSync(HTML);
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const bk=(id,title,q)=>`---\nbooklet: "0.20"\ntitle: ${title}\nlang: en\n---\n\n> [!module|${id}] ${title}\n\n> [!activity|${id}-a] ${title}\n\n> [!text|${id}-q long] ${q||'What stood out?'}\n\n> [!module|${id} end] End\n`;
@@ -110,28 +108,17 @@ if(withStore===RAW.toString('utf8')) throw new Error('booklet.html no longer has
    ok(reqs.slice(n1).every(r=>r.url.split('#')[0]===own)&&!reqs.slice(n1).some(r=>/\/modules\/x\.md$/.test(r.url)),'from disk, with a modules/ folder beside the file, nothing is asked for but the page itself: '+reqs.slice(n1).map(r=>r.url).join(', '));
    ok(/no store/.test(await toast(p))&&await p.getByRole('button',{name:'Start a new booklet'}).count()===1,'and the page says it has no store, on the start screen: '+await toast(p));
    await done(p);}
-  // 8 read only: a registered, allowed host hears nothing of a booklet from the folder
+  // 8 read only: a booklet from the folder, on a page under the box's header, is kept in the browser only; nothing leaves
   p=await open();
   await p.goto(PRIVATE+'/app/');await wait(p,1000);
-  await p.evaluate(()=>{window.__calls=[];window.__h=window.Booklet.host({label:'fleet: test'});window.Booklet.onChange(x=>window.__calls.push({name:x.name,text:x.text}));});
-  await wait(p,300);
-  await p.locator('#main .hostask button',{hasText:/^Allow$/}).click();await wait(p,300);
-  ok(await p.evaluate(()=>window.__h.state())==='active','on the private page the host is active after the reader presses Allow');
   n1=reqs.length;
   await p.evaluate(()=>{location.hash='#/open/x.md';});await wait(p,1200);
   ok(folderReqs(n1).map(r=>r.url).join()===PRIVATE+'/app/modules/x.md'&&await view(p)==='ex/ex-a','under the box\'s header the folder is read and the booklet opens');
+  const n2=reqs.length;
   await p.locator('#main textarea').first().click();await p.keyboard.type('QZXfolderanswer');
-  await wait(p,6500);
-  ok(await p.evaluate(()=>window.__calls.length)===0,'after the reader types and the host\'s cadence (2 s pause, 5 s bound) has passed, the host has heard nothing: '+await p.evaluate(()=>window.__calls.map(c=>c.name).join()));
-  ok(await p.evaluate(()=>window.Booklet.text())==='','the host cannot read it');
-  ok(await p.locator('#hostLine').innerText()==='Kept in this browser only','the bar says it is kept in this browser only: '+await p.locator('#hostLine').innerText());
-  // the control: the host's own booklet, on the same page, is handed over
-  await p.evaluate(t=>window.Booklet.open(t,{name:'y.md'}),bk('hy','Host booklet'));await wait(p,600);
-  await p.locator('#main textarea').first().click();await p.keyboard.type('QZXhostanswer');
-  await wait(p,6500);
-  const heard=await p.evaluate(()=>window.__calls);
-  ok(heard.length>0&&heard.every(c=>c.name==='y.md')&&/QZXhostanswer/.test(heard[heard.length-1].text),'control: a booklet the host hands over on the same page is handed to it ('+heard.length+' calls, names '+[...new Set(heard.map(c=>c.name))].join()+')');
-  ok(!heard.some(c=>/QZXfolderanswer|Folder booklet/.test(c.text)),'no word of the folder booklet reached the host');
+  await wait(p,3000);
+  ok(reqs.slice(n2).length===0,'after the reader types and a while has passed, the page has asked for nothing: '+reqs.slice(n2).map(r=>r.method+' '+r.url).join(', '));
+  ok(await p.locator('#saveLine').innerText()==='Kept in this browser only','the bar says it is kept in this browser only: '+await p.locator('#saveLine').innerText());
   await done(p);
   // 9 two renderers on one site, /app/ and /other/, each with its own modules/a.md: the same ids, different text
   p=await open();

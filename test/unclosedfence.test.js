@@ -2,7 +2,7 @@
 //
 // A records region written after such a body would be read as part of that fence, and its records would not be read
 // back: the reader's answers would be gone at the next open. So every write that would put records after it is refused
-// (a download, the host's onChange, Booklet.text()), with the reason in the reader's language. Nothing is written,
+// (a download), with the reason in the reader's language. Nothing is written,
 // nothing the reader did is cleared, and the fence is never closed for the author, which would change the body's bytes.
 // A write with nothing to put after the body is the file as it was, and is made. A file whose fences all close is
 // written exactly as before. The Obsidian plugin refuses the same way (booklet-obsidian, src/core/write.ts).
@@ -164,7 +164,7 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
      A.peekAnswers("seeds").which==="runner beans"&&(open?BLOBS.length===0:BLOBS.length===1&&A.parseFile(BLOBS[0]).S.answers.seeds.which==="runner beans"),BLOBS.map(show).join());}}
 
 /* ---- work kept as records, through a newer file whose body ends inside such a fence (0.16.1) ----
-   A newer file read on the offer ("Read the newer file": the host's, hostAccept, or a store's, linkAccept) that drops a
+   A newer file read on the offer ("Read the newer file", a store's, linkAccept) that drops a
    module the reader worked in keeps that work as records (keepUnowned), and a file's own records for a module its design
    lacks are kept as written. Where the body ends inside such a fence, those records are kept beside the copy's text, not in
    it, and a later newer file (the fence closed; the module back, or still gone) must keep them too, with a reload between
@@ -175,25 +175,20 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
  /* a file whose region holds records for a module its design lacks, the design after it ending inside the fence */
  const V6=FM+MOD("beds")+"\n%%\n> [!records|beds] The beds\n\n```booklet answers\n{\"q1\": \"peas\"}\n```\n\n> [!records|shed] The shed\n\n```booklet answers\n{\"q1\": \"snails\"}\n```\n\n%%\n"+
    "\nA reminder for the shed:\n\n```text\nwater the beans at dawn\n";
- const STORE="http://fleet/booklets/",LINK="#/open/garden/week.booklet.md",qs=global.document.querySelector,ft=global.fetch;let FILE="",calls=[],h=null;
+ const STORE="http://myhost/booklets/",LINK="#/open/garden/week.booklet.md",qs=global.document.querySelector,ft=global.fetch;let FILE="";
  const reply=(body,ok)=>({ok:ok!==false,status:ok===false?404:200,headers:{get:k=>({"content-type":"text/plain"}[k.toLowerCase()])},text:async()=>body,
    body:{getReader(){const b=Buffer.from(body);let done=false;return {read:async()=>done?{done:true}:(done=true,{done:false,value:new Uint8Array(b)})};}}});
  const type=(A,scope,words)=>{A.screen=scope+"/a1";A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea"||n.tagName==="input")[0];ta.value=words;ta._on.input();A.flushSave();};
- /* the two ways a newer file is read: the host's (Booklet.host, fileChanged) and a store's (a #/open/ link, no host). The
-    reader's only work is in the module the newer file drops, so after that read the copy holds nothing but those records,
-    and the store's next file is offered all the same (storeHolds weighs them, keptBeyond) */
+ /* a newer file is read on a store's offer (a #/open/ link). The reader's only work is in the module the newer file drops, so
+    after that read the copy holds nothing but those records, and the store's next file is offered all the same (storeHolds
+    weighs them, keptBeyond) */
  const WAYS={
-   host:{boot(){P.place("http:","fleet");global.__ls["booklet.host.allowed"]="fleet: garden";const A=P.boot(),B=A.BookletApi;
-       h=B.host({label:"fleet: garden"});B.onChange(x=>calls.push(x));return A;},
-     async open(text){P.wipe();const A=this.boot();A.BookletApi.open(text,{name:"garden/week.booklet.md"});await sleep(300);return A;},
-     async again(A){A.flushSave();P.closePages();const B=this.boot();B.openBooklet(B.readLib().entries[0].id);await sleep(300);return B;},
-     async newer(A,text){calls.length=0;h.fileChanged(text);A.hostAccept();await sleep(700);return A;}},
-   store:{boot(){P.place("http:","fleet");global.document.querySelector=s=>/booklet-store/.test(s)?{getAttribute:k=>k==="content"?STORE:null}:null;
+   store:{boot(){P.place("http:","myhost");global.document.querySelector=s=>/booklet-store/.test(s)?{getAttribute:k=>k==="content"?STORE:null}:null;
        global.fetch=async u=>String(u)===STORE+"garden/week.booklet.md"?reply(FILE):reply("nf",false);return P.boot();},
      async open(text){P.wipe();FILE=text;const A=this.boot();await A.openLink(LINK);return A;},
      async again(A){A.flushSave();P.closePages();const B=this.boot();await B.openLink(LINK);return B;},
      async newer(A,text){FILE=text;A.closeBooklet();await A.openLink(LINK);
-       const b=P.find(P.find(P.main(),P.hasClass("hostnote"))[0]||{children:[]},n=>n.tagName==="button"&&/Read the newer file/.test(P.texts(n)))[0];
+       const b=P.find(P.find(P.main(),P.hasClass("newernote"))[0]||{children:[]},n=>n.tagName==="button"&&/Read the newer file/.test(P.texts(n)))[0];
        if(b) b._on.click({target:b});return A;}}};
  for(const [way,W] of Object.entries(WAYS)){
    for(const [label,last] of [["the module still gone",V3],["the module back",V3b]]) for(const rl of [false,true]){
@@ -206,7 +201,7 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
      const t=A.toMarkdown();
      chk("and the later newer file keeps it: "+(last===V3b?"the answer is back in its module":"still kept as records")+as,
        A.BOOK.raw.source===last&&/snails/.test(t)&&(last===V3b?A.peekAnswers("shed").q1==="snails"&&A.parseFile(t).S.answers.shed.q1==="snails":t.includes("> [!records|shed]")),show(t));
-     if(way==="host") chk("and what the host is sent holds it"+as,calls.length>0&&calls.every(c=>/snails/.test(c.text)),calls.map(c=>show(c.text)).join());}
+     }
    for(const rl of [false,true]){const as=" ("+way+(rl?"; a reload first":"")+")";
      let A=await W.open(V6);type(A,"beds","peas and beans");if(rl) A=await W.again(A);
      A=await W.newer(A,V3);const t=A.toMarkdown();
@@ -221,35 +216,16 @@ const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot
    P.closePages();}
  global.document.querySelector=qs;global.fetch=ft;}
 
-/* ---- the host's write-back and Booklet.text() ---- */
-{P.wipe();P.place("http:","fleet");global.__ls["booklet.host.allowed"]="fleet: garden";const A=P.boot(),B=A.BookletApi;
- const calls=[],h=B.host({label:"fleet: garden"}),line=()=>A.hostLineText(A.STRINGS.en.ui);B.onChange(x=>{calls.push(x);});
- B.open(OPEN,{name:"garden/week.booklet.md"});await sleep(700);
- chk("opened with nothing changed, the host is sent the file as it is",calls.length===1&&calls[0].text===OPEN,calls.map(c=>show(c.text)).join());
- const n=calls.length;A.screen="a1";A.render();const ta=P.find(P.main(),x=>x.tagName==="textarea")[0];ta.value="runner beans";ta._on.input();
- await sleep(700);
- chk("an answer is not sent to the host",calls.length===n,calls.slice(n).map(c=>show(c.text)).join());
- chk("the save status says Unsaved, and the line behind it says why",P.byId("saveBtn").attrs["data-state"]==="unsaved"&&
-   A.hostLineText(A.STRINGS.en.ui).includes(say(A,"en"))&&/^Saves go to: fleet: garden · Not saved/.test(A.hostLineText(A.STRINGS.en.ui)),A.hostLineText(A.STRINGS.en.ui));
- /* a late answer about the change sent before the refusal (the open's): the refusal still holds, and its reason stays */
- h.failed("the disk is full",calls[0]);
- chk("a late failed() for the change sent before the refusal leaves the fence's reason in the line",
-   P.byId("saveBtn").attrs["data-state"]==="unsaved"&&line().includes(say(A,"en"))&&!/disk is full/.test(line()),line());
- h.failed("the disk is full");
- chk("and so does a failed() that names no change",line().includes(say(A,"en"))&&!/disk is full/.test(line()),line());
- chk("Booklet.text() gives the host nothing to write",B.text()==="",show(B.text()));
+/* ---- a download of a body that ends inside a fence ---- */
+{const A=load(OPEN);
+ A.screen="a1";A.render();const ta=P.find(P.main(),x=>x.tagName==="textarea")[0];ta.value="runner beans";ta._on.input();
+ BLOBS.length=0;await A.download();
+ chk("with an answer typed, the download is refused, and the reason is told in the reader's language",BLOBS.length===0&&toastText()===say(A,"en"),toastText());
  chk("and the answer stays in the page",A.peekAnswers("").q1==="runner beans");
- A.lang="fr";chk("the line says why in the reader's language",A.hostLineText(A.STRINGS.fr.ui).includes(say(A,"fr")),A.hostLineText(A.STRINGS.fr.ui));A.lang="en";
- ta.value="runner peas";ta._on.input();await sleep(700);
- chk("typed again: refused again, with the fence's reason in the line",calls.length===n&&line().includes(say(A,"en")),line());
- ta.value="";ta._on.input();await sleep(700);
- chk("the answer taken back, the host is sent the file as it was, and nothing more",calls.length===n+1&&calls[n].text===OPEN,calls.slice(n).map(c=>show(c.text)).join());
- /* the reason is gone with the answer: the line is a failed save's until the host answers, "trying again" while it is awaited */
- chk("and the line no longer gives the fence's reason: it says Not saved, trying again, while the host's answer is awaited",
-   !line().includes(say(A,"en"))&&/Not saved/.test(line())&&line().includes(A.STRINGS.en.ui.saveAgain),line());
- h.saved(calls[n]);
- chk("the host's saved() for that change makes it Saved",P.byId("saveBtn").attrs["data-state"]==="saved"&&!line().includes(say(A,"en")),
-   P.byId("saveBtn").attrs["data-state"]+" | "+line());}
+ A.lang="fr";BLOBS.length=0;await A.download();
+ chk("in French, the reason is the French one",BLOBS.length===0&&toastText()===say(A,"fr"),toastText());A.lang="en";
+ ta.value="";ta._on.input();BLOBS.length=0;await A.download();
+ chk("the answer taken back, the download is the file as it was",BLOBS.length===1&&BLOBS[0]===OPEN,BLOBS.map(show).join());}
 
 /* ---- every kind of fence: a write is refused exactly when the answer would not be read back from the file ----
    For each body, the writer's own text (toMarkdown, which never refuses) is read again: if the answer is not in what it reads,
