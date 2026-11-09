@@ -81,7 +81,7 @@ The file has three parts, in order:
 
 | Part | Holds | Who writes it |
 | --- | --- | --- |
-| **Front matter** (`---` on line 1) | `booklet: "0.20"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, and `media-from` if the booklet names remote audio or video (section 4) | you |
+| **Front matter** (`---` on line 1) | `booklet: "0.20"`, `id`, `title`, `lang`, `version`, a `description` if the first paragraph is not the right sentence for a search result, `media-from` if the booklet names remote audio or video, and `submit` if the booklet's answers are to be sent somewhere (section 4) | you |
 | **Design** (everything above the records, and anything written after them) | the readable prose, and every `> [!…]` line and its fenced data | you; the renderer never rewrites your design, and leaves design written after the records where it is |
 | **Records** (inside `%% … %%`, at the end) | what was answered, fenced and grouped by module | a renderer only; a fresh file has none at all |
 
@@ -265,6 +265,24 @@ Write one booklet line for each question (section 6) where `my-question` stands.
   file directly (a CDN address), not one that redirects. A malformed value is
   reported when the booklet opens and ignored, and the other origins of a list
   still count.
+- **`submit`** (optional, in the front matter, format 0.21) **names** the submit
+  endpoint a host may send the reader's answers to. It holds a **name** and
+  never an address: 1 to 40 characters from `a-z`, `0-9` and `-`, lower case.
+  Write it only when someone has told you the name of an endpoint their host
+  lists; never make a name up, and never write a URL, an email address or any
+  other text there. Nothing in the booklet changes when it is present, and a
+  renderer that sends nothing ignores it.
+
+  ```yaml
+  submit: class-feedback
+  ```
+
+  The name means nothing in the file by itself: the host's registry decides
+  which names exist and where each leads, and a page built for it shows a
+  Submit button only for a name it lists. The reader is shown the endpoint's own
+  name, owner and address (from the registry, not from the booklet) before
+  anything is sent. The linter reports a malformed name as an error, and cannot
+  say whether a host lists it.
 - **Images.** An image is linked, never embedded. A renderer fetches one only
   from a place its own host declares, or from an origin its host or reader has
   allowed, never from an address the file names unasked. The
@@ -1376,7 +1394,9 @@ an extension that may not play everywhere, such as `.flac` or `.mov` (a warning)
 path a renderer will not read (a warning), a bare `![[name.ext]]` with no such file beside
 the booklet (a warning), and a local video with no folded `> [!note]- Transcript` straight
 after it (a warning). For `media-from:` it reports any value that is not an `https:` origin
-(scheme, host and optional port, nothing after), as one value, a list or a comma list. For a
+(scheme, host and optional port, nothing after), as one value, a list or a comma list. For `submit:`
+it reports any value that is not a name (an address, an empty value, capital letters, more than 40
+characters, any character but `a-z`, `0-9` and `-`) as an error, and a name no host lists is not a finding. For a
 `listen` it reports a `left:` that is not a whole number of seconds in digits, a setting the
 kind does not take, a missing id, a `listen` inside a `repeat` activity, and more than one
 audio or video embed under one `listen` (all errors). It also reports raw `<audio>`,
@@ -1474,6 +1494,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 - [ ] No extensionless remote address in image syntax (a video service's page is a plain link), and no raw `<audio>`, `<video>`, `<iframe>` or other HTML media.
 - [ ] `media-from`, if present, holds `https:` origins only (scheme, host, optional port, no path), as one value or a list, and nothing in the file treats it as a permission.
 - [ ] Every word in a copy line's `of:` is a question of the same activity, a `question/solution` or `question/hint` that is folded straight under its question, or a block with a `^id`; the line sits in an activity.
+- [ ] `submit`, if present, holds a name (1 to 40 of `a-z`, `0-9` and `-`) that someone gave you, never an address, and nothing else in the file names where answers go.
 - [ ] A `listen` holds one embed or one link, takes only `left:` (whole seconds), sits in an activity with no `repeat`, and no answer for it is written.
 - [ ] Every local video has a folded `> [!note]- Transcript` beside it.
 - [ ] A booklet with a `listen` is handed out with a word that `pos` and `done` travel with it when it is shared back.
