@@ -38,6 +38,9 @@
 // (/pub/pledge/linked.json), made once however many blocks name it. It still fails any other request for a data file: one before the
 // link is followed, a second read, a method other than GET, a body, a query string, any word the reader typed, and any request at all
 // for a data file named by a booklet that was loaded from disk or pasted (step 8b names one and must make none).
+// CHANGED, 0.20.1 (2026-11-09: the renderer never writes to a host and holds no hook for a page's script to do it). The save hook,
+// window.Booklet, was taken out. Everything above stays as it was (every request a GET to the page's own origin or the registry's,
+// and only the reads named here); this test now also fails if the page defines window.Booklet.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright node test/pledge-browser.js <booklet.html> <outdir>
 const { chromium } = require(process.env.PLAYWRIGHT||'playwright');
 const {kept}=require('./kept.js');
@@ -140,6 +143,9 @@ const FILES={'/kitchen.md':KITCHEN,'/garden.md':GARDEN};
   await p.goto(PAGE_ORIGIN+'/app/');await wait(500);
   const registryOrigin=await p.evaluate(()=>new URL(document.querySelector('meta[name="booklet-registry"]').content).origin);
   ok(registryOrigin==='https://raw.githubusercontent.com','the page names its registry in the meta tag: '+registryOrigin);
+  // 0.20.1: the page has no hook through which a script could be handed what a reader types: no window.Booklet, and none of its names
+  ok(await p.evaluate(()=>typeof window.Booklet==='undefined'&&!('Booklet' in window)),'the page defines no window.Booklet (the save hook is not in the file)');
+  ok(await p.evaluate(()=>[typeof HOOK_LISTENERS,typeof hookFire,typeof hookChanged,typeof hostAllowed,typeof ownPlace].every(t=>t==='undefined')),'none of the old hook names is defined in the page');
   // 1 a new booklet, and two modules from the registry
   await p.getByRole('button',{name:'Start a new booklet'}).click();await wait(600);
   await addFromRegistry('Kitchen module');await addFromRegistry('Garden module');

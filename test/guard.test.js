@@ -186,6 +186,13 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
     count(code,"integrity")===1&&count(hand,'if(/^https?:/.test(url)){if(!LIB_SRI[name]) throw new Error("no digest for "+name);s.integrity=LIB_SRI[name];}')===1&&
     /const LIB_SRI=\{mermaid:"sha256-[A-Za-z0-9+\/]{43}=",temml:"sha256-[A-Za-z0-9+\/]{43}="\};/.test(hand)&&!/crossOrigin|crossorigin/.test(code));}
  for(const n of NAMES) must("the hand-written renderer has no "+n,count(hand,n)===0,count(hand,n)+" found");
+ /* CHANGED 0.20.1 (2026-11-09: the renderer never writes to a host and holds no hook that lets a page's script do it).
+    From 0.13.1 to 0.20.0 the file carried window.Booklet, a hook through which a page's own script could be handed what a reader
+    typed. It was taken out in 0.20.1, and these checks now hold the opposite: nothing in the file defines window.Booklet or
+    has a name from the hook. (The store's reads, the default folder's reads and the policy are pinned by the checks above and below.) */
+ for(const n of ["window.Booklet","Booklet.host","Booklet.onChange","Booklet.open","Booklet.text","HOOK_LISTENERS","hookFire","hookChanged","hookFlush","ownPlace","HOST_OWN","hostAllowed","fileChanged","dataChanged"])
+   must("the hand-written renderer has no "+n+" (the save hook is not in the file)",count(hand,n)===0,count(hand,n)+" found");
+ must("it defines nothing on window under the name Booklet",!/defineProperty\(\s*window\s*,\s*["']Booklet["']/.test(hand)&&!/window\s*\[\s*["']Booklet["']\s*\]\s*=/.test(hand)&&!/window\.Booklet\s*=/.test(hand));
  must("it has no <form with an action",!/<form\b[^>]*\baction\b/i.test(hand)&&!/<form\b/i.test(hand),"a <form> is present");
  must("it never writes document.cookie",count(hand,"document.cookie")===0);
  /* every fetch( call: found with a parser, counted, and able only to read */
@@ -260,7 +267,7 @@ const WHY=" A new key or view needs two real pages that need it (SPEC.md, design
    &&count(hand,'function storeAddress(name,base){base=base===undefined?storeUrl():base;const n=linkName(name);if(!base||n===null) return null;')===1
    &&count(hand,'const storeModule=id=>{const a=moduleMemo("store",STORE_SRC)[id];return a!==undefined&&a===moduleMemo("book",String(((typeof BOOK!=="undefined"&&BOOK&&BOOK.raw)||{}).source||""))[id];};')===1
    &&/function storeImage\(src,done,scope\)\{const folder=imageFolder\(scope\);if\(folder===""\) return null;/.test(hand)&&/u\.href\.startsWith\(folder\)&&u\.origin===new URL\(folder\)\.origin/.test(hand)
-   &&count(hand,'typeof ctx.opts.imageScope==="string"?storeImage(')===1&&count(hand,"imageScope:scopeOfAddr(activityId)")===1&&count(hand,'STORE_SRC=')===3&&count(hand,'let STORE_SRC="";')===1&&count(hand,'function imagesRelease(){STORE_SRC="";')===1&&count(hand,'STORE_SRC=String((((R&&R.template)||{}).raw||{}).source||"");')===1&&count(hand,"noteStoreFile(R)")===5);
+   &&count(hand,'typeof ctx.opts.imageScope==="string"?storeImage(')===1&&count(hand,"imageScope:scopeOfAddr(activityId)")===1&&count(hand,'STORE_SRC=')===3&&count(hand,'let STORE_SRC="";')===1&&count(hand,'function imagesRelease(){STORE_SRC="";')===1&&count(hand,'STORE_SRC=String((((R&&R.template)||{}).raw||{}).source||"");')===1&&count(hand,"noteStoreFile(R)")===4);
  must("temml is started with trust:false, so \\includegraphics and \\href are not drawn",/trust:false/.test(hand)&&!/trust:true/.test(hand));
  must("the libraries are stored as inert text (type text/plain), never as script that runs on load",!/<script(?![^>]*type="text\/plain")[^>]*id="lib-/.test(full));
  must("a part is woken or loaded only through useLib(), and only mermaidNode and mathNode ask for one by name",count(hand,'useLib("mermaid")')===1&&count(hand,'useLib("temml")')===1&&count(hand,"loadPart(")===2&&count(hand,"whenLib(")===2);
