@@ -10,7 +10,7 @@ blocks. A malformed file is an activity that renders wrong or not at all for
 whoever was handed it, so this linter catches it before the file is shared. Its
 checks mirror parseBooklet() in booklet.html, so the two agree on what is wrong.
 
-What it checks: the front matter (`booklet: "0.20"`, one `lang:`, a one-line `description:` if there is one, `media-from:` if there is one), fences that are
+What it checks: the front matter (`booklet: "0.20"`, one `lang:`, a one-line `description:` if there is one, `media-from:` if there is one, `submit:` if there is one), fences that are
 closed, ids that are unique within their module (module ids within the file), modules that open and close, widgets that
 name a data block that exists, widget JSON that parses and names an engine, no
 script in a widget's SVG, numbered-list lines that would swallow a question's
@@ -1612,6 +1612,7 @@ def check_format(f, text, fm, folder=None):
         err(f, f"front matter `start: {fm['start']}`: the only value is `start: home` (a booklet that holds one activity or one module opens "
                "straight into it unless it says `start: home`); the renderer reports it and ignores it")
     check_media_from(f, text)
+    check_submit(f, text)
     lines = text.replace("\r\n", "\n").split("\n")
     i = 0
     if lines and lines[0].strip() == "---":
@@ -2701,6 +2702,42 @@ def check_media_from(f, text):
             why = "is not a host name and an optional port"
         err(f, f"front matter `media-from` {v!r} {why}; write each origin as the scheme, host and optional port, such as "
                f"`https://media.example.org` or `https://cdn.example.net:8443`. A renderer reports it and ignores it")
+
+
+SUBMIT_NAME = re.compile(r"^[a-z0-9-]{1,40}$")
+
+
+def check_submit(f, text):
+    """The front matter's `submit: <name>` (SPEC.md section 2, "Submit"): the name of a submit endpoint, 1 to 40 characters from a-z, 0-9
+    and `-`, lower case, written on the key's own line (quotes are taken off, as the renderer reads every front matter value). A booklet
+    never carries an address, so an address, an empty value or any other text is an error. Which names a host's registry lists is the
+    host's own, and this linter has no registry: a name that is well formed is never a finding, listed or not."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    if not lines or lines[0].strip() != "---":
+        return
+    end = next((k for k in range(1, len(lines)) if lines[k].strip() == "---"), len(lines))
+    for k in range(1, end):
+        m = re.match(r'^submit:[ \t]*(.*?)[ \t]*$', lines[k])
+        if not m:
+            continue
+        v = m.group(1)
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+            v = v[1:-1]
+        if SUBMIT_NAME.match(v):
+            continue
+        if not v.strip():
+            why = "is empty"
+        elif re.search(r'[:/@?#\\]|\.[a-z]', v):
+            why = "looks like an address, and a booklet never carries an address"
+        elif len(v) > 40:
+            why = f"is {len(v)} characters long, and a name is at most 40"
+        elif v != v.lower():
+            why = "has capital letters, and a name is lower case"
+        else:
+            why = "has a character other than a-z, 0-9 and `-`"
+        shown = v if len(v) <= 60 else v[:57] + "..."
+        err(f, f"line {k + 1}: front matter `submit: {shown}` {why}; write the name of a submit endpoint your host lists, 1 to 40 characters "
+               f"from a-z, 0-9 and `-`, such as `submit: class-feedback`, or take the line out")
 
 
 def _plain_heading(s):
