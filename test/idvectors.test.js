@@ -104,5 +104,15 @@ const table=["| case | format | ids in the block | other | makes |","| --- | ---
  table.forEach((row,i)=>chk(i<2?"the spec's table has its header line "+(i+1):`the spec's table has the row of "${V.cases[i-2].name}"`,spec.includes("\n"+row+"\n"),row));
  chk("and the spec's table has no other row of cases",(spec.match(/^\| case \| format \| ids in the block \|/gm)||[]).length===1);}
 
+// ---- 4. the renderer's own maker (booklet.html, makeId) makes every case, as the plugin's does (the same file is the plugin's test/id-vectors.json)
+{const A=require("./page.js").boot(),bytes=u=>(u.replace(/-/g,"").match(/../g)||[]).map(h=>parseInt(h,16));
+ const word={format:"invalid-format",slug:"empty-slug",clash:"clash",empty:"empty-id"};
+ for(const c of V.cases){
+  const got=A.makeId(c.format,{ids:c.ids,values:c.fields||{},parent:c.parent==null?undefined:c.parent,now:new Date(c.now||V.now),random:()=>bytes(c.uuid||V.uuid),labelOf:f=>f}),want=c.expect;
+  const same=("id" in want)?(got.ok&&got.id===want.id):(!got.ok&&word[got.why]===want.refuse&&(want.field===undefined||got.field===want.field));
+  chk(`the renderer's makeId, case "${c.name}"`,same,JSON.stringify(got));
+  const f=A.parseIdFormat(c.format);
+  chk(`the renderer's parseIdFormat calls the format of "${c.name}" ${want.refuse==="invalid-format"?"invalid":"valid"}`,f.ok===(want.refuse!=="invalid-format"),JSON.stringify(f));}}
+
 console.log(fails?`\n${fails} id vector check(s) FAILED`:"\nid vector checks passed");
 process.exit(fails?1:0);

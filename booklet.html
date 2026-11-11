@@ -4087,7 +4087,9 @@ function readData(o){const P=PROBLEM;
       v.forEach(x=>todo.push(x));}}
   let fields,edits;
   if(!Array.isArray(o)&&o.fields!==undefined){const f=readFields(o.fields);if(f.bad) return f;fields=f.fields;edits=f.edits;}
-  return {rows,fields,edits};}
+  /* `idFormat` and `idPattern` (0.20), beside `fields`: how the id of a row the reader adds is made, kept as written and checked by whoever uses them */
+  const ids={};if(!Array.isArray(o)){if(o.idFormat!==undefined) ids.idFormat=o.idFormat;if(o.idPattern!==undefined) ids.idPattern=o.idPattern;}
+  return {rows,fields,edits,...ids};}
 /* Reading a booklet file takes five parts, each handing the next what it needs:
    splitItems cuts the lines into fences, Booklet lines, page breaks and prose;
    readBlocks walks those building modules, activities, pages and blocks, and
@@ -4148,7 +4150,7 @@ function splitItems(lines,start,inner){let i=start;
     const f=FENCE_RE.exec(ln);
     if(f){const F=fenceAt(lines,i,f),k=F.end,last=F.id?F.idAt:k,info=F.info;
       if(/^booklet\b/i.test(info)||F.id){flush();
-        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,last+1).join("\n")+(k<lines.length?"":"\n"+F.mark),id:F.id,line:i+1,rec:rec()});i=last;}
+        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,last+1).join("\n")+(k<lines.length?"":"\n"+F.mark),id:F.id,line:i+1,end:Math.min(k,lines.length),rec:rec()});i=last;}
       else{if(!buf.length) bufAt=i;buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
     if(!inner&&ln.trim()==="%%"){
@@ -4378,7 +4380,8 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
         const d=readData(o);
         if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
         /* it lives where a widget's data lives: inside its module's fence or in its data section, or in the shared data section */
-        dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,edits:d.edits,line:it.line});})(it,what);}};
+        /* `inner`: the lines between its fences, counted from 0 (`to` the line after the last); a reader that changes the block writes only inside them (rowFence) */
+        dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,edits:d.edits,idFormat:d.idFormat,idPattern:d.idPattern,line:it.line,inner:{from:it.line,to:it.end}});})(it,what);}};
   const onFigure=(it,info)=>{if(!it.id) return;
     claimIn(blockIds,blockScope(),it.id,P.line(it.line));
     const key=addrOf(blockScope()===SHARED?"":blockScope(),it.id);
@@ -4684,7 +4687,9 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
      if(as!==undefined&&!QUERY_VIEWS.has(as)){drop(P.queryViewBad(as,[...QUERY_VIEWS]));continue;}
      if(!src){const d=q.from&&(dataBlocks.find(z=>z.id===q.from&&z.mod===here)||dataBlocks.find(z=>z.id===q.from&&z.mod===null));
        if(d){
-         block.data={rows:d.rows,fields:d.fields,...(d.edits?{edits:d.edits}:{}),...(d.file?{file:{...d.file,scope:d.mod?scopeOf(d.mod):""}}:{})};entriesOnly(x);continue;}
+         block.data={rows:d.rows,fields:d.fields,...(d.edits?{edits:d.edits}:{}),...(d.file?{file:{...d.file,scope:d.mod?scopeOf(d.mod):""}}:{}),
+           /* which block it is, for a reader that changes it (rowFence finds it again in the text by these two), and how a new row's id is made */
+           id:d.id,mod:d.mod?d.mod.id:null,...(d.idFormat!==undefined?{idFormat:d.idFormat}:{}),...(d.idPattern!==undefined?{idPattern:d.idPattern}:{})};entriesOnly(x);continue;}
        if(elsewhere()){drop(P.queryOtherModule(q.from));continue;}
        drop(P.queryNothing(q.from||""));continue;}
      if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};if(src.a.kind!=="entry") entriesOnly(x);}
@@ -4767,7 +4772,7 @@ function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities
   const o={...rest,...(blurb?{blurb}:{}),...(opening.length?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   o.activities=acts;
   return o;}
-function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept,opening},fm,L,source,problems,wrote){
+function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept,opening,dataBlocks},fm,L,source,problems,wrote){
   /* a file that holds one module and no notice callout is covered by its own front matter: its license,
      copyright and source are that module's notice (a callout, when there is one, wins) */
   const holders=modules.filter(m=>m.activities.length);
@@ -4784,7 +4789,9 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
      booklet started here and not yet given a module downloads as); a module that holds no activity is still refused */
   const empty=!modules.length;
   const refused=problems.filter(p=>p.refuses);
-  return {ok:(out.length>0||empty)&&!refused.length,empty:empty||undefined,unread:problems,refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st};}
+  /* where each data block stands in the text (rowFence): its id, its module's id (null outside every module fence), whether it names a file, and its lines between the fences */
+  const dataAt=(dataBlocks||[]).map(d=>({id:d.id,mod:d.mod?d.mod.id:null,file:!!d.file,inner:d.inner||null}));
+  return {ok:(out.length>0||empty)&&!refused.length,empty:empty||undefined,unread:problems,refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st,dataAt};}
 /* ---- writing a booklet back (SPEC.md section 8) ----
    A file is written back as it was read. Its body, everything before the records region, comes back byte for byte, its
    trailing blank lines and line endings with it, and so does every line and block of the region. Only what the reader
@@ -7049,6 +7056,393 @@ function drawEach(b,draft,activityId,dc){const src=eachSource(b);
   sync();
   if(dc&&dc.ticks) dc.ticks.push(sync);
   return box;}
+
+/* ======================= ROWS OF DATA WRITTEN IN THE BOOKLET: ADD, ADD UNDER, REMOVE, EDIT =======================
+   Format 0.20, SPEC.md section 5 ("Adding a row", "Removing a row", "Editing a field in place") and section 7 ("The id of a new row").
+   A reader changes the rows of a `booklet data` block written in the booklet itself (not one that names a file): adds a row, adds one
+   under a row, removes one, edits a field where it is drawn. Each act is kept first, as an entry of the activity (`$add`, `$delete`, or a
+   pair under the field's name), and then written once into the block's JSON; if the data cannot take it, the entry stays and says why.
+   Only the bytes between the block's fences change: its other bytes (spacing, key order, line endings, a byte order mark, the rows beside)
+   come back exactly as they were (SPEC.md section 8, no normalizing).
+   The functions here are plain functions of text and values: no page, no DOM. They are a port, function for function, of the core of the
+   Booklet plugin for Obsidian (core/json-edit.ts, apply.ts, row-id.ts and rows-act.ts), and test/apply-vectors.json holds the cases
+   (made by running the plugin's own code) that both must pass. Nothing here sends anything anywhere: the changed booklet is the reader's, kept
+   in this browser and written by "Download a copy" or, where the browser allows, back to the file it was opened from (WRITE BACK, below). */
+const ROWS_ADD="$add",ROWS_DELETE="$delete";
+/* the most a data block may be after a change (the 5 MB a data file is read at, LINK_BYTES); counted in bytes of UTF-8, a lone surrogate as the three of U+FFFD */
+const ROWS_LIMIT=5*1024*1024;
+function utf8Len(s){let n=0;
+  for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);
+    if(c<0x80) n+=1;else if(c<0x800) n+=2;
+    else if(c>=0xd800&&c<=0xdbff&&i+1<s.length&&s.charCodeAt(i+1)>=0xdc00&&s.charCodeAt(i+1)<=0xdfff){n+=4;i++;}
+    else n+=3;}
+  return n;}
+/* an id is a non-empty string or a finite number, and ids are compared as text: 5 and "5" are one id (SPEC.md section 7) */
+const rowIsPick=v=>(typeof v==="string"&&v!=="")||(typeof v==="number"&&Number.isFinite(v));
+const rowIdKey=p=>String(p);
+const rowPickOf=v=>typeof v==="number"&&Number.isFinite(v)?v:(typeof v==="string"&&v.trim()!==""?v:undefined);
+const rowSameId=(a,b)=>(typeof a==="string"||typeof a==="number")&&(typeof b==="string"||typeof b==="number")&&String(a)===String(b);
+/* Reads where each value, member and element of a JSON text sits: {kind:"object"|"array"|"value", start, end, members|elements}. Null for text
+   that is not one JSON value (callers only edit what JSON.parse has already read). */
+const JSON_WS=/[ \t\n\r]/;
+function scanJson(s){let p=0;
+  const ws=()=>{while(p<s.length&&JSON_WS.test(s[p])) p++;},fail=()=>{throw new Error("not JSON");};
+  const str=()=>{if(s[p]!=='"') fail();p++;
+    while(p<s.length){const c=s[p];if(c==="\\") p+=2;else if(c==='"') return ++p;else p++;}
+    return fail();};
+  const value=()=>{ws();const start=p,c=s[p];
+    if(c==="{"){p++;const members=[];ws();
+      if(s[p]==="}") return {kind:"object",start,end:++p,members};
+      for(;;){ws();const keyStart=p,keyEnd=str(),key=JSON.parse(s.slice(keyStart,keyEnd));
+        ws();if(s[p]!==":") fail();p++;
+        const v=value();members.push({key,keyStart,keyEnd,value:v});ws();
+        if(s[p]===",") p++;else if(s[p]==="}") return {kind:"object",start,end:++p,members};else fail();}}
+    if(c==="["){p++;const elements=[];ws();
+      if(s[p]==="]") return {kind:"array",start,end:++p,elements};
+      for(;;){elements.push(value());ws();
+        if(s[p]===",") p++;else if(s[p]==="]") return {kind:"array",start,end:++p,elements};else fail();}}
+    if(c==='"') return {kind:"value",start,end:str()};
+    while(p<s.length&&!JSON_WS.test(s[p])&&!",]}".includes(s[p])) p++;
+    if(p===start) fail();
+    return {kind:"value",start,end:p};};
+  try{const v=value();ws();return p===s.length?v:null;}catch(e){return null;}}
+const rowSplice=(s,from,to,put)=>s.slice(0,from)+put+s.slice(to);
+/* the whitespace that starts the line `at` is on; whether `at` begins its line (only space before it) */
+const rowLead=(code,at)=>/^[ \t]*/.exec(code.slice(code.lastIndexOf("\n",at-1)+1))[0];
+const rowBegins=(code,at)=>/^[ \t]*$/.test(code.slice(code.lastIndexOf("\n",at-1)+1,at));
+/* the spaces and tabs just before the closing `}` that ends `text` (none when it does not end in one), read from the end: a pattern for it is quadratic on a long run */
+function rowPadClose(text){if(!text.endsWith("}")) return "";
+  let i=text.length-1;while(i>0&&(text[i-1]===" "||text[i-1]==="\t")) i--;
+  return text.slice(i,text.length-1);}
+/* Where `row` (an object of plain values, its keys in the order they are written) goes to stand at the end of the list `arr` of `code`, and what is
+   written there: in the layout of the row before it, so one line stays one line (its spacing after a colon and a comma, and inside its braces), and a row
+   written across lines stays so, with the same indent. A list with no row gets the plain layout: two spaces deeper than the line the list starts on, one
+   space after a colon, a key to a line. Line endings follow the text (CRLF stays CRLF). Returns {from,to,put}. */
+function addRowEdit(code,arr,row){
+  const eol=code.includes("\r\n")?"\r\n":"\n",entries=Object.entries(row),el_=arr.elements;
+  if(!el_.length){const ind=rowLead(code,arr.start),mine=ind+"  ";
+    const body=entries.length?"{"+eol+mine+"  "+entries.map(([k,v])=>JSON.stringify(k)+": "+JSON.stringify(v)).join(","+eol+mine+"  ")+eol+mine+"}":"{}";
+    return {from:arr.start,to:arr.end,put:"["+eol+mine+body+eol+ind+"]"};}
+  const prev=el_[el_.length-1],prevText=code.slice(prev.start,prev.end),members=prev.kind==="object"?prev.members:[];
+  const colon=members.length?code.slice(members[0].keyEnd,members[0].value.start):": ";
+  /* what comes between one row and the next */
+  let sep;
+  if(el_.length>=2) sep=code.slice(el_[el_.length-2].end,prev.start);
+  else if(code.slice(arr.start,prev.start).includes("\n")) sep=","+eol+(rowBegins(code,prev.start)?rowLead(code,prev.start):"");
+  else sep=", ";
+  const pair=([k,v])=>JSON.stringify(k)+colon+JSON.stringify(v);
+  let text;
+  if(!prevText.includes("\n")){
+    const comma=members.length>=2?code.slice(members[0].value.end,members[1].keyStart):colon.includes(" ")?", ":",";
+    const padL=(/^\{([ \t]*)/.exec(prevText)||[])[1]||"",padR=members.length?rowPadClose(prevText):"";
+    text=entries.length?"{"+padL+entries.map(pair).join(comma)+padR+"}":"{}";}
+  else{
+    const rowIndent=rowBegins(code,prev.start)?rowLead(code,prev.start):((/\n([ \t]*)$/.exec(sep)||[])[1]||"");
+    const onOwn=[...members].reverse().find(m=>rowBegins(code,m.keyStart)),unit=rowIndent.includes("\t")?"\t":"  ";
+    const inner=onOwn?rowLead(code,onOwn.keyStart):rowIndent+unit;
+    const firstOnBrace=!/^\{[ \t]*\r?\n/.test(prevText),closeOwn=/\n[ \t]*\}$/.test(prevText);
+    const lead=firstOnBrace?"{"+((/^\{([ \t]*)/.exec(prevText)||[])[1]||""):"{"+eol+inner;
+    const tail=closeOwn?eol+rowLead(code,prev.end-1)+"}":rowPadClose(prevText)+"}";
+    text=entries.length?lead+entries.map(pair).join(","+eol+inner)+tail:"{}";}
+  return {from:prev.end,to:prev.end,put:sep+text};}
+/* The change that takes the row at `index` out of the list `arr`: the row's own text and one comma. When a row follows, the comma after it, with the
+   space around that comma, up to the next row (the separator before stays as it was); the last row goes with the comma before it (which was the previous
+   row's separator). A row alone on its lines takes them with it: the line ending before it stays as the previous row's, so the closing bracket keeps its
+   place. The only row of a list leaves `[]`. */
+function removeRowEdit(arr,index){const e=arr.elements;
+  if(e.length===1) return {from:arr.start,to:arr.end,put:"[]"};
+  if(index<e.length-1) return {from:e[index].start,to:e[index+1].start,put:""};
+  return {from:e[index-1].end,to:e[index].end,put:""};}
+const rowByKey=o=>{const m=new Map();for(const x of o.members) m.set(x.key,x);return m;};   /* a key written twice is read as its last, as JSON.parse reads it */
+const rowParseAt=(s,n)=>JSON.parse(s.slice(n.start,n.end));
+/* A text read for an act: past its byte order mark, its list of rows found (the list itself, or an object holding it as `rows`). Or {why}. */
+function rowLocate(text){
+  const bom=text.charCodeAt(0)===0xfeff?1:0,body=text.slice(bom);
+  /* a byte that was not UTF-8 reads as U+FFFD, and the text written back would carry U+FFFD in its place: nothing is written */
+  if(body.includes("�")) return {why:"not utf8"};
+  try{JSON.parse(body);}catch(e){return {why:"unreadable"};}
+  const root=scanJson(body);if(!root) return {why:"unreadable"};
+  let at=root;
+  if(at.kind==="object"){const m=rowByKey(at).get("rows");if(!m) return {why:"no row"};at=m.value;}
+  if(at.kind!=="array") return {why:"no row"};
+  return {bom,body,list:at};}
+/* Every row at every depth whose `id` is the pick (as text), as {row, members, in (the list it stands in, null for a child held as a field's one object), at}.
+   A stack, so a chain thousands deep is no recursion. */
+function rowsWithId(body,list,pick){const found=[],todo=[];
+  for(let i=list.elements.length-1;i>=0;i--){const e=list.elements[i];if(e.kind==="object") todo.push({row:e,in:list,at:i});}
+  while(todo.length){const x=todo.pop(),members=rowByKey(x.row),id=members.get("id");
+    if(id&&id.value.kind==="value"&&rowSameId(rowPickOf(rowParseAt(body,id.value)),pick)) found.push({row:x.row,members,in:x.in,at:x.at});
+    for(const m of members.values()){const v=m.value;
+      if(v.kind==="object") todo.push({row:v,in:null,at:0});
+      else if(v.kind==="array") for(let i=v.elements.length-1;i>=0;i--) if(v.elements[i].kind==="object") todo.push({row:v.elements[i],in:v,at:i});}}
+  return found;}
+/* Two JSON values are the same: the same types and values, an object's keys in any order, a list's members in order. */
+function sameJson(a,b){if(a===b) return true;
+  if(typeof a!==typeof b||a===null||b===null||typeof a!=="object") return false;
+  if(Array.isArray(a)||Array.isArray(b)) return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((x,i)=>sameJson(x,b[i]));
+  const ka=Object.keys(a);
+  return ka.length===Object.keys(b).length&&ka.every(k=>Object.prototype.hasOwnProperty.call(b,k)&&sameJson(a[k],b[k]));}
+/* The list of rows a parent takes a new child in: of its fields whose value is a list whose items are all rows, the only one that has rows; else, when
+   none has, the only empty one; else none (SPEC.md section 5, "Adding a row", "Which of the parent's lists"). `lists`: [{key, empty}]. */
+function chooseChildList(lists){const full=lists.filter(l=>!l.empty);
+  if(full.length) return full.length===1?full[0].key:null;
+  const empty=lists.filter(l=>l.empty);return empty.length===1?empty[0].key:null;}
+/* how the reader compares a field's value with `was`: a value (words trimmed, a number as digits) or a choice's option (trimmed, case ignored) */
+function rowText(v){if(v===null||v===undefined) return "";if(typeof v==="string") return v.trim();if(typeof v==="number"||typeof v==="boolean") return String(v);return JSON.stringify(v);}
+function rowSameValue(a,b){const x=rowText(a),y=rowText(b);
+  if(x===""||y==="") return x===y;
+  if(typeof a==="number"||typeof b==="number"){const n=Number(x),m=Number(y);if(Number.isFinite(n)&&Number.isFinite(m)) return n===m;}
+  return x===y;}
+function rowSameOption(a,b){const x=rowText(a),y=rowText(b);return x===""||y===""?x===y:x.trim().toLowerCase()===y.trim().toLowerCase();}
+/* Sets `field` of the row `pick` to `a` in the data's JSON `text`, only if the row still holds `was` (compared by `eq`), and returns {ok,text} or {ok:false,why}.
+   A pick that names no row or more than one, the field `id` (it is the row's identity), a row without the field or holding a list or rows there, and a value
+   that is no longer `was` write nothing. The text itself comes back when the field already holds `a`. */
+function applyAct(text,pick,field,was,a,eq){eq=eq||rowSameValue;
+  if(field==="id") return {ok:false,why:"identity"};
+  /* a value is written as a JSON string, a JSON number or null: nothing else is an edit's value */
+  if(!(a===null||typeof a==="string"||(typeof a==="number"&&Number.isFinite(a)))) return {ok:false,why:"unreadable"};
+  const at=rowLocate(text);if(at.why) return {ok:false,why:at.why};
+  const found=rowsWithId(at.body,at.list,pick);
+  if(!found.length) return {ok:false,why:"no row"};
+  if(found.length>1) return {ok:false,why:"ambiguous"};
+  const member=found[0].members.get(field);
+  if(!member||member.value.kind!=="value") return {ok:false,why:"no field"};
+  const now=rowParseAt(at.body,member.value);
+  if(eq(now,a)) return {ok:true,text};
+  if(!eq(now,was)) return {ok:false,why:"changed"};
+  return {ok:true,text:text.slice(0,at.bom+member.value.start)+JSON.stringify(a)+text.slice(at.bom+member.value.end)};}
+/* Adds the row `{id: pick, ...row}` at the end of the block's list of rows (`under` undefined) or of the list of rows the row `under` holds (found at any
+   depth: none is "no row", more than one "ambiguous", a row that holds no list of rows or more than one "no place"), in the layout of the row before it.
+   A row with that id already in the block is not added again: the text comes back as it was, if it holds every field of `row`; else it is a "clash". */
+function applyAdd(text,pick,under,row){
+  if(!rowIsPick(pick)) return {ok:false,why:"unreadable"};
+  const at=rowLocate(text);if(at.why) return {ok:false,why:at.why};
+  const have=rowsWithId(at.body,at.list,pick);
+  if(have.length){
+    if(have.length>1) return {ok:false,why:"ambiguous"};
+    const now=rowParseAt(at.body,have[0].row);
+    for(const [k,v] of Object.entries(row)) if(k!=="id"&&!(Object.prototype.hasOwnProperty.call(now,k)&&sameJson(now[k],v))) return {ok:false,why:"clash"};
+    return {ok:true,text};}
+  let list=at.list;
+  if(under!==undefined){const parents=rowsWithId(at.body,at.list,under);
+    if(!parents.length) return {ok:false,why:"no row"};
+    if(parents.length>1) return {ok:false,why:"ambiguous"};
+    const lists=[];for(const m of parents[0].members.values()) if(m.value.kind==="array"&&m.value.elements.every(e=>e.kind==="object")) lists.push({key:m.value,empty:m.value.elements.length===0});
+    const kids=chooseChildList(lists);
+    if(!kids) return {ok:false,why:"no place"};
+    list=kids;}
+  /* the id is the row's first key, whatever else the form gave */
+  const own={id:pick};for(const [k,v] of Object.entries(row)) if(k!=="id") own[k]=v;
+  const e=addRowEdit(at.body,list,own);
+  return {ok:true,text:text.slice(0,at.bom)+rowSplice(at.body,e.from,e.to,e.put)};}
+/* Takes the row `pick` out, with the rows under it, only if it is still `was` (as parsed JSON: the same types and values, keys in any order). No such
+   row is "same" (the text comes back as it was); more than one is "ambiguous"; a row that changed since is "changed"; a child held as one object, in no list, "no place". */
+function applyDelete(text,pick,was){
+  const at=rowLocate(text);if(at.why) return {ok:false,why:at.why};
+  const found=rowsWithId(at.body,at.list,pick);
+  if(!found.length) return {ok:true,text};
+  if(found.length>1) return {ok:false,why:"ambiguous"};
+  const f=found[0];let same;
+  try{same=sameJson(rowParseAt(at.body,f.row),was);}
+  catch(e){return {ok:false,why:"too deep"};}   /* a row nested thousands deep: the comparison runs out of room */
+  if(!same) return {ok:false,why:"changed"};
+  if(!f.in) return {ok:false,why:"no place"};
+  const e=removeRowEdit(f.in,f.at);
+  return {ok:true,text:text.slice(0,at.bom)+rowSplice(at.body,e.from,e.to,e.put)};}
+/* Where the text between the fences of the data block `id` of module `mod` (null: outside every module fence) stands in a booklet's text, and what it is:
+   {from,to,text}, or null when the booklet holds no such block written in itself (it names a file, or is gone). The block is found again in the text as it is now. */
+function rowFence(note,id,mod){const R=parseFile(note),hit=R&&R.dataAt&&R.dataAt.find(d=>d.id===id&&d.mod===mod);
+  if(!hit||hit.file||!hit.inner) return null;
+  const bom=note.charCodeAt(0)===0xfeff?1:0,starts=[bom],re=/\r\n?|\n/g;re.lastIndex=bom;let m;
+  while((m=re.exec(note))) starts.push(re.lastIndex);
+  const at=i=>i<starts.length?starts[i]:note.length,from=at(hit.inner.from),to=at(hit.inner.to);
+  return {from,to,text:note.slice(from,to)};}
+/* Runs an act on a block written in the booklet itself: `act` is given the text between the fences and returns {ok,text} or {ok:false,why}; only that text
+   goes back, and the rest of the booklet is not touched. Returns {ok,text,same?} or {ok:false,why}. A change that makes the block longer than a data file is
+   read at (ROWS_LIMIT) is refused "too big", as it is for a file; an act that changes nothing is not held to it. */
+function applyToBooklet(note,ref,act){const span=rowFence(note,ref.id,ref.mod);
+  if(!span) return {ok:false,why:"no write"};
+  const r=act(span.text);if(!r.ok) return r;
+  if(r.text===span.text) return {ok:true,text:note,same:true};
+  if(utf8Len(r.text)>ROWS_LIMIT) return {ok:false,why:"too big"};
+  return {ok:true,text:note.slice(0,span.from)+r.text+note.slice(span.to)};}
+
+/* ---- the id of a new row (SPEC.md section 7, "The id of a new row") ----
+   A format is literal text and parts in braces, in any order: `{n}` the next whole number, `{n:3}` the same zero-padded to 3 digits (1 to 9), `{time}` UTC
+   YYYYMMDDhhmmss, `{date}` UTC YYYYMMDD, `{epoch}` seconds since 1970, `{uuid}` a random version-4 UUID, `{field:NAME}` the slug of the new row's value in the
+   field NAME, `{parent}` the parent row's id (empty for a top row). `{{` and `}}` are a literal brace. The time and the random bytes are handed in, so the
+   function is exact in a test; a refusal is data (`why`), and the page says it in words. */
+/* A format read: {ok:true, parts, bare} or {ok:false, why}. A bare `{n}` (nothing else) makes a JSON number; anything else makes a string. A format with two number
+   parts is not valid, and neither is a number part against a variable part, a time, a date, a UUID or a digit of a constant: it would be the same number twice. */
+function parseIdFormat(format){
+  if(typeof format!=="string"||format==="") return {ok:false,why:"the id format is empty"};
+  const parts=[];let text="";const flush=()=>{if(text) parts.push({kind:"text",text});text="";};
+  for(let i=0;i<format.length;){const c=format[i];
+    if(c==="{"){
+      if(format[i+1]==="{"){text+="{";i+=2;continue;}
+      const close=format.indexOf("}",i+1);if(close<0) return {ok:false,why:"a brace is not closed"};
+      const name=format.slice(i+1,close);flush();
+      if(name==="n") parts.push({kind:"n",width:0});
+      else if(name.startsWith("n:")&&/^[1-9]$/.test(name.slice(2))) parts.push({kind:"n",width:Number(name.slice(2))});
+      else if(["time","date","epoch","uuid","parent"].includes(name)) parts.push({kind:name});
+      else if(name.startsWith("field:")&&name.length>6) parts.push({kind:"field",name:name.slice(6)});
+      else return {ok:false,why:"“{"+name+"}” is not a part of an id"};
+      i=close+1;continue;}
+    if(c==="}"){if(format[i+1]!=="}") return {ok:false,why:"a closing brace has no opening one"};text+="}";i+=2;continue;}
+    text+=c;i++;}
+  flush();
+  /* a number part is told from its neighbours only by a constant: next to text of any length, or digits, or hex, where it ends is a guess */
+  for(let i=0;i<parts.length;i++){if(parts[i].kind!=="n") continue;
+    for(const j of [i-1,i+1]){const k=parts[j]&&parts[j].kind,t=parts[j]&&parts[j].text;
+      const near=t===undefined?undefined:(j<i?t.slice(-1):t.slice(0,1));
+      if(k==="text"&&near!==undefined&&/[0-9]/.test(near)) return {ok:false,why:"a number part sits next to a digit of a constant; put a hyphen or a letter between them"};
+      if(["field","parent","time","date","epoch","uuid"].includes(k)) return {ok:false,why:"a number part sits next to another part that is not a constant; put a constant (a hyphen, a letter) between them"};}}
+  if(parts.filter(x=>x.kind==="n").length>1) return {ok:false,why:"the id format has two number parts; it can have only one"};
+  return {ok:true,parts,bare:parts.length===1&&parts[0].kind==="n"&&parts[0].width===0};}
+const ROW_UUID="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+/* what an id must look like to count as made by this format: the format as a matcher over the whole id; the first number part's digits are group 1 */
+function idMatcher(parts){let first=true;
+  const body=parts.map(p=>{switch(p.kind){
+    case "text":return p.text.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    case "n":{const g=first?"(\\d+)":"\\d+";first=false;return g;}
+    case "time":return "\\d{14}";
+    case "date":return "\\d{8}";
+    case "epoch":return "\\d+";
+    case "uuid":return ROW_UUID;
+    default:return "[\\s\\S]*";}}).join("");
+  return new RegExp("^"+body+"$");}
+/* the next whole number for a format: the highest number found in an id that matches it, plus one; 1 when none does (`ids`: every id of the block at every
+   depth and of the adds still waiting; a number is read as its digits) */
+function nextNumber(parts,ids){if(!parts.some(p=>p.kind==="n")) return 1;
+  const re=idMatcher(parts);let top=0;
+  for(const id of ids){const m=re.exec(String(id));if(!m||m[1]===undefined) continue;const n=Number(m[1]);if(Number.isSafeInteger(n)&&n>top) top=n;}
+  return top+1;}
+/* a value as a slug: accents removed, lower case, every run of characters other than a to z, digits and hyphens one hyphen, leading and trailing hyphens gone */
+function slugOf(value){const s=value===null||value===undefined?"":String(value);
+  return s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-+|-+$/g,"");}
+/* a random version-4 UUID, lower case, from 16 random bytes */
+function uuidOf(bytes){const b=Array.from({length:16},(_,i)=>(bytes[i]||0)&255);
+  b[6]=(b[6]&0x0f)|0x40;b[8]=(b[8]&0x3f)|0x80;
+  const h=b.map(x=>x.toString(16).padStart(2,"0")).join("");
+  return h.slice(0,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)+"-"+h.slice(16,20)+"-"+h.slice(20);}
+const ROW_ID_BUMP=60;   /* how many seconds past the moment of the add a time or epoch id may move to find a free id */
+/* Makes the id of a new row from a format. `input`: {ids (every id of the block at every depth, and of the adds waiting), values (the new row's text by field name),
+   parent (the parent row's id, or undefined for a top row), now (a Date), random (n -> n random bytes), labelOf (a field's label)}. A `{time}` or `{epoch}` id that
+   exists is tried again one second on, up to 60; any other clash refuses. Returns {ok:true,id} (a number for a bare `{n}`, else a string), or {ok:false, why:
+   "format"|"slug"|"clash"|"empty", field?, label?, filled?} (`slug`: the field's slug is empty, `filled` whether its box held something). */
+function makeId(format,input){const f=parseIdFormat(format);
+  if(!f.ok) return {ok:false,why:"format"};
+  const taken=new Set(input.ids.map(String)),n=nextNumber(f.parts,input.ids);let uuid=null;
+  for(const p of f.parts){
+    if(p.kind==="field"&&!slugOf(input.values[p.name])){
+      const raw=(input.labelOf?input.labelOf(p.name):p.name).trim()||p.name,typed=input.values[p.name];
+      return {ok:false,why:"slug",field:p.name,label:raw,filled:typed!==null&&typed!==undefined&&String(typed).trim()!==""};}
+    if(p.kind==="uuid"&&uuid===null) uuid=uuidOf(input.random(16));}
+  const moves=f.parts.some(p=>p.kind==="time"||p.kind==="epoch"),pad=(x,w)=>String(x).padStart(w,"0");
+  const timeText=d=>pad(d.getUTCFullYear(),4)+pad(d.getUTCMonth()+1,2)+pad(d.getUTCDate(),2)+pad(d.getUTCHours(),2)+pad(d.getUTCMinutes(),2)+pad(d.getUTCSeconds(),2);
+  for(let bump=0;bump<=(moves?ROW_ID_BUMP:0);bump++){
+    const at=new Date(input.now.getTime()+bump*1000);let made=0;
+    const text=f.parts.map(p=>{switch(p.kind){
+      case "text":return p.text;
+      case "n":return pad(n,p.width);
+      case "time":return timeText(at);
+      case "date":return timeText(at).slice(0,8);
+      case "epoch":return String(Math.floor(at.getTime()/1000));
+      case "uuid":return made++===0?uuid:uuidOf(input.random(16));   /* each {uuid} in a format is its own UUID */
+      case "field":return slugOf(input.values[p.name]);
+      case "parent":return input.parent===undefined?"":String(input.parent);}}).join("");
+    if(text==="") return {ok:false,why:"empty"};
+    if(!taken.has(text)) return {ok:true,id:f.bare?n:text};}
+  return {ok:false,why:"clash"};}
+/* The pattern a typed id must fit (a block that declares no `idFormat` asks for the id): matched against the whole id, compiled with the `u` flag. {ok,re} (re null for none) or {ok:false}. */
+function idPatternOf(pattern){if(pattern===undefined||pattern===null) return {ok:true,re:null};
+  if(typeof pattern!=="string") return {ok:false};
+  try{return {ok:true,re:new RegExp("^(?:"+pattern+")$","u")};}catch(e){return {ok:false};}}
+/* Checks an id the reader typed: not empty, one line, fits the pattern, and not an id of the block or of a waiting add. {ok,id} or {ok:false, why: "empty"|"break"|"patternBad"|"pattern"|"clash"}. */
+function checkTypedId(text,pattern,ids){const id=String(text).trim();
+  if(!id) return {ok:false,why:"empty"};
+  if(/[\r\n]/.test(id)) return {ok:false,why:"break"};
+  const p=idPatternOf(pattern);if(!p.ok) return {ok:false,why:"patternBad"};
+  if(p.re&&!p.re.test(id)) return {ok:false,why:"pattern"};
+  if(ids.some(x=>String(x)===id)) return {ok:false,why:"clash"};
+  return {ok:true,id};}
+
+/* ---- what the entries say while the data has not followed yet ---- */
+/* The pairs of an entry's `$add` list that are one: an `in` (the data block's id), a `pick`, an `under` that is a pick when it is there, and a `row` of plain values
+   (`id` is never one of them). A pair without an `in` is no act of any block and is read by nothing. */
+function addPairs(e){const v=e&&e[ROWS_ADD];if(!Array.isArray(v)) return [];
+  const isValue=x=>x===null||typeof x==="string"||typeof x==="number"||typeof x==="boolean",out=[];
+  for(const x of v){if(!isRowObj(x)||!rowIsPick(x.pick)||typeof x.in!=="string"||x.in==="") continue;
+    if(x.under!==undefined&&!rowIsPick(x.under)) continue;
+    const row={};if(isRowObj(x.row)) for(const [k,val] of Object.entries(x.row)) if(k!=="id"&&isValue(val)) row[k]=val;
+    out.push({in:x.in,pick:x.pick,...(x.under!==undefined?{under:x.under}:{}),row});}
+  return out;}
+/* The pairs of an entry's `$delete` list that are one: an `in`, a `pick` and a `was` that is an object. */
+function deletePairs(e){const v=e&&e[ROWS_DELETE];if(!Array.isArray(v)) return [];
+  return v.filter(x=>isRowObj(x)&&rowIsPick(x.pick)&&typeof x.in==="string"&&x.in!==""&&isRowObj(x.was)).map(x=>({in:x.in,pick:x.pick,was:x.was}));}
+/* the field of a row that takes new child rows (SPEC.md section 5, "Adding a row"), or null; a field's value as a list of child rows (a non-empty list whose first member is a row, or one row), else null */
+function rowChildKey(r){const lists=[];
+  for(const [k,v] of Object.entries(r)) if(Array.isArray(v)&&v.every(isRowObj)) lists.push({key:k,empty:v.length===0});
+  return chooseChildList(lists);}
+const rowKids=v=>Array.isArray(v)?(v.length&&isRowObj(v[0])?v:null):(isRowObj(v)?[v]:null);
+/* how many rows stand under a row, at every depth */
+function rowsUnder(r){let n=0;const todo=[r];
+  while(todo.length){const x=todo.pop();for(const v of Object.values(x)){const kids=rowKids(v);if(kids){n+=kids.length;for(const k of kids) todo.push(k);}}}
+  return n;}
+/* the rows with the id of every row at every depth, as keys (ids are text), each with the rows that carry it */
+function indexRows(rows){const out=new Map(),todo=rows.slice().reverse();
+  while(todo.length){const r=todo.pop(),id=r.id;
+    if(rowIsPick(id)){const k=rowIdKey(id),l=out.get(k);if(l) l.push(r);else out.set(k,[r]);}
+    const vs=Object.values(r);
+    for(let i=vs.length-1;i>=0;i--){const kids=rowKids(vs[i]);if(kids) for(let j=kids.length-1;j>=0;j--) todo.push(kids[j]);}}
+  return out;}
+/* the moment of an entry in ms, or -Infinity when its `ts` is no time (so it is the oldest) */
+const rowTimeOf=e=>{const t=Date.parse(String(e.ts));return Number.isFinite(t)?t:-Infinity;};
+/* the newest act on each pick of one data block, in the order the picks were first acted on (an act's place: the entry's time and position, adds before removals, then the pair's position) */
+function newestRowActs(entries,block){const acts=[];
+  entries.forEach((e,i)=>{const t=rowTimeOf(e);
+    addPairs(e).forEach((p,j)=>{if(p.in===block) acts.push({t,i,rank:0,j,kind:"add",p});});
+    deletePairs(e).forEach((p,j)=>{if(p.in===block) acts.push({t,i,rank:1,j,kind:"delete",p});});});
+  acts.sort(rowActOrder);
+  const newest=new Map();for(const a of acts) newest.set(rowIdKey(a.p.pick),a);
+  return [...newest.values()];}
+const rowActOrder=(a,b)=>a.t-b.t||a.i-b.i||a.rank-b.rank||a.j-b.j;
+/* The data's rows with the adds still waiting put in, and the removals still waiting marked (`entries`: the activity's kept entries; `block`: the data block's id).
+   The newest act on a pick decides: an add whose pick the data does not hold is waiting (drawn at the end of its parent's rows when the parent is there and holds a
+   list of rows, or of the top rows); an add whose pick the data holds is drawn from the data, never twice; a removal whose pick the data holds is waiting when the
+   row is still what the reader saw, and refused when it is not; a removal whose pick is gone is done. The rows given are not changed: when an add is drawn, the rows
+   are copied. Returns {rows, origin (a copied row -> the row as the data holds it), adding (a Set of the new rows), removing (Map id key -> "waiting"|"refused")}. */
+function withPending(rows,entries,block){
+  const out={rows,origin:new WeakMap(),adding:new WeakSet(),removing:new Map()},newest=newestRowActs(entries,block);
+  if(!newest.length) return out;
+  const held=indexRows(rows),adds=[];
+  for(const a of newest){const key=rowIdKey(a.p.pick),have=held.get(key);
+    if(a.kind==="add"){if(!have) adds.push(a);}
+    else if(have) out.removing.set(key,have.length===1&&sameJson(have[0],a.p.was)?"waiting":"refused");}
+  if(!adds.length) return out;
+  adds.sort(rowActOrder);
+  /* copy the rows (each row and each list of rows it holds), so the added ones stand where they will land and the data is not touched */
+  const copies=new Map(),copy=r=>{const c={...r};out.origin.set(c,r);return c;},top=rows.map(copy),todo=top.slice().reverse();
+  while(todo.length){const c=todo.pop(),id=c.id;
+    if(rowIsPick(id)){const l=copies.get(rowIdKey(id));if(l) l.push(c);else copies.set(rowIdKey(id),[c]);}
+    for(const [k,v] of Object.entries(c)){
+      if(Array.isArray(v)&&v.every(isRowObj)){const list=v.map(copy);c[k]=list;for(let i=list.length-1;i>=0;i--) todo.push(list[i]);}
+      else if(isRowObj(v)){const one=copy(v);c[k]=one;todo.push(one);}}}
+  for(const a of adds){const p=a.p,made={id:p.pick,...p.row};
+    if(p.under===undefined){top.push(made);out.adding.add(made);continue;}
+    const parents=copies.get(rowIdKey(p.under)),key=parents&&parents.length===1?rowChildKey(parents[0]):null;
+    if(!parents||key===null) continue;
+    parents[0][key].push(made);out.adding.add(made);}
+  out.rows=top;return out;}
+/* The id of every row of the data at every depth, and of every add still waiting (whether or not it can be drawn yet): what the id of a new row is made against,
+   so that a number counts past the adds on their way and no id is made twice. */
+function rowIds(rows,entries,block){const held=indexRows(rows),out=[],todo=rows.slice().reverse();
+  while(todo.length){const r=todo.pop();if(rowIsPick(r.id)) out.push(r.id);
+    const vs=Object.values(r);
+    for(let i=vs.length-1;i>=0;i--){const kids=rowKids(vs[i]);if(kids) for(let j=kids.length-1;j>=0;j--) todo.push(kids[j]);}}
+  const waiting=new Set();
+  for(const a of newestRowActs(entries,block)) if(a.kind==="add"&&!held.has(rowIdKey(a.p.pick))&&!waiting.has(rowIdKey(a.p.pick))){waiting.add(rowIdKey(a.p.pick));out.push(a.p.pick);}
+  return out;}
 
 /* ======================= ACTS ON ROWS =======================
    SPEC.md section 5, "A question asked for each row" and "Editing a field in place". The views of a data block ask the questions

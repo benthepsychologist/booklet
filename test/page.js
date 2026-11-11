@@ -70,6 +70,7 @@ function boot(){const API={};let open=true;const timers=new Set(),on={};
   removeModule, moduleWork, removeModuleControl, FORMAT_VERSION, versionOf, mergeEntries, renameBooklet, renameStored, setTitleIn, noticeNode, dataSections, bookletName, readLib, flushSave, exportName, fileBase, tabName, nameRow, renderBooklets, diagramRisk, mermaidNode, markerOf, isBooklet, plainText, startScreen, homeButton, openFromList,
   get PROVENANCE(){return PROVENANCE}, get REGISTRY_CACHE(){return REGISTRY_CACHE}, linkName, storeUrl, storeAddress, linkOf, linkFetch, openLink, openAsView, loadRegistry, registryUrl, fileNotesNode, provenanceNode, markDirty, get dirty(){return dirty}, registryRead,
   newerAccept, saveLineText, newerNoticeShow, saveState, drawSaveState, download, homeButton, saveLocal,
+  applyToBooklet, applyAct, applyAdd, applyDelete, makeId, parseIdFormat, checkTypedId, withPending, rowIds, rowFence, scanJson, addPairs, deletePairs, rowsUnder, rowSameValue, rowSameOption, utf8Len, ROWS_ADD, ROWS_DELETE, ROWS_LIMIT,
   dataFromJson, entryCard, keptQuestion, drawEach, pairRecord, rowActs, actsConfig, keepPairs, editSpec, keptIndex, ROW_LIVE, actsRefresh, drawDataQuery, dropPair, pairFor, sourcePicks, get KEEP(){return KEEP}, keepRefresh, keepFlush, lsGet, lsSet, lsDel, THEME_KEY, LIB_KEY, get storageOk(){return storageOk}
 }));`);
   /* the page's own window listeners (pagehide, beforeunload, …), run as the browser would: dispatch(type, event) */
