@@ -215,16 +215,20 @@ const FENCE=/```booklet data\n[\s\S]*?\n```/;
     '```booklet data\n[{"id":"r1","title":"Orchard"}]\n```\n^rows\n\n> [!module|d end]\n';
   {const p=await open(BOOK2,{disk:true});await toActivity(p,'Work');
    await p.locator('#main textarea, #main input[type=text]').first().fill('hello');await p.waitForTimeout(200);
-   await p.locator('#main button.finalize').click();await p.waitForTimeout(500);
-   ok(await p.locator('#wbBar:not([hidden])').count()===1,'a Finalize (a kept entry) is a change: the page asks whether to keep the file up to date');
-   await p.locator('#wbYes').click();await p.waitForTimeout(900);
-   ok(/booklet entries/.test(await diskText(p))&&/hello/.test(await diskText(p)),'and on yes the entry reaches the file');
+   ok(await p.locator('#wbBar:not([hidden])').count()===1,'a change asks whether to keep the file up to date');
+   await p.locator('#wbYes').click();await p.waitForTimeout(1500);
+   const before=await diskText(p);
+   ok(!/booklet entries/.test(before)||!/hello/.test(before),'nothing kept yet: the file holds no entry');
+   await p.locator('#main button.finalize').click();await p.waitForTimeout(1500);
+   ok(/booklet entries/.test(await diskText(p))&&/hello/.test(await diskText(p)),'a Finalize (a kept entry) is a change in itself: it reaches the file without another change');
    await p.locator('#main details > summary').first().click().catch(()=>{});await p.waitForTimeout(200);
-   await p.locator('#main textarea.field').last().fill('about the orchard').catch(()=>{});await p.waitForTimeout(200);
+   await p.locator('#main textarea.field').last().fill('about the orchard').catch(()=>{});await p.waitForTimeout(1500);
    const rf=p.locator('#main .dv-rowfin').first();
-   if(await rf.count()){await rf.click();await p.waitForTimeout(1500);
-     ok(/about the orchard/.test(await diskText(p)),'a row\'s Finalize (kept by keepPairs) reaches the file without another change');}
-   else ok(false,'the row has a Finalize button');
+   ok(await rf.count()===1,'the row has a Finalize button');
+   if(await rf.count()){const n0=(await log(p)).filter(x=>x==='write').length;
+     const before2=await diskText(p);
+     await rf.click();await p.waitForTimeout(1500);
+     ok(await diskText(p)!==before2&&(await log(p)).filter(x=>x==='write').length>n0,'a row\'s Finalize (a pair kept by keepPairs) is a change in itself: it reaches the file');}
    await p.context().close();}
 
   // 9. a write-back or a download that cannot be made says so, with why, and that the work is still kept in this browser
