@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-cwx/kBtrM22bn7a7RXKy81jeA5ABAIZn+t/yVMB+lz0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-iRBWtTHWoUgnXQQ49TusHqWHHFWaapkbybSZihdd6X8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1830,7 +1830,7 @@ const STRINGS_SRC={
         rowRefusedMark: " · You asked to remove this; it changed since.",
         rowActs: "Actions",
         rowNum: f=>`${f}: that is not a number, so nothing is kept. Correct the number to keep it.`,
-        rowsFile: "This list reads its rows from a JSON file, and this reader cannot add or remove rows in a file. Rows can be added and removed where the data is written in the booklet itself.",
+        rowsFile: "This list reads its rows from a JSON file, and this page cannot add or remove rows in a file. Rows can be added and removed where the data is written in the booklet itself.",
         rowsHere: "This reader cannot change the rows of this data here.",
         id: {
           formatBad: "The id format is not valid, so rows cannot be added here.",
@@ -1858,7 +1858,7 @@ const STRINGS_SRC={
           clash: "A row with that id exists. Add it again with another id."
         },
         deleteWhy: {
-          changed: "Changed since you drew it.",
+          changed: "Changed since it was shown.",
           ambiguous: "More than one row has that id.",
           "no place": "That row stands in no list of rows, so it cannot be taken out.",
           unreadable: "The data cannot be read as data now.",
@@ -2287,7 +2287,7 @@ const STRINGS_SRC={
         rowRefusedMark: " · Vous avez demandé de supprimer cette ligne ; elle a changé depuis.",
         rowActs: "Actions",
         rowNum: f=>`${f} : ce n’est pas un nombre, donc rien n’est gardé. Corrigez le nombre pour le garder.`,
-        rowsFile: "Cette liste lit ses lignes dans un fichier JSON, et ce lecteur ne peut pas ajouter ni supprimer de lignes dans un fichier. On peut ajouter et supprimer des lignes là où les données sont écrites dans le carnet lui-même.",
+        rowsFile: "Cette liste lit ses lignes dans un fichier JSON, et cette page ne peut pas ajouter ni supprimer de lignes dans un fichier. On peut ajouter et supprimer des lignes là où les données sont écrites dans le carnet lui-même.",
         rowsHere: "Ce lecteur ne peut pas modifier ici les lignes de ces données.",
         id: {
           formatBad: "Le format d’identifiant n’est pas valide, donc on ne peut pas ajouter de lignes ici.",
@@ -2315,7 +2315,7 @@ const STRINGS_SRC={
           clash: "Une ligne avec cet identifiant existe déjà. Ajoutez-la de nouveau avec un autre identifiant."
         },
         deleteWhy: {
-          changed: "La ligne a changé depuis que vous l’avez vue.",
+          changed: "La ligne a changé depuis qu’elle a été affichée.",
           ambiguous: "Plus d’une ligne porte cet identifiant.",
           "no place": "Cette ligne ne figure dans aucune liste de lignes, donc on ne peut pas la supprimer.",
           unreadable: "Les données ne sont plus lisibles.",
@@ -2741,7 +2741,7 @@ const STRINGS_SRC={
         rowRefusedMark: " · Pediste quitar esta fila; cambió desde entonces.",
         rowActs: "Acciones",
         rowNum: f=>`${f}: eso no es un número, así que no se guarda nada. Corrige el número para guardarlo.`,
-        rowsFile: "Esta lista lee sus filas de un archivo JSON, y este lector no puede agregar ni quitar filas en un archivo. Se pueden agregar y quitar filas donde los datos están escritos en el propio cuadernillo.",
+        rowsFile: "Esta lista lee sus filas de un archivo JSON, y esta página no puede agregar ni quitar filas en un archivo. Se pueden agregar y quitar filas donde los datos están escritos en el propio cuadernillo.",
         rowsHere: "Este lector no puede cambiar aquí las filas de estos datos.",
         id: {
           formatBad: "El formato de identificador no es válido, así que aquí no se pueden agregar filas.",
@@ -2769,7 +2769,7 @@ const STRINGS_SRC={
           clash: "Ya existe una fila con ese identificador. Agrégala otra vez con otro identificador."
         },
         deleteWhy: {
-          changed: "La fila cambió desde que la viste.",
+          changed: "La fila cambió desde que se mostró.",
           ambiguous: "Más de una fila tiene ese identificador.",
           "no place": "Esa fila no está en ninguna lista de filas, así que no se puede quitar.",
           unreadable: "Ahora no se pueden leer los datos.",
