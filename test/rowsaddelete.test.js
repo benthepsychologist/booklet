@@ -1,8 +1,8 @@
-// Format 0.20, reference renderer: adding a row and removing one are written in the format and NOT built here (SPEC.md section 13).
-// What the renderer does about them, and nothing more: it reads the two bare query keys `add` and `delete` without a problem, draws the
-// view as it always did with ONE quiet line beneath it that says the reader cannot add or remove rows yet (in English, Spanish and
-// French), reports an `add` or `delete` written with a value, and keeps the `$add` and `$delete` entries it finds in a booklet's records
-// exactly as written when it saves (SPEC.md section 8, "A record the reader did not change is written back exactly as written").
+// Format 0.20, reference renderer 0.20.2: the two bare query keys `add` and `delete`. The renderer reads them without a problem, reports one written with a
+// value, draws the controls where the rows are written in the booklet itself (test/rowschange.test.js) and, where they would be drawn and the rows cannot
+// be changed (a block that reads a JSON file), ONE quiet line beneath the view that says why, in English, Spanish and French. It keeps the `$add` and
+// `$delete` entries it finds in a booklet's records exactly as written when it saves (SPEC.md section 8, "A record the reader did not change is written back
+// exactly as written"), draws the rows they wait for, and leaves them out of every view over kept entries.
 // Everything here is made up: an orchard.
 // Run: node test/rowsaddelete.test.js      (Needs node; nothing to install.)
 const P=require("./page.js");
@@ -12,10 +12,7 @@ const FM=lang=>`---\nbooklet: "0.20"\ntitle: Desk\nlang: ${lang||"en"}\n---\n\n`
 const ROWS={fields:{title:{label:"Name",edit:"text"},stage:"Stage"},rows:[{id:"a",title:"Orchard",stage:"growing",jobs:[{id:"a1",title:"Prune",stage:"planning"}]},{id:"b",title:"Beds",stage:"resting"}]};
 const body=(query,act,lang)=>FM(lang)+`> [!module|d] Desk\n\n> [!activity|a${act||" repeat"}] Work\n\n\`\`\`booklet query\nfrom: rows\n${query}\n\`\`\`\n\n\`\`\`booklet data\n${JSON.stringify(ROWS)}\n\`\`\`\n^rows\n\n> [!module|d end] End\n`;
 const load=(text)=>{P.wipe();const A=P.boot();A.loadText(text);A.screen="d/a";A.render();return A;};
-const quiet={en:"Adding and removing rows is not yet supported by this reader.",
-  es:"Este lector aún no permite añadir ni quitar filas.",
-  fr:"Ce lecteur ne permet pas encore d’ajouter ni de supprimer des lignes."};
-const lines=A=>P.find(P.main(),P.hasClass("dv-add-delete"));
+const lines=A=>P.find(P.main(),P.hasClass("dv-rows-why"));
 const hasTable=A=>P.find(P.main(),n=>n.tagName==="table").length>0;
 
 // ---- the two keys are read: no problem is reported
@@ -30,32 +27,30 @@ for(const k of ["add","delete"]){
   const R=P.boot().parseFile(body(`as: table\n${k}: yes`));
   chk(`\`${k}: yes\` is reported once, in words`,R.unread.length===1&&new RegExp("`"+k+"` is written bare").test(String(R.unread[0]))&&/`yes`|yes/.test(String(R.unread[0])),JSON.stringify(R.unread));}
 
-// ---- the view is drawn as before, with one quiet line beneath it
+// ---- the controls are drawn where the rows are written in the booklet (test/rowschange.test.js); a block that reads a JSON file gets none, and a line that says why
 for(const [what,q] of [["add","as: table\nadd"],["delete","as: table\ndelete"],["both, on cards","as: cards\nadd\ndelete"],["add on a list","as: list\nadd"],["a default view (a table)","add"],["add beside a `readonly` that names fields","as: table\nreadonly: stage\nadd"]]){
-  const A=load(body(q)),l=lines(A);
-  chk(`a view whose query says ${what}: one quiet line, saying so`,l.length===1&&P.texts(l[0])===quiet.en,l.map(P.texts).join("|"));
-  chk(`and the view is still drawn (${what})`,/Orchard/.test(P.texts(P.main()))&&/Beds/.test(P.texts(P.main())));}
-{const A=load(body("as: table\nadd"));
- chk("the line sits beneath the view, after the table, inside the query's own box",(()=>{const box=P.find(P.main(),P.hasClass("query"))[0];const kids=box.children;
-   const last=kids[kids.length-1];return !!last&&(last.attrs.class||"").includes("dv-add-delete")&&P.find(box,n=>n.tagName==="table").length>0;})());
- chk("it is a quiet hint (the class the renderer's other quiet lines use) and not a button or a control",lines(A)[0].tagName==="p"&&P.hasClass("hint")(lines(A)[0])&&!P.find(lines(A)[0],n=>/^(button|input|a)$/.test(n.tagName)).length);}
-{const A=load(body("as: table"));
- chk("a query that says neither `add` nor `delete` has no such line",lines(A).length===0&&hasTable(A));}
-{const A=load(body("as: table\nreadonly: stage"));
- chk("a `readonly` that names fields is not the line",lines(A).length===0);}
+  const A=load(body(q));
+  chk(`a view whose query says ${what}, over rows written in the booklet: no quiet line (the controls are drawn instead)`,lines(A).length===0&&/Orchard/.test(P.texts(P.main())),lines(A).map(P.texts).join("|"));
+  chk(`and the old "not yet supported" words are nowhere (${what})`,!/not yet supported by this reader/.test(P.texts(P.main())));}
+{const A=P.boot(),n=A.rowsNote({add:true},{keeps:true,rows:null,fileBlock:true}),m=A.rowsNote({delete:true},{keeps:true,rows:null,fileBlock:false}),
+   z=A.rowsNote({add:true,readonly:true},{keeps:true,rows:null,fileBlock:true}),d=A.rowsNote({add:true},{keeps:false,rows:null,fileBlock:true}),
+   t=A.rowsNote({add:true,as:"tiles"},{keeps:true,rows:null,fileBlock:true}),o=A.rowsNote({add:true},{keeps:true,rows:{},fileBlock:false});
+  chk("a block that reads a JSON file gets one quiet line that names the real reason",n.length===1&&/reads its rows from a JSON file/.test(P.texts(n[0]))&&/cannot add or remove rows in a file/.test(P.texts(n[0]))&&P.hasClass("hint")(n[0]),n.map(P.texts).join("|"));
+  chk("and it says where rows can be added and removed",/where the data is written in the booklet itself/.test(P.texts(n[0])));
+  chk("a block that cannot be written here says that, in other words",m.length===1&&/cannot change the rows of this data here/.test(P.texts(m[0])));
+  chk("no line under a bare `readonly`, in a daily or non-repeat activity, on tiles, or where the controls are drawn",z.length===0&&d.length===0&&t.length===0&&o.length===0);}
 for(const l of ["es","fr"]){
-  const A=load(body("as: table\nadd",""+" repeat",l)),ls=lines(A);
-  chk(`in ${l} the line is in ${l}`,ls.length===1&&P.texts(ls[0])===quiet[l],ls.map(P.texts).join("|"));}
-// the line is drawn only where the controls would be: beneath a table, cards or list over a data block, in a `repeat` activity that is not daily,
-// when a bare `readonly` does not lock the keys (SPEC.md section 13)
+  const A=load(body("as: table\nadd",""+" repeat",l));
+  chk(`in ${l} the controls are named in ${l}`,P.find(P.main(),n=>n.tagName==="button"&&((n.attrs||{})["aria-label"]||"")===({es:"Añadir una fila",fr:"Ajouter une ligne"})[l]).length===1);}
+// no controls where they would not be drawn: tiles, a chart, a `repeat daily` activity, an activity that keeps nothing, a bare `readonly`
 for(const [what,q,act] of [["tiles","as: tiles\nvalue: stage\nadd"," repeat"],["bars","as: bars\nvalue: stage\nadd"," repeat"],["a line chart","as: line\nvalue: stage\ndelete"," repeat"],
   ["a `repeat daily` activity","as: table\nadd"," repeat daily"],["an activity that keeps nothing","as: table\nadd\ndelete",""],
   ["a bare `readonly`","as: table\nreadonly\nadd\ndelete"," repeat"],["a bare `readonly:` with nothing after it","as: cards\nreadonly:\nadd"," repeat"]]){
   const A=load(act===""?body(q).replace("|a repeat]","|a]"):body(q,act));
-  chk(`no line beneath ${what}`,lines(A).length===0&&/Orchard/.test(P.texts(P.main())),lines(A).map(P.texts).join("|"));}
+  chk(`no control and no line beneath ${what}`,lines(A).length===0&&P.find(P.main(),n=>n.tagName==="button"&&/^(Add a row|Remove )/.test((n.attrs||{})["aria-label"]||"")).length===0&&/Orchard/.test(P.texts(P.main())),lines(A).map(P.texts).join("|"));}
 {const t=body("as: table\nadd").replace("from: rows","from: w"),T=FM()+"> [!module|d] Desk\n\n> [!activity|w repeat] Work\n\n> [!text|note] A note?\n\n> [!activity|a repeat] Look\n\n```booklet query\nfrom: w\nadd\ndelete\n```\n\n> [!module|d end] End\n";
  P.wipe();const A=P.boot();A.loadText(T);A.screen="d/a";A.render();
- chk("no line beneath a query over kept entries (it acts on a data block, and there is none)",lines(A).length===0);}
+ chk("no control and no line beneath a query over kept entries (it acts on a data block, and there is none)",lines(A).length===0&&P.find(P.main(),n=>n.tagName==="button"&&/^(Add a row|Remove )/.test((n.attrs||{})["aria-label"]||"")).length===0);}
 
 {const t=body("as: table\nadd"),A=load(t);
  chk("a draw changes nothing and keeps nothing: no entry, and the file as it was",A.keptFor("d/a").length===0&&A.toMarkdown()===t,A.toMarkdown().slice(-200));
@@ -89,13 +84,13 @@ const TEXT=(q,eol)=>(body(q||"as: table\nadd\ndelete")+"\n"+REGION(ITEMS)).repla
    box._on.keydown({key:"Enter",target:box,preventDefault(){},stopPropagation(){}});}
  const out=A.toMarkdown(),e=A.keptFor("d/a"),z=e[e.length-1];
  chk("keeping an edit adds one entry after the last",e.length===4&&Object.keys(z).sort().join()==="title,ts",JSON.stringify(z));
- chk("and every byte of the earlier entries, the `$add` and the `$delete` among them, is as it was",out===t.replace(ITEMS,ITEMS+",\n    "+JSON.stringify(z)),out.slice(-520));}
+ chk("and every byte of the earlier entries, the `$add` and the `$delete` among them, is as it was (the one value the edit wrote into the block is the only other change)",out===t.replace(ITEMS,ITEMS+",\n    "+JSON.stringify(z)).replace('"title":"Beds"','"title":"Beds and borders"'),out.slice(-520));}
 {const t=TEXT(),A=load(t);
  A.keptFor("d/a");
  const g=A.STATE.entries["d/a"];g[0].title[0].a="Orchard, old";A.markDirty&&A.markDirty();
  chk("changing the one entry the reader changed leaves the `$add` and `$delete` lines as written",A.toMarkdown().includes(ADD)&&A.toMarkdown().includes("    "+DEL),A.toMarkdown().slice(-420));}
 {const A=load(TEXT()),t=P.texts(P.main());
- chk("the page draws with them: the view and its one line are there and nothing throws",/Beds/.test(t)&&lines(A).length===1);}
+ chk("the page draws with them: the view is there and nothing throws",/Beds/.test(t)&&lines(A).length===0);}
 
 // ---- views over kept entries leave the `$add` and `$delete` entries out (SPEC.md section 6): no card, no row, nothing in "Earlier entries"
 {const OK='{"note":"Hello there","ts":"2026-11-08T10:41:00Z"}',KEPT=[OK,ADD,DEL].join(",\n");

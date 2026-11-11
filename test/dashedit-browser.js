@@ -166,7 +166,8 @@ const rowOf=(id,rows)=>{rows=rows||DATA.plots.rows;for(const r of rows){if(r.id=
    await p.keyboard.press('Escape');await wait(p,200);
    await btn(p,'Stage','Orchard').focus();await p.keyboard.press(' ');await wait(p,150);
    ok(await p.evaluate(()=>document.activeElement.tagName)==='SELECT','and so does Space');
-   ok(await p.evaluate(()=>getComputedStyle(document.activeElement).outlineStyle)!=='none'||await p.evaluate(()=>getComputedStyle(document.activeElement).boxShadow)!=='none','the box has a visible focus');
+   /* CHANGED 0.20.2 (Ben, 2026-11-10: "An outline and the fact that it became an edit box", no ring): the box is shown by a thin outline of its own, not by a focus ring */
+   ok(await p.evaluate(()=>{const c=getComputedStyle(document.activeElement);return c.borderTopStyle==='solid'&&c.borderTopWidth==='1px'&&c.outlineStyle==='none'&&c.boxShadow==='none';}),'the box is shown by a thin outline of its own, with no focus ring');
    await p.keyboard.press('Escape');await wait(p,200);
    const note=p.locator('table.dv-table tbody tr.dv-trow').first().locator('textarea.field');
    await note.fill('half typed');await note.focus();await p.keyboard.type(' more');
