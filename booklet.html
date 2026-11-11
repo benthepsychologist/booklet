@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-xg+ut9DtYmxFwCNS39fmK69QHdsiB0USDYA9vft/VW8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-J2BCZ9dWuR+urtr19KKXYqf0wJ1ouUBl0aapjycmSBQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1638,10 +1638,12 @@ const STRINGS_SRC={
       wbYes: "Yes, keep it up to date",
       wbNo: "Not now",
       wbSaved: n=>`Written to ${n}. It is kept up to date from now on.`,
-      wbDenied: "The browser did not allow writing to that file, so nothing was written. Download a copy to keep your changes.",
-      wbChanged: n=>`${n} changed on disk after it was opened here, so it was not overwritten. Download a copy to keep your changes.`,
-      wbFail: "Writing to the file failed. Download a copy to keep your changes.",
-      wbNotUtf8: n=>`${n} is not valid UTF-8, so it was read as best it could be and cannot be written back to. Download a copy to keep your changes.`,
+      wbDenied: "The browser did not allow writing to that file, so nothing was written. Your changes are still kept in this browser; download a copy to keep them on this device.",
+      wbChanged: n=>`${n} changed on disk after it was opened here, so it was not overwritten, and nothing more will be written to it. Your changes are still kept in this browser; download a copy to keep them on this device.`,
+      wbFail: "Writing to the file failed, and nothing more will be written to it. Your changes are still kept in this browser; download a copy to keep them on this device.",
+      wbFence: "This booklet ends inside a code fence that is never closed, so it cannot be written to the file. Your changes are still kept in this browser. Close the fence in Markdown first.",
+      dlFence: "This booklet ends inside a code fence that is never closed, so a copy cannot be made. Your changes are still kept in this browser. Close the fence in Markdown first.",
+      wbNotUtf8: n=>`${n} is not valid UTF-8, so it was read as best it could be and cannot be written back to. Your changes are kept in this browser; download a copy to keep them on this device.`,
       loadErr: "That text does not look like a file saved from this page. Nothing was changed.",
       addModTitle: "Add a module",
       addModHelp: "Add one from the list below. It is checked before anything changes.",
@@ -1676,7 +1678,6 @@ const STRINGS_SRC={
       clearLink: "Clear everything on this page",
       downloaded: "Downloaded. Keep the file somewhere you will find it.",
       downloadFail: "Could not download a copy.",
-      fenceOpen: "This booklet ends inside a code fence that is never closed, so an answer cannot be written after it. Close the fence in Markdown first.",
       leaving: "Your entries are kept in this browser, but you have not downloaded a copy to this device.",
       unsavedEntries: n=>`${n} entr${n===1?"y":"ies"} not yet downloaded`,
       unsavedChanges: "Changes not yet downloaded",
@@ -2094,10 +2095,12 @@ const STRINGS_SRC={
       wbYes: "Oui, le garder à jour",
       wbNo: "Pas maintenant",
       wbSaved: n=>`Écrit dans ${n}. Il sera tenu à jour désormais.`,
-      wbDenied: "Le navigateur n’a pas permis d’écrire dans ce fichier, donc rien n’a été écrit. Téléchargez une copie pour garder vos changements.",
-      wbChanged: n=>`${n} a changé sur le disque après son ouverture ici, donc il n’a pas été écrasé. Téléchargez une copie pour garder vos changements.`,
-      wbFail: "L’écriture dans le fichier a échoué. Téléchargez une copie pour garder vos changements.",
-      wbNotUtf8: n=>`${n} n’est pas en UTF-8 valide : il a été lu au mieux et on ne peut pas y réécrire. Téléchargez une copie pour garder vos changements.`,
+      wbDenied: "Le navigateur n’a pas permis d’écrire dans ce fichier, donc rien n’a été écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.",
+      wbChanged: n=>`${n} a changé sur le disque après son ouverture ici, donc il n’a pas été écrasé, et plus rien n’y sera écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.`,
+      wbFail: "L’écriture dans le fichier a échoué, et plus rien n’y sera écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.",
+      wbFence: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; on ne peut donc pas l’écrire dans le fichier. Vos changements restent gardés dans ce navigateur. Fermez d’abord le bloc en Markdown.",
+      dlFence: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; on ne peut donc pas en faire une copie. Vos changements restent gardés dans ce navigateur. Fermez d’abord le bloc en Markdown.",
+      wbNotUtf8: n=>`${n} n’est pas en UTF-8 valide : il a été lu au mieux et on ne peut pas y réécrire. Vos changements sont gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.`,
       loadErr: "Ce texte ne ressemble pas à un fichier sauvegardé depuis cette page. Rien n’a été modifié.",
       addModTitle: "Ajouter un module",
       addModHelp: "Ajoutez-en un dans la liste ci-dessous. Il est vérifié avant tout changement.",
@@ -2132,7 +2135,6 @@ const STRINGS_SRC={
       clearLink: "Effacer tout ce qui se trouve sur cette page",
       downloaded: "Téléchargé. Conservez le fichier à un endroit où vous le retrouverez.",
       downloadFail: "Impossible de télécharger une copie.",
-      fenceOpen: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; aucune réponse ne peut donc être écrite après ce bloc. Fermez d’abord le bloc en Markdown.",
       leaving: "Vos entrées sont conservées dans ce navigateur, mais vous n’avez pas téléchargé de copie sur cet appareil.",
       unsavedEntries: n=>`${n} entrée${n===1?"":"s"} pas encore téléchargée${n===1?"":"s"}`,
       unsavedChanges: "Modifications pas encore téléchargées",
@@ -2547,10 +2549,12 @@ const STRINGS_SRC={
       wbYes: "Sí, mantenerlo al día",
       wbNo: "Ahora no",
       wbSaved: n=>`Escrito en ${n}. A partir de ahora se mantiene al día.`,
-      wbDenied: "El navegador no permitió escribir en ese archivo, así que no se escribió nada. Descarga una copia para conservar tus cambios.",
-      wbChanged: n=>`${n} cambió en el disco después de abrirse aquí, así que no se sobrescribió. Descarga una copia para conservar tus cambios.`,
-      wbFail: "No se pudo escribir en el archivo. Descarga una copia para conservar tus cambios.",
-      wbNotUtf8: n=>`${n} no es UTF-8 válido, así que se leyó lo mejor posible y no se puede volver a escribir en él. Descarga una copia para conservar tus cambios.`,
+      wbDenied: "El navegador no permitió escribir en ese archivo, así que no se escribió nada. Tus cambios siguen guardados en este navegador; descarga una copia para conservarlos en este dispositivo.",
+      wbChanged: n=>`${n} cambió en el disco después de abrirse aquí, así que no se sobrescribió, y ya no se escribirá más en él. Tus cambios siguen guardados en este navegador; descarga una copia para conservarlos en este dispositivo.`,
+      wbFail: "No se pudo escribir en el archivo, y ya no se escribirá más en él. Tus cambios siguen guardados en este navegador; descarga una copia para conservarlos en este dispositivo.",
+      wbFence: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede escribir en el archivo. Tus cambios siguen guardados en este navegador. Primero hay que cerrar el bloque en Markdown.",
+      dlFence: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede hacer una copia. Tus cambios siguen guardados en este navegador. Primero hay que cerrar el bloque en Markdown.",
+      wbNotUtf8: n=>`${n} no es UTF-8 válido, así que se leyó lo mejor posible y no se puede volver a escribir en él. Tus cambios están guardados en este navegador; descarga una copia para conservarlos en este dispositivo.`,
       loadErr: "Ese texto no parece un archivo guardado desde esta página. No se cambió nada.",
       addModTitle: "Agregar un módulo",
       addModHelp: "Agrega uno de la lista de abajo. Se revisa antes de que cambie nada.",
@@ -2585,7 +2589,6 @@ const STRINGS_SRC={
       clearLink: "Borrar todo lo que hay en esta página",
       downloaded: "Descargado. Guarda el archivo en un lugar donde puedas encontrarlo.",
       downloadFail: "No se pudo descargar una copia.",
-      fenceOpen: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede escribir una respuesta después de él. Primero hay que cerrar el bloque en Markdown.",
       leaving: "Tus entradas se guardan en este navegador, pero no has descargado una copia en este dispositivo.",
       unsavedEntries: n=>`${n} entrada${n===1?"":"s"} sin descargar todavía`,
       unsavedChanges: "Cambios sin descargar todavía",
@@ -4162,11 +4165,11 @@ const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","
 /* A file is read when its front matter says `booklet: "0.20"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
-   does not open with `---`. With `loneCR`, a bare carriage return ends a line
-   too (the parser reads that way; the marker checks below do not). */
-function frontMatter(text,loneCR){
+   does not open with `---`. A line ends at a line feed, with or without the carriage return before it; a carriage return alone does not end a line
+   (as in the Obsidian plugin; test/apply-vectors.json holds both to it, 0.20.2) */
+function frontMatter(text){
   const t=String(text||"").replace(/^\uFEFF/,"");
-  const lines=loneCR?t.replace(/\r\n?/g,"\n").split("\n"):t.split(/\r?\n/);
+  const lines=t.split(/\r?\n/);
   if((lines[0]||"").trim()!=="---") return {lines,head:null,next:0};
   let j=1;while(j<lines.length&&lines[j].trim()!=="---") j++;
   return {lines,head:lines.slice(1,j),next:j+1};}
@@ -4344,7 +4347,7 @@ function readData(o){const P=PROBLEM;
    settle those two; shapeBooklet writes the result. Every problem goes into one
    list, in the order the parts find them. The parse is pure (no page, no interface language), so a second reader or
    a build step can call it; `icons` is the names an `icon:` may give (the page's ICON_NAMES). */
-function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),icons=(opts&&opts.icons)||new Set();
+function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text),icons=(opts&&opts.icons)||new Set();
   /* `problems` is every problem, in the order found; those that stop the file opening (SPEC.md section 12) say so
      (`refuses`), and the rest are reported when it has opened */
   const fm={},problems=[];problems.dupIds=[];
@@ -4370,7 +4373,7 @@ function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),
    with; the file's first line ending, `eol`; and `bom`. Lines are counted as frontMatter splits them. These are bytes of
    one file, not design: the design's JSON leaves them out (toJSON), so a design is still the parse of its text. */
 function wroteOf(text,regs,first,moved,source){const t=String(text||""),bom=/^\uFEFF/.test(t)?"\uFEFF":"",u=bom?t.slice(1):t;
-  const starts=[0],re=/\r\n?|\n/g;let m;while((m=re.exec(u))) starts.push(re.lastIndex);
+  const starts=[0],re=/\n/g;let m;while((m=re.exec(u))) starts.push(re.lastIndex);
   const off=n=>n<starts.length?starts[n]:u.length;
   /* Design after the records (format 0.17, SPEC.md section 8) stays where it is. It does when it all follows the last region: the body
      before the first region is `head` as read, the regions are `region`, and what comes after the last one is `post`, three runs of
@@ -4380,10 +4383,52 @@ function wroteOf(text,regs,first,moved,source){const t=String(text||""),bom=/^\u
   const lastEnd=regs.length?regs[regs.length-1][1]:-1,between=moved&&regs.slice(1).some(([x],i)=>{
     for(let k=regs[i][1]+1;k<x;k++) if(u.slice(off(k),off(k+1)).trim()) return true;return false;});
   const inPlace=moved&&!between;
-  return {head:moved&&!inPlace?null:bom+u.slice(0,off(first)),src:source,eol:(u.match(/\r\n?|\n/)||["\n"])[0],bom,
+  return {head:moved&&!inPlace?null:bom+u.slice(0,off(first)),src:source,eol:(u.match(/\r?\n/)||["\n"])[0],bom,
     region:inPlace?u.slice(off(first),off(lastEnd+1)):moved?regs.map(([x,y])=>u.slice(off(x),off(y+1))).join(""):u.slice(off(first)),
     ...(inPlace?{post:u.slice(off(lastEnd+1))}:{}),toJSON:()=>undefined};}
-function splitItems(lines,start,inner){let i=start;
+/* Which lines START inside a comment (`<!-- … -->` or `%% … %%`), a `<pre>` block or a `$$` math block: the Obsidian plugin's `visibleLines`, as far as it says where a
+   fence may start (`hidden[i]`; SPEC.md section 13, "A data block inside a comment"). A fence line that starts there is part of the comment, so a `booklet data` fence in a
+   comment is no data block: the plugin sees none, and refuses to write into it. `skip[j]`: a line of a records region, which is not scanned. A mark opens a region only when
+   its closer is found later, before a skipped line; a mark inside an inline code span opens nothing; a mark that starts its line (up to three spaces in) is a block and its search
+   runs over fence lines, any other mark's search stops at a fence line. A fenced code block is code and hides nothing. */
+function hiddenLines(lines,from,skip){const n=lines.length,hidden=lines.map(()=>false),dead={comment:[0,0],percent:[0,0],pre:[0,0],math:[0,0]};
+  const OPEN=/`+|<!--|%%|<pre[\s>]|\$\$/gi,TICKS=/`+/g,PRE_END=/<\/pre>/gi;
+  const closeOf=(kind,i,col,block)=>{const d=dead[kind];if(i<(block?d[0]:Math.max(d[0],d[1]))) return null;
+    let j=i;
+    for(;j<n;j++){if(skip&&skip[j]) break;const l=lines[j]||"";if(!block&&j>i&&FENCE_RE.test(l)) break;
+      const at=j===i?col:0;let end=-1;
+      if(kind==="comment"){const x=l.indexOf("-->",at);if(x>=0) end=x+3;}
+      else if(kind==="math"||kind==="percent"){const x=l.indexOf(kind==="math"?"$$":"%%",at);if(x>=0) end=x+2;}
+      else{PRE_END.lastIndex=at;const m=PRE_END.exec(l);if(m) end=m.index+m[0].length;}
+      if(end>=0) return {line:j,end};}
+    if(j<n&&!(skip&&skip[j])) d[1]=j;else d[0]=j;
+    return null;};
+  for(let i=from;i<n;){
+    if(skip&&skip[i]){i++;continue;}
+    const f=FENCE_RE.exec(lines[i]||"");
+    if(f&&f[1]){i=Math.min(fenceEnd(lines,i,f[1]),n-1)+1;continue;}
+    let cur=i,p=0;
+    for(;;){const l=lines[cur]||"";OPEN.lastIndex=p;const m=OPEN.exec(l);if(!m) break;
+      const mark=m[0],after=m.index+mark.length;p=after;
+      if(mark[0]==="`"){TICKS.lastIndex=after;let c,end=after;
+        while((c=TICKS.exec(l))){if(c[0].length===mark.length){end=c.index+c[0].length;break;}}
+        p=end;continue;}
+      const kind=mark==="<!--"?"comment":mark==="%%"?"percent":mark==="$$"?"math":"pre";
+      const close=closeOf(kind,cur,after,/^ {0,3}$/.test(l.slice(0,m.index)));
+      if(!close) continue;
+      if(close.line===cur){if(kind!=="pre") p=close.end;continue;}
+      for(let j=cur+1;j<=close.line;j++) hidden[j]=true;
+      cur=close.line;p=close.end;}
+    i=cur+1;}
+  return hidden;}
+/* The items of the lines from `start` on. A booklet's lines are read twice only when some line starts inside a comment: the first read finds the records regions, which the
+   scan for comments leaves alone, and the second leaves a fence that starts inside a comment as the words of the comment. */
+function splitItems(lines,start,inner){
+  const r=splitItems1(lines,start,inner,null);if(inner) return r;
+  const skip=new Array(lines.length).fill(false);r.regs.forEach(([x,y])=>{for(let k=x;k<=y&&k<lines.length;k++) skip[k]=true;});
+  const hidden=hiddenLines(lines,start,skip);
+  return hidden.some(Boolean)?splitItems1(lines,start,inner,hidden):r;}
+function splitItems1(lines,start,inner,hidden){let i=start;
   /* One pass over the lines, fences first: nothing inside a fence is ever a
      Booklet line, a page break or a comment marker. A choice/multi/scale
      question also claims the option or anchor list straight under it, so
@@ -4394,7 +4439,7 @@ function splitItems(lines,start,inner){let i=start;
   const flush=()=>{const n=buf.findIndex(l=>l.trim());if(n>=0) items.push({t:"text",text:buf.join("\n").replace(/^\n+|\n+$/g,""),line:bufAt+n+1,rec:rec()});buf=[];};
   const rest=k=>{while(k<lines.length&&/^>/.test(lines[k])&&!calloutLine(lines[k])) k++;return k;};
   for(;i<lines.length;i++){const ln=lines[i];
-    const f=FENCE_RE.exec(ln);
+    const f=hidden&&hidden[i]?null:FENCE_RE.exec(ln);
     if(f){const F=fenceAt(lines,i,f),k=F.end,last=F.id?F.idAt:k,info=F.info;
       if(/^booklet\b/i.test(info)||F.id){flush();
         items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,last+1).join("\n")+(k<lines.length?"":"\n"+F.mark),id:F.id,line:i+1,end:Math.min(k,lines.length),rec:rec()});i=last;}
@@ -5061,14 +5106,14 @@ function fileText(book,S,D,drop){const p=writeParts(book,S,D,drop);return p.head
 const regionOf=(book,drop)=>writeParts(book,null,null,drop).region;
 function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol||"\n",src=String(V.source||""),same=typeof W.head==="string"&&src===W.src;
   /* a body written from a changed design (Add, Remove, Rename) ends as the body read did: its trailing blank lines kept */
-  const tl=typeof W.head==="string"&&typeof W.post!=="string"?(W.head.match(/(?:\r\n?|\n)\s*$/)||[""])[0]:"";
+  const tl=typeof W.head==="string"&&typeof W.post!=="string"?(W.head.match(/(?:\r?\n)\s*$/)||[""])[0]:"";
   /* design written after the records (wroteOf) comes back after them, as it was, while the design is as it was read */
   const post=same&&typeof W.post==="string"?W.post:"";
-  let body=(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);if(body&&tl) body=body.replace(/(?:\r\n?|\n)$/,"")+tl;
+  let body=(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);if(body&&tl) body=body.replace(/(?:\r?\n)$/,"")+tl;
   const head=same?W.head:(W.bom||"")+body;
   /* a blank line between the body and the region, where the body does not end with one: before a region this writer
      adds, and before the file's own when its body is written from a changed design; a body as read is left as it was */
-  const gap=()=>{const ls=head.split(/\r\n?|\n/),z=ls[ls.length-1];return !head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"";};
+  const gap=()=>{const ls=head.split(/\r?\n/),z=ls[ls.length-1];return !head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"";};
   /* and before the region of a text designCut cut before it, as the writer put it there before the cut (readMade) */
   const out=region=>({head,sep:(!same||W.cut)&&region?gap():"",region,post});
   const mods=book.modules||[],fenced=id=>fencedModule(id,mods),text=String(W.region||"");
@@ -5178,7 +5223,7 @@ let REGION_READ=null;
    the end of the file (`open`). The last read is kept, since every save of a booklet reads the same region. */
 function readRegion(text,mods){const key=mods.map(m=>m.id+(scopeOfModule(m)?"/":"")).join(" ");
   if(REGION_READ&&REGION_READ.text===text&&REGION_READ.key===key) return REGION_READ.R;
-  const T=[],E=[],re=/\r\n?|\n/g;let a=0,m;while((m=re.exec(text))){T.push(text.slice(a,m.index));E.push(m[0]);a=re.lastIndex;}T.push(text.slice(a));E.push("");
+  const T=[],E=[],re=/\r?\n/g;let a=0,m;while((m=re.exec(text))){T.push(text.slice(a,m.index));E.push(m[0]);a=re.lastIndex;}T.push(text.slice(a));E.push("");
   const fenced=new Set(mods.filter(scopeOfModule).map(x=>x.id)),bare=new Set(mods.filter(x=>!scopeOfModule(x)).map(x=>x.id));
   const blocks=[],groups=[],R={T,E,blocks,groups,top:-1,end:0,open:null};let sc="",inReg=false,g=null;
   const full=(x,y)=>{let k=y-1;while(k>x&&!T[k].trim()) k--;return k+1;};
@@ -5264,7 +5309,7 @@ function fileToWrite(){const p=writeParts(BOOK,STATE,ownDrafts());return p.regio
    parse reads it). The last text asked about is kept, since every save of a booklet asks about the same body. */
 let FENCE_END=null;
 function endsInFence(text){if(FENCE_END&&FENCE_END.text===text) return FENCE_END.open;
-  const {lines,next}=frontMatter(text,true),body=lines.slice(next),F=codeFences(body).pop();
+  const {lines,next}=frontMatter(text),body=lines.slice(next),F=codeFences(body).pop();
   FENCE_END={text,open:!!F&&F.end>=body.length};return FENCE_END.open;}
 /* The text a design is read from (bookText, textWith): its file's text with nothing of the reader's, its kept records with
    it, as {text, cut}. Where that would put a records region after a body that ends inside a code fence that never closes
@@ -5285,7 +5330,7 @@ const designText=(book,drop)=>designCut(book,drop).text;
    its blank line before the region again (writeParts, `cut`). The design is the text's own parse. Returns R. */
 function readMade(R,cut){const raw=R&&R.template&&R.template.raw,W=raw&&raw.wrote;
   if(!W||typeof W.head!=="string"||!endsInFence(W.head)) return R;
-  const {lines,next}=frontMatter(W.head,true),F=codeFences(lines.slice(next)).pop(),e=W.eol||"\n";
+  const {lines,next}=frontMatter(W.head),F=codeFences(lines.slice(next)).pop(),e=W.eol||"\n";
   const z=lines.filter(l=>l.trim()).pop()||"",t=z.replace(/\s+$/,""),s=String(raw.source||"");
   if(z!==t&&s.endsWith("\n"+t+"\n")) raw.source=W.src=s.slice(0,s.length-t.length-1)+z+"\n";
   if(cut){const Q=parseFile(W.head+(/[\r\n]$/.test(W.head)?"":e)+F.mark+e+e+cut);W.cut=true;
@@ -6046,7 +6091,7 @@ function cutComments(line,st){
     out+=line[i];i++;}
   return {text:out,cut};}
 function extractDefs(text,refs){
-  const rawLines=text.replace(/\r\n?/g,"\n").split("\n");
+  const rawLines=text.replace(/\r\n/g,"\n").split("\n");
   const lines=[];let fence=null;
   const com={open:false};
   for(let i=0;i<rawLines.length;i++){
@@ -7238,7 +7283,7 @@ function finalizeEntry(id){const u=strings("ui");
     if(idx>=0) kept[idx]=e; else kept.push(e);
   } else kept.push(e);
   DRAFTS.custom[id]=nullMap();
-  unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;SAVE_QUIET=false;render();saveLocal();toast(u.kept);}
+  unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;SAVE_QUIET=false;render();saveLocal();wbChanged();toast(u.kept);}
 /* a daily activity's empty draft shows today's entry, to be finished again (settle) */
 function seedUpsertDraft(id,m,draft){
   if(m.upsert!=="day"||anyFilled(draft,id)) return;
@@ -7500,7 +7545,7 @@ function applyDelete(text,pick,was){
    {from,to,text}, or null when the booklet holds no such block written in itself (it names a file, or is gone). The block is found again in the text as it is now. */
 function rowFence(note,id,mod){const R=parseFile(note),hit=R&&R.dataAt&&R.dataAt.find(d=>d.id===id&&d.mod===mod);
   if(!hit||hit.file||!hit.inner) return null;
-  const bom=note.charCodeAt(0)===0xfeff?1:0,starts=[bom],re=/\r\n?|\n/g;re.lastIndex=bom;let m;
+  const bom=note.charCodeAt(0)===0xfeff?1:0,starts=[bom],re=/\n/g;re.lastIndex=bom;let m;
   while((m=re.exec(note))) starts.push(re.lastIndex);
   const at=i=>i<starts.length?starts[i]:note.length,from=at(hit.inner.from),to=at(hit.inner.to);
   return {from,to,text:note.slice(from,to)};}
@@ -7749,7 +7794,7 @@ function keepPairs(id,sel,msg){const draft=draftFor(id),e=nullMap();
     const rest=list.filter((_,j)=>j!==i);draft[K]=rest.length?rest:null;}
   if(!Object.keys(e).length) return false;
   e.ts=freshTs(id);keptFor(id).push(e);
-  unsavedEntries++;dirty=true;SAVE_QUIET=false;saveLocal();toast(msg||strings("ui").kept);stripRefresh(id);
+  unsavedEntries++;dirty=true;SAVE_QUIET=false;saveLocal();wbChanged();toast(msg||strings("ui").kept);stripRefresh(id);
   return true;}
 const dropPair=(rec,K,pick)=>{const l=Array.isArray(rec[K])?rec[K]:[],r=l.filter(x=>!(isPair(x)&&x.pick===pick));if(r.length!==l.length) rec[K]=r.length?r:null;};
 /* ---- ROWS CHANGED IN THE BOOKLET (0.20.2, SPEC.md section 5 and section 13) ----
@@ -7760,7 +7805,7 @@ const dropPair=(rec,K,pick)=>{const l=Array.isArray(rec[K])?rec[K]:[],r=l.filter
    row waits (withPending). A block that reads a JSON file or the host's store takes no add and no remove here, and nothing is written to a host. */
 /* one new entry holding one act of a data block: `key` is `$add` or `$delete`, `pair` the act */
 function keepRowAct(id,key,pair){const e=nullMap();e[key]=[clone(pair)];e.ts=freshTs(id);keptFor(id).push(e);
-  unsavedEntries++;dirty=true;SAVE_QUIET=false;return e;}
+  unsavedEntries++;dirty=true;SAVE_QUIET=false;wbChanged();return e;}
 /* runs `run` (the block's lines -> {ok,text} | {ok:false,why}) on the block `ref` ({id, mod}) of the booklet in force, and adopts the result. Returns the act's
    result: {ok:true} (written), {ok:true,same:true} (the block already held it) or {ok:false,why}. */
 function writeIntoBooklet(ref,run){
@@ -9963,7 +10008,7 @@ async function download(){const t=strings("ui");
   SAVE_QUIET=false;
   /* a body that ends inside a code fence that never closes (fileToWrite): no file is made, nothing is marked as downloaded,
      and the reader is told why */
-  const md=fileToWrite();if(md===null){toast(t.fenceOpen);return;}
+  const md=fileToWrite();if(md===null){toast(t.dlFence);return;}
   const name=exportName();
   /* a store booklet of which nothing is kept here and in which nothing has changed (a pointer) has no copy to mark as
      downloaded, and none is made for it: a copy made only to say so would be a 3 MB write for a large file */
@@ -10096,7 +10141,8 @@ async function wbWrite(){const w=WB;if(!w||!w.on) return;
   w.busy=true;
   try{do{w.again=false;
       const text=fileToWrite();
-      if(text===null||text===w.seen) continue;
+      if(text===null){toast(strings("ui").wbFence);continue;}
+      if(text===w.seen) continue;
       const cur=wbDecode(await (await w.h.getFile()).arrayBuffer());
       if(cur!==w.seen){w.on=false;toast(strings("ui").wbChanged(w.name));return;}
       const ws=await w.h.createWritable();await ws.write(text);await ws.close();

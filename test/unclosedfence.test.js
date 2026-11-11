@@ -22,7 +22,7 @@ const HEAD="> [!records] App record — do not edit below this line";
 const BLOBS=[];global.Blob=class{constructor(parts){BLOBS.push(parts.map(String).join(""));}};
 const toastText=()=>P.byId("toast").textContent;
 const load=text=>{P.wipe();const A=P.boot();A.loadText(text);return A;};
-const say=(A,l)=>A.STRINGS[l].ui.fenceOpen;
+const say=(A,l)=>A.STRINGS[l].ui.dlFence;
 const MOD=id=>"\n> [!module|"+id+"] The "+id+"\n\n> [!activity|a1] This week\n\n> [!text|q1] What grew?\n\n> [!module|"+id+" end]\n";
 /* a page load: the booklet open now, read again from the browser's copy */
 const again=A=>{A.flushSave();const id=A.currentId;P.closePages();const B=P.boot();B.openBooklet(id);return B;};

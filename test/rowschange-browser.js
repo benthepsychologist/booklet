@@ -198,6 +198,50 @@ const FENCE=/```booklet data\n[\s\S]*?\n```/;
    ok(d.rows.length===2,'and the change is in it');
    await p.context().close();}
 
+  // 6b. a second file opened in the same visit is asked about again (the browser's permission is for one file)
+  {const p=await open(BOOK,{disk:true});await toActivity(p,'Work');
+   await p.getByRole('button',{name:'Remove Beds',exact:true}).click();await p.waitForTimeout(100);await p.locator('.dv-rm-yes').click();await p.waitForTimeout(400);
+   await p.locator('#wbYes').click();await p.waitForTimeout(900);
+   for(let i=0;i<3&&!await p.getByRole('button',{name:'Add a booklet from a file'}).count();i++){await p.locator('#btnHome').click();await p.waitForTimeout(300);}
+   await p.evaluate(t=>{window.__disk=new TextEncoder().encode(t);window.__log=[];},BOOK.replace('title: Desk','title: Desk two'));  /* another file, behind the same stand-in picker */
+   await p.getByRole('button',{name:'Add a booklet from a file'}).click();await p.waitForTimeout(250);
+   await p.locator('#loadPick').click();await p.waitForTimeout(800);await toActivity(p,'Work');
+   await p.getByRole('button',{name:'Remove Beds',exact:true}).click();await p.waitForTimeout(100);await p.locator('.dv-rm-yes').click();await p.waitForTimeout(400);
+   ok(await p.locator('#wbBar:not([hidden])').count()===1,'a second file opened in the same visit is asked about again');
+   await p.context().close();}
+
+  // 8. every kept entry marks the booklet changed, so the write-back runs: a Finalize, and a row's Finalize (a pair kept by keepPairs)
+  const BOOK2=head+'> [!module|d] Desk\n\n> [!activity|a repeat] Work\n\n> [!text|q] A word\n\n```booklet query\nfrom: rows\nas: table\nlabel: title\nfields: title\n```\n\n> [!text|note each:rows long] A note\n\n'+
+    '```booklet data\n[{"id":"r1","title":"Orchard"}]\n```\n^rows\n\n> [!module|d end]\n';
+  {const p=await open(BOOK2,{disk:true});await toActivity(p,'Work');
+   await p.locator('#main textarea, #main input[type=text]').first().fill('hello');await p.waitForTimeout(200);
+   await p.locator('#main button.finalize').click();await p.waitForTimeout(500);
+   ok(await p.locator('#wbBar:not([hidden])').count()===1,'a Finalize (a kept entry) is a change: the page asks whether to keep the file up to date');
+   await p.locator('#wbYes').click();await p.waitForTimeout(900);
+   ok(/booklet entries/.test(await diskText(p))&&/hello/.test(await diskText(p)),'and on yes the entry reaches the file');
+   await p.locator('#main details > summary').first().click().catch(()=>{});await p.waitForTimeout(200);
+   await p.locator('#main textarea.field').last().fill('about the orchard').catch(()=>{});await p.waitForTimeout(200);
+   const rf=p.locator('#main .dv-rowfin').first();
+   if(await rf.count()){await rf.click();await p.waitForTimeout(1500);
+     ok(/about the orchard/.test(await diskText(p)),'a row\'s Finalize (kept by keepPairs) reaches the file without another change');}
+   else ok(false,'the row has a Finalize button');
+   await p.context().close();}
+
+  // 9. a write-back or a download that cannot be made says so, with why, and that the work is still kept in this browser
+  const BOOK3=head+'> [!module|d] Desk\n\n> [!activity|a repeat] Work\n\n> [!text|q] A word\n\n> [!module|d end]\n\n```js\nnever closed\n';
+  {const p=await open(BOOK3,{disk:true});await toActivity(p,'Work');
+   await p.evaluate(()=>{window.__toasts=[];new MutationObserver(()=>{const t=document.getElementById('toast');if(t.textContent) window.__toasts.push(t.textContent);}).observe(document.getElementById('toast'),{childList:true,characterData:true,subtree:true});});
+   await p.locator('#main textarea, #main input[type=text]').first().fill('hello');await p.waitForTimeout(200);
+   await p.locator('#main button.finalize').click();await p.waitForTimeout(500);
+   await p.locator('#wbYes').click();await p.waitForTimeout(1500);
+   const ts=await p.evaluate(()=>window.__toasts.slice());
+   ok(ts.some(t=>/never closed|code fence that is never closed/.test(t)&&/cannot be written to the file/.test(t)&&/still kept in this browser/.test(t)),'a booklet that ends inside an unclosed fence cannot be written to its file, and the reader is told why and that the work is kept in this browser: '+JSON.stringify(ts).slice(0,300));
+   ok(!(await log(p)).includes('write'),'and nothing was written');
+   await p.locator('#btnExport').click();await p.waitForTimeout(400);
+   const ts2=await p.evaluate(()=>window.__toasts.slice());
+   ok(ts2.some(t=>/a copy cannot be made/.test(t)&&/still kept in this browser/.test(t)),'Download a copy says the same when it cannot make one: '+JSON.stringify(ts2.slice(-2)).slice(0,300));
+   await p.context().close();}
+
   // 7. nothing leaves the page
   {const other=reqs.filter(r=>!r.url.startsWith(PAGE+'/')&&!r.url.startsWith('data:')&&!r.url.startsWith('blob:'));
    ok(other.length===0,'nothing was requested but the page itself: '+JSON.stringify(other.slice(0,3)));

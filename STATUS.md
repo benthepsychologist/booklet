@@ -11,7 +11,7 @@ repo, `booklet-registry`.
 
 ## Current state, renderer 0.20.2: rows in the browser (branch `feat/rows-in-browser`, off `main` at 0.20.1; the marker stays `"0.20"`)
 
-For a `booklet data` block written in the booklet, the renderer adds a row, adds one under a row, removes a row with the rows under it, and writes an edit in place, each kept as an entry first and then written into the block between its fences (`CHANGES.md`, "Renderer 0.20.2"). The ported row code is plain functions in `booklet.html`, held to `test/apply-vectors.json` and `test/pending-vectors.json`. A changed booklet is kept in the browser, downloaded, or (File System Access API, one confirm per visit) written back to the file it was opened from. A list over a JSON file or a host's store gets no Add or Remove and a line that says why. Not built: rows in JSON files, moving rows, audio and `listen`.
+For a `booklet data` block written in the booklet, the renderer adds a row, adds one under a row, removes a row with the rows under it, and writes an edit in place, each kept as an entry first and then written into the block between its fences (`CHANGES.md`, "Renderer 0.20.2"). The ported row code is plain functions in `booklet.html`, held to `test/apply-vectors.json` and `test/pending-vectors.json`. A changed booklet is kept in the browser, downloaded, or (File System Access API, one confirm for each file opened in a visit) written back to the file it was opened from. A list over a JSON file or a host's store gets no Add or Remove and a line that says why. Not built: rows in JSON files, moving rows, audio and `listen`.
 
 ## Current state, renderer 0.20.1: the host save hook is removed (branch `renderer-0.20.1-remove-save-hook`; the marker stays `"0.20"`)
 

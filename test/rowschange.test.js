@@ -192,6 +192,37 @@ const LIST="as: list\nlabel: title\nfields: stage\nadd\ndelete";
  chk("`add` alone draws \"+ add\" and no trash; `delete` alone draws the trash and no \"+ add\"",(()=>{load(book("as: list\nlabel: title\nadd"));const a=!!btn("Add a row")&&!btn("Remove Orchard");load(book("as: list\nlabel: title\ndelete"));return a&&!btn("Add a row")&&!!btn("Remove Orchard");})());
  chk("a query that says neither draws neither",none(load(book("as: list\nlabel: title"))));}
 
+// ---- two data blocks holding the same rows in one booklet: the act changes the block its own list reads, and no other
+{const J=JSON.stringify(ROWS),blk=(id)=>"```booklet data\n"+J+"\n```\n^"+id+"\n\n",qry=(id)=>"```booklet query\nfrom: "+id+"\n"+LIST+"\n```\n\n";
+ const T=FM()+"> [!module|d] Desk\n\n> [!activity|a repeat] Work\n\n"+qry("rows")+qry("rows2")+blk("rows")+blk("rows2")+"> [!module|d end]\n\n> [!module|e] Other\n\n> [!activity|b repeat] More\n\n"+qry("rows")+blk("rows")+"> [!module|e end]\n";
+ const fence=(t,id,nth)=>{const re=new RegExp("```booklet data\\n((?:(?!```)[\\s\\S])*?)\\n```\\n\\^"+id+"\\n","g");let m,i=0;while((m=re.exec(t))){if(i++===nth) return JSON.parse(m[1]);}return null;};
+ const names=d=>d.rows.map(r=>r.title).join();
+ const A=load(T);
+ chk("the booklet holds three blocks that read the same rows (two in one module, one in another)",!!fence(T,"rows",0)&&!!fence(T,"rows2",0)&&!!fence(T,"rows",1)&&A.screen==="d/a");
+ const boxes=byClass(main(),"query"),inBox=(box,label)=>walk(box,x=>x.tagName==="button"&&(x.attrs["aria-label"]||"")===label)[0];
+ chk("an activity with two lists draws a trash in each",boxes.length===2&&boxes.every(b=>!!inBox(b,"Remove Beds")));
+ /* the second list reads `rows2`: removing from it changes `rows2` and nothing else */
+ press(inBox(boxes[1],"Remove Beds"));press(byClass(boxes[1],"dv-rm-yes")[0]);
+ {const t=A.toMarkdown();
+  chk("a removal from the list that reads `rows2` changes `rows2` only",names(fence(t,"rows2",0))==="Orchard,Shed"&&names(fence(t,"rows",0))==="Orchard,Beds,Shed"&&names(fence(t,"rows",1))==="Orchard,Beds,Shed",names(fence(t,"rows2",0))+" | "+names(fence(t,"rows",0))+" | "+names(fence(t,"rows",1)));
+  chk("and the entry names the block it was for (`in`)",entries(A).length===1&&entries(A)[0]["$delete"][0].in==="rows2");}
+ /* an add to the first list changes `rows` of this module, not the `rows` of the other module that has the same id */
+ {const b1=byClass(main(),"query")[0];press(inBox(b1,"Add a row"));fill("Name","Mulch");press(walk(main(),x=>cls(x).includes("dv-addok"))[0]);
+  const t=A.toMarkdown();
+  chk("an add through the list that reads `rows` changes `rows` of its own module, not `rows2` and not the `rows` of the other module",names(fence(t,"rows",0))==="Orchard,Beds,Shed,Mulch"&&names(fence(t,"rows2",0))==="Orchard,Shed"&&names(fence(t,"rows",1))==="Orchard,Beds,Shed",names(fence(t,"rows",0))+" | "+names(fence(t,"rows2",0))+" | "+names(fence(t,"rows",1)));}
+ /* the other module's list: the same id `rows`, another module */
+ A.screen="e/b";A.render();
+ {const box=byClass(main(),"query")[0];press(inBox(box,"Remove Shed"));press(byClass(box,"dv-rm-yes")[0]);
+  const t=A.toMarkdown();
+  chk("a removal in the other module changes that module's `rows` only",names(fence(t,"rows",1))==="Orchard,Beds"&&names(fence(t,"rows",0))==="Orchard,Beds,Shed,Mulch"&&names(fence(t,"rows2",0))==="Orchard,Shed",names(fence(t,"rows",1))+" | "+names(fence(t,"rows",0)));
+  chk("and nothing outside the three blocks differs from the booklet as loaded",upper(t).replace(/```booklet data\n[\s\S]*?\n```/g,"@")===upper(T).replace(/```booklet data\n[\s\S]*?\n```/g,"@"));}}
+
+// ---- a data block inside a comment is no data block (SPEC.md section 13): its list shows nothing and offers no controls, whichever way the comment is written
+for(const [what,pre,post] of [["%% lines",["%%"],["%%"]],["an HTML comment",["<!--"],["-->"]]]){
+  const t=FM()+"> [!module|d] Desk\n\n> [!activity|a repeat] Work\n\n```booklet query\nfrom: rows\n"+LIST+"\n```\n\n"+pre.join("\n")+"\n```booklet data\n"+JSON.stringify(ROWS)+"\n```\n^rows\n"+post.join("\n")+"\n\n> [!module|d end]\n";
+  const A=load(t);
+  chk("a data fence in "+what+" is no block: no Add, no Remove, and the booklet is as it was",!btn("Add a row")&&!btnRe(/^(Remove (Orchard|Beds|Shed|Prune)|Add under)/)&&A.toMarkdown().replace(/\n*$/,"")===t.replace(/\n*$/,""),text(main()).slice(0,160));}
+
 // ---- the three languages
 for(const [lg,names] of Object.entries({es:["Añadir una fila","Quitar Orchard","Añadir debajo de esta fila (Orchard)","+ añadir"],fr:["Ajouter une ligne","Supprimer Orchard","Ajouter sous cette ligne (Orchard)","+ ajouter"]})){
   load(book(LIST,{lang:lg}));openAll();
