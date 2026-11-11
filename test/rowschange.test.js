@@ -223,6 +223,22 @@ for(const [what,pre,post] of [["%% lines",["%%"],["%%"]],["an HTML comment",["<!
   const A=load(t);
   chk("a data fence in "+what+" is no block: no Add, no Remove, and the booklet is as it was",!btn("Add a row")&&!btnRe(/^(Remove (Orchard|Beds|Shed|Prune)|Add under)/)&&A.toMarkdown().replace(/\n*$/,"")===t.replace(/\n*$/,""),text(main()).slice(0,160));}
 
+// ---- the 5 MB limit is on the booklet as it will be saved: the entry the act has just kept is in it (SPEC.md section 5, "What stops it")
+{const LIMIT=5*1024*1024,bytes=t=>Buffer.byteLength(t,"utf8");
+ const mk=slack=>{const t0=book(LIST);const pad=LIMIT-slack-bytes(t0)-8;return t0+"<!--"+"x".repeat(pad)+"-->\n";};
+ /* the note a few bytes under 5 MB: the added row alone would still fit, the kept entry and the records around it would not */
+ {const t=mk(120),A=load(t),before=A.toMarkdown();
+  chk("the booklet before the act is under 5 MB (by "+(LIMIT-bytes(t))+" bytes)",bytes(t)<LIMIT&&LIMIT-bytes(t)<400);
+  press(btn("Add a row"));fill("Name","Compost bay");fill("Stage","growing");press(walk(main(),x=>cls(x).includes("dv-addok"))[0]);
+  const after=A.toMarkdown();
+  chk("an add that would take the saved booklet past 5 MB (with its entry in the records) is refused: the block is unchanged",!/Compost bay/.test(after.slice(0,after.indexOf("\n%%")>0?after.indexOf("\n%%"):after.length)),upper(after)===upper(before)?"":"the block changed");
+  chk("the entry stays kept, and the row waits",entries(A).length===1&&!!entries(A)[0]["$add"]);
+  chk("and the booklet is said to be too big, in words",/too big|5 MB/i.test(text(P.byId("toast"))),text(P.byId("toast")));}
+ /* with room to spare */
+ {const t=mk(5000),A=load(t);
+  press(btn("Add a row"));fill("Name","Compost bay");fill("Stage","growing");press(walk(main(),x=>cls(x).includes("dv-addok"))[0]);
+  chk("an add with room to spare is written into the block, and the saved booklet is under 5 MB",/"title":"Compost bay"/.test(upper(A.toMarkdown()))&&bytes(A.toMarkdown())<=LIMIT,bytes(A.toMarkdown()));}}
+
 // ---- the three languages
 for(const [lg,names] of Object.entries({es:["Añadir una fila","Quitar Orchard","Añadir debajo de esta fila (Orchard)","+ añadir"],fr:["Ajouter une ligne","Supprimer Orchard","Ajouter sous cette ligne (Orchard)","+ ajouter"]})){
   load(book(LIST,{lang:lg}));openAll();

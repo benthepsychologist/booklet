@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-oemVZ1HmobrJFHwRZdgIrxXQ7DX4DJgIm0LL51Ma4gY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-SVkLrvHouPcJcZ0909lWyeOMiHH6JW3uVARmLY1Pxb4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -7552,13 +7552,14 @@ function rowFence(note,id,mod){const R=parseFile(note),hit=R&&R.dataAt&&R.dataAt
 /* Runs an act on a block written in the booklet itself: `act` is given the text between the fences and returns {ok,text} or {ok:false,why}; only that text
    goes back, and the rest of the booklet is not touched. Returns {ok,text,same?} or {ok:false,why}. A change that makes the changed file, here the whole booklet,
    longer than a reader reads (ROWS_LIMIT, in UTF-8 bytes, a byte order mark counted) is refused "too big" (SPEC.md section 5, "What stops it"); an act that changes
-   nothing is not held to it. */
-function applyToBooklet(note,ref,act){const span=rowFence(note,ref.id,ref.mod);
+   nothing is not held to it. `extra`: the bytes the booklet will hold beyond `note` when it is saved (the reader's kept entries, the act's own among them), so
+   the booklet is measured as it will be saved. */
+function applyToBooklet(note,ref,act,extra){const span=rowFence(note,ref.id,ref.mod);
   if(!span) return {ok:false,why:"no write"};
   const r=act(span.text);if(!r.ok) return r;
   if(r.text===span.text) return {ok:true,text:note,same:true};
   const text=note.slice(0,span.from)+r.text+note.slice(span.to);
-  if(utf8Len(text)>ROWS_LIMIT) return {ok:false,why:"too big"};
+  if(utf8Len(text)+(extra||0)>ROWS_LIMIT) return {ok:false,why:"too big"};
   return {ok:true,text};}
 
 /* ---- the id of a new row (SPEC.md section 7, "The id of a new row") ----
@@ -7812,7 +7813,7 @@ function keepRowAct(id,key,pair){const e=nullMap();e[key]=[clone(pair)];e.ts=fre
    result: {ok:true} (written), {ok:true,same:true} (the block already held it) or {ok:false,why}. */
 function writeIntoBooklet(ref,run){
   if(OLD_DESIGN) return {ok:false,why:"no write"};
-  const c=designCut(BOOK),r=applyToBooklet(c.text,ref,run);
+  const c=designCut(BOOK),full=fileToWrite(),r=applyToBooklet(c.text,ref,run,full===null?0:Math.max(0,utf8Len(full)-utf8Len(c.text)));
   if(!r.ok||r.same) return r;
   if(!adoptText(r.text,regionOf(BOOK),c.cut)) return {ok:false,why:"unreadable"};
   CUSTOMIZED=true;return r;}
@@ -10143,7 +10144,7 @@ async function wbWrite(){const w=WB;if(!w||!w.on) return;
   w.busy=true;
   try{do{w.again=false;
       const text=fileToWrite();
-      if(text===null){toast(strings("ui").wbFence);continue;}
+      if(text===null){if(!w.fenceSaid){w.fenceSaid=true;toast(strings("ui").wbFence);}continue;}   /* said once for each file in a visit: the next change would only say it again */
       if(text===w.seen) continue;
       const cur=wbDecode(await (await w.h.getFile()).arrayBuffer());
       if(cur!==w.seen){w.on=false;toast(strings("ui").wbChanged(w.name));return;}
