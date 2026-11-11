@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.20.0**. It matches SPEC.md's v0.20, the current format.
+**Skill version: 0.20.1**. It matches SPEC.md's v0.20, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -812,7 +812,7 @@ itself is never shown.
   ("How sure are you of each topic?") and one short phrase per item.
 - **A question can be asked once for each pick of another,** with
   `each:<id>` after its id: name a `choice`, a `multi` or a widget in the same
-  activity, and write the follow-up after it
+  activity (or a data block, to ask it of each row: section 7), and write the follow-up after it
   (`> [!text|tool-why each:tools] What was it for?`). One level only: a
   follow-up is never itself a source. The reference renderer, `booklet.html`,
   draws the follow-up once for each pick, its title once and each pick as a
@@ -1017,30 +1017,52 @@ between paragraphs for a new one. Section 4 says what a heading does.
   **3. Locking and editing.** A field's label in `fields` may be an object,
   `{ "label": "Stage", "edit": "choice", "options": ["todo", "done"] }`, where
   `edit` is `text`, `long`, `number`, `date` or `choice` (and `choice` needs
-  `options`). A field with no `edit` is read-only. A query's `readonly` line (bare,
+  `options`). **A reader changes a data block only where the booklet says so**: a
+  field marked `edit`, a query with `add` or a query with `delete` (point 4). A
+  block that marks nothing is read-only, written in its fence or read from a file
+  alike. A field whose value is a list is read-only too. A query's `readonly` line (bare,
   or `readonly: title, due`) locks what that view draws, so a roundup can read the
-  same fields a working table edits. A question asked for each row is written
+  same fields a working table edits. An edit is kept as an entry, so a field
+  marked `edit` changes only in a `repeat` activity: in any other activity, and in
+  `repeat daily`, it is drawn read-only. A question asked for each row is written
   `> [!choice|decision each:requests] Your call` (`each:` then a data block's id):
   it is drawn in each row's open part, or in a column when a query's `fields:`
-  names its id, and is asked of the rows that carry a field of that name. Edits and
-  these questions are kept as entries, so the activity is `repeat`. The reference
+  names its id, and is asked of the rows that carry a field of that name (of
+  every row when none does). It may sit in any activity: an ordinary one keeps
+  its answers in `answers`, a `repeat` one as kept entries. The reference
   renderer draws the editing, the questions and `readonly` as they are written here.
   A host applies the kept entries (`docs/hosting.md`); a booklet never does.
 
   **4. Adding and removing rows (format 0.20).** Write `add` and `delete`, each alone
-  on a line, in a query over a data block (`table`, `cards` or `list`, in a `repeat`
-  activity): `add` offers **Add a row** (and **Add under this row** inside a row that
-  opens) with a box for each field marked `edit`, and `delete` offers **Remove** with
-  a confirmation. A bare `readonly` locks both. The block says how a new row's id is
-  made with `"idFormat": "j-{field:title}-{time}"` beside `fields` (parts: `{n}`,
-  `{n:3}`, `{time}`, `{date}`, `{epoch}`, `{uuid}`, `{field:NAME}`, `{parent}`, at
-  most one number part, and a number part beside a hyphen or a letter, never
-  touching a text part or digits), or with `"idPattern": "^[a-z0-9-]+$"` for an id the reader
-  types. Each act is kept first as an entry, `{"$add":[{"in": data block id, "pick": id, "under": parent id,
+  on a line (never `add: yes`), in a query over a data block. Only `table`, `cards`
+  and `list` draw them, and only in a `repeat` activity: on `tiles`, `bars` and
+  `line`, in `repeat daily` and in an activity that keeps no entries they are not
+  drawn, and the linter warns. `add` offers **Add a row** (and **Add under this row**
+  inside a row that opens), and `delete` offers **Remove** with a confirmation. A
+  bare `readonly` locks both. **The add form asks only for the fields marked `edit`**:
+  a field with no `edit` is left out of the new row, so mark `edit` on every field a
+  new row needs.
+
+  The block says how a new row's id is made with `"idFormat": "j-{field:title}-{time}"`
+  beside `fields`, in the fence or in the file's object. Its parts are `{n}`, `{n:3}`,
+  `{time}`, `{date}`, `{epoch}`, `{uuid}`, `{field:NAME}` (the slug of the new row's
+  value, accents dropped: "Café" is `cafe`) and `{parent}`. Use at most one number
+  part, and put it beside a hyphen or a letter, never touching a text part or digits
+  (`{parent}{n}` is not valid). Give the format a part that tells rows apart (a
+  number, a time, a UUID or a field), or every add after the first clashes. A
+  `{field:NAME}` part needs that field marked `edit`, or its slug is always empty
+  and every add is refused. With no `idFormat`, the form has an id box, and
+  `"idPattern": "^[a-z0-9-]+$"` checks what the reader types there (it is ignored
+  beside an `idFormat`). **Ids are compared as text**, so `5` and `"5"` are one id:
+  keep every row's id unique as text.
+
+  Each act is kept first as an entry, `{"$add":[{"in": data block id, "pick": id, "under": parent id,
   "row": values}],"ts": …}` or `{"$delete":[{"in": data block id, "pick": id, "was": the whole row}],"ts": …}`,
-  and a host applies it. The reference renderer does not build the controls: it draws
+  and a host applies it. `in` is required: an act with none is neither applied nor
+  drawn. Like any kept entry, these are the reader's to write, never yours
+  (section 1, point 6). The reference renderer does not build the controls: it draws
   the view with one quiet line saying so, where the controls would be, and keeps
-  those entries as written.
+  those entries as written. The Obsidian plugin builds them.
 
   ````markdown
   > [!module|desk] Garden desk
@@ -1051,6 +1073,8 @@ between paragraphs for a new one. Section 4 says what a heading does.
   from: beds
   as: table
   fields: title, stage, due
+  add
+  delete
   ```
 
   ```booklet query
@@ -1066,7 +1090,8 @@ between paragraphs for a new one. Section 4 says what a heading does.
   - [ ] Leave it
 
   ```booklet data garden-desk.json beds
-  { "fields": { "title": { "label": "Bed", "edit": "text" }, "stage": "Stage", "due": "Due" } }
+  { "fields": { "title": { "label": "Bed", "edit": "text" }, "stage": "Stage", "due": { "label": "Due", "edit": "date" } },
+    "idFormat": "g-{field:title}-{time}" }
   ```
   ^beds
 
@@ -1369,7 +1394,7 @@ lowercase words joined by hyphens. A reader also accepts a plain `.md`.
 `status: draft` draws no warning. A warning you do get names something real
 (a remote image, a language with no strings, a chart that would draw nothing).
 
-**The linter checks the 0.18 additions.** For audio and video it reports a remote address
+**The linter also checks media and `listen`.** For audio and video it reports a remote address
 with no media extension written as an embed (an error: it is a link), a `data:` or
 `javascript:` address (an error), an `http:` address or one that starts `//` (a warning),
 an extension that may not play everywhere, such as `.flac` or `.mov` (a warning), a local
@@ -1381,7 +1406,7 @@ after it (a warning). For `media-from:` it reports any value that is not an `htt
 kind does not take, a missing id, a `listen` inside a `repeat` activity, and more than one
 audio or video embed under one `listen` (all errors). It also reports raw `<audio>`,
 `<video>`, `<iframe>` and other media or framing HTML (an error). A clean run still says
-nothing about what only a writer knows, so keep the last six items of the list below.
+nothing about what only a writer knows, so keep the media and `listen` items of the list below.
 
 | Mistake | The linter says | Fix |
 | --- | --- | --- |
@@ -1414,6 +1439,11 @@ nothing about what only a writer knows, so keep the last six items of the list b
 | `readonly` or `fields:` naming something that is not there | `warn the query's `readonly: x` names a field the rows never carry` / `warn the query's `fields: x` names a question that is not asked for each row` | fix the name, or give the question `each:` and the block's id |
 | a question asked for each row that is not wired up | `warn each:x asks the question … of every row, because no row carries a field named …` / `warn … no query in this activity draws ^x` | name the field in the rows, or add a query over the block in the same activity |
 | an editable field in an activity that keeps no entries | `warn the field(s) 'x' of ^y can be edited, and this activity keeps no entries …` | make the activity `repeat`, or lock the field with `readonly` |
+| `add` or `delete` written with a value | `the query's `add` is written bare (`add` alone on its line), and not `add: yes`; the value is ignored` | write `add` (or `delete`) alone on its line |
+| `add` or `delete` where it is not drawn | `warn the query's `as: bars` does not draw `add`` / `warn the query's `add` is not drawn: this activity is `repeat daily` …` / `… this activity keeps no entries (it is not `repeat`) …` | use `table`, `cards` or `list`, in a `repeat` activity that is not `repeat daily` |
+| an id format that cannot work | `the id format "j-{n}{n}" has more than one number part …` / `warn … has no part that tells rows apart …` / `warn … uses `{field:note}`, and the block has no field `note`` | one number part, beside a hyphen or a letter; add `{n}`, `{time}`, `{uuid}` or a field; name a field the block has and marks `edit` |
+| `idPattern` beside an `idFormat` | `warn `idPattern` is not used when an `idFormat` is declared …` | keep the one you mean |
+| a kept `$add` or `$delete` with no `in`, or one naming no block (in a file you were handed) | `the `$add` pair has no `in`, the id of the data block it is for` / `warn … `in` names ^x, and the booklet has no data block with that id …` | leave the records as they are and tell the person; you never write entries |
 | a query with a bad `as:`, `limit:` or `summary:` | `the query's `as: x` is not one of cards, table, list, tiles, bars, line` / `must be a positive whole number, or a number of days` / `must be `on`` | use one of the six views; a whole number from 1 or `7 days`; `summary: on` |
 | a query with a setting it does not take | `a query has no setting 'x' (it takes from, as, fields, …)` | use the listed keys; a warning `does not draw` means the view ignores that key |
 | a query with a bad `from:` | `the query's `from: x` names no activity, question or data block in this file` (or `is in another module`, or `keeps no entries`) | name an activity that is `repeat`, a question, or a `booklet data` block, in the same module |
@@ -1473,6 +1503,7 @@ nothing about what only a writer knows, so keep the last six items of the list b
 - [ ] Every audio or video embed has a media extension from the table in section 7 (`.webm` is video), and a relative path beside the booklet: no bare `![[name]]` that does not resolve there, no `|300` that is meant to do anything.
 - [ ] No extensionless remote address in image syntax (a video service's page is a plain link), and no raw `<audio>`, `<video>`, `<iframe>` or other HTML media.
 - [ ] `media-from`, if present, holds `https:` origins only (scheme, host, optional port, no path), as one value or a list, and nothing in the file treats it as a permission.
+- [ ] A field marked `edit`, and a query's `add` or `delete`, sit in a `repeat` activity that is not `repeat daily`; `add` and `delete` stand alone on their lines in a `table`, `cards` or `list` query; a block that offers `add` marks `edit` on every field a new row needs, and its `idFormat` has one part that tells rows apart (or it has no `idFormat`, and perhaps an `idPattern`); no two rows share an id, read as text.
 - [ ] Every word in a copy line's `of:` is a question of the same activity, a `question/solution` or `question/hint` that is folded straight under its question, or a block with a `^id`; the line sits in an activity.
 - [ ] A `listen` holds one embed or one link, takes only `left:` (whole seconds), sits in an activity with no `repeat`, and no answer for it is written.
 - [ ] Every local video has a folded `> [!note]- Transcript` beside it.
