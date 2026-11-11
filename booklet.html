@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-J2BCZ9dWuR+urtr19KKXYqf0wJ1ouUBl0aapjycmSBQ=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-oemVZ1HmobrJFHwRZdgIrxXQ7DX4DJgIm0LL51Ma4gY=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -1847,7 +1847,7 @@ const STRINGS_SRC={
         },
         whole: {
           "not utf8": "The data block is not valid UTF-8, so it was not changed.",
-          "too big": "That would make the data block too big to read (the limit is 5 MB), so it was not changed.",
+          "too big": "That would make the booklet too big to read (the limit is 5 MB), so the data was not changed.",
           "no write": "This data cannot be changed from here."
         },
         addWhy: {
@@ -2304,7 +2304,7 @@ const STRINGS_SRC={
         },
         whole: {
           "not utf8": "Le bloc de données n’est pas en UTF-8 valide, donc il n’a pas été modifié.",
-          "too big": "Le bloc de données deviendrait trop gros pour être lu (la limite est de 5 Mo), donc il n’a pas été modifié.",
+          "too big": "Le carnet deviendrait trop gros pour être lu (la limite est de 5 Mo), donc les données n’ont pas été modifiées.",
           "no write": "Ces données ne peuvent pas être modifiées d’ici."
         },
         addWhy: {
@@ -2758,7 +2758,7 @@ const STRINGS_SRC={
         },
         whole: {
           "not utf8": "El bloque de datos no es UTF-8 válido, así que no se cambió.",
-          "too big": "Eso haría el bloque de datos demasiado grande para leerlo (el límite es de 5 MB), así que no se cambió.",
+          "too big": "Eso haría el cuadernillo demasiado grande para leerlo (el límite es de 5 MB), así que los datos no se cambiaron.",
           "no write": "Estos datos no se pueden cambiar desde aquí."
         },
         addWhy: {
@@ -7550,14 +7550,16 @@ function rowFence(note,id,mod){const R=parseFile(note),hit=R&&R.dataAt&&R.dataAt
   const at=i=>i<starts.length?starts[i]:note.length,from=at(hit.inner.from),to=at(hit.inner.to);
   return {from,to,text:note.slice(from,to)};}
 /* Runs an act on a block written in the booklet itself: `act` is given the text between the fences and returns {ok,text} or {ok:false,why}; only that text
-   goes back, and the rest of the booklet is not touched. Returns {ok,text,same?} or {ok:false,why}. A change that makes the block longer than a data file is
-   read at (ROWS_LIMIT) is refused "too big", as it is for a file; an act that changes nothing is not held to it. */
+   goes back, and the rest of the booklet is not touched. Returns {ok,text,same?} or {ok:false,why}. A change that makes the changed file, here the whole booklet,
+   longer than a reader reads (ROWS_LIMIT, in UTF-8 bytes, a byte order mark counted) is refused "too big" (SPEC.md section 5, "What stops it"); an act that changes
+   nothing is not held to it. */
 function applyToBooklet(note,ref,act){const span=rowFence(note,ref.id,ref.mod);
   if(!span) return {ok:false,why:"no write"};
   const r=act(span.text);if(!r.ok) return r;
   if(r.text===span.text) return {ok:true,text:note,same:true};
-  if(utf8Len(r.text)>ROWS_LIMIT) return {ok:false,why:"too big"};
-  return {ok:true,text:note.slice(0,span.from)+r.text+note.slice(span.to)};}
+  const text=note.slice(0,span.from)+r.text+note.slice(span.to);
+  if(utf8Len(text)>ROWS_LIMIT) return {ok:false,why:"too big"};
+  return {ok:true,text};}
 
 /* ---- the id of a new row (SPEC.md section 7, "The id of a new row") ----
    A format is literal text and parts in braces, in any order: `{n}` the next whole number, `{n:3}` the same zero-padded to 3 digits (1 to 9), `{time}` UTC

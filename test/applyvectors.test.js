@@ -31,7 +31,9 @@ for(const c of V.cases){
   chk(c.name,ok,why);}
 // every refusal leaves the booklet alone: nothing is returned to write
 chk("a refusal returns no text to write",V.cases.filter(c=>(c.spec||c.expect).refused).every(c=>{const g=run(fill(c,c.text),fill(c,c.act));return !g.ok&&g.text===undefined;}));
-chk("every case that passes 5 MB carries `spec` (the plugin writes it, SPEC refuses it)",V.cases.filter(c=>c.pad&&c.pad>V.limit-1000&&(c.spec||{}).refused==="too big").length===3);
+chk("every case that takes the booklet past 5 MB carries `spec` (the plugin writes it, SPEC refuses it)",V.cases.filter(c=>c.pad&&c.pad>V.limit-1000&&(c.spec||{}).refused==="too big").length===4);
+chk("the two cases that tell the whole booklet from its block are there: a small block in a big booklet refused, a big block in a booklet under the limit written",
+  V.cases.some(c=>/small block in a booklet that is nearly 5 MB/.test(c.name)&&(c.spec||{}).refused==="too big")&&V.cases.some(c=>/nearly 5 MB in a booklet that stays under/.test(c.name)&&!c.spec&&c.expect.text));
 chk("the file stays small: no case holds a big block written out (the token stands for it)",fs.statSync(path.join(__dirname,"apply-vectors.json")).size<1024*1024,fs.statSync(path.join(__dirname,"apply-vectors.json")).size);
 if(fails){console.log(fails+" apply-vector check(s) failed");process.exit(1);}
 console.log("apply-vector checks passed ("+V.cases.length+" cases)");
