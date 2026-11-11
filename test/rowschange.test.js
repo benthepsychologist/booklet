@@ -240,7 +240,7 @@ for(const [what,pre,post] of [["%% lines",["%%"],["%%"]],["an HTML comment",["<!
   chk("an add with room to spare is written into the block, and the saved booklet is under 5 MB",/"title":"Compost bay"/.test(upper(A.toMarkdown()))&&bytes(A.toMarkdown())<=LIMIT,bytes(A.toMarkdown()));}}
 
 // ---- the three languages
-for(const [lg,names] of Object.entries({es:["Añadir una fila","Quitar Orchard","Añadir debajo de esta fila (Orchard)","+ añadir"],fr:["Ajouter une ligne","Supprimer Orchard","Ajouter sous cette ligne (Orchard)","+ ajouter"]})){
+for(const [lg,names] of Object.entries({es:["Agregar una fila","Quitar Orchard","Agregar debajo de esta fila (Orchard)","+ agregar"],fr:["Ajouter une ligne","Supprimer Orchard","Ajouter sous cette ligne (Orchard)","+ ajouter"]})){
   load(book(LIST,{lang:lg}));openAll();
   chk(`${lg}: the accessible names and the words of the button`,!!btn(names[0])&&!!btn(names[1])&&!!btn(names[2])&&text(btn(names[0]))===names[3],walk(main(),x=>x.tagName==="button").map(b=>b.attrs["aria-label"]||"").join("|"));
   press(btn(names[1]));

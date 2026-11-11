@@ -41,7 +41,7 @@ for(const [what,q] of [["add","as: table\nadd"],["delete","as: table\ndelete"],[
   chk("no line under a bare `readonly`, in a daily or non-repeat activity, on tiles, or where the controls are drawn",z.length===0&&d.length===0&&t.length===0&&o.length===0);}
 for(const l of ["es","fr"]){
   const A=load(body("as: table\nadd",""+" repeat",l));
-  chk(`in ${l} the controls are named in ${l}`,P.find(P.main(),n=>n.tagName==="button"&&((n.attrs||{})["aria-label"]||"")===({es:"Añadir una fila",fr:"Ajouter une ligne"})[l]).length===1);}
+  chk(`in ${l} the controls are named in ${l}`,P.find(P.main(),n=>n.tagName==="button"&&((n.attrs||{})["aria-label"]||"")===({es:"Agregar una fila",fr:"Ajouter une ligne"})[l]).length===1);}
 // no controls where they would not be drawn: tiles, a chart, a `repeat daily` activity, an activity that keeps nothing, a bare `readonly`
 for(const [what,q,act] of [["tiles","as: tiles\nvalue: stage\nadd"," repeat"],["bars","as: bars\nvalue: stage\nadd"," repeat"],["a line chart","as: line\nvalue: stage\ndelete"," repeat"],
   ["a `repeat daily` activity","as: table\nadd"," repeat daily"],["an activity that keeps nothing","as: table\nadd\ndelete",""],

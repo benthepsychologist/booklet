@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-SVkLrvHouPcJcZ0909lWyeOMiHH6JW3uVARmLY1Pxb4=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-cwx/kBtrM22bn7a7RXKy81jeA5ABAIZn+t/yVMB+lz0=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -2090,17 +2090,17 @@ const STRINGS_SRC={
       loadOr: "Ou collez le contenu du fichier :",
       loadCancel: "Annuler",
       loadGo: "Charger",
-      loadPick: "Ouvrir un fichier où enregistrer",
-      wbAsk: n=>`Ce carnet vient du fichier « ${n} ». Garder ce fichier à jour pendant que vous travaillez ? Le navigateur demandera une fois l’autorisation d’y écrire. Rien n’est envoyé nulle part.`,
-      wbYes: "Oui, le garder à jour",
+      loadPick: "Ouvrir un fichier à tenir à jour",
+      wbAsk: n=>`Ce carnet vient du fichier « ${n} ». Tenir ce fichier à jour pendant que vous travaillez ? Le navigateur demandera une fois l’autorisation d’y écrire. Rien n’est envoyé nulle part.`,
+      wbYes: "Oui, le tenir à jour",
       wbNo: "Pas maintenant",
-      wbSaved: n=>`Écrit dans ${n}. Il sera tenu à jour désormais.`,
+      wbSaved: n=>`Enregistré dans ${n}, qui sera désormais tenu à jour.`,
       wbDenied: "Le navigateur n’a pas permis d’écrire dans ce fichier, donc rien n’a été écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.",
       wbChanged: n=>`${n} a changé sur le disque après son ouverture ici, donc il n’a pas été écrasé, et plus rien n’y sera écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.`,
       wbFail: "L’écriture dans le fichier a échoué, et plus rien n’y sera écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.",
-      wbFence: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; on ne peut donc pas l’écrire dans le fichier. Vos changements restent gardés dans ce navigateur. Fermez d’abord le bloc en Markdown.",
-      dlFence: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; on ne peut donc pas en faire une copie. Vos changements restent gardés dans ce navigateur. Fermez d’abord le bloc en Markdown.",
-      wbNotUtf8: n=>`${n} n’est pas en UTF-8 valide : il a été lu au mieux et on ne peut pas y réécrire. Vos changements sont gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.`,
+      wbFence: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; on ne peut donc pas enregistrer le carnet dans le fichier. Vos changements restent gardés dans ce navigateur. Fermez d’abord le bloc dans le texte Markdown.",
+      dlFence: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; on ne peut donc pas en faire une copie. Vos changements restent gardés dans ce navigateur. Fermez d’abord le bloc dans le texte Markdown.",
+      wbNotUtf8: n=>`${n} n’est pas en UTF-8 valide : il a été lu de façon approximative et on ne peut pas y enregistrer vos changements. Vos changements sont gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.`,
       loadErr: "Ce texte ne ressemble pas à un fichier sauvegardé depuis cette page. Rien n’a été modifié.",
       addModTitle: "Ajouter un module",
       addModHelp: "Ajoutez-en un dans la liste ci-dessous. Il est vérifié avant tout changement.",
@@ -2292,7 +2292,7 @@ const STRINGS_SRC={
         id: {
           formatBad: "Le format d’identifiant n’est pas valide, donc on ne peut pas ajouter de lignes ici.",
           patternBad: "Le motif d’identifiant n’est pas valide, donc on ne peut pas ajouter de lignes ici.",
-          noSlug: l=>`Indiquez d’abord ${l}.`,
+          noSlug: l=>`Remplissez d’abord le champ « ${l} ».`,
           clash: "Une ligne avec cet identifiant existe déjà. Ajoutez au format une partie qui distingue les lignes (un nombre, une heure ou un UUID).",
           empty: "Ce format d’identifiant ne produit aucun identifiant ici.",
           noUsable: l=>`« ${l} » ne contient ni lettre ni chiffre qu’un identifiant puisse utiliser. Saisissez un identifiant, ou utilisez une autre partie.`,
@@ -2300,7 +2300,7 @@ const STRINGS_SRC={
           typedEmpty: "Saisissez d’abord un identifiant.",
           typedClash: "Une ligne avec cet identifiant existe déjà. Choisissez-en un autre.",
           typedPattern: p=>`Cet identifiant ne correspond pas au motif ${p}.`,
-          typedBreak: "Un identifiant tient sur une seule ligne."
+          typedBreak: "Un identifiant ne peut pas contenir de saut de ligne."
         },
         whole: {
           "not utf8": "Le bloc de données n’est pas en UTF-8 valide, donc il n’a pas été modifié.",
@@ -2310,15 +2310,15 @@ const STRINGS_SRC={
         addWhy: {
           "no row": "Cette ligne n’existe plus.",
           ambiguous: "Plus d’une ligne porte cet identifiant.",
-          "no place": "Impossible de savoir où va la nouvelle ligne sous celle-ci.",
-          unreadable: "Les données ne peuvent plus être lues comme des données.",
+          "no place": "On ne sait pas où placer la nouvelle ligne sous celle-ci.",
+          unreadable: "Les données ne sont plus lisibles.",
           clash: "Une ligne avec cet identifiant existe déjà. Ajoutez-la de nouveau avec un autre identifiant."
         },
         deleteWhy: {
-          changed: "Elle a changé depuis que vous l’avez vue.",
+          changed: "La ligne a changé depuis que vous l’avez vue.",
           ambiguous: "Plus d’une ligne porte cet identifiant.",
-          "no place": "Cette ligne ne figure dans aucune liste de lignes, donc on ne peut pas la retirer.",
-          unreadable: "Les données ne peuvent plus être lues comme des données.",
+          "no place": "Cette ligne ne figure dans aucune liste de lignes, donc on ne peut pas la supprimer.",
+          unreadable: "Les données ne sont plus lisibles.",
           "no row": "Cette ligne n’existe plus.",
           "too deep": "Cette ligne est imbriquée trop profondément pour être modifiée."
         },
@@ -2326,13 +2326,13 @@ const STRINGS_SRC={
           changed: "les données contiennent maintenant une autre valeur",
           "no row": "la ligne n’existe plus",
           ambiguous: "plus d’une ligne porte cet identifiant, donc les données sont laissées telles quelles",
-          identity: "ce champ est l’identifiant de la ligne, qui n’est jamais écrit",
+          identity: "ce champ est l’identifiant de la ligne, qui n’est jamais modifié",
           "no field": "la ligne n’a plus ce champ",
-          unreadable: "les données ne peuvent plus être lues comme des données",
+          unreadable: "les données ne sont plus lisibles",
           other: "les données ont changé"
         },
         addKept: w=>`La ligne a été gardée, mais pas ajoutée aux données. ${w}`,
-        deleteKept: w=>`La suppression a été gardée, mais aucune ligne n’a été retirée des données. ${w}`,
+        deleteKept: w=>`La demande de suppression a été gardée, mais aucune ligne n’a été supprimée des données. ${w}`,
         editKept: b=>`Changement gardé, mais pas écrit dans les données, parce que ${b}.`,
         editSame: "Changement gardé. Les données contiennent déjà cette valeur, donc rien n’a été écrit.",
         editWhole: w=>`Changement gardé. ${w}`,
@@ -2545,7 +2545,7 @@ const STRINGS_SRC={
       loadCancel: "Cancelar",
       loadGo: "Cargar",
       loadPick: "Abrir un archivo para guardar en él",
-      wbAsk: n=>`Este cuaderno viene del archivo “${n}”. ¿Mantener ese archivo al día mientras trabajas? El navegador pedirá una vez permiso para que esta página escriba en él. No se envía nada a ninguna parte.`,
+      wbAsk: n=>`Este cuadernillo viene del archivo “${n}”. ¿Mantener ese archivo al día mientras trabajas? El navegador pedirá una vez permiso para que esta página escriba en él. No se envía nada a ninguna parte.`,
       wbYes: "Sí, mantenerlo al día",
       wbNo: "Ahora no",
       wbSaved: n=>`Escrito en ${n}. A partir de ahora se mantiene al día.`,
@@ -2727,34 +2727,34 @@ const STRINGS_SRC={
         nanLeft: "No se guardó nada: una casilla de número tenía texto que no es un número.",
         changeKept: "Cambio guardado.",
         history: "Guardado para esta fila",
-        rowAdd: "+ añadir",
-        rowAddName: "Añadir una fila",
-        rowAddUnder: n=>n?`Añadir debajo de esta fila (${n})`:"Añadir debajo de esta fila",
-        rowAddUnderBtn: "+ añadir debajo",
-        rowGo: "Añadir",
+        rowAdd: "+ agregar",
+        rowAddName: "Agregar una fila",
+        rowAddUnder: n=>n?`Agregar debajo de esta fila (${n})`:"Agregar debajo de esta fila",
+        rowAddUnderBtn: "+ agregar debajo",
+        rowGo: "Agregar",
         rowCancel: "Cancelar",
         rowId: "Identificador",
         rowRemoveName: n=>`Quitar ${n}`,
         rowRemoveQ: n=>n?`¿Quitar esta fila y ${n===1?"la fila":"las "+n+" filas"} que ${n===1?"está":"están"} debajo?`:"¿Quitar esta fila?",
         rowRemoveYes: "Quitar",
-        rowRemoving: " · quitándose, en espera",
-        rowRefusedMark: " · Pediste quitar esta fila; ha cambiado desde entonces.",
+        rowRemoving: " · por quitar, en espera",
+        rowRefusedMark: " · Pediste quitar esta fila; cambió desde entonces.",
         rowActs: "Acciones",
         rowNum: f=>`${f}: eso no es un número, así que no se guarda nada. Corrige el número para guardarlo.`,
-        rowsFile: "Esta lista lee sus filas de un archivo JSON, y este lector no puede añadir ni quitar filas en un archivo. Se pueden añadir y quitar filas donde los datos están escritos en el propio cuaderno.",
+        rowsFile: "Esta lista lee sus filas de un archivo JSON, y este lector no puede agregar ni quitar filas en un archivo. Se pueden agregar y quitar filas donde los datos están escritos en el propio cuadernillo.",
         rowsHere: "Este lector no puede cambiar aquí las filas de estos datos.",
         id: {
-          formatBad: "El formato de identificador no es válido, así que aquí no se pueden añadir filas.",
-          patternBad: "El patrón de identificador no es válido, así que aquí no se pueden añadir filas.",
-          noSlug: l=>`Primero indica ${l}.`,
-          clash: "Ya existe una fila con ese identificador. Añade al formato una parte que distinga las filas (un número, una hora o un UUID).",
-          empty: "Ese formato de identificador no produce ningún identificador aquí.",
+          formatBad: "El formato de identificador no es válido, así que aquí no se pueden agregar filas.",
+          patternBad: "El patrón de identificador no es válido, así que aquí no se pueden agregar filas.",
+          noSlug: l=>`Primero completa el campo “${l}”.`,
+          clash: "Ya existe una fila con ese identificador. Agrega al formato una parte que distinga las filas (un número, una hora o un UUID).",
+          empty: "Ese formato de identificador no genera ningún identificador aquí.",
           noUsable: l=>`“${l}” no tiene letras ni dígitos que un identificador pueda usar. Escribe un identificador o usa otra parte.`,
           noBox: l=>`El formato de identificador usa ${l}, que esta tabla no pide.`,
           typedEmpty: "Primero escribe un identificador.",
           typedClash: "Ya existe una fila con ese identificador. Elige otro.",
           typedPattern: p=>`Ese identificador no cumple el patrón ${p}.`,
-          typedBreak: "Un identificador es una sola línea."
+          typedBreak: "Un identificador debe ir en una sola línea."
         },
         whole: {
           "not utf8": "El bloque de datos no es UTF-8 válido, así que no se cambió.",
@@ -2765,16 +2765,16 @@ const STRINGS_SRC={
           "no row": "Esa fila ya no está.",
           ambiguous: "Más de una fila tiene ese identificador.",
           "no place": "No se sabe dónde va la fila nueva debajo de esta.",
-          unreadable: "Ahora los datos no se pueden leer como datos.",
-          clash: "Ya existe una fila con ese identificador. Añádela otra vez con otro identificador."
+          unreadable: "Ahora no se pueden leer los datos.",
+          clash: "Ya existe una fila con ese identificador. Agrégala otra vez con otro identificador."
         },
         deleteWhy: {
-          changed: "Ha cambiado desde que la viste.",
+          changed: "La fila cambió desde que la viste.",
           ambiguous: "Más de una fila tiene ese identificador.",
           "no place": "Esa fila no está en ninguna lista de filas, así que no se puede quitar.",
-          unreadable: "Ahora los datos no se pueden leer como datos.",
+          unreadable: "Ahora no se pueden leer los datos.",
           "no row": "Esa fila ya no está.",
-          "too deep": "Esa fila está anidada a demasiada profundidad para cambiarla."
+          "too deep": "Esa fila está dentro de demasiados niveles para cambiarla."
         },
         editWhy: {
           changed: "los datos tienen ahora otro valor",
@@ -2782,11 +2782,11 @@ const STRINGS_SRC={
           ambiguous: "más de una fila tiene ese identificador, así que los datos se dejan como están",
           identity: "ese campo es el identificador de la fila, que nunca se escribe",
           "no field": "la fila ya no tiene ese campo",
-          unreadable: "ahora los datos no se pueden leer como datos",
+          unreadable: "ahora no se pueden leer los datos",
           other: "los datos cambiaron"
         },
-        addKept: w=>`La fila se guardó, pero no se añadió a los datos. ${w}`,
-        deleteKept: w=>`La eliminación se guardó, pero no se quitó ninguna fila de los datos. ${w}`,
+        addKept: w=>`La fila se guardó, pero no se agregó a los datos. ${w}`,
+        deleteKept: w=>`Se guardó la solicitud de quitar la fila, pero no se quitó ninguna fila de los datos. ${w}`,
         editKept: b=>`Cambio guardado, pero no escrito en los datos, porque ${b}.`,
         editSame: "Cambio guardado. Los datos ya tienen ese valor, así que no se escribió nada.",
         editWhole: w=>`Cambio guardado. ${w}`,
@@ -3004,6 +3004,11 @@ const STRINGS_SRC={
       storageFull: small=>small?"Este navegador se quedó sin espacio para esta página: los cuadernillos de acá se guardan en su espacio chico (unos 5 MB), porque no quiso abrir el más grande. Tus últimos cambios duran hasta que cierres la pestaña, así que descargá una copia.":"Este navegador se quedó sin espacio para esta página, así que tus últimos cambios duran solo hasta que cierres la pestaña. Descargá una copia, o quitá de «Tus cuadernillos» los que ya no necesites.",
       storageFailed: "Este navegador no pudo guardar tus últimos cambios (su almacenamiento informó un error). Duran hasta que cierres la pestaña, así que descargá una copia.",
       leaving: "Tus entradas se guardan en este navegador, pero todavía no descargaste una copia en este dispositivo.",
+      wbAsk: n=>`Este cuadernillo viene del archivo “${n}”. ¿Mantener ese archivo al día mientras trabajás? El navegador pedirá una vez permiso para que esta página escriba en él. No se envía nada a ninguna parte.`,
+      wbDenied: "El navegador no permitió escribir en ese archivo, así que no se escribió nada. Tus cambios siguen guardados en este navegador; descargá una copia para conservarlos en este dispositivo.",
+      wbChanged: n=>`${n} cambió en el disco después de abrirse aquí, así que no se sobrescribió, y ya no se escribirá más en él. Tus cambios siguen guardados en este navegador; descargá una copia para conservarlos en este dispositivo.`,
+      wbFail: "No se pudo escribir en el archivo, y ya no se escribirá más en él. Tus cambios siguen guardados en este navegador; descargá una copia para conservarlos en este dispositivo.",
+      wbNotUtf8: n=>`${n} no es UTF-8 válido, así que se leyó lo mejor posible y no se puede volver a escribir en él. Tus cambios están guardados en este navegador; descargá una copia para conservarlos en este dispositivo.`,
       addModHelp: "Agregá uno de la lista de abajo. Se revisa antes de que cambie nada."
     },
     problem: {
@@ -3023,6 +3028,19 @@ const STRINGS_SRC={
     },
     dv: {
       empty: "No hay nada para mostrar acá.",
+      act: {
+        rowNum: f=>`${f}: eso no es un número, así que no se guarda nada. Corregí el número para guardarlo.`,
+        id: {
+          noSlug: l=>`Primero completá el campo “${l}”.`,
+          clash: "Ya existe una fila con ese identificador. Agregá al formato una parte que distinga las filas (un número, una hora o un UUID).",
+          noUsable: l=>`“${l}” no tiene letras ni dígitos que un identificador pueda usar. Escribí un identificador o usá otra parte.`,
+          typedEmpty: "Primero escribí un identificador.",
+          typedClash: "Ya existe una fila con ese identificador. Elegí otro."
+        },
+        addWhy: {
+          clash: "Ya existe una fila con ese identificador. Agregala otra vez con otro identificador."
+        }
+      },
       ctl: {
         open: "Ordenar y filtrar", search: "Buscar", show: "Mostrar", all: "Todo", sortBy: "Ordenar por",
         original: "Orden original", asc: "Ascendente", desc: "Descendente", clear: "Borrar",
