@@ -9,14 +9,13 @@
 //     booklet in a sub-folder); every request is a GET with no body and no query string;
 //   - one blob per address however many times the page is drawn again; the blobs are released when the booklet closes;
 //   - an image is scaled to the column on a phone and prints;
-//   - the booklet opened again from its "Your booklets" entry draws its images; one opened by the host hook with a store name too;
+//   - the booklet opened again from its "Your booklets" entry draws its images;
 //   - a booklet loaded from a file, on a page that has a store, and any booklet on a page with no store, make no image request;
 //   - a module added to a store booklet afterwards (from the registry) is not the store's: its images are boxes, and nothing is asked
 //     for them, on the visit and on later ones from the kept copy; a registry booklet opened by link makes no image request;
 //   - an image that passes the byte check but cannot be drawn (an SVG with no xmlns, a truncated PNG) is the box with a reason, not a
 //     broken icon; an SVG with a DOCTYPE is drawn; an image redirect is refused; a path over 200 characters is refused;
 //   - "Read the newer file" reads images again (a changed one, and one that was missing before), and a module the newer file adds is the store's;
-//   - Booklet.open with a name on a page with no store asks for nothing;
 //   - tabs and pages (0.15) are presentation: a module tab's prose, an activity's opening (drawn on every tab), a tab's own prose
 //     and a later page draw the store's images by the same rule;
 //   - the default folder (0.15, item v015-host-modules-and-checksum): on a page with no store tag, a booklet opened by link from
@@ -231,18 +230,6 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   ok(s.imgs.length===1&&s.imgs[0].nw===120,'...and draws it');
   await p.close();
 
-  // 5 the host hook, with the store name, is a store booklet; without a name it is not
-  p=await open();await p.goto(PAGE+'/app/');await wait(p,800);n0=mark();
-  await p.evaluate(t=>window.Booklet.open(t,{name:'pics.booklet.md'}),PICS);await wait(p,2500);
-  s=await state(p);
-  ok(s.imgs.length===3&&since(n0).filter(r=>/\/images\//.test(r.url)).length===WANT.length,'Booklet.open(text, { name }) draws the store booklet\'s images');
-  await p.close();
-  p=await open();await p.goto(PAGE+'/app/');await wait(p,800);n0=mark();
-  await p.evaluate(t=>window.Booklet.open(t),PICS);await wait(p,1500);
-  s=await state(p);
-  ok(s.imgs.length===0&&s.boxes.length===3+REFUSED.length+3&&since(n0).length===0,'Booklet.open(text) with no store name draws boxes only and asks for nothing ('+s.boxes.length+' boxes, '+since(n0).length+' requests)');
-  await p.close();
-
   // 6 a file, on a page that has a store; and a page with no store
   for(const [url,what] of [['/app/','a booklet loaded from a file, on a page that declares a store'],['/plain/','a booklet loaded on a page with no store']]){
     p=await open();await p.goto(PAGE+url);await wait(p,800);n0=mark();
@@ -329,13 +316,13 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,900);
   TOPV=2;n0=mark();
   await p.evaluate(()=>{location.hash='#/open/top.booklet.md';});await wait(p,2500);
-  ok(await p.locator('.hostnote button.primary').filter({hasText:'Read the newer file'}).count()===1,'the store\'s file changed since the kept copy read it: the newer file is offered');
+  ok(await p.locator('.newernote button.primary').filter({hasText:'Read the newer file'}).count()===1,'the store\'s file changed since the kept copy read it: the newer file is offered');
   await p.locator('#btnHome').click();await wait(p,500);
   if(!(await p.locator('#main').innerText()).includes('Welcome')){await p.locator('#btnHome').click();await wait(p,500);}
   s=await state(p);
   ok(s.imgs.length===0&&s.boxes.some(x=>x.includes('Opening pic')&&x.includes('images/top1.svg')),'until it is read, the kept opening (the old text) draws the box: '+JSON.stringify(s.boxes));
   ok(since(n0).filter(r=>/images\/top[12]\.svg/.test(r.url)).length===0,'...and asks the store for neither the old path nor the new one ('+since(n0).filter(r=>/images\/top/.test(r.url)).map(r=>r.url).join()+')');
-  await p.locator('.hostnote button.primary').filter({hasText:'Read the newer file'}).click();await wait(p,1500);
+  await p.locator('.newernote button.primary').filter({hasText:'Read the newer file'}).click();await wait(p,1500);
   await p.locator('#btnHome').click();await wait(p,500);
   if(!(await p.locator('#main').innerText()).includes('Welcome')){await p.locator('#btnHome').click();await wait(p,500);}
   s=await state(p);
@@ -412,11 +399,11 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   await p.evaluate(()=>{location.hash='#/open/other.md';});await wait(p,900);
   VERSION=2;n0=mark();
   await p.evaluate(()=>{location.hash='#/open/news.booklet.md';});await wait(p,2500);
-  ok(await p.locator('.hostnote button.primary').filter({hasText:'Read the newer file'}).count()===1,'opened again after the file changed, the booklet offers the newer file');
+  ok(await p.locator('.newernote button.primary').filter({hasText:'Read the newer file'}).count()===1,'opened again after the file changed, the booklet offers the newer file');
   s=await state(p);
   ok(s.imgs.length===1&&s.imgs[0].nw===80&&s.boxes.some(x=>x.includes('Late')&&/not found/.test(x)),'a new visit reads the images as the store has them now (80 wide; the late one still missing): '+JSON.stringify(s.imgs.map(i=>i.nw)));
   VERSION=3;n0=mark();   /* the store's images change again while the offer is waiting */
-  await p.locator('.hostnote button.primary').filter({hasText:'Read the newer file'}).click();await wait(p,1200);
+  await p.locator('.newernote button.primary').filter({hasText:'Read the newer file'}).click();await wait(p,1200);
   await goMod(p,/^\s*\d*\s*News/);
   s=await state(p);
   ok(s.imgs.some(i=>i.alt==='Changed'&&i.nw===120)&&s.imgs.some(i=>i.alt==='Late'&&i.ok),'after "Read the newer file" the changed image is read again (120 wide), and the one that failed before is no longer a kept failure but draws: '+JSON.stringify(s.imgs.map(i=>[i.alt,i.nw])));
@@ -424,15 +411,6 @@ const WANT=['/pub/images/a.svg','/pub/images/b.png','/pub/images/deco.png','/pub
   await goMod(p,/Extra/);
   s=await state(p);
   ok(s.imgs.length===1&&s.imgs[0].alt==='Extra svg'&&s.imgs[0].ok,'a module the newer file adds is the store\'s, and draws its image: '+JSON.stringify(s.imgs.map(i=>i.alt)));
-  await p.close();
-
-  // 11 Booklet.open with a name, on a page with no store, asks for nothing
-  /* a browser that has never kept a booklet from the store, so nothing earlier can stand in for the rule */
-  const fresh=await b.newContext({viewport:{width:1280,height:900}});await setup(fresh);
-  p=await open(fresh);await p.goto(PAGE+'/plain/');await wait(p,800);n0=mark();
-  await p.evaluate(t=>window.Booklet.open(t,{name:'pics.booklet.md'}),PICS);await wait(p,1500);
-  s=await state(p);
-  ok(s.imgs.length===0&&since(n0).length===0,'Booklet.open(text, { name }) on a page that declares no store draws boxes and asks for nothing ('+s.imgs.length+' img, '+since(n0).length+' requests)');
   await p.close();
 
   // 12 tabs and pages are presentation: a module tab's prose, an activity's opening on each of its tabs, a tab's own prose and a

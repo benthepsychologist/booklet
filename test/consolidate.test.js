@@ -9,7 +9,7 @@
 //   R9. One copy of each small job. Two copies had drifted: Remove and Update a module now find a module's fence as Add does,
 //       outside code fences; and an activity's headings are read outside code fences, as its links find them (a page has
 //       no name since 0.15: pages are pagination).
-//       One rule (hostCovers) with three answers, saved, saving and unsaved: leaving the page warns unless saved, and the
+//       One rule (saveState) with two answers, saved and unsaved: leaving the page warns unless saved, and the
 //       bar's save status reads it (since v0.13 item 13, in place of the Download button's mark and the note).
 //   R14. The parser dispatches on two tables (fence kinds, line kinds); the view pipeline calls VIEW_FNS[as] and nothing else,
 //       each view drawing its own groups and a nested list's tree.
@@ -143,39 +143,17 @@ const LS=global.__ls;
  const hs=A.activityHeadings(R.template.modules[0].activities[0]).map(h=>h.text+"@"+h.page).join("|");
  chk("a heading-like line in a code block is no heading; the headings of each page are, on their pages, as its links find them",ps.length===2&&hs==="A@p1|The first page@p1|The second page@p2",hs);}
 
-/* ---- R9: hostCovers is saved, saving or unsaved; leaving warns unless saved, and the bar's save status says the same ----
-   (item 13: the status replaced the Download button's mark and the "not yet downloaded" note; test/autosave.test.js has
-   the rest of it) */
-(async()=>{const T=FM("Hosted")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n";
- const sleep=ms=>new Promise(z=>setTimeout(z,ms));
+/* ---- R9: the save status is saved or unsaved; leaving warns unless saved, and the bar's save status says the same ----
+   (item 13: the status replaced the Download button's mark and the "not yet downloaded" note) */
+(async()=>{const T=FM("Plain")+"> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] Q\n\n> [!module|m end] End\n";
  const rig=A=>{const r={leave:()=>{let warned=false;A.dispatch("beforeunload",{preventDefault(){warned=true;},returnValue:""});return warned;},
    shown:()=>P.byId("saveBtn").attrs["data-state"]};
    r.type=w=>{A.screen="m/a";A.render();const ta=P.find(P.main(),n=>n.tagName==="textarea")[0];ta.value=w;ta._on.input();};return r;};
- P.wipe();P.place("http:","fleet");LS["booklet.host.allowed"]="h";const A=P.boot(),B=A.BookletApi,h=B.host({label:"h"});
- const calls=[];const stop=B.onChange(x=>calls.push(x));
- B.open(T,{name:"hosted.booklet.md"});await sleep(50);h.saved(calls[calls.length-1]);const r=rig(A);r.type("an answer");
- chk("set up: a host that listens, and a change it has not answered (Saving…)",A.HOST.status==="saving"&&A.dirty,A.HOST&&A.HOST.status);
- chk("a change not yet sent is saving: leaving warns, and the bar says Saving",A.hostCovers()==="saving"&&r.leave()&&A.saveState()==="saving"&&r.shown()==="saving",A.hostCovers()+" "+r.shown());
- h.saved();
- chk("a saved() before that change is even sent is not about it: still saving",A.hostCovers()==="saving"&&r.leave()&&r.shown()==="saving",A.hostCovers()+" "+r.shown());
- await sleep(300);h.saved(calls[calls.length-1]);
- chk("once the host says saved for the change sent, saved: no warning, and the bar says Saved",A.hostCovers()==="saved"&&!r.leave()&&r.shown()==="saved"&&/an answer/.test(calls[calls.length-1].text),A.hostCovers()+" "+r.shown());
- r.type("a newer answer");
- chk("a newer change after saved is saving again: leaving warns",A.hostCovers()==="saving"&&r.leave()&&r.shown()==="saving",A.hostCovers()+" "+r.shown());
- await sleep(700);
- chk("a host that has not answered stays saving (it has been told: onChange gave it the newer answer), and leaving warns",calls.some(c=>/a newer answer/.test(c.text))&&A.hostCovers()==="saving"&&r.leave()&&r.shown()==="saving",calls.length+" "+A.hostCovers());
- A.setAnswerMs(50);r.type("another answer");await sleep(800);
- chk("one that does not answer within its time is a failed save, unsaved: leaving warns, and the bar says Unsaved",A.hostCovers()==="unsaved"&&r.leave()&&r.shown()==="unsaved",A.hostCovers()+" "+r.shown());
- A.setAnswerMs(20000);h.saved();
- h.failed("disk full");
- chk("after a failed save, unsaved: leaving warns, and the bar says Unsaved",A.hostCovers()==="unsaved"&&r.leave()&&r.shown()==="unsaved",A.hostCovers()+" "+r.shown());
- h.saved();stop();
- chk("a host that no longer listens covers nothing, unsaved: leaving warns, and the bar says Unsaved",A.hostCovers()==="unsaved"&&r.leave()&&r.shown()==="unsaved",A.hostCovers()+" "+r.shown());
- P.closePages();delete global.location;
  P.wipe();const N=P.boot();N.loadText(T);const n=rig(N);
- chk("with no host, a booklet just read from its file is saved, and leaving does not warn",N.saveState()==="saved"&&!n.leave()&&n.shown()==="saved",N.saveState());
+ chk("a booklet just read from its file is saved, and leaving does not warn",N.saveState()==="saved"&&!n.leave()&&n.shown()==="saved",N.saveState());
  n.type("an answer");
- chk("with no host, a change is unsaved, as before: leaving warns, and the bar says Unsaved",N.hostCovers()==="unsaved"&&n.leave()&&n.shown()==="unsaved",N.hostCovers()+" "+n.shown());
+ chk("a change is unsaved: leaving warns, and the bar says Unsaved",N.saveState()==="unsaved"&&n.leave()&&n.shown()==="unsaved",N.saveState()+" "+n.shown());
+ chk("the page has no third state: the status is never Saving",!P.find(P.byId("saveBtn"),x=>/Saving/.test(P.texts(x))).length);
 
 REST();})().catch(e=>{console.log("  FAIL  the suite threw: "+(e&&e.stack||e));process.exit(1);});
 function REST(){

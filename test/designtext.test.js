@@ -102,14 +102,12 @@ function agrees(A,label){A.flushSave();
     (()=>{const o=JSON.parse(LS[key]),e=entry();return typeof o.text==="string"&&!("TPL" in o)&&o.dirty===d0&&e.updatedAt===e0.updatedAt&&e.dirty===e0.dirty;})());
   P.closePages();const C=P.boot();C.openBooklet(id);C.screen="m/a";C.render();
   chk("opened again, it shows no notice (0.13.0 showed it once), and its answer is there",!P.find(P.main(),P.hasClass("filenotes")).length&&P.find(P.main(),n=>n.tagName==="textarea").map(n=>n.value).join()==="Low water");}
- /* the rewrite tells a host nothing: a host's booklet kept by 0.12 calls the host as often on its first open as on the next */
+ /* a store booklet kept by 0.12 is rewritten as text on its first open too */
  {const {id,key}=await keep12(OLD12("> [!text|seen] What did you see?").replace('"0.12"','"0.16"'),OLD12("> [!text|seen] What did you see?\n\n> [!row|end]"),{seen:"Low water"});
   {const L=JSON.parse(LS["booklet.library.v1"]);L.entries.find(e=>e.id===id).from="store:old.booklet.md";LS["booklet.library.v1"]=json(L);}
-  const opened=async()=>{P.closePages();P.place("http:","fleet");LS["booklet.host.allowed"]="h";const H=P.boot();H.BookletApi.host({label:"h"});
-    const calls=[];H.BookletApi.onChange(x=>calls.push(x));H.openBooklet(id);await new Promise(r=>setTimeout(r,800));return calls.length;};
-  const first=await opened(),upgraded=typeof JSON.parse(LS[key]).text==="string",second=await opened();
-  chk("a host's booklet kept by 0.12 is rewritten as text on its first open, and calls the host no more than opening it again does",upgraded&&first===second&&first===1,first+" / "+second);
-  P.closePages();delete global.location;}
+  P.closePages();const H=P.boot();H.openBooklet(id);
+  chk("a store booklet kept by 0.12 is rewritten as text on its first open",typeof JSON.parse(LS[key]).text==="string"&&!("TPL" in JSON.parse(LS[key])));
+  P.closePages();}
  /* a rename from the list keeps a design it cannot replace */
  {P.wipe();const K=P.boot();await K.createBooklet();K.flushSave();const id=K.currentId,key="booklet.b."+id,o=kept(K);
   delete o.text;o.TPL={modules:[]};LS[key]=json(o);K.closeBooklet();

@@ -3,8 +3,8 @@
    one-file build, writes the address it sends to in a meta tag named booklet-submit, and adds this script's sha256 and that address's origin to
    the copy's Content-Security-Policy. The copy is a different file with its own checksum: booklet-submit.html.
    What it adds, and nothing else:
-   - a Submit button in the bar, shown only while a booklet the host gave is open (one handed over by Booklet.open with a
-     name, or opened by a #/open/<name> link), and only when the file declares an address;
+   - a Submit button in the bar, shown only while a booklet of the declared store is open (opened by a #/open/<name> link),
+     and only when the file declares an address;
    - on the reader's press, a screen listing their answers as they gave them (each answered question's words and the
      answer's, by module, in the booklet's own words), the exact text that would be sent one tap away, and a Send button;
    - on the reader's press of Send, one request: a POST of that text, as JSON, to the declared address, with no cookies, no
@@ -137,7 +137,7 @@ function readable(){const groups=[],all=STATE&&STATE.answers?STATE.answers:{},se
   if(other.length) groups.push({title:S().other,rows:other});
   return groups;}
 /* whether the open booklet is one Submit is for */
-const forHost=()=>!!ENDPOINT&&where!==""&&hookOpen()&&hostName()!==""&&screen!==LIB_SCREEN;
+const forHost=()=>!!ENDPOINT&&where!==""&&bookOpen()&&hostName()!==""&&screen!==LIB_SCREEN;
 /* the body the address last accepted for the open booklet, in this page; Submit reads Sent while nothing has changed since */
 let LAST=null;
 const sentAlready=()=>{if(!LAST||LAST.id!==currentId) return false;const p=payload();return p.ok&&p.text===LAST.text;};

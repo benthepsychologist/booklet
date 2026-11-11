@@ -1,6 +1,7 @@
 // Browser check for the submit build (submit/submit.js, put into booklet-submit.html by submit/build.js). The page is the
 // submit build as a host would serve it: https://forms.example.com/app/, with the host's own script at /host.js (it names the
-// recipe, and hands booklets to the renderer with Booklet.open). The file's own <meta> policy is the whole policy: the test
+// recipe). A booklet with a host name is one the page reads from its store (a copy of the page at /host/ declares the store
+// /store/, the test's own routed files); one without is added from a file on /app/, which declares none. The file's own <meta> policy is the whole policy: the test
 // sends no policy header. The address Submit sends to is https://api.example.org/submit, answered here by a route standing in for
 // recepture (POST only, application/json, the schema rules of its payload contract, 201 {"status":"accepted","response_id"}, and
 // the CORS headers recepture sends for the one origin it is set to allow). The published booklet.html is the file named on the
@@ -39,7 +40,9 @@ const NAME_B='test/submit-questionnaire-b.md',NAME_C='test/submit-questionnaire-
 const EMAIL='client@example.test';
 const FIX=f=>fs.readFileSync(path.join(__dirname,'fixtures',f),'utf8');
 const QUESTIONNAIRE=FIX('submit-questionnaire.booklet.md'),CLASH=FIX('submit-clash.booklet.md');
-const HOSTJS='window.__open=function(t,n){return n?window.Booklet.open(t,{name:n}):window.Booklet.open(t);};window.BookletSubmit.recipe("'+RECIPE+'");';
+const HOSTJS='window.BookletSubmit.recipe("'+RECIPE+'");';
+/* the test's store: name -> text */
+const STORE={};
 const sha=f=>crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
 /* the answers the test gives: made up. The options are positions in the fixture's menu (1 = Not at all ... 4 = Nearly every day) */
 const PHQ=[1,2,3,4,1,2,3,4,1],GAD=[2,3];
@@ -71,6 +74,10 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   fs.mkdirSync(OUT,{recursive:true});
   const before=sha(HTML);
   const BUILD=require('../submit/build.js').build({endpoint:ENDPOINT,script:'/host.js'});
+  /* the same build with a store declared (a meta tag; the policy is unchanged, it already lets the page read its own origin) */
+  const BUILD_STORE=BUILD.replace('<meta name="theme-color"','<meta name="booklet-store" content="/store/">\n<meta name="theme-color"');
+  if(BUILD_STORE===BUILD) throw new Error('no theme-color meta tag to put the store tag before: update this test');
+  const storeBody=u=>{const n=decodeURIComponent(u.slice(7));return n in STORE?STORE[n]:null;};
   /* Live mode: Chromium's Local/Private Network Access checks can block a page on a public-looking name from reaching a
      loopback address. The real recepture is on 127.0.0.1 here, so those checks are turned off for this run only; they are not
      what the test is about (the page's own policy and CORS are). Default mode is routed and needs none of this. */
@@ -80,6 +87,8 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   let server=null;
   if(LIVE){server=http.createServer((q,s)=>{const u=new URL(q.url,'http://x').pathname;
       if(u==='/app/'){s.writeHead(200,{'content-type':'text/html; charset=utf-8'});return s.end(BUILD);}
+      if(u==='/host/'){s.writeHead(200,{'content-type':'text/html; charset=utf-8'});return s.end(BUILD_STORE);}
+      if(u.startsWith('/store/')){const t=storeBody(u);if(t===null){s.writeHead(404);return s.end('nf');}s.writeHead(200,{'content-type':'text/markdown; charset=utf-8'});return s.end(t);}
       if(u==='/host.js'){s.writeHead(200,{'content-type':'text/javascript'});return s.end(HOSTJS);}
       if(u==='/app/modules/'+FOLDER_NAME){s.writeHead(200,{'content-type':'text/markdown; charset=utf-8'});return s.end(QUESTIONNAIRE);}
       s.writeHead(404);s.end('nf');});
@@ -104,6 +113,8 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
     answered.push(r.json().then(j=>({status:r.status(),json:j}),()=>({status:r.status(),json:null})));});
   if(!LIVE) await ctx.route(PAGE+'/**',r=>{const u=new URL(r.request().url()).pathname;
     if(u==='/app/')return r.fulfill({status:200,body:BUILD,headers:{'content-type':'text/html; charset=utf-8'}});
+    if(u==='/host/')return r.fulfill({status:200,body:BUILD_STORE,headers:{'content-type':'text/html; charset=utf-8'}});
+    if(u.startsWith('/store/')){const t=storeBody(u);return t===null?r.fulfill({status:404,body:'nf'}):r.fulfill({status:200,body:t,headers:{'content-type':'text/markdown; charset=utf-8'}});}
     if(u==='/host.js')return r.fulfill({status:200,body:HOSTJS,headers:{'content-type':'text/javascript'}});
     if(u==='/app/modules/'+FOLDER_NAME)return r.fulfill({status:200,body:QUESTIONNAIRE,headers:{'content-type':'text/markdown; charset=utf-8'}});
     r.fulfill({status:404,body:'nf'});});
@@ -130,11 +141,18 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
     p.on('console',m=>{if(/Content Security Policy|Refused to/i.test(m.text()))csp.push(m.text());});
     p.on('pageerror',e=>errs.push(e.message));
     await p.addInitScript(()=>{document.addEventListener('securitypolicyviolation',e=>{(window.__viol=window.__viol||[]).push(e.violatedDirective+' '+e.blockedURI);});});
-    await p.goto(PAGE+'/app/');await p.waitForFunction(()=>typeof window.BookletSubmit==='object'&&typeof window.__open==='function'&&KEEP.ready);
+    await p.goto(PAGE+'/app/');await p.waitForFunction(()=>typeof window.BookletSubmit==='object'&&KEEP.ready);
     return p;};
   const wait=(p,ms)=>p.waitForTimeout(ms||400);
   const viol=[];const grabViol=async p=>{viol.push(...await p.evaluate(()=>window.__viol||[]).catch(()=>[]));};
-  const openBook=async(p,text,name)=>{const r=await p.evaluate(([t,n])=>window.__open(t,n),[text,name]);await wait(p,500);return r;};
+  /* with a name: the booklet is the store's file of that name, opened by its link; without: added from a file */
+  const openBook=async(p,text,name)=>{
+    if(name){STORE[name]=text;await p.goto(PAGE+'/blank');await p.goto(PAGE+'/host/#/open/'+name);
+      await p.waitForFunction(()=>KEEP.ready&&typeof BOOK!=='undefined'&&BOOK!==EMPTY_BOOKLET,null,{timeout:8000}).catch(()=>{});}
+    else{await p.getByRole('button',{name:'Add a booklet from a file'}).click();await wait(p,300);
+      await p.locator('#pasteIn').fill(text);
+      await p.locator('[role=dialog][open] button').filter({hasText:/^Load$/}).first().click();}
+    await wait(p,600);return {ok:await p.evaluate(()=>bookOpen())};};
   const submitHidden=p=>p.evaluate(()=>document.getElementById('btnSubmit').hidden);
   const dialogOpen=p=>p.evaluate(()=>document.getElementById('veilSubmit').hasAttribute('open'));
   const text=(p,sel)=>p.locator(sel).textContent();
@@ -172,7 +190,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
 
   // 4 a booklet without a name
   let r=await openBook(p,QUESTIONNAIRE,null);
-  ok(r.ok===true&&await p.evaluate(()=>hookOpen()),'the host\'s script opened the booklet without a name: '+JSON.stringify(r));
+  ok(r.ok===true&&await p.evaluate(()=>bookOpen()),'the booklet was added from a file without a host name: '+JSON.stringify(r));
   ok(await submitHidden(p),'a booklet opened without a name (the reader\'s own) shows no Submit button');
   await grabViol(p);await p.close();
 
@@ -200,7 +218,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   // 5 with a name
   p=await newPage();
   r=await openBook(p,QUESTIONNAIRE,NAME);
-  ok(r.ok===true,'the host\'s script opened the questionnaire with the name '+NAME+': '+JSON.stringify(r));
+  ok(r.ok===true,'the questionnaire was opened from the store with the name '+NAME+': '+JSON.stringify(r));
   const sb=await p.evaluate(()=>{const b=document.getElementById('btnSubmit');return {hidden:b.hidden,label:b.textContent.trim(),inTools:!!b.closest('.bar .tools')};});
   ok(!sb.hidden&&sb.label==='Submit'&&sb.inTools,'a booklet opened with a name shows the Submit button in the bar, labelled "Submit": '+JSON.stringify(sb));
   const bookId=await p.evaluate(()=>currentId);
@@ -270,7 +288,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   await shot(p,'submit-sent-1280.png');
   let bt=await button(p);
   ok(!bt.hidden&&bt.label==='Sent'&&bt.aria==='true','the Submit button stays in the bar and reads Sent, marked unavailable: '+JSON.stringify(bt));
-  const kept=await p.evaluate(id=>{const c=lsGet(bookKey(id));return {open:hookOpen(),same:currentId===id,entry:readLib().entries.some(e=>e.id===id),copy:typeof c==='string'&&c.includes('phq9-item9')&&c.includes('client@example.test')};},bookId);
+  const kept=await p.evaluate(id=>{const c=lsGet(bookKey(id));return {open:bookOpen(),same:currentId===id,entry:readLib().entries.some(e=>e.id===id),copy:typeof c==='string'&&c.includes('phq9-item9')&&c.includes('client@example.test')};},bookId);
   ok(kept.open&&kept.same&&kept.entry&&kept.copy&&sameJSON(sortKeys(await answers(p)),sortKeys(EXPECT)),'nothing the reader wrote is removed: the same booklet is open with every answer, it has its row in "Your booklets", and its kept copy holds the answers: '+JSON.stringify(kept));
   await p.locator('#submitCancel').click();await wait(p,200);
   ok(!await dialogOpen(p),'Close closes the Sent screen');
@@ -294,8 +312,7 @@ const hasOwnKey=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   await p.reload();await p.waitForFunction(()=>KEEP.ready);await wait(p,800);
   const after=await p.evaluate(id=>{const c=lsGet(bookKey(id));return {entry:readLib().entries.some(e=>e.id===id),copy:typeof c==='string'&&c.includes('phq9-item9'),listed:document.body.innerText.includes('Submit test questionnaire')};},bookId);
   ok(after.entry&&after.copy&&after.listed,'after a reload (same browser) the booklet is still in "Your booklets" with its answers: '+JSON.stringify(after));
-  await p.waitForFunction(()=>typeof window.__open==='function');
-  ok((await openBook(p,QUESTIONNAIRE,NAME)).ok===true&&sameJSON(sortKeys(await answers(p)),sortKeys(EXPECT)),'the host opening the same name again opens the kept copy, with the answers sent');
+  ok((await openBook(p,QUESTIONNAIRE,NAME)).ok===true&&sameJSON(sortKeys(await answers(p)),sortKeys(EXPECT)),'the store link opened again opens the kept copy, with the answers sent');
   bt=await button(p);
   ok(!bt.hidden&&bt.label==='Submit','and Submit is available again: what was sent is remembered in the page only, not across a reload: '+JSON.stringify(bt));
   await grabViol(p);await p.close();

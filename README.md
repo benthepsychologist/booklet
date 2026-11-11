@@ -76,7 +76,7 @@ and it draws those too, as long as they use engines it has.
 | --- | --- |
 | [`booklet.html`](booklet.html) | **the renderer.** The core, plus `parts/` beside it (or the one-file build, `node test/one-file.js`): nothing to install to open it, and opening a file asks the network for nothing but its own parts, and only when a booklet needs one. Draws mermaid diagrams and typesets math with two MIT-licensed libraries, Temml inside the core and mermaid in `parts/mermaid.js` (see below). Reads format 0.19; a file marked with any other 0.x opens by the current rules, with no word about its marker, and a file with no marker, or one not 0.x, is refused |
 | [`SPEC.md`](SPEC.md) | the current format (v0.20), versioned and published separately from anything that implements it |
-| [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer and wants a reader's work saved: the `window.Booklet` interface a host's own script uses, the store contract, and how to check a host serves the real file |
+| [`docs/hosting.md`](docs/hosting.md) | for someone who serves the renderer: the read-only store contract, the default folder, and how to check a host serves the real file |
 | [`submit/`](submit/) | the submit build, never the published file: `node submit/build.js --endpoint <url>` makes `booklet-submit.html`, the one-file renderer with a Submit button that sends a reader's answers to the one address it was built with, on the reader's press (`docs/hosting.md`, "The submit build") |
 | [`compile/`](compile/) | the compiler, a build step and never the published file: `node compile/compile.js <file.booklet.md>` makes a plain web page of a booklet (HTML and one stylesheet that read fully with no script, plus one optional script that keeps nothing and sends nothing and that a page links only when it needs it; a booklet of several activities becomes a contents page and a page each, with links between translations; data views and charts, figures, build-time diagrams (given a browser), a booklet's theme and a tab's pages (format 0.17, titled sections in reading order) are drawn; tabs, citation previews, "Open all" and sort and filter are the script's reading helpers; pick-one and pick-any questions answer as a quiz that forgets, the other kinds stay read-only) for publishing an article on a site of its own, standalone or as a fragment for a site generator. It reads the format only through `booklet.html`'s own parse and never reads a file's records (`compile/README.md`) |
 | [`docs/why-markdown.md`](docs/why-markdown.md) | what shaped v0.3 (the design the later versions kept): the field surveyed, the aims, the choices made and rejected |
@@ -91,7 +91,7 @@ and it draws those too, as long as they use engines it has.
 | [`booklet-obsidian`](https://github.com/benthepsychologist/booklet-obsidian) | a separate repo: the Booklet plugin for Obsidian (1.0.3; reads format 0.18; free, Apache-2.0; needs Obsidian 1.11.7 or later; [in the community plugin directory](https://community.obsidian.md/plugins/booklet)). It opens a note whose front matter says `booklet: "0.18"` in a view of its own and writes the answers into the note's records section. It draws part of what `booklet.html` draws |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add an activity |
 
-If you serve the renderer yourself and want a reader's work saved somewhere other than their browser, read [`docs/hosting.md`](docs/hosting.md). The published `booklet.html` never sends anything (a host that needs a reader's answers sent to one address builds a separate file for it, the submit build in `submit/`); a host adds one script of its own and talks to the renderer through `window.Booklet`, and the renderer hands a booklet to a host only when the page is on the reader's own machine or private network and only after the reader presses Allow.
+If you serve the renderer yourself, read [`docs/hosting.md`](docs/hosting.md). The published `booklet.html` never sends anything, and the renderer reads from a host and never writes to one (a host that needs a reader's answers sent to one address builds a separate file for it, the submit build in `submit/`).
 
 ## Try it
 
@@ -291,25 +291,24 @@ and then goes through the same parser as a file picked by hand, with the same re
 if the file has them. For a store booklet the store's file is the truth, and what the browser keeps of it is only a buffer for
 work the store may not have yet. It joins "Your booklets" as soon as it has been read, as a pointer (its name and title, no copy
 of its content); a copy is kept only once the reader changes something, and beside it a small base: the answers, entries and
-drafts (never the body) of the file it is based on, which is the file it last read, or the text the host last said it saved.
+drafts (never the body) of the file it is based on, which is the file it last read.
 Opening it again, by its link or from the list, reads the store's file afresh and draws it, and drops the kept copy, when the
 kept copy changes nothing of the booklet itself (a rename inside it, a module added or removed, which the store does not take)
-and either nothing has changed here since the base, so that whatever the file now holds is drawn (work another device saved
-just appears), or the kept copy and the file hold exactly the same work. That is decided on content when the booklet opens, so
-it holds whether or not the host has registered yet. Otherwise the kept booklet opens, with "Read the newer file" offered if
+and either nothing has changed here since the base, so that whatever the file now holds is drawn (work another program put in the file
+just appears), or the kept copy and the file hold exactly the same work. That is decided on content when the booklet opens. Otherwise the kept booklet opens, with "Read the newer file" offered if
 the file changed since it was last read, and nothing changes until the reader presses. Rename in the list gives a store
 booklet a name of its own there and changes nothing else. A module link opened by hand is a view that joins the list only
 when the reader changes something in it. While a file is being read, the page says "Opening <name>…". In one browser a store
 name is one booklet, and so is a module link: opening one the browser already keeps opens that booklet, never a second.
 
-Reading the newer file takes its body, with one rule for the records whether a link found the file or the host pushed it (a
-module link instead updates the module in place, as Add a module does). With a host registered, the two are merged place by
+Reading the newer file takes its body, with one rule for the records (a
+module link instead updates the module in place, as Add a module does). For a store booklet, the two are merged place by
 place against the base: what changed here and not in the file is this browser's; what changed in the file and not here is
 the file's (another device's newer answer, an entry it added); what changed on both is this browser's, since the reader is
 looking at it and pressed Read, except that something removed here (an answer cleared, an entry deleted, a draft
 emptied) and changed in the file since stays, with the file's change; removed here and unchanged in the file, it stays
-removed. When a generator has moved an activity to another module, the move is read from the new file's design by the rule
-the box's store uses for its records (`storefile._retarget`): work kept under a module the design no longer has, whose
+removed. When a generator has moved an activity to another module, the move is read from the new file's design by a rule
+a store's writer can apply to its records in the same way: work kept under a module the design no longer has, whose
 id is also the id of an activity in the new design (one inside a module), goes to the module that now holds that
 activity, when every activity the store's records there name now lives in that one module (the activities only this
 browser's unsent work names do not count, since the store decided without them). A module that still exists keeps its work
@@ -317,17 +316,17 @@ even if some of its activities moved, and a module line with no id is no module 
 one. Work left under a module the new design no longer has (a move the rule refuses, or a module the generator removed) is
 written back as records kept as written under its old records line, beside the store's own records kept that way, and so
 survives exactly as they do; it is no longer shown, since no module holds it. A kept copy with no base (one an older release
-kept) is merged the older way, once: what holds something here wins and the file fills in the rest. The host then saves the
-result. With no host, the reader's own answers, entries and drafts stay as they are.
+kept) is merged the older way, once: what holds something here wins and the file fills in the rest. A booklet that is not a store
+booklet keeps the reader's own answers, entries and drafts as they are.
 A quiet line at the top says where the booklet came from ("Opened by a link, from this page's own store: reports/week.booklet.md")
 and can be dismissed. The page reads the link when it starts and whenever the fragment changes, and the link stays in the
 address bar, so a reload opens the same thing.
 
 **The default folder is only read.** A booklet opened from `modules/` is listed, opened again and offered a newer file just as
 a store booklet is (all of the above), and its quiet line names the folder ("Opened by a link, from the modules folder beside
-this page: week.booklet.md"), but it is never the host's: a host script on the
-page is not told of it and cannot read it, so it is never saved back to the folder, and the reader's answers stay in the
-browser and in any copy they download (`docs/hosting.md`, "Which booklets are the host's"). It is a separate booklet from one
+this page: week.booklet.md"), but it is never the store's: it is only read, never
+written back to the folder, and the reader's answers stay in the
+browser and in any copy they download (`docs/hosting.md`, "Which booklets come from the host's store"). It is a separate booklet from one
 of the same name opened from a declared store, and from one of the same name in another default folder of the same site: a
 renderer at `/app/` and one at `/other/` each keep their own `a.md`, and a pointer from one is not listed on the other.
 It draws its images from the folder, relative to its own name there, by the rule a booklet from a declared store follows:
@@ -395,9 +394,8 @@ The renderer reaches what it keeps only through three functions of its own
 (`lsGet`, `lsSet`, `lsDel`), on a few known keys: `booklet.library.v1` for the
 list (kept in IndexedDB as one record per booklet under a head), `booklet.b.<id>`
 for each booklet, `booklet.base.<id>` for a store booklet's base (the records
-last read from or saved to its file, which tell what changed on each side), and
-`booklet.ui.*` for the reader's preferences. Two of them, the theme and the
-reader's yes to a host (`booklet.host.allowed`), are mirrored in local storage
+last read from its file, which tell what changed on each side), and
+`booklet.ui.*` for the reader's preferences. One of them, the theme, is mirrored in local storage
 for the read made before the store is read, and a count there, `booklet.tick`,
 tells another tab showing "Your booklets" that the list changed. The keys live in one IndexedDB
 database whose name is fixed, `booklet` (no setting names it), and when the page
