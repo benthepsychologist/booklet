@@ -48,7 +48,7 @@ if [ -n "${PLAYWRIGHT_SKIP:-}" ]; then
   skipped="PLAYWRIGHT_SKIP is set"
 else
   run browser bash test/run-browser.sh
-  run browser-1 bash test/run-browser.sh build/booklet.html pledge figures libwake mermaid filepage themes
+  run browser-1 bash test/run-browser.sh build/booklet.html pledge figures libwake mermaid filepage themes rowschange
 fi
 
 if [ "$fails" -ne 0 ]; then
