@@ -63,6 +63,22 @@ chk("SKILL.md carries four worked examples",examples.length===4);
   chk("the skeleton lints with 0 errors and 0 warnings",lint.status===0&&/0 errors · 0 warnings/.test(lint.stdout),lint.stdout);
   A.fresh();const P=A.parseFile(sk[1]+"\n");
   chk("and the renderer reads it with nothing it could not read",P.ok&&P.unread.length===0,JSON.stringify(P.unread));}}
+/* the dashboard example in section 7 (rows from a file, rows that open, editing, adding and removing rows: formats 0.19 and 0.20)
+   lints clean with its JSON file beside it, and the renderer reads it. It is a fragment inside a list item, so its two-space
+   indent comes off and front matter goes on. */
+{const at=skill.indexOf("**A dashboard: rows from a file, rows that open**"),rest=at<0?"":skill.slice(at);
+ const md=/\n  ````markdown\n([\s\S]*?)\n  ````\n/.exec(rest),js=/\n  ```json garden-desk\.json\n([\s\S]*?)\n  ```\n/.exec(rest);
+ const undent=t=>t.split("\n").map(l=>l.startsWith("  ")?l.slice(2):l).join("\n");
+ chk("SKILL.md carries the dashboard example and its data file",!!md&&!!js);
+ if(md&&js){const body=undent(md[1]),d=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-desk-"));
+  chk("the dashboard example adds and removes rows, edits a field and declares an id format",
+    /^add$/m.test(body)&&/^delete$/m.test(body)&&/"edit": "/.test(body)&&/"idFormat": "/.test(body));
+  const text=`---\nbooklet: "0.20"\nid: skill/garden-desk\ntitle: Garden desk\nlang: en\nversion: "0.1"\n---\n\n${body}\n`;
+  const f=path.join(d,"desk.booklet.md");fs.writeFileSync(f,text);fs.writeFileSync(path.join(d,"garden-desk.json"),undent(js[1])+"\n");
+  const lint=spawnSync("python3",[path.join(R,"lint-booklet.py"),f],{encoding:"utf8"});
+  chk("the dashboard example lints with 0 errors and 0 warnings, its file beside it",lint.status===0&&/0 errors · 0 warnings/.test(lint.stdout),lint.stdout);
+  A.fresh();const P=A.parseFile(text);
+  chk("and the renderer reads it with nothing it could not read",P.ok&&P.unread.length===0,JSON.stringify(P.unread));}}
 /* the icon names SKILL.md lists are the ones art/icons/ holds (node test/art-sprite.js --write booklet.html rewrites the block) */
 {const sprite=require("./art-sprite.js");
  chk("SKILL.md lists the icon names art/icons/ holds",sprite.skillProblems(skill).length===0,sprite.skillProblems(skill).join("; "));}
