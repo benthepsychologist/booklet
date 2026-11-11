@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-aRcnIqutYQjy1tT8OWAmshmIEYTLeG2Gsx2RmxUzXTc=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RDvEg6FGiSdWXohB3SKiqNo9OdQkBBa2R9dj1iaReNc=' 'sha256-iRBWtTHWoUgnXQQ49TusHqWHHFWaapkbybSZihdd6X8=' 'sha256-GrGRSK/g28g2t6dPNEBxs/OnCnqCWa5ASedolPzfjZU='; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta http-equiv="x-dns-prefetch-control" content="off">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booklet</title>
@@ -993,7 +993,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .dv-ed-btn{font:inherit;color:inherit;background:none;border:0;border-bottom:1px dashed var(--muted);border-radius:0;padding:0 .1em;margin:0;cursor:text;text-align:inherit;white-space:inherit;overflow-wrap:anywhere;max-width:100%}
   .dv-ed-btn:hover{background:var(--accent-soft);border-bottom-color:var(--accent)}
   .dv-ed-none{color:var(--muted)}
-  .dv-ed-in{display:inline-block;width:auto;min-width:8rem;max-width:100%;font:inherit;padding:.15rem .35rem}
+  /* a field being edited is the size of the words it replaced, with one thin outline: that it became a box says it is being edited, so it has no ring */
+  .dv-ed-in{display:inline-block;box-sizing:border-box;width:auto;min-width:6rem;max-width:100%;font:inherit;line-height:inherit;padding:1px .35rem;border:1px solid var(--accent);border-radius:4px;box-shadow:none}
+  .dv-ed-in:focus,.dv-ed-in:focus-visible{border-color:var(--accent);box-shadow:none;outline:none}
   textarea.dv-ed-in{display:block;width:100%;min-width:12rem}
   .dv-ed-val{display:none}
   .dv-wait{font-family:var(--sans);font-size:.82rem;color:var(--warn);font-weight:700;white-space:nowrap}
@@ -1010,6 +1012,26 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   .dv-rowfin{margin:.2rem 0}
   .dv-rowfinrow{margin:.4rem 0 .8rem}
   .dv-rowfin[disabled]{opacity:.55;cursor:default}
+  .wbbar{max-width:var(--col-w,46rem);margin:0 auto 1rem}
+  .wbbar[hidden]{display:none}
+  .wbbar p{margin:0 0 .5rem}
+  .wbbar .actions{display:flex;gap:.5rem;flex-wrap:wrap}
+  #loadPick{margin:.5rem 0}
+  /* rows added and removed in the browser (0.20.2): "+ add" in quiet words, a trash icon that does not take up the row, the question before removing, and the form for a new row */
+  .dv-rowact{display:inline-flex;align-items:center;gap:.25rem;font:inherit;font-family:var(--sans);font-size:.85rem;color:var(--muted);background:none;border:0;border-radius:4px;padding:.15rem .35rem;margin:0;cursor:pointer;min-height:0;vertical-align:baseline}
+  .dv-rowact:hover{color:var(--ink);background:var(--accent-soft)}
+  .dv-rm svg{width:1rem;height:1rem;flex:none}
+  .dv-rm-wrap{display:inline-flex;flex-wrap:wrap;align-items:center;gap:.35rem;vertical-align:baseline}
+  .dv-rm-q{font-family:var(--sans);font-size:.85rem}
+  td.dv-act{white-space:nowrap;text-align:end;width:1%}
+  .dv-addrow{margin:.5rem 0}
+  .dv-addform{display:flex;flex-direction:column;gap:.5rem;max-width:34rem;margin:.5rem 0;padding:.6rem .75rem;border:var(--bw) solid var(--rule);border-radius:var(--r-md,8px)}
+  .dv-addfield{display:flex;flex-direction:column;gap:.15rem}
+  .dv-addfield label{font-family:var(--sans);font-size:.85rem;color:var(--muted)}
+  .dv-addmsg{margin:0;font-family:var(--sans);font-size:.85rem;color:var(--warn)}
+  .dv-addmsg:empty{display:none}
+  .dv-addgo{display:flex;gap:.5rem}
+  @media (pointer:coarse){.dv-rowact{min-width:44px;min-height:44px;justify-content:center}}
   .dv-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(22rem,100%),1fr));gap:0 var(--v-gap);align-items:start}
   .dv-cards>.entry{margin:0 0 1rem;min-width:0}
   /* a data block's row as a card: a small picture and the label as its title above its lines */
@@ -1085,7 +1107,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .dv-tile,.dv-row,.dv-group{break-inside:avoid}
     .dv-sort{font-weight:700}
     .dv-sort::after{display:none}
-    .dv-ed-in,.dv-rowfin,.dv-rowfinrow{display:none!important}
+    .dv-ed-in,.dv-rowfin,.dv-rowfinrow,.dv-rowact,.dv-rm-wrap,.dv-addrow,.dv-addform{display:none!important}
     .dv-ed-val{display:inline!important}
     .dv-ed-btn{border-bottom:0}
     .md-table{overflow:visible}
@@ -1423,6 +1445,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   <span class="ver" id="rendererVer" aria-hidden="true"></span>
 </div>
 
+<div class="notice wbbar" id="wbBar" role="region" hidden>
+  <p id="wbText"></p>
+  <div class="actions"><button type="button" id="wbNo"></button><button type="button" id="wbYes" class="primary"></button></div>
+</div>
+
 <div class="page" id="main"></div>
 
 <div class="veil" id="veilLoad" role="dialog" aria-modal="true" aria-labelledby="loadTitle">
@@ -1430,6 +1457,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     <h3 id="loadTitle"></h3>
     <p id="loadHelp"></p>
     <input type="file" id="fileIn" accept=".md,.txt,text/markdown,text/plain" aria-labelledby="loadHelp">
+    <button type="button" id="loadPick" hidden></button>
     <div class="dropzone" id="dropZone"></div>
     <p id="loadOr" style="margin:.75rem 0 .3rem"></p>
     <textarea id="pasteIn" aria-labelledby="loadOr"></textarea>
@@ -1498,7 +1526,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* This renderer's own version. Major.minor stays in step with the project's
    (SPEC.md, README.md); the patch digit is this file's own, for a fix that
    does not need a project-wide release. */
-const RENDERER_VERSION="0.20.1";
+const RENDERER_VERSION="0.20.2";
 /* The booklet format this renderer reads, as TEXT: the marker a file carries is `booklet: "0.20"`, and a
    booklet design carries this same text. `0.10` is not the number 0.1: a version is never turned into a number,
    it is read as two whole numbers (versionOf, in the small helpers). */
@@ -1605,6 +1633,17 @@ const STRINGS_SRC={
       loadOr: "Or paste the file's contents:",
       loadCancel: "Cancel",
       loadGo: "Load",
+      loadPick: "Open a file I can save back to",
+      wbAsk: n=>`This booklet came from the file “${n}”. Keep that file up to date as you work? Your browser will ask once to let this page write to it. Nothing is sent anywhere.`,
+      wbYes: "Yes, keep it up to date",
+      wbNo: "Not now",
+      wbSaved: n=>`Written to ${n}. It is kept up to date from now on.`,
+      wbDenied: "The browser did not allow writing to that file, so nothing was written. Your changes are still kept in this browser; download a copy to keep them on this device.",
+      wbChanged: n=>`${n} changed on disk after it was opened here, so it was not overwritten, and nothing more will be written to it. Your changes are still kept in this browser; download a copy to keep them on this device.`,
+      wbFail: "Writing to the file failed, and nothing more will be written to it. Your changes are still kept in this browser; download a copy to keep them on this device.",
+      wbFence: "This booklet ends inside a code fence that is never closed, so it cannot be written to the file. Your changes are still kept in this browser. Close the fence in Markdown first.",
+      dlFence: "This booklet ends inside a code fence that is never closed, so a copy cannot be made. Your changes are still kept in this browser. Close the fence in Markdown first.",
+      wbNotUtf8: n=>`${n} is not valid UTF-8, so it was read as best it could be and cannot be written back to. Your changes are kept in this browser; download a copy to keep them on this device.`,
       loadErr: "That text does not look like a file saved from this page. Nothing was changed.",
       addModTitle: "Add a module",
       addModHelp: "Add one from the list below. It is checked before anything changes.",
@@ -1639,7 +1678,6 @@ const STRINGS_SRC={
       clearLink: "Clear everything on this page",
       downloaded: "Downloaded. Keep the file somewhere you will find it.",
       downloadFail: "Could not download a copy.",
-      fenceOpen: "This booklet ends inside a code fence that is never closed, so an answer cannot be written after it. Close the fence in Markdown first.",
       leaving: "Your entries are kept in this browser, but you have not downloaded a copy to this device.",
       unsavedEntries: n=>`${n} entr${n===1?"y":"ies"} not yet downloaded`,
       unsavedChanges: "Changes not yet downloaded",
@@ -1747,8 +1785,7 @@ const STRINGS_SRC={
     },
     query: {
       empty: "Nothing kept here yet.",
-      summaryLater: "Summaries (summary: on) are not yet supported here, so this view is not drawn.",
-      addDeleteLater: "Adding and removing rows is not yet supported by this reader."
+      summaryLater: "Summaries (summary: on) are not yet supported here, so this view is not drawn."
     },
     dv: {
       empty: "Nothing to show here.",
@@ -1778,7 +1815,71 @@ const STRINGS_SRC={
         nan: "That is not a number, so nothing is kept. Correct the number to keep it.",
         nanLeft: "Nothing was kept: a number box held text that is not a number.",
         changeKept: "Change kept.",
-        history: "Kept for this row"
+        history: "Kept for this row",
+        rowAdd: "+ add",
+        rowAddName: "Add a row",
+        rowAddUnder: n=>n?`Add under this row (${n})`:"Add under this row",
+        rowAddUnderBtn: "+ add under",
+        rowGo: "Add",
+        rowCancel: "Cancel",
+        rowId: "Id",
+        rowRemoveName: n=>`Remove ${n}`,
+        rowRemoveQ: n=>n?`Remove this row and the ${n} ${n===1?"row":"rows"} under it?`:"Remove this row?",
+        rowRemoveYes: "Remove",
+        rowRemoving: " · removing, waiting",
+        rowRefusedMark: " · You asked to remove this; it changed since.",
+        rowActs: "Actions",
+        rowNum: f=>`${f}: that is not a number, so nothing is kept. Correct the number to keep it.`,
+        rowsFile: "This list reads its rows from a JSON file, and this page cannot add or remove rows in a file. Rows can be added and removed where the data is written in the booklet itself.",
+        rowsHere: "This reader cannot change the rows of this data here.",
+        id: {
+          formatBad: "The id format is not valid, so rows cannot be added here.",
+          patternBad: "The id pattern is not valid, so rows cannot be added here.",
+          noSlug: l=>`Give it a ${l} first.`,
+          clash: "A row with that id exists. Add a part to the id format that tells rows apart (a number, a time or a UUID).",
+          empty: "That id format makes an empty id here.",
+          noUsable: l=>`'${l}' has no letters or digits an id can use. Type an id, or use another part.`,
+          noBox: l=>`The id format uses ${l}, which this table does not ask for.`,
+          typedEmpty: "Give it an id first.",
+          typedClash: "A row with that id exists. Choose another id.",
+          typedPattern: p=>`That id does not fit the pattern ${p}.`,
+          typedBreak: "An id is one line."
+        },
+        whole: {
+          "not utf8": "The data block is not valid UTF-8, so it was not changed.",
+          "too big": "That would make the booklet too big to read (the limit is 5 MB), so the data was not changed.",
+          "no write": "This data cannot be changed from here."
+        },
+        addWhy: {
+          "no row": "That row is gone.",
+          ambiguous: "More than one row has that id.",
+          "no place": "Cannot tell where the new row goes under this one.",
+          unreadable: "The data cannot be read as data now.",
+          clash: "A row with that id exists. Add it again with another id."
+        },
+        deleteWhy: {
+          changed: "Changed since it was shown.",
+          ambiguous: "More than one row has that id.",
+          "no place": "That row stands in no list of rows, so it cannot be taken out.",
+          unreadable: "The data cannot be read as data now.",
+          "no row": "That row is gone.",
+          "too deep": "That row is nested too deeply to change."
+        },
+        editWhy: {
+          changed: "the data holds a different value now",
+          "no row": "the row is no longer there",
+          ambiguous: "more than one row has that id, so the data is left alone",
+          identity: "that field is the row's id, which is never written",
+          "no field": "the row no longer has that field",
+          unreadable: "the data cannot be read as data now",
+          other: "the data changed"
+        },
+        addKept: w=>`The row was kept but not added to the data. ${w}`,
+        deleteKept: w=>`The removal was kept, but no row was taken out of the data. ${w}`,
+        editKept: b=>`Change kept, but not written to the data, because ${b}.`,
+        editSame: "Change kept. The data already holds that value, so nothing was written.",
+        editWhole: w=>`Change kept. ${w}`,
+        dataOther: "The data changed."
       },
       data: {
         loading: f=>`Loading ${f}…`,
@@ -1989,6 +2090,17 @@ const STRINGS_SRC={
       loadOr: "Ou collez le contenu du fichier :",
       loadCancel: "Annuler",
       loadGo: "Charger",
+      loadPick: "Ouvrir un fichier à tenir à jour",
+      wbAsk: n=>`Ce carnet vient du fichier « ${n} ». Tenir ce fichier à jour pendant que vous travaillez ? Le navigateur demandera une fois l’autorisation d’y écrire. Rien n’est envoyé nulle part.`,
+      wbYes: "Oui, le tenir à jour",
+      wbNo: "Pas maintenant",
+      wbSaved: n=>`Enregistré dans ${n}, qui sera désormais tenu à jour.`,
+      wbDenied: "Le navigateur n’a pas permis d’écrire dans ce fichier, donc rien n’a été écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.",
+      wbChanged: n=>`${n} a changé sur le disque après son ouverture ici, donc il n’a pas été écrasé, et plus rien n’y sera écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.`,
+      wbFail: "L’écriture dans le fichier a échoué, et plus rien n’y sera écrit. Vos changements restent gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.",
+      wbFence: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; on ne peut donc pas enregistrer le carnet dans le fichier. Vos changements restent gardés dans ce navigateur. Fermez d’abord le bloc dans le texte Markdown.",
+      dlFence: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; on ne peut donc pas en faire une copie. Vos changements restent gardés dans ce navigateur. Fermez d’abord le bloc dans le texte Markdown.",
+      wbNotUtf8: n=>`${n} n’est pas en UTF-8 valide : il a été lu de façon approximative et on ne peut pas y enregistrer vos changements. Vos changements sont gardés dans ce navigateur ; téléchargez une copie pour les garder sur cet appareil.`,
       loadErr: "Ce texte ne ressemble pas à un fichier sauvegardé depuis cette page. Rien n’a été modifié.",
       addModTitle: "Ajouter un module",
       addModHelp: "Ajoutez-en un dans la liste ci-dessous. Il est vérifié avant tout changement.",
@@ -2023,7 +2135,6 @@ const STRINGS_SRC={
       clearLink: "Effacer tout ce qui se trouve sur cette page",
       downloaded: "Téléchargé. Conservez le fichier à un endroit où vous le retrouverez.",
       downloadFail: "Impossible de télécharger une copie.",
-      fenceOpen: "Ce carnet se termine dans un bloc de code qui n’est jamais fermé ; aucune réponse ne peut donc être écrite après ce bloc. Fermez d’abord le bloc en Markdown.",
       leaving: "Vos entrées sont conservées dans ce navigateur, mais vous n’avez pas téléchargé de copie sur cet appareil.",
       unsavedEntries: n=>`${n} entrée${n===1?"":"s"} pas encore téléchargée${n===1?"":"s"}`,
       unsavedChanges: "Modifications pas encore téléchargées",
@@ -2131,8 +2242,7 @@ const STRINGS_SRC={
     },
     query: {
       empty: "Rien n’est encore enregistré ici.",
-      summaryLater: "Les résumés (summary: on) ne sont pas encore pris en charge ici ; cette vue n’est donc pas affichée.",
-      addDeleteLater: "Ce lecteur ne permet pas encore d’ajouter ni de supprimer des lignes."
+      summaryLater: "Les résumés (summary: on) ne sont pas encore pris en charge ici ; cette vue n’est donc pas affichée."
     },
     dv: {
       empty: "Rien à afficher ici.",
@@ -2162,7 +2272,71 @@ const STRINGS_SRC={
         nan: "Ce n’est pas un nombre, donc rien n’est gardé. Corrigez le nombre pour le garder.",
         nanLeft: "Rien n’a été gardé : une case de nombre contenait du texte qui n’est pas un nombre.",
         changeKept: "Changement gardé.",
-        history: "Gardé pour cette ligne"
+        history: "Gardé pour cette ligne",
+        rowAdd: "+ ajouter",
+        rowAddName: "Ajouter une ligne",
+        rowAddUnder: n=>n?`Ajouter sous cette ligne (${n})`:"Ajouter sous cette ligne",
+        rowAddUnderBtn: "+ ajouter dessous",
+        rowGo: "Ajouter",
+        rowCancel: "Annuler",
+        rowId: "Identifiant",
+        rowRemoveName: n=>`Supprimer ${n}`,
+        rowRemoveQ: n=>n?`Supprimer cette ligne et ${n===1?"la ligne":"les "+n+" lignes"} qui ${n===1?"se trouve":"se trouvent"} dessous ?`:"Supprimer cette ligne ?",
+        rowRemoveYes: "Supprimer",
+        rowRemoving: " · suppression, en attente",
+        rowRefusedMark: " · Vous avez demandé de supprimer cette ligne ; elle a changé depuis.",
+        rowActs: "Actions",
+        rowNum: f=>`${f} : ce n’est pas un nombre, donc rien n’est gardé. Corrigez le nombre pour le garder.`,
+        rowsFile: "Cette liste lit ses lignes dans un fichier JSON, et cette page ne peut pas ajouter ni supprimer de lignes dans un fichier. On peut ajouter et supprimer des lignes là où les données sont écrites dans le carnet lui-même.",
+        rowsHere: "Ce lecteur ne peut pas modifier ici les lignes de ces données.",
+        id: {
+          formatBad: "Le format d’identifiant n’est pas valide, donc on ne peut pas ajouter de lignes ici.",
+          patternBad: "Le motif d’identifiant n’est pas valide, donc on ne peut pas ajouter de lignes ici.",
+          noSlug: l=>`Remplissez d’abord le champ « ${l} ».`,
+          clash: "Une ligne avec cet identifiant existe déjà. Ajoutez au format une partie qui distingue les lignes (un nombre, une heure ou un UUID).",
+          empty: "Ce format d’identifiant ne produit aucun identifiant ici.",
+          noUsable: l=>`« ${l} » ne contient ni lettre ni chiffre qu’un identifiant puisse utiliser. Saisissez un identifiant, ou utilisez une autre partie.`,
+          noBox: l=>`Le format d’identifiant utilise ${l}, que ce tableau ne demande pas.`,
+          typedEmpty: "Saisissez d’abord un identifiant.",
+          typedClash: "Une ligne avec cet identifiant existe déjà. Choisissez-en un autre.",
+          typedPattern: p=>`Cet identifiant ne correspond pas au motif ${p}.`,
+          typedBreak: "Un identifiant ne peut pas contenir de saut de ligne."
+        },
+        whole: {
+          "not utf8": "Le bloc de données n’est pas en UTF-8 valide, donc il n’a pas été modifié.",
+          "too big": "Le carnet deviendrait trop gros pour être lu (la limite est de 5 Mo), donc les données n’ont pas été modifiées.",
+          "no write": "Ces données ne peuvent pas être modifiées d’ici."
+        },
+        addWhy: {
+          "no row": "Cette ligne n’existe plus.",
+          ambiguous: "Plus d’une ligne porte cet identifiant.",
+          "no place": "On ne sait pas où placer la nouvelle ligne sous celle-ci.",
+          unreadable: "Les données ne sont plus lisibles.",
+          clash: "Une ligne avec cet identifiant existe déjà. Ajoutez-la de nouveau avec un autre identifiant."
+        },
+        deleteWhy: {
+          changed: "La ligne a changé depuis qu’elle a été affichée.",
+          ambiguous: "Plus d’une ligne porte cet identifiant.",
+          "no place": "Cette ligne ne figure dans aucune liste de lignes, donc on ne peut pas la supprimer.",
+          unreadable: "Les données ne sont plus lisibles.",
+          "no row": "Cette ligne n’existe plus.",
+          "too deep": "Cette ligne est imbriquée trop profondément pour être modifiée."
+        },
+        editWhy: {
+          changed: "les données contiennent maintenant une autre valeur",
+          "no row": "la ligne n’existe plus",
+          ambiguous: "plus d’une ligne porte cet identifiant, donc les données sont laissées telles quelles",
+          identity: "ce champ est l’identifiant de la ligne, qui n’est jamais modifié",
+          "no field": "la ligne n’a plus ce champ",
+          unreadable: "les données ne sont plus lisibles",
+          other: "les données ont changé"
+        },
+        addKept: w=>`La ligne a été gardée, mais pas ajoutée aux données. ${w}`,
+        deleteKept: w=>`La demande de suppression a été gardée, mais aucune ligne n’a été supprimée des données. ${w}`,
+        editKept: b=>`Changement gardé, mais pas écrit dans les données, parce que ${b}.`,
+        editSame: "Changement gardé. Les données contiennent déjà cette valeur, donc rien n’a été écrit.",
+        editWhole: w=>`Changement gardé. ${w}`,
+        dataOther: "Les données ont changé."
       },
       data: {
         loading: f=>`Chargement de ${f}…`,
@@ -2370,6 +2544,17 @@ const STRINGS_SRC={
       loadOr: "O pega el contenido del archivo:",
       loadCancel: "Cancelar",
       loadGo: "Cargar",
+      loadPick: "Abrir un archivo para guardar en él",
+      wbAsk: n=>`Este cuadernillo viene del archivo “${n}”. ¿Mantener ese archivo al día mientras trabajas? El navegador pedirá una vez permiso para que esta página escriba en él. No se envía nada a ninguna parte.`,
+      wbYes: "Sí, mantenerlo al día",
+      wbNo: "Ahora no",
+      wbSaved: n=>`Escrito en ${n}. A partir de ahora se mantiene al día.`,
+      wbDenied: "El navegador no permitió escribir en ese archivo, así que no se escribió nada. Tus cambios siguen guardados en este navegador; descarga una copia para conservarlos en este dispositivo.",
+      wbChanged: n=>`${n} cambió en el disco después de abrirse aquí, así que no se sobrescribió, y ya no se escribirá más en él. Tus cambios siguen guardados en este navegador; descarga una copia para conservarlos en este dispositivo.`,
+      wbFail: "No se pudo escribir en el archivo, y ya no se escribirá más en él. Tus cambios siguen guardados en este navegador; descarga una copia para conservarlos en este dispositivo.",
+      wbFence: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede escribir en el archivo. Tus cambios siguen guardados en este navegador. Primero hay que cerrar el bloque en Markdown.",
+      dlFence: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede hacer una copia. Tus cambios siguen guardados en este navegador. Primero hay que cerrar el bloque en Markdown.",
+      wbNotUtf8: n=>`${n} no es UTF-8 válido, así que se leyó lo mejor posible y no se puede volver a escribir en él. Tus cambios están guardados en este navegador; descarga una copia para conservarlos en este dispositivo.`,
       loadErr: "Ese texto no parece un archivo guardado desde esta página. No se cambió nada.",
       addModTitle: "Agregar un módulo",
       addModHelp: "Agrega uno de la lista de abajo. Se revisa antes de que cambie nada.",
@@ -2404,7 +2589,6 @@ const STRINGS_SRC={
       clearLink: "Borrar todo lo que hay en esta página",
       downloaded: "Descargado. Guarda el archivo en un lugar donde puedas encontrarlo.",
       downloadFail: "No se pudo descargar una copia.",
-      fenceOpen: "Este cuadernillo termina dentro de un bloque de código que nunca se cierra, así que no se puede escribir una respuesta después de él. Primero hay que cerrar el bloque en Markdown.",
       leaving: "Tus entradas se guardan en este navegador, pero no has descargado una copia en este dispositivo.",
       unsavedEntries: n=>`${n} entrada${n===1?"":"s"} sin descargar todavía`,
       unsavedChanges: "Cambios sin descargar todavía",
@@ -2512,8 +2696,7 @@ const STRINGS_SRC={
     },
     query: {
       empty: "Todavía no hay nada guardado aquí.",
-      summaryLater: "Los resúmenes (summary: on) aún no se admiten aquí, así que esta vista no se muestra.",
-      addDeleteLater: "Este lector aún no permite añadir ni quitar filas."
+      summaryLater: "Los resúmenes (summary: on) aún no se admiten aquí, así que esta vista no se muestra."
     },
     dv: {
       empty: "Nada que mostrar aquí.",
@@ -2543,7 +2726,71 @@ const STRINGS_SRC={
         nan: "Eso no es un número, así que no se guarda nada. Corrige el número para guardarlo.",
         nanLeft: "No se guardó nada: una casilla de número tenía texto que no es un número.",
         changeKept: "Cambio guardado.",
-        history: "Guardado para esta fila"
+        history: "Guardado para esta fila",
+        rowAdd: "+ agregar",
+        rowAddName: "Agregar una fila",
+        rowAddUnder: n=>n?`Agregar debajo de esta fila (${n})`:"Agregar debajo de esta fila",
+        rowAddUnderBtn: "+ agregar debajo",
+        rowGo: "Agregar",
+        rowCancel: "Cancelar",
+        rowId: "Identificador",
+        rowRemoveName: n=>`Quitar ${n}`,
+        rowRemoveQ: n=>n?`¿Quitar esta fila y ${n===1?"la fila":"las "+n+" filas"} que ${n===1?"está":"están"} debajo?`:"¿Quitar esta fila?",
+        rowRemoveYes: "Quitar",
+        rowRemoving: " · por quitar, en espera",
+        rowRefusedMark: " · Pediste quitar esta fila; cambió desde entonces.",
+        rowActs: "Acciones",
+        rowNum: f=>`${f}: eso no es un número, así que no se guarda nada. Corrige el número para guardarlo.`,
+        rowsFile: "Esta lista lee sus filas de un archivo JSON, y esta página no puede agregar ni quitar filas en un archivo. Se pueden agregar y quitar filas donde los datos están escritos en el propio cuadernillo.",
+        rowsHere: "Este lector no puede cambiar aquí las filas de estos datos.",
+        id: {
+          formatBad: "El formato de identificador no es válido, así que aquí no se pueden agregar filas.",
+          patternBad: "El patrón de identificador no es válido, así que aquí no se pueden agregar filas.",
+          noSlug: l=>`Primero completa el campo “${l}”.`,
+          clash: "Ya existe una fila con ese identificador. Agrega al formato una parte que distinga las filas (un número, una hora o un UUID).",
+          empty: "Ese formato de identificador no genera ningún identificador aquí.",
+          noUsable: l=>`“${l}” no tiene letras ni dígitos que un identificador pueda usar. Escribe un identificador o usa otra parte.`,
+          noBox: l=>`El formato de identificador usa ${l}, que esta tabla no pide.`,
+          typedEmpty: "Primero escribe un identificador.",
+          typedClash: "Ya existe una fila con ese identificador. Elige otro.",
+          typedPattern: p=>`Ese identificador no cumple el patrón ${p}.`,
+          typedBreak: "Un identificador debe ir en una sola línea."
+        },
+        whole: {
+          "not utf8": "El bloque de datos no es UTF-8 válido, así que no se cambió.",
+          "too big": "Eso haría el cuadernillo demasiado grande para leerlo (el límite es de 5 MB), así que los datos no se cambiaron.",
+          "no write": "Estos datos no se pueden cambiar desde aquí."
+        },
+        addWhy: {
+          "no row": "Esa fila ya no está.",
+          ambiguous: "Más de una fila tiene ese identificador.",
+          "no place": "No se sabe dónde va la fila nueva debajo de esta.",
+          unreadable: "Ahora no se pueden leer los datos.",
+          clash: "Ya existe una fila con ese identificador. Agrégala otra vez con otro identificador."
+        },
+        deleteWhy: {
+          changed: "La fila cambió desde que se mostró.",
+          ambiguous: "Más de una fila tiene ese identificador.",
+          "no place": "Esa fila no está en ninguna lista de filas, así que no se puede quitar.",
+          unreadable: "Ahora no se pueden leer los datos.",
+          "no row": "Esa fila ya no está.",
+          "too deep": "Esa fila está dentro de demasiados niveles para cambiarla."
+        },
+        editWhy: {
+          changed: "los datos tienen ahora otro valor",
+          "no row": "la fila ya no está",
+          ambiguous: "más de una fila tiene ese identificador, así que los datos se dejan como están",
+          identity: "ese campo es el identificador de la fila, que nunca se escribe",
+          "no field": "la fila ya no tiene ese campo",
+          unreadable: "ahora no se pueden leer los datos",
+          other: "los datos cambiaron"
+        },
+        addKept: w=>`La fila se guardó, pero no se agregó a los datos. ${w}`,
+        deleteKept: w=>`Se guardó la solicitud de quitar la fila, pero no se quitó ninguna fila de los datos. ${w}`,
+        editKept: b=>`Cambio guardado, pero no escrito en los datos, porque ${b}.`,
+        editSame: "Cambio guardado. Los datos ya tienen ese valor, así que no se escribió nada.",
+        editWhole: w=>`Cambio guardado. ${w}`,
+        dataOther: "Los datos cambiaron."
       },
       data: {
         loading: f=>`Cargando ${f}…`,
@@ -2757,6 +3004,11 @@ const STRINGS_SRC={
       storageFull: small=>small?"Este navegador se quedó sin espacio para esta página: los cuadernillos de acá se guardan en su espacio chico (unos 5 MB), porque no quiso abrir el más grande. Tus últimos cambios duran hasta que cierres la pestaña, así que descargá una copia.":"Este navegador se quedó sin espacio para esta página, así que tus últimos cambios duran solo hasta que cierres la pestaña. Descargá una copia, o quitá de «Tus cuadernillos» los que ya no necesites.",
       storageFailed: "Este navegador no pudo guardar tus últimos cambios (su almacenamiento informó un error). Duran hasta que cierres la pestaña, así que descargá una copia.",
       leaving: "Tus entradas se guardan en este navegador, pero todavía no descargaste una copia en este dispositivo.",
+      wbAsk: n=>`Este cuadernillo viene del archivo “${n}”. ¿Mantener ese archivo al día mientras trabajás? El navegador pedirá una vez permiso para que esta página escriba en él. No se envía nada a ninguna parte.`,
+      wbDenied: "El navegador no permitió escribir en ese archivo, así que no se escribió nada. Tus cambios siguen guardados en este navegador; descargá una copia para conservarlos en este dispositivo.",
+      wbChanged: n=>`${n} cambió en el disco después de abrirse aquí, así que no se sobrescribió, y ya no se escribirá más en él. Tus cambios siguen guardados en este navegador; descargá una copia para conservarlos en este dispositivo.`,
+      wbFail: "No se pudo escribir en el archivo, y ya no se escribirá más en él. Tus cambios siguen guardados en este navegador; descargá una copia para conservarlos en este dispositivo.",
+      wbNotUtf8: n=>`${n} no es UTF-8 válido, así que se leyó lo mejor posible y no se puede volver a escribir en él. Tus cambios están guardados en este navegador; descargá una copia para conservarlos en este dispositivo.`,
       addModHelp: "Agregá uno de la lista de abajo. Se revisa antes de que cambie nada."
     },
     problem: {
@@ -2776,6 +3028,19 @@ const STRINGS_SRC={
     },
     dv: {
       empty: "No hay nada para mostrar acá.",
+      act: {
+        rowNum: f=>`${f}: eso no es un número, así que no se guarda nada. Corregí el número para guardarlo.`,
+        id: {
+          noSlug: l=>`Primero completá el campo “${l}”.`,
+          clash: "Ya existe una fila con ese identificador. Agregá al formato una parte que distinga las filas (un número, una hora o un UUID).",
+          noUsable: l=>`“${l}” no tiene letras ni dígitos que un identificador pueda usar. Escribí un identificador o usá otra parte.`,
+          typedEmpty: "Primero escribí un identificador.",
+          typedClash: "Ya existe una fila con ese identificador. Elegí otro."
+        },
+        addWhy: {
+          clash: "Ya existe una fila con ese identificador. Agregala otra vez con otro identificador."
+        }
+      },
       ctl: {
         open: "Ordenar y filtrar", search: "Buscar", show: "Mostrar", all: "Todo", sortBy: "Ordenar por",
         original: "Orden original", asc: "Ascendente", desc: "Descendente", clear: "Borrar",
@@ -3387,6 +3652,8 @@ let OLD_DESIGN=false;
 /* the design in memory was changed here (renamed, a module added or removed) since it was last read from a file: kept
    with its snapshot (`customized`), since a store cannot hold such a change (storeHolds) */
 let CUSTOMIZED=false;
+/* the file this booklet was opened from, where the browser lets a page write to one (see WRITING BACK): null when it was not opened from one */
+let WB=null;
 /* where a booklet opened by a link came from (see OPENING BY LINK in the shell): its own quiet line, never counted among
    the things the page could not read; in memory for the session, never saved */
 let PROVENANCE=null;
@@ -3827,11 +4094,12 @@ function storedText(o){if(typeof o.text==="string") return o.text;
 /* a change to the reader's work (the screen on show redraws its answers' marks in place: its draw's ticks), and the save
    status kept in step with it (not only with a redraw) */
 function markDirty(){dirty=true;SAVE_QUIET=false;drawSaveState();DRAWN.ticks.forEach(f=>{try{f();}catch(e){}});clearTimeout(saveTimer);const gen=bookletGen;
-  saveTimer=setTimeout(()=>{saveTimer=null;if(gen===bookletGen) saveLocal();},400);}
+  saveTimer=setTimeout(()=>{saveTimer=null;if(gen===bookletGen) saveLocal();},400);
+  wbChanged();}
 function flushSave(){if(!saveTimer) return;clearTimeout(saveTimer);saveTimer=null;saveLocal();}
 function resetBookletState(){
   STATE=emptyState();DRAFTS=emptyDrafts();BOOK=EMPTY_BOOKLET;BASE=null;
-  screen=HOME_SCREEN;dirty=false;unsavedEntries=0;
+  screen=HOME_SCREEN;dirty=false;unsavedEntries=0;WB=null;wbHide();
   viewReset(null);FILE_NOTES=null;OLD_DESIGN=false;CUSTOMIZED=false;PROVENANCE=null;LINK_NEWER=null;
   imagesRelease();
   clearTimeout(saveTimer);saveTimer=null;
@@ -3915,11 +4183,11 @@ const NO_ID_KINDS=new Set(["row","notice","manifest","hint","solution","group","
 /* A file is read when its front matter says `booklet: "0.20"` (quoted or not, as text); another 0.x marker opens with a notice. */
 /* A file's front matter: the lines between an opening `---` on line 1 and the
    next `---`, and the index the body starts at. `head` is null when the file
-   does not open with `---`. With `loneCR`, a bare carriage return ends a line
-   too (the parser reads that way; the marker checks below do not). */
-function frontMatter(text,loneCR){
+   does not open with `---`. A line ends at a line feed, with or without the carriage return before it; a carriage return alone does not end a line
+   (as in the Obsidian plugin; test/apply-vectors.json holds both to it, 0.20.2) */
+function frontMatter(text){
   const t=String(text||"").replace(/^\uFEFF/,"");
-  const lines=loneCR?t.replace(/\r\n?/g,"\n").split("\n"):t.split(/\r?\n/);
+  const lines=t.split(/\r?\n/);
   if((lines[0]||"").trim()!=="---") return {lines,head:null,next:0};
   let j=1;while(j<lines.length&&lines[j].trim()!=="---") j++;
   return {lines,head:lines.slice(1,j),next:j+1};}
@@ -4087,7 +4355,9 @@ function readData(o){const P=PROBLEM;
       v.forEach(x=>todo.push(x));}}
   let fields,edits;
   if(!Array.isArray(o)&&o.fields!==undefined){const f=readFields(o.fields);if(f.bad) return f;fields=f.fields;edits=f.edits;}
-  return {rows,fields,edits};}
+  /* `idFormat` and `idPattern` (0.20), beside `fields`: how the id of a row the reader adds is made, kept as written and checked by whoever uses them */
+  const ids={};if(!Array.isArray(o)){if(o.idFormat!==undefined) ids.idFormat=o.idFormat;if(o.idPattern!==undefined) ids.idPattern=o.idPattern;}
+  return {rows,fields,edits,...ids};}
 /* Reading a booklet file takes five parts, each handing the next what it needs:
    splitItems cuts the lines into fences, Booklet lines, page breaks and prose;
    readBlocks walks those building modules, activities, pages and blocks, and
@@ -4095,7 +4365,7 @@ function readData(o){const P=PROBLEM;
    settle those two; shapeBooklet writes the result. Every problem goes into one
    list, in the order the parts find them. The parse is pure (no page, no interface language), so a second reader or
    a build step can call it; `icons` is the names an `icon:` may give (the page's ICON_NAMES). */
-function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),icons=(opts&&opts.icons)||new Set();
+function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text),icons=(opts&&opts.icons)||new Set();
   /* `problems` is every problem, in the order found; those that stop the file opening (SPEC.md section 12) say so
      (`refuses`), and the rest are reported when it has opened */
   const fm={},problems=[];problems.dupIds=[];
@@ -4121,7 +4391,7 @@ function parseBooklet(text,opts){const {lines,head,next}=frontMatter(text,true),
    with; the file's first line ending, `eol`; and `bom`. Lines are counted as frontMatter splits them. These are bytes of
    one file, not design: the design's JSON leaves them out (toJSON), so a design is still the parse of its text. */
 function wroteOf(text,regs,first,moved,source){const t=String(text||""),bom=/^\uFEFF/.test(t)?"\uFEFF":"",u=bom?t.slice(1):t;
-  const starts=[0],re=/\r\n?|\n/g;let m;while((m=re.exec(u))) starts.push(re.lastIndex);
+  const starts=[0],re=/\n/g;let m;while((m=re.exec(u))) starts.push(re.lastIndex);
   const off=n=>n<starts.length?starts[n]:u.length;
   /* Design after the records (format 0.17, SPEC.md section 8) stays where it is. It does when it all follows the last region: the body
      before the first region is `head` as read, the regions are `region`, and what comes after the last one is `post`, three runs of
@@ -4131,10 +4401,52 @@ function wroteOf(text,regs,first,moved,source){const t=String(text||""),bom=/^\u
   const lastEnd=regs.length?regs[regs.length-1][1]:-1,between=moved&&regs.slice(1).some(([x],i)=>{
     for(let k=regs[i][1]+1;k<x;k++) if(u.slice(off(k),off(k+1)).trim()) return true;return false;});
   const inPlace=moved&&!between;
-  return {head:moved&&!inPlace?null:bom+u.slice(0,off(first)),src:source,eol:(u.match(/\r\n?|\n/)||["\n"])[0],bom,
+  return {head:moved&&!inPlace?null:bom+u.slice(0,off(first)),src:source,eol:(u.match(/\r?\n/)||["\n"])[0],bom,
     region:inPlace?u.slice(off(first),off(lastEnd+1)):moved?regs.map(([x,y])=>u.slice(off(x),off(y+1))).join(""):u.slice(off(first)),
     ...(inPlace?{post:u.slice(off(lastEnd+1))}:{}),toJSON:()=>undefined};}
-function splitItems(lines,start,inner){let i=start;
+/* Which lines START inside a comment (`<!-- … -->` or `%% … %%`), a `<pre>` block or a `$$` math block: the Obsidian plugin's `visibleLines`, as far as it says where a
+   fence may start (`hidden[i]`; SPEC.md section 13, "A data block inside a comment"). A fence line that starts there is part of the comment, so a `booklet data` fence in a
+   comment is no data block: the plugin sees none, and refuses to write into it. `skip[j]`: a line of a records region, which is not scanned. A mark opens a region only when
+   its closer is found later, before a skipped line; a mark inside an inline code span opens nothing; a mark that starts its line (up to three spaces in) is a block and its search
+   runs over fence lines, any other mark's search stops at a fence line. A fenced code block is code and hides nothing. */
+function hiddenLines(lines,from,skip){const n=lines.length,hidden=lines.map(()=>false),dead={comment:[0,0],percent:[0,0],pre:[0,0],math:[0,0]};
+  const OPEN=/`+|<!--|%%|<pre[\s>]|\$\$/gi,TICKS=/`+/g,PRE_END=/<\/pre>/gi;
+  const closeOf=(kind,i,col,block)=>{const d=dead[kind];if(i<(block?d[0]:Math.max(d[0],d[1]))) return null;
+    let j=i;
+    for(;j<n;j++){if(skip&&skip[j]) break;const l=lines[j]||"";if(!block&&j>i&&FENCE_RE.test(l)) break;
+      const at=j===i?col:0;let end=-1;
+      if(kind==="comment"){const x=l.indexOf("-->",at);if(x>=0) end=x+3;}
+      else if(kind==="math"||kind==="percent"){const x=l.indexOf(kind==="math"?"$$":"%%",at);if(x>=0) end=x+2;}
+      else{PRE_END.lastIndex=at;const m=PRE_END.exec(l);if(m) end=m.index+m[0].length;}
+      if(end>=0) return {line:j,end};}
+    if(j<n&&!(skip&&skip[j])) d[1]=j;else d[0]=j;
+    return null;};
+  for(let i=from;i<n;){
+    if(skip&&skip[i]){i++;continue;}
+    const f=FENCE_RE.exec(lines[i]||"");
+    if(f&&f[1]){i=Math.min(fenceEnd(lines,i,f[1]),n-1)+1;continue;}
+    let cur=i,p=0;
+    for(;;){const l=lines[cur]||"";OPEN.lastIndex=p;const m=OPEN.exec(l);if(!m) break;
+      const mark=m[0],after=m.index+mark.length;p=after;
+      if(mark[0]==="`"){TICKS.lastIndex=after;let c,end=after;
+        while((c=TICKS.exec(l))){if(c[0].length===mark.length){end=c.index+c[0].length;break;}}
+        p=end;continue;}
+      const kind=mark==="<!--"?"comment":mark==="%%"?"percent":mark==="$$"?"math":"pre";
+      const close=closeOf(kind,cur,after,/^ {0,3}$/.test(l.slice(0,m.index)));
+      if(!close) continue;
+      if(close.line===cur){if(kind!=="pre") p=close.end;continue;}
+      for(let j=cur+1;j<=close.line;j++) hidden[j]=true;
+      cur=close.line;p=close.end;}
+    i=cur+1;}
+  return hidden;}
+/* The items of the lines from `start` on. A booklet's lines are read twice only when some line starts inside a comment: the first read finds the records regions, which the
+   scan for comments leaves alone, and the second leaves a fence that starts inside a comment as the words of the comment. */
+function splitItems(lines,start,inner){
+  const r=splitItems1(lines,start,inner,null);if(inner) return r;
+  const skip=new Array(lines.length).fill(false);r.regs.forEach(([x,y])=>{for(let k=x;k<=y&&k<lines.length;k++) skip[k]=true;});
+  const hidden=hiddenLines(lines,start,skip);
+  return hidden.some(Boolean)?splitItems1(lines,start,inner,hidden):r;}
+function splitItems1(lines,start,inner,hidden){let i=start;
   /* One pass over the lines, fences first: nothing inside a fence is ever a
      Booklet line, a page break or a comment marker. A choice/multi/scale
      question also claims the option or anchor list straight under it, so
@@ -4145,10 +4457,10 @@ function splitItems(lines,start,inner){let i=start;
   const flush=()=>{const n=buf.findIndex(l=>l.trim());if(n>=0) items.push({t:"text",text:buf.join("\n").replace(/^\n+|\n+$/g,""),line:bufAt+n+1,rec:rec()});buf=[];};
   const rest=k=>{while(k<lines.length&&/^>/.test(lines[k])&&!calloutLine(lines[k])) k++;return k;};
   for(;i<lines.length;i++){const ln=lines[i];
-    const f=FENCE_RE.exec(ln);
+    const f=hidden&&hidden[i]?null:FENCE_RE.exec(ln);
     if(f){const F=fenceAt(lines,i,f),k=F.end,last=F.id?F.idAt:k,info=F.info;
       if(/^booklet\b/i.test(info)||F.id){flush();
-        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,last+1).join("\n")+(k<lines.length?"":"\n"+F.mark),id:F.id,line:i+1,rec:rec()});i=last;}
+        items.push({t:"fence",info,code:lines.slice(i+1,k).join("\n"),raw:lines.slice(i,last+1).join("\n")+(k<lines.length?"":"\n"+F.mark),id:F.id,line:i+1,end:Math.min(k,lines.length),rec:rec()});i=last;}
       else{if(!buf.length) bufAt=i;buf.push(...lines.slice(i,Math.min(k+1,lines.length)));i=k;}
       continue;}
     if(!inner&&ln.trim()==="%%"){
@@ -4378,7 +4690,8 @@ function readBlocks(items,fm,problems,icons){const P=PROBLEM;
         const d=readData(o);
         if(d.bad){problems.push(P.dataBad(P.line(it.line),it.id,d.bad));return;}
         /* it lives where a widget's data lives: inside its module's fence or in its data section, or in the shared data section */
-        dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,edits:d.edits,line:it.line});})(it,what);}};
+        /* `inner`: the lines between its fences, counted from 0 (`to` the line after the last); a reader that changes the block writes only inside them (rowFence) */
+        dataBlocks.push({id:it.id,mod:here,rows:d.rows,fields:d.fields,edits:d.edits,idFormat:d.idFormat,idPattern:d.idPattern,line:it.line,inner:{from:it.line,to:it.end}});})(it,what);}};
   const onFigure=(it,info)=>{if(!it.id) return;
     claimIn(blockIds,blockScope(),it.id,P.line(it.line));
     const key=addrOf(blockScope()===SHARED?"":blockScope(),it.id);
@@ -4684,7 +4997,9 @@ function linkQueries({modules,queries,dataBlocks},problems){const P=PROBLEM;
      if(as!==undefined&&!QUERY_VIEWS.has(as)){drop(P.queryViewBad(as,[...QUERY_VIEWS]));continue;}
      if(!src){const d=q.from&&(dataBlocks.find(z=>z.id===q.from&&z.mod===here)||dataBlocks.find(z=>z.id===q.from&&z.mod===null));
        if(d){
-         block.data={rows:d.rows,fields:d.fields,...(d.edits?{edits:d.edits}:{}),...(d.file?{file:{...d.file,scope:d.mod?scopeOf(d.mod):""}}:{})};entriesOnly(x);continue;}
+         block.data={rows:d.rows,fields:d.fields,...(d.edits?{edits:d.edits}:{}),...(d.file?{file:{...d.file,scope:d.mod?scopeOf(d.mod):""}}:{}),
+           /* which block it is, for a reader that changes it (rowFence finds it again in the text by these two), and how a new row's id is made */
+           id:d.id,mod:d.mod?d.mod.id:null,...(d.inner?{inline:true}:{}),...(d.idFormat!==undefined?{idFormat:d.idFormat}:{}),...(d.idPattern!==undefined?{idPattern:d.idPattern}:{})};entriesOnly(x);continue;}
        if(elsewhere()){drop(P.queryOtherModule(q.from));continue;}
        drop(P.queryNothing(q.from||""));continue;}
      if(src.q){block.from=src.a.id;block.field=src.q.id;block.fields=undefined;block.view={...block.view,value:src.q.id};if(src.a.kind!=="entry") entriesOnly(x);}
@@ -4767,7 +5082,7 @@ function moduleOut(m){const {__intro,__open,__line,__bare,__footnotes,activities
   const o={...rest,...(blurb?{blurb}:{}),...(opening.length?{opening}:{}),...(sources.length?{sources}:{}),...(citations.length?{citations}:{})};
   o.activities=acts;
   return o;}
-function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept,opening},fm,L,source,problems,wrote){
+function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,sharedNotes,recordsKept,opening,dataBlocks},fm,L,source,problems,wrote){
   /* a file that holds one module and no notice callout is covered by its own front matter: its license,
      copyright and source are that module's notice (a callout, when there is one, wins) */
   const holders=modules.filter(m=>m.activities.length);
@@ -4784,7 +5099,9 @@ function shapeBooklet({modules,widgets,answers,entries,drafts,figures,theme,shar
      booklet started here and not yet given a module downloads as); a module that holds no activity is still refused */
   const empty=!modules.length;
   const refused=problems.filter(p=>p.refuses);
-  return {ok:(out.length>0||empty)&&!refused.length,empty:empty||undefined,unread:problems,refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st};}
+  /* where each data block stands in the text (rowFence): its id, its module's id (null outside every module fence), whether it names a file, and its lines between the fences */
+  const dataAt=(dataBlocks||[]).map(d=>({id:d.id,mod:d.mod?d.mod.id:null,file:!!d.file,inner:d.inner||null}));
+  return {ok:(out.length>0||empty)&&!refused.length,empty:empty||undefined,unread:problems,refused,dupIds:problems.dupIds,drafts:{activities:drafts},template:book,lang:L,S:st,dataAt};}
 /* ---- writing a booklet back (SPEC.md section 8) ----
    A file is written back as it was read. Its body, everything before the records region, comes back byte for byte, its
    trailing blank lines and line endings with it, and so does every line and block of the region. Only what the reader
@@ -4807,14 +5124,14 @@ function fileText(book,S,D,drop){const p=writeParts(book,S,D,drop);return p.head
 const regionOf=(book,drop)=>writeParts(book,null,null,drop).region;
 function writeParts(book,S,D,drop){const V=book.raw||{},W=V.wrote||{},eol=W.eol||"\n",src=String(V.source||""),same=typeof W.head==="string"&&src===W.src;
   /* a body written from a changed design (Add, Remove, Rename) ends as the body read did: its trailing blank lines kept */
-  const tl=typeof W.head==="string"&&typeof W.post!=="string"?(W.head.match(/(?:\r\n?|\n)\s*$/)||[""])[0]:"";
+  const tl=typeof W.head==="string"&&typeof W.post!=="string"?(W.head.match(/(?:\r?\n)\s*$/)||[""])[0]:"";
   /* design written after the records (wroteOf) comes back after them, as it was, while the design is as it was read */
   const post=same&&typeof W.post==="string"?W.post:"";
-  let body=(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);if(body&&tl) body=body.replace(/(?:\r\n?|\n)$/,"")+tl;
+  let body=(src&&!/\n$/.test(src)?src+"\n":src).replace(/\n/g,eol);if(body&&tl) body=body.replace(/(?:\r?\n)$/,"")+tl;
   const head=same?W.head:(W.bom||"")+body;
   /* a blank line between the body and the region, where the body does not end with one: before a region this writer
      adds, and before the file's own when its body is written from a changed design; a body as read is left as it was */
-  const gap=()=>{const ls=head.split(/\r\n?|\n/),z=ls[ls.length-1];return !head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"";};
+  const gap=()=>{const ls=head.split(/\r?\n/),z=ls[ls.length-1];return !head?"":z.trim()?eol+eol:z||(ls.length>1&&ls[ls.length-2].trim())?eol:"";};
   /* and before the region of a text designCut cut before it, as the writer put it there before the cut (readMade) */
   const out=region=>({head,sep:(!same||W.cut)&&region?gap():"",region,post});
   const mods=book.modules||[],fenced=id=>fencedModule(id,mods),text=String(W.region||"");
@@ -4924,7 +5241,7 @@ let REGION_READ=null;
    the end of the file (`open`). The last read is kept, since every save of a booklet reads the same region. */
 function readRegion(text,mods){const key=mods.map(m=>m.id+(scopeOfModule(m)?"/":"")).join(" ");
   if(REGION_READ&&REGION_READ.text===text&&REGION_READ.key===key) return REGION_READ.R;
-  const T=[],E=[],re=/\r\n?|\n/g;let a=0,m;while((m=re.exec(text))){T.push(text.slice(a,m.index));E.push(m[0]);a=re.lastIndex;}T.push(text.slice(a));E.push("");
+  const T=[],E=[],re=/\r?\n/g;let a=0,m;while((m=re.exec(text))){T.push(text.slice(a,m.index));E.push(m[0]);a=re.lastIndex;}T.push(text.slice(a));E.push("");
   const fenced=new Set(mods.filter(scopeOfModule).map(x=>x.id)),bare=new Set(mods.filter(x=>!scopeOfModule(x)).map(x=>x.id));
   const blocks=[],groups=[],R={T,E,blocks,groups,top:-1,end:0,open:null};let sc="",inReg=false,g=null;
   const full=(x,y)=>{let k=y-1;while(k>x&&!T[k].trim()) k--;return k+1;};
@@ -5010,7 +5327,7 @@ function fileToWrite(){const p=writeParts(BOOK,STATE,ownDrafts());return p.regio
    parse reads it). The last text asked about is kept, since every save of a booklet asks about the same body. */
 let FENCE_END=null;
 function endsInFence(text){if(FENCE_END&&FENCE_END.text===text) return FENCE_END.open;
-  const {lines,next}=frontMatter(text,true),body=lines.slice(next),F=codeFences(body).pop();
+  const {lines,next}=frontMatter(text),body=lines.slice(next),F=codeFences(body).pop();
   FENCE_END={text,open:!!F&&F.end>=body.length};return FENCE_END.open;}
 /* The text a design is read from (bookText, textWith): its file's text with nothing of the reader's, its kept records with
    it, as {text, cut}. Where that would put a records region after a body that ends inside a code fence that never closes
@@ -5031,7 +5348,7 @@ const designText=(book,drop)=>designCut(book,drop).text;
    its blank line before the region again (writeParts, `cut`). The design is the text's own parse. Returns R. */
 function readMade(R,cut){const raw=R&&R.template&&R.template.raw,W=raw&&raw.wrote;
   if(!W||typeof W.head!=="string"||!endsInFence(W.head)) return R;
-  const {lines,next}=frontMatter(W.head,true),F=codeFences(lines.slice(next)).pop(),e=W.eol||"\n";
+  const {lines,next}=frontMatter(W.head),F=codeFences(lines.slice(next)).pop(),e=W.eol||"\n";
   const z=lines.filter(l=>l.trim()).pop()||"",t=z.replace(/\s+$/,""),s=String(raw.source||"");
   if(z!==t&&s.endsWith("\n"+t+"\n")) raw.source=W.src=s.slice(0,s.length-t.length-1)+z+"\n";
   if(cut){const Q=parseFile(W.head+(/[\r\n]$/.test(W.head)?"":e)+F.mark+e+e+cut);W.cut=true;
@@ -5792,7 +6109,7 @@ function cutComments(line,st){
     out+=line[i];i++;}
   return {text:out,cut};}
 function extractDefs(text,refs){
-  const rawLines=text.replace(/\r\n?/g,"\n").split("\n");
+  const rawLines=text.replace(/\r\n/g,"\n").split("\n");
   const lines=[];let fence=null;
   const com={open:false};
   for(let i=0;i<rawLines.length;i++){
@@ -6583,12 +6900,12 @@ function drawRow(b,draft,activityId,dc){const box=el("div",{class:"pblock row"})
     blocksIn(c).forEach(x=>{if(x&&typeof x==="object") cell.append(renderBlock(x,draft,activityId,dc));});
     box.append(cell);});
   return box;}
-/* A query that says `add` or `delete` (0.20) offers the reader a row to add and a row to remove. The reference renderer builds neither (SPEC.md section 13):
-   the view is drawn as it always was, with this one quiet line beneath it, and nothing is kept or changed. The line stands only where the controls
-   would be drawn: beneath a table, cards or list over a data block, in a `repeat` activity that is not daily, when a bare `readonly` does not lock them.
+/* A query that says `add` or `delete` (0.20) offers the reader a row to add and a row to remove. The controls are drawn where the rows are written in the booklet
+   (rowActs), in a `repeat` activity that is not daily, on a table, cards or list, when a bare `readonly` does not lock them. Where they would be drawn and the rows
+   cannot be changed, this one quiet line beneath the view says why: the block reads a JSON file (this reader does not write files), or cannot be written here.
    `acts` is the activity's actsConfig (its `keeps` is true for `repeat` and false for `repeat daily` and for an activity that keeps nothing). */
-const addDeleteNote=(v,acts)=>v&&(v.add||v.delete)&&acts&&acts.keeps&&v.readonly!==true&&["table","cards","list"].includes(v.as||"table")
-  ?[el("p",{class:"hint dv-quiet dv-add-delete"},strings("query").addDeleteLater)]:[];
+const rowsNote=(v,acts)=>v&&(v.add||v.delete)&&acts&&acts.keeps&&v.readonly!==true&&["table","cards","list"].includes(v.as||"table")&&!acts.rows
+  ?[el("p",{class:"hint dv-quiet dv-rows-why"},acts.fileBlock?strings("dv").act.rowsFile:strings("dv").act.rowsHere)]:[];
 /* read-only: what was kept elsewhere in this module; owns no answer key */
 function drawQuery(b,draft,activityId,dc){const box=el("div",{class:"pblock query"});
   const v={...(b.view||{}),fields:b.fields},state=queryView(activityId,b);
@@ -6984,7 +7301,7 @@ function finalizeEntry(id){const u=strings("ui");
     if(idx>=0) kept[idx]=e; else kept.push(e);
   } else kept.push(e);
   DRAFTS.custom[id]=nullMap();
-  unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;SAVE_QUIET=false;render();saveLocal();toast(u.kept);}
+  unsavedEntries++;dirty=true;viewAt(id).chip=e.ts;SAVE_QUIET=false;render();saveLocal();wbChanged();toast(u.kept);}
 /* a daily activity's empty draft shows today's entry, to be finished again (settle) */
 function seedUpsertDraft(id,m,draft){
   if(m.upsert!=="day"||anyFilled(draft,id)) return;
@@ -7050,6 +7367,396 @@ function drawEach(b,draft,activityId,dc){const src=eachSource(b);
   if(dc&&dc.ticks) dc.ticks.push(sync);
   return box;}
 
+/* ======================= ROWS OF DATA WRITTEN IN THE BOOKLET: ADD, ADD UNDER, REMOVE, EDIT =======================
+   Format 0.20, SPEC.md section 5 ("Adding a row", "Removing a row", "Editing a field in place") and section 7 ("The id of a new row").
+   A reader changes the rows of a `booklet data` block written in the booklet itself (not one that names a file): adds a row, adds one
+   under a row, removes one, edits a field where it is drawn. Each act is kept first, as an entry of the activity (`$add`, `$delete`, or a
+   pair under the field's name), and then written once into the block's JSON; if the data cannot take it, the entry stays and says why.
+   Only the bytes between the block's fences change: its other bytes (spacing, key order, line endings, a byte order mark, the rows beside)
+   come back exactly as they were (SPEC.md section 8, no normalizing).
+   The functions here are plain functions of text and values: no page, no DOM. They are a port, function for function, of the core of the
+   Booklet plugin for Obsidian (core/json-edit.ts, apply.ts, row-id.ts and rows-act.ts), and test/apply-vectors.json holds the cases
+   (made by running the plugin's own code) that both must pass. Nothing here sends anything anywhere: the changed booklet is the reader's, kept
+   in this browser and written by "Download a copy" or, where the browser allows, back to the file it was opened from (WRITE BACK, below). */
+const ROWS_ADD="$add",ROWS_DELETE="$delete";
+/* the most a data block may be after a change (the 5 MB a data file is read at, LINK_BYTES); counted in bytes of UTF-8, a lone surrogate as the three of U+FFFD */
+const ROWS_LIMIT=5*1024*1024;
+function utf8Len(s){let n=0;
+  for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);
+    if(c<0x80) n+=1;else if(c<0x800) n+=2;
+    else if(c>=0xd800&&c<=0xdbff&&i+1<s.length&&s.charCodeAt(i+1)>=0xdc00&&s.charCodeAt(i+1)<=0xdfff){n+=4;i++;}
+    else n+=3;}
+  return n;}
+/* an id is a non-empty string or a finite number, and ids are compared as text: 5 and "5" are one id (SPEC.md section 7) */
+const rowIsPick=v=>(typeof v==="string"&&v!=="")||(typeof v==="number"&&Number.isFinite(v));
+const rowIdKey=p=>String(p);
+const rowPickOf=v=>typeof v==="number"&&Number.isFinite(v)?v:(typeof v==="string"&&v.trim()!==""?v:undefined);
+const rowSameId=(a,b)=>(typeof a==="string"||typeof a==="number")&&(typeof b==="string"||typeof b==="number")&&String(a)===String(b);
+/* Reads where each value, member and element of a JSON text sits: {kind:"object"|"array"|"value", start, end, members|elements}. Null for text
+   that is not one JSON value (callers only edit what JSON.parse has already read). */
+const JSON_WS=/[ \t\n\r]/;
+function scanJson(s){let p=0;
+  const ws=()=>{while(p<s.length&&JSON_WS.test(s[p])) p++;},fail=()=>{throw new Error("not JSON");};
+  const str=()=>{if(s[p]!=='"') fail();p++;
+    while(p<s.length){const c=s[p];if(c==="\\") p+=2;else if(c==='"') return ++p;else p++;}
+    return fail();};
+  const value=()=>{ws();const start=p,c=s[p];
+    if(c==="{"){p++;const members=[];ws();
+      if(s[p]==="}") return {kind:"object",start,end:++p,members};
+      for(;;){ws();const keyStart=p,keyEnd=str(),key=JSON.parse(s.slice(keyStart,keyEnd));
+        ws();if(s[p]!==":") fail();p++;
+        const v=value();members.push({key,keyStart,keyEnd,value:v});ws();
+        if(s[p]===",") p++;else if(s[p]==="}") return {kind:"object",start,end:++p,members};else fail();}}
+    if(c==="["){p++;const elements=[];ws();
+      if(s[p]==="]") return {kind:"array",start,end:++p,elements};
+      for(;;){elements.push(value());ws();
+        if(s[p]===",") p++;else if(s[p]==="]") return {kind:"array",start,end:++p,elements};else fail();}}
+    if(c==='"') return {kind:"value",start,end:str()};
+    while(p<s.length&&!JSON_WS.test(s[p])&&!",]}".includes(s[p])) p++;
+    if(p===start) fail();
+    return {kind:"value",start,end:p};};
+  try{const v=value();ws();return p===s.length?v:null;}catch(e){return null;}}
+const rowSplice=(s,from,to,put)=>s.slice(0,from)+put+s.slice(to);
+/* the whitespace that starts the line `at` is on; whether `at` begins its line (only space before it) */
+const rowLead=(code,at)=>/^[ \t]*/.exec(code.slice(code.lastIndexOf("\n",at-1)+1))[0];
+const rowBegins=(code,at)=>/^[ \t]*$/.test(code.slice(code.lastIndexOf("\n",at-1)+1,at));
+/* the spaces and tabs just before the closing `}` that ends `text` (none when it does not end in one), read from the end: a pattern for it is quadratic on a long run */
+function rowPadClose(text){if(!text.endsWith("}")) return "";
+  let i=text.length-1;while(i>0&&(text[i-1]===" "||text[i-1]==="\t")) i--;
+  return text.slice(i,text.length-1);}
+/* Where `row` (an object of plain values, its keys in the order they are written) goes to stand at the end of the list `arr` of `code`, and what is
+   written there: in the layout of the row before it, so one line stays one line (its spacing after a colon and a comma, and inside its braces), and a row
+   written across lines stays so, with the same indent. A list with no row gets the plain layout: two spaces deeper than the line the list starts on, one
+   space after a colon, a key to a line. Line endings follow the text (CRLF stays CRLF). Returns {from,to,put}. */
+function addRowEdit(code,arr,row){
+  const eol=code.includes("\r\n")?"\r\n":"\n",entries=Object.entries(row),el_=arr.elements;
+  if(!el_.length){const ind=rowLead(code,arr.start),mine=ind+"  ";
+    const body=entries.length?"{"+eol+mine+"  "+entries.map(([k,v])=>JSON.stringify(k)+": "+JSON.stringify(v)).join(","+eol+mine+"  ")+eol+mine+"}":"{}";
+    return {from:arr.start,to:arr.end,put:"["+eol+mine+body+eol+ind+"]"};}
+  const prev=el_[el_.length-1],prevText=code.slice(prev.start,prev.end),members=prev.kind==="object"?prev.members:[];
+  const colon=members.length?code.slice(members[0].keyEnd,members[0].value.start):": ";
+  /* what comes between one row and the next */
+  let sep;
+  if(el_.length>=2) sep=code.slice(el_[el_.length-2].end,prev.start);
+  else if(code.slice(arr.start,prev.start).includes("\n")) sep=","+eol+(rowBegins(code,prev.start)?rowLead(code,prev.start):"");
+  else sep=", ";
+  const pair=([k,v])=>JSON.stringify(k)+colon+JSON.stringify(v);
+  let text;
+  if(!prevText.includes("\n")){
+    const comma=members.length>=2?code.slice(members[0].value.end,members[1].keyStart):colon.includes(" ")?", ":",";
+    const padL=(/^\{([ \t]*)/.exec(prevText)||[])[1]||"",padR=members.length?rowPadClose(prevText):"";
+    text=entries.length?"{"+padL+entries.map(pair).join(comma)+padR+"}":"{}";}
+  else{
+    const rowIndent=rowBegins(code,prev.start)?rowLead(code,prev.start):((/\n([ \t]*)$/.exec(sep)||[])[1]||"");
+    const onOwn=[...members].reverse().find(m=>rowBegins(code,m.keyStart)),unit=rowIndent.includes("\t")?"\t":"  ";
+    const inner=onOwn?rowLead(code,onOwn.keyStart):rowIndent+unit;
+    const firstOnBrace=!/^\{[ \t]*\r?\n/.test(prevText),closeOwn=/\n[ \t]*\}$/.test(prevText);
+    const lead=firstOnBrace?"{"+((/^\{([ \t]*)/.exec(prevText)||[])[1]||""):"{"+eol+inner;
+    const tail=closeOwn?eol+rowLead(code,prev.end-1)+"}":rowPadClose(prevText)+"}";
+    text=entries.length?lead+entries.map(pair).join(","+eol+inner)+tail:"{}";}
+  return {from:prev.end,to:prev.end,put:sep+text};}
+/* The change that takes the row at `index` out of the list `arr`: the row's own text and one comma. When a row follows, the comma after it, with the
+   space around that comma, up to the next row (the separator before stays as it was); the last row goes with the comma before it (which was the previous
+   row's separator). A row alone on its lines takes them with it: the line ending before it stays as the previous row's, so the closing bracket keeps its
+   place. The only row of a list leaves `[]`. */
+function removeRowEdit(arr,index){const e=arr.elements;
+  if(e.length===1) return {from:arr.start,to:arr.end,put:"[]"};
+  if(index<e.length-1) return {from:e[index].start,to:e[index+1].start,put:""};
+  return {from:e[index-1].end,to:e[index].end,put:""};}
+const rowByKey=o=>{const m=new Map();for(const x of o.members) m.set(x.key,x);return m;};   /* a key written twice is read as its last, as JSON.parse reads it */
+const rowParseAt=(s,n)=>JSON.parse(s.slice(n.start,n.end));
+/* A text read for an act: past its byte order mark, its list of rows found (the list itself, or an object holding it as `rows`). Or {why}. */
+function rowLocate(text){
+  const bom=text.charCodeAt(0)===0xfeff?1:0,body=text.slice(bom);
+  /* a byte that was not UTF-8 reads as U+FFFD, and the text written back would carry U+FFFD in its place: nothing is written */
+  if(body.includes("�")) return {why:"not utf8"};
+  try{JSON.parse(body);}catch(e){return {why:"unreadable"};}
+  const root=scanJson(body);if(!root) return {why:"unreadable"};
+  let at=root;
+  if(at.kind==="object"){const m=rowByKey(at).get("rows");if(!m) return {why:"no row"};at=m.value;}
+  if(at.kind!=="array") return {why:"no row"};
+  return {bom,body,list:at};}
+/* Every row at every depth whose `id` is the pick (as text), as {row, members, in (the list it stands in, null for a child held as a field's one object), at}.
+   A stack, so a chain thousands deep is no recursion. */
+function rowsWithId(body,list,pick){const found=[],todo=[];
+  for(let i=list.elements.length-1;i>=0;i--){const e=list.elements[i];if(e.kind==="object") todo.push({row:e,in:list,at:i});}
+  while(todo.length){const x=todo.pop(),members=rowByKey(x.row),id=members.get("id");
+    if(id&&id.value.kind==="value"&&rowSameId(rowPickOf(rowParseAt(body,id.value)),pick)) found.push({row:x.row,members,in:x.in,at:x.at});
+    for(const m of members.values()){const v=m.value;
+      if(v.kind==="object") todo.push({row:v,in:null,at:0});
+      else if(v.kind==="array") for(let i=v.elements.length-1;i>=0;i--) if(v.elements[i].kind==="object") todo.push({row:v.elements[i],in:v,at:i});}}
+  return found;}
+/* Two JSON values are the same: the same types and values, an object's keys in any order, a list's members in order. */
+function sameJson(a,b){if(a===b) return true;
+  if(typeof a!==typeof b||a===null||b===null||typeof a!=="object") return false;
+  if(Array.isArray(a)||Array.isArray(b)) return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((x,i)=>sameJson(x,b[i]));
+  const ka=Object.keys(a);
+  return ka.length===Object.keys(b).length&&ka.every(k=>Object.prototype.hasOwnProperty.call(b,k)&&sameJson(a[k],b[k]));}
+/* The list of rows a parent takes a new child in: of its fields whose value is a list whose items are all rows, the only one that has rows; else, when
+   none has, the only empty one; else none (SPEC.md section 5, "Adding a row", "Which of the parent's lists"). `lists`: [{key, empty}]. */
+function chooseChildList(lists){const full=lists.filter(l=>!l.empty);
+  if(full.length) return full.length===1?full[0].key:null;
+  const empty=lists.filter(l=>l.empty);return empty.length===1?empty[0].key:null;}
+/* how the reader compares a field's value with `was`: a value (words trimmed, a number as digits) or a choice's option (trimmed, case ignored) */
+function rowText(v){if(v===null||v===undefined) return "";if(typeof v==="string") return v.trim();if(typeof v==="number"||typeof v==="boolean") return String(v);return JSON.stringify(v);}
+function rowSameValue(a,b){const x=rowText(a),y=rowText(b);
+  if(x===""||y==="") return x===y;
+  if(typeof a==="number"||typeof b==="number"){const n=Number(x),m=Number(y);if(Number.isFinite(n)&&Number.isFinite(m)) return n===m;}
+  return x===y;}
+function rowSameOption(a,b){const x=rowText(a),y=rowText(b);return x===""||y===""?x===y:x.trim().toLowerCase()===y.trim().toLowerCase();}
+/* Sets `field` of the row `pick` to `a` in the data's JSON `text`, only if the row still holds `was` (compared by `eq`), and returns {ok,text} or {ok:false,why}.
+   A pick that names no row or more than one, the field `id` (it is the row's identity), a row without the field or holding a list or rows there, and a value
+   that is no longer `was` write nothing. The text itself comes back when the field already holds `a`. */
+function applyAct(text,pick,field,was,a,eq){eq=eq||rowSameValue;
+  if(field==="id") return {ok:false,why:"identity"};
+  /* a value is written as a JSON string, a JSON number or null: nothing else is an edit's value */
+  if(!(a===null||typeof a==="string"||(typeof a==="number"&&Number.isFinite(a)))) return {ok:false,why:"unreadable"};
+  const at=rowLocate(text);if(at.why) return {ok:false,why:at.why};
+  const found=rowsWithId(at.body,at.list,pick);
+  if(!found.length) return {ok:false,why:"no row"};
+  if(found.length>1) return {ok:false,why:"ambiguous"};
+  const member=found[0].members.get(field);
+  if(!member||member.value.kind!=="value") return {ok:false,why:"no field"};
+  const now=rowParseAt(at.body,member.value);
+  if(eq(now,a)) return {ok:true,text};
+  if(!eq(now,was)) return {ok:false,why:"changed"};
+  return {ok:true,text:text.slice(0,at.bom+member.value.start)+JSON.stringify(a)+text.slice(at.bom+member.value.end)};}
+/* Adds the row `{id: pick, ...row}` at the end of the block's list of rows (`under` undefined) or of the list of rows the row `under` holds (found at any
+   depth: none is "no row", more than one "ambiguous", a row that holds no list of rows or more than one "no place"), in the layout of the row before it.
+   A row with that id already in the block is not added again: the text comes back as it was, if it holds every field of `row`; else it is a "clash". */
+function applyAdd(text,pick,under,row){
+  if(!rowIsPick(pick)) return {ok:false,why:"unreadable"};
+  const at=rowLocate(text);if(at.why) return {ok:false,why:at.why};
+  const have=rowsWithId(at.body,at.list,pick);
+  if(have.length){
+    if(have.length>1) return {ok:false,why:"ambiguous"};
+    const now=rowParseAt(at.body,have[0].row);
+    for(const [k,v] of Object.entries(row)) if(k!=="id"&&!(Object.prototype.hasOwnProperty.call(now,k)&&sameJson(now[k],v))) return {ok:false,why:"clash"};
+    return {ok:true,text};}
+  let list=at.list;
+  if(under!==undefined){const parents=rowsWithId(at.body,at.list,under);
+    if(!parents.length) return {ok:false,why:"no row"};
+    if(parents.length>1) return {ok:false,why:"ambiguous"};
+    const lists=[];for(const m of parents[0].members.values()) if(m.value.kind==="array"&&m.value.elements.every(e=>e.kind==="object")) lists.push({key:m.value,empty:m.value.elements.length===0});
+    const kids=chooseChildList(lists);
+    if(!kids) return {ok:false,why:"no place"};
+    list=kids;}
+  /* the id is the row's first key, whatever else the form gave */
+  const own={id:pick};for(const [k,v] of Object.entries(row)) if(k!=="id") own[k]=v;
+  const e=addRowEdit(at.body,list,own);
+  return {ok:true,text:text.slice(0,at.bom)+rowSplice(at.body,e.from,e.to,e.put)};}
+/* Takes the row `pick` out, with the rows under it, only if it is still `was` (as parsed JSON: the same types and values, keys in any order). No such
+   row is "same" (the text comes back as it was); more than one is "ambiguous"; a row that changed since is "changed"; a child held as one object, in no list, "no place". */
+function applyDelete(text,pick,was){
+  const at=rowLocate(text);if(at.why) return {ok:false,why:at.why};
+  const found=rowsWithId(at.body,at.list,pick);
+  if(!found.length) return {ok:true,text};
+  if(found.length>1) return {ok:false,why:"ambiguous"};
+  const f=found[0];let same;
+  try{same=sameJson(rowParseAt(at.body,f.row),was);}
+  catch(e){return {ok:false,why:"too deep"};}   /* a row nested thousands deep: the comparison runs out of room */
+  if(!same) return {ok:false,why:"changed"};
+  if(!f.in) return {ok:false,why:"no place"};
+  const e=removeRowEdit(f.in,f.at);
+  return {ok:true,text:text.slice(0,at.bom)+rowSplice(at.body,e.from,e.to,e.put)};}
+/* Where the text between the fences of the data block `id` of module `mod` (null: outside every module fence) stands in a booklet's text, and what it is:
+   {from,to,text}, or null when the booklet holds no such block written in itself (it names a file, or is gone). The block is found again in the text as it is now. */
+function rowFence(note,id,mod){const R=parseFile(note),hit=R&&R.dataAt&&R.dataAt.find(d=>d.id===id&&d.mod===mod);
+  if(!hit||hit.file||!hit.inner) return null;
+  const bom=note.charCodeAt(0)===0xfeff?1:0,starts=[bom],re=/\n/g;re.lastIndex=bom;let m;
+  while((m=re.exec(note))) starts.push(re.lastIndex);
+  const at=i=>i<starts.length?starts[i]:note.length,from=at(hit.inner.from),to=at(hit.inner.to);
+  return {from,to,text:note.slice(from,to)};}
+/* Runs an act on a block written in the booklet itself: `act` is given the text between the fences and returns {ok,text} or {ok:false,why}; only that text
+   goes back, and the rest of the booklet is not touched. Returns {ok,text,same?} or {ok:false,why}. A change that makes the changed file, here the whole booklet,
+   longer than a reader reads (ROWS_LIMIT, in UTF-8 bytes, a byte order mark counted) is refused "too big" (SPEC.md section 5, "What stops it"); an act that changes
+   nothing is not held to it. `extra`: the bytes the booklet will hold beyond `note` when it is saved (the reader's kept entries, the act's own among them), so
+   the booklet is measured as it will be saved. */
+function applyToBooklet(note,ref,act,extra){const span=rowFence(note,ref.id,ref.mod);
+  if(!span) return {ok:false,why:"no write"};
+  const r=act(span.text);if(!r.ok) return r;
+  if(r.text===span.text) return {ok:true,text:note,same:true};
+  const text=note.slice(0,span.from)+r.text+note.slice(span.to);
+  if(utf8Len(text)+(extra||0)>ROWS_LIMIT) return {ok:false,why:"too big"};
+  return {ok:true,text};}
+
+/* ---- the id of a new row (SPEC.md section 7, "The id of a new row") ----
+   A format is literal text and parts in braces, in any order: `{n}` the next whole number, `{n:3}` the same zero-padded to 3 digits (1 to 9), `{time}` UTC
+   YYYYMMDDhhmmss, `{date}` UTC YYYYMMDD, `{epoch}` seconds since 1970, `{uuid}` a random version-4 UUID, `{field:NAME}` the slug of the new row's value in the
+   field NAME, `{parent}` the parent row's id (empty for a top row). `{{` and `}}` are a literal brace. The time and the random bytes are handed in, so the
+   function is exact in a test; a refusal is data (`why`), and the page says it in words. */
+/* A format read: {ok:true, parts, bare} or {ok:false, why}. A bare `{n}` (nothing else) makes a JSON number; anything else makes a string. A format with two number
+   parts is not valid, and neither is a number part against a variable part, a time, a date, a UUID or a digit of a constant: it would be the same number twice. */
+function parseIdFormat(format){
+  if(typeof format!=="string"||format==="") return {ok:false,why:"the id format is empty"};
+  const parts=[];let text="";const flush=()=>{if(text) parts.push({kind:"text",text});text="";};
+  for(let i=0;i<format.length;){const c=format[i];
+    if(c==="{"){
+      if(format[i+1]==="{"){text+="{";i+=2;continue;}
+      const close=format.indexOf("}",i+1);if(close<0) return {ok:false,why:"a brace is not closed"};
+      const name=format.slice(i+1,close);flush();
+      if(name==="n") parts.push({kind:"n",width:0});
+      else if(name.startsWith("n:")&&/^[1-9]$/.test(name.slice(2))) parts.push({kind:"n",width:Number(name.slice(2))});
+      else if(["time","date","epoch","uuid","parent"].includes(name)) parts.push({kind:name});
+      else if(name.startsWith("field:")&&name.length>6) parts.push({kind:"field",name:name.slice(6)});
+      else return {ok:false,why:"“{"+name+"}” is not a part of an id"};
+      i=close+1;continue;}
+    if(c==="}"){if(format[i+1]!=="}") return {ok:false,why:"a closing brace has no opening one"};text+="}";i+=2;continue;}
+    text+=c;i++;}
+  flush();
+  /* a number part is told from its neighbours only by a constant: next to text of any length, or digits, or hex, where it ends is a guess */
+  for(let i=0;i<parts.length;i++){if(parts[i].kind!=="n") continue;
+    for(const j of [i-1,i+1]){const k=parts[j]&&parts[j].kind,t=parts[j]&&parts[j].text;
+      const near=t===undefined?undefined:(j<i?t.slice(-1):t.slice(0,1));
+      if(k==="text"&&near!==undefined&&/[0-9]/.test(near)) return {ok:false,why:"a number part sits next to a digit of a constant; put a hyphen or a letter between them"};
+      if(["field","parent","time","date","epoch","uuid"].includes(k)) return {ok:false,why:"a number part sits next to another part that is not a constant; put a constant (a hyphen, a letter) between them"};}}
+  if(parts.filter(x=>x.kind==="n").length>1) return {ok:false,why:"the id format has two number parts; it can have only one"};
+  return {ok:true,parts,bare:parts.length===1&&parts[0].kind==="n"&&parts[0].width===0};}
+const ROW_UUID="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+/* what an id must look like to count as made by this format: the format as a matcher over the whole id; the first number part's digits are group 1 */
+function idMatcher(parts){let first=true;
+  const body=parts.map(p=>{switch(p.kind){
+    case "text":return p.text.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    case "n":{const g=first?"(\\d+)":"\\d+";first=false;return g;}
+    case "time":return "\\d{14}";
+    case "date":return "\\d{8}";
+    case "epoch":return "\\d+";
+    case "uuid":return ROW_UUID;
+    default:return "[\\s\\S]*";}}).join("");
+  return new RegExp("^"+body+"$");}
+/* the next whole number for a format: the highest number found in an id that matches it, plus one; 1 when none does (`ids`: every id of the block at every
+   depth and of the adds still waiting; a number is read as its digits) */
+function nextNumber(parts,ids){if(!parts.some(p=>p.kind==="n")) return 1;
+  const re=idMatcher(parts);let top=0;
+  for(const id of ids){const m=re.exec(String(id));if(!m||m[1]===undefined) continue;const n=Number(m[1]);if(Number.isSafeInteger(n)&&n>top) top=n;}
+  return top+1;}
+/* a value as a slug: accents removed, lower case, every run of characters other than a to z, digits and hyphens one hyphen, leading and trailing hyphens gone */
+function slugOf(value){const s=value===null||value===undefined?"":String(value);
+  return s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-+|-+$/g,"");}
+/* a random version-4 UUID, lower case, from 16 random bytes */
+function uuidOf(bytes){const b=Array.from({length:16},(_,i)=>(bytes[i]||0)&255);
+  b[6]=(b[6]&0x0f)|0x40;b[8]=(b[8]&0x3f)|0x80;
+  const h=b.map(x=>x.toString(16).padStart(2,"0")).join("");
+  return h.slice(0,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)+"-"+h.slice(16,20)+"-"+h.slice(20);}
+const ROW_ID_BUMP=60;   /* how many seconds past the moment of the add a time or epoch id may move to find a free id */
+/* Makes the id of a new row from a format. `input`: {ids (every id of the block at every depth, and of the adds waiting), values (the new row's text by field name),
+   parent (the parent row's id, or undefined for a top row), now (a Date), random (n -> n random bytes), labelOf (a field's label)}. A `{time}` or `{epoch}` id that
+   exists is tried again one second on, up to 60; any other clash refuses. Returns {ok:true,id} (a number for a bare `{n}`, else a string), or {ok:false, why:
+   "format"|"slug"|"clash"|"empty", field?, label?, filled?} (`slug`: the field's slug is empty, `filled` whether its box held something). */
+function makeId(format,input){const f=parseIdFormat(format);
+  if(!f.ok) return {ok:false,why:"format"};
+  const taken=new Set(input.ids.map(String)),n=nextNumber(f.parts,input.ids);let uuid=null;
+  for(const p of f.parts){
+    if(p.kind==="field"&&!slugOf(input.values[p.name])){
+      const raw=(input.labelOf?input.labelOf(p.name):p.name).trim()||p.name,typed=input.values[p.name];
+      return {ok:false,why:"slug",field:p.name,label:raw,filled:typed!==null&&typed!==undefined&&String(typed).trim()!==""};}
+    if(p.kind==="uuid"&&uuid===null) uuid=uuidOf(input.random(16));}
+  const moves=f.parts.some(p=>p.kind==="time"||p.kind==="epoch"),pad=(x,w)=>String(x).padStart(w,"0");
+  const timeText=d=>pad(d.getUTCFullYear(),4)+pad(d.getUTCMonth()+1,2)+pad(d.getUTCDate(),2)+pad(d.getUTCHours(),2)+pad(d.getUTCMinutes(),2)+pad(d.getUTCSeconds(),2);
+  for(let bump=0;bump<=(moves?ROW_ID_BUMP:0);bump++){
+    const at=new Date(input.now.getTime()+bump*1000);let made=0;
+    const text=f.parts.map(p=>{switch(p.kind){
+      case "text":return p.text;
+      case "n":return pad(n,p.width);
+      case "time":return timeText(at);
+      case "date":return timeText(at).slice(0,8);
+      case "epoch":return String(Math.floor(at.getTime()/1000));
+      case "uuid":return made++===0?uuid:uuidOf(input.random(16));   /* each {uuid} in a format is its own UUID */
+      case "field":return slugOf(input.values[p.name]);
+      case "parent":return input.parent===undefined?"":String(input.parent);}}).join("");
+    if(text==="") return {ok:false,why:"empty"};
+    if(!taken.has(text)) return {ok:true,id:f.bare?n:text};}
+  return {ok:false,why:"clash"};}
+/* The pattern a typed id must fit (a block that declares no `idFormat` asks for the id): matched against the whole id, compiled with the `u` flag. {ok,re} (re null for none) or {ok:false}. */
+function idPatternOf(pattern){if(pattern===undefined||pattern===null) return {ok:true,re:null};
+  if(typeof pattern!=="string") return {ok:false};
+  try{return {ok:true,re:new RegExp("^(?:"+pattern+")$","u")};}catch(e){return {ok:false};}}
+/* Checks an id the reader typed: not empty, one line, fits the pattern, and not an id of the block or of a waiting add. {ok,id} or {ok:false, why: "empty"|"break"|"patternBad"|"pattern"|"clash"}. */
+function checkTypedId(text,pattern,ids){const id=String(text).trim();
+  if(!id) return {ok:false,why:"empty"};
+  if(/[\r\n]/.test(id)) return {ok:false,why:"break"};
+  const p=idPatternOf(pattern);if(!p.ok) return {ok:false,why:"patternBad"};
+  if(p.re&&!p.re.test(id)) return {ok:false,why:"pattern"};
+  if(ids.some(x=>String(x)===id)) return {ok:false,why:"clash"};
+  return {ok:true,id};}
+
+/* ---- what the entries say while the data has not followed yet ---- */
+/* The pairs of an entry's `$add` list that are one: an `in` (the data block's id), a `pick`, an `under` that is a pick when it is there, and a `row` of plain values
+   (`id` is never one of them). A pair without an `in` is no act of any block and is read by nothing. */
+function addPairs(e){const v=e&&e[ROWS_ADD];if(!Array.isArray(v)) return [];
+  const isValue=x=>x===null||typeof x==="string"||typeof x==="number"||typeof x==="boolean",out=[];
+  for(const x of v){if(!isRowObj(x)||!rowIsPick(x.pick)||typeof x.in!=="string"||x.in==="") continue;
+    if(x.under!==undefined&&!rowIsPick(x.under)) continue;
+    const row={};if(isRowObj(x.row)) for(const [k,val] of Object.entries(x.row)) if(k!=="id"&&isValue(val)) row[k]=val;
+    out.push({in:x.in,pick:x.pick,...(x.under!==undefined?{under:x.under}:{}),row});}
+  return out;}
+/* The pairs of an entry's `$delete` list that are one: an `in`, a `pick` and a `was` that is an object. */
+function deletePairs(e){const v=e&&e[ROWS_DELETE];if(!Array.isArray(v)) return [];
+  return v.filter(x=>isRowObj(x)&&rowIsPick(x.pick)&&typeof x.in==="string"&&x.in!==""&&isRowObj(x.was)).map(x=>({in:x.in,pick:x.pick,was:x.was}));}
+/* the field of a row that takes new child rows (SPEC.md section 5, "Adding a row"), or null; a field's value as a list of child rows (a non-empty list whose first member is a row, or one row), else null */
+function rowChildKey(r){const lists=[];
+  for(const [k,v] of Object.entries(r)) if(Array.isArray(v)&&v.every(isRowObj)) lists.push({key:k,empty:v.length===0});
+  return chooseChildList(lists);}
+const rowKids=v=>Array.isArray(v)?(v.length&&isRowObj(v[0])?v:null):(isRowObj(v)?[v]:null);
+/* how many rows stand under a row, at every depth */
+function rowsUnder(r){let n=0;const todo=[r];
+  while(todo.length){const x=todo.pop();for(const v of Object.values(x)){const kids=rowKids(v);if(kids){n+=kids.length;for(const k of kids) todo.push(k);}}}
+  return n;}
+/* the rows with the id of every row at every depth, as keys (ids are text), each with the rows that carry it */
+function indexRows(rows){const out=new Map(),todo=rows.slice().reverse();
+  while(todo.length){const r=todo.pop(),id=r.id;
+    if(rowIsPick(id)){const k=rowIdKey(id),l=out.get(k);if(l) l.push(r);else out.set(k,[r]);}
+    const vs=Object.values(r);
+    for(let i=vs.length-1;i>=0;i--){const kids=rowKids(vs[i]);if(kids) for(let j=kids.length-1;j>=0;j--) todo.push(kids[j]);}}
+  return out;}
+/* the moment of an entry in ms, or -Infinity when its `ts` is no time (so it is the oldest) */
+const rowTimeOf=e=>{const t=Date.parse(String(e.ts));return Number.isFinite(t)?t:-Infinity;};
+/* the newest act on each pick of one data block, in the order the picks were first acted on (an act's place: the entry's time and position, adds before removals, then the pair's position) */
+function newestRowActs(entries,block){const acts=[];
+  entries.forEach((e,i)=>{const t=rowTimeOf(e);
+    addPairs(e).forEach((p,j)=>{if(p.in===block) acts.push({t,i,rank:0,j,kind:"add",p});});
+    deletePairs(e).forEach((p,j)=>{if(p.in===block) acts.push({t,i,rank:1,j,kind:"delete",p});});});
+  acts.sort(rowActOrder);
+  const newest=new Map();for(const a of acts) newest.set(rowIdKey(a.p.pick),a);
+  return [...newest.values()];}
+const rowActOrder=(a,b)=>a.t-b.t||a.i-b.i||a.rank-b.rank||a.j-b.j;
+/* The data's rows with the adds still waiting put in, and the removals still waiting marked (`entries`: the activity's kept entries; `block`: the data block's id).
+   The newest act on a pick decides: an add whose pick the data does not hold is waiting (drawn at the end of its parent's rows when the parent is there and holds a
+   list of rows, or of the top rows); an add whose pick the data holds is drawn from the data, never twice; a removal whose pick the data holds is waiting when the
+   row is still what the reader saw, and refused when it is not; a removal whose pick is gone is done. The rows given are not changed: when an add is drawn, the rows
+   are copied. Returns {rows, origin (a copied row -> the row as the data holds it), adding (a Set of the new rows), removing (Map id key -> "waiting"|"refused")}. */
+function withPending(rows,entries,block){
+  const out={rows,origin:new WeakMap(),adding:new WeakSet(),removing:new Map()},newest=newestRowActs(entries,block);
+  if(!newest.length) return out;
+  const held=indexRows(rows),adds=[];
+  for(const a of newest){const key=rowIdKey(a.p.pick),have=held.get(key);
+    if(a.kind==="add"){if(!have) adds.push(a);}
+    else if(have) out.removing.set(key,have.length===1&&sameJson(have[0],a.p.was)?"waiting":"refused");}
+  if(!adds.length) return out;
+  adds.sort(rowActOrder);
+  /* copy the rows (each row and each list of rows it holds), so the added ones stand where they will land and the data is not touched */
+  const copies=new Map(),copy=r=>{const c={...r};out.origin.set(c,r);return c;},top=rows.map(copy),todo=top.slice().reverse();
+  while(todo.length){const c=todo.pop(),id=c.id;
+    if(rowIsPick(id)){const l=copies.get(rowIdKey(id));if(l) l.push(c);else copies.set(rowIdKey(id),[c]);}
+    for(const [k,v] of Object.entries(c)){
+      if(Array.isArray(v)&&v.every(isRowObj)){const list=v.map(copy);c[k]=list;for(let i=list.length-1;i>=0;i--) todo.push(list[i]);}
+      else if(isRowObj(v)){const one=copy(v);c[k]=one;todo.push(one);}}}
+  for(const a of adds){const p=a.p,made={id:p.pick,...p.row};
+    if(p.under===undefined){top.push(made);out.adding.add(made);continue;}
+    const parents=copies.get(rowIdKey(p.under)),key=parents&&parents.length===1?rowChildKey(parents[0]):null;
+    if(!parents||key===null) continue;
+    parents[0][key].push(made);out.adding.add(made);}
+  out.rows=top;return out;}
+/* The id of every row of the data at every depth, and of every add still waiting (whether or not it can be drawn yet): what the id of a new row is made against,
+   so that a number counts past the adds on their way and no id is made twice. */
+function rowIds(rows,entries,block){const held=indexRows(rows),out=[],todo=rows.slice().reverse();
+  while(todo.length){const r=todo.pop();if(rowIsPick(r.id)) out.push(r.id);
+    const vs=Object.values(r);
+    for(let i=vs.length-1;i>=0;i--){const kids=rowKids(vs[i]);if(kids) for(let j=kids.length-1;j>=0;j--) todo.push(kids[j]);}}
+  const waiting=new Set();
+  for(const a of newestRowActs(entries,block)) if(a.kind==="add"&&!held.has(rowIdKey(a.p.pick))&&!waiting.has(rowIdKey(a.p.pick))){waiting.add(rowIdKey(a.p.pick));out.push(a.p.pick);}
+  return out;}
+
 /* ======================= ACTS ON ROWS =======================
    SPEC.md section 5, "A question asked for each row" and "Editing a field in place". The views of a data block ask the questions
    whose `each:` names it, in a row's open part or in the column a query's `fields:` names, and draw a field marked `edit` as its plain
@@ -7097,6 +7804,8 @@ function badNumsCheck(){BAD_NUMS.forEach((r,key)=>{if(r.c.isConnected!==false) r
 function actsRefresh(){ACT_REDRAW++;
   try{ROW_LIVE.forEach(x=>{if(x.box.isConnected===false){ROW_LIVE.delete(x);return;}try{x.redraw();}catch(e){}});}finally{ACT_REDRAW--;}}
 function stripRefresh(id){const w=STRIPS.get(id);if(w&&w.isConnected!==false&&w.parentNode){const n=chipStrip(id);w.replaceWith(n);}}
+/* a kept act's time is written to the whole second (as section 8's examples are), moved to the next free second when an entry has it */
+function freshTs(id){const taken=new Set(keptFor(id).map(x=>x.ts)),sec=n=>new Date(n).toISOString().replace(/\.\d{3}Z$/,"Z");let at=Math.floor(Date.now()/1000)*1000;while(taken.has(sec(at))) at+=1000;return sec(at);}
 /* one new entry holding the pairs `sel` ([[key, row id], …]) take out of the draft of an activity that keeps entries: it adds exactly one
    entry, and nothing else in the file moves. False when the draft holds none of them. */
 function keepPairs(id,sel,msg){const draft=draftFor(id),e=nullMap();
@@ -7105,23 +7814,71 @@ function keepPairs(id,sel,msg){const draft=draftFor(id),e=nullMap();
     e[K]=[...(e[K]||[]),clone(list[i])];
     const rest=list.filter((_,j)=>j!==i);draft[K]=rest.length?rest:null;}
   if(!Object.keys(e).length) return false;
-  /* a kept act's time is written to the whole second (as section 8's examples are), moved to the next free second when an entry has it */
-  const kept=keptFor(id),taken=new Set(kept.map(x=>x.ts)),sec=n=>new Date(n).toISOString().replace(/\.\d{3}Z$/,"Z");let at=Math.floor(Date.now()/1000)*1000;while(taken.has(sec(at))) at+=1000;
-  e.ts=sec(at);kept.push(e);
-  unsavedEntries++;dirty=true;SAVE_QUIET=false;saveLocal();toast(msg||strings("ui").kept);stripRefresh(id);
+  e.ts=freshTs(id);keptFor(id).push(e);
+  unsavedEntries++;dirty=true;SAVE_QUIET=false;saveLocal();wbChanged();toast(msg||strings("ui").kept);stripRefresh(id);
   return true;}
 const dropPair=(rec,K,pick)=>{const l=Array.isArray(rec[K])?rec[K]:[],r=l.filter(x=>!(isPair(x)&&x.pick===pick));if(r.length!==l.length) rec[K]=r.length?r:null;};
+/* ---- ROWS CHANGED IN THE BOOKLET (0.20.2, SPEC.md section 5 and section 13) ----
+   A data block written in the booklet (a `booklet data` fence) takes the acts the reader makes on its rows, in the browser, as the Obsidian plugin does. The act
+   is kept first, as an entry of the activity (`$add`, `$delete`, or a pair of the field's name with `was`); then it is written into the block, and only the bytes
+   between the block's fences change (applyToBooklet): the booklet's text is cut as a rename cuts it (designCut), the act is run on the block's lines, and the
+   result is read again as a booklet (adoptText). When the block does not take the act it is not written, and a notice says why in words: the entry stays, and the
+   row waits (withPending). A block that reads a JSON file or the host's store takes no add and no remove here, and nothing is written to a host. */
+/* one new entry holding one act of a data block: `key` is `$add` or `$delete`, `pair` the act */
+function keepRowAct(id,key,pair){const e=nullMap();e[key]=[clone(pair)];e.ts=freshTs(id);keptFor(id).push(e);
+  unsavedEntries++;dirty=true;SAVE_QUIET=false;wbChanged();return e;}
+/* runs `run` (the block's lines -> {ok,text} | {ok:false,why}) on the block `ref` ({id, mod}) of the booklet in force, and adopts the result. Returns the act's
+   result: {ok:true} (written), {ok:true,same:true} (the block already held it) or {ok:false,why}. */
+function writeIntoBooklet(ref,run){
+  if(OLD_DESIGN) return {ok:false,why:"no write"};
+  const c=designCut(BOOK),full=fileToWrite(),r=applyToBooklet(c.text,ref,run,full===null?0:Math.max(0,utf8Len(full)-utf8Len(c.text)));
+  if(!r.ok||r.same) return r;
+  if(!adoptText(r.text,regionOf(BOOK),c.cut)) return {ok:false,why:"unreadable"};
+  CUSTOMIZED=true;return r;}
+/* the screen drawn again after the booklet changed, at the same place; `focus` is the data-rfocus of the control that takes the focus (when it is still there) */
+function rowsRedraw(focus){const y=window.scrollY||0,x=window.scrollX||0;
+  markDirty();render();
+  if((window.scrollY||0)!==y||(window.scrollX||0)!==x) window.scrollTo(x,y);
+  if(focus){const n=Array.from(document.querySelectorAll("[data-rfocus]")).find(z=>z.getAttribute("data-rfocus")===focus);if(n&&n.focus) n.focus({preventScroll:true});}}
+/* the words of a refused add or remove, for a notice */
+const rowsWhy=(kind,why)=>{const A=strings("dv").act,t=kind==="add"?A.addWhy:A.deleteWhy;
+  return hasOwn(A.whole,why)?A.whole[why]:hasOwn(t,why)?t[why]:strings("dv").act.dataOther;};
+/* An act of the reader on the rows of a data block written in the booklet: kept, then written. `kind` is "add", "delete" or "edit"; returns the result of writing
+   it, after saying in a notice what a refusal means. The caller draws the screen again. */
+function rowsAct(cfg,kind,key,pair,run){const A=strings("dv").act;
+  keepRowAct(cfg.activityId,key,pair);
+  const r=writeIntoBooklet(cfg.rows.ref,run);
+  if(!r.ok) toast(kind==="add"?A.addKept(rowsWhy("add",r.why)):A.deleteKept(rowsWhy("delete",r.why)));
+  return r;}
+/* An in-place edit of a field of an inline block: the entry is kept (keepPairs) by the caller, and this writes its value into the block. */
+function rowsEdit(cfg,id,field,was,a,eq){const A=strings("dv").act,r=writeIntoBooklet(cfg.rows.ref,t=>applyAct(t,id,field,was,a,eq));
+  if(r.ok&&r.same) toast(A.editSame);
+  else if(!r.ok) toast(hasOwn(A.whole,r.why)?A.editWhole(A.whole[r.why]):A.editKept(hasOwn(A.editWhy,r.why)?A.editWhy[r.why]:A.editWhy.other));
+  return r;}
+const ID_BOX="\u0001id",rowRandom=n=>{const b=new Uint8Array(n);crypto.getRandomValues(b);return b;};
+/* a press of a control inside a row's heading: it never reaches the row's own disclosure */
+const rowPress=(b,fn)=>b.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();fn();});
+/* the trash icon (Lucide's trash-2); it is not in the sprite, whose names are the format's `icon:` values */
+const trashIcon=()=>sv("svg",{class:"ic","aria-hidden":"true",focusable:"false",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round","stroke-linejoin":"round"},
+  sv("path",{d:"M3 6h18"}),sv("path",{d:"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"}),sv("path",{d:"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"}),sv("line",{x1:10,x2:10,y1:11,y2:17}),sv("line",{x1:14,x2:14,y1:11,y2:17}));
 /* the questions a query of data block `b.from` asks of its rows in activity `activityId`, and where its answers go (null: none) */
 function actsConfig(b,activityId,dc){const A=activityOf(activityId);
   const qs=allBlocksOf(A).filter(q=>QUESTION_KINDS.has(q.type)&&q.each===b.from&&!eachSource(q));
   /* an activity that keeps one entry a day (`repeat daily`) keeps no act of a row: acts never merge into a day's entry, so there its fields are plain values and its row questions are answered as in an ordinary activity */
-  return {activityId,dc,keeps:A.kind==="entry"&&A.upsert!=="day",qs,rec:()=>answersFor(activityId)};}
+  const keeps=A.kind==="entry"&&A.upsert!=="day";
+  /* `rows`: the block as a reader may change it (a block written in the booklet itself, in an activity that keeps entries), else null */
+  return {activityId,dc,keeps,qs,rec:()=>answersFor(activityId),
+    fileBlock:!!(b.data&&b.data.file),
+    rows:keeps&&b.data&&!b.data.file&&b.data.inline&&!OLD_DESIGN?{ref:{id:b.data.id,mod:b.data.mod},data:b.data}:null};}
 /* The acts one view draws over `set` (dataSet), or null when it has none: the questions it asks of rows and the fields it lets the reader
    edit, as nodes for the views' cells and open parts. `v` is the view's keys (readonly, fields, label). */
 function rowActs(cfg,set,v){
   const qs=cfg.qs,all=set.all||set.rows,kidKeys=set.kidKeys||new Set();
   const edKeys=cfg.keeps&&set.edits?Object.keys(set.edits).filter(k=>editSpec(set,k)&&!kidKeys.has(k)&&!qs.some(q=>q.id===k)):[];
-  if(!qs.length&&!edKeys.length) return null;
+  /* rows added and removed (0.20.2): only in a data block written in the booklet (cfg.rows), on a table, cards or list, when a bare `readonly` does not lock them */
+  const RW=cfg.rows||null,kindOk=["table","cards","list"].includes(v.as||"table"),
+    addOn=!!RW&&kindOk&&!!v.add&&v.readonly!==true,delOn=!!RW&&kindOk&&!!v.delete&&v.readonly!==true;
+  if(!qs.length&&!edKeys.length&&!addOn&&!delOn) return null;
   const D=strings("dv").act,U=strings("ui"),qById=new Map(qs.map(q=>[q.id,q]));
   const lockAll=v.readonly===true,lockSet=Array.isArray(v.readonly)?new Set(v.readonly):null,locked=k=>lockAll||!!(lockSet&&lockSet.has(k));
   const placed=new Set((v.fields||[]).filter(k=>qById.has(k)));
@@ -7188,7 +7945,7 @@ function rowActs(cfg,set,v){
     const nm=fieldName(k),rn=rowName(r);
     const st=stateOf(k,id,cur,(x,y)=>sameVal(x,y,ci),ci);
     const view=()=>{const shown=st.n===2?st.p.a:cur,t=valText(shown);
-      const b=el("button",{type:"button",class:"dv-ed-btn","aria-label":D.edit(nm,rn,t)},t!==""?cellText(shown):el("span",{class:"dv-ed-none","aria-hidden":"true"},"–"));
+      const b=el("button",{type:"button",class:"dv-ed-btn","data-rfocus":"edit:"+id+"|"+k,"aria-label":D.edit(nm,rn,t)},t!==""?cellText(shown):el("span",{class:"dv-ed-none","aria-hidden":"true"},"–"));
       b.addEventListener("click",()=>begin());
       const out=[b],note=st.n===2?el("span",{class:"dv-wait"},D.waiting):st.n===3?sentNode("span",cellText(st.p.a)):null;
       /* the mark that says what became of the last act is the button's description, so a screen reader reads it with the value */
@@ -7220,8 +7977,12 @@ function rowActs(cfg,set,v){
         badOff();pr[k]=v;val.textContent=cellText(v);markDirty();};
       c.addEventListener("input",put);c.addEventListener("change",put);
       const finish=keep=>{if(done) return;done=true;BAD_NUMS.delete(key);
+        /* a field of a block written in the booklet is also written into the block, once the act is kept (rowsEdit); the screen is then drawn again from the booklet */
+        const mine=keep&&cfg.rows?pairFor(rec()[k],id):null;
         if(keep) keepPairs(cfg.activityId,[[k,id]],D.changeKept);else dropPair(rec(),k,id);
-        ev().delete(key);afterPress(actsRefresh);};
+        ev().delete(key);
+        if(mine&&hasOwn(mine,"was")){rowsEdit(cfg,id,k,mine.was,mine.a,ci?rowSameOption:rowSameValue);afterPress(()=>rowsRedraw("edit:"+id+"|"+k));return;}
+        afterPress(actsRefresh);};
       c.addEventListener("keydown",e=>{
         if(e.key==="Enter"&&!(spec.edit==="long"&&e.shiftKey)){e.preventDefault();e.stopPropagation();put();if(!state.bad) finish(true);}
         else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();finish(false);}});
@@ -7237,19 +7998,120 @@ function rowActs(cfg,set,v){
     const editing=ev().has(key)||!!pairFor(rec()[k],id);
     wrap.append(...(editing?box():view()));
     return wrap;}
+  /* ---- rows added and removed ---- */
+  const infoOf=r=>(set.pending&&set.pending.get(r))||null,entriesNow=()=>(STATE.entries||{})[cfg.activityId]||[];
+  const wv=()=>viewAt(cfg.activityId),addForms=()=>wv().addForms||(wv().addForms=new Map()),asks=()=>wv().rowAsks||(wv().rowAsks=new Set());
+  /* one box for each field the block marks `edit` that the query does not lock, in the block's order (never the id) */
+  const addFields=addOn?set.own.filter(k=>k!=="id"&&!locked(k)&&editSpec(set,k)).map(k=>({key:k,label:fieldName(k),spec:editSpec(set,k)})):[];
+  /* in words, why no row can be added here: the id format or pattern is not valid, or names a field that has no box */
+  const idProblem=!addOn?null:(()=>{const d=RW.data,I=D.id;
+    if(d.idFormat!==undefined){const f=parseIdFormat(d.idFormat);if(!f.ok) return I.formatBad;
+      for(const part of f.parts) if(part.kind==="field"&&!addFields.some(x=>x.key===part.name)) return I.noBox(fieldName(part.name).trim()||part.name);
+      return null;}
+    return idPatternOf(d.idPattern).ok?null:I.patternBad;})();
+  const idWords=m=>{const I=D.id;return m.why==="format"?I.formatBad:m.why==="clash"?I.clash:m.why==="empty"?I.empty:m.filled?I.noUsable(m.label):I.noSlug(m.label.toLowerCase());};
+  const typedWords=m=>{const I=D.id;return m.why==="empty"?I.typedEmpty:m.why==="break"?I.typedBreak:m.why==="patternBad"?I.patternBad:m.why==="pattern"?I.typedPattern(String(RW.data.idPattern)):I.typedClash;};
+  const newBox=(spec,id)=>{let c;
+    if(spec.edit==="choice"){c=el("select",{class:"field",id});c.append(el("option",{value:""},""));spec.options.forEach(o=>c.append(el("option",{value:o},o)));}
+    else if(spec.edit==="long") c=el("textarea",{class:"field",rows:"3",id});
+    else{c=el("input",{type:spec.edit==="number"?"number":spec.edit==="date"?"date":"text",class:"field",id});if(spec.edit==="number") c.setAttribute("step","any");}
+    return c;};
+  /* "+ add" (a top row, or under `parent`), which opens the form for a new row; what is typed is kept for this visit, so the form is as it was when the screen is drawn again */
+  function addForm(parent){
+    const po=parent?infoOf(parent).data:null,pid=po?po.id:undefined,fkey=RW.ref.id+"|"+(parent?rowIdKey(pid):""),name=parent?rowName(parent):"";
+    const box=el("div",{class:"dv-addrow"+(parent?" dv-addunder":""),"data-add":parent?rowKey(parent):""});
+    const closed=()=>{box.textContent="";
+      const b=el("button",{type:"button",class:"dv-rowact dv-add","data-rfocus":"add:"+fkey,"aria-label":parent?D.rowAddUnder(name):D.rowAddName},parent?D.rowAddUnderBtn:D.rowAdd);
+      rowPress(b,()=>{addForms().set(fkey,{values:Object.create(null),id:"",message:"",focus:addFields.length?addFields[0].key:(RW.data.idFormat===undefined?ID_BOX:null)});open();});
+      box.append(b);};
+    const open=()=>{const sess=addForms().get(fkey);if(!sess) return closed();
+      box.textContent="";
+      const group=el("div",{class:"dv-addform",role:"group","aria-label":parent?D.rowAddUnder(name):D.rowAddName}),warn=el("p",{class:"dv-addmsg",role:"alert"},sess.message),boxes=new Map();
+      group.append(warn);
+      const stop=()=>{addForms().delete(fkey);closed();const b=box.querySelector("button");if(b&&b.focus) b.focus();};
+      const say=(m,f)=>{sess.message=m;warn.textContent=m;if(f!==null&&f!==undefined){const c=boxes.get(f);if(c&&c.focus) c.focus();}};
+      const submit=()=>{
+        const row=Object.create(null),text=Object.create(null);
+        for(const f of addFields){const c=boxes.get(f.key),raw=c.value;text[f.key]=sess.values[f.key]!==undefined?sess.values[f.key]:raw;
+          if(f.spec.edit==="number"){
+            if((c.validity&&c.validity.badInput)||(raw.trim()!==""&&!Number.isFinite(Number(raw)))) return say(D.rowNum(f.label),f.key);
+            if(raw.trim()!=="") row[f.key]=Number(raw);}
+          else if(raw.trim()!=="") row[f.key]=raw;}
+        const ids=rowIds(RW.data.rows,entriesNow(),RW.ref.id);
+        const made=RW.data.idFormat!==undefined?makeId(RW.data.idFormat,{ids,values:text,parent:pid,now:new Date(),random:rowRandom,labelOf:fieldName}):checkTypedId(sess.id,RW.data.idPattern,ids);
+        if(!made.ok){const m=RW.data.idFormat!==undefined?idWords(made):typedWords(made);
+          return say(m,RW.data.idFormat!==undefined?(made.field!==undefined&&boxes.has(made.field)?made.field:null):ID_BOX);}
+        const pair={in:RW.ref.id,pick:made.id,...(pid!==undefined?{under:pid}:{}),row};
+        addForms().delete(fkey);
+        rowsAct(cfg,"add",ROWS_ADD,pair,t=>applyAdd(t,made.id,pid,row));
+        rowsRedraw("add:"+fkey);};
+      const field=(key,label,make)=>{const wrap=el("div",{class:"dv-addfield"}),id=newId("adf_"),c=make(id);
+        wrap.append(el("label",{for:id},label),c);boxes.set(key,c);
+        const keep=()=>{if(key===ID_BOX) sess.id=c.value;else sess.values[key]=c.value;if(sess.message){sess.message="";warn.textContent="";}};
+        c.addEventListener("input",keep);c.addEventListener("change",keep);c.addEventListener("focus",()=>{sess.focus=key;});
+        ["keypress","click"].forEach(t=>c.addEventListener(t,e=>e.stopPropagation()));
+        c.addEventListener("keydown",e=>{e.stopPropagation();
+          if(e.key==="Escape"){e.preventDefault();stop();return;}
+          if(e.key==="Enter"&&c.tagName!=="TEXTAREA"&&c.tagName!=="SELECT"){e.preventDefault();submit();}});
+        group.append(wrap);};
+      for(const f of addFields) field(f.key,f.label,id=>{const c=newBox(f.spec,id);c.value=sess.values[f.key]!==undefined?sess.values[f.key]:"";return c;});
+      if(RW.data.idFormat===undefined) field(ID_BOX,D.rowId,id=>{const c=el("input",{type:"text",class:"field",id});c.value=sess.id;return c;});
+      const go=el("button",{type:"button",class:"small primary dv-addok"},D.rowGo),no=el("button",{type:"button",class:"small dv-addcancel"},D.rowCancel);
+      rowPress(go,submit);rowPress(no,stop);
+      group.append(el("div",{class:"dv-addgo"},go,no));
+      group.addEventListener("keydown",e=>{if(e.key!=="Escape") return;e.preventDefault();e.stopPropagation();stop();});
+      box.append(group);
+      if(sess.focus!==null&&sess.focus!==undefined){const c=boxes.get(sess.focus);if(c&&c.focus) c.focus();}};
+    if(addForms().has(fkey)) open();else closed();
+    return box;}
+  /* a row can take a child when it is in the data, is not an add still waiting, and holds exactly one list of rows (or one empty list) */
+  const offersUnder=r=>{if(!addOn||idProblem) return false;const i=infoOf(r);return !!i&&i.act!=="adding"&&rowIsPick(i.data.id)&&rowChildKey(i.data)!==null;};
+  /* the trash icon of a row, and the question before it is taken out */
+  function removeNode(r){const i=infoOf(r),gone=i.data,rkey=RW.ref.id+"|"+rowIdKey(gone.id),name=rowName(r);
+    const wrap=el("span",{class:"dv-rm-wrap","data-rm":rowKey(r)});
+    let asking=false;
+    const back=()=>{asks().delete(rkey);closed();const b=wrap.querySelector("button");if(b&&b.focus) b.focus();};
+    /* a key or a press inside the wrap belongs to it: it never reaches the row's own disclosure (a press on its words does not open or shut the row) */
+    wrap.addEventListener("keydown",e=>{e.stopPropagation();if(!asking||e.key!=="Escape") return;e.preventDefault();back();});
+    wrap.addEventListener("keypress",e=>e.stopPropagation());
+    wrap.addEventListener("keyup",e=>{e.stopPropagation();if(e.key===" "&&!(e.target&&e.target.tagName==="BUTTON")) e.preventDefault();});
+    wrap.addEventListener("click",e=>{e.stopPropagation();if(!(e.target&&/^(button|input|select|textarea)$/i.test(String(e.target.tagName||"")))) e.preventDefault();});
+    const closed=()=>{asking=false;wrap.textContent="";
+      const b=el("button",{type:"button",class:"dv-rowact dv-rm","data-rfocus":"rm:"+rkey,"aria-label":D.rowRemoveName(name)},trashIcon());
+      rowPress(b,()=>{asks().add(rkey);ask();});
+      wrap.append(b);};
+    const ask=()=>{asking=true;wrap.textContent="";
+      const yes=el("button",{type:"button",class:"small dv-rm-yes"},D.rowRemoveYes,el("span",{class:"dv-sr"}," "+name)),no=el("button",{type:"button",class:"small dv-rm-no"},D.rowCancel);
+      rowPress(no,back);
+      rowPress(yes,()=>{asks().delete(rkey);asking=false;
+        rowsAct(cfg,"delete",ROWS_DELETE,{in:RW.ref.id,pick:gone.id,was:clone(gone)},t=>applyDelete(t,gone.id,clone(gone)));
+        rowsRedraw("add:"+RW.ref.id+"|");});
+      wrap.append(el("span",{class:"dv-rm-q"},D.rowRemoveQ(rowsUnder(gone))),yes,no);
+      if(no.focus) no.focus();};
+    if(asks().has(rkey)) ask();else closed();
+    return wrap;}
+  const markNode=r=>{const i=infoOf(r),a=i&&i.act;
+    return a==="adding"?el("span",{class:"dv-wait"},D.waiting):a==="removing"?el("span",{class:"dv-wait"},D.rowRemoving):a==="refused"?el("span",{class:"dv-wait"},D.rowRefusedMark):null;};
+  const anyMark=!!set.pending&&[...set.pending.values()].some(x=>x.act);
   return {
     keys,placed,qById,locked,fin,asked,canEdit,
+    /* rows added and removed: "+ add" under the rows, "Add under this row" in a row's open part, the trash of a row, the words beside a row whose act the data has not followed,
+       and whether a table needs a column for them */
+    addTop(){return addOn?(idProblem?el("p",{class:"hint dv-quiet dv-addquiet"},idProblem):addForm(null)):null;},
+    remove(r){const i=infoOf(r);return delOn&&i&&i.act!=="removing"&&rowIsPick(i.data.id)?removeNode(r):null;},
+    mark:markNode,col:delOn||anyMark,
     /* the node for a field of a row where a view draws it as a value (a column, an extra, a line, the open part): a question, a box to edit
        with, or null when the field is drawn as plain text */
     cell(r,k){const q=qById.get(k);if(q&&placed.has(k)) return asked(q,r)?askNode(q,r,"cell"):"";
       return canEdit(r,k)?editNode(r,k):null;},
     has(r,k){const q=qById.get(k);return q&&placed.has(k)?asked(q,r):canEdit(r,k);},
     /* the questions asked of a row that stay in its open part, and their Finalize */
-    hasAsk(r){return qs.some(q=>!placed.has(q.id)&&asked(q,r));},
+    hasAsk(r){return qs.some(q=>!placed.has(q.id)&&asked(q,r))||offersUnder(r);},
     openPart(r){const out=[];let live=false;
       qs.forEach(q=>{if(placed.has(q.id)||!asked(q,r)) return;
         out.push(el("div",{class:"dv-ask-open"},askNode(q,r,"open")));if(!locked(q.id)) live=true;});
       if(live&&cfg.keeps&&finHolder(r)===null) out.push(el("div",{class:"dv-rowfinrow"},fin(r)));
+      if(offersUnder(r)) out.push(addForm(r));
       return out;},};}
 /* the Finalize buttons of a box follow the draft: enabled while the row has an answer to keep */
 function finSync(box){if(!box.querySelectorAll) return;
@@ -7374,10 +8236,15 @@ const nodeText=n=>typeof n==="string"?n:(n&&typeof n.plain==="string"?n.plain:n&
 /* what a view draws from: {kind, rows, keys:Set, own:[key], first, lab(key), sortVal(row,key)}.
    `own` is the source's own fields in order, and `first` is the first of them,
    whatever the query's `fields:` says. */
-function dataSet(d){
+function dataSet(d,pend){
   /* every row at every depth (0.19: a field that holds rows, or one row, makes child rows; `kidKeys` are those fields). Walked
      with a stack of its own and in the file's order, so the order of `all` is a row's turn before its children's. */
-  const kidKeys=new Set(),all=[],groupsOf=new Map(),copies=new Map(),mine=r=>{if(!copies.has(r)) copies.set(r,bare(r));return copies.get(r);},
+  /* `pend` (withPending of the data's rows): `pending` says, for each row drawn, the row as the data holds it (`data`) and what the kept entries say of it (`act`: "adding", "removing", "refused" or null) */
+  const kidKeys=new Set(),all=[],groupsOf=new Map(),copies=new Map(),pending=new Map(),
+    mine=r=>{if(!copies.has(r)){const c=bare(r);copies.set(r,c);
+      const st=pend&&rowIsPick(r.id)?pend.removing.get(rowIdKey(r.id)):undefined;
+      pending.set(c,{data:pend&&pend.origin.get(r)||r,act:pend&&pend.adding.has(r)?"adding":st==="waiting"?"removing":st==="refused"?"refused":null});}
+      return copies.get(r);},
     top=d.rows.map(mine),todo=top.slice().reverse();
   while(todo.length){const r=todo.pop();all.push(r);
     const gs=[];
@@ -7388,7 +8255,7 @@ function dataSet(d){
   const keys=new Set(Object.keys(d.fields||{}));all.forEach(r=>Object.keys(r).forEach(k=>keys.add(k)));
   const own=(d.fields?Object.keys(d.fields):Object.keys(d.rows[0]||{})).filter(k=>!kidKeys.has(k));
   const lab=k=>hasOwn(d.fields,k)?d.fields[k]:k;
-  return {kind:"data",rows:top,all,groupsOf,kidKeys,keys,own,first:own[0],lab,edits:d.edits||null,sortVal:(r,k)=>r[k]};}
+  return {kind:"data",rows:top,all,groupsOf,kidKeys,keys,own,first:own[0],lab,edits:d.edits||null,pending,sortVal:(r,k)=>r[k]};}
 /* kept entries as rows: each question is a field and the date is the field `date`.
    A chart has them oldest-first (the pipeline's `limit` then keeps the newest N). A row is
    kept when it answers at least one of the questions `fields:` names (or any). */
@@ -7483,6 +8350,10 @@ function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.
     const btn=el("button",{type:"button",class:"dv-sort","data-key":c.key,"aria-label":dvText.sortBy(c.label)},...name);
     btn.addEventListener("click",()=>ctl.sortBy(c.key));
     return el("th",{scope:"col","aria-sort":on(c.key)?(ctl.state.dir===1?"ascending":"descending"):"none",class:cls},btn);});
+  /* a column at the end for what the reader does to a row: Remove, and the words for an act the data has not followed (rows added and removed) */
+  const acts=o&&o.acts,actCol=!!(acts&&acts.col),more=actCol?1:0;
+  if(actCol) heads.push(el("th",{scope:"col",class:"dv-act"},el("span",{class:"dv-sr"},dvText.act.rowActs)));
+  const actCell=r=>actCol?el("td",{class:"dv-act"},acts.mark(r),acts.remove(r)):null;
   table.append(el("thead",{},el("tr",{},...heads)));
   /* the first column that is not the badge leads the row: it carries the row's picture and its link */
   const lead=(cols.find(c=>!(roles.badge&&c.key===roles.badge))||{}).key;
@@ -7497,7 +8368,7 @@ function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.
     /* A nested table: one body, every row a row of the same columns, a child one step in from its parent. A row that opens carries a
        native disclosure in its lead cell; what it opens to is a few rows after it, drawn when it opens (the pipeline's toggle
        listener calls the hook registered here) and taken away when it shuts. `data-depth` says how far in a row is. */
-    const body=el("tbody",{}),span=String(cols.length||1);
+    const body=el("tbody",{}),span=String((cols.length+more)||1);
     const indent=depth=>Array.from({length:depth},()=>el("span",{class:"dv-ind","aria-hidden":"true"}));
     const rowsFor=(r,depth)=>{
       const key=tree.keyOf(r),has=tree.has(r);
@@ -7507,7 +8378,7 @@ function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.
         if(!has) return [el("div",{class:"dv-lead"},...ind,el("span",{class:"dv-nocaret","aria-hidden":"true"}),el("span",{class:"dv-leadtext"},...kids))];
         d=el("details",{"data-id":key,open:tree.open(r)},el("summary",{},...kids));
         return [el("div",{class:"dv-lead"},...ind,d)];};
-      const tr=el("tr",{class:"dv-trow","data-depth":String(depth)},...cols.map(c=>cell(r,c,c.key===lead?wrap:undefined)));
+      const tr=el("tr",{class:"dv-trow","data-depth":String(depth)},...cols.map(c=>cell(r,c,c.key===lead?wrap:undefined)),actCell(r));
       const out=[tr];
       if(has){
         let drawn=tree.open(r);
@@ -7532,9 +8403,9 @@ function viewTable(set,groups,roles,cols,o){const dvText=strings("dv"),ctl=o&&o.
     table.append(body);
     return [el("div",{class:"md-table dv-wrap"},table)];}
   groups.forEach(g=>{const body=el("tbody",{});
-    if(g.name!==null) body.append(el("tr",{class:"dv-grouprow"},el("th",{scope:"rowgroup",colspan:String(cols.length)},
+    if(g.name!==null) body.append(el("tr",{class:"dv-grouprow"},el("th",{scope:"rowgroup",colspan:String(cols.length+more)},
       g.name||"–",el("span",{class:"dv-count"},dvText.rows(g.rows.length)))));
-    g.rows.forEach(r=>body.append(el("tr",{},...cols.map(c=>cell(r,c)))));
+    g.rows.forEach(r=>body.append(el("tr",{},...cols.map(c=>cell(r,c)),actCell(r))));
     table.append(body);});
   return [el("div",{class:"md-table dv-wrap"},table)];}
 function viewList(set,groups,roles,cols,o){const tree=o&&o.tree;
@@ -7551,7 +8422,7 @@ function viewList(set,groups,roles,cols,o){const tree=o&&o.tree;
         el("span",{class:"dv-sr"},c.label+": "),cellOf(o,set,r,c.key)))):null,
       val!==""?el("span",{class:"dv-val"+(t&&!badges.length?" tone-"+t:"")},val):null,
       note!==""?el("span",{class:"dv-n"},note):null,
-      toneWords(t)];};
+      toneWords(t),acts?acts.mark(r):null,acts?acts.remove(r):null];};
   const row=r=>el("li",{class:"dv-row"},...parts(r));
   /* nested (see nestRows): a row with more to show (its other fields, its children) is a native disclosure, a row without is a plain
      row. What it opens to is drawn when it opens (the pipeline's toggle listener calls the hook), or at once if it was kept open. */
@@ -7596,7 +8467,7 @@ function viewCards(set,groups,roles,cols,o){const tree=o&&o.tree;
       /* a card that opens (0.19) is a fold card: its note stays in sight (a fold hides its teaser when open), and its body is
          drawn when it opens (the pipeline's toggle listener calls the hook), or at once if it was kept open */
       const d=cardNode({mode:"fold",open:tree.open(r),cls:"entry entry-row"+(t?" tone-"+t:""),picture,titleNode,
-        pills:badges.map(x=>pill(x,t)),foot:[note!==""?el("div",{class:"dv-n"},note):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)].filter(Boolean)});
+        pills:badges.map(x=>pill(x,t)),foot:[note!==""?el("div",{class:"dv-n"},note):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t),acts?acts.mark(r):null,acts?acts.remove(r):null].filter(Boolean)});
       d.setAttribute("data-id",tree.keyOf(r));
       const body=d.children[d.children.length-1];
       let drawn=false;
@@ -7608,7 +8479,7 @@ function viewCards(set,groups,roles,cols,o){const tree=o&&o.tree;
       return d;}
     return cardNode({mode:"item",cls:"entry entry-row"+(t?" tone-"+t:""),picture,teaser:note,teaserCls:"dv-n",
       titleNode,
-      kids:[badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t)]});};
+      kids:[badges.length?el("span",{class:"dv-b"},...badges.map(x=>pill(x,t))):null,val!==""?el("span",{class:"dv-v"},val):null,lines.length?dl:null,toneWords(t),acts?acts.mark(r):null,acts?acts.remove(r):null]});};
   if(tree&&!isGrouped(groups)) return tree.roots.map(one);
   const cards=g=>g.rows.map(one).filter(Boolean);
   return isGrouped(groups)?groups.flatMap(g=>[groupHead(g),...cards(g)]):cards(groups[0]);}
@@ -7848,9 +8719,11 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
   const nests=drawn.includes("parent")&&(set.groupsOf&&set.groupsOf.size>0||rows.some(r=>cellText(r[pk]).trim()!==""));
   if(nests){tree=nestData(set,pk,v.limit);rows=tree.rows;}
   else if(v.limit&&drawn.includes("limit")) rows=set.kind==="entries"&&(as==="bars"||as==="line")?rows.slice(-v.limit):rows.slice(0,v.limit);
-  if(!rows.length) return [el("p",{class:"hint"},opts.empty||dvText.empty)];
-  /* the questions this view asks of its rows and the fields it lets the reader edit (ACTS ON ROWS); the compiler asks for none */
+  /* the questions this view asks of its rows, the fields it lets the reader edit and the rows it lets the reader add and remove (ACTS ON ROWS); the compiler asks for none */
   const acts=opts.acts&&drawn.includes("parent")&&set.kind==="data"?rowActs(opts.acts,set,v):null;
+  /* "+ add" stands under the rows, and under the words that say there are none: a list with no row can still take its first */
+  const addNode=acts?acts.addTop():null;
+  if(!rows.length) return [el("p",{class:"hint"},opts.empty||dvText.empty),...(addNode?[addNode]:[])];
   let roles=rolesOf({...set,rows},v,as),cols=colsOf(as,set,v,roles,acts);
   if(as==="table"&&!(roles.badge&&cols.some(c=>c.key===roles.badge))){roles.badge=null;roles.tone=null;}
   const gk=drawn.includes("group")&&v.group&&!nests?v.group:null,canSort=as!=="line";
@@ -7937,7 +8810,7 @@ function viewNodes(set,v,opts){opts=opts||{};const dvText=strings("dv");
       if(on){fold();for(let more=true;more;){more=false;
         box.querySelectorAll("details").forEach(d=>{const h=cur&&cur.hooks.get(d);if(!h||d.open) return;lent.set(d,true);d.open=true;h.open();more=true;});}}
       else fold();};}
-  return [box];}
+  return [box,...(addNode?[addNode]:[])];}
 
 /* ======================= 11. TABS AND PAGES, LINKS, READING MATERIAL =======================
    an activity's tabs and pages, the fold switch, links between activities, citations and callouts. */
@@ -8556,7 +9429,7 @@ function renderBar(){const t=strings("ui");const atList=screen===LIB_SCREEN,Lb=s
   document.getElementById("btnHome").textContent=atList?t.app:toList?"← "+Lb.back:(screen===HOME_SCREEN?"":"← ")+t.app;
   const dl=document.getElementById("btnExport");dl.textContent=t.export;dl.hidden=atList;
   document.getElementById("dropZone").textContent=t.dropZone;document.getElementById("dropVeil").textContent=t.dropVeil;
-  for(const [id,key] of [["loadTitle","loadTitle"],["loadHelp","loadHelp"],["loadOr","loadOr"],["loadCancel","loadCancel"],["loadGo","loadGo"],
+  for(const [id,key] of [["loadTitle","loadTitle"],["loadHelp","loadHelp"],["loadOr","loadOr"],["loadCancel","loadCancel"],["loadGo","loadGo"],["loadPick","loadPick"],
     ["clearTitle","clearTitle"],["clearHelp","clearHelp"],["clearCancel","clearCancel"],["clearGo","clearGo"]]) document.getElementById(id).textContent=t[key];
   if(atList) document.getElementById("loadTitle").textContent=Lb.load;
   document.getElementById("langGroup").setAttribute("aria-label",t.pLang);
@@ -9156,7 +10029,7 @@ async function download(){const t=strings("ui");
   SAVE_QUIET=false;
   /* a body that ends inside a code fence that never closes (fileToWrite): no file is made, nothing is marked as downloaded,
      and the reader is told why */
-  const md=fileToWrite();if(md===null){toast(t.fenceOpen);return;}
+  const md=fileToWrite();if(md===null){toast(t.dlFence);return;}
   const name=exportName();
   /* a store booklet of which nothing is kept here and in which nothing has changed (a pointer) has no copy to mark as
      downloaded, and none is made for it: a copy made only to say so would be a 3 MB write for a large file */
@@ -9248,16 +10121,67 @@ const veilAddModule=document.getElementById("veilAddModule");
 const veilLoad=document.getElementById("veilLoad"),veilClear=document.getElementById("veilClear"),dropVeil=document.getElementById("dropVeil");
 function openLoad(){const m=document.getElementById("loadMsg");m.textContent="";m.className="msg";document.getElementById("pasteIn").value="";document.getElementById("fileIn").value="";veilLoad.setAttribute("open","");}
 function readFileInto(file,cb){if(!file) return;const r=new FileReader();r.onload=()=>cb(String(r.result||""));r.readAsText(file);}
-function loadText(text){
+function loadText(text,handle){
   /* a file dropped before the page has read its store opens as soon as it has (it would otherwise make a list of one) */
-  if(!KEEP.ready){KEEP.later.push(()=>loadText(text));return;}
+  if(!KEEP.ready){KEEP.later.push(()=>loadText(text,handle));return;}
   const t=strings("ui");const msg=document.getElementById("loadMsg");
   const R=parseFile(text||"");
   if(!R.ok){const why=refusalList(R).join(" ");
     if(veilLoad.hasAttribute("open")){msg.className="msg err";msg.textContent=why;} else toast(why);return;}
   veilLoad.removeAttribute("open");
   /* a file is always a booklet of its own; it never merges into another one */
-  const e=addEntry();openBooklet(e.id);finishLoad(R);}
+  const e=addEntry();openBooklet(e.id);finishLoad(R);
+  /* opened from a file the browser lets the page write to: it is offered the file back when the reader changes something (see WRITING BACK) */
+  if(handle) WB={h:handle,name:String(handle.name||""),seen:text,asked:false,on:false,busy:false,again:false,wrote:false,id:currentId};}
+/* ---- WRITING BACK TO THE FILE A BOOKLET WAS OPENED FROM (0.20.2) ----
+   Where the browser has the File System Access API (window.showOpenFilePicker: Chromium) and a booklet was opened from a file through it (the "Open a
+   file I can save back to" button, or a file dropped on the page), the reader is asked once in a visit whether to keep that file up to date; on yes the
+   browser asks its own permission, and from then on the booklet (fileToWrite, the same text "Download a copy" makes) is written to that same file a moment
+   after each change. This is the reader's own disk and nothing else: no address is fetched, nothing is sent to a host, and a host is never written to.
+   Before each write the file is read again, and if it is no longer what this page read or wrote last it is not overwritten: a notice says so, and the
+   writing stops (a copy can still be downloaded). The file is read and written as bytes, so a byte order mark and the line endings stay as they were. */
+function wbDecode(buf){return new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(buf);}
+function wbHide(){const b=typeof document!=="undefined"&&document.getElementById("wbBar");if(b) b.setAttribute("hidden","");}
+function wbOffer(){const w=WB;if(!w||w.asked) return;w.asked=true;
+  const U=strings("ui"),bar=document.getElementById("wbBar"),yes=document.getElementById("wbYes"),no=document.getElementById("wbNo");
+  document.getElementById("wbText").textContent=U.wbAsk(w.name);yes.textContent=U.wbYes;no.textContent=U.wbNo;
+  no.onclick=()=>{bar.setAttribute("hidden","");};
+  /* the press is the user activation the browser's permission question needs: it is asked before anything else is awaited */
+  yes.onclick=()=>{bar.setAttribute("hidden","");
+    Promise.resolve().then(()=>w.h.requestPermission({mode:"readwrite"})).then(p=>{
+      if(WB!==w) return;
+      if(p!=="granted"){toast(U.wbDenied);return;}
+      w.on=true;wbWrite();},()=>{toast(U.wbDenied);});};
+  bar.removeAttribute("hidden");}
+/* called after each change to the booklet (markDirty) */
+function wbChanged(){const w=WB;if(!w) return;
+  if(!w.asked){wbOffer();return;}
+  if(w.on){clearTimeout(w.timer);w.timer=setTimeout(wbWrite,600);}}
+async function wbWrite(){const w=WB;if(!w||!w.on) return;
+  if(w.busy){w.again=true;return;}
+  w.busy=true;
+  try{do{w.again=false;
+      const text=fileToWrite();
+      if(text===null){if(!w.fenceSaid){w.fenceSaid=true;toast(strings("ui").wbFence);}continue;}   /* said once for each file in a visit: the next change would only say it again */
+      if(text===w.seen) continue;
+      const cur=wbDecode(await (await w.h.getFile()).arrayBuffer());
+      if(cur!==w.seen){w.on=false;toast(strings("ui").wbChanged(w.name));return;}
+      const ws=await w.h.createWritable();await ws.write(text);await ws.close();
+      const first=!w.wrote;w.seen=text;w.wrote=true;
+      if(first) toast(strings("ui").wbSaved(w.name));
+    }while(w.again&&WB===w);}
+  catch(e){w.on=false;toast(strings("ui").wbFail);}
+  finally{w.busy=false;}
+  /* the file holds the booklet as it is: what a download marks as kept is kept */
+  if(WB===w&&fileToWrite()===w.seen){dirty=false;unsavedEntries=0;saveLocal();drawSaveState();}}
+/* a file chosen with the browser's own file picker (a handle, so it can be written back to), or dropped on the page (dropHandle: its item's handle) */
+async function openWithHandle(h){
+  let buf;try{buf=await (await h.getFile()).arrayBuffer();}catch(e){return;}
+  try{loadText(wbDecode(buf),h);}
+  catch(e){const U=strings("ui");loadText(new TextDecoder().decode(buf));toast(U.wbNotUtf8(String(h.name||"")));}}
+async function pickFile(){
+  let hs;try{hs=await window.showOpenFilePicker({types:[{description:"Markdown",accept:{"text/markdown":[".md"],"text/plain":[".txt"]}}]});}catch(e){return;}   /* cancelled */
+  if(hs&&hs[0]) await openWithHandle(hs[0]);}
 /* `page`: the page a link names (startScreen) */
 /* a parse's notices, for the screen `at` it opens into */
 function fileNotesOf(R,at){const list=R.unread||[];
@@ -9689,7 +10613,10 @@ function drawDataQuery(box,block,v,state,scope,empty,acts){
   const make=()=>{const r=block.file?dataBlockRows(block,scope,()=>paint(true)):{data:block};
     if(block.file){if(live) live.at=r.at;
       else if(r.at){live={box,at:r.at,redraw:()=>paint(true)};DATA_LIVE.add(live);}}
-    return r.data?[...viewNodes(dataSet(r.data),v,{empty,state,scope,acts}),...addDeleteNote(v,acts)]:[el("p",{class:"hint dv-quiet"},r.note)];};
+    if(!r.data) return [el("p",{class:"hint dv-quiet"},r.note)];
+    /* the adds and removals the kept entries hold that the data has not followed yet are drawn as waiting (withPending) */
+    const kept=acts&&acts.keeps?(STATE.entries||{})[acts.activityId]||[]:[],pend=kept.some(isActEntry)?withPending(r.data.rows,kept,block.id):null;
+    return [...viewNodes(dataSet(pend&&pend.rows!==r.data.rows?{...r.data,rows:pend.rows}:r.data,pend),v,{empty,state,scope,acts}),...rowsNote(v,acts)];};
   const FOCUS="input,select,button,summary,textarea";
   function paint(keep){
     if(!keep){box.textContent="";box.append(...make());if(acts) finSync(box);return;}
@@ -9854,6 +10781,8 @@ document.getElementById("btnExport").addEventListener("click",download);
 document.getElementById("saveBtn").addEventListener("click",()=>{SAVE_OPEN=!SAVE_OPEN;drawSaveState();});
 document.getElementById("loadCancel").addEventListener("click",()=>veilLoad.removeAttribute("open"));
 document.getElementById("fileIn").addEventListener("change",e=>readFileInto(e.target.files[0],txt=>{document.getElementById("pasteIn").value=txt;}));
+/* the picker button is there only where the browser can write to a file it opened */
+{const pick=document.getElementById("loadPick");if(typeof window.showOpenFilePicker==="function"){pick.removeAttribute("hidden");pick.addEventListener("click",pickFile);}}
 document.getElementById("addModCancel").addEventListener("click",()=>veilAddModule.removeAttribute("open"));
 document.getElementById("loadGo").addEventListener("click",()=>loadText(document.getElementById("pasteIn").value));
 document.getElementById("clearCancel").addEventListener("click",()=>veilClear.removeAttribute("open"));
@@ -9867,7 +10796,11 @@ let dragDepth=0;
 window.addEventListener("dragenter",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")){e.preventDefault();dragDepth++;dropVeil.classList.add("show");}});
 window.addEventListener("dragover",e=>{if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault();});
 window.addEventListener("dragleave",e=>{if(dragDepth>0) dragDepth--;if(dragDepth===0) dropVeil.classList.remove("show");});
-window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.classList.remove("show");const f=e.dataTransfer?.files?.[0];if(f) readFileInto(f,loadText);});
+window.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;dropVeil.classList.remove("show");const f=e.dataTransfer?.files?.[0];
+  /* the item's handle has to be asked for while the drop is being handled; where the browser has none the file is read as before */
+  const it=e.dataTransfer?.items?.[0],hp=f&&it&&typeof it.getAsFileSystemHandle==="function"?it.getAsFileSystemHandle():null;
+  if(hp) hp.then(h=>h&&h.kind==="file"?openWithHandle(h):readFileInto(f,loadText),()=>readFileInto(f,loadText));
+  else if(f) readFileInto(f,loadText);});
 window.addEventListener("beforeunload",e=>{if(dirty||unsavedEntries>0){e.preventDefault();e.returnValue=strings("ui").leaving;}});
 /* Words typed in a choice or multi's "Add your own" field and not yet added are added as the page is hidden or left, as leaving the
    field would add them, so closing or reloading the page does not drop them (SPEC.md section 5) */

@@ -60,25 +60,27 @@ part("Escape, an unchanged value, a choice, a date, a number",async()=>{
  const ts=entriesOf(A).map(e=>e.ts);
  chk("each entry has a time of its own, though they were made in one second (each takes the next free second)",new Set(ts).size===ts.length,ts.join());});
 
-part("a keep adds one entry and changes no other byte",async()=>{
+part("a keep adds one entry and changes only the edited value in the block",async()=>{
+ /* 0.20.2: a field of a data block written in the booklet is also written into the block, so the booklet differs by that one value, in its fence, and by the entry */
  const A=load(" repeat","as: table\nfields: title");
  const before=A.toMarkdown();
  await edit(A,"Name","Orchard","Old orchard");
  const one=A.toMarkdown();
  const line=l=>l.startsWith('{"title"');
  const at=one.indexOf("```booklet entries");
- chk("the file gained its record block with one entry, after everything that was there",before.length>0&&one.startsWith(before.replace(/\n+$/,"").slice(0,200))&&at>before.replace(/\n+$/,"").length-5,String(at));
- chk("and the booklet's own text is byte for byte what it was",one.slice(0,before.length-1)===before.slice(0,-1)||one.startsWith(before.trimEnd()),"");
+ const edited=before.replace('"title":"Orchard"','"title":"Old orchard"').replace(/\n+$/,"");
+ chk("the file gained its record block with one entry, after everything that was there, and the one value in the block is the new one",before.length>0&&edited!==before.replace(/\n+$/,"")&&one.startsWith(edited)&&at>edited.length-5,String(at));
  await edit(A,"Name","Beds","Vegetable beds");
- const two=A.toMarkdown();
+ const two=A.toMarkdown().replace('"title":"Vegetable beds"','"title":"Beds"');
  const a=one.split("\n"),b=two.split("\n");let i=0;while(i<a.length&&a[i]===b[i]) i++;
  let j=0;while(j<a.length-i&&a[a.length-1-j]===b[b.length-1-j]) j++;
  const gone=a.slice(i,a.length-j),added=b.slice(i,b.length-j);
  const bare=l=>l.replace(/,$/,"");   /* the list's own comma after the line before the new one */
- chk("a second keep adds one line to the list (and the comma the list needs after the line before it); every other line is the same",
+ chk("a second keep adds one line to the list (and the comma the list needs after the line before it); every other line is the same (the block's new value put back)",
    gone.length===1&&added.length===2&&bare(added[0])===gone[0]&&line(added[1])&&!/Orchard/.test(added[1]),JSON.stringify({gone,added}));
- const B=P.boot();B.loadText(two);
- chk("opened again, both entries are there, as written",B.keptFor("d/a").length===2&&B.keptFor("d/a")[0].title[0].a==="Old orchard"&&B.keptFor("d/a")[1].title[0].was==="Beds");});
+ const B=P.boot();B.loadText(A.toMarkdown());
+ chk("opened again, both entries are there, as written",B.keptFor("d/a").length===2&&B.keptFor("d/a")[0].title[0].a==="Old orchard"&&B.keptFor("d/a")[1].title[0].was==="Beds");
+ chk("and both values are in the block, as the booklet text holds them",/"title":"Old orchard"/.test(A.toMarkdown())&&/"title":"Vegetable beds"/.test(A.toMarkdown())&&/"title":"Old orchard"/.test(B.toMarkdown()));});
 
 part("display states",async()=>{
  const seed=(titleNow)=>{const A=P.boot();A.loadText(bookText(" repeat","as: table\nfields: title",null,{...ROWS,rows:ROWS.rows.map((r,i)=>i===0?{...r,title:titleNow}:r)}));
@@ -107,7 +109,11 @@ part("a kept act's card, the waiting mark's description, and the words of a kept
  const A=load(" repeat","as: table\nfields: title, stage");
  await edit(A,"Name","Orchard","Old orchard");
  chk("a kept change is announced in the polite status line",text(P.byId("toast"))==="Change kept.",text(P.byId("toast")));
- const wait=byClass(main(),"dv-wait")[0],b=editBtn(A,"Name","Orchard");
+ chk("and the block holds it now, so nothing waits",byClass(main(),"dv-wait").length===0&&byClass(main(),"dv-sent").length===0&&/Old orchard/.test(text(main())));
+ /* an act the data has not followed waits: the mark is the edit button's description (aria-describedby names it) */
+ const W=load(" repeat","as: table\nfields: title, stage");
+ W.keptFor("d/a").push({ts:"2026-11-06T10:00:00Z",title:[{pick:"a",a:"Old orchard",was:"Orchard"}]});W.render();
+ const wait=byClass(main(),"dv-wait")[0],b=editBtn(W,"Name","Orchard");
  chk("the waiting mark is the edit button's description (aria-describedby names it)",!!wait&&b.attrs["aria-describedby"]===wait.attrs.id&&/sent, waiting/.test(text(wait)),JSON.stringify(b.attrs));
  await edit(A,"Stage","Beds","growing");
  const card=A.entryCard(entriesOf(A)[0],"d/a");

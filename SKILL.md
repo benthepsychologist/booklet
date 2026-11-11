@@ -5,7 +5,7 @@ description: "Create a valid, well-made booklet (a *.booklet.md file in the open
 
 # Making a booklet
 
-**Skill version: 0.20.1**. It matches SPEC.md's v0.20, the current format.
+**Skill version: 0.20.2**. It matches SPEC.md's v0.20, the current format.
 
 A **booklet** is one Markdown file, named `<slug>.booklet.md`, that holds a
 person's work *and* the design of the activities they do in it. The design is
@@ -1060,9 +1060,10 @@ between paragraphs for a new one. Section 4 says what a heading does.
   "row": values}],"ts": …}` or `{"$delete":[{"in": data block id, "pick": id, "was": the whole row}],"ts": …}`,
   and a host applies it. `in` is required: an act with none is neither applied nor
   drawn. Like any kept entry, these are the reader's to write, never yours
-  (section 1, point 6). The reference renderer does not build the controls: it draws
-  the view with one quiet line saying so, where the controls would be, and keeps
-  those entries as written. The Obsidian plugin builds them.
+  (section 1, point 6). The reference renderer (0.20.2) builds the controls for data
+  written in the booklet, in a `booklet data` fence, and writes the change into the
+  fence; for a block that reads a JSON file it draws no controls and says why, and
+  keeps those entries as written. The Obsidian plugin builds them for both.
 
   ````markdown
   > [!module|desk] Garden desk
