@@ -15,7 +15,7 @@ const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 /* a stand-in for the object URL a download makes */
 global.URL=Object.assign(require("url").URL,{createObjectURL:()=>"blob:x",revokeObjectURL(){}});
-const FM=t=>`---\nbooklet: "0.20"\ntitle: ${t}\nlang: en\n---\n\n`;
+const FM=t=>`---\nbooklet: "0.21"\ntitle: ${t}\nlang: en\n---\n\n`;
 const booklet=(title,q)=>FM(title)+`> [!module|m] M\n\n> [!activity|a] A\n\n> [!text|q] ${q||"A question"}\n\n> [!module|m end] End\n`;
 const typeIn=(A,words,addr)=>{A.screen=addr||"m/a";A.render();const ta=P.find(P.main(),x=>x.tagName==="textarea")[0];ta.value=words;ta._on.input();};
 const state=()=>P.byId("saveBtn").attrs["data-state"];

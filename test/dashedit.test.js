@@ -13,7 +13,7 @@ const walk=(n,f,out=[])=>{if(n&&typeof n==="object"){if(f(n)) out.push(n);kids(n
 const byClass=(n,c)=>walk(n,x=>cls(x).includes(c));
 const tag=(n,t)=>walk(n,x=>x.tagName===t);
 const text=n=>typeof n==="string"?n:(n&&n._text)||kids(n).map(text).join("");
-const FM='---\nbooklet: "0.20"\ntitle: Desk\nlang: en\n---\n\n';
+const FM='---\nbooklet: "0.21"\ntitle: Desk\nlang: en\n---\n\n';
 const ROWS={fields:{title:{label:"Name",edit:"text"},stage:{label:"Stage",edit:"choice",options:["planning","growing","resting"]},due:{label:"Due",edit:"date"},
   count:{label:"Trees",edit:"number"},about:{label:"About",edit:"long"},kind:"Kind",notes:"Notes"},
  rows:[{id:"a",title:"Orchard",stage:"growing",due:"2026-11-20",count:8,about:"Apples.",kind:"Orchard",notes:[]},

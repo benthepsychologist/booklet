@@ -31,7 +31,7 @@ const body=(r,rel)=>{const t=get(r,rel);return t.slice(t.indexOf("<article"),t.i
 const heads=html=>[...html.matchAll(/<h([1-6])\b([^>]*)>([\s\S]*?)<\/h\1>/g)].map(m=>({level:+m[1],attrs:m[2],id:(/\bid="([^"]*)"/.exec(m[2])||[])[1],cls:(/\bclass="([^"]*)"/.exec(m[2])||[])[1]||"",
   text:m[3].replace(/<a class="bk-anchor"[\s\S]*$/,"").replace(/<[^>]+>/g,"").trim()}));
 const titles=hs=>hs.filter(h=>/\bbk-page-title\b/.test(h.cls)&&!/\bbk-page-more\b/.test(h.cls));
-const one=(head,more)=>'---\nbooklet: "0.20"\ntitle: One\nlang: en\n'+(more||"")+'---\n\n> [!activity|a] One\n\n'+head+'\n';
+const one=(head,more)=>'---\nbooklet: "0.21"\ntitle: One\nlang: en\n'+(more||"")+'---\n\n> [!activity|a] One\n\n'+head+'\n';
 
 const r=run(fixture,"harbour"),rep=r.results[0].rep,text=reportOf(r),notes=body(r,"harbour/notes/index.html"),H=heads(notes);
 chk("the booklet compiles",rep.ok);

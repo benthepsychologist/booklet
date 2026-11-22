@@ -16,7 +16,7 @@ function tree(){
   return out;}
 function booklet(n){
   const pages=tree().slice(0,n||157);
-  let t='---\nbooklet: "0.20"\ntitle: Harbour almanac\nlang: en\n---\n\n> [!module|alm] Harbour almanac\n\n> [!activity|almanac] Almanac\n\n';
+  let t='---\nbooklet: "0.21"\ntitle: Harbour almanac\nlang: en\n---\n\n> [!module|alm] Harbour almanac\n\n> [!activity|almanac] Almanac\n\n';
   for(const p of pages) t+="> [!page|"+p.id+(p.parent?" parent:"+p.parent:"")+"] "+p.title+"\n\nNotes for "+p.title+". The water was calm and the boats stayed in.\n\n";
   return t+"> [!activity|after] After\n\nThe last word.\n\n> [!module|alm end] End\n";}
 module.exports={tree,booklet};

@@ -17,7 +17,7 @@ const press=b=>b._on.click({target:b,preventDefault(){},stopPropagation(){}});
 const key=(n,k)=>n._on.keydown({key:k,target:n,preventDefault(){},stopPropagation(){}});
 const btn=(label)=>walk(main(),x=>x.tagName==="button"&&(x.attrs["aria-label"]||"")===label)[0];
 const btnRe=re=>walk(main(),x=>x.tagName==="button"&&re.test(x.attrs["aria-label"]||text(x)))[0];
-const FM=lang=>`---\nbooklet: "0.20"\ntitle: Desk\nlang: ${lang||"en"}\n---\n\n`;
+const FM=lang=>`---\nbooklet: "0.21"\ntitle: Desk\nlang: ${lang||"en"}\n---\n\n`;
 const ROWS={fields:{title:{label:"Name",edit:"text"},stage:{label:"Stage",edit:"choice",options:["planning","growing","resting"]},count:{label:"Trees",edit:"number"}},
   idFormat:"r{n}",rows:[{id:"r1",title:"Orchard",stage:"growing",count:8,jobs:[{id:"r2",title:"Prune",stage:"planning"}]},{id:"r3",title:"Beds",stage:"resting",count:4},{id:"r5",title:"Shed",stage:"resting",jobs:[]}]};
 const book=(query,o)=>{o=o||{};const data=o.data||ROWS;

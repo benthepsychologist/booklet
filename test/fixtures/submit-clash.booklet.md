@@ -1,8 +1,9 @@
 ---
-booklet: "0.20"
+booklet: "0.21"
 id: test/submit-clash
 title: Submit clash test
 lang: en
+submit: test-endpoint
 ---
 
 # Submit clash test

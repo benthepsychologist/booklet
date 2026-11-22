@@ -73,7 +73,7 @@ chk("SKILL.md carries four worked examples",examples.length===4);
  if(md&&js){const body=undent(md[1]),d=fs.mkdtempSync(path.join(os.tmpdir(),"booklet-desk-"));
   chk("the dashboard example adds and removes rows, edits a field and declares an id format",
     /^add$/m.test(body)&&/^delete$/m.test(body)&&/"edit": "/.test(body)&&/"idFormat": "/.test(body));
-  const text=`---\nbooklet: "0.20"\nid: skill/garden-desk\ntitle: Garden desk\nlang: en\nversion: "0.1"\n---\n\n${body}\n`;
+  const text=`---\nbooklet: "0.21"\nid: skill/garden-desk\ntitle: Garden desk\nlang: en\nversion: "0.1"\n---\n\n${body}\n`;
   const f=path.join(d,"desk.booklet.md");fs.writeFileSync(f,text);fs.writeFileSync(path.join(d,"garden-desk.json"),undent(js[1])+"\n");
   const lint=spawnSync("python3",[path.join(R,"lint-booklet.py"),f],{encoding:"utf8"});
   chk("the dashboard example lints with 0 errors and 0 warnings, its file beside it",lint.status===0&&/0 errors · 0 warnings/.test(lint.stdout),lint.stdout);

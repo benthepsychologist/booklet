@@ -4,7 +4,7 @@
 const P=require("./page.js");
 let fails=0;
 const chk=(n,ok,d)=>{if(!ok)fails++;console.log((ok?"  ok    ":"  FAIL  ")+n+(d!==undefined&&!ok?"   → "+d:""));};
-const head=(extra="")=>`---\nbooklet: "0.20"\ntitle: Start\nlang: en\n${extra}---\n\n`;
+const head=(extra="")=>`---\nbooklet: "0.21"\ntitle: Start\nlang: en\n${extra}---\n\n`;
 const act=(id,t="Act")=>`> [!activity|${id}] ${t}\n\n> [!text|${id}-q] Q ${id}\n\n`;
 const FILES={
   bare:  head()+act("only"),
@@ -54,7 +54,7 @@ for(const k of ["bare","oneOne","oneThree"]){const A=open(withHome(FILES[k]));
  chk("...two modules open on the home screen",go(id4)==="@home",A.screen);
  chk("...and the back control from the activity leads home",(go(id2),A.homeButton(),A.screen==="@home"),A.screen);}
 {/* a file with another marker: it opens, and nothing is said about the marker */
- const A=open(FILES.oneOne.replace('booklet: "0.20"','booklet: 0.9'));
+ const A=open(FILES.oneOne.replace('booklet: "0.21"','booklet: 0.9'));
  const note=P.find(P.main(),P.hasClass("filenotes"))[0];
  chk("a 0.9 file of one activity opens in it, with no notice at all",where(A)==="m/a"&&!note,where(A)+" "+(note?P.texts(note):"no notice"));
  chk("...and nothing is counted as a thing the page could not read",A.FILE_NOTES===null,JSON.stringify(A.FILE_NOTES));}

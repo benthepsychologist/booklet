@@ -48,7 +48,7 @@ function count(data){let n=0;const todo=[...data.programmes];
 const FIELDS={title:"Name",kind:"Kind",stage:"Stage",open:"Open",due:"Due",moved:"Moved",about:"What it says",projects:"Projects",items:"Work items",steps:"Steps"};
 
 /* the booklet: one activity, three pages, each drawing the same rows another way (a table, a list, cards) */
-function bookletText(file,o){o=o||{};const f=file||"garden.json",marker=o.marker||"0.20";
+function bookletText(file,o){o=o||{};const f=file||"garden.json",marker=o.marker||"0.21";
   return `---
 booklet: "${marker}"
 title: Garden dashboard
